@@ -7,6 +7,7 @@
 #include <vgui_controls/Frame.h>
 #include <game/client/iviewport.h>
 #include "neo/game_controls/neo_button.h"
+#include "neo/game_controls/neo_image_button.h"
 
 #define CNeoLoadoutMenu CNeoLoadoutMenu_Dev
 
@@ -66,23 +67,26 @@ protected:
 	// --------------------------------------------------------
 	// Menu pieces. These are defined in the GetResFile() file.
 	// --------------------------------------------------------
-	vgui::Button *m_pButton1;
-	vgui::Button *m_pButton2;
-	vgui::Button *m_pButton3;
-	vgui::Button *m_pButton4;
-	vgui::Button *m_pButton5;
-	vgui::Button *m_pButton6;
-	vgui::Button *m_pButton7;
-	vgui::Button *m_pButton8;
-	vgui::Button *m_pButton9;
-	vgui::Button *m_pButton10;
-	vgui::Button *m_pButton11;
-	vgui::Button *m_pButton12;
-	vgui::CNeoButton*returnButton;
+	vgui::CNeoImageButton *m_pButton1;
+	vgui::CNeoImageButton *m_pButton2;
+	vgui::CNeoImageButton *m_pButton3;
+	vgui::CNeoImageButton *m_pButton4;
+	vgui::CNeoImageButton *m_pButton5;
+	vgui::CNeoImageButton *m_pButton6;
+	vgui::CNeoImageButton *m_pButton7;
+	vgui::CNeoImageButton *m_pButton8;
+	vgui::CNeoImageButton *m_pButton9;
+	vgui::CNeoImageButton *m_pButton10;
+	vgui::CNeoImageButton *m_pButton11;
+	vgui::CNeoImageButton *m_pButton12;
+	vgui::CNeoButton *returnButton;
 
 	// Our viewport interface accessor
 	IViewPort *m_pViewPort;
 
 	bool m_bLoadoutMenu;
+
+private:
+	int m_iLoadoutNone;
 };
 #endif // NEO_LOADOUT_MENU_H

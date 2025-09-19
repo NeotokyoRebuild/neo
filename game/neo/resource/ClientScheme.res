@@ -3121,6 +3121,18 @@ Scheme
 				}
 			}
 		}
+		
+		NeoImageButtonBorder
+		{
+		}
+		
+		NeoImageButtonDepressedBorder
+		{
+		}
+		
+		NeoImageButtonKeyFocusBorder
+		{
+		}
 	}
 
 	//////////////////////// CUSTOM FONT FILES /////////////////////////////

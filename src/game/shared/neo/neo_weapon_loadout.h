@@ -25,8 +25,8 @@ struct WeaponInfo
 {
 	// Loadout GUI info
 	const char *m_szWeaponName = "";
-	const char *m_szVguiImage = "loadout/loadout_none";
-	const char *m_szVguiImageNo = "loadout/loadout_none";
+	const char *m_szVguiImage = "vgui/loadout/loadout_none";
+	const char *m_szVguiImageNo = "vgui/loadout/loadout_none";
 	const char *m_szWeaponEntityName = "";
 
 	// Bot profile info to check against
