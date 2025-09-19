@@ -21,6 +21,7 @@ extern ConVar weaponstay;
 #include "c_neo_player.h"
 #else
 #include "items.h"
+#include "neo_gamerules.h"
 #endif // CLIENT_DLL
 
 #include "basecombatweapon_shared.h"
@@ -1276,8 +1277,8 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 		return;
 	}
 
-	if (!weaponstay.GetBool())
-	{
+	if (!weaponstay.GetBool() || NEORules()->CanRespawnAnyTime())
+	{ // regardless of the value of mp_weaponstay, disappear weapons in game modes with respawns enabled. Otherwise things can get too chaotic
 		BaseClass::SetPickupTouch();
 		return;
 	}
