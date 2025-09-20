@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "neo_gamerules.h"
 #include "neo_version_info.h"
+#include "neo_misc.h"
 #include "in_buttons.h"
 #include "ammodef.h"
 
@@ -28,7 +29,6 @@
 #include "player_resource.h"
 #include "inetchannelinfo.h"
 #include "neo_dm_spawn.h"
-#include "neo_misc.h"
 #include "neo_game_config.h"
 #include "nav_mesh.h"
 
@@ -135,6 +135,7 @@ ConVar sv_neo_readyup_lobby("sv_neo_readyup_lobby", "0", FCVAR_REPLICATED, "If e
 ConVar sv_neo_pausematch_enabled("sv_neo_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
+ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_juggernaut_spawn_bias("sv_neo_juggernaut_spawn_bias", "0", FCVAR_REPLICATED, "Spawn juggernaut in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 
@@ -147,6 +148,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_pausematch_enabled.SetValue(bCurrentValue);
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_juggernaut_spawn_bias.SetValue(bCurrentValue);
+	sv_neo_client_autorecord.SetValue(bCurrentValue);
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f
@@ -154,6 +156,8 @@ ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive ga
 	, neoSvCompCallback
 	#endif // GAME_DLL
 );
+
+ConVar sv_neo_comp_name("sv_neo_comp_name", "", FCVAR_REPLICATED, "Name of the competition. Leave blank if unused.");
 
 #ifdef CLIENT_DLL
 extern ConVar snd_victory_volume;
@@ -516,9 +520,13 @@ CNEORules::CNEORules()
 	m_iForcedClass = -1;
 	m_iForcedSkin = -1;
 	m_iForcedWeapon = -1;
+#ifdef CLIENT_DLL
+	m_bIsRecording = false;
+#endif
 
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
+	ListenForGameEvent("game_end");
 
 #ifdef GAME_DLL
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
@@ -1534,6 +1542,13 @@ void CNEORules::SetWinningDMPlayer(CNEO_Player *pWinner)
 	}
 
 	GoToIntermission();
+
+	IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+	if (event)
+	{
+		event->SetInt("winner", pWinner->GetUserID());
+		gameeventmanager->FireEvent(event);
+	}
 }
 #endif
 
@@ -1648,10 +1663,27 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 #ifdef CLIENT_DLL
 		engine->ClientCmd("r_cleardecals");
 		engine->ClientCmd("classmenu");
+
+		if (!m_bIsRecording && sv_neo_client_autorecord.GetBool())
+		{
+			StartClientRecording();
+			m_bIsRecording = true;
+		}
 #endif
 		m_flNeoRoundStartTime = gpGlobals->curtime;
 		m_flNeoNextRoundStartTime = 0;
 	}
+
+#ifdef CLIENT_DLL
+	if (Q_strcmp(type, "game_end") == 0)
+	{
+		if (m_bIsRecording && sv_neo_client_autorecord.GetBool())
+		{
+			StopClientRecording();
+			m_bIsRecording = false;
+		}
+	}
+#endif
 }
 
 #ifdef GAME_DLL
@@ -3430,6 +3462,13 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		else
 		{
 			GoToIntermission();
+		}
+
+		IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+		if (event)
+		{
+			event->SetInt("winner", team);
+			gameeventmanager->FireEvent(event);
 		}
 	}
 }
