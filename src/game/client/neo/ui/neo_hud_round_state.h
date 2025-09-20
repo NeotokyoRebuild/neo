@@ -72,11 +72,6 @@ private:
 	wchar_t m_wszPlayersAliveUnicode[16] = {};
 	const wchar_t *m_pWszStatusUnicode = nullptr;
 	int m_iStatusUnicodeSize = 0;
-	wchar_t m_wszGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
-	char szGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
-
-	// Game Description
-	short m_iGameTypeDescriptionState = 0;
 
 	// Totals info
 	int m_iLeftPlayersAlive = 0;
