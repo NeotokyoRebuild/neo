@@ -111,20 +111,10 @@
 		"tabPosition"		"0"
 		"image"		"choose_primary"
 		"scaleImage"		"0"
-	}	
-	"Button1Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button1Image"
-		"xpos"		"8"
-		"ypos"		"64"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
 	}
 	"Button1"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button1"
 		"xpos"		"8"
 		"ypos"		"64"
@@ -142,19 +132,9 @@
 		"command"		"loadout 0"
 		"Default"		"0"
 	}
-	"Button2Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button2Image"
-		"xpos"		"272"
-		"ypos"		"64"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button2"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button2"
 		"xpos"		"272"
 		"ypos"		"64"
@@ -172,19 +152,9 @@
 		"command"		"loadout 1"
 		"Default"		"0"
 	}
-	"Button3Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button3Image"
-		"xpos"		"536"
-		"ypos"		"64"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button3"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button3"
 		"xpos"		"536"
 		"ypos"		"64"
@@ -202,19 +172,9 @@
 		"command"		"loadout 2"
 		"Default"		"0"
 	}
-	"Button4Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button4Image"
-		"xpos"		"8"
-		"ypos"		"200"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button4"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button4"
 		"xpos"		"8"
 		"ypos"		"200"
@@ -232,19 +192,9 @@
 		"command"		"loadout 3"
 		"Default"		"0"
 	}
-	"Button5Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button5Image"
-		"xpos"		"272"
-		"ypos"		"200"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button5"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button5"
 		"xpos"		"272"
 		"ypos"		"200"
@@ -262,19 +212,9 @@
 		"command"		"loadout 4"
 		"Default"		"0"
 	}
-	"Button6Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button6Image"
-		"xpos"		"536"
-		"ypos"		"200"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button6"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button6"
 		"xpos"		"536"
 		"ypos"		"200"
@@ -292,19 +232,9 @@
 		"command"		"loadout 5"
 		"Default"		"0"
 	}
-	"Button7Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button7Image"
-		"xpos"		"8"
-		"ypos"		"336"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button7"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button7"
 		"xpos"		"8"
 		"ypos"		"336"
@@ -322,19 +252,9 @@
 		"command"		"loadout 6"
 		"Default"		"0"
 	}
-	"Button8Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button8Image"
-		"xpos"		"272"
-		"ypos"		"336"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button8"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button8"
 		"xpos"		"272"
 		"ypos"		"336"
@@ -352,19 +272,9 @@
 		"command"		"loadout 7"
 		"Default"		"0"
 	}
-	"Button9Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button9Image"
-		"xpos"		"536"
-		"ypos"		"336"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button9"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button9"
 		"xpos"		"536"
 		"ypos"		"336"
@@ -382,19 +292,9 @@
 		"command"		"loadout 8"
 		"Default"		"0"
 	}
-	"Button10Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button10Image"
-		"xpos"		"8"
-		"ypos"		"472"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button10"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button10"
 		"xpos"		"8"
 		"ypos"		"472"
@@ -412,19 +312,9 @@
 		"command"		"loadout 9"
 		"Default"		"0"
 	}
-	"Button11Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button11Image"
-		"xpos"		"272"
-		"ypos"		"472"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button11"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button11"
 		"xpos"		"272"
 		"ypos"		"472"
@@ -442,19 +332,9 @@
 		"command"		"loadout 10"
 		"Default"		"0"
 	}
-	"Button12Image"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Button12Image"
-		"xpos"		"536"
-		"ypos"		"472"
-		"wide"		"256"
-		"tall"		"128"
-		"image"		"loadout/loadout_none"
-	}
 	"Button12"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Button12"
 		"xpos"		"536"
 		"ypos"		"472"
