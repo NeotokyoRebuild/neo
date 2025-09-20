@@ -75,10 +75,6 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 
 	LoadControlSettings(GetResFile());
 
-	SetPaintBorderEnabled(false);
-	SetPaintBackgroundEnabled(false);
-	SetBorder(NULL);
-
 	SetVisible(false);
 	SetProportional(false);
 	SetMouseInputEnabled(true);
@@ -124,13 +120,11 @@ void CNeoLoadoutMenu::FindButtons()
 			continue;
 		}
 
-		button->SetUseCaptureMouse(true);
 		button->SetMouseInputEnabled(true);
 		button->SetButtonTextureID(m_iLoadoutNone);
 	}
 
 	returnButton = FindControl<CNeoButton>("ReturnButton");
-	returnButton->SetUseCaptureMouse(true);
 	returnButton->SetMouseInputEnabled(true);
 	if (!returnButton)
 	{
@@ -298,9 +292,6 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	LoadControlSettings(GetResFile());
 	SetPaintBorderEnabled(false);
 	SetPaintBackgroundEnabled(false);
-	SetBorder(NULL);
-	
-	// FindButtons(); Doing this further down for all enabled buttons
 
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer) { return; }
@@ -323,15 +314,15 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 		if (iWepPrice <= currentXP)
 		{
 			// Available weapons
-			button->SetUseCaptureMouse(true);
-			button->SetMouseInputEnabled(true);
 			button->SetButtonTexture(loadout[i].info.m_szVguiImage);
+			button->SetMouseInputEnabled(true);
+			continue;
 		}
-		else if (iWepPrice < XP_EMPTY)
+
+		button->SetEnabled(false);
+		if (iWepPrice < XP_EMPTY)
 		{
 			// Locked weapons
-			const char *command = "";
-			button->SetCommand(command);
 			button->SetButtonTexture(loadout[i].info.m_szVguiImageNo);
 		}
 		else
@@ -342,7 +333,6 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	}
 
 	returnButton = FindControl<CNeoButton>("ReturnButton");
-	returnButton->SetUseCaptureMouse(true);
 	returnButton->SetMouseInputEnabled(true);
 	InvalidateLayout();
 }

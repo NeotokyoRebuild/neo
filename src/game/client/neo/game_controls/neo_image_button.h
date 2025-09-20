@@ -26,6 +26,9 @@ protected:
 	void Paint(void) override;
 
 private:
+	CPanelAnimationVarAliasType(int, wide, "wide", "256", "int");
+	CPanelAnimationVarAliasType(int, tall, "tall", "256", "int");
+
 	int	m_iTextureID = -1;
 };
 

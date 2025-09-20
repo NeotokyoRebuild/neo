@@ -31,9 +31,6 @@ void CNeoImageButton::Paint()
 		return;
 	}
 
-	int wide, tall;
-	GetSize(wide, tall);
-
 	if (m_iTextureID != -1)
 	{
 		surface()->DrawSetColor(255, 255, 255, 255);
