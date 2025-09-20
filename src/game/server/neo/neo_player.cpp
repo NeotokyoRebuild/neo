@@ -3449,9 +3449,9 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 // Start spectator takeover of player related code:
 ConVar sv_neo_spec_replace_player_loadout_enable("sv_neo_spec_replace_player_loadout_enable", "0", FCVAR_NONE, "Allow loadout change after spectator takeover.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.", true, 0, true, 1);
-ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "1", FCVAR_NONE, "Allow spectators to take over AFK players.", true, 0, true, 1);
+ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "0", FCVAR_NONE, "Allow spectators to take over AFK players.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
-	"120", FCVAR_NONE,
+	"180", FCVAR_NONE,
 	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
 	true, -1, true, 999);
 ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
@@ -3459,7 +3459,8 @@ ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
 	"Minimum experience allowed to takeover players ",
 	true, -999, true, 999);
 
-bool CNEO_Player::IsAFK() const {
+bool CNEO_Player::IsAFK() const
+{
     // NEO JANK GetTimeSinceLastUserCommand seems to return 0 as long as the player is connected, so use an alternative timer
     return GetTimeSinceWeaponFired() > sv_neo_spec_replace_player_afk_time_sec.GetInt();
 }
