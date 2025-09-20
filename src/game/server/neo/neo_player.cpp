@@ -3459,10 +3459,19 @@ ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
 	"Minimum experience allowed to takeover players ",
 	true, -999, true, 999);
 
+int CNEO_Player::GetSecondsUntilAFK() const
+{
+	// NEO JANK GetTimeSinceLastUserCommand seems to return 0 as long as the player is connected, so use an alternative timer
+	// GetTimeSinceWeaponFired was the simplest timer that worked, but should choose more robust criteria later
+	// TODO: Identify when player has triggered significant inputs and reset an AFK timer
+	// > 0 means more time needs to elapse before considered AFK
+	// <= 0 means player is considered AFK
+	return sv_neo_spec_replace_player_afk_time_sec.GetInt() - GetTimeSinceWeaponFired();
+}
+
 bool CNEO_Player::IsAFK() const
 {
-    // NEO JANK GetTimeSinceLastUserCommand seems to return 0 as long as the player is connected, so use an alternative timer
-    return GetTimeSinceWeaponFired() > sv_neo_spec_replace_player_afk_time_sec.GetInt();
+	return GetSecondsUntilAFK() <= 0;
 }
 
 void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
@@ -3533,8 +3542,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	}
 	else
 	{
-		int  secondsLeft = sv_neo_spec_replace_player_afk_time_sec.GetInt()
-			- static_cast<int>(pNeoPlayerToReplace->GetTimeSinceWeaponFired());
+		int secondsLeft = pNeoPlayerToReplace->GetSecondsUntilAFK();
 		UTIL_ClientPrintFilter(
 			filter,
 			HUD_PRINTCONSOLE,

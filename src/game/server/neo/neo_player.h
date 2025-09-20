@@ -317,6 +317,7 @@ private:
 	CNEO_Player(const CNEO_Player&);
 
 	// Spectator takeover player related functionality
+	int GetSecondsUntilAFK() const;
 	bool IsAFK() const;
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
