@@ -140,6 +140,12 @@ enum ETextEditFlags
 	TEXTEDITFLAG_PASSWORD = 1 << 0,
 };
 
+enum EBaseButtonType
+{
+	BASEBUTTONTYPE_TEXT = 0,
+	BASEBUTTONTYPE_IMAGE,
+};
+
 struct SliderInfo
 {
 	wchar_t wszText[33];
@@ -271,6 +277,8 @@ struct Context
 	int ipwszRightClickListSize = 0;
 	const wchar **pwszRightClickList = nullptr;
 	Dim dimRightClick = {};
+	void (*fnRightClickRet)(void *, int) = nullptr;
+	void *pData = nullptr;
 
 	// TextEdit text selection
 	int iTextSelStart = -1;
@@ -293,6 +301,7 @@ struct RetButton
 	bool bMousePressed;
 	bool bMouseHover;
 	bool bMouseDoublePressed;
+	bool bMouseRightPressed;
 };
 
 struct LabelExOpt
@@ -354,6 +363,7 @@ void EndOverrideFgColor();
 /*1W*/ void Label(const wchar_t *wszText, const LabelExOpt &opt);
 /*2W*/ void Label(const wchar_t *wszLabel, const wchar_t *wszText);
 /*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+/*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType);
 /*1W*/ RetButton Button(const wchar_t *wszText);
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 /*1W*/ RetButton ButtonTexture(const char *szTexturePath);
@@ -382,6 +392,10 @@ enum TextureOptFlags
 bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
 			 const char *szTextureGroup = "", const TextureOptFlags texFlags = TEXTUREOPTFLAGS_NONE);
 void ResetTextures();
+
+// Right-click menu
+void PopupMenu(const wchar **pwszRightClickList, const int ipwszRightClickListSize,
+		void (*fnRightClickRet)(void *, int), void *pData);
 
 // Non-widgets/convenience functions
 bool Bind(const ButtonCode_t eCode);
