@@ -26,7 +26,7 @@ protected:
 	void Paint(void) override;
 
 private:
-	int	m_iTextureID;
+	int	m_iTextureID = -1;
 };
 
 } // namespace vgui

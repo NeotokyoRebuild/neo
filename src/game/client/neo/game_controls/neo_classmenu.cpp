@@ -153,7 +153,7 @@ void CNeoClassMenu::FindButtons()
 	m_pSkin3_Button = FindControl<CNeoImageButton>("Skin3_Button");
 	if (m_pSkin3_Button)
 	{
-		m_pSkin1_Button->SetButtonTexture("vgui/cm/jinrai_assault03");
+		m_pSkin3_Button->SetButtonTexture("vgui/cm/jinrai_assault03");
 	}
 
 	m_pRecon_Button = FindControl<CNeoButton>("Scout_Button");
