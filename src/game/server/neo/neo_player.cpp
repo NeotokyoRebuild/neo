@@ -124,6 +124,7 @@ DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 // Inputs
 DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
 DEFINE_INPUTFUNC(FIELD_VOID, "RefillAmmo", InputRefillAmmo),
+DEFINE_INPUTFUNC(FIELD_INTEGER, "SetTeam", InputSetTeam),
 
 END_DATADESC()
 
@@ -2301,7 +2302,7 @@ void CNEO_Player::SetPlayerTeamModel( void )
 }
 
 // Input to set the player's model (not skin)
-void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
+void CNEO_Player::InputSetPlayerModel( inputdata_t &inputdata )
 {
 	const char* modelpath = inputdata.value.String();
 
@@ -2315,7 +2316,7 @@ void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
 	}
 }
 
-void CNEO_Player::InputRefillAmmo( inputdata_t & inputdata)
+void CNEO_Player::InputRefillAmmo( inputdata_t &inputdata)
 {
 	CBaseCombatWeapon* pWeapon = GetActiveWeapon();
 
@@ -2327,6 +2328,11 @@ void CNEO_Player::InputRefillAmmo( inputdata_t & inputdata)
 			pWeapon->SetSecondaryAmmoCount(pWeapon->GetDefaultClip2());
 		}
 	}
+}
+
+void CNEO_Player::InputSetTeam( inputdata_t &inputdata )
+{
+	CBasePlayer::ChangeTeam( inputdata.value.Int() );
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
