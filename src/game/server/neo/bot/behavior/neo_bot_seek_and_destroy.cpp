@@ -85,55 +85,26 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		{
 			RecomputeSeekPath( me );
 
-			CUtlVector<CHandle<CNEO_Player>> visitedPlayers;
 			CNEO_Player *pPlayerToMirror = me->m_hLeadingPlayer.Get();
-			bool bShouldCloak = false;
-			bool bShouldCrouch = false;
-
-			while ( pPlayerToMirror )
+			if (pPlayerToMirror)
 			{
-				// Cycle breaker
-				if ( visitedPlayers.Find( pPlayerToMirror ) != visitedPlayers.InvalidIndex() )
+				if (pPlayerToMirror->GetInThermOpticCamo())
 				{
-					break;
+					me->EnableCloak(4.0f);
 				}
-				visitedPlayers.AddToTail( pPlayerToMirror );
-
-				if ( !bShouldCloak && pPlayerToMirror->GetInThermOpticCamo() )
+				else
 				{
-					bShouldCloak = true;
+					me->DisableCloak();
 				}
 
-				if ( !bShouldCrouch && pPlayerToMirror->IsDucking() )
+				if (pPlayerToMirror->IsDucking())
 				{
-					bShouldCrouch = true;
+					me->PressCrouchButton(0.5f);
 				}
-
-				if ( bShouldCloak && bShouldCrouch )
+				else
 				{
-					break;
+					me->ReleaseCrouchButton();
 				}
-
-				// Move to the next leader in the chain
-				pPlayerToMirror = pPlayerToMirror->m_hLeadingPlayer.Get();
-			}
-
-			if ( bShouldCloak )
-			{
-				me->EnableCloak( 4.0f );
-			}
-			else
-			{
-				me->DisableCloak();
-			}
-
-			if ( bShouldCrouch )
-			{
-				me->PressCrouchButton(0.5f);
-			}
-			else
-			{
-				me->ReleaseCrouchButton();
 			}
 		}
 		else
@@ -385,13 +356,49 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		return;
 	}
 
-	// Check if following a player
+	float follow_stop_distance_sq = sv_neo_bot_follow_stop_distance_sq.GetFloat();
+	CNEO_Player* pCommander = me->m_hCommandingPlayer.Get();
+	if (pCommander && pCommander->IsAlive())
+	{
+		if (pCommander->m_flBotDynamicFollowDistanceSq > 0.0f)
+		{
+			follow_stop_distance_sq = pCommander->m_flBotDynamicFollowDistanceSq;
+		}
+
+		// Follow commander if close enough and ping cooldown elapsed.
+		if (pCommander->m_tBotPlayerPingCooldown.IsElapsed() &&
+			me->GetAbsOrigin().DistToSqr(pCommander->GetAbsOrigin()) < sv_neo_bot_follow_stop_distance_sq.GetFloat())
+		{
+			me->m_hLeadingPlayer = pCommander;
+			pCommander->m_vLastPing = vec3_origin;
+		}
+		// Go to commander's ping
+		else if (pCommander->m_vLastPing != vec3_origin)
+		{
+			me->m_hLeadingPlayer = nullptr;
+			m_vGoalPos = pCommander->m_vLastPing;
+
+			if (me->GetAbsOrigin().DistToSqr(m_vGoalPos) < sv_neo_bot_follow_stop_distance_sq.GetFloat() * 10)
+			{
+				m_path.Invalidate();
+			}
+			else
+			{
+				CNEOBotPathCost cost(me, SAFEST_ROUTE);
+				if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+				{
+					return;
+				}
+			}
+		}
+	}
+
 	if (me->m_hLeadingPlayer.Get())
 	{
-		CNEO_Player* pCommander = me->m_hLeadingPlayer.Get();
-		if (pCommander && pCommander->IsAlive())
+		CNEO_Player* pLeader = me->m_hLeadingPlayer.Get();
+		if (pLeader && pLeader->IsAlive())
 		{
-			if (me->GetAbsOrigin().DistToSqr(pCommander->GetAbsOrigin()) < sv_neo_bot_follow_stop_distance_sq.GetFloat())
+			if (me->GetAbsOrigin().DistToSqr(pLeader->GetAbsOrigin()) < follow_stop_distance_sq)
 			{
 				// Anti-collision: follow neighbor in snake chain
 				for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
@@ -400,9 +407,8 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 					if (!pOther || !pOther->IsBot() || pOther == me || pOther->m_hLeadingPlayer != me->m_hLeadingPlayer)
 						continue;
 
-					if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < sv_neo_bot_follow_stop_distance_sq.GetFloat() / 4)
+					if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < follow_stop_distance_sq/2)
 					{
-						me->PressBackwardButton();
 						// Link up to snake chain of followers
 						me->m_hLeadingPlayer = pOther;
 					}
@@ -414,8 +420,8 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				return;
 			}
 
-			// Set the bot's goal to the commander's position.
-			m_vGoalPos = pCommander->GetAbsOrigin();
+			// Set the bot's goal to the leader's position.
+			m_vGoalPos = pLeader->GetAbsOrigin();
 			CNEOBotPathCost cost(me, SAFEST_ROUTE);
 			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
 			{
@@ -427,8 +433,14 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		{
 			// Commander is no longer valid or alive, stop following.
 			me->m_hLeadingPlayer = nullptr;
+			me->m_hCommandingPlayer = nullptr;
 		}
 	}
+	else if (pCommander)
+	{
+		me->m_hLeadingPlayer = pCommander;
+	}
+
 
 	m_hTargetEntity = NULL;
 	m_bGoingToTargetEntity = false;
