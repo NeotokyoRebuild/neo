@@ -298,6 +298,10 @@ public:
 	// Bot-only usage
 	float m_flRanOutSprintTime = 0.0f;
 	CHandle<CNEO_Player> m_hLeadingPlayer; // The player this bot is following
+	CHandle<CNEO_Player> m_hCommandingPlayer; // The player this bot is commanded by
+	CountdownTimer m_tBotPlayerPingCooldown; // The cooldown for the player ping
+	float m_flBotDynamicFollowDistanceSq; // The dynamic follow distance for bots
+	Vector m_vLastPing; // The last ping location from this player
 
 public:
 	void ToggleFollowPlayer( CNEO_Player *pCommander );
