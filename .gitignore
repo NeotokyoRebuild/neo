@@ -24,6 +24,7 @@ out
 /game/neo/materials/temp
 /game/neo/resource/*.sfd
 /game/neo/resource/*.ttf
+/game/neo/resource/OFL.txt
 /game/neo/sound
 
 # Use -f to override it
@@ -31,7 +32,6 @@ out
 *.vmf
 
 # Any debug or user specific configs that shouldn't be pushed
-/game/neo/cfg/autoexec.cfg
 /game/neo/cfg/config.cfg
 /game/neo/cfg/rain.cfg
 
@@ -43,8 +43,13 @@ out
 /game/neo/mapsrc/*.prt
 /game/neo/mapsrc/*.vmx
 
-# MP3 Databalse
+# MP3 Player
 /game/neo/resource/mp3player_db.txt
+/game/neo/resource/mp3settings.txt
+
+# Selected Background
+/game/neo/scripts/ChapterBackgrounds.txt
+/game/neo/scripts/chapterbackgrounds.txt
 
 # Object files
 *.o
@@ -192,6 +197,7 @@ stats.txt
 *.cache
 glshaders.cfg
 server_blacklist.txt
+ntre_server_blacklist.txt
 videoconfig_linux.cfg
 *.ain
 user_custom

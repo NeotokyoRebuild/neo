@@ -27,16 +27,20 @@ public:
 #endif
 
 	CWeaponGhost(void);
-	
+#ifdef GAME_DLL
+	virtual ~CWeaponGhost();
+#endif
+
 	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }
 
 	virtual void Drop(const Vector &vecVelocity) override;
 	virtual void ItemHolsterFrame(void);
-	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
+	void Equip(CBaseCombatCharacter *pNewOwner) override;
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE;};
 	void HandleGhostUnequip(void);
+	bool CanBePickedUpByClass(int classId) OVERRIDE;
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }

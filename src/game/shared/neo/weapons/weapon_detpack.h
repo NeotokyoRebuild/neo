@@ -54,6 +54,8 @@ public:
 	bool	CanDrop(void) OVERRIDE;
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
+	bool CanBePickedUpByClass(int classId) OVERRIDE;
+
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator);
 

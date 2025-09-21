@@ -21,6 +21,7 @@ extern ConVar weaponstay;
 #include "c_neo_player.h"
 #else
 #include "items.h"
+#include "neo_gamerules.h"
 #endif // CLIENT_DLL
 
 #include "basecombatweapon_shared.h"
@@ -212,6 +213,10 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_ZR68_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
 		{0.15, 0.25, -0.4, 0.4},
+	},
+	{NEO_WEP_BALC,
+		{{VECTOR_CONE_6DEGREES, VECTOR_CONE_6DEGREES, VECTOR_CONE_6DEGREES, VECTOR_CONE_6DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
 	},
 };
 
@@ -1272,8 +1277,8 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 		return;
 	}
 
-	if (!weaponstay.GetBool())
-	{
+	if (!weaponstay.GetBool() || NEORules()->CanRespawnAnyTime())
+	{ // regardless of the value of mp_weaponstay, disappear weapons in game modes with respawns enabled. Otherwise things can get too chaotic
 		BaseClass::SetPickupTouch();
 		return;
 	}
@@ -1287,3 +1292,20 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 	}
 #endif
 }
+
+#ifdef GAME_DLL
+void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	auto* neoPlayer = ToNEOPlayer(pActivator);
+
+	if (neoPlayer && neoPlayer->Weapon_CanSwitchTo(this) && CanBePickedUpByClass(neoPlayer->GetClass()))
+	{
+		neoPlayer->Weapon_DropSlot(GetSlot());
+		neoPlayer->Weapon_Equip(this);
+
+		RemoveEffects(EF_BONEMERGE);
+	}
+
+	BaseClass::Use(pActivator, pCaller, useType, value);
+}
+#endif

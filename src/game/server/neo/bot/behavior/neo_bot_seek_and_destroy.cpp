@@ -65,10 +65,17 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 
 	if ( threat )
 	{
-		const float engageRange = 1000.0f;
-		if ( me->IsRangeLessThan( threat->GetLastKnownPosition(), engageRange ) )
+		const auto *neoThreat = ToNEOPlayer(threat->GetEntity());
+		// This will just go to the ghoster RecomputeSeekPath logics instead of
+		// only going after it
+		const bool bDontSuspendForGhoster = (neoThreat && neoThreat->IsCarryingGhost());
+		if (!bDontSuspendForGhoster)
 		{
-			return SuspendFor( new CNEOBotAttack, "Going after an enemy" );
+			const float engageRange = 1000.0f;
+			if ( me->IsRangeLessThan( threat->GetLastKnownPosition(), engageRange ) )
+			{
+				return SuspendFor( new CNEOBotAttack, "Going after an enemy" );
+			}
 		}
 	}
 	else

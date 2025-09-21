@@ -34,6 +34,7 @@
 #ifdef NEO
 #include "neo_player_shared.h"
 #include <IGameUIFuncs.h>
+#include "neo/ui/neo_utils.h"
 #endif // NEO
 
 #include "engine/IEngineSound.h"
@@ -1645,7 +1646,7 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 	// to pausing it (big sad). The wiki above states that, for snd_musicvolume to be respected the sound also needs to be non-directional (sound level of 0). So we use EmitSound instead with
 	// SNDLVL_NORM, the result sounding exactly the same as before far as I can tell, being pausable, and still ignoring the value of snd_musicvolume. This only took me the entire day to figure out
 	CLocalPlayerFilter filter;
-	enginesound->EmitSound(	filter,	SOUND_FROM_UI_PANEL, CHAN_MP3_PLAYER, drymix, volume,
+	enginesound->EmitSound(	filter,	SOUND_FROM_UI_PANEL, CHAN_STATIC, drymix, volume,
 		SNDLVL_NORM, 0,	PITCH_NORM,	0, NULL, NULL, NULL, true, 
 		skipTime == 0.0f ? 0.0f : (gpGlobals->curtime + skipTime), -1
 	);
@@ -2316,6 +2317,7 @@ bool CMP3Player::RestoreDb( char const *filename )
 	return true;
 }
 
+#ifndef NEO // Moved to neo_utils
 void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 {
 	char txt[ 4096 ];
@@ -2331,6 +2333,7 @@ void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 	}
 	buf.Printf( "%s", txt );
 }
+#endif // NEO
 
 void CMP3Player::SaveDbFile( int level, CUtlBuffer& buf, MP3File_t *file, int filenumber )
 {

@@ -36,3 +36,8 @@ CWeaponM41::CWeaponM41()
 		"m41ry",
 	};
 }
+
+bool CWeaponM41::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

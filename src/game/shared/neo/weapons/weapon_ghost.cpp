@@ -6,6 +6,7 @@
 #include "c_neo_player.h"
 #else
 #include "neo_player.h"
+#include "neo_gamerules.h"
 #endif
 
 #ifdef CLIENT_DLL
@@ -49,6 +50,15 @@ CWeaponGhost::CWeaponGhost(void)
 	m_flLastGhostBeepTime = 0;
 #endif
 }
+
+#ifdef GAME_DLL
+CWeaponGhost::~CWeaponGhost()
+{
+	// At map exit, the rules may be gone before the ghost, so we check.
+	if (auto* rules = NEORules())
+		rules->ResetGhost();
+}
+#endif
 
 void CWeaponGhost::ItemPreFrame(void)
 {
@@ -176,9 +186,9 @@ ConVar neo_ghost_debug_spew("neo_ghost_debug_spew", "0", FCVAR_CHEAT | FCVAR_REP
 ConVar neo_ghost_debug_hudinfo("neo_ghost_debug_hudinfo", "0", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Whether to overlay debug text information to screen about ghosting targets.", true, 0.0, true, 1.0);
 
-void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
+void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 {
-	BaseClass::OnPickedUp(pNewOwner);
+	BaseClass::Equip(pNewOwner);
 
 	if (pNewOwner)
 	{
@@ -255,4 +265,9 @@ bool CWeaponGhost::IsPosWithinViewDistance(const Vector& otherPlayerPos, float& 
 {
 	dist = DistanceToPos(otherPlayerPos);
 	return dist <= GetGhostRangeInHammerUnits();
+}
+
+bool CWeaponGhost::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
 }

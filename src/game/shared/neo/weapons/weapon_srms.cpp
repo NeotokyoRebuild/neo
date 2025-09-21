@@ -36,3 +36,8 @@ CWeaponSRM_S::CWeaponSRM_S()
 		"srmsry",
 	};
 }
+
+bool CWeaponSRM_S::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

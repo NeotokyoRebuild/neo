@@ -370,6 +370,8 @@ const char *vipModel = "models/player/vip.mdl";
 const char *vipModelDead = "models/player/vip_dead.mdl";
 const char *vipSmacViewModel = "models/weapons/v_vip_smac.mdl";
 
+const char *jgrModel = "models/player/jgr.mdl";
+
 static inline void PrecachePlayerModels( void )
 {
 	const int size = ARRAYSIZE(playerModels);
@@ -379,6 +381,7 @@ static inline void PrecachePlayerModels( void )
 	}
 
 	CBaseEntity::PrecacheModel(vipModel);
+	CBaseEntity::PrecacheModel(jgrModel);
 }
 
 static inline void PrecacheGibs( void )
@@ -531,6 +534,11 @@ const char *CNEOModelManager::GetPlayerModel(NeoSkin nSkin,
 	if (nClass == NEO_CLASS_VIP)
 	{
 		return vipModel;
+	}
+
+	if (nClass == NEO_CLASS_JUGGERNAUT)
+	{
+		return jgrModel;
 	}
 
 	// Unspecified skin number, give a skin randomly.

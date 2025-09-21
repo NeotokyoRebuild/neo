@@ -32,7 +32,6 @@ ActionResult< CNEOBot >	CNEOBotAttack::OnStart( CNEOBot *me, Action< CNEOBot > *
 ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	me->EquipBestWeaponForThreat( threat );
 
 	if ( threat == NULL || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
@@ -65,7 +64,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 	if ( bAggressive ||
 	     !threat->IsVisibleRecently() || 
 		 me->IsRangeGreaterThan( threat->GetEntity()->GetAbsOrigin(), me->GetDesiredAttackRange() ) || 
-		 !me->IsLineOfFireClear( threat->GetEntity()->EyePosition() ) )
+		 !me->IsLineOfFireClear( threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 	{
 		// SUPA7 reload can be interrupted so proactively reload
 		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))

@@ -55,7 +55,8 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 		NEO_WEP_GHOST |
 		NEO_WEP_KNIFE |
 		NEO_WEP_PROX_MINE |
-		NEO_WEP_SMOKE_GRENADE;
+		NEO_WEP_SMOKE_GRENADE |
+		NEO_WEP_BALC;
 
 	return !(pWep->GetNeoWepBits() & forbiddenZooms);
 }
@@ -106,6 +107,66 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 
 	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_aim_hold"));
 #endif
+}
+
+#ifdef CLIENT_DLL
+extern ConVar cl_neo_player_pings;
+#endif // CLIENT_DLL
+void CheckPingButton(CNEO_Player* player)
+{
+	if (!player->IsAlive() || !(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
+	{
+		return;
+	}
+
+	if (!player->IsBot())
+	{ // players with pings disabled can't ping
+#ifdef GAME_DLL
+		const bool showPlayerPings = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "cl_neo_player_pings"));
+#else
+		const bool showPlayerPings = cl_neo_player_pings.GetBool();
+#endif // GAME_DLL
+		if (!showPlayerPings)
+		{
+			return;
+		}
+	}
+
+	IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
+	if (event)
+	{
+		trace_t tr;
+		Vector forward;
+		player->EyeVectors(&forward);
+		Vector eyePosition = player->EyePosition();
+		UTIL_TraceLine(eyePosition, eyePosition + forward * MAX_COORD_RANGE, MASK_VISIBLE_AND_NPCS, player, COLLISION_GROUP_NONE, &tr);
+
+		if (Q_stristr(tr.surface.name, "SKYBOX"))
+		{
+			return;
+		}
+
+		event->SetInt("userid", player->GetUserID());
+		event->SetInt("playerteam", player->GetTeamNumber());
+		event->SetInt("pingx", tr.endpos.x);
+		event->SetInt("pingy", tr.endpos.y);
+		event->SetInt("pingz", tr.endpos.z);
+		event->SetBool("ghosterping", player->IsCarryingGhost() || player->m_iNeoClass == NEO_CLASS_VIP);
+#ifdef GAME_DLL
+		gameeventmanager->FireEvent(event);
+#else
+		gameeventmanager->FireEventClientSide(event);
+#endif // GAME_DLL
+		constexpr float NEO_PING_DELAY = 2.f;
+		if ((gpGlobals->curtime - player->m_flNextPingTime) < NEO_PING_DELAY)
+		{ // NEO TODO (Adam) fix for pings placed during the first NEO_PING_DELAY seconds of the server's life?
+			player->m_flNextPingTime = gpGlobals->curtime + NEO_PING_DELAY;
+		}
+		else
+		{
+			player->m_flNextPingTime = gpGlobals->curtime;
+		}
+	}
 }
 
 void KillerLineStr(char* killByLine, const int killByLineMax,

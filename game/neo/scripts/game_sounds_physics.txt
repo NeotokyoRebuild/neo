@@ -3876,6 +3876,98 @@
 	}
 }
 
+"JGR56.FootstepLeft"
+{
+	"volume"		"0.6"
+	"pitch"		"100"
+	"soundlevel"	"SNDLVL_80dB"
+
+	"rndwave"
+	{
+		"wave"	"npc/dog/dog_footstep1.wav"
+		"wave"	"npc/dog/dog_footstep2.wav"
+
+	}
+}
+
+"JGR56.FootstepRight"
+{
+	"volume"		"0.6"
+	"pitch"		"100"
+	"soundlevel"	"SNDLVL_80dB"
+
+	"rndwave"
+	{
+		"wave"	"npc/dog/dog_footstep3.wav"
+		"wave"	"npc/dog/dog_footstep4.wav"
+
+	}
+}
+
+"JGR56.RunFootstepLeft"
+{
+	"volume"		"0.8"
+	"pitch"		"100"
+	"soundlevel"	"SNDLVL_80dB"
+
+	"rndwave"
+	{
+		"wave"	"npc/dog/dog_footstep_run1.wav"
+		"wave"	"npc/dog/dog_footstep_run2.wav"
+		"wave"	"npc/dog/dog_footstep_run3.wav"
+		"wave"	"npc/dog/dog_footstep_run4.wav"
+
+	}
+}
+
+"JGR56.RunFootstepRight"
+{
+	"volume"		"0.8"
+	"pitch"		"100"
+	"soundlevel"	"SNDLVL_80dB"
+
+	"rndwave"
+	{
+		"wave"	"npc/dog/dog_footstep_run5.wav"
+		"wave"	"npc/dog/dog_footstep_run6.wav"
+		"wave"	"npc/dog/dog_footstep_run7.wav"
+		"wave"	"npc/dog/dog_footstep_run8.wav"
+
+	}
+}
+
+"JGR56.Pneumatic"
+{
+	"channel"		"CHAN_STATIC"
+	"volume"		"0.9"
+	"pitch"			"90, 110"
+	"soundlevel"	"SNDLVL_80dB"
+
+	"rndwave"
+	{
+		"wave"	"npc/dog/dog_pneumatic1.wav"
+		"wave"	"npc/dog/dog_pneumatic2.wav"
+	}
+}
+
+"JGR56.Servo"
+{
+	"channel"		"CHAN_STATIC"
+	"volume"		"0.8"
+	"pitch"			"PITCH_NORM"
+	"soundlevel"	"SNDLVL_70dB"
+	
+	"rndwave"
+	{
+		"wave"	"npc/dog/dog_servo1.wav"
+		"wave"	"npc/dog/dog_servo2.wav"
+		"wave"	"npc/dog/dog_servo5.wav"
+		"wave"	"npc/dog/dog_servo6.wav"
+		"wave"	"npc/dog/dog_servo8.wav"
+		"wave"	"npc/dog/dog_servo10.wav"
+	}
+}
+
 "coast.leech_bites_loop"
 {
 	"channel"		"CHAN_STATIC"

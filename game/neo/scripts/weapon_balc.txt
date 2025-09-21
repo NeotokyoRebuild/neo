@@ -1,0 +1,134 @@
+WeaponData
+{
+	// Weapon data is loaded by both the Game and Client DLLs.
+	"printname"		"BALC3"
+	"BulletCharacter"	"c"
+	"iDeathIcon"		"@"
+	"viewmodel"			"models/weapons/v_balc.mdl"
+	"playermodel"		"models/weapons/w_balc.mdl"
+	"anim_prefix"		"m4"
+	"bucket"		"0"
+	"bucket_position"	"0"
+	"Damage"		"25"
+	"Penetration"		"28.0"
+	"CycleTime"		"0.1"		// time between shots
+	
+	"TPMuzzleFlashScale"	"2.0"
+
+	"clip_size"		"-1"
+	"default_clip"	"40"
+	"autoswitchfrom"        "0"
+	"primary_ammo"		"AMMO_PRI"
+	"secondary_ammo"	"None"
+	"DropOnDeath"			"0"
+
+	"weight"		"3"
+	// ITEM_FLAG_SELECTONEMPTY = 1
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 37
+	"item_flags"		"37"
+	// "item_flags"		"0"
+	
+	"AimType"		"0"
+	
+	"VMFov"			"30.0"	
+	"VMOffsetForward"	"0.0"
+	"VMOffsetRight"		"3.0"	
+	"VMOffsetUp"		"-1.0"
+	"VMAngleYaw"		"4.0"
+	
+	"VMAimFov"				"40.0"	
+	"VMAimOffsetForward"	"10.0"
+	"VMAimOffsetRight"		"1.16"	
+	"VMAimOffsetUp"			"2.59"
+
+	"AimFov"		"45.0"
+	
+	"ViewModelOffset"
+	{
+		"fov"		"30"
+		"forward"	"0"
+		"right"		"3"
+		"up"		"-1"
+		"yaw"		"4"
+		"pitch"		"-9"
+	}
+
+	"ZoomOffset"
+	{
+		"fov"		"54"
+		"forward"	"8"
+		"right"		"7"
+		"up"		"2"
+	}
+	
+	"AimOffset"
+	{
+		"fov"		"40"
+		"forward"	"10"
+		"right"		"1.16"
+		"up"		"2.59"
+	}
+
+	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
+	SoundData
+	{
+		"reload"			"Weapon_pz.Reload"
+		"reload_npc"		"Weapon_pz.NPC_Reload"
+		"empty"				"weapon_pz.empty"
+		"single_shot"		"weapon_balc.single"
+		"single_shot_npc"	"weapon_balc.single"
+		"special1"			"weapon_balc.overheat"
+		"special2"			"weapon_balc.ready"
+	}
+
+	// Weapon Sprite data is loaded by the Client DLL.
+	TextureData
+	{
+		"weapon"
+		{
+				"font"		"WeaponIcons"
+				"character"	"d"
+		}
+		"weapon_s"
+		{	
+				"font"		"WeaponIconsSelected"
+				"character"	"d"
+		}
+		"ammo"
+		{
+				"font"		"WeaponIcons"
+				"character"	"p"
+		}
+		"crosshair"
+		{
+				"file"		"vgui/hud/crosshair"
+				"x"		"0"
+				"y"		"0"
+				"width"		"128"
+				"height"	"128"
+		}
+		"autoaim"
+		{
+				"file"		"sprites/crosshairs"
+				"x"			"0"
+				"y"			"48"
+				"width"		"24"
+				"height"	"24"
+		}
+	}
+	ModelBounds
+	{
+		Viewmodel
+		{
+			Mins	"-10 -4 -13"
+			Maxs	"21 9 -1"
+		}
+		World
+		{
+			Mins	"-10 -7 -6"
+			Maxs	"22 8 9"
+		}
+	}	
+}

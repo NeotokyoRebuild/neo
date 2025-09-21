@@ -106,7 +106,7 @@ void CWeaponKnife::PrimaryAttack()
 
 bool CWeaponKnife::CanBePickedUpByClass(int classId)
 {
-	return classId != NEO_CLASS_SUPPORT;
+	return (classId != NEO_CLASS_SUPPORT) && (classId != NEO_CLASS_JUGGERNAUT);
 }
 
 #ifdef CLIENT_DLL

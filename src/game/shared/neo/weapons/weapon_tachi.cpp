@@ -72,11 +72,6 @@ void CWeaponTachi::SwitchFireMode( void )
 
 	m_bIsPrimaryFireMode = !m_bIsPrimaryFireMode;
 
-#ifdef CLIENT_DLL
-	// NEO TODO (Rain): fire mode indicator
-	Msg("Fire mode: %s\n", m_bIsPrimaryFireMode ? "primary" : "alt");
-#endif
-
 	WeaponSound( SPECIAL1 );
 	SendWeaponAnim( ACT_VM_DRAW_SPECIAL );
 }
@@ -120,4 +115,9 @@ void CWeaponTachi::ItemPostFrame( void )
 			return;
 		}
 	}
+}
+
+bool CWeaponTachi::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
 }

@@ -1,22 +1,219 @@
 #include "neo_root_serverbrowser.h"
 
+#include <tier1/fmtstr.h>
 #include <steam/steam_api.h>
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 #include <vgui_controls/Controls.h>
+#include <filesystem.h>
 
 #include "neo_ui.h"
+#include "neo_root.h"
+#include "neo_misc.h"
 
 #include <algorithm>
 
 extern NeoUI::Context g_uiCtx;
+extern IFileSystem *g_pFullFileSystem;
+
+inline CUtlVector<ServerBlacklistInfo> g_blacklistedServers;
+static inline bool g_bThisBlacklistUsed = false;
+
+// SDK and NT;RE blacklist format is similar enough that
+// NT;RE blacklist can also import SDK blacklist, but
+// it's not backward compatible due to uint64 on date,
+// GetUint64 will still read int type
+
+void ServerBlacklistRead(const char *szPath)
+{
+	// Regardless if the file there or not, using this func already marks
+	// this blacklist list being used
+	g_bThisBlacklistUsed = true;
+
+	KeyValues *kv = new KeyValues("serverblacklist");
+	if (!kv->LoadFromFile(g_pFullFileSystem, szPath))
+	{
+		kv->deleteThis();
+		return;
+	}
+
+	for (KeyValues *pSubKey = kv->GetFirstTrueSubKey(); pSubKey; pSubKey = pSubKey->GetNextTrueSubKey())
+	{
+		if (V_strcmp(pSubKey->GetName(), "server") == 0 ||
+				V_strcmp(pSubKey->GetName(), "Server") == 0)
+		{
+			ServerBlacklistInfo sbInfo = {};
+
+			V_wcscpy_safe(sbInfo.wszName, pSubKey->GetWString("name"));
+			sbInfo.timeVal = pSubKey->GetUint64("date");
+			sbInfo.netAdr.SetFromString(pSubKey->GetString("addr", "0.0.0.0:0"));
+			const int iType = pSubKey->GetInt("type", SBLIST_TYPE_NETADR);
+			sbInfo.eType = (iType >= 0 && iType < SBLIST_TYPE__TOTAL) ? static_cast<EServerBlacklistType>(iType) : SBLIST_TYPE_NETADR;
+			ServerBlacklistCacheWsz(&sbInfo);
+
+			g_blacklistedServers.AddToTail(sbInfo);
+		}
+	}
+
+	kv->deleteThis();
+}
+
+void ServerBlacklistWrite(const char *szPath)
+{
+	if (!g_bThisBlacklistUsed)
+	{
+		return;
+	}
+
+	KeyValues *kv = new KeyValues("serverblacklist");
+
+	for (const ServerBlacklistInfo &blacklist : g_blacklistedServers)
+	{
+		const CUtlNetAdrRender netAdrRender(blacklist.netAdr);
+
+		KeyValues *pSubKey = new KeyValues("server");
+		pSubKey->SetWString("name", blacklist.wszName);
+		pSubKey->SetUint64("date", blacklist.timeVal);
+		pSubKey->SetString("addr", netAdrRender.String());
+		pSubKey->SetInt("type", blacklist.eType);
+		kv->AddSubKey(pSubKey);
+	}
+
+	kv->SaveToFile(g_pFullFileSystem, szPath);
+	kv->deleteThis();
+}
+
+void ServerBlacklistCacheWsz(ServerBlacklistInfo *sbInfo)
+{
+	char szDate[32] = {};
+	char szTime[16] = {};
+	BGetLocalFormattedDateAndTime(sbInfo->timeVal, szDate, sizeof(szDate), szTime, sizeof(szTime));
+	wchar_t wszDate[32] = {};
+	wchar_t wszTime[16] = {};
+	g_pVGuiLocalize->ConvertANSIToUnicode(szDate, wszDate, sizeof(wszDate));
+	g_pVGuiLocalize->ConvertANSIToUnicode(szTime, wszTime, sizeof(wszTime));
+	V_swprintf_safe(sbInfo->wszDateTimeAdded, L"%ls %ls", wszDate, wszTime);
+}
+
+bool ServerBlacklisted(const gameserveritem_t &server)
+{
+	const netadr_t netAdrCmp(server.m_NetAdr.GetIP(), server.m_NetAdr.GetConnectionPort());
+
+	for (const ServerBlacklistInfo &blacklist : g_blacklistedServers)
+	{
+		switch (blacklist.eType)
+		{
+		case SBLIST_TYPE_NETADR:
+		{
+			if (blacklist.netAdr.ip[3] == 0)
+			{
+				if (blacklist.netAdr.CompareClassCAdr(netAdrCmp))
+				{
+					return true;
+				}
+			}
+			else
+			{
+				if (blacklist.netAdr.CompareAdr(netAdrCmp, blacklist.netAdr.GetPort() == 0))
+				{
+					return true;
+				}
+			}
+		} break;
+		case SBLIST_TYPE_SUBNAME:
+		{
+			char szBlacklistName[128] = {};
+			g_pVGuiLocalize->ConvertUnicodeToANSI(blacklist.wszName, szBlacklistName, sizeof(szBlacklistName));
+			if (V_strstr(server.GetName(), szBlacklistName))
+			{
+				return true;
+			}
+		} break;
+		}
+	}
+	return false;
+}
+
+void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
+{
+	if (g_blacklistedServers.IsEmpty())
+	{
+		g_pNeoRoot->m_iSelectedServer = -1;
+		return;
+	}
+
+	ServerBlacklistInfo curSbi;
+	if (IN_BETWEEN_AR(0, g_pNeoRoot->m_iSelectedServer, g_blacklistedServers.Count()))
+	{
+		V_memcpy(&curSbi, &g_blacklistedServers[g_pNeoRoot->m_iSelectedServer], sizeof(ServerBlacklistInfo));
+	}
+
+	std::sort(g_blacklistedServers.begin(), g_blacklistedServers.end(),
+			[&sortCtx](const ServerBlacklistInfo &blLeft, const ServerBlacklistInfo &blRight) -> bool {
+		// Always set wszLeft/wszRight to name as fallback
+		const wchar_t *wszLeft = blLeft.wszName;
+		const wchar_t *wszRight = blRight.wszName;
+		int64 iLeft, iRight;
+		switch (sortCtx.col)
+		{
+		case SBLIST_COL_TYPE:
+			iLeft = static_cast<int64>(blLeft.eType);
+			iRight = static_cast<int64>(blRight.eType);
+			break;
+		case SBLIST_COL_DATETIME:
+			iLeft = blLeft.timeVal;
+			iRight = blRight.timeVal;
+			break;
+		default:
+			break;
+		}
+
+		switch (sortCtx.col)
+		{
+		case SBLIST_COL_TYPE:
+		case SBLIST_COL_DATETIME:
+			if (iLeft != iRight) return (sortCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
+			break;
+		default:
+			break;
+		}
+
+		return (sortCtx.bDescending) ? (V_wcscmp(wszRight, wszLeft) > 0) : (V_wcscmp(wszLeft, wszRight) > 0);
+	});
+
+	if (IN_BETWEEN_AR(0, g_pNeoRoot->m_iSelectedServer, g_blacklistedServers.Count()))
+	{
+		g_pNeoRoot->m_iSelectedServer = -1;
+		for (int i = 0; i < g_blacklistedServers.Count(); ++i)
+		{
+			if (V_memcmp(&curSbi, &g_blacklistedServers[i], sizeof(ServerBlacklistInfo)) == 0)
+			{
+				g_pNeoRoot->m_iSelectedServer = i;
+				break;
+			}
+		}
+	}
+}
 
 void CNeoServerList::UpdateFilteredList()
 {
-	// TODO: g_pNeoRoot->m_iSelectedServer Select kept with sorting
+	if (m_iType == GS_BLACKLIST)
+	{
+		Assert(m_pSortCtx);
+		ServerBlacklistUpdateSortedList(*m_pSortCtx);
+		return;
+	}
+
+	gameserveritem_t curGsi;
+	if (IN_BETWEEN_AR(0, g_pNeoRoot->m_iSelectedServer, m_filteredServers.Count()))
+	{
+		V_memcpy(&curGsi, &m_filteredServers[g_pNeoRoot->m_iSelectedServer], sizeof(gameserveritem_t));
+	}
+
 	m_filteredServers = m_servers;
 	if (m_filteredServers.IsEmpty())
 	{
+		g_pNeoRoot->m_iSelectedServer = -1;
 		return;
 	}
 
@@ -83,10 +280,28 @@ void CNeoServerList::UpdateFilteredList()
 
 		return (m_pSortCtx->bDescending) ? (V_strcmp(szRight, szLeft) > 0) : (V_strcmp(szLeft, szRight) > 0);
 	});
+
+	if (IN_BETWEEN_AR(0, g_pNeoRoot->m_iSelectedServer, m_filteredServers.Count()))
+	{
+		g_pNeoRoot->m_iSelectedServer = -1;
+		for (int i = 0; i < m_filteredServers.Count(); ++i)
+		{
+			if (V_memcmp(&curGsi, &m_filteredServers[i], sizeof(gameserveritem_t)) == 0)
+			{
+				g_pNeoRoot->m_iSelectedServer = i;
+				break;
+			}
+		}
+	}
 }
 
 void CNeoServerList::RequestList()
 {
+	if (m_iType == GS_BLACKLIST)
+	{
+		return;
+	}
+
 	static MatchMakingKeyValuePair_t mmFilters[] = {
 		{"gamedir", "neo"},
 	};
@@ -100,6 +315,7 @@ void CNeoServerList::RequestList()
 		&ISteamMatchmakingServers::RequestFavoritesServerList,
 		&ISteamMatchmakingServers::RequestHistoryServerList,
 		&ISteamMatchmakingServers::RequestSpectatorServerList,
+		nullptr,
 	};
 
 	ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
@@ -112,7 +328,7 @@ void CNeoServerList::RequestList()
 // Server has responded ok with updated data
 void CNeoServerList::ServerResponded(HServerListRequest hRequest, int iServer)
 {
-	if (hRequest != m_hdlRequest) return;
+	if (m_iType == GS_BLACKLIST || hRequest != m_hdlRequest) return;
 
 	ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
 	gameserveritem_t *pServerDetails = steamMM->GetServerDetails(hRequest, iServer);
@@ -126,13 +342,13 @@ void CNeoServerList::ServerResponded(HServerListRequest hRequest, int iServer)
 // Server has failed to respond
 void CNeoServerList::ServerFailedToRespond(HServerListRequest hRequest, [[maybe_unused]] int iServer)
 {
-	if (hRequest != m_hdlRequest) return;
+	if (m_iType == GS_BLACKLIST || hRequest != m_hdlRequest) return;
 }
 
 // A list refresh you had initiated is now 100% completed
 void CNeoServerList::RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response)
 {
-	if (hRequest != m_hdlRequest) return;
+	if (m_iType == GS_BLACKLIST || hRequest != m_hdlRequest) return;
 
 	m_bSearching = false;
 	if (response == eNoServersListedOnMasterServer && m_servers.IsEmpty())

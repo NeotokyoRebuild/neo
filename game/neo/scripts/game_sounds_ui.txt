@@ -119,6 +119,50 @@
 	}
 }
 
+"HUD.CPCharge"
+{
+	"channel"		"CHAN_ITEM"
+	"volume"		"0.9"
+	"pitch"			"PITCH_NORM"
+	
+	"soundlevel"		"SNDLVL_70dB"
+
+	"wave"			"player/CPcharging.wav"
+}
+
+"HUD.CPNeutral"
+{
+	"channel"		"CHAN_ITEM"
+	"volume"		"0.9"
+	"pitch"			"PITCH_NORM"
+	
+	"soundlevel"		"SNDLVL_70dB"
+
+	"wave"			"player/CPneutral.wav"
+}
+
+"HUD.CPCaptured"
+{
+	"channel"		"CHAN_ITEM"
+	"volume"		"0.9"
+	"pitch"			"PITCH_NORM"
+	
+	"soundlevel"		"SNDLVL_70dB"
+
+	"wave"			"player/CPcaptured.wav"
+}
+
+"HUD.Ping"
+{
+	"channel"		"CHAN_STATIC"
+	"volume"		"0.33"
+	"pitch"			"PITCH_NORM"
+	
+	"soundlevel"	"SNDLVL_GUNFIRE"
+	
+	"wave"			")gameplay/ping.wav"
+}
+
 "HUDQuickInfo.LowHealth"
 {
 	"channel"		"CHAN_ITEM"

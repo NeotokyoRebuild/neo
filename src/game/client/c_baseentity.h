@@ -1388,10 +1388,6 @@ public:
 	void							SetWaterType( int nType );
 
 	float							GetElasticity( void ) const;
-#ifdef NEO
-	inline void						SetOldVelocity( const Vector& oldVelocity ) { m_vecOldVelocity = oldVelocity; }
-	inline const Vector&			GetOldVelocity() const { return m_vecOldVelocity; };
-#endif // NEO
 
 	int								GetTextureFrameIndex( void );
 	void							SetTextureFrameIndex( int iIndex );
@@ -1625,9 +1621,6 @@ private:
 
 	Vector							m_vecOldOrigin;
 	QAngle							m_vecOldAngRotation;
-#ifdef NEO
-	Vector							m_vecOldVelocity;
-#endif // NEO
 
 	Vector							m_vecOrigin;
 	CInterpolatedVar< Vector >		m_iv_vecOrigin;

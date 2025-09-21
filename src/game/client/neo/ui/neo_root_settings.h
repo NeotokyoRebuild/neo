@@ -34,6 +34,8 @@ enum XHairExportNotify
 	XHAIREXPORTNOTIFY__TOTAL,
 };
 
+#define NEO_BINDS_TOTAL 96
+
 struct NeoSettings
 {
 	struct General
@@ -76,8 +78,10 @@ struct NeoSettings
 			ButtonCode_t bcNext;
 			ButtonCode_t bcCurrent; // Only used for unbinding
 			ButtonCode_t bcDefault;
+			ButtonCode_t bcSecondaryNext;
+			ButtonCode_t bcSecondaryCurrent;
 		};
-		Bind vBinds[96];
+		Bind vBinds[NEO_BINDS_TOTAL];
 		int iBindsSize = 0;
 
 		// Will be checked often so cached
@@ -93,6 +97,7 @@ struct NeoSettings
 	struct Mouse
 	{
 		float flSensitivity;
+		float flZoomSensitivityRatio;
 		bool bRawInput;
 		bool bFilter;
 		bool bReverse;
@@ -100,11 +105,21 @@ struct NeoSettings
 		float flExponent;
 	};
 
+	struct Controller
+	{
+		bool bEnabled;
+		bool bReverse;
+		bool bSwapSticks;
+		float flSensHorizontal;
+		float flSensVertical;
+	};
+
 	struct Audio
 	{
 		float flVolMain;
 		float flVolMusic;
 		float flVolVictory;
+		float flVolPing;
 		int iSoundSetup;
 		int iSoundQuality;
 		bool bMuteAudioUnFocus;
@@ -163,15 +178,21 @@ struct NeoSettings
 	General general;
 	Keys keys;
 	Mouse mouse;
+	Controller controller;
 	Audio audio;
 	Video video;
 	Crosshair crosshair;
+
+	KeyValues* backgrounds;
+	int iCBListSize;
+	wchar_t** p2WszCBList;
 
 	int iCurTab = 0;
 	bool bBack = false;
 	bool bModified = false;
 	bool bIsValid = false;
 	int iNextBinding = -1;
+	bool bNextBindingSecondary = false;
 
 	struct CVR
 	{
@@ -206,16 +227,25 @@ struct NeoSettings
 
 		// Mouse
 		CONVARREF_DEF(sensitivity);
+		CONVARREF_DEF(zoom_sensitivity_ratio);
 		CONVARREF_DEF(m_filter);
 		CONVARREF_DEF(m_pitch);
 		CONVARREF_DEF(m_customaccel);
 		CONVARREF_DEF(m_customaccel_exponent);
 		CONVARREF_DEF(m_rawinput);
 
+		// Controller
+		CONVARREF_DEF(joystick);
+		CONVARREF_DEF(joy_inverty);
+		CONVARREF_DEF(joy_movement_stick);
+		CONVARREF_DEF(joy_yawsensitivity);
+		CONVARREF_DEF(joy_pitchsensitivity);
+
 		// Audio
 		CONVARREF_DEFNOGLOBALPTR(volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_musicvolume);
 		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
+		CONVARREF_DEFNOGLOBALPTR(snd_ping_volume);
 		CONVARREF_DEF(snd_surround_speakers);
 		CONVARREF_DEF(voice_enable);
 		CONVARREF_DEF(voice_scale);
@@ -251,6 +281,8 @@ struct NeoSettings
 	CVR cvr;
 };
 void NeoSettingsInit(NeoSettings *ns);
+void NeoSettingsBackgroundsInit(NeoSettings* ns);
+void NeoSettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundName = nullptr);
 void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys = NeoSettings::Keys::NONE);
 void NeoSettingsSave(const NeoSettings *ns);
@@ -258,7 +290,7 @@ void NeoSettingsResetToDefault(NeoSettings *ns);
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
-void NeoSettings_Mouse(NeoSettings *ns);
+void NeoSettings_MouseController(NeoSettings *ns);
 void NeoSettings_Audio(NeoSettings *ns);
 void NeoSettings_Video(NeoSettings *ns);
 void NeoSettings_Crosshair(NeoSettings *ns);

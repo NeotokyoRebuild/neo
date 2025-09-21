@@ -145,7 +145,9 @@ public:
 
 	virtual void PrimaryAttack(void) override;
 	virtual void SecondaryAttack(void) override;
-
+#ifdef GAME_DLL
+	virtual void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value ) override;
+#endif
 	virtual void DryFire(void);
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
@@ -164,7 +166,7 @@ public:
 		{
 			return true;
 		}
-		if (owner->GetNeoFlags() & NEO_FL_FREEZETIME)
+		if (owner->GetNeoFlags() & NEO_FL_FREEZETIME || owner->GetFlags() & FL_FROZEN)
 		{
 			return true;
 		}
@@ -183,7 +185,7 @@ public:
 	{
 		return ((GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
-			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C | NEO_WEP_ZR68_S
+			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C | NEO_WEP_ZR68_S | NEO_WEP_BALC
 #ifdef INCLUDE_WEP_PBK
 			| NEO_WEP_PBK56S
 #endif

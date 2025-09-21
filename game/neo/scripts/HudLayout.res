@@ -397,8 +397,8 @@
 		"LineMargin"		"2"
 		"MaxDeathNotices" 	"8"
 		"RightJustify"		"1"
-		"BackgroundColor"	"200 200 200 40"
-		"BackgroundColourInvolved"	"20 20 20 220"
+		"BackgroundColour"	"20 20 20 220"
+		"BackgroundColourInvolved"	"200 200 200 40"
 	}
 
 	HudVehicle
@@ -852,6 +852,11 @@
 		"ammo_text_color"	"255 255 255 100"
 		"ammo_color"		"255 255 255 150"
 		"emptied_ammo_color"	"255 255 255 50"
+		"heatbar_xpos"	"45"
+		"heatbar_ypos"	"12"
+		"heatbar_w"		"150"
+		"heatbar_h"		"15"
+		"heat_color"	"255 50 50 200"
 	}
 	NHudHealth
 	{
@@ -909,6 +914,10 @@
 		"fieldName"		"NRoundState"
 		"box_color"		"200 200 200 40"
 		"health_monochrome"	"1"
+	}
+	NHudPlayerPing
+	{
+		"fieldName"		"NHudPlayerPing"
 	}
 
 	neo_ghost_uplink_state

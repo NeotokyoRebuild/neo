@@ -31,6 +31,11 @@ static constexpr int WDGINFO_ALLOC_STEPS = 64;
 static_assert(DEBUG_NEOUI == 0);
 #endif
 
+static bool RightClickMenuActive()
+{
+	return (c->iRightClick >= 0 && c->iRightClickSection >= 0 && c->pwszRightClickList && c->ipwszRightClickListSize > 0);
+}
+
 void SwapFont(const EFont eFont, const bool bForce)
 {
 	if (c->eMode != MODE_PAINT || (!bForce && (c->eFont == eFont))) return;
@@ -160,6 +165,69 @@ void FreeContext(NeoUI::Context *pCtx)
 	}
 }
 
+// Just helper bool function to deal with both KB and gamepad inputs
+
+static bool IsKeyEnter()
+{
+	return c->eCode == KEY_ENTER || c->eCode == KEY_XBUTTON_A ||
+		c->eCode == STEAMCONTROLLER_A;
+}
+
+static bool IsKeyBack()
+{
+	return c->eCode == KEY_ESCAPE || c->eCode == KEY_XBUTTON_B ||
+		c->eCode == STEAMCONTROLLER_B;
+}
+
+static bool IsKeyLeft()
+{
+	return c->eCode == KEY_LEFT || c->eCode == KEY_XBUTTON_LEFT ||
+			c->eCode == KEY_XSTICK1_LEFT || c->eCode == STEAMCONTROLLER_DPAD_LEFT;
+}
+
+static bool IsKeyRight()
+{
+	return c->eCode == KEY_RIGHT || c->eCode == KEY_XBUTTON_RIGHT ||
+			c->eCode == KEY_XSTICK1_RIGHT || c->eCode == STEAMCONTROLLER_DPAD_RIGHT;
+}
+
+static bool IsKeyLeftRight()
+{
+	return IsKeyLeft() || IsKeyRight();
+}
+
+// The following are not just simply called IsKeyDownUp because
+// SECTIONFLAG_ROWWIDGETS can allow left-right direction also
+
+static bool IsKeyDownWidget()
+{
+	return c->eCode == KEY_DOWN || c->eCode == KEY_XBUTTON_DOWN || 
+			c->eCode == KEY_XSTICK1_DOWN || c->eCode == STEAMCONTROLLER_DPAD_DOWN ||
+			((c->iSectionFlags & SECTIONFLAG_ROWWIDGETS) && IsKeyRight());
+}
+
+static bool IsKeyUpWidget()
+{
+	return c->eCode == KEY_UP || c->eCode == KEY_XBUTTON_UP ||
+			c->eCode == KEY_XSTICK1_UP || c->eCode == STEAMCONTROLLER_DPAD_UP ||
+			((c->iSectionFlags & SECTIONFLAG_ROWWIDGETS) && IsKeyLeft());
+}
+
+static bool IsKeyChangeWidgetFocus()
+{
+	return IsKeyDownWidget() || IsKeyUpWidget();
+}
+
+bool BindKeyEnter()
+{
+	return c->eMode == MODE_KEYPRESSED && IsKeyEnter();
+}
+
+bool BindKeyBack()
+{
+	return c->eMode == MODE_KEYPRESSED && IsKeyBack();
+}
+
 void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName)
 {
 	c = pNextCtx;
@@ -182,6 +250,8 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 	c->eLabelTextStyle = TEXTSTYLE_LEFT;
 	c->selectBgColor = COLOR_NEOPANELSELECTBG;
 	c->normalBgColor = COLOR_NEOPANELACCENTBG;
+	c->ibfSectionCanActive = 0;
+	c->ibfSectionCanController = 0;
 	// Different pointer, change context
 	if (c->pSzCurCtxName != pSzCtxName)
 	{
@@ -192,7 +262,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 	switch (c->eMode)
 	{
 	case MODE_KEYPRESSED:
-		if (c->eCode == KEY_DOWN || c->eCode == KEY_UP)
+		if (IsKeyChangeWidgetFocus())
 		{
 			if (c->iActive == FOCUSOFF_NUM)
 			{
@@ -204,9 +274,15 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 			}
 			c->iHot = c->iActive;
 		}
+		c->eKeyHints = (c->eCode <= KEY_LAST) ? KEYHINTS_KEYBOARD : KEYHINTS_CONTROLLER;
 		break;
 	case MODE_MOUSERELEASED:
 		c->eMousePressedStart = MOUSESTART_NONE;
+		break;
+	case MODE_MOUSEPRESSED:
+	case MODE_MOUSEDOUBLEPRESSED:
+	case MODE_MOUSEWHEELED:
+		c->eKeyHints = KEYHINTS_KEYBOARD;
 		break;
 	case MODE_PAINT:
 		for (int i = 0; i < FONT__TOTAL; ++i)
@@ -224,10 +300,10 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 
 		if (wszTitle)
 		{
-			SwapFont(FONT_NTHEADING);
+			SwapFont(FONT_NTLARGE);
 			vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 			vgui::surface()->DrawSetTextPos(c->dPanel.x + c->iMarginX,
-											c->dPanel.y + -c->layout.iRowTall + c->fonts[FONT_NTHEADING].iYOffset);
+											c->dPanel.y + -c->layout.iRowTall + c->fonts[FONT_NTLARGE].iYOffset);
 			vgui::surface()->DrawPrintText(wszTitle, V_wcslen(wszTitle));
 		}
 		break;
@@ -240,14 +316,14 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 	}
 
 	// Force SwapFont on main to prevent crash on startup
-	SwapFont(FONT_NTNORMAL, true);
+	SwapFont(FONT_NTLARGE, true);
 	c->eButtonTextStyle = TEXTSTYLE_LEFT;
 	vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 }
 
 void EndContext()
 {
-	if (c->iRightClick >= 0 && c->iRightClickSection >= 0 && c->pwszRightClickList && c->ipwszRightClickListSize > 0)
+	if (RightClickMenuActive())
 	{
 		bool bDeInitRightClick = false;
 		switch (c->eMode)
@@ -333,12 +409,19 @@ void EndContext()
 
 		if (bDeInitRightClick)
 		{
+			if (c->fnRightClickRet && IN_BETWEEN_AR(0, c->iRightClickHotItem, c->ipwszRightClickListSize))
+			{
+				c->fnRightClickRet(c->pData, c->iRightClickHotItem);
+			}
+
 			// Already set wide/tall indicates right-click menu already initalized before
 			// and can now de-initialize/close
 			c->iRightClick = -1;
 			c->iRightClickSection = -1;
 			c->pwszRightClickList = nullptr;
 			c->ipwszRightClickListSize = 0;
+			c->fnRightClickRet = nullptr;
+			c->pData = nullptr;
 		}
 	}
 
@@ -350,20 +433,24 @@ void EndContext()
 
 	if (c->eMode == MODE_KEYPRESSED)
 	{
-		if (c->eCode == KEY_DOWN || c->eCode == KEY_UP || c->eCode == KEY_TAB)
+		const bool bSwitchSectionController = c->eCode == KEY_XBUTTON_BACK || c->eCode == STEAMCONTROLLER_SELECT;
+		const bool bSwitchSectionKey = c->eCode == KEY_TAB;
+		if (IsKeyChangeWidgetFocus() || bSwitchSectionKey || bSwitchSectionController)
 		{
 			if (c->iActiveSection == -1)
 			{
 				c->iActiveSection = 0;
 			}
 
-			if (c->eCode == KEY_TAB)
+			if (bSwitchSectionKey || bSwitchSectionController)
 			{
 				const int iTotalSection = c->iSection;
 				int iTally = 0;
 				for (int i = 0; i < iTotalSection; ++i)
 				{
-					iTally += c->iSectionCanActive[i];
+					const uint64_t ibfCmp = (1 << i);
+					iTally += (c->ibfSectionCanActive & ibfCmp) &&
+							(!bSwitchSectionController || (c->ibfSectionCanController & ibfCmp));
 				}
 				if (iTally == 0)
 				{
@@ -373,11 +460,16 @@ void EndContext()
 				else
 				{
 					const int iIncr = ((vgui::input()->IsKeyDown(KEY_LSHIFT) || vgui::input()->IsKeyDown(KEY_RSHIFT)) ? -1 : +1);
+					bool bNextCmp = false;
 					do
 					{
 						c->iActiveSection += iIncr;
 						c->iActiveSection = LoopAroundInArray(c->iActiveSection, iTotalSection);
-					} while (c->iSectionCanActive[c->iActiveSection] == 0);
+
+						const uint64_t ibfCmp = (1 << c->iActiveSection);
+						bNextCmp = !((c->ibfSectionCanActive & ibfCmp) &&
+								(!bSwitchSectionController || (c->ibfSectionCanController & ibfCmp)));
+					} while (bNextCmp);
 				}
 			}
 			c->iHotSection = c->iActiveSection;
@@ -390,16 +482,16 @@ void EndContext()
 	}
 }
 
-void BeginSection(const bool bDefaultFocus)
+void BeginSection(const ISectionFlags iSectionFlags)
 {
 	c->iLayoutX = 0;
 	c->iLayoutY = -c->iYOffset[c->iSection];
 	c->irWidgetLayoutY = c->iLayoutY;
 	c->iWidget = 0;
-	c->iCanActives = 0;
 	c->iIdxRowParts = -1;
 	c->iIdxVertParts = -1;
 	c->iVertLayoutY = 0;
+	c->iSectionFlags = iSectionFlags;
 
 	c->iMouseRelX = c->iMouseAbsX - c->dPanel.x;
 	c->iMouseRelY = c->iMouseAbsY - c->dPanel.y;
@@ -420,7 +512,7 @@ void BeginSection(const bool bDefaultFocus)
 		vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 		break;
 	case MODE_KEYPRESSED:
-		if (bDefaultFocus && c->iActiveSection == -1 && (c->eCode == KEY_DOWN || c->eCode == KEY_UP))
+		if ((iSectionFlags & SECTIONFLAG_DEFAULTFOCUS) && c->iActiveSection == -1 && IsKeyChangeWidgetFocus())
 		{
 			c->iActiveSection = c->iSection;
 		}
@@ -467,12 +559,12 @@ void EndSection()
 			c->iYOffset[c->iSection] = clamp(c->iYOffset[c->iSection], 0, iAbsLayoutY - c->dPanel.tall);
 		}
 	}
-	else if (c->eMode == MODE_KEYPRESSED && (c->eCode == KEY_DOWN || c->eCode == KEY_UP) &&
+	else if (c->eMode == MODE_KEYPRESSED && IsKeyChangeWidgetFocus() &&
 			 (c->iActiveSection == c->iSection || c->iHotSection == c->iSection))
 	{
 		if (c->iActive != FOCUSOFF_NUM && c->iActiveSection == c->iSection)
 		{
-			const int iActiveDirection = (c->eCode == KEY_UP) ? -1 : +1;
+			const int iActiveDirection = IsKeyUpWidget() ? -1 : +1;
 			int activeIdxLoop = 0;
 			do // do-while: Deal with if LoopAroundInArray does alter (begin <-> end widgets)
 			{
@@ -555,7 +647,6 @@ void EndSection()
 		}
 	}
 
-	c->iSectionCanActive[c->iSection] = c->iCanActives;
 	++c->iSection;
 }
 
@@ -723,7 +814,14 @@ GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 			c->iHot = c->iWidget;
 			c->iHotSection = c->iSection;
 		}
-		const bool bHot = c->iHot == c->iWidget && c->iHotSection == c->iSection;
+		bool bHot = c->iHot == c->iWidget && c->iHotSection == c->iSection;
+		if (bHot && RightClickMenuActive())
+		{
+			const Dim &dim = c->dimRightClick;
+			bHot = !(IN_BETWEEN_EQ(dim.x, c->iMouseAbsX, dim.x + dim.wide) &&
+					 IN_BETWEEN_EQ(dim.y, c->iMouseAbsY, dim.y + dim.tall));
+		}
+
 		const bool bActive = c->iWidget == c->iActive && c->iSection == c->iActiveSection;
 		if (bActive || bHot)
 		{
@@ -738,7 +836,17 @@ GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 			.bHot = bHot,
 		};
 	}
-	
+
+	// Mark this section this widget under as able to be active
+	if (eWidgetFlag & WIDGETFLAG_MARKACTIVE)
+	{
+		c->ibfSectionCanActive |= (1 << c->iSection);
+		if (!(c->iSectionFlags & SECTIONFLAG_EXCLUDECONTROLLER))
+		{
+			c->ibfSectionCanController |= (1 << c->iSection);
+		}
+	}
+
 	return GetMouseinFocusedRet{};
 }
 
@@ -894,9 +1002,10 @@ void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 	Label(wszText);
 }
 
-NeoUI::RetButton Button(const wchar_t *wszText)
+NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType)
 {
-	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
+
 	RetButton ret = {};
 	ret.bMouseHover = wdgState.bHot;
 
@@ -906,18 +1015,32 @@ NeoUI::RetButton Button(const wchar_t *wszText)
 		{
 		case MODE_PAINT:
 		{
-			vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
+			switch (eType)
+			{
+			case BASEBUTTONTYPE_TEXT:
+			{
+				vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
 
-			const auto *pFontI = &c->fonts[c->eFont];
-			const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
-			const int y = pFontI->iYOffset;
-			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
-			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				const auto *pFontI = &c->fonts[c->eFont];
+				const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
+				const int y = pFontI->iYOffset;
+				vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
+				vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+			} break;
+			case BASEBUTTONTYPE_IMAGE:
+			{
+				vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, c->rWidgetArea.y0,
+												c->rWidgetArea.x1, c->rWidgetArea.y1);
+				Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
+						c->irWidgetWide, c->irWidgetTall);
+			} break;
+			}
 		}
 		break;
 		case MODE_MOUSEPRESSED:
 		{
 			ret.bMousePressed = ret.bPressed = (ret.bMouseHover && c->eCode == MOUSE_LEFT);
+			ret.bMouseRightPressed = (ret.bMouseHover && c->eCode == MOUSE_RIGHT);
 		}
 		break;
 		case MODE_MOUSEDOUBLEPRESSED:
@@ -927,7 +1050,7 @@ NeoUI::RetButton Button(const wchar_t *wszText)
 		break;
 		case MODE_KEYPRESSED:
 		{
-			ret.bKeyPressed = ret.bPressed = (wdgState.bActive && c->eCode == KEY_ENTER);
+			ret.bKeyPressed = ret.bPressed = (wdgState.bActive && IsKeyEnter());
 		}
 		break;
 		default:
@@ -941,9 +1064,13 @@ NeoUI::RetButton Button(const wchar_t *wszText)
 		}
 	}
 
-	++c->iCanActives;
 	EndWidget(wdgState);
 	return ret;
+}
+
+NeoUI::RetButton Button(const wchar_t *wszText)
+{
+	return BaseButton(wszText, "", BASEBUTTONTYPE_TEXT);
 }
 
 NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
@@ -1109,52 +1236,7 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 
 NeoUI::RetButton ButtonTexture(const char *szTexturePath)
 {
-	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
-	RetButton ret = {};
-	ret.bMouseHover = wdgState.bHot;
-
-	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
-	{
-		switch (c->eMode)
-		{
-		case MODE_PAINT:
-		{
-			vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, c->rWidgetArea.y0,
-											c->rWidgetArea.x1, c->rWidgetArea.y1);
-			Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
-					c->irWidgetWide, c->irWidgetTall);
-		}
-		break;
-		case MODE_MOUSEPRESSED:
-		{
-			ret.bMousePressed = ret.bPressed = (ret.bMouseHover && c->eCode == MOUSE_LEFT);
-		}
-		break;
-		case MODE_MOUSEDOUBLEPRESSED:
-		{
-			ret.bMouseDoublePressed = ret.bPressed = (ret.bMouseHover && c->eCode == MOUSE_LEFT);
-		}
-		break;
-		case MODE_KEYPRESSED:
-		{
-			ret.bKeyPressed = ret.bPressed = (wdgState.bActive && c->eCode == KEY_ENTER);
-		}
-		break;
-		default:
-			break;
-		}
-
-		if (ret.bPressed)
-		{
-			c->iActive = c->iWidget;
-			c->iActiveSection = c->iSection;
-		}
-
-	}
-
-	++c->iCanActives;
-	EndWidget(wdgState);
-	return ret;
+	return BaseButton(L"", szTexturePath, BASEBUTTONTYPE_IMAGE);
 }
 
 void ResetTextures()
@@ -1191,7 +1273,7 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 
 void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 {
-	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 
 	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
@@ -1261,9 +1343,9 @@ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		break;
 		case MODE_KEYPRESSED:
 		{
-			if (wdgState.bActive && (c->eCode == KEY_LEFT || c->eCode == KEY_RIGHT))
+			if (wdgState.bActive && IsKeyLeftRight())
 			{
-				*iIndex += (c->eCode == KEY_LEFT) ? -1 : +1;
+				*iIndex += (IsKeyLeft()) ? -1 : +1;
 				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
 				c->bValueEdited = true;
 			}
@@ -1274,7 +1356,6 @@ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		}
 	}
 
-	++c->iCanActives;
 	EndWidget(wdgState);
 }
 
@@ -1283,7 +1364,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	// This is basically a ringbox but different UI
 	const auto wdgState = BeginWidget(WIDGETFLAG_SKIPACTIVE | WIDGETFLAG_MOUSE);
 
-	SwapFont(FONT_NTHORIZSIDES);
+	SwapFont(FONT_NTNORMAL);
 	const int iTabWide = (c->dPanel.wide / iLabelsSize);
 	bool bResetActiveHot = false;
 
@@ -1326,13 +1407,13 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		// Draw the side-hints text
 		// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
 		int iFontWidth, iFontHeight;
-		vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, L"F##", iFontWidth, iFontHeight);
-		const int iHintYPos = c->dPanel.y + (iFontHeight / 2);
+		vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, L"F #", iFontWidth, iFontHeight);
+		const int iHintYPos = c->rWidgetArea.y0 + pFontI->iYOffset;
 
 		vgui::surface()->DrawSetTextPos(c->dPanel.x - c->iMarginX - iFontWidth, iHintYPos);
-		vgui::surface()->DrawPrintText(L"F 1", 3);
+		vgui::surface()->DrawPrintText((c->eKeyHints == KEYHINTS_KEYBOARD) ? L"F 1" : L"L 1", 3);
 		vgui::surface()->DrawSetTextPos(c->dPanel.x + c->dPanel.wide + c->iMarginX, iHintYPos);
-		vgui::surface()->DrawPrintText(L"F 3", 3);
+		vgui::surface()->DrawPrintText((c->eKeyHints == KEYHINTS_KEYBOARD) ? L"F 3" : L"R 1", 3);
 	}
 	break;
 	case MODE_MOUSEPRESSED:
@@ -1351,9 +1432,13 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	break;
 	case MODE_KEYPRESSED:
 	{
-		if (c->eCode == KEY_F1 || c->eCode == KEY_F3) // Global keybind
+		const bool bLeftKey = c->eCode == KEY_F1 || c->eCode == KEY_XBUTTON_LEFT_SHOULDER ||
+				c->eCode == STEAMCONTROLLER_LEFT_TRIGGER;
+		const bool bRightKey = c->eCode == KEY_F3 || c->eCode == KEY_XBUTTON_RIGHT_SHOULDER ||
+				c->eCode == STEAMCONTROLLER_RIGHT_TRIGGER;
+		if (bLeftKey || bRightKey) // Global keybind
 		{
-			*iIndex += (c->eCode == KEY_F1) ? -1 : +1;
+			*iIndex += (bLeftKey) ? -1 : +1;
 			*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
 			V_memset(c->iYOffset, 0, sizeof(c->iYOffset));
 			bResetActiveHot = true;
@@ -1404,7 +1489,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 {
 	MultiWidgetHighlighter(2);
 	Label(wszLeftLabel);
-	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 
 	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
@@ -1526,13 +1611,13 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		{
 			if (wdgState.bActive)
 			{
-				if (c->eCode == KEY_LEFT || c->eCode == KEY_RIGHT)
+				if (IsKeyLeftRight())
 				{
-					*flValue += (c->eCode == KEY_LEFT) ? -flStep : +flStep;
+					*flValue += (IsKeyLeft()) ? -flStep : +flStep;
 					*flValue = ClampAndLimitDp(*flValue, flMin, flMax, iDp);
 					c->bValueEdited = true;
 				}
-				else if (c->eCode == KEY_ENTER)
+				else if (IsKeyEnter())
 				{
 					c->iActive = FOCUSOFF_NUM;
 					c->iActiveSection = -1;
@@ -1560,7 +1645,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			}
 			else if (wdgState.bHot)
 			{
-				if (c->eCode == KEY_ENTER)
+				if (IsKeyEnter())
 				{
 					c->iActive = c->iWidget;
 					c->iActiveSection = c->iSection;
@@ -1611,7 +1696,6 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		}
 	}
 
-	++c->iCanActives;
 	EndWidget(wdgState);
 }
 
@@ -1709,7 +1793,7 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTe
 
 void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags flags)
 {
-	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 
 	static wchar_t staticWszPasswordChars[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
 	if (staticWszPasswordChars[0] == L'\0')
@@ -1862,14 +1946,8 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags 
 					static const wchar *PWSZ_TEXTEDIT_RIGHTCLICK[COPYMENU__TOTAL] = {
 						L"Cut", L"Copy", L"Paste",
 					};
-					c->dimRightClick.x = c->iMouseAbsX;
-					c->dimRightClick.y = c->iMouseAbsY;
-					c->dimRightClick.wide = 0;
-					c->dimRightClick.tall = 0;
-					c->iRightClick = c->iWidget;
-					c->iRightClickSection = c->iSection;
-					c->pwszRightClickList = PWSZ_TEXTEDIT_RIGHTCLICK;
-					c->ipwszRightClickListSize = ARRAYSIZE(PWSZ_TEXTEDIT_RIGHTCLICK);
+					PopupMenu(PWSZ_TEXTEDIT_RIGHTCLICK, ARRAYSIZE(PWSZ_TEXTEDIT_RIGHTCLICK),
+							nullptr, nullptr);
 				} break;
 				default:
 					break;
@@ -2145,13 +2223,27 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags 
 		}
 	}
 
-	++c->iCanActives;
 	EndWidget(wdgState);
 }
 
 bool Bind(const ButtonCode_t eCode)
 {
 	return c->eMode == MODE_KEYPRESSED && c->eCode == eCode;
+}
+
+bool Bind(const ButtonCode_t *peCode, const int ieCodeSize)
+{
+	if (c->eMode == MODE_KEYPRESSED)
+	{
+		for (int i = 0; i < ieCodeSize; ++i)
+		{
+			if (c->eCode == peCode[i])
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 void OpenURL(const char *szBaseUrl, const char *szPath)
@@ -2173,6 +2265,26 @@ void OpenURL(const char *szBaseUrl, const char *szPath)
 	char syscmd[512] = {};
 	V_sprintf_safe(syscmd, "%s %s%s", CMD, szBaseUrl, szPath);
 	system(syscmd);
+}
+
+const wchar_t *HintAlt(const wchar *wszKey, const wchar *wszController)
+{
+	return (c->eKeyHints == NeoUI::KEYHINTS_KEYBOARD) ? wszKey : wszController;
+}
+
+void PopupMenu(const wchar **pwszRightClickList, const int ipwszRightClickListSize,
+		void (*fnRightClickRet)(void *, int), void *pData)
+{
+	c->dimRightClick.x = c->iMouseAbsX;
+	c->dimRightClick.y = c->iMouseAbsY;
+	c->dimRightClick.wide = 0;
+	c->dimRightClick.tall = 0;
+	c->iRightClick = c->iWidget;
+	c->iRightClickSection = c->iSection;
+	c->pwszRightClickList = pwszRightClickList;
+	c->ipwszRightClickListSize = ipwszRightClickListSize;
+	c->fnRightClickRet = fnRightClickRet;
+	c->pData = pData;
 }
 
 }  // namespace NeoUI

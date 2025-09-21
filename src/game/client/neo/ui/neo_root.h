@@ -43,10 +43,15 @@ class CNeoRootInput : public vgui::Panel
 public:
 	CNeoRootInput(CNeoRoot *rootPanel);
 	void PerformLayout() final;
+	void OnKeyCodePressed(vgui::KeyCode code) final;
+	void OnTick() final;
+	void OnKeyCodeReleased(vgui::KeyCode code) final;
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
 	void OnKeyTyped(wchar_t unichar) final;
 	void OnThink();
 	CNeoRoot *m_pNeoRoot = nullptr;
+	vgui::KeyCode m_pressedKey = BUTTON_CODE_NONE;
+	float m_flStartPressed = 0.0f;
 };
 
 enum RootState
@@ -72,6 +77,7 @@ enum RootState
 	STATE_SERVERPASSWORD,
 	STATE_SETTINGSRESETDEFAULT,
 	STATE_SPRAYDELETERCONFIRM,
+	STATE_ADDCUSTOMBLACKLIST,
 
 	STATE__TOTAL,
 };
@@ -195,6 +201,7 @@ public:
 
 	wchar_t m_wszBindingText[128];
 	int m_iBindingIdx = -1;
+	bool m_bNextBindingSecondary = false;
 
 	int m_iTitleWidth;
 	int m_iTitleHeight;
@@ -202,6 +209,8 @@ public:
 	wchar_t m_wszMap[128];
 
 	wchar_t m_wszServerPassword[128] = {};
+	wchar_t m_wszServerNewBlacklist[128] = {};
+	int m_iServerNewBlacklistType = 0;
 
 	CCallResult<CNeoRoot, HTTPRequestCompleted_t> m_ccallbackHttp;
 	void HTTPCallbackRequest(HTTPRequestCompleted_t *request, bool bIOFailure);
@@ -221,6 +230,8 @@ public:
 	enum FileIODialogMode
 	{
 		FILEIODLGMODE_SPRAY = 0,
+		FILEIODLGMODE_BLACKLIST_IMPORT,
+		FILEIODLGMODE_BLACKLIST_EXPORT,
 
 		FILEIODLGMODE__TOTAL,
 	};
@@ -231,12 +242,11 @@ public:
 	bool m_bOnLoadingScreen = false;
 	float m_flTimeLoadingScreenTransition = 0.0f;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	int m_iSavedActive = 0;
+	int m_iSavedSection = 0;
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
 	SprayInfo m_sprayToDelete = {};
-
-private:
-	void OnFileSelectedMode_Spray(const char *szFullpath);
 };
 
 extern CNeoRoot *g_pNeoRoot;

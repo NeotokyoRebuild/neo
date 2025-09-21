@@ -2,6 +2,7 @@
 
 #define FOR_LIST_WEAPONS(X, X_ALT) \
 	X(AA13, aa13, "AA13") \
+	X(BALC, balc, "BALC3") \
 	X(DETPACK, detpack, "Detpack") \
 	X(GHOST, ghost, "Ghost") \
 	X(FRAG_GRENADE, grenade, "Grenade") \

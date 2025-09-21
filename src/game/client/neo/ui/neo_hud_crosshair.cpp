@@ -77,15 +77,16 @@ void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const
 			iSize = (crh.flScrSize * (max(wide, tall) / 2));
 		}
 
-		const bool bOdd = ((iThick % 2) == 1);
-		const int iHalf = iThick / 2;
+		const bool bOdd = ((crh.iThick % 2) == 1);
+		const int iRBOffset = bOdd ? -1 : 0; // Right + bottom, odd-px offset
+		const int iHalf = crh.iThick / 2;
 		const int iStartThick = bOdd ? iHalf + 1 : iHalf;
 		const int iEndThick = iHalf;
 		vgui::IntRect iRects[4] = {
-			{ -iSize - iGap, -iStartThick, -iGap, iEndThick },	// Left
-			{ iGap, -iStartThick, iGap + iSize, iEndThick },	// Right
-			{ -iStartThick, iGap, iEndThick, iGap + iSize },	// Bottom
-			{ -iStartThick, -iSize - iGap, iEndThick, -iGap },	// Top (Must be last for bTopLine)
+			{ -iSize - crh.iGap, -iStartThick, -crh.iGap, iEndThick },	// Left
+			{ crh.iGap + iRBOffset, -iStartThick, crh.iGap + iSize + iRBOffset, iEndThick },	// Right
+			{ -iStartThick, crh.iGap + iRBOffset, iEndThick, crh.iGap + iSize + iRBOffset },	// Bottom
+			{ -iStartThick, -iSize - crh.iGap, iEndThick, -crh.iGap },	// Top (Must be last for bTopLine)
 		};
 		for (vgui::IntRect &rect : iRects)
 		{

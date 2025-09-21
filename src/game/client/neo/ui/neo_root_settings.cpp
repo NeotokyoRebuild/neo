@@ -17,6 +17,7 @@
 
 #include "neo_ui.h"
 #include "neo_root.h"
+#include "neo/ui/neo_utils.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -235,12 +236,143 @@ void NeoSettingsInit(NeoSettings *ns)
 			vgui::surface()->DrawGetTextureSize(pTex->iTexId, pTex->iWide, pTex->iTall);
 		}
 	}
+
+	// NEO NOTE (Adam) Ensures random background on every launch if random background option selected.
+	// If new background is different from previous background, the static image will change during load
+	// NEO TODO (Adam) Change the background on client shutdown instead somehow?
+	NeoSettingsBackgroundsInit(ns);
+}
+
+// sv_unlockedchapters is not a consistent way of guaranteeing what background shows up as the menu background.
+// Instead, we read all available backgrounds from a second file neo_backgrounds.txt, and overwrite chapterbackgrounds.txt
+// to only include the one background that the user is interested in.
+void NeoSettingsBackgroundsInit(NeoSettings* ns)
+{
+#define NEO_BACKGROUNDS_FILENAME "scripts/neo_backgrounds.txt"
+#define NEO_RANDOM_BACKGROUND_NAME "Random"
+#define NEO_FALLBACK_BACKGROUND_DISPLAYNAME "No backgrounds"
+#define NEO_FALLBACK_BACKGROUND_FILENAME "background01"
+
+	if (ns->backgrounds)
+	{
+		ns->backgrounds->deleteThis();
+	}
+	ns->backgrounds = new KeyValues( "neo_backgrounds" );
+	ns->iCBListSize = 0;
+
+	constexpr auto allocate = [](NeoSettings *ns, int size) {
+		ns->p2WszCBList = (wchar_t **)calloc(sizeof(wchar_t *), ns->iCBListSize);
+		ns->p2WszCBList[0] = (wchar_t *)calloc(sizeof(wchar_t) * size, ns->iCBListSize);
+	};
+
+	// Setup Background Map options
+	int dispSize = Max(sizeof(NEO_FALLBACK_BACKGROUND_DISPLAYNAME), sizeof(NEO_RANDOM_BACKGROUND_NAME) + 1);
+	if ( !ns->backgrounds->LoadFromFile( g_pFullFileSystem, NEO_BACKGROUNDS_FILENAME, "MOD" ) )
+	{ // File empty or unable to load, set to static and return early
+		Warning( "Unable to load '%s'\n", NEO_BACKGROUNDS_FILENAME );
+		ns->iCBListSize = 1;
+		allocate(ns, dispSize);
+		g_pVGuiLocalize->ConvertANSIToUnicode(NEO_FALLBACK_BACKGROUND_DISPLAYNAME, ns->p2WszCBList[0], sizeof(wchar_t) * dispSize);
+		NeoSettingsBackgroundWrite(ns, NEO_FALLBACK_BACKGROUND_FILENAME);
+		return;
+	}
+
+	for ( KeyValues* background = ns->backgrounds->GetFirstSubKey(); background != NULL; /*background = background->GetNextKey()*/)
+	{ // Iterate once to get the number of options and longest background map name
+		const char* displayName = background->GetName();
+		if (FStrEq(displayName, "")) // NEO NOTE (Adam) If name missing read will fail
+		{ // no display name, skip
+			KeyValues* thisKey = background;
+			background = background->GetNextKey();
+			ns->backgrounds->RemoveSubKey(thisKey);
+			continue;
+		}
+
+		const char* fileName = background->GetString("fileName");
+		if (FStrEq(fileName, ""))
+		{ // no file name, skip
+			KeyValues* thisKey = background;
+			background = background->GetNextKey();
+			ns->backgrounds->RemoveSubKey(thisKey);
+			continue;
+		}
+
+		ns->iCBListSize++;
+		dispSize = Max(dispSize, (V_strlen(displayName) + 1));
+		background = background->GetNextKey();
+	}
+	const int wDispSize = sizeof(wchar_t) * dispSize;
+	
+	// Random Background Option
+	ns->iCBListSize++;
+	allocate(ns, dispSize);
+	KeyValues* background = ns->backgrounds->GetFirstSubKey();
+	// iterate through background maps and set their names
+	for (int i = 0, offset = 0; i < ns->iCBListSize - 1; ++i, offset += dispSize)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(background->GetName(), ns->p2WszCBList[0] + offset, wDispSize);
+		ns->p2WszCBList[i] = ns->p2WszCBList[0] + offset;
+		background = background->GetNextKey();
+	}
+
+	// Set last option to random
+	const int offset = (ns->iCBListSize - 1) * dispSize;
+	g_pVGuiLocalize->ConvertANSIToUnicode(ns->iCBListSize == 1 ? NEO_FALLBACK_BACKGROUND_DISPLAYNAME : NEO_RANDOM_BACKGROUND_NAME, ns->p2WszCBList[0] + offset, wDispSize);
+	ns->p2WszCBList[ns->iCBListSize - 1] = ns->p2WszCBList[0] + offset;
+
+	// write selected background name
+	NeoSettingsBackgroundWrite(ns);
+}
+
+void NeoSettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundName)
+{
+	// Select background name
+	if (!backgroundName)
+	{
+		const int selectedBackground = ns->cvr.sv_unlockedchapters.GetInt() + 1;
+		int i = 1;
+		const int iFinal = selectedBackground >= ns->iCBListSize ? RandomInt(1, ns->iCBListSize - 1) : selectedBackground;
+		KeyValues* background;
+		for (background = ns->backgrounds->GetFirstSubKey(); background != NULL && i < iFinal; (background = background->GetNextKey()) && i++)
+		{ // Skip to the desired background
+		}
+		backgroundName = background ? background->GetString("fileName") : NEO_FALLBACK_BACKGROUND_DISPLAYNAME;
+	}
+
+	// Overwrite CHAPTER_BACKGROUNDS_FILENAME with selected background
+	CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
+	bpr(0, buf, "// Auto Generated on game launch. Set background in game through the options menu from those available in scripts/neo_backgrounds.txt\n");
+	bpr(0, buf, "\"chapters\"\n");
+	bpr(0, buf, "{\n" );
+	bpr(1, buf, "1 \"");
+	bpr(0, buf, backgroundName);
+	bpr(0, buf, "\"\n");
+	bpr(0, buf, "}\n");
+
+#define NEO_CHAPTER_BACKGROUNDS_FILENAME "scripts/chapterbackgrounds.txt"
+	FileHandle_t fh = g_pFullFileSystem->Open( NEO_CHAPTER_BACKGROUNDS_FILENAME, "wb" );
+	if ( FILESYSTEM_INVALID_HANDLE != fh )
+	{
+		g_pFullFileSystem->Write( buf.Base(), buf.TellPut(), fh );
+		g_pFullFileSystem->Close( fh );
+	}
+	else
+	{
+		Warning( "Unable to open '%s' for writing\n", NEO_CHAPTER_BACKGROUNDS_FILENAME );
+	}
 }
 
 void NeoSettingsDeinit(NeoSettings *ns)
 {
 	free(ns->video.p2WszVmDispList[0]);
 	free(ns->video.p2WszVmDispList);
+
+	free(ns->p2WszCBList[0]);
+	free(ns->p2WszCBList);
+	if (ns->backgrounds)
+	{
+		ns->backgrounds->deleteThis();
+	}
 }
 
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys)
@@ -283,8 +415,9 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
-		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
+		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		pGeneral->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
+		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
 	}
 	{
@@ -293,21 +426,79 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pKeys->bDeveloperConsole = cvr->cl_neo_toggleconsole.GetBool();
 		if (!(flagsKeys & NeoSettings::Keys::SKIP_KEYS))
 		{
+			static constexpr const int MAX_BCVAL = 2;
+			struct BcVal
+			{
+				ButtonCode_t list[MAX_BCVAL];
+				int iSize;
+			};
+			CUtlHashtable<CUtlConstString, BcVal> htAllBinds;
+			for (int iBc = KEY_FIRST; iBc <= BUTTON_CODE_LAST; ++iBc)
+			{
+				const ButtonCode_t bc = static_cast<ButtonCode_t>(iBc);
+				const char *pszBinding = gameuifuncs->GetBindingForButtonCode(bc);
+				if (pszBinding)
+				{
+					auto hdl = htAllBinds.Find(pszBinding);
+					if (hdl == htAllBinds.InvalidHandle())
+					{
+						BcVal bcVal = {}; // zero-init
+						hdl = htAllBinds.Insert(pszBinding, bcVal);
+					}
+					if (hdl != htAllBinds.InvalidHandle())
+					{
+						BcVal &bcVal = htAllBinds.Element(hdl);
+						if (bcVal.iSize < MAX_BCVAL)
+						{
+							bcVal.list[bcVal.iSize++] = bc;
+						}
+					}
+				}
+			}
+
 			for (int i = 0; i < pKeys->iBindsSize; ++i)
 			{
 				auto *bind = &pKeys->vBinds[i];
 				bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
+				bind->bcSecondaryNext = bind->bcSecondaryCurrent = BUTTON_CODE_NONE;
+				if (bind->bcCurrent > BUTTON_CODE_NONE)
+				{
+					auto hdl = htAllBinds.Find(bind->szBindingCmd);
+					if (hdl != htAllBinds.InvalidHandle())
+					{
+						const auto &bcVal = htAllBinds.Element(hdl);
+						const int iMaxIdxBc = Min(bcVal.iSize, MAX_BCVAL);
+						for (int idxBc = 0; idxBc < iMaxIdxBc; ++idxBc)
+						{
+							const ButtonCode_t bc = bcVal.list[idxBc];
+							if (bc != bind->bcCurrent)
+							{
+								bind->bcSecondaryNext = bind->bcSecondaryCurrent = bc;
+								break;
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 	{
 		NeoSettings::Mouse *pMouse = &ns->mouse;
 		pMouse->flSensitivity = cvr->sensitivity.GetFloat();
+		pMouse->flZoomSensitivityRatio = cvr->zoom_sensitivity_ratio.GetFloat();
 		pMouse->bRawInput = cvr->m_rawinput.GetBool();
 		pMouse->bFilter = cvr->m_filter.GetBool();
 		pMouse->bReverse = (cvr->m_pitch.GetFloat() < 0.0f);
 		pMouse->bCustomAccel = (cvr->m_customaccel.GetInt() == 3);
 		pMouse->flExponent = cvr->m_customaccel_exponent.GetFloat();
+	}
+	{
+		NeoSettings::Controller *pController = &ns->controller;
+		pController->bEnabled = cvr->joystick.GetBool();
+		pController->bReverse = cvr->joy_inverty.GetBool();
+		pController->bSwapSticks = cvr->joy_movement_stick.GetBool();
+		pController->flSensHorizontal = -cvr->joy_yawsensitivity.GetFloat(); // Negate convar
+		pController->flSensVertical = cvr->joy_pitchsensitivity.GetFloat();
 	}
 	{
 		NeoSettings::Audio *pAudio = &ns->audio;
@@ -316,6 +507,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pAudio->flVolMain = cvr->volume.GetFloat();
 		pAudio->flVolMusic = cvr->snd_musicvolume.GetFloat();
 		pAudio->flVolVictory = cvr->snd_victory_volume.GetFloat();
+		pAudio->flVolPing = cvr->snd_ping_volume.GetFloat();
 		pAudio->iSoundSetup = 0;
 		switch (cvr->snd_surround_speakers.GetInt())
 		{
@@ -507,6 +699,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pGeneral->iKdinfoToggletype);
+		NeoSettingsBackgroundWrite(ns);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -527,14 +720,24 @@ void NeoSettingsSave(const NeoSettings *ns)
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			auto *bind = const_cast<NeoSettings::Keys::Bind *>(&pKeys->vBinds[i]);
-			if (bind->szBindingCmd[0] != '\0' && bind->bcNext > KEY_NONE)
+			if (bind->szBindingCmd[0] != '\0')
 			{
 				char cmdStr[128];
-				const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcNext);
-				V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
-				engine->ClientCmd_Unrestricted(cmdStr);
+				if (bind->bcNext > KEY_NONE)
+				{
+					const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcNext);
+					V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
+					engine->ClientCmd_Unrestricted(cmdStr);
+				}
+				if (bind->bcSecondaryNext > KEY_NONE)
+				{
+					const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcSecondaryNext);
+					V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
+					engine->ClientCmd_Unrestricted(cmdStr);
+				}
 			}
 			bind->bcCurrent = bind->bcNext;
+			bind->bcSecondaryCurrent = bind->bcSecondaryNext;
 		}
 		// Reset the cache to none so it'll refresh on next KeyCodeTyped
 		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
@@ -542,12 +745,21 @@ void NeoSettingsSave(const NeoSettings *ns)
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
 		cvr->sensitivity.SetValue(pMouse->flSensitivity);
+		cvr->zoom_sensitivity_ratio.SetValue(pMouse->flZoomSensitivityRatio);
 		cvr->m_rawinput.SetValue(pMouse->bRawInput);
 		cvr->m_filter.SetValue(pMouse->bFilter);
 		const float absPitch = abs(cvr->m_pitch.GetFloat());
 		cvr->m_pitch.SetValue(pMouse->bReverse ? -absPitch : absPitch);
 		cvr->m_customaccel.SetValue(pMouse->bCustomAccel ? 3 : 0);
 		cvr->m_customaccel_exponent.SetValue(pMouse->flExponent);
+	}
+	{
+		const NeoSettings::Controller *pController = &ns->controller;
+		cvr->joystick.SetValue(pController->bEnabled);
+		cvr->joy_inverty.SetValue(pController->bReverse);
+		cvr->joy_movement_stick.SetValue(pController->bSwapSticks);
+		cvr->joy_yawsensitivity.SetValue(-pController->flSensHorizontal); // Negate convar
+		cvr->joy_pitchsensitivity.SetValue(pController->flSensVertical);
 	}
 	{
 		const NeoSettings::Audio *pAudio = &ns->audio;
@@ -567,6 +779,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->volume.SetValue(pAudio->flVolMain);
 		cvr->snd_musicvolume.SetValue(pAudio->flVolMusic);
 		cvr->snd_victory_volume.SetValue(pAudio->flVolVictory);
+		cvr->snd_ping_volume.SetValue(pAudio->flVolPing);
 		cvr->snd_surround_speakers.SetValue(SURROUND_RE_MAP[pAudio->iSoundSetup]);
 		cvr->snd_mute_losefocus.SetValue(pAudio->bMuteAudioUnFocus);
 		cvr->snd_pitchquality.SetValue(pAudio->iSoundQuality == QUALITY_HIGH);
@@ -660,6 +873,7 @@ void NeoSettingsResetToDefault(NeoSettings *ns)
 			engine->ClientCmd_Unrestricted(cmdStr);
 		}
 		bind->bcCurrent = bind->bcNext = bind->bcDefault;
+		bind->bcSecondaryCurrent = bind->bcSecondaryNext = BUTTON_CODE_NONE;
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
@@ -722,8 +936,11 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pGeneral->bExtendedKillfeed);
-	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pGeneral->iKdinfoToggletype);
+
+	
+	NeoUI::HeadingLabel(L"MAIN MENU");
+	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
 
 	NeoUI::HeadingLabel(L"STREAMER MODE");
 	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);
@@ -781,7 +998,15 @@ void NeoSettings_Keys(NeoSettings *ns)
 	NeoSettings::Keys *pKeys = &ns->keys;
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pKeys->bWeaponFastSwitch);
 	NeoUI::RingBoxBool(L"Developer console", &pKeys->bDeveloperConsole);
+	NeoUI::Pad();
 	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	static constexpr const int KEYS_LAYOUT[] = { 40, 30, -1 };
+	NeoUI::SetPerRowLayout(ARRAYSIZE(KEYS_LAYOUT), KEYS_LAYOUT);
+	NeoUI::Label(L"Name");
+	NeoUI::Label(L"Primary");
+	NeoUI::Label(L"Secondary");
+	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 	for (int i = 0; i < pKeys->iBindsSize; ++i)
 	{
 		const auto &bind = pKeys->vBinds[i];
@@ -791,26 +1016,52 @@ void NeoSettings_Keys(NeoSettings *ns)
 		}
 		else
 		{
+			NeoUI::MultiWidgetHighlighter(3);
+			NeoUI::Label(bind.wszDisplayText);
 			wchar_t wszBindBtnName[64];
 			const char *szBindBtnName = g_pInputSystem->ButtonCodeToString(bind.bcNext);
 			g_pVGuiLocalize->ConvertANSIToUnicode(szBindBtnName, wszBindBtnName, sizeof(wszBindBtnName));
-			if (NeoUI::Button(bind.wszDisplayText, wszBindBtnName).bPressed)
+			if (NeoUI::Button(wszBindBtnName).bPressed)
 			{
 				ns->iNextBinding = i;
+				ns->bNextBindingSecondary = false;
+			}
+			const char *szBindSecondaryBtnName = g_pInputSystem->ButtonCodeToString(bind.bcSecondaryNext);
+			g_pVGuiLocalize->ConvertANSIToUnicode(szBindSecondaryBtnName, wszBindBtnName, sizeof(wszBindBtnName));
+			if (NeoUI::Button(wszBindBtnName).bPressed)
+			{
+				ns->iNextBinding = i;
+				ns->bNextBindingSecondary = true;
 			}
 		}
 	}
 }
 
-void NeoSettings_Mouse(NeoSettings *ns)
+void NeoSettings_MouseController(NeoSettings *ns)
 {
-	NeoSettings::Mouse *pMouse = &ns->mouse;
-	NeoUI::Slider(L"Sensitivity", &pMouse->flSensitivity, 0.1f, 10.0f, 2, 0.25f);
-	NeoUI::RingBoxBool(L"Raw input", &pMouse->bRawInput);
-	NeoUI::RingBoxBool(L"Mouse Filter", &pMouse->bFilter);
-	NeoUI::RingBoxBool(L"Mouse Reverse", &pMouse->bReverse);
-	NeoUI::RingBoxBool(L"Custom Acceleration", &pMouse->bCustomAccel);
-	NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
+	{
+		NeoUI::HeadingLabel(L"MOUSE");
+		NeoSettings::Mouse *pMouse = &ns->mouse;
+		NeoUI::Slider(L"Sensitivity", &pMouse->flSensitivity, 0.1f, 10.0f, 2, 0.25f);
+		NeoUI::Slider(L"Zoom Sensitivity Ratio", &pMouse->flZoomSensitivityRatio, 0.f, 10.0f, 2, 0.25f);
+		NeoUI::RingBoxBool(L"Raw input", &pMouse->bRawInput);
+		NeoUI::RingBoxBool(L"Mouse Filter", &pMouse->bFilter);
+		NeoUI::RingBoxBool(L"Mouse Reverse", &pMouse->bReverse);
+		NeoUI::RingBoxBool(L"Custom Acceleration", &pMouse->bCustomAccel);
+		NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
+	}
+	{
+		NeoUI::HeadingLabel(L"CONTROLLER");
+		NeoSettings::Controller *pController = &ns->controller;
+		NeoUI::RingBoxBool(L"Enable controller", &pController->bEnabled);
+		if (pController->bEnabled)
+		{
+			NeoUI::RingBoxBool(L"Reverse stick", &pController->bReverse);
+			NeoUI::RingBoxBool(L"Swap sticks", &pController->bSwapSticks);
+			NeoUI::Slider(L"Horizontal sensitivity", &pController->flSensHorizontal, 0.5f, 7.0f, 2, 0.1f);
+			NeoUI::Slider(L"Vertical sensitivity", &pController->flSensVertical, 0.5f, 7.0f, 2, 0.1f);
+		}
+	}
 }
 
 void NeoSettings_Audio(NeoSettings *ns)
@@ -819,6 +1070,7 @@ void NeoSettings_Audio(NeoSettings *ns)
 	NeoUI::Slider(L"Main Volume", &pAudio->flVolMain, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Slider(L"Music Volume", &pAudio->flVolMusic, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Slider(L"Victory Volume", &pAudio->flVolVictory, 0.0f, 1.0f, 2, 0.1f);
+	NeoUI::Slider(L"Ping Volume", &pAudio->flVolPing, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::RingBox(L"Sound Setup", SPEAKER_CFG_LABELS, ARRAYSIZE(SPEAKER_CFG_LABELS), &pAudio->iSoundSetup);
 	NeoUI::RingBox(L"Sound Quality", QUALITY_LABELS, 3, &pAudio->iSoundQuality);
 	NeoUI::RingBoxBool(L"Mute Audio on un-focus", &pAudio->bMuteAudioUnFocus);
@@ -902,7 +1154,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * IVIEW_ROWS;
 
 	const bool bTextured = CROSSHAIR_FILES[pCrosshair->info.iStyle][0];
-	NeoUI::BeginSection();
+	NeoUI::BeginSection(NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
 	{
 		if (bTextured)
 		{
@@ -927,9 +1179,13 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		NeoUI::SetPerRowLayout(4);
 		{
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-			const bool bExportPressed = NeoUI::Button(L"Export to clipboard").bPressed;
+			static constexpr const ButtonCode_t BUTTON_CODES_EXPORT[] = { KEY_XBUTTON_X, STEAMCONTROLLER_X };
+			static constexpr const ButtonCode_t BUTTON_CODES_IMPORT[] = { KEY_XBUTTON_Y, STEAMCONTROLLER_Y };
+			const bool bExportPressed = NeoUI::Button(NeoUI::HintAlt(L"Export", L"Export (X)")).bPressed ||
+					NeoUI::Bind(BUTTON_CODES_EXPORT, ARRAYSIZE(BUTTON_CODES_EXPORT));
 			const bool bTestCrosshairPressed = NeoUI::Button(L"Test dynamic").bPressed;
-			const bool bImportPressed = NeoUI::Button(L"Import from clipboard").bPressed;
+			const bool bImportPressed = NeoUI::Button(NeoUI::HintAlt(L"Import", L"Import (Y)")).bPressed ||
+					NeoUI::Bind(BUTTON_CODES_IMPORT, ARRAYSIZE(BUTTON_CODES_IMPORT));
 			const bool bDefaultPressed = NeoUI::Button(L"Reset to default").bPressed;
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 
@@ -1001,7 +1257,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 	g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen - IVIEW_ROWS);
-	NeoUI::BeginSection(true);
+	NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
 	{
 		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->info.iStyle);

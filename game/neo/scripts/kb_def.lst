@@ -51,5 +51,6 @@
 "MWHEELUP" "invnext"
 "MOUSE1" "+attack"
 "MOUSE2" "+aim"
+"MOUSE3" "+attack3"
 "PAUSE" "pause"
 "`" "neo_toggleconsole"

@@ -77,6 +77,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
+	RecvPropEHandle(RECVINFO(m_hDroppedJuggernautItem)),
 
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
@@ -89,6 +90,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
+	RecvPropTime(RECVINFO(m_flNextPingTime)),
 
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
@@ -105,9 +107,9 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
-	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	
@@ -120,6 +122,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
+	DEFINE_PRED_FIELD_TOL(m_flNextPingTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
 
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
@@ -850,6 +853,7 @@ void C_NEO_Player::CalculateSpeed(void)
 				break;
 			case NEO_CLASS_ASSAULT:
 			case NEO_CLASS_VIP:
+			case NEO_CLASS_JUGGERNAUT:
 				speed *= NEO_ASSAULT_SPRINT_MODIFIER;
 				break;
 			case NEO_CLASS_SUPPORT:
@@ -874,7 +878,7 @@ void C_NEO_Player::CalculateSpeed(void)
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	if (!neo_ghost_bhopping.GetBool() && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed && m_bCarryingGhost)
+	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed)
 	{
 		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
@@ -1068,6 +1072,7 @@ void C_NEO_Player::PreThink( void )
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
+	CheckPingButton(this);
 
 	if (m_bInThermOpticCamo)
 	{
@@ -1347,12 +1352,37 @@ void C_NEO_Player::PostThink(void)
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
 {
-	if (auto *pRagdoll = static_cast<C_HL2MPRagdoll *>(m_hRagdoll.Get()))
+	auto* pRagdoll = static_cast<C_HL2MPRagdoll*>(m_hRagdoll.Get());
+	if (pRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
 		// First person death cam
 		pRagdoll->GetAttachment(pRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
 		Vector vForward;
 		AngleVectors(eyeAngles, &vForward);
+		fov = GetFOV();
+	}
+	else if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		Vector vTarget = vec3_origin;
+		if (m_hDroppedJuggernautItem)
+		{
+			vTarget = m_hDroppedJuggernautItem->WorldSpaceCenter();
+		}
+		else
+		{
+			vTarget = NEORules()->GetJuggernautMarkerPos();
+
+		}
+
+		eyeOrigin = vTarget + Vector(80, 80, 80);
+		trace_t tr;
+		CTraceFilterWorldOnly traceFilter;
+		UTIL_TraceLine(vTarget, eyeOrigin, MASK_OPAQUE, &traceFilter, &tr);
+		eyeOrigin = vTarget + ((Vector(75, 75, 75) * tr.fraction));
+
+		Vector vDir = vTarget - eyeOrigin;
+		VectorNormalize(vDir);
+		VectorAngles(vDir, eyeAngles);
 		fov = GetFOV();
 	}
 	else
@@ -1460,17 +1490,14 @@ void C_NEO_Player::Spawn( void )
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 
-	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS);
+	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS);
+	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS);
+	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		m_rfAttackersScores.Set(i, 0);
-	}
-	for (int i = 0; i < m_rfAttackersAccumlator.Count(); ++i)
-	{
-		m_rfAttackersAccumlator.Set(i, 0.0f);
-	}
-	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
-	{
-		m_rfAttackersHits.Set(i, 0);
+		m_rfAttackersScores.GetForModify(i) = 0;
+		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
+		m_rfAttackersHits.GetForModify(i) = 0;
 	}
 	V_memset(m_rfNeoPlayerIdxsKilledByLocal, 0, sizeof(m_rfNeoPlayerIdxsKilledByLocal));
 
@@ -1632,6 +1659,8 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 		return NEO_SUPPORT_CROUCH_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_CROUCH_SPEED;
 	default:
 		return (NEO_BASE_SPEED * NEO_CROUCH_MODIFIER);
 	}
@@ -1649,6 +1678,8 @@ float C_NEO_Player::GetNormSpeed(void) const
 		return NEO_SUPPORT_BASE_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_BASE_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_BASE_SPEED;
 	default:
 		return NEO_BASE_SPEED;
 	}
@@ -1666,6 +1697,8 @@ float C_NEO_Player::GetSprintSpeed(void) const
 		return NEO_SUPPORT_SPRINT_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_SPRINT_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_SPRINT_SPEED;
 	default:
 		return NEO_BASE_SPEED; // No generic sprint modifier; default speed.
 	}
@@ -1803,4 +1836,35 @@ extern ConVar sv_neo_wep_dmg_modifier;
 void C_NEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 {
 	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
+}
+
+const char *C_NEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
+{
+	if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		if (!IsSprinting())
+		{
+			if (m_Local.m_nStepside)
+			{
+				return "JGR56.FootstepLeft";
+			}
+			else
+			{
+				return "JGR56.FootstepRight";
+			}
+		}
+		else
+		{
+			if (m_Local.m_nStepside)
+			{
+				return "JGR56.RunFootstepLeft";
+			}
+			else
+			{
+				return "JGR56.RunFootstepRight";
+			}
+		}
+	}
+
+	return BaseClass::GetOverrideStepSound(pBaseStepSound);
 }

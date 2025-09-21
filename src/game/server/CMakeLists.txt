@@ -1347,6 +1347,10 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
@@ -1410,6 +1414,8 @@ target_sources_grouped(
     neo/bot/neo_bot_locomotion.h
     neo/bot/neo_bot_manager.cpp
     neo/bot/neo_bot_manager.h
+    neo/bot/neo_bot_profile.cpp
+    neo/bot/neo_bot_profile.h
     neo/bot/neo_bot_squad.cpp
     neo/bot/neo_bot_squad.h
     neo/bot/neo_bot_vision.cpp
@@ -1452,6 +1458,8 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
