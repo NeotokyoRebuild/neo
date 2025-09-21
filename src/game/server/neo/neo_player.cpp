@@ -483,6 +483,11 @@ CNEO_Player::CNEO_Player()
 	m_szNameDupePos = 0;
 	
 	m_flNextPingTime = 0;
+	m_hLeadingPlayer = nullptr;
+	m_hCommandingPlayer = nullptr;
+	m_tBotPlayerPingCooldown.Invalidate();
+	m_flBotDynamicFollowDistanceSq = 0.0f;
+	m_vLastPing.Init();
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -551,7 +556,13 @@ void CNEO_Player::Spawn(void)
 
 	m_flRanOutSprintTime = 0.0f;
 	m_flNextPingTime = 0.0f;
-	m_hLeadingPlayer = nullptr; // Reset leading player on spawn
+
+	// Reset bot command on spawn
+	m_hLeadingPlayer = nullptr;
+	m_hCommandingPlayer = nullptr;
+	m_tBotPlayerPingCooldown.Invalidate();
+	m_flBotDynamicFollowDistanceSq = 0.0f;
+	m_vLastPing.Init();
 
 	Weapon_SetZoom(false);
 
@@ -3077,12 +3088,21 @@ void CNEO_Player::ToggleFollowPlayer( CNEO_Player *pCommander )
 	{
 		// Bot is already following this player, so toggle off.
 		m_hLeadingPlayer = nullptr;
+		m_hCommandingPlayer = nullptr;
 	}
 	// Without other checks, players can steal others' bots.
 	else
 	{
 		// Bot starts following this player.
 		m_hLeadingPlayer = pCommander;
+		if (pCommander && !pCommander->IsBot())
+		{
+			m_hCommandingPlayer = pCommander;
+		}
+		else if (pCommander && pCommander->IsBot())
+		{
+			m_hCommandingPlayer = pCommander->m_hCommandingPlayer;
+		}
 	}
 }
 
