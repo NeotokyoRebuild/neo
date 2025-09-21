@@ -188,9 +188,10 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 	{
 		// We're storing the round number to the custom field, because there's a weird bug where players can be affected
 		// by the blast of a grenade from the previous round if it happens right at the round end.
-		// If you really need to store more info here, consider bit shifting to pack it in - we probs only need 1 byte for round num.
 		// For more context, see: https://github.com/NeotokyoRebuild/neo/issues/1376
-		info.SetDamageCustom(NEORules() ? NEORules()->roundNumber() : -1);
+		const unsigned char roundNum = NEORules() ? NEORules()->roundNumber() : 0xff;
+		// Use just the first byte, so the original custom damage feature also works. Gotta handle this when reading the value!
+		info.SetDamageCustom(roundNum << 24);
 	}
 #endif
 #endif

@@ -3729,9 +3729,11 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	bool isRemoteDetpack = false;
 	CNEOBaseCombatWeapon* neoWep = pScorer ? static_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon()) : nullptr;
 
-#if(0) // Undone because we use the DamageCustom to carry round number for NEO.
+	// The first byte is reserved for custom round counting stuff
+	const int dmgCustom = info.GetDamageCustom() & 0x00ffffff;
+
 	// Custom kill type?
-	if (info.GetDamageCustom())
+	if (dmgCustom)
 	{
 		killer_weapon_name = GetDamageCustomString(info);
 		if (pScorer)
@@ -3740,7 +3742,6 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		}
 	}
 	else
-#endif
 	{
 		// Is the killer a client?
 		if (pScorer)

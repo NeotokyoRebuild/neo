@@ -1476,8 +1476,8 @@ void CBasePlayer::OnDamagedByExplosion( const CTakeDamageInfo &info )
 
 #ifdef NEO
 	// Prevent stale explosions from the prev round from affecting the next, with really unfortunate timing
-	int explodedRoundNum = info.GetDamageCustom();
-	int currentRoundNum = -1;
+	unsigned char explodedRoundNum = (info.GetDamageCustom() & 0xff000000) >> 24;
+	unsigned char currentRoundNum = 0xff; // magic value for unspecified round
 	if (const auto rules = NEORules())
 		currentRoundNum = rules->roundNumber();
 	if (currentRoundNum != explodedRoundNum)
