@@ -24,6 +24,8 @@ public:
 	bool m_bPostDeath = false;
 #endif
 
+	virtual unsigned int PhysicsSolidMaskForEntity() const final override { return MASK_PLAYERSOLID; }
+
 private:
 #ifdef GAME_DLL
 	void	Think(void);
