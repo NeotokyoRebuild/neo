@@ -31,6 +31,11 @@ static constexpr int WDGINFO_ALLOC_STEPS = 64;
 static_assert(DEBUG_NEOUI == 0);
 #endif
 
+static bool RightClickMenuActive()
+{
+	return (c->iRightClick >= 0 && c->iRightClickSection >= 0 && c->pwszRightClickList && c->ipwszRightClickListSize > 0);
+}
+
 void SwapFont(const EFont eFont, const bool bForce)
 {
 	if (c->eMode != MODE_PAINT || (!bForce && (c->eFont == eFont))) return;
@@ -318,7 +323,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 
 void EndContext()
 {
-	if (c->iRightClick >= 0 && c->iRightClickSection >= 0 && c->pwszRightClickList && c->ipwszRightClickListSize > 0)
+	if (RightClickMenuActive())
 	{
 		bool bDeInitRightClick = false;
 		switch (c->eMode)
@@ -404,12 +409,19 @@ void EndContext()
 
 		if (bDeInitRightClick)
 		{
+			if (c->fnRightClickRet && IN_BETWEEN_AR(0, c->iRightClickHotItem, c->ipwszRightClickListSize))
+			{
+				c->fnRightClickRet(c->pData, c->iRightClickHotItem);
+			}
+
 			// Already set wide/tall indicates right-click menu already initalized before
 			// and can now de-initialize/close
 			c->iRightClick = -1;
 			c->iRightClickSection = -1;
 			c->pwszRightClickList = nullptr;
 			c->ipwszRightClickListSize = 0;
+			c->fnRightClickRet = nullptr;
+			c->pData = nullptr;
 		}
 	}
 
@@ -802,7 +814,14 @@ GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 			c->iHot = c->iWidget;
 			c->iHotSection = c->iSection;
 		}
-		const bool bHot = c->iHot == c->iWidget && c->iHotSection == c->iSection;
+		bool bHot = c->iHot == c->iWidget && c->iHotSection == c->iSection;
+		if (bHot && RightClickMenuActive())
+		{
+			const Dim &dim = c->dimRightClick;
+			bHot = !(IN_BETWEEN_EQ(dim.x, c->iMouseAbsX, dim.x + dim.wide) &&
+					 IN_BETWEEN_EQ(dim.y, c->iMouseAbsY, dim.y + dim.tall));
+		}
+
 		const bool bActive = c->iWidget == c->iActive && c->iSection == c->iActiveSection;
 		if (bActive || bHot)
 		{
@@ -983,7 +1002,7 @@ void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 	Label(wszText);
 }
 
-NeoUI::RetButton Button(const wchar_t *wszText)
+NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType)
 {
 	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 
@@ -996,18 +1015,32 @@ NeoUI::RetButton Button(const wchar_t *wszText)
 		{
 		case MODE_PAINT:
 		{
-			vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
+			switch (eType)
+			{
+			case BASEBUTTONTYPE_TEXT:
+			{
+				vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
 
-			const auto *pFontI = &c->fonts[c->eFont];
-			const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
-			const int y = pFontI->iYOffset;
-			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
-			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				const auto *pFontI = &c->fonts[c->eFont];
+				const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
+				const int y = pFontI->iYOffset;
+				vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
+				vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+			} break;
+			case BASEBUTTONTYPE_IMAGE:
+			{
+				vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, c->rWidgetArea.y0,
+												c->rWidgetArea.x1, c->rWidgetArea.y1);
+				Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
+						c->irWidgetWide, c->irWidgetTall);
+			} break;
+			}
 		}
 		break;
 		case MODE_MOUSEPRESSED:
 		{
 			ret.bMousePressed = ret.bPressed = (ret.bMouseHover && c->eCode == MOUSE_LEFT);
+			ret.bMouseRightPressed = (ret.bMouseHover && c->eCode == MOUSE_RIGHT);
 		}
 		break;
 		case MODE_MOUSEDOUBLEPRESSED:
@@ -1033,6 +1066,11 @@ NeoUI::RetButton Button(const wchar_t *wszText)
 
 	EndWidget(wdgState);
 	return ret;
+}
+
+NeoUI::RetButton Button(const wchar_t *wszText)
+{
+	return BaseButton(wszText, "", BASEBUTTONTYPE_TEXT);
 }
 
 NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
@@ -1198,52 +1236,7 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 
 NeoUI::RetButton ButtonTexture(const char *szTexturePath)
 {
-	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
-
-	RetButton ret = {};
-	ret.bMouseHover = wdgState.bHot;
-
-	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
-	{
-		switch (c->eMode)
-		{
-		case MODE_PAINT:
-		{
-			vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, c->rWidgetArea.y0,
-											c->rWidgetArea.x1, c->rWidgetArea.y1);
-			Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
-					c->irWidgetWide, c->irWidgetTall);
-		}
-		break;
-		case MODE_MOUSEPRESSED:
-		{
-			ret.bMousePressed = ret.bPressed = (ret.bMouseHover && c->eCode == MOUSE_LEFT);
-		}
-		break;
-		case MODE_MOUSEDOUBLEPRESSED:
-		{
-			ret.bMouseDoublePressed = ret.bPressed = (ret.bMouseHover && c->eCode == MOUSE_LEFT);
-		}
-		break;
-		case MODE_KEYPRESSED:
-		{
-			ret.bKeyPressed = ret.bPressed = (wdgState.bActive && IsKeyEnter());
-		}
-		break;
-		default:
-			break;
-		}
-
-		if (ret.bPressed)
-		{
-			c->iActive = c->iWidget;
-			c->iActiveSection = c->iSection;
-		}
-
-	}
-
-	EndWidget(wdgState);
-	return ret;
+	return BaseButton(L"", szTexturePath, BASEBUTTONTYPE_IMAGE);
 }
 
 void ResetTextures()
@@ -1953,14 +1946,8 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags 
 					static const wchar *PWSZ_TEXTEDIT_RIGHTCLICK[COPYMENU__TOTAL] = {
 						L"Cut", L"Copy", L"Paste",
 					};
-					c->dimRightClick.x = c->iMouseAbsX;
-					c->dimRightClick.y = c->iMouseAbsY;
-					c->dimRightClick.wide = 0;
-					c->dimRightClick.tall = 0;
-					c->iRightClick = c->iWidget;
-					c->iRightClickSection = c->iSection;
-					c->pwszRightClickList = PWSZ_TEXTEDIT_RIGHTCLICK;
-					c->ipwszRightClickListSize = ARRAYSIZE(PWSZ_TEXTEDIT_RIGHTCLICK);
+					PopupMenu(PWSZ_TEXTEDIT_RIGHTCLICK, ARRAYSIZE(PWSZ_TEXTEDIT_RIGHTCLICK),
+							nullptr, nullptr);
 				} break;
 				default:
 					break;
@@ -2283,6 +2270,21 @@ void OpenURL(const char *szBaseUrl, const char *szPath)
 const wchar_t *HintAlt(const wchar *wszKey, const wchar *wszController)
 {
 	return (c->eKeyHints == NeoUI::KEYHINTS_KEYBOARD) ? wszKey : wszController;
+}
+
+void PopupMenu(const wchar **pwszRightClickList, const int ipwszRightClickListSize,
+		void (*fnRightClickRet)(void *, int), void *pData)
+{
+	c->dimRightClick.x = c->iMouseAbsX;
+	c->dimRightClick.y = c->iMouseAbsY;
+	c->dimRightClick.wide = 0;
+	c->dimRightClick.tall = 0;
+	c->iRightClick = c->iWidget;
+	c->iRightClickSection = c->iSection;
+	c->pwszRightClickList = pwszRightClickList;
+	c->ipwszRightClickListSize = ipwszRightClickListSize;
+	c->fnRightClickRet = fnRightClickRet;
+	c->pData = pData;
 }
 
 }  // namespace NeoUI
