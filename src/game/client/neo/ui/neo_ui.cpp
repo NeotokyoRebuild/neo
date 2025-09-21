@@ -300,7 +300,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 
 		if (wszTitle)
 		{
-			SwapFont(FONT_NTLARGE);
+			SwapFont(FONT_NTLARGE, true);
 			vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 			vgui::surface()->DrawSetTextPos(c->dPanel.x + c->iMarginX,
 											c->dPanel.y + -c->layout.iRowTall + c->fonts[FONT_NTLARGE].iYOffset);
