@@ -393,6 +393,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
+		pGeneral->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
 		pGeneral->bShowHints = cvr->cl_neo_showhints.GetBool();
@@ -622,8 +623,11 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		{
 			ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
 		}
+		pCrosshair->bPreviewDynamicAccuracy = false;
 		pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_NONE;
 		pCrosshair->bNetworkCrosshair = cvr->cl_neo_crosshair_network.GetBool();
+		pCrosshair->bInaccuracyInScope = cvr->cl_neo_crosshair_scope_inaccuracy.GetBool();
+		pCrosshair->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 	}
 }
 
@@ -682,6 +686,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
+		cvr->cl_neo_crosshair_hip_fire.SetValue(pGeneral->bHipFireCrosshair);
 		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_neo_showhints.SetValue(pGeneral->bShowHints);
@@ -828,6 +833,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		ExportCrosshair(&pCrosshair->info, szSequence);
 		cvr->cl_neo_crosshair.SetValue(szSequence);
 		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
+		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
+		cvr->cl_neo_crosshair_hip_fire.SetValue(pCrosshair->bHipFireCrosshair);
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
@@ -1162,7 +1169,8 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		}
 		else
 		{
-			PaintCrosshair(pCrosshair->info,
+			const int iPreviewDynamicAccuracy = (pCrosshair->bPreviewDynamicAccuracy) ? (Max(0, (int)(sin(gpGlobals->curtime) * 24) + 16)) : 0;
+			PaintCrosshair(pCrosshair->info, iPreviewDynamicAccuracy,
 						   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
 						   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
 		}
@@ -1170,15 +1178,18 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 		NeoUI::SetPerRowLayout(4);
 		{
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			static constexpr const ButtonCode_t BUTTON_CODES_EXPORT[] = { KEY_XBUTTON_X, STEAMCONTROLLER_X };
 			static constexpr const ButtonCode_t BUTTON_CODES_IMPORT[] = { KEY_XBUTTON_Y, STEAMCONTROLLER_Y };
 			const bool bExportPressed = NeoUI::Button(NeoUI::HintAlt(L"Export", L"Export (X)")).bPressed ||
 					NeoUI::Bind(BUTTON_CODES_EXPORT, ARRAYSIZE(BUTTON_CODES_EXPORT));
+			const bool bTestCrosshairPressed = NeoUI::Button(L"Test dynamic").bPressed;
 			const bool bImportPressed = NeoUI::Button(NeoUI::HintAlt(L"Import", L"Import (Y)")).bPressed ||
 					NeoUI::Bind(BUTTON_CODES_IMPORT, ARRAYSIZE(BUTTON_CODES_IMPORT));
 			const bool bDefaultPressed = NeoUI::Button(L"Reset to default").bPressed;
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 
-			if (bExportPressed || bImportPressed)
+			if (bExportPressed || bTestCrosshairPressed || bImportPressed)
 			{
 				char szClipboardCrosshair[NEO_XHAIR_SEQMAX] = {}; // zero-init
 				if (bExportPressed)
@@ -1187,6 +1198,10 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 					ExportCrosshair(&pCrosshair->info, szClipboardCrosshair);
 					vgui::system()->SetClipboardText(szClipboardCrosshair, V_strlen(szClipboardCrosshair));
 					pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD;
+				}
+				else if (bTestCrosshairPressed)
+				{
+					pCrosshair->bPreviewDynamicAccuracy = !pCrosshair->bPreviewDynamicAccuracy;
 				}
 				else // bImportPressed
 				{
@@ -1265,9 +1280,12 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
 			NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
 			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
+			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE_TOTAL, &pCrosshair->info.iEDynamicType);
 		}
-		NeoUI::HeadingLabel(L"NETWORKING");
+		NeoUI::HeadingLabel(L"MISCELLANEOUS");
 		NeoUI::RingBoxBool(L"Show other players' crosshairs", &pCrosshair->bNetworkCrosshair);
+		NeoUI::RingBoxBool(L"Inaccuracy in scope", &pCrosshair->bInaccuracyInScope);
+		NeoUI::RingBoxBool(L"Hip fire crosshair", &pCrosshair->bHipFireCrosshair);
 	}
 	NeoUI::EndSection();
 }
