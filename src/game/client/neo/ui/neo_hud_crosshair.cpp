@@ -35,13 +35,14 @@ void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 		}
 
 		const bool bOdd = ((crh.iThick % 2) == 1);
+		const int iRBOffset = bOdd ? -1 : 0; // Right + bottom, odd-px offset
 		const int iHalf = crh.iThick / 2;
 		const int iStartThick = bOdd ? iHalf + 1 : iHalf;
 		const int iEndThick = iHalf;
 		vgui::IntRect iRects[4] = {
 			{ -iSize - crh.iGap, -iStartThick, -crh.iGap, iEndThick },	// Left
-			{ crh.iGap, -iStartThick, crh.iGap + iSize, iEndThick },	// Right
-			{ -iStartThick, crh.iGap, iEndThick, crh.iGap + iSize },	// Bottom
+			{ crh.iGap + iRBOffset, -iStartThick, crh.iGap + iSize + iRBOffset, iEndThick },	// Right
+			{ -iStartThick, crh.iGap + iRBOffset, iEndThick, crh.iGap + iSize + iRBOffset },	// Bottom
 			{ -iStartThick, -iSize - crh.iGap, iEndThick, -crh.iGap },	// Top (Must be last for bTopLine)
 		};
 		for (vgui::IntRect &rect : iRects)
