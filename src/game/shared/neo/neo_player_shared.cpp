@@ -108,6 +108,8 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 #endif
 }
 
+static ConVar sv_neo_bot_follow_stop_distance_sq_max("sv_neo_bot_follow_stop_distance_sq_max", "50000");
+static ConVar sv_neo_bot_follow_ping_ignore_delay_sec("sv_neo_bot_follow_ping_ignore_delay_sec", "3");
 #ifdef CLIENT_DLL
 extern ConVar cl_neo_player_pings;
 #endif // CLIENT_DLL
@@ -144,6 +146,23 @@ void CheckPingButton(CNEO_Player* player)
 		{
 			return;
 		}
+
+#ifdef GAME_DLL
+		player->m_vLastPing = tr.endpos;
+		float distSqrToPing = player->GetAbsOrigin().DistToSqr(tr.endpos);
+		if (distSqrToPing < sv_neo_bot_follow_stop_distance_sq_max.GetFloat())
+		{
+			player->m_flBotDynamicFollowDistanceSq = clamp(distSqrToPing, 5000, sv_neo_bot_follow_stop_distance_sq_max.GetFloat());
+		}
+		else
+		{
+			player->m_flBotDynamicFollowDistanceSq = 0.0f;
+		}
+
+		float pingCooldownTime = sv_neo_bot_follow_ping_ignore_delay_sec.GetFloat() + sqrt(distSqrToPing/100000)/2;
+		player->m_tBotPlayerPingCooldown.Start(pingCooldownTime);
+#endif
+
 
 		event->SetInt("userid", player->GetUserID());
 		event->SetInt("playerteam", player->GetTeamNumber());
