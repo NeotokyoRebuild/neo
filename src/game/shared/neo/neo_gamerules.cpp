@@ -1195,7 +1195,7 @@ void CNEORules::Think(void)
 					if (playerControllingMe)
 					{
 						// Will get XP from player possessing me based on their win conditions
-						return;
+						continue;
 					}
 					auto playerPossessedByMe = neoPlayer->m_hSpectatorTakeoverPlayerTarget.Get();
 					if (playerPossessedByMe)
@@ -3391,7 +3391,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				if (playerControllingMe)
 				{
 					// Will get XP from player possessing me based on their win conditions
-					return;
+					continue;
 				}
 				auto playerPossessedByMe = player->m_hSpectatorTakeoverPlayerTarget.Get();
 				if (playerPossessedByMe)

@@ -1872,7 +1872,7 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 	{
 		if (score >= 0)
 		{
-			// Don't penalize possessed/bot for takeover player's actions
+			// Reward possessed/bot for takeover player's actions
 			m_hSpectatorTakeoverPlayerTarget->AddPoints(score, false);
 			return;
 		}
