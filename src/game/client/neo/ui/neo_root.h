@@ -247,6 +247,19 @@ public:
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
 	SprayInfo m_sprayToDelete = {};
+
+	servernetadr_t m_favCacheNetAdr = {};
+	bool m_bFavCacheIsFav = false;
+	bool m_bAutoRefreshFav = false;
+
+	enum ERightClickServer
+	{
+		RIGHTCLICKSERVER_FAV = 0,
+		RIGHTCLICKSERVER_BLACKLIST,
+
+		RIGHTCLICKSERVER__TOTAL,
+	};
+	const wchar_t *pwszRightclickServer[RIGHTCLICKSERVER__TOTAL] = { L"", L"Add to blacklist" };
 };
 
 extern CNeoRoot *g_pNeoRoot;
