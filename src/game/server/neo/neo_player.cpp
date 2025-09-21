@@ -3313,7 +3313,7 @@ void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 void CNEO_Player::BecomeJuggernaut()
 {
 	NEORules()->JuggernautActivated(this);
-	if (m_iNextSpawnClassChoice = -1)
+	if (m_iNextSpawnClassChoice == -1)
 	{
 		m_iNextSpawnClassChoice = GetClass(); // Don't let the player respawn as the juggernaut
 	}
