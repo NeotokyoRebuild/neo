@@ -417,6 +417,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		pGeneral->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
+		pGeneral->iSpecReplacePlayerHintVersion = cvr->cl_neo_spec_replace_player_hint_version.GetInt();
 		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
 	}
@@ -699,6 +700,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pGeneral->iKdinfoToggletype);
+		cvr->cl_neo_spec_replace_player_hint_version.SetValue(pGeneral->iSpecReplacePlayerHintVersion);
 		NeoSettingsBackgroundWrite(ns);
 	}
 	{
@@ -898,6 +900,12 @@ static const wchar_t *KDMGINFO_TOGGLETYPE_LABELS[KDMGINFO_TOGGLETYPE__TOTAL] = {
 	L"Never", // KDMGINFO_TOGGLETYPE_NEVER
 };
 
+static const wchar_t *SPEC_REPLACE_PLAYER_HINT_LABELS[SPEC_REPLACE_PLAYER_HINT__TOTAL] = {
+	L"Never",   // SPEC_REPLACE_PLAYER_HINT_NONE
+	L"Minimal", // SPEC_REPLACE_PLAYER_HINT_MINIMAL,
+	L"Central", // SPEC_REPLACE_PLAYER_HINT_CENTRAL,
+};
+
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
@@ -937,6 +945,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pGeneral->bExtendedKillfeed);
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pGeneral->iKdinfoToggletype);
+	NeoUI::RingBox(L"Show spectator takeover hint", SPEC_REPLACE_PLAYER_HINT_LABELS, SPEC_REPLACE_PLAYER_HINT__TOTAL, &pGeneral->iSpecReplacePlayerHintVersion);
 
 	
 	NeoUI::HeadingLabel(L"MAIN MENU");

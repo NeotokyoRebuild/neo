@@ -47,6 +47,7 @@ void AddSubKeyNamed( KeyValues *pKeys, const char *pszName );
 #endif
 
 #ifdef NEO
+#include "../neo/ui/neo_root_settings.h"
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "c_neo_player.h"
@@ -62,6 +63,11 @@ extern IGameUIFuncs *gameuifuncs; // for key binding details
 // void DuckMessage(const char *str); // from vgui_teamfortressviewport.cpp
 
 ConVar spec_scoreboard( "spec_scoreboard", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE );
+
+#ifdef NEO
+extern ConVar cl_neo_spec_replace_player_hint_version;
+extern ConVar cl_neo_spec_replace_player_hint_time_sec;
+#endif // NEO
 
 CSpectatorGUI *g_pSpectatorGUI = NULL;
 
@@ -455,6 +461,19 @@ CSpectatorGUI::CSpectatorGUI(IViewPort *pViewPort) : EditablePanel( NULL, PANEL_
 	// m_pBannerImage = new ImagePanel( m_pTopBar, NULL );
 	m_pPlayerLabel = new Label( this, "playerlabel", "" );
 	m_pPlayerLabel->SetVisible( false );
+#ifdef NEO
+	m_pBotTakeoverHintLabel = new Label(this, "bottakeoverhintlabel", "");
+	m_pBotTakeoverHintLabel->SetVisible(false);
+
+	TextImage *hintImage = m_pBotTakeoverHintLabel->GetTextImage(); if (hintImage)
+	{
+		HFont hFallbackFont = scheme()->GetIScheme(GetScheme())->GetFont("DefaultVerySmallFallBack", false);
+		if (INVALID_FONT != hFallbackFont)
+		{
+			hintImage->SetUseFallbackFont(true, hFallbackFont);
+		}
+	}
+#endif // NEO
 	TextImage *image = m_pPlayerLabel->GetTextImage();
 	if ( image )
 	{
@@ -603,7 +622,8 @@ void CSpectatorGUI::OnThink()
 		if (m_pPlayerLabel->IsVisible())
 		{
 			UpdatePlayerLabel();
-                }
+			UpdateTakeoverHintLabel();
+		}
 
 #endif // NEO
 #ifdef TF_CLIENT_DLL
@@ -753,6 +773,7 @@ void CSpectatorGUI::Update()
 	// update player name filed, text & color
 #ifdef NEO
 	UpdatePlayerLabel();
+	UpdateTakeoverHintLabel();
 #else
 	if ( playernum > 0 && playernum <= gpGlobals->maxClients && gr )
 	{
@@ -881,6 +902,113 @@ void CSpectatorGUI::UpdatePlayerLabel()
 	else
 	{
 		m_pPlayerLabel->SetText(L"");
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Updates the bot takeover hint label
+//-----------------------------------------------------------------------------
+void CSpectatorGUI::UpdateTakeoverHintLabel()
+{
+	if (cl_neo_spec_replace_player_hint_version.GetInt() != SPEC_REPLACE_PLAYER_HINT_MINIMAL)
+	{
+		m_pBotTakeoverHintLabel->SetVisible(false);
+		return;
+	}
+
+	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
+	if (!pLocalPlayer)
+	{
+		m_pBotTakeoverHintLabel->SetVisible(false);
+		return;
+	}
+
+	C_BaseEntity* pObserverTargetEntity = pLocalPlayer->GetObserverTarget();
+	C_BasePlayer* pObserverTargetPlayer = (pObserverTargetEntity && pObserverTargetEntity->IsPlayer()) ? ToBasePlayer(pObserverTargetEntity) : nullptr;
+
+	// If the spectator target has changed, reset the hint shown flag
+	if (pObserverTargetPlayer != m_hLastSpectatedTarget)
+	{
+		m_bHintShownForCurrentTarget = false;
+	}
+	m_hLastSpectatedTarget = pObserverTargetPlayer;
+
+	auto eObserverMode = pLocalPlayer->GetObserverMode();
+	bool bIsSpectating = (eObserverMode == OBS_MODE_CHASE || eObserverMode == OBS_MODE_IN_EYE);
+
+	bool bShouldDisplayBotTakeoverHint = false;
+	if (bIsSpectating && pObserverTargetPlayer)
+	{
+		if (GameResources()->IsFakePlayer(pObserverTargetPlayer->entindex()))
+		{
+			if (pLocalPlayer->InSameTeam(pObserverTargetPlayer))
+			{
+				ConVar* pBotEnableCvar = g_pCVar->FindVar("sv_neo_spec_replace_player_bot_enable");
+				bool bBotEnable = pBotEnableCvar ? pBotEnableCvar->GetBool() : false;
+
+				if (bBotEnable)
+				{
+					// Check that spectator's XP is not at concerning griefing levels
+					int localPlayerXP = GameResources()->GetXP(pLocalPlayer->entindex());
+					ConVar* pMinExpCvar = g_pCVar->FindVar("sv_neo_spec_replace_player_min_exp");
+					int minExp = pMinExpCvar ? pMinExpCvar->GetInt() : 0;
+
+					bShouldDisplayBotTakeoverHint = (localPlayerXP >= minExp);
+				}
+			}
+		}
+	}
+
+	if (bShouldDisplayBotTakeoverHint)
+	{
+		if (!m_bHintShownForCurrentTarget)
+		{
+			m_pBotTakeoverHintLabel->SetVisible(true);
+			m_flDisplayTime = gpGlobals->curtime + cl_neo_spec_replace_player_hint_time_sec.GetFloat();
+			m_bHintShownForCurrentTarget = true;
+		}
+
+		if (m_pBotTakeoverHintLabel->IsVisible() && gpGlobals->curtime < m_flDisplayTime)
+		{
+			const char* useKeyBinding = engine->Key_LookupBinding("+use");
+			if (useKeyBinding && useKeyBinding[0] != '\0')
+			{
+				char szUppercaseKeyBinding[16];
+				V_strncpy(szUppercaseKeyBinding, useKeyBinding, sizeof(szUppercaseKeyBinding));
+				V_strupr(szUppercaseKeyBinding);
+				V_snwprintf(m_wszBotTakeoverHintText, ARRAYSIZE(m_wszBotTakeoverHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
+			}
+			else
+			{
+				V_wcsncpy(m_wszBotTakeoverHintText, L"Press Use To Control Bot", sizeof(m_wszBotTakeoverHintText));
+			}
+			m_pBotTakeoverHintLabel->SetText(m_wszBotTakeoverHintText);
+			m_pBotTakeoverHintLabel->InvalidateLayout(true, false);
+			m_pBotTakeoverHintLabel->SetVisible(true);
+
+			// Position the hint label above the player label
+			int wide, tall;
+			GetHudSize(wide, tall);
+			int hintTextWide, hintTextTall;
+			m_pBotTakeoverHintLabel->GetContentSize(hintTextWide, hintTextTall);
+
+			int playerLabelX, playerLabelY;
+			m_pPlayerLabel->GetPos(playerLabelX, playerLabelY);
+			int x = (wide - hintTextWide) / 2;
+			int y = playerLabelY - hintTextTall - 5; // # pixels offset above player label
+
+			m_pBotTakeoverHintLabel->SetPos(x, y);
+			m_pBotTakeoverHintLabel->SetSize(hintTextWide, hintTextTall);
+		}
+		else // Timer expired or not displaying hint
+		{
+			m_pBotTakeoverHintLabel->SetVisible(false);
+		}
+	}
+	else // bShouldDisplayBotTakeoverHint is false
+	{
+		m_pBotTakeoverHintLabel->SetVisible(false);
+		m_bHintShownForCurrentTarget = false;
 	}
 }
 #endif

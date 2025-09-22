@@ -81,6 +81,7 @@ protected:
 	void UpdateTimer();
 #ifdef NEO
 	void UpdatePlayerLabel();
+	void UpdateTakeoverHintLabel();
 #endif
 	void SetLogoImage(const char *image);
 
@@ -97,6 +98,12 @@ protected:
 #ifdef NEO
 	vgui::Label *m_scoreValueLabelJinrai = nullptr;
 	vgui::Label *m_scoreValueLabelNSF = nullptr;
+
+	vgui::Label* m_pBotTakeoverHintLabel{nullptr};
+	wchar_t m_wszBotTakeoverHintText[32];
+	float m_flDisplayTime{0.0f};
+	bool m_bHintShownForCurrentTarget{false};
+	CHandle<C_BasePlayer> m_hLastSpectatedTarget{nullptr};
 #endif
 
 	vgui::ImagePanel *m_pBannerImage;
