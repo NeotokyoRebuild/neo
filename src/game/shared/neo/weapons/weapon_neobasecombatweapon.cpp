@@ -1141,7 +1141,10 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 
 	// No supernatural gunowners allowed here
 	if (!pOwner->IsAlive())
+	{
+		Assert(false);
 		return false;
+	}
 
 	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
 
