@@ -1906,7 +1906,8 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			}
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_szMap, wszText, sizeof(wszText));
 			NeoUI::Label(L"Map:", wszText);
-			if (bP) V_swprintf_safe(wszText, L"%d/%d (%d)", gameServer->m_nPlayers - gameServer->m_nBotPlayers , gameServer->m_nMaxPlayers, gameServer->m_nBotPlayers);
+			if (bP) gameServer->m_nBotPlayers ? V_swprintf_safe(wszText, L"%d/%d (%d)", gameServer->m_nPlayers - gameServer->m_nBotPlayers , gameServer->m_nMaxPlayers, gameServer->m_nBotPlayers)
+												: V_swprintf_safe(wszText, L"%d/%d", gameServer->m_nPlayers, gameServer->m_nMaxPlayers);
 			NeoUI::Label(L"Players:", wszText);
 			if (bP) V_swprintf_safe(wszText, L"%ls", gameServer->m_bSecure ? L"Enabled" : L"Disabled");
 			NeoUI::Label(L"VAC:", wszText);
