@@ -975,7 +975,7 @@ void CNEORules::Think(void)
 	}
 
 	// Allow respawn if it's an idle, warmup round, pausing, or deathmatch-type gamemode
-	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_DM || m_nGameTypeSelected == NEO_GAME_TYPE_TDM);
+	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_DM || m_nGameTypeSelected == NEO_GAME_TYPE_TDM || m_nGameTypeSelected == NEO_GAME_TYPE_JGR);
 	if (bIsDMType || bIsIdleState || bIsPause)
 	{
 		CRecipientFilter filter;
@@ -1298,11 +1298,19 @@ void CNEORules::Think(void)
 			Assert(false);
 		}
 
-		m_iJuggernautPlayerIndex = 0;
 		m_bJuggernautItemExists = true;
 	}
 	else
 	{
+		if (m_pJuggernautPlayer && (m_pJuggernautPlayer->GetAbsOrigin().IsValid()))
+		{
+			m_vecJuggernautMarkerPos = m_pJuggernautPlayer->WorldSpaceCenter();
+		}
+		else
+		{
+			Assert(false);
+		}
+
 		m_bJuggernautItemExists = false;
 	}
 
@@ -1938,14 +1946,23 @@ void CNEORules::SelectTheVIP()
 		Assert(false);
 }
 
-void CNEORules::JuggernautActivated(CNEO_Player* pPlayer)
+void CNEORules::JuggernautActivated(CNEO_Player *pPlayer)
 {
 	if (GetGameType() == NEO_GAME_TYPE_JGR)
 	{
 		m_pJuggernautPlayer = pPlayer;
 		m_iJuggernautPlayerIndex = pPlayer->entindex();
 		m_pJuggernautItem = nullptr;
-		m_vecJuggernautMarkerPos = vec3_origin;
+	}
+}
+
+void CNEORules::JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut)
+{
+	if (GetGameType() == NEO_GAME_TYPE_JGR)
+	{
+		m_pJuggernautPlayer = nullptr;
+		m_iJuggernautPlayerIndex = 0;
+		m_pJuggernautItem = pJuggernaut;
 	}
 }
 

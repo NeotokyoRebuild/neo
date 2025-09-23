@@ -53,10 +53,18 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 	surface()->GetScreenSize(wide, tall);
 	SetBounds(0, 0, wide, tall);
 
-	m_hTex = surface()->CreateNewTextureID();
-	Assert(m_hTex > 0);
-	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/star", 1, false);
-	surface()->DrawGetTextureSize(m_hTex, m_iMarkerTexWidth, m_iMarkerTexHeight);
+	m_hStarTex = surface()->CreateNewTextureID();
+	Assert(m_hStarTex > 0);
+	surface()->DrawSetTextureFile(m_hStarTex, "vgui/hud/star", 1, false);
+	surface()->DrawGetTextureSize(m_hStarTex, m_iMarkerTexWidth, m_iMarkerTexHeight);
+
+	m_hNonStarTex = surface()->CreateNewTextureID();
+	Assert(m_hNonStarTex > 0);
+	surface()->DrawSetTextureFile(m_hNonStarTex, "vgui/hud/non_star", 1, false);
+
+	m_hUniqueTex = surface()->CreateNewTextureID();
+	Assert(m_hUniqueTex > 0);
+	surface()->DrawSetTextureFile(m_hUniqueTex, "vgui/hud/kill_melee", 1, false);
 
 	SetFgColor(Color(0, 0, 0, 0));
 	SetBgColor(Color(0, 0, 0, 0));
@@ -208,7 +216,21 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 
 		if (!drawOutline)
 		{
-			surface()->DrawSetTexture(m_hTex);
+			if (player->GetClass() != NEO_CLASS_JUGGERNAUT)
+			{
+				if (player->GetStar() == localPlayer->GetStar())
+				{
+					surface()->DrawSetTexture(m_hStarTex);
+				}
+				else
+				{
+					surface()->DrawSetTexture(m_hNonStarTex);
+				}
+			}
+			else
+			{
+				surface()->DrawSetTexture(m_hUniqueTex);
+			}
 			surface()->DrawSetColor(teamColor);
 			surface()->DrawTexturedRect(
 				x - m_iMarkerWidth,

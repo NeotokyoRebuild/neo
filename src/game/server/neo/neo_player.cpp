@@ -3413,10 +3413,9 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 			soundFilter.MakeReliable();
 			EmitSound(soundFilter, this->entindex(), soundParams);
 		}
-
-		NEORules()->m_pJuggernautPlayer = nullptr;
-		NEORules()->m_pJuggernautItem = pJuggernautItem;
 	}
+	NEORules()->JuggernautDeactivated(pJuggernautItem);
+
 	m_hDroppedJuggernautItem = pJuggernautItem;
 	DispatchSpawn(pJuggernautItem);
 }
