@@ -25,6 +25,7 @@ public:
 #endif
 
 	virtual unsigned int PhysicsSolidMaskForEntity() const final override { return MASK_PLAYERSOLID; }
+	virtual void UpdateOnRemove() override;
 
 private:
 #ifdef GAME_DLL

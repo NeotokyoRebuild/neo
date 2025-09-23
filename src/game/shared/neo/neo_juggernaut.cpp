@@ -29,6 +29,12 @@ BEGIN_DATADESC(CNEO_Juggernaut)
 #endif
 END_DATADESC()
 
+void CNEO_Juggernaut::UpdateOnRemove()
+{
+	StopSound("HUD.CPCharge");
+	BaseClass::UpdateOnRemove();
+}
+
 #ifdef GAME_DLL
 void CNEO_Juggernaut::Precache(void)
 {
@@ -108,8 +114,6 @@ void CNEO_Juggernaut::Spawn(void)
 	SetThink(&CNEO_Juggernaut::Think);
 	SetNextThink(TICK_NEVER_THINK);
 	SetContextThink(&CNEO_Juggernaut::AnimThink, gpGlobals->curtime + TICK_INTERVAL, "AnimThink");
-
-	StopSound("HUD.CPCharge"); // for round reset
 
 	BaseClass::Spawn();
 }
