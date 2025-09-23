@@ -775,6 +775,25 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	if (!victim_name)
 		victim_name = "";
 
+	// Override killer name if they took over another player
+	// Does not factor in clan tag since original display did not use clan tag
+	char killer_name_takeover_override_buf[MAX_PLAYER_NAME_LENGTH];
+	C_NEO_Player* pKillerPlayer = ToNEOPlayer(UTIL_PlayerByIndex(killer));
+	if (pKillerPlayer)
+	{
+		C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pKillerPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
+		if (pTakeoverTarget)
+		{
+			const char* pTakeoverTargetName = pTakeoverTarget->GetPlayerName();
+			int len = V_sprintf_safe(killer_name_takeover_override_buf, "%s (%s)", pTakeoverTargetName, killer_name);
+			if (len >= sizeof(killer_name_takeover_override_buf))
+			{
+				killer_name_takeover_override_buf[sizeof(killer_name_takeover_override_buf) - 2] = ')'; // cap off ()
+			}
+			killer_name = killer_name_takeover_override_buf;
+		}
+	}
+
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = killer;

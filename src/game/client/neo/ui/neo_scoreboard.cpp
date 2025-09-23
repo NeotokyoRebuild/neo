@@ -37,6 +37,7 @@
 
 #include "neo_player_shared.h"
 #include "neo_gamerules.h"
+#include "c_neo_player.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -737,20 +738,48 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	if ( !g_PR )
 		return;
 
+	char szClanTagWName[NEO_MAX_DISPLAYNAME];
 	kv->SetInt("playerIndex", playerIndex);
 	const int neoTeam = g_PR->GetTeam(playerIndex);
 	kv->SetInt("team", neoTeam);
-	const char *pClantag = g_PR->GetClanTag(playerIndex);
+	const char* pClantag = g_PR->GetClanTag(playerIndex);
 	if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
 	{
-		char szClanTagWName[NEO_MAX_DISPLAYNAME];
 		V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
-		kv->SetString("name", szClanTagWName);
 	}
 	else
 	{
-		kv->SetString("name", g_PR->GetPlayerName(playerIndex));
+		V_sprintf_safe(szClanTagWName, "%s", g_PR->GetPlayerName(playerIndex));
 	}
+
+	C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+	C_NEO_Player* pTakeoverTarget = pNeoPlayer ? ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get()) : nullptr;
+	C_NEO_Player* pImpersonatingMe = pNeoPlayer ? ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
+	char finalName[NEO_MAX_DISPLAYNAME];
+
+	if (pTakeoverTarget)
+	{
+		int len = V_sprintf_safe(finalName, "%s (%s)", pTakeoverTarget->GetPlayerName(), szClanTagWName);
+		if (len >= sizeof(finalName))
+		{
+			finalName[sizeof(finalName) - 2] = ')'; // cap off ()
+		}
+	}
+	else if (pImpersonatingMe)
+	{
+		int len = V_sprintf_safe(finalName, "%s (%s)", szClanTagWName, pImpersonatingMe->GetPlayerName());
+		if (len >= sizeof(finalName))
+		{
+			// TODO? Do we want to also display the clan tag of the impersonator?
+			finalName[sizeof(finalName) - 2] = ')'; // cap off ()
+		}
+	}
+	else
+	{
+		V_strncpy(finalName, szClanTagWName, sizeof(finalName));
+	}
+
+	kv->SetString("name", finalName);
 	kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
 
 	const int xp = g_PR->GetXP(playerIndex);
