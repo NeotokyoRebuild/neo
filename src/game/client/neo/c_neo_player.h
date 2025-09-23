@@ -175,9 +175,11 @@ public:
 	virtual void TeamChange(int iNewTeam) override;
 
 	// Spectator takeover
+	bool m_bCopyOverTakeoverPlayerDetails{ false };
+	CNetworkHandle(C_NEO_Player, m_hSpectatorTakeoverPlayerTarget);
+	CNetworkHandle(C_NEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
 	void CSpectatorTakeoverPlayerUpdateOnDataChanged();
 	void CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget);
-	CHandle<C_NEO_Player> m_hSpectatorTakeoverTarget;
 
 private:
 	void CheckThermOpticButtons();

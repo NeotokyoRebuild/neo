@@ -326,8 +326,8 @@ private:
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
 	void SpectatorTakeoverPlayerRevert(bool bHardReset=true);
 
-	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerTarget{nullptr};
-	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerImpersonatingMe{nullptr};
+	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerTarget);
+	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
 
 };
 
