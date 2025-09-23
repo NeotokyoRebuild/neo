@@ -1953,6 +1953,15 @@ void CNEORules::JuggernautActivated(CNEO_Player *pPlayer)
 		m_pJuggernautPlayer = pPlayer;
 		m_iJuggernautPlayerIndex = pPlayer->entindex();
 		m_pJuggernautItem = nullptr;
+
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			CBasePlayer *pTargetPlayer = UTIL_PlayerByIndex(i);
+			if (pTargetPlayer && pTargetPlayer->IsDead() && pTargetPlayer->DeathCount() > 0 && pTargetPlayer->GetTeamNumber() == pPlayer->GetTeamNumber())
+			{
+				pTargetPlayer->ForceRespawn();
+			}
+		}
 	}
 }
 
