@@ -35,6 +35,7 @@
 
 #include "vgui_avatarimage.h"
 
+#include "c_neo_player.h"
 #include "neo_player_shared.h"
 #include "neo_gamerules.h"
 
@@ -617,7 +618,11 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 				pPlayerList->ModifyItem( itemID, sectionID, playerData );
 			}
 
-			if ( gr->IsLocalPlayer( i ) )
+			C_NEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+			C_NEO_Player *pImpersonator = pPlayer ? ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
+			bool isImpersonatedByLocalPlayer = pImpersonator && (pImpersonator->entindex() == GetLocalPlayerIndex());
+
+			if ( gr->IsLocalPlayer( i ) || isImpersonatedByLocalPlayer )
 			{
 				Color color = bPlayerInDM ? COLOR_NEO_WHITE : gr->GetTeamColor(team);
 				color.SetColor(color.r(), color.g(), color.b(), 16);
@@ -740,17 +745,29 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	kv->SetInt("playerIndex", playerIndex);
 	const int neoTeam = g_PR->GetTeam(playerIndex);
 	kv->SetInt("team", neoTeam);
-	const char *pClantag = g_PR->GetClanTag(playerIndex);
-	if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
+
+	C_NEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+	C_NEO_Player *pImpersonator = pPlayer ? ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
+
+	if (pImpersonator)
 	{
-		char szClanTagWName[NEO_MAX_DISPLAYNAME];
-		V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
-		kv->SetString("name", szClanTagWName);
+		kv->SetString("name", pImpersonator->GetPlayerNameWithTakeoverContext(pImpersonator->entindex()));
 	}
 	else
 	{
-		kv->SetString("name", g_PR->GetPlayerName(playerIndex));
+		const char *pClantag = g_PR->GetClanTag(playerIndex);
+		if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
+		{
+			char szClanTagWName[NEO_MAX_DISPLAYNAME];
+			V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
+			kv->SetString("name", szClanTagWName);
+		}
+		else
+		{
+			kv->SetString("name", g_PR->GetPlayerName(playerIndex));
+		}
 	}
+
 	kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
 
 	const int xp = g_PR->GetXP(playerIndex);
@@ -764,13 +781,32 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 				((playerNeoTeam == TEAM_JINRAI || playerNeoTeam == TEAM_NSF) && (neoTeam != playerNeoTeam)) :
 				(!g_PR->IsLocalPlayer(playerIndex));
 
+	bool isImpersonated = pImpersonator != nullptr;
+	bool isImpersonating = pPlayer && pPlayer->m_hSpectatorTakeoverPlayerTarget.Get() != nullptr;
 	int statusIcon = -1;
 	if (neoTeam == TEAM_JINRAI || neoTeam == TEAM_NSF)
 	{
 		statusIcon = ((!SHOW_ENEMY_STATUS && oppositeTeam) || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
+
+		if (isImpersonating)
+		{
+			// Former spectators impersonating other players are (un)dead
+			statusIcon = m_iDeadIcon;
+		}
+		else if (isImpersonated)
+		{
+			// Do not show death icon for players being impersonated
+			statusIcon = -1;
+		}
 	}
 	kv->SetInt("status", statusIcon);
-	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(neoClassIdx));
+
+	int classToDisplay = neoClassIdx;
+	if (isImpersonating)
+	{
+		classToDisplay = pPlayer->m_iClassAtTimeOfDeath;
+	}
+	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(classToDisplay));
 
 	if ( g_PR->IsFakePlayer( playerIndex ) )
 	{
@@ -793,8 +829,19 @@ void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv )
 	// Update their avatar
 	if (UpdateAvatars() && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
 	{
+		int playerIndexForAvatar = playerIndex;
+
+		C_NEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+		C_NEO_Player *pImpersonator = pPlayer ? ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
+
+		if (pImpersonator)
+		{
+			// Show the avatar of the impersonator
+			playerIndexForAvatar = pImpersonator->entindex();
+		}
+
 		player_info_t pi;
-		if ( engine->GetPlayerInfo( playerIndex, &pi ) )
+		if ( engine->GetPlayerInfo( playerIndexForAvatar, &pi ) )
 		{
 			if ( pi.friendsID )
 			{

@@ -325,7 +325,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 	vgui::surface()->DrawSetTextColor(FadeColour(teamColor, fadeTextMultiplier));
 
 	if (settings->bShowName) {
-		auto playerName = player->GetNeoPlayerName();
+		auto playerName = player->GetPlayerNameWithTakeoverContext(player->entindex());
 		const char *playerClantag = player->GetNeoClantag();
 
 		if (settings->bPrependClantagToName && playerClantag && playerClantag[0])
