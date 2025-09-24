@@ -64,7 +64,7 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 
 	m_hUniqueTex = surface()->CreateNewTextureID();
 	Assert(m_hUniqueTex > 0);
-	surface()->DrawSetTextureFile(m_hUniqueTex, "vgui/hud/kill_melee", 1, false);
+	surface()->DrawSetTextureFile(m_hUniqueTex, "vgui/hud/unique_star", 1, false);
 
 	SetFgColor(Color(0, 0, 0, 0));
 	SetBgColor(Color(0, 0, 0, 0));
@@ -216,7 +216,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 
 		if (!drawOutline)
 		{
-			if (player->GetClass() != NEO_CLASS_JUGGERNAUT)
+			if (player->GetClass() != NEO_CLASS_JUGGERNAUT && player->GetClass() != NEO_CLASS_VIP)
 			{
 				if (player->GetStar() == localPlayer->GetStar())
 				{
