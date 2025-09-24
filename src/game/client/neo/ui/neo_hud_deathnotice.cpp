@@ -86,6 +86,7 @@ protected:
 	void SetColorForNoticePlayer( int iTeamNumber );
 	void RetireExpiredDeathNotices( void );
 	
+	const char* GetPlayerNameWithTakeoverContext(int player_index);
 	virtual void FireGameEvent( IGameEvent * event );
 	void AddPlayerDeath(IGameEvent* event);
 	void AddPlayerRankChange(IGameEvent* event);
@@ -113,6 +114,8 @@ private:
 	CPanelAnimationVar( bool, m_bRightJustify, "RightJustify", "1" );
 	CPanelAnimationVar( Color, m_BackgroundColour, "BackgroundColour", "20 20 20 220");
 	CPanelAnimationVar( Color, m_BackgroundColourInvolved, "BackgroundColourInvolved", "200 200 200 40");
+	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
+
 
 	CUtlVector<DeathNoticeItem> m_DeathNotices;
 };
@@ -698,8 +701,39 @@ void CNEOHud_DeathNotice::RetireExpiredDeathNotices( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Server's told us that someone's died
+// Purpose: Get the full name that takes into account spectator takeover
 //-----------------------------------------------------------------------------
+const char* CNEOHud_DeathNotice::GetPlayerNameWithTakeoverContext(int player_index)
+{
+	if (player_index == 0)
+		return "";
+
+	const char* base_name = g_PR->GetPlayerName(player_index);
+	if (!base_name)
+		base_name = "";
+
+	// Does not factor in clan tag since original display did not use clan tag
+	C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(player_index));
+	if (pPlayer)
+	{
+		C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
+		if (pTakeoverTarget)
+		{
+			const char* pTakeoverTargetName = pTakeoverTarget->GetPlayerName();
+			if (!pTakeoverTargetName)
+				pTakeoverTargetName = "";
+
+			int len = V_sprintf_safe(m_sNameWithTakeoverContextProcessingBuffer, "%s (%s)", pTakeoverTargetName, base_name);
+			if (len >= sizeof(m_sNameWithTakeoverContextProcessingBuffer))
+			{
+				m_sNameWithTakeoverContextProcessingBuffer[sizeof(m_sNameWithTakeoverContextProcessingBuffer) - 2] = ')'; // cap off ()
+			}
+			return m_sNameWithTakeoverContextProcessingBuffer;
+		}
+	}
+	return base_name;
+}
+
 ConVar cl_neo_hud_extended_killfeed("cl_neo_hud_extended_killfeed", "1", FCVAR_ARCHIVE, "Show extra events in killfeed", true, 0, true, 1);
 void CNEOHud_DeathNotice::FireGameEvent(IGameEvent* event)
 {
@@ -775,24 +809,10 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	if (!victim_name)
 		victim_name = "";
 
-	// Override killer name if they took over another player
-	// Does not factor in clan tag since original display did not use clan tag
-	char killer_name_takeover_override_buf[MAX_PLAYER_NAME_LENGTH];
-	C_NEO_Player* pKillerPlayer = ToNEOPlayer(UTIL_PlayerByIndex(killer));
-	if (pKillerPlayer)
-	{
-		C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pKillerPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
-		if (pTakeoverTarget)
-		{
-			const char* pTakeoverTargetName = pTakeoverTarget->GetPlayerName();
-			int len = V_sprintf_safe(killer_name_takeover_override_buf, "%s (%s)", pTakeoverTargetName, killer_name);
-			if (len >= sizeof(killer_name_takeover_override_buf))
-			{
-				killer_name_takeover_override_buf[sizeof(killer_name_takeover_override_buf) - 2] = ')'; // cap off ()
-			}
-			killer_name = killer_name_takeover_override_buf;
-		}
-	}
+	// Override killer/victim name if they took over another player
+	killer_name = GetPlayerNameWithTakeoverContext(killer);
+	victim_name = GetPlayerNameWithTakeoverContext(victim);
+	assists_name = GetPlayerNameWithTakeoverContext(assist);
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
@@ -882,9 +902,7 @@ void CNEOHud_DeathNotice::AddPlayerRankChange(IGameEvent* event)
 	const int newRank = event->GetInt("newRank");
 
 	// Get the name of the player
-	const char* playerRankChangeName = g_PR->GetPlayerName(playerRankChange);
-	if (!playerRankChangeName)
-		playerRankChangeName = "";
+	const char* playerRankChangeName = GetPlayerNameWithTakeoverContext(playerRankChange);
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
@@ -915,9 +933,7 @@ void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
 	const int playerCapturedGhost = engine->GetPlayerForUserID(event->GetInt("userid"));
 
 	// Get the name of the player
-	const char* playerCapturedGhostName = g_PR->GetPlayerName(playerCapturedGhost);
-	if (!playerCapturedGhostName)
-		playerCapturedGhostName = "";
+	const char* playerCapturedGhostName = GetPlayerNameWithTakeoverContext(playerCapturedGhost);
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
@@ -944,9 +960,7 @@ void CNEOHud_DeathNotice::AddVIPExtract(IGameEvent* event)
 	const int playerExtracted = engine->GetPlayerForUserID(event->GetInt("userid"));
 
 	// Name of VIP
-	const char* playerExtractedName = g_PR->GetPlayerName(playerExtracted);
-	if (!playerExtractedName)
-		playerExtractedName = "";
+	const char* playerExtractedName = GetPlayerNameWithTakeoverContext(playerExtracted);
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
@@ -974,12 +988,8 @@ void CNEOHud_DeathNotice::AddVIPDeath(IGameEvent* event)
 	const int VIPKiller = engine->GetPlayerForUserID(event->GetInt("attacker"));
 
 	// Names of vip and killer
-	const char* playerKilledName = g_PR->GetPlayerName(playerKilled);
-	if (!playerKilledName)
-		playerKilledName = "";
-	const char* VIPKillerName = g_PR->GetPlayerName(VIPKiller);
-	if (!VIPKillerName)
-		VIPKillerName = "";
+	const char* playerKilledName = GetPlayerNameWithTakeoverContext(playerKilled);
+	const char* VIPKillerName = GetPlayerNameWithTakeoverContext(VIPKiller);
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
