@@ -738,78 +738,130 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	if ( !g_PR )
 		return;
 
-	char szClanTagWName[NEO_MAX_DISPLAYNAME];
 	kv->SetInt("playerIndex", playerIndex);
 	const int neoTeam = g_PR->GetTeam(playerIndex);
 	kv->SetInt("team", neoTeam);
-	const char* pClantag = g_PR->GetClanTag(playerIndex);
-	if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
-	{
-		V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
-	}
-	else
-	{
-		V_sprintf_safe(szClanTagWName, "%s", g_PR->GetPlayerName(playerIndex));
-	}
 
 	C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
 	C_NEO_Player* pTakeoverTarget = pNeoPlayer ? ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get()) : nullptr;
 	C_NEO_Player* pImpersonatingMe = pNeoPlayer ? ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
-	char finalName[NEO_MAX_DISPLAYNAME];
+
+	CBasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
+	const int localPlayerNeoTeam = pLocalPlayer ? pLocalPlayer->GetTeamNumber() : TEAM_UNASSIGNED;
+	const bool bIsOppositeTeam = (NEORules()->IsTeamplay()) ?
+		((localPlayerNeoTeam == TEAM_JINRAI || localPlayerNeoTeam == TEAM_NSF) && (neoTeam != localPlayerNeoTeam)) :
+		(!g_PR->IsLocalPlayer(playerIndex));
 
 	if (pTakeoverTarget)
 	{
-		int len = V_sprintf_safe(finalName, "%s (%s)", pTakeoverTarget->GetPlayerName(), szClanTagWName);
+		// I am currently impersonating pTakeoverTarget
+		const int targetIndex = pTakeoverTarget->entindex();
+
+		if ( g_PR->IsFakePlayer( playerIndex ) )
+		{
+			// Assume bots in spec are SourceTV etc. Looks cleaner if their ping is just empty string.
+			kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "BOT");
+		}
+		else
+		{
+			kv->SetInt("ping", g_PR->GetPing( playerIndex ));
+		}
+
+		// e.g. BOT bob (alice)
+		// no clan tag to conserve display space
+		char finalName[NEO_MAX_DISPLAYNAME];
+		int len = V_sprintf_safe(finalName, "%s (%s)", g_PR->GetPlayerName(targetIndex), g_PR->GetPlayerName(playerIndex));
 		if (len >= sizeof(finalName))
 		{
 			finalName[sizeof(finalName) - 2] = ')'; // cap off ()
 		}
+		kv->SetString("name", finalName);
+
+		// "class" is my own class copied from earlier takeover event, hidden if on opposite team
+		kv->SetString("class", bIsOppositeTeam ? "" : GetNeoClassName(g_PR->GetClass(playerIndex)));
+
+		// "rank", "xp", "deaths" imitated from pTakeoverTarget
+		const int targetXp = g_PR->GetXP(targetIndex);
+		kv->SetString("rank", GetRankName(targetXp));
+		kv->SetInt("xp", targetXp);
+		kv->SetInt("deaths", g_PR->GetDeaths(targetIndex));
 	}
 	else if (pImpersonatingMe)
 	{
-		int len = V_sprintf_safe(finalName, "%s (%s)", szClanTagWName, pImpersonatingMe->GetPlayerName());
-		if (len >= sizeof(finalName))
+		// I am currently being possessed by pImpersonatingMe
+		const int impersonatorIndex = pImpersonatingMe->entindex();
+
+		if ( g_PR->IsFakePlayer( playerIndex ) )
 		{
-			// TODO? Do we want to also display the clan tag of the impersonator?
-			finalName[sizeof(finalName) - 2] = ')'; // cap off ()
+			// Indicate that this bot is being remote controlled
+			kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "SAT");
 		}
+		else
+		{
+			kv->SetInt("ping", g_PR->GetPing( playerIndex ));
+		}
+
+		// "class" is "Operator", hidden if on opposite team
+		// NEO JANK: This is a coverup for the lack of tracking of the hijacker's original class
+		// This is also meant as another indicator that this player is remote controlling another
+		kv->SetString("class", bIsOppositeTeam ? "" : "Operator");
+
+		// "name", "rank", "xp", "deaths" imitated from pImpersonatingMe
+		char szClanTagWName[NEO_MAX_DISPLAYNAME];
+		const char* pClantag = g_PR->GetClanTag(impersonatorIndex);
+		if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(impersonatorIndex)))
+		{
+			V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(impersonatorIndex));
+		}
+		else
+		{
+			V_sprintf_safe(szClanTagWName, "%s", g_PR->GetPlayerName(impersonatorIndex));
+		}
+		kv->SetString("name", szClanTagWName);
+
+		const int impersonatorXp = g_PR->GetXP(impersonatorIndex);
+		kv->SetString("rank", GetRankName(impersonatorXp));
+		kv->SetInt("xp", impersonatorXp);
+		kv->SetInt("deaths", g_PR->GetDeaths(impersonatorIndex));
 	}
 	else
 	{
-		V_strncpy(finalName, szClanTagWName, sizeof(finalName));
+		char szClanTagWName[NEO_MAX_DISPLAYNAME];
+		const char* pClantag = g_PR->GetClanTag(playerIndex);
+		if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
+		{
+			V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
+		}
+		else
+		{
+			V_sprintf_safe(szClanTagWName, "%s", g_PR->GetPlayerName(playerIndex));
+		}
+		kv->SetString("name", szClanTagWName);
+
+		kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
+		const int xp = g_PR->GetXP(playerIndex);
+		kv->SetString("rank", GetRankName(xp));
+		kv->SetInt("xp", xp);
+
+		kv->SetString("class", bIsOppositeTeam ? "" : GetNeoClassName(g_PR->GetClass(playerIndex)));
+
+		if ( g_PR->IsFakePlayer( playerIndex ) )
+		{
+			// Assume bots in spec are SourceTV etc. Looks cleaner if their ping is just empty string.
+			kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "BOT");
+		}
+		else
+		{
+			kv->SetInt("ping", g_PR->GetPing( playerIndex ));
+		}
 	}
-
-	kv->SetString("name", finalName);
-	kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
-
-	const int xp = g_PR->GetXP(playerIndex);
-	const int neoClassIdx = g_PR->GetClass(playerIndex);
-	kv->SetString("rank", GetRankName(xp));
-	kv->SetInt("xp", xp);
-
-	CBasePlayer* player = C_BasePlayer::GetLocalPlayer();
-	const int playerNeoTeam = player->GetTeamNumber();
-	const bool oppositeTeam = (NEORules()->IsTeamplay()) ?
-				((playerNeoTeam == TEAM_JINRAI || playerNeoTeam == TEAM_NSF) && (neoTeam != playerNeoTeam)) :
-				(!g_PR->IsLocalPlayer(playerIndex));
 
 	int statusIcon = -1;
 	if (neoTeam == TEAM_JINRAI || neoTeam == TEAM_NSF)
 	{
-		statusIcon = ((!SHOW_ENEMY_STATUS && oppositeTeam) || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
+		statusIcon = ((!SHOW_ENEMY_STATUS && bIsOppositeTeam) || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
 	}
 	kv->SetInt("status", statusIcon);
-	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(neoClassIdx));
-
-	if ( g_PR->IsFakePlayer( playerIndex ) )
-	{
-		// Assume bots in spec are SourceTV etc. Looks cleaner if their ping is just empty string.
-		kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "BOT");
-	}
-	else
-	{
-		kv->SetInt("ping", g_PR->GetPing( playerIndex ));
-	}
 
 	return;
 }
