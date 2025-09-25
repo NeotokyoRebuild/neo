@@ -124,6 +124,7 @@ DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 // Inputs
 DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
 DEFINE_INPUTFUNC(FIELD_VOID, "RefillAmmo", InputRefillAmmo),
+DEFINE_INPUTFUNC(FIELD_INTEGER, "SetTeam", InputSetTeam),
 
 END_DATADESC()
 
@@ -933,6 +934,8 @@ void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
 
 void CNEO_Player::PreThink(void)
 {
+	SpectatorTakeoverPlayerPreThink();
+
 	BaseClass::PreThink();
 
 	if (m_HL2Local.m_flSuitPower <= 0.0f && IsSprinting())
@@ -1727,6 +1730,28 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
+	else if (FStrEq(args[0], "spectatortakeoverplayer"))
+	{
+		if (args.ArgC() < 2)
+		{
+			return false;
+		}
+
+		int targetIndex = V_atoi(args[1]);
+		CBaseEntity* pTarget = UTIL_PlayerByUserId(targetIndex);
+		CNEO_Player* pPlayerToTakeover = ToNEOPlayer(pTarget);
+
+		if (pPlayerToTakeover)
+		{
+			SpectatorTryReplacePlayer(pPlayerToTakeover);
+		}
+		else
+		{
+			return false;
+		}
+
+		return true;
+	}
 
 	return BaseClass::ClientCommand(args);
 }
@@ -1841,8 +1866,19 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 	MessageEnd();
 }
 
-void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
+void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover)
 {
+	if (!bIgnorePlayerTakeover && m_hSpectatorTakeoverPlayerTarget.Get())
+	{
+		if (score >= 0)
+		{
+			// Reward possessed/bot for takeover player's actions
+			m_hSpectatorTakeoverPlayerTarget->AddPoints(score, false);
+			return;
+		}
+		// If a player made a mistake while taking over another player, continue to penalize them
+	}
+
 	// Positive score always adds
 	if (score < 0)
 	{
@@ -1911,6 +1947,8 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	{
 		SetDeadModel(info);
 	}
+
+	SpectatorTakeoverPlayerRevert(false); // soft reset: may still have live impostor
 }
 
 void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
@@ -2040,13 +2078,13 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 	{
 		for (int i = 0; i < NEO_GIB_LIMB__ENUM_COUNT; i++)
 		{
-			CGib::SpawnSpecificGibs(this, 1, 10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(i)));
+			SpawnSpecificGibs(10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(i)));
 		}
 		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_ALL);
 	}
 	else
 	{
-		CGib::SpawnSpecificGibs(this, 1, 10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType-1)));
+		SpawnSpecificGibs(10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType - 1)));
 		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_GORE | FX_BLOODSPRAY_DROPS);
 	}
 	SetPlayerCorpseModel(deadModelType);
@@ -2074,6 +2112,25 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 	{
 		m_hRagdoll->SetModel(model);
 	}
+}
+
+void CNEO_Player::SpawnSpecificGibs(float vMinVelocity, float vMaxVelocity, const char* cModelName)
+{
+	CGib* pGib = CREATE_ENTITY(CGib, "gib");
+
+	if (NEORules()->CanRespawnAnyTime())
+	{
+		constexpr float GIB_LIFETIME = 30.f;
+		pGib->Spawn(cModelName, GIB_LIFETIME);
+	}
+	else
+	{
+		pGib->Spawn(cModelName);
+	}
+
+	pGib->m_nBody = 0;
+	pGib->InitGib(this, vMinVelocity, vMaxVelocity);
+	pGib->SetOwnerEntity(this);
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
@@ -2193,6 +2250,12 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
+	// We had some cases of dead players chilling around with visible guns.
+	// While that will be addressed in ShouldDraw, here's a preventive measure
+	// to avoid that situation from occurring altogether.
+	if (IsDead())
+		return false;
+
 	auto weaponSlot = pWeapon->GetSlot();
 	// Only pick up grenades if we don't have grenades of that type NEOTODO (Adam) What if we have less than the maximum of that type (i.e one smoke grenade)? Can I carry more of a grenade than I spawn with?
 	if (weaponSlot == 3 && Weapon_GetPosition(weaponSlot, pWeapon->GetPosition()))
@@ -2282,7 +2345,7 @@ void CNEO_Player::SetPlayerTeamModel( void )
 }
 
 // Input to set the player's model (not skin)
-void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
+void CNEO_Player::InputSetPlayerModel( inputdata_t &inputdata )
 {
 	const char* modelpath = inputdata.value.String();
 
@@ -2296,7 +2359,7 @@ void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
 	}
 }
 
-void CNEO_Player::InputRefillAmmo( inputdata_t & inputdata)
+void CNEO_Player::InputRefillAmmo( inputdata_t &inputdata)
 {
 	CBaseCombatWeapon* pWeapon = GetActiveWeapon();
 
@@ -2308,6 +2371,11 @@ void CNEO_Player::InputRefillAmmo( inputdata_t & inputdata)
 			pWeapon->SetSecondaryAmmoCount(pWeapon->GetDefaultClip2());
 		}
 	}
+}
+
+void CNEO_Player::InputSetTeam( inputdata_t &inputdata )
+{
+	CBasePlayer::ChangeTeam( inputdata.value.Int() );
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
@@ -2681,6 +2749,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	NEORules()->m_bThinkCheckClantags = true;
+
+	SpectatorTakeoverPlayerRevert(); // hard reset: no longer on the same team
 
 	return true;
 }
@@ -3288,7 +3358,7 @@ void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 void CNEO_Player::BecomeJuggernaut()
 {
 	NEORules()->JuggernautActivated(this);
-	if (m_iNextSpawnClassChoice = -1)
+	if (m_iNextSpawnClassChoice == -1)
 	{
 		m_iNextSpawnClassChoice = GetClass(); // Don't let the player respawn as the juggernaut
 	}
@@ -3380,4 +3450,276 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 	}
 
 	return BaseClass::GetOverrideStepSound(pBaseStepSound);
+}
+
+// Start spectator takeover of player related code:
+ConVar sv_neo_spec_replace_player_loadout_enable("sv_neo_spec_replace_player_loadout_enable", "0", FCVAR_NONE, "Allow loadout change after spectator takeover.", true, 0, true, 1);
+ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.", true, 0, true, 1);
+ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "0", FCVAR_NONE, "Allow spectators to take over AFK players.", true, 0, true, 1);
+ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
+	"180", FCVAR_NONE,
+	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
+	true, -1, true, 999);
+ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
+	"0", FCVAR_NONE,
+	"Minimum experience allowed to takeover players ",
+	true, -999, true, 999);
+
+int CNEO_Player::GetSecondsUntilAFK() const
+{
+	// NEO JANK GetTimeSinceLastUserCommand seems to return 0 as long as the player is connected, so use an alternative timer
+	// GetTimeSinceWeaponFired was the simplest timer that worked, but should choose more robust criteria later
+	// TODO: Identify when player has triggered significant inputs and reset an AFK timer
+	// > 0 means more time needs to elapse before considered AFK
+	// <= 0 means player is considered AFK
+	return sv_neo_spec_replace_player_afk_time_sec.GetInt() - GetTimeSinceWeaponFired();
+}
+
+bool CNEO_Player::IsAFK() const
+{
+	return GetSecondsUntilAFK() <= 0;
+}
+
+void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
+{
+	CSingleUserRecipientFilter filter(this);
+
+	if (!IsObserver() && IsAlive())
+	{
+		DevWarning("A client initiating player takeover without being in observer mode might indicate server command bugs or tampering.\n");
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Not in observer mode.");
+		return;
+	}
+
+	if (m_iXP < sv_neo_spec_replace_player_min_exp.GetInt())
+	{
+		if (m_iXP < 0)
+		{
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Rankless Dogs are not authorized.");
+		}
+		else
+		{
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE,
+				"Shell takeover failed: Requires at least %s1 XP for authorization.",
+				sv_neo_spec_replace_player_min_exp.GetString());
+		}
+		return;
+	}
+
+	if (!pNeoPlayerToReplace)
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The target is not a valid candidate.");
+		return;
+	}
+
+	if (!pNeoPlayerToReplace->IsAlive())
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The target is dead.");
+		return;
+	}
+
+	if (!InSameTeam(pNeoPlayerToReplace))
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Target is not friendly.");
+		return;
+	}
+
+	const bool bIsTargetBot = pNeoPlayerToReplace->IsBot();
+	const bool bIsTargetAFK = pNeoPlayerToReplace->IsAFK();
+	const bool bAllowBotTakeover = sv_neo_spec_replace_player_bot_enable.GetBool();
+	const bool bAllowAfkTakeover = sv_neo_spec_replace_player_afk_enable.GetBool();
+
+	// If no valid condition is met, determine the specific reason and inform the user.
+	if (bIsTargetBot)
+	{
+		if (!bAllowBotTakeover)
+		{
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over bots is disabled.");
+			return;
+		}
+	}
+	else if (bIsTargetAFK)
+	{
+		if (!bAllowAfkTakeover)
+		{
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over inactive shells is disabled.");
+			return;
+		}
+	}
+	else
+	{
+		int secondsLeft = pNeoPlayerToReplace->GetSecondsUntilAFK();
+		UTIL_ClientPrintFilter(
+			filter,
+			HUD_PRINTCONSOLE,
+			UTIL_VarArgs("Shell takeover failed: Shell is not considered inactive until %d seconds.", secondsLeft) );
+		return;
+	}
+
+	m_bSpectatorTakeoverPlayerPending = true;
+	m_hSpectatorTakeoverPlayerTarget = pNeoPlayerToReplace;
+	ForceRespawn();
+
+	// Send client confirmation to smooth out transition
+	CBroadcastRecipientFilter updatefilter;
+	updatefilter.MakeReliable();
+	UserMessageBegin(updatefilter, "CSpectatorTakeoverPlayer");
+		WRITE_LONG(this->GetUserID());
+		WRITE_LONG(pNeoPlayerToReplace->GetUserID());
+	MessageEnd();
+}
+
+void CNEO_Player::SpectatorTakeoverPlayerPreThink()
+{
+	if (m_bSpectatorTakeoverPlayerPending)
+	{
+		if (!IsAlive() || IsObserver())
+		{
+			// Something is wrong, abort the takeover.
+			DevWarning("Shell takeover failed: Player state was invalid after ForceRespawn().\n");
+			m_bSpectatorTakeoverPlayerPending = false;
+			m_hSpectatorTakeoverPlayerTarget = nullptr;
+			return;
+		}
+
+		CNEO_Player* pPlayerTakeoverTarget = m_hSpectatorTakeoverPlayerTarget.Get();
+
+		if (pPlayerTakeoverTarget)
+		{
+			m_iNeoClass = pPlayerTakeoverTarget->m_iNeoClass;
+			m_iNeoSkin = pPlayerTakeoverTarget->m_iNeoSkin;
+			SetMaxHealth(pPlayerTakeoverTarget->GetMaxHealth());
+			SetHealth(pPlayerTakeoverTarget->GetHealth());
+			SetArmorValue(pPlayerTakeoverTarget->ArmorValue());
+			m_HL2Local.m_cloakPower = pPlayerTakeoverTarget->m_HL2Local.m_cloakPower;
+			m_HL2Local.m_flSuitPower = pPlayerTakeoverTarget->m_HL2Local.m_flSuitPower;
+			m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
+
+			m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
+			m_bHasBeenAirborneForTooLongToSuperJump = pPlayerTakeoverTarget->m_bHasBeenAirborneForTooLongToSuperJump;
+			m_bInAim = pPlayerTakeoverTarget->m_bInAim;
+			Weapon_SetZoom(pPlayerTakeoverTarget->m_bInAim);
+			m_bCarryingGhost = pPlayerTakeoverTarget->m_bCarryingGhost;
+			m_bInLean = pPlayerTakeoverTarget->m_bInLean;
+			m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
+			m_iNextSpawnClassChoice = pPlayerTakeoverTarget->m_iNextSpawnClassChoice;
+			m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
+			m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
+			m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
+			m_botThermOpticCamoDisruptedTimer.Invalidate(); // taken over by player
+			m_bFirstDeathTick = pPlayerTakeoverTarget->m_bFirstDeathTick;
+			m_bCorpseSet = pPlayerTakeoverTarget->m_bCorpseSet;
+			m_bPreviouslyReloading = pPlayerTakeoverTarget->m_bPreviouslyReloading;
+			m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
+			m_bIsPendingSpawnForThisRound = pPlayerTakeoverTarget->m_bIsPendingSpawnForThisRound;
+			m_bAllowGibbing = pPlayerTakeoverTarget->m_bAllowGibbing;
+			m_iBotDetectableBleedingInjuryEvents = pPlayerTakeoverTarget->m_iBotDetectableBleedingInjuryEvents;
+
+			m_bInVision = pPlayerTakeoverTarget->m_bInVision;
+			m_nVisionLastTick = pPlayerTakeoverTarget->m_nVisionLastTick;
+
+
+			// Transfer weapons from the takeover target.
+			RemoveAllItems(false);
+			CBaseCombatWeapon* pTakeoverTargetActiveWeapon = pPlayerTakeoverTarget->GetActiveWeapon();
+			for (int i = 0; i < MAX_WEAPONS; ++i)
+			{
+				CBaseCombatWeapon* pTakeoverTargetWeapon = pPlayerTakeoverTarget->GetWeapon(i);
+				if (pTakeoverTargetWeapon)
+				{
+					pPlayerTakeoverTarget->Weapon_Detach(pTakeoverTargetWeapon);
+					Weapon_Equip(pTakeoverTargetWeapon);
+				}
+			}
+
+			// After giving weapons, ensure the correct active weapon is set.
+			if (pTakeoverTargetActiveWeapon)
+			{
+				CBaseCombatWeapon* pPlayerActiveWeapon = Weapon_OwnsThisType(pTakeoverTargetActiveWeapon->GetClassname());
+				if (pPlayerActiveWeapon)
+				{
+					Weapon_Switch(pPlayerActiveWeapon);
+				}
+			}
+
+			// TODO: Limit loadout options based on takeover target's XP rank.
+			// Currently, loadout options are based on former spectator's XP rank.
+			// To evaluate loadout options on takeover target's XP rank, need to send networked takeover state to client.
+			// In an active game, bots will likely already be ineligible for loadout pick, by the time an average takeover happens.
+			m_bIneligibleForLoadoutPick = sv_neo_spec_replace_player_loadout_enable.GetBool() ?
+				pPlayerTakeoverTarget->m_bIneligibleForLoadoutPick
+				: true;
+
+			// Teleport the takeover target's location and velocity.
+			SetAbsOrigin(pPlayerTakeoverTarget->GetAbsOrigin());
+			SetAbsAngles(pPlayerTakeoverTarget->GetAbsAngles());
+			SetAbsVelocity(pPlayerTakeoverTarget->GetAbsVelocity());
+			SetLocalAngles(pPlayerTakeoverTarget->GetLocalAngles());
+			SetViewOffset(VEC_VIEW_NEOSCALE(this));
+			SnapEyeAngles( pPlayerTakeoverTarget->EyeAngles() ); 
+			SetPlayerTeamModel();
+			InitSprinting();
+
+			// Put the takeover target in stasis.
+			pPlayerTakeoverTarget->SpectatorTakeoverPlayerInitiate(this);
+		}
+
+		m_bSpectatorTakeoverPlayerPending = false;
+	}
+}
+
+void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
+{
+    m_hSpectatorTakeoverPlayerImpersonatingMe = pPlayer;
+    pPlayer->m_hSpectatorTakeoverPlayerTarget = this;
+
+    // Strip all weapons and items so replaced player is truly disarmed.
+    RemoveAllItems(true);
+
+    // Silently remove player from the game.
+    SetSolid(SOLID_NONE);
+    AddEffects(EF_NODRAW);
+    m_takedamage = DAMAGE_NO;
+    m_lifeState = LIFE_DEAD;
+    AddFlag(FL_NOTARGET);
+}
+
+void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
+{
+	// This player was taken off the field, so revert takeover status
+	CNEO_Player* pPlayerTakenOver = m_hSpectatorTakeoverPlayerTarget.Get();
+	if (pPlayerTakenOver)
+	{
+		pPlayerTakenOver->m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
+
+		// Determine if we should kick taken over player to spectator team
+		if ( pPlayerTakenOver && !pPlayerTakenOver->IsBot()  // player is human
+			&& !pPlayerTakenOver->IsAlive() // player has not respawned by takeover
+			&& pPlayerTakenOver->IsAFK() ) // player is still AFK
+		{
+			pPlayerTakenOver->ChangeTeam(TEAM_SPECTATOR);
+		}
+	}
+	m_hSpectatorTakeoverPlayerTarget = nullptr;
+
+	// Hard Reset Criteria: Does it make sense to route points to this player anymore?
+	if (bHardReset)
+	{
+		// Examples for when to hard reset:
+		// For new round reset where all players will be reset
+		// For a player that disconnects, so they can no longer receive points
+		// When a possessEE changes teams, it doesn't make sense to penalize possessOR for doing well
+
+		// Example for when not to enter here:
+		// Player A is AFK, while on same team as Player B and Bot C
+		// Player B is a spectator that takes over Player A
+		// Player A returns to keyboard during round and takes over Bot C
+		// Player A dies: should reset target Bot C, but not impersonator Player B
+		// because Player B is still scoring points for Player A, despite Player A being dead again
+		if (m_hSpectatorTakeoverPlayerImpersonatingMe.Get())
+		{
+			m_hSpectatorTakeoverPlayerImpersonatingMe->m_hSpectatorTakeoverPlayerTarget = nullptr;
+		}
+		m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
+	}
 }

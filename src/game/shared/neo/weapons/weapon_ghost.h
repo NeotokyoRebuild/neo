@@ -27,7 +27,10 @@ public:
 #endif
 
 	CWeaponGhost(void);
-	
+#ifdef GAME_DLL
+	virtual ~CWeaponGhost();
+#endif
+
 	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }

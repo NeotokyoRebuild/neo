@@ -14,6 +14,8 @@
 	#define max(a,b)  (((a) > (b)) ? (a) : (b))
 #endif
 
+#define USERID2NEOPLAYER(i) ToNEOPlayer( ClientEntityList().GetEnt( engine->GetPlayerForUserID( i ) ) )
+
 #include "neo_predicted_viewmodel.h"
 #include "neo_misc.h"
 #include "shareddefs.h"
@@ -317,11 +319,11 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const EClNeoDisplayNameFlag flags = CL_NEODISPLAYNAME_FLAG_NONE);
 
 // NEO NOTE (nullsystem): Max string length is 
-// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;"
-// which is ~43 for v2 serialization | 64 length is enough for now till
+// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;2;"
+// which is ~45 for v3 serialization | 64 length is enough for now till
 // more comes in
 static constexpr const int NEO_XHAIR_SEQMAX = 64;
-#define NEO_CROSSHAIR_DEFAULT "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;"
+#define NEO_CROSSHAIR_DEFAULT "3;0;-1;0;6;0.000;2;4;0;0;1;0;0;2;"
 
 #define TUTORIAL_MAP_CLASSES "ntre_class_tut"
 #define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"

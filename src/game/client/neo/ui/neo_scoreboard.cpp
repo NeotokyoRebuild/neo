@@ -239,7 +239,7 @@ void CNEOScoreBoard::PostApplySchemeSettings( vgui::IScheme *pScheme )
 	SetBgColor( Color( 0,0,0,0) );
 
 	// What happens if PostApplySchemeSettings runs the instant the local player's team changes?
-	if (GetLocalPlayerTeam() == TEAM_NSF)
+	if (GetLocalPlayerTeam() == TEAM_NSF && cl_neo_hud_team_swap_sides.GetBool())
 	{
 		m_pJinraiPlayerList->GetPos(m_iRightTeamXPos, m_iRightTeamYPos);
 		m_pNSFPlayerList->GetPos(m_iLeftTeamXPos, m_iLeftTeamYPos);

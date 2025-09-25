@@ -393,6 +393,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
+		pGeneral->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
 		pGeneral->bShowHints = cvr->cl_neo_showhints.GetBool();
@@ -425,10 +426,59 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pKeys->bDeveloperConsole = cvr->cl_neo_toggleconsole.GetBool();
 		if (!(flagsKeys & NeoSettings::Keys::SKIP_KEYS))
 		{
+			static constexpr const int MAX_BCVAL = 2;
+			struct BcVal
+			{
+				ButtonCode_t list[MAX_BCVAL];
+				int iSize;
+			};
+			CUtlHashtable<CUtlConstString, BcVal> htAllBinds;
+			for (int iBc = KEY_FIRST; iBc <= BUTTON_CODE_LAST; ++iBc)
+			{
+				const ButtonCode_t bc = static_cast<ButtonCode_t>(iBc);
+				const char *pszBinding = gameuifuncs->GetBindingForButtonCode(bc);
+				if (pszBinding)
+				{
+					auto hdl = htAllBinds.Find(pszBinding);
+					if (hdl == htAllBinds.InvalidHandle())
+					{
+						BcVal bcVal = {}; // zero-init
+						hdl = htAllBinds.Insert(pszBinding, bcVal);
+					}
+					if (hdl != htAllBinds.InvalidHandle())
+					{
+						BcVal &bcVal = htAllBinds.Element(hdl);
+						if (bcVal.iSize < MAX_BCVAL)
+						{
+							bcVal.list[bcVal.iSize++] = bc;
+						}
+					}
+				}
+			}
+
 			for (int i = 0; i < pKeys->iBindsSize; ++i)
 			{
 				auto *bind = &pKeys->vBinds[i];
 				bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
+				bind->bcSecondaryNext = bind->bcSecondaryCurrent = BUTTON_CODE_NONE;
+				if (bind->bcCurrent > BUTTON_CODE_NONE)
+				{
+					auto hdl = htAllBinds.Find(bind->szBindingCmd);
+					if (hdl != htAllBinds.InvalidHandle())
+					{
+						const auto &bcVal = htAllBinds.Element(hdl);
+						const int iMaxIdxBc = Min(bcVal.iSize, MAX_BCVAL);
+						for (int idxBc = 0; idxBc < iMaxIdxBc; ++idxBc)
+						{
+							const ButtonCode_t bc = bcVal.list[idxBc];
+							if (bc != bind->bcCurrent)
+							{
+								bind->bcSecondaryNext = bind->bcSecondaryCurrent = bc;
+								break;
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -441,6 +491,14 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pMouse->bReverse = (cvr->m_pitch.GetFloat() < 0.0f);
 		pMouse->bCustomAccel = (cvr->m_customaccel.GetInt() == 3);
 		pMouse->flExponent = cvr->m_customaccel_exponent.GetFloat();
+	}
+	{
+		NeoSettings::Controller *pController = &ns->controller;
+		pController->bEnabled = cvr->joystick.GetBool();
+		pController->bReverse = cvr->joy_inverty.GetBool();
+		pController->bSwapSticks = cvr->joy_movement_stick.GetBool();
+		pController->flSensHorizontal = -cvr->joy_yawsensitivity.GetFloat(); // Negate convar
+		pController->flSensVertical = cvr->joy_pitchsensitivity.GetFloat();
 	}
 	{
 		NeoSettings::Audio *pAudio = &ns->audio;
@@ -565,8 +623,11 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		{
 			ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
 		}
+		pCrosshair->bPreviewDynamicAccuracy = false;
 		pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_NONE;
 		pCrosshair->bNetworkCrosshair = cvr->cl_neo_crosshair_network.GetBool();
+		pCrosshair->bInaccuracyInScope = cvr->cl_neo_crosshair_scope_inaccuracy.GetBool();
+		pCrosshair->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 	}
 }
 
@@ -625,6 +686,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
+		cvr->cl_neo_crosshair_hip_fire.SetValue(pGeneral->bHipFireCrosshair);
 		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_neo_showhints.SetValue(pGeneral->bShowHints);
@@ -658,14 +720,24 @@ void NeoSettingsSave(const NeoSettings *ns)
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			auto *bind = const_cast<NeoSettings::Keys::Bind *>(&pKeys->vBinds[i]);
-			if (bind->szBindingCmd[0] != '\0' && bind->bcNext > KEY_NONE)
+			if (bind->szBindingCmd[0] != '\0')
 			{
 				char cmdStr[128];
-				const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcNext);
-				V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
-				engine->ClientCmd_Unrestricted(cmdStr);
+				if (bind->bcNext > KEY_NONE)
+				{
+					const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcNext);
+					V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
+					engine->ClientCmd_Unrestricted(cmdStr);
+				}
+				if (bind->bcSecondaryNext > KEY_NONE)
+				{
+					const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcSecondaryNext);
+					V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
+					engine->ClientCmd_Unrestricted(cmdStr);
+				}
 			}
 			bind->bcCurrent = bind->bcNext;
+			bind->bcSecondaryCurrent = bind->bcSecondaryNext;
 		}
 		// Reset the cache to none so it'll refresh on next KeyCodeTyped
 		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
@@ -680,6 +752,14 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->m_pitch.SetValue(pMouse->bReverse ? -absPitch : absPitch);
 		cvr->m_customaccel.SetValue(pMouse->bCustomAccel ? 3 : 0);
 		cvr->m_customaccel_exponent.SetValue(pMouse->flExponent);
+	}
+	{
+		const NeoSettings::Controller *pController = &ns->controller;
+		cvr->joystick.SetValue(pController->bEnabled);
+		cvr->joy_inverty.SetValue(pController->bReverse);
+		cvr->joy_movement_stick.SetValue(pController->bSwapSticks);
+		cvr->joy_yawsensitivity.SetValue(-pController->flSensHorizontal); // Negate convar
+		cvr->joy_pitchsensitivity.SetValue(pController->flSensVertical);
 	}
 	{
 		const NeoSettings::Audio *pAudio = &ns->audio;
@@ -753,6 +833,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		ExportCrosshair(&pCrosshair->info, szSequence);
 		cvr->cl_neo_crosshair.SetValue(szSequence);
 		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
+		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
+		cvr->cl_neo_crosshair_hip_fire.SetValue(pCrosshair->bHipFireCrosshair);
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
@@ -791,6 +873,7 @@ void NeoSettingsResetToDefault(NeoSettings *ns)
 			engine->ClientCmd_Unrestricted(cmdStr);
 		}
 		bind->bcCurrent = bind->bcNext = bind->bcDefault;
+		bind->bcSecondaryCurrent = bind->bcSecondaryNext = BUTTON_CODE_NONE;
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
@@ -915,7 +998,15 @@ void NeoSettings_Keys(NeoSettings *ns)
 	NeoSettings::Keys *pKeys = &ns->keys;
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pKeys->bWeaponFastSwitch);
 	NeoUI::RingBoxBool(L"Developer console", &pKeys->bDeveloperConsole);
+	NeoUI::Pad();
 	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	static constexpr const int KEYS_LAYOUT[] = { 40, 30, -1 };
+	NeoUI::SetPerRowLayout(ARRAYSIZE(KEYS_LAYOUT), KEYS_LAYOUT);
+	NeoUI::Label(L"Name");
+	NeoUI::Label(L"Primary");
+	NeoUI::Label(L"Secondary");
+	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 	for (int i = 0; i < pKeys->iBindsSize; ++i)
 	{
 		const auto &bind = pKeys->vBinds[i];
@@ -925,27 +1016,52 @@ void NeoSettings_Keys(NeoSettings *ns)
 		}
 		else
 		{
+			NeoUI::MultiWidgetHighlighter(3);
+			NeoUI::Label(bind.wszDisplayText);
 			wchar_t wszBindBtnName[64];
 			const char *szBindBtnName = g_pInputSystem->ButtonCodeToString(bind.bcNext);
 			g_pVGuiLocalize->ConvertANSIToUnicode(szBindBtnName, wszBindBtnName, sizeof(wszBindBtnName));
-			if (NeoUI::Button(bind.wszDisplayText, wszBindBtnName).bPressed)
+			if (NeoUI::Button(wszBindBtnName).bPressed)
 			{
 				ns->iNextBinding = i;
+				ns->bNextBindingSecondary = false;
+			}
+			const char *szBindSecondaryBtnName = g_pInputSystem->ButtonCodeToString(bind.bcSecondaryNext);
+			g_pVGuiLocalize->ConvertANSIToUnicode(szBindSecondaryBtnName, wszBindBtnName, sizeof(wszBindBtnName));
+			if (NeoUI::Button(wszBindBtnName).bPressed)
+			{
+				ns->iNextBinding = i;
+				ns->bNextBindingSecondary = true;
 			}
 		}
 	}
 }
 
-void NeoSettings_Mouse(NeoSettings *ns)
+void NeoSettings_MouseController(NeoSettings *ns)
 {
-	NeoSettings::Mouse *pMouse = &ns->mouse;
-	NeoUI::Slider(L"Sensitivity", &pMouse->flSensitivity, 0.1f, 10.0f, 2, 0.25f);
-	NeoUI::Slider(L"Zoom Sensitivity Ratio", &pMouse->flZoomSensitivityRatio, 0.f, 10.0f, 2, 0.25f);
-	NeoUI::RingBoxBool(L"Raw input", &pMouse->bRawInput);
-	NeoUI::RingBoxBool(L"Mouse Filter", &pMouse->bFilter);
-	NeoUI::RingBoxBool(L"Mouse Reverse", &pMouse->bReverse);
-	NeoUI::RingBoxBool(L"Custom Acceleration", &pMouse->bCustomAccel);
-	NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
+	{
+		NeoUI::HeadingLabel(L"MOUSE");
+		NeoSettings::Mouse *pMouse = &ns->mouse;
+		NeoUI::Slider(L"Sensitivity", &pMouse->flSensitivity, 0.1f, 10.0f, 2, 0.25f);
+		NeoUI::Slider(L"Zoom Sensitivity Ratio", &pMouse->flZoomSensitivityRatio, 0.f, 10.0f, 2, 0.25f);
+		NeoUI::RingBoxBool(L"Raw input", &pMouse->bRawInput);
+		NeoUI::RingBoxBool(L"Mouse Filter", &pMouse->bFilter);
+		NeoUI::RingBoxBool(L"Mouse Reverse", &pMouse->bReverse);
+		NeoUI::RingBoxBool(L"Custom Acceleration", &pMouse->bCustomAccel);
+		NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
+	}
+	{
+		NeoUI::HeadingLabel(L"CONTROLLER");
+		NeoSettings::Controller *pController = &ns->controller;
+		NeoUI::RingBoxBool(L"Enable controller", &pController->bEnabled);
+		if (pController->bEnabled)
+		{
+			NeoUI::RingBoxBool(L"Reverse stick", &pController->bReverse);
+			NeoUI::RingBoxBool(L"Swap sticks", &pController->bSwapSticks);
+			NeoUI::Slider(L"Horizontal sensitivity", &pController->flSensHorizontal, 0.5f, 7.0f, 2, 0.1f);
+			NeoUI::Slider(L"Vertical sensitivity", &pController->flSensVertical, 0.5f, 7.0f, 2, 0.1f);
+		}
+	}
 }
 
 void NeoSettings_Audio(NeoSettings *ns)
@@ -1038,7 +1154,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * IVIEW_ROWS;
 
 	const bool bTextured = CROSSHAIR_FILES[pCrosshair->info.iStyle][0];
-	NeoUI::BeginSection();
+	NeoUI::BeginSection(NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
 	{
 		if (bTextured)
 		{
@@ -1053,7 +1169,8 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		}
 		else
 		{
-			PaintCrosshair(pCrosshair->info,
+			const int iPreviewDynamicAccuracy = (pCrosshair->bPreviewDynamicAccuracy) ? (Max(0, (int)(sin(gpGlobals->curtime) * 24) + 16)) : 0;
+			PaintCrosshair(pCrosshair->info, iPreviewDynamicAccuracy,
 						   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
 						   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
 		}
@@ -1061,11 +1178,18 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 		NeoUI::SetPerRowLayout(4);
 		{
-			const bool bExportPressed = NeoUI::Button(L"Export to clipboard").bPressed;
-			const bool bImportPressed = NeoUI::Button(L"Import from clipboard").bPressed;
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			static constexpr const ButtonCode_t BUTTON_CODES_EXPORT[] = { KEY_XBUTTON_X, STEAMCONTROLLER_X };
+			static constexpr const ButtonCode_t BUTTON_CODES_IMPORT[] = { KEY_XBUTTON_Y, STEAMCONTROLLER_Y };
+			const bool bExportPressed = NeoUI::Button(NeoUI::HintAlt(L"Export", L"Export (X)")).bPressed ||
+					NeoUI::Bind(BUTTON_CODES_EXPORT, ARRAYSIZE(BUTTON_CODES_EXPORT));
+			const bool bTestCrosshairPressed = NeoUI::Button(L"Test dynamic").bPressed;
+			const bool bImportPressed = NeoUI::Button(NeoUI::HintAlt(L"Import", L"Import (Y)")).bPressed ||
+					NeoUI::Bind(BUTTON_CODES_IMPORT, ARRAYSIZE(BUTTON_CODES_IMPORT));
 			const bool bDefaultPressed = NeoUI::Button(L"Reset to default").bPressed;
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 
-			if (bExportPressed || bImportPressed)
+			if (bExportPressed || bTestCrosshairPressed || bImportPressed)
 			{
 				char szClipboardCrosshair[NEO_XHAIR_SEQMAX] = {}; // zero-init
 				if (bExportPressed)
@@ -1074,6 +1198,10 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 					ExportCrosshair(&pCrosshair->info, szClipboardCrosshair);
 					vgui::system()->SetClipboardText(szClipboardCrosshair, V_strlen(szClipboardCrosshair));
 					pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD;
+				}
+				else if (bTestCrosshairPressed)
+				{
+					pCrosshair->bPreviewDynamicAccuracy = !pCrosshair->bPreviewDynamicAccuracy;
 				}
 				else // bImportPressed
 				{
@@ -1129,7 +1257,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 	g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen - IVIEW_ROWS);
-	NeoUI::BeginSection(true);
+	NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
 	{
 		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->info.iStyle);
@@ -1152,9 +1280,12 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
 			NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
 			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
+			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE_TOTAL, &pCrosshair->info.iEDynamicType);
 		}
-		NeoUI::HeadingLabel(L"NETWORKING");
+		NeoUI::HeadingLabel(L"MISCELLANEOUS");
 		NeoUI::RingBoxBool(L"Show other players' crosshairs", &pCrosshair->bNetworkCrosshair);
+		NeoUI::RingBoxBool(L"Inaccuracy in scope", &pCrosshair->bInaccuracyInScope);
+		NeoUI::RingBoxBool(L"Hip fire crosshair", &pCrosshair->bHipFireCrosshair);
 	}
 	NeoUI::EndSection();
 }

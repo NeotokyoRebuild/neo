@@ -31,6 +31,7 @@ enum EMenuSelectType
 
 class CNEO_Player : public CHL2MP_Player
 {
+	friend class CNEORules;
 public:
 	DECLARE_CLASS(CNEO_Player, CHL2MP_Player);
 
@@ -115,6 +116,7 @@ public:
 	void SetPlayerTeamModel(void);
 	void SetDeadModel(const CTakeDamageInfo& info);
 	void SetPlayerCorpseModel(int type);
+	void SpawnSpecificGibs(float vMinVelocity, float vMaxVelocity, const char* cModelName);
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
 	virtual bool StartObserverMode(int mode) OVERRIDE;
@@ -162,6 +164,7 @@ public:
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotPerceivedCloakState() const { return m_botThermOpticCamoDisruptedTimer.IsElapsed() && m_bInThermOpticCamo; }
+	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
 	virtual void StartSprinting(void) OVERRIDE;
@@ -208,13 +211,14 @@ public:
 	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
-	void AddPoints(int score, bool bAllowNegativeScore);
+	void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
 	inline void SetDeathTime(const float deathTime) { m_flDeathTime.Set(deathTime); }
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
-	void InputSetPlayerModel( inputdata_t & inputData );
-	void InputRefillAmmo( inputdata_t & inputData );
+	void InputSetPlayerModel( inputdata_t &inputData );
+	void InputRefillAmmo( inputdata_t &inputData );
+	void InputSetTeam( inputdata_t &inputdata);
 	void CloakFlash(float time = 0.f);
 
 	void BecomeJuggernaut();
@@ -307,9 +311,22 @@ private:
 
 	// blood decals are client-side, so track injury event count for bots
 	int m_iBotDetectableBleedingInjuryEvents = 0;
+	bool m_bSpectatorTakeoverPlayerPending{false};
 
 private:
 	CNEO_Player(const CNEO_Player&);
+
+	// Spectator takeover player related functionality
+	int GetSecondsUntilAFK() const;
+	bool IsAFK() const;
+	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
+	void SpectatorTakeoverPlayerPreThink();
+	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
+	void SpectatorTakeoverPlayerRevert(bool bHardReset=true);
+
+	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerTarget{nullptr};
+	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerImpersonatingMe{nullptr};
+
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

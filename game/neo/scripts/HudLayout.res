@@ -397,8 +397,8 @@
 		"LineMargin"		"2"
 		"MaxDeathNotices" 	"8"
 		"RightJustify"		"1"
-		"BackgroundColor"	"200 200 200 40"
-		"BackgroundColourInvolved"	"20 20 20 220"
+		"BackgroundColour"	"20 20 20 220"
+		"BackgroundColourInvolved"	"200 200 200 40"
 	}
 
 	HudVehicle
@@ -996,9 +996,10 @@
 	neo_killer_damage_info
 	{
 		"fieldName"		"neo_killer_damage_info"
-		"xpos"	"0"
-		"ypos"	"0"
+		"xpos"	"20"
+		"ypos"	"150"
 		"wide"	"640"
 		"tall"	"480"
+		"box_color"		"200 200 200 40"
 	}
 }

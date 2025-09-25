@@ -256,8 +256,6 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 					break;
 				}
 			}
-
-			Assert(m_jgrInPVS);
 		}
 
 		// Use PVS over networked-given position if possible as it'll give a smoother visual

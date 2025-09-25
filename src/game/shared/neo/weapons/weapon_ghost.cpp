@@ -6,6 +6,7 @@
 #include "c_neo_player.h"
 #else
 #include "neo_player.h"
+#include "neo_gamerules.h"
 #endif
 
 #ifdef CLIENT_DLL
@@ -49,6 +50,15 @@ CWeaponGhost::CWeaponGhost(void)
 	m_flLastGhostBeepTime = 0;
 #endif
 }
+
+#ifdef GAME_DLL
+CWeaponGhost::~CWeaponGhost()
+{
+	// At map exit, the rules may be gone before the ghost, so we check.
+	if (auto* rules = NEORules())
+		rules->ResetGhost();
+}
+#endif
 
 void CWeaponGhost::ItemPreFrame(void)
 {

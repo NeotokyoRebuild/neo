@@ -244,6 +244,52 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	{
 		m_pWszStatusUnicode = L"Match point";
 	}
+	else if (NEORules()->GetRoundStatus() != NeoRoundStatus::Pause && (NEORules()->IsRoundPreRoundFreeze() || g_pNeoScoreBoard->IsVisible()))
+	{
+		// Update Objective
+		switch (NEORules()->GetGameType()) {
+		case NEO_GAME_TYPE_DM:
+			// Don't print objective for deathmatch
+			m_pWszStatusUnicode = L"\0";
+			break;
+		case NEO_GAME_TYPE_TDM:
+			m_pWszStatusUnicode = L"Score the most Points\n";
+			break;
+		case NEO_GAME_TYPE_CTG:
+			m_pWszStatusUnicode = L"Capture the Ghost\n";
+			break;
+		case NEO_GAME_TYPE_VIP:
+			if (GetLocalPlayerTeam() == NEORules()->m_iEscortingTeam.Get())
+			{
+				if (NEORules()->GhostExists())
+				{
+					m_pWszStatusUnicode = L"VIP down, prevent Ghost capture\n";
+				}
+				else
+				{
+					m_pWszStatusUnicode = L"Escort the VIP\n";
+				}
+			}
+			else
+			{
+				if (NEORules()->GhostExists())
+				{
+					m_pWszStatusUnicode = L"HVT down, secure the Ghost\n";
+				}
+				else
+				{
+					m_pWszStatusUnicode = L"Eliminate the HVT\n";
+				}
+			}
+			break;
+		case NEO_GAME_TYPE_JGR:
+			m_pWszStatusUnicode = L"Control the Juggernaut\n";
+			break;
+		default:
+			m_pWszStatusUnicode = L"Await further orders\n";
+			break;
+		}
+	}
 	m_iStatusUnicodeSize = V_wcslen(m_pWszStatusUnicode);
 
 	// Clear the strings so zero roundTimeLeft also picks it up as to not draw
@@ -252,7 +298,6 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	memset(m_wszTime, 0, sizeof(m_wszTime));
 	memset(m_wszLeftTeamScore, 0, sizeof(m_wszLeftTeamScore));
 	memset(m_wszRightTeamScore, 0, sizeof(m_wszRightTeamScore));
-	memset(m_wszGameTypeDescription, 0, sizeof(m_wszGameTypeDescription));
 
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
@@ -342,69 +387,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(szPlayersAliveANSI, m_wszPlayersAliveUnicode, sizeof(m_wszPlayersAliveUnicode));
 
-	// Update Objective
-	switch (NEORules()->GetGameType()) {
-	case NEO_GAME_TYPE_DM:
-		// Don't print objective for deathmatch
-		szGameTypeDescription[0] = '\0';
-		break;
-	case NEO_GAME_TYPE_TDM:
-		V_sprintf_safe(szGameTypeDescription, "Score the most Points\n");
-		break;
-	case NEO_GAME_TYPE_CTG:
-		V_sprintf_safe(szGameTypeDescription, "Capture the Ghost\n");
-		break;
-	case NEO_GAME_TYPE_VIP:
-		if (localPlayerTeam == NEORules()->m_iEscortingTeam.Get())
-		{
-			if (NEORules()->GhostExists())
-			{
-				V_sprintf_safe(szGameTypeDescription, "VIP down, prevent Ghost capture\n");
-			}
-			else
-			{
-				V_sprintf_safe(szGameTypeDescription, "Escort the VIP\n");
-			}
-		}
-		else
-		{
-			if (NEORules()->GhostExists())
-			{
-				V_sprintf_safe(szGameTypeDescription, "HVT down, secure the Ghost\n");
-			}
-			else
-			{
-				V_sprintf_safe(szGameTypeDescription, "Eliminate the HVT\n");
-			}
-		}
-		break;
-	case NEO_GAME_TYPE_JGR:
-		V_sprintf_safe(szGameTypeDescription, "Control the Juggernaut\n");
-		break;
-	default:
-		V_sprintf_safe(szGameTypeDescription, "Await further orders\n");
-		break;
-	}
-
-	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause ||
-			NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown || NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup)
-	{
-		szGameTypeDescription[0] = '\0';
-	}
-
 	C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (localPlayer)
 	{
-		if (NEORules()->IsRoundPreRoundFreeze() || localPlayer->m_nButtons & IN_SCORE)
-		{
-			m_iGameTypeDescriptionState = MIN(m_iGameTypeDescriptionState + 1, Q_UnicodeLength(szGameTypeDescription));
-		}
-		else
-		{
-			m_iGameTypeDescriptionState = MAX(m_iGameTypeDescriptionState - 1, 0);
-		}
-
-		g_pVGuiLocalize->ConvertANSIToUnicode(szGameTypeDescription, m_wszGameTypeDescription, m_iGameTypeDescriptionState * sizeof(wchar_t));
 
 		if (NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown)
 		{
@@ -515,16 +500,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		surface()->DrawPrintText(m_wszRightTeamScore, 2);
 	}
 
-	// Draw Game Type Description
-	if (m_iGameTypeDescriptionState)
-	{
-		surface()->DrawSetTextFont(m_hOCRFont);
-		surface()->GetTextSize(m_hOCRFont, m_wszGameTypeDescription, fontWidth, fontHeight);
-		surface()->DrawSetTextColor(COLOR_WHITE);
-		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd);
-		surface()->DrawPrintText(m_wszGameTypeDescription, Q_UnicodeLength(m_wszGameTypeDescription));
-	}
-
 	if (!cl_neo_squad_hud_original.GetBool())
 	{
 		// Draw players
@@ -625,7 +600,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const int localPlayerTeam = GetLocalPlayerTeam();
 		const int localPlayerIndex = GetLocalPlayerIndex();
 		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
-		const int leftTeam = cl_neo_hud_team_swap_sides.GetBool() ? (localPlayerSpec ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
+		const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
 
 		if (localPlayerSpec)
 		{

@@ -34,6 +34,8 @@ enum XHairExportNotify
 	XHAIREXPORTNOTIFY__TOTAL,
 };
 
+#define NEO_BINDS_TOTAL 96
+
 struct NeoSettings
 {
 	struct General
@@ -48,6 +50,7 @@ struct NeoSettings
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
+		bool bHipFireCrosshair;
 		int iLeanAutomatic;
 		bool bShowSquadList;
 		bool bShowPlayerSprays;
@@ -75,8 +78,10 @@ struct NeoSettings
 			ButtonCode_t bcNext;
 			ButtonCode_t bcCurrent; // Only used for unbinding
 			ButtonCode_t bcDefault;
+			ButtonCode_t bcSecondaryNext;
+			ButtonCode_t bcSecondaryCurrent;
 		};
-		Bind vBinds[96];
+		Bind vBinds[NEO_BINDS_TOTAL];
 		int iBindsSize = 0;
 
 		// Will be checked often so cached
@@ -98,6 +103,15 @@ struct NeoSettings
 		bool bReverse;
 		bool bCustomAccel;
 		float flExponent;
+	};
+
+	struct Controller
+	{
+		bool bEnabled;
+		bool bReverse;
+		bool bSwapSticks;
+		float flSensHorizontal;
+		float flSensVertical;
 	};
 
 	struct Audio
@@ -147,6 +161,9 @@ struct NeoSettings
 		CrosshairInfo info;
 		XHairExportNotify eClipboardInfo;
 		bool bNetworkCrosshair;
+		bool bInaccuracyInScope;
+		bool bHipFireCrosshair;
+		bool bPreviewDynamicAccuracy;
 
 		// Textures
 		struct Texture
@@ -161,6 +178,7 @@ struct NeoSettings
 	General general;
 	Keys keys;
 	Mouse mouse;
+	Controller controller;
 	Audio audio;
 	Video video;
 	Crosshair crosshair;
@@ -174,6 +192,7 @@ struct NeoSettings
 	bool bModified = false;
 	bool bIsValid = false;
 	int iNextBinding = -1;
+	bool bNextBindingSecondary = false;
 
 	struct CVR
 	{
@@ -215,6 +234,13 @@ struct NeoSettings
 		CONVARREF_DEF(m_customaccel_exponent);
 		CONVARREF_DEF(m_rawinput);
 
+		// Controller
+		CONVARREF_DEF(joystick);
+		CONVARREF_DEF(joy_inverty);
+		CONVARREF_DEF(joy_movement_stick);
+		CONVARREF_DEF(joy_yawsensitivity);
+		CONVARREF_DEF(joy_pitchsensitivity);
+
 		// Audio
 		CONVARREF_DEFNOGLOBALPTR(volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_musicvolume);
@@ -249,6 +275,8 @@ struct NeoSettings
 		// Crosshair
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_crosshair);
 		CONVARREF_DEF(cl_neo_crosshair_network);
+		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
+		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
 	};
 	CVR cvr;
 };
@@ -262,7 +290,7 @@ void NeoSettingsResetToDefault(NeoSettings *ns);
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
-void NeoSettings_Mouse(NeoSettings *ns);
+void NeoSettings_MouseController(NeoSettings *ns);
 void NeoSettings_Audio(NeoSettings *ns);
 void NeoSettings_Video(NeoSettings *ns);
 void NeoSettings_Crosshair(NeoSettings *ns);
