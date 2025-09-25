@@ -347,7 +347,162 @@ private:
 };
 
 
-static ConVar sv_neo_bot_follow_stop_distance_sq("sv_neo_bot_follow_stop_distance_sq", "5000");
+static ConVar sv_neo_bot_follow_stop_distance_sq("sv_neo_bot_follow_stop_distance_sq", "5000",
+	FCVAR_NONE, "Minimum distance gap between following bots", true, 3000, true, 100000);
+
+bool CNEOBotSeekAndDestroy::Disperse(CNEOBot* me, const Vector& disperseGoal, bool bMoveToSeparate)
+{
+
+	// Close enough at the position, disperse and wait for orders
+	Vector vBotRepulsion = vec3_origin;
+	Vector vWallRepulsion = vec3_origin;
+
+	// Combined loop for player forces
+	for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
+	{
+		CBasePlayer* pPlayer = UTIL_PlayerByIndex(idx);
+		if (!pPlayer || pPlayer == me || !pPlayer->IsAlive())
+			continue;
+
+		if (pPlayer->GetTeamNumber() == me->GetTeamNumber())
+		{
+			// Friendly player
+			CNEO_Player* pOther = ToNEOPlayer(pPlayer);
+			if (pOther && pOther->IsBot() && pOther->m_hCommandingPlayer == me->m_hCommandingPlayer)
+			{
+				Vector vToOther = pOther->GetAbsOrigin() - me->GetAbsOrigin();
+				vToOther.z = 0;
+				float flDistSqr = vToOther.LengthSqr();
+
+				if (flDistSqr < (sv_neo_bot_follow_stop_distance_sq.GetFloat()) && flDistSqr > 0.001f)
+				{
+					trace_t tr;
+					UTIL_TraceLine(me->GetAbsOrigin(), pOther->GetAbsOrigin(), MASK_SOLID, me, COLLISION_GROUP_NONE, &tr);
+
+					if (tr.DidHitWorld() || (tr.DidHit() && tr.m_pEnt != pOther))
+					{
+						// Teammate is behind world geometry or another entity, ignore for repulsion
+						continue;
+					}
+
+					float flRepulsion = 1.0f - (sqrt(flDistSqr) / sqrt(sv_neo_bot_follow_stop_distance_sq.GetFloat()));
+					vBotRepulsion -= vToOther.Normalized() * flRepulsion;
+				}
+			}
+		}
+	}
+
+	// Wall Repulsion
+	trace_t tr;
+	const int numWhiskers = 8;
+	for (int i = 0; i < numWhiskers; ++i)
+	{
+		QAngle ang = me->GetLocalAngles();
+		ang.y += (360.0f / numWhiskers) * i;
+		Vector vWhiskerDir;
+		AngleVectors(ang, &vWhiskerDir);
+		float whiskerDist = 10000.0f;
+		UTIL_TraceLine(me->GetBodyInterface()->GetEyePosition(), me->GetBodyInterface()->GetEyePosition() + vWhiskerDir * whiskerDist, MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
+		if (tr.DidHit())
+		{
+			float flRepulsion = 1.0f - (tr.fraction);
+			vWallRepulsion += tr.plane.normal * flRepulsion;
+		}
+	}
+
+	// Combine forces
+	float friendlyRepulsionWeight = 10.0f;
+	float wallRepulsionWeight = 1.0;
+
+	Vector vFinalForce = (vBotRepulsion * friendlyRepulsionWeight) + (vWallRepulsion * wallRepulsionWeight);
+
+	if (vFinalForce.LengthSqr() > 0.1f)
+	{
+		vFinalForce.NormalizeInPlace();
+		me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vFinalForce * 500.0f);
+
+
+	}
+	else
+	{
+		// Stable position, look around.
+		if (m_lookAroundTimer.IsElapsed())
+		{
+			m_lookAroundTimer.Start(RandomFloat(2.0f, 4.0f));
+
+			Vector vCenterOfMass = vec3_origin;
+			int iBotCount = 0;
+			for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
+			{
+				CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
+				if (pOther && pOther->IsBot() && pOther->m_hCommandingPlayer == me->m_hCommandingPlayer)
+				{
+					vCenterOfMass += pOther->GetAbsOrigin();
+					iBotCount++;
+				}
+			}
+
+			if (iBotCount > 1)
+			{
+				vCenterOfMass /= iBotCount;
+				Vector vAwayFromCenter = me->GetAbsOrigin() - vCenterOfMass;
+				vAwayFromCenter.z = 0;
+				vAwayFromCenter.NormalizeInPlace();
+
+				QAngle ang;
+				VectorAngles(vAwayFromCenter, ang);
+				ang.y += RandomFloat(-45.0f, 45.0f);
+				AngleVectors(ang, &vAwayFromCenter);
+
+				UTIL_TraceLine(me->GetBodyInterface()->GetEyePosition(), me->GetBodyInterface()->GetEyePosition() + vAwayFromCenter * 200.f, MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
+				if (tr.DidHit())
+				{
+					Vector vNewDir = Vector(-vAwayFromCenter.y, vAwayFromCenter.x, 0);
+					me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vNewDir * 500.0f);
+				}
+				else
+				{
+					me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vAwayFromCenter * 500.0f);
+				}
+			}
+		}
+	}
+
+	const int numTeammatesToLeaveRoomFor = 10;
+	if (me->GetAbsOrigin().DistToSqr(disperseGoal) < sv_neo_bot_follow_stop_distance_sq.GetFloat() * numTeammatesToLeaveRoomFor)
+	{
+		bool bTooClose = false;
+
+		// Determine if we are too close to any friendly bot
+		for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
+		{
+			CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
+			if (!pOther || !pOther->IsBot() || pOther == me || pOther->m_hCommandingPlayer != me->m_hCommandingPlayer)
+				continue;
+
+			if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < sv_neo_bot_follow_stop_distance_sq.GetFloat() / 2)
+			{
+				bTooClose = true;
+				break; // Found one, no need to check further
+			}
+		}
+
+		if (bMoveToSeparate)
+		{
+			if (bTooClose)
+			{
+				me->PressForwardButton();
+			}
+		}
+
+		m_vGoalPos = me->GetAbsOrigin();
+		m_path.Invalidate();
+		return true;
+	}
+
+	return false;
+}
+
 //---------------------------------------------------------------------------------------------
 void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 {
@@ -371,24 +526,27 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		{
 			me->m_hLeadingPlayer = pCommander;
 			pCommander->m_vLastPing = vec3_origin;
+			m_vGoalPos = vec3_origin;
 		}
 		// Go to commander's ping
 		else if (pCommander->m_vLastPing != vec3_origin)
 		{
-			me->m_hLeadingPlayer = nullptr;
-			m_vGoalPos = pCommander->m_vLastPing;
-
-			if (me->GetAbsOrigin().DistToSqr(m_vGoalPos) < sv_neo_bot_follow_stop_distance_sq.GetFloat() * 10)
+			if (pCommander->m_vLastPing != me->m_vLastPing)
 			{
-				m_path.Invalidate();
+				me->m_hLeadingPlayer = nullptr;
+				m_vGoalPos = pCommander->m_vLastPing;
+				me->m_vLastPing = pCommander->m_vLastPing;
 			}
-			else
+
+			if (Disperse(me, m_vGoalPos))
 			{
-				CNEOBotPathCost cost(me, SAFEST_ROUTE);
-				if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
-				{
-					return;
-				}
+				return;
+			}
+
+			CNEOBotPathCost cost(me, SAFEST_ROUTE);
+			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+			{
+				return;
 			}
 		}
 	}
@@ -417,6 +575,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				m_hTargetEntity = NULL;
 				m_bGoingToTargetEntity = false;
 				m_path.Invalidate();
+				Disperse(me, pLeader->GetAbsOrigin(), false);
 				return;
 			}
 
@@ -592,6 +751,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				constexpr int DISTANCE_CONSIDERED_ARRIVED_SQUARED = 10000;
 				if (m_vGoalPos.DistToSqr(me->GetAbsOrigin()) < DISTANCE_CONSIDERED_ARRIVED_SQUARED)
 				{
+					Disperse(me, m_vGoalPos);
 					constexpr float RECHECK_TIME = 30.f;
 					m_repathTimer.Start(RECHECK_TIME);
 					m_bGoingToTargetEntity = false;
