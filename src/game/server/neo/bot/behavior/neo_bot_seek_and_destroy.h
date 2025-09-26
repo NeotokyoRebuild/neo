@@ -35,13 +35,13 @@ private:
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
 	CountdownTimer m_itemStolenTimer;
-	CountdownTimer m_lookAroundTimer;
 	EHANDLE m_hTargetEntity;
 	bool m_bGoingToTargetEntity = false;
 	Vector m_vGoalPos = vec3_origin;
 	bool m_bTimerElapsed = false;
 	void RecomputeSeekPath( CNEOBot *me );
-	bool Disperse( CNEOBot *me, const Vector &disperseGoal, bool bMoveToSeparate = true );
+	bool FollowCommandChain( CNEOBot *me );
+	bool FanOutAndCover( CNEOBot *me, const Vector &movementTarget, bool bMoveToSeparate = true );
 
 	bool m_bOverrideApproach = false;
 	Vector m_vOverrideApproach = vec3_origin;
