@@ -284,10 +284,10 @@ void CNEOHud_Compass::DrawCompass() const
 	surface()->DrawPrintText(m_wszCompassUnicode, UNICODE_NEO_COMPASS_STR_LENGTH);
 
 	// Print compass objective arrow
-	if (m_objectiveVisible && !player->IsCarryingGhost())
+	if (m_objectiveVisible && !player->IsCarryingGhost() && player->GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
-		// Point the objective arrow to the ghost, if it exists
-		if (NEORules()->GhostExists() || NEORules()->JuggernautItemExists())
+		// Point the objective arrow to the relevant objective, if it exists
+		if (NEORules()->GhostExists() || NEORules()->GetJuggernautMarkerPos() != vec3_origin)
 		{
 			int ghostMarkerX, ghostMarkerY;
 			bool ghostIsInView = false;

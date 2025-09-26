@@ -36,7 +36,9 @@ private:
 	int m_y0[MAX_PLAYERS];
 	int m_y1[MAX_PLAYERS];
 
-	vgui::HTexture m_hTex = 0UL;
+	vgui::HTexture m_hStarTex = 0UL;
+	vgui::HTexture m_hNonStarTex = 0UL;
+	vgui::HTexture m_hUniqueTex = 0UL;
 	vgui::HFont m_hFont = 0UL;
 
 	void DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const;

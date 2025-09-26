@@ -3379,12 +3379,14 @@ void CNEO_Player::BecomeJuggernaut()
 #define COLOR_JGR_FADE color32{170, 170, 170, 255}
 	UTIL_ScreenFade(this, COLOR_JGR_FADE, 1.0f, 0.0f, FFADE_IN);
 
+	RemoveAllItems(false);
 	m_iNeoClass = NEO_CLASS_JUGGERNAUT;
+	GiveDefaultItems();
+	// Set model after weapon change to avoid studio asserts
 	SetPlayerTeamModel();
+
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	InitSprinting();
-	RemoveAllItems(false);
-	GiveDefaultItems();
 	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
 	//SetBloodColor(DONT_BLEED); Check C_HL2MP_Player::TraceAttack
@@ -3416,10 +3418,9 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 			soundFilter.MakeReliable();
 			EmitSound(soundFilter, this->entindex(), soundParams);
 		}
-
-		NEORules()->m_pJuggernautPlayer = nullptr;
-		NEORules()->m_pJuggernautItem = pJuggernautItem;
 	}
+	NEORules()->JuggernautDeactivated(pJuggernautItem);
+
 	m_hDroppedJuggernautItem = pJuggernautItem;
 	DispatchSpawn(pJuggernautItem);
 }

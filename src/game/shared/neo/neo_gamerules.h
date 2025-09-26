@@ -408,9 +408,11 @@ private:
 	void SelectTheVIP();
 public:
 	void JuggernautActivated(CNEO_Player *pPlayer);
+	void JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut);
+private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
-private:
+
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
