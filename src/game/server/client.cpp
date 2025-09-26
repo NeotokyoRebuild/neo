@@ -697,6 +697,48 @@ END_DATADESC()
 
 LINK_ENTITY_TO_CLASS( point_servercommand, CPointServerCommand );
 
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+class CPointBroadcastClientCommand : public CPointEntity
+{
+public:
+	DECLARE_CLASS( CPointBroadcastClientCommand, CPointEntity );
+	DECLARE_DATADESC();
+	void InputCommand( inputdata_t& inputdata );
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Input  : inputdata - 
+//-----------------------------------------------------------------------------
+void CPointBroadcastClientCommand::InputCommand( inputdata_t& inputdata )
+{
+	if ( !inputdata.value.String()[0] )
+		return;
+
+	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+	{
+		CBasePlayer* pl = UTIL_PlayerByIndex( i );
+		if ( !pl )
+			continue;
+
+		edict_t* pClient = pl->edict();
+		if ( !pClient || !pClient->GetUnknown() )
+			continue;
+
+		engine->ClientCommand( pClient, "%s\n", inputdata.value.String() );
+	}
+}
+
+BEGIN_DATADESC( CPointBroadcastClientCommand )
+DEFINE_INPUTFUNC( FIELD_STRING, "Command", InputCommand ),
+END_DATADESC()
+
+LINK_ENTITY_TO_CLASS( point_broadcastclientcommand, CPointBroadcastClientCommand );
+#endif
+
 //------------------------------------------------------------------------------
 // Purpose : Draw a line betwen two points.  White if no world collisions, red if collisions
 // Input   :
