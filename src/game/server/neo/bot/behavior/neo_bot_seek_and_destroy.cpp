@@ -16,6 +16,13 @@ extern ConVar neo_bot_defense_must_defend_time;
 ConVar neo_bot_debug_seek_and_destroy( "neo_bot_debug_seek_and_destroy", "0", FCVAR_CHEAT );
 ConVar neo_bot_disable_seek_and_destroy( "neo_bot_disable_seek_and_destroy", "0", FCVAR_CHEAT );
 
+ConVar sv_neo_bot_cmdr_stop_distance_sq("sv_neo_bot_cmdr_stop_distance_sq", "5000",
+	FCVAR_NONE, "Minimum distance gap between following bots", true, 3000, true, 100000);
+ConVar sv_neo_bot_cmdr_look_weights_friendly_repulsion("sv_neo_bot_cmdr_look_weights_friendly_repulsion", "900",
+	FCVAR_NONE, "Weight for friendly bot repulsion force", true, 1, true, 9999);
+ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights_wall_repulsion", "100",
+	FCVAR_NONE, "Weight for wall repulsion force", true, 1, true, 9999);
+
 
 //---------------------------------------------------------------------------------------------
 CNEOBotSeekAndDestroy::CNEOBotSeekAndDestroy( float duration )
@@ -574,13 +581,6 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 
 // ---------------------------------------------------------------------------------------------
 // Bot commander utilities
-static ConVar sv_neo_bot_cmdr_stop_distance_sq("sv_neo_bot_cmdr_stop_distance_sq", "5000",
-	FCVAR_NONE, "Minimum distance gap between following bots", true, 3000, true, 100000);
-static ConVar sv_neo_bot_cmdr_look_weights_friendly_repulsion("sv_neo_bot_cmdr_look_weights_friendly_repulsion", "900",
-	FCVAR_NONE, "Weight for friendly bot repulsion force", true, 1, true, 9999);
-static ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights_wall_repulsion", "100",
-	FCVAR_NONE, "Weight for wall repulsion force", true, 1, true, 9999);
-
 //
 // ---------------------------------------------------------------------------------------------
 // Process commander ping waypoint commands for bots
