@@ -296,14 +296,14 @@ public:
 
 	// Bot-only usage
 	float m_flRanOutSprintTime = 0.0f;
-	CHandle<CNEO_Player> m_hCommandingPlayer; // The player this bot is commanded by
+	CNetworkHandle(CNEO_Player, m_hCommandingPlayer); // The player this bot is commanded by
 	CHandle<CNEO_Player> m_hLeadingPlayer; // The player this bot is following
 	CountdownTimer m_tBotPlayerPingCooldown; // The cooldown time for following player ping
 	float m_flBotDynamicFollowDistanceSq; // The dynamic follow distance interval for bots
-	Vector m_vLastPing; // The last ping location from this player
-
-public:
-	void ToggleFollowPlayer( CNEO_Player *pCommander );
+	CNetworkArray(Vector, m_vLastPingByStar, STAR__TOTAL); // The last ping location from this player for each squad star
+	// Bot Functions
+	void ResetBotCommandState();
+	void ToggleBotFollowCommander( CNEO_Player *pCommander );
 
 private:
 	bool m_bFirstDeathTick;

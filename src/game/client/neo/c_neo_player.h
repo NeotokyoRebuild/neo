@@ -206,6 +206,8 @@ public:
 
 	CNetworkVar(float, m_flNextPingTime);
 
+	CNetworkArray(Vector, m_vLastPingByStar, STAR__TOTAL);
+
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
@@ -214,6 +216,7 @@ public:
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 	CNetworkHandle(CBaseEntity, m_hDroppedJuggernautItem);
+	CNetworkHandle(CBasePlayer, m_hCommandingPlayer);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
