@@ -253,6 +253,7 @@ enum NeoWeponAimToggleE {
 bool ClientWantsAimHold(const CNEO_Player* player);
 
 void CheckPingButton(CNEO_Player* player);
+void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos);
 
 struct AttackersTotals
 {
