@@ -1288,8 +1288,9 @@ static void ServerBrowserDrawRow(const gameserveritem_t &server)
 		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0 + xPos, g_uiCtx.rWidgetArea.y0,
 										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
 
-		wchar_t wszPlayers[10];
-		const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
+		wchar_t wszPlayers[15];
+		const int iSize = server.m_nBotPlayers ? V_swprintf_safe(wszPlayers, L"%d/%d (%d)", server.m_nPlayers - server.m_nBotPlayers, server.m_nMaxPlayers, server.m_nBotPlayers)
+												: V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
 		vgui::surface()->DrawSetTextPos(g_uiCtx.rWidgetArea.x0 + xPos + g_uiCtx.iMarginX, g_uiCtx.rWidgetArea.y0 + fontStartYPos);
 		vgui::surface()->DrawPrintText(wszPlayers, iSize);
 	}
@@ -1509,7 +1510,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 						const auto &server = sbTab->m_filteredServers[i];
 						bool bSkipServer = false;
 						if (m_sbFilters.bServerNotFull && server.m_nPlayers == server.m_nMaxPlayers) bSkipServer = true;
-						else if (m_sbFilters.bHasUsersPlaying && server.m_nPlayers == 0) bSkipServer = true;
+						else if (m_sbFilters.bHasUsersPlaying && server.m_nPlayers - server.m_nBotPlayers == 0) bSkipServer = true;
 						else if (m_sbFilters.bIsNotPasswordProtected && server.m_bPassword) bSkipServer = true;
 						else if (m_sbFilters.iAntiCheat == ANTICHEAT_OFF && server.m_bSecure) bSkipServer = true;
 						else if (m_sbFilters.iAntiCheat == ANTICHEAT_ON && !server.m_bSecure) bSkipServer = true;
@@ -1905,7 +1906,8 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			}
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_szMap, wszText, sizeof(wszText));
 			NeoUI::Label(L"Map:", wszText);
-			if (bP) V_swprintf_safe(wszText, L"%d/%d", gameServer->m_nPlayers, gameServer->m_nMaxPlayers);
+			if (bP) gameServer->m_nBotPlayers ? V_swprintf_safe(wszText, L"%d/%d (%d)", gameServer->m_nPlayers - gameServer->m_nBotPlayers , gameServer->m_nMaxPlayers, gameServer->m_nBotPlayers)
+												: V_swprintf_safe(wszText, L"%d/%d", gameServer->m_nPlayers, gameServer->m_nMaxPlayers);
 			NeoUI::Label(L"Players:", wszText);
 			if (bP) V_swprintf_safe(wszText, L"%ls", gameServer->m_bSecure ? L"Enabled" : L"Disabled");
 			NeoUI::Label(L"VAC:", wszText);
