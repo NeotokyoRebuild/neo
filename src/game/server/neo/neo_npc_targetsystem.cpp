@@ -12,24 +12,24 @@ public:
     DECLARE_CLASS(CNEO_NPCTargetSystem, CBaseEntity);
     DECLARE_DATADESC();
 
-    CNEO_NPCTargetSystem();
-
+private:
     // KVs
-    float m_flFOV;
-    float m_flTopClip;
-    float m_flBottomClip;
-    float m_flMaxViewDistance;
-    float m_flDeadzone;
-    float m_flMiddleBoundsHalf;
-    string_t m_iFilterName;
-    bool m_bStartDisabled;
+    float m_flFOV = 90.0f;
+    float m_flTopClip = 60.0f;
+    float m_flBottomClip = -100.0f;
+    float m_flMaxViewDistance = 800.0f;
+    float m_flDeadzone = 100.0f;
+    float m_flMiddleBoundsHalf = 20.0f;
+    string_t m_iFilterName = NULL_STRING;
+    bool m_bStartDisabled = false;
+    bool m_bMotionVision = true;
     // Damage trace
-    string_t m_strDamageSourceName;
-    float m_flDamage;
-    float m_flFireRate;
+    string_t m_strDamageSourceName = NULL_STRING;
+    float m_flDamage = 10.0f;
+    float m_flFireRate = 1.0f;
 
-    CBaseFilter* m_pFilter;
-    EHANDLE m_hDamageSource;
+    CBaseFilter *m_pFilter = nullptr;
+    EHANDLE m_hDamageSource = nullptr;
 
     COutputEvent m_OnSpotted;
     COutputEvent m_OnRight;
@@ -39,12 +39,12 @@ public:
     COutputEvent m_OnExit;
     COutputEvent m_OnExitMiddle;
 
-    void InputEnable(inputdata_t& inputData);
-    void InputDisable(inputdata_t& inputData);
+    void InputEnable(inputdata_t &inputData);
+    void InputDisable(inputdata_t &inputData);
 
-    void Precache(void);
-    void Spawn(void);
-    void Think(void);
+public:
+    void Spawn();
+    void Think();
 
 private:
     enum TargetZone_e
@@ -55,10 +55,11 @@ private:
         ZONE_RIGHT
     };
 
-    TargetZone_e m_iLastZone;
-    bool m_bTargetAcquired;
-    bool m_bMiddleIgnoreActive;
-    float m_flNextFireTime;
+    TargetZone_e m_iLastZone = ZONE_NONE;
+    bool m_bTargetAcquired = false;
+    bool m_bMiddleIgnoreActive = false;
+    float m_flNextFireTime = 0;
+    CBasePlayer *m_pLastBestTarget = nullptr;
 };
 
 LINK_ENTITY_TO_CLASS(neo_npc_targetsystem, CNEO_NPCTargetSystem);
@@ -72,6 +73,7 @@ BEGIN_DATADESC(CNEO_NPCTargetSystem)
     DEFINE_KEYFIELD(m_flMiddleBoundsHalf, FIELD_FLOAT, "middlebounds"),
     DEFINE_KEYFIELD(m_iFilterName, FIELD_STRING, "filtername"),
     DEFINE_KEYFIELD(m_bStartDisabled, FIELD_BOOLEAN, "StartDisabled"),
+    DEFINE_KEYFIELD(m_bMotionVision, FIELD_BOOLEAN, "motionvision"),
 
     DEFINE_KEYFIELD(m_strDamageSourceName, FIELD_STRING, "damagesource"),
     DEFINE_KEYFIELD(m_flDamage, FIELD_FLOAT, "damage"),
@@ -92,37 +94,18 @@ BEGIN_DATADESC(CNEO_NPCTargetSystem)
 END_DATADESC()
 
 // This entity is a built-for-purpose recreation of the HT tank's "vision"
-CNEO_NPCTargetSystem::CNEO_NPCTargetSystem() :
-    m_iLastZone(ZONE_NONE),
-    m_bTargetAcquired(false),
-    m_bMiddleIgnoreActive(false),
-    m_pFilter(nullptr),
-    m_hDamageSource(nullptr),
-    m_flNextFireTime(0),
-    m_bStartDisabled(false)
+// But it can be used for general machines in maps that require precise player tracking.
+// The view is divided into left/middle/right for turning the head of the turret,
+// where the middle zone is where it can attack the player, and stop turning
+
+// The deadzone is a space where the turret shouldnt be able to hit the player
+// but still see them (like behind the barrel). So OnMiddle is not fired when
+// the target is in this zone. OnMiddleIgnore fires regardless of the deadzone.
+
+// NOTE: Isnt actually an npc anymore
+
+void CNEO_NPCTargetSystem::Spawn()
 {
-    m_flFOV = 90.0f;
-    m_flTopClip = 60.0f;
-    m_flBottomClip = -100.0f;
-    m_flMaxViewDistance = 800.0f;
-    m_flDeadzone = 100.0f;
-    m_flMiddleBoundsHalf = 20.0f;
-    m_iFilterName = NULL_STRING;
-
-    m_strDamageSourceName = NULL_STRING;
-    m_flDamage = 10.0f;
-    m_flFireRate = 1.0f;
-}
-
-void CNEO_NPCTargetSystem::Precache(void)
-{
-    BaseClass::Precache();
-}
-
-void CNEO_NPCTargetSystem::Spawn(void)
-{
-    Precache();
-
     if (m_iFilterName != NULL_STRING)
     {
         m_pFilter = dynamic_cast<CBaseFilter*>(gEntList.FindEntityByName(nullptr, m_iFilterName));
@@ -144,19 +127,17 @@ void CNEO_NPCTargetSystem::Spawn(void)
     }
 }
 
-void CNEO_NPCTargetSystem::Think(void)
+void CNEO_NPCTargetSystem::Think()
 {
-    bool bFoundTarget = false;
-
     float flBestLateral = FLT_MAX;
     float flBestForward = 0.0f;
     Vector vBestLateral;
-    CBasePlayer* pBestTarget = nullptr;
+    CBasePlayer *pBestTarget = nullptr;
 
     const float flMaxViewDistanceSqr = m_flMaxViewDistance * m_flMaxViewDistance;
     const float flTanFOV = tan(DEG2RAD(m_flFOV * 0.5f));
 
-    Vector vecEye = EyePosition();
+    Vector vecEye = EyePosition(); // Despite not using a model mappers are able to set their own eye offsets
 
     Vector vecForward, vecRight;
     AngleVectors(GetAbsAngles(), &vecForward, &vecRight, nullptr);
@@ -165,16 +146,24 @@ void CNEO_NPCTargetSystem::Think(void)
     {
         CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
         if (!pPlayer || !pPlayer->IsAlive())
+        {
             continue;
+        }
 
         if (m_pFilter && !m_pFilter->PassesFilter(this, pPlayer))
-            continue;
-
-        CNEO_Player* pNEOPlayer = static_cast<CNEO_Player*>(pPlayer);
-        if (pNEOPlayer->m_bInThermOpticCamo)
         {
-            if (pPlayer->GetAbsVelocity().Length2DSqr() < CLOAKED_VELOCITY_THRESHOLD)
-                continue;
+            continue;
+        }
+
+        if (m_bMotionVision)
+        {
+            if (ToNEOPlayer(pPlayer)->m_bInThermOpticCamo)
+            {
+                if (pPlayer->GetAbsVelocity().Length2DSqr() < CLOAKED_VELOCITY_THRESHOLD)
+                {
+                    continue;
+                }
+            }
         }
 
         // The player's eye position is used for detection.
@@ -187,25 +176,35 @@ void CNEO_NPCTargetSystem::Think(void)
 
         float flDistanceSqr = vecTarget2DPos.LengthSqr();
         if (flDistanceSqr > flMaxViewDistanceSqr) // Ignore if out of range
+        {
             continue;
+        }
 
         float flZDiff = vecPlayerEye.z - vecEye.z;
         if (flZDiff > m_flTopClip || flZDiff < m_flBottomClip) // Ignore if head is out of high/low bounds
+        {
             continue;
+        }
 
         if (!FVisible(pPlayer, MASK_BLOCKLOS, nullptr)) // Draw a trace to check if we can actually see the player
+        {
             continue;
+        }
 
         float flForwardDist = DotProduct(vecTarget2DPos, vecForward);
         if (flForwardDist <= 0) // Is the player behind?
+        {
             continue;
+        }
 
         // How close is this player to the center of our view
         Vector vLateral = vecTarget2DPos - (flForwardDist * vecForward);
         float flLateral = vLateral.Length();
 
         if (flLateral > flTanFOV * flForwardDist) // Ignore if they are outside our FOV
+        {
             continue;
+        }
 
         // The player is valid. But let's focus the one closest to us & our line of fire!!
         if (flLateral < flBestLateral)
@@ -214,13 +213,13 @@ void CNEO_NPCTargetSystem::Think(void)
             flBestForward = flForwardDist;
             vBestLateral = vLateral;
             pBestTarget = pPlayer;
-            bFoundTarget = true;
+            m_pLastBestTarget = pPlayer;
         }
     }
 
     // Determine the zone this valid player is in
     enum TargetZone_e iNewZone = ZONE_NONE;
-    if (bFoundTarget)
+    if (pBestTarget)
     {
         if (flBestForward >= m_flDeadzone && flBestLateral <= m_flMiddleBoundsHalf) // If the player is outside the deadzone and inside the middle volume
         {
@@ -233,20 +232,20 @@ void CNEO_NPCTargetSystem::Think(void)
         }
     }
 
-    bool bMiddleIgnore = bFoundTarget && (flBestLateral <= m_flMiddleBoundsHalf); // Its just the middle zone ignoring the deadzone.
+    bool bMiddleIgnore = pBestTarget && (flBestLateral <= m_flMiddleBoundsHalf); // Its just the middle zone ignoring the deadzone.
 
     // Fire outputs
-    if (bFoundTarget)
+    if (pBestTarget)
     {
         if (!m_bTargetAcquired)
         {
-            m_OnSpotted.FireOutput(this, this);
+            m_OnSpotted.FireOutput(pBestTarget, this);
             m_bTargetAcquired = true;
         }
 
         if (bMiddleIgnore && !m_bMiddleIgnoreActive)
         {
-            m_OnMiddleIgnore.FireOutput(this, this);
+            m_OnMiddleIgnore.FireOutput(pBestTarget, this);
             m_bMiddleIgnoreActive = true;
         }
         else if (!bMiddleIgnore && m_bMiddleIgnoreActive)
@@ -258,18 +257,18 @@ void CNEO_NPCTargetSystem::Think(void)
         {
             if (m_iLastZone == ZONE_MIDDLE && iNewZone != ZONE_MIDDLE)
             {
-                m_OnExitMiddle.FireOutput(this, this);
+                m_OnExitMiddle.FireOutput(pBestTarget, this);
             }
             switch (iNewZone)
             {
             case ZONE_MIDDLE:
-                m_OnMiddle.FireOutput(this, this);
+                m_OnMiddle.FireOutput(pBestTarget, this);
                 break;
             case ZONE_LEFT:
-                m_OnLeft.FireOutput(this, this);
+                m_OnLeft.FireOutput(pBestTarget, this);
                 break;
             case ZONE_RIGHT:
-                m_OnRight.FireOutput(this, this);
+                m_OnRight.FireOutput(pBestTarget, this);
                 break;
             default:
                 break;
@@ -282,9 +281,9 @@ void CNEO_NPCTargetSystem::Think(void)
         {
             if (m_iLastZone == ZONE_MIDDLE)
             {
-                m_OnExitMiddle.FireOutput(this, this);
+                m_OnExitMiddle.FireOutput(m_pLastBestTarget, this);
             }
-            m_OnExit.FireOutput(this, this);
+            m_OnExit.FireOutput(m_pLastBestTarget, this);
             m_bTargetAcquired = false;
         }
         // Reset state when no target is found
@@ -292,26 +291,25 @@ void CNEO_NPCTargetSystem::Think(void)
     }
 
     // Optional - damage the target
-    if (m_hDamageSource && bFoundTarget && (iNewZone == ZONE_MIDDLE) && pBestTarget)
+    if (m_hDamageSource && pBestTarget && (iNewZone == ZONE_MIDDLE))
     {
         if (gpGlobals->curtime >= m_flNextFireTime)
         {
-            Vector vecDamageSrc = m_hDamageSource ? m_hDamageSource->WorldSpaceCenter() : vecEye;
             trace_t tr;
-            UTIL_TraceLine(vecDamageSrc, pBestTarget->EyePosition(), MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+            UTIL_TraceLine(m_hDamageSource->GetAbsOrigin(), pBestTarget->EyePosition(), MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
 
-            CBaseEntity* pDamageTarget = (tr.m_pEnt != nullptr) ? tr.m_pEnt : pBestTarget;
-
-            if (pDamageTarget && pDamageTarget->m_takedamage != DAMAGE_NO) // is the second check neseccary
+            if (tr.m_pEnt)
             {
                 CTakeDamageInfo info(this, this, m_flDamage, DMG_BULLET);
-                info.SetDamagePosition(this->WorldSpaceCenter());
+                info.SetDamagePosition(m_hDamageSource->GetAbsOrigin());
                 info.SetDamageForce(Vector(0, 0, 1)); // These are just to fill the fields. Probably never used here
-                pDamageTarget->TakeDamage(info);
+                tr.m_pEnt->TakeDamage(info);
             }
 
             if (m_flFireRate > 0)
+            {
                 m_flNextFireTime = gpGlobals->curtime + (1.0f / m_flFireRate);
+            }
         }
     }
 
@@ -319,12 +317,12 @@ void CNEO_NPCTargetSystem::Think(void)
     SetNextThink(gpGlobals->curtime + 0.05f);
 }
 
-void CNEO_NPCTargetSystem::InputEnable(inputdata_t & inputData)
+void CNEO_NPCTargetSystem::InputEnable(inputdata_t &inputData)
 {
     SetNextThink(gpGlobals->curtime + 0.05f);
 }
 
-void CNEO_NPCTargetSystem::InputDisable(inputdata_t& inputData)
+void CNEO_NPCTargetSystem::InputDisable(inputdata_t &inputData)
 {
     SetNextThink(TICK_NEVER_THINK);
 }
