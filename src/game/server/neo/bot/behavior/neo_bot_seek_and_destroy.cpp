@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "util_shared.h"
 #include "neo_player.h"
 #include "neo_gamerules.h"
 #include "team_control_point_master.h"
@@ -83,7 +84,9 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		// Out of combat
 		if ( me->m_hLeadingPlayer.Get() )
 		{
+			// Leading player's position tends to change frequently
 			RecomputeSeekPath( me );
+			// In contrast, a commander's ping waypoint tends to be relatively less mobile
 
 			CNEO_Player *pPlayerToMirror = me->m_hLeadingPlayer.Get();
 			if (pPlayerToMirror)
@@ -346,163 +349,7 @@ private:
 	EHANDLE		m_hEntityFound;
 };
 
-
-static ConVar sv_neo_bot_follow_stop_distance_sq("sv_neo_bot_follow_stop_distance_sq", "5000",
-	FCVAR_NONE, "Minimum distance gap between following bots", true, 3000, true, 100000);
-
-bool CNEOBotSeekAndDestroy::Disperse(CNEOBot* me, const Vector& disperseGoal, bool bMoveToSeparate)
-{
-
-	// Close enough at the position, disperse and wait for orders
-	Vector vBotRepulsion = vec3_origin;
-	Vector vWallRepulsion = vec3_origin;
-
-	// Combined loop for player forces
-	for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
-	{
-		CBasePlayer* pPlayer = UTIL_PlayerByIndex(idx);
-		if (!pPlayer || pPlayer == me || !pPlayer->IsAlive())
-			continue;
-
-		if (pPlayer->GetTeamNumber() == me->GetTeamNumber())
-		{
-			// Friendly player
-			CNEO_Player* pOther = ToNEOPlayer(pPlayer);
-			if (pOther && pOther->IsBot() && pOther->m_hCommandingPlayer == me->m_hCommandingPlayer)
-			{
-				Vector vToOther = pOther->GetAbsOrigin() - me->GetAbsOrigin();
-				vToOther.z = 0;
-				float flDistSqr = vToOther.LengthSqr();
-
-				if (flDistSqr < (sv_neo_bot_follow_stop_distance_sq.GetFloat()) && flDistSqr > 0.001f)
-				{
-					trace_t tr;
-					UTIL_TraceLine(me->GetAbsOrigin(), pOther->GetAbsOrigin(), MASK_SOLID, me, COLLISION_GROUP_NONE, &tr);
-
-					if (tr.DidHitWorld() || (tr.DidHit() && tr.m_pEnt != pOther))
-					{
-						// Teammate is behind world geometry or another entity, ignore for repulsion
-						continue;
-					}
-
-					float flRepulsion = 1.0f - (sqrt(flDistSqr) / sqrt(sv_neo_bot_follow_stop_distance_sq.GetFloat()));
-					vBotRepulsion -= vToOther.Normalized() * flRepulsion;
-				}
-			}
-		}
-	}
-
-	// Wall Repulsion
-	trace_t tr;
-	const int numWhiskers = 8;
-	for (int i = 0; i < numWhiskers; ++i)
-	{
-		QAngle ang = me->GetLocalAngles();
-		ang.y += (360.0f / numWhiskers) * i;
-		Vector vWhiskerDir;
-		AngleVectors(ang, &vWhiskerDir);
-		float whiskerDist = 10000.0f;
-		UTIL_TraceLine(me->GetBodyInterface()->GetEyePosition(), me->GetBodyInterface()->GetEyePosition() + vWhiskerDir * whiskerDist, MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
-		if (tr.DidHit())
-		{
-			float flRepulsion = 1.0f - (tr.fraction);
-			vWallRepulsion += tr.plane.normal * flRepulsion;
-		}
-	}
-
-	// Combine forces
-	float friendlyRepulsionWeight = 10.0f;
-	float wallRepulsionWeight = 1.0;
-
-	Vector vFinalForce = (vBotRepulsion * friendlyRepulsionWeight) + (vWallRepulsion * wallRepulsionWeight);
-
-	if (vFinalForce.LengthSqr() > 0.1f)
-	{
-		vFinalForce.NormalizeInPlace();
-		me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vFinalForce * 500.0f);
-
-
-	}
-	else
-	{
-		// Stable position, look around.
-		if (m_lookAroundTimer.IsElapsed())
-		{
-			m_lookAroundTimer.Start(RandomFloat(2.0f, 4.0f));
-
-			Vector vCenterOfMass = vec3_origin;
-			int iBotCount = 0;
-			for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
-			{
-				CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
-				if (pOther && pOther->IsBot() && pOther->m_hCommandingPlayer == me->m_hCommandingPlayer)
-				{
-					vCenterOfMass += pOther->GetAbsOrigin();
-					iBotCount++;
-				}
-			}
-
-			if (iBotCount > 1)
-			{
-				vCenterOfMass /= iBotCount;
-				Vector vAwayFromCenter = me->GetAbsOrigin() - vCenterOfMass;
-				vAwayFromCenter.z = 0;
-				vAwayFromCenter.NormalizeInPlace();
-
-				QAngle ang;
-				VectorAngles(vAwayFromCenter, ang);
-				ang.y += RandomFloat(-45.0f, 45.0f);
-				AngleVectors(ang, &vAwayFromCenter);
-
-				UTIL_TraceLine(me->GetBodyInterface()->GetEyePosition(), me->GetBodyInterface()->GetEyePosition() + vAwayFromCenter * 200.f, MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
-				if (tr.DidHit())
-				{
-					Vector vNewDir = Vector(-vAwayFromCenter.y, vAwayFromCenter.x, 0);
-					me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vNewDir * 500.0f);
-				}
-				else
-				{
-					me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vAwayFromCenter * 500.0f);
-				}
-			}
-		}
-	}
-
-	const int numTeammatesToLeaveRoomFor = 10;
-	if (me->GetAbsOrigin().DistToSqr(disperseGoal) < sv_neo_bot_follow_stop_distance_sq.GetFloat() * numTeammatesToLeaveRoomFor)
-	{
-		bool bTooClose = false;
-
-		// Determine if we are too close to any friendly bot
-		for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
-		{
-			CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
-			if (!pOther || !pOther->IsBot() || pOther == me || pOther->m_hCommandingPlayer != me->m_hCommandingPlayer)
-				continue;
-
-			if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < sv_neo_bot_follow_stop_distance_sq.GetFloat() / 2)
-			{
-				bTooClose = true;
-				break; // Found one, no need to check further
-			}
-		}
-
-		if (bMoveToSeparate)
-		{
-			if (bTooClose)
-			{
-				me->PressForwardButton();
-			}
-		}
-
-		m_vGoalPos = me->GetAbsOrigin();
-		m_path.Invalidate();
-		return true;
-	}
-
-	return false;
-}
-
+extern ConVar sv_neo_bot_cmdr_stop_distance_sq;
 //---------------------------------------------------------------------------------------------
 void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 {
@@ -511,95 +358,11 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		return;
 	}
 
-	float follow_stop_distance_sq = sv_neo_bot_follow_stop_distance_sq.GetFloat();
-	CNEO_Player* pCommander = me->m_hCommandingPlayer.Get();
-	if (pCommander && pCommander->IsAlive())
+	if (FollowCommandChain(me))
 	{
-		if (pCommander->m_flBotDynamicFollowDistanceSq > 0.0f)
-		{
-			follow_stop_distance_sq = pCommander->m_flBotDynamicFollowDistanceSq;
-		}
-
-		// Follow commander if close enough and ping cooldown elapsed.
-		if (pCommander->m_tBotPlayerPingCooldown.IsElapsed() &&
-			me->GetAbsOrigin().DistToSqr(pCommander->GetAbsOrigin()) < sv_neo_bot_follow_stop_distance_sq.GetFloat())
-		{
-			me->m_hLeadingPlayer = pCommander;
-			pCommander->m_vLastPing = vec3_origin;
-			m_vGoalPos = vec3_origin;
-		}
-		// Go to commander's ping
-		else if (pCommander->m_vLastPing != vec3_origin)
-		{
-			if (pCommander->m_vLastPing != me->m_vLastPing)
-			{
-				me->m_hLeadingPlayer = nullptr;
-				m_vGoalPos = pCommander->m_vLastPing;
-				me->m_vLastPing = pCommander->m_vLastPing;
-			}
-
-			if (Disperse(me, m_vGoalPos))
-			{
-				return;
-			}
-
-			CNEOBotPathCost cost(me, SAFEST_ROUTE);
-			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
-			{
-				return;
-			}
-		}
+		// A successfully commanded bot ignores the usual seek and destroy logic
+		return;
 	}
-
-	if (me->m_hLeadingPlayer.Get())
-	{
-		CNEO_Player* pLeader = me->m_hLeadingPlayer.Get();
-		if (pLeader && pLeader->IsAlive())
-		{
-			if (me->GetAbsOrigin().DistToSqr(pLeader->GetAbsOrigin()) < follow_stop_distance_sq)
-			{
-				// Anti-collision: follow neighbor in snake chain
-				for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
-				{
-					CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
-					if (!pOther || !pOther->IsBot() || pOther == me || pOther->m_hLeadingPlayer != me->m_hLeadingPlayer)
-						continue;
-
-					if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < follow_stop_distance_sq/2)
-					{
-						// Link up to snake chain of followers
-						me->m_hLeadingPlayer = pOther;
-					}
-				}
-
-				m_hTargetEntity = NULL;
-				m_bGoingToTargetEntity = false;
-				m_path.Invalidate();
-				Disperse(me, pLeader->GetAbsOrigin(), false);
-				return;
-			}
-
-			// Set the bot's goal to the leader's position.
-			m_vGoalPos = pLeader->GetAbsOrigin();
-			CNEOBotPathCost cost(me, SAFEST_ROUTE);
-			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
-			{
-				// Path to commander found, so return.
-				return;
-			}
-		}
-		else
-		{
-			// Commander is no longer valid or alive, stop following.
-			me->m_hLeadingPlayer = nullptr;
-			me->m_hCommandingPlayer = nullptr;
-		}
-	}
-	else if (pCommander)
-	{
-		me->m_hLeadingPlayer = pCommander;
-	}
-
 
 	m_hTargetEntity = NULL;
 	m_bGoingToTargetEntity = false;
@@ -751,7 +514,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				constexpr int DISTANCE_CONSIDERED_ARRIVED_SQUARED = 10000;
 				if (m_vGoalPos.DistToSqr(me->GetAbsOrigin()) < DISTANCE_CONSIDERED_ARRIVED_SQUARED)
 				{
-					Disperse(me, m_vGoalPos);
+					FanOutAndCover(me, m_vGoalPos);
 					constexpr float RECHECK_TIME = 30.f;
 					m_repathTimer.Start(RECHECK_TIME);
 					m_bGoingToTargetEntity = false;
@@ -807,6 +570,242 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 	}
 
 	m_path.Invalidate();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Bot commander utilities
+static ConVar sv_neo_bot_cmdr_stop_distance_sq("sv_neo_bot_cmdr_stop_distance_sq", "5000",
+	FCVAR_NONE, "Minimum distance gap between following bots", true, 3000, true, 100000);
+static ConVar sv_neo_bot_cmdr_look_weights_friendly_repulsion("sv_neo_bot_cmdr_look_weights_friendly_repulsion", "900",
+	FCVAR_NONE, "Weight for friendly bot repulsion force", true, 1, true, 9999);
+static ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights_wall_repulsion", "100",
+	FCVAR_NONE, "Weight for wall repulsion force", true, 1, true, 9999);
+
+//
+// ---------------------------------------------------------------------------------------------
+// Process commander ping waypoint commands for bots
+// true - order has been processed, don't perform other actions in seek_and_destroy
+// false - no order, continue with other seek_and_destroy logic
+bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
+{
+	Assert(me);
+	CNEO_Player* pCommander = me->m_hCommandingPlayer.Get();
+
+	if (!pCommander)
+	{
+		return false;
+	}
+
+	float follow_stop_distance_sq = sv_neo_bot_cmdr_stop_distance_sq.GetFloat();
+	if (pCommander->m_flBotDynamicFollowDistanceSq > follow_stop_distance_sq)
+	{
+		follow_stop_distance_sq = pCommander->m_flBotDynamicFollowDistanceSq;
+	}
+
+	if (pCommander->IsAlive())
+	{
+		// Follow commander if they are close enough to collect you (and ping cooldown elapsed)
+		if (!me->m_hLeadingPlayer && pCommander->m_tBotPlayerPingCooldown.IsElapsed()
+			&& me->GetAbsOrigin().DistToSqr(pCommander->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat())
+		{
+			me->m_hLeadingPlayer = pCommander;
+			m_vGoalPos = vec3_origin;
+			pCommander->m_vLastPingByStar.GetForModify(me->GetStar()) = vec3_origin;
+		}
+		// Go to commander's ping
+		else if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != vec3_origin)
+		{
+			// Check if there's been an update for this star's ping waypoint
+			if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != me->m_vLastPingByStar.Get(me->GetStar()))
+			{
+				me->m_hLeadingPlayer = nullptr; // Stop following and start travelling to ping
+				m_vGoalPos = pCommander->m_vLastPingByStar.Get(me->GetStar());
+				me->m_vLastPingByStar.GetForModify(me->GetStar()) = pCommander->m_vLastPingByStar.Get(me->GetStar());
+			}
+
+			if (FanOutAndCover(me, m_vGoalPos))
+			{
+				// FanOutAndCover true: arrived at destination and settled, so don't recompute path
+				return true;
+			}
+
+			CNEOBotPathCost cost(me, SAFEST_ROUTE);
+			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+			{
+				return true;
+			}
+			else
+			{
+				// Something went wrong with pathing
+				me->m_hLeadingPlayer = nullptr;
+				me->m_hCommandingPlayer = nullptr;
+				return false;
+			}
+		}
+	}
+	else
+	{
+		// Commander died
+		me->m_hLeadingPlayer = nullptr;
+		me->m_hCommandingPlayer = nullptr;
+		return false;
+	}
+
+	// Didn't have order from commander, so follow in snake formation
+	if (me->m_hLeadingPlayer.Get())
+	{
+		CNEO_Player* pLeader = me->m_hLeadingPlayer.Get();
+		if (pLeader && pLeader->IsAlive())
+		{
+			if (me->GetAbsOrigin().DistToSqr(pLeader->GetAbsOrigin()) < follow_stop_distance_sq)
+			{
+				// Anti-collision: follow neighbor in snake chain
+				for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
+				{
+					CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
+					if (!pOther || !pOther->IsBot() || pOther == me
+						|| (pOther->m_hLeadingPlayer.Get() != me->m_hLeadingPlayer.Get()))
+					{
+						// Not another bot in the same command structure
+						continue;
+					}
+
+					if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < follow_stop_distance_sq / 2)
+					{
+						// Follow person I bumped into and link up to snake chain of followers
+						me->m_hLeadingPlayer = pOther;
+						break;
+					}
+				}
+
+				m_hTargetEntity = NULL;
+				m_bGoingToTargetEntity = false;
+				m_path.Invalidate();
+				FanOutAndCover(me, pLeader->GetAbsOrigin(), false);
+				return true;
+			}
+
+			// Set the bot's goal to the leader's position.
+			m_vGoalPos = pLeader->GetAbsOrigin();
+			CNEOBotPathCost cost(me, SAFEST_ROUTE);
+			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+			{
+				// Prioritize following leader.
+				return true;
+			}
+			else
+			{
+				// Something went wrong with pathing
+				me->m_hLeadingPlayer = nullptr;
+				me->m_hCommandingPlayer = nullptr;
+				return false;
+			}
+		}
+		else
+		{
+			// Commander is no longer valid or alive, stop following.
+			me->m_hLeadingPlayer = nullptr;
+			me->m_hCommandingPlayer = nullptr;
+		}
+	}
+	else if (pCommander)
+	{
+		me->m_hLeadingPlayer = pCommander;
+	}
+	return false;
+}
+//
+// ---------------------------------------------------------------------------------------------
+// Process commander ping waypoint commands for bots
+bool CNEOBotSeekAndDestroy::FanOutAndCover(CNEOBot* me, const Vector& movementTarget, bool bMoveToSeparate)
+{
+	Vector vBotRepulsion = vec3_origin;
+	Vector vWallRepulsion = vec3_origin;
+	Vector vCenterOfMass = vec3_origin;
+	bool bTooClose = false;
+
+	// Combined loop for player forces and proximity checks
+	for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
+	{
+		CBasePlayer* pPlayer = UTIL_PlayerByIndex(idx);
+		if (!pPlayer || pPlayer == me || !pPlayer->IsAlive())
+			continue;
+
+		if (pPlayer->GetTeamNumber() == me->GetTeamNumber())
+		{
+			// Friendly player
+			CNEO_Player* pOther = ToNEOPlayer(pPlayer);
+			// Only consider other players in formation, to reduce calculation load
+			if (pOther && pOther->IsBot()
+				&& (pOther->m_hCommandingPlayer.Get() == me->m_hCommandingPlayer.Get())
+				&& (pOther->GetStar() == me->GetStar()))
+			{
+				// Calculate vBotRepulsion
+				Vector vToOther = pOther->GetAbsOrigin() - me->GetAbsOrigin();
+				vToOther.z = 0;
+				float flDistSqr = vToOther.LengthSqr();
+
+				if (flDistSqr < (sv_neo_bot_cmdr_stop_distance_sq.GetFloat()) && flDistSqr > 0.001f)
+				{
+					float flRepulsion = 1.0f - (sqrt(flDistSqr) / sqrt(sv_neo_bot_cmdr_stop_distance_sq.GetFloat()));
+					vBotRepulsion -= vToOther.Normalized() * flRepulsion;
+				}
+
+				// Calculate vCenterOfMass
+				vCenterOfMass += pOther->GetAbsOrigin();
+
+				// Determine if we are too close to any friendly bot
+				if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat() / 2)
+				{
+					bTooClose = true;
+				}
+			}
+		}
+	}
+
+	// Wall Repulsion
+	trace_t tr;
+	const int numWhiskers = 8;
+	for (int i = 0; i < numWhiskers; ++i)
+	{
+		QAngle ang = me->GetLocalAngles();
+		ang.y += (360.0f / numWhiskers) * i;
+		Vector vWhiskerDir;
+		AngleVectors(ang, &vWhiskerDir);
+		float whiskerDist = 1000.0f;
+		UTIL_TraceLine(me->GetBodyInterface()->GetEyePosition(), me->GetBodyInterface()->GetEyePosition() + vWhiskerDir * whiskerDist, MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
+		if (tr.DidHit())
+		{
+			float flRepulsion = 1.0f - (tr.fraction);
+			vWallRepulsion += tr.plane.normal * flRepulsion;
+		}
+	}
+
+	// Combine forces and look at final direction
+	float friendlyRepulsionWeight = sv_neo_bot_cmdr_look_weights_friendly_repulsion.GetFloat();
+	float wallRepulsionWeight = sv_neo_bot_cmdr_look_weights_wall_repulsion.GetFloat();
+	Vector vFinalForce = (vBotRepulsion * friendlyRepulsionWeight) + (vWallRepulsion * wallRepulsionWeight);
+	vFinalForce.NormalizeInPlace();
+	me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vFinalForce * 500.0f);
+
+	// Fudge factor to reduce teammates running into each other trying to reach the same point
+	const int numTeammateSpacesThreshold = 10;
+	if (me->GetAbsOrigin().DistToSqr(movementTarget) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat() * numTeammateSpacesThreshold)
+	{
+		if (bMoveToSeparate)
+		{
+			if (bTooClose)
+			{
+				me->PressForwardButton();
+			}
+		}
+
+		m_vGoalPos = me->GetAbsOrigin();
+		m_path.Invalidate();
+		return true; // Is already at destination
+	}
+
+	return false; // still moving to destination
 }
 
 
