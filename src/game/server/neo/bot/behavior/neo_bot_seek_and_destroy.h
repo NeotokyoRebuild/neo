@@ -47,4 +47,8 @@ private:
 	Vector m_vOverrideApproach = vec3_origin;
 
 	CountdownTimer m_giveUpTimer;
+	bool m_bAvoidingExplosive = false;
+
+	float m_flNextWallRepulsionCalcTime = 0.0f;
+	Vector m_vCachedWallRepulsion = vec3_origin;
 };
