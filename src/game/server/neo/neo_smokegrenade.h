@@ -29,6 +29,7 @@ public:
 	void	DelayThink();
 	void	SetPunted(bool punt) { m_punted = punt; }
 	bool	WasPunted(void) const { return m_punted; }
+	bool    HasSettled() const { return m_hasSettled; }
 	void	OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPickup_t reason);
 
 	void	InputSetTimer(inputdata_t& inputdata);
