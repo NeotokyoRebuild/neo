@@ -1474,6 +1474,16 @@ void CBasePlayer::OnDamagedByExplosion( const CTakeDamageInfo &info )
 	if ( !shock && !ear_ringing )
 		return;
 
+#ifdef NEO
+	// Prevent stale explosions from the prev round from affecting the next, with really unfortunate timing
+	unsigned char explodedRoundNum = (info.GetDamageCustom() & 0xff000000) >> 24;
+	unsigned char currentRoundNum = 0xff; // magic value for unspecified round
+	if (const auto rules = NEORules())
+		currentRoundNum = rules->roundNumber();
+	if (currentRoundNum != explodedRoundNum)
+		return;
+#endif
+
 	int effect = shock ? 
 		random->RandomInt( 35, 37 ) : 
 		random->RandomInt( 32, 34 );
