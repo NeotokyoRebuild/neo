@@ -1534,10 +1534,12 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO\\Game_Controls"
     FILES
-    neo/game_controls/neo_classmenu.cpp
-    neo/game_controls/neo_classmenu.h
     neo/game_controls/neo_button.cpp
     neo/game_controls/neo_button.h
+    neo/game_controls/neo_classmenu.cpp
+    neo/game_controls/neo_classmenu.h
+    neo/game_controls/neo_image_button.cpp
+    neo/game_controls/neo_image_button.h
     neo/game_controls/neo_loadoutmenu.cpp
     neo/game_controls/neo_loadoutmenu.h
     neo/game_controls/neo_teammenu.cpp
