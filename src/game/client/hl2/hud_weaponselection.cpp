@@ -116,7 +116,19 @@ private:
 	int GetLastPosInSlot( int iSlot ) const;
     
 #ifdef NEO
+	// Callback function type for finding the next/previous weapon
+	typedef C_BaseCombatWeapon* (CHudWeaponSelection::*WeaponFindCallback)(int, int);
+
+	C_BaseCombatWeapon* FindAndSelectWeaponInCycle(
+		C_BasePlayer* pPlayer,
+		WeaponFindCallback findWeaponCallback,
+		int iDirection,
+		int iWrapAroundSlot,
+		int iWrapAroundPosition
+	);
+
 	C_BaseCombatWeapon *GetNeoClassUtilityWeapon(int iSlot, C_BasePlayer *pPlayer);
+	C_BaseCombatWeapon *GetNeoPrioritizedWeaponOnCycle(C_BasePlayer *pPlayer, int iCurrentSlot, int iCurrentPosition, int iDirection=1);
 #endif // NEO
 	void FastWeaponSwitch( int iWeaponSlot );
 	void PlusTypeFastWeaponSwitch( int iWeaponSlot );
@@ -1155,6 +1167,69 @@ C_BaseCombatWeapon *CHudWeaponSelection::FindPrevWeaponInWeaponSelection(int iCu
 	return pPrevWeapon;
 }
 
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: Helper function to find and select the next/previous weapon
+//-----------------------------------------------------------------------------
+C_BaseCombatWeapon* CHudWeaponSelection::FindAndSelectWeaponInCycle(
+	C_BasePlayer* pPlayer,
+	WeaponFindCallback findWeaponCallback,
+	int iDirection,
+	int iWrapAroundSlot,
+	int iWrapAroundPosition
+)
+{
+	int iCurrentSlot = -1;
+	int iCurrentPosition = -1;
+
+	// Compare against #else in CycleToNextWeapon/CycleToPrevWeapon
+	C_BaseCombatWeapon* pActiveWeapon = pPlayer->GetActiveWeapon(); // Get active weapon here
+	C_BaseCombatWeapon* pNextWeapon = NULL;
+	if (IsInSelectionMode())
+	{
+		// find the next selection spot
+		C_BaseCombatWeapon* pWeapon = GetSelectedWeapon();
+		if (pWeapon)
+		{
+			iCurrentSlot = pWeapon->GetSlot();
+			iCurrentPosition = pWeapon->GetPosition();
+		}
+	}
+	else
+	{
+		// Use pActiveWeapon here
+		if (pActiveWeapon)
+		{
+			iCurrentSlot = pActiveWeapon->GetSlot();
+			iCurrentPosition = pActiveWeapon->GetPosition();
+		}
+	}
+
+	pNextWeapon = (this->*findWeaponCallback)(iCurrentSlot, iCurrentPosition);
+
+	// If we are cycling into slot 3 (UI Slot 4) from another slot, prioritize the class utility weapon
+	if (pActiveWeapon && pNextWeapon && pActiveWeapon->GetSlot() != 3 && pNextWeapon->GetSlot() == 3)
+	{
+		C_BaseCombatWeapon* pPrioritizedWeapon = GetNeoClassUtilityWeapon(3, pPlayer);
+		if (pPrioritizedWeapon)
+		{
+			pNextWeapon = pPrioritizedWeapon;
+		}
+	}
+
+	if (!pNextWeapon)
+	{
+		pNextWeapon = GetNeoPrioritizedWeaponOnCycle(pPlayer, iCurrentSlot, iCurrentPosition, iDirection);
+		if (!pNextWeapon)
+		{
+			pNextWeapon = (this->*findWeaponCallback)(iWrapAroundSlot, iWrapAroundPosition);
+		}
+	}
+
+	return pNextWeapon;
+}
+#endif // NEO
+
 //-----------------------------------------------------------------------------
 // Purpose: Moves the selection to the next item in the menu
 //-----------------------------------------------------------------------------
@@ -1167,6 +1242,15 @@ void CHudWeaponSelection::CycleToNextWeapon( void )
 
 	m_pLastWeapon = pPlayer->GetActiveWeapon();
 
+#ifdef NEO
+	C_BaseCombatWeapon *pNextWeapon = FindAndSelectWeaponInCycle(
+		pPlayer,
+		&CHudWeaponSelection::FindNextWeaponInWeaponSelection,
+		1, // iDirection for GetNeoPrioritizedWeaponOnCycle
+		-1, // iWrapAroundSlot
+		-1  // iWrapAroundPosition
+	);
+#else // refactored into FindAndSelectWeaponInCycle
 	C_BaseCombatWeapon *pNextWeapon = NULL;
 	if ( IsInSelectionMode() )
 	{
@@ -1192,6 +1276,7 @@ void CHudWeaponSelection::CycleToNextWeapon( void )
 		// wrap around back to start
 		pNextWeapon = FindNextWeaponInWeaponSelection(-1, -1);
 	}
+#endif
 
 	if ( pNextWeapon )
 	{
@@ -1220,6 +1305,15 @@ void CHudWeaponSelection::CycleToPrevWeapon( void )
 
 	m_pLastWeapon = pPlayer->GetActiveWeapon();
 
+#ifdef NEO
+	C_BaseCombatWeapon *pNextWeapon = FindAndSelectWeaponInCycle(
+		pPlayer,
+		&CHudWeaponSelection::FindPrevWeaponInWeaponSelection,
+		-1, // iDirection for GetNeoPrioritizedWeaponOnCycle
+		MAX_WEAPON_SLOTS, // iWrapAroundSlot
+		MAX_WEAPON_POSITIONS  // iWrapAroundPosition
+	);
+#else // refactored into FindAndSelectWeaponInCycle
 	C_BaseCombatWeapon *pNextWeapon = NULL;
 	if ( IsInSelectionMode() )
 	{
@@ -1245,6 +1339,7 @@ void CHudWeaponSelection::CycleToPrevWeapon( void )
 		// wrap around back to end of weapon list
 		pNextWeapon = FindPrevWeaponInWeaponSelection(MAX_WEAPON_SLOTS, MAX_WEAPON_POSITIONS);
 	}
+#endif
 
 	if ( pNextWeapon )
 	{
@@ -1311,6 +1406,9 @@ C_BaseCombatWeapon *CHudWeaponSelection::GetWeaponInSlot( int iSlot, int iSlotPo
 }
 
 #ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: Get utility item specific to the player class default
+//-----------------------------------------------------------------------------
 C_BaseCombatWeapon *CHudWeaponSelection::GetNeoClassUtilityWeapon(int iSlot, C_BasePlayer *pPlayer)
 {
 	// Only apply class-based prioritization for bucket 3 (UserCmd_Slot4)
@@ -1349,6 +1447,64 @@ C_BaseCombatWeapon *CHudWeaponSelection::GetNeoClassUtilityWeapon(int iSlot, C_B
 		}
 	}
 	return NULL;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Prioritize class utility when cycling from different slot
+//-----------------------------------------------------------------------------
+C_BaseCombatWeapon *CHudWeaponSelection::GetNeoPrioritizedWeaponOnCycle(C_BasePlayer *pPlayer, int iCurrentSlot, int iCurrentPosition, int iDirection)
+{
+    C_BaseCombatWeapon *pNeoUtilityWeapon = NULL;
+
+    if (iDirection < 0) // Cycling backward (Prev)
+    {
+        // If no previous weapon was found in the normal sequence, it means we're wrapping around.
+        // Check if the "logical" previous slot would have been Slot 0 (the first slot).
+        // If so, try to get the class-based utility weapon for Slot 3 (UI Slot 4).
+        // This handles cases where Slot 0 might be empty or its weapon unusable.
+        int iLogicalPrevSlot = iCurrentSlot;
+        if (iCurrentSlot == -1) // No active weapon or not in selection mode, assume we're starting from the end
+        {
+            iLogicalPrevSlot = MAX_WEAPON_SLOTS; // Will become MAX_WEAPON_SLOTS - 1 in FindPrevWeaponInWeaponSelection
+        }
+        else if (iCurrentSlot == 0 && iCurrentPosition == 0) // If we are at the very first weapon, the logical previous is the last slot
+        {
+            iLogicalPrevSlot = MAX_WEAPON_SLOTS - 1;
+        }
+        else if (iCurrentPosition == 0)
+        {
+            iLogicalPrevSlot = iCurrentSlot - 1;
+        }
+
+        // If we're logically wrapping from slot 0 (UI Slot 1) or if the previous slot was 0 and we're wrapping around
+        if (iLogicalPrevSlot == 0 || (iCurrentSlot == 0 && !FindPrevWeaponInWeaponSelection(iCurrentSlot, iCurrentPosition)))
+        {
+            pNeoUtilityWeapon = GetNeoClassUtilityWeapon(3, pPlayer); // Slot 3 is the fourth slot (Slot 4 in UI)
+        }
+    }
+    else if (iDirection > 0) // Cycling forward (Next)
+    {
+        // If no next weapon was found in the normal sequence, it means we're wrapping around or the next slot is empty.
+        // Check if the "logical" next slot would have been Slot 3 (UI Slot 4).
+        // If so, try to get the class-based utility weapon for Slot 3.
+        int iLogicalNextSlot = iCurrentSlot;
+        if (iCurrentSlot == -1) // No active weapon or not in selection mode, assume we're starting from the beginning
+        {
+            iLogicalNextSlot = -1; // FindNextWeaponInWeaponSelection(-1, -1) will look for slot 0 first
+        }
+        else
+        {
+            iLogicalNextSlot = (iCurrentSlot + 1) % MAX_WEAPON_SLOTS; // Calculate the next logical slot
+        }
+        
+        // If we're logically moving to slot 3 (UI Slot 4)
+        if (iLogicalNextSlot == 3) // Slot 3 is the fourth slot (Slot 4 in UI)
+        {
+            pNeoUtilityWeapon = GetNeoClassUtilityWeapon(3, pPlayer);
+        }
+    }
+
+    return pNeoUtilityWeapon;
 }
 #endif // NEO
 
