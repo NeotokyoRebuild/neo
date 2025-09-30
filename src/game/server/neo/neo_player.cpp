@@ -1941,6 +1941,20 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		SetDeadModel(info);
 	}
 
+	// If teamkilled by commander, the commander loses all subordinates.
+	CNEO_Player *pAttacker = ToNEOPlayer(info.GetAttacker());
+	if (pAttacker && m_hCommandingPlayer.Get() == pAttacker)
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			CNEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+			if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == pAttacker)
+			{
+				pPlayer->m_hCommandingPlayer.Set(NULL);
+			}
+		}
+	}
+
 	SpectatorTakeoverPlayerRevert(false); // soft reset: may still have live impostor
 	ResetBotCommandState();
 }
