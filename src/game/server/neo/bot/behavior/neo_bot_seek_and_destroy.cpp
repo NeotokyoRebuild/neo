@@ -23,7 +23,7 @@ ConVar sv_neo_bot_cmdr_look_weights_friendly_repulsion("sv_neo_bot_cmdr_look_wei
 	FCVAR_NONE, "Weight for friendly bot repulsion force", true, 1, true, 9999);
 ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights_wall_repulsion", "100",
 	FCVAR_NONE, "Weight for wall repulsion force", true, 1, true, 9999);
-ConVar sv_neo_bot_cmdr_look_weights_explosives_repulsion("sv_neo_bot_cmdr_look_weights_explosives_repulsion", "500",
+ConVar sv_neo_bot_cmdr_look_weights_explosives_repulsion("sv_neo_bot_cmdr_look_weights_explosives_repulsion", "200",
 	FCVAR_NONE, "Weight for explosive repulsion force", true, 1, true, 9999);
 
 ConVar sv_neo_grenade_check_radius("sv_neo_grenade_check_radius", "1500",
@@ -729,6 +729,7 @@ bool CNEOBotSeekAndDestroy::FanOutAndCover(CNEOBot* me, const Vector& movementTa
 	Vector vBotRepulsion = vec3_origin;
 	Vector vWallRepulsion = vec3_origin;
 	Vector vExplosiveRepulsion = vec3_origin;
+	Vector vFinalForce = vec3_origin; // Initialize to vec3_origin
 	bool bTooClose = false;
 	bool bPrevAvoidingExplosive = m_bAvoidingExplosive;
 
@@ -801,58 +802,57 @@ bool CNEOBotSeekAndDestroy::FanOutAndCover(CNEOBot* me, const Vector& movementTa
 		m_bAvoidingExplosive = bFoundExplosive;
 	};
 
-	findAndProcessExplosives("neo_grenade_frag");
-	if (me->GetDifficulty() <= CNEOBot::DifficultyType::NORMAL)
+	if (gpGlobals->curtime > m_flNextFanOutLookCalcTime)
 	{
-		// Easier bots mistake smoke grenades as dangerous
-		findAndProcessExplosives("neo_grenade_smoke", true);
-	}
+		m_flNextFanOutLookCalcTime = gpGlobals->curtime + 0.1f; // Recalculate every 100ms
 
-	// Combined loop for player forces and proximity checks
-	if (!m_bAvoidingExplosive) // Don't worry about crashing into other players if panicking
-	{
-		for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
+		findAndProcessExplosives("neo_grenade_frag");
+		if (me->GetDifficulty() <= CNEOBot::DifficultyType::NORMAL)
 		{
-			CBasePlayer* pPlayer = UTIL_PlayerByIndex(idx);
-			if (!pPlayer || pPlayer == me || !pPlayer->IsAlive())
-				continue;
+			// Easier bots mistake smoke grenades as dangerous
+			findAndProcessExplosives("neo_grenade_smoke", true);
+		}
 
-			if (pPlayer->GetTeamNumber() == me->GetTeamNumber())
+		// Combined loop for player forces and proximity checks
+		if (!m_bAvoidingExplosive) // Don't worry about crashing into other players if panicking
+		{
+			for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
 			{
-				// Friendly player
-				CNEO_Player* pOther = ToNEOPlayer(pPlayer);
-				// Only consider other players in formation, to reduce calculation load
-				if (pOther && pOther->IsBot()
-					&& (pOther->m_hCommandingPlayer.Get() == me->m_hCommandingPlayer.Get())
-					&& (pOther->GetStar() == me->GetStar()))
+				CBasePlayer* pPlayer = UTIL_PlayerByIndex(idx);
+				if (!pPlayer || pPlayer == me || !pPlayer->IsAlive())
+					continue;
+
+				if (pPlayer->GetTeamNumber() == me->GetTeamNumber())
 				{
-					// Calculate vBotRepulsion
-					Vector vToOther = pOther->GetAbsOrigin() - me->GetAbsOrigin();
-					vToOther.z = 0;
-					float flDistSqr = vToOther.LengthSqr();
-
-					if (flDistSqr < (sv_neo_bot_cmdr_stop_distance_sq.GetFloat()) && flDistSqr > 0.001f)
+					// Friendly player
+					CNEO_Player* pOther = ToNEOPlayer(pPlayer);
+					// Only consider other players in formation, to reduce calculation load
+					if (pOther && pOther->IsBot()
+						&& (pOther->m_hCommandingPlayer.Get() == me->m_hCommandingPlayer.Get())
+						&& (pOther->GetStar() == me->GetStar()))
 					{
-						float flRepulsion = 1.0f - (sqrt(flDistSqr) / sqrt(sv_neo_bot_cmdr_stop_distance_sq.GetFloat()));
-						vBotRepulsion -= vToOther.Normalized() * flRepulsion;
-					}
+						// Calculate vBotRepulsion
+						Vector vToOther = pOther->GetAbsOrigin() - me->GetAbsOrigin();
+						vToOther.z = 0;
+						float flDistSqr = vToOther.LengthSqr();
 
-					// Determine if we are too close to any friendly bot
-					if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat() / 2)
-					{
-						bTooClose = true;
+						if (flDistSqr < (sv_neo_bot_cmdr_stop_distance_sq.GetFloat()) && flDistSqr > 0.001f)
+						{
+							float flRepulsion = 1.0f - (sqrt(flDistSqr) / sqrt(sv_neo_bot_cmdr_stop_distance_sq.GetFloat()));
+							vBotRepulsion -= vToOther.Normalized() * flRepulsion;
+						}
+
+						// Determine if we are too close to any friendly bot
+						if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat() / 2)
+						{
+							bTooClose = true;
+						}
 					}
 				}
 			}
 		}
-	}
 
-	// Wall Repulsion
-	if (gpGlobals->curtime > m_flNextWallRepulsionCalcTime)
-	{
-		m_flNextWallRepulsionCalcTime = gpGlobals->curtime + 0.1f; // Recalculate every 100ms
-		m_vCachedWallRepulsion = vec3_origin;
-
+		// Wall Repulsion
 		trace_t tr;
 		const int numWhiskers = 8;
 		for (int i = 0; i < numWhiskers; ++i)
@@ -866,20 +866,19 @@ bool CNEOBotSeekAndDestroy::FanOutAndCover(CNEOBot* me, const Vector& movementTa
 			if (tr.DidHit())
 			{
 				float flRepulsion = 1.0f - (tr.fraction);
-				m_vCachedWallRepulsion += tr.plane.normal * flRepulsion;
+				vWallRepulsion += tr.plane.normal * flRepulsion;
 			}
 		}
-	}
-	vWallRepulsion = m_vCachedWallRepulsion;
 
-	// Combine forces and look at final direction
-	float friendlyRepulsionWeight = sv_neo_bot_cmdr_look_weights_friendly_repulsion.GetFloat();
-	float wallRepulsionWeight = sv_neo_bot_cmdr_look_weights_wall_repulsion.GetFloat();
-	float explosiveRepulsionWeight = sv_neo_bot_cmdr_look_weights_explosives_repulsion.GetFloat();
-	Vector vFinalForce = (vBotRepulsion * friendlyRepulsionWeight) + (vWallRepulsion * wallRepulsionWeight) + (vExplosiveRepulsion * explosiveRepulsionWeight); // Add explosive repulsion
-	vFinalForce.NormalizeInPlace();
-	vFinalForce.z = 0; // avoid tilting awkwardly up or down
-	me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vFinalForce * 500.0f);
+		// Combine forces and look at final direction
+		float friendlyRepulsionWeight = sv_neo_bot_cmdr_look_weights_friendly_repulsion.GetFloat();
+		float wallRepulsionWeight = sv_neo_bot_cmdr_look_weights_wall_repulsion.GetFloat();
+		float explosiveRepulsionWeight = sv_neo_bot_cmdr_look_weights_explosives_repulsion.GetFloat();
+		vFinalForce = (vBotRepulsion * friendlyRepulsionWeight) + (vWallRepulsion * wallRepulsionWeight) + (vExplosiveRepulsion * explosiveRepulsionWeight); // Add explosive repulsion
+		vFinalForce.NormalizeInPlace();
+		vFinalForce.z = 0; // avoid tilting awkwardly up or down
+		me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vFinalForce * 500.0f);
+	}
 
 	// Fudge factor to reduce teammates running into each other trying to reach the same point
 	const int numTeammateSpacesThreshold = 10;
