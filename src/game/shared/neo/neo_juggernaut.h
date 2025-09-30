@@ -5,6 +5,10 @@
 #include "c_neo_player.h"
 #endif
 
+#ifdef CLIENT_DLL
+#define CNEO_Juggernaut C_NEO_Juggernaut
+#endif
+
 class CNEO_Juggernaut : public CBaseAnimating
 {
 public:
