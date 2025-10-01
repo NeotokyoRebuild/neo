@@ -1066,31 +1066,31 @@ void CNEORules::Think(void)
 		return;
 	}
 
-	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && sv_neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive &&
-		m_iGhosterPlayer && (m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60) - sv_neo_ctg_ghost_overtime_grace.GetFloat()) < gpGlobals->curtime)
+	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG)
 	{
-		m_nRoundStatus = NeoRoundStatus::Overtime;
-	}
-
-	if (sv_neo_ctg_ghost_overtime_grace_decay.GetBool())
-	{
-		if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && m_nRoundStatus == NeoRoundStatus::Overtime)
+		if (sv_neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive && m_iGhosterPlayer &&
+			(m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60) - sv_neo_ctg_ghost_overtime_grace.GetFloat()) < gpGlobals->curtime)
 		{
-			if (m_iGhosterPlayer)
-			{
-				m_flAccumulatedOvertime = (gpGlobals->curtime - m_flNeoRoundStartTime - (neo_ctg_round_timelimit.GetFloat() * 60.f) + sv_neo_ctg_ghost_overtime_grace.GetFloat());
-			}
-			else
-			{
-				m_flAccumulatedOvertime += m_iGhosterPlayer ? gpGlobals->interval_per_tick : gpGlobals->interval_per_tick * ((sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat()) / sv_neo_ctg_ghost_overtime_grace.GetFloat());
-			}
+			m_nRoundStatus = NeoRoundStatus::Overtime;
 		}
-	}
-	else
-	{
-		if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && m_nRoundStatus == NeoRoundStatus::Overtime && m_iGhosterPlayer)
+
+		if (m_nRoundStatus == NeoRoundStatus::Overtime)
 		{
-			m_flGhostLastHeld = gpGlobals->curtime;
+			if (sv_neo_ctg_ghost_overtime_grace_decay.GetBool())
+			{
+				if (m_iGhosterPlayer)
+				{
+					m_flAccumulatedOvertime = (gpGlobals->curtime - m_flNeoRoundStartTime - (neo_ctg_round_timelimit.GetFloat() * 60.f) + sv_neo_ctg_ghost_overtime_grace.GetFloat());
+				}
+				else
+				{
+					m_flAccumulatedOvertime += m_iGhosterPlayer ? gpGlobals->interval_per_tick : gpGlobals->interval_per_tick * ((sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat()) / sv_neo_ctg_ghost_overtime_grace.GetFloat());
+				}
+			}
+			else if (m_iGhosterPlayer)
+			{
+				m_flGhostLastHeld = gpGlobals->curtime;
+			}
 		}
 	}
 
