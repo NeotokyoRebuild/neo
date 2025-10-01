@@ -71,7 +71,7 @@ extern ConVar replay_rendersetting_renderglow;
 #include "c_neo_player.h"
 #include <GameUI/IGameUI.h>
 #include "ui/neo_loading.h"
-#include "ui/neo_spectator_takeover.h"
+#include "ui/neo_hud_spectator_takeover.h"
 #include "neo_gamerules.h"
 #endif
 
@@ -378,11 +378,6 @@ void ClientModeShared::Init()
 
 	m_pWeaponSelection = ( CBaseHudWeaponSelection * )GET_HUDELEMENT( CHudWeaponSelection );
 	Assert( m_pWeaponSelection );
-
-#ifdef NEO
-	m_pSpectatorTakeover = ( CNEOHudSpectatorTakeover * )GET_HUDELEMENT( CNEOHudSpectatorTakeover );
-	Assert( m_pSpectatorTakeover );
-#endif
 
 	KeyValuesAD pConditions( "conditions" );
 	ComputeVguiResConditions( pConditions );

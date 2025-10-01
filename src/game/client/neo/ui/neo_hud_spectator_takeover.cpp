@@ -1,11 +1,13 @@
 #include "cbase.h"
-#include "neo_spectator_takeover.h"
+#include "neo_hud_spectator_takeover.h"
 
 #include "iclientmode.h"
 #include "c_neo_player.h"
 #include "vgui/ISurface.h"
 #include "neo_ui.h"
 #include "igameresources.h"
+#include "ienginevgui.h"
+#include "KeyValues.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -13,10 +15,12 @@
 ConVar cl_neo_spec_replace_player_hint_time_sec("cl_neo_spec_replace_player_hint_time_sec", "3.0",
 	FCVAR_ARCHIVE, "Duration in seconds to display the spectator bot takeover hint.");
 
-DECLARE_HUDELEMENT(CNEOHudSpectatorTakeover);
+DECLARE_HUDELEMENT(CNEOHud_SpectatorTakeover);
 
-CNEOHudSpectatorTakeover::CNEOHudSpectatorTakeover(const char* pElementName)
-	: CHudElement(pElementName), vgui::Panel(NULL, "CNEOHudSpectatorTakeover")
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(SpectatorTakeover, 0.00695);
+
+CNEOHud_SpectatorTakeover::CNEOHud_SpectatorTakeover(const char* pElementName)
+	: CNEOHud_ChildElement(), CHudElement(pElementName), vgui::Panel(NULL, "neo_spectator_takeover")
 {
 	SetParent(g_pClientMode->GetViewport());
 	SetVisible(false);
@@ -29,20 +33,20 @@ CNEOHudSpectatorTakeover::CNEOHudSpectatorTakeover(const char* pElementName)
 	m_hLastSpectatedTarget = nullptr;
 }
 
-CNEOHudSpectatorTakeover::~CNEOHudSpectatorTakeover()
+CNEOHud_SpectatorTakeover::~CNEOHud_SpectatorTakeover()
 {
 	NeoUI::FreeContext(&m_uiCtx);
 }
 
-void CNEOHudSpectatorTakeover::Init()
+void CNEOHud_SpectatorTakeover::Init()
 {
 }
 
-void CNEOHudSpectatorTakeover::VidInit()
+void CNEOHud_SpectatorTakeover::VidInit()
 {
 }
 
-void CNEOHudSpectatorTakeover::Reset()
+void CNEOHud_SpectatorTakeover::Reset()
 {
 	m_flDisplayTime = 0.0f;
 	m_bIsDisplayingHint = false;
@@ -51,7 +55,7 @@ void CNEOHudSpectatorTakeover::Reset()
 	SetVisible(false);
 }
 
-void CNEOHudSpectatorTakeover::ApplySchemeSettings(vgui::IScheme* pScheme)
+void CNEOHud_SpectatorTakeover::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
@@ -71,18 +75,38 @@ void CNEOHudSpectatorTakeover::ApplySchemeSettings(vgui::IScheme* pScheme)
 		m_uiCtx.fonts[i].hdl = pScheme->GetFont(FONT_NAMES[i], true);
 	}
 
-	// Calculate initial UI context dimensions for positioning
-	// NEO JANK potential duplication: Using UI_SCALE from killer_damage_info as a reference
-	static const constexpr float UI_SCALE = 0.66f;
-	m_uiCtx.layout.iDefRowTall = (iScrTall / 27) * UI_SCALE;
-	m_uiCtx.iMarginX = (iScrWide / 192) * UI_SCALE;
-	m_uiCtx.iMarginY = (iScrTall / 108) * UI_SCALE;
-
-	// Hint text buffer formatting
-	V_wcsncpy(m_wszHintText, L"Press Use To Control Bot", sizeof(m_wszHintText));
+	KeyValues* pKV = new KeyValues("HudLayout");
+	if (pKV->LoadFromFile(reinterpret_cast<IBaseFileSystem*>(g_pFullFileSystem), "scripts/HudLayout.res"))
+	{
+		KeyValues* pSpectatorTakeoverKV = pKV->FindKey("neo_spectator_takeover");
+		if (pSpectatorTakeoverKV)
+		{
+			float flUIScale = pSpectatorTakeoverKV->GetFloat("ui_scale", 0.66f);
+			m_uiCtx.layout.iDefRowTall = (iScrTall / pSpectatorTakeoverKV->GetInt("def_row_tall_divisor", 27)) * flUIScale;
+			m_uiCtx.iMarginX = (iScrWide / pSpectatorTakeoverKV->GetInt("margin_x_divisor", 192)) * flUIScale;
+			m_uiCtx.iMarginY = (iScrTall / pSpectatorTakeoverKV->GetInt("margin_y_divisor", 108)) * flUIScale;
+		}
+		else
+		{
+			// Fallback to default values if the key is not found
+			float flUIScale = 0.66f;
+			m_uiCtx.layout.iDefRowTall = (iScrTall / 27) * flUIScale;
+			m_uiCtx.iMarginX = (iScrWide / 192) * flUIScale;
+			m_uiCtx.iMarginY = (iScrTall / 108) * flUIScale;
+		}
+	}
+	else
+	{
+		// Fallback to default values if the file cannot be loaded
+		float flUIScale = 0.66f;
+		m_uiCtx.layout.iDefRowTall = (iScrTall / 27) * flUIScale;
+		m_uiCtx.iMarginX = (iScrWide / 192) * flUIScale;
+		m_uiCtx.iMarginY = (iScrTall / 108) * flUIScale;
+	}
+	pKV->deleteThis();
 }
 
-bool CNEOHudSpectatorTakeover::ShouldDraw()
+bool CNEOHud_SpectatorTakeover::ShouldDraw()
 {
 	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
 	if (!pLocalPlayer)
@@ -147,13 +171,32 @@ bool CNEOHudSpectatorTakeover::ShouldDraw()
 	return false;
 }
 
-void CNEOHudSpectatorTakeover::OnThink()
+void CNEOHud_SpectatorTakeover::UpdateStateForNeoHudElementDraw()
 {
 	SetVisible(ShouldDraw());
+
+	if (IsVisible())
+	{
+		const char* useKeyBinding = engine->Key_LookupBinding("+use");
+		if (useKeyBinding && useKeyBinding[0] != '\0')
+		{
+			char szUppercaseKeyBinding[16]; // Assuming keybinds won't exceed 15 characters + null terminator
+			V_strncpy(szUppercaseKeyBinding, useKeyBinding, sizeof(szUppercaseKeyBinding));
+			V_strupr(szUppercaseKeyBinding);
+			V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Control Bot [%hs]", szUppercaseKeyBinding);
+		}
+		else
+		{
+			V_wcsncpy(m_wszHintText, L"Press Use To Control Bot", sizeof(m_wszHintText));
+		}
+	}
 }
 
-void CNEOHudSpectatorTakeover::Paint()
+void CNEOHud_SpectatorTakeover::DrawNeoHudElement()
 {
+	if (!IsVisible())
+		return;
+
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 
@@ -163,21 +206,34 @@ void CNEOHudSpectatorTakeover::Paint()
 	int iTextWide, iTextTall;
 	vgui::surface()->GetTextSize(m_uiCtx.fonts[NeoUI::FONT_NTHORIZSIDES].hdl, m_wszHintText, iTextWide, iTextTall);
 
-	int iPaddingX = m_uiCtx.iMarginX * 2;
-	int iPaddingY = m_uiCtx.iMarginY * 2;
+	KeyValues* pKV = new KeyValues("HudLayout");
+	int iPaddingX = m_uiCtx.iMarginX * 2; // Default values
+	int iPaddingY = m_uiCtx.iMarginY * 2; // Default values
+	int iBoxY = (iScrTall * 3) / 4; // Default values
+
+	if (pKV->LoadFromFile(reinterpret_cast<IBaseFileSystem*>(g_pFullFileSystem), "scripts/HudLayout.res"))
+	{
+		KeyValues* pSpectatorTakeoverKV = pKV->FindKey("neo_spectator_takeover");
+		if (pSpectatorTakeoverKV)
+		{
+			iPaddingX = m_uiCtx.iMarginX * pSpectatorTakeoverKV->GetInt("padding_x_multiplier", 2);
+			iPaddingY = m_uiCtx.iMarginY * pSpectatorTakeoverKV->GetInt("padding_y_multiplier", 2);
+			iBoxY = (iScrTall * pSpectatorTakeoverKV->GetInt("box_y_numerator", 3)) / pSpectatorTakeoverKV->GetInt("box_y_divisor", 4);
+		}
+	}
+	pKV->deleteThis();
 
 	int iBoxWide = iTextWide + iPaddingX;
 	int iBoxTall = iTextTall + iPaddingY;
 
 	int iBoxX = (iScrWide - iBoxWide) / 2;
-	int iBoxY = (iScrTall * 3) / 4;
 
 	m_uiCtx.dPanel.x = iBoxX;
 	m_uiCtx.dPanel.y = iBoxY;
 	m_uiCtx.dPanel.wide = iBoxWide;
 	m_uiCtx.dPanel.tall = iBoxTall;
 
-	NeoUI::BeginContext(&m_uiCtx, NeoUI::MODE_PAINT, nullptr, "CNEOHudSpectatorTakeover");
+	NeoUI::BeginContext(&m_uiCtx, NeoUI::MODE_PAINT, nullptr, "CNEOHud_SpectatorTakeover");
 	NeoUI::BeginSection();
 	{
 		NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
@@ -189,7 +245,13 @@ void CNEOHudSpectatorTakeover::Paint()
 	NeoUI::EndContext();
 }
 
-void CNEOHudSpectatorTakeover::FireGameEvent(IGameEvent* event)
+void CNEOHud_SpectatorTakeover::Paint()
+{
+	PaintNeoElement();
+	BaseClass::Paint();
+}
+
+void CNEOHud_SpectatorTakeover::FireGameEvent(IGameEvent* event)
 {
 }
 

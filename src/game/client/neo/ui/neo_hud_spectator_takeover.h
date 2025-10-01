@@ -1,4 +1,4 @@
-#ifndef NEO_SPECTATOR_TAKEOVER_H
+#ifndef NEO_HUD_SPECTATOR_TAKEOVER_H
 #define NEO_SPECTATOR_TAKEOVER_H
 #ifdef _WIN32
 #pragma once
@@ -6,30 +6,33 @@
 
 #include "hudelement.h"
 #include "vgui_controls/Panel.h"
+#include "neo_hud_childelement.h"
 #include "neo_ui.h"
 
 //-----------------------------------------------------------------------------
 // Purpose: Displays a hint when spectating a potential takeover target
 //-----------------------------------------------------------------------------
-class CNEOHudSpectatorTakeover : public CHudElement, public vgui::Panel
+class CNEOHud_SpectatorTakeover : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
-	DECLARE_CLASS_SIMPLE(CNEOHudSpectatorTakeover, vgui::Panel);
+	DECLARE_CLASS_SIMPLE(CNEOHud_SpectatorTakeover, vgui::Panel);
 
 public:
-	CNEOHudSpectatorTakeover(const char *pElementName);
-	~CNEOHudSpectatorTakeover();
+	CNEOHud_SpectatorTakeover(const char *pElementName);
+	~CNEOHud_SpectatorTakeover();
 
 	void Init();
 	void VidInit();
 	void Reset();
-	void OnThink();
 	bool ShouldDraw();
-	void Paint();
 
 	virtual void FireGameEvent( IGameEvent * event );
 
 protected:
 	void ApplySchemeSettings(vgui::IScheme *pScheme) override;
+	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual void DrawNeoHudElement() override;
+	virtual ConVar* GetUpdateFrequencyConVar() const override;
+	virtual void Paint() override;
 
 private:
 	NeoUI::Context m_uiCtx;
@@ -41,4 +44,4 @@ private:
 	CHandle<C_BasePlayer> m_hLastSpectatedTarget;
 };
 
-#endif // NEO_SPECTATOR_TAKEOVER_H
+#endif // NEO_HUD_SPECTATOR_TAKEOVER_H
