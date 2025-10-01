@@ -196,10 +196,7 @@ void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos)
 			player->m_flBotDynamicFollowDistanceSq = 0.0f;
 		}
 
-		float distanceToPing = sqrt(distSqrToPing);
-		float travelTimeEstimate = distanceToPing / sv_neo_bot_cmdr_travel_time_factor.GetFloat();
-		float pingCooldownTime = sv_neo_bot_cmdr_ping_ignore_delay_min_sec.GetFloat() + travelTimeEstimate;
-		player->m_tBotPlayerPingCooldown.Start(pingCooldownTime);
+		player->m_tBotPlayerPingCooldown.Start(sv_neo_bot_cmdr_ping_ignore_delay_min_sec.GetFloat());
 	}
 #endif
 }
