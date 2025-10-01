@@ -41,7 +41,7 @@ private:
 	bool m_bTimerElapsed = false;
 	void RecomputeSeekPath( CNEOBot *me );
 	bool FollowCommandChain( CNEOBot *me );
-	bool FanOutAndCover( CNEOBot *me, const Vector &movementTarget, bool bMoveToSeparate = true );
+	bool FanOutAndCover( CNEOBot *me, Vector &movementTarget, bool bMoveToSeparate = true, float flArrivalZoneSizeSq = -1.0f );
 
 	bool m_bOverrideApproach = false;
 	Vector m_vOverrideApproach = vec3_origin;
