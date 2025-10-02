@@ -133,6 +133,7 @@ public:
 	int GetDisplayedHealth(bool asPercent) const;
 
 	bool IsCarryingGhost(void) const;
+	bool IsObjective(void) const;
 
 	virtual void SetLocalViewAngles( const QAngle &viewAngles ) OVERRIDE
 	{

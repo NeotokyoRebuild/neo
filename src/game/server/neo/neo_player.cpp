@@ -685,7 +685,6 @@ void CNEO_Player::CheckLeanButtons()
 	}
 }
 
-extern ConVar neo_ghost_bhopping;
 void CNEO_Player::CalculateSpeed(void)
 {
 	float speed = GetNormSpeed();
@@ -729,17 +728,6 @@ void CNEO_Player::CalculateSpeed(void)
 		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
 	}
 
-	Vector absoluteVelocity = GetAbsVelocity();
-	absoluteVelocity.z = 0.f;
-	float currentSpeed = absoluteVelocity.Length();
-
-	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed)
-	{
-		float overSpeed = currentSpeed - speed;
-		absoluteVelocity.NormalizeInPlace();
-		absoluteVelocity *= -overSpeed;
-		ApplyAbsVelocityImpulse(absoluteVelocity);
-	}
 	speed = MAX(speed, 55);
 
 	// Slowdown after jumping
@@ -2396,6 +2384,11 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 bool CNEO_Player::IsCarryingGhost(void) const
 {
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
+}
+
+bool CNEO_Player::IsObjective(void) const
+{
+	return IsCarryingGhost() || GetClass() == NEO_CLASS_VIP || GetClass() == NEO_CLASS_JUGGERNAUT;
 }
 
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,

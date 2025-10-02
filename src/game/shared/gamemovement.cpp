@@ -1717,6 +1717,68 @@ void CGameMovement::Friction( void )
  	mv->m_outWishVel -= (1.f-newspeed) * mv->m_vecVelocity;
 }
 
+#ifdef NEO
+ConVar	sv_airfriction("sv_neo_airfriction", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Air friction.", true, 0, false, 0);
+ConVar	sv_airfriction_objective("sv_neo_airfriction_objective", "0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Air friction for ghost carrier, VIP and juggernaut.", true, 0, false, 0);
+ConVar	sv_airstopspeed("sv_neo_airstopspeed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum stopping speed when in the air.", true, 0, false, 0);
+ConVar	sv_jumpbuffer("sv_neo_jumpbuffer", "0", FCVAR_NOTIFY | FCVAR_REPLICATED | FCVAR_CHEAT, "Allow Quake style jump buffering.", true, 0, true, 1);
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CGameMovement::AirFriction( void )
+{
+	float	speed, newspeed, control;
+	float	friction;
+	float	drop;
+
+	// Friction only works horizontally so zero out the z component
+	float z = mv->m_vecVelocity.z;
+	mv->m_vecVelocity.z = 0;
+	speed = VectorLength( mv->m_vecVelocity );
+
+	// If too slow, return
+	auto neoplayer = ToNEOPlayer(player);
+	float overspeed = speed - neoplayer->GetNormSpeed_WithActiveWepEncumberment();
+	if (overspeed < 0.1f)
+	{
+		// Restore z component
+		mv->m_vecVelocity.z = z;
+		return;
+	}
+
+	drop = 0;
+
+	// apply air friction
+	friction = neoplayer->IsObjective() ? sv_airfriction_objective.GetFloat() : sv_airfriction.GetFloat();
+
+	// Bleed off some speed, but if we have less than the bleed
+	// threshold, bleed the threshold amount.
+	control = (overspeed < sv_airstopspeed.GetFloat()) ? sv_airstopspeed.GetFloat() : overspeed;
+
+	// Add the amount to the drop amount.
+	drop += control*friction*gpGlobals->frametime;
+
+	// scale the velocity
+	newspeed = speed - drop;
+	if (newspeed < 0)
+		newspeed = 0;
+
+	if ( newspeed != speed )
+	{
+		// Determine proportion of old speed we are using.
+		newspeed /= speed;
+		// Adjust velocity according to proportion.
+		VectorScale( mv->m_vecVelocity, newspeed, mv->m_vecVelocity );
+	}
+
+	// Restore z component
+	mv->m_vecVelocity.z = z;
+
+ 	mv->m_outWishVel -= (1.f-newspeed) * mv->m_vecVelocity;
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -2145,6 +2207,12 @@ void CGameMovement::FullWalkMove( )
 			mv->m_vecVelocity[2] = 0.0;
 			Friction();
 		}
+#ifdef NEO
+		else
+		{
+			AirFriction();
+		}
+#endif
 
 		// Make sure velocity is valid.
 		CheckVelocity();
@@ -2442,7 +2510,19 @@ bool CGameMovement::CheckJumpButton( void )
 	// No more effect
  	if (player->GetGroundEntity() == NULL)
 	{
-		mv->m_nOldButtons |= IN_JUMP;
+#ifdef NEO
+		if (sv_jumpbuffer.GetBool())
+		{
+			if (!(mv->m_nOldButtons & IN_JUMP))
+			{
+				mv->m_nButtons &= ~IN_JUMP;
+			}
+		}
+		else
+#endif
+		{
+			mv->m_nOldButtons |= IN_JUMP;
+		}
 		return false;		// in air, so no effect
 	}
 
