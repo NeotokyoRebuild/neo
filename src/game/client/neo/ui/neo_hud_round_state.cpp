@@ -41,6 +41,7 @@ extern ConVar cl_neo_streamermode;
 extern ConVar snd_victory_volume;
 extern ConVar sv_neo_readyup_countdown;
 extern ConVar cl_neo_hud_scoreboard_hide_others;
+extern ConVar sv_neo_ctg_ghost_overtime_grace;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -319,6 +320,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	{
 		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"STARTING");
 	}
+	else if (NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime)
+	{
+		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"OVERTIME");
+	}
 	else
 	{
 		if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
@@ -334,7 +339,16 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	if (roundStatus == NeoRoundStatus::PreRoundFreeze)
 		roundTimeLeft = NEORules()->GetRemainingPreRoundFreezeTime(true);
 
-	const int secsTotal = RoundFloatToInt(roundTimeLeft);
+	int secsTotal = 0.0f;
+	if (roundStatus == NeoRoundStatus::Overtime && NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		secsTotal = RoundFloatToInt(NEORules()->GetCTGOverTime());
+	}
+	else
+	{
+		secsTotal = RoundFloatToInt(roundTimeLeft);
+	}
+
 	const int secsRemainder = secsTotal % 60;
 	const int minutes = (secsTotal - secsRemainder) / 60;
 	V_snwprintf(m_wszTime, 6, L"%02d:%02d", minutes, secsRemainder);
@@ -465,9 +479,15 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	// Draw time
 	surface()->DrawSetTextFont(m_hOCRFont);
 	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
-	surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ||
-								 NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown) ?
-									COLOR_RED : COLOR_WHITE);
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown || NEORules()->GetGameType() == NEO_GAME_TYPE_CTG ?
+		(NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime && (NEORules()->GetRoundRemainingTime() < sv_neo_ctg_ghost_overtime_grace.GetFloat())) : NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime)
+	{
+		surface()->DrawSetTextColor(COLOR_RED);
+	}
+	else
+	{
+		surface()->DrawSetTextColor(COLOR_WHITE);
+	}
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd / 2 - fontHeight / 2);
 	surface()->DrawPrintText(m_wszTime, 6);
 
