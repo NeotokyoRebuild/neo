@@ -10,6 +10,7 @@
 #include <vgui_controls/EditablePanel.h>
 #include <vgui_controls/Button.h>
 #include "neo/game_controls/neo_button.h"
+#include "neo/game_controls/neo_image_button.h"
 #include <vgui_controls/ComboBox.h>
 #include <igameevents.h>
 #include "GameEventListener.h"
@@ -89,19 +90,14 @@ protected:
     // Menu pieces. These are defined in the GetResFile() file.
     // --------------------------------------------------------
 
-    // Image panels
-    vgui::ImagePanel *m_pSkinPanel1;
-    vgui::ImagePanel *m_pSkinPanel2;
-    vgui::ImagePanel *m_pSkinPanel3;
-
     // Buttons
-    vgui::CNeoButton*m_pRecon_Button;
-    vgui::CNeoButton*m_pAssault_Button;
-    vgui::CNeoButton*m_pSupport_Button;
-	vgui::Button *m_pSkin1_Button;
-	vgui::Button *m_pSkin2_Button;
-	vgui::Button *m_pSkin3_Button;
-    vgui::CNeoButton*m_pBack_Button;
+    vgui::CNeoButton *m_pRecon_Button;
+    vgui::CNeoButton *m_pAssault_Button;
+    vgui::CNeoButton *m_pSupport_Button;
+	vgui::CNeoImageButton *m_pSkin1_Button;
+	vgui::CNeoImageButton *m_pSkin2_Button;
+	vgui::CNeoImageButton *m_pSkin3_Button;
+    vgui::CNeoButton *m_pBack_Button;
 
     bool m_bClassMenu;
 
