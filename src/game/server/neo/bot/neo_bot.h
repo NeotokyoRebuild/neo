@@ -101,6 +101,7 @@ public:
 	virtual void PressFireButton(float duration = -1.0f) OVERRIDE;
 	virtual void PressAltFireButton(float duration = -1.0f) OVERRIDE;
 	virtual void PressSpecialFireButton(float duration = -1.0f) OVERRIDE;
+	virtual bool CanSprint(void) OVERRIDE;
 
 	// INextBot
 	virtual CNEOBotLocomotion* GetLocomotionInterface(void) const { return m_locomotor; }
@@ -232,6 +233,7 @@ public:
 		ALWAYS_FIRE_WEAPON = 1 << 10,				// constantly fire our weapon
 		TELEPORT_TO_HINT = 1 << 11,				// bot will teleport to hint target instead of walking out from the spawn point
 		AUTO_JUMP = 1 << 12,				// auto jump
+		RELOADING = 1 << 13,				// bot is actively reloading
 	};
 	void SetAttribute(int attributeFlag);
 	void ClearAttribute(int attributeFlag);
@@ -503,6 +505,10 @@ private:
 	float m_flPhyscannonPickupTime = 0.0f;
 
 	CUtlVector< const EventChangeAttributes_t* > m_eventChangeAttributes;
+
+public:
+	void StartReload(CNEOBaseCombatWeapon* weapon);
+	bool IsReloading();
 };
 
 class CNEOBotBehavior : public Behavior<CNEOBot>, public CNEOBotContextualQueryInterface

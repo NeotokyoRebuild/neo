@@ -556,7 +556,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				me->ReleaseFireButton();
 				me->EnableCloak(3.0f);
 				m_isWaitingForFullReload = true;
-				me->PressReloadButton();
+				me->StartReload(myWeapon);
 			}
 
 			if ( m_isWaitingForFullReload )
@@ -570,6 +570,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 				// we are fully reloaded
 				m_isWaitingForFullReload = false;
+				me->ClearAttribute(CNEOBot::RELOADING); // Clear RELOADING attribute
 			}
 		}
 	}
@@ -704,10 +705,15 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				else
 				{
 					me->ReleaseFireButton();
-					me->PressReloadButton();
+					me->StartReload(myWeapon);
 					m_isWaitingForFullReload = true;
 				}
 				return;
+			}
+			// Add a check here to clear RELOADING if the clip is now full
+			else if (myWeapon->m_iClip1 >= myWeapon->GetMaxClip1() && me->HasAttribute(CNEOBot::RELOADING))
+			{
+				me->ClearAttribute(CNEOBot::RELOADING);
 			}
 			else if (myWeapon->GetNeoWepBits() & NEO_WEP_SUPPRESSED)
 			{
@@ -722,7 +728,8 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			if ( me->IsContinuousFireWeapon( myWeapon ) )
 			{
 				// spray for a bit
-				me->PressFireButton( neo_bot_fire_weapon_min_time.GetFloat() );
+				// NEO Jank: Spraying wastes bullets into friends and walls, so just tap fire
+				me->PressFireButton( /*neo_bot_fire_weapon_min_time.GetFloat()*/ );
 			}
 			else 
 			{

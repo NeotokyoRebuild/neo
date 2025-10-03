@@ -4,6 +4,7 @@
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
 
 #include "nav_mesh.h"
 
@@ -72,6 +73,11 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	bool bHasRangedWeapon = me->IsRanged( myWeapon );
 
+	if (bHasRangedWeapon && me->IsLineOfFireClear(threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT))
+	{
+		return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Threat has a bead on me, retreating to cover to break line of sight");
+	}
+
 	// Go after them!
 	bool bAggressive = neo_bot_aggressive.GetBool() &&
 					   !bHasRangedWeapon &&
@@ -84,10 +90,14 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		 !me->IsLineOfFireClear( threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 	{
 		// SUPA7 reload can be interrupted so proactively reload
-		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()) && !me->IsReloading())
 		{
 			me->ReleaseFireButton();
-			me->PressReloadButton();
+			me->StartReload(myWeapon); // Supa reload can be interrupted so continue pursuit
+		}
+		else if (me->IsReloading())
+		{
+			return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Need to reload in presence of threat, looking for cover");
 		}
 		
 		if ( threat->IsVisibleRecently() )
