@@ -92,11 +92,7 @@ END_NETWORK_TABLE()
 		}
 #endif // NEO
 #ifdef NEO
-#ifdef GLOWS_ENABLE
-		auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
-#else
-		auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
-#endif // GLOWS_ENABLE
+		auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 		bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 		if (inThermalVision)
 		{
