@@ -4,6 +4,7 @@
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
 
 #include "nav_mesh.h"
 
@@ -53,6 +54,11 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		}
 	}
 
+	if (me->IsLineOfFireClear(threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT))
+	{
+		return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Threat has bead on me, retreating to cover to break line of sight");
+	}
+
 	bool bHasRangedWeapon = me->IsRanged( myWeapon );
 
 	// Go after them!
@@ -70,7 +76,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
 		{
 			me->ReleaseFireButton();
-			me->PressReloadButton();
+			me->PressReloadButton(); // is not a blocking reload so don't set CNEOBot::RELOADING attribute
 		}
 		
 		if ( threat->IsVisibleRecently() )

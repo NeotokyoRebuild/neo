@@ -188,7 +188,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	{
 		if ( myPrimary->Clip1() < myPrimary->GetMaxClip1() )
 		{
-			me->PressReloadButton();
+			me->PressReloadButton();  // is not a blocking reload so don't set CNEOBot::RELOADING attribute
 			isDoingAFullReload = true;
 		}
 	}

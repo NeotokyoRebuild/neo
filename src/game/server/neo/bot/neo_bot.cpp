@@ -466,9 +466,9 @@ CBasePlayer* CNEOBot::AllocatePlayerEntity(edict_t* edict, const char* playerNam
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PressFireButton(float duration)
 {
-	// can't fire if stunned
+	// can't fire if stunned or reloading
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if (HasAttribute(CNEOBot::SUPPRESS_FIRE) || HasAttribute(CNEOBot::RELOADING))
 	{
 		ReleaseFireButton();
 		return;
@@ -481,9 +481,9 @@ void CNEOBot::PressFireButton(float duration)
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PressAltFireButton(float duration)
 {
-	// can't fire if stunned
+	// can't fire if stunned or reloading
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if (HasAttribute(CNEOBot::SUPPRESS_FIRE) || HasAttribute(CNEOBot::RELOADING))
 	{
 		ReleaseAltFireButton();
 		return;
@@ -496,9 +496,9 @@ void CNEOBot::PressAltFireButton(float duration)
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PressSpecialFireButton(float duration)
 {
-	// can't fire if stunned
+	// can't fire if stunned or reloading
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if (HasAttribute(CNEOBot::SUPPRESS_FIRE) || HasAttribute(CNEOBot::RELOADING))
 	{
 		ReleaseAltFireButton();
 		return;
@@ -2439,6 +2439,15 @@ bool CNEOBot::IsFiring() const
 	return m_nButtons & IN_ATTACK || m_afButtonPressed & IN_ATTACK || m_afButtonLast & IN_ATTACK;
 }
 
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::CanSprint(void)
+{
+	if (HasAttribute(CNEOBot::RELOADING))
+		return false;
+
+	return BaseClass::CanSprint();
+}
+
 void CNEOBot::RequestClassOnProfile()
 {
 	bool bValidClasses[NEO_CLASS__ENUM_COUNT] = {};
@@ -2540,7 +2549,8 @@ INextBotEventResponder *CNEOBotIntention::NextContainedResponder(INextBotEventRe
 
 QueryResultType CNEOBotIntention::ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const
 {
-	return m_behavior->ShouldWalk(me, qShouldAimQuery);
+	return ANSWER_YES;  // prioritize movement
+	// return m_behavior->ShouldWalk(me, qShouldAimQuery);
 }
 
 QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const
@@ -2576,6 +2586,9 @@ QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me, const QueryResult
 
 QueryResultType CNEOBotIntention::ShouldAim(const CNEOBot *me, const bool bWepHasClip) const
 {
+	if (me->HasAttribute(CNEOBot::RELOADING)) // If reloading, don't aim
+		return ANSWER_NO;
+
 	return m_behavior->ShouldAim( me, bWepHasClip );
 }
 
