@@ -505,6 +505,10 @@ private:
 	float m_flPhyscannonPickupTime = 0.0f;
 
 	CUtlVector< const EventChangeAttributes_t* > m_eventChangeAttributes;
+
+public:
+	void StartReload(CNEOBaseCombatWeapon* weapon);
+	bool IsReloading();
 };
 
 class CNEOBotBehavior : public Behavior<CNEOBot>, public CNEOBotContextualQueryInterface

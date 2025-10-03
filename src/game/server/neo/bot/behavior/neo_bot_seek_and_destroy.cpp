@@ -110,18 +110,10 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 				}
 			}
 
-			if (shouldReload)
+			if (shouldReload && !me->IsReloading())
 			{
-				me->ReleaseFireButton();
-				me->SetAttribute(CNEOBot::RELOADING);
-				me->PressReloadButton();
-				me->PressCrouchButton(0.3f);
+				me->StartReload(myWeapon);
 			}
-			else
-			{
-				me->ClearAttribute(CNEOBot::RELOADING);
-			}
-
 		}
 	}
 

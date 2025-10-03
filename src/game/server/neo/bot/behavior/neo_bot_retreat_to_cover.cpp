@@ -182,14 +182,12 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	me->EquipBestWeaponForThreat( threat );
 
 	// reload while moving to cover
-	bool isDoingAFullReload = false;
 	CNEOBaseCombatWeapon *myPrimary = (CNEOBaseCombatWeapon*)me->GetActiveWeapon();
-	if ( myPrimary && myPrimary->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(myPrimary))
+	if ( myPrimary && myPrimary->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(myPrimary) && !me->IsReloading())
 	{
 		if ( myPrimary->Clip1() < myPrimary->GetMaxClip1() )
 		{
-			me->PressReloadButton();  // is not a blocking reload so don't set CNEOBot::RELOADING attribute
-			isDoingAFullReload = true;
+			me->StartReload(myPrimary);
 		}
 	}
 
@@ -216,8 +214,9 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		}
 
 		// stay in cover while we fully reload
-		if ( isDoingAFullReload )
+		if ( me->IsReloading() )
 		{
+			me->PressCrouchButton(0.3f);
 			return Continue();
 		}
 

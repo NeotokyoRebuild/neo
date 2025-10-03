@@ -73,10 +73,14 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		 !me->IsLineOfFireClear( threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 	{
 		// SUPA7 reload can be interrupted so proactively reload
-		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()) && !me->IsReloading())
 		{
 			me->ReleaseFireButton();
-			me->PressReloadButton(); // is not a blocking reload so don't set CNEOBot::RELOADING attribute
+			me->StartReload(myWeapon); // Supa reload can be interrupted so continue pursuit
+		}
+		else if (me->IsReloading())
+		{
+			return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Need to reload in presence of threat, looking for cover");
 		}
 		
 		if ( threat->IsVisibleRecently() )

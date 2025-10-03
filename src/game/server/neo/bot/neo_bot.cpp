@@ -803,6 +803,8 @@ void CNEOBot::FireGameEvent(IGameEvent* event)
 extern ConVar nb_update_frequency;
 void CNEOBot::Update()
 {
+	IsReloading(); // clears the RELOADING attribute
+
 	if (!TheNavMesh->IsLoaded())
 	{
 		if ( IsDebugging( NEXTBOT_DEBUG_ALL ) )
@@ -1442,6 +1444,9 @@ bool CNEOBot::EquipRequiredWeapon(void)
 // Equip the best weapon we have to attack the given threat
 void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary)
 {
+	if (IsReloading())
+		return;
+
 	if (EquipRequiredWeapon())
 		return;
 
@@ -2439,13 +2444,55 @@ bool CNEOBot::IsFiring() const
 	return m_nButtons & IN_ATTACK || m_afButtonPressed & IN_ATTACK || m_afButtonLast & IN_ATTACK;
 }
 
-//-----------------------------------------------------------------------------------------------------
 bool CNEOBot::CanSprint(void)
 {
 	if (HasAttribute(CNEOBot::RELOADING))
 		return false;
 
 	return BaseClass::CanSprint();
+}
+
+void CNEOBot::StartReload(CNEOBaseCombatWeapon* weapon)
+{
+	if (!weapon)
+	{
+		return;
+	}
+
+	// Check if we actually have spare ammo to reload
+	if (weapon->GetPrimaryAmmoCount() <= 0)
+	{
+		return;
+	}
+
+	// If already reloading, don't restart
+	if (HasAttribute(CNEOBot::RELOADING))
+	{
+		return;
+	}
+
+	if (!(weapon->GetNeoWepBits() & NEO_WEP_SUPA7))
+	{
+		// SUPA7 doesn't consume spare ammo and reload can be interrupted without consequence
+		SetAttribute(CNEOBot::RELOADING);
+	}
+	ReleaseFireButton();
+	PressReloadButton();
+}
+
+bool CNEOBot::IsReloading()
+{
+	if (HasAttribute(CNEOBot::RELOADING))
+	{
+		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (myWeapon && myWeapon->Clip1() >= myWeapon->GetMaxClip1())
+		{
+			ClearAttribute(CNEOBot::RELOADING);
+			return false;
+		}
+		return true;
+	}
+	return false;
 }
 
 void CNEOBot::RequestClassOnProfile()

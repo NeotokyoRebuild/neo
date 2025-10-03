@@ -556,8 +556,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				me->ReleaseFireButton();
 				me->EnableCloak(3.0f);
 				m_isWaitingForFullReload = true;
-				me->SetAttribute(CNEOBot::RELOADING); // Set RELOADING attribute
-				me->PressReloadButton();
+				me->StartReload(myWeapon);
 			}
 
 			if ( m_isWaitingForFullReload )
@@ -706,8 +705,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				else
 				{
 					me->ReleaseFireButton();
-					me->SetAttribute(CNEOBot::RELOADING); // Set RELOADING attribute
-					me->PressReloadButton();
+					me->StartReload(myWeapon);
 					m_isWaitingForFullReload = true;
 				}
 				return;
