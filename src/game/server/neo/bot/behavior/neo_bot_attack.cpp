@@ -54,12 +54,12 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	if (me->IsLineOfFireClear(threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT))
-	{
-		return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Threat has bead on me, retreating to cover to break line of sight");
-	}
-
 	bool bHasRangedWeapon = me->IsRanged( myWeapon );
+
+	if (bHasRangedWeapon && me->IsLineOfFireClear(threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT))
+	{
+		return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Threat has a bead on me, retreating to cover to break line of sight");
+	}
 
 	// Go after them!
 	bool bAggressive = neo_bot_aggressive.GetBool() &&
