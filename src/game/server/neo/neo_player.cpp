@@ -1084,7 +1084,8 @@ void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 		EmitSound(filter, edict()->m_EdictIndex, params);
 
 		// for emulating bot visibility of cloak initiation flash
-		m_botThermOpticCamoDisruptedTimer.Start(0.5f);
+		// effect lasts 0.5 seconds, but allow 200-300ms leeway with GetFogObscuredRatio cache window
+		m_botThermOpticCamoDisruptedTimer.Start(0.2f);
 	}
 }
 
@@ -2205,7 +2206,8 @@ void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 	if (!((static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))->GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 	{
 		// cloak disruption from unsuppressed weapons
-		m_botThermOpticCamoDisruptedTimer.Start(0.5f);
+		// effect lasts 0.5 seconds, but allow 200-300ms leeway with GetFogObscuredRatio cache window
+		m_botThermOpticCamoDisruptedTimer.Start(0.2f);
 	}
 }
 
