@@ -18,6 +18,13 @@
 
 #endif
 
+#ifdef NEO
+#ifdef GAME_DLL
+#include "neo_gamerules.h"
+#include "neo_grenade.h"
+#endif
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -173,6 +180,21 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 	Vector vecReported = m_hThrower ? m_hThrower->GetAbsOrigin() : vec3_origin;
 	
 	CTakeDamageInfo info( this, m_hThrower, GetBlastForce(), GetAbsOrigin(), m_flDamage, bitsDamageType, 0, &vecReported );
+
+#ifdef NEO
+#ifdef GAME_DLL
+	// NEO TODO (Rain): Refactor!! This is kind of icky, but grenades exploding is not a hot code path so I guess it's acceptable for now...
+	if (const auto neoNade = dynamic_cast<CNEOGrenadeFrag*>(this))
+	{
+		// We're storing the round number to the custom field, because there's a weird bug where players can be affected
+		// by the blast of a grenade from the previous round if it happens right at the round end.
+		// For more context, see: https://github.com/NeotokyoRebuild/neo/issues/1376
+		const unsigned char roundNum = NEORules() ? NEORules()->roundNumber() : 0xff;
+		// Use just the first byte, so the original custom damage feature also works. Gotta handle this when reading the value!
+		info.SetDamageCustom(roundNum << 24);
+	}
+#endif
+#endif
 
 	RadiusDamage( info, GetAbsOrigin(), m_DmgRadius, CLASS_NONE, NULL );
 
