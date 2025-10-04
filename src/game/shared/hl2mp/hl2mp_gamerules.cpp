@@ -892,6 +892,8 @@ bool CHL2MPRules::IsOfficialMap( void )
 	static const char *s_OfficialMaps[] =
 	{
 #ifdef NEO
+		"background_alley",
+		"background_door",
 		"ntre_ballistrade_ctg",
 		"ntre_bullet_tdm",
 		"ntre_class_tut",
