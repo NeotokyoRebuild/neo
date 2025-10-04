@@ -188,7 +188,10 @@ void CNEOHud_Compass::DrawCompass() const
 	const int steps = ARRAYSIZE(ROSE);
 	for (int i = 0; i < steps; i += m_separators ? 1 : 2) {
 		const float stepAngle = (float)(i * 360) / steps;
-		float drawAngle = safeAngle(stepAngle - angle + (float)m_fov / 2) + 180;
+		float drawAngle = safeAngle(stepAngle - angle + (float)m_fov / 2);
+		if (drawAngle < 0) {
+			drawAngle += 360;
+		}
 		if (drawAngle >= m_fov) {
 			continue;
 		}
