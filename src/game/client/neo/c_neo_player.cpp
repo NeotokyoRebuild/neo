@@ -1353,13 +1353,28 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 			Vector vForward;
 			AngleVectors(eyeAngles, &vForward);
 			fov = GetFOV();
+
+			int iHeadBone = pRagdoll->LookupBone("ValveBiped.Bip01_Head1");
+			if (iHeadBone != -1)
+			{
+				matrix3x4_t &transform = pRagdoll->GetBoneForWrite(iHeadBone);
+				MatrixScaleByZero(transform);
+			}
 		}
-		else if (m_hServerRagdoll)
+		else if (m_hServerRagdoll.Get())
 		{
-			m_hServerRagdoll->GetAttachment(m_hServerRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
+			auto* pServerRagdoll = static_cast<C_BaseAnimating*>(m_hServerRagdoll.Get());
+			pServerRagdoll->GetAttachment(pServerRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
 			Vector vForward;
 			AngleVectors(eyeAngles, &vForward);
 			fov = GetFOV();
+
+			int iHeadBone = pServerRagdoll->LookupBone("ValveBiped.Bip01_Head1");
+			if (iHeadBone != -1)
+			{
+				matrix3x4_t &transform = pServerRagdoll->GetBoneForWrite(iHeadBone);
+				MatrixScaleByZero(transform);
+			}
 		}
 		else
 		{
