@@ -58,6 +58,10 @@
 	#include "portal_shareddefs.h"
 #endif
 
+#ifdef NEO
+#include "neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1569,6 +1573,12 @@ bool CBaseCombatCharacter::BecomeRagdoll( const CTakeDamageInfo &info, const Vec
 		CBaseEntity *pRagdoll = CreateServerRagdoll( this, m_nForceBone, newinfo, COLLISION_GROUP_INTERACTIVE_DEBRIS, true );
 		FixupBurningServerRagdoll( pRagdoll );
 		PhysSetEntityGameFlags( pRagdoll, FVPHYSICS_NO_SELF_COLLISIONS );
+#ifdef NEO
+		if (IsPlayer())
+		{
+			ToNEOPlayer(this)->m_hServerRagdoll = pRagdoll;
+		}
+#endif
 		RemoveDeferred();
 
 		return true;
