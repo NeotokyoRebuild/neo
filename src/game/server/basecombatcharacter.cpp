@@ -1576,7 +1576,9 @@ bool CBaseCombatCharacter::BecomeRagdoll( const CTakeDamageInfo &info, const Vec
 #ifdef NEO
 		if (IsPlayer())
 		{
-			ToNEOPlayer(this)->m_hServerRagdoll = pRagdoll;
+			auto *pPlayer = ToNEOPlayer(this);
+			pPlayer->m_hServerRagdoll = pRagdoll;
+			pPlayer->m_hRagdoll = nullptr;
 		}
 #endif
 		RemoveDeferred();
