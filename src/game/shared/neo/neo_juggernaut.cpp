@@ -16,8 +16,12 @@ LINK_ENTITY_TO_CLASS(neo_juggernaut, CNEO_Juggernaut);
 IMPLEMENT_SERVERCLASS_ST(CNEO_Juggernaut, DT_NEO_Juggernaut)
 END_SEND_TABLE()
 #else
-IMPLEMENT_CLIENTCLASS_DT(CNEO_Juggernaut, DT_NEO_Juggernaut, CNEO_Juggernaut)
+#ifdef CNEO_Juggernaut
+#undef CNEO_Juggernaut
+#endif
+IMPLEMENT_CLIENTCLASS_DT(C_NEO_Juggernaut, DT_NEO_Juggernaut, CNEO_Juggernaut)
 END_RECV_TABLE()
+#define CNEO_Juggernaut C_NEO_Juggernaut
 #endif
 
 BEGIN_DATADESC(CNEO_Juggernaut)
