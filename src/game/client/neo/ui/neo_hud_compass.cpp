@@ -97,8 +97,8 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	Assert(pLocalPlayer);
 
-	// Point the objective arrow to the ghost, if it exists
-	if (NEORules()->GhostExists() || NEORules()->JuggernautItemExists())
+	// Point the objective arrow to the relevant objective, if it exists
+	if (NEORules()->GhostExists() || NEORules()->GetJuggernautMarkerPos() != vec3_origin)
 	{
 		const Vector objPos = NEORules()->GetGameType() == NEO_GAME_TYPE_JGR ? NEORules()->GetJuggernautMarkerPos() : NEORules()->GetGhostPos();
 		const Vector objVec = objPos - pLocalPlayer->EyePosition();
