@@ -60,24 +60,24 @@ CNeoClassMenu *g_pNeoClassMenu = NULL;
 using namespace vgui;
 
 const char* playerModels[]{
-	"cm/jinrai_scout01",
-	"cm/jinrai_scout02",
-	"cm/jinrai_scout03",
-	"cm/jinrai_assault01",
-	"cm/jinrai_assault02",
-	"cm/jinrai_assault03",
-	"cm/jinrai_heavy01",
-	"cm/jinrai_heavy02",
-	"cm/jinrai_heavy03",
-	"cm/nsf_scout01",
-	"cm/nsf_scout02",
-	"cm/nsf_scout03",
-	"cm/nsf_assault01",
-	"cm/nsf_assault02",
-	"cm/nsf_assault03",
-	"cm/nsf_heavy01",
-	"cm/nsf_heavy02",
-	"cm/nsf_heavy03",
+	"vgui/cm/jinrai_scout01",
+	"vgui/cm/jinrai_scout02",
+	"vgui/cm/jinrai_scout03",
+	"vgui/cm/jinrai_assault01",
+	"vgui/cm/jinrai_assault02",
+	"vgui/cm/jinrai_assault03",
+	"vgui/cm/jinrai_heavy01",
+	"vgui/cm/jinrai_heavy02",
+	"vgui/cm/jinrai_heavy03",
+	"vgui/cm/nsf_scout01",
+	"vgui/cm/nsf_scout02",
+	"vgui/cm/nsf_scout03",
+	"vgui/cm/nsf_assault01",
+	"vgui/cm/nsf_assault02",
+	"vgui/cm/nsf_assault03",
+	"vgui/cm/nsf_heavy01",
+	"vgui/cm/nsf_heavy02",
+	"vgui/cm/nsf_heavy03",
 };
 
 CNeoClassMenu::CNeoClassMenu(IViewPort *pViewPort)
@@ -109,9 +109,6 @@ CNeoClassMenu::CNeoClassMenu(IViewPort *pViewPort)
 
 CNeoClassMenu::~CNeoClassMenu()
 {
-	m_pSkinPanel1->SetAutoDelete(true);
-	m_pSkinPanel2->SetAutoDelete(true);
-	m_pSkinPanel3->SetAutoDelete(true);
 	m_pSkin1_Button->SetAutoDelete(true);
 	m_pSkin2_Button->SetAutoDelete(true);
 	m_pSkin3_Button->SetAutoDelete(true);
@@ -141,12 +138,24 @@ void CNeoClassMenu::FireGameEvent(IGameEvent* event)
 
 void CNeoClassMenu::FindButtons()
 {
-	m_pSkinPanel1 = FindControl<ImagePanel>("Model1_ImagePanel");
-	m_pSkinPanel2 = FindControl<ImagePanel>("Model2_ImagePanel");
-	m_pSkinPanel3 = FindControl<ImagePanel>("Model3_ImagePanel");
-	m_pSkin1_Button = FindControl<Button>("Skin1_Button");
-	m_pSkin2_Button = FindControl<Button>("Skin2_Button");
-	m_pSkin3_Button = FindControl<Button>("Skin3_Button");
+	m_pSkin1_Button = FindControl<CNeoImageButton>("Skin1_Button");
+	if (m_pSkin1_Button)
+	{
+		m_pSkin1_Button->SetButtonTexture("vgui/cm/jinrai_assault01");
+	}
+
+	m_pSkin2_Button = FindControl<CNeoImageButton>("Skin2_Button");
+	if (m_pSkin2_Button)
+	{
+		m_pSkin2_Button->SetButtonTexture("vgui/cm/jinrai_assault02");
+	}
+
+	m_pSkin3_Button = FindControl<CNeoImageButton>("Skin3_Button");
+	if (m_pSkin3_Button)
+	{
+		m_pSkin3_Button->SetButtonTexture("vgui/cm/jinrai_assault03");
+	}
+
 	m_pRecon_Button = FindControl<CNeoButton>("Scout_Button");
 	m_pAssault_Button = FindControl<CNeoButton>("Assault_Button");
 	m_pSupport_Button = FindControl<CNeoButton>("Heavy_Button");
@@ -280,15 +289,15 @@ void CNeoClassMenu::UpdateSkinImages(int classNumber, int overrideTeamNumber)
 
 	if (classNumber > NEO_CLASS_SUPPORT || classNumber < NEO_CLASS_RECON)
 	{
-		m_pSkinPanel1->SetImage("cm/none");
-		m_pSkinPanel2->SetImage("cm/none");
-		m_pSkinPanel3->SetImage("cm/none");
+		m_pSkin1_Button->SetButtonTexture("vgui/cm/none");
+		m_pSkin2_Button->SetButtonTexture("vgui/cm/none");
+		m_pSkin3_Button->SetButtonTexture("vgui/cm/none");
 		return;
 	}
-
-	m_pSkinPanel1->SetImage(playerModels[teamNumber * 9 + (classNumber * 3) + 0]);
-	m_pSkinPanel2->SetImage(playerModels[teamNumber * 9 + (classNumber * 3) + 1]);
-	m_pSkinPanel3->SetImage(playerModels[teamNumber * 9 + (classNumber * 3) + 2]);
+	
+	m_pSkin1_Button->SetButtonTexture(playerModels[teamNumber * 9 + (classNumber * 3) + 0]);
+	m_pSkin2_Button->SetButtonTexture(playerModels[teamNumber * 9 + (classNumber * 3) + 1]);
+	m_pSkin3_Button->SetButtonTexture(playerModels[teamNumber * 9 + (classNumber * 3) + 2]);
 }
 
 void CNeoClassMenu::OnMessage(const KeyValues *params, VPANEL fromPanel)

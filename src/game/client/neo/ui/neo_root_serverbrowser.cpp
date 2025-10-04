@@ -246,8 +246,8 @@ void CNeoServerList::UpdateFilteredList()
 			break;
 		}
 		case GSIW_PLAYERS:
-			iLeft = gsiLeft.m_nPlayers;
-			iRight = gsiRight.m_nPlayers;
+			iLeft = gsiLeft.m_nPlayers - gsiLeft.m_nBotPlayers;
+			iRight = gsiRight.m_nPlayers - gsiRight.m_nBotPlayers;
 			if (iLeft == iRight)
 			{
 				iLeft = gsiLeft.m_nMaxPlayers;

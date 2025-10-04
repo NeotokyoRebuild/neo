@@ -35,7 +35,7 @@ public:
 
 	virtual void Spawn() override;
 	virtual void PrimaryAttack() override;
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_BALC; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_BALC | NEO_WEP_FIREARM; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 20; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 1.0f; }
