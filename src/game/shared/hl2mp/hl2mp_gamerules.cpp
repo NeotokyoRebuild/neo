@@ -891,38 +891,6 @@ bool CHL2MPRules::IsOfficialMap( void )
 { 
 	static const char *s_OfficialMaps[] =
 	{
-#ifdef NEO
-		"background_alley",
-		"background_door",
-		"ntre_ballistrade_ctg",
-		"ntre_bullet_tdm",
-		"ntre_class_tut",
-		"ntre_dawn_ctg",
-		"ntre_decom_ctg",
-		"ntre_disengage_ctg",
-		"ntre_dusk_ctg",
-		"ntre_engage_ctg",
-		"ntre_ghost_ctg",
-		"ntre_isolation_ctg",
-		"ntre_marketa_ctg",
-		"ntre_oilstain_ctg",
-		"ntre_pissalley_ctg",
-		"ntre_redlight_ctg",
-		"ntre_ridgeline_ctg",
-		"ntre_rise_ctg",
-		"ntre_rogue_ctg",
-		"ntre_saitama_ctg",
-		"ntre_sentinel_ctg",
-		"ntre_shooting_tut",
-		"ntre_shrine_ctg",
-		"ntre_skyline_ctg",
-		"ntre_subsurface_ctg",
-		"ntre_tarmac_ctg",
-		"ntre_terminal_jgr",
-		"ntre_threadplate_ctg",
-		"ntre_transit_ctg",
-		"ntre_vtol_ctg",
-#else
 		"devtest",
 		"dm_lockdown",
 		"dm_overwatch",
@@ -932,7 +900,6 @@ bool CHL2MPRules::IsOfficialMap( void )
 		"dm_steamlab",
 		"dm_underpass",
 		"halls3",
-#endif
 	};
 
 	char szCurrentMap[MAX_MAP_NAME];
