@@ -819,10 +819,15 @@
 	{
 		"fieldName"		"NHudCompass"
 		"visible"		"1"
-		"y_bottom_pos"		"3"
-		"needle_visible"	"0"
-		"needle_colored"	"0"
+		"xpos"			"c-100"
+		"ypos"			"469"
+		"wide"			"200"
+		"tall"			"8"
+		"fov"			"90"
+		"separators"	"1"
 		"objective_visible"	"1"
+		"text_fade_exp"	"1"
+		"text_color"	"255 255 255 150"
 		"box_color"		"200 200 200 40"
 	}
 	NHudWeapon
