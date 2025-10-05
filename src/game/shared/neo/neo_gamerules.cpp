@@ -1754,7 +1754,7 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 		engine->ClientCmd("r_cleardecals");
 		engine->ClientCmd("classmenu");
 
-		if (!engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		if (sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
 			StartAutoClientRecording();
 		}
@@ -1766,7 +1766,7 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 #ifdef CLIENT_DLL
 	if (Q_strcmp(type, "game_end") == 0)
 	{
-		if (engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		if (sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
 			engine->StopDemoRecording();
 		}
