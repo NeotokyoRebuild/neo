@@ -81,9 +81,6 @@ CWeaponDetpack::CWeaponDetpack()
 	m_bThisDetpackHasBeenThrown = false;
 	m_bRemoteHasBeenTriggered = false;
 
-#ifdef GAME_DLL
-	m_pDetpack = NULL;
-#endif
 	SetViewOffset(Vector(0, 0, 1.0));
 }
 

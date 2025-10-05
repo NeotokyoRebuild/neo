@@ -5,6 +5,7 @@
 #endif
 
 #include "cbase.h"
+#include "ehandle.h"
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
@@ -83,7 +84,7 @@ private:
 	CWeaponDetpack(const CWeaponDetpack &other);
 
 #ifdef GAME_DLL
-	CNEODeployedDetpack* m_pDetpack;
+	CHandle<CNEODeployedDetpack> m_pDetpack;
 #endif
 };
 
