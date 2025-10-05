@@ -22,6 +22,5 @@ struct SZWSZTexts
 #define X_SZWSZ_INIT(STR) SZWSZ_INIT(STR)
 
 #ifdef CLIENT_DLL
-void StartClientRecording();
-void StopClientRecording();
+void StartAutoClientRecording();
 #endif

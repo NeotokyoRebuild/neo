@@ -32,7 +32,7 @@ extern ConVar sv_neo_comp_name;
 }
 
 #ifdef CLIENT_DLL
-void StartClientRecording()
+void StartAutoClientRecording()
 {
 	// SteamID
 	char steamSection[64];
@@ -69,14 +69,8 @@ void StartClientRecording()
 		V_snprintf(replayName, sizeof(replayName), "%s_%s_%s", timeSection, mapSection, steamSection);
 	}
 
-	StopClientRecording(); // Stop any previous recording, jic. This does nothing if a demo isn't running.
-	char cmd[16 + sizeof(replayName)];
-	V_snprintf(cmd, sizeof(cmd), "record %s", replayName);
-	engine->ClientCmd(cmd); // Start recording. Format demo filename here. Note: replays can be overwritten using this.
-}
+	engine->StopDemoRecording(); // Stop any previous recording
 
-void StopClientRecording()
-{
-	engine->ClientCmd("stop");
+	engine->StartDemoRecording(replayName); // Start recording
 }
 #endif

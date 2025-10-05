@@ -530,9 +530,6 @@ CNEORules::CNEORules()
 	m_iForcedClass = -1;
 	m_iForcedSkin = -1;
 	m_iForcedWeapon = -1;
-#ifdef CLIENT_DLL
-	m_bIsRecording = false;
-#endif
 
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
@@ -1757,10 +1754,9 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 		engine->ClientCmd("r_cleardecals");
 		engine->ClientCmd("classmenu");
 
-		if (!m_bIsRecording && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		if (!engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
-			StartClientRecording();
-			m_bIsRecording = true;
+			StartAutoClientRecording();
 		}
 #endif
 		m_flNeoRoundStartTime = gpGlobals->curtime;
@@ -1770,10 +1766,9 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 #ifdef CLIENT_DLL
 	if (Q_strcmp(type, "game_end") == 0)
 	{
-		if (m_bIsRecording && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		if (engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
-			StopClientRecording();
-			m_bIsRecording = false;
+			engine->StopDemoRecording();
 		}
 	}
 #endif
