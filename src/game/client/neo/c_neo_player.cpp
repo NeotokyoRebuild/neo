@@ -833,7 +833,6 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
-extern ConVar neo_ghost_bhopping;
 void C_NEO_Player::CalculateSpeed(void)
 {
 	float speed = GetNormSpeed();
@@ -877,17 +876,6 @@ void C_NEO_Player::CalculateSpeed(void)
 		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
 	}
 
-	Vector absoluteVelocity = GetAbsVelocity();
-	absoluteVelocity.z = 0.f;
-	float currentSpeed = absoluteVelocity.Length();
-
-	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed)
-	{
-		float overSpeed = currentSpeed - speed;
-		absoluteVelocity.NormalizeInPlace();
-		absoluteVelocity *= -overSpeed;
-		ApplyAbsVelocityImpulse(absoluteVelocity);
-	}
 	speed = MAX(speed, 55);
 
 	// Slowdown after jumping
@@ -1768,6 +1756,11 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 bool C_NEO_Player::IsCarryingGhost(void) const
 {
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
+}
+
+bool C_NEO_Player::IsObjective(void) const
+{
+	return IsCarryingGhost() || GetClass() == NEO_CLASS_VIP || GetClass() == NEO_CLASS_JUGGERNAUT;
 }
 
 const Vector C_NEO_Player::GetPlayerMins(void) const

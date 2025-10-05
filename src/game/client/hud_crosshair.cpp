@@ -323,12 +323,24 @@ void CHudCrosshair::Paint( void )
 		return;
 
 #ifdef NEO
-	auto* pPlayer = IsLocalPlayerSpectator() ? static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(GetSpectatorTarget())) : static_cast<C_NEO_Player *>(C_NEO_Player::GetLocalPlayer());
+	C_NEO_Player* pPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pPlayer)
+		return;
+
+	if (pPlayer->IsObserver())
+	{
+		if (pPlayer->GetObserverMode() != OBS_MODE_IN_EYE)
+			return;
+
+		pPlayer = ToNEOPlayer(ClientEntityList().GetBaseEntity(GetSpectatorTarget()));
+		if (!pPlayer)
+			return;
+	}
 #else
 	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
-#endif // NEO
 	if ( !pPlayer )
 		return;
+#endif // NEO
 
 	float x, y;
 	bool bBehindCamera;
