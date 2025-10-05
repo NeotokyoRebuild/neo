@@ -2,6 +2,7 @@
 #include "neo_detpack.h"
 #include "explode.h"
 #include "neo_tracefilter_collisiongroupdelta.h"
+#include "hl2/hl2_shareddefs.h"
 
 #ifdef GAME_DLL
 #include "gamestats.h"
@@ -31,6 +32,10 @@ END_DATADESC()
 extern ConVar sv_neo_grenade_cor;
 extern ConVar sv_neo_grenade_gravity;
 extern ConVar sv_neo_grenade_friction;
+
+ConVar sv_neo_detpack_health("sv_neo_detpack_health", "100.0", FCVAR_REPLICATED, "Health of a deployed detpack.", true, 1.0, true, 1000.0);
+ConVar sv_neo_detpack_damage_blast_enable("sv_neo_detpack_damage_blast_enable", "0", FCVAR_REPLICATED, "Allow blast damage to destroy detpacks.", true, 0.0, true, 1.0);
+
 void CNEODeployedDetpack::Spawn(void)
 {
 	Precache();
@@ -45,7 +50,7 @@ void CNEODeployedDetpack::Spawn(void)
 	m_flDamage = NEO_DETPACK_DAMAGE;
 	m_DmgRadius = NEO_DETPACK_DAMAGE_RADIUS;
 	m_takedamage = DAMAGE_YES;
-	m_iHealth = 1;
+	m_iHealth = sv_neo_detpack_health.GetFloat();
 	m_punted = false;
 	m_hasSettled = false;
 	m_hasBeenMadeNonSolid = false;
@@ -170,7 +175,25 @@ void CNEODeployedDetpack::SetVelocity(const Vector& velocity, const AngularImpul
 
 int CNEODeployedDetpack::OnTakeDamage(const CTakeDamageInfo& inputInfo)
 {
-	// Dets can't be detonated by damage.
+	int bitsDamageType = inputInfo.GetDamageType();
+
+	bool bCanTakeDamage = false;
+
+	if ((bitsDamageType & DMG_BLAST) && sv_neo_detpack_damage_blast_enable.GetBool())
+	{
+		bCanTakeDamage = true;
+	}
+
+	if (bCanTakeDamage)
+	{
+		m_iHealth -= inputInfo.GetDamage();
+
+		if (m_iHealth <= 0)
+		{
+			Detonate();
+		}
+	}
+
 	return 0;
 }
 
@@ -198,7 +221,7 @@ CBaseGrenadeProjectile* NEODeployedDetpack_Create(const Vector& position, const 
 	pDet->SetTimer(FLT_MAX, FLT_MAX);
 	pDet->SetThrower(ToBaseCombatCharacter(pOwner));
 	if (pOwner) pDet->ChangeTeam(pOwner->GetTeamNumber());
-	pDet->m_takedamage = DAMAGE_EVENTS_ONLY;
+	pDet->m_takedamage = DAMAGE_YES;
 
 	return pDet;
 }

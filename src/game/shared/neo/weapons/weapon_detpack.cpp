@@ -69,6 +69,8 @@ PRECACHE_WEAPON_REGISTER(weapon_remotedet);
 
 ConVar sv_neo_detpack_xp_limit("sv_neo_detpack_xp_limit", "4", FCVAR_REPLICATED,
 	"How many XP are required to unlock the detpack for recons (or -1 for no limit).", true, -1.0, false, 0.0);
+ConVar sv_neo_detpack_sound_dud("sv_neo_detpack_sound_dud", "HL2Player.UseDeny", FCVAR_REPLICATED,
+	"Sound that detpack detonator makes when detpack has already been destroyed.");
 
 int CWeaponDetpack::GetNeoWepXPCost(const int neoClass) const
 {
@@ -81,9 +83,6 @@ CWeaponDetpack::CWeaponDetpack()
 	m_bThisDetpackHasBeenThrown = false;
 	m_bRemoteHasBeenTriggered = false;
 
-#ifdef GAME_DLL
-	m_pDetpack = NULL;
-#endif
 	SetViewOffset(Vector(0, 0, 1.0));
 }
 
@@ -207,6 +206,7 @@ void CWeaponDetpack::ItemPostFrame(void)
 			{
 				if (pOwner)
 				{
+					pOwner->EmitSound(sv_neo_detpack_sound_dud.GetString());
 					if (pOwner->GetActiveWeapon() == this)
 					{
 						if (!pOwner->SwitchToNextBestWeapon(this))
