@@ -42,10 +42,14 @@ void StartAutoClientRecording()
 		auto accountID = steamID.GetAccountID();
 		V_snprintf(steamSection, sizeof(steamSection), "%d", accountID);
 	}
+	else
+	{
+		V_strncpy(steamSection, "nosteamid", sizeof(steamSection));
+	}
 
 	// Map name
 	char mapSection[256];
-	V_strcpy(mapSection, GameRules()->MapName());
+	V_strncpy(mapSection, GameRules()->MapName(), sizeof(mapSection));
 
 	// Time and date
 	char timeSection[16];
@@ -55,10 +59,10 @@ void StartAutoClientRecording()
 
 	// Competition name
 	char compSection[32];
-	V_strcpy(compSection, sv_neo_comp_name.GetString());
+	V_strncpy(compSection, sv_neo_comp_name.GetString(), sizeof(compSection));
 
 	// Build the filename
-	char replayName[sizeof(steamSection) + sizeof(mapSection) + sizeof(timeSection) + sizeof(compSection) + 2];
+	char replayName[MAX_PATH];
 
 	if (compSection[0] != '\0')
 	{
