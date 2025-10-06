@@ -512,6 +512,7 @@ void C_NEO_Player::CheckVisionButtons()
 				C_RecipientFilter filter;
 				filter.AddRecipient(this);
 				filter.MakeReliable();
+				filter.UsePredictionRules();
 
 				EmitSound_t params;
 				params.m_bEmitCloseCaption = false;
@@ -1778,6 +1779,7 @@ void C_NEO_Player::PlayCloakSound(void)
 	C_RecipientFilter filter;
 	filter.AddRecipient(this);
 	filter.MakeReliable();
+	filter.UsePredictionRules();
 
 	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
 	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
