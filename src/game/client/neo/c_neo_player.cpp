@@ -1119,6 +1119,15 @@ void C_NEO_Player::PreThink( void )
 			// Disable client side glow effects of all players
 			glow_outline_effect_enable.SetValue(false);
 #endif // GLOWS_ENABLE
+
+			// Reset any player explosion/shock effects
+			// NEO NOTE (Rain): The game already does this at CBasePlayer::Spawn, but that one's server-side,
+			// so it could arrive too late. Its recipient filter is also not marked reliable, so that packet
+			// could be dropped, which may also be why we received player reports of the grenade ear-ringing effect
+			// not being properly removed, even though at least I couldn't reproduce the bug locally.
+			// For these reasons we're doing it client-sided here ourselves.
+			CLocalPlayerFilter filter;
+			enginesound->SetPlayerDSP(filter, 0, true);
 		}
 	}
 	else
