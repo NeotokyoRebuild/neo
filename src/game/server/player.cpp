@@ -5304,6 +5304,12 @@ void CBasePlayer::Spawn( void )
 	Q_strncpy( m_szLastPlaceName.GetForModify(), "", MAX_PLACE_NAME_LENGTH );
 	
 	CSingleUserRecipientFilter user( this );
+#ifdef NEO
+	// So that the explosion ear-ringing SFX is reliably cleared.
+	// We already do this for the local C_NEO_Player (for faster response to remote clients),
+	// but this is made reliable for POV spectators' benefit.
+	user.MakeReliable();
+#endif
 	enginesound->SetPlayerDSP( user, 0, false );
 
 	CreateViewModel();
