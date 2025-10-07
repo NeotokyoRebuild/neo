@@ -1119,6 +1119,12 @@ void C_NEO_Player::PreThink( void )
 			// Disable client side glow effects of all players
 			glow_outline_effect_enable.SetValue(false);
 #endif // GLOWS_ENABLE
+
+			// Reset any player explosion/shock effects
+			// NEO NOTE (Rain): The game already does this at CBasePlayer::Spawn, but that one's server-side,
+			// so it could arrive too late.
+			CLocalPlayerFilter filter;
+			enginesound->SetPlayerDSP(filter, 0, true);
 		}
 	}
 	else
