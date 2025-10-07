@@ -2887,9 +2887,9 @@ void GiveDet(CNEO_Player* pPlayer)
 			auto pWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
 			if (pWeapon)
 			{
-				const int detXpCost = pWeapon->GetNeoWepXPCost(pPlayer->GetClass());
+				const int detXpCost = -1;
 				// Cost of -1 XP means no XP cost.
-				const bool canHaveDet = (detXpCost < 0 || pPlayer->m_iXP >= detXpCost);
+				const bool canHaveDet = true;
 
 				pWeapon->SetSubType(0);
 				if (canHaveDet)
@@ -2917,17 +2917,23 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
-		if (this->m_iXP >= 4) { GiveDet(this); }
+		GiveNamedItem("weapon_smokegrenade");
+		GiveNamedItem("weapon_grenade");
+		GiveDet(this); 
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
+		GiveDet(this); 
+		GiveNamedItem("weapon_smokegrenade");
 		GiveNamedItem("weapon_grenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		break;
 	case NEO_CLASS_SUPPORT:
 		GiveNamedItem("weapon_kyla");
+		GiveDet(this); 
+		GiveNamedItem("weapon_grenade");
 		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
 		break;
