@@ -1142,7 +1142,19 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 	// No supernatural gunowners allowed here
 	if (!pOwner->IsAlive())
 	{
-		Assert(false);
+#if DEBUG
+		static int deathTicks[MAX_PLAYERS]{};
+		if (!*deathTicks)
+			for (int i = 0; i < ARRAYSIZE(deathTicks); ++i) deathTicks[i] = -1;
+		const int ownerIdx = pOwner->entindex();
+		const int deathTick = deathTicks[ownerIdx];
+		if (deathTick != -1)
+		{
+			int tickDelta = gpGlobals->tickcount - deathTick;
+			AssertMsg(tickDelta != 1, "Owner has been dead for two consecutive ticks!!");
+		}
+		deathTicks[ownerIdx] = gpGlobals->tickcount;
+#endif
 		return false;
 	}
 
