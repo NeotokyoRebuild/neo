@@ -1007,4 +1007,17 @@
 		"tall"	"480"
 		"box_color"		"200 200 200 40"
 	}
+
+	neo_spectator_takeover
+	{
+		"fieldName"		"neo_spectator_takeover"
+		"ui_scale"				"0.66"
+		"def_row_tall_divisor"	"27"
+		"margin_x_divisor"		"192"
+		"margin_y_divisor"		"108"
+		"padding_x_multiplier"	"2"
+		"padding_y_multiplier"	"2"
+		"box_y_divisor"			"4"
+		"box_y_numerator"		"3"
+	}
 }

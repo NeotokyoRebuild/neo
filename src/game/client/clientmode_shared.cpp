@@ -71,6 +71,7 @@ extern ConVar replay_rendersetting_renderglow;
 #include "c_neo_player.h"
 #include <GameUI/IGameUI.h>
 #include "ui/neo_loading.h"
+#include "ui/neo_hud_spectator_takeover.h"
 #include "neo_gamerules.h"
 #endif
 
@@ -322,6 +323,7 @@ ClientModeShared::ClientModeShared()
 
 #ifdef NEO
 	g_pNeoLoading = nullptr;
+	m_pSpectatorTakeover = nullptr;
 #endif
 
 #if defined( REPLAY_ENABLED )

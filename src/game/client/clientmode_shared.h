@@ -20,6 +20,7 @@
 #include "vguitextwindow.h"
 
 extern ConVar cl_disablehtmlmotd;
+class CNEOHud_SpectatorTakeover;
 #endif
 
 class CBaseHudChat;
@@ -186,6 +187,9 @@ private:
 	CBaseHudChat			*m_pChatElement;
 	vgui::HCursor			m_CursorNone;
 	CBaseHudWeaponSelection *m_pWeaponSelection;
+#ifdef NEO
+	CNEOHud_SpectatorTakeover *m_pSpectatorTakeover;
+#endif
 	int						m_nRootSize[2];
 };
 
