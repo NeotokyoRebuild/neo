@@ -1579,7 +1579,8 @@ int CInput::GetButtonBits( int bResetState )
 	CalcButtonBits( bits, IN_VISION, s_ClearInputState, &in_vision, bResetState);
 	if (KeyState(&in_speed))
 	{
-		bits &= ~(IN_WALK);
+		// Cancel walk toggle if sprinting
+		KeyUp(&in_walk, nullptr);
 	}
 #endif
 
