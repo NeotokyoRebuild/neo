@@ -104,6 +104,9 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
 	RecvPropTime(RECVINFO(m_flDeathTime)),
+
+	RecvPropEHandle(RECVINFO(m_hSpectatorTakeoverPlayerTarget)),
+	RecvPropEHandle(RECVINFO(m_hSpectatorTakeoverPlayerImpersonatingMe))
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -1877,28 +1880,27 @@ void __MsgFunc_CSpectatorTakeoverPlayer(bf_read &msg)
 	C_NEO_Player* pPlayerTakeoverTarget = USERID2NEOPLAYER(playerTakeoverTargetUserID);
 
 
-	if (!pPlayerTakeoverTarget || !pSpectatorTakingOver)
+	if (pPlayerTakeoverTarget && pSpectatorTakingOver)
 	{
-		return;
+		// Save for later in C_NEO_Player::OnDataChanged
+		pSpectatorTakingOver->m_hSpectatorTakeoverPlayerTarget = pPlayerTakeoverTarget;
+		pSpectatorTakingOver->m_bCopyOverTakeoverPlayerDetails = true;
 	}
-
-	// Save for later in C_NEO_Player::OnDataChanged
-	pSpectatorTakingOver->m_hSpectatorTakeoverTarget = pPlayerTakeoverTarget;
 }
 
 CUserMessageRegister CSpectatorTakeoverPlayerRegistration("CSpectatorTakeoverPlayer", __MsgFunc_CSpectatorTakeoverPlayer);
 
 void C_NEO_Player::CSpectatorTakeoverPlayerUpdateOnDataChanged()
 {
-    if ( C_NEO_Player* pTarget = m_hSpectatorTakeoverTarget.Get() )
+	if (m_bCopyOverTakeoverPlayerDetails)
 	{
-        // Check if our model is stable from server & matches the target
-        if (GetModel() && (GetModel() == pTarget->GetModel()))
-        {
-            CSpectatorTakeoverPlayerUpdate(pTarget);
-            m_hSpectatorTakeoverTarget = nullptr;
-        }
-    }
+		m_bCopyOverTakeoverPlayerDetails = false;
+
+		if (C_NEO_Player* pTarget = m_hSpectatorTakeoverPlayerTarget.Get())
+		{
+			CSpectatorTakeoverPlayerUpdate(pTarget);
+		}
+	}
 }
 
 void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget)

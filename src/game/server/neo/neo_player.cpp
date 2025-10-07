@@ -83,6 +83,9 @@ SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
 
 SendPropTime(SENDINFO(m_flDeathTime)),
+
+SendPropEHandle(SENDINFO(m_hSpectatorTakeoverPlayerTarget)),
+SendPropEHandle(SENDINFO(m_hSpectatorTakeoverPlayerImpersonatingMe)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
