@@ -174,6 +174,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 		RemoveAllItems(false);
 		GiveDefaultItems();
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
+		SetMaxHealth(MAX_HEALTH_FOR_CLASS[newClass]);
+		SetHealth(MAX_HEALTH_FOR_CLASS[newClass]);
 	}
 	else
 	{
@@ -524,6 +526,9 @@ void CNEO_Player::Spawn(void)
 
 	BaseClass::Spawn();
 
+	SetHealth(MAX_HEALTH_FOR_CLASS[m_iNeoClass]);
+	SetMaxHealth(MAX_HEALTH_FOR_CLASS[m_iNeoClass]);
+
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 
 	m_bIsPendingSpawnForThisRound = false;
@@ -574,7 +579,7 @@ void CNEO_Player::Spawn(void)
 			return;
 		}
 		ChangeTeam(forcedTeam);
-
+		
 		if (NEORules()->GetForcedClass() < 0)
 		{
 			engine->ClientCommand(this->edict(), "classmenu");
@@ -2129,22 +2134,7 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return 0.f;
 	}
 
-	switch (GetClass())
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_VIP:
-		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_JUGGERNAUT:
-		return NEO_JUGGERNAUT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	default:
-		Assert(false);
-		return BaseClass::GetReceivedDamageScale(pAttacker);
-	}
+	return BaseClass::GetReceivedDamageScale(pAttacker);
 }
 
 bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,

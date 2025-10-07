@@ -43,6 +43,7 @@ protected:
 	string_t m_szNeoNameNone;
 	CNetworkArray(int, m_iStar, MAX_PLAYERS_ARRAY_SAFE);
 	CNetworkArray(string_t, m_szNeoClantag, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(int, m_iMaxHealth, MAX_PLAYERS_ARRAY_SAFE);
 #endif
 	CNetworkArray( int, m_iScore, MAX_PLAYERS_ARRAY_SAFE );
 	CNetworkArray( int, m_iDeaths, MAX_PLAYERS_ARRAY_SAFE );

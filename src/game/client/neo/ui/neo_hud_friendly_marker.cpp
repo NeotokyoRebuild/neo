@@ -25,6 +25,7 @@ ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_facto
 	"Friendly player marker HUD element scaling factor", true, 0.01, false, 0);
 ConVar cl_neo_clantag_friendly_marker_spec_only("cl_neo_clantag_friendly_marker_spec_only", "1", FCVAR_ARCHIVE,
 												"Clantags only appear for spectators.", true, 0.0f, true, 1.0f);
+extern ConVar cl_neo_hud_health_mode;
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, neo_iff);
 
@@ -202,7 +203,8 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 				DisplayText(textASCII, drawOutline);
 			}
 
-			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%d%%", player->GetHealth());
+			int healthMode = cl_neo_hud_health_mode.GetInt();
+			V_snprintf(textASCII, MAX_MARKER_STRLEN, healthMode ? "%dhp" : "%d%%", player->GetDisplayedHealth(healthMode));
 			DisplayText(textASCII, drawOutline);
 		}
 

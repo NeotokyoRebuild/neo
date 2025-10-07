@@ -55,6 +55,8 @@
 #include "c_user_message_register.h"
 #include "neo_player_shared.h"
 
+#include "c_playerresource.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -143,6 +145,7 @@ ConVar cl_neo_streamermode_autodetect_obs("cl_neo_streamermode_autodetect_obs", 
 
 extern ConVar sv_neo_clantag_allow;
 extern ConVar sv_neo_dev_test_clantag;
+extern ConVar sv_neo_wep_dmg_modifier;
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -628,16 +631,13 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
-constexpr float invertedDamageResistanceModifier[NEO_CLASS__ENUM_COUNT] = {
-	1 / NEO_RECON_DAMAGE_MODIFIER,
-	1 / NEO_ASSAULT_DAMAGE_MODIFIER,
-	1 / NEO_SUPPORT_DAMAGE_MODIFIER,
-	1 / NEO_ASSAULT_DAMAGE_MODIFIER
-};
+ConVar cl_neo_hud_health_mode("cl_neo_hud_health_mode", "1", FCVAR_ARCHIVE,
+	"Health display mode. 0 = Percent, 1 = Hit points, 2 = Effective hit points", true, 0, true, 2);
 
-int C_NEO_Player::GetDisplayedHealth(bool asPercent) const
+// 0 = Percent, 1 = Hit points, 2 = Effective hit points
+int C_NEO_Player::GetDisplayedHealth(int mode) const
 {
-	return asPercent ? GetHealth() : GetHealth() * invertedDamageResistanceModifier[m_iNeoClass];
+	return g_PR ? g_PR->GetDisplayedHealth(entindex(), mode) : GetHealth();
 }
 
 extern ConVar mat_neo_toc_test;
@@ -1825,8 +1825,6 @@ void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
 
 	BaseClass::PreDataUpdate(updateType);
 }
-
-extern ConVar sv_neo_wep_dmg_modifier;
 
 // NEO NOTE (Rain): doesn't seem to be implemented at all clientside?
 // Don't need to do this, unless we want it for prediction with proper implementation later.
