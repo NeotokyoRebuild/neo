@@ -292,7 +292,9 @@ protected:
 	void					OnPlay();
 	void					OnStop();
 #ifdef NEO
+public:
 	void					OnPause();
+protected:
 #endif // NEO
 	void					OnChangeVolume( float newVol );
 #ifdef NEO
@@ -332,6 +334,10 @@ protected:
 	void					ShowDirectorySelectDialog();
 
 	void					GoToNextSong( int skip );
+#ifdef NEO
+public:
+	int						m_bPauseNextSong = false;
+#endif // NEO
 
 // Data
 private:
@@ -351,6 +357,7 @@ private:
 	vgui::Slider			*m_pVolume;
 #ifdef NEO
 	vgui::Slider			*m_pVolumeInGame;
+	vgui::CheckButton		*m_pMenuPause;
 	vgui::CheckButton		*m_pGamePause;
 
 	bool					m_bFirstEverTick = true;
@@ -374,6 +381,7 @@ private:
 	bool					m_bMuted;
 #ifdef NEO
 	bool					m_bShuffle;
+	bool					m_bPauseInMenu;
 	bool					m_bPauseInGame;
 #endif // NEO
 
