@@ -33,9 +33,6 @@ CNeoLoading::CNeoLoading()
 
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 	ApplySchemeSettings(pScheme);
-
-	m_pHostMap = g_pCVar->FindVar("host_map");
-	Assert(m_pHostMap != nullptr);
 }
 
 CNeoLoading::~CNeoLoading()
@@ -193,10 +190,9 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 
 	static bool bStaticInitNeoUI = false;
 	bool bSkipRender = false;
-	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && m_pHostMap)
+	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
 	{
-		auto hostMapName = m_pHostMap->GetString();
-		if (Q_stristr(hostMapName, "background_"))
+		if (engine->IsLevelMainMenuBackground())
 		{
 			bSkipRender = true;
 		}
