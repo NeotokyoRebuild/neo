@@ -292,9 +292,7 @@ protected:
 	void					OnPlay();
 	void					OnStop();
 #ifdef NEO
-public:
 	void					OnPause();
-protected:
 #endif // NEO
 	void					OnChangeVolume( float newVol );
 #ifdef NEO
