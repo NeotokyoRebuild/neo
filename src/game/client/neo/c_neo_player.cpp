@@ -640,6 +640,11 @@ int C_NEO_Player::GetDisplayedHealth(int mode) const
 	return g_PR ? g_PR->GetDisplayedHealth(entindex(), mode) : GetHealth();
 }
 
+int C_NEO_Player::GetMaxHealth() const
+{
+	return g_PR ? g_PR->GetMaxHealth(entindex()) : 1;
+}
+
 extern ConVar mat_neo_toc_test;
 #ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;

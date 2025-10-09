@@ -93,7 +93,7 @@ C_PlayerResource::C_PlayerResource()
 	memset(m_szDispNameWDupeIdx, 0, sizeof(m_szDispNameWDupeIdx));
 	memset(m_iStar, 0, sizeof(m_iStar));
 	memset(m_szNeoClantag, 0, sizeof(m_szNeoClantag));
-	memset(m_iMaxHealth, 0, sizeof(m_iMaxHealth));
+	memset(m_iMaxHealth, 1, sizeof(m_iMaxHealth));
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -452,7 +452,7 @@ int	C_PlayerResource::GetHealth( int iIndex )
 int	C_PlayerResource::GetMaxHealth(int iIndex)
 {
 	if (!IsConnected(iIndex) && !IsValid(iIndex))
-		return 0;
+		return 1;
 
 	return m_iMaxHealth[iIndex];
 }

@@ -722,12 +722,12 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 	const char* squadMateClass = GetNeoClassName(g_PR->GetClass(playerIndex));
 	const bool isAlive = g_PR->IsAlive(playerIndex);
 
-	const int healthMode = cl_neo_hud_health_mode.GetInt();
-	const int squadMateHealth = isAlive ? g_PR->GetDisplayedHealth(playerIndex, healthMode) : 0;
-
 	if (isAlive)
 	{
-		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  Integrity %i", g_PR->GetPlayerName(playerIndex), squadMateRankName, squadMateClass, squadMateHealth);
+		const int healthMode = cl_neo_hud_health_mode.GetInt();
+		char playerHealth[7]; // 4 digits + 2 letters
+		V_snprintf(playerHealth, sizeof(playerHealth), healthMode ? "%dhp" : "%d%%", g_PR->GetDisplayedHealth(playerIndex, healthMode));
+		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", g_PR->GetPlayerName(playerIndex), squadMateRankName, squadMateClass, playerHealth);
 	}
 	else
 	{

@@ -95,7 +95,7 @@ void CPlayerResource::Init( int iIndex )
 	m_iNeoNameDupeIdx.Set(iIndex, 0);
 	m_iStar.Set(iIndex, 0);
 	m_szNeoClantag.Set(iIndex, m_szNeoNameNone);
-	m_iMaxHealth.Set(iIndex, 0);
+	m_iMaxHealth.Set(iIndex, 1);
 #endif
 	m_iPing.Set( iIndex, 0 );
 	m_iScore.Set( iIndex, 0 );

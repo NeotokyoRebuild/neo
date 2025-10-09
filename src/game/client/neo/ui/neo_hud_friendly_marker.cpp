@@ -142,6 +142,8 @@ void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team *team, const C_NEO_Player 
 	}
 }
 
+ConVar cl_neo_hud_iff_verbose("cl_neo_hud_iff_verbose", "1", FCVAR_ARCHIVE, "Verbosity of information displayed on top of teammates", true, 0, true, 1);
+
 extern ConVar glow_outline_effect_enable;
 void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const
 {
@@ -197,15 +199,34 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 					((!localPlayerAlive || localPlayerSpec) && player->IsCarryingGhost()))
 			{
 				const float flDistance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(localPlayer->GetAbsOrigin());
-				V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
-						 player->IsCarryingGhost() ? "GHOST DISTANCE" : "DISTANCE",
-						 flDistance);
+				if (cl_neo_hud_iff_verbose.GetBool())
+				{
+					V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
+						player->IsCarryingGhost() ? "GHOST DISTANCE" : "DISTANCE",
+						flDistance);
+				}
+				else
+				{
+					V_snprintf(textASCII, MAX_MARKER_STRLEN, "%.0fm",
+						flDistance);
+				}
 				DisplayText(textASCII, drawOutline);
 			}
 
-			int healthMode = cl_neo_hud_health_mode.GetInt();
-			V_snprintf(textASCII, MAX_MARKER_STRLEN, healthMode ? "%dhp" : "%d%%", player->GetDisplayedHealth(healthMode));
-			DisplayText(textASCII, drawOutline);
+			if (cl_neo_hud_iff_verbose.GetBool()) {
+				int healthMode = cl_neo_hud_health_mode.GetInt();
+				V_snprintf(textASCII, MAX_MARKER_STRLEN, healthMode ? "%dhp" : "%d%%", player->GetDisplayedHealth(healthMode));
+				DisplayText(textASCII, drawOutline);
+			}
+
+			static constexpr int HEALTHBAR_WIDTH = 64;
+			static constexpr int HEALTHBAR_HEIGHT = 6;
+
+			int healthBarWidth = (HEALTHBAR_WIDTH / 2) * Min((float)player->GetHealth() / player->GetMaxHealth(), 1.0f); // Clamp in case someone forgot to set max health, or it hasn't been sent by the server yet.
+			int healthBarYPos = y + (drawOutline ? 0 : m_iMarkerHeight) + textYOffset + 4;
+			surface()->DrawSetColor(FadeColour(teamColor, fadeTextMultiplier));
+			surface()->DrawOutlinedRect(x - (HEALTHBAR_WIDTH / 2), healthBarYPos, x + (HEALTHBAR_WIDTH / 2), healthBarYPos + HEALTHBAR_HEIGHT);
+			surface()->DrawFilledRect(x - healthBarWidth, healthBarYPos, x + healthBarWidth, healthBarYPos + HEALTHBAR_HEIGHT);
 		}
 
 		if (!drawOutline)

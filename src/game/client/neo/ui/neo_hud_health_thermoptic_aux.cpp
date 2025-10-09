@@ -122,7 +122,7 @@ void CNEOHud_HTA::DrawHTA() const
 
 	const int healthMode = cl_neo_hud_health_mode.GetInt();
 	const int displayedHealth = player->GetDisplayedHealth(healthMode);
-	const int healthPercent = player->GetDisplayedHealth(0);
+	const float healthPercent = Min((float)player->GetHealth() / player->GetMaxHealth(), 1.0f);
 	const int thermopticValue = static_cast<int>(roundf(player->m_HL2Local.m_cloakPower));
 	const float thermopticPercent = player->CloakPower_CurrentVisualPercentage();
 	const int aux = player->m_HL2Local.m_flSuitPower;
@@ -191,7 +191,7 @@ void CNEOHud_HTA::DrawHTA() const
 	surface()->DrawFilledRect(
 		healthbar_xpos + xpos,
 		healthbar_ypos + ypos,
-		healthbar_xpos + xpos + (healthbar_w * (healthPercent / 100.0)),
+		healthbar_xpos + xpos + healthbar_w * healthPercent,
 		healthbar_ypos + ypos + healthbar_h);
 
 	if (playerIsNotSupport)
