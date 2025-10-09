@@ -1143,7 +1143,7 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 	if (!pOwner->IsAlive())
 	{
 #if DEBUG
-		static int deathTicks[MAX_PLAYERS]{};
+		static int deathTicks[MAX_PLAYERS_ARRAY_SAFE]{};
 		if (!*deathTicks)
 			for (int i = 0; i < ARRAYSIZE(deathTicks); ++i) deathTicks[i] = -1;
 		const int ownerIdx = pOwner->entindex();
