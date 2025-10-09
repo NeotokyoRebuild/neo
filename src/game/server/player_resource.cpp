@@ -30,6 +30,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 	SendPropArray3(SENDINFO_ARRAY3(m_iNeoNameDupeIdx), SendPropInt(SENDINFO_ARRAY(m_iNeoNameDupeIdx), 12)),
 	SendPropArray3(SENDINFO_ARRAY3(m_iStar), SendPropInt(SENDINFO_ARRAY(m_iStar), 12)),
 	SendPropArray3(SENDINFO_ARRAY3(m_szNeoClantag), SendPropString(SENDINFO_ARRAY(m_szNeoClantag), 0, SendProxy_StringT_To_String)),
+	SendPropArray3(SENDINFO_ARRAY3(m_iMaxHealth), SendPropInt(SENDINFO_ARRAY(m_iMaxHealth), -1, SPROP_VARINT | SPROP_UNSIGNED)),
 #endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),
@@ -94,6 +95,7 @@ void CPlayerResource::Init( int iIndex )
 	m_iNeoNameDupeIdx.Set(iIndex, 0);
 	m_iStar.Set(iIndex, 0);
 	m_szNeoClantag.Set(iIndex, m_szNeoNameNone);
+	m_iMaxHealth.Set(iIndex, 1);
 #endif
 	m_iPing.Set( iIndex, 0 );
 	m_iScore.Set( iIndex, 0 );
@@ -144,6 +146,7 @@ void CPlayerResource::UpdatePlayerData( void )
 			m_iXP.Set(i, neoPlayer->m_iXP.Get());
 			m_iClass.Set(i, neoPlayer->m_iNeoClass.Get());
 			m_iStar.Set(i, neoPlayer->m_iNeoStar.Get());
+			m_iMaxHealth.Set(i, MAX(0, pPlayer->GetMaxHealth()));
 			{
 				const char *neoPlayerName = neoPlayer->GetNeoPlayerName();
 				// NEO JANK (nullsystem): Possible memory hog from this? Although "The memory is freed on behalf of clients
