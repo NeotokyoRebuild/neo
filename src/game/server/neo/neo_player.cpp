@@ -3093,6 +3093,12 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 		return;
 	}
 
+	if (!NEORules()->IsTeamplay())
+	{
+		// Do not allow bot commanding in free for all game modes
+		return;
+	}
+
 	if (pCommander->GetTeamNumber() != GetTeamNumber())
 	{
 		// Commander is not on the same team, do not allow toggling follow state.
