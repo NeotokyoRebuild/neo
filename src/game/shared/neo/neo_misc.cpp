@@ -73,8 +73,6 @@ void StartAutoClientRecording()
 		V_snprintf(replayName, sizeof(replayName), "%s_%s_%s", timeSection, mapSection, steamSection);
 	}
 
-	engine->StopDemoRecording(); // Stop any previous recording
-
 	engine->StartDemoRecording(replayName); // Start recording
 }
 #endif

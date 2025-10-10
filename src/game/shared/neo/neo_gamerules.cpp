@@ -1754,7 +1754,7 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 		engine->ClientCmd("r_cleardecals");
 		engine->ClientCmd("classmenu");
 
-		if (sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		if (!engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
 			StartAutoClientRecording();
 		}
