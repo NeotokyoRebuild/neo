@@ -761,7 +761,16 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 									const int xOffset, const bool drawHealthClass)
 {
 	// Draw Outline
-	surface()->DrawSetColor(box_color);
+	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
+	if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
+	{
+		surface()->DrawSetColor(COLOR_WHITE);
+	}
+	else
+	{
+		surface()->DrawSetColor(box_color);
+	}
+
 	surface()->DrawFilledRect(xOffset - 1, Y_POS, xOffset + m_ilogoSize + 1,
 							  Y_POS + m_ilogoSize + 2 + (drawHealthClass ? 5 : 0));
 
@@ -804,23 +813,9 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	}
 
 	// Drawing Class Icon
-	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
-	if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
-	{
-		// Draw highlight background
-		surface()->DrawSetColor(teamLogoColor.color);
-		surface()->DrawFilledRect(xOffset, Y_POS + m_ilogoSize + 7, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 22);
-		// Draw inverted class icon
-		surface()->DrawSetColor(COLOR_BLACK);
-		surface()->DrawSetTexture(m_iGraphicID[g_PR->GetClass(playerIndex)]);
-		surface()->DrawTexturedRect(xOffset, Y_POS + m_ilogoSize + 7, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 71);
-	}
-	else
-	{
-		surface()->DrawSetTexture(m_iGraphicID[g_PR->GetClass(playerIndex)]);
-		surface()->DrawSetColor(teamLogoColor.color);
-		surface()->DrawTexturedRect(xOffset, Y_POS + m_ilogoSize + 7, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 71);
-	}
+	surface()->DrawSetTexture(m_iGraphicID[g_PR->GetClass(playerIndex)]);
+	surface()->DrawSetColor(teamLogoColor.color);
+	surface()->DrawTexturedRect(xOffset, Y_POS + m_ilogoSize + 7, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 71);
 
 	// Drawing Healthbar
 	if (!g_PR->IsAlive(playerIndex))
