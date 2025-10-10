@@ -4,6 +4,7 @@
 #include "steamclientpublic.h"
 #include "vgui/ISystem.h"
 #include "tier3.h"
+#include <filesystem.h>
 
 extern ConVar sv_neo_comp_name;
 #endif
@@ -73,6 +74,11 @@ void StartAutoClientRecording()
 		V_snprintf(replayName, sizeof(replayName), "%s_%s_%s", timeSection, mapSection, steamSection);
 	}
 
-	engine->StartDemoRecording(replayName); // Start recording
+	if (!g_pFullFileSystem->IsDirectory("demos"))
+	{
+		g_pFullFileSystem->CreateDirHierarchy("demos");
+	}
+
+	engine->StartDemoRecording(replayName, "demos"); // Start recording
 }
 #endif
