@@ -306,6 +306,7 @@ public:
 	// Bot Functions
 	void ResetBotCommandState();
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
+	void HideBotBehindHealthierPlayer();
 
 private:
 	bool m_bFirstDeathTick;
