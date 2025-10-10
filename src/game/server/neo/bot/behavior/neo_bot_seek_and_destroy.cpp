@@ -815,10 +815,8 @@ bool CNEOBotSeekAndDestroy::FanOutAndCover(CNEOBot* me, Vector& movementTarget, 
 		m_bAvoidingExplosive = bFoundExplosive;
 	};
 
-	if (gpGlobals->curtime > m_flNextFanOutLookCalcTime)
+	if (m_bAvoidingExplosive || (gpGlobals->curtime > m_flNextFanOutLookCalcTime))
 	{
-		m_flNextFanOutLookCalcTime = gpGlobals->curtime + 0.2; // Recalculate every 200ms
-
 		findAndProcessExplosives("neo_grenade_frag");
 		if (me->GetDifficulty() <= CNEOBot::DifficultyType::NORMAL)
 		{
@@ -851,27 +849,31 @@ bool CNEOBotSeekAndDestroy::FanOutAndCover(CNEOBot* me, Vector& movementTarget, 
 						trace_t tr;
 						UTIL_TraceLine(pOther->EyePosition(), me->EyePosition(), MASK_PLAYERSOLID, pOther, COLLISION_GROUP_NONE, &tr);
 
-						if (tr.fraction == 1.0f || tr.m_pEnt == me) // if we can see 'me'
+						if (tr.DidHit()) // if we can see 'me'
 						{
-							// Calculate vBotRepulsion
-							Vector vToOther = pOther->GetAbsOrigin() - me->GetAbsOrigin();
-							vToOther.z = 0;
-							float flDistSqr = vToOther.LengthSqr();
-
-							if (flDistSqr < (sv_neo_bot_cmdr_stop_distance_sq.GetFloat()) && flDistSqr > 0.001f)
-							{
-								float flRepulsion = 1.0f - (sqrt(flDistSqr) / sqrt(sv_neo_bot_cmdr_stop_distance_sq.GetFloat()));
-								vBotRepulsion -= vToOther.Normalized() * flRepulsion;
-							}
+							float flRepulsion = 1.0f - (tr.fraction);
+							vBotRepulsion -= tr.plane.normal * flRepulsion;
 						}
 					}
 				}
 			}
 		}
 
+		// Next look time
+		if (bTooClose)
+		{
+			m_flNextFanOutLookCalcTime = gpGlobals->curtime + 0.15; // 150 ms
+		}
+		else
+		{
+			int waitSec = RandomFloat(0.2f, 3.0f);
+			m_flNextFanOutLookCalcTime = gpGlobals->curtime + waitSec;
+		}
+
+
 		// Wall Repulsion
 		trace_t tr;
-		const int numWhiskers = 8;
+		const int numWhiskers = 12;
 		for (int i = 0; i < numWhiskers; ++i)
 		{
 			QAngle ang = me->GetLocalAngles();
