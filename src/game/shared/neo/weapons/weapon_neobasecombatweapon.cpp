@@ -1147,7 +1147,7 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 		if (!*deathTicks)
 			for (int i = 0; i < ARRAYSIZE(deathTicks); ++i) deathTicks[i] = -1;
 		const int ownerIdx = pOwner->entindex();
-		Assert(ToNEOPlayer(pOwner));
+		Assert(pOwner->IsPlayer()); // player index guaranteed within array range
 		const int deathTick = deathTicks[ownerIdx];
 		if (deathTick != -1)
 		{
