@@ -43,6 +43,9 @@ out
 /game/neo/mapsrc/*.prt
 /game/neo/mapsrc/*.vmx
 
+# Demos
+*.dem
+
 # MP3 Player
 /game/neo/resource/mp3player_db.txt
 /game/neo/resource/mp3settings.txt
