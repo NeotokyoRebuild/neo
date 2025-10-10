@@ -762,15 +762,6 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	surface()->DrawFilledRect(xOffset - 1, Y_POS, xOffset + m_ilogoSize + 1,
 							  Y_POS + m_ilogoSize + 2 + (drawHealthClass ? 5 : 0));
 
-	// Draw Command Highlight Border
-	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
-	if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
-	{
-		surface()->DrawSetColor(COLOR_WHITE);
-		surface()->DrawFilledRect(xOffset - 2, Y_POS-2, xOffset + m_ilogoSize + 2,
-			Y_POS + m_ilogoSize + 2);
-	}
-
 	// Drawing Avatar
 	surface()->DrawSetTexture(teamLogoColor.logo);
 
@@ -787,6 +778,18 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	if (!g_PR->IsAlive(playerIndex))
 		surface()->DrawSetColor(COLOR_DARK);
 	surface()->DrawTexturedRect(xOffset, Y_POS + 1, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 1);
+
+	// Draw Command Highlight Border on top of the avatar image
+	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
+	if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
+	{
+		surface()->DrawSetColor(COLOR_WHITE);
+		// Draw a thicker border inwards
+		for (int borderIndex = 0; borderIndex < 3; ++borderIndex)
+		{
+			surface()->DrawOutlinedRect(xOffset + borderIndex, Y_POS + borderIndex, xOffset + m_ilogoSize - borderIndex, Y_POS + m_ilogoSize - borderIndex);
+		}
+	}
 
 	// Deathmatch only: Draw XP on everyone
 	if (!NEORules()->IsTeamplay())
