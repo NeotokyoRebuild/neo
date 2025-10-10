@@ -43,6 +43,14 @@ out
 /game/neo/mapsrc/*.prt
 /game/neo/mapsrc/*.vmx
 
+# Mapping utilities
+*.rad
+*.fgd
+*.vbsp
+
+# Demos
+*.dem
+
 # MP3 Player
 /game/neo/resource/mp3player_db.txt
 /game/neo/resource/mp3settings.txt
@@ -689,6 +697,3 @@ FodyWeavers.xsd
 /mp
 
 /game/neo/cache/DownloadCache.db
-/game/neo/lights.rad
-/game/neo/rebuild.fgd
-/game/neo/detail.vbsp
