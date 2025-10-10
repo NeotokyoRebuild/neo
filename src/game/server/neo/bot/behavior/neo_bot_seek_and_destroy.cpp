@@ -662,6 +662,7 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 		// Commander died
 		me->m_hLeadingPlayer = nullptr;
 		me->m_hCommandingPlayer = nullptr;
+		me->HideBotBehindHealthierPlayer();
 		return false;
 	}
 
@@ -713,6 +714,7 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 				// Something went wrong with pathing
 				me->m_hLeadingPlayer = nullptr;
 				me->m_hCommandingPlayer = nullptr;
+				me->HideBotBehindHealthierPlayer();
 				return false;
 			}
 		}
@@ -721,6 +723,7 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 			// Commander is no longer valid or alive, stop following.
 			me->m_hLeadingPlayer = nullptr;
 			me->m_hCommandingPlayer = nullptr;
+			me->HideBotBehindHealthierPlayer();
 		}
 	}
 	else if (pCommander)
