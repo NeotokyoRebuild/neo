@@ -2875,6 +2875,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			}
 		}
 	}
+	HideBotBehindHealthierPlayer();
 	return BaseClass::OnTakeDamage_Alive(info);
 }
 
@@ -3141,6 +3142,51 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 			{
 				RequestSetStar(pCommander->GetStar());
 			}
+		}
+	}
+}
+
+void CNEO_Player::HideBotBehindHealthierPlayer()
+{
+	if (IsBot() && NEORules()->IsTeamplay() && !m_hCommandingPlayer.Get())
+	{
+		CNEO_Player* pNearestTeammate = nullptr;
+		float flNearestTeammateDistSq = FLT_MAX;
+
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			CNEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+
+			// Look to follow only other bots
+			// Some humans might not want to hang out with bots, so skip checking them
+			if (pPlayer && pPlayer != this && pPlayer->IsBot() && pPlayer->GetTeamNumber() == GetTeamNumber())
+			{
+				if (pPlayer->GetHealth() > GetHealth())
+				{
+					float flDistSq = (pPlayer->GetAbsOrigin() - GetAbsOrigin()).LengthSqr();
+					if (flDistSq < flNearestTeammateDistSq)
+					{
+						flNearestTeammateDistSq = flDistSq;
+						pNearestTeammate = pPlayer;
+					}
+
+					// Healthier bot should look for someone with more HP
+					if (pPlayer->m_hCommandingPlayer.Get() == this)
+					{
+						// resets search condition for HideBotBehindHealthierPlayer
+						pPlayer->m_hCommandingPlayer = nullptr;
+						pPlayer->m_hLeadingPlayer = nullptr;
+					}
+				}
+			}
+		}
+
+		if (pNearestTeammate)
+		{
+			m_hLeadingPlayer = pNearestTeammate;
+			// Somes bots might choose to follow other bots under a human commanded group,
+			// but keep human commander appointments manual
+			m_hCommandingPlayer = pNearestTeammate;
 		}
 	}
 }

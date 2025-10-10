@@ -35,7 +35,24 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	if ( threat == NULL || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
+		// Clear m_vLastPingByStar when threat is gone
+		if (me->GetDifficulty() >= CNEOBot::HARD)
+		{
+			for (int i = 0; i < STAR__TOTAL; ++i)
+			{
+				me->m_vLastPingByStar.GetForModify(i) = vec3_origin;
+			}
+		}
 		return Done( "No threat" );
+	}
+
+	// If bot is HARD or EXPERT difficulty, set m_vLastPingByStar to m_chasePath
+	if (me->GetDifficulty() >= CNEOBot::HARD)
+	{
+		for (int i = 0; i < STAR__TOTAL; ++i)
+		{
+			me->m_vLastPingByStar.GetForModify(i) = m_chasePath.GetEndPosition();
+		}
 	}
 
 	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon* >( me->GetActiveWeapon() );
