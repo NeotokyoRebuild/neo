@@ -761,18 +761,18 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 									const int xOffset, const bool drawHealthClass)
 {
 	// Draw Outline
+	surface()->DrawSetColor(box_color);
+	surface()->DrawFilledRect(xOffset - 1, Y_POS, xOffset + m_ilogoSize + 1,
+							  Y_POS + m_ilogoSize + 2 + (drawHealthClass ? 5 : 0));
+
+	// Draw Command Highlight Border
 	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
 	if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
 	{
 		surface()->DrawSetColor(COLOR_WHITE);
+		surface()->DrawFilledRect(xOffset - 2, Y_POS-2, xOffset + m_ilogoSize + 2,
+			Y_POS + m_ilogoSize + 2);
 	}
-	else
-	{
-		surface()->DrawSetColor(box_color);
-	}
-
-	surface()->DrawFilledRect(xOffset - 1, Y_POS, xOffset + m_ilogoSize + 1,
-							  Y_POS + m_ilogoSize + 2 + (drawHealthClass ? 5 : 0));
 
 	// Drawing Avatar
 	surface()->DrawSetTexture(teamLogoColor.logo);
