@@ -33,7 +33,6 @@ ConVar neo_bot_shotgunner_range("neo_bot_shotgunner_range", "320", FCVAR_NONE);
 ConVar neo_bot_recon_ratio("neo_bot_recon_ratio", "0.2", FCVAR_NONE);
 ConVar neo_bot_support_ratio("neo_bot_support_ratio", "0.2", FCVAR_NONE);
 
-extern ConVar neo_bot_fire_weapon_min_time;
 extern ConVar neo_bot_difficulty;
 extern ConVar neo_bot_farthest_visible_theater_sample_count;
 extern ConVar neo_bot_path_lookahead_range;

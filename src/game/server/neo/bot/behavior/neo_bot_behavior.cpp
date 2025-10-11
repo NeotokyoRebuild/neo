@@ -18,7 +18,6 @@ ConVar neo_bot_path_lookahead_range( "neo_bot_path_lookahead_range", "300" );
 ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT );
 ConVar neo_bot_sniper_aim_steady_rate( "neo_bot_sniper_aim_steady_rate", "10", FCVAR_CHEAT );
 ConVar neo_bot_debug_sniper( "neo_bot_debug_sniper", "0", FCVAR_CHEAT );
-ConVar neo_bot_fire_weapon_min_time( "neo_bot_fire_weapon_min_time", "1", FCVAR_CHEAT );
 
 ConVar neo_bot_notice_backstab_chance( "neo_bot_notice_backstab_chance", "25", FCVAR_CHEAT );
 ConVar neo_bot_notice_backstab_min_range( "neo_bot_notice_backstab_min_range", "100", FCVAR_CHEAT );
@@ -729,7 +728,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			{
 				// spray for a bit
 				// NEO Jank: Spraying wastes bullets into friends and walls, so just tap fire
-				me->PressFireButton( /*neo_bot_fire_weapon_min_time.GetFloat()*/ );
+				me->PressFireButton();
 			}
 			else 
 			{
