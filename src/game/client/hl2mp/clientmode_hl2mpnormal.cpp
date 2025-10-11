@@ -216,14 +216,13 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 		return BaseClass::GetViewModelFOV();
 	}
 
-	Assert(!GetActiveWeapon() || dynamic_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon()));
-	const auto* pWeapon = static_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
+	const auto* pWeapon = assert_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
 	if (!pWeapon)
 	{
 		return BaseClass::GetViewModelFOV();
 	}
 
-	const auto* pOwner = static_cast<C_NEO_Player*>(pWeapon->GetOwner());
+	const auto* pOwner = assert_cast<C_NEO_Player*>(pWeapon->GetOwner());
 	if (!pOwner)
 	{
 		return BaseClass::GetViewModelFOV();
