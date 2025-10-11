@@ -40,9 +40,14 @@ private:
 	Vector m_vGoalPos = vec3_origin;
 	bool m_bTimerElapsed = false;
 	void RecomputeSeekPath( CNEOBot *me );
+	bool FollowCommandChain( CNEOBot *me );
+	bool FanOutAndCover( CNEOBot *me, Vector &movementTarget, bool bMoveToSeparate = true, float flArrivalZoneSizeSq = -1.0f );
 
 	bool m_bOverrideApproach = false;
 	Vector m_vOverrideApproach = vec3_origin;
 
 	CountdownTimer m_giveUpTimer;
+	bool m_bAvoidingExplosive = false;
+
+	float m_flNextFanOutLookCalcTime = 0.0f;
 };
