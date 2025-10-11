@@ -34,10 +34,12 @@ public:
 	virtual int		GetDeathMessageStartHeight( void );
 
 #ifdef NEO
-	virtual float	GetViewModelFOV(void);
-	float m_flStartAimingChange;
-	float m_flVMFOV = 0.0f;
-	bool m_bViewAim;
+	virtual float	GetViewModelFOV(void) override final;
+
+private:
+	float m_flStartAimingChange{};
+	float m_flVMFOV{};
+	bool m_bViewAim{};
 #endif
 };
 
