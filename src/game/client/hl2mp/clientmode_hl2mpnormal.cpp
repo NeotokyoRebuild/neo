@@ -219,33 +219,16 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 	}
 
 	Assert(!GetActiveWeapon() || dynamic_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon()));
-	auto pWeapon = static_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
+	const auto* pWeapon = static_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
 	if (!pWeapon)
 	{
 		return BaseClass::GetViewModelFOV();
 	}
 
-	auto pOwner = static_cast<C_NEO_Player*>(pWeapon->GetOwner());
+	const auto* pOwner = static_cast<C_NEO_Player*>(pWeapon->GetOwner());
 	if (!pOwner)
 	{
 		return BaseClass::GetViewModelFOV();
-	}
-
-	auto pVm = pOwner->GetViewModel();
-	if (pVm)
-	{
-		// Toggle sniper viewmodel rendering according to scoped status.
-		if (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
-		{
-			if (pOwner->IsInAim())
-			{
-				pVm->AddEffects(EF_NODRAW);
-			}
-			else
-			{
-				pVm->RemoveEffects(EF_NODRAW);
-			}
-		}
 	}
 
 	float flTargetFov = m_flVMFOV;
