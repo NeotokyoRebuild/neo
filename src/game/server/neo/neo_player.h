@@ -306,6 +306,7 @@ public:
 	void ResetBotCommandState();
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
 	void HideBotBehindHealthierPlayer();
+	void SetAllSquadPingWaypoints(const Vector &vec);
 
 private:
 	bool m_bFirstDeathTick;
