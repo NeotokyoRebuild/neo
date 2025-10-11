@@ -121,8 +121,6 @@ ClientModeHL2MPNormal::ClientModeHL2MPNormal()
 {
 	m_pViewport = new CHudViewport();
 	m_pViewport->Start(gameuifuncs, gameeventmanager);
-	m_flStartAimingChange = 0.0f;
-	m_bViewAim = false;
 }
 
 
