@@ -36,24 +36,8 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	if ( threat == NULL || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
-		// Clear m_vLastPingByStar when threat is gone
-		if (me->GetDifficulty() >= CNEOBot::HARD)
-		{
-			for (int i = 0; i < STAR__TOTAL; ++i)
-			{
-				me->m_vLastPingByStar.GetForModify(i) = vec3_origin;
-			}
-		}
+		me->SetAllSquadPingWaypoints(vec3_origin); // clean up waypoints
 		return Done( "No threat" );
-	}
-
-	// If bot is HARD or EXPERT difficulty, set m_vLastPingByStar to m_chasePath
-	if (me->GetDifficulty() >= CNEOBot::HARD)
-	{
-		for (int i = 0; i < STAR__TOTAL; ++i)
-		{
-			me->m_vLastPingByStar.GetForModify(i) = m_chasePath.GetEndPosition();
-		}
 	}
 
 	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon* >( me->GetActiveWeapon() );
@@ -73,9 +57,11 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	bool bHasRangedWeapon = me->IsRanged( myWeapon );
 
-	if (bHasRangedWeapon && me->IsLineOfFireClear(threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT))
+	if ( bHasRangedWeapon
+		&& (me->IsThreatFiringAtMe(threat->GetEntity()) || threat->IsVisibleInFOVNow())
+		&& me->IsLineOfFireClear(threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_PENETRATION) )
 	{
-		return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Threat has a bead on me, retreating to cover to break line of sight");
+		return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Contact with threat, retreating to cover to break line of sight");
 	}
 
 	// Go after them!
@@ -115,6 +101,12 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 				CNEOBotPathCost cost( me, DEFAULT_ROUTE );
 				m_chasePath.Update( me, threat->GetEntity(), cost );
 			}
+
+			// If bot is HARD or EXPERT difficulty, set m_vLastPingByStar to m_chasePath
+			if (me->GetDifficulty() >= CNEOBot::HARD)
+			{
+				me->SetAllSquadPingWaypoints(m_chasePath.GetEndPosition());
+			}
 		}
 		else
 		{
@@ -124,6 +116,8 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			if ( me->IsRangeLessThan( threat->GetLastKnownPosition(), 20.0f ) )
 			{
 				me->GetVisionInterface()->ForgetEntity( threat->GetEntity() );
+
+				me->SetAllSquadPingWaypoints(vec3_origin); // clean up waypoints
 				return Done( "I lost my target!" );
 			}
 

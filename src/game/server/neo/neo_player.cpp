@@ -3086,6 +3086,14 @@ void CNEO_Player::ResetBotCommandState()
 	}
 }
 
+void CNEO_Player::SetAllSquadPingWaypoints(const Vector& vec)
+{
+	for (int i = 0; i < STAR__TOTAL; ++i)
+	{
+		m_vLastPingByStar.GetForModify(i) = vec;
+	}
+}
+
 void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 {
 	if (!pCommander)
@@ -3204,8 +3212,8 @@ void CNEO_Player::PlayerUse( void )
 		Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
 
 		trace_t tr;
-		// Use MASK_SHOT to hit players/NPCs, with CommanderFindGoal as an example.
-		UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+		// MASK_SHOT_HULL to match friendly fire warning trace
+		UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr );
 
 		if ( tr.DidHit() && tr.m_pEnt )
 		{
