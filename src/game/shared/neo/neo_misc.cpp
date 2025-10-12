@@ -7,6 +7,8 @@
 #include <filesystem.h>
 
 extern ConVar sv_neo_comp_name;
+
+#define DEMOS_DIRECTORY_NAME "demos"
 #endif
 
 [[nodiscard]] bool InRect(const vgui::IntRect &rect, const int x, const int y)
@@ -74,11 +76,11 @@ void StartAutoClientRecording()
 		V_snprintf(replayName, sizeof(replayName), "%s_%s_%s", timeSection, mapSection, steamSection);
 	}
 
-	if (!g_pFullFileSystem->IsDirectory("demos"))
+	if (!g_pFullFileSystem->IsDirectory(DEMOS_DIRECTORY_NAME))
 	{
-		g_pFullFileSystem->CreateDirHierarchy("demos");
+		g_pFullFileSystem->CreateDirHierarchy(DEMOS_DIRECTORY_NAME);
 	}
 
-	engine->StartDemoRecording(replayName, "demos"); // Start recording
+	engine->StartDemoRecording(replayName, DEMOS_DIRECTORY_NAME); // Start recording
 }
 #endif
