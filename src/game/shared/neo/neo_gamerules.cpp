@@ -3568,8 +3568,8 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 		}
 
 		const int assistDmg = victim->GetAttackersScores(assistIdx);
-		static const int MIN_DMG_QUALIFY_ASSIST = 50;
-		if (assistDmg >= MIN_DMG_QUALIFY_ASSIST)
+		static const float MIN_DMG_QUALIFY_ASSIST = 0.5f;
+		if ((float)assistDmg / victim->GetMaxHealth() >= MIN_DMG_QUALIFY_ASSIST)
 		{
 			return static_cast<CNEO_Player*>(UTIL_PlayerByIndex(assistIdx));
 		}

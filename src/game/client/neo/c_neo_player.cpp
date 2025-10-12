@@ -555,7 +555,7 @@ int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 	{
 		return m_rfAttackersScores.Get(attackerIdx);
 	}
-	return min(m_rfAttackersScores.Get(attackerIdx), 100);
+	return m_rfAttackersScores.Get(attackerIdx);
 }
 
 const char *C_NEO_Player::GetNeoClantag() const

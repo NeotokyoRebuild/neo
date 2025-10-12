@@ -2747,7 +2747,7 @@ int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 	{
 		return m_rfAttackersScores.Get(attackerIdx);
 	}
-	return min(m_rfAttackersScores.Get(attackerIdx), 100);
+	return m_rfAttackersScores.Get(attackerIdx);
 }
 
 int CNEO_Player::GetAttackerHits(const int attackerIdx) const
@@ -2840,7 +2840,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
-				m_rfAttackersScores.GetForModify(attackerIdx) += iDamage;
+				m_rfAttackersScores.GetForModify(attackerIdx) += Min(iDamage, GetHealth());
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
 				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
 
