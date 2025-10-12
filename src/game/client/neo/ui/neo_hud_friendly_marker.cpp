@@ -225,8 +225,8 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			int healthBarWidth = HEALTHBAR_WIDTH * Min((float)player->GetHealth() / player->GetMaxHealth(), 1.0f); // Clamp in case someone forgot to set max health, or it hasn't been sent by the server yet.
 			int healthBarYPos = y + (drawOutline ? 0 : m_iMarkerHeight) + textYOffset + 4;
 			surface()->DrawSetColor(FadeColour(teamColor, fadeTextMultiplier / 2));
-			surface()->DrawOutlinedRect(x - (HEALTHBAR_WIDTH / 2), healthBarYPos, x + (HEALTHBAR_WIDTH / 2), healthBarYPos + HEALTHBAR_HEIGHT);
-			surface()->DrawFilledRect(x - (HEALTHBAR_WIDTH / 2), healthBarYPos, x - (HEALTHBAR_WIDTH / 2) + healthBarWidth, healthBarYPos + HEALTHBAR_HEIGHT);
+			surface()->DrawOutlinedRect(x - HEALTHBAR_WIDTH / 2, healthBarYPos, x + HEALTHBAR_WIDTH / 2, healthBarYPos + HEALTHBAR_HEIGHT);
+			surface()->DrawFilledRect(x - HEALTHBAR_WIDTH / 2, healthBarYPos, x - HEALTHBAR_WIDTH / 2 + healthBarWidth, healthBarYPos + HEALTHBAR_HEIGHT);
 		}
 
 		if (!drawOutline)

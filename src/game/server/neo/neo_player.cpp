@@ -175,7 +175,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		GiveDefaultItems();
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
 		SetMaxHealth(MAX_HEALTH_FOR_CLASS[newClass]);
-		SetHealth(MAX_HEALTH_FOR_CLASS[newClass]);
+		SetHealth(GetMaxHealth());
 	}
 	else
 	{
@@ -526,8 +526,8 @@ void CNEO_Player::Spawn(void)
 
 	BaseClass::Spawn();
 
-	SetHealth(MAX_HEALTH_FOR_CLASS[m_iNeoClass]);
 	SetMaxHealth(MAX_HEALTH_FOR_CLASS[m_iNeoClass]);
+	SetHealth(GetMaxHealth());
 
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 
@@ -3368,6 +3368,7 @@ void CNEO_Player::BecomeJuggernaut()
 	InitSprinting();
 	RemoveAllItems(false);
 	GiveDefaultItems();
+	SetMaxHealth(MAX_HEALTH_FOR_CLASS[NEO_CLASS_JUGGERNAUT]);
 	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
 	//SetBloodColor(DONT_BLEED); Check C_HL2MP_Player::TraceAttack
