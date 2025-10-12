@@ -1478,8 +1478,31 @@ void CBasePlayer::OnDamagedByExplosion( const CTakeDamageInfo &info )
 		random->RandomInt( 35, 37 ) : 
 		random->RandomInt( 32, 34 );
 
+#ifdef NEO
+	CRecipientFilter recipients;
+	recipients.MakeReliable();
+	recipients.AddRecipient(this);
+	const int thisClientIdx = ENTINDEX(this);
+	for (int clientIdx = 1; clientIdx <= gpGlobals->maxClients; ++clientIdx)
+	{
+		// Also play the ear-ringing for POV spectators.
+		if (clientIdx != thisClientIdx)
+		{
+			const auto otherPlayer = UTIL_PlayerByIndex(clientIdx);
+			if (!otherPlayer || !otherPlayer->IsObserver() ||
+				otherPlayer->GetObserverMode() != OBS_MODE_IN_EYE ||
+				otherPlayer->GetObserverTarget() != this)
+			{
+				continue;
+			}
+			recipients.AddRecipient(otherPlayer);
+		}
+	}
+	enginesound->SetPlayerDSP(recipients, effect, false);
+#else
 	CSingleUserRecipientFilter user( this );
 	enginesound->SetPlayerDSP( user, effect, false );
+#endif
 }
 
 //=========================================================
@@ -5304,6 +5327,12 @@ void CBasePlayer::Spawn( void )
 	Q_strncpy( m_szLastPlaceName.GetForModify(), "", MAX_PLACE_NAME_LENGTH );
 	
 	CSingleUserRecipientFilter user( this );
+#ifdef NEO
+	// So that the explosion ear-ringing SFX is reliably cleared.
+	// We already do this for the local C_NEO_Player (for faster response to remote clients),
+	// but this is made reliable for POV spectators' benefit.
+	user.MakeReliable();
+#endif
 	enginesound->SetPlayerDSP( user, 0, false );
 
 	CreateViewModel();
