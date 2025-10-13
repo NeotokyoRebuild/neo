@@ -1346,14 +1346,9 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 {
 	if (GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
-		auto* pRagdoll = static_cast<C_HL2MPRagdoll*>(m_hRagdoll.Get());
-		if (pRagdoll)
+		if (auto* pRagdoll = assert_cast<C_BaseAnimating*>(m_hRagdoll.Get() ? m_hRagdoll.Get() : m_hServerRagdoll.Get()))
 		{
-			// First person death cam
 			pRagdoll->GetAttachment(pRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
-			Vector vForward;
-			AngleVectors(eyeAngles, &vForward);
-			fov = GetFOV();
 
 			int iHeadBone = pRagdoll->LookupBone("ValveBiped.Bip01_Head1");
 			if (iHeadBone != -1)
@@ -1362,25 +1357,10 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 				MatrixScaleByZero(transform);
 			}
 		}
-		else if (m_hServerRagdoll.Get())
-		{
-			auto* pServerRagdoll = static_cast<C_BaseAnimating*>(m_hServerRagdoll.Get());
-			pServerRagdoll->GetAttachment(pServerRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
-			Vector vForward;
-			AngleVectors(eyeAngles, &vForward);
-			fov = GetFOV();
-
-			int iHeadBone = pServerRagdoll->LookupBone("ValveBiped.Bip01_Head1");
-			if (iHeadBone != -1)
-			{
-				matrix3x4_t &transform = pServerRagdoll->GetBoneForWrite(iHeadBone);
-				MatrixScaleByZero(transform);
-			}
-		}
 		else
 		{
 			// Fallback just in-case it somehow doesn't do m_hRagdoll
-			BaseClass::CalcDeathCamView(eyeOrigin, eyeAngles, fov);
+			return BaseClass::CalcDeathCamView(eyeOrigin, eyeAngles, fov);
 		}
 	}
 	else
@@ -1405,8 +1385,9 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 		Vector vDir = vTarget - eyeOrigin;
 		VectorNormalize(vDir);
 		VectorAngles(vDir, eyeAngles);
-		fov = GetFOV();
 	}
+
+	fov = GetFOV();
 }
 
 void C_NEO_Player::TeamChange(int iNewTeam)
