@@ -22,7 +22,7 @@ using vgui::surface;
 
 ConVar cl_neo_hud_hta_enabled("cl_neo_hud_hta_enabled", "1", FCVAR_USERINFO,
 	"Whether the HUD Health/ThermOptic/AUX module is enabled or not.", true, 0, true, 1);
-extern ConVar cl_neo_hud_health_mode;
+extern ConVar cl_neo_hud_health_mode_self;
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_HTA, NHudHealth);
 
@@ -120,7 +120,7 @@ void CNEOHud_HTA::DrawHTA() const
 	wchar_t unicodeValue_ThermOptic[4]{ L'\0' };
 	wchar_t unicodeValue_Aux[4]{ L'\0' };
 
-	const int healthMode = cl_neo_hud_health_mode.GetInt();
+	const int healthMode = cl_neo_hud_health_mode_self.GetInt();
 	const int displayedHealth = player->GetDisplayedHealth(healthMode);
 	const float healthPercent = Min((float)player->GetHealth() / player->GetMaxHealth(), 1.0f);
 	const int thermopticValue = static_cast<int>(roundf(player->m_HL2Local.m_cloakPower));

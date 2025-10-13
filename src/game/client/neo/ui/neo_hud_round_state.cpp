@@ -42,7 +42,7 @@ extern ConVar snd_victory_volume;
 extern ConVar sv_neo_readyup_countdown;
 extern ConVar cl_neo_hud_scoreboard_hide_others;
 extern ConVar sv_neo_ctg_ghost_overtime_grace;
-extern ConVar cl_neo_hud_health_mode;
+extern ConVar cl_neo_hud_health_mode_other;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -724,7 +724,7 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 
 	if (isAlive)
 	{
-		const int healthMode = cl_neo_hud_health_mode.GetInt();
+		const int healthMode = cl_neo_hud_health_mode_other.GetInt();
 		char playerHealth[7]; // 4 digits + 2 letters
 		V_snprintf(playerHealth, sizeof(playerHealth), healthMode ? "%dhp" : "%d%%", g_PR->GetDisplayedHealth(playerIndex, healthMode));
 		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", g_PR->GetPlayerName(playerIndex), squadMateRankName, squadMateClass, playerHealth);
