@@ -77,7 +77,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
-	RecvPropEHandle(RECVINFO(m_hDroppedJuggernautItem)),
+	RecvPropEHandle(RECVINFO(m_hServerRagdoll)),
 
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
@@ -1350,21 +1350,31 @@ void C_NEO_Player::PostThink(void)
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
 {
-	auto* pRagdoll = static_cast<C_HL2MPRagdoll*>(m_hRagdoll.Get());
-	if (pRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
+	if (GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
-		// First person death cam
-		pRagdoll->GetAttachment(pRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
-		Vector vForward;
-		AngleVectors(eyeAngles, &vForward);
-		fov = GetFOV();
+		if (auto* pRagdoll = assert_cast<C_BaseAnimating*>(m_hRagdoll.Get() ? m_hRagdoll.Get() : m_hServerRagdoll.Get()))
+		{
+			pRagdoll->GetAttachment(pRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
+
+			int iHeadBone = pRagdoll->LookupBone("ValveBiped.Bip01_Head1");
+			if (iHeadBone != -1)
+			{
+				matrix3x4_t &transform = pRagdoll->GetBoneForWrite(iHeadBone);
+				MatrixScaleByZero(transform);
+			}
+		}
+		else
+		{
+			// Fallback just in-case it somehow doesn't do m_hRagdoll
+			return BaseClass::CalcDeathCamView(eyeOrigin, eyeAngles, fov);
+		}
 	}
-	else if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	else
 	{
 		Vector vTarget = vec3_origin;
-		if (m_hDroppedJuggernautItem)
+		if (m_hServerRagdoll)
 		{
-			vTarget = m_hDroppedJuggernautItem->WorldSpaceCenter();
+			vTarget = m_hServerRagdoll->WorldSpaceCenter();
 		}
 		else
 		{
@@ -1381,13 +1391,9 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 		Vector vDir = vTarget - eyeOrigin;
 		VectorNormalize(vDir);
 		VectorAngles(vDir, eyeAngles);
-		fov = GetFOV();
 	}
-	else
-	{
-		// Fallback just in-case it somehow doesn't do m_hRagdoll
-		BaseClass::CalcDeathCamView(eyeOrigin, eyeAngles, fov);
-	}
+
+	fov = GetFOV();
 }
 
 void C_NEO_Player::TeamChange(int iNewTeam)

@@ -52,7 +52,7 @@ SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean)),
-SendPropEHandle(SENDINFO(m_hDroppedJuggernautItem)),
+SendPropEHandle(SENDINFO(m_hServerRagdoll)),
 
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
@@ -3413,7 +3413,7 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 		NEORules()->m_pJuggernautPlayer = nullptr;
 		NEORules()->m_pJuggernautItem = pJuggernautItem;
 	}
-	m_hDroppedJuggernautItem = pJuggernautItem;
+	m_hServerRagdoll = pJuggernautItem;
 	DispatchSpawn(pJuggernautItem);
 }
 
