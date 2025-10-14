@@ -1959,12 +1959,14 @@ void CMP3Player::OnTick()
 	// No song playing...
 	m_nSongGuid = 0;
 	OnNextTrack();
+#ifdef NEO
 
 	if (m_bPauseNextSong)
 	{
 		OnPause();
 		m_bPauseNextSong = false;
 	}
+#endif // NEO
 }
 
 void CMP3Player::OnChangeVolume( float newVol )
