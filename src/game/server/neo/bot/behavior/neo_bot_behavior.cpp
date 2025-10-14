@@ -236,6 +236,13 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnOtherKilled( CNEOBot *me, CBa
 	// make sure we forget about this guy
 	me->GetVisionInterface()->ForgetEntity( victim );
 
+	CNEO_Player* pNeoVictim = ToNEOPlayer(victim);
+	if (pNeoVictim && pNeoVictim->GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		me->GetVisionInterface()->ForgetAllKnownEntities();
+		me->GetIntentionInterface()->Reset();
+	}
+
 	return TryContinue();
 }
 

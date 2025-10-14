@@ -1904,7 +1904,13 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	if (!m_bForceServerRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
+	bool wasJuggernaut = false;
+	if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		wasJuggernaut = true;
+
+	}
+	else if (!m_bForceServerRagdoll)
 	{
 		CreateRagdollEntity();
 	}
@@ -1913,11 +1919,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 
 	Weapon_DropAllOnDeath(info);
 
-	if (GetClass() == NEO_CLASS_JUGGERNAUT)
-	{
-		SpawnJuggernautPostDeath();
-	}
-
+	
 	if (!IsBot() && !IsHLTV())
 	{
 		StartShowDmgStats(&info);
@@ -1937,6 +1939,12 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 
 	SpectatorTakeoverPlayerRevert(false); // soft reset: may still have live impostor
+
+	// Finishing death handling first before spawning next juggernaut
+	if (wasJuggernaut)
+	{
+		SpawnJuggernautPostDeath();
+	}
 }
 
 void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )

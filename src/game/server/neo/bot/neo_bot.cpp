@@ -1032,8 +1032,6 @@ void CNEOBot::OnWeaponFired(CBaseCombatCharacter* whoFired, CBaseCombatWeapon* w
 {
 	VPROF_BUDGET("CNEOBot::OnWeaponFired", "NextBot");
 
-	BaseClass::OnWeaponFired(whoFired, weapon);
-
 	if (!whoFired || !whoFired->IsAlive())
 		return;
 
@@ -1045,6 +1043,8 @@ void CNEOBot::OnWeaponFired(CBaseCombatCharacter* whoFired, CBaseCombatWeapon* w
 	{
 		return;
 	}
+
+	BaseClass::OnWeaponFired(whoFired, weapon);
 
 	int noticeChance = 100;
 
