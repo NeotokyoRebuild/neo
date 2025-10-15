@@ -35,6 +35,7 @@ extern ConVar sv_neo_grenade_friction;
 
 ConVar sv_neo_detpack_health("sv_neo_detpack_health", "100.0", FCVAR_CHEAT, "Health of a deployed detpack.", true, 1.0, true, 1000.0);
 ConVar sv_neo_detpack_damage_blast_enable("sv_neo_detpack_damage_blast_enable", "0", FCVAR_CHEAT, "Allow blast damage to destroy detpacks.", true, 0.0, true, 1.0);
+ConVar sv_neo_detpack_damage_attacks_enable("sv_neo_detpack_damage_attacks_enable", "0", FCVAR_REPLICATED, "Allow player damage to destroy detpacks.", true, 0.0, true, 1.0);
 
 void CNEODeployedDetpack::Spawn(void)
 {
@@ -46,6 +47,7 @@ void CNEODeployedDetpack::Spawn(void)
 	SetGravity(sv_neo_grenade_gravity.GetFloat());
 	SetFriction(sv_neo_grenade_friction.GetFloat());
 	SetCollisionGroup(COLLISION_GROUP_WEAPON);
+	SetSolidFlags(FSOLID_TRIGGER); // Should the detpack be shootable straight away or only after its settled?
 
 	m_flDamage = NEO_DETPACK_DAMAGE;
 	m_DmgRadius = NEO_DETPACK_DAMAGE_RADIUS;
@@ -114,6 +116,9 @@ void CNEODeployedDetpack::DelayThink()
 		{
 			SetParent(groundEntity);
 		}
+		// rays will not hit the entity if they do not hit the bounding box, increase the bounding box now that the entity is settled to encompass the entire model without affecting the detpack's collisions
+		Vector size = Vector(8, 8, 8);
+		SetCollisionBounds(-size, size);
 		m_hasBeenMadeNonSolid = true;
 		// Clear think function
 		SetThink(NULL);
@@ -152,6 +157,10 @@ bool CNEODeployedDetpack::TryDetonate(void)
 
 void CNEODeployedDetpack::Detonate(void)
 {
+	// Prevent detpack from being damaged
+	RemoveSolidFlags(FSOLID_TRIGGER);
+	m_takedamage = DAMAGE_NO;
+
 	// Make sure we've stopped playing bounce tick sounds upon explosion
 	if (!m_hasSettled)
 	{
@@ -183,6 +192,10 @@ int CNEODeployedDetpack::OnTakeDamage(const CTakeDamageInfo& inputInfo)
 	{
 		bCanTakeDamage = true;
 	}
+	else if ((bitsDamageType & (DMG_BULLET | DMG_BUCKSHOT | DMG_SLASH | DMG_CLUB)) && sv_neo_detpack_damage_attacks_enable.GetBool())
+	{ // What should happen if a detpack falls into a vat of acid, or gets hit by an electric shock?
+		bCanTakeDamage = true;
+	}
 
 	if (bCanTakeDamage)
 	{
@@ -190,7 +203,11 @@ int CNEODeployedDetpack::OnTakeDamage(const CTakeDamageInfo& inputInfo)
 
 		if (m_iHealth <= 0)
 		{
-			Detonate();
+			if (auto attacker = static_cast<CBaseCombatCharacter *>(inputInfo.GetAttacker()))
+			{
+				SetThrower(attacker);
+			}
+			Detonate(); // Detonating a detpack with the remote calls InputRemoteDetonate instead of this function fyi
 		}
 	}
 
@@ -199,6 +216,10 @@ int CNEODeployedDetpack::OnTakeDamage(const CTakeDamageInfo& inputInfo)
 
 void CNEODeployedDetpack::InputRemoteDetonate(inputdata_t& inputdata)
 {
+	// Prevent detpack from being damaged
+	RemoveSolidFlags(FSOLID_TRIGGER);
+	m_takedamage = DAMAGE_NO;
+
 	ExplosionCreate(GetAbsOrigin() + Vector(0, 0, 16), GetAbsAngles(), GetThrower(), GetDamage(), GetDamageRadius(),
 					SF_ENVEXPLOSION_NOSPARKS | SF_ENVEXPLOSION_NODLIGHTS | SF_ENVEXPLOSION_NOSMOKE | SF_ENVEXPLOSION_NOSOUND, 0.0f, this);
 	m_hasBeenTriggeredToDetonate = true;
