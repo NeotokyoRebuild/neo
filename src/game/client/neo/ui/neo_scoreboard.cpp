@@ -35,9 +35,9 @@
 
 #include "vgui_avatarimage.h"
 
+#include "c_neo_player.h"
 #include "neo_player_shared.h"
 #include "neo_gamerules.h"
-#include "c_neo_player.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -618,7 +618,11 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 				pPlayerList->ModifyItem( itemID, sectionID, playerData );
 			}
 
-			if ( gr->IsLocalPlayer( i ) )
+			C_NEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+			C_NEO_Player *pImpersonator = pPlayer ? ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
+			bool isImpersonatedByLocalPlayer = pImpersonator && (pImpersonator->entindex() == GetLocalPlayerIndex());
+
+			if ( gr->IsLocalPlayer( i ) || isImpersonatedByLocalPlayer )
 			{
 				Color color = bPlayerInDM ? COLOR_NEO_WHITE : gr->GetTeamColor(team);
 				color.SetColor(color.r(), color.g(), color.b(), 16);
@@ -742,126 +746,77 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	const int neoTeam = g_PR->GetTeam(playerIndex);
 	kv->SetInt("team", neoTeam);
 
-	C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
-	C_NEO_Player* pTakeoverTarget = pNeoPlayer ? ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get()) : nullptr;
-	C_NEO_Player* pImpersonatingMe = pNeoPlayer ? ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
+	C_NEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+	C_NEO_Player *pImpersonator = pPlayer ? ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
 
-	CBasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
-	const int localPlayerNeoTeam = pLocalPlayer ? pLocalPlayer->GetTeamNumber() : TEAM_UNASSIGNED;
-	const bool bIsOppositeTeam = (NEORules()->IsTeamplay()) ?
-		((localPlayerNeoTeam == TEAM_JINRAI || localPlayerNeoTeam == TEAM_NSF) && (neoTeam != localPlayerNeoTeam)) :
-		(!g_PR->IsLocalPlayer(playerIndex));
-
-	if (pTakeoverTarget)
+	if (pImpersonator)
 	{
-		// I am currently impersonating pTakeoverTarget
-		const int targetIndex = pTakeoverTarget->entindex();
-
-		if ( g_PR->IsFakePlayer( playerIndex ) )
-		{
-			// Assume bots in spec are SourceTV etc. Looks cleaner if their ping is just empty string.
-			kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "BOT");
-		}
-		else
-		{
-			kv->SetInt("ping", g_PR->GetPing( playerIndex ));
-		}
-
-		// e.g. BOT bob (alice)
-		// no clan tag to conserve display space
-		char finalName[NEO_MAX_DISPLAYNAME];
-		int len = V_sprintf_safe(finalName, "%s (%s)", g_PR->GetPlayerName(targetIndex), g_PR->GetPlayerName(playerIndex));
-		if (len >= sizeof(finalName))
-		{
-			finalName[sizeof(finalName) - 2] = ')'; // cap off ()
-		}
-		kv->SetString("name", finalName);
-
-		// "class" is my own class copied from earlier takeover event, hidden if on opposite team
-		kv->SetString("class", bIsOppositeTeam ? "" : GetNeoClassName(g_PR->GetClass(playerIndex)));
-
-		// "rank", "xp", "deaths" imitated from pTakeoverTarget
-		const int targetXp = g_PR->GetXP(targetIndex);
-		kv->SetString("rank", GetRankName(targetXp));
-		kv->SetInt("xp", targetXp);
-		kv->SetInt("deaths", g_PR->GetDeaths(targetIndex));
-	}
-	else if (pImpersonatingMe)
-	{
-		// I am currently being possessed by pImpersonatingMe
-		const int impersonatorIndex = pImpersonatingMe->entindex();
-
-		if ( g_PR->IsFakePlayer( playerIndex ) )
-		{
-			// Indicate that this bot is being remote controlled
-			kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "SAT");
-		}
-		else
-		{
-			kv->SetInt("ping", g_PR->GetPing( playerIndex ));
-		}
-
-		// "class" is "Operator", hidden if on opposite team
-		// NEO JANK: This is a coverup for the lack of tracking of the hijacker's original class
-		// This is also meant as another indicator that this player is remote controlling another
-		kv->SetString("class", bIsOppositeTeam ? "" : "Operator");
-
-		// "name", "rank", "xp", "deaths" imitated from pImpersonatingMe
-		char szClanTagWName[NEO_MAX_DISPLAYNAME];
-		const char* pClantag = g_PR->GetClanTag(impersonatorIndex);
-		if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(impersonatorIndex)))
-		{
-			V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(impersonatorIndex));
-		}
-		else
-		{
-			V_sprintf_safe(szClanTagWName, "%s", g_PR->GetPlayerName(impersonatorIndex));
-		}
-		kv->SetString("name", szClanTagWName);
-
-		const int impersonatorXp = g_PR->GetXP(impersonatorIndex);
-		kv->SetString("rank", GetRankName(impersonatorXp));
-		kv->SetInt("xp", impersonatorXp);
-		kv->SetInt("deaths", g_PR->GetDeaths(impersonatorIndex));
+		kv->SetString("name", pImpersonator->GetPlayerNameWithTakeoverContext(pImpersonator->entindex()));
 	}
 	else
 	{
-		char szClanTagWName[NEO_MAX_DISPLAYNAME];
-		const char* pClantag = g_PR->GetClanTag(playerIndex);
+		const char *pClantag = g_PR->GetClanTag(playerIndex);
 		if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
 		{
+			char szClanTagWName[NEO_MAX_DISPLAYNAME];
 			V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
+			kv->SetString("name", szClanTagWName);
 		}
 		else
 		{
-			V_sprintf_safe(szClanTagWName, "%s", g_PR->GetPlayerName(playerIndex));
-		}
-		kv->SetString("name", szClanTagWName);
-
-		kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
-		const int xp = g_PR->GetXP(playerIndex);
-		kv->SetString("rank", GetRankName(xp));
-		kv->SetInt("xp", xp);
-
-		kv->SetString("class", bIsOppositeTeam ? "" : GetNeoClassName(g_PR->GetClass(playerIndex)));
-
-		if ( g_PR->IsFakePlayer( playerIndex ) )
-		{
-			// Assume bots in spec are SourceTV etc. Looks cleaner if their ping is just empty string.
-			kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "BOT");
-		}
-		else
-		{
-			kv->SetInt("ping", g_PR->GetPing( playerIndex ));
+			kv->SetString("name", g_PR->GetPlayerName(playerIndex));
 		}
 	}
 
+	kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
+
+	const int xp = g_PR->GetXP(playerIndex);
+	const int neoClassIdx = g_PR->GetClass(playerIndex);
+	kv->SetString("rank", GetRankName(xp));
+	kv->SetInt("xp", xp);
+
+	CBasePlayer* player = C_BasePlayer::GetLocalPlayer();
+	const int playerNeoTeam = player->GetTeamNumber();
+	const bool oppositeTeam = (NEORules()->IsTeamplay()) ?
+				((playerNeoTeam == TEAM_JINRAI || playerNeoTeam == TEAM_NSF) && (neoTeam != playerNeoTeam)) :
+				(!g_PR->IsLocalPlayer(playerIndex));
+
+	bool isImpersonated = pImpersonator != nullptr;
+	bool isImpersonating = pPlayer && pPlayer->m_hSpectatorTakeoverPlayerTarget.Get() != nullptr;
 	int statusIcon = -1;
 	if (neoTeam == TEAM_JINRAI || neoTeam == TEAM_NSF)
 	{
-		statusIcon = ((!SHOW_ENEMY_STATUS && bIsOppositeTeam) || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
+		statusIcon = ((!SHOW_ENEMY_STATUS && oppositeTeam) || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
+
+		if (isImpersonating)
+		{
+			// Former spectators impersonating other players are (un)dead
+			statusIcon = m_iDeadIcon;
+		}
+		else if (isImpersonated)
+		{
+			// Do not show death icon for players being impersonated
+			statusIcon = -1;
+		}
 	}
 	kv->SetInt("status", statusIcon);
+
+	int classToDisplay = neoClassIdx;
+	if (isImpersonating)
+	{
+		classToDisplay = pPlayer->m_iClassAtTimeOfDeath;
+	}
+	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(classToDisplay));
+
+	if ( g_PR->IsFakePlayer( playerIndex ) )
+	{
+		// Assume bots in spec are SourceTV etc. Looks cleaner if their ping is just empty string.
+		kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "BOT");
+	}
+	else
+	{
+		kv->SetInt("ping", g_PR->GetPing( playerIndex ));
+	}
 
 	return;
 }
@@ -874,8 +829,19 @@ void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv )
 	// Update their avatar
 	if (UpdateAvatars() && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
 	{
+		int playerIndexForAvatar = playerIndex;
+
+		C_NEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+		C_NEO_Player *pImpersonator = pPlayer ? ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
+
+		if (pImpersonator)
+		{
+			// Show the avatar of the impersonator
+			playerIndexForAvatar = pImpersonator->entindex();
+		}
+
 		player_info_t pi;
-		if ( engine->GetPlayerInfo( playerIndex, &pi ) )
+		if ( engine->GetPlayerInfo( playerIndexForAvatar, &pi ) )
 		{
 			if ( pi.friendsID )
 			{
