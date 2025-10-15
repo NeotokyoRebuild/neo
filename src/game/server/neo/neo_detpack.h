@@ -10,6 +10,7 @@
 #include "Sprite.h"
 #include "SpriteTrail.h"
 #include "soundent.h"
+#include "neo_detpack_hitbox.h"
 
 #define NEO_DEPLOYED_DET_WARN_TIME 1.5f
 
@@ -35,7 +36,7 @@ public:
 	void	SetTimer(float detonateDelay, float warnDelay);
 	void	SetVelocity(const Vector& velocity, const AngularImpulse& angVelocity);
 	int		OnTakeDamage(const CTakeDamageInfo& inputInfo);
-	void	DelayThink();
+	void		DetpackThink();
 	void	SetPunted(bool punt) { m_punted = punt; }
 	bool	WasPunted(void) const { return m_punted; }
 	void	OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPickup_t reason);
@@ -48,6 +49,7 @@ protected:
 	bool	m_hasSettled;
 	bool	m_hasBeenMadeNonSolid;
 	bool	m_hasBeenTriggeredToDetonate;
+	CHandle<CNEODetpackHitbox> m_hHitbox;
 
 private:
 	bool TryDetonate(void);

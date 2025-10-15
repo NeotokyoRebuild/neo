@@ -1373,6 +1373,8 @@ target_sources_grouped(
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_detpack.h
+    neo/neo_detpack_hitbox.cpp
+    neo/neo_detpack_hitbox.h
     neo/neo_game_config.cpp
     neo/neo_game_config.h
     neo/neo_ghost_boundary.cpp

@@ -3,6 +3,7 @@
 #include "explode.h"
 #include "neo_tracefilter_collisiongroupdelta.h"
 #include "hl2/hl2_shareddefs.h"
+#include "debugoverlay_shared.h"
 
 #ifdef GAME_DLL
 #include "gamestats.h"
@@ -21,9 +22,10 @@ BEGIN_DATADESC(CNEODeployedDetpack)
 	DEFINE_FIELD(m_punted, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_hasSettled, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_hasBeenTriggeredToDetonate, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_hHitbox, FIELD_EHANDLE),
 
 	// Function pointers
-	DEFINE_THINKFUNC(DelayThink),
+	DEFINE_THINKFUNC(DetpackThink),
 
 	// Inputs
 	DEFINE_INPUTFUNC(FIELD_VOID, "RemoteDetonate", InputRemoteDetonate),
@@ -34,12 +36,15 @@ extern ConVar sv_neo_grenade_gravity;
 extern ConVar sv_neo_grenade_friction;
 
 ConVar sv_neo_detpack_health("sv_neo_detpack_health", "100.0", FCVAR_REPLICATED, "Health of a deployed detpack.", true, 1.0, true, 1000.0);
-ConVar sv_neo_detpack_damage_blast_enable("sv_neo_detpack_damage_blast_enable", "0", FCVAR_REPLICATED, "Allow blast damage to destroy detpacks.", true, 0.0, true, 1.0);
+ConVar sv_neo_detpack_damage_blast_enable("sv_neo_detpack_damage_blast_enable", "1", FCVAR_REPLICATED, "Allow blast damage to destroy detpacks.", true, 0.0, true, 1.0);
+ConVar sv_neo_detpack_damage_bullet_enable("sv_neo_detpack_damage_bullet_enable", "1", FCVAR_REPLICATED, "Allow bullet damage to destroy detpacks.", true, 0.0, true, 1.0);
+ConVar sv_neo_detpack_debug_draw_hitbox("sv_neo_detpack_debug_draw_hitbox", "1", FCVAR_REPLICATED, "Draw detpack hitbox for debugging.", true, 0.0, true, 1.0);
 
 void CNEODeployedDetpack::Spawn(void)
 {
 	Precache();
 	SetModel(NEO_DEPLOYED_DETPACK_MODEL);
+	UTIL_SetSize(this, Vector(-4, -4, 0), Vector(4, 4, 4));
 	BaseClass::Spawn();
 
 	SetElasticity(sv_neo_grenade_cor.GetFloat());
@@ -73,7 +78,7 @@ void CNEODeployedDetpack::SetTimer(float detonateDelay, float warnDelay)
 {
 	SetDetonateTimerLength(detonateDelay);
 	m_flWarnAITime = gpGlobals->curtime + warnDelay;
-	SetThink(&CNEODeployedDetpack::DelayThink);
+	SetThink(&CNEODeployedDetpack::DetpackThink);
 	SetNextThink(gpGlobals->curtime);
 }
 
@@ -85,7 +90,7 @@ void CNEODeployedDetpack::OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPick
 	BaseClass::OnPhysGunPickup(pPhysGunUser, reason);
 }
 
-void CNEODeployedDetpack::DelayThink()
+void CNEODeployedDetpack::DetpackThink()
 {
 	if (TryDetonate())
 	{
@@ -100,27 +105,48 @@ void CNEODeployedDetpack::DelayThink()
 		m_bHasWarnedAI = true;
 	}
 
-	CBaseEntity* groundEntity = GetGroundEntity();
-	m_hasSettled = GetLocalVelocity().LengthSqr() < 0.5f && groundEntity;
-	m_lastPos = GetAbsOrigin();
-
-	if (m_hasSettled && !m_hasBeenMadeNonSolid)
+	// Settling logic
+	if (!m_hasSettled)
 	{
-		SetTouch(NULL);
-		SetSolid(SOLID_NONE);
-		SetAbsVelocity(vec3_origin);
-		SetMoveType(MOVETYPE_NONE);
-		if (!groundEntity->IsWorld() && !groundEntity->IsBaseCombatWeapon())
+		CBaseEntity* groundEntity = GetGroundEntity();
+		if (GetLocalVelocity().LengthSqr() < 0.5f && groundEntity)
 		{
-			SetParent(groundEntity);
+			m_hasSettled = true;
+			SetMoveType(MOVETYPE_NONE);
+			SetAbsVelocity(vec3_origin);
+
+			// Become non-solid and spawn a hitbox entity to handle bullet damage
+			SetSolid(SOLID_NONE);
+			AddSolidFlags(FSOLID_NOT_SOLID);
+
+			CNEODetpackHitbox* pHitbox = (CNEODetpackHitbox*)CreateEntityByName("neo_detpack_hitbox");
+			if (pHitbox)
+			{
+				pHitbox->SetAbsOrigin(GetAbsOrigin());
+				pHitbox->Spawn();
+				pHitbox->SetParentDetpack(this);
+				m_hHitbox = pHitbox;
+			}
+
+			m_hasBeenMadeNonSolid = true; // This seems to be a general "settled" flag
+
+			if (!groundEntity->IsWorld() && !groundEntity->IsBaseCombatWeapon())
+			{
+				SetParent(groundEntity);
+			}
 		}
-		m_hasBeenMadeNonSolid = true;
-		// Clear think function
-		SetThink(NULL);
-		return;
 	}
 
-	SetNextThink(gpGlobals->curtime + 0.1);
+	// If we are not settled, we need to keep thinking.
+	if (!m_hasSettled)
+	{
+		SetNextThink(gpGlobals->curtime + 0.1f);
+	}
+	else
+	{
+		// Otherwise, we can stop thinking.
+		SetThink(NULL);
+	}
 }
 
 void CNEODeployedDetpack::Explode(trace_t* pTrace, int bitsDamageType)
@@ -152,6 +178,12 @@ bool CNEODeployedDetpack::TryDetonate(void)
 
 void CNEODeployedDetpack::Detonate(void)
 {
+	if (m_hHitbox)
+	{
+		UTIL_Remove(m_hHitbox);
+		m_hHitbox = NULL;
+	}
+
 	// Make sure we've stopped playing bounce tick sounds upon explosion
 	if (!m_hasSettled)
 	{
@@ -183,6 +215,10 @@ int CNEODeployedDetpack::OnTakeDamage(const CTakeDamageInfo& inputInfo)
 	{
 		bCanTakeDamage = true;
 	}
+	else if ((bitsDamageType & DMG_BULLET) && sv_neo_detpack_damage_bullet_enable.GetBool())
+	{
+		bCanTakeDamage = true;
+	}
 
 	if (bCanTakeDamage)
 	{
@@ -199,6 +235,12 @@ int CNEODeployedDetpack::OnTakeDamage(const CTakeDamageInfo& inputInfo)
 
 void CNEODeployedDetpack::InputRemoteDetonate(inputdata_t& inputdata)
 {
+	if (m_hHitbox)
+	{
+		UTIL_Remove(m_hHitbox);
+		m_hHitbox = NULL;
+	}
+
 	ExplosionCreate(GetAbsOrigin() + Vector(0, 0, 16), GetAbsAngles(), GetThrower(), GetDamage(), GetDamageRadius(),
 					SF_ENVEXPLOSION_NOSPARKS | SF_ENVEXPLOSION_NODLIGHTS | SF_ENVEXPLOSION_NOSMOKE | SF_ENVEXPLOSION_NOSOUND, 0.0f, this);
 	m_hasBeenTriggeredToDetonate = true;
