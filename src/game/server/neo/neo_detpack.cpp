@@ -33,8 +33,8 @@ extern ConVar sv_neo_grenade_cor;
 extern ConVar sv_neo_grenade_gravity;
 extern ConVar sv_neo_grenade_friction;
 
-ConVar sv_neo_detpack_health("sv_neo_detpack_health", "100.0", FCVAR_REPLICATED, "Health of a deployed detpack.", true, 1.0, true, 1000.0);
-ConVar sv_neo_detpack_damage_blast_enable("sv_neo_detpack_damage_blast_enable", "0", FCVAR_REPLICATED, "Allow blast damage to destroy detpacks.", true, 0.0, true, 1.0);
+ConVar sv_neo_detpack_health("sv_neo_detpack_health", "100.0", FCVAR_CHEAT, "Health of a deployed detpack.", true, 1.0, true, 1000.0);
+ConVar sv_neo_detpack_damage_blast_enable("sv_neo_detpack_damage_blast_enable", "0", FCVAR_CHEAT, "Allow blast damage to destroy detpacks.", true, 0.0, true, 1.0);
 
 void CNEODeployedDetpack::Spawn(void)
 {
