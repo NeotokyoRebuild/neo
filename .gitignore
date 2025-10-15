@@ -165,12 +165,14 @@ obj*/
 VTune\ Profiler\ Results/
 
 # Specific Source build products
-bin
 *.project
 
 client.pdb
 client.dll
 client.lib
+game_shader_dx9.pdb
+game_shader_dx9.dll
+game_shader_dx9.lib
 server.pdb
 server.dll
 server.lib
@@ -183,6 +185,8 @@ raytrace.lib
 
 client.so
 client.so.dbg
+game_shader_dx9.so
+game_shader_dx9.so.dbg
 server.so
 server.so.dbg
 server_srv.so
@@ -312,13 +316,11 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
-x64/
 x86/
 [Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
