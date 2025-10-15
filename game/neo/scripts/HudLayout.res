@@ -1008,9 +1008,9 @@
 		"box_color"		"200 200 200 40"
 	}
 
-	neo_spectator_takeover
+	neo_context_hint
 	{
-		"fieldName" 	"neo_spectator_takeover"
+		"fieldName" 	"neo_context_hint"
 		"font"      	"NeoUINormal"
 		"padding_x" 	"4"
 		"padding_y" 	"6"

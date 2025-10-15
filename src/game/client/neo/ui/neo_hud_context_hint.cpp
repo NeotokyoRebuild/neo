@@ -1,5 +1,5 @@
 #include "cbase.h"
-#include "neo_hud_spectator_takeover.h"
+#include "neo_hud_context_hint.h"
 
 #include "iclientmode.h"
 #include "c_neo_player.h"
@@ -14,50 +14,48 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar cl_neo_spec_replace_player_hint_version("cl_neo_spec_replace_player_hint_version", "2",
-	FCVAR_ARCHIVE, "Which version of the spectator bot takeover hint to show. 0: None, 1: Minimal, 2: Central.", false, 0, true, 2);
+ConVar cl_neo_hud_context_hint_enabled("cl_neo_hud_context_hint_enabled", "1",
+	FCVAR_ARCHIVE, "Whether to show contextual hud hints. 0: Disabled, 1: Enabled.", false, 0, true, 1);
 
-ConVar cl_neo_spec_replace_player_hint_time_sec("cl_neo_spec_replace_player_hint_time_sec", "3.0",
+ConVar cl_neo_spec_takeover_player_hint_time_sec("cl_neo_spec_takeover_player_hint_time_sec", "3.0",
 	FCVAR_ARCHIVE, "Duration in seconds to display the spectator bot takeover hint.", true, 0, true, 9999);
 
-extern ConVar cl_neo_spec_replace_player_hint_version;
+DECLARE_HUDELEMENT(CNEOHud_ContextHint);
 
-DECLARE_HUDELEMENT(CNEOHud_SpectatorTakeover);
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(ContextHint, 0.00695);
 
-NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(SpectatorTakeover, 0.00695);
-
-CNEOHud_SpectatorTakeover::CNEOHud_SpectatorTakeover(const char* pElementName)
-	: CNEOHud_ChildElement(), CHudElement(pElementName), vgui::EditablePanel(NULL, "neo_spectator_takeover")
+CNEOHud_ContextHint::CNEOHud_ContextHint(const char* pElementName)
+	: CNEOHud_ChildElement(), CHudElement(pElementName), vgui::EditablePanel(NULL, "neo_context_hint")
 {
 	SetParent(g_pClientMode->GetViewport());
 	SetVisible(false);
 
 	m_flDisplayTime = 0.0f;
-	m_bHintShownForCurrentTarget = false;
-	m_hLastSpectatedTarget = nullptr;
+	m_bHintShownForCurrentSpecTarget = false;
+	m_hLastSpecTarget = nullptr;
 }
 
-CNEOHud_SpectatorTakeover::~CNEOHud_SpectatorTakeover()
+CNEOHud_ContextHint::~CNEOHud_ContextHint()
 {
 }
 
-void CNEOHud_SpectatorTakeover::Init()
+void CNEOHud_ContextHint::Init()
 {
 }
 
-void CNEOHud_SpectatorTakeover::VidInit()
+void CNEOHud_ContextHint::VidInit()
 {
 }
 
-void CNEOHud_SpectatorTakeover::Reset()
+void CNEOHud_ContextHint::Reset()
 {
 	m_flDisplayTime = 0.0f;
-	m_bHintShownForCurrentTarget = false;
-	m_hLastSpectatedTarget = nullptr;
+	m_bHintShownForCurrentSpecTarget = false;
+	m_hLastSpecTarget = nullptr;
 	SetVisible(false);
 }
 
-void CNEOHud_SpectatorTakeover::ApplySchemeSettings(vgui::IScheme* pScheme)
+void CNEOHud_ContextHint::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
@@ -68,9 +66,9 @@ void CNEOHud_SpectatorTakeover::ApplySchemeSettings(vgui::IScheme* pScheme)
 	LoadControlSettings("scripts/HudLayout.res");
 }
 
-bool CNEOHud_SpectatorTakeover::ShouldDraw()
+bool CNEOHud_ContextHint::ShouldDraw()
 {
-	if (cl_neo_spec_replace_player_hint_version.GetInt() != SPEC_REPLACE_PLAYER_HINT_CENTRAL)
+	if (!cl_neo_hud_context_hint_enabled.GetBool())
 	{
 		return false;
 	}
@@ -87,10 +85,10 @@ bool CNEOHud_SpectatorTakeover::ShouldDraw()
 	auto eObserverMode = pLocalPlayer->GetObserverMode();
 	bool bIsSpectating = (eObserverMode == OBS_MODE_CHASE || eObserverMode == OBS_MODE_IN_EYE);
 
-	if (pObserverTargetPlayer != m_hLastSpectatedTarget.Get())
+	if (pObserverTargetPlayer != m_hLastSpecTarget.Get())
 	{
-		m_bHintShownForCurrentTarget = false;
-		m_hLastSpectatedTarget = pObserverTargetPlayer;
+		m_bHintShownForCurrentSpecTarget = false;
+		m_hLastSpecTarget = pObserverTargetPlayer;
 	}
 
 	bool bShouldDisplayBotTakeoverHint = false;
@@ -119,10 +117,10 @@ bool CNEOHud_SpectatorTakeover::ShouldDraw()
 	if (bShouldDisplayBotTakeoverHint)
 	{
 		// If the hint has not been shown for the current target yet, start the timer.
-		if (!m_bHintShownForCurrentTarget)
+		if (!m_bHintShownForCurrentSpecTarget)
 		{
-			m_flDisplayTime = gpGlobals->curtime + cl_neo_spec_replace_player_hint_time_sec.GetFloat();
-			m_bHintShownForCurrentTarget = true;
+			m_flDisplayTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
+			m_bHintShownForCurrentSpecTarget = true;
 		}
 
 		// If the hint is displaying and the timer hasn't expired, keep displaying it.
@@ -136,32 +134,24 @@ bool CNEOHud_SpectatorTakeover::ShouldDraw()
 	return false;
 }
 
-void CNEOHud_SpectatorTakeover::UpdateStateForNeoHudElementDraw()
+void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 {
-	SetVisible(ShouldDraw());
-
-	if (IsVisible())
+	const char* useKeyBinding = engine->Key_LookupBinding("+use");
+	if (useKeyBinding && useKeyBinding[0] != '\0')
 	{
-		const char* useKeyBinding = engine->Key_LookupBinding("+use");
-		if (useKeyBinding && useKeyBinding[0] != '\0')
-		{
-			char szUppercaseKeyBinding[16]; // Assuming keybinds won't exceed 15 characters + null terminator
-			V_strncpy(szUppercaseKeyBinding, useKeyBinding, sizeof(szUppercaseKeyBinding));
-			V_strupr(szUppercaseKeyBinding);
-			V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
-		}
-		else
-		{
-			V_wcsncpy(m_wszHintText, L"Press Use To Control Bot", sizeof(m_wszHintText));
-		}
+		char szUppercaseKeyBinding[16]; // Assuming keybinds won't exceed 15 characters + null terminator
+		V_strncpy(szUppercaseKeyBinding, useKeyBinding, sizeof(szUppercaseKeyBinding));
+		V_strupr(szUppercaseKeyBinding);
+		V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
+	}
+	else
+	{
+		V_wcsncpy(m_wszHintText, L"Press Use To Control Bot", sizeof(m_wszHintText));
 	}
 }
 
-void CNEOHud_SpectatorTakeover::DrawNeoHudElement()
+void CNEOHud_ContextHint::DrawNeoHudElement()
 {
-	if (!IsVisible())
-		return;
-
 	int iScrWide, iScrTall;
 	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 
@@ -180,15 +170,15 @@ void CNEOHud_SpectatorTakeover::DrawNeoHudElement()
 	vgui::surface()->DrawSetTextFont(m_hHintFont);
 	vgui::surface()->DrawSetTextColor(m_TextColor);
 	vgui::surface()->DrawSetTextPos(iBoxX + m_iPaddingX, iBoxY + m_iPaddingY);
-	vgui::surface()->DrawPrintText(m_wszHintText, wcslen(m_wszHintText));
+	vgui::surface()->DrawPrintText(m_wszHintText, static_cast<int>(wcslen(m_wszHintText)));
 }
 
-void CNEOHud_SpectatorTakeover::Paint()
+void CNEOHud_ContextHint::Paint()
 {
 	PaintNeoElement();
 	BaseClass::Paint();
 }
 
-void CNEOHud_SpectatorTakeover::FireGameEvent(IGameEvent* event)
+void CNEOHud_ContextHint::FireGameEvent(IGameEvent* event)
 {
 }

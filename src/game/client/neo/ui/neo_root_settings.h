@@ -34,15 +34,6 @@ enum XHairExportNotify
 	XHAIREXPORTNOTIFY__TOTAL,
 };
 
-enum ESpecReplacePlayerHintVersion
-{
-	SPEC_REPLACE_PLAYER_HINT_NONE = 0,
-	SPEC_REPLACE_PLAYER_HINT_MINIMAL,
-	SPEC_REPLACE_PLAYER_HINT_CENTRAL,
-
-	SPEC_REPLACE_PLAYER_HINT__TOTAL,
-};
-
 #define NEO_BINDS_TOTAL 96
 
 struct NeoSettings
@@ -73,7 +64,7 @@ struct NeoSettings
 		bool bExtendedKillfeed;
 		int iBackground;
 		int iKdinfoToggletype;
-		int iSpecReplacePlayerHintVersion;
+		bool bShowHudContextHints;
 	};
 
 	struct Keys
@@ -230,7 +221,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
-		CONVARREF_DEF(cl_neo_spec_replace_player_hint_version);
+		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
