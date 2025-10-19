@@ -25,7 +25,7 @@ ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_facto
 	"Friendly player marker HUD element scaling factor", true, 0.01, false, 0);
 ConVar cl_neo_clantag_friendly_marker_spec_only("cl_neo_clantag_friendly_marker_spec_only", "1", FCVAR_ARCHIVE,
 												"Clantags only appear for spectators.", true, 0.0f, true, 1.0f);
-extern ConVar cl_neo_hud_health_mode_other;
+extern ConVar cl_neo_hud_health_mode;
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, neo_iff);
 
@@ -216,7 +216,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 
 			if (cl_neo_hud_iff_verbosity.GetInt() >= 1) 
 			{
-				int healthMode = cl_neo_hud_health_mode_other.GetInt();
+				int healthMode = cl_neo_hud_health_mode.GetInt();
 				V_snprintf(textASCII, MAX_MARKER_STRLEN, healthMode ? "%dhp" : "%d%%", player->GetDisplayedHealth(healthMode));
 				DisplayText(textASCII, drawOutline);
 			}
@@ -226,7 +226,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 
 			if (cl_neo_hud_iff_healthbars.GetBool()) 
 			{
-				int healthBarWidth = HEALTHBAR_WIDTH * Min((float)player->GetHealth() / player->GetMaxHealth(), 1.0f); // Clamp in case someone forgot to set max health, or it hasn't been sent by the server yet.
+				int healthBarWidth = Ceil2Int(HEALTHBAR_WIDTH * Min((float)player->GetHealth() / player->GetMaxHealth(), 1.0f)); // Clamp in case someone forgot to set max health, or it hasn't been sent by the server yet.
 				int healthBarYPos = y + (drawOutline ? 0 : m_iMarkerHeight) + textYOffset + 4;
 				surface()->DrawSetColor(FadeColour(teamColor, fadeTextMultiplier / 2));
 				surface()->DrawOutlinedRect(x - HEALTHBAR_WIDTH / 2, healthBarYPos, x + HEALTHBAR_WIDTH / 2, healthBarYPos + HEALTHBAR_HEIGHT);

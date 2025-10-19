@@ -844,7 +844,7 @@ void CSpectatorGUI::UpdateTimer()
 }
 
 #ifdef NEO
-extern ConVar cl_neo_hud_health_mode_other;
+extern ConVar cl_neo_hud_health_mode;
 //-----------------------------------------------------------------------------
 // Purpose: Updates the spectated player's health
 //-----------------------------------------------------------------------------
@@ -866,7 +866,7 @@ void CSpectatorGUI::UpdatePlayerLabel()
 		memset(playerName, 0x0, sizeof(playerName));
 
 		g_pVGuiLocalize->ConvertANSIToUnicode(UTIL_SafeName(gr->GetPlayerName(playernum)), playerName, sizeof(playerName));
-		int healthMode = cl_neo_hud_health_mode_other.GetInt();
+		int healthMode = cl_neo_hud_health_mode.GetInt();
 		int iHealth = gr->GetDisplayedHealth(playernum, healthMode);
 		if (iHealth > 0 && gr->IsAlive(playernum))
 		{

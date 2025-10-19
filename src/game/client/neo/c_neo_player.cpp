@@ -631,10 +631,8 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
-ConVar cl_neo_hud_health_mode_self("cl_neo_hud_health_mode_self", "1", FCVAR_ARCHIVE,
-	"Health display mode for self. 0 = Percent, 1 = Hit points, 2 = Effective hit points", true, 0, true, 2);
-ConVar cl_neo_hud_health_mode_other("cl_neo_hud_health_mode_other", "1", FCVAR_ARCHIVE,
-	"Health display mode for other players. 0 = Percent, 1 = Hit points, 2 = Effective hit points", true, 0, true, 2);
+ConVar cl_neo_hud_health_mode("cl_neo_hud_health_mode", "1", FCVAR_ARCHIVE,
+	"Health display mode. 0 = Percent, 1 = Hit points, 2 = Effective hit points", true, 0, true, 2);
 
 // 0 = Percent, 1 = Hit points, 2 = Effective hit points
 int C_NEO_Player::GetDisplayedHealth(int mode) const
