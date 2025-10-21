@@ -32,6 +32,7 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerReso
 	RecvPropArray3(RECVINFO_ARRAY(m_iNeoNameDupeIdx), RecvPropInt(RECVINFO(m_iNeoNameDupeIdx[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_iStar), RecvPropInt(RECVINFO(m_iStar[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_szNeoClantag), RecvPropString(RECVINFO(m_szNeoClantag[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_iMaxHealth), RecvPropInt(RECVINFO(m_iMaxHealth[0]))),
 #endif
 	RecvPropArray3( RECVINFO_ARRAY(m_iScore), RecvPropInt( RECVINFO(m_iScore[0]))),
 	RecvPropArray3( RECVINFO_ARRAY(m_iDeaths), RecvPropInt( RECVINFO(m_iDeaths[0]))),
@@ -55,6 +56,7 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 	DEFINE_PRED_ARRAY(m_iNeoNameDupeIdx, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_iStar, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_szNeoClantag, FIELD_STRING, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_iMaxHealth, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
 #endif
 	DEFINE_PRED_ARRAY( m_iScore, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_iDeaths, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE ),
@@ -91,6 +93,7 @@ C_PlayerResource::C_PlayerResource()
 	memset(m_szDispNameWDupeIdx, 0, sizeof(m_szDispNameWDupeIdx));
 	memset(m_iStar, 0, sizeof(m_iStar));
 	memset(m_szNeoClantag, 0, sizeof(m_szNeoClantag));
+	memset(m_iMaxHealth, 1, sizeof(m_iMaxHealth));
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -444,6 +447,30 @@ int	C_PlayerResource::GetHealth( int iIndex )
 
 	return m_iHealth[iIndex];
 }
+
+#ifdef NEO
+int	C_PlayerResource::GetMaxHealth(int iIndex)
+{
+	if (!IsConnected(iIndex) && !IsValid(iIndex))
+		return 1;
+
+	return m_iMaxHealth[iIndex];
+}
+
+extern ConVar sv_neo_wep_dmg_modifier;
+// 0 = Percent, 1 = Hit points, 2 = Effective hit points
+int C_PlayerResource::GetDisplayedHealth(int iIndex, int mode)
+{
+	switch (mode) {
+	case 0:
+		return Ceil2Int(100.0f * (float)GetHealth(iIndex) / GetMaxHealth(iIndex));
+	case 2:
+		return Ceil2Int((float)GetHealth(iIndex) / sv_neo_wep_dmg_modifier.GetFloat());
+	default:
+		return GetHealth(iIndex);
+	}
+}
+#endif
 
 const Color &C_PlayerResource::GetTeamColor(int index_ )
 {

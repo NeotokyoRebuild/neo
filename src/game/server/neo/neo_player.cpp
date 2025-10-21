@@ -174,6 +174,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 		RemoveAllItems(false);
 		GiveDefaultItems();
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
+		SetMaxHealth(MAX_HEALTH_FOR_CLASS[newClass]);
+		SetHealth(GetMaxHealth());
 	}
 	else
 	{
@@ -524,6 +526,9 @@ void CNEO_Player::Spawn(void)
 
 	BaseClass::Spawn();
 
+	SetMaxHealth(MAX_HEALTH_FOR_CLASS[m_iNeoClass]);
+	SetHealth(GetMaxHealth());
+
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 
 	m_bIsPendingSpawnForThisRound = false;
@@ -574,7 +579,7 @@ void CNEO_Player::Spawn(void)
 			return;
 		}
 		ChangeTeam(forcedTeam);
-
+		
 		if (NEORules()->GetForcedClass() < 0)
 		{
 			engine->ClientCommand(this->edict(), "classmenu");
@@ -2129,22 +2134,7 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return 0.f;
 	}
 
-	switch (GetClass())
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_VIP:
-		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_JUGGERNAUT:
-		return NEO_JUGGERNAUT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	default:
-		Assert(false);
-		return BaseClass::GetReceivedDamageScale(pAttacker);
-	}
+	return BaseClass::GetReceivedDamageScale(pAttacker);
 }
 
 bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,
@@ -2757,7 +2747,7 @@ int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 	{
 		return m_rfAttackersScores.Get(attackerIdx);
 	}
-	return min(m_rfAttackersScores.Get(attackerIdx), 100);
+	return m_rfAttackersScores.Get(attackerIdx);
 }
 
 int CNEO_Player::GetAttackerHits(const int attackerIdx) const
@@ -2850,7 +2840,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
-				m_rfAttackersScores.GetForModify(attackerIdx) += iDamage;
+				m_rfAttackersScores.GetForModify(attackerIdx) += Min(iDamage, GetHealth());
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
 				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
 
@@ -3378,6 +3368,7 @@ void CNEO_Player::BecomeJuggernaut()
 	InitSprinting();
 	RemoveAllItems(false);
 	GiveDefaultItems();
+	SetMaxHealth(MAX_HEALTH_FOR_CLASS[NEO_CLASS_JUGGERNAUT]);
 	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
 	//SetBloodColor(DONT_BLEED); Check C_HL2MP_Player::TraceAttack
