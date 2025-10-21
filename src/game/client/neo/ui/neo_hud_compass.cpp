@@ -94,22 +94,21 @@ static float safeAngle(float angle) {
 
 void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 {
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	Assert(pLocalPlayer);
+	auto pFPPlayer = GetFirstPersonPlayer();
+	Assert(pFPPlayer);
 
 	// Point the objective arrow to the relevant objective, if it exists
 	if (NEORules()->GhostExists() || NEORules()->GetJuggernautMarkerPos() != vec3_origin)
 	{
 		const Vector objPos = NEORules()->GetGameType() == NEO_GAME_TYPE_JGR ? NEORules()->GetJuggernautMarkerPos() : NEORules()->GetGhostPos();
-		const Vector objVec = objPos - pLocalPlayer->EyePosition();
+		const Vector objVec = objPos - pFPPlayer->EyePosition();
 		const float objYaw = RAD2DEG(atan2f(objVec.y, objVec.x));
-		float objAngle = safeAngle(- objYaw + pLocalPlayer->EyeAngles()[YAW]);
+		float objAngle = safeAngle(- objYaw + pFPPlayer->EyeAngles()[YAW]);
 		m_objAngle = Clamp(objAngle, -(float)m_fov / 2, (float)m_fov / 2);
 	}
 
 	if (cl_neo_hud_rangefinder_enabled.GetBool())
 	{
-		C_NEO_Player *pFPPlayer = GetFirstPersonPlayer();
 		if (pFPPlayer->IsInAim())
 		{
 			// Update Rangefinder
@@ -174,7 +173,7 @@ void CNEOHud_Compass::DrawCompass() const
 		L"S", L"|", L"SW", L"|", L"W", L"|", L"NW", L"|", L"N", L"|", L"NE", L"|", L"E", L"|", L"SE", L"|",
 	};
 
-	auto player = C_NEO_Player::GetLocalNEOPlayer();
+	auto player = GetFirstPersonPlayer();
 	Assert(player);
 
 	surface()->DrawSetTextFont(m_hFont);

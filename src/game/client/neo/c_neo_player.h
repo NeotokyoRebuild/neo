@@ -104,6 +104,8 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
+	virtual int GetMaxHealth(void) const override;
+
 	float CloakPower_CurrentVisualPercentage(void) const;
 
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
@@ -130,7 +132,7 @@ public:
 
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
-	int GetDisplayedHealth(bool asPercent) const;
+	int GetDisplayedHealth(int mode) const;
 
 	bool IsCarryingGhost(void) const;
 	bool IsObjective(void) const;
@@ -214,7 +216,7 @@ public:
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
-	CNetworkHandle(CBaseEntity, m_hDroppedJuggernautItem);
+	CNetworkHandle(CBaseEntity, m_hServerRagdoll);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);

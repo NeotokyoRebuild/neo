@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "neo_gamerules.h"
 #include "neo_version_info.h"
+#include "neo_misc.h"
 #include "in_buttons.h"
 #include "ammodef.h"
 
@@ -28,7 +29,6 @@
 #include "player_resource.h"
 #include "inetchannelinfo.h"
 #include "neo_dm_spawn.h"
-#include "neo_misc.h"
 #include "neo_game_config.h"
 #include "nav_mesh.h"
 
@@ -41,7 +41,7 @@ ConVar sv_neo_warmup_round_time("sv_neo_warmup_round_time", "45", FCVAR_REPLICAT
 ConVar sv_neo_preround_freeze_time("sv_neo_preround_freeze_time", "15", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
 ConVar sv_neo_latespawn_max_time("sv_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
-ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "1", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
+ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "1.485", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
 ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
 ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
@@ -138,6 +138,10 @@ ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", 
 ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_juggernaut_spawn_bias("sv_neo_juggernaut_spawn_bias", "0", FCVAR_REPLICATED, "Spawn juggernaut in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
+ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
+#ifdef CLIENT_DLL
+ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
+#endif
 
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
@@ -148,6 +152,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_pausematch_enabled.SetValue(bCurrentValue);
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_juggernaut_spawn_bias.SetValue(bCurrentValue);
+	sv_neo_client_autorecord.SetValue(bCurrentValue);
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f
@@ -155,6 +160,8 @@ ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive ga
 	, neoSvCompCallback
 	#endif // GAME_DLL
 );
+
+ConVar sv_neo_comp_name("sv_neo_comp_name", "", FCVAR_REPLICATED, "Name of the competition. Leave blank if unused.");
 
 #ifdef CLIENT_DLL
 extern ConVar snd_victory_volume;
@@ -526,6 +533,7 @@ CNEORules::CNEORules()
 
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
+	ListenForGameEvent("game_end");
 
 #ifdef GAME_DLL
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
@@ -1597,6 +1605,13 @@ void CNEORules::SetWinningDMPlayer(CNEO_Player *pWinner)
 	}
 
 	GoToIntermission();
+
+	IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+	if (event)
+	{
+		event->SetInt("winner", pWinner->GetUserID());
+		gameeventmanager->FireEvent(event);
+	}
 }
 #endif
 
@@ -1746,10 +1761,25 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 #ifdef CLIENT_DLL
 		engine->ClientCmd("r_cleardecals");
 		engine->ClientCmd("classmenu");
+
+		if (!engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		{
+			StartAutoClientRecording();
+		}
 #endif
 		m_flNeoRoundStartTime = gpGlobals->curtime;
 		m_flNeoNextRoundStartTime = 0;
 	}
+
+#ifdef CLIENT_DLL
+	if (Q_strcmp(type, "game_end") == 0)
+	{
+		if (sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		{
+			engine->StopDemoRecording();
+		}
+	}
+#endif
 }
 
 #ifdef GAME_DLL
@@ -3570,6 +3600,13 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		{
 			GoToIntermission();
 		}
+
+		IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+		if (event)
+		{
+			event->SetInt("winner", team);
+			gameeventmanager->FireEvent(event);
+		}
 	}
 }
 #endif
@@ -3594,8 +3631,8 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 		}
 
 		const int assistDmg = victim->GetAttackersScores(assistIdx);
-		static const int MIN_DMG_QUALIFY_ASSIST = 50;
-		if (assistDmg >= MIN_DMG_QUALIFY_ASSIST)
+		static const float MIN_DMG_QUALIFY_ASSIST = 0.5f;
+		if ((float)assistDmg / victim->GetMaxHealth() >= MIN_DMG_QUALIFY_ASSIST)
 		{
 			return static_cast<CNEO_Player*>(UTIL_PlayerByIndex(assistIdx));
 		}
@@ -4246,5 +4283,55 @@ const char *CNEORules::GetTeamClantag(const int iTeamNum) const
 void CNEORules::OnNavMeshLoad(void)
 {
 	TheNavMesh->SetPlayerSpawnName("info_player_defender");
+}
+
+bool CNEORules::IsOfficialMap(void)
+{
+	static const char *s_OfficialMaps[] =
+	{
+		"background_alley",
+		"background_door",
+		"ntre_ballistrade_ctg",
+		"ntre_bullet_tdm",
+		"ntre_class_tut",
+		"ntre_dawn_ctg",
+		"ntre_decom_ctg",
+		"ntre_disengage_ctg",
+		"ntre_dusk_ctg",
+		"ntre_engage_ctg",
+		"ntre_ghost_ctg",
+		"ntre_isolation_ctg",
+		"ntre_marketa_ctg",
+		"ntre_oilstain_ctg",
+		"ntre_pissalley_ctg",
+		"ntre_redlight_ctg",
+		"ntre_ridgeline_ctg",
+		"ntre_rise_ctg",
+		"ntre_rogue_ctg",
+		"ntre_saitama_ctg",
+		"ntre_sentinel_ctg",
+		"ntre_shooting_tut",
+		"ntre_shrine_ctg",
+		"ntre_skyline_ctg",
+		"ntre_subsurface_ctg",
+		"ntre_tarmac_ctg",
+		"ntre_terminal_jgr",
+		"ntre_threadplate_ctg",
+		"ntre_transit_ctg",
+		"ntre_vtol_ctg",
+	};
+
+	char szCurrentMap[MAX_MAP_NAME];
+	Q_strncpy( szCurrentMap, STRING( gpGlobals->mapname ), sizeof( szCurrentMap ) );
+
+	for ( int i = 0; i < ARRAYSIZE( s_OfficialMaps ); ++i )
+	{
+		if ( !Q_stricmp( s_OfficialMaps[i], szCurrentMap ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 #endif
