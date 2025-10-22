@@ -20,3 +20,7 @@ struct SZWSZTexts
 };
 #define SZWSZ_INIT(STR) {.szStr = STR, .wszStr = L"" STR}
 #define X_SZWSZ_INIT(STR) SZWSZ_INIT(STR)
+
+#ifdef CLIENT_DLL
+void StartAutoClientRecording();
+#endif

@@ -180,24 +180,9 @@
 		"Command"		"setclass 3"
 		"Default"		"0"
 	}
-	"Model1_ImagePanel"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Model1_ImagePanel"
-		"xpos"		"10"
-		"ypos"		"130"
-		"wide"		"128"
-		"tall"		"256"
-		"autoResize"		"1"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"Default"		"0"
-		"image"			"cm/jinrai_assault01"
-	}
 	"Skin1_Button"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Skin1_Button"
 		"xpos"		"10"
 		"ypos"		"130"
@@ -212,24 +197,9 @@
 		"Command"		"SetVariant 0"
 		"Default"		"0"
 	}
-	"Model2_ImagePanel"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Model2_ImagePanel"
-		"xpos"		"150"
-		"ypos"		"130"
-		"wide"		"128"
-		"tall"		"256"
-		"autoResize"		"1"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"Default"		"0"
-		"image"			"cm/jinrai_assault02"
-	}
 	"Skin2_Button"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Skin2_Button"
 		"xpos"		"150"
 		"ypos"		"130"
@@ -244,24 +214,9 @@
 		"Command"		"SetVariant 1"
 		"Default"		"0"
 	}
-	"Model3_ImagePanel"
-	{
-		"ControlName"		"ImagePanel"
-		"fieldName"		"Model3_ImagePanel"
-		"xpos"		"290"
-		"ypos"		"130"
-		"wide"		"128"
-		"tall"		"256"
-		"autoResize"		"1"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"Default"		"0"
-		"image"			"cm/jinrai_assault03"
-	}
 	"Skin3_Button"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoImageButton"
 		"fieldName"		"Skin3_Button"
 		"xpos"		"290"
 		"ypos"		"130"

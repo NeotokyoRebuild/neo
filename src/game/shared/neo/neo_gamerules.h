@@ -108,6 +108,7 @@ enum NeoRoundStatus {
 	Warmup,
 	PreRoundFreeze,
 	RoundLive,
+	Overtime,
 	PostRound,
 	Pause,
 	Countdown,
@@ -177,6 +178,8 @@ public:
 	virtual void ClientDisconnected(edict_t* pClient) OVERRIDE;
 
 	CBaseEntity *GetPlayerSpawnSpot(CBasePlayer *pPlayer) override;
+
+	virtual bool IsOfficialMap(void) override;
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
@@ -258,6 +261,7 @@ public:
 	virtual bool CheckGameOver(void) OVERRIDE;
 
 	float GetRoundRemainingTime() const;
+	float GetCTGOverTime() const;
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
 	float MirrorDamageMultiplier() const;
@@ -445,6 +449,7 @@ private:
 	CNetworkVar(int, m_iGhosterPlayer);
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
+	CNetworkVar(float, m_flGhostLastHeld);
 
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);

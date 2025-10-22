@@ -52,7 +52,7 @@ SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean)),
-SendPropEHandle(SENDINFO(m_hDroppedJuggernautItem)),
+SendPropEHandle(SENDINFO(m_hServerRagdoll)),
 
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
@@ -174,6 +174,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 		RemoveAllItems(false);
 		GiveDefaultItems();
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
+		SetMaxHealth(MAX_HEALTH_FOR_CLASS[newClass]);
+		SetHealth(GetMaxHealth());
 	}
 	else
 	{
@@ -189,7 +191,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 void CNEO_Player::RequestSetSkin(int newSkin)
 {
 	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
-	bool canChangeImmediately = ((roundStatus != NeoRoundStatus::RoundLive) && (roundStatus != NeoRoundStatus::PostRound)) || !IsAlive();
+	bool canChangeImmediately = ((roundStatus != NeoRoundStatus::RoundLive) && (roundStatus != NeoRoundStatus::Overtime) && (roundStatus != NeoRoundStatus::PostRound)) || !IsAlive();
 
 	if (canChangeImmediately)
 	{
@@ -524,6 +526,9 @@ void CNEO_Player::Spawn(void)
 
 	BaseClass::Spawn();
 
+	SetMaxHealth(MAX_HEALTH_FOR_CLASS[m_iNeoClass]);
+	SetHealth(GetMaxHealth());
+
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 
 	m_bIsPendingSpawnForThisRound = false;
@@ -574,7 +579,7 @@ void CNEO_Player::Spawn(void)
 			return;
 		}
 		ChangeTeam(forcedTeam);
-
+		
 		if (NEORules()->GetForcedClass() < 0)
 		{
 			engine->ClientCommand(this->edict(), "classmenu");
@@ -685,7 +690,6 @@ void CNEO_Player::CheckLeanButtons()
 	}
 }
 
-extern ConVar neo_ghost_bhopping;
 void CNEO_Player::CalculateSpeed(void)
 {
 	float speed = GetNormSpeed();
@@ -729,17 +733,6 @@ void CNEO_Player::CalculateSpeed(void)
 		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
 	}
 
-	Vector absoluteVelocity = GetAbsVelocity();
-	absoluteVelocity.z = 0.f;
-	float currentSpeed = absoluteVelocity.Length();
-
-	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed)
-	{
-		float overSpeed = currentSpeed - speed;
-		absoluteVelocity.NormalizeInPlace();
-		absoluteVelocity *= -overSpeed;
-		ApplyAbsVelocityImpulse(absoluteVelocity);
-	}
 	speed = MAX(speed, 55);
 
 	// Slowdown after jumping
@@ -2141,22 +2134,7 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return 0.f;
 	}
 
-	switch (GetClass())
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_VIP:
-		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_JUGGERNAUT:
-		return NEO_JUGGERNAUT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	default:
-		Assert(false);
-		return BaseClass::GetReceivedDamageScale(pAttacker);
-	}
+	return BaseClass::GetReceivedDamageScale(pAttacker);
 }
 
 bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,
@@ -2396,6 +2374,11 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 bool CNEO_Player::IsCarryingGhost(void) const
 {
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
+}
+
+bool CNEO_Player::IsObjective(void) const
+{
+	return IsCarryingGhost() || GetClass() == NEO_CLASS_VIP || GetClass() == NEO_CLASS_JUGGERNAUT;
 }
 
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
@@ -2764,7 +2747,7 @@ int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 	{
 		return m_rfAttackersScores.Get(attackerIdx);
 	}
-	return min(m_rfAttackersScores.Get(attackerIdx), 100);
+	return m_rfAttackersScores.Get(attackerIdx);
 }
 
 int CNEO_Player::GetAttackerHits(const int attackerIdx) const
@@ -2857,11 +2840,11 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
-				m_rfAttackersScores.GetForModify(attackerIdx) += iDamage;
+				m_rfAttackersScores.GetForModify(attackerIdx) += Min(iDamage, GetHealth());
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
 				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
 
-				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
+				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->IsRoundLive())
 				{
 					attacker->m_iTeamDamageInflicted += iDamage;
 				}
@@ -3391,6 +3374,7 @@ void CNEO_Player::BecomeJuggernaut()
 	InitSprinting();
 	RemoveAllItems(false);
 	GiveDefaultItems();
+	SetMaxHealth(MAX_HEALTH_FOR_CLASS[NEO_CLASS_JUGGERNAUT]);
 	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
 	//SetBloodColor(DONT_BLEED); Check C_HL2MP_Player::TraceAttack
@@ -3426,7 +3410,7 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 		NEORules()->m_pJuggernautPlayer = nullptr;
 		NEORules()->m_pJuggernautItem = pJuggernautItem;
 	}
-	m_hDroppedJuggernautItem = pJuggernautItem;
+	m_hServerRagdoll = pJuggernautItem;
 	DispatchSpawn(pJuggernautItem);
 }
 

@@ -62,6 +62,7 @@ public:
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
 	virtual bool BecomeRagdollOnClient(const Vector &force) OVERRIDE;
+	virtual bool CanBecomeServerRagdoll(void) override { return GetClass() != NEO_CLASS_JUGGERNAUT; }
 	virtual void Event_Killed(const CTakeDamageInfo &info) OVERRIDE;
 	virtual float GetReceivedDamageScale(CBaseEntity* pAttacker) OVERRIDE;
 	virtual bool WantsLagCompensationOnEntity(const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits) const OVERRIDE;
@@ -126,6 +127,7 @@ public:
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer) OVERRIDE;
 
 	bool IsCarryingGhost(void) const;
+	bool IsObjective(void) const;
 
 	void Weapon_AimToggle(CNEOBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 
@@ -263,7 +265,7 @@ public:
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
-	CNetworkHandle(CBaseEntity, m_hDroppedJuggernautItem);
+	CNetworkHandle(CBaseEntity, m_hServerRagdoll);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);

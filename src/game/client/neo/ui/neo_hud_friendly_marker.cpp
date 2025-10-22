@@ -25,6 +25,7 @@ ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_facto
 	"Friendly player marker HUD element scaling factor", true, 0.01, false, 0);
 ConVar cl_neo_clantag_friendly_marker_spec_only("cl_neo_clantag_friendly_marker_spec_only", "1", FCVAR_ARCHIVE,
 												"Clantags only appear for spectators.", true, 0.0f, true, 1.0f);
+extern ConVar cl_neo_hud_health_mode;
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, neo_iff);
 
@@ -141,6 +142,9 @@ void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team *team, const C_NEO_Player 
 	}
 }
 
+ConVar cl_neo_hud_iff_verbosity("cl_neo_hud_iff_verbosity", "1", FCVAR_ARCHIVE, "Verbosity of information displayed on top of teammates. 0 = Name and distance. 1 = Name, distance and health. 2 = Full OGNT style", true, 0, true, 2);
+ConVar cl_neo_hud_iff_healthbars("cl_neo_hud_iff_healthbars", "1", FCVAR_ARCHIVE, "Display healthbars on players in world", true, 0, true, 1);
+
 extern ConVar glow_outline_effect_enable;
 void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const
 {
@@ -196,14 +200,38 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 					((!localPlayerAlive || localPlayerSpec) && player->IsCarryingGhost()))
 			{
 				const float flDistance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(localPlayer->GetAbsOrigin());
-				V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
-						 player->IsCarryingGhost() ? "GHOST DISTANCE" : "DISTANCE",
-						 flDistance);
+				if (cl_neo_hud_iff_verbosity.GetInt() >= 2)
+				{
+					V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
+						player->IsCarryingGhost() ? "GHOST DISTANCE" : "DISTANCE",
+						flDistance);
+				}
+				else
+				{
+					V_snprintf(textASCII, MAX_MARKER_STRLEN, "%.0fm",
+						flDistance);
+				}
 				DisplayText(textASCII, drawOutline);
 			}
 
-			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%d%%", player->GetHealth());
-			DisplayText(textASCII, drawOutline);
+			if (cl_neo_hud_iff_verbosity.GetInt() >= 1) 
+			{
+				int healthMode = cl_neo_hud_health_mode.GetInt();
+				V_snprintf(textASCII, MAX_MARKER_STRLEN, healthMode ? "%dhp" : "%d%%", player->GetDisplayedHealth(healthMode));
+				DisplayText(textASCII, drawOutline);
+			}
+
+			static constexpr int HEALTHBAR_WIDTH = 64;
+			static constexpr int HEALTHBAR_HEIGHT = 6;
+
+			if (cl_neo_hud_iff_healthbars.GetBool()) 
+			{
+				int healthBarWidth = Ceil2Int(HEALTHBAR_WIDTH * Min((float)player->GetHealth() / player->GetMaxHealth(), 1.0f)); // Clamp in case someone forgot to set max health, or it hasn't been sent by the server yet.
+				int healthBarYPos = y + (drawOutline ? 0 : m_iMarkerHeight) + textYOffset + 4;
+				surface()->DrawSetColor(FadeColour(teamColor, fadeTextMultiplier / 2));
+				surface()->DrawOutlinedRect(x - HEALTHBAR_WIDTH / 2, healthBarYPos, x + HEALTHBAR_WIDTH / 2, healthBarYPos + HEALTHBAR_HEIGHT);
+				surface()->DrawFilledRect(x - HEALTHBAR_WIDTH / 2, healthBarYPos, x - HEALTHBAR_WIDTH / 2 + healthBarWidth, healthBarYPos + HEALTHBAR_HEIGHT);
+			}
 		}
 
 		if (!drawOutline)

@@ -102,6 +102,10 @@ protected:
 	// Handles both ground friction and water friction
 	void			Friction( void );
 
+#ifdef NEO
+	void			AirFriction( void );
+#endif
+
 	virtual void	AirAccelerate( Vector& wishdir, float wishspeed, float accel );
 
 	virtual void	AirMove( void );
