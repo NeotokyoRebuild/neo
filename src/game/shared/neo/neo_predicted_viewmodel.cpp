@@ -7,6 +7,7 @@
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
+#include "weapon_neobasecombatweapon.h"
 
 #include "engine/ivdebugoverlay.h"
 #include "iinput.h"
@@ -273,6 +274,23 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 	}
 
 	return BaseClass::DrawModel(flags);
+}
+
+bool CNEOPredictedViewModel::ShouldDraw()
+{
+	const auto* owner = ToNEOPlayer(GetOwner());
+	if (!owner || !owner->IsInAim())
+		return BaseClass::ShouldDraw();
+
+	const auto* wep = assert_cast<CNEOBaseCombatWeapon*>(GetOwningWeapon());
+	if (!wep)
+		return BaseClass::ShouldDraw();
+
+	const bool isScopedWithSniper = wep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
+	if (!isScopedWithSniper)
+		return BaseClass::ShouldDraw();
+
+	return false;
 }
 #endif
 
