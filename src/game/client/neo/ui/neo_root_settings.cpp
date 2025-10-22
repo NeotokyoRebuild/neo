@@ -421,6 +421,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		pGeneral->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
+		pGeneral->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
 		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
 	}
@@ -707,6 +708,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pGeneral->iKdinfoToggletype);
+		cvr->cl_neo_hud_context_hint_enabled.SetValue(pGeneral->bShowHudContextHints);
 		NeoSettingsBackgroundWrite(ns);
 	}
 	{
@@ -954,6 +956,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"IFF healthbars", &pGeneral->bIFFHealthbars);
 	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pGeneral->iObjVerbosity);
 	NeoUI::RingBoxBool(L"Show hints", &pGeneral->bShowHints);
+	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pGeneral->bShowHudContextHints);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);

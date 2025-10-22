@@ -1613,6 +1613,8 @@ target_sources_grouped(
     neo/ui/neo_hud_worldpos_marker.h
     neo/ui/neo_scoreboard.cpp
     neo/ui/neo_scoreboard.h
+    neo/ui/neo_hud_context_hint.cpp
+    neo/ui/neo_hud_context_hint.h
 )
 
 target_sources_grouped(

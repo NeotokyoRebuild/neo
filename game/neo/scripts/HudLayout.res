@@ -1007,4 +1007,15 @@
 		"tall"	"480"
 		"box_color"		"200 200 200 40"
 	}
+
+	neo_context_hint
+	{
+		"fieldName" 	"neo_context_hint"
+		"font"      	"NeoUINormal"
+		"padding_x" 	"4"
+		"padding_y" 	"6"
+		"box_y_factor" 	"0.75"
+		"box_color" 	"20 20 20 0"
+		"text_color" 	"255 255 255 255"
+	}
 }

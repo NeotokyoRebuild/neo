@@ -68,6 +68,7 @@ struct NeoSettings
 		bool bExtendedKillfeed;
 		int iBackground;
 		int iKdinfoToggletype;
+		bool bShowHudContextHints;
 	};
 
 	struct Keys
@@ -228,6 +229,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
+		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
