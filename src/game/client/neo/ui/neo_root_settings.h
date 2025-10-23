@@ -54,6 +54,10 @@ struct NeoSettings
 		int iLeanAutomatic;
 		bool bShowSquadList;
 		bool bShowPlayerSprays;
+		int iHealthMode;
+		int iIFFVerbosity;
+		bool bIFFHealthbars;
+		int iObjVerbosity;
 		bool bShowHints;
 		bool bShowPos;
 		int iShowFps;
@@ -64,6 +68,7 @@ struct NeoSettings
 		bool bExtendedKillfeed;
 		int iBackground;
 		int iKdinfoToggletype;
+		bool bShowHudContextHints;
 	};
 
 	struct Keys
@@ -209,6 +214,10 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_neo_lean_automatic);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
+		CONVARREF_DEF(cl_neo_hud_health_mode);
+		CONVARREF_DEF(cl_neo_hud_iff_verbosity);
+		CONVARREF_DEF(cl_neo_hud_iff_healthbars);
+		CONVARREF_DEF(cl_neo_hud_worldpos_verbose);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
 		CONVARREF_DEF(cl_neo_showhints);
 		CONVARREF_DEF(cl_showpos);
@@ -220,6 +229,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
+		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);

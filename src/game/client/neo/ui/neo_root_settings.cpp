@@ -395,6 +395,10 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
 		pGeneral->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
+		pGeneral->iHealthMode = cvr->cl_neo_hud_health_mode.GetInt();
+		pGeneral->iIFFVerbosity = cvr->cl_neo_hud_iff_verbosity.GetInt();
+		pGeneral->bIFFHealthbars = cvr->cl_neo_hud_iff_healthbars.GetBool();
+		pGeneral->iObjVerbosity = cvr->cl_neo_hud_worldpos_verbose.GetInt();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
 		pGeneral->bShowHints = cvr->cl_neo_showhints.GetBool();
 		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
@@ -417,6 +421,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		pGeneral->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
+		pGeneral->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
 		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
 	}
@@ -688,6 +693,10 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
 		cvr->cl_neo_crosshair_hip_fire.SetValue(pGeneral->bHipFireCrosshair);
 		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
+		cvr->cl_neo_hud_health_mode.SetValue(pGeneral->iHealthMode);
+		cvr->cl_neo_hud_iff_verbosity.SetValue(pGeneral->iIFFVerbosity);
+		cvr->cl_neo_hud_iff_healthbars.SetValue(pGeneral->bIFFHealthbars);
+		cvr->cl_neo_hud_worldpos_verbose.SetValue(pGeneral->iObjVerbosity);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_neo_showhints.SetValue(pGeneral->bShowHints);
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
@@ -699,6 +708,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pGeneral->iKdinfoToggletype);
+		cvr->cl_neo_hud_context_hint_enabled.SetValue(pGeneral->bShowHudContextHints);
 		NeoSettingsBackgroundWrite(ns);
 	}
 	{
@@ -889,8 +899,15 @@ static const wchar_t *DLFILTER_LABELS[] = {
 	L"Only allow map files",
 	L"Do not download any custom files",
 };
-static const wchar_t *SHOWFPS_LABELS[] = { L"Disabled", L"Enabled (FPS)", L"Enabled (Smooth FPS)", };
 static_assert(ARRAYSIZE(DLFILTER_STRMAP) == ARRAYSIZE(DLFILTER_LABELS));
+
+static const wchar_t* HEALTHMODE_LABELS[] = { L"Percent", L"Hit Points", L"Effective HP" };
+
+static const wchar_t* IFFVERBOSITY_LABELS[] = { L"Minimal", L"Clean", L"Full" };
+
+static const wchar_t* OBJVERBOSITY_LABELS[] = { L"Minimal", L"Full" };
+
+static const wchar_t *SHOWFPS_LABELS[] = { L"Disabled", L"Enabled (FPS)", L"Enabled (Smooth FPS)", };
 
 static const wchar_t *KDMGINFO_TOGGLETYPE_LABELS[KDMGINFO_TOGGLETYPE__TOTAL] = {
 	L"Always", // KDMGINFO_TOGGLETYPE_ROUND
@@ -930,8 +947,16 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
+
+
+	NeoUI::HeadingLabel(L"HUD");
 	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);
+	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, ARRAYSIZE(HEALTHMODE_LABELS), &pGeneral->iHealthMode);
+	NeoUI::RingBox(L"IFF verbosity", IFFVERBOSITY_LABELS, ARRAYSIZE(IFFVERBOSITY_LABELS), &pGeneral->iIFFVerbosity);
+	NeoUI::RingBoxBool(L"IFF healthbars", &pGeneral->bIFFHealthbars);
+	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pGeneral->iObjVerbosity);
 	NeoUI::RingBoxBool(L"Show hints", &pGeneral->bShowHints);
+	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pGeneral->bShowHudContextHints);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);

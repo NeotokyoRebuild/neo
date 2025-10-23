@@ -881,7 +881,7 @@
 		"healthtext_ypos"	"2"
 		"healthbar_xpos"	"86"
 		"healthbar_ypos"	"4"
-		"healthbar_w"		"93"
+		"healthbar_w"		"90"
 		"healthbar_h"		"6"
 		"healthnum_xpos"	"198"
 		"healthnum_ypos"	"2"
@@ -891,7 +891,7 @@
 		"camotext_ypos"		"12"
 		"camobar_xpos"		"86"
 		"camobar_ypos"		"14"
-		"camobar_w"		"93"
+		"camobar_w"		"90"
 		"camobar_h"		"6"
 		"camonum_xpos"		"198"
 		"camonum_ypos"		"12"
@@ -901,7 +901,7 @@
 		"sprinttext_ypos"	"22"
 		"sprintbar_xpos"	"86"
 		"sprintbar_ypos"	"24"
-		"sprintbar_w"		"93"
+		"sprintbar_w"		"90"
 		"sprintbar_h"		"6"
 		"sprintnum_xpos"	"198"
 		"sprintnum_ypos"	"22"
@@ -1006,5 +1006,16 @@
 		"wide"	"640"
 		"tall"	"480"
 		"box_color"		"200 200 200 40"
+	}
+
+	neo_context_hint
+	{
+		"fieldName" 	"neo_context_hint"
+		"font"      	"NeoUINormal"
+		"padding_x" 	"4"
+		"padding_y" 	"6"
+		"box_y_factor" 	"0.75"
+		"box_color" 	"20 20 20 0"
+		"text_color" 	"255 255 255 255"
 	}
 }
