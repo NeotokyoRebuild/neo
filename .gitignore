@@ -680,5 +680,5 @@ FodyWeavers.xsd
 
 !/game/bin/
 !/game/bin/x64/
-!/game/bin/**/rebuild.fgd
-!/game/bin/[Gg]ame[Cc]onfig.txt
+!/game/bin/rebuild.fgd
+!/game/bin/**/[Gg]ame[Cc]onfig.txt
