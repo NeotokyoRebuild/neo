@@ -80,11 +80,6 @@
 // Projective textures
 #include "C_Env_Projected_Texture.h"
 
-#ifdef NEO
-// For removing screen overlays when in vision modes
-#include "c_neo_player.h"
-#endif
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1246,12 +1241,8 @@ IMaterial *CViewRender::GetScreenOverlayMaterial( )
 void CViewRender::PerformScreenOverlay( int x, int y, int w, int h )
 {
 	VPROF("CViewRender::PerformScreenOverlay()");
-#ifdef NEO
-	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (m_ScreenOverlayMaterial && !pLocalPlayer->m_bInVision)
-#else
+
 	if (m_ScreenOverlayMaterial)
-#endif
 	{
 		tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
 
