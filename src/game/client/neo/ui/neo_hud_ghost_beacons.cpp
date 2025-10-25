@@ -24,16 +24,16 @@
 
 using vgui::surface;
 
-ConVar neo_ghost_beacon_scale("neo_ghost_beacon_scale", "1", FCVAR_ARCHIVE,
+ConVar cl_neo_ghost_beacon_scale("cl_neo_ghost_beacon_scale", "1", FCVAR_ARCHIVE,
 	"Ghost beacons scale.", true, 0.01, false, 0);
 
-ConVar neo_ghost_beacon_scale_with_distance("neo_ghost_beacon_scale_with_distance", "0", FCVAR_ARCHIVE,
+ConVar cl_neo_ghost_beacon_scale_with_distance("cl_neo_ghost_beacon_scale_with_distance", "0", FCVAR_ARCHIVE,
 	"Toggles the scaling of ghost beacons with distance.", true, 0, true, 1);
 
-ConVar neo_ghost_beacon_alpha("neo_ghost_beacon_alpha", "150", FCVAR_ARCHIVE,
+ConVar cl_neo_ghost_beacon_alpha("cl_neo_ghost_beacon_alpha", "150", FCVAR_ARCHIVE,
 	"Alpha channel transparency of HUD ghost beacons.", true, 0, true, 255);
 
-ConVar neo_ghost_delay_secs("neo_ghost_delay_secs", "3.3", FCVAR_CHEAT | FCVAR_REPLICATED,
+ConVar cl_neo_ghost_delay_secs("cl_neo_ghost_delay_secs", "3.3", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"The delay in seconds until the ghost shows up after pick up.", true, 0.0, false, 0.0);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostBeacons, neo_ghost_beacons);
@@ -135,7 +135,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	}
 
 	const auto dtGhostActivated = gpGlobals->curtime - ghostActivatedTime;
-	const bool showGhost = dtGhostActivated >= neo_ghost_delay_secs.GetFloat();
+	const bool showGhost = dtGhostActivated >= cl_neo_ghost_delay_secs.GetFloat();
 #if(0)
 	if (!showGhost)
 		DevMsg("ghost beacons are activating... %f\n", dtGhostActivated);
@@ -186,14 +186,14 @@ void CNEOHud_GhostBeacons::Paint()
 void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) const
 {	
 	const auto distInMeters = distance * METERS_PER_INCH;
-	const float scale = neo_ghost_beacon_scale.GetFloat();
+	const float scale = cl_neo_ghost_beacon_scale.GetFloat();
 	constexpr float HALF_BASE_TEX_LENGTH = 32;
 
 	float halfBeaconLength = HALF_BASE_TEX_LENGTH * scale;
 	int posX, posY;
-	Vector ghostBeaconOffset = Vector(0, 0, neo_ghost_beacon_scale_with_distance.GetBool() ? 32 : 48); // The center of the player, or raise slightly if not scaling
+	Vector ghostBeaconOffset = Vector(0, 0, cl_neo_ghost_beacon_scale_with_distance.GetBool() ? 32 : 48); // The center of the player, or raise slightly if not scaling
 	GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
-	if (neo_ghost_beacon_scale_with_distance.GetBool())
+	if (cl_neo_ghost_beacon_scale_with_distance.GetBool())
 	{
 		int pos2X, pos2Y;
 		Vector ghostBeaconOffset2 = Vector(0, 0, 64); // The top of the player
@@ -205,7 +205,7 @@ void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) c
 	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(distInMeters));
 
 	const auto ghostViewDist = sv_neo_ghost_view_distance.GetFloat();
-	const int alpha = distInMeters < ghostViewDist *35/45 ? neo_ghost_beacon_alpha.GetInt() : neo_ghost_beacon_alpha.GetInt() * ((ghostViewDist - distInMeters) / 10);
+	const int alpha = cl_neo_ghost_beacon_alpha.GetInt() * (distInMeters < ghostViewDist *35/45) ? 1 : ((ghostViewDist - distInMeters) / 10);
 	surface()->DrawSetTextColor(255, 255, 255, alpha);
 	surface()->DrawSetTextFont(m_hFont);
 	int textWidth, textHeight;
