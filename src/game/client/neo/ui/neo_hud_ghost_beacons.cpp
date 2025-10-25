@@ -145,7 +145,11 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	auto enemyCount = enemyTeam->GetNumPlayers();
 	float closestEnemy = FLT_MAX;
 
-	const auto processBeacon = [this, &showGhost, &closestEnemy, &spectateTarget](auto* enemy)->void {
+	using std::as_const;
+	const auto processBeacon = [this,
+		&showGhost{ as_const(showGhost) },
+		&spectateTarget{ as_const(spectateTarget) },
+		&closestEnemy] (auto* enemy)->void {
 		if (!enemy || !enemy->IsAlive() || enemy->IsDormant())
 			return;
 		const auto& enemyPos = enemy->GetAbsOrigin();
