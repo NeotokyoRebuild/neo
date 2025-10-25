@@ -48,6 +48,7 @@ IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
 SendPropInt(SENDINFO(m_iNeoStar)),
+SendPropInt(SENDINFO(m_iClassAtTimeOfDeath)),
 SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
@@ -83,12 +84,16 @@ SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
 
 SendPropTime(SENDINFO(m_flDeathTime)),
+
+SendPropEHandle(SENDINFO(m_hSpectatorTakeoverPlayerTarget)),
+SendPropEHandle(SENDINFO(m_hSpectatorTakeoverPlayerImpersonatingMe)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
 DEFINE_FIELD(m_iNeoClass, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
+DEFINE_FIELD(m_iClassAtTimeOfDeath, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bIneligibleForLoadoutPick, FIELD_BOOLEAN),
@@ -1909,6 +1914,11 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	if (m_hSpectatorTakeoverPlayerTarget == nullptr)
+	{
+		m_iClassAtTimeOfDeath = GetClass();
+	}
+
 	if (!m_bForceServerRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
 		CreateRagdollEntity();

@@ -179,7 +179,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			};
 
 			// Draw player's name and health
-			auto playerName = player->GetNeoPlayerName();
+			auto playerName = player->GetPlayerNameWithTakeoverContext(player->entindex());
 
 			// Only show clan tag if spectator/no playing and this player has a clantag
 			const char *playerClantag = player->GetNeoClantag();
