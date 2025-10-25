@@ -183,7 +183,7 @@ void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) c
 	const auto distInMeters = distance * METERS_PER_INCH;
 	const float scale = neo_ghost_beacon_scale.GetFloat();
 	constexpr float HALF_BASE_TEX_LENGTH = 32;
-	
+
 	float halfBeaconLength = HALF_BASE_TEX_LENGTH * scale;
 	int posX, posY;
 	Vector ghostBeaconOffset = Vector(0, 0, neo_ghost_beacon_scale_with_distance.GetBool() ? 32 : 48); // The center of the player, or raise slightly if not scaling
