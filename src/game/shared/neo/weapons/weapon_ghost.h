@@ -31,12 +31,14 @@ public:
 	virtual ~CWeaponGhost();
 #endif
 
+	float GetDeployTime() const { return m_flDeployTime; }
 	float GetPickupTime() const { return m_flPickupTime; }
 
 	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }
 
+	virtual bool Deploy() override;
 	virtual void Drop(const Vector &vecVelocity) override;
 	virtual void ItemHolsterFrame(void);
 	virtual void Equip(CBaseCombatCharacter *pNewOwner) override;
@@ -84,6 +86,7 @@ private:
 	float m_flLastGhostBeepTime;
 #endif
 
+	CNetworkVar(float, m_flDeployTime);
 	CNetworkVar(float, m_flPickupTime);
 
 	CWeaponGhost(const CWeaponGhost &other);

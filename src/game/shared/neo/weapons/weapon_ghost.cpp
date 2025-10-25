@@ -27,8 +27,10 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
 	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 #ifdef CLIENT_DLL
+	RecvPropTime(RECVINFO(m_flDeployTime)),
 	RecvPropTime(RECVINFO(m_flPickupTime)),
 #else
+	SendPropTime(SENDINFO(m_flDeployTime)),
 	SendPropTime(SENDINFO(m_flPickupTime)),
 #endif
 END_NETWORK_TABLE()
@@ -36,6 +38,7 @@ END_NETWORK_TABLE()
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponGhost)
 	DEFINE_NEO_BASE_WEP_PREDICTION
+	DEFINE_PRED_FIELD_TOL(m_flDeployTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TICKS_TO_TIME(1)),
 	DEFINE_PRED_FIELD_TOL(m_flPickupTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TICKS_TO_TIME(1)),
 END_PREDICTION_DATA()
 #endif
@@ -54,6 +57,7 @@ CWeaponGhost::CWeaponGhost(void)
 
 	m_flLastGhostBeepTime = 0;
 #endif
+	m_flDeployTime = 0;
 	m_flPickupTime = 0;
 }
 
@@ -230,6 +234,14 @@ void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 		PlayGhostSound();
 	}
 #endif
+}
+
+bool CWeaponGhost::Deploy()
+{
+	if (!BaseClass::Deploy())
+		return false;
+	m_flDeployTime = gpGlobals->curtime;
+	return true;
 }
 
 void CWeaponGhost::Drop(const Vector &vecVelocity)

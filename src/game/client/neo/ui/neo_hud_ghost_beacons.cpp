@@ -33,8 +33,7 @@ ConVar cl_neo_ghost_beacon_scale_with_distance("cl_neo_ghost_beacon_scale_with_d
 ConVar cl_neo_ghost_beacon_alpha("cl_neo_ghost_beacon_alpha", "150", FCVAR_ARCHIVE,
 	"Alpha channel transparency of HUD ghost beacons.", true, 0, true, 255);
 
-ConVar cl_neo_ghost_delay_secs("cl_neo_ghost_delay_secs", "3.3", FCVAR_CHEAT | FCVAR_REPLICATED,
-	"The delay in seconds until the ghost shows up after pick up.", true, 0.0, false, 0.0);
+
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostBeacons, neo_ghost_beacons);
 
@@ -108,30 +107,18 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	float ghostActivatedTime;
 	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
-		ghost = static_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
+		ghost = assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
 		if (!ghost)
 			return;
 		ghostActivatedTime = ghost->GetPickupTime();
 	}
 	else
 	{
-		auto weapon = static_cast<C_NEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
+		auto weapon = assert_cast<C_NEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
 		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
 		if (!ghost)
 			return;
-		// This is the time the ghost's viewmodel "draw" animation completes, when unholstered/equipped.
-		const auto ghostDeployTime = ghost->m_flNextPrimaryAttack;
-		// This is the time the draw animation takes. It's a known constant, but I'm querying it
-		// so that the logic doesn't break if the viewmodel's draw animation is ever modified to a different
-		// duration in the future.
-		auto getGhostDrawDuration = [&ghost]()->float { return ghost->SequenceDuration(ghost->SelectWeightedSequence(ACT_VM_DRAW)); };
-		const static auto drawDuration = getGhostDrawDuration();
-		AssertMsg(getGhostDrawDuration() == drawDuration,
-			"ghost draw duration mismatch: cached as %f but now got %f",
-			drawDuration,
-			getGhostDrawDuration());
-		// The time the ghost was last equipped. The deploy animation shouldn't affect the beacons so we subtract.
-		ghostActivatedTime = ghostDeployTime - drawDuration;
+		ghostActivatedTime = ghost->GetDeployTime();
 	}
 
 	const auto dtGhostActivated = gpGlobals->curtime - ghostActivatedTime;

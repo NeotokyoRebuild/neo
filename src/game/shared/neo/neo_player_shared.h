@@ -22,6 +22,7 @@
 #include "weapon_bits.h"
 #include "neo_enums.h"
 
+extern ConVar sv_neo_ghost_delay_secs;
 extern ConVar sv_neo_ghost_view_distance;
 
 //////////////////////////////////////////////////////
