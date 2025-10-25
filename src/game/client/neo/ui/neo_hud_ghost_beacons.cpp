@@ -199,7 +199,8 @@ void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) c
 	wchar_t m_wszBeaconTextUnicode[4 + 1];
 	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(distInMeters));
 
-	const int alpha = distInMeters < 35 ? neo_ghost_beacon_alpha.GetInt() : neo_ghost_beacon_alpha.GetInt() * ((45 - distInMeters) / 10);
+	const auto ghostViewDist = cl_neo_ghost_view_distance.GetFloat();
+	const int alpha = distInMeters < ghostViewDist *35/45 ? neo_ghost_beacon_alpha.GetInt() : neo_ghost_beacon_alpha.GetInt() * ((ghostViewDist - distInMeters) / 10);
 	surface()->DrawSetTextColor(255, 255, 255, alpha);
 	surface()->DrawSetTextFont(m_hFont);
 	int textWidth, textHeight;
