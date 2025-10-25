@@ -147,8 +147,8 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	float closestEnemy = FLT_MAX;
 
 	const auto processBeacon = [this,
-		&showGhost{ std::as_const(showGhost) },
-		&spectateTarget{ std::as_const(spectateTarget) },
+		&showGhost = std::as_const(showGhost),
+		&spectateTarget = std::as_const(spectateTarget),
 		&closestEnemy] (auto* enemy)->void {
 		if (!enemy || !enemy->IsAlive() || enemy->IsDormant())
 			return;
