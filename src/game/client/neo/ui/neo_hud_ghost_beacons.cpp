@@ -120,7 +120,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 			return;
 		// This is the time the ghost's viewmodel "draw" animation completes, when unholstered/equipped.
 		const auto ghostDeployTime = ghost->m_flNextPrimaryAttack;
-		// This is the time the draw animation takes. It's is a known constant, but I'm querying it
+		// This is the time the draw animation takes. It's a known constant, but I'm querying it
 		// so that the logic doesn't break if the viewmodel's draw animation is ever modified to a different
 		// duration in the future.
 		auto getGhostDrawDuration = [&ghost]()->float { return ghost->SequenceDuration(ghost->SelectWeightedSequence(ACT_VM_DRAW)); };
