@@ -432,6 +432,7 @@ private:
 	friend class CNEO_GhostBoundary;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
+	bool m_bGotMatchWinner = false;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
