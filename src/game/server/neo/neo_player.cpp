@@ -19,6 +19,9 @@
 
 #include "weapon_ghost.h"
 #include "weapon_supa7.h"
+#include "weapon_knife.h"
+#include "weapon_grenade.h"
+#include "weapon_smokegrenade.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -28,15 +31,10 @@
 
 #include "neo_te_tocflash.h"
 
-#include "weapon_grenade.h"
-#include "weapon_smokegrenade.h"
-
-#include "weapon_knife.h"
-
 #include "viewport_panel_names.h"
-
 #include "neo_weapon_loadout.h"
 
+#include "player_resource.h"
 #include "neo_player_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -3278,9 +3276,7 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 
 		// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
 		constexpr auto getSafetyOverhead = []()->float {
-			int ghosterAvgPingMs;
-			[[maybe_unused]] int dummy;
-			UTIL_GetPlayerConnectionInfo(NEORules()->GetGhosterPlayer(), ghosterAvgPingMs, dummy);
+			const int ghosterAvgPingMs = g_pPlayerResource->GetPing(NEORules()->GetGhosterPlayer());
 			const float ghosterAvgPingSecs = ghosterAvgPingMs / 1000.f;
 			const float safetyOverhead = 1.5f * ghosterAvgPingSecs;
 			return safetyOverhead;
