@@ -20,7 +20,10 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar cl_neo_ghost_view_distance("cl_neo_ghost_view_distance", "45", FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
+// This default value is not a typo. The OGNT ghost beacon distance is 1800 Hammer units/inches, which equals a little over 45 meters.
+// Since we can represent this value exactly with floating point, it's not really a problem to store it as meters here.
+ConVar cl_neo_ghost_view_distance("cl_neo_ghost_view_distance", "45.72", FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
+
 ConVar neo_ctg_ghost_beacons_when_inactive("neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
@@ -129,7 +132,7 @@ void CWeaponGhost::HandleGhostEquip(void)
 // Emit a ghost ping at a refire interval based on distance.
 void C_WeaponGhost::TryGhostPing(float closestEnemy)
 {
-	if (closestEnemy < 0 || closestEnemy > 45)
+	if (closestEnemy < 0 || closestEnemy > cl_neo_ghost_view_distance.GetFloat())
 	{
 		return;
 	}
