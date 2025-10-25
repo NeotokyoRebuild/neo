@@ -991,7 +991,7 @@ void CNEORules::Think(void)
 	}
 
 	// Allow respawn if it's an idle, warmup round, pausing, or deathmatch-type gamemode
-	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_DM || m_nGameTypeSelected == NEO_GAME_TYPE_TDM);
+	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_DM || m_nGameTypeSelected == NEO_GAME_TYPE_TDM || m_nGameTypeSelected == NEO_GAME_TYPE_JGR);
 	if (bIsDMType || bIsIdleState || bIsPause)
 	{
 		CRecipientFilter filter;
@@ -1369,8 +1369,20 @@ void CNEORules::Think(void)
 			Assert(false);
 		}
 
-		m_iJuggernautPlayerIndex = 0;
 		m_bJuggernautItemExists = true;
+	}
+	else if (m_pJuggernautPlayer)
+	{
+		if (m_pJuggernautPlayer->GetAbsOrigin().IsValid())
+		{
+			m_vecJuggernautMarkerPos = m_pJuggernautPlayer->WorldSpaceCenter();
+		}
+		else
+		{
+			Assert(false);
+		}
+
+		m_bJuggernautItemExists = false;
 	}
 	else
 	{
@@ -1921,7 +1933,10 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 		}
 		else if (auto* jgr = dynamic_cast<CNEO_Juggernaut*>(pEnt))
 		{
-			m_pJuggernautItem = jgr;
+			if (!jgr->IsMarkedForDeletion())
+			{
+				m_pJuggernautItem = jgr;
+			}
 		}
 
 		pEnt = gEntList.NextEnt(pEnt);
@@ -2064,14 +2079,32 @@ void CNEORules::SelectTheVIP()
 		Assert(false);
 }
 
-void CNEORules::JuggernautActivated(CNEO_Player* pPlayer)
+void CNEORules::JuggernautActivated(CNEO_Player *pPlayer)
 {
 	if (GetGameType() == NEO_GAME_TYPE_JGR)
 	{
 		m_pJuggernautPlayer = pPlayer;
 		m_iJuggernautPlayerIndex = pPlayer->entindex();
 		m_pJuggernautItem = nullptr;
-		m_vecJuggernautMarkerPos = vec3_origin;
+
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			CBasePlayer *pTargetPlayer = UTIL_PlayerByIndex(i);
+			if (pTargetPlayer && pTargetPlayer->IsDead() && pTargetPlayer->DeathCount() > 0 && pTargetPlayer->GetTeamNumber() == pPlayer->GetTeamNumber())
+			{
+				pTargetPlayer->ForceRespawn();
+			}
+		}
+	}
+}
+
+void CNEORules::JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut)
+{
+	if (GetGameType() == NEO_GAME_TYPE_JGR)
+	{
+		m_pJuggernautPlayer = nullptr;
+		m_iJuggernautPlayerIndex = 0;
+		m_pJuggernautItem = pJuggernaut;
 	}
 }
 
