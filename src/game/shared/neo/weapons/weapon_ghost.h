@@ -31,13 +31,15 @@ public:
 	virtual ~CWeaponGhost();
 #endif
 
+	float GetPickupTime() const { return m_flPickupTime; }
+
 	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }
 
 	virtual void Drop(const Vector &vecVelocity) override;
 	virtual void ItemHolsterFrame(void);
-	void Equip(CBaseCombatCharacter *pNewOwner) override;
+	virtual void Equip(CBaseCombatCharacter *pNewOwner) override;
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE;};
 	void HandleGhostUnequip(void);
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
@@ -81,6 +83,8 @@ private:
 
 	float m_flLastGhostBeepTime;
 #endif
+
+	CNetworkVar(float, m_flPickupTime);
 
 	CWeaponGhost(const CWeaponGhost &other);
 };

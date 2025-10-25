@@ -20,21 +20,23 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-// This default value is not a typo. The OGNT ghost beacon distance is 1800 Hammer units/inches, which equals a little over 45 meters.
-// Since we can represent this value exactly with floating point, it's not really a problem to store it as meters here.
-ConVar cl_neo_ghost_view_distance("cl_neo_ghost_view_distance", "45.72", FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
-
 ConVar neo_ctg_ghost_beacons_when_inactive("neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
 BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
 	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
+#ifdef CLIENT_DLL
+	RecvPropTime(RECVINFO(m_flPickupTime)),
+#else
+	SendPropTime(SENDINFO(m_flPickupTime)),
+#endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponGhost)
 	DEFINE_NEO_BASE_WEP_PREDICTION
+	DEFINE_PRED_FIELD_TOL(m_flPickupTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TICKS_TO_TIME(1)),
 END_PREDICTION_DATA()
 #endif
 
@@ -52,6 +54,7 @@ CWeaponGhost::CWeaponGhost(void)
 
 	m_flLastGhostBeepTime = 0;
 #endif
+	m_flPickupTime = 0;
 }
 
 #ifdef GAME_DLL
@@ -193,40 +196,40 @@ void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 {
 	BaseClass::Equip(pNewOwner);
 
-	if (pNewOwner)
+	if (!pNewOwner)
+		return;
+
+	auto neoOwner = assert_cast<CNEO_Player*>(pNewOwner);
+
+	// Prevent ghoster from sprinting
+	if (neoOwner->IsSprinting())
 	{
-		auto neoOwner = static_cast<CNEO_Player*>(pNewOwner);
-		Assert(neoOwner);
+		neoOwner->StopSprinting();
+	}
 
-		// Prevent ghoster from sprinting
-		if (neoOwner->IsSprinting())
-		{
-			neoOwner->StopSprinting();
-		}
-
-		neoOwner->m_bCarryingGhost = true;
+	neoOwner->m_bCarryingGhost = true;
+	m_flPickupTime = gpGlobals->curtime;
 
 #ifdef GAME_DLL // NEO NOTE (Adam) Fairly sure the above will never run client side and this whole thing could be surrounded by ifdef GAME_DLL, but I don't want weapons falling through the floor again if im wrong, so just leaving this comment here
-		EmitSound_t soundParams;
-		soundParams.m_pSoundName = "HUD.GhostPickUp";
-		soundParams.m_nChannel = CHAN_GHOST_PICKUP;
-		soundParams.m_bWarnOnDirectWaveReference = false;
-		soundParams.m_bEmitCloseCaption = false;
-		soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
+	EmitSound_t soundParams;
+	soundParams.m_pSoundName = "HUD.GhostPickUp";
+	soundParams.m_nChannel = CHAN_GHOST_PICKUP;
+	soundParams.m_bWarnOnDirectWaveReference = false;
+	soundParams.m_bEmitCloseCaption = false;
+	soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
 
-		CRecipientFilter soundFilter;
-		soundFilter.AddAllPlayers();
-		int ownerIndex = pNewOwner->entindex();
-		soundFilter.RemoveRecipientByPlayerIndex(ownerIndex);
-		soundFilter.MakeReliable();
-		EmitSound(soundFilter, ownerIndex, soundParams);
+	CRecipientFilter soundFilter;
+	soundFilter.AddAllPlayers();
+	int ownerIndex = pNewOwner->entindex();
+	soundFilter.RemoveRecipientByPlayerIndex(ownerIndex);
+	soundFilter.MakeReliable();
+	EmitSound(soundFilter, ownerIndex, soundParams);
 
-		if (neo_ctg_ghost_beacons_when_inactive.GetBool())
-		{
-			PlayGhostSound();
-		}
-#endif
+	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		PlayGhostSound();
 	}
+#endif
 }
 
 void CWeaponGhost::Drop(const Vector &vecVelocity)

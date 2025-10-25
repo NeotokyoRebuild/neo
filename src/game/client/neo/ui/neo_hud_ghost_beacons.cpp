@@ -104,40 +104,40 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	}
 
 	C_WeaponGhost* ghost;
+	float ghostActivatedTime;
 	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
 		ghost = static_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
+		if (!ghost)
+			return;
+		ghostActivatedTime = ghost->GetPickupTime();
 	}
 	else
 	{
 		auto weapon = static_cast<C_NEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
 		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
+		if (!ghost)
+			return;
+		// This is the time the ghost's viewmodel "draw" animation completes, when unholstered/equipped.
+		const auto ghostDeployTime = ghost->m_flNextPrimaryAttack;
+		// This is the time the draw animation takes. It's is a known constant, but I'm querying it
+		// so that the logic doesn't break if the viewmodel's draw animation is ever modified to a different
+		// duration in the future.
+		auto getGhostDrawDuration = [&ghost]()->float { return ghost->SequenceDuration(ghost->SelectWeightedSequence(ACT_VM_DRAW)); };
+		const static auto drawDuration = getGhostDrawDuration();
+		AssertMsg(getGhostDrawDuration() == drawDuration,
+			"ghost draw duration mismatch: cached as %f but now got %f",
+			drawDuration,
+			getGhostDrawDuration());
+		// The time the ghost was last equipped. The deploy animation shouldn't affect the beacons so we subtract.
+		ghostActivatedTime = ghostDeployTime - drawDuration;
 	}
 
-	if (!ghost)
-	{
-		return;
-	}
-
-	// This is the time the ghost's viewmodel "draw" animation completes, when unholstered/equipped.
-	const auto ghostDeployTime = ghost->m_flNextPrimaryAttack;
-	// This is the time the draw animation takes. It's is a known constant, but I'm querying it
-	// so that the logic doesn't break if the viewmodel's draw animation is ever modified to a different
-	// duration in the future.
-	auto getGhostDrawDuration = [&ghost]()->float { return ghost->SequenceDuration(ghost->SelectWeightedSequence(ACT_VM_DRAW)); };
-	const static auto drawDuration = getGhostDrawDuration();
-	AssertMsg(getGhostDrawDuration() == drawDuration,
-		"ghost draw duration mismatch: cached as %f but now got %f",
-		drawDuration,
-		getGhostDrawDuration());
-	// The time the ghost was last equipped. The deploy animation shouldn't affect the beacons so we subtract.
-	const auto ghostEquipTime = ghostDeployTime - drawDuration;
-
-	const auto dtGhostEquipped = gpGlobals->curtime - ghostEquipTime;	
-	const bool showGhost = dtGhostEquipped >= neo_ghost_delay_secs.GetFloat();
+	const auto dtGhostActivated = gpGlobals->curtime - ghostActivatedTime;
+	const bool showGhost = dtGhostActivated >= neo_ghost_delay_secs.GetFloat();
 #if(0)
 	if (!showGhost)
-		DevMsg("ghost draw sequence duration: %f\n", dtGhostEquipped);
+		DevMsg("ghost beacons are activating... %f\n", dtGhostActivated);
 #endif
 
 	auto enemyTeamId = spectateTarget->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
