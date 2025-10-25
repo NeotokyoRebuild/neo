@@ -200,6 +200,7 @@ public:
 	int GetForcedClass();
 	int GetForcedSkin();
 	int GetForcedWeapon();
+	bool IsCyberspace();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
 	bool CanChangeTeamClassLoadoutWhenAlive();
 	bool CanRespawnAnyTime();
@@ -302,8 +303,7 @@ public:
 	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
 
 	void CheckGameType();
-	void CheckHiddenHudElements();
-	void CheckPlayerForced();
+	void CheckGameConfig();
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -439,6 +439,7 @@ private:
 	CNetworkVar(int, m_iForcedClass);
 	CNetworkVar(int, m_iForcedSkin);
 	CNetworkVar(int, m_iForcedWeapon);
+	CNetworkVar(bool, m_bCyberspaceLevel);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);

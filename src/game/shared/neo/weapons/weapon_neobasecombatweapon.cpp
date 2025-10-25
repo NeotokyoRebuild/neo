@@ -259,6 +259,12 @@ void CNEOBaseCombatWeapon::Spawn()
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
+
+	if (NEORules()->IsCyberspace())
+	{
+		SetRenderMode(kRenderTransTexture);
+		m_nRenderFX = kRenderFxDistort;
+	}
 #else
 	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 #endif // GAME_DLL

@@ -232,6 +232,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iForcedClass)),
 	RecvPropInt(RECVINFO(m_iForcedSkin)),
 	RecvPropInt(RECVINFO(m_iForcedWeapon)),
+	RecvPropBool(RECVINFO(m_bCyberspaceLevel)),
 	RecvPropString(RECVINFO(m_szNeoJinraiClantag)),
 	RecvPropString(RECVINFO(m_szNeoNSFClantag)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -255,6 +256,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iForcedClass)),
 	SendPropInt(SENDINFO(m_iForcedSkin)),
 	SendPropInt(SENDINFO(m_iForcedWeapon)),
+	SendPropBool(SENDINFO(m_bCyberspaceLevel)),
 	SendPropString(SENDINFO(m_szNeoJinraiClantag)),
 	SendPropString(SENDINFO(m_szNeoNSFClantag)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
@@ -500,6 +502,11 @@ static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float f
 		wep = gEntList.NextEntByClass(wep);
 	}
 }
+
+static CNEOGameConfig *GetActiveGameConfig()
+{
+	return static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+}
 #endif
 
 CNEORules::CNEORules()
@@ -530,6 +537,7 @@ CNEORules::CNEORules()
 	m_iForcedClass = -1;
 	m_iForcedSkin = -1;
 	m_iForcedWeapon = -1;
+	m_bCyberspaceLevel = false;
 
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
@@ -889,33 +897,28 @@ void CNEORules::CheckGameType()
 	} break;
 	default:
 	{
-		const auto pEntGameCfg = static_cast<CNEOGameConfig *>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
-		m_nGameTypeSelected = (pEntGameCfg) ? pEntGameCfg->m_GameType : NEO_GAME_TYPE_CTG;
+		const auto pEntGameCfg = GetActiveGameConfig();
+		m_nGameTypeSelected = (pEntGameCfg) ? pEntGameCfg->m_GameType : NEO_GAME_TYPE_EMT;
 	} break;
 	}
 	m_bGamemodeTypeBeenInitialized = true;
 	iStaticInitOnCmd = iGamemodeEnforce;
 	iStaticInitOnRandAllow = iGamemodeRandAllow;
-
-	if (CNEOGameConfig::s_pGameRulesToConfig && sv_neo_comp.GetBool())
-	{
-		CNEOGameConfig::s_pGameRulesToConfig->OutputCompetitive();
-	}
 }
 
-void CNEORules::CheckHiddenHudElements()
+void CNEORules::CheckGameConfig()
 {
-	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+	CheckGameType();
+
+	const auto pEntGameCfg = GetActiveGameConfig();
 	m_iHiddenHudElements = (pEntGameCfg) ? pEntGameCfg->m_HiddenHudElements : 0;
-}
 
-void CNEORules::CheckPlayerForced()
-{
-	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
 	m_iForcedTeam = (pEntGameCfg) ? pEntGameCfg->m_ForcedTeam : -1;
 	m_iForcedClass = (pEntGameCfg) ? pEntGameCfg->m_ForcedClass : -1;
 	m_iForcedSkin = (pEntGameCfg) ? pEntGameCfg->m_ForcedSkin : -1;
 	m_iForcedWeapon = (pEntGameCfg) ? pEntGameCfg->m_ForcedWeapon : -1;
+
+	m_bCyberspaceLevel = (pEntGameCfg) ? pEntGameCfg->m_Cyberspace : false;
 }
 #endif
 
@@ -935,9 +938,7 @@ bool CNEORules::CheckShouldNotThink()
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
-	CheckHiddenHudElements();
-	CheckGameType();
-	CheckPlayerForced();
+	CheckGameConfig();
 	if (CheckShouldNotThink())
 	{
 		return;
@@ -1548,9 +1549,9 @@ void CNEORules::SetWinningDMPlayer(CNEO_Player *pWinner)
 		return;
 	}
 
-	if (CNEOGameConfig::s_pGameRulesToConfig)
+	if (auto pEntGameCfg = GetActiveGameConfig())
 	{
-		CNEOGameConfig::s_pGameRulesToConfig->OutputRoundEnd();
+		pEntGameCfg->m_OnDMRoundEnd.FireOutput(pWinner, pEntGameCfg);
 	}
 
 	SetRoundStatus(NeoRoundStatus::PostRound);
@@ -2858,9 +2859,11 @@ void CNEORules::CleanUpMap()
 
 	ResetGhostCapPoints();
 
-	if (CNEOGameConfig::s_pGameRulesToConfig && sv_neo_comp.GetBool())
+	// OnCompetitive needs to fire every time the map resets, along with all the entities, props, etc.
+	auto pEntGameCfg = GetActiveGameConfig();
+	if (pEntGameCfg && sv_neo_comp.GetBool())
 	{
-		CNEOGameConfig::s_pGameRulesToConfig->OutputCompetitive();
+		pEntGameCfg->m_OnCompetitive.FireOutput(nullptr, pEntGameCfg);
 	}
 }
 
@@ -3332,9 +3335,9 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		return;
 	}
 
-	if (CNEOGameConfig::s_pGameRulesToConfig)
+	if (auto pEntGameCfg = GetActiveGameConfig())
 	{
-		CNEOGameConfig::s_pGameRulesToConfig->OutputRoundEnd();
+		pEntGameCfg->m_OnRoundEnd.Set(team, nullptr, pEntGameCfg);
 	}
 
 	if (bForceMapReset)
@@ -4154,9 +4157,9 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 		{
 			UTIL_CenterPrintAll("- GO! GO! GO! -\n");
 
-			if (CNEOGameConfig::s_pGameRulesToConfig)
+			if (auto pEntGameCfg = GetActiveGameConfig())
 			{
-				CNEOGameConfig::s_pGameRulesToConfig->OutputRoundStart();
+				pEntGameCfg->m_OnRoundStart.FireOutput(nullptr, pEntGameCfg);
 			}
 		}
 #endif
@@ -4212,6 +4215,11 @@ int CNEORules::GetForcedSkin(void)
 int CNEORules::GetForcedWeapon(void)
 {
 	return m_iForcedWeapon;
+}
+
+bool CNEORules::IsCyberspace()
+{
+	return m_bCyberspaceLevel;
 }
 
 inline const char* CNEORules::GetGameTypeName(void)
