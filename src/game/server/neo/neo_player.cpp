@@ -3279,13 +3279,49 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
 		if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
 		{
-			return FL_EDICT_ALWAYS;
+			const auto* ghost = assert_cast<const CWeaponGhost*>(GetNeoWepWithBits(otherNeoPlayer, NEO_WEP_GHOST));
+			if (!ghost)
+			{
+				Assert(false);
+				return BaseClass::ShouldTransmit(pInfo);
+			}
+
+			// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
+			int ghosterAvgPingMs;
+			[[maybe_unused]] int dummy;
+			UTIL_GetPlayerConnectionInfo(NEORules()->GetGhosterPlayer(), ghosterAvgPingMs, dummy);
+			const float ghosterAvgPingSecs = ghosterAvgPingMs / 1000.f;
+			// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
+			const float safetyOverhead = 1.5f * ghosterAvgPingSecs;
+
+			auto dt = gpGlobals->curtime - ghost->GetPickupTime();
+			if (dt + safetyOverhead < sv_neo_ghost_delay_secs.GetFloat())
+				return BaseClass::ShouldTransmit(pInfo);
+
+			const auto distTo = GetAbsOrigin().DistTo(ghost->GetAbsOrigin());
+			const auto maxBeaconDist = CWeaponGhost::GetGhostRangeInHammerUnits();
+			if (distTo <= maxBeaconDist)
+				return FL_EDICT_ALWAYS;
 		}
 
 		// If the other player is actively using the ghost and therefore fetching beacons
 		const auto* otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
 		if (otherWep && otherWep->IsGhost())
 		{
+			const auto* ghost = assert_cast<const CWeaponGhost*>(otherWep);
+
+			// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
+			int ghosterAvgPingMs;
+			[[maybe_unused]] int dummy;
+			UTIL_GetPlayerConnectionInfo(NEORules()->GetGhosterPlayer(), ghosterAvgPingMs, dummy);
+			const float ghosterAvgPingSecs = ghosterAvgPingMs / 1000.f;
+			// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
+			const float safetyOverhead = 1.5f * ghosterAvgPingSecs;
+
+			auto dt = gpGlobals->curtime - ghost->GetDeployTime();
+			if (dt + safetyOverhead < sv_neo_ghost_delay_secs.GetFloat())
+				return BaseClass::ShouldTransmit(pInfo);
+
 			const auto distTo = GetAbsOrigin().DistTo(otherWep->GetAbsOrigin());
 			const auto maxBeaconDist = CWeaponGhost::GetGhostRangeInHammerUnits();
 			if (distTo <= maxBeaconDist)
