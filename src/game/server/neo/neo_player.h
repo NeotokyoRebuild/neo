@@ -11,6 +11,7 @@ class INEOPlayerAnimState;
 #include "simtimer.h"
 #include "soundenvelope.h"
 #include "utldict.h"
+#include "utlmap.h"
 #include "hl2mp_player.h"
 #include "in_buttons.h"
 
@@ -27,6 +28,14 @@ enum EMenuSelectType
 {
 	MENU_SELECT_TYPE_NONE = 0,
 	MENU_SELECT_TYPE_PAUSE,
+};
+
+// For rate-limiting thermoptic/etc visibility calculations
+struct CNEO_Player_FogCacheEntry
+{
+    bool m_bIsHidden{false};
+    float m_flUpdateTime{-1.0f};   // ensure update the first time
+    float m_flObscuredRatio{1.0f}; // more handy for debugging
 };
 
 class CNEO_Player : public CHL2MP_Player
@@ -314,6 +323,9 @@ private:
 	// blood decals are client-side, so track injury event count for bots
 	int m_iBotDetectableBleedingInjuryEvents = 0;
 	bool m_bSpectatorTakeoverPlayerPending{false};
+
+	// Cache for GetFogObscuredRatio for each player
+	mutable CUtlMap<int, CNEO_Player_FogCacheEntry> m_mapPlayerFogCache;
 
 private:
 	CNEO_Player(const CNEO_Player&);
