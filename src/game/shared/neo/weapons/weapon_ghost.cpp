@@ -239,32 +239,10 @@ void CWeaponGhost::Drop(const Vector &vecVelocity)
 #endif
 }
 
-float CWeaponGhost::DistanceToPos(const Vector& otherPlayerPos)
-{
-	auto owner = GetOwner();
-	if(!owner)
-		return false;
-	
-	const auto dir = owner->EyePosition() - otherPlayerPos;
-	return dir.Length2D();
-}
-
-float CWeaponGhost::GetGhostRangeInHammerUnits() const
+float CWeaponGhost::GetGhostRangeInHammerUnits()
 {
 	const float maxGhostRangeMeters = cl_neo_ghost_view_distance.GetFloat();
 	return (maxGhostRangeMeters / METERS_PER_INCH);
-}
-
-bool CWeaponGhost::IsPosWithinViewDistance(const Vector& otherPlayerPos)
-{
-	float dist;
-	return IsPosWithinViewDistance(otherPlayerPos, dist);
-}
-
-bool CWeaponGhost::IsPosWithinViewDistance(const Vector& otherPlayerPos, float& dist)
-{
-	dist = DistanceToPos(otherPlayerPos);
-	return dist <= GetGhostRangeInHammerUnits();
 }
 
 bool CWeaponGhost::CanBePickedUpByClass(int classId)

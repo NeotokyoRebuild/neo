@@ -46,10 +46,7 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
-	float GetGhostRangeInHammerUnits() const;
-	bool IsPosWithinViewDistance(const Vector &otherPlayerPos);
-	bool IsPosWithinViewDistance(const Vector &otherPlayerPos, float &dist);
-	float DistanceToPos(const Vector& otherPlayerPos);
+	static float GetGhostRangeInHammerUnits();
 
 #ifdef GAME_DLL
 	int UpdateTransmitState() override;

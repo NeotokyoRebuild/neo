@@ -114,53 +114,59 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
 	}
 
-	if (!ghost) //Check ghost ready here as players might be in PVS
+	if (!ghost)
 	{
-		m_bHoldingGhost = false;
 		return;
 	}
 
-	if (!m_bHoldingGhost)
-	{
-		// Just changed to holding the ghost, start delay timer
-		m_flNextAllowGhostShowTime = gpGlobals->curtime + neo_ghost_delay_secs.GetFloat();
-	}
-	m_bHoldingGhost = true;
+	// This is the time the ghost's viewmodel "draw" animation completes, when unholstered/equipped.
+	const auto ghostDeployTime = ghost->m_flNextPrimaryAttack;
+	// This is the time the draw animation takes. It's is a known constant, but I'm querying it
+	// so that the logic doesn't break if the viewmodel's draw animation is ever modified to a different
+	// duration in the future.
+	auto getGhostDrawDuration = [&ghost]()->float { return ghost->SequenceDuration(ghost->SelectWeightedSequence(ACT_VM_DRAW)); };
+	const static auto drawDuration = getGhostDrawDuration();
+	AssertMsg(getGhostDrawDuration() == drawDuration,
+		"ghost draw duration mismatch: cached as %f but now got %f",
+		drawDuration,
+		getGhostDrawDuration());
+	// The time the ghost was last equipped. The deploy animation shouldn't affect the beacons so we subtract.
+	const auto ghostEquipTime = ghostDeployTime - drawDuration;
 
-	m_pGhost = ghost;
-	const bool showGhost = (gpGlobals->curtime > m_flNextAllowGhostShowTime);
+	const auto dtGhostEquipped = gpGlobals->curtime - ghostEquipTime;	
+	const bool showGhost = dtGhostEquipped >= neo_ghost_delay_secs.GetFloat();
+#if(0)
+	if (!showGhost)
+		DevMsg("ghost draw sequence duration: %f\n", dtGhostEquipped);
+#endif
 
 	auto enemyTeamId = spectateTarget->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
 	auto enemyTeam = GetGlobalTeam(enemyTeamId);
 	auto enemyCount = enemyTeam->GetNumPlayers();
 	float closestEnemy = FLT_MAX;
 
+	const auto processBeacon = [this, &showGhost, &closestEnemy, &spectateTarget](auto* enemy)->void {
+		if (!enemy || !enemy->IsAlive() || enemy->IsDormant())
+			return;
+		const auto& enemyPos = enemy->GetAbsOrigin();
+		const float distTo = spectateTarget->GetAbsOrigin().DistTo(enemyPos);
+		const float maxDist = CWeaponGhost::GetGhostRangeInHammerUnits();
+		if (distTo > maxDist)
+			return;
+		closestEnemy = Min(distTo, closestEnemy);
+		if (showGhost)
+			DrawPlayer(distTo, enemyPos);
+	};
+
 	// Human and bot enemies
 	for(int i = 0; i < enemyCount; ++i)
 	{
-		auto enemyToShow = enemyTeam->GetPlayer(i);
-		if(enemyToShow)
-		{
-			auto enemyPos = enemyToShow->GetAbsOrigin();
-			float distance = FLT_MAX;
-			if(enemyToShow->IsAlive() && !enemyToShow->IsDormant() && ghost->IsPosWithinViewDistance(enemyPos, distance) && showGhost)
-			{
-				DrawPlayer(enemyPos);
-			}
-			closestEnemy = Min(distance, closestEnemy);
-		}
+		processBeacon(enemyTeam->GetPlayer(i));
 	}
 	// Dummy entity enemies
 	for (auto dummy = C_NEO_NPCDummy::GetList(); dummy; dummy = dummy->m_pNext)
 	{
-		Assert(dummy);
-		auto dummyPos = dummy->GetAbsOrigin();
-		float distance = FLT_MAX;
-		if (dummy->IsAlive() && !dummy->IsDormant() && ghost->IsPosWithinViewDistance(dummyPos, distance) && showGhost)
-		{
-			DrawPlayer(dummyPos);
-		}
-		closestEnemy = Min(distance, closestEnemy);
+		processBeacon(dummy);
 	}
 
 	ghost->TryGhostPing(closestEnemy * METERS_PER_INCH);
@@ -172,15 +178,13 @@ void CNEOHud_GhostBeacons::Paint()
 	PaintNeoElement();
 }
 
-void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
+void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) const
 {	
-	auto dist = m_pGhost->DistanceToPos(playerPos);	//Move this to some util
-	auto distInMeters = dist * METERS_PER_INCH;
-
-	float scale = neo_ghost_beacon_scale.GetFloat();
+	const auto distInMeters = distance * METERS_PER_INCH;
+	const float scale = neo_ghost_beacon_scale.GetFloat();
 	constexpr float HALF_BASE_TEX_LENGTH = 32;
+	
 	float halfBeaconLength = HALF_BASE_TEX_LENGTH * scale;
-
 	int posX, posY;
 	Vector ghostBeaconOffset = Vector(0, 0, neo_ghost_beacon_scale_with_distance.GetBool() ? 32 : 48); // The center of the player, or raise slightly if not scaling
 	GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
@@ -193,9 +197,9 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	}
 	
 	wchar_t m_wszBeaconTextUnicode[4 + 1];
-	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(dist * METERS_PER_INCH));
+	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(distInMeters));
 
-	int alpha = distInMeters < 35 ? neo_ghost_beacon_alpha.GetInt() : neo_ghost_beacon_alpha.GetInt() * ((45 - distInMeters) / 10);
+	const int alpha = distInMeters < 35 ? neo_ghost_beacon_alpha.GetInt() : neo_ghost_beacon_alpha.GetInt() * ((45 - distInMeters) / 10);
 	surface()->DrawSetTextColor(255, 255, 255, alpha);
 	surface()->DrawSetTextFont(m_hFont);
 	int textWidth, textHeight;

@@ -19,7 +19,8 @@ public:
 	virtual void ApplySchemeSettings(vgui::IScheme* pScheme) override;
 	virtual void Paint() override;
 
-	void DrawPlayer(const Vector& playerPos) const;
+private:
+	void DrawPlayer(float distance, const Vector& playerPos) const;
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw() override;
@@ -27,10 +28,6 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
-	C_WeaponGhost* m_pGhost;
-	float m_flNextAllowGhostShowTime;
-	bool m_bHoldingGhost = false;
-
 	vgui::HFont m_hFont;
 	vgui::HTexture m_hTex;
 

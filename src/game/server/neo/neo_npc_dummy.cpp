@@ -188,11 +188,13 @@ int CNEO_NPCDummy::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 		}
 
 		// Ghoster should receive beacons regardless of PVS
-		auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
-		if (otherWep && otherWep->IsGhost() &&
-			static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+		const auto* otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
+		if (otherWep && otherWep->IsGhost())
 		{
-			return FL_EDICT_ALWAYS;
+			const auto distTo = GetAbsOrigin().DistTo(otherWep->GetAbsOrigin());
+			const auto maxBeaconDist = CWeaponGhost::GetGhostRangeInHammerUnits();
+			if (distTo <= maxBeaconDist)
+				return FL_EDICT_ALWAYS;
 		}
 
 		// NEO TODO (Adam) Check if weapon attached to this npc is of type weapon_ghost? can we draw more than one ghost beacon at once?
