@@ -17,6 +17,7 @@
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
 
+#include <utility>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
