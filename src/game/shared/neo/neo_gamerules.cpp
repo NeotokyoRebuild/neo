@@ -1371,9 +1371,9 @@ void CNEORules::Think(void)
 
 		m_bJuggernautItemExists = true;
 	}
-	else
+	else if (m_pJuggernautPlayer)
 	{
-		if (m_pJuggernautPlayer && (m_pJuggernautPlayer->GetAbsOrigin().IsValid()))
+		if (m_pJuggernautPlayer->GetAbsOrigin().IsValid())
 		{
 			m_vecJuggernautMarkerPos = m_pJuggernautPlayer->WorldSpaceCenter();
 		}
@@ -1382,6 +1382,10 @@ void CNEORules::Think(void)
 			Assert(false);
 		}
 
+		m_bJuggernautItemExists = false;
+	}
+	else
+	{
 		m_bJuggernautItemExists = false;
 	}
 
@@ -1929,7 +1933,10 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 		}
 		else if (auto* jgr = dynamic_cast<CNEO_Juggernaut*>(pEnt))
 		{
-			m_pJuggernautItem = jgr;
+			if (!jgr->IsMarkedForDeletion())
+			{
+				m_pJuggernautItem = jgr;
+			}
 		}
 
 		pEnt = gEntList.NextEnt(pEnt);

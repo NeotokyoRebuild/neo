@@ -1,3 +1,5 @@
+#pragma once
+
 #include "cbase.h"
 #ifdef GAME_DLL
 #include "neo_player.h"
