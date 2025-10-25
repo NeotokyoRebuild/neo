@@ -122,7 +122,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	}
 
 	const auto dtGhostActivated = gpGlobals->curtime - ghostActivatedTime;
-	const bool showGhost = dtGhostActivated >= cl_neo_ghost_delay_secs.GetFloat();
+	const bool showGhost = dtGhostActivated >= sv_neo_ghost_delay_secs.GetFloat();
 #if(0)
 	if (!showGhost)
 		DevMsg("ghost beacons are activating... %f\n", dtGhostActivated);
