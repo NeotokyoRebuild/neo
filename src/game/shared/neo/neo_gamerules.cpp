@@ -2180,11 +2180,22 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 				{
 					UTIL_ClientPrintAll(HUD_PRINTTALK, "All players are ready! Starting soon...");
 				}
+				else
+				{
+					char szReadyText[256];
+					V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
+					UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
+				}
 			}
 			else if (V_strcmp(pSzChat, "unready") == 0)
 			{
 				m_readyAccIDs.Remove(steamID.GetAccountID());
 				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as unready.");
+
+				char szReadyText[256];
+				const auto readyPlayers = FetchReadyPlayers();
+				V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
+				UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
 			}
 			else if (V_strcmp(pSzChat, "start") == 0)
 			{
@@ -2440,11 +2451,13 @@ void CNEORules::StartNextRound()
 				m_bIgnoreOverThreshold = false;
 			}
 
-			char szPrint[512];
-			V_sprintf_safe(szPrint, "- WAITING FOR %dv%d: %d JINRAI, %d NSF PLAYERS READY -\n",
-						   iThres, iThres,
-						   readyPlayers.array[TEAM_JINRAI], readyPlayers.array[TEAM_NSF]);
+			char szPrint[128];
+			int needed = Max(2 * iThres - (readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF]), 0);
+			V_sprintf_safe(szPrint, "- WAITING FOR %d %s TO READY UP -\n",
+				needed,
+				needed == 1 ? "PLAYER" : "PLAYERS");
 			UTIL_CenterPrintAll(szPrint);
+
 			if (bPrintHelpInfo)
 			{
 				V_sprintf_safe(szPrint, "Ready up lobby is on - Type \".help\" for list of commands.");
