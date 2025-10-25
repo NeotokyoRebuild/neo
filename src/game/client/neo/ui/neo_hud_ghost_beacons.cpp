@@ -83,7 +83,7 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
-extern ConVar neo_ctg_ghost_beacons_when_inactive;
+extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 void CNEOHud_GhostBeacons::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
@@ -100,13 +100,13 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	}
 
 	if (!spectateTarget->m_bCarryingGhost)
-	{ // Saves iterating through all the weapons when neo_ctg_ghost_beacons_when_inactive is set to 1
+	{ // Saves iterating through all the weapons when sv_neo_ctg_ghost_beacons_when_inactive is set to 1
 		return;
 	}
 
 	C_WeaponGhost* ghost;
 	float ghostActivatedTime;
-	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
 		ghost = static_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
 		if (!ghost)
@@ -204,7 +204,7 @@ void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) c
 	wchar_t m_wszBeaconTextUnicode[4 + 1];
 	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(distInMeters));
 
-	const auto ghostViewDist = cl_neo_ghost_view_distance.GetFloat();
+	const auto ghostViewDist = sv_neo_ghost_view_distance.GetFloat();
 	const int alpha = distInMeters < ghostViewDist *35/45 ? neo_ghost_beacon_alpha.GetInt() : neo_ghost_beacon_alpha.GetInt() * ((ghostViewDist - distInMeters) / 10);
 	surface()->DrawSetTextColor(255, 255, 255, alpha);
 	surface()->DrawSetTextFont(m_hFont);

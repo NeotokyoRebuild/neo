@@ -24,7 +24,7 @@
 
 // This default value is not a typo. The OGNT ghost beacon distance is 1800 Hammer units/inches, which equals a little over 45 meters.
 // Since we can represent this value exactly with floating point, it's not really a problem to store it as meters here.
-static ConVar cl_neo_ghost_view_distance("cl_neo_ghost_view_distance", "45.72", FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
+static ConVar sv_neo_ghost_view_distance("sv_neo_ghost_view_distance", "45.72", FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
 
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS

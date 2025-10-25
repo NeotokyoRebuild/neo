@@ -20,7 +20,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar neo_ctg_ghost_beacons_when_inactive("neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
+ConVar sv_neo_ctg_ghost_beacons_when_inactive("sv_neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
@@ -69,7 +69,7 @@ CWeaponGhost::~CWeaponGhost()
 void CWeaponGhost::ItemPreFrame(void)
 {
 #ifdef CLIENT_DLL
-	if (!neo_ctg_ghost_beacons_when_inactive.GetBool())
+	if (!sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
 		HandleGhostEquip();
 	}
@@ -135,7 +135,7 @@ void CWeaponGhost::HandleGhostEquip(void)
 // Emit a ghost ping at a refire interval based on distance.
 void C_WeaponGhost::TryGhostPing(float closestEnemy)
 {
-	if (closestEnemy < 0 || closestEnemy > cl_neo_ghost_view_distance.GetFloat())
+	if (closestEnemy < 0 || closestEnemy > sv_neo_ghost_view_distance.GetFloat())
 	{
 		return;
 	}
@@ -173,7 +173,7 @@ void CWeaponGhost::ItemHolsterFrame(void)
 	BaseClass::ItemHolsterFrame();
 
 #ifdef CLIENT_DLL
-	if (!neo_ctg_ghost_beacons_when_inactive.GetBool())
+	if (!sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
 		HandleGhostUnequip(); // is there some callback, so we don't have to keep calling this?
 	}
@@ -225,7 +225,7 @@ void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 	soundFilter.MakeReliable();
 	EmitSound(soundFilter, ownerIndex, soundParams);
 
-	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
 		PlayGhostSound();
 	}
@@ -247,7 +247,7 @@ void CWeaponGhost::Drop(const Vector &vecVelocity)
 
 float CWeaponGhost::GetGhostRangeInHammerUnits()
 {
-	const float maxGhostRangeMeters = cl_neo_ghost_view_distance.GetFloat();
+	const float maxGhostRangeMeters = sv_neo_ghost_view_distance.GetFloat();
 	return (maxGhostRangeMeters / METERS_PER_INCH);
 }
 

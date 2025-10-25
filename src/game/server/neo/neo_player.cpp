@@ -3259,7 +3259,7 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
-extern ConVar neo_ctg_ghost_beacons_when_inactive;
+extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
 	if (pInfo)
@@ -3277,7 +3277,7 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 		}
 
 		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
-		if (neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
+		if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
 		{
 			return FL_EDICT_ALWAYS;
 		}
