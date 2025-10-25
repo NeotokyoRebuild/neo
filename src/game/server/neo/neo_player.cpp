@@ -3276,6 +3276,16 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 			return FL_EDICT_ALWAYS;
 		}
 
+		// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
+		constexpr auto getSafetyOverhead = []()->float {
+			int ghosterAvgPingMs;
+			[[maybe_unused]] int dummy;
+			UTIL_GetPlayerConnectionInfo(NEORules()->GetGhosterPlayer(), ghosterAvgPingMs, dummy);
+			const float ghosterAvgPingSecs = ghosterAvgPingMs / 1000.f;
+			const float safetyOverhead = 1.5f * ghosterAvgPingSecs;
+			return safetyOverhead;
+		};
+
 		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
 		if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
 		{
@@ -3287,15 +3297,8 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 			}
 
 			// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
-			int ghosterAvgPingMs;
-			[[maybe_unused]] int dummy;
-			UTIL_GetPlayerConnectionInfo(NEORules()->GetGhosterPlayer(), ghosterAvgPingMs, dummy);
-			const float ghosterAvgPingSecs = ghosterAvgPingMs / 1000.f;
-			// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
-			const float safetyOverhead = 1.5f * ghosterAvgPingSecs;
-
 			auto dt = gpGlobals->curtime - ghost->GetPickupTime();
-			if (dt + safetyOverhead < sv_neo_ghost_delay_secs.GetFloat())
+			if (dt + getSafetyOverhead() < sv_neo_ghost_delay_secs.GetFloat())
 				return BaseClass::ShouldTransmit(pInfo);
 
 			const auto distTo = GetAbsOrigin().DistTo(ghost->GetAbsOrigin());
@@ -3311,15 +3314,8 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 			const auto* ghost = assert_cast<const CWeaponGhost*>(otherWep);
 
 			// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
-			int ghosterAvgPingMs;
-			[[maybe_unused]] int dummy;
-			UTIL_GetPlayerConnectionInfo(NEORules()->GetGhosterPlayer(), ghosterAvgPingMs, dummy);
-			const float ghosterAvgPingSecs = ghosterAvgPingMs / 1000.f;
-			// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
-			const float safetyOverhead = 1.5f * ghosterAvgPingSecs;
-
 			auto dt = gpGlobals->curtime - ghost->GetDeployTime();
-			if (dt + safetyOverhead < sv_neo_ghost_delay_secs.GetFloat())
+			if (dt + getSafetyOverhead() < sv_neo_ghost_delay_secs.GetFloat())
 				return BaseClass::ShouldTransmit(pInfo);
 
 			const auto distTo = GetAbsOrigin().DistTo(otherWep->GetAbsOrigin());
