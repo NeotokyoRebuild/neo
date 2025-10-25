@@ -20,18 +20,26 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar cl_neo_ghost_view_distance("cl_neo_ghost_view_distance", "45", FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
-ConVar neo_ctg_ghost_beacons_when_inactive("neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
+ConVar sv_neo_ctg_ghost_beacons_when_inactive("sv_neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
 BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
 	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
+#ifdef CLIENT_DLL
+	RecvPropTime(RECVINFO(m_flDeployTime)),
+	RecvPropTime(RECVINFO(m_flPickupTime)),
+#else
+	SendPropTime(SENDINFO(m_flDeployTime)),
+	SendPropTime(SENDINFO(m_flPickupTime)),
+#endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponGhost)
 	DEFINE_NEO_BASE_WEP_PREDICTION
+	DEFINE_PRED_FIELD_TOL(m_flDeployTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TICKS_TO_TIME(1)),
+	DEFINE_PRED_FIELD_TOL(m_flPickupTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TICKS_TO_TIME(1)),
 END_PREDICTION_DATA()
 #endif
 
@@ -49,6 +57,8 @@ CWeaponGhost::CWeaponGhost(void)
 
 	m_flLastGhostBeepTime = 0;
 #endif
+	m_flDeployTime = 0;
+	m_flPickupTime = 0;
 }
 
 #ifdef GAME_DLL
@@ -63,7 +73,7 @@ CWeaponGhost::~CWeaponGhost()
 void CWeaponGhost::ItemPreFrame(void)
 {
 #ifdef CLIENT_DLL
-	if (!neo_ctg_ghost_beacons_when_inactive.GetBool())
+	if (!sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
 		HandleGhostEquip();
 	}
@@ -129,7 +139,7 @@ void CWeaponGhost::HandleGhostEquip(void)
 // Emit a ghost ping at a refire interval based on distance.
 void C_WeaponGhost::TryGhostPing(float closestEnemy)
 {
-	if (closestEnemy < 0 || closestEnemy > 45)
+	if (closestEnemy < 0 || closestEnemy > sv_neo_ghost_view_distance.GetFloat())
 	{
 		return;
 	}
@@ -167,7 +177,7 @@ void CWeaponGhost::ItemHolsterFrame(void)
 	BaseClass::ItemHolsterFrame();
 
 #ifdef CLIENT_DLL
-	if (!neo_ctg_ghost_beacons_when_inactive.GetBool())
+	if (!sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
 		HandleGhostUnequip(); // is there some callback, so we don't have to keep calling this?
 	}
@@ -190,40 +200,48 @@ void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 {
 	BaseClass::Equip(pNewOwner);
 
-	if (pNewOwner)
+	if (!pNewOwner)
+		return;
+
+	auto neoOwner = assert_cast<CNEO_Player*>(pNewOwner);
+
+	// Prevent ghoster from sprinting
+	if (neoOwner->IsSprinting())
 	{
-		auto neoOwner = static_cast<CNEO_Player*>(pNewOwner);
-		Assert(neoOwner);
+		neoOwner->StopSprinting();
+	}
 
-		// Prevent ghoster from sprinting
-		if (neoOwner->IsSprinting())
-		{
-			neoOwner->StopSprinting();
-		}
-
-		neoOwner->m_bCarryingGhost = true;
+	neoOwner->m_bCarryingGhost = true;
+	m_flPickupTime = gpGlobals->curtime; // passed as netprop to the client
 
 #ifdef GAME_DLL // NEO NOTE (Adam) Fairly sure the above will never run client side and this whole thing could be surrounded by ifdef GAME_DLL, but I don't want weapons falling through the floor again if im wrong, so just leaving this comment here
-		EmitSound_t soundParams;
-		soundParams.m_pSoundName = "HUD.GhostPickUp";
-		soundParams.m_nChannel = CHAN_GHOST_PICKUP;
-		soundParams.m_bWarnOnDirectWaveReference = false;
-		soundParams.m_bEmitCloseCaption = false;
-		soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
+	EmitSound_t soundParams;
+	soundParams.m_pSoundName = "HUD.GhostPickUp";
+	soundParams.m_nChannel = CHAN_GHOST_PICKUP;
+	soundParams.m_bWarnOnDirectWaveReference = false;
+	soundParams.m_bEmitCloseCaption = false;
+	soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
 
-		CRecipientFilter soundFilter;
-		soundFilter.AddAllPlayers();
-		int ownerIndex = pNewOwner->entindex();
-		soundFilter.RemoveRecipientByPlayerIndex(ownerIndex);
-		soundFilter.MakeReliable();
-		EmitSound(soundFilter, ownerIndex, soundParams);
+	CRecipientFilter soundFilter;
+	soundFilter.AddAllPlayers();
+	int ownerIndex = pNewOwner->entindex();
+	soundFilter.RemoveRecipientByPlayerIndex(ownerIndex);
+	soundFilter.MakeReliable();
+	EmitSound(soundFilter, ownerIndex, soundParams);
 
-		if (neo_ctg_ghost_beacons_when_inactive.GetBool())
-		{
-			PlayGhostSound();
-		}
-#endif
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		PlayGhostSound();
 	}
+#endif
+}
+
+bool CWeaponGhost::Deploy()
+{
+	if (!BaseClass::Deploy())
+		return false;
+	m_flDeployTime = gpGlobals->curtime;
+	return true;
 }
 
 void CWeaponGhost::Drop(const Vector &vecVelocity)
@@ -239,32 +257,10 @@ void CWeaponGhost::Drop(const Vector &vecVelocity)
 #endif
 }
 
-float CWeaponGhost::DistanceToPos(const Vector& otherPlayerPos)
+float CWeaponGhost::GetGhostRangeInHammerUnits()
 {
-	auto owner = GetOwner();
-	if(!owner)
-		return false;
-	
-	const auto dir = owner->EyePosition() - otherPlayerPos;
-	return dir.Length2D();
-}
-
-float CWeaponGhost::GetGhostRangeInHammerUnits() const
-{
-	const float maxGhostRangeMeters = cl_neo_ghost_view_distance.GetFloat();
+	const float maxGhostRangeMeters = sv_neo_ghost_view_distance.GetFloat();
 	return (maxGhostRangeMeters / METERS_PER_INCH);
-}
-
-bool CWeaponGhost::IsPosWithinViewDistance(const Vector& otherPlayerPos)
-{
-	float dist;
-	return IsPosWithinViewDistance(otherPlayerPos, dist);
-}
-
-bool CWeaponGhost::IsPosWithinViewDistance(const Vector& otherPlayerPos, float& dist)
-{
-	dist = DistanceToPos(otherPlayerPos);
-	return dist <= GetGhostRangeInHammerUnits();
 }
 
 bool CWeaponGhost::CanBePickedUpByClass(int classId)

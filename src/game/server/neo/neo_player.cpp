@@ -19,6 +19,9 @@
 
 #include "weapon_ghost.h"
 #include "weapon_supa7.h"
+#include "weapon_knife.h"
+#include "weapon_grenade.h"
+#include "weapon_smokegrenade.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -28,15 +31,10 @@
 
 #include "neo_te_tocflash.h"
 
-#include "weapon_grenade.h"
-#include "weapon_smokegrenade.h"
-
-#include "weapon_knife.h"
-
 #include "viewport_panel_names.h"
-
 #include "neo_weapon_loadout.h"
 
+#include "player_resource.h"
 #include "neo_player_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -3259,7 +3257,7 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
-extern ConVar neo_ctg_ghost_beacons_when_inactive;
+extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
 	if (pInfo)
@@ -3276,19 +3274,50 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 			return FL_EDICT_ALWAYS;
 		}
 
+		// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
+		constexpr auto getSafetyOverhead = []()->float {
+			const int ghosterAvgPingMs = g_pPlayerResource->GetPing(NEORules()->GetGhosterPlayer());
+			const float ghosterAvgPingSecs = ghosterAvgPingMs / 1000.f;
+			const float safetyOverhead = 1.5f * ghosterAvgPingSecs;
+			return safetyOverhead;
+		};
+
 		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
-		if (neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
+		if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
 		{
-			return FL_EDICT_ALWAYS;
+			const auto* ghost = assert_cast<const CWeaponGhost*>(GetNeoWepWithBits(otherNeoPlayer, NEO_WEP_GHOST));
+			if (!ghost)
+			{
+				Assert(false);
+				return BaseClass::ShouldTransmit(pInfo);
+			}
+
+			// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
+			auto dt = gpGlobals->curtime - ghost->GetPickupTime();
+			if (dt + getSafetyOverhead() < sv_neo_ghost_delay_secs.GetFloat())
+				return BaseClass::ShouldTransmit(pInfo);
+
+			const auto distTo = GetAbsOrigin().DistTo(ghost->GetAbsOrigin());
+			const auto maxBeaconDist = CWeaponGhost::GetGhostRangeInHammerUnits();
+			if (distTo <= maxBeaconDist)
+				return FL_EDICT_ALWAYS;
 		}
 
-
 		// If the other player is actively using the ghost and therefore fetching beacons
-		auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
-		if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
-			static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+		const auto* otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
+		if (otherWep && otherWep->IsGhost())
 		{
-			return FL_EDICT_ALWAYS;
+			const auto* ghost = assert_cast<const CWeaponGhost*>(otherWep);
+
+			// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
+			auto dt = gpGlobals->curtime - ghost->GetDeployTime();
+			if (dt + getSafetyOverhead() < sv_neo_ghost_delay_secs.GetFloat())
+				return BaseClass::ShouldTransmit(pInfo);
+
+			const auto distTo = GetAbsOrigin().DistTo(otherWep->GetAbsOrigin());
+			const auto maxBeaconDist = CWeaponGhost::GetGhostRangeInHammerUnits();
+			if (distTo <= maxBeaconDist)
+				return FL_EDICT_ALWAYS;
 		}
 
 		// If this player is carrying the ghost (whether active or not)
