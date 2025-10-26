@@ -6,26 +6,29 @@
 // $NoKeywords: $
 //=============================================================================//
 
+#ifdef WIN32
 #include <windows.h>
+#include <io.h>
+#endif
+
 #include "vbsp.h"
 #include "bsplib.h"
 #include "KeyValues.h"
 #include "utlsymbol.h"
 #include "utlvector.h"
-#include <io.h>
 #include "bspfile.h"
 #include "utilmatlib.h"
 #include "gamebspfile.h"
-#include "mathlib/VMatrix.h"
+#include "mathlib/vmatrix.h"
 #include "materialpatch.h"
 #include "pacifier.h"
 #include "vstdlib/random.h"
 #include "builddisp.h"
 #include "disp_vbsp.h"
-#include "UtlBuffer.h"
-#include "CollisionUtils.h"
+#include "utlbuffer.h"
+#include "collisionutils.h"
 #include <float.h>
-#include "UtlLinkedList.h"
+#include "utllinkedlist.h"
 #include "byteswap.h"
 #include "writebsp.h"
 
@@ -132,8 +135,8 @@ static void ParseDetailGroup( int detailId, KeyValues* pGroupKeyValues )
 
 			DetailModel_t &model = group.m_Models[i];
 
-			model.m_ModelName = pIter->GetString( "model", 0 );
-			if (model.m_ModelName != UTL_INVAL_SYMBOL)
+            model.m_ModelName = pIter->GetString( "model", nullptr );
+            if (model.m_ModelName)
 			{
 				model.m_Type = DETAIL_PROP_TYPE_MODEL;
 			}
@@ -285,7 +288,7 @@ static const char *FindDetailVBSPName( void )
 {
 	for( int i = 0; i < num_entities; i++ )
 	{
-		char* pEntity = ValueForKey( &entities[i], "classname" );
+        auto pEntity = ValueForKey( &entities[i], "classname" );
 		if ( !strcmp( pEntity, "worldspawn" ) )
 		{
 			const char *pDetailVBSP = ValueForKey( &entities[i], "detailvbsp" );
@@ -904,12 +907,12 @@ void EmitDetailModels()
 	Vector2D tex[2];
 	for (int i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!strcmp(pEntity, "detail_prop") || !strcmp(pEntity, "prop_detail"))
 		{
 			GetVectorForKey( &entities[i], "origin", origin );
 			GetAnglesForKey( &entities[i], "angles", angles );
-			char* pModelName = ValueForKey( &entities[i], "model" );
+            auto  pModelName = ValueForKey( &entities[i], "model" );
 			int nOrientation = IntForKey( &entities[i], "detailOrientation" );
 
 			AddDetailToLump( pModelName, origin, angles, nOrientation );
