@@ -10,6 +10,8 @@ class CNEOGameConfig : public CLogicalEntity
 	DECLARE_DATADESC();
 
 public:
+	virtual void Spawn() override;
+
 	int m_GameType = NEO_GAME_TYPE_TDM;
 	int m_HiddenHudElements = 0;
 	int m_ForcedTeam = -1;

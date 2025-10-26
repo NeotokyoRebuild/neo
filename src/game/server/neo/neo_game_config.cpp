@@ -24,6 +24,16 @@ BEGIN_DATADESC(CNEOGameConfig)
 	DEFINE_OUTPUT(m_OnCompetitive, "OnCompetitive")
 END_DATADESC()
 
+extern ConVar sv_neo_comp;
+
+void CNEOGameConfig::Spawn()
+{
+	if (sv_neo_comp.GetBool())
+	{
+		m_OnCompetitive.FireOutput(nullptr, this);
+	}
+}
+
 // Inputs
 
 void CNEOGameConfig::InputFireTeamWin(inputdata_t& inputData)
