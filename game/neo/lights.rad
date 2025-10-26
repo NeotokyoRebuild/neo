@@ -1,0 +1,156 @@
+lights/fluorescentcool001a	189 231 232 350
+lights/fluorescentcool001b	236 255 182 350
+lights/fluorescentcool002a	189 231 232 400
+lights/fluorescentcool002b	236 255 182 400
+lights/fluorescentcool003a	189 231 232 300
+lights/fluorescentwarm001a	239 216 193 350
+lights/fluorescentwarm002a	239 216 193 400
+lights/fluorescentwhite001a	245 245 245 350
+lights/fluorescentwhite002a	245 245 245 400
+
+
+lights/hazzardred001a		228 37 0 300
+lights/hazzardyellow001a	250 215 74 300
+
+lights/HIDcool001a		145 222 172 650
+lights/HIDcool001b		205 232 255 650
+lights/HIDwarm001a		255 201 116 650
+
+lights/white001			250 240 205 100
+lights/white002			189 233 247 425
+lights/white003			232 246 190 350
+lights/white004			170 228 247 425
+lights/white005			234 235 220 375
+lights/white006			234 235 220 100
+
+lights/white001_nochop	250 240 205 100
+lights/white002_nochop	189 233 247 425
+lights/white003_nochop	232 246 190 350
+lights/white004_nochop	170 228 247 425
+lights/white005_nochop	234 235 220 375
+lights/white006_nochop	234 235 220 100
+
+lights/incandescentcool001a	235 235 235 300
+lights/incandescentwarm001a	250 226 129 300
+
+
+glass/glassscreen001a		172 192 161 225
+glass/glasspipe001f		214 72 44 200
+glass/glassscreen001c		172 192 161 225
+glass/glassscreen001d		211 187 134 225
+glass/glassblock001a		70 194 209 200 
+composite/citadelfloor001a	103 143 203 200
+props/tvscreen006a		196 0 0 200
+shadertest/gooinglass		149 49 15 50
+
+glass/glasswindow002e		189 233 247 425
+glass/glasswindow035a		145 222 172 100
+
+dev/DEV_INTERIORLIGHT02B	151 176 204 225
+
+plaster/plasterwall029h		189 223 227 125
+building_template/Building_Trainstation_Template001d	230 230 200 65
+building_template/Building_Trainstation_Template001e	230 230 200 150
+building_template/Building_Trainstation_window002d	230 230 200 300
+building_template/Building_Trainstation_window002e	230 230 200 300
+
+lights/physgunlight	189 231 232 20
+
+forcetextureshadow models/nt/props_nature/wall_vegetation.mdl
+forcetextureshadow models/nt/props_nature/vegetation_smallclump.mdl
+forcetextureshadow models/nt/props_nature/vegetation_longclump.mdl
+forcetextureshadow models/nt/props_nature/bushhedge.mdl
+forcetextureshadow models/nt/props_nature/foliage_01.mdl
+forcetextureshadow models/nt/props_nature/foliage_02.mdl
+forcetextureshadow models/nt/props_nature/foliage_03.mdl
+forcetextureshadow models/nt/props_nature/foliage_04.mdl
+forcetextureshadow models/nt/props_nature/tree01_sg.mdl
+forcetextureshadow models/nt/props_nature/tree02_sg.mdl
+forcetextureshadow models/nt/props_nature/tree03_sg.mdl
+forcetextureshadow models/nt/props_nature/tree04_sg.mdl
+forcetextureshadow models/nt/props_nature/tree04b_sg.mdl
+forcetextureshadow models/nt/props_nature/tree05_sg.mdl
+forcetextureshadow models/nt/props_nature/tree06_sg.mdl
+forcetextureshadow models/nt/props_nature/tree07_sg.mdl
+forcetextureshadow models/nt/props_nature/tree08_sg.mdl
+forcetextureshadow models/nt/props_nature/tree09_sg.mdl
+forcetextureshadow models/nt/props_nature/tree1.mdl
+forcetextureshadow models/nt/props_nature/tree2.mdl
+forcetextureshadow models/nt/props_nature/tree3.mdl
+forcetextureshadow models/nt/props_nature/sakurasv.mdl
+forcetextureshadow models/nt/props_nature/sakura2sv.mdl
+forcetextureshadow models/nt/props_nature/sakura3sv.mdl
+forcetextureshadow models/nt/props_nature/sakura4sv.mdl
+
+forcetextureshadow models/nt/props_nature/BambooTree01_sg.mdl
+forcetextureshadow models/nt/props_nature/bambootree02_sg.mdl
+
+forcetextureshadow models/nt/props_fence/chainlink_fence_3ft_32.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_3ft_64.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_3ft_128.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_3ft_256.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_3ft_512.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_3ft_1024.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_32.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_64.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_128.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_256.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_512.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_1024.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_broken_200.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_door.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_doorway.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_doorway_wire.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_wire_32.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_wire_64.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_wire_128.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_wire_256.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_wire_512.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_wire_1024.mdl
+forcetextureshadow models/nt/props_fence/chainlink_fence_wire_turn.mdl
+forcetextureshadow models/nt/props_fence/fence_securitywire.mdl
+forcetextureshadow models/nt/props_fence/fence_securitywire_4long.mdl
+forcetextureshadow models/nt/props_fence/fence_securitywire_post.mdl
+forcetextureshadow models/nt/props_fence/fence_squarelink.mdl
+forcetextureshadow models/nt/props_fence/fence_squarelink_2long.mdl
+forcetextureshadow models/nt/props_fence/fence_squarelink_4long.mdl
+forcetextureshadow models/nt/props_fence/fence_squarelink_quads.mdl
+forcetextureshadow models/nt/props_fence/fence_squarelink_quads_long.mdl
+
+forcetextureshadow models/nt/props_street/blockade1.mdl
+forcetextureshadow models/nt/props_street/blockade2.mdl
+
+forcetextureshadow models/nt/props_warehouse/metal_techbeam_grate.mdl
+forcetextureshadow models/nt/props_warehouse/handrail_walkway_128.mdl
+forcetextureshadow models/nt/props_warehouse/handrail_walkway_256.mdl
+forcetextureshadow models/nt/props_warehouse/handrail_walkway_512.mdl
+forcetextureshadow models/nt/props_warehouse/handrail_walkway_platform.mdl
+forcetextureshadow models/nt/props_warehouse/handrail_walkway_platform_a.mdl
+forcetextureshadow models/nt/props_warehouse/handrail_walkway_platform_b.mdl
+forcetextureshadow models/nt/props_warehouse/handrail_walkway_platform_c.mdl
+forcetextureshadow models/nt/props_warehouse/handrail_walkway_turn.mdl
+
+forcetextureshadow models/nt/props_tech/hydroliclift.mdl
+
+forcetextureshadow models/props_wasteland/exterior_fence001a.mdl
+forcetextureshadow models/props_wasteland/exterior_fence001b.mdl
+forcetextureshadow models/props_wasteland/exterior_fence002a.mdl
+forcetextureshadow models/props_wasteland/exterior_fence002b.mdl
+forcetextureshadow models/props_wasteland/exterior_fence002c.mdl
+forcetextureshadow models/props_wasteland/exterior_fence002d.mdl
+forcetextureshadow models/props_wasteland/exterior_fence002e.mdl
+forcetextureshadow models/props_wasteland/exterior_fence003a.mdl
+forcetextureshadow models/props_wasteland/exterior_fence003b.mdl
+
+forcetextureshadow models/props_foliage/ivy_01.mdl
+
+forcetextureshadow models/props_foliage/tree_deciduous_card_01_skybox.mdl
+forcetextureshadow models/nt/props_skybox/tree_deciduous_card_01_skybox.mdl
+forcetextureshadow models/nt/props_skybox/crane02.mdl
+forcetextureshadow models/nt/props_skybox/skybox_cranetower.mdl
+forcetextureshadow models/nt/props_skybox/radiotower01.mdl
+forcetextureshadow models/nt/props_skybox/satdish01.mdl
+forcetextureshadow models/nt/props_skybox/satdish01b.mdl
+forcetextureshadow models/nt/props_skybox/tree1.mdl
+forcetextureshadow models/nt/props_skybox/tree2.mdl
+forcetextureshadow models/nt/props_skybox/tree3.mdl
