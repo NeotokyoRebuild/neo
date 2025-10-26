@@ -31,13 +31,17 @@ public:
 	virtual ~CWeaponGhost();
 #endif
 
+	float GetDeployTime() const { return m_flDeployTime; }
+	float GetPickupTime() const { return m_flPickupTime; }
+
 	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }
 
+	virtual bool Deploy() override;
 	virtual void Drop(const Vector &vecVelocity) override;
 	virtual void ItemHolsterFrame(void);
-	void Equip(CBaseCombatCharacter *pNewOwner) override;
+	virtual void Equip(CBaseCombatCharacter *pNewOwner) override;
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE;};
 	void HandleGhostUnequip(void);
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
@@ -46,10 +50,7 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
-	float GetGhostRangeInHammerUnits() const;
-	bool IsPosWithinViewDistance(const Vector &otherPlayerPos);
-	bool IsPosWithinViewDistance(const Vector &otherPlayerPos, float &dist);
-	float DistanceToPos(const Vector& otherPlayerPos);
+	static float GetGhostRangeInHammerUnits();
 
 #ifdef GAME_DLL
 	int UpdateTransmitState() override;
@@ -60,9 +61,14 @@ public:
 #ifdef CLIENT_DLL
 	void StopGhostSound(void);
 	void HandleGhostEquip(void);
+#endif
 
+#ifdef GAME_DLL
+	void TryGhostPing(CNEO_Player* ghoster, float closestEnemy);
+#else
 	void TryGhostPing(float closestEnemy);
 #endif
+
 	virtual void UpdateOnRemove() override
 	{
 		if (GetOwner())
@@ -81,9 +87,11 @@ private:
 #ifdef CLIENT_DLL
 	bool m_bHavePlayedGhostEquipSound;
 	bool m_bHaveHolsteredTheGhost;
-
-	float m_flLastGhostBeepTime;
 #endif
+	float m_flLastGhostBeepTime;
+
+	CNetworkVar(float, m_flDeployTime);
+	CNetworkVar(float, m_flPickupTime);
 
 	CWeaponGhost(const CWeaponGhost &other);
 };

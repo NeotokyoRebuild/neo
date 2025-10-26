@@ -28,6 +28,14 @@ public:
 	virtual int  UpdateTransmitState( void );
 	virtual int  GetTeam( int iIndex );
 
+#ifdef NEO
+	int GetPing(int iIndex) const
+	{
+		Assert(iIndex > 0 && iIndex < m_iPing.Count());
+		return m_bConnected.Get(iIndex) ? m_iPing.Get(iIndex) : 0;
+	}
+#endif
+
 protected:
 	virtual void UpdateConnectedPlayer( int iIndex, CBasePlayer *pPlayer );
 	virtual void UpdateDisconnectedPlayer( int iIndex );

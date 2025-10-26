@@ -31,6 +31,9 @@
 #include "neo_dm_spawn.h"
 #include "neo_game_config.h"
 #include "nav_mesh.h"
+#include "neo_npc_dummy.h"
+
+#include <utility>
 
 extern ConVar weaponstay;
 #endif
@@ -1301,6 +1304,7 @@ void CNEORules::Think(void)
 			nextGhosterTeam = pGhosterPlayer->GetTeamNumber();
 			nextGhosterPlayerIdx = pGhosterPlayer->entindex();
 			Assert(nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF);
+			TryGhostPing(pGhosterPlayer);
 		}
 		m_iGhosterTeam = nextGhosterTeam;
 		m_iGhosterPlayer = nextGhosterPlayerIdx;
@@ -4361,5 +4365,69 @@ bool CNEORules::IsOfficialMap(void)
 	}
 
 	return false;
+}
+
+void CNEORules::TryGhostPing(CNEO_Player* ghoster)
+{
+	Assert(ghoster);
+	// This case will be handled by clients locally.
+	if (!sv_neo_serverside_beacons.GetBool())
+		return;
+
+	if (ghoster->IsObserver())
+	{
+		auto obsTarget = ghoster->GetObserverTarget();
+		if (obsTarget && obsTarget->IsPlayer())
+			ghoster = assert_cast<CNEO_Player*>(obsTarget);
+	}
+	Assert(ghoster->m_bCarryingGhost);
+
+	CWeaponGhost* ghost;
+	extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		ghost = assert_cast<CWeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST));
+	}
+	else
+	{
+		auto weapon = assert_cast<CNEOBaseCombatWeapon*>(ghoster->GetActiveWeapon());
+		ghost = (weapon && weapon->IsGhost()) ? assert_cast<CWeaponGhost*>(weapon) : nullptr;
+	}
+
+	if (!ghost)
+		return;
+
+	const int ghosterTeam = ghoster->GetTeamNumber();
+	Assert(ghosterTeam == TEAM_JINRAI || ghosterTeam == TEAM_NSF);
+	const int enemyTeamId = ghosterTeam == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
+	const auto* enemyTeam = GetGlobalTeam(enemyTeamId);
+	const int enemyCount = enemyTeam->GetNumPlayers();
+	float closestEnemy = FLT_MAX;
+
+	const auto processBeacon = [
+		&ghoster = std::as_const(ghoster),
+		&closestEnemy] (auto* enemy)->void {
+		if (!enemy || !enemy->IsAlive() || enemy->IsDormant())
+			return;
+		const auto& enemyPos = enemy->GetAbsOrigin();
+		const float distTo = ghoster->GetAbsOrigin().DistTo(enemyPos);
+		const float maxDist = CWeaponGhost::GetGhostRangeInHammerUnits();
+		if (distTo > maxDist)
+			return;
+		closestEnemy = Min(distTo, closestEnemy);
+	};
+
+	// Human and bot enemies
+	for (int i = 0; i < enemyCount; ++i)
+	{
+		processBeacon(enemyTeam->GetPlayer(i));
+	}
+	// Dummy entity enemies (used in tutorial)
+	for (auto* dummy = CNEO_NPCDummy::GetList(); dummy; dummy = dummy->m_pNext)
+	{
+		processBeacon(dummy);
+	}
+
+	ghost->TryGhostPing(ghoster, closestEnemy * METERS_PER_INCH);
 }
 #endif

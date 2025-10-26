@@ -17,23 +17,23 @@
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
 
+#include <utility>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 using vgui::surface;
 
-ConVar neo_ghost_beacon_scale("neo_ghost_beacon_scale", "1", FCVAR_ARCHIVE,
+ConVar cl_neo_ghost_beacon_scale("cl_neo_ghost_beacon_scale", "1", FCVAR_ARCHIVE,
 	"Ghost beacons scale.", true, 0.01, false, 0);
 
-ConVar neo_ghost_beacon_scale_with_distance("neo_ghost_beacon_scale_with_distance", "0", FCVAR_ARCHIVE,
+ConVar cl_neo_ghost_beacon_scale_with_distance("cl_neo_ghost_beacon_scale_with_distance", "0", FCVAR_ARCHIVE,
 	"Toggles the scaling of ghost beacons with distance.", true, 0, true, 1);
 
-ConVar neo_ghost_beacon_alpha("neo_ghost_beacon_alpha", "150", FCVAR_ARCHIVE,
+ConVar cl_neo_ghost_beacon_alpha("cl_neo_ghost_beacon_alpha", "150", FCVAR_ARCHIVE,
 	"Alpha channel transparency of HUD ghost beacons.", true, 0, true, 255);
 
-ConVar neo_ghost_delay_secs("neo_ghost_delay_secs", "3.3", FCVAR_CHEAT | FCVAR_REPLICATED,
-	"The delay in seconds until the ghost shows up after pick up.", true, 0.0, false, 0.0);
+
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostBeacons, neo_ghost_beacons);
 
@@ -82,7 +82,7 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
-extern ConVar neo_ctg_ghost_beacons_when_inactive;
+extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 void CNEOHud_GhostBeacons::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
@@ -99,71 +99,79 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	}
 
 	if (!spectateTarget->m_bCarryingGhost)
-	{ // Saves iterating through all the weapons when neo_ctg_ghost_beacons_when_inactive is set to 1
+	{ // Saves iterating through all the weapons when sv_neo_ctg_ghost_beacons_when_inactive is set to 1
 		return;
 	}
 
 	C_WeaponGhost* ghost;
-	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+	float ghostActivatedTime;
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
-		ghost = static_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
+		ghost = assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
+		if (!ghost)
+			return;
+		ghostActivatedTime = ghost->GetPickupTime();
 	}
 	else
 	{
-		auto weapon = static_cast<C_NEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
+		auto weapon = assert_cast<C_NEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
 		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
+		if (!ghost)
+			return;
+		ghostActivatedTime = ghost->GetDeployTime();
 	}
 
-	if (!ghost) //Check ghost ready here as players might be in PVS
+	const auto dtGhostActivated = gpGlobals->curtime - ghostActivatedTime;
+	const bool showGhost = dtGhostActivated >= sv_neo_ghost_delay_secs.GetFloat();
+
+	if (!showGhost)
 	{
-		m_bHoldingGhost = false;
+#if(0)
+		if (!sv_neo_serverside_beacons.GetBool())
+			DevMsg("CLI ghost beacons are activating... %f\n", dtGhostActivated);
+#endif
 		return;
 	}
-
-	if (!m_bHoldingGhost)
-	{
-		// Just changed to holding the ghost, start delay timer
-		m_flNextAllowGhostShowTime = gpGlobals->curtime + neo_ghost_delay_secs.GetFloat();
-	}
-	m_bHoldingGhost = true;
-
-	m_pGhost = ghost;
-	const bool showGhost = (gpGlobals->curtime > m_flNextAllowGhostShowTime);
 
 	auto enemyTeamId = spectateTarget->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
 	auto enemyTeam = GetGlobalTeam(enemyTeamId);
 	auto enemyCount = enemyTeam->GetNumPlayers();
-	float closestEnemy = FLT_MAX;
+	[[maybe_unused]] float closestEnemy = FLT_MAX;
 
-	// Human and bot enemies
-	for(int i = 0; i < enemyCount; ++i)
-	{
-		auto enemyToShow = enemyTeam->GetPlayer(i);
-		if(enemyToShow)
+	const auto processBeacon = [this,
+			&closestEnemy,
+			&showGhost = std::as_const(showGhost),
+			&spectateTarget = std::as_const(spectateTarget)]
+			(auto* enemy)->void {
+		if (!enemy || !enemy->IsAlive() || enemy->IsDormant())
+			return;
+		const auto& enemyPos = enemy->GetAbsOrigin();
+		const float distTo = spectateTarget->GetAbsOrigin().DistTo(enemyPos);
+		const float maxDist = CWeaponGhost::GetGhostRangeInHammerUnits();
+		if (distTo <= maxDist)
 		{
-			auto enemyPos = enemyToShow->GetAbsOrigin();
-			float distance = FLT_MAX;
-			if(enemyToShow->IsAlive() && !enemyToShow->IsDormant() && ghost->IsPosWithinViewDistance(enemyPos, distance) && showGhost)
-			{
-				DrawPlayer(enemyPos);
-			}
-			closestEnemy = Min(distance, closestEnemy);
+			closestEnemy = Min(closestEnemy, distTo);
+			if (showGhost)
+				DrawPlayer(distTo, enemyPos);
 		}
+	};
+
+	// Human and bot enemies.
+	for (int i = 0; i < enemyCount; ++i)
+	{
+		processBeacon(enemyTeam->GetPlayer(i));
 	}
 	// Dummy entity enemies
 	for (auto dummy = C_NEO_NPCDummy::GetList(); dummy; dummy = dummy->m_pNext)
 	{
-		Assert(dummy);
-		auto dummyPos = dummy->GetAbsOrigin();
-		float distance = FLT_MAX;
-		if (dummy->IsAlive() && !dummy->IsDormant() && ghost->IsPosWithinViewDistance(dummyPos, distance) && showGhost)
-		{
-			DrawPlayer(dummyPos);
-		}
-		closestEnemy = Min(distance, closestEnemy);
+		processBeacon(dummy);
 	}
 
-	ghost->TryGhostPing(closestEnemy * METERS_PER_INCH);
+	// The server may restrict ghoster access to off-PVS enemy data, and in such a case
+	// we can't play these ghost ping sounds client-side (because we don't know how close they are).
+	// But if that's not the case, then we can handle the sounds here.
+	if (!sv_neo_serverside_beacons.GetBool())
+		ghost->TryGhostPing(closestEnemy * METERS_PER_INCH);
 }
 
 void CNEOHud_GhostBeacons::Paint()
@@ -172,19 +180,17 @@ void CNEOHud_GhostBeacons::Paint()
 	PaintNeoElement();
 }
 
-void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
+void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) const
 {	
-	auto dist = m_pGhost->DistanceToPos(playerPos);	//Move this to some util
-	auto distInMeters = dist * METERS_PER_INCH;
-
-	float scale = neo_ghost_beacon_scale.GetFloat();
+	const auto distInMeters = distance * METERS_PER_INCH;
+	const float scale = cl_neo_ghost_beacon_scale.GetFloat();
 	constexpr float HALF_BASE_TEX_LENGTH = 32;
-	float halfBeaconLength = HALF_BASE_TEX_LENGTH * scale;
 
+	float halfBeaconLength = HALF_BASE_TEX_LENGTH * scale;
 	int posX, posY;
-	Vector ghostBeaconOffset = Vector(0, 0, neo_ghost_beacon_scale_with_distance.GetBool() ? 32 : 48); // The center of the player, or raise slightly if not scaling
+	Vector ghostBeaconOffset = Vector(0, 0, cl_neo_ghost_beacon_scale_with_distance.GetBool() ? 32 : 48); // The center of the player, or raise slightly if not scaling
 	GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
-	if (neo_ghost_beacon_scale_with_distance.GetBool())
+	if (cl_neo_ghost_beacon_scale_with_distance.GetBool())
 	{
 		int pos2X, pos2Y;
 		Vector ghostBeaconOffset2 = Vector(0, 0, 64); // The top of the player
@@ -193,9 +199,11 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	}
 	
 	wchar_t m_wszBeaconTextUnicode[4 + 1];
-	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(dist * METERS_PER_INCH));
+	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(distInMeters));
 
-	int alpha = distInMeters < 35 ? neo_ghost_beacon_alpha.GetInt() : neo_ghost_beacon_alpha.GetInt() * ((45 - distInMeters) / 10);
+	const auto ghostViewDist = sv_neo_ghost_view_distance.GetFloat();
+	const float alphaMultiplier = (distInMeters < ghostViewDist * 35.f / 45) ? 1.0 : ((ghostViewDist - distInMeters) / 10);
+	const int alpha = cl_neo_ghost_beacon_alpha.GetInt() * alphaMultiplier;
 	surface()->DrawSetTextColor(255, 255, 255, alpha);
 	surface()->DrawSetTextFont(m_hFont);
 	int textWidth, textHeight;
