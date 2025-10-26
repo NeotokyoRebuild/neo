@@ -297,6 +297,7 @@ void CNeoClassMenu::UpdateSkinImages(int classNumber, int overrideTeamNumber)
 	
 	if (NEORules()->IsCyberspace())
 	{
+		teamNumber = player->GetTeamNumber();
 		m_pSkin1_Button->SetButtonTexture(classNumber == NEO_CLASS_RECON ? (teamNumber == TEAM_JINRAI ? "vgui/cm/jinrai_dummy" : "vgui/cm/nsf_dummy") : "vgui/cm/none");
 		m_pSkin2_Button->SetButtonTexture(classNumber == NEO_CLASS_ASSAULT ? (teamNumber == TEAM_JINRAI ? "vgui/cm/jinrai_dummy" : "vgui/cm/nsf_dummy") : "vgui/cm/none");
 		m_pSkin3_Button->SetButtonTexture(classNumber == NEO_CLASS_SUPPORT ? (teamNumber == TEAM_JINRAI ? "vgui/cm/jinrai_dummy" : "vgui/cm/nsf_dummy") : "vgui/cm/none");
