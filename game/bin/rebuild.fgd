@@ -72,6 +72,12 @@
 	
 	ForcedWeapon(integer) : "Forced Weapon" : -1 : "-1 = Do not force weapon"
 	
+	Cyberspace(choices) : "Cyberspace Map?" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	
 	spawnflags(flags) =
 	[
 		         1 : "Hide Ammo" : 0
@@ -95,7 +101,8 @@
 	input FireDMPlayerWin(void) : "Trigger round win for the activator (Deathmatch only)"
 	input FireRoundTie(void) : "Trigger round tie"
 	
-	output OnRoundEnd(void) : "Fires when a round ends"
+	output OnRoundEnd(integer) : "Fires when a round ends"
+	output OnDMRoundEnd(void) : "Fires when a DM round ends"
 	output OnRoundStart(void) : "Fires when a round starts"
 	output OnCompetitive(void) : "Fires when competitive mode is enabled"
 ]

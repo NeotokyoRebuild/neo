@@ -2310,6 +2310,11 @@ void CNEO_Player::SetPlayerTeamModel( void )
 		return;
 	}
 
+	if (NEORules()->IsCyberspace())
+	{
+		m_bAllowGibbing = false;
+	}
+
 	SetModel(model);
 	SetPlaybackRate(1.0f);
 	//ResetAnimation();
