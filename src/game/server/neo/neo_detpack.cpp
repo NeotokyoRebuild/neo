@@ -38,7 +38,8 @@ void CNEODeployedDetpack::Spawn(void)
 	BaseClass::Spawn();
 
 	SetElasticity(sv_neo_grenade_cor.GetFloat());
-	SetGravity(sv_neo_grenade_gravity.GetFloat());
+	constexpr float NEO_DETPACK_GRAVITY = 1.f;
+	SetGravity(NEO_DETPACK_GRAVITY);
 	SetFriction(sv_neo_grenade_friction.GetFloat());
 	SetCollisionGroup(COLLISION_GROUP_WEAPON);
 
