@@ -31,8 +31,18 @@ public:
 	virtual ~CWeaponGhost();
 #endif
 
-	float GetDeployTime() const { return m_flDeployTime; }
-	float GetPickupTime() const { return m_flPickupTime; }
+	// Get the timestamp when the ghost was last equipped as the active weapon.
+	inline float GetDeployTime() const { return m_flDeployTime; }
+	// Get the timestamp when the ghost was last picked up by a player into their inventory.
+	inline float GetPickupTime() const { return m_flPickupTime; }
+	// Get the timestamp when the ghost was last equipped such that it could show beacons to the ghoster.
+	// Normally, this is the time the ghost is equipped as the active weapon, but we also support a mode
+	// where ghosting can be done passively, in which case it is the ghost pick-up time.
+	inline float GetGhostingBootTime() const
+	{
+		extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
+		return sv_neo_ctg_ghost_beacons_when_inactive.GetBool() ? GetPickupTime() : GetDeployTime();
+	}
 
 	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }

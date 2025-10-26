@@ -3262,76 +3262,62 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
-extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
-	if (pInfo)
-	{
-		auto otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+	if (!pInfo)
+		return BaseClass::ShouldTransmit(pInfo);
 
-		// If other is spectator or same team
-		if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+	const auto* otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+
+	// If other is spectator or same team
+	if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE
-			otherNeoPlayer->IsDead() ||
+		otherNeoPlayer->IsDead() ||
 #endif
-			GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
+		GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
+	{
+		return FL_EDICT_ALWAYS;
+	}
+
+	const CWeaponGhost* ghost{};
+
+	extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		if (NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
 		{
-			return FL_EDICT_ALWAYS;
-		}
-
-		// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
-		constexpr auto getSafetyOverhead = []()->float {
-			// Estimate half-roundtrip latency.
-			const float outboundAvgLatency = g_pPlayerResource->GetPing(NEORules()->GetGhosterPlayer()) / 1000.f / 2;
-			// Scale it by this much to account for network spikes.
-			constexpr float scale = 2.f;
-			return outboundAvgLatency * scale;
-		};
-
-		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
-		if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
-		{
-			const auto* ghost = assert_cast<const CWeaponGhost*>(GetNeoWepWithBits(otherNeoPlayer, NEO_WEP_GHOST));
-			if (!ghost)
-			{
-				Assert(false);
-				return BaseClass::ShouldTransmit(pInfo);
-			}
-
-			// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
-			auto dt = gpGlobals->curtime - ghost->GetPickupTime();
-			if (dt + getSafetyOverhead() < sv_neo_ghost_delay_secs.GetFloat())
-				return BaseClass::ShouldTransmit(pInfo);
-
-			const auto distTo = GetAbsOrigin().DistTo(ghost->GetAbsOrigin());
-			const auto maxBeaconDist = CWeaponGhost::GetGhostRangeInHammerUnits();
-			if (distTo <= maxBeaconDist)
-				return FL_EDICT_ALWAYS;
-		}
-
-		// If the other player is actively using the ghost and therefore fetching beacons
-		const auto* otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
-		if (otherWep && otherWep->IsGhost())
-		{
-			const auto* ghost = assert_cast<const CWeaponGhost*>(otherWep);
-
-			// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
-			auto dt = gpGlobals->curtime - ghost->GetDeployTime();
-			if (dt + getSafetyOverhead() < sv_neo_ghost_delay_secs.GetFloat())
-				return BaseClass::ShouldTransmit(pInfo);
-
-			const auto distTo = GetAbsOrigin().DistTo(otherWep->GetAbsOrigin());
-			const auto maxBeaconDist = CWeaponGhost::GetGhostRangeInHammerUnits();
-			if (distTo <= maxBeaconDist)
-				return FL_EDICT_ALWAYS;
-		}
-
-		// If this player is carrying the ghost (whether active or not)
-		if (IsCarryingGhost())
-		{
-			return FL_EDICT_ALWAYS;
+			ghost = assert_cast<const CWeaponGhost*>(GetNeoWepWithBits(otherNeoPlayer, NEO_WEP_GHOST));
+			AssertMsg(ghost, "player was marked as ghoster but they didn't have the ghost");
 		}
 	}
+	if (!ghost)
+	{
+		if (const auto* otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon()))
+			if (otherWep->IsGhost())
+				ghost = assert_cast<const CWeaponGhost*>(otherWep);
+	}
+	if (!ghost)
+		return BaseClass::ShouldTransmit(pInfo);
+
+	// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
+	auto dt = gpGlobals->curtime - ghost->GetGhostingBootTime();
+	// Estimate half-roundtrip latency.
+	const float outboundAvgLatency = g_pPlayerResource->GetPing(NEORules()->GetGhosterPlayer()) / 1000.f / 2;
+	// Scale it by this much to account for network spikes.
+	constexpr float scale = 2.f;
+	// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
+	const auto safetyOverhead = outboundAvgLatency * scale;
+	if (dt + safetyOverhead < sv_neo_ghost_delay_secs.GetFloat())
+		return BaseClass::ShouldTransmit(pInfo);
+
+	const auto myDistanceToGhost = GetAbsOrigin().DistTo(ghost->GetAbsOrigin());
+	if (myDistanceToGhost <= CWeaponGhost::GetGhostRangeInHammerUnits())
+		return FL_EDICT_ALWAYS;
+
+	// This player is the ghoster, so their location should be networked always, even to enemies,
+	// because we need to be able to draw the warning beacon for them even outside PVS.
+	if (IsCarryingGhost())
+		return FL_EDICT_ALWAYS;
 	
 	return BaseClass::ShouldTransmit(pInfo);
 }
