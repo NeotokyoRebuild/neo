@@ -3367,12 +3367,14 @@ void CNEO_Player::BecomeJuggernaut()
 #define COLOR_JGR_FADE color32{170, 170, 170, 255}
 	UTIL_ScreenFade(this, COLOR_JGR_FADE, 1.0f, 0.0f, FFADE_IN);
 
+	RemoveAllItems(false);
 	m_iNeoClass = NEO_CLASS_JUGGERNAUT;
+	GiveDefaultItems();
+	// Set model after weapon change to avoid studio asserts
 	SetPlayerTeamModel();
+
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	InitSprinting();
-	RemoveAllItems(false);
-	GiveDefaultItems();
 	SetMaxHealth(MAX_HEALTH_FOR_CLASS[NEO_CLASS_JUGGERNAUT]);
 	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
@@ -3405,10 +3407,9 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 			soundFilter.MakeReliable();
 			EmitSound(soundFilter, this->entindex(), soundParams);
 		}
-
-		NEORules()->m_pJuggernautPlayer = nullptr;
-		NEORules()->m_pJuggernautItem = pJuggernautItem;
 	}
+	NEORules()->JuggernautDeactivated(pJuggernautItem);
+
 	m_hServerRagdoll = pJuggernautItem;
 	DispatchSpawn(pJuggernautItem);
 }
