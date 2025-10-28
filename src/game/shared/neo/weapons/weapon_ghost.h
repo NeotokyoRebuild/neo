@@ -51,8 +51,8 @@ public:
 		return deltaTime + timeOffset >= sv_neo_ghost_delay_secs.GetFloat();
 	}
 
-	// If there are enemies within this ghost's range, returns true and passes the distance to the nearest enemy by reference.
-	// If there are no enemies within range, the distance will not be written into.
+	// If the enemy is within this ghost's range, returns true and passes its distance by reference.
+	// If the enemy is not in range, the distance will not be written into.
 	[[nodiscard]] bool BeaconRange(CBaseEntity* enemy, float& outDistance) const;
 
 	virtual void ItemPreFrame(void) OVERRIDE;
