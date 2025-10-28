@@ -35,10 +35,7 @@ public:
 	virtual void ClientThink() override final
 	{
 		BaseClass::ClientThink();
-
-		if (!sv_neo_serverside_beacons.GetBool())
-			UpdateNearestGhostBeaconDist();
-
+		UpdateNearestGhostBeaconDist();
 		TryGhostPing();
 	}
 #endif
