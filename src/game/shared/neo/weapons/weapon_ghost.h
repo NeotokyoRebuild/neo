@@ -49,7 +49,7 @@ public:
 	{
 		extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 		const float ghostActivationTime = sv_neo_ctg_ghost_beacons_when_inactive.GetBool()
-			? GetPickupTime() : GetDeployTime();
+			? m_flPickupTime : m_flDeployTime;
 		const float deltaTime = gpGlobals->curtime - ghostActivationTime;
 		return deltaTime + timeOffset >= sv_neo_ghost_delay_secs.GetFloat();
 	}
@@ -101,10 +101,6 @@ public:
 	};
 
 private:
-	// Get the timestamp when the ghost was last equipped as the active weapon.
-	inline float GetDeployTime() const { return m_flDeployTime; }
-	// Get the timestamp when the ghost was last picked up by a player into their inventory.
-	inline float GetPickupTime() const { return m_flPickupTime; }
 	void PlayGhostSound(float volume = 1.0f);
 #ifdef CLIENT_DLL
 	void TryGhostPing();
@@ -114,9 +110,9 @@ private:
 #endif
 	float m_flLastGhostBeepTime;
 
-	CNetworkVar(float, m_flDeployTime);
+	CNetworkVar(float, m_flDeployTime); // The timestamp when the ghost was last equipped as the active weapon.
 	CNetworkVar(float, m_flNearestEnemyDist);
-	CNetworkVar(float, m_flPickupTime);
+	CNetworkVar(float, m_flPickupTime); // The timestamp when the ghost was last picked up by a player into their inventory.
 
 	CWeaponGhost(const CWeaponGhost &other);
 };

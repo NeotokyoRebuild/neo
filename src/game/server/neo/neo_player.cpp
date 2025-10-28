@@ -3274,7 +3274,6 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 
 	const auto* otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
 
-	// If other is spectator or same team
 	if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE
 		otherNeoPlayer->IsDead() ||
@@ -3310,14 +3309,11 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 	if (!sv_neo_serverside_beacons.GetBool())
 		return FL_EDICT_ALWAYS;
 
-	// Estimate half-roundtrip latency. This is fast than calculating it accurately, and we don't need an exact value.
-	const float outboundAvgLatency = g_pPlayerResource->GetPing(NEORules()->GetGhosterPlayer()) / 1000.f / 2;
-	// Scale it by this much to account for network spikes.
-	constexpr float scale = 2.f;
-	// Give this much leeway to ensure the ghoster gets their off-PVS beacon data in time to display it.
-	const auto safetyOverhead = outboundAvgLatency * scale;
+	// Actually we just need the server->client latency instead of roundtrip, but this gives us a good safety buffer.
+	// It's also faster to grab from the g_pPlayerResource instead of calculating here.
+	const float avgLatency = g_pPlayerResource->GetPing(NEORules()->GetGhosterPlayer()) / 1000.f;
 	// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
-	if (!ghost->IsBootupCompleted(safetyOverhead))
+	if (!ghost->IsBootupCompleted(avgLatency))
 		return BaseClass::ShouldTransmit(pInfo);
 
 	const auto myDistanceToGhost = GetAbsOrigin().DistTo(ghost->GetAbsOrigin());

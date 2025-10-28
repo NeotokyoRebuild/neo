@@ -172,10 +172,9 @@ int CNEO_NPCDummy::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 	if (pInfo)
 	{
 		auto otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
-		// If other is spectator or same team
 		if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE
-			otherNeoPlayer->IsDead() || // ...or dead spec, for xray purposes
+			otherNeoPlayer->IsDead() ||
 #endif
 			GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
 		{

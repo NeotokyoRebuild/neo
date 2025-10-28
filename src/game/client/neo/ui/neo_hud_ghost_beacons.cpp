@@ -102,7 +102,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	{
 		ghost = assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST));
 		AssertMsg(ghoster->m_bCarryingGhost == !!ghost,
-			"ghoster m_bCarryingGhost but did not have a ghost");
+			"ghost ptr and m_bCarryingGhost mismatch");
 	}
 	else
 	{
@@ -110,7 +110,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
 		AssertMsg(ghoster->m_bCarryingGhost ==
 			!!assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST)),
-			"ghoster m_bCarryingGhost but did not have a ghost");
+			"ghost ptr and m_bCarryingGhost mismatch");
 	}
 
 	if (!ghost || !ghost->IsBootupCompleted())
