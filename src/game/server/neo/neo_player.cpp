@@ -1914,11 +1914,6 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	if (m_hSpectatorTakeoverPlayerTarget == nullptr)
-	{
-		m_iClassAtTimeOfDeath = GetClass();
-	}
-
 	if (!m_bForceServerRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
 		CreateRagdollEntity();
@@ -3560,6 +3555,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	}
 
 	m_bSpectatorTakeoverPlayerPending = true;
+	m_iClassAtTimeOfDeath = GetClass();
 	m_hSpectatorTakeoverPlayerTarget = pNeoPlayerToReplace;
 	ForceRespawn();
 
