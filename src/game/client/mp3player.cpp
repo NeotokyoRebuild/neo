@@ -787,6 +787,7 @@ public:
 #ifdef NEO
 ConVar cl_neo_radio_shuffle("cl_neo_radio_shuffle", "0", FCVAR_CLIENTDLL| FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Randomize song order", true, 0, true, 1);
 ConVar cl_neo_radio_mute("cl_neo_radio_mute", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Turn down sound volume as far as possible", true, 0, true, 1);
+ConVar cl_neo_radio_menu_pause("cl_neo_radio_menu_pause", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Pause NEO Radio song when loading into the menu", true, 0, true, 1);
 ConVar cl_neo_radio_game_pause("cl_neo_radio_game_pause", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Pause NEO Radio song when loading into a game", true, 0, true, 1);
 ConVar cl_neo_radio_volume("cl_neo_radio_volume", "0.8", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume", true, MUTED_VOLUME, true, 1,
 	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]] )
@@ -862,6 +863,7 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	m_pVolumeInGame = new Slider(this, "VolumeInGame");
 	m_pVolumeInGame->SetRange((int)ceil(MUTED_VOLUME * 100.f), 100);
 
+	m_pMenuPause = new CheckButton(this, "MenuPause", "#MenuPause");
 	m_pGamePause = new CheckButton(this, "GamePause", "#GamePause");
 #else
 	m_pVolume->SetValue( 100 );
@@ -1808,12 +1810,18 @@ void CMP3Player::OnTick()
 		m_bFirstEverTick = false;
 		m_pMute->SetSelected(cl_neo_radio_mute.GetBool());
 		m_pShuffle->SetSelected(cl_neo_radio_shuffle.GetBool());
+		m_pMenuPause->SetSelected(cl_neo_radio_menu_pause.GetBool());
 		m_pGamePause->SetSelected(cl_neo_radio_game_pause.GetBool());
 		m_pVolume->SetValue(cl_neo_radio_volume.GetFloat() * 100);
 		m_pVolumeInGame->SetValue(cl_neo_radio_volume_ingame.GetFloat() * 100);
 		m_flCurrentVolume = m_pVolume->GetValue();
 		m_bMuted = m_pMute->IsSelected();
 		m_bShuffle = m_pShuffle->IsSelected();
+		m_bPauseInMenu = m_pMenuPause->IsSelected();
+		if (m_bPauseInMenu)
+		{
+			OnPause();
+		}
 		m_bPauseInGame = m_pGamePause->IsSelected();
 	}
 #endif // NEO
@@ -1850,6 +1858,12 @@ void CMP3Player::OnTick()
 	{
 		m_bShuffle = m_pShuffle->IsSelected();
 		cl_neo_radio_shuffle.SetValue(m_bShuffle);
+	}
+	bool pauseInMenuChanged = m_bPauseInMenu != m_pMenuPause->IsSelected();
+	if (pauseInMenuChanged)
+	{
+		m_bPauseInMenu = m_pMenuPause->IsSelected();
+		cl_neo_radio_menu_pause.SetValue(m_bPauseInMenu);
 	}
 	bool pauseInGameChanged = m_bPauseInGame != m_pGamePause->IsSelected();
 	if (pauseInGameChanged)
@@ -1945,6 +1959,12 @@ void CMP3Player::OnTick()
 	// No song playing...
 	m_nSongGuid = 0;
 	OnNextTrack();
+
+	if (m_bPauseNextSong)
+	{
+		OnPause();
+		m_bPauseNextSong = false;
+	}
 }
 
 void CMP3Player::OnChangeVolume( float newVol )
@@ -2888,6 +2908,12 @@ public:
 		{
 			g_pPlayer->EnableAutoAdvance( false );
 		}
+#ifdef NEO
+		else if (cl_neo_radio_menu_pause.GetBool())
+		{
+			g_pPlayer->m_bPauseNextSong = true;
+		}
+#endif // NEO
 	}
 };
 
