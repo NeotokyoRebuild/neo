@@ -3702,6 +3702,20 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 		{
 			pPlayerTakenOver->ChangeTeam(TEAM_SPECTATOR);
 		}
+
+		// Reset spectator's class to their original selection
+		switch (m_iClassAtTimeOfDeath)
+		{
+		case NEO_CLASS_RECON:
+		case NEO_CLASS_ASSAULT:
+		case NEO_CLASS_SUPPORT:
+			m_iNeoClass = m_iClassAtTimeOfDeath;
+			break;
+		default:
+			// Don't reset class if spectator was a special class (VIP, Juggernaut)
+			// Let the round reset logic resolve special cases
+			break;
+		}
 	}
 	m_hSpectatorTakeoverPlayerTarget = nullptr;
 
