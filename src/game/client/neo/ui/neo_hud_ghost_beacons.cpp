@@ -1,14 +1,13 @@
-#include "cbase.h"
 #include "neo_hud_ghost_beacons.h"
 
+#include "cbase.h"
+
 #include "iclientmode.h"
+#include "ienginevgui.h"
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 #include <vgui_controls/Controls.h>
 #include <vgui_controls/ImagePanel.h>
-
-#include "ienginevgui.h"
-
 
 #include "c_neo_npc_dummy.h"
 #include "c_neo_player.h"
@@ -16,8 +15,6 @@
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
-
-#include <utility>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -86,92 +83,61 @@ extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 void CNEOHud_GhostBeacons::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
+		return;
+
+	auto ghoster = IsLocalPlayerSpectator()
+		? ToNEOPlayer(UTIL_PlayerByIndex(GetSpectatorTarget()))
+		: C_NEO_Player::GetLocalNEOPlayer();
+
+	if (!ghoster || !ghoster->m_bCarryingGhost ||
+		ghoster->GetTeamNumber() < FIRST_GAME_TEAM ||
+		!ghoster->IsAlive() || NEORules()->IsRoundOver())
 	{
 		return;
 	}
-
-	auto spectateTarget = IsLocalPlayerSpectator() ? ToNEOPlayer(UTIL_PlayerByIndex(GetSpectatorTarget())) : C_NEO_Player::GetLocalNEOPlayer();
-	if (!spectateTarget || spectateTarget->GetTeamNumber() < FIRST_GAME_TEAM || !spectateTarget->IsAlive() || NEORules()->IsRoundOver())
-	{
-		// NEO NOTE (nullsystem): Spectator and dead players even in spec shouldn't see beacons
-		// Post-round also should switch off beacon
-		return;
-	}
-
-	if (!spectateTarget->m_bCarryingGhost)
-	{ // Saves iterating through all the weapons when sv_neo_ctg_ghost_beacons_when_inactive is set to 1
-		return;
-	}
+	Assert(ghoster->GetTeamNumber() < TEAM__TOTAL);
 
 	C_WeaponGhost* ghost;
-	float ghostActivatedTime;
 	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
-		ghost = assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
-		if (!ghost)
-			return;
-		ghostActivatedTime = ghost->GetPickupTime();
+		ghost = assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST));
+		AssertMsg(ghoster->m_bCarryingGhost == !!ghost,
+			"ghoster m_bCarryingGhost but did not have a ghost");
 	}
 	else
 	{
-		auto weapon = assert_cast<C_NEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
+		auto weapon = assert_cast<C_NEOBaseCombatWeapon*>(ghoster->GetActiveWeapon());
 		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
-		if (!ghost)
-			return;
-		ghostActivatedTime = ghost->GetDeployTime();
+		AssertMsg(ghoster->m_bCarryingGhost ==
+			!!assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST)),
+			"ghoster m_bCarryingGhost but did not have a ghost");
 	}
 
-	const auto dtGhostActivated = gpGlobals->curtime - ghostActivatedTime;
-	const bool showGhost = dtGhostActivated >= sv_neo_ghost_delay_secs.GetFloat();
-
-	if (!showGhost)
-	{
-#if(0)
-		if (!sv_neo_serverside_beacons.GetBool())
-			DevMsg("CLI ghost beacons are activating... %f\n", dtGhostActivated);
-#endif
+	if (!ghost || !ghost->IsBootupCompleted())
 		return;
-	}
 
-	auto enemyTeamId = spectateTarget->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
+	Assert(ghoster->GetTeamNumber() == TEAM_JINRAI || ghoster->GetTeamNumber() == TEAM_NSF);
+	auto enemyTeamId = ghoster->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
 	auto enemyTeam = GetGlobalTeam(enemyTeamId);
 	auto enemyCount = enemyTeam->GetNumPlayers();
-	[[maybe_unused]] float closestEnemy = FLT_MAX;
-
-	const auto processBeacon = [this,
-			&closestEnemy,
-			&showGhost = std::as_const(showGhost),
-			&spectateTarget = std::as_const(spectateTarget)]
-			(auto* enemy)->void {
-		if (!enemy || !enemy->IsAlive() || enemy->IsDormant())
-			return;
-		const auto& enemyPos = enemy->GetAbsOrigin();
-		const float distTo = spectateTarget->GetAbsOrigin().DistTo(enemyPos);
-		const float maxDist = CWeaponGhost::GetGhostRangeInHammerUnits();
-		if (distTo <= maxDist)
-		{
-			closestEnemy = Min(closestEnemy, distTo);
-			if (showGhost)
-				DrawPlayer(distTo, enemyPos);
-		}
-	};
 
 	// Human and bot enemies.
 	for (int i = 0; i < enemyCount; ++i)
 	{
-		processBeacon(enemyTeam->GetPlayer(i));
+		if (auto enemy = enemyTeam->GetPlayer(i))
+		{
+			float distTo;
+			if (ghost->BeaconRange(enemy, distTo))
+				DrawPlayer(distTo, enemy->GetAbsOrigin());
+		}
 	}
-	// Dummy entity enemies
+	// Dummies.
 	for (auto dummy = C_NEO_NPCDummy::GetList(); dummy; dummy = dummy->m_pNext)
 	{
-		processBeacon(dummy);
+		float distTo;
+		if (ghost->BeaconRange(dummy, distTo))
+			DrawPlayer(distTo, dummy->GetAbsOrigin());
 	}
-
-	// The server may restrict ghoster access to off-PVS enemy data, and in such a case
-	// we can't play these ghost ping sounds client-side (because we don't know how close they are).
-	// But if that's not the case, then we can handle the sounds here.
-	if (!sv_neo_serverside_beacons.GetBool())
-		ghost->TryGhostPing(closestEnemy * METERS_PER_INCH);
 }
 
 void CNEOHud_GhostBeacons::Paint()

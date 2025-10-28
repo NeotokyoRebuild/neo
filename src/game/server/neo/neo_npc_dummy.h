@@ -32,5 +32,6 @@ private:
 
 	friend class CEntityClassList<CNEO_NPCDummy>;
 	friend class CNEORules;
+	friend class CWeaponGhost;
 	CNEO_NPCDummy* m_pNext = nullptr;
 };

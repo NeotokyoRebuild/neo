@@ -15,9 +15,6 @@
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #include "c_playerresource.h"
-#ifndef CNEO_Player
-#define CNEO_Player C_NEO_Player
-#endif
 #else
 #include "neo_player.h"
 #endif

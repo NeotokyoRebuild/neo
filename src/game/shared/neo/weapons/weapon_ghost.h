@@ -31,18 +31,32 @@ public:
 	virtual ~CWeaponGhost();
 #endif
 
-	// Get the timestamp when the ghost was last equipped as the active weapon.
-	inline float GetDeployTime() const { return m_flDeployTime; }
-	// Get the timestamp when the ghost was last picked up by a player into their inventory.
-	inline float GetPickupTime() const { return m_flPickupTime; }
-	// Get the timestamp when the ghost was last equipped such that it could show beacons to the ghoster.
-	// Normally, this is the time the ghost is equipped as the active weapon, but we also support a mode
-	// where ghosting can be done passively, in which case it is the ghost pick-up time.
-	inline float GetGhostingBootTime() const
+#ifdef CLIENT_DLL
+	virtual void ClientThink() override final
+	{
+		BaseClass::ClientThink();
+
+		if (!sv_neo_serverside_beacons.GetBool())
+			UpdateNearestGhostBeaconDist();
+
+		TryGhostPing();
+	}
+#endif
+
+	// When the player "activates" the ghost, there is a slight time delay until they're allowed
+	// to start seeing enemy beacons. This function returns whether that time has elapsed.
+	inline bool IsBootupCompleted(float timeOffset=0) const
 	{
 		extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
-		return sv_neo_ctg_ghost_beacons_when_inactive.GetBool() ? GetPickupTime() : GetDeployTime();
+		const float ghostActivationTime = sv_neo_ctg_ghost_beacons_when_inactive.GetBool()
+			? GetPickupTime() : GetDeployTime();
+		const float deltaTime = gpGlobals->curtime - ghostActivationTime;
+		return deltaTime + timeOffset >= sv_neo_ghost_delay_secs.GetFloat();
 	}
+
+	// If there are enemies within this ghost's range, returns true and passes the distance to the nearest enemy by reference.
+	// If there are no enemies within range, the distance will not be written into.
+	[[nodiscard]] bool BeaconRange(CBaseEntity* enemy, float& outDistance) const;
 
 	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
@@ -61,22 +75,16 @@ public:
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 	static float GetGhostRangeInHammerUnits();
+	void UpdateNearestGhostBeaconDist();
 
 #ifdef GAME_DLL
 	int UpdateTransmitState() override;
 	int ShouldTransmit(const CCheckTransmitInfo *pInfo) override;
 #endif
 
-	void PlayGhostSound(float volume = 1.0f);
 #ifdef CLIENT_DLL
 	void StopGhostSound(void);
 	void HandleGhostEquip(void);
-#endif
-
-#ifdef GAME_DLL
-	void TryGhostPing(CNEO_Player* ghoster, float closestEnemy);
-#else
-	void TryGhostPing(float closestEnemy);
 #endif
 
 	virtual void UpdateOnRemove() override
@@ -93,14 +101,21 @@ public:
 	};
 
 private:
-
+	// Get the timestamp when the ghost was last equipped as the active weapon.
+	inline float GetDeployTime() const { return m_flDeployTime; }
+	// Get the timestamp when the ghost was last picked up by a player into their inventory.
+	inline float GetPickupTime() const { return m_flPickupTime; }
+	void PlayGhostSound(float volume = 1.0f);
 #ifdef CLIENT_DLL
+	void TryGhostPing();
+
 	bool m_bHavePlayedGhostEquipSound;
 	bool m_bHaveHolsteredTheGhost;
 #endif
 	float m_flLastGhostBeepTime;
 
 	CNetworkVar(float, m_flDeployTime);
+	CNetworkVar(float, m_flNearestEnemyDist);
 	CNetworkVar(float, m_flPickupTime);
 
 	CWeaponGhost(const CWeaponGhost &other);

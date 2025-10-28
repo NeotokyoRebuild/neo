@@ -4,16 +4,20 @@
 #include "neo_player_shared.h"
 
 #ifdef CLIENT_DLL
+#include "c_neo_npc_dummy.h"
 #include "c_neo_player.h"
+#include "c_team.h"
 
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 
 #include "filesystem.h"
 #else
+#include "neo_npc_dummy.h"
 #include "neo_player.h"
 #include "neo_gamerules.h"
 #include "player_resource.h"
+#include "team.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -23,23 +27,26 @@ ConVar sv_neo_ctg_ghost_beacons_when_inactive("sv_neo_ctg_ghost_beacons_when_ina
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
-BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
-	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
-#ifdef CLIENT_DLL
-	RecvPropTime(RECVINFO(m_flDeployTime)),
-	RecvPropTime(RECVINFO(m_flPickupTime)),
-#else
-	SendPropTime(SENDINFO(m_flDeployTime)),
-	SendPropTime(SENDINFO(m_flPickupTime)),
-#endif
-END_NETWORK_TABLE()
-
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponGhost)
 	DEFINE_NEO_BASE_WEP_PREDICTION
 	DEFINE_PRED_FIELD_TOL(m_flDeployTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TICKS_TO_TIME(1)),
+	DEFINE_PRED_FIELD(m_flNearestEnemyDist, FIELD_FLOAT, FTYPEDESC_INSENDTABLE | FTYPEDESC_NOERRORCHECK),
 END_PREDICTION_DATA()
 #endif
+
+BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
+#ifdef CLIENT_DLL
+	RecvPropTime(RECVINFO(m_flDeployTime)),
+	RecvPropTime(RECVINFO(m_flNearestEnemyDist)),
+	RecvPropTime(RECVINFO(m_flPickupTime)),
+#else
+	SendPropTime(SENDINFO(m_flDeployTime)),
+	SendPropTime(SENDINFO(m_flNearestEnemyDist)),
+	SendPropTime(SENDINFO(m_flPickupTime)),
+#endif
+END_NETWORK_TABLE()
 
 NEO_IMPLEMENT_ACTTABLE(CWeaponGhost)
 
@@ -56,6 +63,7 @@ CWeaponGhost::CWeaponGhost(void)
 	m_flLastGhostBeepTime = 0;
 #endif
 	m_flDeployTime = 0;
+	m_flNearestEnemyDist = FLT_MAX;
 	m_flPickupTime = 0;
 }
 
@@ -152,29 +160,22 @@ void CWeaponGhost::StopGhostSound(void)
 #endif
 
 // Emit a ghost ping at a refire interval based on distance.
-#ifdef GAME_DLL
-void CWeaponGhost::TryGhostPing(CNEO_Player* ghoster, float closestEnemy)
-#else
-void CWeaponGhost::TryGhostPing(float closestEnemy)
-#endif
+#ifdef CLIENT_DLL
+void CWeaponGhost::TryGhostPing()
 {
-	if (IsServer() != sv_neo_serverside_beacons.GetBool())
+	if (!GetOwner() || !NEORules()->IsRoundLive())
 		return;
 
-	if (closestEnemy < 0 || closestEnemy > sv_neo_ghost_view_distance.GetFloat())
-		return;
+	if (!sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+		if (!assert_cast<CNEOBaseCombatWeapon*>(GetOwner()->GetActiveWeapon())->IsGhost())
+			return;
 
-	constexpr auto freqMin = 1.0f, freqMax = 3.5f;
-#ifdef GAME_DLL
-	// Estimate outbound latency for more accurate server-sided beacon frequency
-	const auto avgDelay = g_pPlayerResource->GetPing(ghoster->entindex()) / 1000.f / 2;
-	constexpr auto minDivisor = 2;
-	const float frequency = Clamp(0.1f * closestEnemy - avgDelay,
-		Clamp(freqMin - avgDelay, freqMin / minDivisor, freqMin),
-		Clamp(freqMax - avgDelay, freqMax / minDivisor, freqMax));
-#else
-	const float frequency = Clamp(0.1f * closestEnemy, freqMin, freqMax);
-#endif
+	if (m_flNearestEnemyDist > GetGhostRangeInHammerUnits())
+		return;
+	Assert(m_flNearestEnemyDist >= 0);
+
+	const float closestEnemyInMeters = m_flNearestEnemyDist * METERS_PER_INCH;
+	const float frequency = Clamp(0.1f * closestEnemyInMeters, 1.0f, 3.5f);
 	const float deltaTime = gpGlobals->curtime - m_flLastGhostBeepTime;
 
 	if (deltaTime > frequency)
@@ -183,6 +184,7 @@ void CWeaponGhost::TryGhostPing(float closestEnemy)
 		m_flLastGhostBeepTime = gpGlobals->curtime;
 	}
 }
+#endif
 
 void CWeaponGhost::ItemHolsterFrame(void)
 {
@@ -246,6 +248,77 @@ void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 		PlayGhostSound();
 	}
 #endif
+}
+
+void CWeaponGhost::UpdateNearestGhostBeaconDist()
+{
+	if (sv_neo_serverside_beacons.GetBool() != IsServer())
+		return;
+
+	CNEO_Player* ghoster;
+	if (auto owner = GetOwner())
+	{
+		Assert(owner->IsPlayer());
+		ghoster = assert_cast<CNEO_Player*>(owner);
+	}
+	else
+		return;
+
+	if (ghoster->IsObserver())
+	{
+		auto obsTarget = ghoster->GetObserverTarget();
+		if (obsTarget && obsTarget->IsPlayer())
+			ghoster = assert_cast<CNEO_Player*>(obsTarget);
+	}
+	Assert(ghoster->m_bCarryingGhost);
+
+	const int ghosterTeam = ghoster->GetTeamNumber();
+	Assert(ghosterTeam == TEAM_JINRAI || ghosterTeam == TEAM_NSF);
+	const int enemyTeamId = ghosterTeam == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
+	auto* enemyTeam = GetGlobalTeam(enemyTeamId);
+	const int enemyCount = enemyTeam->GetNumPlayers();
+
+	float closestEnemy = FLT_MAX;
+	// Human and bot enemies
+	for (int i = 0; i < enemyCount; ++i)
+	{
+		float distTo;
+		if (BeaconRange(enemyTeam->GetPlayer(i), distTo))
+			closestEnemy = Min(closestEnemy, distTo);
+	}
+#ifdef CLIENT_DLL
+#ifndef CNEO_NPCDummy
+#define CNEO_NPCDummy C_NEO_NPCDummy
+#endif
+#endif
+	// Dummy entity enemies (used in tutorial)
+	for (auto* dummy = CNEO_NPCDummy::GetList(); dummy; dummy = dummy->m_pNext)
+	{
+		float distTo;
+		if (BeaconRange(dummy, distTo))
+			closestEnemy = Min(closestEnemy, distTo);
+	}
+
+	m_flNearestEnemyDist = closestEnemy;
+}
+
+bool CWeaponGhost::BeaconRange(CBaseEntity* enemy, float& outDistance) const
+{
+	if (!enemy)
+		return false;
+	const auto* ghoster = GetOwner();
+	if (!ghoster)
+		return false;
+	if (!enemy->IsAlive() || enemy->IsDormant())
+		return false;
+
+	const auto& ghosterPos = ghoster->GetAbsOrigin();
+	const auto& enemyPos = enemy->GetAbsOrigin();
+	const auto dist = ghosterPos.DistTo(enemyPos);
+	if (dist > GetGhostRangeInHammerUnits())
+		return false;
+	outDistance = dist;
+	return true;
 }
 
 bool CWeaponGhost::Deploy()

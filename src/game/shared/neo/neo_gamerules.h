@@ -405,7 +405,6 @@ public:
 
 private:
 	void ResetMapSessionCommon();
-	static void TryGhostPing(CNEO_Player* ghoster);
 
 #ifdef GAME_DLL
 	void SpawnTheGhost(const Vector *origin = nullptr);

@@ -31,7 +31,12 @@ public:
 #ifdef NEO
 	int GetPing(int iIndex) const
 	{
-		Assert(iIndex > 0 && iIndex < m_iPing.Count());
+		if (iIndex < 0 || iIndex >= m_iPing.Count())
+		{
+			AssertMsg(false, "requested ping for index %d but there are only %d entries total",
+				iIndex, m_iPing.Count());
+			return 0;
+		}
 		return m_bConnected.Get(iIndex) ? m_iPing.Get(iIndex) : 0;
 	}
 #endif

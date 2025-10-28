@@ -18,5 +18,6 @@ private:
 
     friend class C_EntityClassList<C_NEO_NPCDummy>;
     friend class CNEOHud_GhostBeacons;
+    friend class C_WeaponGhost;
     C_NEO_NPCDummy* m_pNext = nullptr;
 };
