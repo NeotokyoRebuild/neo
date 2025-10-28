@@ -163,12 +163,21 @@ void CWeaponGhost::StopGhostSound(void)
 #ifdef CLIENT_DLL
 void CWeaponGhost::TryGhostPing()
 {
-	if (!GetOwner() || !NEORules()->IsRoundLive())
+	const auto* owner = GetOwner();
+	if (!owner)
+		return;
+
+	if (!NEORules()->IsRoundLive() && NEORules()->GetGameType() != NEO_GAME_TYPE_TUT)
 		return;
 
 	if (!sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
-		if (!assert_cast<CNEOBaseCombatWeapon*>(GetOwner()->GetActiveWeapon())->IsGhost())
+	{
+		const auto* wep = owner->GetActiveWeapon();
+		if (!wep)
 			return;
+		if (!assert_cast<const CNEOBaseCombatWeapon*>(wep)->IsGhost())
+			return;
+	}
 
 	if (m_flNearestEnemyDist > GetGhostRangeInHammerUnits())
 		return;

@@ -944,6 +944,21 @@ void CNEORules::Think(void)
 	CheckGameConfig();
 	if (CheckShouldNotThink())
 	{
+		// This is kind of wonky, but we only need it for the tutorial, in order to play the dummy beacon sounds...
+		if (!m_pGhost && GetGameType() == NEO_GAME_TYPE_TUT)
+		{
+			auto pEnt = gEntList.FirstEnt();
+			while (pEnt)
+			{
+				if (dynamic_cast<CWeaponGhost*>(pEnt))
+				{
+					m_pGhost = static_cast<CWeaponGhost*>(pEnt);
+					return;
+				}
+				pEnt = gEntList.NextEnt(pEnt);
+			}
+		}
+		if (m_pGhost) m_pGhost->UpdateNearestGhostBeaconDist();
 		return;
 	}
 
