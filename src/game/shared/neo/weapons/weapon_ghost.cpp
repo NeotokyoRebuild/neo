@@ -59,7 +59,6 @@ CWeaponGhost::CWeaponGhost(void)
 #ifdef CLIENT_DLL
 	m_bHavePlayedGhostEquipSound = false;
 	m_bHaveHolsteredTheGhost = false;
-#else
 	m_flLastGhostBeepTime = 0;
 #endif
 	m_flDeployTime = 0;

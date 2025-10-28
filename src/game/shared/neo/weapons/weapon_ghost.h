@@ -104,8 +104,8 @@ private:
 
 	bool m_bHavePlayedGhostEquipSound;
 	bool m_bHaveHolsteredTheGhost;
-#endif
 	float m_flLastGhostBeepTime;
+#endif
 
 	CNetworkVar(float, m_flDeployTime); // The timestamp when the ghost was last equipped as the active weapon.
 	CNetworkVar(float, m_flNearestEnemyDist);
