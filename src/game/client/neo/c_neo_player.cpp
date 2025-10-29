@@ -1263,7 +1263,7 @@ void C_NEO_Player::PostThink(void)
 				SetObserverMode(OBS_MODE_DEATHCAM);
 				// Fade out 8s to blackout + 2s full blackout
 				ScreenFade_t sfade{
-					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 8.0f),
+					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * (DEATH_ANIMATION_TIME - 2.0f)),
 					.holdTime = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
 					.fadeFlags = FFADE_OUT|FFADE_PURGE,
 					.r = 0,
@@ -1283,10 +1283,10 @@ void C_NEO_Player::PostThink(void)
 			}
 		}
 
-		if (IsLocalPlayer() && GetObserverMode() == OBS_MODE_DEATHCAM && gpGlobals->curtime >= (GetDeathTime() + 10.0f))
+		auto observerMode = GetObserverMode();
+		if (IsLocalPlayer() && observerMode == OBS_MODE_DEATHCAM && gpGlobals->curtime >= (GetDeathTime() + DEATH_ANIMATION_TIME))
 		{
-			// Deathcam -> None so you view your own body for a bit before proper spec
-			m_iObserverMode = OBS_MODE_NONE;
+			SetObserverMode(OBS_MODE_IN_EYE);
 			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
 
 			// Fade in 2s from blackout
@@ -1301,6 +1301,20 @@ void C_NEO_Player::PostThink(void)
 			};
 			vieweffects->Fade(sfade);
 		}
+
+		if (observerMode == OBS_MODE_CHASE || observerMode == OBS_MODE_IN_EYE)
+		{
+			auto target = GetObserverTarget();
+			if (!IsValidObserverTarget(target))
+			{
+				auto nextTarget = FindNextObserverTarget(false);
+				if (nextTarget && nextTarget != target)
+				{
+					SetObserverTarget(nextTarget);
+				}
+			}
+		}
+
 		return;
 	}
 	else
