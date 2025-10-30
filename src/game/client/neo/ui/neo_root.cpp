@@ -1760,8 +1760,9 @@ static constexpr const wchar_t *CREDITSPEOPLELABEL_NAMES[] = {
 	L"Brian \"Tatsur0\" Comer",
 	L"Jeffery \"Filter Decay\" Pitts",
 	L"Erik \"KillahMo\" Grant",
-	L"[title]", // NT Contributors
 	L"Edward \"0edit\" Harrison",
+	L"Glasseater",
+	L"[title]", // NT Contributors
 	L"Violet \"McVee\" McVinnie",
 	L"Joshua \"Supernaut\" Winkelmann",
 	L"Viktor \"Slick Vick\" Svensson",
