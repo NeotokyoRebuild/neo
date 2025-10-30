@@ -1742,7 +1742,7 @@ static constexpr const wchar_t *CREDITSPEOPLELABEL_NAMES[] = {
 	L"bryson",
 	L"DESTROYGIRL!",
 	L"kinoko",
-	L"Linn \"Blåberry\" Engström",
+	L"Linn \"Bl\u00E5berry\" Engstr\u00F6m",
 	L"Masterkatze",
 	L"nullsystem",
 	L"plowie",
@@ -1775,7 +1775,7 @@ static constexpr const wchar_t *CREDITSPEOPLELABEL_NAMES[] = {
 static constexpr const wchar_t *CREDITSTITLELABEL_NAMES[] = {
 	L"NEOTOKYO;REBUILD Contributors",
 	L"STUDIO RADI-8",
-	L"NEOTOKYO° Contributors",
+	L"NEOTOKYO\u00B0 Contributors",
 	L"Special Thanks"
 };
 
