@@ -60,6 +60,7 @@ enum RootState
 	STATE_SETTINGS,
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
+	STATE_CREDITS,
 
 	// Those that are not the main states goes under here
 	STATE__SUBSTATES,
@@ -116,6 +117,7 @@ enum MainMenuButtons
 	BTNS_TOTAL,
 
 	SMBTN_MP3,
+	SMBTN_CREDITS,
 };
 
 struct SprayInfo
@@ -174,6 +176,7 @@ public:
 	void MainLoopSettings(const MainLoopParam param);
 	void MainLoopNewGame(const MainLoopParam param);
 	void MainLoopServerBrowser(const MainLoopParam param);
+	void MainLoopCredits(const MainLoopParam param);
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
 	void MainLoopPlayerList(const MainLoopParam param);
