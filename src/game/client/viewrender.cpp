@@ -2063,6 +2063,9 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 
 #ifdef NEO
 	VerifyValidDxLevel();
+	ErrorIfNot(g_pMaterialSystemHardwareConfig->GetDXSupportLevel() >= Neotokyo::minDxLevel,
+		("This game has a minimum requirement of DirectX (mat_dxlevel %d) to run properly.",
+		Neotokyo::minDxLevel));
 #else
 	// Don't want TF2 running less than DX 8
 	if ( g_pMaterialSystemHardwareConfig->GetDXSupportLevel() < 80 )
