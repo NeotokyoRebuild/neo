@@ -2061,6 +2061,9 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 	VPROF( "CViewRender::RenderView" );
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
 
+#ifdef NEO
+	VerifyValidDxLevel();
+#else
 	// Don't want TF2 running less than DX 8
 	if ( g_pMaterialSystemHardwareConfig->GetDXSupportLevel() < 80 )
 	{
@@ -2077,6 +2080,7 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 			return;
 		}
 	}
+#endif
 
 	CMatRenderContextPtr pRenderContext( materials );
 	ITexture *saveRenderTarget = pRenderContext->GetRenderTarget();
