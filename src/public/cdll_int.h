@@ -24,6 +24,7 @@
 #include "xbox/xboxstubs.h"
 #endif
 
+#ifdef NEO
 inline void VerifyValidDxLevel()
 {
 	// DX 9.0 because our shaders don't support older versions
@@ -37,6 +38,7 @@ inline void VerifyValidDxLevel()
 		"If you need more help, you can copy this error message with Ctrl+C, and visit:\n%s",
 		pDXLevel.GetInt(), minDxLevel, helpUrl));
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // forward declarations
