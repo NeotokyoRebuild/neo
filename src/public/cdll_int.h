@@ -26,12 +26,12 @@
 
 #ifdef NEO
 namespace Neotokyo {
+	// DX 9.0 because our shaders don't support older versions
 	constexpr int minDxLevel = 90;
 }
 
 inline void VerifyValidDxLevel()
 {
-	// DX 9.0 because our shaders don't support older versions
 	constexpr const char* helpUrl = R"(https://help.steampowered.com/en/wizard/HelpWithGame?text=Launch+Settings+Video+Display)";
 	static ConVarRef pDXLevel("mat_dxlevel");
 	ErrorIfNot(pDXLevel.IsValid(), ("Could not find cvar max_dxlevel"));
