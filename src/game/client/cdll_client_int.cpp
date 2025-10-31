@@ -1150,6 +1150,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		RegisterSecureLaunchProcessFunc( pfnUnsafeCmdLineProcessor );
 	}
 
+#ifdef NEO
+	VerifyValidDxLevel();
+#endif
+
 	return true;
 }
 

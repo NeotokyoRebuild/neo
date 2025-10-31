@@ -24,6 +24,25 @@
 #include "xbox/xboxstubs.h"
 #endif
 
+#ifdef NEO
+namespace Neotokyo {
+	// DX 9.0 because our shaders don't support older versions
+	constexpr int minDxLevel = 90;
+}
+
+inline void VerifyValidDxLevel()
+{
+	constexpr const char* helpUrl = R"(https://help.steampowered.com/en/wizard/HelpWithGame?text=Launch+Settings+Video+Display)";
+	static ConVarRef pDXLevel("mat_dxlevel");
+	ErrorIfNot(pDXLevel.IsValid(), ("Could not find cvar max_dxlevel"));
+	ErrorIfNot(pDXLevel.GetInt() >= Neotokyo::minDxLevel, (
+		"DirectX version used was too low (mat_dxlevel was %d but must be %d or higher).\n\n"
+		"To fix this, try to launch with advanced launch option -autoconfig\n\n"
+		"If you need more help, you can copy this error message with Ctrl+C, and visit:\n%s",
+		pDXLevel.GetInt(), Neotokyo::minDxLevel, helpUrl));
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // forward declarations
 //-----------------------------------------------------------------------------
