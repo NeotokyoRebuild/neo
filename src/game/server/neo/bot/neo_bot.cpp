@@ -33,7 +33,6 @@ ConVar neo_bot_shotgunner_range("neo_bot_shotgunner_range", "320", FCVAR_NONE);
 ConVar neo_bot_recon_ratio("neo_bot_recon_ratio", "0.2", FCVAR_NONE);
 ConVar neo_bot_support_ratio("neo_bot_support_ratio", "0.2", FCVAR_NONE);
 
-extern ConVar neo_bot_fire_weapon_min_time;
 extern ConVar neo_bot_difficulty;
 extern ConVar neo_bot_farthest_visible_theater_sample_count;
 extern ConVar neo_bot_path_lookahead_range;
@@ -466,9 +465,9 @@ CBasePlayer* CNEOBot::AllocatePlayerEntity(edict_t* edict, const char* playerNam
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PressFireButton(float duration)
 {
-	// can't fire if stunned
+	// can't fire if stunned or reloading
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if (HasAttribute(CNEOBot::SUPPRESS_FIRE) || HasAttribute(CNEOBot::RELOADING))
 	{
 		ReleaseFireButton();
 		return;
@@ -481,9 +480,9 @@ void CNEOBot::PressFireButton(float duration)
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PressAltFireButton(float duration)
 {
-	// can't fire if stunned
+	// can't fire if stunned or reloading
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if (HasAttribute(CNEOBot::SUPPRESS_FIRE) || HasAttribute(CNEOBot::RELOADING))
 	{
 		ReleaseAltFireButton();
 		return;
@@ -496,9 +495,9 @@ void CNEOBot::PressAltFireButton(float duration)
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PressSpecialFireButton(float duration)
 {
-	// can't fire if stunned
+	// can't fire if stunned or reloading
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if (HasAttribute(CNEOBot::SUPPRESS_FIRE) || HasAttribute(CNEOBot::RELOADING))
 	{
 		ReleaseAltFireButton();
 		return;
@@ -803,6 +802,8 @@ void CNEOBot::FireGameEvent(IGameEvent* event)
 extern ConVar nb_update_frequency;
 void CNEOBot::Update()
 {
+	IsReloading(); // clears the RELOADING attribute
+
 	if (!TheNavMesh->IsLoaded())
 	{
 		if ( IsDebugging( NEXTBOT_DEBUG_ALL ) )
@@ -1442,6 +1443,9 @@ bool CNEOBot::EquipRequiredWeapon(void)
 // Equip the best weapon we have to attack the given threat
 void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary)
 {
+	if (IsReloading())
+		return;
+
 	if (EquipRequiredWeapon())
 		return;
 
@@ -2439,6 +2443,57 @@ bool CNEOBot::IsFiring() const
 	return m_nButtons & IN_ATTACK || m_afButtonPressed & IN_ATTACK || m_afButtonLast & IN_ATTACK;
 }
 
+bool CNEOBot::CanSprint(void)
+{
+	if (HasAttribute(CNEOBot::RELOADING))
+		return false;
+
+	return BaseClass::CanSprint();
+}
+
+void CNEOBot::StartReload(CNEOBaseCombatWeapon* weapon)
+{
+	if (!weapon)
+	{
+		return;
+	}
+
+	// Check if we actually have spare ammo to reload
+	if (weapon->GetPrimaryAmmoCount() <= 0)
+	{
+		return;
+	}
+
+	// If already reloading, don't restart
+	if (HasAttribute(CNEOBot::RELOADING))
+	{
+		return;
+	}
+
+	if (!(weapon->GetNeoWepBits() & NEO_WEP_SUPA7))
+	{
+		// SUPA7 doesn't consume spare ammo and reload can be interrupted without consequence
+		SetAttribute(CNEOBot::RELOADING);
+	}
+	ReleaseFireButton();
+	PressReloadButton();
+}
+
+bool CNEOBot::IsReloading()
+{
+	if (HasAttribute(CNEOBot::RELOADING))
+	{
+		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (myWeapon && myWeapon->Clip1() >= myWeapon->GetMaxClip1())
+		{
+			ClearAttribute(CNEOBot::RELOADING);
+			return false;
+		}
+		return true;
+	}
+	return false;
+}
+
 void CNEOBot::RequestClassOnProfile()
 {
 	bool bValidClasses[NEO_CLASS__ENUM_COUNT] = {};
@@ -2540,7 +2595,8 @@ INextBotEventResponder *CNEOBotIntention::NextContainedResponder(INextBotEventRe
 
 QueryResultType CNEOBotIntention::ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const
 {
-	return m_behavior->ShouldWalk(me, qShouldAimQuery);
+	return ANSWER_YES;  // prioritize movement
+	// return m_behavior->ShouldWalk(me, qShouldAimQuery);
 }
 
 QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const
@@ -2576,6 +2632,9 @@ QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me, const QueryResult
 
 QueryResultType CNEOBotIntention::ShouldAim(const CNEOBot *me, const bool bWepHasClip) const
 {
+	if (me->HasAttribute(CNEOBot::RELOADING)) // If reloading, don't aim
+		return ANSWER_NO;
+
 	return m_behavior->ShouldAim( me, bWepHasClip );
 }
 
