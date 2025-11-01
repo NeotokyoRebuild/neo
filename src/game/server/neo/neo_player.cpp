@@ -1234,6 +1234,8 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 //-----------------------------------------------------------------------------
 float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 {
+	VPROF_BUDGET(__FUNCTION__, "NextBotExpensive");
+
 	if (!target)
 	{
 		return 0.0f;
@@ -1270,7 +1272,8 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return player->GetAbsVelocity().LengthSqr() > (runSpeedThreshold * runSpeedThreshold);
 		};
 
-	bool targetIsMoving = isMoving(targetPlayer);
+	bool targetIsRunning = isRunning(targetPlayer);
+	bool targetIsMoving  = targetIsRunning || isMoving(targetPlayer);
 
 	// Class Impact:
 	// Assault class motion vision
@@ -1286,31 +1289,35 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		nSneakPenaltyCount += 5;
 	}
 
-	bool observerIsMoving  = isMoving(this); // Observer (me) is moving
 	bool observerIsRunning = isRunning(this);  // Observer (me) is running
-	bool targetIsRunning   = isRunning(targetPlayer);
+	bool observerIsMoving  = observerIsRunning || isMoving(this); // Observer (me) is moving
 
-	// Player Movement Impact
-	// me
-	if (observerIsMoving)
+	// Observer Movement Impact
+	if (!observerIsMoving) // is NOT moving
 	{
-		nSneakPenaltyCount += 1;
-	}
-	if (observerIsRunning)
-	{
+		// movement is most obvious if observer is stationary
 		nSneakPenaltyCount += 2;
 	}
-	// target
-	if (targetIsMoving)
+	else if (!observerIsRunning) // is walking, and NOT running
 	{
+		// movement is more obvious when the observer is walking rather than running
 		nSneakPenaltyCount += 1;
 	}
+	// if running, is less likely to notice movement
+
+	// Target Movement Impact
 	if (targetIsRunning)
 	{
 		nSneakPenaltyCount += 2;
 	}
-	if (!targetPlayer->IsDucking())
+	else if (targetIsMoving)
 	{
+		nSneakPenaltyCount += 1;
+	}
+
+	if (!targetPlayer->IsDucking()) // is standing, and NOT ducking
+	{
+		// target is more obvious when standing at full height
 		nSneakPenaltyCount += 1;
 	}
 
