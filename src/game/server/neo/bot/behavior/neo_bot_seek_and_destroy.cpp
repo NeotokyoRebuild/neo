@@ -20,12 +20,18 @@ ConVar neo_bot_disable_seek_and_destroy( "neo_bot_disable_seek_and_destroy", "0"
 // NEOTODO: Figure out a clean way to represent config distances as Hammer units, without needing to square on use
 ConVar sv_neo_bot_cmdr_stop_distance_sq("sv_neo_bot_cmdr_stop_distance_sq", "5000",
 	FCVAR_NONE, "Minimum distance gap between following bots", true, 3000, true, 100000);
-ConVar sv_neo_bot_cmdr_look_weights_friendly_repulsion("sv_neo_bot_cmdr_look_weights_friendly_repulsion", "3",
+
+ConVar sv_neo_bot_cmdr_look_weights_friendly_repulsion("sv_neo_bot_cmdr_look_weights_friendly_repulsion", "2",
 	FCVAR_NONE, "Weight for friendly bot repulsion force", true, 1, true, 9999);
-ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights_wall_repulsion", "1",
+ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights_wall_repulsion", "3",
 	FCVAR_NONE, "Weight for wall repulsion force", true, 1, true, 9999);
-ConVar sv_neo_bot_cmdr_look_weights_explosives_repulsion("sv_neo_bot_cmdr_look_weights_explosives_repulsion", "2",
+ConVar sv_neo_bot_cmdr_look_weights_explosives_repulsion("sv_neo_bot_cmdr_look_weights_explosives_repulsion", "4",
 	FCVAR_NONE, "Weight for explosive repulsion force", true, 1, true, 9999);
+
+ConVar sv_neo_bot_cmdr_look_weights_friendly_max_dist("sv_neo_bot_cmdr_look_weights_friendly_max_dist", "5000",
+	FCVAR_NONE, "Distance to compare friendly repulsion forces", true, 1, true, 100000);
+ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist("sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist", "500",
+	FCVAR_NONE, "Distance to extend whiskers", true, 1, true, 100000);
 
 ConVar sv_neo_grenade_check_radius("sv_neo_grenade_check_radius", "1000",
 	FCVAR_NONE, "Radius for bots to check for grenades", true, 1, true, 9999);
@@ -598,6 +604,7 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 		return false;
 	}
 
+	// Calibrate dynamic follow distance
 	float follow_stop_distance_sq = sv_neo_bot_cmdr_stop_distance_sq.GetFloat();
 	if (pCommander->m_flBotDynamicFollowDistanceSq > follow_stop_distance_sq)
 	{
@@ -607,8 +614,9 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 	if (pCommander->IsAlive())
 	{
 		// Follow commander if they are close enough to collect you (and ping cooldown elapsed)
-		if (!me->m_hLeadingPlayer && pCommander->m_tBotPlayerPingCooldown.IsElapsed()
-			&& me->GetAbsOrigin().DistToSqr(pCommander->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat())
+		if (pCommander->m_tBotPlayerPingCooldown.IsElapsed()
+			&& (me->GetStar() == pCommander->GetStar()) // only follow when commander is focused on your squad
+			&& (me->GetAbsOrigin().DistToSqr(pCommander->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat()))
 		{
 			// Use sv_neo_bot_cmdr_stop_distance_sq for consistent bot collection range
 			// follow_stop_distance_sq would be confusing if player doesn't know about distance tuning
@@ -632,6 +640,11 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 				{
 					return true;
 				}
+				else
+				{
+					me->m_hLeadingPlayer = pCommander; // fallback to following commander
+					// continue with leader following logic below
+				}
 			}
 
 			if (FanOutAndCover(me, m_vGoalPos))
@@ -647,11 +660,8 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 			}
 			else
 			{
-				// Something went wrong with pathing
-				me->m_hLeadingPlayer = nullptr;
-				me->m_hCommandingPlayer = nullptr;
-				me->HideBotBehindHealthierPlayer();
-				return false;
+				me->m_hLeadingPlayer = pCommander; // fallback to following commander
+				// continue with leader following logic below
 			}
 		}
 	}
@@ -668,7 +678,14 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 	CNEO_Player* pLeader = me->m_hLeadingPlayer.Get();
 	if (pLeader && pLeader->IsAlive())
 	{
-		if (me->GetAbsOrigin().DistToSqr(pLeader->GetAbsOrigin()) < follow_stop_distance_sq)
+		// Commander can swap and order around different squads while having followers
+		// but otherwise bots only follow squadmates in the same star or their commander
+		if ((pLeader != pCommander) && (pLeader->GetStar() != me->GetStar()))
+		{
+			me->m_hLeadingPlayer = nullptr;
+			return true; // restart logic next tick
+		}
+		else if (me->GetAbsOrigin().DistToSqr(pLeader->GetAbsOrigin()) < follow_stop_distance_sq)
 		{
 			// Anti-collision: follow neighbor in snake chain
 			for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
@@ -705,22 +722,27 @@ bool CNEOBotSeekAndDestroy::FollowCommandChain(CNEOBot* me)
 			// Prioritize following leader.
 			return true;
 		}
-		else
+		else if (me->m_hLeadingPlayer.Get() == me->m_hCommandingPlayer.Get())
 		{
-			// Something went wrong with pathing
+			// Invalid path to leader who is also the commander, so reset both
 			me->m_hLeadingPlayer = nullptr;
 			me->m_hCommandingPlayer = nullptr;
 			me->HideBotBehindHealthierPlayer();
 			return false;
 		}
+		else
+		{
+			// check command chain on next tick
+			me->m_hLeadingPlayer = nullptr;
+			return true;
+		}
 	}
 	else
 	{
-		// Leader is no longer valid or alive, try to recover in next tick by following commander
-		me->m_hLeadingPlayer = pCommander;
+		// Leader is no longer valid or alive
+		me->m_hLeadingPlayer = nullptr;
+		return true;
 	}
-
-	return false;
 }
 //
 // ---------------------------------------------------------------------------------------------
@@ -850,7 +872,7 @@ bool CNEOBotSeekAndDestroy::FanOutAndCover(CNEOBot* me, Vector& movementTarget, 
 							float flDistSqr = vToOther.LengthSqr();
 							if (flDistSqr > 0.0f)
 							{
-								const float flMaxRepulsionDist = 10000.0f;
+								const float flMaxRepulsionDist = sv_neo_bot_cmdr_look_weights_friendly_max_dist.GetFloat();
 								float flDist = sqrt(flDistSqr);
 								float flRepulsionScale = 1.0f - (flDist / flMaxRepulsionDist);
 								flRepulsionScale = clamp(flRepulsionScale, 0.0f, 1.0f);
@@ -888,7 +910,7 @@ bool CNEOBotSeekAndDestroy::FanOutAndCover(CNEOBot* me, Vector& movementTarget, 
 			ang.y += (360.0f / numWhiskers) * i;
 			Vector vWhiskerDir;
 			AngleVectors(ang, &vWhiskerDir);
-			float whiskerDist = 10000.0f;
+			float whiskerDist = sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist.GetFloat();
 			vWhiskerDir.z = 0; // look at eye level for windows
 			UTIL_TraceLine(me->GetBodyInterface()->GetEyePosition(), me->GetBodyInterface()->GetEyePosition() + vWhiskerDir * whiskerDist, MASK_SHOT, me, COLLISION_GROUP_NONE, &tr);
 			if (tr.DidHit())

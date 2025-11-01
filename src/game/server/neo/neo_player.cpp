@@ -1936,7 +1936,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		SetDeadModel(info);
 	}
 
-	// If teamkilled by commander, the commander loses all subordinates.
+	// If teamkilled by commander, other subordinates stop following commander
 	CNEO_Player *pAttacker = ToNEOPlayer(info.GetAttacker());
 	if (pAttacker && m_hCommandingPlayer.Get() == pAttacker)
 	{
