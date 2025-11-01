@@ -680,6 +680,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
 			&CNeoRoot::MainLoopNewGame,			// STATE_NEWGAME
 			&CNeoRoot::MainLoopServerBrowser,	// STATE_SERVERBROWSER
+			&CNeoRoot::MainLoopCredits,			// STATE_CREDITS
 
 			&CNeoRoot::MainLoopMapList,			// STATE_MAPLIST
 			&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
@@ -993,7 +994,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::EndSection();
 #endif
 	g_uiCtx.dPanel.x = param.wide - 128;
-	g_uiCtx.dPanel.y = param.tall - 48;
+	g_uiCtx.dPanel.y = param.tall - 96;
 	g_uiCtx.dPanel.wide = 128;
 	g_uiCtx.dPanel.tall = 1;
 	NeoUI::BeginSection();
@@ -1005,6 +1006,18 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		engine->ClientCmd("neo_mp3");
 
 	}
+	NeoUI::EndSection();
+
+	NeoUI::BeginSection();
+	g_uiCtx.dPanel.y = param.tall - 48;
+	const auto creditsBtn = NeoUI::Button(L"Credits");
+	if (creditsBtn.bPressed)
+	{
+		surface()->PlaySound("ui/buttonclickrelease.wav");
+		m_state = STATE_CREDITS;
+	}
+	NeoUI::EndSection();
+
 	if (param.eMode == NeoUI::MODE_MOUSEMOVED)
 	{
 		if (musicPlayerBtn.bMouseHover && SMBTN_MP3 != m_iHoverBtn)
@@ -1012,13 +1025,17 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			surface()->PlaySound("ui/buttonrollover.wav");
 			m_iHoverBtn = SMBTN_MP3;
 		}
-		else if (!musicPlayerBtn.bMouseHover && SMBTN_MP3 == m_iHoverBtn)
+		else if (creditsBtn.bMouseHover && SMBTN_CREDITS != m_iHoverBtn)
+		{
+			surface()->PlaySound("ui/buttonrollover.wav");
+			m_iHoverBtn = SMBTN_CREDITS;
+		}
+		else if ((!musicPlayerBtn.bMouseHover && SMBTN_MP3 == m_iHoverBtn) || (!creditsBtn.bMouseHover && SMBTN_CREDITS == m_iHoverBtn))
 		{
 			m_iHoverBtn = -1;
 		}
 	}
-	
-	NeoUI::EndSection();
+
 	NeoUI::EndContext();
 }
 
@@ -1714,6 +1731,107 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 	}
 	NeoUI::EndContext();
 
+}
+
+static constexpr const wchar_t *CREDITSPEOPLELABEL_NAMES[] = {
+	L"[title]", // NT;RE Contributors
+	L"Adam \"Zwiadowca\" Tomaszewski",
+	L"Agiel",
+	L"Alan \"FCC\" Shen",
+	L"brekiy",
+	L"bryson",
+	L"DESTROYGIRL!",
+	L"kinoko",
+	L"Linn \"Bl\u00E5berry\" Engstr\u00F6m",
+	L"Masterkatze",
+	L"nullsystem",
+	L"plowie",
+	L"Rain",
+	L"StellaNova",
+	L"wak (borntofrag.net)",
+	L"Wray \"wraybies\" Burgess",
+	L"You're Pissed Off",
+	L"[title]", // STUDIO RADI-8
+	L"Justin \"Grey\" Harvey",
+	L"Leri \"pushBAK\" Greer",
+	L"Sam \"Gato\" Greer",
+	L"Jason \"Deej\" Woronicz",
+	L"Finn \"Operation Ivy\" Allen",
+	L"Brian \"Tatsur0\" Comer",
+	L"Jeffery \"Filter Decay\" Pitts",
+	L"Erik \"KillahMo\" Grant",
+	L"Edward \"0edit\" Harrison",
+	L"Glasseater",
+	L"[title]", // NT Contributors
+	L"Violet \"McVee\" McVinnie",
+	L"Joshua \"Supernaut\" Winkelmann",
+	L"Viktor \"Slick Vick\" Svensson",
+	L"Ryan \"Stenchy\" Anderson",
+	L"[title]", // Special Thanks
+	L"Kasietti",
+	L"Kerim \"Nbc66\" Camdzic",
+	L"Tony \"omega\" Sergi"
+};
+
+static constexpr const wchar_t *CREDITSTITLELABEL_NAMES[] = {
+	L"NEOTOKYO;REBUILD Contributors",
+	L"STUDIO RADI-8",
+	L"NEOTOKYO\u00B0 Contributors",
+	L"Special Thanks"
+};
+
+void CNeoRoot::MainLoopCredits(const MainLoopParam param)
+{
+	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Credits", "CtxCredits");
+	{
+		NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+		NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
+		{
+			g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			size_t titleIndex = 0;
+			for (const wchar_t *line : CREDITSPEOPLELABEL_NAMES)
+			{
+				if (V_wcscmp(line, L"[title]") == 0)
+				{
+					NeoUI::SwapFont(NeoUI::FONT_NTLARGE);
+					NeoUI::Label(L"");
+					NeoUI::Label(CREDITSTITLELABEL_NAMES[titleIndex]);
+					NeoUI::Label(L"");
+					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+					titleIndex++;
+				}
+				else
+				{
+					NeoUI::Label(line);
+				}
+			}
+			NeoUI::Label(L"");
+			NeoUI::ImageTexture("vgui/hud/kill_kill");
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
+		NeoUI::BeginSection(NeoUI::SECTIONFLAG_ROWWIDGETS | NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
+		{
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SetPerRowLayout(5);
+			{
+				if (NeoUI::Button(NeoUI::HintAlt(L"Back (ESC)", L"Back (B)")).bPressed || NeoUI::BindKeyBack())
+				{
+					m_state = STATE_ROOT;
+				}
+			}
+		}
+		NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
 }
 
 void CNeoRoot::MainLoopMapList(const MainLoopParam param)
