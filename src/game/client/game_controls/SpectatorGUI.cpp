@@ -865,7 +865,9 @@ void CSpectatorGUI::UpdatePlayerLabel()
 		V_wcsncpy(playerText, L"Unable to find #Spec_PlayerItem*", sizeof(playerText));
 		memset(playerName, 0x0, sizeof(playerName));
 
-		g_pVGuiLocalize->ConvertANSIToUnicode(UTIL_SafeName(gr->GetPlayerName(playernum)), playerName, sizeof(playerName));
+		C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playernum));
+		const char* pPlayerDisplayName = pNeoPlayer ? pNeoPlayer->GetPlayerNameWithTakeoverContext(playernum) : gr->GetPlayerName(playernum);
+		g_pVGuiLocalize->ConvertANSIToUnicode(UTIL_SafeName(pPlayerDisplayName), playerName, sizeof(playerName));
 		int healthMode = cl_neo_hud_health_mode.GetInt();
 		int iHealth = gr->GetDisplayedHealth(playernum, healthMode);
 		if (iHealth > 0 && gr->IsAlive(playernum))
