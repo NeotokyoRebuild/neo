@@ -2136,6 +2136,7 @@ Scheme
 				"weight"	"550"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"480 599"
+				"antialias"	"1"
 				//"additive"	"1"
 			}
 			"2"
@@ -2145,6 +2146,7 @@ Scheme
 				"weight"	"550"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"600 767"
+				"antialias"	"1"
 				//"additive"	"1"
 			}
 			"3"
