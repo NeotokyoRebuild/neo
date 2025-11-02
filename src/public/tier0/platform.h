@@ -1924,4 +1924,44 @@ extern "C" int V_tier0_stricmp(const char *s1, const char *s2 );
 // >:)
 #define PAD_LIGHTMAP_ATLAS 1
 
+//-----------------------------------------------------------------------------
+
+#ifdef NEO
+// Used for automatic generation of SourceMod gamedata
+
+struct MemberOffset
+{
+	const char* class_name;
+	const char* member_name;
+	size_t offset;
+};
+
+template<typename T> struct OffsetCalculator;
+
+#ifdef POSIX
+#define BEGIN_OFFSET_REGISTER(cls) \
+	template<> struct OffsetCalculator<cls>  \
+	{ \
+	    static void register_offsets() \
+		{
+
+#define REGISTER_OFFSET(cls, mbr) \
+	__attribute__((section(".member_offsets"), used)) \
+	static const MemberOffset offset_##cls##_##mbr = { #cls, #mbr, offsetof(cls, mbr) }
+
+#define END_OFFSET_REGISTER(cls) \
+		} \
+	}; \
+static auto _##cls##_force_reg = (OffsetCalculator<cls>::register_offsets(), 0);
+
+#else
+#define BEGIN_OFFSET_REGISTER(cls)
+#define REGISTER_OFFSET(cls, mbr)
+#define END_OFFSET_REGISTER(cls)
+#endif
+
+#endif
+
+//-----------------------------------------------------------------------------
+
 #endif /* PLATFORM_H */
