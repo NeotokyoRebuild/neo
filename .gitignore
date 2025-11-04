@@ -51,10 +51,6 @@ out
 /game/neo/resource/mp3player_db.txt
 /game/neo/resource/mp3settings.txt
 
-# Selected Background
-/game/neo/scripts/ChapterBackgrounds.txt
-/game/neo/scripts/chapterbackgrounds.txt
-
 # Object files
 *.o
 *.p
@@ -682,3 +678,7 @@ FodyWeavers.xsd
 !/game/bin/x64/
 !/game/bin/rebuild.fgd
 !/game/bin/**/[Gg]ame[Cc]onfig.txt
+
+
+# Selected Background
+/game/neo/scripts/[Cc]hapter[Bb]ackgrounds.txt
