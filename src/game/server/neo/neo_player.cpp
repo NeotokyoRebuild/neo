@@ -158,6 +158,10 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
+	if (newClass == m_iNeoClass) {
+		return;
+	}
+
 	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
@@ -173,6 +177,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		InitSprinting();
 		RemoveAllItems(false);
 		GiveDefaultItems();
+		RequestSetLoadout(0);
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
 		SetMaxHealth(MAX_HEALTH_FOR_CLASS[newClass]);
 		SetHealth(GetMaxHealth());
@@ -298,7 +303,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
-		result = false;
+		result = RequestSetLoadout(0);
 	}
 
 	if (result)
@@ -334,15 +339,15 @@ void SetClass(const CCommand &command)
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
 
-		if (NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP)
+		auto playerIsVip = NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP;
+		auto playerIsSameClass = player->m_iNeoClass == nextClass;
+
+		if (playerIsVip || playerIsSameClass)
 		{
 			return;
 		}
-		else
-		{
-			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
-		}
-
+		
+		nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
 		player->RequestSetClass(nextClass);
 	}
 }
@@ -566,7 +571,7 @@ void CNEO_Player::Spawn(void)
 	SetPlayerTeamModel();
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
-		GiveLoadoutWeapon();
+		RequestSetLoadout(m_iLoadoutWepChoice);
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	}
 
