@@ -2185,17 +2185,6 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		return;
 	}
 
-	material -= 'A';
-	if (material > 0 && material < MATERIALS_NUM)
-	{
-		penResistance = PENETRATION_RESISTANCE[material];
-	}
-
-	if (tr.m_pEnt && tr.m_pEnt->IsPlayer())
-	{ // If hit entity is player 1. We don't want them taking damage more than once 2. Tracelines get stuck inside of hitboxes at the start of the traceline, like in props and unlike in brushes
-		static_cast<CBulletsTraceFilter*>(pTraceFilter)->AddEntityToIgnore(tr.m_pEnt);
-	}
-
 #ifdef CLIENT_DLL
 	if (cl_neo_bullet_trace.GetBool())
 	{ // Entrance (GREEN STAR)
@@ -2207,6 +2196,20 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 0, 255, 0, 1, 30.f);
 	}
 #endif // CLIENT_DLL
+
+	if (tr.m_pEnt && tr.m_pEnt->IsPlayer())
+	{
+		// OGNT doesn't penetrate players at all so we just return here.
+		// If we want to change this in the future, take care not to hit
+		// the same player multiple times with the same bullet.
+		return;
+	}
+
+	material -= 'A';
+	if (material > 0 && material < MATERIALS_NUM)
+	{
+		penResistance = PENETRATION_RESISTANCE[material];
+	}
 
 	trace_t	penetrationTrace;
 	TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
