@@ -1339,15 +1339,15 @@ void CNEORules::Think(void)
 					pGhostCap->SetActive(false);
 				}
 
-				// And then announce team victory
-				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
-
 				IGameEvent* event = gameeventmanager->CreateEvent("ghost_capture");
 				if (event)
 				{
 					event->SetInt("userid", UTIL_PlayerByIndex(m_iGhosterPlayer)->GetUserID());
 					gameeventmanager->FireEvent(event);
 				}
+
+				// And then announce team victory
+				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
 
 				if (m_iEscortingTeam && m_iEscortingTeam == captorTeam)
 				{
@@ -1517,7 +1517,7 @@ void CNEORules::Think(void)
 		{
 			if (GetGlobalTeam(TEAM_JINRAI)->GetAliveMembers() > 0 && GetGlobalTeam(TEAM_NSF)->GetAliveMembers() > 0)
 			{
-				SetRoundStatus(NeoRoundStatus::RoundLive);
+				StartNextRound();
 			}
 		}
 	}
