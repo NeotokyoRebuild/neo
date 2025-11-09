@@ -69,6 +69,7 @@ struct NeoSettings
 		int iBackground;
 		int iKdinfoToggletype;
 		bool bShowHudContextHints;
+		int iEquipUtilityPriority;
 	};
 
 	struct Keys
@@ -180,6 +181,14 @@ struct NeoSettings
 		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
 	};
 
+	enum EquipUtilityPriorityType
+	{
+		EQUIP_UTILITY_PRIORITY_FRAG_SMOKE_DETPACK = 0,
+		EQUIP_UTILITY_PRIORITY_CLASS_SPECIFIC,
+
+		EQUIP_UTILITY_PRIORITY__TOTAL,
+	};
+
 	General general;
 	Keys keys;
 	Mouse mouse;
@@ -230,6 +239,7 @@ struct NeoSettings
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
+		CONVARREF_DEF(cl_neo_equip_utility_priority);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
