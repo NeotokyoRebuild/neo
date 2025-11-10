@@ -2495,7 +2495,12 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	pWeapon->m_bInReload = false;
 	pWeapon->StopWeaponSound(RELOAD_NPC);
 
-	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
+
+	Vector vecVel = BodyDirection3D();
+	vecVel.z = vecVel.z + 0.7;
+	vecVel = vecVel.Normalized() * 300;
+
+	BaseClass::Weapon_Drop(pWeapon, pvecTarget, &vecVel);
 }
 
 void CNEO_Player::UpdateOnRemove( void )
