@@ -386,7 +386,7 @@ public:
 
 #ifdef NEO
 	bool			Setup( const CViewSetup &view, int *pClearFlags, SkyboxVisibility_t *pSkyboxVisible, view_id_t iViewID = VIEW_3DSKY );
-	void			DrawAlternate( view_id_t iViewID );
+	void			DrawAlternate( view_id_t iViewID, int iSavedDrawFlags = 0 );
 #else
 	bool			Setup( const CViewSetup &view, int *pClearFlags, SkyboxVisibility_t *pSkyboxVisible );
 #endif
@@ -493,6 +493,11 @@ protected:
 
 	void			SSAO_DepthPass();
 	void			DrawDepthOfField();
+
+#ifdef NEO
+	float			m_flWorldReflectionClipZ = 0.0f;
+	MaterialHeightClipMode_t	m_WorldReflectionClipMode;
+#endif
 };
 
 
@@ -5131,6 +5136,13 @@ bool CSkyboxView::Setup( const CViewSetup &viewRender, int *pClearFlags, SkyboxV
 		return false;
 	}
 
+#ifdef NEO
+	if ( iViewID == VIEW_REFLECTION && m_pSky3dParams->reflectMode == REFLECT_SKYBOX_OFF )
+	{
+		return false;
+	}
+#endif
+
 	// At this point, we've cleared everything we need to clear
 	// The next path will need to clear depth, though.
 	m_ClearFlags = *pClearFlags;
@@ -5138,7 +5150,7 @@ bool CSkyboxView::Setup( const CViewSetup &viewRender, int *pClearFlags, SkyboxV
 	*pClearFlags |= VIEW_CLEAR_DEPTH; // Need to clear depth after rednering the skybox
 
 #ifdef NEO
-	if (iViewID != VIEW_REFLECTION)
+	if ( iViewID != VIEW_REFLECTION )
 	{
 		m_DrawFlags = DF_RENDER_UNDERWATER | DF_RENDER_ABOVEWATER | DF_RENDER_WATER;
 	}
@@ -5162,10 +5174,41 @@ bool CSkyboxView::Setup( const CViewSetup &viewRender, int *pClearFlags, SkyboxV
 //-----------------------------------------------------------------------------
 // Draw for 3d sky in reflection, seperate as to not break AddViewToScene
 //-----------------------------------------------------------------------------
-void CSkyboxView::DrawAlternate( view_id_t iViewID )
+void CSkyboxView::DrawAlternate( view_id_t iViewID, int iSavedDrawFlags )
 {
 	VPROF_BUDGET( "CSkyboxView::DrawAlternate", "3D Skybox" );
 
+	if ( iViewID == VIEW_REFLECTION )
+	{
+		Assert( m_pSky3dParams->reflectMode.Get() != REFLECT_SKYBOX_OFF );
+
+		CMatRenderContextPtr pRenderContext( materials );
+		
+		if ( m_pSky3dParams->reflectMode.Get() == REFLECT_SKYBOX_WATERCLIPZ )
+		{
+			float flSkyWaterlevel = m_pSky3dParams->waterLevel.Get();
+
+			// NEO NOTE DG: Bit of an estimate. may want to tweak the spread if maps using
+			// skybox scales other than 16 have visible seams in the water reflections
+			const float spread = 16.0f / m_pSky3dParams->scale.Get();
+			if ( iSavedDrawFlags & DF_FUDGE_UP )
+			{
+				flSkyWaterlevel += spread;
+			}
+			else
+			{
+				flSkyWaterlevel -= spread;
+			}
+			pRenderContext->SetHeightClipZ( flSkyWaterlevel );
+		}
+		else
+		{
+			pRenderContext->SetHeightClipMode( MATERIAL_HEIGHTCLIPMODE_DISABLE );
+		}
+
+		pRenderContext.SafeRelease();
+	}
+	
 	ITexture *pRTColor = NULL;
 	ITexture *pRTDepth = NULL;
 
@@ -5530,6 +5573,10 @@ void CBaseWorldView::PushView( float waterHeight )
 
 		pRenderContext->SetHeightClipZ( waterHeight );
 		pRenderContext->SetHeightClipMode( clipMode );
+#ifdef NEO
+		m_flWorldReflectionClipZ = waterHeight;
+		m_WorldReflectionClipMode = clipMode;
+#endif
 
 		render->Push3DView( *this, m_ClearFlags, pTexture, GetFrustum() );
 
@@ -5712,7 +5759,7 @@ void CBaseWorldView::DrawExecute( float waterHeight, view_id_t viewID, float wat
 		if ( viewID == VIEW_REFLECTION && r_3dsky.GetBool() )
 		{
 			// Ensure that flags remain unchanged...
-			const int iSavedDFs = m_DrawFlags;
+			int iSavedDFs = m_DrawFlags;
 			const int iSavedCFs = m_ClearFlags;
 
 			CMatRenderContextPtr pRenderContext( materials );
@@ -5721,20 +5768,17 @@ void CBaseWorldView::DrawExecute( float waterHeight, view_id_t viewID, float wat
 			CSkyboxView *pSkyView = new CSkyboxView( m_pMainView );
 			if ( pSkyView->Setup( *this, &m_ClearFlags, &nSkyboxVisible, viewID ) )
 			{
-				// NEO TODO DG: Clip everything underwater.
-				// Seams and the reflections playing catch up make this annoying,
-				// and the skybox water is not necessarily level with the world's water
-#if 0
-				const float flSkyWaterlevel = pSkyView->m_pSky3dParams->waterLevel.Get();
-				if ( flSkyWaterlevel )
-				{
-					pRenderContext->SetHeightClipMode( MATERIAL_HEIGHTCLIPMODE_RENDER_ABOVE_HEIGHT );
-					pRenderContext->SetHeightClipZ( flSkyWaterlevel );
-				}
-#endif
-				pSkyView->DrawAlternate( viewID );
+				pSkyView->DrawAlternate( viewID, iSavedDFs );
 				render->ViewSetupVis( false, 1, &m_pMainView->GetViewSetup()->origin );
 				pRenderContext->ClearBuffers( false, true, false );
+
+				// Reset the clip z for the world reflection, since the skybox has its own
+				pRenderContext->SetHeightClipMode( m_WorldReflectionClipMode );
+				pRenderContext->SetHeightClipZ( m_flWorldReflectionClipZ );
+			}
+			else
+			{
+				iSavedDFs |= DF_DRAWSKYBOX;
 			}
 			SafeRelease( pSkyView );
 			pRenderContext.SafeRelease();

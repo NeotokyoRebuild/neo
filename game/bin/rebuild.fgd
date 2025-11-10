@@ -338,3 +338,41 @@
 	// Inputs
 	input Command(string) : "Command to execute."
 ]
+
+@PointClass base(Angles) size(-16 -16 -16, 16 16 16) color(0 0 255) line(255 255 255, targetname, waterlevel) = sky_camera : 
+	"An entity used to control the 3D Skybox. Its origin is used to determine the 3D Skybox's position relative to the map. Place this entity, in the 3D Skybox, at the point where the origin of the map should be."
+[
+	scale(integer) : "3D Skybox scale" : 16 : "Scale of the skybox."
+	fogenable(choices) : "Fog Enable" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	fogblend(choices) : "Fog Blend" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	use_angles(choices) : "Use Angles for Fog Dir" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	fogcolor(color255) : "Primary Fog Color" : "255 255 255"
+	fogcolor2(color255) : "Secondary Fog Color" : "255 255 255"
+	fogdir(string) : "Primary Fog Dir" : "1 0 0"
+	fogstart(string) : "Fog Start" : "500.0" : "Distance at which the skybox fog should start."
+	fogend(string) : "Fog End" : "2000.0" : "Distance at which the skybox fog should be fully opaque."
+	fogradial(choices) : "Use Radial Fog?" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	reflectmode(choices) : "Skybox Reflection Mode" : 0 : "Whether or not the skybox should be drawn in water reflections. If using option 2, set a Water Level Designator!" =
+	[
+		0 : "Don't draw skybox"
+		1 : "Draw, with water in skybox"
+		2 : "Draw entire skybox"
+	]
+	waterlevel(target_destination) : "Water Level Designator" : "" : "(Reflections enabled only) Entity to mark the primary body of water in the skybox. The origin must be exactly level with the water, use info_target"
+]
