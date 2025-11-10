@@ -81,6 +81,10 @@ private:
 	bool m_bClearingEntities;
 	CUtlVector<IEntityListener *>	m_entityListeners;
 
+#ifdef NEO
+	friend struct OffsetCalculator<CGlobalEntityList>;
+#endif
+
 public:
 	IServerNetworkable* GetServerNetworkable( CBaseHandle hEnt ) const;
 	CBaseNetworkable* GetBaseNetworkable( CBaseHandle hEnt ) const;
@@ -171,6 +175,12 @@ protected:
 	virtual void OnRemoveEntity( IHandleEntity *pEnt, CBaseHandle handle );
 
 };
+
+#ifdef NEO
+BEGIN_OFFSET_REGISTER(CGlobalEntityList);
+REGISTER_OFFSET(CGlobalEntityList, m_entityListeners);
+END_OFFSET_REGISTER(CGlobalEntityList);
+#endif
 
 extern CGlobalEntityList gEntList;
 
