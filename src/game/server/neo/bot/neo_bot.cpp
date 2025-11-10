@@ -1803,9 +1803,40 @@ bool CNEOBot::IsLineOfFireClear(const Vector& where, const LineOfFireFlags flags
 
 
 //-----------------------------------------------------------------------------------------------------
+// Return whether there is a friendly player blocking the line of fire
+bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const
+{
+	if (NEORules()->IsTeamplay())
+	{
+		trace_t playerTrace;
+		CTraceFilterSimple playerFilter(this, COLLISION_GROUP_NONE);
+		const Vector to = who->WorldSpaceCenter();
+		UTIL_TraceLine(from, to, MASK_SHOT_HULL, &playerFilter, &playerTrace);
+
+		if (playerTrace.DidHit())
+		{
+			if (playerTrace.m_pEnt && playerTrace.m_pEnt->IsPlayer())
+			{
+				// If it's a friendly player, line of fire is NOT clear
+				if (playerTrace.m_pEnt->GetTeamNumber() == GetTeamNumber())
+				{
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+//-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line between the given point and entity
 bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const
 {
+	if (!IsLineOfFireClearOfFriendlies(from, who))
+	{
+		return false; // Friendly player blocking line of fire
+	}
+
 	trace_t trace;
 	NextBotTraceFilterIgnoreActors botFilter(NULL, COLLISION_GROUP_NONE);
 	CTraceFilterIgnoreFriendlyCombatItems ignoreFriendlyCombatFilter(this, COLLISION_GROUP_NONE, GetTeamNumber());
