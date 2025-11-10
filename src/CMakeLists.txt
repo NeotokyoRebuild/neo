@@ -336,6 +336,9 @@ if(OS_LINUX OR OS_MACOS)
 
         # Fix for "error: cast from pointer to smaller type 'unsigned int' loses information"
         #-fms-extensions
+
+        # Required for SourceMod gamedata generation
+        -Wno-invalid-offsetof
     )
 
     # Disable option for older compiler in docker
@@ -401,8 +404,8 @@ if(NEO_GENERATE_GAMEDATA)
 
     FetchContent_Declare(
         gamedata-gen
-        URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v2/gamedata-gen.zip
-        URL_HASH MD5=2a988c84e7e192d33819868c37ad3150
+        URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v3/gamedata-gen.zip
+        URL_HASH MD5=b502c1d8454e6ce9d0e0d8976ce39a8d
         GIT_PROGRESS TRUE
         USES_TERMINAL_DOWNLOAD TRUE
     )
