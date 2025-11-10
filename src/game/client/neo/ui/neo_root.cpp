@@ -364,8 +364,8 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 
 	for (int i = 0; i < MMBTN__TOTAL; ++i)
 	{
-		const char *label = BTNS_LOCALIZE[i];
-		wchar_t *localizedWszStr = g_pVGuiLocalize->Find(label);
+		const char *pszLocalizeKey = BTNS_LOCALIZE[i];
+		wchar_t *localizedWszStr = g_pVGuiLocalize->Find(pszLocalizeKey);
 		Assert(localizedWszStr);
 		if (localizedWszStr)
 		{
@@ -373,7 +373,8 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 		}
 		else
 		{
-			g_pVGuiLocalize->ConvertANSIToUnicode(label, m_wszCachedTexts[i], sizeof(m_wszCachedTexts[i]));
+			Warning("ERROR: Cannot find localized text of %s", pszLocalizeKey);
+			g_pVGuiLocalize->ConvertANSIToUnicode(pszLocalizeKey, m_wszCachedTexts[i], sizeof(m_wszCachedTexts[i]));
 		}
 	}
 
