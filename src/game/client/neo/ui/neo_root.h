@@ -83,23 +83,6 @@ enum RootState
 	STATE__TOTAL,
 };
 
-struct WidgetInfo
-{
-	const char *label;
-	bool isFake;
-	const char *command; // TODO: Replace
-	bool isMainMenuCommand;
-	RootState nextState;
-	int flags;
-};
-
-enum WidgetInfoFlags
-{
-	FLAG_NONE = 0,
-	FLAG_SHOWINGAME = 1 << 0,
-	FLAG_SHOWINMAIN = 1 << 1,
-};
-
 enum MainMenuButtons
 {
 	MMBTN_RESUME = 0,
@@ -107,17 +90,12 @@ enum MainMenuButtons
 	MMBTN_CREATESERVER,
 	MMBTN_DISCONNECT,
 	MMBTN_PLAYERLIST,
-	MMBTN_SEPARATOR1,
 	MMBTN_TUTORIAL,
 	MMBTN_FIRINGRANGE,
-	MMBTN_SEPARATOR2,
 	MMBTN_OPTIONS,
 	MMBTN_QUIT,
 
-	BTNS_TOTAL,
-
-	SMBTN_MP3,
-	SMBTN_CREDITS,
+	MMBTN__TOTAL,
 };
 
 struct SprayInfo
@@ -143,12 +121,10 @@ public:
 	void UpdateControls();
 
 	IGameUI *m_gameui = nullptr;
-	int m_iHoverBtn = -1;
 	RootState m_state = STATE_ROOT;
 	CAvatarImage *m_avImage = nullptr;
 
-	wchar_t m_wszDispBtnTexts[BTNS_TOTAL][64] = {};
-	int m_iWszDispBtnTextsSizes[BTNS_TOTAL] = {};
+	wchar_t m_wszCachedTexts[MMBTN__TOTAL][64] = {};
 
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);

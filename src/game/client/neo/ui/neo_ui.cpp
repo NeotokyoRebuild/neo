@@ -307,12 +307,16 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 			vgui::surface()->DrawPrintText(wszTitle, V_wcslen(wszTitle));
 		}
 		break;
-	case MODE_MOUSEMOVED:
-		c->iHot = FOCUSOFF_NUM;
-		c->iHotSection = -1;
-		break;
 	default:
 		break;
+	}
+
+	c->iHotPersist = c->iHot;
+	c->iHotPersistSection = c->iHotSection;
+	if (c->eMode == MODE_MOUSEMOVED)
+	{
+		c->iHot = FOCUSOFF_NUM;
+		c->iHotSection = -1;
 	}
 
 	// Force SwapFont on main to prevent crash on startup
@@ -807,6 +811,7 @@ GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 	// Check mouse hot/active states if WIDGETFLAG_MOUSE flag set
 	if (eWidgetFlag & WIDGETFLAG_MOUSE)
 	{
+		const bool bNotCurHot = (c->iHotPersist != c->iWidget || c->iHotPersistSection != c->iSection);
 		const bool bMouseIn = IN_BETWEEN_EQ(c->rWidgetArea.x0, c->iMouseAbsX, c->rWidgetArea.x1)
 				&& IN_BETWEEN_EQ(c->rWidgetArea.y0, c->iMouseAbsY, c->rWidgetArea.y1);
 		if (bMouseIn)
@@ -834,6 +839,7 @@ GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 		return GetMouseinFocusedRet{
 			.bActive = bActive,
 			.bHot = bHot,
+			.bNewHot = bNotCurHot && bHot,
 		};
 	}
 
@@ -1061,6 +1067,20 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 		{
 			c->iActive = c->iWidget;
 			c->iActiveSection = c->iSection;
+		}
+	}
+
+	if (c->iSectionFlags & SECTIONFLAG_PLAYBUTTONSOUNDS)
+	{
+		if (ret.bPressed)
+		{
+			vgui::surface()->PlaySound(c->pszSoundBtnPressed);
+		}
+        if (wdgState.bNewHot &&
+                ((c->eMode == MODE_MOUSEMOVED && ret.bMouseHover) ||
+                 (c->eMode == MODE_KEYPRESSED && !ret.bPressed)))
+		{
+			vgui::surface()->PlaySound(c->pszSoundBtnRollover);
 		}
 	}
 
