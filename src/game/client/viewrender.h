@@ -474,6 +474,11 @@ private:
 	// This stores the current view
  	CViewSetup		m_CurrentView;
 
+#ifdef NEO
+	VisibleFogVolumeInfo_t	m_fogVolumeInfo;
+	WaterRenderInfo_t		m_waterInfo;
+#endif
+
 	// VIS Overrides
 	// Set to true to turn off client side vis ( !!!! rendering will be slow since everything will draw )
 	bool			m_bForceNoVis;	

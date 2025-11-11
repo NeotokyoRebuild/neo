@@ -199,6 +199,10 @@ BEGIN_RECV_TABLE_NOBASE( CPlayerLocalData, DT_Local )
 	RecvPropInt(RECVINFO(m_skybox3d.scale)),
 	RecvPropVector(RECVINFO(m_skybox3d.origin)),
 	RecvPropInt(RECVINFO(m_skybox3d.area)),
+#ifdef NEO
+	RecvPropInt(RECVINFO(m_skybox3d.reflectMode)),
+	RecvPropFloat(RECVINFO(m_skybox3d.waterLevel)),
+#endif
 
 	// 3d skybox fog data
 	RecvPropInt( RECVINFO( m_skybox3d.fog.enable ) ),
