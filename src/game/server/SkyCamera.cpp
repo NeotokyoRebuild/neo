@@ -112,15 +112,16 @@ void CSkyCamera::Spawn( void )
 	m_skyboxData.area = engine->GetArea( m_skyboxData.origin );
 	
 #ifdef NEO
-	if (m_skyboxData.reflectMode.Get() == REFLECT_SKYBOX_WATERCLIPZ)
+	if ( m_skyboxData.reflectMode.Get() == REFLECT_SKYBOX_WATERCLIPZ )
 	{
-		if (m_strWaterLevelDesignator != NULL_STRING)
+		auto pDesignator = gEntList.FindEntityByName( nullptr, m_strWaterLevelDesignator );
+		if ( m_strWaterLevelDesignator != NULL_STRING && pDesignator )
 		{
-			m_skyboxData.waterLevel = gEntList.FindEntityByName(nullptr, m_strWaterLevelDesignator)->GetAbsOrigin().z;
+			m_skyboxData.waterLevel = pDesignator->GetAbsOrigin().z;
 		}
 		else
 		{
-			Warning("sky_camera: Skybox water level entity not specified!\n");
+			Warning( "sky_camera: Skybox water level entity not found/specified!\n" );
 		}
 	}
 #endif
