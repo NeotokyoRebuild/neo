@@ -15,9 +15,6 @@
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #include "c_playerresource.h"
-#ifndef CNEO_Player
-#define CNEO_Player C_NEO_Player
-#endif
 #else
 #include "neo_player.h"
 #endif
@@ -39,6 +36,16 @@ ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Hold t
 #endif
 
 ConVar sv_neo_dev_loadout("sv_neo_dev_loadout", "0", FCVAR_CHEAT | FCVAR_REPLICATED | FCVAR_HIDDEN | FCVAR_DONTRECORD, "", true, 0.0f, true, 1.0f);
+
+// This default value is not a typo. The OGNT ghost beacon distance is 1800 Hammer units/inches, which equals a little over 45 meters.
+// Since we can represent this value exactly with floating point, it's not really a problem to store it as meters here.
+ConVar sv_neo_ghost_view_distance("sv_neo_ghost_view_distance", "45.72", FCVAR_NOTIFY | FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
+
+ConVar sv_neo_ghost_delay_secs("sv_neo_ghost_delay_secs", "3.3", FCVAR_NOTIFY | FCVAR_REPLICATED,
+	"The delay in seconds until the ghost shows up after pick up.", true, 0.0, false, 0.0);
+
+ConVar sv_neo_serverside_beacons("sv_neo_serverside_beacons", "1", FCVAR_NOTIFY | FCVAR_REPLICATED,
+	"Whether ghost beacons should be processed server-side.", true, false, true, true);
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {

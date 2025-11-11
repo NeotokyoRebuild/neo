@@ -31,6 +31,9 @@
 #include "neo_dm_spawn.h"
 #include "neo_game_config.h"
 #include "nav_mesh.h"
+#include "neo_npc_dummy.h"
+
+#include <utility>
 
 extern ConVar weaponstay;
 #endif
@@ -941,6 +944,21 @@ void CNEORules::Think(void)
 	CheckGameConfig();
 	if (CheckShouldNotThink())
 	{
+		// This is kind of wonky, but we only need it for the tutorial, in order to play the dummy beacon sounds...
+		if (!m_pGhost && GetGameType() == NEO_GAME_TYPE_TUT)
+		{
+			auto pEnt = gEntList.FirstEnt();
+			while (pEnt)
+			{
+				if (dynamic_cast<CWeaponGhost*>(pEnt))
+				{
+					m_pGhost = static_cast<CWeaponGhost*>(pEnt);
+					return;
+				}
+				pEnt = gEntList.NextEnt(pEnt);
+			}
+		}
+		if (m_pGhost) m_pGhost->UpdateNearestGhostBeaconDist();
 		return;
 	}
 
@@ -1301,6 +1319,7 @@ void CNEORules::Think(void)
 			nextGhosterTeam = pGhosterPlayer->GetTeamNumber();
 			nextGhosterPlayerIdx = pGhosterPlayer->entindex();
 			Assert(nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF);
+			m_pGhost->UpdateNearestGhostBeaconDist();
 		}
 		m_iGhosterTeam = nextGhosterTeam;
 		m_iGhosterPlayer = nextGhosterPlayerIdx;

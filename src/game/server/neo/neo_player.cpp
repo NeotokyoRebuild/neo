@@ -19,6 +19,9 @@
 
 #include "weapon_ghost.h"
 #include "weapon_supa7.h"
+#include "weapon_knife.h"
+#include "weapon_grenade.h"
+#include "weapon_smokegrenade.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -28,15 +31,10 @@
 
 #include "neo_te_tocflash.h"
 
-#include "weapon_grenade.h"
-#include "weapon_smokegrenade.h"
-
-#include "weapon_knife.h"
-
 #include "viewport_panel_names.h"
-
 #include "neo_weapon_loadout.h"
 
+#include "player_resource.h"
 #include "neo_player_shared.h"
 #include "bot/neo_bot.h"
 
@@ -3336,44 +3334,63 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
-extern ConVar neo_ctg_ghost_beacons_when_inactive;
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
-	if (pInfo)
-	{
-		auto otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+	if (!pInfo)
+		return BaseClass::ShouldTransmit(pInfo);
 
-		// If other is spectator or same team
-		if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+	// This player is the ghoster, so their location should be networked always, even to enemies,
+	// because we need to be able to draw the warning beacon for them even outside PVS.
+	if (IsCarryingGhost())
+		return FL_EDICT_ALWAYS;
+
+	const auto* otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+
+	if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE
-			otherNeoPlayer->IsDead() ||
+		otherNeoPlayer->IsDead() ||
 #endif
-			GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
-		{
-			return FL_EDICT_ALWAYS;
-		}
+		GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
+	{
+		return FL_EDICT_ALWAYS;
+	}
 
-		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
-		if (neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
-		{
-			return FL_EDICT_ALWAYS;
-		}
+	const CWeaponGhost* ghost = nullptr;
 
-
-		// If the other player is actively using the ghost and therefore fetching beacons
-		auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
-		if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
-			static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+	extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		if (NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
 		{
-			return FL_EDICT_ALWAYS;
-		}
-
-		// If this player is carrying the ghost (whether active or not)
-		if (IsCarryingGhost())
-		{
-			return FL_EDICT_ALWAYS;
+			ghost = assert_cast<const CWeaponGhost*>(GetNeoWepWithBits(otherNeoPlayer, NEO_WEP_GHOST));
+			AssertMsg(ghost, "player was marked as ghoster but they didn't have the ghost");
 		}
 	}
+	if (!ghost)
+	{
+		if (const auto* otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon()))
+			if (otherWep->IsGhost())
+				ghost = assert_cast<const CWeaponGhost*>(otherWep);
+	}
+
+	if (!ghost)
+		return BaseClass::ShouldTransmit(pInfo);
+
+	// If handling ghost client-side, ghoster must know about nearby off-PVS enemies even before the ghost bootup,
+	// because else we couldn't play the ghost beacon sound beeps for the ghoster at the correct interval.
+	if (!sv_neo_serverside_beacons.GetBool())
+		return FL_EDICT_ALWAYS;
+
+	// Actually we just need the server->client latency instead of roundtrip, but this gives us a good safety buffer.
+	// It's also faster to grab from the g_pPlayerResource instead of calculating here.
+	const float avgLatency = g_pPlayerResource->GetPing(NEORules()->GetGhosterPlayer()) / 1000.f;
+	// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
+	if (!ghost->IsBootupCompleted(avgLatency))
+		return BaseClass::ShouldTransmit(pInfo);
+
+	const auto myDistanceToGhost = GetAbsOrigin().DistTo(ghost->GetAbsOrigin());
+	if (myDistanceToGhost <= CWeaponGhost::GetGhostRangeInHammerUnits())
+		return FL_EDICT_ALWAYS;
 	
 	return BaseClass::ShouldTransmit(pInfo);
 }
