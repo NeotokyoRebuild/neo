@@ -3,6 +3,7 @@
 #include "tier1/convar.h"
 #include "neo_player_shared.h"
 #include "neo_hud_crosshair.h"
+#include "neo_hud_friendly_marker.h"
 
 // NEO TODO (nullsystem): Implement our own file IO dialog
 #include "vgui_controls/FileOpenDialog.h"
@@ -180,6 +181,12 @@ struct NeoSettings
 		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
 	};
 
+	struct FriendlyMarker
+	{
+		int optionChosen;
+		FriendlyMarkerInfo options[NeoIFFMarkerOption::NEOIFFMARKER_OPTION_TOTAL];
+	};
+
 	General general;
 	Keys keys;
 	Mouse mouse;
@@ -187,6 +194,7 @@ struct NeoSettings
 	Audio audio;
 	Video video;
 	Crosshair crosshair;
+	FriendlyMarker friendlyMarkers;
 
 	KeyValues* backgrounds;
 	int iCBListSize;
@@ -284,6 +292,14 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_crosshair_network);
 		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
 		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
+
+		// Friendly Markers
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_player_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_player_xray_marker);
 	};
 	CVR cvr;
 };
@@ -301,3 +317,4 @@ void NeoSettings_MouseController(NeoSettings *ns);
 void NeoSettings_Audio(NeoSettings *ns);
 void NeoSettings_Video(NeoSettings *ns);
 void NeoSettings_Crosshair(NeoSettings *ns);
+void NeoSettings_HUD(NeoSettings *ns);

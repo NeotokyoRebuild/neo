@@ -41,7 +41,7 @@ void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float fl
 	else if (pConVar->GetName() == "cl_neo_player_marker") { conVarChanged = NEOIFFMARKER_OPTION_PLAYER; }
 	else if (pConVar->GetName() == "cl_neo_player_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_PLAYER_XRAY; }
 	
-	if (!iffHudElement->ParseFriendlyMarker(conVarChanged, newValue))
+	if (!ImportMarker(&iffHudElement->m_szMarkerSettings[conVarChanged], newValue))
 	{ // unsuccessfull, revert value
 		pConVar->SetValue(pOldString);
 	}
@@ -91,12 +91,12 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 	Assert(m_hUniqueTex > 0);
 	vgui::surface()->DrawSetTextureFile(m_hUniqueTex, "vgui/hud/unique_star", 1, false);
 
-	ParseFriendlyMarker(NEOIFFMARKER_OPTION_FRIENDLY, cl_neo_friendly_marker.GetString());
-	ParseFriendlyMarker(NEOIFFMARKER_OPTION_FRIENDLY_XRAY, cl_neo_friendly_xray_marker.GetString());
-	ParseFriendlyMarker(NEOIFFMARKER_OPTION_SQUAD, cl_neo_squad_marker.GetString());
-	ParseFriendlyMarker(NEOIFFMARKER_OPTION_SQUAD_XRAY, cl_neo_squad_xray_marker.GetString());
-	ParseFriendlyMarker(NEOIFFMARKER_OPTION_PLAYER, cl_neo_player_marker.GetString());
-	ParseFriendlyMarker(NEOIFFMARKER_OPTION_PLAYER_XRAY, cl_neo_player_xray_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_FRIENDLY], cl_neo_friendly_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], cl_neo_friendly_xray_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_SQUAD], cl_neo_squad_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_SQUAD_XRAY], cl_neo_squad_xray_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_PLAYER], cl_neo_player_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_PLAYER_XRAY], cl_neo_player_xray_marker.GetString());
 
 	SetVisible(true);
 }
@@ -191,7 +191,7 @@ extern ConVar cl_neo_hud_health_mode;
 void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const
 {
 	NeoIFFMarkerOption markerUsedIndex = NEOIFFMARKER_OPTION_FRIENDLY;
-	if (player->IsObserver()){
+	if (localPlayer->IsObserver()){
 		if (glow_outline_effect_enable.GetBool()) { markerUsedIndex = NEOIFFMARKER_OPTION_PLAYER_XRAY; }
 		else { markerUsedIndex = NEOIFFMARKER_OPTION_PLAYER; }
 	}
@@ -208,7 +208,6 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 		return;
 	}
 
-	static constexpr int MAX_MARKER_STRLEN = 48 + NEO_MAX_CLANTAG_LENGTH + 1;
 	char textASCII[MAX_MARKER_STRLEN];
 	int textSize = 0;
 
@@ -241,8 +240,9 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 		y -= textSize;
 	}
 
-	if (settings->bShowSquadMarker) {
-		if (player->GetClass() == NEO_CLASS_JUGGERNAUT || player->GetClass() == NEO_CLASS_VIP) {
+	const bool unique = player->GetClass() == NEO_CLASS_JUGGERNAUT || player->GetClass() == NEO_CLASS_VIP;
+	if (settings->bShowSquadMarker || unique) {
+		if (unique) {
 			vgui::surface()->DrawSetTexture(m_hUniqueTex);
 		}
 		else if (player->GetStar() == localPlayer->GetStar()) {
@@ -349,9 +349,8 @@ static constexpr const NeoIFFMarkerVariantType NEOIFFMARKER_SEGMENT_VARTYPES[NEO
 	NEOIFFMARKERVARTYPE_INT,   // NEOIFFMARKER_SEGMENT_I_MAXNAMELENGTH
 };
 
-bool CNEOHud_FriendlyMarker::ParseFriendlyMarker(NeoIFFMarkerOption option, const char *pszSequence)
+bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 {
-	FriendlyMarkerInfo* crh = &m_szMarkerSettings[option];
 	int iPrevSegment = 0;
 	int iSegmentIdx = 0;
 	NeoIFFMarkerVariant vars[NEOIFFMARKER_SEGMENT__TOTAL] = {};
@@ -409,4 +408,20 @@ bool CNEOHud_FriendlyMarker::ParseFriendlyMarker(NeoIFFMarkerOption option, cons
 	crh->iMaxNameLength = vars[NEOIFFMARKER_SEGMENT_I_MAXNAMELENGTH].iVal;
 
 	return true;
+}
+
+void ExportMarker(const FriendlyMarkerInfo *crh, char (&szSequence)[NEO_IFFMARKER_SEQMAX])
+{
+	V_sprintf_safe(szSequence,
+			"%d;%d;%d;%d;%.2f;%d;%d;%d;%d;%d;",
+			crh->iInitialOffset,
+			static_cast<int>(crh->bShowDistance),
+			static_cast<int>(crh->bVerboseDistance),
+			static_cast<int>(crh->bShowSquadMarker),
+			crh->flSquadMarkerScale,
+			static_cast<int>(crh->bShowHealthBar),
+			static_cast<int>(crh->bShowHealth),
+			static_cast<int>(crh->bShowName),
+			static_cast<int>(crh->bPrependClantagToName),
+			crh->iMaxNameLength);
 }

@@ -24,6 +24,7 @@ enum NeoIFFMarkerSegment
 
 #define NEO_FRIENDLY_MARKER_DEFAULT "0;1;1;1;0.5;1;1;1;1;32;"
 constexpr int NEO_IFFMARKER_SEQMAX = 32;
+constexpr int MAX_MARKER_STRLEN = 48 + NEO_MAX_CLANTAG_LENGTH + 1;
 
 struct FriendlyMarkerInfo
 {
@@ -61,7 +62,7 @@ public:
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
 	virtual void Paint() override;
 
-	bool ParseFriendlyMarker(NeoIFFMarkerOption option, const char *pszSequence);
+	FriendlyMarkerInfo m_szMarkerSettings[NEOIFFMARKER_OPTION_TOTAL] = {};
 
 protected:
 	virtual void DrawNeoHudElement() override;
@@ -72,8 +73,6 @@ protected:
 private:
 	int m_iIconWidth, m_iIconHeight;
 	
-	FriendlyMarkerInfo m_szMarkerSettings[NEOIFFMARKER_OPTION_TOTAL] = {};
-
 	int m_x0[MAX_PLAYERS];
 	int m_x1[MAX_PLAYERS];
 	int m_y0[MAX_PLAYERS];
@@ -87,3 +86,6 @@ private:
 	void DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const;
 	static Color GetTeamColour(int team);
 };
+
+bool ImportMarker(FriendlyMarkerInfo* crh, const char* pszSequence);
+void ExportMarker(const FriendlyMarkerInfo* crh, char(&szSequence)[NEO_IFFMARKER_SEQMAX]);

@@ -631,6 +631,39 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pCrosshair->bInaccuracyInScope = cvr->cl_neo_crosshair_scope_inaccuracy.GetBool();
 		pCrosshair->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 	}
+	{
+		NeoSettings::FriendlyMarker *pFriendlyMarker = &ns->friendlyMarkers;
+		bool bImported = ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_FRIENDLY], cvr->cl_neo_friendly_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_FRIENDLY], NEO_FRIENDLY_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], cvr->cl_neo_friendly_xray_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], NEO_FRIENDLY_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_SQUAD], cvr->cl_neo_squad_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_SQUAD], NEO_FRIENDLY_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], cvr->cl_neo_squad_xray_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], NEO_FRIENDLY_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_PLAYER], cvr->cl_neo_player_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_PLAYER], NEO_FRIENDLY_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], cvr->cl_neo_player_xray_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], NEO_FRIENDLY_MARKER_DEFAULT);
+		}
+	}
 }
 
 void NeoToggleConsoleEnforce()
@@ -840,6 +873,22 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
 		cvr->cl_neo_crosshair_hip_fire.SetValue(pCrosshair->bHipFireCrosshair);
 	}
+	{
+		const NeoSettings::FriendlyMarker *pFriendlyMarker = &ns->friendlyMarkers;
+		char szSequence[NEO_IFFMARKER_SEQMAX];
+		ExportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_FRIENDLY], szSequence);
+		cvr->cl_neo_friendly_marker.SetValue(szSequence);
+		ExportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], szSequence);
+		cvr->cl_neo_friendly_xray_marker.SetValue(szSequence);
+		ExportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_SQUAD], szSequence);
+		cvr->cl_neo_squad_marker.SetValue(szSequence);
+		ExportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], szSequence);
+		cvr->cl_neo_squad_xray_marker.SetValue(szSequence);
+		ExportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_PLAYER], szSequence);
+		cvr->cl_neo_player_marker.SetValue(szSequence);
+		ExportMarker(&pFriendlyMarker->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], szSequence);
+		cvr->cl_neo_player_xray_marker.SetValue(szSequence);
+	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
 	engine->ClientCmd_Unrestricted("mat_savechanges");
@@ -946,8 +995,6 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::HeadingLabel(L"HUD");
 	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);
 	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, ARRAYSIZE(HEALTHMODE_LABELS), &pGeneral->iHealthMode);
-	NeoUI::RingBox(L"IFF verbosity", IFFVERBOSITY_LABELS, ARRAYSIZE(IFFVERBOSITY_LABELS), &pGeneral->iIFFVerbosity);
-	NeoUI::RingBoxBool(L"IFF healthbars", &pGeneral->bIFFHealthbars);
 	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pGeneral->iObjVerbosity);
 	NeoUI::RingBoxBool(L"Show hints", &pGeneral->bShowHints);
 	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pGeneral->bShowHudContextHints);
@@ -1307,4 +1354,29 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		NeoUI::RingBoxBool(L"Hip fire crosshair", &pCrosshair->bHipFireCrosshair);
 	}
 	NeoUI::EndSection();
+}
+
+static const wchar_t *IFF_LABELS[] = { L"Friendly", L"Friendly Xray", L"Squad", L"Squad Xray", L"Player", L"Player Xray",};
+void NeoSettings_HUD(NeoSettings* ns)
+{
+	static int optionChosen = 0;
+	NeoUI::SetPerRowLayout(ARRAYSIZE(IFF_LABELS));
+	for (int i = 0; i < ARRAYSIZE(IFF_LABELS); i++) {
+		if (NeoUI::Button(IFF_LABELS[i]).bPressed) { optionChosen = i; }
+	}
+
+	// NEO TODO (Adam) Show what the marker looks like somewhere here
+
+	FriendlyMarkerInfo *pMarker = &ns->friendlyMarkers.options[optionChosen];
+	NeoUI::SetPerRowLayout(2);
+	NeoUI::SliderInt(L"Initial offset", &pMarker->iInitialOffset, -64, 64, 1);
+	NeoUI::RingBoxBool(L"Show distance", &pMarker->bShowDistance);
+	NeoUI::RingBoxBool(L"Verbose distance", &pMarker->bVerboseDistance);
+	NeoUI::RingBoxBool(L"Show squad marker", &pMarker->bShowSquadMarker);
+	NeoUI::Slider(L"Squad marker scale", &pMarker->flSquadMarkerScale, 0, 2, 2, 0.1f);
+	NeoUI::RingBoxBool(L"Show healthbar", &pMarker->bShowHealthBar);
+	NeoUI::RingBoxBool(L"Show health", &pMarker->bShowHealth);
+	NeoUI::RingBoxBool(L"Show name", &pMarker->bShowName);
+	NeoUI::RingBoxBool(L"Prepend clantag", &pMarker->bPrependClantagToName);
+	NeoUI::SliderInt(L"Max name length (including clantag)", &pMarker->iMaxNameLength, 0, MAX_MARKER_STRLEN, 1);
 }

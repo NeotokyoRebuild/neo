@@ -1053,9 +1053,10 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 		{NeoSettings_Audio, false},
 		{NeoSettings_Video, false},
 		{NeoSettings_Crosshair, true},
+		{NeoSettings_HUD, false},
 	};
 	static const wchar_t *WSZ_TABS_LABELS[ARRAYSIZE(P_FN)] = {
-		L"Multiplayer", L"Keybinds", L"Mouse/Controller", L"Audio", L"Video", L"Crosshair"
+		L"Multiplayer", L"Keybinds", L"Mouse/Controller", L"Audio", L"Video", L"Crosshair", L"HUD"
 	};
 
 	m_ns.iNextBinding = -1;
