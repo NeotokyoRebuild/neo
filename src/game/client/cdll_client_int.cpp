@@ -1249,6 +1249,10 @@ static void NeoDeleteDownloadedSprays()
 		char szSLSearch[MAX_PATH];
 		V_sprintf_safe(szSLSearch, "%s/*.dat", szSLRelPath);
 
+		// Copy the string before calling FindFirst
+		char szFNameFLDir[MAX_PATH];
+		V_strcpy_safe(szFNameFLDir, pszFNameFLDir);
+
 		FileFindHandle_t findHdlSL;
 		for (const char *pszFNameSLDat = filesystem->FindFirst(szSLSearch, &findHdlSL);
 			 pszFNameSLDat && findHdlSL != FILESYSTEM_INVALID_FIND_HANDLE;
@@ -1275,7 +1279,7 @@ static void NeoDeleteDownloadedSprays()
 			}
 
 			char szFullFPathSLDat[MAX_PATH];
-			V_sprintf_safe(szFullFPathSLDat, SZ_USERCUSTOM_DIR "/%s/%s", pszFNameFLDir, pszFNameSLDat);
+			V_sprintf_safe(szFullFPathSLDat, SZ_USERCUSTOM_DIR "/%s/%s", szFNameFLDir, pszFNameSLDat);
 
 			// NEO JANK (nullsystem): filesystem API seems buggy having earlier file(s) in alphanum order
 			// unable to recognize those files and remove them. When RemoveFile was called wasn't the issue
