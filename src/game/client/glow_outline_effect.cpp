@@ -26,7 +26,8 @@ ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.0
 extern ConVar mp_forcecamera;
 static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue, float flOldValue)
 {
-	if (!flOldValue && GetLocalPlayerTeam() != TEAM_SPECTATOR && mp_forcecamera.GetInt() != OBS_ALLOW_ALL)
+	C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
+	if (!pPlayer || !flOldValue && pPlayer->GetTeamNumber() != TEAM_SPECTATOR && (mp_forcecamera.GetInt() != OBS_ALLOW_ALL || pPlayer->IsAlive()))
 	{
 		var->SetValue(false);
 		return;
