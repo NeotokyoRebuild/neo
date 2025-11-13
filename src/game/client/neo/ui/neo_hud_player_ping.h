@@ -34,13 +34,15 @@ protected:
 	virtual void FireGameEvent(IGameEvent* event) override;
 
 private:
+	void DrawPings(playerPing* pings, int localPlayerTeam, int spectateTargetTeam, int playerPingsInSpectate, bool isEnemyPings);
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
-	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex);
-	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing);
-	void NotifyPing(const int playerSlot);
+	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex, bool isShotPing);
+	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing, bool isShotPing);
+	void NotifyPing(const int playerSlot, bool isShotPing);
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};
+	playerPing m_iEnemyHitPings[MAX_PLAYERS] = {};
 
 	int m_iPosX, m_iPosY;
 

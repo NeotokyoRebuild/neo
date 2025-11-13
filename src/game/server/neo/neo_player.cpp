@@ -22,6 +22,7 @@
 #include "weapon_knife.h"
 #include "weapon_grenade.h"
 #include "weapon_smokegrenade.h"
+#include "neo_smokelineofsightblocker.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -149,6 +150,7 @@ ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_R
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
 ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
 ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_ping_enemies_automatically("sv_neo_ping_enemies_automatically", "1", FCVAR_REPLICATED, "If enabled, the location of enemies are automatically reported as player pings.", true, 0.0f, true, 1.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -2926,6 +2928,34 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 
 				if (info.GetDamageType() & (DMG_BULLET | DMG_SLASH | DMG_BUCKSHOT)) {
 					++m_iBotDetectableBleedingInjuryEvents;
+				}
+
+				// Automatically place ping for attacker if accessibility convar enabled
+				if (sv_neo_ping_enemies_automatically.GetBool()
+					//&& !GetInThermOpticCamo()
+					&& (attacker->GetTeamNumber() != GetTeamNumber())
+					&& (info.GetDamageType() & (DMG_BULLET | DMG_BUCKSHOT)))
+				{
+					bool bAttackerCanSeeThroughSmoke = attacker->m_bInVision && (attacker->GetClass() == NEO_CLASS_SUPPORT);
+					ScopedSmokeLOS scopedSmoke(bAttackerCanSeeThroughSmoke);
+					if (FVisible(attacker, MASK_BLOCKLOS))
+					{
+						IGameEvent* evt = gameeventmanager->CreateEvent("player_ping");
+
+						if (evt)
+						{
+							const Vector& pos = info.GetDamagePosition(); 
+							evt->SetInt("userid", attacker->GetUserID());
+							evt->SetInt("playerteam", attacker->GetTeamNumber());
+							evt->SetInt("pingx", pos.x);
+							evt->SetInt("pingy", pos.y);
+							evt->SetInt("pingz", pos.z);
+							evt->SetBool("ghosterping", false);
+							evt->SetBool("shotping", true);
+
+							gameeventmanager->FireEvent(evt);
+						}
+					}
 				}
 			}
 		}

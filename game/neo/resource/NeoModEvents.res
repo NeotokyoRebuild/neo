@@ -89,6 +89,7 @@
 		"pingy"			"short"		// ping y position
 		"pingz"			"short"		// ping z position
 		"ghosterping"	"bool"		// the player is carrying the ghost
+		"shotping"		"bool"		// the player shot an enemy
 	}
 	
 	// inherited from NT
