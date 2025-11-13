@@ -51,25 +51,12 @@ struct NeoSettings
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
-		bool bHipFireCrosshair;
 		int iLeanAutomatic;
-		bool bShowSquadList;
 		bool bShowPlayerSprays;
-		int iHealthMode;
-		int iIFFVerbosity;
-		bool bIFFHealthbars;
-		int iObjVerbosity;
-		bool bShowHints;
-		bool bShowPos;
-		int iShowFps;
 		int iDlFilter;
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
-		bool bEnableRangeFinder;
-		bool bExtendedKillfeed;
 		int iBackground;
-		int iKdinfoToggletype;
-		bool bShowHudContextHints;
 	};
 
 	struct Keys
@@ -181,8 +168,21 @@ struct NeoSettings
 		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
 	};
 
-	struct FriendlyMarker
+	struct HUD
 	{
+		bool bShowSquadList;
+		int iHealthMode;
+		int iIFFVerbosity;
+		bool bIFFHealthbars;
+		int iObjVerbosity;
+		bool bShowHints;
+		bool bShowPos;
+		int iShowFps;
+		bool bEnableRangeFinder;
+		bool bExtendedKillfeed;
+		bool bShowHudContextHints;
+		int iKdinfoToggletype;
+
 		int optionChosen;
 		FriendlyMarkerInfo options[NeoIFFMarkerOption::NEOIFFMARKER_OPTION_TOTAL];
 	};
@@ -194,7 +194,7 @@ struct NeoSettings
 	Audio audio;
 	Video video;
 	Crosshair crosshair;
-	FriendlyMarker friendlyMarkers;
+	HUD hud;
 
 	KeyValues* backgrounds;
 	int iCBListSize;
