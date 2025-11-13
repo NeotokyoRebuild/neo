@@ -385,7 +385,6 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_clantag.GetString(), pGeneral->wszNeoClantag, sizeof(pGeneral->wszNeoClantag));
 		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
-		pGeneral->bMarkerSpecOnlyClantag = cvr->cl_neo_clantag_friendly_marker_spec_only.GetBool();
 		pGeneral->iFov = cvr->neo_fov.GetInt();
 		pGeneral->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
 		pGeneral->bAimHold = cvr->neo_aim_hold.GetBool();
@@ -396,8 +395,6 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
 		pGeneral->iHealthMode = cvr->cl_neo_hud_health_mode.GetInt();
-		pGeneral->iIFFVerbosity = cvr->cl_neo_hud_iff_verbosity.GetInt();
-		pGeneral->bIFFHealthbars = cvr->cl_neo_hud_iff_healthbars.GetBool();
 		pGeneral->iObjVerbosity = cvr->cl_neo_hud_worldpos_verbose.GetInt();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
 		pGeneral->bShowHints = cvr->cl_neo_showhints.GetBool();
@@ -683,7 +680,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 		g_pVGuiLocalize->ConvertUnicodeToANSI(pGeneral->wszNeoClantag, neoClantagText, sizeof(neoClantagText));
 		cvr->neo_clantag.SetValue(neoClantagText);
 		cvr->cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
-		cvr->cl_neo_clantag_friendly_marker_spec_only.SetValue(pGeneral->bMarkerSpecOnlyClantag);
 		cvr->neo_fov.SetValue(pGeneral->iFov);
 		cvr->neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
 		cvr->neo_aim_hold.SetValue(pGeneral->bAimHold);
@@ -694,8 +690,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_crosshair_hip_fire.SetValue(pGeneral->bHipFireCrosshair);
 		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
 		cvr->cl_neo_hud_health_mode.SetValue(pGeneral->iHealthMode);
-		cvr->cl_neo_hud_iff_verbosity.SetValue(pGeneral->iIFFVerbosity);
-		cvr->cl_neo_hud_iff_healthbars.SetValue(pGeneral->bIFFHealthbars);
 		cvr->cl_neo_hud_worldpos_verbose.SetValue(pGeneral->iObjVerbosity);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_neo_showhints.SetValue(pGeneral->bShowHints);

@@ -205,7 +205,6 @@ struct NeoSettings
 		CONVARREF_DEF(neo_name);
 		CONVARREF_DEF(neo_clantag);
 		CONVARREF_DEF(cl_onlysteamnick);
-		CONVARREF_DEF(cl_neo_clantag_friendly_marker_spec_only);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
 		CONVARREF_DEF(neo_aim_hold);
@@ -215,8 +214,6 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_lean_automatic);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
 		CONVARREF_DEF(cl_neo_hud_health_mode);
-		CONVARREF_DEF(cl_neo_hud_iff_verbosity);
-		CONVARREF_DEF(cl_neo_hud_iff_healthbars);
 		CONVARREF_DEF(cl_neo_hud_worldpos_verbose);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
 		CONVARREF_DEF(cl_neo_showhints);
