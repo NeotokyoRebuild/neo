@@ -290,11 +290,15 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 		vgui::surface()->DrawSetColor(FadeColour(COLOR_BLACK, fadeTextMultiplier * 0.8));
 		const float numChunks = (player->GetMaxHealth() / 25.f);
 		const int chunkWidth = (HEALTHBAR_WIDTH) / numChunks;
-		for (int i = 1; i < numChunks; i++) {
-			if (healthBarWidth <= i * chunkWidth) {
-				break;
+		constexpr int HEALTHBAR_MIN_CHUNK_WIDTH = 2;
+		if (chunkWidth >= HEALTHBAR_MIN_CHUNK_WIDTH)
+		{
+			for (int i = 1; i < numChunks; i++) {
+				if (healthBarWidth <= i * chunkWidth) {
+					break;
+				}
+				vgui::surface()->DrawLine((x - (HEALTHBAR_WIDTH / 2)) + (i * chunkWidth), healthBarYPos, (x - (HEALTHBAR_WIDTH / 2)) + (i * chunkWidth), healthBarYPos + HEALTHBAR_HEIGHT - 1);
 			}
-			vgui::surface()->DrawLine((x - (HEALTHBAR_WIDTH / 2)) + (i * chunkWidth), healthBarYPos, (x - (HEALTHBAR_WIDTH / 2)) + (i * chunkWidth), healthBarYPos + HEALTHBAR_HEIGHT - 1);
 		}
 		y -= HEALTHBAR_HEIGHT;
 	}
