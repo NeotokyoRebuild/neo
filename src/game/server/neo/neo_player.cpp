@@ -2941,7 +2941,7 @@ CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
 	if (item && szName && FStrEq(szName, "weapon_tachi"))
 	{
 		const char* tachiPref = engine->GetClientConVarValue(entindex(), "cl_neo_tachi_prefer_auto");
-		if (tachiPref && *tachiPref && bool(V_atoi(tachiPref)))
+		if (tachiPref && *tachiPref && (V_atoi(tachiPref) != 0))
 		{
 			assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
 		}
