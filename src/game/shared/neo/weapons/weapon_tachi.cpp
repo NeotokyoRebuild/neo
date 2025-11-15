@@ -53,7 +53,7 @@ CWeaponTachi::CWeaponTachi()
 
 	m_bFiresUnderwater = false;
 	m_bAltFiresUnderwater = true;
-	m_bIsPrimaryFireMode = true;
+	m_bIsPrimaryFireMode = (bool)Tachi::Firemode::Single;
 
 	m_weaponSeeds = {
 		"tachipx",
@@ -76,10 +76,10 @@ void CWeaponTachi::SwitchFireMode( void )
 	SendWeaponAnim( ACT_VM_DRAW_SPECIAL );
 }
 
-void CWeaponTachi::ForceSetFireMode( bool bPrimaryMode, bool bPlaySound,
+void CWeaponTachi::ForceSetFireMode( Tachi::Firemode primaryMode, bool bPlaySound,
 	float flSoonestSwitch )
 {
-	m_bIsPrimaryFireMode = bPrimaryMode;
+	m_bIsPrimaryFireMode = (bool)primaryMode;
 	m_flSoonestFiremodeSwitch = flSoonestSwitch;
 
 	if (bPlaySound)

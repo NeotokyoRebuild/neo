@@ -419,6 +419,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
+		pGeneral->bTachiFullAutoPreferred = cvr->cl_neo_tachi_prefer_auto.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		pGeneral->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
 		pGeneral->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
@@ -706,6 +707,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
 		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
+		cvr->cl_neo_tachi_prefer_auto.SetValue(pGeneral->bTachiFullAutoPreferred);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pGeneral->iKdinfoToggletype);
 		cvr->cl_neo_hud_context_hint_enabled.SetValue(pGeneral->bShowHudContextHints);
@@ -961,6 +963,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pGeneral->bExtendedKillfeed);
+	NeoUI::RingBoxBool(L"Prefer full-auto for Tachi loadouts", &pGeneral->bTachiFullAutoPreferred);
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pGeneral->iKdinfoToggletype);
 
 	

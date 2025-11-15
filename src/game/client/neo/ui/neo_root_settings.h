@@ -66,6 +66,7 @@ struct NeoSettings
 		bool bAutoDetectOBS;
 		bool bEnableRangeFinder;
 		bool bExtendedKillfeed;
+		bool bTachiFullAutoPreferred;
 		int iBackground;
 		int iKdinfoToggletype;
 		bool bShowHudContextHints;
@@ -219,6 +220,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_iff_healthbars);
 		CONVARREF_DEF(cl_neo_hud_worldpos_verbose);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
+		CONVARREF_DEF(cl_neo_tachi_prefer_auto);
 		CONVARREF_DEF(cl_neo_showhints);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);

@@ -22,6 +22,7 @@
 #include "weapon_knife.h"
 #include "weapon_grenade.h"
 #include "weapon_smokegrenade.h"
+#include "weapon_tachi.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -2931,6 +2932,22 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		}
 	}
 	return BaseClass::OnTakeDamage_Alive(info);
+}
+
+CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
+{
+	auto* item = BaseClass::GiveNamedItem(szName, iSubType);
+
+	if (item && szName && FStrEq(szName, "weapon_tachi"))
+	{
+		const char* tachiPref = engine->GetClientConVarValue(entindex(), "cl_neo_tachi_prefer_auto");
+		if (tachiPref && *tachiPref && (V_atoi(tachiPref) != 0))
+		{
+			assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
+		}
+	}
+
+	return item;
 }
 
 void GiveDet(CNEO_Player* pPlayer)

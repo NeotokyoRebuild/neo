@@ -95,6 +95,7 @@ public:
 	virtual void RemoveSuit(void) OVERRIDE;
 	virtual void GiveDefaultItems(void) OVERRIDE;
 	virtual int	OnTakeDamage_Alive(const CTakeDamageInfo& info) OVERRIDE;
+	virtual CBaseEntity* GiveNamedItem(const char* szName, int iSubType = 0) override;
 
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
