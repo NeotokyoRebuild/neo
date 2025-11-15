@@ -47,6 +47,9 @@ ConVar sv_neo_ghost_delay_secs("sv_neo_ghost_delay_secs", "3.3", FCVAR_NOTIFY | 
 ConVar sv_neo_serverside_beacons("sv_neo_serverside_beacons", "1", FCVAR_NOTIFY | FCVAR_REPLICATED,
 	"Whether ghost beacons should be processed server-side.", true, false, true, true);
 
+ConVar cl_neo_tachi_prefer_auto("cl_neo_tachi_prefer_auto", "1", FCVAR_ARCHIVE | FCVAR_USERINFO,
+	"Whether full-auto is the preferred default firing mode for Tachi loadouts.", true, false, true, true);
+
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
 	if (!pWep || pWep->m_bInReload || pWep->GetRoundBeingChambered())

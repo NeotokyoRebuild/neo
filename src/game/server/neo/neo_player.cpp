@@ -5,6 +5,7 @@
 #include "neo_predicted_viewmodel_muzzleflash.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
+#include "neo_player_shared.h"
 #include "team.h"
 
 #include "engine/IEngineSound.h"
@@ -22,6 +23,7 @@
 #include "weapon_knife.h"
 #include "weapon_grenade.h"
 #include "weapon_smokegrenade.h"
+#include "weapon_tachi.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -2931,6 +2933,21 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		}
 	}
 	return BaseClass::OnTakeDamage_Alive(info);
+}
+
+CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
+{
+	auto* item = BaseClass::GiveNamedItem(szName, iSubType);
+
+	if (item && cl_neo_tachi_prefer_auto.GetBool())
+	{
+		if (szName && FStrEq(szName, "weapon_tachi"))
+		{
+			assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
+		}
+	}
+
+	return item;
 }
 
 void GiveDet(CNEO_Player* pPlayer)
