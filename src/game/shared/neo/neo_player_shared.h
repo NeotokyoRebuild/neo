@@ -26,8 +26,6 @@ extern ConVar sv_neo_ghost_delay_secs;
 extern ConVar sv_neo_ghost_view_distance;
 extern ConVar sv_neo_serverside_beacons;
 
-extern ConVar cl_neo_tachi_prefer_auto;
-
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS
 

@@ -5,7 +5,6 @@
 #include "neo_predicted_viewmodel_muzzleflash.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
-#include "neo_player_shared.h"
 #include "team.h"
 
 #include "engine/IEngineSound.h"
@@ -2939,9 +2938,10 @@ CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
 {
 	auto* item = BaseClass::GiveNamedItem(szName, iSubType);
 
-	if (item && cl_neo_tachi_prefer_auto.GetBool())
+	if (item && szName && FStrEq(szName, "weapon_tachi"))
 	{
-		if (szName && FStrEq(szName, "weapon_tachi"))
+		const char* tachiPref = engine->GetClientConVarValue(entindex(), "cl_neo_tachi_prefer_auto");
+		if (tachiPref && *tachiPref && bool(V_atoi(tachiPref)))
 		{
 			assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
 		}
