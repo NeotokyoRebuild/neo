@@ -12,6 +12,7 @@ struct playerPing
 	int team;
 	bool noLineOfSight;
 	bool ghosterPing;
+	int victimUserID;
 };
 
 class CNEOHud_PlayerPing : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
@@ -34,15 +35,16 @@ protected:
 	virtual void FireGameEvent(IGameEvent* event) override;
 
 private:
-	void DrawPings(playerPing* pings, int localPlayerTeam, int spectateTargetTeam, int playerPingsInSpectate, bool isEnemyPings);
+	void DrawPings(playerPing* pings, int localPlayerTeam, int spectateTargetTeam, int playerPingsInSpectate, bool isEnemyPings, bool isDeathPing);
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
-	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex, bool isShotPing);
-	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing, bool isShotPing);
-	void NotifyPing(const int playerSlot, bool isShotPing);
+	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex, bool isShotPing, bool isDeathPing);
+	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing, bool isShotPing, bool isDeathPing, int shotUserID);
+	void NotifyPing(const int playerSlot, bool isShotPing, bool isDeathPing);
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};
 	playerPing m_iEnemyHitPings[MAX_PLAYERS] = {};
+	playerPing m_iDeathPings[MAX_PLAYERS] = {};
 
 	int m_iPosX, m_iPosY;
 
@@ -54,6 +56,7 @@ private:
 	int m_iFontTall;
 
 	vgui::HTexture m_hTexture = 0UL;
+	vgui::HTexture m_hDeathPingTexture = 0UL;
 	int m_iTexWidth, m_iTexHeight;
 	int m_iTexTall;
 };

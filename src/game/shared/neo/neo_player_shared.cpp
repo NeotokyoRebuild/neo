@@ -158,6 +158,7 @@ void CheckPingButton(CNEO_Player* player)
 		event->SetInt("pingy", tr.endpos.y);
 		event->SetInt("pingz", tr.endpos.z);
 		event->SetBool("ghosterping", player->IsCarryingGhost() || player->m_iNeoClass == NEO_CLASS_VIP);
+		event->SetInt("shotuserid", 0);
 #ifdef GAME_DLL
 		gameeventmanager->FireEvent(event);
 #else

@@ -1994,6 +1994,21 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		StartShowDmgStats(&info);
 	}
 
+	IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
+	if (event)
+	{
+		const Vector& pos = info.GetDamagePosition();
+		event->SetInt("userid", GetUserID());
+		event->SetInt("playerteam", GetTeamNumber());
+		event->SetInt("pingx", pos.x);
+		event->SetInt("pingy", pos.y);
+		event->SetInt("pingz", pos.z);
+		event->SetBool("ghosterping", false);
+		event->SetInt("shotuserid", 0);
+		event->SetBool("deathping", true);
+		gameeventmanager->FireEvent(event);
+	}
+
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
@@ -2951,7 +2966,8 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 							evt->SetInt("pingy", pos.y);
 							evt->SetInt("pingz", pos.z);
 							evt->SetBool("ghosterping", false);
-							evt->SetBool("shotping", true);
+							evt->SetInt("shotuserid", GetUserID());
+							evt->SetBool("deathping", false);
 
 							gameeventmanager->FireEvent(evt);
 						}
