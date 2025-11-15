@@ -4,20 +4,35 @@
 	{
 		"Offsets"
 		{
-			"EntityListeners"
+			"Blocked"
 			{
-				"windows64"	"#VTableField.CGlobalEntityList::m_entityListeners#"
-				"linux64"	"#VTableField.CGlobalEntityList::m_entityListeners#"
+				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::Blocked(CBaseEntity*).windows#"
+				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::Blocked(CBaseEntity*).linux#"
+			}
+			"CanBeAutobalanced"
+			{
+				"windows64"	"#VTableMethod.CBaseMultiplayerPlayer::CBaseMultiplayerPlayer::CanBeAutobalanced().windows#"
+				"linux64"	"#VTableMethod.CBaseMultiplayerPlayer::CBaseMultiplayerPlayer::CanBeAutobalanced().linux#"
 			}
 			"EndTouch"
 			{
 				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::EndTouch(CBaseEntity*).windows#"
 				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::EndTouch(CBaseEntity*).linux#"
 			}
+			"EntityListeners"
+			{
+				"windows64"	"#VTableField.CGlobalEntityList::m_entityListeners#"
+				"linux64"	"#VTableField.CGlobalEntityList::m_entityListeners#"
+			}
 			"FireBullets"
 			{
 				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::FireBullets(FireBulletsInfo_t const&).windows#"
 				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::FireBullets(FireBulletsInfo_t const&).linux#"
+			}
+			"GetMaxHealth"
+			{
+				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::GetMaxHealth() const.windows#"
+				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::GetMaxHealth() const.linux#"
 			}
 			"GroundEntChanged"
 			{
@@ -34,20 +49,30 @@
 				"windows64"	"#VTableMethod.CBaseCombatCharacter::CBaseCombatCharacter::OnTakeDamage_Alive(CTakeDamageInfo const&).windows#"
 				"linux64"	"#VTableMethod.CBaseCombatCharacter::CBaseCombatCharacter::OnTakeDamage_Alive(CTakeDamageInfo const&).linux#"
 			}
-			"PreThink"
-			{
-				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::PreThink().windows#"
-				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::PreThink().linux#"
-			}
 			"PostThink"
 			{
 				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::PostThink().windows#"
 				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::PostThink().linux#"
 			}
+			"PreThink"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::PreThink().windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::PreThink().linux#"
+			}
+			"Reload"
+			{
+				"windows64"	"#VTableMethod.CBaseCombatWeapon::CBaseCombatWeapon::Reload().windows#"
+				"linux64"	"#VTableMethod.CBaseCombatWeapon::CBaseCombatWeapon::Reload().linux#"
+			}
 			"SetTransmit"
 			{
 				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::SetTransmit(CCheckTransmitInfo*, bool).windows#"
 				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::SetTransmit(CCheckTransmitInfo*, bool).linux#"
+			}
+			"ShouldCollide"
+			{
+				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::ShouldCollide(int, int) const.windows#"
+				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::ShouldCollide(int, int) const.linux#"
 			}
 			"Spawn"
 			{
@@ -74,6 +99,16 @@
 				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::TraceAttack(CTakeDamageInfo const&, Vector const&, CGameTrace*, CDmgAccumulator*).windows#"
 				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::TraceAttack(CTakeDamageInfo const&, Vector const&, CGameTrace*, CDmgAccumulator*).linux#"
 			}
+			"Use"
+			{
+				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::Use(CBaseEntity*, CBaseEntity*, USE_TYPE, float).windows#"
+				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::Use(CBaseEntity*, CBaseEntity*, USE_TYPE, float).linux#"
+			}
+			"VPhysicsUpdate"
+			{
+				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::VPhysicsUpdate(IPhysicsObject*).windows#"
+				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::VPhysicsUpdate(IPhysicsObject*).linux#"
+			}
 			"Weapon_CanSwitchTo"
 			{
 				"windows64"	"#VTableMethod.CBaseCombatCharacter::CBaseCombatCharacter::Weapon_CanSwitchTo(CBaseCombatWeapon*).windows#"
@@ -98,41 +133,6 @@
 			{
 				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::Weapon_Switch(CBaseCombatWeapon*, int).windows#"
 				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::Weapon_Switch(CBaseCombatWeapon*, int).linux#"
-			}
-			"ShouldCollide"
-			{
-				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::ShouldCollide(int, int) const.windows#"
-				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::ShouldCollide(int, int) const.linux#"
-			}
-			"VPhysicsUpdate"
-			{
-				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::VPhysicsUpdate(IPhysicsObject*).windows#"
-				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::VPhysicsUpdate(IPhysicsObject*).linux#"
-			}
-			"Use"
-			{
-				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::Use(CBaseEntity*, CBaseEntity*, USE_TYPE, float).windows#"
-				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::Use(CBaseEntity*, CBaseEntity*, USE_TYPE, float).linux#"
-			}
-			"Reload"
-			{
-				"windows64"	"#VTableMethod.CBaseCombatWeapon::CBaseCombatWeapon::Reload().windows#"
-				"linux64"	"#VTableMethod.CBaseCombatWeapon::CBaseCombatWeapon::Reload().linux#"
-			}
-			"GetMaxHealth"
-			{
-				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::GetMaxHealth() const.windows#"
-				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::GetMaxHealth() const.linux#"
-			}
-			"Blocked"
-			{
-				"windows64"	"#VTableMethod.CBaseEntity::CBaseEntity::Blocked(CBaseEntity*).windows#"
-				"linux64"	"#VTableMethod.CBaseEntity::CBaseEntity::Blocked(CBaseEntity*).linux#"
-			}
-			"CanBeAutobalanced"
-			{
-				"windows64"	"#VTableMethod.CBaseMultiplayerPlayer::CBaseMultiplayerPlayer::CanBeAutobalanced().windows#"
-				"linux64"	"#VTableMethod.CBaseMultiplayerPlayer::CBaseMultiplayerPlayer::CanBeAutobalanced().linux#"
 			}
 		}
 	}
