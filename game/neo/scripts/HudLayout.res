@@ -963,9 +963,9 @@
 		"text_y_offset" "420"
 	}
 
-	neo_iff
+	NHudFriendlyMarker
 	{
-		"fieldName"		"neo_iff"
+		"fieldName"		"NHudFriendlyMarker"
 		"xpos"	"0"
 		"ypos"	"0"
 		"wide"	"640"

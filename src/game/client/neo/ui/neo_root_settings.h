@@ -3,6 +3,7 @@
 #include "tier1/convar.h"
 #include "neo_player_shared.h"
 #include "neo_hud_crosshair.h"
+#include "neo_hud_friendly_marker.h"
 
 // NEO TODO (nullsystem): Implement our own file IO dialog
 #include "vgui_controls/FileOpenDialog.h"
@@ -50,25 +51,12 @@ struct NeoSettings
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
-		bool bHipFireCrosshair;
 		int iLeanAutomatic;
-		bool bShowSquadList;
 		bool bShowPlayerSprays;
-		int iHealthMode;
-		int iIFFVerbosity;
-		bool bIFFHealthbars;
-		int iObjVerbosity;
-		bool bShowHints;
-		bool bShowPos;
-		int iShowFps;
 		int iDlFilter;
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
-		bool bEnableRangeFinder;
-		bool bExtendedKillfeed;
 		int iBackground;
-		int iKdinfoToggletype;
-		bool bShowHudContextHints;
 	};
 
 	struct Keys
@@ -180,6 +168,25 @@ struct NeoSettings
 		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
 	};
 
+	struct HUD
+	{
+		bool bShowSquadList;
+		int iHealthMode;
+		int iIFFVerbosity;
+		bool bIFFHealthbars;
+		int iObjVerbosity;
+		bool bShowHints;
+		bool bShowPos;
+		int iShowFps;
+		bool bEnableRangeFinder;
+		bool bExtendedKillfeed;
+		bool bShowHudContextHints;
+		int iKdinfoToggletype;
+
+		int optionChosen;
+		FriendlyMarkerInfo options[NeoIFFMarkerOption::NEOIFFMARKER_OPTION_TOTAL];
+	};
+
 	General general;
 	Keys keys;
 	Mouse mouse;
@@ -187,6 +194,7 @@ struct NeoSettings
 	Audio audio;
 	Video video;
 	Crosshair crosshair;
+	HUD hud;
 
 	KeyValues* backgrounds;
 	int iCBListSize;
@@ -205,7 +213,6 @@ struct NeoSettings
 		CONVARREF_DEF(neo_name);
 		CONVARREF_DEF(neo_clantag);
 		CONVARREF_DEF(cl_onlysteamnick);
-		CONVARREF_DEF(cl_neo_clantag_friendly_marker_spec_only);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
 		CONVARREF_DEF(neo_aim_hold);
@@ -215,8 +222,6 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_lean_automatic);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
 		CONVARREF_DEF(cl_neo_hud_health_mode);
-		CONVARREF_DEF(cl_neo_hud_iff_verbosity);
-		CONVARREF_DEF(cl_neo_hud_iff_healthbars);
 		CONVARREF_DEF(cl_neo_hud_worldpos_verbose);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
 		CONVARREF_DEF(cl_neo_showhints);
@@ -287,6 +292,14 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_crosshair_network);
 		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
 		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
+
+		// Friendly Markers
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_player_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_player_xray_marker);
 	};
 	CVR cvr;
 };
@@ -304,3 +317,4 @@ void NeoSettings_MouseController(NeoSettings *ns);
 void NeoSettings_Audio(NeoSettings *ns);
 void NeoSettings_Video(NeoSettings *ns);
 void NeoSettings_Crosshair(NeoSettings *ns);
+void NeoSettings_HUD(NeoSettings *ns);
