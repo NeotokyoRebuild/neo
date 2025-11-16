@@ -535,11 +535,12 @@ void CNEO_Player::Spawn(void)
 
 		float maxVal{};
 		[[maybe_unused]] bool hasMaxVal = bot_class.GetMax(maxVal);
-		Assert(hasMaxVal && minVal < maxVal);
+		Assert(hasMaxVal);
 
 		const int noClassChoice = minVal;
 		const int minClass = noClassChoice + 1;
 		const int maxClass = maxVal;
+		Assert(minClass <= maxClass);
 
 		const int botClass = bot_class.GetInt();
 		if (botClass != noClassChoice)
