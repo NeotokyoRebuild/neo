@@ -1,0 +1,29 @@
+"Games"
+{
+	"#default"
+	{
+		"Offsets"
+		{
+			"CSendPropExtra_UtlVector::m_Offset"
+			{
+				"windows64"	"28"
+				"linux64"	"28"
+			}
+		}
+	}
+	
+	"#default"
+	{
+		"#supported"
+		{
+			"game"	"neo"
+		}
+
+		"Keys"
+		{
+			"HudRadioMenuMsg"	"ShowMenu"
+			"RadioMenuTimeout"	"4"
+			"HudTextMsg"		"HudMsg"
+		}
+	}
+}
