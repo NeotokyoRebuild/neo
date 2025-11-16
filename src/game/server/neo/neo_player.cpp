@@ -3841,7 +3841,7 @@ void BotChangeClassFn(const CCommand& args)
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		auto* player = assert_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-		if (player && player->IsBot())
+		if (player && player->IsBot() && player->GetTeamNumber() >= FIRST_GAME_TEAM)
 			player->RequestSetClass(botClass);
 	}
 }
