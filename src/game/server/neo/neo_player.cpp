@@ -150,6 +150,10 @@ ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.2
 ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
 ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
+ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specified class number, or -1 to disable.", true, -1, true, NEO_CLASS_ENUM_COUNT-1);
+void BotChangeClassFn(const CCommand& args);
+ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots to switch to the specified class number.");
+
 void CNEO_Player::RequestSetClass(int newClass)
 {
 	if (newClass < 0 || newClass >= NEO_CLASS_ENUM_COUNT)
@@ -502,7 +506,6 @@ void CNEO_Player::Precache( void )
 	BaseClass::Precache();
 }
 
-extern ConVar bot_changeclass;
 void CNEO_Player::Spawn(void)
 {
 	int teamNumber = GetTeamNumber();
@@ -522,6 +525,27 @@ void CNEO_Player::Spawn(void)
 		}
 
 		State_Transition(STATE_ACTIVE);
+	}
+
+	if (IsBot())
+	{
+		float minVal{};
+		[[maybe_unused]] bool hasMinVal = bot_class.GetMin(minVal);
+		Assert(hasMinVal);
+
+		float maxVal{};
+		[[maybe_unused]] bool hasMaxVal = bot_class.GetMax(maxVal);
+		Assert(hasMaxVal && minVal < maxVal);
+
+		const int noClassChoice = minVal;
+		const int minClass = noClassChoice + 1;
+		const int maxClass = maxVal;
+
+		const int botClass = bot_class.GetInt();
+		if (botClass != noClassChoice)
+		{
+			m_iNextSpawnClassChoice = Clamp(botClass, minClass, maxClass);
+		}
 	}
 	
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
@@ -3803,5 +3827,21 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 			m_hSpectatorTakeoverPlayerImpersonatingMe->m_hSpectatorTakeoverPlayerTarget = nullptr;
 		}
 		m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
+	}
+}
+
+void BotChangeClassFn(const CCommand& args)
+{
+	if (args.ArgC() != 2)
+	{
+		Msg("Format: %s <number between %d and %d>\n", args.Arg(0), NEO_CLASS_RECON, NEO_CLASS_ENUM_COUNT - 1);
+		return;
+	}
+	const int botClass = V_atoi(args.Arg(1));
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		auto* player = assert_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player && player->IsBot())
+			player->RequestSetClass(botClass);
 	}
 }
