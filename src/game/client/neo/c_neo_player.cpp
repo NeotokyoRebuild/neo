@@ -432,7 +432,7 @@ C_NEO_Player::C_NEO_Player()
 	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
-	m_iNextSpawnClassChoice = -1;
+	m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 	m_iXP.GetForModify() = 0;
 
 	m_bInThermOpticCamo = m_bInVision = false;

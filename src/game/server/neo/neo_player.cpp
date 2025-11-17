@@ -150,7 +150,7 @@ ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.2
 ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
 ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
-ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specified class number, or -1 to disable.", true, -1, true, NEO_CLASS_ENUM_COUNT-1);
+ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specified class number, or -1 to disable.", true, NEO_CLASS_RANDOM, true, NEO_CLASS_ENUM_COUNT-1);
 void BotChangeClassFn(const CCommand& args);
 ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots to switch to the specified class number.");
 
@@ -174,7 +174,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup || status == NeoRoundStatus::Countdown))
 	{
 		m_iNeoClass = newClass;
-		m_iNextSpawnClassChoice = -1;
+		m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 
 		SetPlayerTeamModel();
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
@@ -254,7 +254,7 @@ void CNEO_Player::RequestSetStar(int newStar)
 
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 {
-	int classChosen = m_iNextSpawnClassChoice.Get() != -1 ? m_iNextSpawnClassChoice.Get() : m_iNeoClass.Get();
+	int classChosen = m_iNextSpawnClassChoice.Get() != NEO_CLASS_RANDOM ? m_iNextSpawnClassChoice.Get() : m_iNeoClass.Get();
 	const int iLoadoutClass = sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen;
 
 	const char *pszWepName = (IN_BETWEEN_AR(0, iLoadoutClass, NEO_LOADOUT__COUNT) && IN_BETWEEN_AR(0, loadoutNumber, MAX_WEAPON_LOADOUTS)) ?
@@ -467,7 +467,7 @@ CNEO_Player::CNEO_Player()
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
-	m_iNextSpawnClassChoice = -1;
+	m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
@@ -529,28 +529,23 @@ void CNEO_Player::Spawn(void)
 
 	if (IsBot())
 	{
-		float minVal{};
-		[[maybe_unused]] bool hasMinVal = bot_class.GetMin(minVal);
-		Assert(hasMinVal);
+		const int forcedBotClass = bot_class.GetInt();
 
-		float maxVal{};
-		[[maybe_unused]] bool hasMaxVal = bot_class.GetMax(maxVal);
-		Assert(hasMaxVal);
-
-		const int noClassChoice = minVal;
-		const int minClass = noClassChoice + 1;
-		const int maxClass = maxVal;
-		Assert(minClass <= maxClass);
-
-		const int botClass = bot_class.GetInt();
-		if (botClass != noClassChoice)
+		if (forcedBotClass == NEO_CLASS_RANDOM)
 		{
-			m_iNextSpawnClassChoice = Clamp(botClass, minClass, maxClass);
+			if (auto* thisBot = ToNEOBot(this))
+				m_iNextSpawnClassChoice = thisBot->ChooseRandomClass();
+			else
+				AssertMsg(false, "this IsBot() but can't convert to NEO bot!?");
+		}
+		else
+		{
+			m_iNextSpawnClassChoice = forcedBotClass;
 		}
 	}
 	
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
-	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
+	if ((m_iNextSpawnClassChoice != NEO_CLASS_RANDOM) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
 		m_iNeoClass = m_iNextSpawnClassChoice;
 	}
@@ -3463,9 +3458,10 @@ void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 void CNEO_Player::BecomeJuggernaut()
 {
 	NEORules()->JuggernautActivated(this);
-	if (m_iNextSpawnClassChoice == -1)
+	if (m_iNextSpawnClassChoice == NEO_CLASS_RANDOM)
 	{
 		m_iNextSpawnClassChoice = GetClass(); // Don't let the player respawn as the juggernaut
+		Assert(m_iNextSpawnClassChoice != NEO_CLASS_JUGGERNAUT);
 	}
 	RemoveFlag(FL_DUCKING);
 	m_Local.m_bDucked = false;
@@ -3833,16 +3829,43 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 
 void BotChangeClassFn(const CCommand& args)
 {
+	int minValue, maxValue;
+	GetCvarBounds(&bot_class, minValue, maxValue);
+
+	const auto nag = [&args, minValue, maxValue]() {
+		Msg("Format: %s <number between %d and %d>\n", args.Arg(0), minValue, maxValue);
+	};
+
 	if (args.ArgC() != 2)
 	{
-		Msg("Format: %s <number between %d and %d>\n", args.Arg(0), NEO_CLASS_RECON, NEO_CLASS_ENUM_COUNT - 1);
+		nag();
 		return;
 	}
+
 	const int botClass = V_atoi(args.Arg(1));
+	if (botClass < minValue || botClass > maxValue)
+	{
+		nag();
+		return;
+	}
+
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		auto* player = assert_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 		if (player && player->IsBot() && player->GetTeamNumber() >= FIRST_GAME_TEAM)
-			player->RequestSetClass(botClass);
+		{
+			// NEO_CLASS_RANDOM is not a valid class request, but we allow it here for the side effects of the
+			// m_iNextSpawnClassChoice reset below.
+			if (botClass != NEO_CLASS_RANDOM)
+			{
+				player->RequestSetClass(botClass);
+			}
+
+			// This is one-and-done callback (in contrast to "bot_class" cvar), so ensure random spawns aren't interrupted.
+			if (bot_class.GetInt() == NEO_CLASS_RANDOM)
+			{
+				player->m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
+			}
+		}
 	}
 }
