@@ -1333,7 +1333,6 @@ void C_NEO_Player::PostThink(void)
 
 	if (auto *pNeoWep = static_cast<C_NEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
-		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pNeoWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
@@ -1342,14 +1341,14 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
+		else if (m_nButtons & IN_AIM && !IsInAim())
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
-				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
+				Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_AIM);
 			}
 		}
-		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
+		else if (m_afButtonReleased & IN_AIM)
 		{
 			Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}

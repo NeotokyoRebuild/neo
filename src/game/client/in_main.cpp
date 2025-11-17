@@ -551,6 +551,18 @@ void IN_SpecNextDown(const CCommand &args) { KeyDown(&in_spec_next, args[1]); }
 void IN_SpecPrevUp(const CCommand &args) { KeyUp(&in_spec_prev, args[1]); }
 void IN_SpecPrevDown(const CCommand &args) { KeyDown(&in_spec_prev, args[1]); }
 
+void IN_AimToggle(const CCommand& args)
+{
+	if (::input->KeyState(&in_aim))
+	{
+		KeyUp(&in_aim, args[1]);
+	}
+	else
+	{
+		KeyDown(&in_aim, args[1]);
+	}
+}
+
 void IN_LeanLeftToggle(const CCommand& args)
 {
 	if (::input->KeyState(&in_lean_left))
@@ -1760,6 +1772,8 @@ static ConCommand enddrop("-toss", IN_DropUp);
 
 static ConCommand startaim("+aim", IN_AimDown);
 static ConCommand endaim("-aim", IN_AimUp);
+
+static ConCommand toggle_aim("toggle_aim", IN_AimToggle);
 
 static ConCommand startleanleft("+leanl", IN_LeanLeftDown);
 static ConCommand endleanleft("-leanl", IN_LeanLeftUp);

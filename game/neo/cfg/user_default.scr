@@ -63,12 +63,6 @@ DESCRIPTION INFO_OPTIONS
 		{ NUMBER -20 40 } // Alternatively SLIDER, but can't have both?
 		{ "0" }
 	}
-	"neo_aim_hold"
-	{
-		"Hold To Aim"
-		{ BOOL }
-		{ "0" }
-	}
 	"cl_autoreload_when_empty"
 	{
 		"Reload When Empty"
