@@ -775,26 +775,4 @@ private:
 																\
 	CCommandMemberInitializer_##_funcname m_##_funcname##_register;		\
 
-
-#ifdef NEO
-template <class T>
-constexpr void GetCvarBounds(const IConVar* var, T& outMin, T& outMax)
-{
-	const ConVarRef varRef(const_cast<IConVar*>(var));
-	Assert(varRef.IsValid());
-
-	float minVal{};
-	[[maybe_unused]] bool hasMinVal = varRef.GetMin(minVal);
-	Assert(hasMinVal);
-
-	float maxVal{};
-	[[maybe_unused]] bool hasMaxVal = varRef.GetMax(maxVal);
-	Assert(hasMaxVal);
-
-	Assert(minVal <= maxVal);
-	outMin = minVal;
-	outMax = maxVal;
-}
-#endif
-
 #endif // CONVAR_H

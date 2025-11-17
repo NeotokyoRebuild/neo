@@ -151,7 +151,7 @@ ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED
 ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
 ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specified class number, or -1 to disable.", true, NEO_CLASS_RANDOM, true, NEO_CLASS_LOADOUTABLE_COUNT-1);
-void BotChangeClassFn(const CCommand& args);
+static void BotChangeClassFn(const CCommand& args);
 ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots to switch to the specified class number.");
 
 void CNEO_Player::RequestSetClass(int newClass)
@@ -3827,7 +3827,7 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 	}
 }
 
-void BotChangeClassFn(const CCommand& args)
+static void BotChangeClassFn(const CCommand& args)
 {
 	constexpr int minValue = NEO_CLASS_RECON;
 	constexpr int maxValue = NEO_CLASS_LOADOUTABLE_COUNT - 1;
@@ -3853,19 +3853,6 @@ void BotChangeClassFn(const CCommand& args)
 	{
 		auto* player = assert_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 		if (player && player->IsBot() && player->GetTeamNumber() >= FIRST_GAME_TEAM)
-		{
-			// NEO_CLASS_RANDOM is not a valid class request, but we allow it here for the side effects of the
-			// m_iNextSpawnClassChoice reset below.
-			if (botClass != NEO_CLASS_RANDOM)
-			{
-				player->RequestSetClass(botClass);
-			}
-
-			// This is one-and-done callback (in contrast to "bot_class" cvar), so ensure random spawns aren't interrupted.
-			if (bot_class.GetInt() == NEO_CLASS_RANDOM)
-			{
-				player->m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
-			}
-		}
+			player->RequestSetClass(botClass);
 	}
 }
