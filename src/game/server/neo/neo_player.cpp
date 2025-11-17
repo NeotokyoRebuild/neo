@@ -150,7 +150,7 @@ ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.2
 ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
 ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
-ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specified class number, or -1 to disable.", true, NEO_CLASS_RANDOM, true, NEO_CLASS_ENUM_COUNT-1);
+ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specified class number, or -1 to disable.", true, NEO_CLASS_RANDOM, true, NEO_CLASS_LOADOUTABLE_COUNT-1);
 void BotChangeClassFn(const CCommand& args);
 ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots to switch to the specified class number.");
 
@@ -3829,8 +3829,8 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 
 void BotChangeClassFn(const CCommand& args)
 {
-	int minValue, maxValue;
-	GetCvarBounds(&bot_class, minValue, maxValue);
+	constexpr int minValue = NEO_CLASS_RECON;
+	constexpr int maxValue = NEO_CLASS_LOADOUTABLE_COUNT - 1;
 
 	const auto nag = [&args, minValue, maxValue]() {
 		Msg("Format: %s <number between %d and %d>\n", args.Arg(0), minValue, maxValue);
