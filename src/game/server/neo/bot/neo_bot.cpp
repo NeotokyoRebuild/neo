@@ -176,7 +176,6 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 				pBot->SetAttribute(CNEOBot::QUOTA_MANANGED);
 			}
 
-			pBot->RequestClassOnProfile();
 			engine->SetFakeClientConVarValue(pBot->edict(), "name", pBot->GetPlayerName() );
 			pBot->RequestSetSkin(RandomInt(0, 2));
 			pBot->HandleCommand_JoinTeam(iTeam);
@@ -2546,11 +2545,6 @@ NeoClass CNEOBot::ChooseRandomClass() const
 
 	AssertMsg(false, "fell through the logic");
 	return NEO_CLASS_RECON;
-}
-
-void CNEOBot::RequestClassOnProfile()
-{
-	RequestSetClass(ChooseRandomClass());
 }
 
 CNEOBotIntention::CNEOBotIntention(CNEOBot *bot)
