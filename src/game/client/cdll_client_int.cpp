@@ -892,6 +892,36 @@ extern IGameSystem *ViewportClientSystem();
 //-----------------------------------------------------------------------------
 ISourceVirtualReality *g_pSourceVR = NULL;
 
+#ifdef NEO
+// Restrict external cheaty ConVars or ConCommands, where we don't have ctor access to set the flags.
+static void RestrictNeoClientCheats()
+{
+	if (!g_pCVar)
+	{
+		Assert(false);
+		return;
+	}
+
+	// NEO TODO (Rain): list currently incomplete...
+	// These cheat names can be either ConVars or ConCommands
+	constexpr const char* cheats[]{
+		"building_cubemaps",
+	};
+
+	constexpr auto flags = FCVAR_CHEAT;
+	for (int i = 0; i < ARRAYSIZE(cheats); ++i)
+	{
+		const char* cheatName = cheats[i];
+		if (auto* var = g_pCVar->FindVar(cheatName))
+			var->AddFlags(flags);
+		else if (auto* cmd = g_pCVar->FindCommand(cheatName))
+			cmd->AddFlags(flags);
+		else
+			AssertMsg(false, "convar or concmd named \"%s\" was not found\n", cheatName);
+	}
+}
+#endif
+
 // Purpose: Called when the DLL is first loaded.
 // Input  : engineFactory - 
 // Output : int
@@ -1342,6 +1372,7 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_MAX_CLANTAG_LENGTH>);
 		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_XHAIR_SEQMAX>);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
+		RestrictNeoClientCheats();
 	}
 	else
 	{
