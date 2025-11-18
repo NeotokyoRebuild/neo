@@ -550,10 +550,10 @@ void CNEO_Player::Spawn(void)
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
-	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS);
-	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS);
-	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS);
-	for (int i = 0; i < MAX_PLAYERS; ++i)
+	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
+	for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
 	{
 		m_rfAttackersScores.GetForModify(i) = 0;
 		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;

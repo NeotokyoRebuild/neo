@@ -200,9 +200,9 @@ public:
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
 
-	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS);
-	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS);
-	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS);
+	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS_ARRAY_SAFE);
 	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
@@ -249,7 +249,7 @@ private:
 	mutable int m_szNeoNameLocalDupeIdx;
 
 public:
-	bool m_rfNeoPlayerIdxsKilledByLocal[MAX_PLAYERS + 1];
+	bool m_rfNeoPlayerIdxsKilledByLocal[MAX_PLAYERS_ARRAY_SAFE];
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

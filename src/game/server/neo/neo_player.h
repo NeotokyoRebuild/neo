@@ -281,9 +281,10 @@ public:
 	CNetworkVar(float, m_flJumpLastTime);
 	CNetworkVar(float, m_flNextPingTime);
 
-	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS);
-	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS);
-	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS);
+	// Used as 1-indexed, need MAX_PLAYERS_ARRAY_SAFE
+	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS_ARRAY_SAFE);
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);

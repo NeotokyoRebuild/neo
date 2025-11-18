@@ -1358,15 +1358,15 @@ void CNEORules::Think(void)
 					pGhostCap->SetActive(false);
 				}
 
-				// And then announce team victory
-				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
-
 				IGameEvent* event = gameeventmanager->CreateEvent("ghost_capture");
 				if (event)
 				{
 					event->SetInt("userid", UTIL_PlayerByIndex(m_iGhosterPlayer)->GetUserID());
 					gameeventmanager->FireEvent(event);
 				}
+
+				// And then announce team victory
+				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
 
 				if (m_iEscortingTeam && m_iEscortingTeam == captorTeam)
 				{
@@ -1530,42 +1530,29 @@ void CNEORules::Think(void)
 			}
 		}
 	}
-	else if (!IsRoundLive())
+	else if (IsRoundLive())
 	{
-		if (!IsRoundOver())
+		COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
+		if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM && GetGameType() != NEO_GAME_TYPE_JGR)
 		{
-			if (GetGlobalTeam(TEAM_JINRAI)->GetAliveMembers() > 0 && GetGlobalTeam(TEAM_NSF)->GetAliveMembers() > 0)
+			for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
 			{
-				SetRoundStatus(NeoRoundStatus::RoundLive);
+				if (GetGlobalTeam(team)->GetAliveMembers() == 0)
+				{
+					SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
+				}
 			}
 		}
-	}
-	else
-	{
-		if (IsRoundLive())
+		if (GetGameType() == NEO_GAME_TYPE_DM && sv_neo_dm_win_xp.GetInt() > 0)
 		{
-			COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
-			if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM && GetGameType() != NEO_GAME_TYPE_JGR)
+			// End game early if there's already a player past the winning XP
+			CNEO_Player *pHighestPlayers[MAX_PLAYERS + 1] = {};
+			int iWinningTotal = 0;
+			int iWinningXP = 0;
+			GetDMHighestScorers(&pHighestPlayers, &iWinningTotal, &iWinningXP);
+			if (iWinningXP >= sv_neo_dm_win_xp.GetInt() && iWinningTotal == 1)
 			{
-				for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
-				{
-					if (GetGlobalTeam(team)->GetAliveMembers() == 0)
-					{
-						SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
-					}
-				}
-			}
-			if (GetGameType() == NEO_GAME_TYPE_DM && sv_neo_dm_win_xp.GetInt() > 0)
-			{
-				// End game early if there's already a player past the winning XP
-				CNEO_Player *pHighestPlayers[MAX_PLAYERS + 1] = {};
-				int iWinningTotal = 0;
-				int iWinningXP = 0;
-				GetDMHighestScorers(&pHighestPlayers, &iWinningTotal, &iWinningXP);
-				if (iWinningXP >= sv_neo_dm_win_xp.GetInt() && iWinningTotal == 1)
-				{
-					SetWinningDMPlayer(pHighestPlayers[0]);
-				}
+				SetWinningDMPlayer(pHighestPlayers[0]);
 			}
 		}
 	}

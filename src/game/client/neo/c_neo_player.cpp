@@ -109,9 +109,9 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
-	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	
@@ -1574,10 +1574,10 @@ void C_NEO_Player::Spawn( void )
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 
-	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS);
-	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS);
-	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS);
-	for (int i = 0; i < MAX_PLAYERS; ++i)
+	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
+	for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
 	{
 		m_rfAttackersScores.GetForModify(i) = 0;
 		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;

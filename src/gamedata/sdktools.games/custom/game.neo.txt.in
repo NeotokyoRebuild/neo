@@ -69,6 +69,11 @@
 				"windows64"	"#VTableMethod.CBasePlayer::CBaseAnimating::Ignite(float, bool, float, bool).windows#"
 				"linux64"	"#VTableMethod.CBasePlayer::CBaseAnimating::Ignite(float, bool, float, bool).linux#"
 			}
+			"PlayerRunCmd"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::PlayerRunCommand(CUserCmd*, IMoveHelper*).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::PlayerRunCommand(CUserCmd*, IMoveHelper*).linux#"
+			}
 			"RemovePlayerItem"
 			{
 				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::RemovePlayerItem(CBaseCombatWeapon*).windows#"
@@ -89,51 +94,39 @@
 				"windows64"	"#VTableMethod.CBasePlayer::CBaseCombatCharacter::Weapon_GetSlot(int) const.windows#"
 				"linux64"	"#VTableMethod.CBasePlayer::CBaseCombatCharacter::Weapon_GetSlot(int) const.linux#"
 			}
-			"PlayerRunCmd"
-			{
-				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::PlayerRunCommand(CUserCmd*, IMoveHelper*).windows#"
-				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::PlayerRunCommand(CUserCmd*, IMoveHelper*).linux#"
-			}
 		}
 		"Signatures"
 		{
-			"FireOutput"
+			"CreateEntityByName"
 			{
-				"linux64"	"@_ZN17CBaseEntityOutput10FireOutputE9variant_tP11CBaseEntityS2_f"
-				"windows64"	"@?FireOutput@CBaseEntityOutput@@QEAAXVvariant_t@@PEAVCBaseEntity@@1M@Z"
-			}
-			"LookupAttachment"
-			{
-				"linux64"	"@_ZN14CBaseAnimating16LookupAttachmentEPKc"
-				"windows64"	"@?LookupAttachment@CBaseAnimating@@QEAAHPEBD@Z"
-			}
-			
-			"LevelShutdown"
-			{
-				"linux64"	"@_ZN14CServerGameDLL13LevelShutdownEv"
-				"windows64"	"@?LevelShutdown@CServerGameDLL@@UEAAXXZ"
+				"linux64"	"@_Z18CreateEntityByNamePKci"
+				"windows64"	"@?CreateEntityByName@@YAPEAVCBaseEntity@@PEBDH@Z"
 			}
 			"DispatchSpawn"
 			{
 				"linux64"	"@_Z13DispatchSpawnP11CBaseEntity"
 				"windows64"	"@?DispatchSpawn@@YAHPEAVCBaseEntity@@_N@Z"
 			}
-			"CreateEntityByName"
+			"FireOutput"
 			{
-				"linux64"	"@_Z18CreateEntityByNamePKci"
-				"windows64"	"@?CreateEntityByName@@YAPEAVCBaseEntity@@PEBDH@Z"
-
+				"linux64"	"@_ZN17CBaseEntityOutput10FireOutputE9variant_tP11CBaseEntityS2_f"
+				"windows64"	"@?FireOutput@CBaseEntityOutput@@QEAAXVvariant_t@@PEAVCBaseEntity@@1M@Z"
 			}
-			"FindEntityByClassname"
+			"LevelShutdown"
 			{
-				"linux64"	"@_ZN17CGlobalEntityList21FindEntityByClassnameEP11CBaseEntityPKc"
-				"windows64"	"@?FindEntityByClassname@CGlobalEntityList@@QEAAPEAVCBaseEntity@@PEAV2@PEBDPEAVIEntityFindFilter@@@Z"
+				"linux64"	"@_ZN14CServerGameDLL13LevelShutdownEv"
+				"windows64"	"@?LevelShutdown@CServerGameDLL@@UEAAXXZ"
+			}
+			"LookupAttachment"
+			{
+				"linux64"	"@_ZN14CBaseAnimating16LookupAttachmentEPKc"
+				"windows64"	"@?LookupAttachment@CBaseAnimating@@QEAAHPEBD@Z"
 			}
 		}
 		"Keys"
 		{
-			"GameRulesProxy"		"CNEOGameRulesProxy"
 			"GameRulesDataTable"	"neo_gamerules_data"
+			"GameRulesProxy"		"CNEOGameRulesProxy"
 		}
 	}
 }

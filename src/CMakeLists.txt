@@ -539,13 +539,13 @@ if(NEO_INSTALL_LIBRARIES)
         get_target_property(SERVER_GAMEDATA_SDKHOOKS_OUTPUT_FILE server GAMEDATA_SDKHOOKS_OUTPUT_FILE)
         install(
             FILES ${SERVER_GAMEDATA_SDKHOOKS_OUTPUT_FILE}
-            DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/sdkhooks.games"
+            DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/sdkhooks.games/custom"
         )
 
         get_target_property(SERVER_GAMEDATA_SDKTOOLS_OUTPUT_FILE server GAMEDATA_SDKTOOLS_OUTPUT_FILE)
         install(
             FILES ${SERVER_GAMEDATA_SDKTOOLS_OUTPUT_FILE}
-            DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/sdktools.games"
+            DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/sdktools.games/custom"
         )
     endif()
 endif()
