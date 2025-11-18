@@ -654,12 +654,12 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		{
 			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], NEO_FRIENDLY_MARKER_DEFAULT);
 		}
-		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER], cvr->cl_neo_player_marker.GetString());
+		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER], cvr->cl_neo_spectator_marker.GetString());
 		if (!bImported)
 		{
 			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER], NEO_FRIENDLY_MARKER_DEFAULT);
 		}
-		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], cvr->cl_neo_player_xray_marker.GetString());
+		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], cvr->cl_neo_spectator_xray_marker.GetString());
 		if (!bImported)
 		{
 			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], NEO_FRIENDLY_MARKER_DEFAULT);
@@ -887,9 +887,9 @@ void NeoSettingsSave(const NeoSettings *ns)
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], szSequence);
 		cvr->cl_neo_squad_xray_marker.SetValue(szSequence);
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER], szSequence);
-		cvr->cl_neo_player_marker.SetValue(szSequence);
+		cvr->cl_neo_spectator_marker.SetValue(szSequence);
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], szSequence);
-		cvr->cl_neo_player_xray_marker.SetValue(szSequence);
+		cvr->cl_neo_spectator_xray_marker.SetValue(szSequence);
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");

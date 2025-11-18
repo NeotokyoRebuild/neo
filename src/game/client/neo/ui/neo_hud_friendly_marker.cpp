@@ -38,8 +38,8 @@ void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float fl
 	if (pConVar->GetName() == "cl_neo_friendly_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY_XRAY; }
 	else if (pConVar->GetName() == "cl_neo_squad_marker") { conVarChanged = NEOIFFMARKER_OPTION_SQUAD; }
 	else if (pConVar->GetName() == "cl_neo_squad_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_SQUAD_XRAY; }
-	else if (pConVar->GetName() == "cl_neo_player_marker") { conVarChanged = NEOIFFMARKER_OPTION_PLAYER; }
-	else if (pConVar->GetName() == "cl_neo_player_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_PLAYER_XRAY; }
+	else if (pConVar->GetName() == "cl_neo_spectator_marker") { conVarChanged = NEOIFFMARKER_OPTION_PLAYER; }
+	else if (pConVar->GetName() == "cl_neo_spectator_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_PLAYER_XRAY; }
 	
 	if (!ImportMarker(&iffHudElement->m_szMarkerSettings[conVarChanged], newValue))
 	{ // unsuccessfull, revert value
@@ -51,8 +51,8 @@ ConVar cl_neo_friendly_marker("cl_neo_friendly_marker", NEO_FRIENDLY_MARKER_DEFA
 ConVar cl_neo_friendly_xray_marker("cl_neo_friendly_xray_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for team-mates with xray enabled", iffMarkerChangeCallback);
 ConVar cl_neo_squad_marker("cl_neo_squad_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates", iffMarkerChangeCallback);
 ConVar cl_neo_squad_xray_marker("cl_neo_squad_xray_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates with xray enabled", iffMarkerChangeCallback);
-ConVar cl_neo_player_marker("cl_neo_player_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players", iffMarkerChangeCallback);
-ConVar cl_neo_player_xray_marker("cl_neo_player_xray_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players with xray enabled", iffMarkerChangeCallback);
+ConVar cl_neo_spectator_marker("cl_neo_spectator_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players", iffMarkerChangeCallback);
+ConVar cl_neo_spectator_xray_marker("cl_neo_spectator_xray_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players with xray enabled", iffMarkerChangeCallback);
 
 
 void CNEOHud_FriendlyMarker::UpdateStateForNeoHudElementDraw()
@@ -95,8 +95,8 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], cl_neo_friendly_xray_marker.GetString());
 	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_SQUAD], cl_neo_squad_marker.GetString());
 	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_SQUAD_XRAY], cl_neo_squad_xray_marker.GetString());
-	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_PLAYER], cl_neo_player_marker.GetString());
-	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_PLAYER_XRAY], cl_neo_player_xray_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_PLAYER], cl_neo_spectator_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_PLAYER_XRAY], cl_neo_spectator_xray_marker.GetString());
 
 	SetVisible(true);
 }

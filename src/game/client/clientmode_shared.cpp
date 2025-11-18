@@ -86,6 +86,7 @@ CLIENTEFFECT_REGISTER_BEGIN(PrecachePostProcessingEffectsGlow)
 CLIENTEFFECT_MATERIAL("dev/glow_color")
 CLIENTEFFECT_MATERIAL("dev/halo_add_to_screen")
 CLIENTEFFECT_MATERIAL("dev/halo_add_to_screen_outline")
+CLIENTEFFECT_MATERIAL("dev/halo_textured_add_to_screen")
 CLIENTEFFECT_REGISTER_END_CONDITIONAL(engine->GetDXSupportLevel() >= 90)
 #endif
 #define ACHIEVEMENT_ANNOUNCEMENT_MIN_TIME 10
@@ -1217,17 +1218,6 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 	else if ( Q_strcmp( "player_team", eventname ) == 0 )
 	{
 		C_BasePlayer *pPlayer = USERID2PLAYER( event->GetInt("userid") );
-#ifdef NEO
-#ifdef GLOWS_ENABLE
-		if (pPlayer && glow_outline_effect_enable.GetBool())
-		{ // NEO JANK (Adam) bots join their final team before they are created client side, so pPlayer here will be null for them, and setting clientsideglow on them in c_neo_player::Spawn() results in an incorrect glow colour. This works for players though
-			float r, g, b;
-			NEORules()->GetTeamGlowColor(event->GetInt("team"), r, g, b);
-			pPlayer->SetGlowEffectColor(r, g, b);
-			pPlayer->SetClientSideGlowEnabled(true);
-		}
-#endif // GLOWS_ENABLE
-#endif // NEO
 
 		if ( !hudChat )
 			return;
@@ -1317,6 +1307,14 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			// that's me
 			pPlayer->TeamChange( team );
 		}
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+		if (auto pNeoPlayer = static_cast<C_NEO_Player*>(pPlayer))
+		{
+			pNeoPlayer->UpdateGlowEffects(team);
+		}
+#endif GLOWS_ENABLE
+#endif // NEO
 	}
 #ifdef NEO
 	else if (Q_strcmp("player_changename", eventname) == 0 || Q_strcmp("player_changeneoname", eventname) == 0)

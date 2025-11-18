@@ -3299,7 +3299,7 @@ int C_BaseAnimating::DrawModel( int flags )
 		}
 		bool isMoving = false;
 		bool isHot = false;
-		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM ^2
+		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS) && flags & STUDIO_RENDER) // MOVING_SPEED_MINIMUM ^2
 		{
 			isMoving = true;
 			if (!IsFollowingEntity())

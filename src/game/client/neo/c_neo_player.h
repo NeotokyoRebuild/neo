@@ -178,6 +178,9 @@ public:
 	void CSpectatorTakeoverPlayerUpdateOnDataChanged();
 	void CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget);
 	CHandle<C_NEO_Player> m_hSpectatorTakeoverTarget;
+#ifdef GLOWS_ENABLE
+	void UpdateGlowEffects(int iNewTeam);
+#endif // GLOWS_ENABLE
 
 private:
 	void CheckThermOpticButtons();

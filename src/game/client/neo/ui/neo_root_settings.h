@@ -298,8 +298,8 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_xray_marker);
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_marker);
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_xray_marker);
-		CONVARREF_DEFNOGLOBALPTR(cl_neo_player_marker);
-		CONVARREF_DEFNOGLOBALPTR(cl_neo_player_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_spectator_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_spectator_xray_marker);
 	};
 	CVR cvr;
 };

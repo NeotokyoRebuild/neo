@@ -809,6 +809,27 @@ Vector C_NEO_Player::GetAutoaimVector( float flDelta )
 
 void C_NEO_Player::NotifyShouldTransmit( ShouldTransmitState_t state )
 {
+#ifdef GLOWS_ENABLE
+	if (state == ShouldTransmitState_t::SHOULDTRANSMIT_START && glow_outline_effect_enable.GetBool()) {
+		int localPlayerTeam = GetLocalPlayerTeam();
+		float r, g, b;
+		NEORules()->GetTeamGlowColor(GetTeamNumber(), r, g, b);
+		SetGlowEffectColor(r, g, b);
+		if (GetLocalPlayerTeam() == TEAM_SPECTATOR) {
+			SetClientSideGlowEnabled(true);
+		}
+		else if (localPlayerTeam == GetTeamNumber()) {
+			SetClientSideGlowEnabled(true);
+		}
+		else { // NEO TODO (Adam) check mp_forcecamera here? we don't draw enemy iff markers when spectating on a playing team, so don't highlight them either
+			SetClientSideGlowEnabled(false);
+		}
+	}
+	else {
+		SetClientSideGlowEnabled(false);
+		DestroyGlowEffect();
+	}
+#endif // GLOWS_ENABLE
 	BaseClass::NotifyShouldTransmit(state);
 }
 
@@ -1119,11 +1140,6 @@ void C_NEO_Player::PreThink( void )
 		if (IsLocalPlayer() && m_bFirstAliveTick)
 		{
 			m_bFirstAliveTick = false;
-			// NEO TODO (Adam) since the stuff in C_NEO_PLAYER::Spawn() only runs the first time a person spawns in the map, would it be worth moving some of the stuff from there here instead?
-#ifdef GLOWS_ENABLE
-			// Disable client side glow effects of all players
-			glow_outline_effect_enable.SetValue(false);
-#endif // GLOWS_ENABLE
 
 			// Reset any player explosion/shock effects
 			// NEO NOTE (Rain): The game already does this at CBasePlayer::Spawn, but that one's server-side,
@@ -1230,7 +1246,18 @@ void C_NEO_Player::ClientThink(void)
 				else { m_flTocFactor = 0.2f; } // 0.255f
 			}
 		}
-	}	
+#ifdef GLOWS_ENABLE
+		if (auto glowObject = GetGlowObject()) {
+			glowObject->SetUseTexturedHighlight(true);
+		}
+#endif // GLOWS_ENABLE
+	} else {
+#ifdef GLOWS_ENABLE
+		if (auto glowObject = GetGlowObject()) {
+			glowObject->SetUseTexturedHighlight(false);
+		}
+#endif // GLOWS_ENABLE
+	}
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
@@ -1419,6 +1446,40 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 {
 	BaseClass::TeamChange(iNewTeam);
 }
+
+#ifdef GLOWS_ENABLE
+void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
+{
+	if (!glow_outline_effect_enable.GetBool())
+	{
+		return;
+	}
+
+	if (IsLocalPlayer()) {
+		for (int i = 1; i < gpGlobals->maxClients; i++) {
+			CBasePlayer *player = UTIL_PlayerByIndex( i );
+			if (!player) {
+				continue;
+			}
+			if (iNewTeam == TEAM_SPECTATOR || iNewTeam == player->GetTeamNumber()) {
+				player->SetClientSideGlowEnabled(true);
+			}
+			else { // ditto wrt mp_forcecamera check
+				player->SetClientSideGlowEnabled(false);
+			}
+		}
+	}
+	else {
+		int localPlayerTeam = GetLocalPlayerTeam();
+		if (localPlayerTeam == TEAM_SPECTATOR || localPlayerTeam == iNewTeam) {
+			SetClientSideGlowEnabled(true);
+		}
+		else { // ditto wrt mp_forcecamera check
+			SetClientSideGlowEnabled(false);
+		}
+	}
+}
+#endif GLOWS_ENABLE
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
 {

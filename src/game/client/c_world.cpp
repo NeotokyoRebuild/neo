@@ -15,6 +15,9 @@
 #include "eventlist.h"
 // NVNT haptic include for notification of world precache
 #include "haptics/haptic_utils.h"
+#ifdef NEO
+#include "c_neo_player.h"
+#endif // NEO
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -119,6 +122,16 @@ void C_World::OnDataChanged( DataUpdateType_t updateType )
 		engine->SetOcclusionParameters( params );
 
 		modelinfo->SetLevelScreenFadeRange( m_flMinPropScreenSpaceWidth, m_flMaxPropScreenSpaceWidth );
+
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+		// Likely lost connection, update glow effects of all players
+		C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (pLocalPlayer) {
+			pLocalPlayer->UpdateGlowEffects(pLocalPlayer->GetTeamNumber());
+		}
+#endif // GLOWS_ENABLE
+#endif // NEO
 	}
 }
 

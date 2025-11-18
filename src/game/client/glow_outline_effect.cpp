@@ -21,33 +21,31 @@
 #ifdef GLOWS_ENABLE
 
 #ifdef NEO
-ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.05f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model", true, 0.f, true, 1.f);
+ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.2f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when obstructed", true, 0.f, true, 1.f);
+ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_center_alpha", "0.2f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when cloaked", true, 0.f, true, 1.f);
 
-extern ConVar mp_forcecamera;
-static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	if (!flOldValue && GetLocalPlayerTeam() != TEAM_SPECTATOR && mp_forcecamera.GetInt() != OBS_ALLOW_ALL)
+#endif // NEO
+#ifdef NEO
+ConVar glow_outline_effect_enable("glow_outline_effect_enable", "0", FCVAR_ARCHIVE, "Enable entity outline glow effects.", 
+	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]])
 	{
-		var->SetValue(false);
-		return;
-	}
-
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		if (auto player = UTIL_PlayerByIndex(i))
+		bool wantGlow = glow_outline_effect_enable.GetBool();
+		C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
-			float r, g, b;
-			NEORules()->GetTeamGlowColor(player->GetTeamNumber(), r, g, b);
-			player->SetGlowEffectColor(r, g, b);
-			player->SetClientSideGlowEnabled(!flOldValue);
+			if (auto player = UTIL_PlayerByIndex(i))
+			{
+				float r, g, b;
+				NEORules()->GetTeamGlowColor(player->GetTeamNumber(), r, g, b);
+				player->SetGlowEffectColor(r, g, b);
+				player->SetClientSideGlowEnabled(wantGlow ? pLocalPlayer->GetTeamNumber() == player->GetTeamNumber() || pLocalPlayer->GetTeamNumber() == TEAM_SPECTATOR : false);
+			}
 		}
 	}
-}
-#endif // NEO
-ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "0", 0, "Enable entity outline glow effects.", glowOutlineEffectToggleCallBack);
-#ifdef NEO
+);
 ConVar glow_outline_effect_width( "glow_outline_effect_width", "0.5f", FCVAR_ARCHIVE, "Width of glow outline effect in screen space.", true, 0.f, false, 0.f);
 #else
+ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "0", 0, "Enable entity outline glow effects.");
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );
 #endif // NEO
 
@@ -224,6 +222,13 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 				ShaderStencilState_t stencilState;
 				stencilState.m_bEnable = true;
 				stencilState.m_nReferenceValue = 1;
+#ifdef NEO
+				if (m_GlowObjectDefinitions[i].m_bUseTexturedHighlight)
+				{
+					stencilState.m_nReferenceValue = 5;
+				}
+				stencilState.m_nWriteMask = 7; // 4th bit tells us if the viewmodel is drawn here, do not overwrite it
+#endif // NEO
 				stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_ALWAYS;
 				stencilState.m_PassOp = STENCILOPERATION_REPLACE;
 				stencilState.m_FailOp = STENCILOPERATION_KEEP;
@@ -238,13 +243,20 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 				ShaderStencilState_t stencilState;
 				stencilState.m_bEnable = true;
 				stencilState.m_nReferenceValue = 1;
+#ifdef NEO
+				if (m_GlowObjectDefinitions[i].m_bUseTexturedHighlight)
+				{
+					stencilState.m_nReferenceValue = 5;
+				}
+				stencilState.m_nWriteMask = 7; // 4th bit tells us if the viewmodel is drawn here, do not overwrite it
+#endif // NEO
 				stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_ALWAYS;
 				stencilState.m_PassOp = STENCILOPERATION_KEEP;
 				stencilState.m_FailOp = STENCILOPERATION_KEEP;
 				stencilState.m_ZFailOp = STENCILOPERATION_REPLACE;
 
 				stencilState.SetStencilState( pRenderContext );
-
+				
 				m_GlowObjectDefinitions[i].DrawModel();
 			}
 			else if ( m_GlowObjectDefinitions[i].m_bRenderWhenUnoccluded )
@@ -260,7 +272,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 				stencilState.m_ZFailOp = STENCILOPERATION_REPLACE;
 
 				stencilState.SetStencilState( pRenderContext );
-
+				
 				m_GlowObjectDefinitions[i].DrawModel();
 			}
 		}
@@ -279,12 +291,19 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 			ShaderStencilState_t stencilState;
 			stencilState.m_bEnable = true;
 			stencilState.m_nReferenceValue = 2;
+#ifdef NEO
+			if (m_GlowObjectDefinitions[i].m_bUseTexturedHighlight)
+			{
+				stencilState.m_nReferenceValue = 6;
+			}
+			stencilState.m_nWriteMask = 7; // 4th bit tells us if the viewmodel is drawn here, do not overwrite it
+#endif // NEO
 			stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_ALWAYS;
 			stencilState.m_PassOp = STENCILOPERATION_REPLACE;
 			stencilState.m_FailOp = STENCILOPERATION_KEEP;
 			stencilState.m_ZFailOp = STENCILOPERATION_KEEP;
 			stencilState.SetStencilState( pRenderContext );
-
+			
 			m_GlowObjectDefinitions[i].DrawModel();
 		}
 	}
@@ -329,6 +348,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		//=======================================================================================================//
 		IMaterial *pMatHaloAddToScreen = materials->FindMaterial( "dev/halo_add_to_screen", TEXTURE_GROUP_OTHER, true );
 #ifdef NEO
+		IMaterial *pMatHaloTexturedAddToScreen = materials->FindMaterial( "dev/halo_textured_add_to_screen", TEXTURE_GROUP_OTHER, true );
 		IMaterial *pMatHaloAddToScreenOutline = materials->FindMaterial( "dev/halo_add_to_screen_outline", TEXTURE_GROUP_OTHER, true );
 #endif // NEO
 
@@ -339,9 +359,9 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		// Set stencil state
 		ShaderStencilState_t stencilState;
 		stencilState.m_bEnable = true;
-		stencilState.m_nWriteMask = 0x0; // We're not changing stencil
+		stencilState.m_nWriteMask = 0; // We're not changing stencil
 		stencilState.m_nTestMask = 0xFF; 
-		stencilState.m_nReferenceValue = 0x0;
+		stencilState.m_nReferenceValue = 0;
 		stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_EQUAL;
 		stencilState.m_PassOp = STENCILOPERATION_KEEP;
 		stencilState.m_FailOp = STENCILOPERATION_KEEP;
@@ -361,12 +381,48 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 				pRtQuarterSize1->GetActualHeight());
 		}
 
+		// Set stencil state
+		stencilState.m_bEnable = true;
+		stencilState.m_nWriteMask = 0;
+		stencilState.m_nTestMask = 9;
+		stencilState.m_nReferenceValue = 1;
+		stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_EQUAL;
+		stencilState.SetStencilState( pRenderContext );
+
 		const float alpha = glow_outline_effect_center_alpha.GetFloat();
 		if (alpha)
 		{
-			stencilStateDisable.SetStencilState( pRenderContext );
+			stencilState.SetStencilState( pRenderContext );
 			pDimVar->SetFloatValue(alpha);
 			pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth+1, nViewportHeight+1,
+				0, 0, pRtQuarterSize1->GetActualWidth(), pRtQuarterSize1->GetActualHeight(),
+				pRtQuarterSize1->GetActualWidth(),
+				pRtQuarterSize1->GetActualHeight());
+		}
+		
+		// Set stencil state
+		stencilState.m_bEnable = true;
+		stencilState.m_nWriteMask = 0;
+		stencilState.m_nTestMask = 12;
+		stencilState.m_nReferenceValue = 4;
+		stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_EQUAL;
+		stencilState.SetStencilState( pRenderContext );
+
+		const float alpha2 = glow_outline_effect_textured_center_alpha.GetFloat();
+		if (alpha2)
+		{
+			stencilState.SetStencilState( pRenderContext );
+			IMaterialVar *pDimVar = pMatHaloTexturedAddToScreen->FindVar( "$C0_X", NULL );
+			pDimVar->SetFloatValue(alpha2);
+
+			int width, height;
+			pRenderContext->GetWindowSize(width, height);
+			IMaterialVar *pResX = pMatHaloTexturedAddToScreen->FindVar( "$C1_X", NULL );
+			pResX->SetIntValue(width);
+			IMaterialVar *pResY = pMatHaloTexturedAddToScreen->FindVar( "$C1_Y", NULL );
+			pResY->SetIntValue(height);
+
+			pRenderContext->DrawScreenSpaceRectangle(pMatHaloTexturedAddToScreen, 0, 0, nViewportWidth+1, nViewportHeight+1,
 				0, 0, pRtQuarterSize1->GetActualWidth(), pRtQuarterSize1->GetActualHeight(),
 				pRtQuarterSize1->GetActualWidth(),
 				pRtQuarterSize1->GetActualHeight());
@@ -377,8 +433,8 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 			pRtQuarterSize1->GetActualWidth(),
 			pRtQuarterSize1->GetActualHeight() );
 
-		stencilStateDisable.SetStencilState( pRenderContext );
 #endif
+		stencilStateDisable.SetStencilState( pRenderContext );
 	}
 }
 
@@ -408,4 +464,32 @@ void CGlowObjectManager::GlowObjectDefinition_t::DrawModel()
 	}
 }
 
+#ifdef NEO
+// NEO TODO (Adam) sort m_GlowObjectDefinitions so objects further away get drawn first. m_GlowObjectDefinitions maintains a linked list and a nextFreeIndex, and so does each element
+// and glowing objects hold a reference to m_GlowObjectDefinitions via CGlowObject so sorting it would require updating all of these, or maybe a second list could be maintained instead?
+// alternatively we could do away with the linked list and make C_BaseEntity hold the reference instead of C_BaseCombatCharacter and C_TeamTrainWatcher.
+// This would also allow us to make any entity glow instead of just these two classes (or any attachment of these two classes)
+
+//void CGlowObjectManager::SortGlowEffects()
+//{
+//	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+//	if (!pLocalPlayer)
+//	{
+//		return;
+//	}
+//	static Vector localPlayerEyePosition = pLocalPlayer->EyePosition();
+//
+//	m_GlowObjectDefinitions.InPlaceQuickSort([](const GlowObjectDefinition_t* first, const GlowObjectDefinition_t* second)->int{ 
+//		C_BaseEntity* firstEntity = first->m_hEntity.Get();
+//		C_BaseEntity* secondEntity = second->m_hEntity.Get();
+//		if (!firstEntity || !secondEntity)
+//		{
+//			return 0;
+//		}
+//
+//		return secondEntity->GetAbsOrigin().DistToSqr(localPlayerEyePosition) - firstEntity->GetAbsOrigin().DistToSqr(localPlayerEyePosition);
+//	});
+//}
+
+#endif // NEO
 #endif // GLOWS_ENABLE
