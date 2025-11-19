@@ -48,12 +48,11 @@ void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float fl
 }
 
 ConVar cl_neo_friendly_marker("cl_neo_friendly_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for team-mates", iffMarkerChangeCallback);
-ConVar cl_neo_friendly_xray_marker("cl_neo_friendly_xray_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for team-mates with xray enabled", iffMarkerChangeCallback);
-ConVar cl_neo_squad_marker("cl_neo_squad_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates", iffMarkerChangeCallback);
-ConVar cl_neo_squad_xray_marker("cl_neo_squad_xray_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates with xray enabled", iffMarkerChangeCallback);
-ConVar cl_neo_spectator_marker("cl_neo_spectator_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players", iffMarkerChangeCallback);
-ConVar cl_neo_spectator_xray_marker("cl_neo_spectator_xray_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players with xray enabled", iffMarkerChangeCallback);
-
+ConVar cl_neo_friendly_xray_marker("cl_neo_friendly_xray_marker", NEO_FRIENDLY_XRAY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for team-mates with xray enabled", iffMarkerChangeCallback);
+ConVar cl_neo_squad_marker("cl_neo_squad_marker", NEO_SQUAD_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates", iffMarkerChangeCallback);
+ConVar cl_neo_squad_xray_marker("cl_neo_squad_xray_marker", NEO_SQUAD_XRAY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates with xray enabled", iffMarkerChangeCallback);
+ConVar cl_neo_spectator_marker("cl_neo_spectator_marker", NEO_SPECTATOR_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players", iffMarkerChangeCallback);
+ConVar cl_neo_spectator_xray_marker("cl_neo_spectator_xray_marker", NEO_SPECTATOR_XRAY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players with xray enabled", iffMarkerChangeCallback);
 
 void CNEOHud_FriendlyMarker::UpdateStateForNeoHudElementDraw()
 {

@@ -642,28 +642,33 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], cvr->cl_neo_friendly_xray_marker.GetString());
 		if (!bImported)
 		{
-			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], NEO_FRIENDLY_MARKER_DEFAULT);
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], NEO_FRIENDLY_XRAY_MARKER_DEFAULT);
 		}
 		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], cvr->cl_neo_squad_marker.GetString());
 		if (!bImported)
 		{
-			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], NEO_FRIENDLY_MARKER_DEFAULT);
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], NEO_SQUAD_MARKER_DEFAULT);
 		}
 		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], cvr->cl_neo_squad_xray_marker.GetString());
 		if (!bImported)
 		{
-			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], NEO_FRIENDLY_MARKER_DEFAULT);
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], NEO_SQUAD_XRAY_MARKER_DEFAULT);
 		}
 		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER], cvr->cl_neo_spectator_marker.GetString());
 		if (!bImported)
 		{
-			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER], NEO_FRIENDLY_MARKER_DEFAULT);
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER], NEO_SPECTATOR_MARKER_DEFAULT);
 		}
 		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], cvr->cl_neo_spectator_xray_marker.GetString());
 		if (!bImported)
 		{
-			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], NEO_FRIENDLY_MARKER_DEFAULT);
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], NEO_SPECTATOR_XRAY_MARKER_DEFAULT);
 		}
+
+		pHUD->bEnableXray = cvr->glow_outline_effect_enable.GetBool();
+		pHUD->flOutlineWidth = cvr->glow_outline_effect_width.GetFloat();
+		pHUD->flCenterOpacity = cvr->glow_outline_effect_center_alpha.GetFloat();
+		pHUD->flTexturedOpacity = cvr->glow_outline_effect_textured_center_alpha.GetFloat();
 	}
 }
 
@@ -890,6 +895,11 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_spectator_marker.SetValue(szSequence);
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_PLAYER_XRAY], szSequence);
 		cvr->cl_neo_spectator_xray_marker.SetValue(szSequence);
+
+		cvr->glow_outline_effect_enable.SetValue(pHUD->bEnableXray);
+		cvr->glow_outline_effect_width.SetValue(pHUD->flOutlineWidth);
+		cvr->glow_outline_effect_center_alpha.SetValue(pHUD->flCenterOpacity);
+		cvr->glow_outline_effect_textured_center_alpha.SetValue(pHUD->flTexturedOpacity);
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
@@ -1381,4 +1391,10 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::RingBoxBool(L"Show name", &pMarker->bShowName);
 	NeoUI::RingBoxBool(L"Prepend clantag", &pMarker->bPrependClantagToName);
 	NeoUI::SliderInt(L"Max name length (including clantag)", &pMarker->iMaxNameLength, 0, MAX_MARKER_STRLEN, 1);
+
+	NeoUI::HeadingLabel(L"Player Xray");
+	NeoUI::RingBoxBool(L"Enable Xray",  &pHud->bEnableXray);
+	NeoUI::Slider(L"Outline Width", &pHud->flOutlineWidth, 0, 2, 2, 0.25f);
+	NeoUI::Slider(L"Center Opacity", &pHud->flCenterOpacity, 0, 1, 2, 0.1f);
+	NeoUI::Slider(L"Texture Opacity (Cloak highlight)", &pHud->flTexturedOpacity, 0, 1, 2, 0.1f);
 }

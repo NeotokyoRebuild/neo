@@ -170,6 +170,7 @@ struct NeoSettings
 
 	struct HUD
 	{
+		// Miscellaneous
 		bool bShowSquadList;
 		int iHealthMode;
 		int iIFFVerbosity;
@@ -183,8 +184,15 @@ struct NeoSettings
 		bool bShowHudContextHints;
 		int iKdinfoToggletype;
 
+		// IFF Markers
 		int optionChosen;
 		FriendlyMarkerInfo options[NeoIFFMarkerOption::NEOIFFMARKER_OPTION_TOTAL];
+
+		// Player Xray
+		bool bEnableXray;
+		float flOutlineWidth;
+		float flCenterOpacity;
+		float flTexturedOpacity;
 	};
 
 	General general;
@@ -300,6 +308,12 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_xray_marker);
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_spectator_marker);
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_spectator_xray_marker);
+
+		// Xray
+		CONVARREF_DEF(glow_outline_effect_enable);
+		CONVARREF_DEF(glow_outline_effect_width);
+		CONVARREF_DEF(glow_outline_effect_center_alpha);
+		CONVARREF_DEF(glow_outline_effect_textured_center_alpha);
 	};
 	CVR cvr;
 };
