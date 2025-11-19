@@ -811,19 +811,7 @@ void C_NEO_Player::NotifyShouldTransmit( ShouldTransmitState_t state )
 {
 #ifdef GLOWS_ENABLE
 	if (state == ShouldTransmitState_t::SHOULDTRANSMIT_START && glow_outline_effect_enable.GetBool()) {
-		int localPlayerTeam = GetLocalPlayerTeam();
-		float r, g, b;
-		NEORules()->GetTeamGlowColor(GetTeamNumber(), r, g, b);
-		SetGlowEffectColor(r, g, b);
-		if (GetLocalPlayerTeam() == TEAM_SPECTATOR) {
-			SetClientSideGlowEnabled(true);
-		}
-		else if (localPlayerTeam == GetTeamNumber()) {
-			SetClientSideGlowEnabled(true);
-		}
-		else { // NEO TODO (Adam) check mp_forcecamera here? we don't draw enemy iff markers when spectating on a playing team, so don't highlight them either
-			SetClientSideGlowEnabled(false);
-		}
+		UpdateGlowEffects(GetTeamNumber());
 	}
 	else {
 		SetClientSideGlowEnabled(false);
@@ -1455,21 +1443,42 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 		return;
 	}
 
+	auto updateGlowColour = [](C_BasePlayer* pPlayer, int iTeam = 0) {
+		float r, g, b;
+		NEORules()->GetTeamGlowColor(iTeam ? iTeam : pPlayer->GetTeamNumber(), r, g, b);
+		pPlayer->SetGlowEffectColor(r, g, b);
+	};
+
 	if (IsLocalPlayer()) {
 		for (int i = 1; i < gpGlobals->maxClients; i++) {
-			CBasePlayer *player = UTIL_PlayerByIndex( i );
-			if (!player) {
+			CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+			if (!pPlayer || pPlayer == this) {
 				continue;
 			}
-			if (iNewTeam == TEAM_SPECTATOR || iNewTeam == player->GetTeamNumber()) {
-				player->SetClientSideGlowEnabled(true);
+
+			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED)
+			{
+				pPlayer->SetClientSideGlowEnabled(false);
+				continue;
+			}
+			
+			updateGlowColour(pPlayer);
+			if (iNewTeam == TEAM_SPECTATOR || iNewTeam == pPlayer->GetTeamNumber()) {
+				pPlayer->SetClientSideGlowEnabled(true);
 			}
 			else { // ditto wrt mp_forcecamera check
-				player->SetClientSideGlowEnabled(false);
+				pPlayer->SetClientSideGlowEnabled(false);
 			}
 		}
 	}
 	else {
+		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED)
+		{
+			SetClientSideGlowEnabled(false);
+			return;
+		}
+		
+		updateGlowColour(this, iNewTeam);
 		int localPlayerTeam = GetLocalPlayerTeam();
 		if (localPlayerTeam == TEAM_SPECTATOR || localPlayerTeam == iNewTeam) {
 			SetClientSideGlowEnabled(true);

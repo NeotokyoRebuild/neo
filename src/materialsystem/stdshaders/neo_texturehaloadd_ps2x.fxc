@@ -19,7 +19,8 @@ float4 main( PS_INPUT i ) : COLOR
 	// Scale by dim value before computing luminance below
 	result.rgb *= saturate( g_flDimValue );
 	
-	result.rgb *= ( 0.5 + ( 0.5 * sin(((i.baseTexCoord.x * res.x) - (i.baseTexCoord.y * res.y)))));
+	// Scale with the value of sin to create a pattern
+	result.rgb *= 0.5 + ( 0.5 * sin((i.baseTexCoord.x * res.x) - (i.baseTexCoord.y * res.y)));
 
 	// Store max color component in alpha for alpha blend of one/invSrcAlpha
 	float flLuminance = max( result.r, max( result.g, result.b ) );

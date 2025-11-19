@@ -65,6 +65,9 @@
 #if defined( HL2_CLIENT_DLL ) || defined( CSTRIKE_DLL ) || defined( TF_CLIENT_DLL )
 #define USE_MONITORS
 #endif
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif // NEO
 #include "rendertexture.h"
 #include "viewpostprocess.h"
 #include "viewdebug.h"
@@ -1217,8 +1220,8 @@ void CViewRender::DrawViewModels( const CViewSetup &viewRender, bool drawViewmod
 #ifdef NEO
 #ifdef GLOWS_ENABLE
 		pRenderContext->SetStencilEnable(true);
-		pRenderContext->SetStencilReferenceValue(8);
-		pRenderContext->SetStencilWriteMask(8);
+		pRenderContext->SetStencilReferenceValue(NEO_GLOW_VIEWMODEL);
+		pRenderContext->SetStencilWriteMask(NEO_GLOW_VIEWMODEL);
 		pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_ALWAYS);
 		pRenderContext->SetStencilPassOperation(STENCILOPERATION_REPLACE);
 		pRenderContext->SetStencilFailOperation(STENCILOPERATION_KEEP);
