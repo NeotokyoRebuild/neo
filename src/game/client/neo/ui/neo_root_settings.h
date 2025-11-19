@@ -188,11 +188,13 @@ struct NeoSettings
 		int optionChosen;
 		FriendlyMarkerInfo options[NeoIFFMarkerOption::NEOIFFMARKER_OPTION_TOTAL];
 
+#ifdef GLOWS_ENABLE
 		// Player Xray
 		bool bEnableXray;
 		float flOutlineWidth;
 		float flCenterOpacity;
 		float flTexturedOpacity;
+#endif // GLOWS_ENABLE
 	};
 
 	General general;
@@ -302,11 +304,12 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
 
 		// Friendly Markers
-		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_marker);
-		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_xray_marker);
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_marker);
-		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_marker);
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_spectator_marker);
+#ifdef GLOWS_ENABLE
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_xray_marker);
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_spectator_xray_marker);
 
 		// Xray
@@ -314,6 +317,7 @@ struct NeoSettings
 		CONVARREF_DEF(glow_outline_effect_width);
 		CONVARREF_DEF(glow_outline_effect_center_alpha);
 		CONVARREF_DEF(glow_outline_effect_textured_center_alpha);
+#endif // GLOWS_ENABLE
 	};
 	CVR cvr;
 };

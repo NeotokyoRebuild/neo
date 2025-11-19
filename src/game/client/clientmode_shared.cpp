@@ -1307,14 +1307,12 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			// that's me
 			pPlayer->TeamChange( team );
 		}
-#ifdef NEO
-#ifdef GLOWS_ENABLE
+#if defined NEO && defined GLOWS_ENABLE
 		if (auto pNeoPlayer = static_cast<C_NEO_Player*>(pPlayer))
 		{
 			pNeoPlayer->UpdateGlowEffects(team);
 		}
-#endif GLOWS_ENABLE
-#endif // NEO
+#endif // NEO && GLOWS_ENABLE
 	}
 #ifdef NEO
 	else if (Q_strcmp("player_changename", eventname) == 0 || Q_strcmp("player_changeneoname", eventname) == 0)

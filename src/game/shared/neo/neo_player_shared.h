@@ -332,6 +332,7 @@ static constexpr const int NEO_XHAIR_SEQMAX = 64;
 #define TUTORIAL_MAP_CLASSES "ntre_class_tut"
 #define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
 
+#ifdef GLOWS_ENABLE
 enum NeoGlowStencilBits
 {
 	NEO_GLOW_ZERO = 0,
@@ -340,6 +341,7 @@ enum NeoGlowStencilBits
 	NEO_GLOW_CLOAKED = 1 << 2,
 	NEO_GLOW_VIEWMODEL = 1 << 3,
 };
+#endif // GLOWS_ENABLE
 
 enum
 {

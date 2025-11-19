@@ -358,9 +358,9 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		// Set stencil state
 		ShaderStencilState_t stencilState;
 		stencilState.m_bEnable = true;
-		stencilState.m_nWriteMask = 0; // We're not changing stencil
+		stencilState.m_nWriteMask = 0x0; // We're not changing stencil
 		stencilState.m_nTestMask = 0xFF; 
-		stencilState.m_nReferenceValue = 0;
+		stencilState.m_nReferenceValue = 0x0;
 		stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_EQUAL;
 		stencilState.m_PassOp = STENCILOPERATION_KEEP;
 		stencilState.m_FailOp = STENCILOPERATION_KEEP;
@@ -380,7 +380,6 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 				pRtQuarterSize1->GetActualHeight());
 		}
 
-		// Set stencil state
 		stencilState.m_bEnable = true;
 		stencilState.m_nWriteMask = 0;
 		stencilState.m_nTestMask = NEO_GLOW_OBSTRUCTED + NEO_GLOW_VIEWMODEL;
@@ -399,7 +398,6 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 				pRtQuarterSize1->GetActualHeight());
 		}
 		
-		// Set stencil state
 		stencilState.m_bEnable = true;
 		stencilState.m_nWriteMask = 0;
 		stencilState.m_nTestMask = NEO_GLOW_CLOAKED + NEO_GLOW_VIEWMODEL;
@@ -432,7 +430,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 			pRtQuarterSize1->GetActualWidth(),
 			pRtQuarterSize1->GetActualHeight() );
 
-#endif
+#endif // NEO
 		stencilStateDisable.SetStencilState( pRenderContext );
 	}
 }
@@ -445,7 +443,7 @@ void CGlowObjectManager::GlowObjectDefinition_t::DrawModel()
 		m_hEntity->DrawModel( STUDIO_RENDER | STUDIO_IGNORE_NEO_EFFECTS );
 #else
 		m_hEntity->DrawModel( STUDIO_RENDER );
-#endif
+#endif // NEO
 		C_BaseEntity *pAttachment = m_hEntity->FirstMoveChild();
 
 		while ( pAttachment != NULL )
@@ -456,7 +454,7 @@ void CGlowObjectManager::GlowObjectDefinition_t::DrawModel()
 				pAttachment->DrawModel( STUDIO_RENDER | STUDIO_IGNORE_NEO_EFFECTS );
 #else
 				pAttachment->DrawModel( STUDIO_RENDER );
-#endif
+#endif // NEO
 			}
 			pAttachment = pAttachment->NextMovePeer();
 		}

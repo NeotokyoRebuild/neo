@@ -216,10 +216,12 @@ public:
 
 	// Add more accessors/mutators here as needed
 
+#ifdef NEO
 	void SetUseTexturedHighlight(bool value)
 	{
 		g_GlowObjectManager.SetUseTexturedHighlight( m_nGlowObjectHandle, value );
 	}
+#endif // NEO
 
 private:
 	int m_nGlowObjectHandle;

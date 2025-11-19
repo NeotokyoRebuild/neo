@@ -34,12 +34,14 @@ void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float fl
 	ConVarRef conVar( pConVar );
 	const char* newValue = conVar.GetString();
 
-	NeoIFFMarkerOption conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY;
-	if (pConVar->GetName() == "cl_neo_friendly_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY_XRAY; }
-	else if (pConVar->GetName() == "cl_neo_squad_marker") { conVarChanged = NEOIFFMARKER_OPTION_SQUAD; }
+	NeoIFFMarkerOption conVarChanged = NEOIFFMARKER_OPTION_SQUAD;
+	if (pConVar->GetName() == "cl_neo_friendly_marker") { conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY; }
+	else if (pConVar->GetName() == "cl_neo_spectator_marker") { conVarChanged = NEOIFFMARKER_OPTION_SPECTATOR; }
+#ifdef GLOWS_ENABLE
+	else if (pConVar->GetName() == "cl_neo_friendly_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY_XRAY; }
 	else if (pConVar->GetName() == "cl_neo_squad_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_SQUAD_XRAY; }
-	else if (pConVar->GetName() == "cl_neo_spectator_marker") { conVarChanged = NEOIFFMARKER_OPTION_PLAYER; }
-	else if (pConVar->GetName() == "cl_neo_spectator_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_PLAYER_XRAY; }
+	else if (pConVar->GetName() == "cl_neo_spectator_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_SPECTATOR_XRAY; }
+#endif // GLOWS_ENABLE
 	
 	if (!ImportMarker(&iffHudElement->m_szMarkerSettings[conVarChanged], newValue))
 	{ // unsuccessfull, revert value
@@ -47,12 +49,14 @@ void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float fl
 	}
 }
 
-ConVar cl_neo_friendly_marker("cl_neo_friendly_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for team-mates", iffMarkerChangeCallback);
-ConVar cl_neo_friendly_xray_marker("cl_neo_friendly_xray_marker", NEO_FRIENDLY_XRAY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for team-mates with xray enabled", iffMarkerChangeCallback);
 ConVar cl_neo_squad_marker("cl_neo_squad_marker", NEO_SQUAD_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates", iffMarkerChangeCallback);
-ConVar cl_neo_squad_xray_marker("cl_neo_squad_xray_marker", NEO_SQUAD_XRAY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates with xray enabled", iffMarkerChangeCallback);
+ConVar cl_neo_friendly_marker("cl_neo_friendly_marker", NEO_FRIENDLY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for team-mates", iffMarkerChangeCallback);
 ConVar cl_neo_spectator_marker("cl_neo_spectator_marker", NEO_SPECTATOR_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players", iffMarkerChangeCallback);
+#ifdef GLOWS_ENABLE
+ConVar cl_neo_squad_xray_marker("cl_neo_squad_xray_marker", NEO_SQUAD_XRAY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for squad-mates with xray enabled", iffMarkerChangeCallback);
+ConVar cl_neo_friendly_xray_marker("cl_neo_friendly_xray_marker", NEO_FRIENDLY_XRAY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for team-mates with xray enabled", iffMarkerChangeCallback);
 ConVar cl_neo_spectator_xray_marker("cl_neo_spectator_xray_marker", NEO_SPECTATOR_XRAY_MARKER_DEFAULT, FCVAR_ARCHIVE | FCVAR_DONTRECORD, "IFF Marker settings for spectated players with xray enabled", iffMarkerChangeCallback);
+#endif // GLOWS_ENABLE
 
 void CNEOHud_FriendlyMarker::UpdateStateForNeoHudElementDraw()
 {
@@ -90,12 +94,14 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 	Assert(m_hUniqueTex > 0);
 	vgui::surface()->DrawSetTextureFile(m_hUniqueTex, "vgui/hud/unique_star", 1, false);
 
-	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_FRIENDLY], cl_neo_friendly_marker.GetString());
-	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], cl_neo_friendly_xray_marker.GetString());
 	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_SQUAD], cl_neo_squad_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_FRIENDLY], cl_neo_friendly_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_SPECTATOR], cl_neo_spectator_marker.GetString());
+#ifdef GLOWS_ENABLE
 	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_SQUAD_XRAY], cl_neo_squad_xray_marker.GetString());
-	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_PLAYER], cl_neo_spectator_marker.GetString());
-	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_PLAYER_XRAY], cl_neo_spectator_xray_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], cl_neo_friendly_xray_marker.GetString());
+	ImportMarker(&m_szMarkerSettings[NEOIFFMARKER_OPTION_SPECTATOR_XRAY], cl_neo_spectator_xray_marker.GetString());
+#endif // GLOWS_ENABLE
 
 	SetVisible(true);
 }
@@ -185,20 +191,34 @@ void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team *team, const C_NEO_Player 
 	}
 }
 
+#ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 extern ConVar cl_neo_hud_health_mode;
 void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const
 {
 	NeoIFFMarkerOption markerUsedIndex = NEOIFFMARKER_OPTION_FRIENDLY;
 	if (localPlayer->IsObserver()){
-		if (glow_outline_effect_enable.GetBool()) { markerUsedIndex = NEOIFFMARKER_OPTION_PLAYER_XRAY; }
-		else { markerUsedIndex = NEOIFFMARKER_OPTION_PLAYER; }
+#ifdef GLOWS_ENABLE
+		if (glow_outline_effect_enable.GetBool()) { markerUsedIndex = NEOIFFMARKER_OPTION_SPECTATOR_XRAY; } else { 
+#endif //  GLOWS_ENABLE
+			markerUsedIndex = NEOIFFMARKER_OPTION_SPECTATOR;
+#ifdef GLOWS_ENABLE
+		}
+#endif //  GLOWS_ENABLE
 	}
 	else if (player->GetStar() == localPlayer->GetStar()) {
-		if (glow_outline_effect_enable.GetBool()) { markerUsedIndex = NEOIFFMARKER_OPTION_SQUAD_XRAY; }
-		else { markerUsedIndex = NEOIFFMARKER_OPTION_SQUAD; }
+#ifdef GLOWS_ENABLE
+		if (glow_outline_effect_enable.GetBool()) {	markerUsedIndex = NEOIFFMARKER_OPTION_SQUAD_XRAY; } else { 
+#endif //  GLOWS_ENABLE
+			markerUsedIndex = NEOIFFMARKER_OPTION_SQUAD;
+#ifdef GLOWS_ENABLE
+		}
+#endif //  GLOWS_ENABLE
 	}
+#ifdef GLOWS_ENABLE
 	else if (glow_outline_effect_enable.GetBool()) { markerUsedIndex = NEOIFFMARKER_OPTION_FRIENDLY_XRAY; }	
+#endif //  GLOWS_ENABLE
 	const FriendlyMarkerInfo* settings = &m_szMarkerSettings[markerUsedIndex];
 
 	const Vector pos = player->GetAbsOrigin() + Vector(0, 0, player->GetPlayerMaxs().z + settings->iInitialOffset);
