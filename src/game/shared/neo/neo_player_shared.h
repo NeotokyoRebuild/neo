@@ -335,7 +335,7 @@ static constexpr const int NEO_XHAIR_SEQMAX = 64;
 enum NeoGlowStencilBits
 {
 	NEO_GLOW_ZERO = 0,
-	NEO_GLOW_OBSTRUCTEDORWHOLE = 1 << 0,
+	NEO_GLOW_OBSTRUCTED = 1 << 0,
 	NEO_GLOW_NOTOBSTRUCTED = 1 << 1,
 	NEO_GLOW_CLOAKED = 1 << 2,
 	NEO_GLOW_VIEWMODEL = 1 << 3,

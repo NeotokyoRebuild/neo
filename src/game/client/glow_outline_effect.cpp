@@ -212,17 +212,13 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 			{
 				ShaderStencilState_t stencilState;
 				stencilState.m_bEnable = true;
-#ifdef NEO
-				stencilState.m_nReferenceValue = NEO_GLOW_OBSTRUCTEDORWHOLE;
-#else
 				stencilState.m_nReferenceValue = 1;
-#endif // NEO
 #ifdef NEO
 				if (m_GlowObjectDefinitions[i].m_bUseTexturedHighlight)
 				{
 					stencilState.m_nReferenceValue += NEO_GLOW_CLOAKED;
 				}
-				stencilState.m_nWriteMask = NEO_GLOW_OBSTRUCTEDORWHOLE + NEO_GLOW_CLOAKED;
+				stencilState.m_nWriteMask = 1 + NEO_GLOW_CLOAKED;
 #endif // NEO
 				stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_ALWAYS;
 				stencilState.m_PassOp = STENCILOPERATION_REPLACE;
@@ -238,7 +234,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 				ShaderStencilState_t stencilState;
 				stencilState.m_bEnable = true;
 #ifdef NEO
-				stencilState.m_nReferenceValue = NEO_GLOW_OBSTRUCTEDORWHOLE;
+				stencilState.m_nReferenceValue = NEO_GLOW_OBSTRUCTED;
 #else
 				stencilState.m_nReferenceValue = 1;
 #endif // NEO
@@ -247,7 +243,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 				{
 					stencilState.m_nReferenceValue += NEO_GLOW_CLOAKED;
 				}
-				stencilState.m_nWriteMask = NEO_GLOW_OBSTRUCTEDORWHOLE + NEO_GLOW_CLOAKED;
+				stencilState.m_nWriteMask = NEO_GLOW_OBSTRUCTED + NEO_GLOW_CLOAKED;
 #endif // NEO
 				stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_ALWAYS;
 				stencilState.m_PassOp = STENCILOPERATION_KEEP;
@@ -299,7 +295,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 			{
 				stencilState.m_nReferenceValue += NEO_GLOW_CLOAKED;
 			}
-			stencilState.m_nWriteMask = NEO_GLOW_OBSTRUCTEDORWHOLE + NEO_GLOW_NOTOBSTRUCTED + NEO_GLOW_CLOAKED;
+			stencilState.m_nWriteMask = NEO_GLOW_OBSTRUCTED + NEO_GLOW_NOTOBSTRUCTED + NEO_GLOW_CLOAKED;
 #endif // NEO
 			stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_ALWAYS;
 			stencilState.m_PassOp = STENCILOPERATION_REPLACE;
@@ -387,8 +383,8 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		// Set stencil state
 		stencilState.m_bEnable = true;
 		stencilState.m_nWriteMask = 0;
-		stencilState.m_nTestMask = NEO_GLOW_OBSTRUCTEDORWHOLE + NEO_GLOW_VIEWMODEL;
-		stencilState.m_nReferenceValue = NEO_GLOW_OBSTRUCTEDORWHOLE;
+		stencilState.m_nTestMask = NEO_GLOW_OBSTRUCTED + NEO_GLOW_VIEWMODEL;
+		stencilState.m_nReferenceValue = NEO_GLOW_OBSTRUCTED;
 		stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_EQUAL;
 		stencilState.SetStencilState( pRenderContext );
 
