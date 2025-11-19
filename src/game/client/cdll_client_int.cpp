@@ -906,6 +906,8 @@ static void RestrictNeoClientCheats()
 	// These cheat names can be either ConVars or ConCommands
 	constexpr const char* cheats[]{
 		"building_cubemaps",
+		"cl_showerror",
+		"net_showmsg",
 	};
 
 	constexpr auto flags = FCVAR_CHEAT;
