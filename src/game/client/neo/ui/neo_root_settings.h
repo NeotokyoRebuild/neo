@@ -56,6 +56,7 @@ struct NeoSettings
 		int iDlFilter;
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
+		bool bTachiFullAutoPreferred;
 		int iBackground;
 	};
 
@@ -234,6 +235,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_health_mode);
 		CONVARREF_DEF(cl_neo_hud_worldpos_verbose);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
+		CONVARREF_DEF(cl_neo_tachi_prefer_auto);
 		CONVARREF_DEF(cl_neo_showhints);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
