@@ -14,7 +14,7 @@ WeaponData
 	"bucket_position"	"0"
 	"Damage"		"100"
 	"Penetration"		"65.0"
-	"CycleTime"		"1.0"
+	"CycleTime"		"1.4"
 	
 	"TPMuzzleFlashScale"	"0.25"
 
