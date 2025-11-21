@@ -2073,7 +2073,7 @@ void CNEORules::SelectTheVIP()
 
 	if (m_pVIP)
 	{
-		m_iVIPPreviousClass = m_pVIP->m_iNextSpawnClassChoice.Get() >= 0 ? m_pVIP->m_iNextSpawnClassChoice.Get() : m_pVIP->m_iNeoClass.Get();
+		m_iVIPPreviousClass = m_pVIP->m_iNextSpawnClassChoice.Get() != NEO_CLASS_RANDOM ? m_pVIP->m_iNextSpawnClassChoice.Get() : m_pVIP->m_iNeoClass.Get();
 		m_pVIP->m_iNeoClass.Set(NEO_CLASS_VIP);
 		m_pVIP->m_iNextSpawnClassChoice.Set(NEO_CLASS_VIP);
 		m_pVIP->RequestSetClass(NEO_CLASS_VIP);
