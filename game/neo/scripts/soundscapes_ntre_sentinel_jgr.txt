@@ -1,0 +1,27 @@
+"nt_sentinel_ctg.outdoors"
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	"1"
+		"pitch"		"100"
+		"wave"		"skylines.wav"
+	}
+	"playlooping"
+	{
+		"volume"	"0.7"
+		"pitch"		"100"
+		"wave"		"rain_02.wav"
+	}
+}
+
+"nt_sentinel_ctg.indoors"
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".3"
+		"pitch"		"100"
+		"wave"		"office/ambience.wav"
+	}
+}
