@@ -388,7 +388,6 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bMarkerSpecOnlyClantag = cvr->cl_neo_clantag_friendly_marker_spec_only.GetBool();
 		pGeneral->iFov = cvr->neo_fov.GetInt();
 		pGeneral->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
-		pGeneral->bAimHold = cvr->neo_aim_hold.GetBool();
 		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
@@ -687,7 +686,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_clantag_friendly_marker_spec_only.SetValue(pGeneral->bMarkerSpecOnlyClantag);
 		cvr->neo_fov.SetValue(pGeneral->iFov);
 		cvr->neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
-		cvr->neo_aim_hold.SetValue(pGeneral->bAimHold);
 		cvr->cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
@@ -944,7 +942,6 @@ void NeoSettings_General(NeoSettings *ns)
 
 	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
-	NeoUI::RingBoxBool(L"Aim hold", &pGeneral->bAimHold);
 	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);

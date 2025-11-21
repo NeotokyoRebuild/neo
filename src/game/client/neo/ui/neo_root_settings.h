@@ -46,7 +46,6 @@ struct NeoSettings
 		bool bMarkerSpecOnlyClantag;
 		int iFov;
 		int iViewmodelFov;
-		bool bAimHold;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
@@ -209,7 +208,6 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_clantag_friendly_marker_spec_only);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
-		CONVARREF_DEF(neo_aim_hold);
 		CONVARREF_DEF(cl_autoreload_when_empty);
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);

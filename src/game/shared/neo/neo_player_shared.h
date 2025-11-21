@@ -247,12 +247,10 @@ enum NeoLeanDirectionE {
 };
 
 enum NeoWeponAimToggleE {
-	NEO_TOGGLE_DEFAULT = 0,
+	NEO_TOGGLE_NIL = 0,
 	NEO_TOGGLE_FORCE_AIM,
 	NEO_TOGGLE_FORCE_UN_AIM,
 };
-
-bool ClientWantsAimHold(const CNEO_Player* player);
 
 void CheckPingButton(CNEO_Player* player);
 
