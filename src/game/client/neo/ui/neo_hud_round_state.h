@@ -44,7 +44,7 @@ private:
 
 	void CheckActiveStar();
 	void DrawPlayerList();
-	int DrawPlayerRow(int playerIndex, int yOffset, bool small = false);
+	int DrawPlayerRow(int playerIndex, int yOffset, bool small = false, const Color* highlightColor = nullptr);
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
 					const int xOffset, const bool drawHealthClass);
 	void SetTextureToAvatar(int playerIndex);

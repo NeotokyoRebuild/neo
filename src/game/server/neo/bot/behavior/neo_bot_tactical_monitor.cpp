@@ -10,10 +10,12 @@
 #include "bot/behavior/neo_bot_tactical_monitor.h"
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
+#include "bot/behavior/neo_bot_command_follow.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_pause.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
 #endif
@@ -24,6 +26,7 @@
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
+extern ConVar sv_neo_bot_cmdr_debug_pause_uncommanded;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -273,6 +276,16 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	if ( result.IsRequestingChange() )
 	{
 		return result;
+	}
+
+	if (me->m_hLeadingPlayer.Get() || me->m_hCommandingPlayer.Get())
+	{
+		return SuspendFor(new CNEOBotCommandFollow, "Following commander");
+	}
+
+	if (sv_neo_bot_cmdr_debug_pause_uncommanded.GetBool())
+	{
+		return SuspendFor( new CNEOBotPause, "Paused by debug convar sv_neo_bot_cmdr_debug_pause_uncommanded" );
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
