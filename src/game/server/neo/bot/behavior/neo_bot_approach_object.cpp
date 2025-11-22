@@ -5,6 +5,7 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_approach_object.h"
+#include "bot/neo_bot_path_compute.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 
@@ -53,8 +54,7 @@ ActionResult< CNEOBot >	CNEOBotApproachObject::Update( CNEOBot *me, float interv
 	{
 		m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 
-		CNEOBotPathCost cost( me, FASTEST_ROUTE );
-		m_path.Compute( me, m_loot->GetAbsOrigin(), cost );
+		CNEOBotPathCompute( me, m_path, m_loot->GetAbsOrigin(), FASTEST_ROUTE );
 	}
 
 	// move to the loot

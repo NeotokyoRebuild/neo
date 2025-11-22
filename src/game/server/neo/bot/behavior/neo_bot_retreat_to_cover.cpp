@@ -4,6 +4,7 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
+#include "bot/neo_bot_path_compute.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 ConVar neo_bot_retreat_to_cover_range( "neo_bot_retreat_to_cover_range", "1000", FCVAR_CHEAT );
@@ -235,8 +236,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		{
 			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
 
-			CNEOBotPathCost cost( me, RETREAT_ROUTE );
-			m_path.Compute( me, m_coverArea->GetCenter(), cost );
+			CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
 		}
 
 		m_path.Update( me );

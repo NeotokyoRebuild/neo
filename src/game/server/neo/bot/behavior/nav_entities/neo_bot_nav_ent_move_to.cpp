@@ -3,6 +3,7 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
+#include "bot/neo_bot_path_compute.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 
@@ -90,8 +91,7 @@ ActionResult< CNEOBot >	CNEOBotNavEntMoveTo::Update( CNEOBot *me, float interval
 			{
 				m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 
-				CNEOBotPathCost cost( me, FASTEST_ROUTE );
-				m_path.Compute( me, m_goalPosition, cost );
+				CNEOBotPathCompute( me, m_path, m_goalPosition, FASTEST_ROUTE );
 			}
 
 			// move into position

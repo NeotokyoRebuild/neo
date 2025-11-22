@@ -3,6 +3,7 @@
 #include "bot/neo_bot.h"
 //#include "item_healthkit.h"
 #include "bot/behavior/neo_bot_get_health.h"
+#include "bot/neo_bot_path_compute.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar neo_bot_health_critical_ratio;
@@ -138,9 +139,8 @@ bool CNEOBotGetHealth::IsPossible( CNEOBot *me )
 		return false;
 	}
 
-	CNEOBotPathCost cost( me, FASTEST_ROUTE );
 	PathFollower path;
-	if ( !path.Compute( me, closestHealth->WorldSpaceCenter(), cost ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
+	if ( !CNEOBotPathCompute( me, path, closestHealth->WorldSpaceCenter(), FASTEST_ROUTE ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
 	{
 		if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
 		{
@@ -175,8 +175,7 @@ ActionResult< CNEOBot >	CNEOBotGetHealth::OnStart( CNEOBot *me, Action< CNEOBot 
 	m_healthKit = s_possibleHealth;
 	m_isGoalCharger = m_healthKit->ClassMatches( "*charger*" );
 
-	CNEOBotPathCost cost( me, SAFEST_ROUTE );
-	if ( !m_path.Compute( me, m_healthKit->WorldSpaceCenter(), cost ) )
+	if (!CNEOBotPathCompute(me, m_path, m_healthKit->WorldSpaceCenter(), SAFEST_ROUTE))
 	{
 		return Done( "No path to health!" );
 	}
@@ -212,8 +211,7 @@ ActionResult< CNEOBot >	CNEOBotGetHealth::Update( CNEOBot *me, float interval )
 	{
 		// this can occur if we overshoot the health kit's location
 		// because it is momentarily gone
-		CNEOBotPathCost cost( me, SAFEST_ROUTE );
-		if ( !m_path.Compute( me, m_healthKit->WorldSpaceCenter(), cost ) )
+		if ( !CNEOBotPathCompute( me, m_path, m_healthKit->WorldSpaceCenter(), SAFEST_ROUTE ) )
 		{
 			return Done( "No path to health!" );
 		}

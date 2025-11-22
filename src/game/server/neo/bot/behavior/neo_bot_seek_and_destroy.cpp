@@ -5,6 +5,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
+#include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "neo_ghost_cap_point.h"
 
@@ -365,11 +366,10 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 			CBaseEntity* pClosestWeapon = pWeapons[i];
 			if ( pClosestWeapon )
 			{
-				CNEOBotPathCost cost( me, SAFEST_ROUTE );
 				m_hTargetEntity = pClosestWeapon;
 				m_bGoingToTargetEntity = true;
 				m_vGoalPos = pClosestWeapon->WorldSpaceCenter();
-				if ( m_path.Compute( me, m_vGoalPos, cost, 0.0f, true, true ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+				if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, SAFEST_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
 					return;
 			}
 		}
@@ -482,8 +482,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				}
 			}
 			m_bGoingToTargetEntity = true;
-			CNEOBotPathCost cost(me, bQuickToGoalPos ? FASTEST_ROUTE : SAFEST_ROUTE);
-			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+			if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, bQuickToGoalPos ? FASTEST_ROUTE : SAFEST_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
 			{
 				return;
 			}
@@ -508,11 +507,10 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		{
 			for ( int i = 0; i < 10; i++ )
 			{
-				CNEOBotPathCost cost( me, SAFEST_ROUTE );
 				m_hTargetEntity = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
 				m_bGoingToTargetEntity = true;
 				m_vGoalPos = m_hTargetEntity->WorldSpaceCenter();
-				if ( m_path.Compute( me, m_vGoalPos, cost, 0.0f, true, true ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+				if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, SAFEST_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
 					return;
 			}
 		}
@@ -522,10 +520,9 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 	{
 		// No spawns we can get to? Just wander... somewhere!
 
-		CNEOBotPathCost cost( me, SAFEST_ROUTE );
 		Vector vWanderPoint = TheNavAreas[RandomInt( 0, TheNavAreas.Size() - 1 )]->GetCenter();
 		m_vGoalPos = vWanderPoint;
-		if ( m_path.Compute( me, vWanderPoint, cost ) )
+		if ( CNEOBotPathCompute( me, m_path, vWanderPoint, SAFEST_ROUTE ) )
 			return;
 	}
 
@@ -560,8 +557,7 @@ EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnCommandApproach( CNEOBot*
 	m_bOverrideApproach = true;
 	m_vOverrideApproach = pos;
 
-	CNEOBotPathCost cost( me, SAFEST_ROUTE );
-	m_path.Compute( me, m_vOverrideApproach, cost );
+	CNEOBotPathCompute( me, m_path, m_vOverrideApproach, SAFEST_ROUTE );
 
 	return TryContinue();
 }

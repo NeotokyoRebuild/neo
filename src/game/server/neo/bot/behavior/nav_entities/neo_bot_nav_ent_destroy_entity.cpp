@@ -3,6 +3,7 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
+#include "bot/neo_bot_path_compute.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 
@@ -133,8 +134,7 @@ ActionResult< CNEOBot >	CNEOBotNavEntDestroyEntity::Update( CNEOBot *me, float i
 	{
 		m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 
-		CNEOBotPathCost cost( me, FASTEST_ROUTE );
-		m_path.Compute( me, target->GetAbsOrigin(), cost );
+		CNEOBotPathCompute( me, m_path, target->GetAbsOrigin(), FASTEST_ROUTE );
 	}
 
 	m_path.Update( me );
