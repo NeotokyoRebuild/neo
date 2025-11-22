@@ -1359,6 +1359,22 @@ static void SetupBindIfNotSet(const char *pszBindName, const ButtonCode_t bc)
 	}
 }
 
+static void UnbindIfExists(const char *pszBindName)
+{
+	const ButtonCode_t btnCode = gameuifuncs->GetButtonCodeForBind(pszBindName);
+	if (btnCode)
+	{
+		const char* bindBtnName = g_pInputSystem->ButtonCodeToString(btnCode);
+		if (bindBtnName && bindBtnName[0])
+		{
+			char szCmd[128];
+
+			V_sprintf_safe(szCmd, "unbind \"%s\"\n", bindBtnName);
+			engine->ClientCmd_Unrestricted(szCmd);
+		}
+	}
+}
+
 #endif // NEO
 
 //-----------------------------------------------------------------------------
@@ -1445,6 +1461,13 @@ void CHLClient::PostInit()
 						engine->ClientCmd_Unrestricted(szCmd);
 					}
 				}
+
+				// neo_lean_hold added and toggle binds removed
+				// Set lean keys to default value and unblind toggle lean
+				UnbindIfExists("toggle_leanl");
+				UnbindIfExists("toggle_leanr");
+				SetupBindIfNotSet("+leanl", KEY_Q);
+				SetupBindIfNotSet("+leanr", KEY_E);
 			}
 
 			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
