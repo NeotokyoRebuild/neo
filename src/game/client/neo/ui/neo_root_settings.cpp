@@ -392,6 +392,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
+		pGeneral->bLeanHold = cvr->cl_neo_lean_hold.GetBool();
 		pGeneral->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
 		pGeneral->iHealthMode = cvr->cl_neo_hud_health_mode.GetInt();
@@ -690,6 +691,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
+		cvr->cl_neo_lean_hold.SetValue(pGeneral->bLeanHold);
 		cvr->cl_neo_crosshair_hip_fire.SetValue(pGeneral->bHipFireCrosshair);
 		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
 		cvr->cl_neo_hud_health_mode.SetValue(pGeneral->iHealthMode);
@@ -946,7 +948,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
-
+	NeoUI::RingBoxBool(L"Lean hold", &pGeneral->bLeanHold);
 
 	NeoUI::HeadingLabel(L"HUD");
 	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);

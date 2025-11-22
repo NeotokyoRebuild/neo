@@ -705,15 +705,20 @@ void CNEO_Player::CheckLeanButtons()
 	{
 		return;
 	}
-	
-	m_bInLean = NEO_LEAN_NONE;
-	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT || IsSprinting()))
+
+	auto leanLeft = m_nButtons & IN_LEAN_LEFT;
+	auto leanRight = m_nButtons & IN_LEAN_RIGHT;
+
+	if (leanLeft && !leanRight)
 	{
 		m_bInLean = NEO_LEAN_LEFT;
 	}
-	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT || IsSprinting()))
+	else if (leanRight && !leanLeft)
 	{
 		m_bInLean = NEO_LEAN_RIGHT;
+	}
+	else {
+		m_bInLean = NEO_LEAN_NONE;
 	}
 }
 
