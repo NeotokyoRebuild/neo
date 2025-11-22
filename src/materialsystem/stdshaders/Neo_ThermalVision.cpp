@@ -91,6 +91,8 @@ SHADER_DRAW
 		const int fmt = VERTEX_POSITION;
 		const int nTexCoordCount = 1;
 		pShaderShadow->VertexShaderVertexFormat(fmt, nTexCoordCount, NULL, 0);
+		
+		pShaderShadow->EnableDepthWrites(false);
 
 		DECLARE_STATIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_STATIC_VERTEX_SHADER(neo_passthrough_vs30);

@@ -165,7 +165,7 @@ void C_BaseCombatCharacter::UpdateGlowEffect( void )
 		float r, g, b;
 		GetGlowEffectColor( &r, &g, &b );
 #ifdef NEO
-		m_pGlowEffect = new CGlowObject( this, Vector( r, g, b ), 1.0, true, true );
+		m_pGlowEffect = new CGlowObject( this, Vector( r, g, b ), 1.0, true, false );
 #else
 		m_pGlowEffect = new CGlowObject( this, Vector( r, g, b ), 1.0, true );
 #endif
