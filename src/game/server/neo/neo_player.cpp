@@ -706,6 +706,11 @@ void CNEO_Player::CheckLeanButtons()
 		return;
 	}
 
+	if (IsSprinting() || IsAirborne()) {
+		m_bInLean = NEO_LEAN_NONE;
+		return;
+	}
+
 	auto leanLeft = m_nButtons & IN_LEAN_LEFT;
 	auto leanRight = m_nButtons & IN_LEAN_RIGHT;
 
