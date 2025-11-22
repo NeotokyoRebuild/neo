@@ -534,6 +534,8 @@ void C_NEO_Player::CheckVisionButtons()
 	}
 }
 
+ConVar cl_neo_lean_hold("cl_neo_lean_hold", "0", FCVAR_ARCHIVE, "Hold leaning instead of toggle");
+
 void C_NEO_Player::CheckLeanButtons()
 {
 	if (!IsAlive())
@@ -541,14 +543,29 @@ void C_NEO_Player::CheckLeanButtons()
 		return;
 	}
 
-	m_bInLean = NEO_LEAN_NONE;
-	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT || IsSprinting()))
+	if (IsSprinting() || IsAirborne()) {
+		m_bInLean = NEO_LEAN_NONE;
+		
+		if (!cl_neo_lean_hold.GetBool()) {
+			IN_LeanReset();
+		}
+		
+		return;
+	}
+
+	bool leanLeft = m_nButtons & IN_LEAN_LEFT;
+	bool leanRight = m_nButtons & IN_LEAN_RIGHT;
+
+	if (leanLeft && !leanRight)
 	{
 		m_bInLean = NEO_LEAN_LEFT;
 	}
-	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT || IsSprinting()))
+	else if (leanRight && !leanLeft)
 	{
 		m_bInLean = NEO_LEAN_RIGHT;
+	}
+	else {
+		m_bInLean = NEO_LEAN_NONE;
 	}
 }
 
@@ -1616,7 +1633,6 @@ void C_NEO_Player::StartSprinting(void)
 void C_NEO_Player::StopSprinting(void)
 {
 	m_fIsSprinting = false;
-	IN_SpeedReset();
 }
 
 bool C_NEO_Player::CanSprint(void)

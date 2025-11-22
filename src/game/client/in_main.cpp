@@ -88,6 +88,7 @@ ConVar thirdperson_screenspace( "thirdperson_screenspace", "0", 0, "Movement wil
 ConVar sv_noclipduringpause( "sv_noclipduringpause", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "If cheats are enabled, then you can noclip with the game paused (for doing screenshots, etc.)." );
 
 extern ConVar cl_mouselook;
+extern ConVar cl_neo_lean_hold;
 
 #define UsingMouselook() cl_mouselook.GetBool()
 
@@ -527,17 +528,61 @@ void IN_DropDown( const CCommand &args ) { KeyDown( &in_drop, args[1] ); }
 void IN_AimUp( const CCommand &args ) { KeyUp( &in_aim, args[1] ); }
 void IN_AimDown( const CCommand &args ) { KeyDown( &in_aim, args[1] ); }
 
-void IN_LeanLeftUp( const CCommand &args ) { KeyUp( &in_lean_left, args[1] ); }
-void IN_LeanLeftDown( const CCommand &args ) { KeyDown( &in_lean_left, args[1] ); }
+void IN_LeanLeftUp( const CCommand &args ) {
+	if(cl_neo_lean_hold.GetBool())
+	{
+		KeyUp(&in_lean_left, args[1]);
+	}
+}
+void IN_LeanLeftDown( const CCommand &args ) { 
+	if (cl_neo_lean_hold.GetBool())
+	{
+		KeyDown(&in_lean_left, args[1]);
+	}
+	else
+	{
+		if (::input->KeyState(&in_lean_left))
+		{
+			KeyUp(&in_lean_left, nullptr);
+		}
+		else
+		{
+			KeyDown(&in_lean_left, args[1]);
+			KeyUp(&in_lean_right, nullptr);
+		}
+	}
+}
 
-void IN_LeanLeft() { KeyUp(&in_lean_right, nullptr); KeyDown(&in_lean_left, nullptr); }
+void IN_LeanLeft() { KeyUp(&in_lean_right, nullptr);KeyDown(&in_lean_left, nullptr); }
 void IN_LeanRight() { KeyUp(&in_lean_left, nullptr); KeyDown(&in_lean_right, nullptr); }
 void IN_LeanReset() { KeyUp(&in_lean_left, nullptr); KeyUp(&in_lean_right, nullptr); }
 
 void IN_SpeedReset() { KeyUp(&in_speed, nullptr); }
 
-void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); }
-void IN_LeanRightDown( const CCommand &args ) { KeyDown( &in_lean_right, args[1] ); }
+void IN_LeanRightUp( const CCommand &args ) {
+	if (cl_neo_lean_hold.GetBool()) {
+		KeyUp(&in_lean_right, args[1]);
+	}	
+}
+void IN_LeanRightDown( const CCommand &args )
+{
+	if (cl_neo_lean_hold.GetBool())
+	{
+		KeyDown(&in_lean_right, args[1]);
+	}
+	else
+	{
+		if (::input->KeyState(&in_lean_right))
+		{
+			KeyUp(&in_lean_right, nullptr);
+		}
+		else
+		{
+			KeyDown(&in_lean_right, args[1]);
+			KeyUp(&in_lean_left, nullptr);
+		}
+	}
+}
 
 void IN_ThermOpticUp(const CCommand &args) { KeyUp(&in_thermoptic, args[1]); }
 void IN_ThermOpticDown(const CCommand &args) { KeyDown(&in_thermoptic, args[1]); }
@@ -560,32 +605,6 @@ void IN_AimToggle(const CCommand& args)
 	else
 	{
 		KeyDown(&in_aim, args[1]);
-	}
-}
-
-void IN_LeanLeftToggle(const CCommand& args)
-{
-	if (::input->KeyState(&in_lean_left))
-	{
-		KeyUp(&in_lean_left, args[1]);
-	}
-	else
-	{
-		KeyDown(&in_lean_left, args[1]);
-		KeyUp(&in_lean_right, args[1]);
-	}
-}
-
-void IN_LeanRightToggle(const CCommand& args)
-{
-	if (::input->KeyState(&in_lean_right))
-	{
-		KeyUp(&in_lean_right, args[1]);
-	}
-	else
-	{
-		KeyDown(&in_lean_right, args[1]);
-		KeyUp(&in_lean_left, args[1]);
 	}
 }
 
@@ -1786,9 +1805,6 @@ static ConCommand endthermoptic("-thermoptic", IN_ThermOpticUp);
 
 static ConCommand startvision("+vision", IN_VisionDown);
 static ConCommand endvision("-vision", IN_VisionUp);
-
-static ConCommand toggle_leanleft("toggle_leanl", IN_LeanLeftToggle);
-static ConCommand toggle_leanright("toggle_leanr", IN_LeanRightToggle);
 
 static ConCommand toggle_walk("toggle_walk", IN_WalkToggle);
 

@@ -51,6 +51,7 @@ struct NeoSettings
 		bool bLeanViewmodelOnly;
 		bool bHipFireCrosshair;
 		int iLeanAutomatic;
+		bool bLeanHold;
 		bool bShowSquadList;
 		bool bShowPlayerSprays;
 		int iHealthMode;
@@ -212,6 +213,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_neo_lean_automatic);
+		CONVARREF_DEF(cl_neo_lean_hold);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
 		CONVARREF_DEF(cl_neo_hud_health_mode);
 		CONVARREF_DEF(cl_neo_hud_iff_verbosity);

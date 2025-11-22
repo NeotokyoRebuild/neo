@@ -7,8 +7,6 @@
 "+moveright"			"#Valve_Move_Right"
 "+leanl"	            "Lean left"
 "+leanr"	            "Lean right"
-"toggle_leanl"	        "Lean left (toggle)"
-"toggle_leanr"	        "Lean right (toggle)"
 "+sprint"             	"#Valve_Sprint"
 "+walk"       	        "Walk"
 "toggle_walk"			"Walk (toggle)"
