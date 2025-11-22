@@ -634,45 +634,15 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
 
 		// Draw squad mates
-		if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != 0 && !hideDueToScoreboard)
-		{
-			bool squadMateFound = false;
-
-			for (int i = 0; i < (MAX_PLAYERS + 1); i++)
-			{
-				if (i == localPlayerIndex)
-				{
-					continue;
-				}
-				if (!g_PR->IsConnected(i))
-				{
-					continue;
-				}
-				const int playerTeam = g_PR->GetTeam(i);
-				if (playerTeam != localPlayerTeam)
-				{
-					continue;
-				}
-				const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
-				if (!isSameSquad)
-				{
-					continue;
-				}
-
-				offset = DrawPlayerRow(i, offset);
-				squadMateFound = true;
-			}
-
-			if (squadMateFound)
-			{
-				offset += 12;
-			}
-		}
-
+		CUtlVector<int> commandedList;
+		CUtlVector<int> nonCommandedList;
+		CUtlVector<int> nonSquadList;
+		bool squadMateFound = false;
 		m_iLeftPlayersAlive = 0;
 		m_iRightPlayersAlive = 0;
+		const int localStar = g_PR->GetStar(localPlayerIndex);
 
-		// Draw other team mates
+		// Single pass to collect and categorize players
 		for (int i = 0; i < (MAX_PLAYERS + 1); i++)
 		{
 			if (!g_PR->IsConnected(i))
@@ -697,22 +667,62 @@ void CNEOHud_RoundState::DrawPlayerList()
 			{
 				continue;
 			}
-			if (i == localPlayerIndex || localPlayerSpec || hideDueToScoreboard)
-			{
-				continue;
-			}
-			const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
-			if (isSameSquad)
+			if (i == localPlayerIndex || localPlayerSpec || hideDueToScoreboard || !ArePlayersOnSameTeam(i, localPlayerIndex))
 			{
 				continue;
 			}
 
-			offset = DrawPlayerRow(i, offset, true);
+			// Only consider players in the same squad star as the local player
+			const bool isSameSquadStar = (localStar != STAR_NONE) && (g_PR->GetStar(i) == localStar);
+			if (isSameSquadStar)
+			{
+				C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+				bool isCommanded = (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer());
+				if (isCommanded)
+				{
+					commandedList.AddToTail(i);
+				}
+				else
+				{
+					nonCommandedList.AddToTail(i);
+				}
+				squadMateFound = true;
+			}
+			else
+			{
+				nonSquadList.AddToTail(i);
+			}
+		}
+
+		// Draw commanded players first
+		const auto player = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(localPlayerIndex));
+		TeamLogoColor* pTeamLogoColor = player ? &m_teamLogoColors[player->GetTeamNumber()] : nullptr;
+		const Color* colorOverride = pTeamLogoColor ? &pTeamLogoColor->color : nullptr;
+		for (int i = 0; i < commandedList.Count(); ++i)
+		{
+			offset = DrawPlayerRow(commandedList[i], offset, false, colorOverride);
+		}
+
+		// Draw non-commanded players (who are also in the same squad star)
+		for (int i = 0; i < nonCommandedList.Count(); ++i)
+		{
+			offset = DrawPlayerRow(nonCommandedList[i], offset, false);
+		}
+
+		if (squadMateFound)
+		{
+			offset += 12;
+		}
+
+		// Draw other team mates
+		for (int i = 0; i < nonSquadList.Count(); ++i)
+		{
+			offset = DrawPlayerRow(nonSquadList[i], offset, true);
 		}
 	}
 }
 
-int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small)
+int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small, const Color* colorOverride)
 {
 	// Draw player
 	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
@@ -760,7 +770,8 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 	int fontWidth, fontHeight;
 	surface()->DrawSetTextFont(small ? m_hOCRSmallerFont : m_hOCRSmallFont);
 	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
+
+	surface()->DrawSetTextColor(colorOverride ? *colorOverride : (isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE));
 	surface()->DrawSetTextPos(8, yOffset);
 	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
 
@@ -791,6 +802,18 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	if (!g_PR->IsAlive(playerIndex))
 		surface()->DrawSetColor(COLOR_DARK);
 	surface()->DrawTexturedRect(xOffset, Y_POS + 1, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 1);
+
+	// Draw Command Highlight Border on top of the avatar image
+	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
+	if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
+	{
+		surface()->DrawSetColor(COLOR_WHITE);
+		// Draw a thicker border inwards
+		for (int borderIndex = 0; borderIndex < 3; ++borderIndex)
+		{
+			surface()->DrawOutlinedRect(xOffset + borderIndex, Y_POS + borderIndex, xOffset + m_ilogoSize - borderIndex, Y_POS + m_ilogoSize - borderIndex);
+		}
+	}
 
 	// Deathmatch only: Draw XP on everyone
 	if (!NEORules()->IsTeamplay())
