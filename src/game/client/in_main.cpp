@@ -405,6 +405,45 @@ void KeyDown( kbutton_t *b, const char *c )
 	b->state |= 1 + 2;	// down + impulse down
 }
 
+#ifdef NEO
+/*
+============
+KeyDown where pressing a hold key will lift a toggle key
+============
+*/
+void KeyDownHoldReplaceToggle( kbutton_t *b, const char *c )
+{
+	int		k = -1;
+	if ( c && c[0] )
+	{
+		k = atoi(c);
+	}
+
+	if (k == b->down[0] || k == b->down[1])
+		return;		// repeating key
+	if (b->down[0] == -1)
+		b->down[0] = k;
+	else if (b->down[1] == -1)
+		b->down[1] = k;
+	else if (!b->down[0])
+		b->down[0] = k;
+	else if (!b->down[1])
+		b->down[1] = k;
+	else
+	{
+		if ( c[0] )
+		{
+			DevMsg( 1,"Three keys down for a button '%c' '%c' '%c'!\n", b->down[0], b->down[1], c[0]);
+		}
+		return;
+	}
+	
+	if (b->state & 1)
+		return;		// still down
+	b->state |= 1 + 2;	// down + impulse down
+}
+#endif // NEO
+
 /*
 ============
 KeyUp
@@ -475,22 +514,44 @@ void IN_MoveleftDown( const CCommand &args ) {KeyDown(&in_moveleft, args[1] );}
 void IN_MoveleftUp( const CCommand &args ) {KeyUp(&in_moveleft, args[1] );}
 void IN_MoverightDown( const CCommand &args ) {KeyDown(&in_moveright, args[1] );}
 void IN_MoverightUp( const CCommand &args ) {KeyUp(&in_moveright, args[1] );}
-void IN_WalkDown( const CCommand &args ) {KeyDown(&in_walk, args[1] );}
 #ifdef NEO
-void IN_WalkUp( const CCommand &args )
-{
-	int k = atoi(args[1]);
-	if (in_walk.down[0] == -1 && in_walk.down[1] == k)
-	{ // Releasing walk button using hold to walk when walking is already toggled using toggle walk, have to release toggle walk // NEO TODO (Adam) Any way to figure out it was exactly toggle walk that is holding this button down? Does it matter?
-		in_walk.down[0] = k;
-		in_walk.down[1] = 0;
-	};
-	KeyUp(&in_walk, args[1] );
-}
+void IN_WalkDown( const CCommand &args ) {KeyDownHoldReplaceToggle(&in_walk, args[1] );}
 #else
-void IN_WalkUp( const CCommand &args ) {KeyUp(&in_walk, args[1] );}
+void IN_WalkDown( const CCommand &args ) {KeyDown(&in_walk, args[1] );}
 #endif // NEO
+#ifdef NEO
+void IN_LeanReset() { KeyUp(&in_lean_left, nullptr); KeyUp(&in_lean_right, nullptr); }
+void IN_LeanToggleReset()
+{
+	for (kbutton_t* leanButton : { &in_lean_left, &in_lean_right })
+	{
+		bool bToggleWasHeld = false;
+		bool bHoldHeld = false;
+		if (leanButton->down[0] == -1) {
+			bToggleWasHeld = true;
+			leanButton->down[0] = 0;
+		}
+		if (leanButton->down[0] != 0) {
+			bHoldHeld = true;
+		}
+
+		if (leanButton->down[1] == -1) {
+			bToggleWasHeld = true;
+			leanButton->down[1] = 0;
+		}
+		if (leanButton->down[1] != 0) {
+			bHoldHeld = true;
+		}
+
+		if (bToggleWasHeld && !bHoldHeld) {
+			leanButton->state = 4;	// Key was raised
+		}
+	}
+}
+void IN_SpeedDown(const CCommand& args) { KeyDown(&in_speed, args[1]); IN_LeanToggleReset(); }
+#else
 void IN_SpeedDown( const CCommand &args ) {KeyDown(&in_speed, args[1] );}
+#endif // NEO
 void IN_SpeedUp( const CCommand &args ) {KeyUp(&in_speed, args[1] );}
 void IN_StrafeDown( const CCommand &args ) {KeyDown(&in_strafe, args[1] );}
 void IN_StrafeUp( const CCommand &args ) {KeyUp(&in_strafe, args[1] );}
@@ -498,7 +559,11 @@ void IN_Attack2Down( const CCommand &args ) { KeyDown(&in_attack2, args[1] );}
 void IN_Attack2Up( const CCommand &args ) {KeyUp(&in_attack2, args[1] );}
 void IN_UseDown ( const CCommand &args ) {KeyDown(&in_use, args[1] );}
 void IN_UseUp ( const CCommand &args ) {KeyUp(&in_use, args[1] );}
+#ifdef NEO
+void IN_JumpDown(const CCommand& args) { KeyDown(&in_jump, args[1]); IN_LeanToggleReset(); }
+#else
 void IN_JumpDown ( const CCommand &args ) {KeyDown(&in_jump, args[1] );}
+#endif // NEO
 void IN_JumpUp ( const CCommand &args ) {KeyUp(&in_jump, args[1] );}
 void IN_DuckDown( const CCommand &args ) {KeyDown(&in_duck, args[1] );}
 void IN_DuckUp( const CCommand &args ) {KeyUp(&in_duck, args[1] );}
@@ -528,16 +593,15 @@ void IN_AimUp( const CCommand &args ) { KeyUp( &in_aim, args[1] ); }
 void IN_AimDown( const CCommand &args ) { KeyDown( &in_aim, args[1] ); }
 
 void IN_LeanLeftUp( const CCommand &args ) { KeyUp( &in_lean_left, args[1] ); }
-void IN_LeanLeftDown( const CCommand &args ) { KeyDown( &in_lean_left, args[1] ); }
+void IN_LeanLeftDown(const CCommand& args) { KeyDown(&in_lean_left, args[1]); IN_LeanToggleReset(); }
 
 void IN_LeanLeft() { KeyUp(&in_lean_right, nullptr); KeyDown(&in_lean_left, nullptr); }
 void IN_LeanRight() { KeyUp(&in_lean_left, nullptr); KeyDown(&in_lean_right, nullptr); }
-void IN_LeanReset() { KeyUp(&in_lean_left, nullptr); KeyUp(&in_lean_right, nullptr); }
 
 void IN_SpeedReset() { KeyUp(&in_speed, nullptr); }
 
 void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); }
-void IN_LeanRightDown( const CCommand &args ) { KeyDown( &in_lean_right, args[1] ); }
+void IN_LeanRightDown(const CCommand& args) { KeyDown(&in_lean_right, args[1]); IN_LeanToggleReset(); }
 
 void IN_ThermOpticUp(const CCommand &args) { KeyUp(&in_thermoptic, args[1]); }
 void IN_ThermOpticDown(const CCommand &args) { KeyDown(&in_thermoptic, args[1]); }
