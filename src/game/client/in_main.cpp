@@ -422,9 +422,15 @@ void KeyDownHoldReplaceToggle( kbutton_t *b, const char *c )
 	if (k == b->down[0] || k == b->down[1])
 		return;		// repeating key
 	if (b->down[0] == -1)
+	{
 		b->down[0] = k;
+		return; // state hasn't changed
+	}
 	else if (b->down[1] == -1)
+	{
 		b->down[1] = k;
+		return; // state hasn't changed
+	}
 	else if (!b->down[0])
 		b->down[0] = k;
 	else if (!b->down[1])
@@ -519,6 +525,7 @@ void IN_WalkDown( const CCommand &args ) {KeyDownHoldReplaceToggle(&in_walk, arg
 #else
 void IN_WalkDown( const CCommand &args ) {KeyDown(&in_walk, args[1] );}
 #endif // NEO
+void IN_WalkUp( const CCommand &args ) {KeyUp(&in_walk, args[1] );}
 #ifdef NEO
 void IN_LeanReset() { KeyUp(&in_lean_left, nullptr); KeyUp(&in_lean_right, nullptr); }
 void IN_LeanToggleReset()
