@@ -175,11 +175,16 @@ public:
 	virtual void TeamChange(int iNewTeam) override;
 
 	// Spectator takeover
+	bool m_bCopyOverTakeoverPlayerDetails{ false };
+	CNetworkHandle(C_NEO_Player, m_hSpectatorTakeoverPlayerTarget);
+	CNetworkHandle(C_NEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
 	void CSpectatorTakeoverPlayerUpdateOnDataChanged();
 	void CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget);
-	CHandle<C_NEO_Player> m_hSpectatorTakeoverTarget;
+
+	const char* GetPlayerNameWithTakeoverContext(int player_index);
 
 private:
+	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
 	void CheckLeanButtons();
@@ -221,6 +226,7 @@ public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 	CNetworkVar(int, m_iNeoStar);
+	CNetworkVar(int, m_iClassAtTimeOfDeath);
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
