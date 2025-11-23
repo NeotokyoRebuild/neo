@@ -2182,7 +2182,7 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags 
 			if (vgui::system()->GetClipboardTextCount() > 0)
 			{
 				wchar_t wszClipboard[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
-				const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboard, ARRAYSIZE(wszClipboard));
+				const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboard, sizeof(wszClipboard));
 				if (iClipboardWSZBytes > 0)
 				{
 					// Write to temporary first otherwise wszText -> wszText can corrupt

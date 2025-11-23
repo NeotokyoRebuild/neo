@@ -1236,7 +1236,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 #ifdef WIN32
 						// NEO NOTE (nullsystem): On Windows, GetClipboardText char * returns UTF-16 arranged bytes, differs from Set...
 						wchar_t wszClipboardCrosshair[NEO_XHAIR_SEQMAX] = {};
-						const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, NEO_XHAIR_SEQMAX);
+						const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, sizeof(wszClipboardCrosshair));
 						const int iClipboardBytes = (iClipboardWSZBytes > 0)
 								? g_pVGuiLocalize->ConvertUnicodeToANSI(wszClipboardCrosshair, szClipboardCrosshair, sizeof(szClipboardCrosshair))
 								: 0;
