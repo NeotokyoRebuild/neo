@@ -321,11 +321,11 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const EClNeoDisplayNameFlag flags = CL_NEODISPLAYNAME_FLAG_NONE);
 
 // NEO NOTE (nullsystem): Max string length is 
-// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;2;"
-// which is ~45 for v3 serialization | 64 length is enough for now till
+// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;2;1;-16711936;-16711936;-16711936;"
+// which is ~77 for v4 serialization | 96 length is enough for now till
 // more comes in
-static constexpr const int NEO_XHAIR_SEQMAX = 64;
-#define NEO_CROSSHAIR_DEFAULT "3;0;-1;0;6;0.000;2;4;0;0;1;0;0;2;"
+static constexpr const int NEO_XHAIR_SEQMAX = 96;
+#define NEO_CROSSHAIR_DEFAULT "4;0;-1;0;6;0.000;2;4;0;0;1;0;0;2;0;-16777216;-16777216;-16777216;"
 
 #define TUTORIAL_MAP_CLASSES "ntre_class_tut"
 #define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
