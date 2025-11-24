@@ -9,6 +9,19 @@ execute_process(
 )
 string(SUBSTRING "${GIT_LONGHASH}" 0 7 GIT_HASH)
 
+set(UPSTREAM_URL "https://github.com/NeotokyoRebuild/neo")
+execute_process(
+    COMMAND git remote get-url origin
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE THIS_REMOTE_URL
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+# Must fetch tags from upstream in forked repos to guarantee the "git describe --tags (...)" command works
+if (NOT "${THIS_REMOTE_URL}" STREQUAL "${UPSTREAM_URL}")
+execute_process(
+    COMMAND git fetch ${UPSTREAM_URL} --force --tags
+)
+endif()
 execute_process(
     COMMAND git describe --tags --abbrev=0 --match v*
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
