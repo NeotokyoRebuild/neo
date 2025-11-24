@@ -398,7 +398,6 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	}
 	else
 	{
-
 		V_sprintf_safe(szPlayersAliveANSI, "%i vs %i", m_iLeftPlayersAlive, m_iRightPlayersAlive);
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(szPlayersAliveANSI, m_wszPlayersAliveUnicode, sizeof(m_wszPlayersAliveUnicode));
