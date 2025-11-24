@@ -955,6 +955,7 @@ void CNEORules::Think(void)
 				if (dynamic_cast<CWeaponGhost*>(pEnt))
 				{
 					m_pGhost = static_cast<CWeaponGhost*>(pEnt);
+					m_hGhost = m_pGhost;
 					return;
 				}
 				pEnt = gEntList.NextEnt(pEnt);
