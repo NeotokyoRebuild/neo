@@ -486,6 +486,38 @@ void KeyUp( kbutton_t *b, const char *c )
 	b->state |= 4; 		// impulse up
 }
 
+#ifdef NEO
+
+void ToggleUp(kbutton_t *button)
+{
+	bool bToggleWasHeld = false;
+	bool bHoldHeld = false;
+	for (int iDown : button->down)
+	{
+		if (button->down[iDown] == -1) {
+			bToggleWasHeld = true;
+			button->down[iDown] = 0;
+		}
+		if (button->down[iDown] != 0) {
+			bHoldHeld = true;
+		}
+	}
+	
+	if (bToggleWasHeld && !bHoldHeld) {
+		button->state = 4;	// Key was raised
+	}
+}
+
+void LiftAllToggleKeys()
+{
+	for (kbutton_t* button : { &in_walk, &in_ducktoggle, &in_aim, &in_lean_left, &in_lean_right }) {
+		ToggleUp(button);
+	}
+}
+
+#endif // NEO
+
+
 void IN_CommanderMouseMoveDown( const CCommand &args ) {KeyDown(&in_commandermousemove, args[1] );}
 void IN_CommanderMouseMoveUp( const CCommand &args ) {KeyUp(&in_commandermousemove, args[1] );}
 void IN_BreakDown( const CCommand &args ) { KeyDown( &in_break , args[1] );}
@@ -532,27 +564,7 @@ void IN_LeanToggleReset()
 {
 	for (kbutton_t* leanButton : { &in_lean_left, &in_lean_right })
 	{
-		bool bToggleWasHeld = false;
-		bool bHoldHeld = false;
-		if (leanButton->down[0] == -1) {
-			bToggleWasHeld = true;
-			leanButton->down[0] = 0;
-		}
-		if (leanButton->down[0] != 0) {
-			bHoldHeld = true;
-		}
-
-		if (leanButton->down[1] == -1) {
-			bToggleWasHeld = true;
-			leanButton->down[1] = 0;
-		}
-		if (leanButton->down[1] != 0) {
-			bHoldHeld = true;
-		}
-
-		if (bToggleWasHeld && !bHoldHeld) {
-			leanButton->state = 4;	// Key was raised
-		}
+		ToggleUp(leanButton);
 	}
 }
 void IN_SpeedDown(const CCommand& args) { KeyDown(&in_speed, args[1]); IN_LeanToggleReset(); }
