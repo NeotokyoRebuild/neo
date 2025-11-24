@@ -244,6 +244,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropFloat(RECVINFO(m_flGhostLastHeld)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
+	RecvPropEHandle(RECVINFO(m_hGhost)),
 	RecvPropInt(RECVINFO(m_iJuggernautPlayerIndex)),
 	RecvPropBool(RECVINFO(m_bJuggernautItemExists)),
 	RecvPropVector(RECVINFO(m_vecJuggernautMarkerPos)),
@@ -268,6 +269,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropBool(SENDINFO(m_bGhostExists)),
 	SendPropFloat(SENDINFO(m_flGhostLastHeld)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
+	SendPropEHandle(SENDINFO(m_hGhost)),
 	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex)),
 	SendPropBool(SENDINFO(m_bJuggernautItemExists)),
 	SendPropVector(SENDINFO(m_vecJuggernautMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
@@ -1845,8 +1847,9 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		m_pGhost->NetworkStateChanged();
 		spawnedGhostNow = true;
 	}
+	m_hGhost = m_pGhost;
 	m_bGhostExists = true;
-
+	
 	Assert(UTIL_IsValidEntity(m_pGhost));
 
 	if (origin)
