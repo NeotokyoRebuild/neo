@@ -1236,7 +1236,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 #ifdef WIN32
 						// NEO NOTE (nullsystem): On Windows, GetClipboardText char * returns UTF-16 arranged bytes, differs from Set...
 						wchar_t wszClipboardCrosshair[NEO_XHAIR_SEQMAX] = {};
-						const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, NEO_XHAIR_SEQMAX);
+						const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, sizeof(wszClipboardCrosshair));
 						const int iClipboardBytes = (iClipboardWSZBytes > 0)
 								? g_pVGuiLocalize->ConvertUnicodeToANSI(wszClipboardCrosshair, szClipboardCrosshair, sizeof(szClipboardCrosshair))
 								: 0;
@@ -1301,7 +1301,32 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::SliderInt(L"Thickness", &pCrosshair->info.iThick, 0, CROSSHAIR_MAX_THICKNESS);
 			NeoUI::SliderInt(L"Gap", &pCrosshair->info.iGap, 0, CROSSHAIR_MAX_GAP);
 			NeoUI::SliderInt(L"Outline", &pCrosshair->info.iOutline, 0, CROSSHAIR_MAX_OUTLINE);
+			if (pCrosshair->info.iOutline > 0)
+			{
+				NeoUI::SliderU8(L"Outline color: Red", &pCrosshair->info.colorOutline[0], 0, UCHAR_MAX);
+				NeoUI::SliderU8(L"Outline color: Green", &pCrosshair->info.colorOutline[1], 0, UCHAR_MAX);
+				NeoUI::SliderU8(L"Outline color: Blue", &pCrosshair->info.colorOutline[2], 0, UCHAR_MAX);
+				NeoUI::SliderU8(L"Outline color: Alpha", &pCrosshair->info.colorOutline[3], 0, UCHAR_MAX);
+			}
 			NeoUI::SliderInt(L"Center dot", &pCrosshair->info.iCenterDot, 0, CROSSHAIR_MAX_CENTER_DOT);
+			if (pCrosshair->info.iCenterDot > 0)
+			{
+				NeoUI::RingBoxBool(L"Separate dot color", &pCrosshair->info.bSeparateColorDot);
+				if (pCrosshair->info.bSeparateColorDot)
+				{
+					NeoUI::SliderU8(L"Dot color: Red", &pCrosshair->info.colorDot[0], 0, UCHAR_MAX);
+					NeoUI::SliderU8(L"Dot color: Green", &pCrosshair->info.colorDot[1], 0, UCHAR_MAX);
+					NeoUI::SliderU8(L"Dot color: Blue", &pCrosshair->info.colorDot[2], 0, UCHAR_MAX);
+					NeoUI::SliderU8(L"Dot color: Alpha", &pCrosshair->info.colorDot[3], 0, UCHAR_MAX);
+					if (pCrosshair->info.iOutline > 0)
+					{
+						NeoUI::SliderU8(L"Dot outline color: Red", &pCrosshair->info.colorDotOutline[0], 0, UCHAR_MAX);
+						NeoUI::SliderU8(L"Dot outline color: Green", &pCrosshair->info.colorDotOutline[1], 0, UCHAR_MAX);
+						NeoUI::SliderU8(L"Dot outline color: Blue", &pCrosshair->info.colorDotOutline[2], 0, UCHAR_MAX);
+						NeoUI::SliderU8(L"Dot outline color: Alpha", &pCrosshair->info.colorDotOutline[3], 0, UCHAR_MAX);
+					}
+				}
+			}
 			NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
 			NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
 			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
