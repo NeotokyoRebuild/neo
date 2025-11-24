@@ -1258,7 +1258,7 @@ void C_NEO_Player::PostThink(void)
 			m_bFirstDeathTick = false;
 
 			Weapon_SetZoom(false);
-			m_bInVision = false;
+			m_bInVision = m_bInThermOpticCamo = false;
 			IN_LeanReset();
 
 			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
