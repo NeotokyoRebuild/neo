@@ -510,7 +510,7 @@ void ToggleUp(kbutton_t *button)
 
 void LiftAllToggleKeys()
 {
-	for (kbutton_t* button : { &in_walk, &in_ducktoggle, &in_aim, &in_lean_left, &in_lean_right }) {
+	for (kbutton_t* button : { &in_walk, &in_aim, &in_lean_left, &in_lean_right }) {
 		ToggleUp(button);
 	}
 }
