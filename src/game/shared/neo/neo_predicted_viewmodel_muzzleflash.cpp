@@ -14,11 +14,11 @@
 static void RecvProxy_ScaleChangeFlag(const CRecvProxyData* pData, void* pStruct, void* pOut)
 {
 	CNEOPredictedViewModelMuzzleFlash* pViewModel = ((CNEOPredictedViewModelMuzzleFlash*)pStruct);
-	if (pData->m_Value.m_Int != pViewModel->m_bScaleChangeFlag)
+	if (static_cast<bool>(pData->m_Value.m_Int) != pViewModel->m_bScaleChangeFlag)
 	{ // Client side value for m_flModelScale will not be updated correctly, work out the correct scale clientside
 		pViewModel->UpdateMuzzleFlashProperties(GetActiveWeapon());
 	}
-	// Chain through to the default recieve proxy ...
+	// Chain through to the default receive proxy ...
 	RecvProxy_IntToEHandle(pData, pStruct, pOut);
 }
 #endif // CLIENT_DLL
