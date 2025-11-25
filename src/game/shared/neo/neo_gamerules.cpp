@@ -1331,9 +1331,10 @@ void CNEORules::Think(void)
 
 		if (m_pGhost->GetAbsOrigin().IsValid())
 		{
-			// Someone's carrying it, center at their body
-			m_vecGhostMarkerPos = (pGhosterPlayer && (nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF)) ?
-						pGhosterPlayer->EyePosition() : m_pGhost->GetAbsOrigin();
+			// Someone's carrying it
+			m_vecGhostMarkerPos = (nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF) ?
+			// NEO NOTE (Adam) GetGhostMarkerPos() can return m_vecGhostMarkerPos if m_pGhost is invalid, but we've checked for m_pGhost above so should be fine?
+						GetGhostMarkerPos() : m_pGhost->GetAbsOrigin();
 		}
 		else
 		{
@@ -4305,6 +4306,40 @@ float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
 	{
 		return m_flNeoRoundStartTime + sv_neo_preround_freeze_time.GetFloat() - gpGlobals->curtime;
 	}
+}
+
+Vector CNEORules::GetGhostPos() const
+{
+#ifdef GAME_DLL
+	return m_pGhost ? m_pGhost->GetAbsOrigin() : m_vecGhostMarkerPos;
+#else
+	if (auto pGhost = static_cast<CWeaponGhost*>(m_hGhost.Get());
+		pGhost)
+	{
+		return pGhost->GetAbsOrigin();
+	}
+	return m_vecGhostMarkerPos;
+#endif // GAME_DLL
+}
+
+Vector CNEORules::GetGhostMarkerPos() const
+{
+	if (auto pGhosterPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(GetGhosterPlayer()));
+		pGhosterPlayer
+#ifdef CLIENT_DLL
+		&& pGhosterPlayer->IsVisible()
+#endif // CLIENT_DLL
+		)
+	{
+		if (auto pWeapon = static_cast<CNEOBaseCombatWeapon*>(pGhosterPlayer->GetActiveWeapon());
+			pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_GHOST)
+		{
+			constexpr const int GHOST_MARKER_STANDING_PLAYER_OFFSET = 32;
+			constexpr const int GHOST_MARKER_CROUCHING_PLAYER_OFFSET = 24;
+			return pGhosterPlayer->GetAbsOrigin() + Vector(0, 0, pGhosterPlayer->GetFlags() & FL_DUCKING ? GHOST_MARKER_CROUCHING_PLAYER_OFFSET : GHOST_MARKER_STANDING_PLAYER_OFFSET);
+		}
+	}
+	return GetGhostPos();
 }
 
 const char *CNEORules::GetTeamClantag(const int iTeamNum) const

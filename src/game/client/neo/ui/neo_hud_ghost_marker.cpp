@@ -171,28 +171,8 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 				ghostColor = (iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
 			}
 		}
-
-		// Use PVS over networked-given position if possible as it'll give a smoother visual
-		// NEO NOTE (Rain): this assignment was segfaulting on Linux, so I've split the logic
-		// and added extra guards, so we can catch it better if it still happens.
-		Vector ghostPos = NEORules()->GetGhostPos();
-
-		if (const int ghosterPlayerIdx = NEORules()->GetGhosterPlayer();
-			ghosterPlayerIdx > 0)
-		{
-			if (auto ghosterPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(ghosterPlayerIdx)))
-			{
-				if (auto pWeapon = static_cast<C_NEOBaseCombatWeapon*>(ghosterPlayer->GetActiveWeapon());
-					pWeapon->GetNeoWepBits() & NEO_WEP_GHOST &&	ghosterPlayer->IsVisible())
-				{
-					constexpr const int GHOST_MARKER_STANDING_PLAYER_OFFSET = 32;
-					constexpr const int GHOST_MARKER_CROUCHING_PLAYER_OFFSET = 24;
-					ghostPos = ghosterPlayer->GetAbsOrigin() + Vector(0, 0, ghosterPlayer->GetFlags() & FL_DUCKING ? GHOST_MARKER_CROUCHING_PLAYER_OFFSET : GHOST_MARKER_STANDING_PLAYER_OFFSET);
-				}
-			}
-		}
 		
-		GetVectorInScreenSpace(ghostPos, iPosX, iPosY);
+		GetVectorInScreenSpace(NEORules()->GetGhostMarkerPos(), iPosX, iPosY);
 	}
 	else
 	{

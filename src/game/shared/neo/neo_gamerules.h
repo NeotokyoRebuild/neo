@@ -324,17 +324,8 @@ public:
 	int GetGhosterTeam() const { return m_iGhosterTeam; }
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
 	bool GhostExists() const { return m_bGhostExists; }
-#ifdef GAME_DLL
-	Vector GetGhostPos() const { return m_pGhost ? m_pGhost->GetAbsOrigin() : vec3_origin; }
-#else
-	Vector GetGhostPos() const {
-		if (auto pGhost = static_cast<CWeaponGhost*>(m_hGhost.Get()))
-		{
-			return pGhost->GetAbsOrigin();
-		}
-		return vec3_origin;
-	}
-#endif // GAME_DLL
+	Vector GetGhostPos() const;
+	Vector GetGhostMarkerPos() const;
 
 	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
 	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
