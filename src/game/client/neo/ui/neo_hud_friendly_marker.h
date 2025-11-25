@@ -31,7 +31,7 @@ enum NeoIFFMarkerSegment
 #define NEO_SPECTATOR_XRAY_MARKER_DEFAULT "4;0;0;0;0.50;1;0;1;1;32;"
 #endif // GLOWS_ENABLE
 constexpr int NEO_IFFMARKER_SEQMAX = 32;
-constexpr int MAX_MARKER_STRLEN = 48 + NEO_MAX_CLANTAG_LENGTH + 1;
+constexpr int MAX_MARKER_STRSIZE = 48 + NEO_MAX_CLANTAG_LENGTH + 1;
 
 struct FriendlyMarkerInfo
 {

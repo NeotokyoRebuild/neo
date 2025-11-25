@@ -35,12 +35,12 @@ void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float fl
 	const char* newValue = conVar.GetString();
 
 	NeoIFFMarkerOption conVarChanged = NEOIFFMARKER_OPTION_SQUAD;
-	if (pConVar->GetName() == "cl_neo_friendly_marker") { conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY; }
-	else if (pConVar->GetName() == "cl_neo_spectator_marker") { conVarChanged = NEOIFFMARKER_OPTION_SPECTATOR; }
+	if (FStrEq(pConVar->GetName(), "cl_neo_friendly_marker")) { conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY; }
+	else if (FStrEq(pConVar->GetName(), "cl_neo_spectator_marker")) { conVarChanged = NEOIFFMARKER_OPTION_SPECTATOR; }
 #ifdef GLOWS_ENABLE
-	else if (pConVar->GetName() == "cl_neo_friendly_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY_XRAY; }
-	else if (pConVar->GetName() == "cl_neo_squad_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_SQUAD_XRAY; }
-	else if (pConVar->GetName() == "cl_neo_spectator_xray_marker") { conVarChanged = NEOIFFMARKER_OPTION_SPECTATOR_XRAY; }
+	else if (FStrEq(pConVar->GetName(), "cl_neo_friendly_xray_marker")) { conVarChanged = NEOIFFMARKER_OPTION_FRIENDLY_XRAY; }
+	else if (FStrEq(pConVar->GetName(), "cl_neo_squad_xray_marker")) { conVarChanged = NEOIFFMARKER_OPTION_SQUAD_XRAY; }
+	else if (FStrEq(pConVar->GetName(), "cl_neo_spectator_xray_marker")) { conVarChanged = NEOIFFMARKER_OPTION_SPECTATOR_XRAY; }
 #endif // GLOWS_ENABLE
 	
 	if (!ImportMarker(&iffHudElement->m_szMarkerSettings[conVarChanged], newValue))
@@ -227,17 +227,17 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 		return;
 	}
 
-	char textASCII[MAX_MARKER_STRLEN];
+	char textASCII[MAX_MARKER_STRSIZE];
 	int textSize = 0;
 
 	auto DisplayText = [this, &textSize, x](const char *textASCII, int y, int maxLength) {
-			wchar_t textUTF[MAX_MARKER_STRLEN];
-			COMPILE_TIME_ASSERT(sizeof(textUTF) == sizeof(wchar_t) * MAX_MARKER_STRLEN);
-			g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, min(sizeof(textUTF), sizeof(wchar_t) * maxLength));
+			wchar_t textUTF[MAX_MARKER_STRSIZE];
+			COMPILE_TIME_ASSERT(sizeof(textUTF) == sizeof(wchar_t) * MAX_MARKER_STRSIZE);
+			const int numChars = g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, min(sizeof(textUTF), sizeof(wchar_t) * maxLength));
 			int textWidth, textHeight;
 			vgui::surface()->GetTextSize(m_hFont, textUTF, textWidth, textHeight);
 			vgui::surface()->DrawSetTextPos(x - (textWidth / 2), y - textHeight);
-			vgui::surface()->DrawPrintText(textUTF, min(V_wcslen(textUTF), maxLength));
+			vgui::surface()->DrawPrintText(textUTF, numChars);
 			textSize = textHeight;
 		};
 
@@ -247,15 +247,15 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 	if (settings->bShowDistance) {
 		const float flDistance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(localPlayer->GetAbsOrigin());
 		if (settings->bVerboseDistance) {
-			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
+			V_snprintf(textASCII, MAX_MARKER_STRSIZE, "%s: %.0fm",
 				player->IsCarryingGhost() ? "GHOST DISTANCE" : "DISTANCE",
 				flDistance);
 		}
 		else {
-			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%.0fm",
+			V_snprintf(textASCII, MAX_MARKER_STRSIZE, "%.0fm",
 				flDistance);
 		}
-		DisplayText(textASCII, y, MAX_MARKER_STRLEN);
+		DisplayText(textASCII, y, MAX_MARKER_STRSIZE);
 		y -= textSize;
 	}
 
@@ -290,8 +290,8 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 
 	if (settings->bShowHealth) {
 		int healthMode = cl_neo_hud_health_mode.GetInt();
-		V_snprintf(textASCII, MAX_MARKER_STRLEN, healthMode ? "%dhp" : "%d%%", player->GetDisplayedHealth(healthMode));
-		DisplayText(textASCII, y, MAX_MARKER_STRLEN);
+		V_snprintf(textASCII, MAX_MARKER_STRSIZE, healthMode ? "%dhp" : "%d%%", player->GetDisplayedHealth(healthMode));
+		DisplayText(textASCII, y, MAX_MARKER_STRSIZE);
 		y -= textSize;
 	}
 
@@ -378,15 +378,15 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 	int iSegmentIdx = 0;
 	NeoIFFMarkerVariant vars[NEOIFFMARKER_SEGMENT__TOTAL] = {};
 
-	const int iPszSequenceSize = V_strlen(pszSequence);
-	if (iPszSequenceSize <= 0 || iPszSequenceSize > NEO_IFFMARKER_SEQMAX)
+	const int iPszSequenceLength = V_strlen(pszSequence);
+	if (iPszSequenceLength <= 0 || iPszSequenceLength > NEO_IFFMARKER_SEQMAX)
 	{
 		return false;
 	}
 
 	char szMutSequence[NEO_IFFMARKER_SEQMAX];
-	V_memcpy(szMutSequence, pszSequence, sizeof(char) * iPszSequenceSize);
-	for (int i = 0; i < iPszSequenceSize && iSegmentIdx < NEOIFFMARKER_SEGMENT__TOTAL; ++i)
+	V_memcpy(szMutSequence, pszSequence, sizeof(char) * iPszSequenceLength);
+	for (int i = 0; i < iPszSequenceLength && iSegmentIdx < NEOIFFMARKER_SEGMENT__TOTAL; ++i)
 	{
 		const char ch = szMutSequence[i];
 		if (ch == ';')

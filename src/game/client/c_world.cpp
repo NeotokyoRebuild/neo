@@ -15,7 +15,7 @@
 #include "eventlist.h"
 // NVNT haptic include for notification of world precache
 #include "haptics/haptic_utils.h"
-#if defined NEO && GLOWS_ENABLE
+#if defined NEO && defined GLOWS_ENABLE
 #include "c_neo_player.h"
 #endif // NEO && GLOWS_ENABLE
 // memdbgon must be the last include file in a .cpp file!!!

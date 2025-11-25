@@ -386,7 +386,6 @@ void C_ClientRagdoll::OnRestore( void )
 }
 
 #ifdef NEO
-extern ConVar glow_outline_effect_enable;
 int C_ClientRagdoll::DrawModel(int flags)
 {
 	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
@@ -3222,9 +3221,6 @@ void C_BaseAnimating::UpdateVisibility()
 
 ConVar r_drawothermodels( "r_drawothermodels", "1", FCVAR_CHEAT, "0=Off, 1=Normal, 2=Wireframe" );
 
-#if defined NEO && defined GLOWS_ENABLE
-extern ConVar glow_outline_effect_enable;
-#endif // NEO && GLOWS_ENABLE
 //-----------------------------------------------------------------------------
 // Purpose: Draws the object
 // Input  : flags - 

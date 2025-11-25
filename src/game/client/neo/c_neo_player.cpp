@@ -1061,7 +1061,6 @@ void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 #endif
 
 extern ConVar sv_infinite_aux_power;
-extern ConVar glow_outline_effect_enable;
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();

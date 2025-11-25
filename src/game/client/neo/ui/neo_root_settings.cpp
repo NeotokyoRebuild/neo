@@ -1408,7 +1408,7 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::RingBoxBool(L"Show health", &pMarker->bShowHealth);
 	NeoUI::RingBoxBool(L"Show name", &pMarker->bShowName);
 	NeoUI::RingBoxBool(L"Prepend clantag", &pMarker->bPrependClantagToName);
-	NeoUI::SliderInt(L"Max name length (including clantag)", &pMarker->iMaxNameLength, 0, MAX_MARKER_STRLEN, 1);
+	NeoUI::SliderInt(L"Max name length (including clantag)", &pMarker->iMaxNameLength, 0, MAX_MARKER_STRSIZE, 1);
 
 #ifdef GLOWS_ENABLE
 	NeoUI::HeadingLabel(L"Player Xray");

@@ -783,9 +783,9 @@ int	ClientModeShared::KeyInput( int down, ButtonCode_t keynum, const char *pszCu
 	return 1;
 }
 
-#ifdef NEO
+#if defined NEO && defined GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
-#endif // NEO
+#endif // NEO && GLOWS_ENABLE
 //-----------------------------------------------------------------------------
 // Purpose: See if spectator input occurred. Return 0 if the key is swallowed.
 //-----------------------------------------------------------------------------
@@ -836,13 +836,13 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 #endif
 		return 0;
 	}
-#ifdef GLOWS_ENABLE
+#if defined NEO && defined GLOWS_ENABLE
 	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+attack2") == 0)
 	{
 		glow_outline_effect_enable.SetValue(!glow_outline_effect_enable.GetBool());
 		return 0;
 	}
-#endif // GLOWS_ENABLE
+#endif // NEO && GLOWS_ENABLE
 #ifdef NEO
 	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+use") == 0)
 	{

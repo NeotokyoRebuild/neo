@@ -331,6 +331,7 @@ void CNeoRootInput::OnThink()
 		m_pNeoRoot->m_bNextBindingSecondary = false;
 		m_pNeoRoot->m_state = STATE_SETTINGS;
 		V_memcpy(g_uiCtx.iYOffset, m_pNeoRoot->m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
+		V_memcpy(g_uiCtx.iXOffset, m_pNeoRoot->m_iSavedXOffsets, NeoUI::SIZEOF_SECTIONS);
 		g_uiCtx.iActive = m_pNeoRoot->m_iSavedActive;
 		g_uiCtx.iActiveSection = m_pNeoRoot->m_iSavedSection;
 	}
@@ -477,6 +478,7 @@ void CNeoRoot::UpdateControls()
 	g_uiCtx.iActive = NeoUI::FOCUSOFF_NUM;
 	g_uiCtx.iActiveSection = -1;
 	V_memset(g_uiCtx.iYOffset, 0, sizeof(g_uiCtx.iYOffset));
+	V_memset(g_uiCtx.iXOffset, 0, sizeof(g_uiCtx.iXOffset));
 	m_ns.bBack = false;
 	m_bShowBrowserLabel = false;
 	RequestFocus();
@@ -711,11 +713,13 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			if (ePrevState == STATE_SETTINGS)
 			{
 				V_memcpy(m_iSavedYOffsets, g_uiCtx.iYOffset, NeoUI::SIZEOF_SECTIONS);
+				V_memcpy(m_iSavedXOffsets, g_uiCtx.iXOffset, NeoUI::SIZEOF_SECTIONS);
 			}
 			UpdateControls();
 			if (m_state == STATE_SETTINGS && ePrevState >= STATE__POPUPSTART && ePrevState < STATE__TOTAL)
 			{
 				V_memcpy(g_uiCtx.iYOffset, m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
+				V_memcpy(g_uiCtx.iXOffset, m_iSavedXOffsets, NeoUI::SIZEOF_SECTIONS);
 			}
 		}
 	}
@@ -1046,7 +1050,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 	{
 		NeoUI::BeginSection(NeoUI::SECTIONFLAG_ROWWIDGETS | NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
 		{
-			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab);
+			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab, 2);
 		}
 		NeoUI::EndSection();
 		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
@@ -1363,7 +1367,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 		NeoUI::BeginSection(NeoUI::SECTIONFLAG_ROWWIDGETS);
 		{
 			const int iPrevTab = m_iServerBrowserTab;
-			NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab);
+			NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab, 6);
 			if (iPrevTab != m_iServerBrowserTab)
 			{
 				m_iSelectedServer = -1;

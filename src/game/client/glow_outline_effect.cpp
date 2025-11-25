@@ -25,7 +25,6 @@
 ConVar glow_outline_effect_enable("glow_outline_effect_enable", "0", FCVAR_ARCHIVE, "Enable entity outline glow effects.", 
 	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]])
 	{
-		bool wantGlow = glow_outline_effect_enable.GetBool();
 		C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 		if (pLocalPlayer) {
 			pLocalPlayer->UpdateGlowEffects(pLocalPlayer->GetTeamNumber());
@@ -327,8 +326,10 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	}
 	
 	// Get viewport
+#ifndef NEO
 	int nSrcWidth = pSetup->width;
 	int nSrcHeight = pSetup->height;
+#endif // NEO
 	int nViewportX, nViewportY, nViewportWidth, nViewportHeight;
 	pRenderContext->GetViewport( nViewportX, nViewportY, nViewportWidth, nViewportHeight );
 
