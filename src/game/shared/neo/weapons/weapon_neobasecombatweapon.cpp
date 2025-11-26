@@ -41,6 +41,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bRoundChambered)),
 	RecvPropBool(RECVINFO(m_bRoundBeingChambered)),
+	RecvPropBool(RECVINFO(m_bTriggerReset)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
@@ -48,6 +49,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bRoundChambered)),
 	SendPropBool(SENDINFO(m_bRoundBeingChambered)),
+	SendPropBool(SENDINFO(m_bTriggerReset)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
 END_NETWORK_TABLE()
@@ -60,6 +62,7 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bRoundChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -73,6 +76,7 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 	DEFINE_FIELD(m_bRoundChambered, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
 
@@ -222,6 +226,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
+	m_bTriggerReset = true;
 }
 
 void CNEOBaseCombatWeapon::Precache()
@@ -630,6 +635,11 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 
 	UpdateAutoFire();
 
+	if (IsSemiAuto() && (pOwner->m_afButtonLast & IN_ATTACK) && !(pOwner->m_nButtons & IN_ATTACK))
+	{
+		m_bTriggerReset = true;
+	}
+
 	//Track the duration of the fire
 	//FIXME: Check for IN_ATTACK2 as well?
 	//FIXME: What if we're calling ItemBusyFrame?
@@ -868,10 +878,12 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	{
 		return;
 	}
+
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;
 	}
+
 	else if (m_iClip1 == 0)
 	{
 		if (!m_bFireOnEmpty)
@@ -897,14 +909,9 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 
-	if (IsSemiAuto())
+	if (IsSemiAuto() && !m_bTriggerReset)
 	{
-		// Do nothing if we hold fire whilst semi auto
-		if ((pOwner->m_afButtonLast & IN_ATTACK) &&
-			(pOwner->m_nButtons & IN_ATTACK))
-		{
-			return;
-		}
+		return;
 	}
 
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
@@ -927,7 +934,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	// Only the player fires this way so we can cast
 	auto pPlayer = static_cast<CNEO_Player*>(GetOwner());
-
 	if (!pPlayer)
 	{
 		return;
@@ -946,6 +952,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
 	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
+	m_bTriggerReset = false;
 
 	// player "shoot" animation
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);

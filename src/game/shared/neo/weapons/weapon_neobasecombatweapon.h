@@ -243,6 +243,7 @@ protected:
 	CNetworkVar(int, m_nNumShotsFired);
 	CNetworkVar(bool, m_bRoundChambered);
 	CNetworkVar(bool, m_bRoundBeingChambered);
+	CNetworkVar(bool, m_bTriggerReset);
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
