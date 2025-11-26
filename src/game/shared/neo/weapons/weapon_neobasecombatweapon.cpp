@@ -952,7 +952,10 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
 	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
-	m_bTriggerReset = false;
+	if (IsSemiAuto())
+	{
+		m_bTriggerReset = false;
+	}
 
 	// player "shoot" animation
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
