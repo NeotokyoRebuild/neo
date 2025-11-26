@@ -775,5 +775,4 @@ private:
 																\
 	CCommandMemberInitializer_##_funcname m_##_funcname##_register;		\
 
-
 #endif // CONVAR_H

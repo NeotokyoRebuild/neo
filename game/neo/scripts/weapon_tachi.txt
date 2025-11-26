@@ -31,7 +31,7 @@ WeaponData
 	"AimFov"		"55.0"
 	"Damage"		"17"
 	"Penetration"           "19.0"
-	"CycleTime"             "0.12"
+	"CycleTime"             "0.121212"
 
 	"ViewModelOffset"
 	{

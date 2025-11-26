@@ -429,7 +429,7 @@ public:
 	float m_flLastShouldAimTime = 0.0f;
 
 	CNEOBotProfile m_profile = {};
-	void RequestClassOnProfile();
+	NeoClass ChooseRandomClass() const;
 	int m_iIntendTeam = 0;
 	int m_iProfileIdx = -1;
 

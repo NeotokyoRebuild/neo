@@ -142,6 +142,7 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 
 ConVar cl_neo_streamermode("cl_neo_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
 ConVar cl_neo_streamermode_autodetect_obs("cl_neo_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn cl_neo_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_equip_utility_priority("cl_neo_equip_utility_priority", "1", FCVAR_ARCHIVE, "Utility slot equip priority. 0 = Frag,Smoke,Detpack, 1 = Class Specific First.", true, 0.0f, true, 1.0f);
 
 ConVar cl_neo_tachi_prefer_auto("cl_neo_tachi_prefer_auto", "1", FCVAR_ARCHIVE | FCVAR_USERINFO,
 	"Whether full-auto is the preferred default firing mode for Tachi loadouts.", true, false, true, true);
@@ -435,7 +436,7 @@ C_NEO_Player::C_NEO_Player()
 	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
-	m_iNextSpawnClassChoice = -1;
+	m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 	m_iXP.GetForModify() = 0;
 
 	m_bInThermOpticCamo = m_bInVision = false;
@@ -1268,7 +1269,7 @@ void C_NEO_Player::PostThink(void)
 			m_bFirstDeathTick = false;
 
 			Weapon_SetZoom(false);
-			m_bInVision = false;
+			m_bInVision = m_bInThermOpticCamo = false;
 			IN_LeanReset();
 
 			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
@@ -1346,7 +1347,6 @@ void C_NEO_Player::PostThink(void)
 
 	if (auto *pNeoWep = static_cast<C_NEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
-		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pNeoWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
@@ -1355,14 +1355,14 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
+		else if (m_nButtons & IN_AIM && !IsInAim())
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
-				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
+				Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_AIM);
 			}
 		}
-		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
+		else if (m_afButtonReleased & IN_AIM)
 		{
 			Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}

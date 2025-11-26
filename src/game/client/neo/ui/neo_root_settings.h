@@ -47,7 +47,6 @@ struct NeoSettings
 		bool bMarkerSpecOnlyClantag;
 		int iFov;
 		int iViewmodelFov;
-		bool bAimHold;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
@@ -169,6 +168,14 @@ struct NeoSettings
 		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
 	};
 
+	enum EquipUtilityPriorityType
+	{
+		EQUIP_UTILITY_PRIORITY_FRAG_SMOKE_DETPACK = 0,
+		EQUIP_UTILITY_PRIORITY_CLASS_SPECIFIC,
+
+		EQUIP_UTILITY_PRIORITY__TOTAL,
+	};
+
 	struct HUD
 	{
 		// Miscellaneous
@@ -226,7 +233,6 @@ struct NeoSettings
 		CONVARREF_DEF(cl_onlysteamnick);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
-		CONVARREF_DEF(neo_aim_hold);
 		CONVARREF_DEF(cl_autoreload_when_empty);
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
@@ -247,6 +253,7 @@ struct NeoSettings
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
+		CONVARREF_DEF(cl_neo_equip_utility_priority);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);

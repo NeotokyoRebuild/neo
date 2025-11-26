@@ -536,6 +536,11 @@ if(NEO_INSTALL_LIBRARIES)
     endif()
 
     if(OS_LINUX AND NEO_GENERATE_GAMEDATA)
+        install(
+            FILES "${CMAKE_SOURCE_DIR}/gamedata/core.games/custom/game.neo.txt"
+            DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/core.games/custom"
+        )
+
         get_target_property(SERVER_GAMEDATA_SDKHOOKS_OUTPUT_FILE server GAMEDATA_SDKHOOKS_OUTPUT_FILE)
         install(
             FILES ${SERVER_GAMEDATA_SDKHOOKS_OUTPUT_FILE}

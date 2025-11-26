@@ -387,7 +387,6 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
 		pGeneral->iFov = cvr->neo_fov.GetInt();
 		pGeneral->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
-		pGeneral->bAimHold = cvr->neo_aim_hold.GetBool();
 		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
@@ -634,6 +633,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pHUD->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pHUD->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
 		pHUD->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
+		pHUD->iEquipUtilityPriority = cvr->cl_neo_equip_utility_priority.GetInt();
 
 		bool bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], cvr->cl_neo_squad_marker.GetString());
 		if (!bImported)
@@ -724,7 +724,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
 		cvr->neo_fov.SetValue(pGeneral->iFov);
 		cvr->neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
-		cvr->neo_aim_hold.SetValue(pGeneral->bAimHold);
 		cvr->cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
@@ -885,6 +884,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pHUD->bExtendedKillfeed);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pHUD->iKdinfoToggletype);
 		cvr->cl_neo_hud_context_hint_enabled.SetValue(pHUD->bShowHudContextHints);
+		cvr->cl_neo_equip_utility_priority.SetValue(pHUD->iEquipUtilityPriority);
 
 		char szSequence[NEO_IFFMARKER_SEQMAX];
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], szSequence);
@@ -976,6 +976,11 @@ static const wchar_t *KDMGINFO_TOGGLETYPE_LABELS[KDMGINFO_TOGGLETYPE__TOTAL] = {
 	L"Never", // KDMGINFO_TOGGLETYPE_NEVER
 };
 
+static const wchar_t *EQUIP_UTILITY_PRIORITY_LABELS[NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL] = {
+	L"Frag, Smoke, Detpack", // EQUIP_UTILITY_PRIORITY_FRAG_SMOKE_DETPACK
+	L"Class Specific First" // EQUIP_UTILITY_PRIORITY_CLASS_SPECIFIC
+};
+
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
@@ -1003,7 +1008,6 @@ void NeoSettings_General(NeoSettings *ns)
 
 	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
-	NeoUI::RingBoxBool(L"Aim hold", &pGeneral->bAimHold);
 	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
@@ -1281,7 +1285,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 #ifdef WIN32
 						// NEO NOTE (nullsystem): On Windows, GetClipboardText char * returns UTF-16 arranged bytes, differs from Set...
 						wchar_t wszClipboardCrosshair[NEO_XHAIR_SEQMAX] = {};
-						const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, NEO_XHAIR_SEQMAX);
+						const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, sizeof(wszClipboardCrosshair));
 						const int iClipboardBytes = (iClipboardWSZBytes > 0)
 								? g_pVGuiLocalize->ConvertUnicodeToANSI(wszClipboardCrosshair, szClipboardCrosshair, sizeof(szClipboardCrosshair))
 								: 0;
@@ -1346,7 +1350,32 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::SliderInt(L"Thickness", &pCrosshair->info.iThick, 0, CROSSHAIR_MAX_THICKNESS);
 			NeoUI::SliderInt(L"Gap", &pCrosshair->info.iGap, 0, CROSSHAIR_MAX_GAP);
 			NeoUI::SliderInt(L"Outline", &pCrosshair->info.iOutline, 0, CROSSHAIR_MAX_OUTLINE);
+			if (pCrosshair->info.iOutline > 0)
+			{
+				NeoUI::SliderU8(L"Outline color: Red", &pCrosshair->info.colorOutline[0], 0, UCHAR_MAX);
+				NeoUI::SliderU8(L"Outline color: Green", &pCrosshair->info.colorOutline[1], 0, UCHAR_MAX);
+				NeoUI::SliderU8(L"Outline color: Blue", &pCrosshair->info.colorOutline[2], 0, UCHAR_MAX);
+				NeoUI::SliderU8(L"Outline color: Alpha", &pCrosshair->info.colorOutline[3], 0, UCHAR_MAX);
+			}
 			NeoUI::SliderInt(L"Center dot", &pCrosshair->info.iCenterDot, 0, CROSSHAIR_MAX_CENTER_DOT);
+			if (pCrosshair->info.iCenterDot > 0)
+			{
+				NeoUI::RingBoxBool(L"Separate dot color", &pCrosshair->info.bSeparateColorDot);
+				if (pCrosshair->info.bSeparateColorDot)
+				{
+					NeoUI::SliderU8(L"Dot color: Red", &pCrosshair->info.colorDot[0], 0, UCHAR_MAX);
+					NeoUI::SliderU8(L"Dot color: Green", &pCrosshair->info.colorDot[1], 0, UCHAR_MAX);
+					NeoUI::SliderU8(L"Dot color: Blue", &pCrosshair->info.colorDot[2], 0, UCHAR_MAX);
+					NeoUI::SliderU8(L"Dot color: Alpha", &pCrosshair->info.colorDot[3], 0, UCHAR_MAX);
+					if (pCrosshair->info.iOutline > 0)
+					{
+						NeoUI::SliderU8(L"Dot outline color: Red", &pCrosshair->info.colorDotOutline[0], 0, UCHAR_MAX);
+						NeoUI::SliderU8(L"Dot outline color: Green", &pCrosshair->info.colorDotOutline[1], 0, UCHAR_MAX);
+						NeoUI::SliderU8(L"Dot outline color: Blue", &pCrosshair->info.colorDotOutline[2], 0, UCHAR_MAX);
+						NeoUI::SliderU8(L"Dot outline color: Alpha", &pCrosshair->info.colorDotOutline[3], 0, UCHAR_MAX);
+					}
+				}
+			}
 			NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
 			NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
 			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
@@ -1387,6 +1416,7 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::RingBoxBool(L"Show rangefinder", &pHud->bEnableRangeFinder);
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pHud->bExtendedKillfeed);
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
+	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pHud->iEquipUtilityPriority);
 
 	NeoUI::HeadingLabel(L"IFF MARKERS");
 	static int optionChosen = 0;
