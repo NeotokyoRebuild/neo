@@ -1491,7 +1491,7 @@ void CNEO_Player::PostThink(void)
 			m_bFirstDeathTick = false;
 
 			Weapon_SetZoom(false);
-			m_bInVision = false;
+			m_bInVision = m_bInThermOpticCamo =false;
 			m_bInLean = NEO_LEAN_NONE;
 		}
 
