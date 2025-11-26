@@ -13,6 +13,7 @@
 #include "GameEventListener.h"
 #include "neo_player_shared.h"
 #include "neo_misc.h"
+#include "weapon_ghost.h"
 #ifdef GAME_DLL
 #include "neo_juggernaut.h"
 #endif
@@ -323,7 +324,8 @@ public:
 	int GetGhosterTeam() const { return m_iGhosterTeam; }
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
 	bool GhostExists() const { return m_bGhostExists; }
-	Vector GetGhostPos() const { return m_vecGhostMarkerPos; }
+	Vector GetGhostPos() const;
+	Vector GetGhostMarkerPos() const;
 
 	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
 	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
@@ -453,6 +455,7 @@ private:
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(float, m_flGhostLastHeld);
+	CNetworkHandle( CWeaponGhost, m_hGhost );
 
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);
