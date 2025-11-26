@@ -39,6 +39,14 @@ enum XHairExportNotify
 
 struct NeoSettings
 {
+	enum EquipUtilityPriorityType
+	{
+		EQUIP_UTILITY_PRIORITY_FRAG_SMOKE_DETPACK = 0,
+		EQUIP_UTILITY_PRIORITY_CLASS_SPECIFIC,
+
+		EQUIP_UTILITY_PRIORITY__TOTAL,
+	};
+
 	struct General
 	{
 		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH];
@@ -51,6 +59,7 @@ struct NeoSettings
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
 		int iLeanAutomatic;
+		int iEquipUtilityPriority;
 		bool bShowPlayerSprays;
 		int iDlFilter;
 		bool bStreamerMode;
@@ -168,14 +177,6 @@ struct NeoSettings
 		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
 	};
 
-	enum EquipUtilityPriorityType
-	{
-		EQUIP_UTILITY_PRIORITY_FRAG_SMOKE_DETPACK = 0,
-		EQUIP_UTILITY_PRIORITY_CLASS_SPECIFIC,
-
-		EQUIP_UTILITY_PRIORITY__TOTAL,
-	};
-
 	struct HUD
 	{
 		// Miscellaneous
@@ -191,7 +192,6 @@ struct NeoSettings
 		bool bExtendedKillfeed;
 		bool bShowHudContextHints;
 		int iKdinfoToggletype;
-		int iEquipUtilityPriority;
 
 		// IFF Markers
 		int optionChosen;

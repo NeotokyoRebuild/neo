@@ -391,6 +391,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
+		pGeneral->iEquipUtilityPriority = cvr->cl_neo_equip_utility_priority.GetInt();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
 		{
 			const char *szDlFilter = cvr->cl_downloadfilter.GetString();
@@ -633,7 +634,6 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pHUD->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pHUD->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
 		pHUD->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
-		pHUD->iEquipUtilityPriority = cvr->cl_neo_equip_utility_priority.GetInt();
 
 		bool bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], cvr->cl_neo_squad_marker.GetString());
 		if (!bImported)
@@ -728,6 +728,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
+		cvr->cl_neo_equip_utility_priority.SetValue(pGeneral->iEquipUtilityPriority);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
 		cvr->cl_neo_streamermode.SetValue(pGeneral->bStreamerMode);
@@ -884,7 +885,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pHUD->bExtendedKillfeed);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pHUD->iKdinfoToggletype);
 		cvr->cl_neo_hud_context_hint_enabled.SetValue(pHUD->bShowHudContextHints);
-		cvr->cl_neo_equip_utility_priority.SetValue(pHUD->iEquipUtilityPriority);
 
 		char szSequence[NEO_IFFMARKER_SEQMAX];
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], szSequence);
@@ -1012,6 +1012,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
+	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pGeneral->iEquipUtilityPriority);
 
 	NeoUI::HeadingLabel(L"MAIN MENU");
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
@@ -1416,7 +1417,6 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::RingBoxBool(L"Show rangefinder", &pHud->bEnableRangeFinder);
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pHud->bExtendedKillfeed);
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
-	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pHud->iEquipUtilityPriority);
 
 	NeoUI::HeadingLabel(L"IFF MARKERS");
 	static int optionChosen = 0;
