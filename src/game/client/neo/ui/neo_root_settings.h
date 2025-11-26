@@ -191,6 +191,7 @@ struct NeoSettings
 		bool bExtendedKillfeed;
 		bool bShowHudContextHints;
 		int iKdinfoToggletype;
+		int iEquipUtilityPriority;
 
 		// IFF Markers
 		int optionChosen;
