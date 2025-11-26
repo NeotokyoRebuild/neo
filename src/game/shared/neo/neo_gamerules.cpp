@@ -4308,7 +4308,7 @@ float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
 	}
 }
 
-Vector CNEORules::GetGhostPos() const
+const Vector& CNEORules::GetGhostPos() const
 {
 #ifdef GAME_DLL
 	return m_pGhost ? m_pGhost->GetAbsOrigin() : m_vecGhostMarkerPos;
@@ -4322,7 +4322,7 @@ Vector CNEORules::GetGhostPos() const
 #endif // GAME_DLL
 }
 
-Vector CNEORules::GetGhostMarkerPos() const
+const Vector& CNEORules::GetGhostMarkerPos() const
 {
 	if (auto pGhosterPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(GetGhosterPlayer()));
 		pGhosterPlayer

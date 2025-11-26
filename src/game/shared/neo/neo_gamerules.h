@@ -324,8 +324,8 @@ public:
 	int GetGhosterTeam() const { return m_iGhosterTeam; }
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
 	bool GhostExists() const { return m_bGhostExists; }
-	Vector GetGhostPos() const;
-	Vector GetGhostMarkerPos() const;
+	const Vector& GetGhostPos() const;
+	const Vector& GetGhostMarkerPos() const;
 
 	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
 	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
