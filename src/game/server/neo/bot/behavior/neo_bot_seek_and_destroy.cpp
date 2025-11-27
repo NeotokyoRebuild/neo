@@ -62,6 +62,26 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		return Done( "Disabled." );
 	}
 
+	// Juggernaut weapon firing logic
+	if (me->GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		CNEOBaseCombatWeapon* activeWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
+		if (activeWeapon && (activeWeapon->GetNeoWepBits() & NEO_WEP_BALC))
+		{
+			// Hold down fire button for 10 seconds.
+			// This will be called repeatedly by the Update function while the bot is the Juggernaut.
+			me->PressFireButton(10.0f); 
+		}
+		// If the bot is the Juggernaut, it should no longer pursue the neo_juggernaut objective
+		// This will allow the fallback wandering logic to take over.
+		if (m_hTargetEntity && FStrEq(m_hTargetEntity->GetClassname(), "neo_juggernaut"))
+		{
+			m_hTargetEntity = NULL;
+			m_bGoingToTargetEntity = false;
+			m_path.Invalidate(); // Invalidate path to trigger recomputation of a new objective (wandering)
+		}
+	}
+
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 
 	if ( threat )
@@ -120,6 +140,51 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 
 		}
 	}
+
+	// Juggernaut objective "use" logic
+	if (m_bGoingToTargetEntity && m_hTargetEntity && FStrEq(m_hTargetEntity->GetClassname(), "neo_juggernaut"))
+	{
+		if (me->GetClass() != NEO_CLASS_JUGGERNAUT) // Bot is not yet a Juggernaut
+		{
+			// Check if bot is close enough to the objective to "use" it
+			const float useRangeSq = 100.0f * 100.0f; // Example: within 100 hammer units
+			if (me->GetAbsOrigin().DistToSqr(m_vGoalPos) < useRangeSq)
+			{
+				// Start timer for use attempt
+				if (!m_jgrUseAttemptTimer.HasStarted())
+				{
+					m_jgrUseAttemptTimer.Start(USE_DURATION + 1.0f); // Give it a little more time than the actual use duration
+				}
+				// Continuously press the use button
+				me->PressUseButton(-1.0f); // -1.0f duration means continuous press until released
+				// Make the bot look at the objective while pressing use
+				me->GetBodyInterface()->AimHeadTowards(m_vGoalPos, IBody::CRITICAL, 0.1f, NULL, "Looking at Juggernaut objective to use");
+
+				// If use attempt timer has elapsed, stop trying and re-evaluate
+				if (m_jgrUseAttemptTimer.IsElapsed())
+				{
+					me->ReleaseUseButton();
+					m_jgrUseAttemptTimer.Invalidate();
+					m_hTargetEntity = NULL;
+					m_bGoingToTargetEntity = false;
+					m_path.Invalidate(); // Invalidate path to trigger recomputation of a new objective (wandering)
+				}
+			}
+			else
+			{
+				// Release use button if not close enough or moving away
+				me->ReleaseUseButton();
+				m_jgrUseAttemptTimer.Invalidate(); // Invalidate timer if not actively using
+			}
+		}
+		else
+		{
+			// Bot became Juggernaut, so release use button and invalidate timer
+			me->ReleaseUseButton();
+			m_jgrUseAttemptTimer.Invalidate();
+		}
+	}
+
 
 	// move towards our seek goal
 	m_path.Update( me );
@@ -334,6 +399,81 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 	{
 		m_path.Invalidate();
 		return;
+	}
+
+	// Juggernaut bot behavior: seek and attack nearest enemy
+	if (me->GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		const CKnownEntity* nearestEnemy = me->GetVisionInterface()->GetPrimaryKnownThreat();
+		if (nearestEnemy && nearestEnemy->GetEntity()->IsAlive())
+		{
+			m_hTargetEntity = nearestEnemy->GetEntity();
+			m_bGoingToTargetEntity = true;
+			m_vGoalPos = nearestEnemy->GetLastKnownPosition(); // Target last known position
+			
+			CNEOBotPathCost cost(me, FASTEST_ROUTE);
+			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+			{
+				return;
+			}
+		}
+		// If no immediate threat, try to find a reachable enemy
+		else
+		{
+			CUtlVector<CNEO_Player*> enemyPlayers;
+			CollectPlayers(&enemyPlayers, GetEnemyTeam(me->GetTeamNumber()), COLLECT_ONLY_LIVING_PLAYERS);
+
+			float minDistanceSq = FLT_MAX;
+			CNEO_Player* closestEnemy = nullptr;
+
+			for (int i = 0; i < enemyPlayers.Count(); ++i)
+			{
+				CNEO_Player* enemy = enemyPlayers[i];
+				if (enemy->IsAlive())
+				{
+					float distSq = me->GetAbsOrigin().DistToSqr(enemy->GetAbsOrigin());
+					if (distSq < minDistanceSq)
+					{
+						minDistanceSq = distSq;
+						closestEnemy = enemy;
+					}
+				}
+			}
+
+			if (closestEnemy)
+			{
+				m_hTargetEntity = closestEnemy;
+				m_bGoingToTargetEntity = true;
+				m_vGoalPos = closestEnemy->GetAbsOrigin();
+
+				CNEOBotPathCost cost(me, FASTEST_ROUTE);
+				if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+				{
+					return;
+				}
+			}
+		}
+	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+	{
+		if (me->GetClass() != NEO_CLASS_JUGGERNAUT)
+		{
+			// Find the neo_juggernaut entity
+			CBaseEntity* pJuggernautObjective = gEntList.FindEntityByClassname(NULL, "neo_juggernaut");
+			if (pJuggernautObjective)
+			{
+				m_hTargetEntity = pJuggernautObjective;
+				m_bGoingToTargetEntity = true;
+				m_vGoalPos = pJuggernautObjective->WorldSpaceCenter();
+
+				CNEOBotPathCost cost(me, FASTEST_ROUTE); // Prioritize fastest route to objective
+				if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+				{
+					return;
+				}
+			}
+		}
 	}
 
 #if 0 // NEO TODO (Adam) search for the ghost separately, also can't pick up weapons on contact so bots just jump around weapons thinking they're stuck indefinitely

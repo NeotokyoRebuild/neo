@@ -10,8 +10,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-#define USE_DURATION 5.0f
-#define USE_DISTANCE_SQUARED 22500.0f
+
 
 LINK_ENTITY_TO_CLASS(neo_juggernaut, CNEO_Juggernaut);
 

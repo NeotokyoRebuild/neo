@@ -7,6 +7,9 @@
 #include "c_neo_player.h"
 #endif
 
+#define USE_DURATION 5.0f
+#define USE_DISTANCE_SQUARED 22500.0f
+
 #ifdef CLIENT_DLL
 #define CNEO_Juggernaut C_NEO_Juggernaut
 #endif

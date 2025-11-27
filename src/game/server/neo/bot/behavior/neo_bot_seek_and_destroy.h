@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Path/NextBotChasePath.h"
-
+#include "neo_juggernaut.h" // For USE_DURATION
 
 //
 // Roam around the map attacking enemies
@@ -35,6 +35,7 @@ private:
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
 	CountdownTimer m_itemStolenTimer;
+	CountdownTimer m_jgrUseAttemptTimer; // New member for Juggernaut use attempt timer
 	EHANDLE m_hTargetEntity;
 	bool m_bGoingToTargetEntity = false;
 	Vector m_vGoalPos = vec3_origin;
