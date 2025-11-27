@@ -820,6 +820,12 @@ void CNEOBot::Update()
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::Event_Killed(const CTakeDamageInfo& info)
 {
+	if (m_intention)
+	{
+		// Clean up Action stack on death
+		m_intention->Reset();
+	}
+
 	BaseClass::Event_Killed(info);
 
 	if (HasProxy())
