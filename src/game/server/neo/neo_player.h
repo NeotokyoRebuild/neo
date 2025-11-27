@@ -150,7 +150,7 @@ public:
 	const char *GetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
 	// "neo_name" even if it's nothing
 	const char *GetNeoPlayerNameDirect() const;
-	void SetNeoPlayerName(const char *newNeoName);
+	[[nodiscard]] bool SetNeoPlayerName(const char *newNeoName);
 	void SetClientWantNeoName(const bool b);
 	const char *GetNeoClantag() const;
 
@@ -326,7 +326,7 @@ private:
 	bool m_bFirstDeathTick;
 	bool m_bCorpseSet;
 	bool m_bPreviouslyReloading;
-	bool m_szNeoNameHasSet;
+	bool m_bNeoNameHasSet;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
