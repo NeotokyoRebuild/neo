@@ -22,7 +22,7 @@
 #ifdef GLOWS_ENABLE
 
 #ifdef NEO
-ConVar glow_outline_effect_enable("glow_outline_effect_enable", "0", FCVAR_ARCHIVE, "Enable entity outline glow effects.", 
+ConVar glow_outline_effect_enable("glow_outline_effect_enable", "1", FCVAR_ARCHIVE, "Enable entity outline glow effects.", 
 	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]])
 	{
 		C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
