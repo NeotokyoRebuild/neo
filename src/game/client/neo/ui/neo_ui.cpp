@@ -1401,6 +1401,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, con
 		vgui::surface()->GetFullscreenViewport(oldX, oldY, oldW, oldH);
 		vgui::surface()->SetFullscreenViewport(c->rWidgetArea.x0, c->rWidgetArea.y0, c->irWidgetWide, c->irWidgetTall);
 		vgui::surface()->PushFullscreenViewport();
+
 		const auto *pFontI = &c->fonts[c->eFont];
 		for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
 		{
@@ -1436,6 +1437,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, con
 			vgui::surface()->DrawSetColor(COLOR_WHITE);
 			vgui::surface()->DrawFilledRect(c->irWidgetWide, 0, c->irWidgetWide-2, c->irWidgetTall);
 		}
+
 		vgui::surface()->PopFullscreenViewport();
 		vgui::surface()->SetFullscreenViewport(oldX, oldY, oldW, oldH);
 
