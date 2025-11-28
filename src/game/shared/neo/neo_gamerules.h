@@ -325,11 +325,11 @@ public:
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
 	bool GhostExists() const { return m_bGhostExists; }
 	const Vector& GetGhostPos() const;
-	const Vector& GetGhostMarkerPos() const;
+	Vector GetGhostMarkerPos() const;
 
 	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
 	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
-	Vector GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
+	const Vector& GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
 
 	int GetOpposingTeam(const int team) const
 	{

@@ -4322,7 +4322,7 @@ const Vector& CNEORules::GetGhostPos() const
 #endif // GAME_DLL
 }
 
-const Vector& CNEORules::GetGhostMarkerPos() const
+Vector CNEORules::GetGhostMarkerPos() const
 {
 	if (auto pGhosterPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(GetGhosterPlayer()));
 		pGhosterPlayer
