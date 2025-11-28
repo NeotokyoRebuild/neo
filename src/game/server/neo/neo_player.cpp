@@ -2957,12 +2957,17 @@ CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
 {
 	auto* item = BaseClass::GiveNamedItem(szName, iSubType);
 
-	if (item && szName && FStrEq(szName, "weapon_tachi"))
+	if (item)
 	{
-		const char* tachiPref = engine->GetClientConVarValue(entindex(), "cl_neo_tachi_prefer_auto");
-		if (tachiPref && *tachiPref && (V_atoi(tachiPref) != 0))
+		item->RemoveEffects( EF_BONEMERGE );
+
+		if (szName && FStrEq(szName, "weapon_tachi"))
 		{
-			assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
+			const char* tachiPref = engine->GetClientConVarValue(entindex(), "cl_neo_tachi_prefer_auto");
+			if (tachiPref && *tachiPref && (V_atoi(tachiPref) != 0))
+			{
+				assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
+			}
 		}
 	}
 
