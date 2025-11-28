@@ -458,6 +458,7 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 	if (ret)
 	{
 		AddEffects(EF_BONEMERGE);
+		m_bTriggerReset = true;
 
 #ifdef DEBUG
 		CNEO_Player* pOwner = NULL;
