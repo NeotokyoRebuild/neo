@@ -143,6 +143,12 @@ void CNEOHud_KillerDamageInfo::resetHUDState()
 			}
 		}
 	}
+	
+	C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (localPlayer)
+	{
+		V_memset(localPlayer->m_rfNeoPlayerIdxsKilledByLocal, false, sizeof(localPlayer->m_rfNeoPlayerIdxsKilledByLocal));
+	}
 	ResetDisplayInfos();
 }
 
