@@ -1177,7 +1177,11 @@ int CNPC_Crow::SelectSchedule( void )
 
 	if ( m_flDangerSoundTime <= gpGlobals->curtime )
 	{
+#ifdef NEO
+		if ( HasCondition( COND_HEAR_DANGER ) || HasCondition( COND_HEAR_COMBAT ) || HasCondition( COND_HEAR_BULLET_IMPACT ) )
+#else
 		if ( HasCondition( COND_HEAR_DANGER ) || HasCondition( COND_HEAR_COMBAT ) )
+#endif
 		{
 			m_flDangerSoundTime = gpGlobals->curtime + 10.0f;
 			return SCHED_CROW_FLY_AWAY;
@@ -1395,7 +1399,11 @@ int CNPC_Crow::DrawDebugTextOverlays( void )
 //-----------------------------------------------------------------------------
 int CNPC_Crow::GetSoundInterests( void )
 {
+#ifdef NEO
+	return	SOUND_WORLD | SOUND_COMBAT | SOUND_PLAYER | SOUND_DANGER | SOUND_BULLET_IMPACT;
+#else
 	return	SOUND_WORLD | SOUND_COMBAT | SOUND_PLAYER | SOUND_DANGER;
+#endif
 }
 
 

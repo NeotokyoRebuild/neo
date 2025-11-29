@@ -82,6 +82,8 @@ struct WeaponSeeds_t
 	const char *recoilY;
 };
 
+#define	SOUNDENT_VOLUME_NEO_SUPPRESSED 900.0
+
 #if(1)
 		// This does nothing; dummy value for network test. Remove when not needed anymore.
 #define DEFINE_NEO_BASE_WEP_PREDICTION

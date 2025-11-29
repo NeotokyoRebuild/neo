@@ -181,6 +181,8 @@ public:
 	CBaseEntity *GetPlayerSpawnSpot(CBasePlayer *pPlayer) override;
 
 	virtual bool IsOfficialMap(void) override;
+
+	virtual void InitDefaultAIRelationships(void);
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
