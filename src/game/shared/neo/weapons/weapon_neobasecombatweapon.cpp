@@ -6,7 +6,6 @@
 
 #ifdef GAME_DLL
 #include "player.h"
-#include "soundent.h"
 
 extern ConVar weaponstay;
 #endif

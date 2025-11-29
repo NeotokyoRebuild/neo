@@ -13,6 +13,9 @@
 #include "neo_player_shared.h"
 
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
+#ifdef GAME_DLL
+#include "soundent.h"
+#endif
 
 #ifdef CLIENT_DLL
 	#define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
