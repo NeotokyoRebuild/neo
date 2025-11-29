@@ -1951,8 +1951,14 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #ifdef GAME_DLL
 			UpdateShotStatistics( tr );
 
+#ifdef NEO
+			const int soundEntChannel = (info.m_nFlags & FIRE_BULLETS_TEMPORARY_DANGER_SOUND)
+				? SOUNDENT_CHANNEL_BULLET_IMPACT
+				: (neoWeapon->IsAutomatic() ? SOUNDENT_CHANNEL_REPEATING : SOUNDENT_CHANNEL_WEAPON);
+#else
 			// For shots that don't need persistance
 			int soundEntChannel = ( info.m_nFlags&FIRE_BULLETS_TEMPORARY_DANGER_SOUND ) ? SOUNDENT_CHANNEL_BULLET_IMPACT : SOUNDENT_CHANNEL_UNSPECIFIED;
+#endif
 
 			CSoundEnt::InsertSound( SOUND_BULLET_IMPACT, tr.endpos, 200, 0.5, this, soundEntChannel );
 #endif
