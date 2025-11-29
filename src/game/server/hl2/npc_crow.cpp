@@ -692,6 +692,9 @@ void CNPC_Crow::SetFlyingState( FlyState_t eState )
 		SetMoveType( MOVETYPE_STEP );
 		m_vLastStoredOrigin = vec3_origin;
 		m_flGroundIdleMoveTime = gpGlobals->curtime + random->RandomFloat( 5.0f, 10.0f );
+#ifdef NEO
+		StopLoopingSounds();
+#endif
 	}
 	else
 	{
@@ -840,9 +843,26 @@ void CNPC_Crow::StartTask( const Task_t *pTask )
 				return;
 			}
 			// Overloaded because we search over a greater distance.
+#ifndef NEO
 			if ( !GetHintNode() )
+#endif
 			{
+#ifdef NEO
+				// We should have a new spot every time we want to fly away
+				ClearHintNode();
+
+				CHintCriteria hintCriteria;
+				hintCriteria.AddHintType( HINT_CROW_FLYTO_POINT );
+				hintCriteria.SetFlag( bits_HINT_NODE_RANDOM | bits_HINT_NODE_USE_GROUP | bits_HINT_NOT_CLOSE_TO_ENEMY );
+				hintCriteria.SetGroup( GetHintGroup() );
+				hintCriteria.AddExcludePosition( GetAbsOrigin(), 256.0f );
+				hintCriteria.AddIncludePosition( GetAbsOrigin(), 10000.0f );
+
+				// NEO NOTE DG: Call FindHintRandom directly because we want to exclude the hint we are already at with AddExcludePosition
+				SetHintNode(CAI_HintManager::FindHintRandom( this, GetAbsOrigin(), hintCriteria ));
+#else
 				SetHintNode(CAI_HintManager::FindHint( this, HINT_CROW_FLYTO_POINT, bits_HINT_NODE_NEAREST | bits_HINT_NODE_USE_GROUP, 10000 ));
+#endif
 			}
 
 			if ( GetHintNode() )
