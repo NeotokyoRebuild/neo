@@ -647,10 +647,6 @@ void CNEOHud_RoundState::DrawPlayerList()
 		// Single pass to collect and categorize players
 		for (int i = 0; i < (MAX_PLAYERS + 1); i++)
 		{
-			if (i == localPlayerIndex)
-			{
-				continue;
-			}
 			if (!g_PR->IsConnected(i))
 			{
 				continue;
@@ -669,6 +665,12 @@ void CNEOHud_RoundState::DrawPlayerList()
 				{
 					m_iLeftPlayersAlive++;
 				}
+			}
+
+			// Don't include local player or enemies in squad/friendly lists
+			if ((i == localPlayerIndex) || !ArePlayersOnSameTeam(i, localPlayerIndex))
+			{
+				continue;
 			}
 
 			// Only consider players in the same squad star as the local player

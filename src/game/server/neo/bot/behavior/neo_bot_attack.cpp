@@ -58,6 +58,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 	bool bHasRangedWeapon = me->IsRanged( myWeapon );
 
 	if ( bHasRangedWeapon
+		&& !me->m_hCommandingPlayer.Get() // ignoring waypoints/commander to hide can be annoying
 		&& me->IsThreatFiringAtMe(threat->GetEntity())
 		&& me->IsLineOfFireClear(threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_PENETRATION) )
 	{

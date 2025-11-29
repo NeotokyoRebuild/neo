@@ -193,7 +193,7 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	else if ( shouldRetreat != ANSWER_NO )
 	{
 		// retreat if we need to do a full reload
-		if ( me->IsDifficulty( CNEOBot::HARD ) || me->IsDifficulty( CNEOBot::EXPERT ) )
+		if ( me->GetDifficulty() >= CNEOBot::NORMAL )
 		{
 			CNEOBaseCombatWeapon *weapon = (CNEOBaseCombatWeapon*) me->GetActiveWeapon();
 			if ( weapon && weapon->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(weapon))
