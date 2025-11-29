@@ -4308,7 +4308,7 @@ float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
 	}
 }
 
-Vector CNEORules::GetGhostPos() const
+const Vector& CNEORules::GetGhostPos() const
 {
 #ifdef GAME_DLL
 	return m_pGhost ? m_pGhost->GetAbsOrigin() : m_vecGhostMarkerPos;
