@@ -183,7 +183,7 @@ public:
 	int GetNumShotsFired(void) const { return m_nNumShotsFired; }
 
 	// Whether this weapon should fire automatically when holding down the attack.
-	virtual bool IsAutomatic(void) const
+	inline virtual bool IsAutomatic(void) const
 	{
 		return ((GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
@@ -195,7 +195,7 @@ public:
 	}
 
 	// Whether this weapon should fire only once per each attack command, even if held down.
-	bool IsSemiAuto(void) const { return !IsAutomatic(); }
+	inline bool IsSemiAuto(void) const { return !IsAutomatic(); }
 
 	virtual const Vector& GetBulletSpread(void) override;
 	virtual const WeaponSpreadInfo_t& GetSpreadInfo(void);
