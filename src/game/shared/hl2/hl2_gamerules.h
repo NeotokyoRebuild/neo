@@ -67,11 +67,7 @@ private:
 	virtual bool			ClientCommand( CBaseEntity *pEdict, const CCommand &args );
 	virtual void			PlayerSpawn( CBasePlayer *pPlayer );
 
-#ifdef NEO
-	static void			InitDefaultAIRelationships( void );
-#else
 	virtual void			InitDefaultAIRelationships( void );
-#endif
 	virtual const char*		AIClassText(int classType);
 	virtual const char *GetGameDescription( void ) { return "Half-Life 2"; }
 
