@@ -258,6 +258,7 @@ public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 	CNetworkVar(int, m_iNeoStar);
+	CNetworkVar(int, m_iClassAtTimeOfDeath);
 
 	CNetworkVar(int, m_iXP);
 
@@ -340,8 +341,8 @@ private:
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
 	void SpectatorTakeoverPlayerRevert(bool bHardReset=true);
 
-	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerTarget{nullptr};
-	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerImpersonatingMe{nullptr};
+	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerTarget);
+	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
 
 };
 
