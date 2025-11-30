@@ -21,6 +21,7 @@
 #ifdef NEO
 #include "c_neo_player.h"
 #include "neo_player_shared.h"
+#include "in_main.h"
 #endif
 
 // Don't alias here
@@ -960,6 +961,10 @@ void C_HL2MP_Player::StartSprinting( void )
 #endif
 
 	m_fIsSprinting = true;
+#ifdef NEO
+	IN_AimToggleReset();
+	IN_LeanToggleReset();
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
