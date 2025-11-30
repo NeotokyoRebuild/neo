@@ -800,19 +800,20 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	if (!g_PR->IsAlive(playerIndex))
 		return;
 
+	const int health = g_PR->GetDisplayedHealth(playerIndex, 0);
 	if (health_monochrome) {
-		const int greenBlueValue = (g_PR->GetDisplayedHealth(playerIndex, 0) / 100.0f) * 255;
+		const int greenBlueValue = (health / 100.0f) * 255;
 		surface()->DrawSetColor(Color(255, greenBlueValue, greenBlueValue, 255));
 	}
 	else {
-		if (g_PR->GetHealth(playerIndex) <= 20)
+		if (health <= 20)
 			surface()->DrawSetColor(COLOR_RED);
-		else if (g_PR->GetHealth(playerIndex) <= 80)
+		else if (health <= 80)
 			surface()->DrawSetColor(COLOR_YELLOW);
 		else
 			surface()->DrawSetColor(COLOR_WHITE);
 	}
-	surface()->DrawFilledRect(xOffset, Y_POS + m_ilogoSize + 2, xOffset + (g_PR->GetHealth(playerIndex) / 100.0f * m_ilogoSize), Y_POS + m_ilogoSize + 6);
+	surface()->DrawFilledRect(xOffset, Y_POS + m_ilogoSize + 2, xOffset + (health / 100.0f * m_ilogoSize), Y_POS + m_ilogoSize + 6);
 }
 
 void CNEOHud_RoundState::CheckActiveStar()
