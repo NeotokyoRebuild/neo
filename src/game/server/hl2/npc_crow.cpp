@@ -705,6 +705,9 @@ void CNPC_Crow::SetFlyingState( FlyState_t eState )
 		CapabilitiesAdd( bits_CAP_MOVE_GROUND );
 		SetMoveType( MOVETYPE_STEP );
 		m_flGroundIdleMoveTime = gpGlobals->curtime + random->RandomFloat( 5.0f, 10.0f );
+#ifdef NEO
+		StopLoopingSounds();
+#endif
 	}
 }
 
