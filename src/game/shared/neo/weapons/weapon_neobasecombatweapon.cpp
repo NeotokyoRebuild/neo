@@ -858,6 +858,9 @@ void CNEOBaseCombatWeapon::AddViewKick()
 void CNEOBaseCombatWeapon::DryFire()
 {
 	WeaponSound(EMPTY);
+#ifdef GAME_DLL
+	CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), SOUNDENT_VOLUME_EMPTY, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+#endif
 	SendWeaponAnim(ACT_VM_DRYFIRE);
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
@@ -964,6 +967,9 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	{
 		// MUST call sound before removing a round from the clip of a CMachineGun
 		WeaponSound(SINGLE, m_flNextPrimaryAttack);
+#ifdef GAME_DLL
+		CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), (GetNeoWepBits() & NEO_WEP_SUPPRESSED) ? SOUNDENT_VOLUME_NEO_SUPPRESSED : SOUNDENT_VOLUME_PISTOL, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+#endif
 		m_flNextPrimaryAttack = m_flNextPrimaryAttack + fireRate;
 		info.m_iShots++;
 		if (!fireRate)

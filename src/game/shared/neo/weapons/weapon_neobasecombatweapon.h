@@ -13,6 +13,9 @@
 #include "neo_player_shared.h"
 
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
+#ifdef GAME_DLL
+#include "soundent.h"
+#endif
 
 #ifdef CLIENT_DLL
 	#define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
@@ -81,6 +84,8 @@ struct WeaponSeeds_t
 	const char *recoilX;
 	const char *recoilY;
 };
+
+#define	SOUNDENT_VOLUME_NEO_SUPPRESSED 900.0
 
 #if(1)
 		// This does nothing; dummy value for network test. Remove when not needed anymore.
