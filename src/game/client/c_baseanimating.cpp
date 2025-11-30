@@ -386,14 +386,9 @@ void C_ClientRagdoll::OnRestore( void )
 }
 
 #ifdef NEO
-extern ConVar glow_outline_effect_enable;
 int C_ClientRagdoll::DrawModel(int flags)
 {
-#ifdef GLOWS_ENABLE
-	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
-#else
 	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
-#endif // GLOWS_ENABLE
 	if (!pTargetPlayer)
 	{
 		Assert(false);
@@ -3226,9 +3221,6 @@ void C_BaseAnimating::UpdateVisibility()
 
 ConVar r_drawothermodels( "r_drawothermodels", "1", FCVAR_CHEAT, "0=Off, 1=Normal, 2=Wireframe" );
 
-#if defined NEO && defined GLOWS_ENABLE
-extern ConVar glow_outline_effect_enable;
-#endif // NEO && GLOWS_ENABLE
 //-----------------------------------------------------------------------------
 // Purpose: Draws the object
 // Input  : flags - 
@@ -3276,12 +3268,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			extraFlags |= STUDIO_IGNORE_NEO_EFFECTS;
 		}
 
-#ifdef GLOWS_ENABLE
-		auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
-#else
 		auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
-#endif // GLOWS_ENABLE
-
 		const bool inMotionVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_ASSAULT;
 		auto rootMoveParent = GetRootMoveParent();
 		Vector vel;
@@ -3299,7 +3286,7 @@ int C_BaseAnimating::DrawModel( int flags )
 		}
 		bool isMoving = false;
 		bool isHot = false;
-		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM ^2
+		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS) && flags & STUDIO_RENDER) // MOVING_SPEED_MINIMUM ^2
 		{
 			isMoving = true;
 			if (!IsFollowingEntity())

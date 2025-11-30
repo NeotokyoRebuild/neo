@@ -195,15 +195,15 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 	int iSegmentIdx = 0;
 	NeoXHairVariant vars[NEOXHAIR_SEGMENT__TOTAL] = {};
 
-	const int iPszSequenceSize = V_strlen(pszSequence);
-	if (iPszSequenceSize <= 0 || iPszSequenceSize > NEO_XHAIR_SEQMAX)
+	const int iPszSequenceLength = V_strlen(pszSequence);
+	if (iPszSequenceLength <= 0 || iPszSequenceLength > NEO_XHAIR_SEQMAX)
 	{
 		return false;
 	}
 
 	char szMutSequence[NEO_XHAIR_SEQMAX];
-	V_memcpy(szMutSequence, pszSequence, sizeof(char) * iPszSequenceSize);
-	for (int i = 0; i < iPszSequenceSize && iSegmentIdx < NEOXHAIR_SEGMENT__TOTAL; ++i)
+	V_memcpy(szMutSequence, pszSequence, sizeof(char) * iPszSequenceLength);
+	for (int i = 0; i < iPszSequenceLength && iSegmentIdx < NEOXHAIR_SEGMENT__TOTAL; ++i)
 	{
 		const char ch = szMutSequence[i];
 		if (ch == ';')

@@ -385,23 +385,14 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_clantag.GetString(), pGeneral->wszNeoClantag, sizeof(pGeneral->wszNeoClantag));
 		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
-		pGeneral->bMarkerSpecOnlyClantag = cvr->cl_neo_clantag_friendly_marker_spec_only.GetBool();
 		pGeneral->iFov = cvr->neo_fov.GetInt();
 		pGeneral->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
 		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
-		pGeneral->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
-		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
-		pGeneral->iHealthMode = cvr->cl_neo_hud_health_mode.GetInt();
-		pGeneral->iIFFVerbosity = cvr->cl_neo_hud_iff_verbosity.GetInt();
-		pGeneral->bIFFHealthbars = cvr->cl_neo_hud_iff_healthbars.GetBool();
-		pGeneral->iObjVerbosity = cvr->cl_neo_hud_worldpos_verbose.GetInt();
+		pGeneral->iEquipUtilityPriority = cvr->cl_neo_equip_utility_priority.GetInt();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
-		pGeneral->bShowHints = cvr->cl_neo_showhints.GetBool();
-		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
-		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
 		{
 			const char *szDlFilter = cvr->cl_downloadfilter.GetString();
 			pGeneral->iDlFilter = 0;
@@ -416,13 +407,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		}
 		pGeneral->bStreamerMode = cvr->cl_neo_streamermode.GetBool();
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
-		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
-		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pGeneral->bTachiFullAutoPreferred = cvr->cl_neo_tachi_prefer_auto.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
-		pGeneral->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
-		pGeneral->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
-		pGeneral->iEquipUtilityPriority = cvr->cl_neo_equip_utility_priority.GetInt();
 		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
 	}
@@ -635,6 +621,58 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pCrosshair->bInaccuracyInScope = cvr->cl_neo_crosshair_scope_inaccuracy.GetBool();
 		pCrosshair->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 	}
+	{
+		NeoSettings::HUD *pHUD = &ns->hud;
+		
+		pHUD->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
+		pHUD->iHealthMode = cvr->cl_neo_hud_health_mode.GetInt();
+		pHUD->iObjVerbosity = cvr->cl_neo_hud_worldpos_verbose.GetInt();
+		pHUD->bShowHints = cvr->cl_neo_showhints.GetBool();
+		pHUD->bShowPos = cvr->cl_showpos.GetBool();
+		pHUD->iShowFps = cvr->cl_showfps.GetInt();
+		pHUD->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
+		pHUD->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
+		pHUD->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
+		pHUD->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
+
+		bool bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], cvr->cl_neo_squad_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], NEO_SQUAD_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY], cvr->cl_neo_friendly_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY], NEO_FRIENDLY_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SPECTATOR], cvr->cl_neo_spectator_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SPECTATOR], NEO_SPECTATOR_MARKER_DEFAULT);
+		}
+#ifdef GLOWS_ENABLE
+		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], cvr->cl_neo_squad_xray_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], NEO_SQUAD_XRAY_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], cvr->cl_neo_friendly_xray_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], NEO_FRIENDLY_XRAY_MARKER_DEFAULT);
+		}
+		bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SPECTATOR_XRAY], cvr->cl_neo_spectator_xray_marker.GetString());
+		if (!bImported)
+		{
+			ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SPECTATOR_XRAY], NEO_SPECTATOR_XRAY_MARKER_DEFAULT);
+		}
+
+		pHUD->bEnableXray = cvr->glow_outline_effect_enable.GetBool();
+		pHUD->flOutlineWidth = cvr->glow_outline_effect_width.GetFloat();
+		pHUD->flCenterOpacity = cvr->glow_outline_effect_center_alpha.GetFloat();
+		pHUD->flTexturedOpacity = cvr->glow_outline_effect_textured_center_alpha.GetFloat();
+#endif // GLOWS_ENABLE
+	}
 }
 
 void NeoToggleConsoleEnforce()
@@ -684,33 +722,19 @@ void NeoSettingsSave(const NeoSettings *ns)
 		g_pVGuiLocalize->ConvertUnicodeToANSI(pGeneral->wszNeoClantag, neoClantagText, sizeof(neoClantagText));
 		cvr->neo_clantag.SetValue(neoClantagText);
 		cvr->cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
-		cvr->cl_neo_clantag_friendly_marker_spec_only.SetValue(pGeneral->bMarkerSpecOnlyClantag);
 		cvr->neo_fov.SetValue(pGeneral->iFov);
 		cvr->neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
 		cvr->cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
-		cvr->cl_neo_crosshair_hip_fire.SetValue(pGeneral->bHipFireCrosshair);
-		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
-		cvr->cl_neo_hud_health_mode.SetValue(pGeneral->iHealthMode);
-		cvr->cl_neo_hud_iff_verbosity.SetValue(pGeneral->iIFFVerbosity);
-		cvr->cl_neo_hud_iff_healthbars.SetValue(pGeneral->bIFFHealthbars);
-		cvr->cl_neo_hud_worldpos_verbose.SetValue(pGeneral->iObjVerbosity);
+		cvr->cl_neo_equip_utility_priority.SetValue(pGeneral->iEquipUtilityPriority);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
-		cvr->cl_neo_showhints.SetValue(pGeneral->bShowHints);
-		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
-		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
 		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
 		cvr->cl_neo_streamermode.SetValue(pGeneral->bStreamerMode);
 		cvr->cl_neo_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
-		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
-		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->cl_neo_tachi_prefer_auto.SetValue(pGeneral->bTachiFullAutoPreferred);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
-		cvr->cl_neo_kdinfo_toggletype.SetValue(pGeneral->iKdinfoToggletype);
-		cvr->cl_neo_hud_context_hint_enabled.SetValue(pGeneral->bShowHudContextHints);
-		cvr->cl_neo_equip_utility_priority.SetValue(pGeneral->iEquipUtilityPriority);
 		NeoSettingsBackgroundWrite(ns);
 	}
 	{
@@ -848,6 +872,41 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
 		cvr->cl_neo_crosshair_hip_fire.SetValue(pCrosshair->bHipFireCrosshair);
 	}
+	{
+		const NeoSettings::HUD *pHUD = &ns->hud;
+		
+		cvr->cl_neo_squad_hud_original.SetValue(pHUD->bShowSquadList);
+		cvr->cl_neo_hud_health_mode.SetValue(pHUD->iHealthMode);
+		cvr->cl_neo_hud_worldpos_verbose.SetValue(pHUD->iObjVerbosity);
+		cvr->cl_neo_showhints.SetValue(pHUD->bShowHints);
+		cvr->cl_showpos.SetValue(pHUD->bShowPos);
+		cvr->cl_showfps.SetValue(pHUD->iShowFps);
+		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pHUD->bEnableRangeFinder);
+		cvr->cl_neo_hud_extended_killfeed.SetValue(pHUD->bExtendedKillfeed);
+		cvr->cl_neo_kdinfo_toggletype.SetValue(pHUD->iKdinfoToggletype);
+		cvr->cl_neo_hud_context_hint_enabled.SetValue(pHUD->bShowHudContextHints);
+
+		char szSequence[NEO_IFFMARKER_SEQMAX];
+		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], szSequence);
+		cvr->cl_neo_squad_marker.SetValue(szSequence);
+		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY], szSequence);
+		cvr->cl_neo_friendly_marker.SetValue(szSequence);
+		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SPECTATOR], szSequence);
+		cvr->cl_neo_spectator_marker.SetValue(szSequence);
+#ifdef GLOWS_ENABLE
+		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD_XRAY], szSequence);
+		cvr->cl_neo_squad_xray_marker.SetValue(szSequence);
+		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_FRIENDLY_XRAY], szSequence);
+		cvr->cl_neo_friendly_xray_marker.SetValue(szSequence);
+		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SPECTATOR_XRAY], szSequence);
+		cvr->cl_neo_spectator_xray_marker.SetValue(szSequence);
+
+		cvr->glow_outline_effect_enable.SetValue(pHUD->bEnableXray);
+		cvr->glow_outline_effect_width.SetValue(pHUD->flOutlineWidth);
+		cvr->glow_outline_effect_center_alpha.SetValue(pHUD->flCenterOpacity);
+		cvr->glow_outline_effect_textured_center_alpha.SetValue(pHUD->flTexturedOpacity);
+#endif // GLOWS_ENABLE
+	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
 	engine->ClientCmd_Unrestricted("mat_savechanges");
@@ -953,25 +1012,8 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
-
-
-	NeoUI::HeadingLabel(L"HUD");
-	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);
-	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, ARRAYSIZE(HEALTHMODE_LABELS), &pGeneral->iHealthMode);
-	NeoUI::RingBox(L"IFF verbosity", IFFVERBOSITY_LABELS, ARRAYSIZE(IFFVERBOSITY_LABELS), &pGeneral->iIFFVerbosity);
-	NeoUI::RingBoxBool(L"IFF healthbars", &pGeneral->bIFFHealthbars);
-	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pGeneral->iObjVerbosity);
-	NeoUI::RingBoxBool(L"Show hints", &pGeneral->bShowHints);
-	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pGeneral->bShowHudContextHints);
-	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
-	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
-	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
-	NeoUI::RingBoxBool(L"Extended Killfeed", &pGeneral->bExtendedKillfeed);
-	NeoUI::RingBoxBool(L"Prefer full-auto for Tachi loadouts", &pGeneral->bTachiFullAutoPreferred);
-	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pGeneral->iKdinfoToggletype);
 	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pGeneral->iEquipUtilityPriority);
 
-	
 	NeoUI::HeadingLabel(L"MAIN MENU");
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
 
@@ -1346,4 +1388,63 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		NeoUI::RingBoxBool(L"Hip fire crosshair", &pCrosshair->bHipFireCrosshair);
 	}
 	NeoUI::EndSection();
+}
+
+static const wchar_t *IFF_LABELS[] = { L"Squad", 
+#ifdef GLOWS_ENABLE
+L"Squad Xray",
+#endif // GLOWS_ENABLE
+L"Friendly",
+#ifdef GLOWS_ENABLE
+L"Friendly Xray",
+#endif // GLOWS_ENABLE
+L"Player",
+#ifdef GLOWS_ENABLE
+L"Player Xray"
+#endif // GLOWS_ENABLE
+};
+void NeoSettings_HUD(NeoSettings* ns)
+{
+	NeoSettings::HUD* pHud = &ns->hud;
+	NeoUI::HeadingLabel(L"MISCELLANEOUS");
+	NeoUI::RingBoxBool(L"Classic squad list", &pHud->bShowSquadList);
+	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, ARRAYSIZE(HEALTHMODE_LABELS), &pHud->iHealthMode);
+	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pHud->iObjVerbosity);
+	NeoUI::RingBoxBool(L"Show hints", &pHud->bShowHints);
+	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pHud->bShowHudContextHints);
+	NeoUI::RingBoxBool(L"Show position", &pHud->bShowPos);
+	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pHud->iShowFps);
+	NeoUI::RingBoxBool(L"Show rangefinder", &pHud->bEnableRangeFinder);
+	NeoUI::RingBoxBool(L"Extended Killfeed", &pHud->bExtendedKillfeed);
+	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
+
+	NeoUI::HeadingLabel(L"IFF MARKERS");
+	static int optionChosen = 0;
+	NeoUI::SetPerRowLayout(ARRAYSIZE(IFF_LABELS));
+	for (int i = 0; i < ARRAYSIZE(IFF_LABELS); i++) {
+		if (NeoUI::Button(IFF_LABELS[i]).bPressed) { optionChosen = i; }
+	}
+
+	// NEO TODO (Adam) Show what the marker looks like somewhere here
+
+	FriendlyMarkerInfo *pMarker = &pHud->options[optionChosen];
+	NeoUI::SetPerRowLayout(2);
+	NeoUI::SliderInt(L"Initial offset", &pMarker->iInitialOffset, -64, 64, 1);
+	NeoUI::RingBoxBool(L"Show distance", &pMarker->bShowDistance);
+	NeoUI::RingBoxBool(L"Verbose distance", &pMarker->bVerboseDistance);
+	NeoUI::RingBoxBool(L"Show squad marker", &pMarker->bShowSquadMarker);
+	NeoUI::Slider(L"Squad marker scale", &pMarker->flSquadMarkerScale, 0, 2, 2, 0.1f);
+	NeoUI::RingBoxBool(L"Show healthbar", &pMarker->bShowHealthBar);
+	NeoUI::RingBoxBool(L"Show health", &pMarker->bShowHealth);
+	NeoUI::RingBoxBool(L"Show name", &pMarker->bShowName);
+	NeoUI::RingBoxBool(L"Prepend clantag", &pMarker->bPrependClantagToName);
+	NeoUI::SliderInt(L"Max name length (including clantag)", &pMarker->iMaxNameLength, 0, MAX_MARKER_STRSIZE, 1);
+
+#ifdef GLOWS_ENABLE
+	NeoUI::HeadingLabel(L"Player Xray");
+	NeoUI::RingBoxBool(L"Enable Xray",  &pHud->bEnableXray);
+	NeoUI::Slider(L"Outline Width", &pHud->flOutlineWidth, 0, 2, 2, 0.25f);
+	NeoUI::Slider(L"Center Opacity", &pHud->flCenterOpacity, 0, 1, 2, 0.1f);
+	NeoUI::Slider(L"Texture Opacity (Cloak highlight)", &pHud->flTexturedOpacity, 0, 1, 2, 0.1f);
+#endif // GLOWS_ENABLE
 }
