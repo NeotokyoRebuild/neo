@@ -28,6 +28,8 @@ extern int g_iRowsInScreen;
 extern bool g_bOBSDetected;
 extern ConVar cl_neo_streamermode;
 
+ConVar cl_neo_spectator_letterbox("cl_neo_spectator_letterbox", "0", FCVAR_ARCHIVE, "Show Spectator Letterboxing");
+
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
 	L"Medium",
@@ -407,6 +409,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		}
 		pGeneral->bStreamerMode = cvr->cl_neo_streamermode.GetBool();
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
+		pGeneral->bShowSpectatorLetterboxing = cvr->cl_neo_spectator_letterbox.GetBool();
 		pGeneral->bTachiFullAutoPreferred = cvr->cl_neo_tachi_prefer_auto.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		NeoSettingsBackgroundWrite(ns);
@@ -733,6 +736,15 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
 		cvr->cl_neo_streamermode.SetValue(pGeneral->bStreamerMode);
 		cvr->cl_neo_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
+		cvr->cl_neo_spectator_letterbox.SetValue(pGeneral->bShowSpectatorLetterboxing);
+		if (pGeneral->bShowSpectatorLetterboxing)
+		{
+			engine->ClientCmd_Unrestricted("showpanel specgui");
+		}
+		else
+		{
+			engine->ClientCmd_Unrestricted("hidepanel specgui");
+		}
 		cvr->cl_neo_tachi_prefer_auto.SetValue(pGeneral->bTachiFullAutoPreferred);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		NeoSettingsBackgroundWrite(ns);
@@ -1021,6 +1033,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);
 	NeoUI::RingBoxBool(L"Auto streamer mode (requires restart)", &pGeneral->bAutoDetectOBS);
 	NeoUI::Label(L"OBS detection", g_bOBSDetected ? L"OBS detected on startup" : L"Not detected on startup");
+	NeoUI::RingBoxBool(L"Show Spectator Letterboxing", &pGeneral->bShowSpectatorLetterboxing);
 
 	NeoUI::HeadingLabel(L"DOWNLOADING");
 	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);

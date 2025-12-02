@@ -64,6 +64,7 @@ struct NeoSettings
 		int iDlFilter;
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
+		bool bShowSpectatorLetterboxing;
 		bool bTachiFullAutoPreferred;
 		int iBackground;
 	};
@@ -250,6 +251,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_toggleconsole);
 		CONVARREF_DEF(cl_neo_streamermode);
 		CONVARREF_DEF(cl_neo_streamermode_autodetect_obs);
+		CONVARREF_DEF(cl_neo_spectator_letterbox);
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
