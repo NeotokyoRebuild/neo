@@ -711,7 +711,6 @@ void CNEOHud_RoundState::DrawPlayerList()
 
 int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small)
 {
-
 	// Draw player
 	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
 	char squadMateText[SQUAD_MATE_TEXT_LENGTH];
