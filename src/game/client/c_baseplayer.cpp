@@ -80,6 +80,7 @@ int g_nKillCamTarget1 = 0;
 int g_nKillCamTarget2 = 0;
 
 extern ConVar mp_forcecamera; // in gamevars_shared.h
+extern ConVar cl_neo_spectator_letterbox;
 
 #define FLASHLIGHT_DISTANCE		1000
 #define MAX_VGUI_INPUT_MODE_SPEED 30
@@ -644,6 +645,18 @@ void C_BasePlayer::SetObserverMode ( int iNewMode )
 {
 	if ( m_iObserverMode != iNewMode )
 	{
+		if ( IsLocalPlayer() && iNewMode != OBS_MODE_NONE )
+		{
+			if ( cl_neo_spectator_letterbox.GetBool() )
+			{
+				engine->ClientCmd_Unrestricted("showpanel specgui");
+			}
+			else
+			{
+				engine->ClientCmd_Unrestricted("hidepanel specgui");
+			}
+		}
+
 		m_iObserverMode = iNewMode;
 		if ( IsLocalPlayer() )
 		{

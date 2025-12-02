@@ -28,7 +28,7 @@ extern int g_iRowsInScreen;
 extern bool g_bOBSDetected;
 extern ConVar cl_neo_streamermode;
 
-ConVar cl_neo_spectator_letterbox("cl_neo_spectator_letterbox", "0", FCVAR_ARCHIVE, "Show Spectator Letterboxing");
+ConVar cl_neo_spectator_letterbox("cl_neo_spectator_letterbox", "0", FCVAR_ARCHIVE, "Show Spectator Letterbox");
 
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
