@@ -393,7 +393,11 @@ void KeyDown( kbutton_t *b, const char *c )
 		b->down[1] = k;
 	else
 	{
+#ifdef NEO
+		if ( c && c[0] )
+#else
 		if ( c[0] )
+#endif // NEO
 		{
 			DevMsg( 1,"Three keys down for a button '%c' '%c' '%c'!\n", b->down[0], b->down[1], c[0]);
 		}
@@ -437,7 +441,7 @@ void KeyDownHoldReplaceToggle( kbutton_t *b, const char *c )
 		b->down[1] = k;
 	else
 	{
-		if ( c[0] )
+		if ( c && c[0] )
 		{
 			DevMsg( 1,"Three keys down for a button '%c' '%c' '%c'!\n", b->down[0], b->down[1], c[0]);
 		}
@@ -574,11 +578,7 @@ void IN_Attack2Down( const CCommand &args ) { KeyDown(&in_attack2, args[1] );}
 void IN_Attack2Up( const CCommand &args ) {KeyUp(&in_attack2, args[1] );}
 void IN_UseDown ( const CCommand &args ) {KeyDown(&in_use, args[1] );}
 void IN_UseUp ( const CCommand &args ) {KeyUp(&in_use, args[1] );}
-#ifdef NEO
-void IN_JumpDown(const CCommand& args) { KeyDown(&in_jump, args[1]); }
-#else
 void IN_JumpDown ( const CCommand &args ) {KeyDown(&in_jump, args[1] );}
-#endif // NEO
 void IN_JumpUp ( const CCommand &args ) {KeyUp(&in_jump, args[1] );}
 void IN_DuckDown( const CCommand &args ) {KeyDown(&in_duck, args[1] );}
 void IN_DuckUp( const CCommand &args ) {KeyUp(&in_duck, args[1] );}
