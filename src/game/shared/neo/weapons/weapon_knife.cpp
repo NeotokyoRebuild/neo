@@ -176,6 +176,9 @@ void CWeaponKnife::Swing()
 	}
 
 	WeaponSound(SINGLE);
+#ifdef GAME_DLL
+	CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), SOUNDENT_VOLUME_EMPTY, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+#endif
 
 	// -------------------------
 	//	Miss

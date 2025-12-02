@@ -12,6 +12,11 @@
 #include "c_basehlplayer.h"
 #endif
 
+#ifdef NEO
+#include "model_types.h"
+#include "c_neo_player.h"
+#endif
+
 #include "death_pose.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -183,3 +188,36 @@ bool C_AI_BaseNPC::GetRagdollInitBoneArrays( matrix3x4_t *pDeltaBones0, matrix3x
 	return bRet;
 }
 
+#ifdef NEO
+int C_AI_BaseNPC::DrawModel( int flags )
+{
+    if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
+    {
+        return BaseClass::DrawModel(flags);
+    }
+
+    auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+    if (!pTargetPlayer)
+    {
+        Assert(false);
+        return BaseClass::DrawModel(flags);
+    }
+
+    bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
+
+    int ret = 0;
+    if (inThermalVision)
+    {
+        IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
+        modelrender->ForcedMaterialOverride(pass);
+        ret = BaseClass::DrawModel(flags);
+        modelrender->ForcedMaterialOverride(nullptr);
+    }
+    else
+    {
+        ret = BaseClass::DrawModel(flags);
+    }
+
+    return ret;
+}
+#endif
