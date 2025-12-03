@@ -367,10 +367,7 @@ void CNEOHud_PlayerPing::NotifyPing(const int playerSlot)
 		CBaseHudChat* hudChat = (CBaseHudChat*)GET_HUDELEMENT(CHudChat);
 		if (hudChat)
 		{
-			char szText[256];
-			V_strcpy_safe(szText, pPlayer->GetNeoPlayerName());
-			V_strcat_safe(szText, " pinged a location\n");
-			hudChat->ChatPrintf(0, CHAT_FILTER_NONE, szText);
+			hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged a location\n", pPlayer->GetNeoPlayerName());
 		}
 	}
 	
