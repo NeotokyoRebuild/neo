@@ -468,7 +468,11 @@ const char *CPropData::GetRandomChunkModel( const char *pszBreakableSection, int
 	int i;
 	for ( i = 0; i < iCount; i++ )
 	{
+#ifdef NEO
+		if ( !Q_strncmp( STRING(m_BreakableChunks[i].iszChunkType), pszBreakableSection, V_strlen(pszBreakableSection) ) )
+#else
 		if ( !Q_strncmp( STRING(m_BreakableChunks[i].iszChunkType), pszBreakableSection, strlen(pszBreakableSection) ) )
+#endif
 			break;
 	}
 	if ( i == iCount )

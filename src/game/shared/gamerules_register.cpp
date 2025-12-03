@@ -122,7 +122,11 @@ CGameRulesRegister* CGameRulesRegister::FindByName( const char *pName )
 
 		// Make sure the client gets notification to make a new game rules object.
 		Assert( g_StringTableGameRules );
+#ifdef NEO
+		g_StringTableGameRules->AddString( true, "classname", narrow_cast<int>( strlen( pClassName ) + 1 ), pClassName );
+#else
 		g_StringTableGameRules->AddString( true, "classname", strlen( pClassName ) + 1, pClassName );
+#endif
 
 		if ( g_pGameRules )
 		{

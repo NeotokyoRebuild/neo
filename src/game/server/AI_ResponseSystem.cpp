@@ -679,7 +679,11 @@ public:
 	bool		Compare( const char *setValue, Criteria *c, bool verbose = false );
 	bool		CompareUsingMatcher( const char *setValue, Matcher& m, bool verbose = false );
 	void		ComputeMatcher( Criteria *c, Matcher& matcher );
+#ifdef NEO
+	void		ResolveToken( Matcher& matcher, char *token, int bufsize, char const *rawtoken );
+#else
 	void		ResolveToken( Matcher& matcher, char *token, size_t bufsize, char const *rawtoken );
+#endif
 	float		LookupEnumeration( const char *name, bool& found );
 
 	int			FindBestMatchingRule( const AI_CriteriaSet& set, bool verbose );
@@ -695,7 +699,11 @@ public:
 
 	void		LoadFromBuffer( const char *scriptfile, const char *buffer, CStringPool &includedFiles );
 
+#ifdef NEO
+	void		GetCurrentScript( char *buf, int buflen );
+#else
 	void		GetCurrentScript( char *buf, size_t buflen );
+#endif
 	int			GetCurrentToken() const;
 	void		SetCurrentScript( const char *script );
 	bool		IsRootCommand();
@@ -775,7 +783,11 @@ CResponseSystem::~CResponseSystem()
 // Purpose: 
 // Output : char const
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CResponseSystem::GetCurrentScript( char *buf, int buflen )
+#else
 void CResponseSystem::GetCurrentScript( char *buf, size_t buflen )
+#endif
 {
 	Assert( buf );
 	buf[ 0 ] = 0;
@@ -843,7 +855,11 @@ float CResponseSystem::LookupEnumeration( const char *name, bool& found )
 // Purpose: 
 // Input  : matcher - 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CResponseSystem::ResolveToken( Matcher& matcher, char *token, int bufsize, char const *rawtoken )
+#else
 void CResponseSystem::ResolveToken( Matcher& matcher, char *token, size_t bufsize, char const *rawtoken )
+#endif
 {
 	if ( rawtoken[0] != '[' )
 	{

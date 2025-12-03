@@ -118,7 +118,11 @@ static ConCommand mp3( "mp3", mp3_f, "Show/hide mp3 player UI." );
 //			albumlen - 
 // Output : static bool
 //-----------------------------------------------------------------------------
+#ifdef NEO
+static bool SplitArtistAlbum( char const *relative, char *artist, int artistlen, char *album, int albumlen )
+#else
 static bool SplitArtistAlbum( char const *relative, char *artist, size_t artistlen, char *album, size_t albumlen )
+#endif
 {
 	artist[ 0 ] = 0;
 	album[ 0 ] = 0;
@@ -1519,7 +1523,11 @@ extern "C"
 };
 #endif  //NEO
 
+#ifdef NEO
+void CMP3Player::GetLocalCopyOfSong( const MP3File_t &mp3, char *outsong, int outlen )
+#else
 void CMP3Player::GetLocalCopyOfSong( const MP3File_t &mp3, char *outsong, size_t outlen )
+#endif
 {
 	outsong[ 0 ] = 0;
 	char fn[ 512 ];

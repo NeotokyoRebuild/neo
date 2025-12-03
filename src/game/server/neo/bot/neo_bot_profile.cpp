@@ -210,7 +210,7 @@ static void SetProfileTempBotCommon(CNEOBotProfile *pProfile, KeyValues *kv)
 						char szInvalids[512] = {};
 						for (int idxWep = 1; idxWep < NEO_WIDX__TOTAL; ++idxWep)
 						{
-							if (flagsInvalids & (1 << (idxWep - 1)))
+							if (flagsInvalids & ((decltype(flagsInvalids))1 << (idxWep - 1)))
 							{
 								V_strcat_safe(szInvalids, " ");
 								V_strcat_safe(szInvalids, WEP_BIT_FLAG_CMP[idxWep - 1].szValue);

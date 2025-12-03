@@ -39,6 +39,10 @@
 #include "npc_alyx_episodic.h"
 #endif // HL2_EPISODIC
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -209,7 +213,11 @@ bool CopySceneFileIntoMemory( char const *pFilename, void **pBuffer, int *pSize 
 	if ( bufSize > 0 )
 	{
 		*pBuffer = new byte[bufSize];
+#ifdef NEO
+		*pSize = narrow_cast<std::remove_pointer_t<decltype(pSize)>>(bufSize);
+#else
 		*pSize = bufSize;
+#endif
 		return scenefilecache->GetSceneData( pFilename, (byte *)(*pBuffer), bufSize );
 	}
 
@@ -1652,7 +1660,11 @@ bool CSceneEntity::GetSoundNameForPlayer( CChoreoEvent *event, CBasePlayer *play
 	}
 
 	// Copy the sound name
+#ifdef NEO
+	CopySoundNameWithModifierToken( buf, event->GetParameters(), narrow_cast<int>(buflen), pchToken );
+#else
 	CopySoundNameWithModifierToken( buf, event->GetParameters(), buflen, pchToken );
+#endif
 
 	// If there was a modifier token, don't change the sound based on CC
 	if ( pchToken[0] != 0 )
@@ -1686,7 +1698,11 @@ bool CSceneEntity::GetSoundNameForPlayer( CChoreoEvent *event, CBasePlayer *play
 		// Master event sounds always play too (master will be the combined .wav)
 		if ( validtoken )
 		{
+#ifdef NEO
+			V_strncpy( buf, tok, narrow_cast<int>(buflen) );
+#else
 			Q_strncpy( buf, tok, buflen );
+#endif
 		}
 		return true;
 	}

@@ -15,6 +15,7 @@ target_include_directories(tier1
     ${CMAKE_SOURCE_DIR}/public/tier1
     PRIVATE
     ${CMAKE_SOURCE_DIR}/common
+    ${CMAKE_SOURCE_DIR}/common/neo
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/public/tier0
 )
@@ -136,6 +137,8 @@ target_sources_grouped(
     TARGET tier1
     NAME "Header Files"
     FILES
+    ${CMAKE_SOURCE_DIR}/common/neo/narrow_cast.h
+
     ${CMAKE_SOURCE_DIR}/public/tier1/bitbuf.h
     ${CMAKE_SOURCE_DIR}/public/tier1/byteswap.h
     ${CMAKE_SOURCE_DIR}/public/tier1/callqueue.h
