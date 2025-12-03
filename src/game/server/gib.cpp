@@ -555,7 +555,9 @@ void CGib::BounceGibTouch ( CBaseEntity *pOther )
 //
 void CGib::StickyGibTouch ( CBaseEntity *pOther )
 {
+#ifndef NEO
 	Vector	vecSpot;
+#endif
 	trace_t tr;
 	
 	SetThink ( &CGib::SUB_Remove );

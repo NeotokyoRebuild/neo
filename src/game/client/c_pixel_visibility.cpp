@@ -51,7 +51,9 @@ const float MIN_PROXY_PIXELS = 25.0f;
 
 float PixelVisibility_DrawProxy( IMatRenderContext *pRenderContext, OcclusionQueryObjectHandle_t queryHandle, Vector origin, float scale, float proxyAspect, IMaterial *pMaterial, bool screenspace )
 {
+#ifndef NEO
 	Vector point;
+#endif
 
 	// don't expand this with distance to fit pixels or the sprite will poke through
 	// only expand the parts perpendicular to the view

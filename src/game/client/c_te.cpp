@@ -599,7 +599,11 @@ public:
 
 		case TE_SMOKE:
 			{
+#ifdef NEO
+				Vector vecOrigin;
+#else
 				Vector vecOrigin, vecDirection;
+#endif
 				vecOrigin.x = pKeyValues->GetFloat( "originx" );
 				vecOrigin.y = pKeyValues->GetFloat( "originy" );
 				vecOrigin.z = pKeyValues->GetFloat( "originz" );

@@ -2973,8 +2973,10 @@ void CC_KDTreeTest( const CCommand &args )
 
 			int nCount = 0;
 
+#ifndef NEO
 			Vector vecDelta;
 			trace_t trace;
+#endif
 			CBaseEntity *pList[1024];
 			for ( iTest = 0; iTest < NUM_KDTREE_TESTS; ++iTest )
 			{
@@ -2999,7 +3001,9 @@ void CC_KDTreeTest( const CCommand &args )
 
 			int nCount = 0;
 
+#ifndef NEO
 			trace_t trace;
+#endif
 			CBaseEntity *pList[1024];
 			for ( iTest = 0; iTest < NUM_KDTREE_TESTS; ++iTest )
 			{
