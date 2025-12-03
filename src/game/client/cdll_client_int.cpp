@@ -926,7 +926,7 @@ static void RestrictNeoClientCheats()
 		else if (auto* cmd = g_pCVar->FindCommand(cheatName))
 			cmd->AddFlags(flags);
 		else
-			AssertMsg(false, "convar or concmd named \"%s\" was not found\n", cheatName);
+			AssertMsg1(false, "convar or concmd named \"%s\" was not found\n", cheatName);
 	}
 }
 #endif
