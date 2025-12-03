@@ -8,6 +8,10 @@
 #ifndef MINMAX_H
 #define MINMAX_H
 
+#ifdef NEO
+// Please use Max/Min from basetypes.h instead
+#else
+
 // Remove the MSVC defines
 #ifdef min
 #undef min
@@ -36,5 +40,7 @@ const T& max(const T& a, const T& b)
 {
     return (a < b) ? b : a;
 }
+
+#endif // NEO
 
 #endif // MINMAX_H

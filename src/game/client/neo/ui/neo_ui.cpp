@@ -1259,7 +1259,7 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 				}
 				else
 				{
-					iDispWide = min(width, height);
+					iDispWide = Min(width, height);
 					iDispTall = iDispWide;
 				}
 
@@ -1617,7 +1617,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			wchar_t wszTmpTest[ARRAYSIZE(pSInfo->wszText)];
 			const int iStrMinLen = V_swprintf_safe(wszTmpTest, wszFormat, flMin);
 			const int iStrMaxLen = V_swprintf_safe(wszTmpTest, wszFormat, flMax);
-			pSInfo->iMaxStrSize = max(iStrMinLen, iStrMaxLen);
+			pSInfo->iMaxStrSize = Max(iStrMinLen, iStrMaxLen);
 			pSInfo->bActive = wdgState.bActive;
 		}
 		SliderInfo *pSInfo = &c->htSliders.Element(hdl);

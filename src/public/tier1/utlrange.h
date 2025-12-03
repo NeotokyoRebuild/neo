@@ -13,6 +13,9 @@
 
 // This terribleness breaks <limits>/numeric_limits on msvc
 #if defined( min ) || defined( max )
+#ifdef NEO
+#error Please use Max/Min from basetypes.h instead
+#endif
 #define UTLRANGE_H_MINMAX_QUIRK
 #include "valve_minmax_off.h"
 #endif // defined( min ) || defined( max )

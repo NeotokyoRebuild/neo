@@ -2352,8 +2352,8 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					}
 					if (readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres)
 					{
-						const int iNeedJin = max(0, iThres - readyPlayers.array[TEAM_JINRAI]);
-						const int iNeedNSF = max(0, iThres - readyPlayers.array[TEAM_NSF]);
+						const int iNeedJin = Max(0, iThres - readyPlayers.array[TEAM_JINRAI]);
+						const int iNeedNSF = Max(0, iThres - readyPlayers.array[TEAM_NSF]);
 						char szPrintNeed[100];
 						V_sprintf_safe(szPrintNeed, "Jinrai need %d players and NSF need %d players "
 													"to ready up to start.", iNeedJin, iNeedNSF);
@@ -2361,8 +2361,8 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					}
 					else if (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres)
 					{
-						const int iExtraJin = max(0, readyPlayers.array[TEAM_JINRAI] - iThres);
-						const int iExtraNSF = max(0, readyPlayers.array[TEAM_NSF] - iThres);
+						const int iExtraJin = Max(0, readyPlayers.array[TEAM_JINRAI] - iThres);
+						const int iExtraNSF = Max(0, readyPlayers.array[TEAM_NSF] - iThres);
 						char szPrintNeed[100];
 						V_sprintf_safe(szPrintNeed, "Jinrai have %d extra players and NSF have %d extra players "
 													"over the %d per team threshold.", iExtraJin, iExtraNSF, iThres);
