@@ -110,7 +110,11 @@ void CHudHDRDemo::Paint()
 			iLength += vgui::surface()->GetCharacterWidth( hFont, *wch );
 		}
 		vgui::surface()->DrawSetTextPos( floor(wide * 0.25) - (iLength / 2), m_iLeftY );
+#ifdef NEO
+		vgui::surface()->DrawPrintText(tempString, V_wcslen(tempString));
+#else
 		vgui::surface()->DrawPrintText(tempString, wcslen(tempString));
+#endif
 	}
 
 	// Right Title
@@ -123,7 +127,11 @@ void CHudHDRDemo::Paint()
 			iLength += vgui::surface()->GetCharacterWidth( hFont, *wch );
 		}
  		vgui::surface()->DrawSetTextPos( ceil(wide * 0.75) - (iLength / 2), m_iRightY );
+#ifdef NEO
+		vgui::surface()->DrawPrintText(tempString, V_wcslen(tempString));
+#else
 		vgui::surface()->DrawPrintText(tempString, wcslen(tempString));
+#endif
 	}
 	
 }

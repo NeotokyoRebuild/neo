@@ -157,8 +157,8 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 		switch (sortCtx.col)
 		{
 		case SBLIST_COL_TYPE:
-			iLeft = static_cast<int64>(blLeft.eType);
-			iRight = static_cast<int64>(blRight.eType);
+			iLeft = narrow_cast<decltype(iLeft)>(blLeft.eType);
+			iRight = narrow_cast<decltype(iRight)>(blRight.eType);
 			break;
 		case SBLIST_COL_DATETIME:
 			iLeft = blLeft.timeVal;

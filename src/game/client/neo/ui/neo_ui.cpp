@@ -450,9 +450,9 @@ void EndContext()
 			{
 				const int iTotalSection = c->iSection;
 				int iTally = 0;
-				for (int i = 0; i < iTotalSection; ++i)
+				for (decltype(Context::ibfSectionCanActive) i = 0; i < iTotalSection; ++i)
 				{
-					const uint64_t ibfCmp = (1 << i);
+					const auto ibfCmp = (decltype(i))1 << i;
 					iTally += (c->ibfSectionCanActive & ibfCmp) &&
 							(!bSwitchSectionController || (c->ibfSectionCanController & ibfCmp));
 				}
@@ -470,7 +470,7 @@ void EndContext()
 						c->iActiveSection += iIncr;
 						c->iActiveSection = LoopAroundInArray(c->iActiveSection, iTotalSection);
 
-						const uint64_t ibfCmp = (1 << c->iActiveSection);
+						const auto ibfCmp = (decltype(Context::ibfSectionCanActive))1 << c->iActiveSection;
 						bNextCmp = !((c->ibfSectionCanActive & ibfCmp) &&
 								(!bSwitchSectionController || (c->ibfSectionCanController & ibfCmp)));
 					} while (bNextCmp);
@@ -846,10 +846,10 @@ GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 	// Mark this section this widget under as able to be active
 	if (eWidgetFlag & WIDGETFLAG_MARKACTIVE)
 	{
-		c->ibfSectionCanActive |= (1 << c->iSection);
+		c->ibfSectionCanActive |= (decltype(Context::ibfSectionCanActive))1 << c->iSection;
 		if (!(c->iSectionFlags & SECTIONFLAG_EXCLUDECONTROLLER))
 		{
-			c->ibfSectionCanController |= (1 << c->iSection);
+			c->ibfSectionCanController |= (decltype(Context::ibfSectionCanController))1 << c->iSection;
 		}
 	}
 

@@ -424,8 +424,13 @@ public:
 		}
 		else
 		{
+#ifdef NEO
+			auto nNeeded = sizeof(Data_t) + ( num * sizeof(T) );
+			auto nHave = A::GetSize( m_pData );
+#else
 			int nNeeded = sizeof(Data_t) + ( num * sizeof(T) );
 			int nHave = A::GetSize( m_pData );
+#endif
 			if ( nNeeded > nHave )
 			{
 				m_pData = (Data_t *)A::Realloc( m_pData, nNeeded );
