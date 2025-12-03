@@ -148,6 +148,10 @@ add_compile_definitions(
     # NEO NOTE (nullsystem): New defines since 2025-02-18 TF2 SDK Update
     PLATFORM_64BITS
     INCLUDED_STEAM2_USERID_STRUCTS
+
+    # NEO NOTE (Rain): Needed to remove platform specific min/max C macro pollution;
+    # instead you can use the Min/Max templated functions from basetypes.h.
+    NOMINMAX
 )
 
 if(OS_WINDOWS)
