@@ -70,7 +70,9 @@
 
 #ifdef NEO
 #include "neo_player.h"
+#include "neo_misc.h"
 #endif // NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
