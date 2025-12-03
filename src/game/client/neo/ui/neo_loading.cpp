@@ -148,7 +148,7 @@ void CNeoLoading::FetchGameUIPanels()
 	{
 		const vgui::VPANEL curLoadChPanel = vgui::ipanel()->GetChild(loadingPanel, i);
 		const char *curLoadChPanelName = vgui::ipanel()->GetName(curLoadChPanel);
-		const char *curLoadChPanelClass = vgui::ipanel()->GetClassName(curLoadChPanel);
+		[[maybe_unused]] const char *curLoadChPanelClass = vgui::ipanel()->GetClassName(curLoadChPanel);
 		Panel *pPanel = vgui::ipanel()->GetPanel(curLoadChPanel, "GAMEUI");
 		if (!pPanel)
 		{

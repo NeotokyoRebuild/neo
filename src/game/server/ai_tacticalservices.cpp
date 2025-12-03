@@ -151,7 +151,9 @@ bool CAI_TacticalServices::FindCoverPos( const Vector &vNearPos, const Vector &v
 //-------------------------------------
 bool CAI_TacticalServices::TestLateralCover( const Vector &vecCheckStart, const Vector &vecCheckEnd, float flMinDist )
 {
+#ifndef NEO
 	trace_t	tr;
+#endif
 
 	if ( (vecCheckStart - vecCheckEnd).LengthSqr() > Square(flMinDist) )
 	{

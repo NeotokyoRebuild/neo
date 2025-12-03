@@ -195,7 +195,7 @@ void DMSpawnComCallbackLoad([[maybe_unused]] const CCommand &command)
 		return;
 	}
 
-	const int version = buf.GetInt();
+	/*const int version =*/ (void)buf.GetInt();
 	const int locsSize = buf.GetInt();
 	for (int i = 0; i < locsSize && buf.IsValid(); ++i)
 	{

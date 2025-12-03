@@ -221,7 +221,11 @@ void ScratchPad_DrawLitCone(
 	tri.m_Verts.SetSize( 3 );
 
 	float flDot = -vLightDir.Dot( vDir );
+#ifdef NEO
+	Vector bottomColor;
+#else
 	Vector topColor, bottomColor;
+#endif
 	VectorLerp( vDarkColor, vBrightColor, RemapVal( -flDot, -1, 1, 0, 1 ), bottomColor );
 
 	

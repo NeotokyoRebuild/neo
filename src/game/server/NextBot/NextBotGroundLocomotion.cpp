@@ -394,7 +394,7 @@ void NextBotGroundLocomotion::ApplyAccumulatedApproach( void )
 	SetDesiredLean( lean );
 */	
 
-	Vector newPos;
+	//Vector newPos;
 
 	// if we just started a jump, don't snap to the ground - let us get in the air first
 	if ( DidJustJump() || !IsOnGround() )

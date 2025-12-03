@@ -80,9 +80,13 @@ Vector VecCheckToss( CBaseEntity *pEntity, ITraceFilter *pFilter, Vector vecSpot
 	trace_t			tr;
 	Vector			vecMidPoint;// halfway point between Spot1 and Spot2
 	Vector			vecApex;// highest point 
+#ifndef NEO
 	Vector			vecScale;
+#endif
 	Vector			vecTossVel;
+#ifndef NEO
 	Vector			vecTemp;
+#endif
 	float			flGravity = GetCurrentGravity() * flGravityAdj;
 
 	if (vecSpot2.z - vecSpot1.z > 500)

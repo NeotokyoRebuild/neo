@@ -3836,7 +3836,9 @@ void CAI_BaseNPC::SetPlayerAvoidState( void )
 	//If we are coming out of a script, check if we are stuck inside the player.
 	if ( m_bPerformAvoidance || ( ShouldPlayerAvoid() && bIsMoving ) )
 	{
+#ifndef NEO
 		trace_t trace;
+#endif
 		Vector vMins, vMaxs;
 
 		GetPlayerAvoidBounds( &vMins, &vMaxs );

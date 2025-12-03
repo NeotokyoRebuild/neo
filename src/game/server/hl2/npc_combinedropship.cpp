@@ -2982,7 +2982,9 @@ void CNPC_CombineDropship::MakeTracer( const Vector &vecTracerSrc, const trace_t
 		{
 			float flTracerDist;
 			Vector vecDir;
+#ifndef NEO
 			Vector vecEndPos;
+#endif
 
 			vecDir = tr.endpos - vecTracerSrc;
 

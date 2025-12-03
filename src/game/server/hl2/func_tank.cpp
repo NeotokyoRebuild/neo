@@ -1728,7 +1728,9 @@ void CFuncTank::AimBarrelAtPlayerCrosshair( QAngle *pAngles )
 //-----------------------------------------------------------------------------
 void CFuncTank::CalcNPCEnemyTarget( Vector *pVecTarget )
 {
+#ifndef NEO
 	Vector vecTarget;
+#endif
 	CAI_BaseNPC *pNPC = m_hController->MyNPCPointer();
 
 	// Aim the barrel at the npc's enemy, or where the npc is looking.
@@ -3616,8 +3618,10 @@ void CMortarShell::Warn( void )
 //---------------------------------------------------------
 void CMortarShell::Impact( void )
 {
+#ifndef NEO
 	// Fire the bullets
 	Vector vecSrc, vecShootDir;
+#endif
 
 	float flRadius = MORTAR_BLAST_RADIUS;
 
@@ -3921,8 +3925,10 @@ void CFuncTankMortar::Fire( int bulletCount, const Vector &barrelEnd, const Vect
 
 	#define TARGET_SEARCH_DEPTH 100
 
+#ifndef NEO
 	// find something interesting to shoot at near the projected position. 
 	Vector delta;
+#endif
 
 	// Make a really rough approximation of the last half of the mortar trajectory and trace it. 
 	// Do this so that mortars fired into windows land on rooftops, and that targets projected 
@@ -4184,8 +4190,10 @@ void CFuncTankCombineCannon::UpdateBeamThink()
 		return;
 
 	trace_t trBeam;
+#ifndef NEO
 	trace_t trShot;
 	trace_t trBlockLOS;
+#endif
 
 	Vector vecBarrel = WorldBarrelPosition();
 	Vector vecAim;

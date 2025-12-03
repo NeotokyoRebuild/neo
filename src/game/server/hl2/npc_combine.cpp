@@ -2312,8 +2312,10 @@ void CNPC_Combine::OnStartSchedule( int scheduleType )
 //=========================================================
 void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 {
+#ifndef NEO
 	Vector vecShootDir;
 	Vector vecShootOrigin;
+#endif
 	bool handledEvent = false;
 
 	if (pEvent->type & AE_TYPE_NEWEVENTSYSTEM)

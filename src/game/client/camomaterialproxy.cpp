@@ -367,14 +367,18 @@ void CCamoMaterialProxy::GenerateCamoTexture( ITexture* pTexture, IVTFTexture *p
 	mins = m_pEnt->WorldAlignMins();
 	maxs = m_pEnt->WorldAlignMaxs();
 	
+#ifndef NEO
 	Vector traceDirection;
 	Vector traceEnd;
 	trace_t	traceResult;
+#endif
 	
 	Vector forward, right, up;
 	AngleVectors( entityAngles, &forward, &right, &up );
 	
+#ifndef NEO
 	Vector position, transformedPosition;
+#endif
 	Vector maxsMinusMins = maxs - mins;
 
 	Vector diffuseColor[256];

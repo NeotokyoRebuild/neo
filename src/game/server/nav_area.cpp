@@ -2102,7 +2102,9 @@ bool CNavArea::IsFlat( void ) const
  */
 bool CNavArea::IsCoplanar( const CNavArea *area ) const
 {
+#ifndef NEO
 	Vector u, v;
+#endif
 
 	bool isOnDisplacement = ( m_node[ NORTH_WEST ] && m_node[ NORTH_WEST ]->IsOnDisplacement() ) ||
 		( m_node[ NORTH_EAST ] && m_node[ NORTH_EAST ]->IsOnDisplacement() ) ||
@@ -4535,8 +4537,10 @@ float FindGroundZ( const Vector& original, const Vector& corner1, const Vector& 
  */
 void CNavArea::PlaceOnGround( NavCornerType corner, float inset )
 {
+#ifndef NEO
 	trace_t result;
 	Vector from, to;
+#endif
 
 	Vector nw = m_nwCorner + Vector ( inset, inset, 0 );
 	Vector se = m_seCorner + Vector ( -inset, -inset, 0 );

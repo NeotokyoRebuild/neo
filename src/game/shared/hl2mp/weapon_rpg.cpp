@@ -596,7 +596,9 @@ void CMissile::SeekThink( void )
 	Vector	targetPos;
 
 	float flHomingSpeed; 
+#ifndef NEO
 	Vector vecLaserDotPosition;
+#endif
 	ComputeActualDotPosition( pLaserDot, &targetPos, &flHomingSpeed );
 
 	if ( IsSimulatingOnAlternateTicks() )
@@ -1439,8 +1441,10 @@ void CWeaponRPG::PrimaryAttack( void )
 	if ( GetActivity() == ACT_VM_RELOAD )
 		return;
 
+#ifndef NEO
 	Vector vecOrigin;
 	Vector vecForward;
+#endif
 
 	m_flNextPrimaryAttack = gpGlobals->curtime + 0.5f;
 
@@ -2005,7 +2009,9 @@ void CWeaponRPG::DrawEffects( void )
 
 	color32 color={255,255,255,255};
 	Vector	vecAttachment, vecDir;
+#ifndef NEO
 	QAngle	angles;
+#endif
 
 	float scale = 8.0f + random->RandomFloat( -2.0f, 2.0f );
 
@@ -2236,7 +2242,9 @@ int CLaserDot::DrawModel( int flags )
 {
 	color32 color={255,255,255,255};
 	Vector	vecAttachment, vecDir;
+#ifndef NEO
 	QAngle	angles;
+#endif
 
 	float	scale;
 	Vector	endPos;

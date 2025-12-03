@@ -2739,7 +2739,9 @@ void CNPC_Strider::MakeTracer( const Vector &vecTracerSrc, const trace_t &tr, in
 {
 	float flTracerDist;
 	Vector vecDir;
+#ifndef NEO
 	Vector vecEndPos;
+#endif
 
 	vecDir = tr.endpos - vecTracerSrc;
 

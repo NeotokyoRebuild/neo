@@ -987,7 +987,9 @@ void StriderBlood( const Vector &origin, const Vector &normal, float scale )
 	PMaterialHandle	hMaterial = ParticleMgr()->GetPMaterial( "effects/slime1" );
 
 	float	length = 0.2f;
+#ifndef NEO
 	Vector	vForward, vRight, vUp;
+#endif
 	Vector	offDir;
 
 	TrailParticle	*tParticle;
