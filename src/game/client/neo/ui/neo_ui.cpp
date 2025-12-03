@@ -74,7 +74,6 @@ void MultiWidgetHighlighter(const int iTotalWidgets)
 
 	// Peek-forward what the area of the multiple widgets will cover without modifying the context
 	int iMulLayoutX = c->iLayoutX;
-	int iMulLayoutY = c->iLayoutY;
 	int iAllXWide = 0;
 	int iMulIdxRowParts = c->iIdxRowParts;
 

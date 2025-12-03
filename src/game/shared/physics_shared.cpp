@@ -826,7 +826,9 @@ void PhysComputeSlideDirection( IPhysicsObject *pPhysics, const Vector &inputVel
 {
 	Vector velocity = inputVelocity;
 	AngularImpulse angVel = inputAngularVelocity;
+#ifndef NEO
 	Vector pos;
+#endif
 
 	IPhysicsFrictionSnapshot *pSnapshot = pPhysics->CreateFrictionSnapshot();
 	while ( pSnapshot->IsValid() )

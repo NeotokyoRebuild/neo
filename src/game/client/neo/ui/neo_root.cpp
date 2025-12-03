@@ -819,10 +819,6 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::EndSection();
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 
-	const int iBtnWide = m_iTitleWidth + iMargin;
-	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + iMarginHalf;
-	int iRightSideYStart = (iTitleMarginTop + (2 * iTitleNHeight));
-
 	// Draw top steam section portion
 	{
 		// Draw title
@@ -1926,7 +1922,6 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 
 		m_bSprayGalleryRefresh = false;
 	}
-	const int iGalleryRows = g_iRowsInScreen / 4;
 	const int iNormTall = g_uiCtx.layout.iRowTall;
 	const int iCellTall = iNormTall * 4;
 
