@@ -185,7 +185,11 @@ void CTeamMenu::Update()
 void CTeamMenu::LoadMapPage( const char *mapName )
 {
 	// Save off the map name so we can re-load the page in ApplySchemeSettings().
+#ifdef NEO
+	V_strncpy( m_szMapName, mapName, narrow_cast<int>( strlen( mapName ) + 1 ) );
+#else
 	Q_strncpy( m_szMapName, mapName, strlen( mapName ) + 1 );
+#endif
 	
 	char mapRES[ MAX_PATH ];
 

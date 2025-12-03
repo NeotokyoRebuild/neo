@@ -26,6 +26,15 @@ DECLARE_HUDELEMENT( CHudSuitPower );
 
 #define SUITPOWER_INIT -1
 
+#ifdef NEO
+template <size_t len>
+constexpr void DrawPrintLiteral(const wchar (&literal)[len], vgui::FontDrawType_t drawType=vgui::FONT_DRAW_DEFAULT)
+{
+	static_assert(len > 0);
+	surface()->DrawPrintText(&literal[0], ARRAYSIZE(literal) - 1, drawType);
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -189,6 +198,12 @@ void CHudSuitPower::Paint()
 
 	wchar_t *tempString = g_pVGuiLocalize->Find("#Valve_Hud_AUX_POWER");
 
+#ifdef NEO
+	if (tempString)
+		surface()->DrawPrintText(tempString, narrow_cast<int>(wcslen(tempString)));
+	else
+		DrawPrintLiteral(L"AUX POWER");
+#else
 	if (tempString)
 	{
 		surface()->DrawPrintText(tempString, wcslen(tempString));
@@ -197,6 +212,7 @@ void CHudSuitPower::Paint()
 	{
 		surface()->DrawPrintText(L"AUX POWER", wcslen(L"AUX POWER"));
 	}
+#endif
 
 	if ( m_iActiveSuitDevices )
 	{
@@ -209,6 +225,12 @@ void CHudSuitPower::Paint()
 
 			surface()->DrawSetTextPos(text2_xpos, ypos);
 
+#ifdef NEO
+			if (tempString)
+				surface()->DrawPrintText(tempString, narrow_cast<int>(wcslen(tempString)));
+			else
+				DrawPrintLiteral(L"OXYGEN");
+#else
 			if (tempString)
 			{
 				surface()->DrawPrintText(tempString, wcslen(tempString));
@@ -217,6 +239,7 @@ void CHudSuitPower::Paint()
 			{
 				surface()->DrawPrintText(L"OXYGEN", wcslen(L"OXYGEN"));
 			}
+#endif
 			ypos += text2_gap;
 		}
 
@@ -226,6 +249,12 @@ void CHudSuitPower::Paint()
 
 			surface()->DrawSetTextPos(text2_xpos, ypos);
 
+#ifdef NEO
+			if (tempString)
+				surface()->DrawPrintText(tempString, narrow_cast<int>(wcslen(tempString)));
+			else
+				DrawPrintLiteral(L"FLASHLIGHT");
+#else
 			if (tempString)
 			{
 				surface()->DrawPrintText(tempString, wcslen(tempString));
@@ -234,6 +263,7 @@ void CHudSuitPower::Paint()
 			{
 				surface()->DrawPrintText(L"FLASHLIGHT", wcslen(L"FLASHLIGHT"));
 			}
+#endif
 			ypos += text2_gap;
 		}
 
@@ -243,6 +273,12 @@ void CHudSuitPower::Paint()
 
 			surface()->DrawSetTextPos(text2_xpos, ypos);
 
+#ifdef NEO
+			if (tempString)
+				surface()->DrawPrintText(tempString, narrow_cast<int>(wcslen(tempString)));
+			else
+				DrawPrintLiteral(L"SPRINT");
+#else
 			if (tempString)
 			{
 				surface()->DrawPrintText(tempString, wcslen(tempString));
@@ -251,6 +287,7 @@ void CHudSuitPower::Paint()
 			{
 				surface()->DrawPrintText(L"SPRINT", wcslen(L"SPRINT"));
 			}
+#endif
 			ypos += text2_gap;
 		}
 	}

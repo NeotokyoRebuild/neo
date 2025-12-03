@@ -1797,7 +1797,11 @@ void CServerGameDLL::GetSaveComment( char *text, int maxlength, float flMinutes,
 	// Try to find a matching title comment for this mapname
 	for ( i = 0; i < ARRAYSIZE(gTitleComments) && !pName; i++ )
 	{
+#ifdef NEO
+		if ( !V_strnicmp( mapname, gTitleComments[i].pBSPName, narrow_cast<int>( strlen(gTitleComments[i].pBSPName) ) ) )
+#else
 		if ( !Q_strnicmp( mapname, gTitleComments[i].pBSPName, strlen(gTitleComments[i].pBSPName) ) )
+#endif
 		{
 			// found one
 			int j;
@@ -2163,7 +2167,11 @@ void UpdateChapterRestrictions( const char *mapname )
 	chapterTitle[0] = 0;
 	for ( int i = 0; i < ARRAYSIZE(gTitleComments); i++ )
 	{
+#ifdef NEO
+		if ( !V_strnicmp( mapname, gTitleComments[i].pBSPName, narrow_cast<int>( strlen(gTitleComments[i].pBSPName) ) ) )
+#else
 		if ( !Q_strnicmp( mapname, gTitleComments[i].pBSPName, strlen(gTitleComments[i].pBSPName) ) )
+#endif
 		{
 			// found
 			Q_strncpy( chapterTitle, gTitleComments[i].pTitleName, sizeof( chapterTitle ) );

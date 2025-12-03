@@ -260,7 +260,11 @@ int KB_ConvertString( char *in, char **ppout )
 
 	*pOut = '\0';
 
+#ifdef NEO
+	int maxlen = V_strlen( sz ) + 1;
+#else
 	int maxlen = strlen( sz ) + 1;
+#endif
 	pOut = ( char * )malloc( maxlen );
 	Q_strncpy( pOut, sz, maxlen );
 	*ppout = pOut;
