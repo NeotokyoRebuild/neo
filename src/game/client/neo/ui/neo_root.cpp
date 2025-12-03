@@ -133,7 +133,7 @@ static bool NetAdrIsFavorite(const servernetadr_t &netAdr)
 					nConnPort == netAdr.GetConnectionPort() &&
 					nQueryPort == netAdr.GetQueryPort() &&
 					(unFlags & k_unFavoriteFlagFavorite) &&
-					nAppID == narrow_cast<decltype(nAppID)>(engine->GetAppID()))
+					nAppID == static_cast<decltype(nAppID)>(engine->GetAppID()))
 			{
 				return true;
 			}
