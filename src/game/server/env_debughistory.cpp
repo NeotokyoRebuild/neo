@@ -89,7 +89,11 @@ void CDebugHistory::AddDebugHistoryLine( int iCategory, const char *szLine )
 		return;
 
 	const char *pszRemaining = szLine;
+#ifdef NEO
+	int iCharsToWrite = narrow_cast<int>( strlen( pszRemaining ) + 1 );	// Add 1 so that we copy the null terminator
+#else
 	int iCharsToWrite = strlen( pszRemaining ) + 1;	// Add 1 so that we copy the null terminator
+#endif
 
 	// Clip the line if it's too long. Wasteful doing it this way, but keeps code below nice & simple.
 	char szTmpBuffer[MAX_DEBUG_HISTORY_LINE_LENGTH];
@@ -103,7 +107,11 @@ void CDebugHistory::AddDebugHistoryLine( int iCategory, const char *szLine )
 
 	while ( iCharsToWrite )
 	{
+#ifdef NEO
+		int iCharsLeftBeforeLoop = narrow_cast<int>(sizeof(m_DebugLines[iCategory]) - (m_DebugLineEnd[iCategory] - m_DebugLines[iCategory]));
+#else
 		int iCharsLeftBeforeLoop = sizeof(m_DebugLines[iCategory]) - (m_DebugLineEnd[iCategory] - m_DebugLines[iCategory]);
+#endif
 
 		// Write into the buffer
 		int iWrote = MIN( iCharsToWrite, iCharsLeftBeforeLoop );

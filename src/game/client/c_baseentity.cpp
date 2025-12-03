@@ -5199,7 +5199,11 @@ void C_BaseEntity::AllocateIntermediateData( void )
 #if !defined( NO_ENTITY_PREDICTION )
 	if ( m_pOriginalData )
 		return;
+#ifdef NEO
+	auto allocsize = GetIntermediateDataSize();
+#else
 	size_t allocsize = GetIntermediateDataSize();
+#endif
 	Assert( allocsize > 0 );
 
 	m_pOriginalData = new unsigned char[ allocsize ];

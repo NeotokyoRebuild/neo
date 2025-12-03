@@ -12484,7 +12484,11 @@ int CAI_BaseNPC::WalkMove( const Vector& vecPosition, unsigned int mask )
 
 static void AIMsgGuts( CAI_BaseNPC *pAI, unsigned flags, const char *pszMsg )
 {
+#ifdef NEO
+	int			len		= V_strlen( pszMsg );
+#else
 	int			len		= strlen( pszMsg );
+#endif
 	const char *pszFmt2 = NULL;
 
 	if ( len && pszMsg[len-1] == '\n' )
@@ -13875,8 +13879,13 @@ void CAI_BaseNPC::InputForceInteractionWithNPC( inputdata_t &inputdata )
 	int iInteraction = -1;
 	for ( int i = 0; i < m_ScriptedInteractions.Count(); i++ )
 	{
+#ifdef NEO
+		if ( Q_strncmp( pszParam, STRING(m_ScriptedInteractions[i].iszInteractionName), V_strlen(pszParam) ) )
+			continue;
+#else
 		if ( Q_strncmp( pszParam, STRING(m_ScriptedInteractions[i].iszInteractionName), strlen(pszParam) ) )
 			continue;
+#endif
 
 		// Use sequence? or activity?
 		if ( m_ScriptedInteractions[i].sPhases[SNPCINT_SEQUENCE].iActivity != ACT_INVALID )

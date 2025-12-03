@@ -1097,7 +1097,11 @@ static int GamesoundCompletion( const char *partial, char commands[ COMMAND_COMP
 	if ( Q_strstr( partial, cmdname ) && strlen(partial) > strlen(cmdname) + 1 )
 	{
 		substring = (char *)partial + strlen( cmdname ) + 1;
+#ifdef NEO
+		substringLen = V_strlen(substring);
+#else
 		substringLen = strlen(substring);
+#endif
 	}
 	
 	for ( int i = soundemitterbase->GetSoundCount()-1; i >= 0 && current < COMMAND_COMPLETION_MAXITEMS; i-- )

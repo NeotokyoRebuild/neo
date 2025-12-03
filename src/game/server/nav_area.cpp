@@ -122,8 +122,13 @@ void *CNavVectorNoEditAllocator::Alloc( size_t nSize )
 	{
 		m_memory.Init( 1024*1024, 0, 0, 4 );
 	}
+#ifdef NEO
+	m_pCurrent = (int *)m_memory.Alloc( narrow_cast<unsigned int>(nSize) );
+	m_nBytesCurrent = narrow_cast<decltype(m_nBytesCurrent)>(nSize);
+#else
 	m_pCurrent = (int *)m_memory.Alloc( nSize );
 	m_nBytesCurrent = nSize;
+#endif
 	return m_pCurrent;
 }
 
@@ -136,8 +141,13 @@ void *CNavVectorNoEditAllocator::Realloc( void *pMem, size_t nSize )
 	}
 	if ( nSize > (size_t)m_nBytesCurrent )
 	{
+#ifdef NEO
+		m_memory.Alloc( narrow_cast<unsigned int>(nSize - m_nBytesCurrent) );
+		m_nBytesCurrent = narrow_cast<decltype(m_nBytesCurrent)>(nSize);
+#else
 		m_memory.Alloc( nSize - m_nBytesCurrent );
 		m_nBytesCurrent = nSize;
+#endif
 	}
 	return m_pCurrent;
 }

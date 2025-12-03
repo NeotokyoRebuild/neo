@@ -699,12 +699,20 @@ bool CMapOverview::DrawIcon( MapObject_t *obj )
 		// draw black shadow text
 		surface()->DrawSetTextColor( 0, 0, 0, 255 );
 		surface()->DrawSetTextPos( x+1, y );
+#ifdef NEO
+		surface()->DrawPrintText( iconText, V_wcslen(iconText) );
+#else
 		surface()->DrawPrintText( iconText, wcslen(iconText) );
+#endif
 
 		// draw name in color 
 		surface()->DrawSetTextColor( textColor->r(), textColor->g(), textColor->b(), 255 );
 		surface()->DrawSetTextPos( x, y );
+#ifdef NEO
+		surface()->DrawPrintText( iconText, V_wcslen(iconText) );
+#else
 		surface()->DrawPrintText( iconText, wcslen(iconText) );
+#endif
 	}
 
 	return true;

@@ -676,7 +676,11 @@ void CAI_HintManager::RemoveHint( CAI_Hint *pHintToRemove )
 //-----------------------------------------------------------------------------
 int CAI_HintManager::GetFlags( const char *token )
 {
+#ifdef NEO
+	int len = V_strlen( token );
+#else
 	int len = strlen( token );
+#endif
 	if ( len <= 0 )
 	{
 		return bits_HINT_NODE_NONE;

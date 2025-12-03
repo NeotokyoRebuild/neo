@@ -284,7 +284,13 @@ public:
 #ifdef NEO
 protected:
 #endif // NEO
+
+#ifdef NEO
+	void					GetLocalCopyOfSong( const MP3File_t &mp3, char *outsong, int outlen );
+#else
 	void					GetLocalCopyOfSong( const MP3File_t &mp3, char *outsong, size_t outlen );
+#endif
+
 	float					GetMP3Duration( char const *songname );
 	void					OnNextTrack();
 	void					OnPrevTrack();

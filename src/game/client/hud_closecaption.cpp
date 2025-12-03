@@ -198,7 +198,11 @@ void CCloseCaptionWorkUnit::SetStream( const wchar_t *stream )
 	delete[] m_pszStream;
 	m_pszStream = NULL;
 
+#ifdef NEO
+	int len = narrow_cast<int>( wcslen( stream ) );
+#else
 	int len = wcslen( stream );
+#endif
 	Assert( len < 4096 );
 	m_pszStream = new wchar_t[ len + 1 ];
 	wcsncpy( m_pszStream, stream, len );
@@ -1718,7 +1722,11 @@ void CHudCloseCaption::ComputeStreamWork( int available_width, CCloseCaptionItem
 	WorkUnitParams params;
 
 	const wchar_t *curpos = item->GetStream();
+#ifdef NEO
+	int streamlen = narrow_cast<int>( wcslen( curpos ) );
+#else
 	int streamlen = wcslen( curpos );
+#endif
 	CUtlVector< Color > colorStack;
 
 	const wchar_t *most_recent_space = NULL;
@@ -1938,7 +1946,11 @@ void CHudCloseCaption::DrawStream( wrect_t &rcText, wrect_t &rcWindow, CCloseCap
 		vgui::surface()->DrawSetTextFont( useF );
 		vgui::surface()->DrawSetTextPos( rcOut.left, rcOut.top );
 		vgui::surface()->DrawSetTextColor( useColor );
+#ifdef NEO
+		vgui::surface()->DrawPrintText( wu->GetStream(), narrow_cast<int>( wcslen( wu->GetStream() ) ) );
+#else
 		vgui::surface()->DrawPrintText( wu->GetStream(), wcslen( wu->GetStream() ) );
+#endif
 	}
 }
 
@@ -2098,7 +2110,11 @@ public:
 		for ( int i = 0; i < c; ++i )
 		{
 			caption_t *caption = m_Tokens[ i ];
+#ifdef NEO
+			int len = narrow_cast<int>( wcslen( caption->stream ) + 1 );
+#else
 			int len = wcslen( caption->stream ) + 1;
+#endif
 			if ( curlen + len >= maxlen )
 				break;
 
@@ -2259,7 +2275,11 @@ private:
 			if ( !in )
 				return;
 
+#ifdef NEO
+			int len = narrow_cast<int>( wcslen( in ) );
+#else
 			int len = wcslen( in );
+#endif
 			stream = new wchar_t[ len + 1 ];
 			wcsncpy( stream, in, len + 1 );
 		}
@@ -2682,7 +2702,11 @@ static int EmitCaptionCompletion( const char *partial, char commands[ COMMAND_CO
 	if ( Q_strstr( partial, cmdname ) && strlen(partial) > strlen(cmdname) + 1 )
 	{
 		substring = (char *)partial + strlen( cmdname ) + 1;
+#ifdef NEO
+		substringLen = narrow_cast<int>(strlen(substring));
+#else
 		substringLen = strlen(substring);
+#endif
 	}
 	
 	StringIndex_t i = g_pVGuiLocalize->GetFirstStringIndex();

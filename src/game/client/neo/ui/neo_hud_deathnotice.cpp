@@ -796,9 +796,9 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	g_pVGuiLocalize->ConvertANSIToUnicode(killer_name, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(victim_name, deathMsg.Victim.szName, sizeof(deathMsg.Victim.szName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(assists_name, deathMsg.Assist.szName, sizeof(deathMsg.Assist.szName));
-	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
-	deathMsg.Victim.iNameLength = wcslen(deathMsg.Victim.szName);
-	deathMsg.Assist.iNameLength = wcslen(deathMsg.Assist.szName);
+	deathMsg.Killer.iNameLength = V_wcslen(deathMsg.Killer.szName);
+	deathMsg.Victim.iNameLength = V_wcslen(deathMsg.Victim.szName);
+	deathMsg.Assist.iNameLength = V_wcslen(deathMsg.Assist.szName);
 	if (const auto killerTeam = GetPlayersTeam(killer))
 	{
 		deathMsg.Killer.iTeam = killerTeam->GetTeamNumber();
@@ -883,7 +883,7 @@ void CNEOHud_DeathNotice::AddPlayerRankChange(IGameEvent* event)
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = playerRankChange;
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerRankChangeName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
-	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
+	deathMsg.Killer.iNameLength = V_wcslen(deathMsg.Killer.szName);
 	if (const auto playerRankChangeTeam = GetPlayersTeam(playerRankChange))
 	{
 		deathMsg.Killer.iTeam = playerRankChangeTeam->GetTeamNumber();
@@ -915,7 +915,7 @@ void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = playerCapturedGhost;
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerCapturedGhostName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
-	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
+	deathMsg.Killer.iNameLength = V_wcslen(deathMsg.Killer.szName);
 	if (const auto playerCapturedGhostTeam = GetPlayersTeam(playerCapturedGhost))
 	{
 		deathMsg.Killer.iTeam = playerCapturedGhostTeam->GetTeamNumber();
@@ -943,7 +943,7 @@ void CNEOHud_DeathNotice::AddVIPExtract(IGameEvent* event)
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = playerExtracted;
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerExtractedName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
-	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
+	deathMsg.Killer.iNameLength = V_wcslen(deathMsg.Killer.szName);
 	if (const auto playerExtractedTeam = GetPlayersTeam(playerExtracted))
 	{
 		deathMsg.Killer.iTeam = playerExtractedTeam->GetTeamNumber();
@@ -974,14 +974,14 @@ void CNEOHud_DeathNotice::AddVIPDeath(IGameEvent* event)
 	DeathNoticeItem deathMsg;
 	deathMsg.Victim.iEntIndex = playerKilled;
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerKilledName, deathMsg.Victim.szName, sizeof(deathMsg.Victim.szName));
-	deathMsg.Victim.iNameLength = wcslen(deathMsg.Victim.szName);
+	deathMsg.Victim.iNameLength = V_wcslen(deathMsg.Victim.szName);
 	if (const auto playerKilledTeam = GetPlayersTeam(playerKilled))
 	{
 		deathMsg.Victim.iTeam = playerKilledTeam->GetTeamNumber();
 	}
 	deathMsg.Killer.iEntIndex = VIPKiller;
 	g_pVGuiLocalize->ConvertANSIToUnicode(VIPKillerName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
-	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
+	deathMsg.Killer.iNameLength = V_wcslen(deathMsg.Killer.szName);
 	if (const auto VIPKillerTeam = GetPlayersTeam(VIPKiller))
 	{
 		deathMsg.Killer.iTeam = VIPKillerTeam->GetTeamNumber();

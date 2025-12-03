@@ -187,7 +187,11 @@ public:
 		m_DeleteOnSwitch[m_nCurrentStack].RemoveAll();
 	}
 
+#ifdef NEO
+	inline void *Alloc( unsigned bytes )
+#else
 	inline void *Alloc( size_t bytes )
+#endif
 	{
 		MEM_ALLOC_CREDIT();
 		void *pReturn = m_QueuedRopeMemory[m_nCurrentStack].Alloc( bytes, false );
@@ -564,7 +568,11 @@ void CRopeManager::DrawRenderCache( bool bShadowDepth )
 								(iRopeCount * sizeof(C_RopeKeyframe::BuildRopeQueuedData_t)) +
 								(iNodeCount * (sizeof(Vector) * 2));
 
+#ifdef NEO
+		void *pMemory = m_QueuedModeMemory.Alloc( narrow_cast<unsigned>(iMemoryNeeded) );
+#else
 		void *pMemory = m_QueuedModeMemory.Alloc( iMemoryNeeded );
+#endif
 
 		CRopeManager::RopeRenderData_t *pRenderCachesStart = (CRopeManager::RopeRenderData_t *)pMemory;
 		C_RopeKeyframe::BuildRopeQueuedData_t *pBuildRopeQueuedDataStart = (C_RopeKeyframe::BuildRopeQueuedData_t *)(pRenderCachesStart + iRenderCacheCount);

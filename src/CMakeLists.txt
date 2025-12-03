@@ -115,6 +115,12 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWith
     )
 endif()
 
+add_compile_definitions(
+	# Whether to validate narrowing conversions done with narrow_cast<T>(...)
+	# If not, will simply alias narrow_cast to static_cast
+	$<$<CONFIG:Debug>:PARANOID_NARROWING>
+)
+
 if(NEO_RAD_TELEMETRY_DISABLED)
     add_compile_definitions(RAD_TELEMETRY_DISABLED)
 endif()
@@ -142,6 +148,10 @@ add_compile_definitions(
     # NEO NOTE (nullsystem): New defines since 2025-02-18 TF2 SDK Update
     PLATFORM_64BITS
     INCLUDED_STEAM2_USERID_STRUCTS
+
+    # NEO NOTE (Rain): Needed to remove platform specific min/max C macro pollution;
+    # instead you can use the Min/Max templated functions from basetypes.h.
+    NOMINMAX
 )
 
 if(OS_WINDOWS)
