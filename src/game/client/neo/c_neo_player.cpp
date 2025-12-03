@@ -1511,7 +1511,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 		}
 	}
 }
-#endif GLOWS_ENABLE
+#endif // GLOWS_ENABLE
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
 {
