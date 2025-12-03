@@ -264,7 +264,11 @@ void CAI_Expresser::TestAllResponses()
 
 //-----------------------------------------------------------------------------
 
+#ifdef NEO
+static const int LEN_SPECIFIC_SCENE_MODIFIER = V_strlen( AI_SPECIFIC_SCENE_MODIFIER );
+#else
 static const int LEN_SPECIFIC_SCENE_MODIFIER = strlen( AI_SPECIFIC_SCENE_MODIFIER );
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Searches for a possible response
@@ -510,7 +514,11 @@ bool CAI_Expresser::Speak( AIConcept_t aiconcept, const char *modifiers /*= NULL
 	if ( pszOutResponseChosen )
 	{
         const char *szResponse = response.GetResponsePtr();
+#ifdef NEO
+		V_strncpy( pszOutResponseChosen, szResponse, narrow_cast<int>(bufsize) );
+#else
         Q_strncpy( pszOutResponseChosen, szResponse, bufsize );
+#endif
 	}
 	
 	return spoke;

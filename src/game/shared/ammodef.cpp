@@ -201,7 +201,11 @@ bool CAmmoDef::AddAmmoType(char const* name, int damageType, int tracerType, int
 	if (m_nAmmoIndex == MAX_AMMO_TYPES)
 		return false;
 
+#ifdef NEO
+	int len = V_strlen(name);
+#else
 	int len = strlen(name);
+#endif
 	m_AmmoType[m_nAmmoIndex].pName = new char[len+1];
 	Q_strncpy(m_AmmoType[m_nAmmoIndex].pName, name,len+1);
 	m_AmmoType[m_nAmmoIndex].nDamageType	= damageType;
