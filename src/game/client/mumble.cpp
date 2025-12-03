@@ -233,7 +233,11 @@ void CMumbleSystem::FireGameEvent( IGameEvent *event )
 	if ( !Q_strcmp( "server_spawn", eventname ) )
 	{
 		V_strcpy_safe( m_szSteamIDCurrentServer, event->GetString( "steamid", "" ) );
+#ifdef NEO
+		m_cubSteamIDCurrentServer = V_strlen( m_szSteamIDCurrentServer ) + 1;
+#else
 		m_cubSteamIDCurrentServer = strlen( m_szSteamIDCurrentServer ) + 1;
+#endif
 	}
 #endif // NO_STEAM
 }

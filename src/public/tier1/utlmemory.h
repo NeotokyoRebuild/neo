@@ -22,6 +22,10 @@
 #include "tier0/memalloc.h"
 #include "tier0/memdbgon.h"
 
+#ifdef NEO
+#include "../common/neo/narrow_cast.h"
+#endif
+
 #pragma warning (disable:4100)
 #pragma warning (disable:4514)
 
@@ -342,7 +346,11 @@ public:
 
 	int NumAllocated() const
 	{
+#ifdef NEO
+		return narrow_cast<int>( AllocSize() / sizeof( T ) );
+#else
 		return AllocSize() / sizeof( T );
+#endif
 	}
 	int Count() const
 	{

@@ -961,7 +961,11 @@ void UTIL_ReplaceKeyBindings( const wchar_t *inbuf, int inbufsizebytes, OUT_Z_BY
 
 					outbuf[pos] = '\0';
 					wcscat( outbuf, token );
+#ifdef NEO
+					pos += narrow_cast<int>(wcslen(token));
+#else
 					pos += wcslen(token);
+#endif
 				}
 				else
 				{
@@ -972,7 +976,11 @@ void UTIL_ReplaceKeyBindings( const wchar_t *inbuf, int inbufsizebytes, OUT_Z_BY
 						pos += 1;
 					}
 					wcscat( outbuf, locName );
+#ifdef NEO
+					pos += narrow_cast<int>(wcslen(locName));
+#else
 					pos += wcslen(locName);
+#endif
 					if ( bAddBrackets )
 					{
 						wcscat( outbuf, L"]" );

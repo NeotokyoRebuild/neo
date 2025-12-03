@@ -242,7 +242,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	constexpr auto maxBullets = 100; // PZ Mag Size
 
 	char bullets[maxBullets + 1];
-	magSizeMax = min(magSizeMax, sizeof(bullets)-1);
+	magSizeMax = Min(magSizeMax, narrow_cast<int>(sizeof(bullets) - 1));
 	int i;
 	for(i = 0; i < magSizeMax; i++)
 	{

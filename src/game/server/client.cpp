@@ -297,7 +297,11 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 		Q_snprintf( text, sizeof(text), "%s: ", pszPlayerName );
 	}
 
+#ifdef NEO
+	j = narrow_cast<int>(sizeof(text) - 2 - strlen(text));  // -2 for /n and null terminator
+#else
 	j = sizeof(text) - 2 - strlen(text);  // -2 for /n and null terminator
+#endif
 	if ( (int)strlen(p) > j )
 		p[j] = 0;
 

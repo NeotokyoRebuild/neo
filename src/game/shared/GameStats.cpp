@@ -453,7 +453,11 @@ bool CBaseGameStats::SaveToFileNOW( bool bForceSyncWrite /* = false */ )
 	else
 	{
 		// Allocate memory for async system to use (and free afterward!!!)
+#ifdef NEO
+		const auto nBufferSize = buf.TellPut();
+#else
 		size_t nBufferSize = buf.TellPut();
+#endif
 		void *pMem = malloc(nBufferSize);
 		CUtlBuffer statsBuffer( pMem, nBufferSize );
 		statsBuffer.Put( buf.Base(), nBufferSize );

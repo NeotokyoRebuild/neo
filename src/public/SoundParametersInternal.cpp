@@ -226,7 +226,11 @@ int TextToChannel( const char *name )
 		return CHAN_AUTO;
 	}
 
+#ifdef NEO
+	if ( Q_strncasecmp( name, "chan_", V_strlen( "chan_" ) ) )
+#else
 	if ( Q_strncasecmp( name, "chan_", strlen( "chan_" ) ) )
+#endif
 	{
 		return atoi( name );
 	}
@@ -538,7 +542,11 @@ void CSoundParametersInternal::PitchFromString( const char *sz )
 
 void CSoundParametersInternal::SoundLevelFromString( const char *sz )
 {
+#ifdef NEO
+	if ( !Q_strncasecmp( sz, "SNDLVL_", V_strlen( "SNDLVL_" ) ) )
+#else
 	if ( !Q_strncasecmp( sz, "SNDLVL_", strlen( "SNDLVL_" ) ) )
+#endif
 	{
 		soundlevel.start = TextToSoundLevel( sz );
 		soundlevel.range = 0;
