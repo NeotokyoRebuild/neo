@@ -318,13 +318,13 @@ void CNEOBaseCombatWeapon::ClientThink()
 {
 	if (GetOwner() && m_flTemperature > 0)
 	{
-		constexpr int DESIRED_TEMPERATURE_WHEN_HELD = 0;
-		m_flTemperature = max(DESIRED_TEMPERATURE_WHEN_HELD, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+		constexpr float DESIRED_TEMPERATURE_WHEN_HELD = 0;
+		m_flTemperature = Max(DESIRED_TEMPERATURE_WHEN_HELD, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
 	}
 	else if (m_flTemperature < 1)
 	{
-		constexpr int DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
-		m_flTemperature = min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+		constexpr float DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
+		m_flTemperature = Min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
 	}
 	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 }
@@ -589,7 +589,7 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		{
 			return;
 		}
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack);
+		m_flNextPrimaryAttack = Max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack.Get());
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	};
 
@@ -615,7 +615,7 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
 		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextPrimaryAttack = Max(gpGlobals->curtime + 0.2f, m_flNextPrimaryAttack.Get());
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 }
