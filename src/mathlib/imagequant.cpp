@@ -8,6 +8,26 @@
 #include <quantize.h>
 #include <minmax.h>
 
+#ifdef NEO
+namespace {
+	// Please use "Min" instead.
+	// Alias for Min, so we don't need to ifdef every single SDK location where this is used.
+	template< class T >
+	constexpr T min(T const& val1, T const& val2)
+	{
+		return Min(val1, val2);
+	}
+
+	// Please use "Max" instead.
+	// Alias for Max, so we don't need to ifdef every single SDK location where this is used.
+	template< class T >
+	constexpr T max(T const& val1, T const& val2)
+	{
+		return Max(val1, val2);
+	}
+};
+#endif
+
 #define N_EXTRAVALUES 1
 #define N_DIMENSIONS (3+N_EXTRAVALUES)
 

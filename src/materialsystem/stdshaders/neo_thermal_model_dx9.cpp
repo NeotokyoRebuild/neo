@@ -86,7 +86,7 @@ BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
 			constexpr float timeForBodyToCoolFully = 5;
 			const float maximumTemperatureOffsetValue = params[MAXTEMPERATUREOFFSET]->GetFloatValue();
 			const float temperatureValue = params[TEMPERATUREVALUE]->GetFloatValue();
-			const float temperatureCoefficient = maximumTemperatureOffsetValue * min(1.f, temperatureValue / timeForBodyToCoolFully);
+			const float temperatureCoefficient = maximumTemperatureOffsetValue * Min(1.f, temperatureValue / timeForBodyToCoolFully);
 			s_pShaderAPI->SetPixelShaderConstant(3, &temperatureCoefficient);
 		}
 

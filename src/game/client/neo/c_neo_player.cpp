@@ -1254,8 +1254,8 @@ void C_NEO_Player::ClientThink(void)
 			auto vel = GetAbsVelocity().Length();
 			if (this == pLocalPlayer)
 			{
-				if (vel > 0.5) { m_flTocFactor = min(0.3f, m_flTocFactor + 0.01); } // NEO TODO (Adam) base on time rather than think rate
-				else { m_flTocFactor = max(0.1f, m_flTocFactor - 0.01); }
+				if (vel > 0.5) { m_flTocFactor = Min(0.3f, m_flTocFactor + 0.01f); } // NEO TODO (Adam) base on time rather than think rate
+				else { m_flTocFactor = Max(0.1f, m_flTocFactor - 0.01f); }
 			}
 			else
 			{
