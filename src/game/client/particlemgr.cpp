@@ -1633,7 +1633,11 @@ int CParticleMgr::ComputeParticleDefScreenArea( int nInfoCount, RetireInfo_t *pI
 		pInfo[nCollection].m_pCollection = pCollection;
 		pInfo[nCollection].m_bFirstFrame = false;
 
+#ifdef NEO
+		Vector vecCenter, vecScreenCenter;
+#else
 		Vector vecCenter, vecScreenCenter, vecCenterCam;
+#endif
 		vecCenter = pCollection->GetControlPointAtCurrentTime( pDef->GetCullControlPoint() );
 
 		Vector3DMultiplyPositionProjective( worldToPixels, vecCenter, vecScreenCenter );
@@ -1751,7 +1755,9 @@ bool CParticleMgr::EarlyRetireParticleSystems( int nCount, ParticleSimListEntry_
 		ppEffects[i].m_pNewParticleEffect->MarkShouldPerformCullCheck( true );
 	}
 
+#ifndef NEO
 	Vector vecCameraForward;
+#endif
 	VMatrix worldToView, viewToProjection, worldToProjection, worldToScreen;
 	render->GetMatricesForView( *pViewSetup, &worldToView, &viewToProjection, &worldToProjection, &worldToScreen );
 	float flFocalDist = tan( DEG2RAD( pViewSetup->fov * 0.5f ) );

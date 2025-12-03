@@ -900,7 +900,9 @@ void C_RopeKeyframe::CPhysicsDelegate::GetNodeForces( CSimplePhysics::CNode *pNo
 		GetWindspeedAtTime(gpGlobals->curtime, vecWindVel);
 		if ( vecWindVel.LengthSqr() > 0 )
 		{
+#ifndef NEO
 			Vector vecWindAccel;
+#endif
 			VectorMA( *pAccel, WIND_FORCE_FACTOR, vecWindVel, *pAccel );
 		}
 		else

@@ -882,7 +882,9 @@ void CBaseCombatCharacter::UpdateOnRemove( void )
 //=========================================================
 bool CBaseCombatCharacter::CorpseGib( const CTakeDamageInfo &info )
 {
+#ifndef NEO
 	trace_t		tr;
+#endif
 	bool		gibbed = false;
 
 	EmitSound( "BaseCombatCharacter.CorpseGib" );
@@ -1793,7 +1795,9 @@ void CBaseCombatCharacter::ThrowDirForWeaponStrip( CBaseCombatWeapon *pWeapon, c
 		VMatrix zRot;
 		MatrixBuildRotateZ( zRot, random->RandomFloat( -60.0f, 60.0f ) );
 
+#ifndef NEO
 		Vector vecThrow;
+#endif
 		Vector3DMultiply( zRot, vecForward, *pVecThrowDir );
 
 		pVecThrowDir->z = random->RandomFloat( -0.5f, 0.5f );

@@ -593,7 +593,11 @@ void HunterDamageCallback( const CEffectData &data )
 	// Setup our collision information
 	pGlassEmitter->m_ParticleCollision.Setup( data.m_vOrigin, &data.m_vNormal, flAngularSpray, flMinSpeed, flMaxSpeed, 600.0f, 0.2f );
 
+#ifdef NEO
+	Vector dir;
+#else
 	Vector	dir, end;
+#endif
 
 	int	numFlecks = 32;
 
