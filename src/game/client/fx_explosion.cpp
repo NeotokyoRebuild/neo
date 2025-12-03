@@ -1207,7 +1207,9 @@ void C_WaterExplosionEffect::CreateMisc( void )
 
 	int		numDrops = 32;
 	float	length = 0.1f;
+#ifndef NEO
 	Vector	vForward, vRight, vUp;
+#endif
 	Vector	offDir;
 
 	TrailParticle	*tParticle;

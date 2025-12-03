@@ -575,7 +575,9 @@ void CFishPool::Spawn()
 
 	m_waterLevel = UTIL_WaterLevel( GetAbsOrigin(), GetAbsOrigin().z, GetAbsOrigin().z + 1000.0f );
 
+#ifndef NEO
 	trace_t result;
+#endif
 	for( int i=0; i<m_fishCount; ++i )
 	{
 		QAngle heading( 0.0f, RandomFloat( 0, 360.0f ), 0.0f );
