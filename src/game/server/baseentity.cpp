@@ -2779,7 +2779,9 @@ static void CheckPushedEntity( CBaseEntity *pEntity, pushblock_t &params )
 	pPhysics->GetShadowPosition( &origin, &angles );
 	float fraction = -1.0f;
 
+#ifndef NEO
 	matrix3x4_t parentDelta;
+#endif
 	if ( pEntity == params.pRootParent )
 	{
 		if ( pEntity->GetLocalAngularVelocity() == vec3_angle )

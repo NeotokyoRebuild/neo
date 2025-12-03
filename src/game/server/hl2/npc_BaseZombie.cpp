@@ -2087,7 +2087,9 @@ void CNPC_BaseZombie::StartTask( const Task_t *pTask )
 
 	case TASK_ZOMBIE_GET_PATH_TO_PHYSOBJ:
 		{
+#ifndef NEO
 			Vector vecGoalPos;
+#endif
 			Vector vecDir;
 
 			vecDir = GetLocalOrigin() - m_hPhysicsEnt->GetLocalOrigin();
