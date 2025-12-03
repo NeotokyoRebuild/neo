@@ -43,6 +43,7 @@ enum
 };
 
 
+#ifndef NEO // Please use Max/Min from basetypes.h instead
 #ifndef max
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
 #endif
@@ -52,6 +53,10 @@ enum
 #endif
 
 #ifndef clamp
+#define clamp( val, min, max ) ( ((val) > (max)) ? (max) : ( ((val) < (min)) ? (min) : (val) ) )
+#endif
+#endif
+#ifdef NEO
 #define clamp( val, min, max ) ( ((val) > (max)) ? (max) : ( ((val) < (min)) ? (min) : (val) ) )
 #endif
 
