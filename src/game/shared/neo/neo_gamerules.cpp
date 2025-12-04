@@ -1375,7 +1375,7 @@ void CNEORules::Think(void)
 	}
 	else if (m_pJuggernautItem)
 	{
-		if (IsRoundLive() && (gpGlobals->curtime > (m_flNeoRoundStartTime + sv_neo_preround_freeze_time.GetFloat()) + 15.0f) && IsJuggernautLocked())
+		if (IsRoundLive() && (gpGlobals->curtime > (m_flNeoRoundStartTime + sv_neo_preround_freeze_time.GetFloat()) + 20.0f) && IsJuggernautLocked())
 		{
 			UTIL_CenterPrintAll("- JUGGERNAUT ENABLED -\n");
 
