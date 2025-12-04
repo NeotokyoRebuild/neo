@@ -484,7 +484,9 @@ bool CParticleSystemQuery::IsPointInControllingObjectHitBox(
 		bool bInBBox = false;
 		Vector vecBBoxMin;
 		Vector vecBBoxMax;
+#ifndef NEO
 		Vector vecOrigin;
+#endif
 
 		vecBBoxMin = pMoveParent->CollisionProp()->OBBMins();
 		vecBBoxMax = pMoveParent->CollisionProp()->OBBMaxs();

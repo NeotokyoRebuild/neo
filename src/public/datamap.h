@@ -130,13 +130,13 @@ DECLARE_FIELD_SIZE( FIELD_MATERIALINDEX,	sizeof(int) )
 
 // Normal offset of is invalid on non-array-types, this is dubious as hell. The rest of the codebase converted to the
 // legit offsetof from the C headers, so we'll use the old impl here to avoid exposing temptation to others
-#define _hacky_datamap_offsetof(s,m)	((size_t)&(((s *)0)->m))
-
-#ifdef NEO // NEO NOTE (nullsystem): warning: narrowing conversion of ... from 'int' to 'size_t'
-#define _FIELD(name,fieldtype,count,flags,mapname,tolerance)		{ fieldtype, #name, { (size_t)_hacky_datamap_offsetof(classNameTypedef, name), 0 }, count, flags, mapname, NULL, NULL, NULL, sizeof( ((classNameTypedef *)0)->name ), NULL, 0, tolerance }
+#ifdef NEO
+#define _hacky_datamap_offsetof(s,m)	narrow_cast<int>(((size_t)&(((s *)0)->m)))
 #else
-#define _FIELD(name,fieldtype,count,flags,mapname,tolerance)		{ fieldtype, #name, { (int)_hacky_datamap_offsetof(classNameTypedef, name), 0 }, count, flags, mapname, NULL, NULL, NULL, sizeof( ((classNameTypedef *)0)->name ), NULL, 0, tolerance }
+#define _hacky_datamap_offsetof(s,m)	((size_t)&(((s *)0)->m))
 #endif
+
+#define _FIELD(name,fieldtype,count,flags,mapname,tolerance)		{ fieldtype, #name, { (int)_hacky_datamap_offsetof(classNameTypedef, name), 0 }, count, flags, mapname, NULL, NULL, NULL, sizeof( ((classNameTypedef *)0)->name ), NULL, 0, tolerance }
 #define DEFINE_FIELD_NULL	{ FIELD_VOID,0, {0,0},0,0,0,0,0,0}
 #define DEFINE_FIELD(name,fieldtype)			_FIELD(name, fieldtype, 1,  FTYPEDESC_SAVE, NULL, 0 )
 #define DEFINE_KEYFIELD(name,fieldtype, mapname) _FIELD(name, fieldtype, 1,  FTYPEDESC_KEY | FTYPEDESC_SAVE, mapname, 0 )

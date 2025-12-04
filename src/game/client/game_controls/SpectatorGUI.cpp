@@ -714,9 +714,13 @@ void CSpectatorGUI::Update()
 	GetHudSize(wide, tall);
 	m_pTopBar->GetBounds( bx, by, bwide, btall );
 
+#ifndef NEO
 	IGameResources *gr = GameResources();
+#endif
 	int specmode = GetSpectatorMode();
+#ifndef NEO
 	int playernum = GetSpectatorTarget();
+#endif
 
 	IViewPortPanel *overview = gViewPortInterface->FindPanelByName( PANEL_OVERVIEW );
 
@@ -851,7 +855,6 @@ extern ConVar cl_neo_hud_health_mode;
 void CSpectatorGUI::UpdatePlayerLabel()
 {
 	IGameResources* gr = GameResources();
-	int specmode = GetSpectatorMode();
 	int playernum = GetSpectatorTarget();
 
 	// update player name filed, text & color

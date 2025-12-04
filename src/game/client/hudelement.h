@@ -84,7 +84,11 @@ public:
 	void operator delete( void *pMem )				
 	{												
 #if defined( _DEBUG )
-		int size = _msize( pMem );					
+#ifdef NEO
+		size_t size = _msize(pMem);
+#else
+		int size = _msize( pMem );	
+#endif
 		memset( pMem, 0xcd, size );					
 #endif
 		free( pMem );								

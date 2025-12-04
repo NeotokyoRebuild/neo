@@ -27,8 +27,10 @@
 
 using namespace vgui;
 
+#ifndef NEO // Please use Max/Min from basetypes.h instead
 #ifndef max
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
+#endif
 #endif
 
 DECLARE_BUILD_FACTORY_DEFAULT_TEXT( Label, Label );
