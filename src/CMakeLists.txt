@@ -310,8 +310,10 @@ if(OS_LINUX OR OS_MACOS)
         #-Wextra # if STEAM_BRANCH
         #-Wshadow # if STEAM_BRANCH
 
-        $<$<CXX_COMPILER_ID:GNU>:-mfpmath=sse>
+        # Required for SourceMod gamedata generation
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>
+
+        $<$<CXX_COMPILER_ID:GNU>:-mfpmath=sse>
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual>
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-reorder>
         -Wno-multichar
@@ -346,9 +348,6 @@ if(OS_LINUX OR OS_MACOS)
 
         # Fix for "error: cast from pointer to smaller type 'unsigned int' loses information"
         #-fms-extensions
-
-        # Required for SourceMod gamedata generation
-        -Wno-invalid-offsetof
     )
 
     # Disable option for older compiler in docker
