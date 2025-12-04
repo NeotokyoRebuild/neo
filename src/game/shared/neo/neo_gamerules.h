@@ -14,9 +14,7 @@
 #include "neo_player_shared.h"
 #include "neo_misc.h"
 #include "weapon_ghost.h"
-#ifdef GAME_DLL
 #include "neo_juggernaut.h"
-#endif
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -331,7 +329,9 @@ public:
 
 	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
 	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
-	const Vector& GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
+	const Vector& GetJuggernautMarkerPos() const;
+	bool IsJuggernautLocked() const;
+
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -463,7 +463,7 @@ private:
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);
 	CNetworkVar(bool, m_bJuggernautItemExists);
-	CNetworkVector(m_vecJuggernautMarkerPos);
+	CNetworkHandle( CBaseEntity, m_hJuggernaut );
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
