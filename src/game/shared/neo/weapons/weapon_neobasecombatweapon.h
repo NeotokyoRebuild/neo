@@ -13,6 +13,9 @@
 #include "neo_player_shared.h"
 
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
+#ifdef GAME_DLL
+#include "soundent.h"
+#endif
 
 #ifdef CLIENT_DLL
 	#define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
@@ -81,6 +84,8 @@ struct WeaponSeeds_t
 	const char *recoilX;
 	const char *recoilY;
 };
+
+#define	SOUNDENT_VOLUME_NEO_SUPPRESSED 900.0
 
 #if(1)
 		// This does nothing; dummy value for network test. Remove when not needed anymore.
@@ -181,7 +186,7 @@ public:
 	int GetNumShotsFired(void) const { return m_nNumShotsFired; }
 
 	// Whether this weapon should fire automatically when holding down the attack.
-	virtual bool IsAutomatic(void) const
+	inline virtual bool IsAutomatic(void) const
 	{
 		return ((GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
@@ -193,7 +198,7 @@ public:
 	}
 
 	// Whether this weapon should fire only once per each attack command, even if held down.
-	bool IsSemiAuto(void) const { return !IsAutomatic(); }
+	inline bool IsSemiAuto(void) const { return !IsAutomatic(); }
 
 	virtual const Vector& GetBulletSpread(void) override;
 	virtual const WeaponSpreadInfo_t& GetSpreadInfo(void);
@@ -243,6 +248,7 @@ protected:
 	CNetworkVar(int, m_nNumShotsFired);
 	CNetworkVar(bool, m_bRoundChambered);
 	CNetworkVar(bool, m_bRoundBeingChambered);
+	CNetworkVar(bool, m_bTriggerReset);
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);

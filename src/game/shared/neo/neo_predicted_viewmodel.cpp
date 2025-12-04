@@ -256,7 +256,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 
 			return 0;
 		}
-		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision() && !glow_outline_effect_enable.GetBool())
+		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision())
 		{
 			IMaterial* pass = materials->FindMaterial("dev/thermal_view_model", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());

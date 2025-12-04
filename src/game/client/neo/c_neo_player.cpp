@@ -660,11 +660,7 @@ int C_NEO_Player::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-#ifdef GLOWS_ENABLE
-	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
-#else
 	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
-#endif // GLOWS_ENABLE
 	if (!pTargetPlayer)
 	{
 		Assert(false);
@@ -813,6 +809,15 @@ Vector C_NEO_Player::GetAutoaimVector( float flDelta )
 
 void C_NEO_Player::NotifyShouldTransmit( ShouldTransmitState_t state )
 {
+#ifdef GLOWS_ENABLE
+	if (state == ShouldTransmitState_t::SHOULDTRANSMIT_START && glow_outline_effect_enable.GetBool()) {
+		UpdateGlowEffects(GetTeamNumber());
+	}
+	else {
+		SetClientSideGlowEnabled(false);
+		DestroyGlowEffect();
+	}
+#endif // GLOWS_ENABLE
 	BaseClass::NotifyShouldTransmit(state);
 }
 
@@ -1057,7 +1062,6 @@ void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 #endif
 
 extern ConVar sv_infinite_aux_power;
-extern ConVar glow_outline_effect_enable;
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
@@ -1123,11 +1127,6 @@ void C_NEO_Player::PreThink( void )
 		if (IsLocalPlayer() && m_bFirstAliveTick)
 		{
 			m_bFirstAliveTick = false;
-			// NEO TODO (Adam) since the stuff in C_NEO_PLAYER::Spawn() only runs the first time a person spawns in the map, would it be worth moving some of the stuff from there here instead?
-#ifdef GLOWS_ENABLE
-			// Disable client side glow effects of all players
-			glow_outline_effect_enable.SetValue(false);
-#endif // GLOWS_ENABLE
 
 			// Reset any player explosion/shock effects
 			// NEO NOTE (Rain): The game already does this at CBasePlayer::Spawn, but that one's server-side,
@@ -1234,7 +1233,18 @@ void C_NEO_Player::ClientThink(void)
 				else { m_flTocFactor = 0.2f; } // 0.255f
 			}
 		}
-	}	
+#ifdef GLOWS_ENABLE
+		if (auto glowObject = GetGlowObject()) {
+			glowObject->SetUseTexturedHighlight(true);
+		}
+#endif // GLOWS_ENABLE
+	} else {
+#ifdef GLOWS_ENABLE
+		if (auto glowObject = GetGlowObject()) {
+			glowObject->SetUseTexturedHighlight(false);
+		}
+#endif // GLOWS_ENABLE
+	}
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
@@ -1422,6 +1432,61 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 {
 	BaseClass::TeamChange(iNewTeam);
 }
+
+#ifdef GLOWS_ENABLE
+void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
+{
+	if (!glow_outline_effect_enable.GetBool())
+	{
+		return;
+	}
+
+	auto updateGlowColour = [](C_BasePlayer* pPlayer, int iTeam = 0) {
+		float r, g, b;
+		NEORules()->GetTeamGlowColor(iTeam ? iTeam : pPlayer->GetTeamNumber(), r, g, b);
+		pPlayer->SetGlowEffectColor(r, g, b);
+	};
+
+	if (IsLocalPlayer()) {
+		for (int i = 1; i < gpGlobals->maxClients; i++) {
+			CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+			if (!pPlayer || pPlayer == this) {
+				continue;
+			}
+
+			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED)
+			{
+				pPlayer->SetClientSideGlowEnabled(false);
+				continue;
+			}
+			
+			updateGlowColour(pPlayer);
+			if (iNewTeam == TEAM_SPECTATOR || iNewTeam == pPlayer->GetTeamNumber()) {
+				pPlayer->SetClientSideGlowEnabled(true);
+			}
+			else { // ditto wrt mp_forcecamera check
+				pPlayer->SetClientSideGlowEnabled(false);
+			}
+		}
+	}
+	else {
+		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED)
+		{
+			SetClientSideGlowEnabled(false);
+			return;
+		}
+		
+		updateGlowColour(this, iNewTeam);
+		int localPlayerTeam = GetLocalPlayerTeam();
+		if (localPlayerTeam == TEAM_SPECTATOR || localPlayerTeam == iNewTeam) {
+			SetClientSideGlowEnabled(true);
+		}
+		else { // ditto wrt mp_forcecamera check
+			SetClientSideGlowEnabled(false);
+		}
+	}
+}
+#endif GLOWS_ENABLE
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
 {
@@ -1798,14 +1863,32 @@ bool C_NEO_Player::IsObjective(void) const
 	return IsCarryingGhost() || GetClass() == NEO_CLASS_VIP || GetClass() == NEO_CLASS_JUGGERNAUT;
 }
 
+//NEO TODO (Adam) move to neo_player_shared
 const Vector C_NEO_Player::GetPlayerMins(void) const
 {
-	return VEC_DUCK_HULL_MIN_SCALED(this);
+	if (IsObserver())
+	{
+		return VEC_OBS_HULL_MIN_SCALED(this);
+	}
+	if (GetFlags() & FL_DUCKING)
+	{
+		return VEC_DUCK_HULL_MIN_SCALED(this);
+	}
+	return VEC_HULL_MIN_SCALED(this);
 }
 
+//NEO TODO (Adam) move to neo_player_shared
 const Vector C_NEO_Player::GetPlayerMaxs(void) const
 {
-	return VEC_DUCK_HULL_MAX_SCALED(this);
+	if (IsObserver())
+	{
+		return VEC_OBS_HULL_MAX_SCALED(this);
+	}
+	if (GetFlags() & FL_DUCKING)
+	{
+		return VEC_DUCK_HULL_MAX_SCALED(this);
+	}
+	return VEC_HULL_MAX_SCALED(this);
 }
 
 void C_NEO_Player::PlayCloakSound(void)

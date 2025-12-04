@@ -68,6 +68,10 @@ BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
 			{
 				pShaderShadow->EnableSRGBRead(SHADER_SAMPLER1, true);
 			}
+
+			pShaderShadow->EnableDepthWrites(true);
+			pShaderShadow->EnableDepthTest(true);
+			pShaderShadow->DepthFunc(SHADER_DEPTHFUNC_NEAREROREQUAL);
 		}
 		
 		DYNAMIC_STATE

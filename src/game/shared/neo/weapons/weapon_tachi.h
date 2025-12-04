@@ -55,7 +55,7 @@ public:
 	virtual int	GetMinBurst() OVERRIDE { return 1; }
 	virtual int	GetMaxBurst() OVERRIDE { return 3; }
 
-	virtual bool IsAutomatic(void) const OVERRIDE
+	inline virtual bool IsAutomatic(void) const override final
 	{
 		return (m_bIsPrimaryFireMode == Tachi::Firemode::Auto);
 	}

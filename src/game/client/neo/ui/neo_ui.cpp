@@ -1379,50 +1379,67 @@ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	EndWidget(wdgState);
 }
 
-void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
+void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, const int iLongestTab)
 {
 	// This is basically a ringbox but different UI
 	const auto wdgState = BeginWidget(WIDGETFLAG_SKIPACTIVE | WIDGETFLAG_MOUSE);
 
 	SwapFont(FONT_NTNORMAL);
-	const int iTabWide = (c->dPanel.wide / iLabelsSize);
+	int iTabWide, iTabTall;
+	vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, wszLabelsList[iLongestTab], iTabWide, iTabTall);
+	iTabWide += 2 * c->iMarginX;
+	const int iTotalTabsWidth = (iTabWide * iLabelsSize);
+	const int iCenterTabsXOffset = iTotalTabsWidth < c->irWidgetWide ? (c->irWidgetWide - iTotalTabsWidth) * 0.5 : 0;
 	bool bResetActiveHot = false;
-
+	
+	const int iMWheelJump = iTabWide * 0.2;
 	switch (c->eMode)
 	{
 	case MODE_PAINT:
 	{
+		int oldX, oldY, oldW, oldH;
+		vgui::surface()->GetFullscreenViewport(oldX, oldY, oldW, oldH);
+		vgui::surface()->SetFullscreenViewport(c->rWidgetArea.x0, c->rWidgetArea.y0, c->irWidgetWide, c->irWidgetTall);
+		vgui::surface()->PushFullscreenViewport();
+
 		const auto *pFontI = &c->fonts[c->eFont];
 		for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
 		{
 			vgui::IntRect tabRect = {
-				.x0 = c->rWidgetArea.x0 + iXPosTab,
-				.y0 = c->rWidgetArea.y0,
-				.x1 = (i == (iLabelsSize - 1))
-						? (c->rWidgetArea.x1)
-						: (c->rWidgetArea.x0 + iXPosTab + iTabWide),
-				.y1 = c->rWidgetArea.y1,
+				.x0 = c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab,
+				.y0 = 0,
+				.x1 = c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab + iTabWide,
+				.y1 = c->irWidgetTall,
 			};
-			const bool bHoverTab = IN_BETWEEN_EQ(tabRect.x0, c->iMouseAbsX, tabRect.x1) &&
-					IN_BETWEEN_EQ(tabRect.y0, c->iMouseAbsY, tabRect.y1);
+			const bool bHoverTab = IN_BETWEEN_EQ(tabRect.x0, c->iMouseAbsX - c->rWidgetArea.x0, tabRect.x1) &&
+					IN_BETWEEN_EQ(tabRect.y0, c->iMouseAbsY - c->rWidgetArea.y0, tabRect.y1);
 			if (bHoverTab || i == *iIndex)
 			{
-				// NEO NOTE (nullsystem): On the final tab, just expand it to the end width as iTabWide isn't always going
-				// to give a properly aligned width
-#if 0
-				vgui::surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : c->normalBgColor);
-#else
 				// NEO TODO (nullsystem): The altered color scheme makes some element invisible,
 				// so will refactor this when I get to the styling refactoring
 				vgui::surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
-#endif
 				vgui::surface()->DrawFilledRectArray(&tabRect, 1);
 			}
 			const wchar_t *wszText = wszLabelsList[i];
-			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + iXPosTab + c->iMarginX,
-											c->rWidgetArea.y0 + pFontI->iYOffset);
+			int wide, tall;
+			vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, wszText, wide, tall);
+			vgui::surface()->DrawSetTextPos(c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab + ((iTabWide - wide) * 0.5), pFontI->iYOffset);
 			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
 		}
+		if (c->iXOffset[c->iSection] != 0)
+		{ // more tab content to the left
+			vgui::surface()->DrawSetColor(COLOR_WHITE);
+			vgui::surface()->DrawFilledRect(0, 0, 2, c->irWidgetTall);
+		}
+		const int iTabsWiderBy = c->dPanel.wide - iTotalTabsWidth;
+		if (iTabsWiderBy < 0 && c->iXOffset[c->iSection] != iTabsWiderBy)
+		{ // more tab content to the right
+			vgui::surface()->DrawSetColor(COLOR_WHITE);
+			vgui::surface()->DrawFilledRect(c->irWidgetWide, 0, c->irWidgetWide-2, c->irWidgetTall);
+		}
+
+		vgui::surface()->PopFullscreenViewport();
+		vgui::surface()->SetFullscreenViewport(oldX, oldY, oldW, oldH);
 
 		// Draw the side-hints text
 		// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
@@ -1438,12 +1455,12 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	break;
 	case MODE_MOUSEPRESSED:
 	{
-		if (wdgState.bHot && c->eCode == MOUSE_LEFT && c->iMouseAbsX >= c->rWidgetArea.x0)
+		if (wdgState.bHot && c->eCode == MOUSE_LEFT && c->iMouseAbsX >= (c->rWidgetArea.x0 + iCenterTabsXOffset) && c->iMouseAbsX <= c->rWidgetArea.x0 + iCenterTabsXOffset + (iTabWide * iLabelsSize))
 		{
-			const int iNextIndex = ((c->iMouseAbsX - c->rWidgetArea.x0) / iTabWide);
+			const int iNextIndex = ((-c->iXOffset[c->iSection] + c->iMouseAbsX - c->rWidgetArea.x0 - iCenterTabsXOffset) / iTabWide);
 			if (iNextIndex != *iIndex)
 			{
-				*iIndex = clamp(iNextIndex, 0, iLabelsSize);
+				*iIndex = clamp(iNextIndex, 0, iLabelsSize - 1);
 				V_memset(c->iYOffset, 0, sizeof(c->iYOffset));
 				bResetActiveHot = true;
 			}
@@ -1460,11 +1477,29 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		{
 			*iIndex += (bLeftKey) ? -1 : +1;
 			*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
+			const int distanceToStartOfButton = *iIndex * iTabWide;
+			if (-c->iXOffset[c->iSection] > distanceToStartOfButton)
+			{
+				c->iXOffset[c->iSection] = -distanceToStartOfButton;
+			}
+			const int distanceToEndOfButton = (*iIndex + 1) * iTabWide;
+			if (-c->iXOffset[c->iSection] + c->irWidgetWide < distanceToEndOfButton)
+			{
+				c->iXOffset[c->iSection] = c->irWidgetWide - distanceToEndOfButton;
+			}
 			V_memset(c->iYOffset, 0, sizeof(c->iYOffset));
 			bResetActiveHot = true;
 		}
 	}
 	break;
+	case MODE_MOUSEWHEELED:
+		if (!(c->bMouseInPanel))
+		{
+			break;
+		}
+		c->iXOffset[c->iSection] += (c->eCode == MOUSE_WHEEL_UP) ? iMWheelJump : -iMWheelJump; // NEO TODO (Adam) customizable horizontal scroll direction?
+		c->iXOffset[c->iSection] = clamp(c->iXOffset[c->iSection], -(iTotalTabsWidth - c->dPanel.wide), 0);
+		break;
 	default:
 		break;
 	}

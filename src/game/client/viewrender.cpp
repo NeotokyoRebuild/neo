@@ -65,6 +65,9 @@
 #if defined( HL2_CLIENT_DLL ) || defined( CSTRIKE_DLL ) || defined( TF_CLIENT_DLL )
 #define USE_MONITORS
 #endif
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif // NEO
 #include "rendertexture.h"
 #include "viewpostprocess.h"
 #include "viewdebug.h"
@@ -1213,8 +1216,21 @@ void CViewRender::DrawViewModels( const CViewSetup &viewRender, bool drawViewmod
 		{
 			UpdateRefractIfNeededByList( translucentViewModelList );
 		}
-
+		
+#if defined NEO && defined GLOWS_ENABLE
+		// toggles the viewmodel bit in the stencil layer for all pixels where an opaque viewmodel is drawn
+		pRenderContext->SetStencilEnable(true);
+		pRenderContext->SetStencilReferenceValue(NEO_GLOW_VIEWMODEL);
+		pRenderContext->SetStencilWriteMask(NEO_GLOW_VIEWMODEL);
+		pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_ALWAYS);
+		pRenderContext->SetStencilPassOperation(STENCILOPERATION_REPLACE);
+		pRenderContext->SetStencilFailOperation(STENCILOPERATION_KEEP);
+		pRenderContext->SetStencilZFailOperation(STENCILOPERATION_REPLACE);
+#endif // NEO && GLOWS_ENABLE
 		DrawRenderablesInList( opaqueViewModelList );
+#if defined NEO && defined GLOWS_ENABLE
+		pRenderContext->SetStencilEnable(false);
+#endif // NEO && GLOWS_ENABLE
 		DrawRenderablesInList( translucentViewModelList, STUDIO_TRANSPARENCY );
 	}
 
@@ -2311,7 +2327,7 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 			pRenderContext.SafeRelease();
 		}
 
-#ifdef NEO // Add glow effect after HDR stuff is done, so the colour of the effect doesn't vary
+#ifdef NEO // && defined GLOWS_ENABLE? // Add glow effect after HDR stuff is done and vision modes are applied, so the colour of the effect doesn't vary
 		GetClientModeNormal()->DoPostScreenSpaceEffects(&viewRender);
 #endif // NEO
 		CleanupMain3DView( viewRender );

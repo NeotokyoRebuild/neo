@@ -28,6 +28,7 @@
 #include "../server/neo/neo_player.h"
 #else
 #include "../client/neo/c_neo_player.h"
+#include "in_main.h"
 #endif
 #endif
 
@@ -2666,6 +2667,9 @@ bool CGameMovement::CheckJumpButton( void )
 	mv->m_outStepHeight += 0.15f;
 
 	OnJump(mv->m_outJumpVel.z);
+#if defined NEO && defined CLIENT_DLL
+	IN_LeanToggleReset();
+#endif // NEO && CLIENT_DLL
 
 	// Set jump time.
 	if ( gpGlobals->maxClients == 1 )

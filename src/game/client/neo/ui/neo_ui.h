@@ -240,6 +240,7 @@ struct Context
 	int iLayoutY;
 	int iVertLayoutY;
 	int iYOffset[MAX_SECTIONS] = {};
+	int iXOffset[MAX_SECTIONS] = {};
 	bool abYMouseDragOffset[MAX_SECTIONS] = {};
 	int iStartMouseDragOffset[MAX_SECTIONS] = {};
 
@@ -374,7 +375,7 @@ void EndOverrideFgColor();
 /*1W*/ void Label(const wchar_t *wszText, const bool bNotWidget = false);
 /*1W*/ void Label(const wchar_t *wszText, const LabelExOpt &opt);
 /*2W*/ void Label(const wchar_t *wszLabel, const wchar_t *wszText);
-/*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+/*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, const int iLongestTab = 0);
 /*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType);
 /*1W*/ RetButton Button(const wchar_t *wszText);
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);

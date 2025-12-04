@@ -86,6 +86,7 @@ CLIENTEFFECT_REGISTER_BEGIN(PrecachePostProcessingEffectsGlow)
 CLIENTEFFECT_MATERIAL("dev/glow_color")
 CLIENTEFFECT_MATERIAL("dev/halo_add_to_screen")
 CLIENTEFFECT_MATERIAL("dev/halo_add_to_screen_outline")
+CLIENTEFFECT_MATERIAL("dev/halo_textured_add_to_screen")
 CLIENTEFFECT_REGISTER_END_CONDITIONAL(engine->GetDXSupportLevel() >= 90)
 #endif
 #define ACHIEVEMENT_ANNOUNCEMENT_MIN_TIME 10
@@ -782,9 +783,9 @@ int	ClientModeShared::KeyInput( int down, ButtonCode_t keynum, const char *pszCu
 	return 1;
 }
 
-#ifdef NEO
+#if defined NEO && defined GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
-#endif // NEO
+#endif // NEO && GLOWS_ENABLE
 //-----------------------------------------------------------------------------
 // Purpose: See if spectator input occurred. Return 0 if the key is swallowed.
 //-----------------------------------------------------------------------------
@@ -835,13 +836,13 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 #endif
 		return 0;
 	}
-#ifdef GLOWS_ENABLE
+#if defined NEO && defined GLOWS_ENABLE
 	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+attack2") == 0)
 	{
 		glow_outline_effect_enable.SetValue(!glow_outline_effect_enable.GetBool());
 		return 0;
 	}
-#endif // GLOWS_ENABLE
+#endif // NEO && GLOWS_ENABLE
 #ifdef NEO
 	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+use") == 0)
 	{
@@ -1217,17 +1218,6 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 	else if ( Q_strcmp( "player_team", eventname ) == 0 )
 	{
 		C_BasePlayer *pPlayer = USERID2PLAYER( event->GetInt("userid") );
-#ifdef NEO
-#ifdef GLOWS_ENABLE
-		if (pPlayer && glow_outline_effect_enable.GetBool())
-		{ // NEO JANK (Adam) bots join their final team before they are created client side, so pPlayer here will be null for them, and setting clientsideglow on them in c_neo_player::Spawn() results in an incorrect glow colour. This works for players though
-			float r, g, b;
-			NEORules()->GetTeamGlowColor(event->GetInt("team"), r, g, b);
-			pPlayer->SetGlowEffectColor(r, g, b);
-			pPlayer->SetClientSideGlowEnabled(true);
-		}
-#endif // GLOWS_ENABLE
-#endif // NEO
 
 		if ( !hudChat )
 			return;
@@ -1317,6 +1307,12 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			// that's me
 			pPlayer->TeamChange( team );
 		}
+#if defined NEO && defined GLOWS_ENABLE
+		if (auto pNeoPlayer = static_cast<C_NEO_Player*>(pPlayer))
+		{
+			pNeoPlayer->UpdateGlowEffects(team);
+		}
+#endif // NEO && GLOWS_ENABLE
 	}
 #ifdef NEO
 	else if (Q_strcmp("player_changename", eventname) == 0 || Q_strcmp("player_changeneoname", eventname) == 0)
