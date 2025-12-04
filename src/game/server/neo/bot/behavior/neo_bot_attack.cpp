@@ -4,6 +4,7 @@
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
 
 #include "nav_mesh.h"
 
@@ -35,6 +36,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	if ( threat == NULL || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
+		me->SetAllSquadPingWaypoints(vec3_origin); // clean up waypoints
 		return Done( "No threat" );
 	}
 
@@ -55,6 +57,14 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	bool bHasRangedWeapon = me->IsRanged( myWeapon );
 
+	if ( bHasRangedWeapon
+		&& !me->m_hCommandingPlayer.Get() // ignoring waypoints/commander to hide can be annoying
+		&& me->IsThreatFiringAtMe(threat->GetEntity())
+		&& me->IsLineOfFireClear(threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_PENETRATION) )
+	{
+		return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Threat has a bead on me, retreating to cover to break line of sight");
+	}
+
 	// Go after them!
 	bool bAggressive = neo_bot_aggressive.GetBool() &&
 					   !bHasRangedWeapon &&
@@ -67,10 +77,14 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		 !me->IsLineOfFireClear( threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 	{
 		// SUPA7 reload can be interrupted so proactively reload
-		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()) && !me->IsReloading())
 		{
 			me->ReleaseFireButton();
-			me->PressReloadButton();
+			me->StartReload(myWeapon); // Supa reload can be interrupted so continue pursuit
+		}
+		else if (me->IsReloading())
+		{
+			return SuspendFor(new CNEOBotRetreatToCover(0.0f), "Need to reload in presence of threat, looking for cover");
 		}
 		
 		if ( threat->IsVisibleRecently() )
@@ -88,6 +102,12 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 				CNEOBotPathCost cost( me, DEFAULT_ROUTE );
 				m_chasePath.Update( me, threat->GetEntity(), cost );
 			}
+
+			// If bot is HARD or EXPERT difficulty, set m_vLastPingByStar to m_chasePath
+			if (me->GetDifficulty() >= CNEOBot::HARD)
+			{
+				me->SetAllSquadPingWaypoints(m_chasePath.GetEndPosition());
+			}
 		}
 		else
 		{
@@ -97,6 +117,8 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			if ( me->IsRangeLessThan( threat->GetLastKnownPosition(), 20.0f ) )
 			{
 				me->GetVisionInterface()->ForgetEntity( threat->GetEntity() );
+
+				me->SetAllSquadPingWaypoints(vec3_origin); // clean up waypoints
 				return Done( "I lost my target!" );
 			}
 
