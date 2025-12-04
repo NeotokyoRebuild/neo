@@ -117,7 +117,10 @@ wchar_t* ConvertCRtoNL( wchar_t *str )
 void StripEndNewlineFromString( char *str )
 {
 #ifdef NEO
-	int s = narrow_cast<int>( strlen( str ) - 1 );
+	const auto len = strlen(str);
+	if (len == 0)
+		return;
+	int s = narrow_cast<int>(len - 1);
 #else
 	int s = strlen( str ) - 1;
 #endif
@@ -131,7 +134,10 @@ void StripEndNewlineFromString( char *str )
 void StripEndNewlineFromString( wchar_t *str )
 {
 #ifdef NEO
-	int s = narrow_cast<int>( wcslen( str ) - 1 );
+	const auto len = wcslen(str);
+	if (len == 0)
+		return;
+	int s = narrow_cast<int>(len - 1);
 #else
 	int s = wcslen( str ) - 1;
 #endif
