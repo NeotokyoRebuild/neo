@@ -418,14 +418,15 @@ public:
 private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
-
+	float m_flJuggernautDeathTime = 0.0f;
+	int m_iLastJuggernautTeam = TEAM_INVALID;
+	
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
 	int m_iVIPPreviousClass = 0;
 
-	float m_flLastPointTime = 0.0f;
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
