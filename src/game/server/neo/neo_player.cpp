@@ -1491,7 +1491,7 @@ void CNEO_Player::PostThink(void)
 			m_bFirstDeathTick = false;
 
 			Weapon_SetZoom(false);
-			m_bInVision = false;
+			m_bInVision = m_bInThermOpticCamo =false;
 			m_bInLean = NEO_LEAN_NONE;
 		}
 
@@ -2957,12 +2957,17 @@ CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
 {
 	auto* item = BaseClass::GiveNamedItem(szName, iSubType);
 
-	if (item && szName && FStrEq(szName, "weapon_tachi"))
+	if (item)
 	{
-		const char* tachiPref = engine->GetClientConVarValue(entindex(), "cl_neo_tachi_prefer_auto");
-		if (tachiPref && *tachiPref && (V_atoi(tachiPref) != 0))
+		item->RemoveEffects( EF_BONEMERGE );
+
+		if (szName && FStrEq(szName, "weapon_tachi"))
 		{
-			assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
+			const char* tachiPref = engine->GetClientConVarValue(entindex(), "cl_neo_tachi_prefer_auto");
+			if (tachiPref && *tachiPref && (V_atoi(tachiPref) != 0))
+			{
+				assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
+			}
 		}
 	}
 
@@ -3437,14 +3442,32 @@ float CNEO_Player::GetActiveWeaponSpeedScale() const
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
+// NEO TODO (Adam) move to neo_player_shared
 const Vector CNEO_Player::GetPlayerMins(void) const
 {
-	return VEC_DUCK_HULL_MIN_SCALED(this);
+	if (IsObserver())
+	{
+		return VEC_OBS_HULL_MIN_SCALED(this);
+	}
+	if (GetFlags() & FL_DUCKING)
+	{
+		return VEC_DUCK_HULL_MIN_SCALED(this);
+	}
+	return VEC_HULL_MIN_SCALED(this);
 }
 
+//NEO TODO (Adam) move to neo_player_shared
 const Vector CNEO_Player::GetPlayerMaxs(void) const
 {
-	return VEC_DUCK_HULL_MAX_SCALED(this);
+	if (IsObserver())
+	{
+		return VEC_OBS_HULL_MAX_SCALED(this);
+	}
+	if (GetFlags() & FL_DUCKING)
+	{
+		return VEC_DUCK_HULL_MAX_SCALED(this);
+	}
+	return VEC_HULL_MAX_SCALED(this);
 }
 
 extern ConVar sv_turbophysics;

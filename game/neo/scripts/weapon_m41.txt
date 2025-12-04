@@ -14,7 +14,7 @@ WeaponData
 	"bucket_position"	"0"
 	"Damage"		"29"
 	"Penetration"		"32.0"
-	"CycleTime"		"0.1"		// time between shots
+	"CycleTime"		"0.166666"		// time between shots
 	
 	"TPMuzzleFlashScale"	"0.5"
 

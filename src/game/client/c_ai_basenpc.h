@@ -41,6 +41,10 @@ public:
 	void					OnDataChanged( DataUpdateType_t type );
 	bool					ImportantRagdoll( void ) { return m_bImportanRagdoll;	}
 
+#ifdef NEO
+	virtual int				DrawModel( int flags );
+#endif
+
 private:
 	C_AI_BaseNPC( const C_AI_BaseNPC & ); // not defined, not accessible
 	float m_flTimePingEffect;

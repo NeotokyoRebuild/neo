@@ -107,7 +107,7 @@ void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const
 				rect.x1 += crh.iOutline;
 				rect.y1 += crh.iOutline;
 			}
-			vgui::surface()->DrawSetColor(COLOR_BLACK);
+			vgui::surface()->DrawSetColor(crh.colorOutline);
 			vgui::surface()->DrawFilledRectArray(iOutRects, iRectSize);
 		}
 
@@ -124,12 +124,12 @@ void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const
 
 		if (crh.iOutline > 0)
 		{
-			vgui::surface()->DrawSetColor(COLOR_BLACK);
+			vgui::surface()->DrawSetColor(crh.bSeparateColorDot ? crh.colorDotOutline : crh.colorOutline);
 			vgui::surface()->DrawFilledRect(-iStartCenter + x -crh.iOutline, -iStartCenter + y -crh.iOutline,
 											iEndCenter + x +crh.iOutline, iEndCenter + y +crh.iOutline);
 		}
 
-		vgui::surface()->DrawSetColor(crh.color);
+		vgui::surface()->DrawSetColor(crh.bSeparateColorDot ? crh.colorDot : crh.color);
 		vgui::surface()->DrawFilledRect(-iStartCenter + x, -iStartCenter + y, iEndCenter + x, iEndCenter + y);
 	}
 
@@ -148,6 +148,7 @@ enum NeoXHairSerial
 	NEOXHAIR_SERIAL_PREALPHA_V8_2 = 1,
 	NEOXHAIR_SERIAL_ALPHA_V17,
 	NEOXHAIR_SERIAL_ALPHA_V19,
+	NEOXHAIR_SERIAL_ALPHA_V22,
 
 	NEOXHAIR_SERIAL__LATESTPLUSONE,
 	NEOXHAIR_SERIAL_CURRENT = NEOXHAIR_SERIAL__LATESTPLUSONE - 1,
@@ -182,6 +183,10 @@ static constexpr const NeoXHairVariantType NEOXHAIR_SEGMENT_VARTYPES[NEOXHAIR_SE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_CIRCLERAD
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_DYNAMICTYPE
+	NEOXHAIRVARTYPE_BOOL,  // NEOXHAIR_SEGMENT_B_SEPARATECOLORDOT,
+	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_COLORDOT,
+	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_COLORDOTOUTLINE,
+	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_COLOROUTLINE,
 };
 
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
@@ -190,15 +195,15 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 	int iSegmentIdx = 0;
 	NeoXHairVariant vars[NEOXHAIR_SEGMENT__TOTAL] = {};
 
-	const int iPszSequenceSize = V_strlen(pszSequence);
-	if (iPszSequenceSize <= 0 || iPszSequenceSize > NEO_XHAIR_SEQMAX)
+	const int iPszSequenceLength = V_strlen(pszSequence);
+	if (iPszSequenceLength <= 0 || iPszSequenceLength > NEO_XHAIR_SEQMAX)
 	{
 		return false;
 	}
 
 	char szMutSequence[NEO_XHAIR_SEQMAX];
-	V_memcpy(szMutSequence, pszSequence, sizeof(char) * iPszSequenceSize);
-	for (int i = 0; i < iPszSequenceSize && iSegmentIdx < NEOXHAIR_SEGMENT__TOTAL; ++i)
+	V_memcpy(szMutSequence, pszSequence, sizeof(char) * iPszSequenceLength);
+	for (int i = 0; i < iPszSequenceLength && iSegmentIdx < NEOXHAIR_SEGMENT__TOTAL; ++i)
 	{
 		const char ch = szMutSequence[i];
 		if (ch == ';')
@@ -226,7 +231,18 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 		}
 	}
 
-	if (iSegmentIdx < NEOXHAIR_SEGMENT__TOTAL)
+	static constexpr const int SERIAL_TO_TOTAL_MAP[NEOXHAIR_SERIAL__LATESTPLUSONE] = {
+		0, // not used
+		0, // NEOXHAIR_SERIAL_PREALPHA_V8_2 (pre-string serial, not used)
+		NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V17, // NEOXHAIR_SERIAL_ALPHA_V17
+		NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V19, // NEOXHAIR_SERIAL_ALPHA_V19
+		NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V22, // NEOXHAIR_SERIAL_ALPHA_V22
+	};
+
+	const int iSerialVersion = vars[NEOXHAIR_SEGMENT_I_VERSION].iVal;
+	const int iTotalForSerial = (IN_BETWEEN_AR(0, iSerialVersion, NEOXHAIR_SERIAL__LATESTPLUSONE)) ?
+			SERIAL_TO_TOTAL_MAP[iSerialVersion] : 0;
+	if ((iTotalForSerial <= 0) || (iSegmentIdx < iTotalForSerial))
 	{
 		return false;
 	}
@@ -244,7 +260,23 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 	crh->iCircleRad = vars[NEOXHAIR_SEGMENT_I_CIRCLERAD].iVal;
 	crh->iCircleSegments = vars[NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS].iVal;
 	
-	crh->iEDynamicType = vars[NEOXHAIR_SEGMENT_I_VERSION].iVal >= NEOXHAIR_SERIAL_ALPHA_V19 ? vars[NEOXHAIR_SEGMENT_I_DYNAMICTYPE].iVal : 0;
+	crh->iEDynamicType = (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V19) ?
+			vars[NEOXHAIR_SEGMENT_I_DYNAMICTYPE].iVal : 0;
+
+	if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V22)
+	{
+		crh->bSeparateColorDot = vars[NEOXHAIR_SEGMENT_B_SEPARATECOLORDOT].bVal;
+		crh->colorDot.SetRawColor(vars[NEOXHAIR_SEGMENT_I_COLORDOT].iVal);
+		crh->colorDotOutline.SetRawColor(vars[NEOXHAIR_SEGMENT_I_COLORDOTOUTLINE].iVal);
+		crh->colorOutline.SetRawColor(vars[NEOXHAIR_SEGMENT_I_COLOROUTLINE].iVal);
+	}
+	else
+	{
+		crh->bSeparateColorDot = false;
+		crh->colorDot = COLOR_BLACK;
+		crh->colorDotOutline = COLOR_BLACK;
+		crh->colorOutline = COLOR_BLACK;
+	}
 
 	return true;
 }
@@ -252,7 +284,7 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX])
 {
 	V_sprintf_safe(szSequence,
-			"%d;%d;%d;%d;%d;%.3f;%d;%d;%d;%d;%d;%d;%d;%d;",
+			"%d;%d;%d;%d;%d;%.3f;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;",
 			NEOXHAIR_SERIAL_CURRENT,
 			crh->iStyle,
 			crh->color.GetRawColor(),
@@ -266,7 +298,11 @@ void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQM
 			static_cast<int>(crh->bTopLine),
 			crh->iCircleRad,
 			crh->iCircleSegments,
-			crh->iEDynamicType);
+			crh->iEDynamicType,
+			static_cast<int>(crh->bSeparateColorDot),
+			crh->colorDot.GetRawColor(),
+			crh->colorDotOutline.GetRawColor(),
+			crh->colorOutline.GetRawColor());
 }
 
 int HalfInaccuracyConeInScreenPixels(C_NEO_Player* pPlayer, C_NEOBaseCombatWeapon* pWeapon, int halfScreenWidth)

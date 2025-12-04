@@ -4,6 +4,7 @@
 
 neo_testshader_ps2x.fxc
 neo_refract_ps2x.fxc
+neo_texturehaloadd_ps2x.fxc
 
 neo_thermal_model_ps20b.fxc
 neo_thermal_model_vs20.fxc

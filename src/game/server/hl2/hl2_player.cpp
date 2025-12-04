@@ -3370,8 +3370,10 @@ void CHL2_Player::UpdateWeaponPosture( void )
 	{
 		if( !pWeapon )
 		{
+#ifndef NEO
 			// This tells the client to draw no crosshair
 			m_HL2Local.m_bWeaponLowered = true;
+#endif // NEO
 			return;
 		}
 		else

@@ -221,6 +221,7 @@ public:
 	bool m_bOnLoadingScreen = false;
 	float m_flTimeLoadingScreenTransition = 0.0f;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	int m_iSavedXOffsets[NeoUI::MAX_SECTIONS] = {};
 	int m_iSavedActive = 0;
 	int m_iSavedSection = 0;
 	bool m_bSprayGalleryRefresh = false;
