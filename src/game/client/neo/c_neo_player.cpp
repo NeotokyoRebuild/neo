@@ -1128,6 +1128,9 @@ void C_NEO_Player::PreThink( void )
 		{
 			m_bFirstAliveTick = false;
 
+			// Toggle keys can be toggled while the player is dead, reset again on spawn
+			LiftAllToggleKeys();
+
 			// Reset any player explosion/shock effects
 			// NEO NOTE (Rain): The game already does this at CBasePlayer::Spawn, but that one's server-side,
 			// so it could arrive too late.
@@ -1271,6 +1274,7 @@ void C_NEO_Player::PostThink(void)
 			Weapon_SetZoom(false);
 			m_bInVision = m_bInThermOpticCamo = false;
 			IN_LeanReset();
+			LiftAllToggleKeys();
 
 			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
@@ -1656,7 +1660,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	m_bIneligibleForLoadoutPick = true;
-	Weapon_SetZoom(false);
+	IN_AimToggleReset();
 
 	if (pWeapon->IsGhost())
 	{
