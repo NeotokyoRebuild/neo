@@ -4347,13 +4347,8 @@ bool CNEORules::JuggernautItemExists() const
 		auto jgr = assert_cast<CNEO_Juggernaut*>(m_hJuggernaut.Get());
 		return jgr;
 	}
-	else
-	{
-		return m_bJuggernautItemExists;
-	}
-#else
-	return m_bJuggernautItemExists;
 #endif
+	return m_bJuggernautItemExists;
 }
 
 const Vector& CNEORules::GetJuggernautMarkerPos() const
@@ -4378,15 +4373,9 @@ bool CNEORules::IsJuggernautLocked() const
 		{
 			return jgr->m_bLocked;
 		}
-		else
-		{
-			return false;
-		}
 	}
-	else
-	{
-		return false;
-	}
+
+	return false;
 }
 
 const char *CNEORules::GetTeamClantag(const int iTeamNum) const
