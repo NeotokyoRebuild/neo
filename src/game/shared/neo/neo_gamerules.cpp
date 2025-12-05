@@ -4339,6 +4339,23 @@ Vector CNEORules::GetGhostMarkerPos() const
 	return GetGhostPos();
 }
 
+bool CNEORules::JuggernautItemExists() const
+{
+#ifdef DEBUG
+	if (m_bJuggernautItemExists)
+	{
+		auto jgr = assert_cast<CNEO_Juggernaut*>(m_hJuggernaut.Get());
+		return jgr;
+	}
+	else
+	{
+		return m_bJuggernautItemExists;
+	}
+#else
+	return m_bJuggernautItemExists;
+#endif
+}
+
 const Vector& CNEORules::GetJuggernautMarkerPos() const
 {
 	auto jgr = m_hJuggernaut.Get();

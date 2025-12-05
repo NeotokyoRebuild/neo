@@ -328,7 +328,7 @@ public:
 	Vector GetGhostMarkerPos() const;
 
 	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
-	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
+	bool JuggernautItemExists() const;
 	const Vector& GetJuggernautMarkerPos() const;
 	bool IsJuggernautLocked() const;
 
