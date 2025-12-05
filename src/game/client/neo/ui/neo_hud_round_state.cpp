@@ -607,7 +607,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			}
 		}
 	}
-	else if (!cl_neo_hud_scoreboard_hide_others.GetBool() || !g_pNeoScoreBoard->IsVisible())
+	else
 	{
 		DrawPlayerList();
 	}
@@ -623,11 +623,6 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
 		const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
 
-		if (localPlayerSpec)
-		{
-			return;
-		}
-
 		int offset = 52;
 		if (cl_neo_squad_hud_star_scale.GetFloat() > 0)
 		{
@@ -636,8 +631,10 @@ void CNEOHud_RoundState::DrawPlayerList()
 			offset *= cl_neo_squad_hud_star_scale.GetFloat() * res.h / 1080.0f;
 		}
 
+		const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
+
 		// Draw squad mates
-		if (g_PR->GetStar(localPlayerIndex) != 0)
+		if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != 0 && !hideDueToScoreboard)
 		{
 			bool squadMateFound = false;
 
@@ -697,7 +694,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 					m_iLeftPlayersAlive++;
 				}
 			}
-			if (i == localPlayerIndex)
+			if (i == localPlayerIndex || localPlayerSpec || hideDueToScoreboard)
 			{
 				continue;
 			}
