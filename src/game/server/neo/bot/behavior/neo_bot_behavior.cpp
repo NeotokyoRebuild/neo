@@ -789,6 +789,29 @@ QueryResultType	CNEOBotMainAction::ShouldRetreat( const INextBot *bot ) const
 	if ( me->HasAttribute( CNEOBot::IGNORE_ENEMIES ) )
 		return ANSWER_NO;
 
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if ( threat &&  me->IsLineOfFireClear(threat->GetEntity(), CNEOBot::LINE_OF_FIRE_PENETRATION_MODE_DEFAULT) )
+	{
+		if (me->IsThreatFiringAtMe(threat->GetEntity()) )
+		{
+			return ANSWER_YES;
+		}
+
+		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
+		if (myWeapon)
+		{
+			if (!me->IsRanged(myWeapon))
+			{
+				return ANSWER_NO;
+			}
+
+			if (myWeapon->m_bInReload)
+			{
+				return ANSWER_YES;
+			}
+		}
+	}
+
 	return ANSWER_NO;
 }
 
