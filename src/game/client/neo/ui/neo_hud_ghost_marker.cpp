@@ -100,11 +100,6 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 	}
 	else
 	{
-		if (m_jgrInPVS && (!NEORules()->JuggernautItemExists() || NEORules()->IsRoundOver()))
-		{
-			m_jgrInPVS = nullptr;
-		}
-
 		if (!NEORules()->GetJuggernautPlayer())
 		{
 			const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetJuggernautMarkerPos());
@@ -118,11 +113,6 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 			}
 		}
 	}
-}
-
-void CNEOHud_GhostMarker::resetHUDState()
-{
-	m_jgrInPVS = nullptr;
 }
 
 void CNEOHud_GhostMarker::DrawNeoHudElement()
@@ -181,40 +171,12 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 			return;
 		}
 
-		if (!m_jgrInPVS)
+		if (NEORules()->IsJuggernautLocked())
 		{
-			C_AllBaseEntityIterator itr;
-			C_BaseEntity* ent = nullptr;
-			while ((ent = itr.Next()) != nullptr)
-			{
-				if (auto* jgrEnt = dynamic_cast<CNEO_Juggernaut*>(ent))
-				{
-					m_jgrInPVS = jgrEnt;
-					break;
-				}
-			}
+			ghostColor = COLOR_RED;
 		}
 
-		// Use PVS over networked-given position if possible as it'll give a smoother visual
-		Vector jgrPos;
-		if (m_jgrInPVS && m_jgrInPVS->IsVisible())
-		{
-			jgrPos = m_jgrInPVS->WorldSpaceCenter();
-		}
-		else
-		{
-			if (NEORules())
-			{
-				jgrPos = NEORules()->GetJuggernautMarkerPos();
-			}
-			else
-			{
-				Assert(false);
-				return;
-			}
-		}
-
-		GetVectorInScreenSpace(jgrPos, iPosX, iPosY);
+		GetVectorInScreenSpace(NEORules()->GetJuggernautMarkerPos(), iPosX, iPosY);
 	}
 
 	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();

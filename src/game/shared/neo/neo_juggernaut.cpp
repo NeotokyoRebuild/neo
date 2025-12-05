@@ -17,12 +17,14 @@ LINK_ENTITY_TO_CLASS(neo_juggernaut, CNEO_Juggernaut);
 
 #ifdef GAME_DLL
 IMPLEMENT_SERVERCLASS_ST(CNEO_Juggernaut, DT_NEO_Juggernaut)
+	SendPropBool(SENDINFO(m_bLocked)),
 END_SEND_TABLE()
 #else
 #ifdef CNEO_Juggernaut
 #undef CNEO_Juggernaut
 #endif
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Juggernaut, DT_NEO_Juggernaut, CNEO_Juggernaut)
+	RecvPropBool(RECVINFO(m_bLocked)),
 END_RECV_TABLE()
 #define CNEO_Juggernaut C_NEO_Juggernaut
 #endif
@@ -30,6 +32,11 @@ END_RECV_TABLE()
 BEGIN_DATADESC(CNEO_Juggernaut)
 #ifdef GAME_DLL
 	DEFINE_USEFUNC(CNEO_Juggernaut::Use),
+	DEFINE_KEYFIELD(m_bLocked, FIELD_BOOLEAN, "StartLocked"),
+
+	// Inputs
+	DEFINE_INPUTFUNC(FIELD_VOID, "Lock", InputLock),
+	DEFINE_INPUTFUNC(FIELD_VOID, "Unlock", InputUnlock),
 
 	// Outputs
 	DEFINE_OUTPUT(m_OnPlayerActivate, "OnPlayerActivate")
@@ -127,6 +134,9 @@ void CNEO_Juggernaut::Spawn(void)
 
 void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value)
 {
+	if (m_bLocked)
+		return;
+
 	CBasePlayer* pPlayer = ToBasePlayer(pActivator);
 	if (!pPlayer || !pPlayer->IsAlive())
 		return;
