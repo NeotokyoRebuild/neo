@@ -829,19 +829,8 @@ void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv )
 	// Update their avatar
 	if (UpdateAvatars() && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
 	{
-		int playerIndexForAvatar = playerIndex;
-
-		C_NEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
-		C_NEO_Player *pImpersonator = pPlayer ? ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()) : nullptr;
-
-		if (pImpersonator)
-		{
-			// Show the avatar of the impersonator
-			playerIndexForAvatar = pImpersonator->entindex();
-		}
-
 		player_info_t pi;
-		if ( engine->GetPlayerInfo( playerIndexForAvatar, &pi ) )
+		if ( engine->GetPlayerInfo( playerIndex, &pi ) )
 		{
 			if ( pi.friendsID )
 			{
