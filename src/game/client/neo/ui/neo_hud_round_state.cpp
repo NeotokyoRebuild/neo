@@ -752,7 +752,7 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 		    pImpersonator->GetPlayerName()
 			: g_PR->GetPlayerName(playerIndex);
 
-		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassAtTimeOfDeath) : squadMateClass;
+		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
 		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", pPlayerDisplayName, displayClass);
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));

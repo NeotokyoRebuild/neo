@@ -229,7 +229,7 @@ public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 	CNetworkVar(int, m_iNeoStar);
-	CNetworkVar(int, m_iClassAtTimeOfDeath);
+	CNetworkVar(int, m_iClassBeforeTakeover);
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);

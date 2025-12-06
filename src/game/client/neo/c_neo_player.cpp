@@ -72,7 +72,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iNeoClass)),
 	RecvPropInt(RECVINFO(m_iNeoSkin)),
 	RecvPropInt(RECVINFO(m_iNeoStar)),
-	RecvPropInt(RECVINFO(m_iClassAtTimeOfDeath)),
+	RecvPropInt(RECVINFO(m_iClassBeforeTakeover)),
 
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),

@@ -48,7 +48,7 @@ IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
 SendPropInt(SENDINFO(m_iNeoStar)),
-SendPropInt(SENDINFO(m_iClassAtTimeOfDeath)),
+SendPropInt(SENDINFO(m_iClassBeforeTakeover)),
 SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
@@ -93,7 +93,7 @@ BEGIN_DATADESC(CNEO_Player)
 DEFINE_FIELD(m_iNeoClass, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
-DEFINE_FIELD(m_iClassAtTimeOfDeath, FIELD_INTEGER),
+DEFINE_FIELD(m_iClassBeforeTakeover, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bIneligibleForLoadoutPick, FIELD_BOOLEAN),
@@ -3704,7 +3704,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	}
 
 	m_bSpectatorTakeoverPlayerPending = true;
-	m_iClassAtTimeOfDeath = GetClass();
+	m_iClassBeforeTakeover = GetClass();
 	m_hSpectatorTakeoverPlayerTarget = pNeoPlayerToReplace;
 	ForceRespawn();
 
@@ -3849,12 +3849,12 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 		}
 
 		// Reset spectator's class to their original selection
-		switch (m_iClassAtTimeOfDeath)
+		switch (m_iClassBeforeTakeover)
 		{
 		case NEO_CLASS_RECON:
 		case NEO_CLASS_ASSAULT:
 		case NEO_CLASS_SUPPORT:
-			m_iNeoClass = m_iClassAtTimeOfDeath;
+			m_iNeoClass = m_iClassBeforeTakeover;
 			break;
 		default:
 			// Don't reset class if spectator was a special class (VIP, Juggernaut)

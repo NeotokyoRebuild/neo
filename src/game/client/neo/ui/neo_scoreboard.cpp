@@ -804,7 +804,7 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	int classToDisplay = neoClassIdx;
 	if (isImpersonating)
 	{
-		classToDisplay = pPlayer->m_iClassAtTimeOfDeath;
+		classToDisplay = pPlayer->m_iClassBeforeTakeover;
 	}
 	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(classToDisplay));
 
