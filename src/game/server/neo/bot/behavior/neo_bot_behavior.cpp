@@ -789,26 +789,21 @@ QueryResultType	CNEOBotMainAction::ShouldRetreat( const INextBot *bot ) const
 	if ( me->HasAttribute( CNEOBot::IGNORE_ENEMIES ) )
 		return ANSWER_NO;
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	if ( threat &&  me->IsLineOfFireClear(threat->GetEntity(), CNEOBot::LINE_OF_FIRE_PENETRATION_MODE_DEFAULT) )
+	const CKnownEntity* threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if (threat)
 	{
-		if (me->IsThreatFiringAtMe(threat->GetEntity()) )
+		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
+		if (myWeapon && myWeapon->m_bInReload)
 		{
 			return ANSWER_YES;
 		}
 
-		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
-		if (myWeapon)
+		if ( me->IsThreatFiringAtMe(threat->GetEntity())
+			&& me->IsLineOfFireClear(threat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT) )
 		{
-			if (!me->IsRanged(myWeapon))
-			{
-				return ANSWER_NO;
-			}
-
-			if (myWeapon->m_bInReload)
-			{
-				return ANSWER_YES;
-			}
+			// IsThreatFiringAtMe only checks general aim direction, and does not check if a wall is in the way
+			// IsLineOfFireClear check needed to prevent bots from hiding from gun sounds behind walls
+			return ANSWER_YES;
 		}
 	}
 
