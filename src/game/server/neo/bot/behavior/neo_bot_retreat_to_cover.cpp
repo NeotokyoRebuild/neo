@@ -181,6 +181,9 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	// attack while retreating
 	me->EquipBestWeaponForThreat( threat );
 
+	// NEO JANK: How we handle reloads and how we classify barrage and reload weapons might not mix well
+	// It's probably a bad idea to waste a partial magazine for the PZ or SRS
+#ifndef NEO
 	// reload while moving to cover
 	bool isDoingAFullReload = false;
 	CNEOBaseCombatWeapon *myPrimary = (CNEOBaseCombatWeapon*)me->GetActiveWeapon();
@@ -192,7 +195,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 			isDoingAFullReload = true;
 		}
 	}
-
+#endif
 
 	// move to cover, or stop if we've found opportunistic cover (no visible threats right now)
 	if ( me->GetLastKnownArea() == m_coverArea || !threat )
@@ -216,7 +219,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		}
 
 		// stay in cover while we fully reload
-		if ( isDoingAFullReload )
+		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
+		if ( myWeapon && myWeapon->m_bInReload )
 		{
 			return Continue();
 		}
