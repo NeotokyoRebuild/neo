@@ -290,9 +290,13 @@ protected:
 	void					OnPrevTrack();
 
 	void					OnPlay();
+#ifdef NEO
+public:
+#endif // NEO
 	void					OnStop();
 #ifdef NEO
 	void					OnPause();
+protected:
 #endif // NEO
 	void					OnChangeVolume( float newVol );
 #ifdef NEO
@@ -332,10 +336,6 @@ protected:
 	void					ShowDirectorySelectDialog();
 
 	void					GoToNextSong( int skip );
-#ifdef NEO
-public:
-	int						m_bPauseNextSong = false;
-#endif // NEO
 
 // Data
 private:

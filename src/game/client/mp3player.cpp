@@ -1782,6 +1782,11 @@ void CMP3Player::OnPause()
 	{
 		return;
 	}
+	
+	if (!enginesound->IsSoundStillPlaying(m_nSongGuid))
+	{
+		OnNextTrack();
+	}
 
 	if (m_flTimePaused > 0.f)
 	{
@@ -1807,6 +1812,7 @@ void CMP3Player::OnTick()
 #ifdef NEO
 	if (m_bFirstEverTick)
 	{ // NEO HACK (Adam) Saved values for these convars are not read until after this Panel is initialized, read values on first tick instead
+		// NEO TODO (Adam) give these convars an onchange function to update the relevant mp3 player values instead?
 		m_bFirstEverTick = false;
 		m_pMute->SetSelected(cl_neo_radio_mute.GetBool());
 		m_pShuffle->SetSelected(cl_neo_radio_shuffle.GetBool());
@@ -1943,30 +1949,19 @@ void CMP3Player::OnTick()
 
 	if ( !m_bEnableAutoAdvance )
 	{
+#ifndef NEO
 		// If we got disconnected completely, reset the flag
-#ifdef NEO
-		// Do not reenable the flag until we can play songs again
-		if ( !engine->IsInGame() )
-#else
 		if ( !engine->IsConnected() )
-#endif // NEO
 		{
 			m_bEnableAutoAdvance = true;
 		}
+#endif // NEO
 		return;
 	}
 
 	// No song playing...
 	m_nSongGuid = 0;
 	OnNextTrack();
-#ifdef NEO
-
-	if (m_bPauseNextSong)
-	{
-		OnPause();
-		m_bPauseNextSong = false;
-	}
-#endif // NEO
 }
 
 void CMP3Player::OnChangeVolume( float newVol )
@@ -1979,6 +1974,13 @@ void CMP3Player::OnChangeVolume( float newVol )
 	if ( !m_nSongGuid )
 		return;
 
+#ifdef NEO
+	if (!enginesound->IsSoundStillPlaying(m_nSongGuid))
+	{
+		return;
+	}
+
+#endif // NEO
 	enginesound->SetVolumeByGuid( m_nSongGuid, newVol );
 }
 
@@ -2877,12 +2879,6 @@ void CMP3Player::SetPlayListSong( int listIndex )
 void CMP3Player::EnableAutoAdvance( bool state )
 {
 	m_bEnableAutoAdvance = state;
-#ifdef NEO
-	if (state && m_flTimePaused == 0.f && m_bPauseInGame && !engine->IsLevelMainMenuBackground())
-	{
-		OnPause();
-	}
-#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
@@ -2898,10 +2894,38 @@ public:
 	{
 	}
 
+#ifdef NEO
+	virtual void LevelInitPostEntity()
+	{
+		if (engine->IsLevelMainMenuBackground())
+		{
+			if (cl_neo_radio_menu_pause.GetBool())
+			{
+				g_pPlayer->EnableAutoAdvance( false );
+				g_pPlayer->OnPause(); // NEO TODO (Adam) OnPause can both pause and resume, perhaps this should explicitly call a Pause function that can only pause
+			}
+			else
+			{
+				g_pPlayer->EnableAutoAdvance( true );
+			}
+		}
+		else if (cl_neo_radio_game_pause.GetBool())
+		{
+			g_pPlayer->EnableAutoAdvance( false );
+			g_pPlayer->OnPause();
+		}
+		else
+		{
+			g_pPlayer->EnableAutoAdvance( true );
+		}
+	}
+#else
 	virtual void LevelInitPreEntity()
 	{
 		g_pPlayer->EnableAutoAdvance( true );
 	}
+#endif // NEO
+
 
 	virtual void LevelShutdownPostEntity()
 	{
@@ -2913,7 +2937,12 @@ public:
 #ifdef NEO
 		else if (cl_neo_radio_menu_pause.GetBool())
 		{
-			g_pPlayer->m_bPauseNextSong = true;
+			g_pPlayer->EnableAutoAdvance( false );
+			g_pPlayer->OnPause();
+		}
+		else
+		{
+			g_pPlayer->EnableAutoAdvance( true );
 		}
 #endif // NEO
 	}
