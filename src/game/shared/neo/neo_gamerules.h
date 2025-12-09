@@ -13,6 +13,7 @@
 #include "GameEventListener.h"
 #include "neo_player_shared.h"
 #include "neo_misc.h"
+#include "weapon_ghost.h"
 #ifdef GAME_DLL
 #include "neo_juggernaut.h"
 #endif
@@ -178,6 +179,10 @@ public:
 	virtual void ClientDisconnected(edict_t* pClient) OVERRIDE;
 
 	CBaseEntity *GetPlayerSpawnSpot(CBasePlayer *pPlayer) override;
+
+	virtual bool IsOfficialMap(void) override;
+
+	virtual void InitDefaultAIRelationships(void);
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
@@ -198,6 +203,7 @@ public:
 	int GetForcedClass();
 	int GetForcedSkin();
 	int GetForcedWeapon();
+	bool IsCyberspace();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
 	bool CanChangeTeamClassLoadoutWhenAlive();
 	bool CanRespawnAnyTime();
@@ -300,8 +306,7 @@ public:
 	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
 
 	void CheckGameType();
-	void CheckHiddenHudElements();
-	void CheckPlayerForced();
+	void CheckGameConfig();
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -321,11 +326,12 @@ public:
 	int GetGhosterTeam() const { return m_iGhosterTeam; }
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
 	bool GhostExists() const { return m_bGhostExists; }
-	Vector GetGhostPos() const { return m_vecGhostMarkerPos; }
+	const Vector& GetGhostPos() const;
+	Vector GetGhostMarkerPos() const;
 
 	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
 	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
-	Vector GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
+	const Vector& GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -410,9 +416,11 @@ private:
 	void SelectTheVIP();
 public:
 	void JuggernautActivated(CNEO_Player *pPlayer);
+	void JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut);
+private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
-private:
+
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
@@ -437,6 +445,7 @@ private:
 	CNetworkVar(int, m_iForcedClass);
 	CNetworkVar(int, m_iForcedSkin);
 	CNetworkVar(int, m_iForcedWeapon);
+	CNetworkVar(bool, m_bCyberspaceLevel);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);
@@ -448,6 +457,7 @@ private:
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(float, m_flGhostLastHeld);
+	CNetworkHandle( CWeaponGhost, m_hGhost );
 
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);

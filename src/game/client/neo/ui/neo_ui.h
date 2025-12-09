@@ -173,6 +173,8 @@ enum ESectionFlag
 	//   Make sure to have Bind so controllers don't get cut out from being
 	//   able to utilize actions from this section.
 	SECTIONFLAG_EXCLUDECONTROLLER = 1 << 2,
+	// Allow the hover and button click sound to play on buttons
+	SECTIONFLAG_PLAYBUTTONSOUNDS = 1 << 3,
 };
 typedef int ISectionFlags;
 
@@ -238,6 +240,7 @@ struct Context
 	int iLayoutY;
 	int iVertLayoutY;
 	int iYOffset[MAX_SECTIONS] = {};
+	int iXOffset[MAX_SECTIONS] = {};
 	bool abYMouseDragOffset[MAX_SECTIONS] = {};
 	int iStartMouseDragOffset[MAX_SECTIONS] = {};
 
@@ -259,6 +262,11 @@ struct Context
 
 	int iHot;
 	int iHotSection;
+
+	// vs iHot this persists between Begin/EndContext
+	// only used for bNewHot detection
+	int iHotPersist;
+	int iHotPersistSection;
 
 	int iActive;
 	int iActiveSection;
@@ -286,12 +294,17 @@ struct Context
 	int iTextSelDrag = -1;
 	int iTextSelDragSection = -1;
 	int irTextWidths[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
+
+	// Sound paths
+	const char *pszSoundBtnPressed = "ui/buttonclickrelease.wav";
+	const char *pszSoundBtnRollover = "ui/buttonrollover.wav";
 };
 
 struct GetMouseinFocusedRet
 {
 	bool bActive;
 	bool bHot;
+	bool bNewHot;
 };
 
 struct RetButton
@@ -362,7 +375,7 @@ void EndOverrideFgColor();
 /*1W*/ void Label(const wchar_t *wszText, const bool bNotWidget = false);
 /*1W*/ void Label(const wchar_t *wszText, const LabelExOpt &opt);
 /*2W*/ void Label(const wchar_t *wszLabel, const wchar_t *wszText);
-/*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+/*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, const int iLongestTab = 0);
 /*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType);
 /*1W*/ RetButton Button(const wchar_t *wszText);
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);

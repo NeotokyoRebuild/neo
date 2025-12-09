@@ -100,10 +100,23 @@ struct sky3dparams_t
 	CNetworkVar( int, scale );
 	CNetworkVector( origin );
 	CNetworkVar( int, area );
+#ifdef NEO
+	CNetworkVar( int, reflectMode );
+	CNetworkVar( float, waterLevel );
+#endif
 
 	// 3d skybox fog data
 	CNetworkVarEmbedded( fogparams_t, fog );
 };
+
+#ifdef NEO
+enum SkyboxReflectionMode_t
+{
+	REFLECT_SKYBOX_OFF = 0,
+	REFLECT_SKYBOX_WATERCLIPZ,
+	REFLECT_SKYBOX_ON,
+};
+#endif
 
 struct audioparams_t
 {

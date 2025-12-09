@@ -65,6 +65,9 @@
 #if defined( HL2_CLIENT_DLL ) || defined( CSTRIKE_DLL ) || defined( TF_CLIENT_DLL )
 #define USE_MONITORS
 #endif
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif // NEO
 #include "rendertexture.h"
 #include "viewpostprocess.h"
 #include "viewdebug.h"
@@ -79,11 +82,6 @@
 
 // Projective textures
 #include "C_Env_Projected_Texture.h"
-
-#ifdef NEO
-// For removing screen overlays when in vision modes
-#include "c_neo_player.h"
-#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -389,7 +387,12 @@ public:
 	  {
 	  }
 
+#ifdef NEO
+	bool			Setup( const CViewSetup &view, int *pClearFlags, SkyboxVisibility_t *pSkyboxVisible, view_id_t iViewID = VIEW_3DSKY );
+	void			DrawAlternate( view_id_t iViewID, int iSavedDrawFlags = 0 );
+#else
 	bool			Setup( const CViewSetup &view, int *pClearFlags, SkyboxVisibility_t *pSkyboxVisible );
+#endif
 	void			Draw();
 
 protected:
@@ -398,7 +401,11 @@ protected:
 	virtual bool ShouldDrawPortals() { return false; }
 #endif
 
+#ifdef NEO
+	virtual SkyboxVisibility_t	ComputeSkyboxVisibility( view_id_t iViewID = VIEW_3DSKY );
+#else
 	virtual SkyboxVisibility_t	ComputeSkyboxVisibility();
+#endif
 
 	bool			GetSkyboxFogEnable();
 
@@ -489,6 +496,11 @@ protected:
 
 	void			SSAO_DepthPass();
 	void			DrawDepthOfField();
+
+#ifdef NEO
+	float			m_flWorldReflectionClipZ = 0.0f;
+	MaterialHeightClipMode_t	m_WorldReflectionClipMode;
+#endif
 };
 
 
@@ -561,7 +573,9 @@ class CAboveWaterView : public CBaseWaterView
 public:
 	CAboveWaterView(CViewRender *pMainView) : 
 		CBaseWaterView( pMainView ),
+#ifndef NEO
 		m_ReflectionView( pMainView ),
+#endif
 		m_RefractionView( pMainView ),
 		m_IntersectionView( pMainView )
 	{}
@@ -569,6 +583,7 @@ public:
 	void Setup(  const CViewSetup &view, bool bDrawSkybox, const VisibleFogVolumeInfo_t &fogInfo, const WaterRenderInfo_t& waterInfo );
 	void			Draw();
 
+#ifndef NEO
 	class CReflectionView : public CBaseWorldView
 	{
 		DECLARE_CLASS( CReflectionView, CBaseWorldView );
@@ -581,6 +596,7 @@ public:
 	private:
 		CAboveWaterView *GetOuter() { return GET_OUTER( CAboveWaterView, m_ReflectionView ); }
 	};
+#endif
 
 	class CRefractionView : public CBaseWorldView
 	{
@@ -610,12 +626,16 @@ public:
 
 
 	friend class CRefractionView;
+#ifndef NEO
 	friend class CReflectionView;
+#endif
 	friend class CIntersectionView;
 
 	bool m_bViewIntersectsWater;
 
+#ifndef NEO
 	CReflectionView m_ReflectionView;
+#endif
 	CRefractionView m_RefractionView;
 	CIntersectionView m_IntersectionView;
 };
@@ -693,6 +713,26 @@ public:
 
 	cplane_t m_ReflectionPlane;
 };
+
+
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Water Reflection
+//-----------------------------------------------------------------------------
+class CReflectionView : public CBaseWorldView
+{
+	DECLARE_CLASS( CReflectionView, CBaseWorldView );
+public:
+	CReflectionView(CViewRender *pMainView) : CBaseWorldView( pMainView ) {}
+
+	void Setup( const CViewSetup &view, const VisibleFogVolumeInfo_t &fogInfo, const WaterRenderInfo_t &waterInfo );
+	void Draw();
+
+private:
+	WaterRenderInfo_t m_waterInfo;
+	VisibleFogVolumeInfo_t m_fogInfo;
+};
+#endif
 
 
 //-----------------------------------------------------------------------------
@@ -1176,8 +1216,21 @@ void CViewRender::DrawViewModels( const CViewSetup &viewRender, bool drawViewmod
 		{
 			UpdateRefractIfNeededByList( translucentViewModelList );
 		}
-
+		
+#if defined NEO && defined GLOWS_ENABLE
+		// toggles the viewmodel bit in the stencil layer for all pixels where an opaque viewmodel is drawn
+		pRenderContext->SetStencilEnable(true);
+		pRenderContext->SetStencilReferenceValue(NEO_GLOW_VIEWMODEL);
+		pRenderContext->SetStencilWriteMask(NEO_GLOW_VIEWMODEL);
+		pRenderContext->SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_ALWAYS);
+		pRenderContext->SetStencilPassOperation(STENCILOPERATION_REPLACE);
+		pRenderContext->SetStencilFailOperation(STENCILOPERATION_KEEP);
+		pRenderContext->SetStencilZFailOperation(STENCILOPERATION_REPLACE);
+#endif // NEO && GLOWS_ENABLE
 		DrawRenderablesInList( opaqueViewModelList );
+#if defined NEO && defined GLOWS_ENABLE
+		pRenderContext->SetStencilEnable(false);
+#endif // NEO && GLOWS_ENABLE
 		DrawRenderablesInList( translucentViewModelList, STUDIO_TRANSPARENCY );
 	}
 
@@ -1246,12 +1299,8 @@ IMaterial *CViewRender::GetScreenOverlayMaterial( )
 void CViewRender::PerformScreenOverlay( int x, int y, int w, int h )
 {
 	VPROF("CViewRender::PerformScreenOverlay()");
-#ifdef NEO
-	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (m_ScreenOverlayMaterial && !pLocalPlayer->m_bInVision)
-#else
+
 	if (m_ScreenOverlayMaterial)
-#endif
 	{
 		tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
 
@@ -2070,6 +2119,12 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 	VPROF( "CViewRender::RenderView" );
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
 
+#ifdef NEO
+	VerifyValidDxLevel();
+	ErrorIfNot(g_pMaterialSystemHardwareConfig->GetDXSupportLevel() >= Neotokyo::minDxLevel,
+		("This game has a minimum requirement of DirectX (mat_dxlevel %d) to run properly.",
+		Neotokyo::minDxLevel));
+#else
 	// Don't want TF2 running less than DX 8
 	if ( g_pMaterialSystemHardwareConfig->GetDXSupportLevel() < 80 )
 	{
@@ -2086,6 +2141,7 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 			return;
 		}
 	}
+#endif
 
 	CMatRenderContextPtr pRenderContext( materials );
 	ITexture *saveRenderTarget = pRenderContext->GetRenderTarget();
@@ -2127,10 +2183,24 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 
 		// clear happens here probably
 		SetupMain3DView( viewRender, nClearFlags );
-			 	  
+
+#ifdef NEO
+		// Reflections must be prepped before the skybox, or else reflections inside the skybox will be behind
+		render->GetVisibleFogVolume( viewRender.origin, &m_fogVolumeInfo );
+		DetermineWaterRenderInfo( m_fogVolumeInfo, m_waterInfo );
+		
+		if ( !m_waterInfo.m_bCheapWater && !m_fogVolumeInfo.m_bEyeInFogVolume )
+		{
+			CReflectionView *pReflectView = new CReflectionView( this );
+			pReflectView->Setup( viewRender, m_fogVolumeInfo, m_waterInfo );
+			AddViewToScene( pReflectView );
+			SafeRelease( pReflectView );
+		}
+#endif
+
 		bool bDrew3dSkybox = false;
 		SkyboxVisibility_t nSkyboxVisible = SKYBOX_NOT_VISIBLE;
-
+		
 		// if the 3d skybox world is drawn, then don't draw the normal skybox
 		CSkyboxView *pSkyView = new CSkyboxView( this );
 		if ( ( bDrew3dSkybox = pSkyView->Setup( viewRender, &nClearFlags, &nSkyboxVisible ) ) != false )
@@ -2257,7 +2327,7 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 			pRenderContext.SafeRelease();
 		}
 
-#ifdef NEO // Add glow effect after HDR stuff is done, so the colour of the effect doesn't vary
+#ifdef NEO // && defined GLOWS_ENABLE? // Add glow effect after HDR stuff is done and vision modes are applied, so the colour of the effect doesn't vary
 		GetClientModeNormal()->DoPostScreenSpaceEffects(&viewRender);
 #endif // NEO
 		CleanupMain3DView( viewRender );
@@ -2699,6 +2769,7 @@ void CViewRender::DrawWorldAndEntities( bool bDrawSkybox, const CViewSetup &view
 	MDLCACHE_CRITICAL_SECTION();
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
 
+#ifndef NEO
 	VisibleFogVolumeInfo_t fogVolumeInfo;
 #ifdef PORTAL //in portal, we can't use the fog volume for the camera since it's almost never in the same fog volume as what's in front of the portal
 	if( g_pPortalRender->GetViewRecursionLevel() == 0 )
@@ -2715,24 +2786,41 @@ void CViewRender::DrawWorldAndEntities( bool bDrawSkybox, const CViewSetup &view
 
 	WaterRenderInfo_t info;
 	DetermineWaterRenderInfo( fogVolumeInfo, info );
+#endif
 
+#ifdef NEO
+	if ( m_waterInfo.m_bCheapWater )
+#else
 	if ( info.m_bCheapWater )
+#endif
 	{		     
 		tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "bCheapWater" );
 		cplane_t glassReflectionPlane;
 		if ( IsReflectiveGlassInView( viewIn, glassReflectionPlane ) )
 		{								    
 			CRefPtr<CReflectiveGlassView> pGlassReflectionView = new CReflectiveGlassView( this );
+#ifdef NEO
+			pGlassReflectionView->Setup( viewIn, VIEW_CLEAR_DEPTH | VIEW_CLEAR_COLOR, bDrawSkybox, m_fogVolumeInfo, m_waterInfo, glassReflectionPlane );
+#else
 			pGlassReflectionView->Setup( viewIn, VIEW_CLEAR_DEPTH | VIEW_CLEAR_COLOR, bDrawSkybox, fogVolumeInfo, info, glassReflectionPlane );
+#endif
 			AddViewToScene( pGlassReflectionView );
 
 			CRefPtr<CRefractiveGlassView> pGlassRefractionView = new CRefractiveGlassView( this );
+#ifdef NEO
+			pGlassRefractionView->Setup( viewIn, VIEW_CLEAR_DEPTH | VIEW_CLEAR_COLOR, bDrawSkybox, m_fogVolumeInfo, m_waterInfo, glassReflectionPlane );
+#else
 			pGlassRefractionView->Setup( viewIn, VIEW_CLEAR_DEPTH | VIEW_CLEAR_COLOR, bDrawSkybox, fogVolumeInfo, info, glassReflectionPlane );
+#endif
 			AddViewToScene( pGlassRefractionView );
 		}
 
 		CRefPtr<CSimpleWorldView> pNoWaterView = new CSimpleWorldView( this );
+#ifdef NEO
+		pNoWaterView->Setup( viewIn, nClearFlags, bDrawSkybox, m_fogVolumeInfo, m_waterInfo, pCustomVisibility );
+#else
 		pNoWaterView->Setup( viewIn, nClearFlags, bDrawSkybox, fogVolumeInfo, info, pCustomVisibility );
+#endif
 		AddViewToScene( pNoWaterView );
 		return;
 	}
@@ -2742,22 +2830,38 @@ void CViewRender::DrawWorldAndEntities( bool bDrawSkybox, const CViewSetup &view
 	// Blat out the visible fog leaf if we're not going to use it
 	if ( !r_ForceWaterLeaf.GetBool() )
 	{
+#ifdef NEO
+		m_fogVolumeInfo.m_nVisibleFogVolumeLeaf = -1;
+#else
 		fogVolumeInfo.m_nVisibleFogVolumeLeaf = -1;
+#endif
 	}
 
 	// We can see water of some sort
+#ifdef NEO
+	if ( !m_fogVolumeInfo.m_bEyeInFogVolume )
+#else
 	if ( !fogVolumeInfo.m_bEyeInFogVolume )
+#endif
 	{
 		tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "CAboveWaterView" );
 		CRefPtr<CAboveWaterView> pAboveWaterView = new CAboveWaterView( this );
+#ifdef NEO
+		pAboveWaterView->Setup( viewIn, bDrawSkybox, m_fogVolumeInfo, m_waterInfo );
+#else
 		pAboveWaterView->Setup( viewIn, bDrawSkybox, fogVolumeInfo, info );
+#endif
 		AddViewToScene( pAboveWaterView );
 	}
 	else
 	{
 		tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "CUnderWaterView" );
 		CRefPtr<CUnderWaterView> pUnderWaterView = new CUnderWaterView( this );
+#ifdef NEO
+		pUnderWaterView->Setup( viewIn, bDrawSkybox, m_fogVolumeInfo, m_waterInfo );
+#else
 		pUnderWaterView->Setup( viewIn, bDrawSkybox, fogVolumeInfo, info );
+#endif
 		AddViewToScene( pUnderWaterView );
 	}
 }
@@ -4815,9 +4919,17 @@ void CRendering3dView::SetFogVolumeState( const VisibleFogVolumeInfo_t &fogInfo,
 //-----------------------------------------------------------------------------
 // Standard 3d skybox view
 //-----------------------------------------------------------------------------
+#ifdef NEO
+SkyboxVisibility_t CSkyboxView::ComputeSkyboxVisibility( view_id_t iViewID )
+#else
 SkyboxVisibility_t CSkyboxView::ComputeSkyboxVisibility()
+#endif
 {
+#ifdef NEO
+	return engine->IsSkyboxVisibleFromPoint( ( iViewID != VIEW_REFLECTION ) ? origin : m_pMainView->GetViewSetup()->origin );
+#else
 	return engine->IsSkyboxVisibleFromPoint( origin );
+#endif
 }
 
 
@@ -4975,7 +5087,15 @@ void CSkyboxView::DrawInternal( view_id_t iSkyBoxViewID, bool bInvokePreAndPostR
 
 	// Iterate over all leaves and render objects in those leaves
 	DrawTranslucentRenderables( true, false );
+#ifdef NEO 
+	// Sprites do not seem to like being drawn twice here
+	if ( iSkyBoxViewID != VIEW_REFLECTION )
+	{
+		DrawNoZBufferTranslucentRenderables();
+	}
+#else
 	DrawNoZBufferTranslucentRenderables();
+#endif
 
 	m_pMainView->DisableFog();
 
@@ -4990,9 +5110,16 @@ void CSkyboxView::DrawInternal( view_id_t iSkyBoxViewID, bool bInvokePreAndPostR
 	if( bInvokePreAndPostRender )
 	{
 		IGameSystem::PostRenderAllSystems();
+#ifdef NEO
+		if ( iSkyBoxViewID != VIEW_REFLECTION )
+		{
+			FinishCurrentView();
+		}
+#else
 		FinishCurrentView();
+#endif
 	}
-
+	
 	render->PopView( GetFrustum() );
 
 #if defined( _X360 )
@@ -5004,12 +5131,20 @@ void CSkyboxView::DrawInternal( view_id_t iSkyBoxViewID, bool bInvokePreAndPostR
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+bool CSkyboxView::Setup( const CViewSetup &viewRender, int *pClearFlags, SkyboxVisibility_t *pSkyboxVisible, view_id_t iViewID )
+#else
 bool CSkyboxView::Setup( const CViewSetup &viewRender, int *pClearFlags, SkyboxVisibility_t *pSkyboxVisible )
+#endif
 {
 	BaseClass::Setup( viewRender );
 
 	// The skybox might not be visible from here
+#ifdef NEO
+	*pSkyboxVisible = ComputeSkyboxVisibility( iViewID );
+#else
 	*pSkyboxVisible = ComputeSkyboxVisibility();
+#endif
 	m_pSky3dParams = PreRender3dSkyboxWorld( *pSkyboxVisible );
 
 	if ( !m_pSky3dParams )
@@ -5017,13 +5152,32 @@ bool CSkyboxView::Setup( const CViewSetup &viewRender, int *pClearFlags, SkyboxV
 		return false;
 	}
 
+#ifdef NEO
+	if ( iViewID == VIEW_REFLECTION && m_pSky3dParams->reflectMode == REFLECT_SKYBOX_OFF )
+	{
+		return false;
+	}
+#endif
+
 	// At this point, we've cleared everything we need to clear
 	// The next path will need to clear depth, though.
 	m_ClearFlags = *pClearFlags;
 	*pClearFlags &= ~( VIEW_CLEAR_COLOR | VIEW_CLEAR_DEPTH | VIEW_CLEAR_STENCIL | VIEW_CLEAR_FULL_TARGET );
 	*pClearFlags |= VIEW_CLEAR_DEPTH; // Need to clear depth after rednering the skybox
 
+#ifdef NEO
+	if ( iViewID != VIEW_REFLECTION )
+	{
+		m_DrawFlags = DF_RENDER_UNDERWATER | DF_RENDER_ABOVEWATER | DF_RENDER_WATER;
+	}
+	else
+	{
+		m_DrawFlags = DF_RENDER_REFLECTION | DF_CLIP_Z | DF_CLIP_BELOW | DF_RENDER_ABOVEWATER;
+	}
+#else
 	m_DrawFlags = DF_RENDER_UNDERWATER | DF_RENDER_ABOVEWATER | DF_RENDER_WATER;
+#endif
+
 	if( r_skybox.GetBool() )
 	{
 		m_DrawFlags |= DF_DRAWSKYBOX;
@@ -5032,6 +5186,51 @@ bool CSkyboxView::Setup( const CViewSetup &viewRender, int *pClearFlags, SkyboxV
 	return true;
 }
 
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Draw for 3d sky in reflection, seperate as to not break AddViewToScene
+//-----------------------------------------------------------------------------
+void CSkyboxView::DrawAlternate( view_id_t iViewID, int iSavedDrawFlags )
+{
+	VPROF_BUDGET( "CSkyboxView::DrawAlternate", "3D Skybox" );
+
+	if ( iViewID == VIEW_REFLECTION )
+	{
+		Assert( m_pSky3dParams->reflectMode.Get() != REFLECT_SKYBOX_OFF );
+
+		CMatRenderContextPtr pRenderContext( materials );
+		
+		if ( m_pSky3dParams->reflectMode.Get() == REFLECT_SKYBOX_WATERCLIPZ )
+		{
+			float flSkyWaterlevel = m_pSky3dParams->waterLevel.Get();
+
+			// NEO NOTE DG: Bit of an estimate. may want to tweak the spread if maps using
+			// skybox scales other than 16 have visible seams in the water reflections
+			const float spread = 16.0f / m_pSky3dParams->scale.Get();
+			if ( iSavedDrawFlags & DF_FUDGE_UP )
+			{
+				flSkyWaterlevel += spread;
+			}
+			else
+			{
+				flSkyWaterlevel -= spread;
+			}
+			pRenderContext->SetHeightClipZ( flSkyWaterlevel );
+		}
+		else
+		{
+			pRenderContext->SetHeightClipMode( MATERIAL_HEIGHTCLIPMODE_DISABLE );
+		}
+
+		pRenderContext.SafeRelease();
+	}
+	
+	ITexture *pRTColor = NULL;
+	ITexture *pRTDepth = NULL;
+
+	DrawInternal(iViewID, true, pRTColor, pRTDepth );
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // 
@@ -5390,6 +5589,10 @@ void CBaseWorldView::PushView( float waterHeight )
 
 		pRenderContext->SetHeightClipZ( waterHeight );
 		pRenderContext->SetHeightClipMode( clipMode );
+#ifdef NEO
+		m_flWorldReflectionClipZ = waterHeight;
+		m_WorldReflectionClipMode = clipMode;
+#endif
 
 		render->Push3DView( *this, m_ClearFlags, pTexture, GetFrustum() );
 
@@ -5568,6 +5771,40 @@ void CBaseWorldView::DrawExecute( float waterHeight, view_id_t viewID, float wat
 
 	if ( m_DrawFlags & DF_DRAW_ENTITITES )
 	{
+#ifdef NEO
+		if ( viewID == VIEW_REFLECTION && r_3dsky.GetBool() )
+		{
+			// Ensure that flags remain unchanged...
+			int iSavedDFs = m_DrawFlags;
+			const int iSavedCFs = m_ClearFlags;
+
+			CMatRenderContextPtr pRenderContext( materials );
+			SkyboxVisibility_t nSkyboxVisible = SKYBOX_NOT_VISIBLE;
+
+			CSkyboxView *pSkyView = new CSkyboxView( m_pMainView );
+			if ( pSkyView->Setup( *this, &m_ClearFlags, &nSkyboxVisible, viewID ) )
+			{
+				pSkyView->DrawAlternate( viewID, iSavedDFs );
+				render->ViewSetupVis( false, 1, &m_pMainView->GetViewSetup()->origin );
+				pRenderContext->ClearBuffers( false, true, false );
+
+				// Reset the clip z for the world reflection, since the skybox has its own
+				pRenderContext->SetHeightClipMode( m_WorldReflectionClipMode );
+				pRenderContext->SetHeightClipZ( m_flWorldReflectionClipZ );
+			}
+			else
+			{
+				iSavedDFs |= DF_DRAWSKYBOX;
+			}
+			SafeRelease( pSkyView );
+			pRenderContext.SafeRelease();
+
+			// Restore
+			m_DrawFlags = iSavedDFs;
+			m_ClearFlags = iSavedCFs;
+		}
+#endif
+
 		DrawWorld( waterZAdjust );
 		DrawOpaqueRenderables( DepthMode );
 
@@ -5948,14 +6185,16 @@ void CAboveWaterView::Draw()
 	// eye is outside of water
 	
 	CMatRenderContextPtr pRenderContext( materials );
-	
+
+#ifndef NEO
 	// render the reflection
 	if( m_waterInfo.m_bReflect )
 	{
 		m_ReflectionView.Setup( m_waterInfo.m_bReflectEntities );
 		m_pMainView->AddViewToScene( &m_ReflectionView );
 	}
-	
+#endif
+
 	bool bViewIntersectsWater = false;
 
 	// render refraction
@@ -6012,9 +6251,17 @@ void CAboveWaterView::Draw()
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CReflectionView::Setup( const CViewSetup &view, const VisibleFogVolumeInfo_t &fogInfo, const WaterRenderInfo_t &waterInfo )
+#else
 void CAboveWaterView::CReflectionView::Setup( bool bReflectEntities )
+#endif
 {
+#ifdef NEO
+	BaseClass::Setup( view );
+#else
 	BaseClass::Setup( *GetOuter() );
+#endif
 
 	m_ClearFlags = VIEW_CLEAR_DEPTH;
 
@@ -6023,21 +6270,41 @@ void CAboveWaterView::CReflectionView::Setup( bool bReflectEntities )
 	m_DrawFlags = DF_RENDER_REFLECTION | DF_CLIP_Z | DF_CLIP_BELOW | 
 		DF_RENDER_ABOVEWATER;
 
+#ifndef NEO
 	// NOTE: This will cause us to draw the 2d skybox in the reflection 
 	// (which we want to do instead of drawing the 3d skybox)
 	m_DrawFlags |= DF_DRAWSKYBOX;
+#else
+	if ( !waterInfo.m_bReflectEntities || !r_3dsky.GetBool() )
+	{
+		m_DrawFlags |= DF_DRAWSKYBOX;
+	}
+#endif
 
+#ifdef NEO
+	if( waterInfo.m_bReflectEntities )
+#else
 	if( bReflectEntities )
+#endif
 	{
 		m_DrawFlags |= DF_DRAW_ENTITITES;
 	}
+
+#ifdef NEO
+	m_waterInfo = waterInfo;
+	m_fogInfo = fogInfo;
+#endif
 }
 
 
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CReflectionView::Draw()
+#else
 void CAboveWaterView::CReflectionView::Draw()
+#endif
 {
 #ifdef PORTAL
 	g_pPortalRender->WaterRenderingHandler_PreReflection();
@@ -6051,10 +6318,18 @@ void CAboveWaterView::CReflectionView::Draw()
 	bool bVisOcclusion = r_visocclusion.GetInt();
 	r_visocclusion.SetValue( 0 );
 
+#ifdef NEO
+	DrawSetup( m_fogInfo.m_flWaterHeight, m_DrawFlags, 0.0f, m_fogInfo.m_nVisibleFogVolumeLeaf );
+#else
 	DrawSetup( GetOuter()->m_fogInfo.m_flWaterHeight, m_DrawFlags, 0.0f, GetOuter()->m_fogInfo.m_nVisibleFogVolumeLeaf );
+#endif
 
 	EnableWorldFog();
+#ifdef NEO
+	DrawExecute( m_fogInfo.m_flWaterHeight, VIEW_REFLECTION, 0.0f );
+#else
 	DrawExecute( GetOuter()->m_fogInfo.m_flWaterHeight, VIEW_REFLECTION, 0.0f );
+#endif
 
 	r_visocclusion.SetValue( bVisOcclusion );
 	

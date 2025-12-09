@@ -34,6 +34,11 @@ public:
 	sky3dparams_t	m_skyboxData;
 	bool			m_bUseAngles;
 	CSkyCamera		*m_pNext;
+
+#ifdef NEO
+private:
+	string_t		m_strWaterLevelDesignator = NULL_STRING;
+#endif
 };
 
 

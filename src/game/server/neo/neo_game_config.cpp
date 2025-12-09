@@ -12,23 +12,26 @@ BEGIN_DATADESC(CNEOGameConfig)
 	DEFINE_KEYFIELD(m_ForcedClass, FIELD_INTEGER, "ForcedClass"),
 	DEFINE_KEYFIELD(m_ForcedSkin, FIELD_INTEGER, "ForcedSkin"),
 	DEFINE_KEYFIELD(m_ForcedWeapon, FIELD_INTEGER, "ForcedWeapon"),
+	DEFINE_KEYFIELD(m_Cyberspace, FIELD_BOOLEAN, "Cyberspace"),
 
 	DEFINE_INPUTFUNC(FIELD_INTEGER, "FireTeamWin", InputFireTeamWin),
 	DEFINE_INPUTFUNC(FIELD_VOID, "FireDMPlayerWin", InputFireDMPlayerWin),
 	DEFINE_INPUTFUNC(FIELD_VOID, "FireRoundTie", InputFireRoundTie),
 
 	DEFINE_OUTPUT(m_OnRoundEnd, "OnRoundEnd"),
+	DEFINE_OUTPUT(m_OnDMRoundEnd, "OnDMRoundEnd"),
 	DEFINE_OUTPUT(m_OnRoundStart, "OnRoundStart"),
 	DEFINE_OUTPUT(m_OnCompetitive, "OnCompetitive")
 END_DATADESC()
 
-CNEOGameConfig* CNEOGameConfig::s_pGameRulesToConfig = nullptr;
+extern ConVar sv_neo_comp;
 
 void CNEOGameConfig::Spawn()
 {
-	BaseClass::Spawn();
-
-	s_pGameRulesToConfig = this;
+	if (sv_neo_comp.GetBool())
+	{
+		m_OnCompetitive.FireOutput(nullptr, this);
+	}
 }
 
 // Inputs
@@ -56,22 +59,5 @@ void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
 
 void CNEOGameConfig::InputFireRoundTie(inputdata_t& inputData)
 {
-	NEORules()->SetWinningTeam(1, NEO_VICTORY_STALEMATE, false, true, true, false);
-}
-
-// Outputs
-
-void CNEOGameConfig::OutputRoundEnd()
-{
-	m_OnRoundEnd.FireOutput(NULL, this);
-}
-
-void CNEOGameConfig::OutputRoundStart()
-{
-	m_OnRoundStart.FireOutput(NULL, this);
-}
-
-void CNEOGameConfig::OutputCompetitive()
-{
-	m_OnCompetitive.FireOutput(NULL, this);
+	NEORules()->SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, true, true, false);
 }

@@ -59,6 +59,8 @@ public : // IGameResources interface
 	virtual int     GetClass(int index);
 	virtual int		GetStar(int index);
 	const char *GetClanTag(int index);
+	virtual int		GetMaxHealth(int index);
+	virtual int		GetDisplayedHealth(int index, int mode);
 #endif
 	virtual int		GetFrags( int index );
 	virtual int		GetHealth( int index );
@@ -86,6 +88,7 @@ protected:
 	char    m_szDispNameWDupeIdx[MAX_PLAYERS_ARRAY_SAFE][MAX_PLAYER_NAME_LENGTH + 10];  // Non-networked, includes dupe index
 	int     m_iStar[MAX_PLAYERS_ARRAY_SAFE];
 	char    m_szNeoClantag[MAX_PLAYERS_ARRAY_SAFE][NEO_MAX_CLANTAG_LENGTH];
+	int		m_iMaxHealth[MAX_PLAYERS_ARRAY_SAFE];
 #endif
 	int		m_iScore[MAX_PLAYERS_ARRAY_SAFE];
 	int		m_iDeaths[MAX_PLAYERS_ARRAY_SAFE];

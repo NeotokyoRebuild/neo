@@ -28,6 +28,19 @@ public:
 	virtual int  UpdateTransmitState( void );
 	virtual int  GetTeam( int iIndex );
 
+#ifdef NEO
+	int GetPing(int iIndex) const
+	{
+		if (iIndex < 0 || iIndex >= m_iPing.Count())
+		{
+			AssertMsg(false, "requested ping for index %d but there are only %d entries total",
+				iIndex, m_iPing.Count());
+			return 0;
+		}
+		return m_bConnected.Get(iIndex) ? m_iPing.Get(iIndex) : 0;
+	}
+#endif
+
 protected:
 	virtual void UpdateConnectedPlayer( int iIndex, CBasePlayer *pPlayer );
 	virtual void UpdateDisconnectedPlayer( int iIndex );
@@ -43,6 +56,7 @@ protected:
 	string_t m_szNeoNameNone;
 	CNetworkArray(int, m_iStar, MAX_PLAYERS_ARRAY_SAFE);
 	CNetworkArray(string_t, m_szNeoClantag, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(int, m_iMaxHealth, MAX_PLAYERS_ARRAY_SAFE);
 #endif
 	CNetworkArray( int, m_iScore, MAX_PLAYERS_ARRAY_SAFE );
 	CNetworkArray( int, m_iDeaths, MAX_PLAYERS_ARRAY_SAFE );

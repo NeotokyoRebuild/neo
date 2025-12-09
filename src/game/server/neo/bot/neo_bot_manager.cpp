@@ -402,7 +402,6 @@ void CNEOBotManager::MaintainBotQuota()
 		if ( pBot )
 		{
 			pBot->SetAttribute( CNEOBot::QUOTA_MANANGED );
-			pBot->RequestClassOnProfile();
 			engine->SetFakeClientConVarValue( pBot->edict(), "name", pBot->GetPlayerName() );
 			pBot->RequestSetSkin(RandomInt(0, 2));
 			pBot->HandleCommand_JoinTeam( iTeam );

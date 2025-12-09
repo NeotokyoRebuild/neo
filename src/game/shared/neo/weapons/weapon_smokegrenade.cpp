@@ -223,13 +223,12 @@ void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBase
 
 	Vector vForward, vRight, vUp;
 
-	if (angThrow.x < 90)
+	if (angThrow.x >= 0)
+		// Below horizon
 		angThrow.x = -10 + angThrow.x * ((90 + 10) / 90.0);
 	else
-	{
-		angThrow.x = 360.0f - angThrow.x;
-		angThrow.x = -10 + angThrow.x * -((90 - 10) / 90.0);
-	}
+		// Above horizon
+		angThrow.x = -10 + angThrow.x * ((90 - 10) / 90.0);
 
 	float flVel = (90 - angThrow.x) * 6;
 

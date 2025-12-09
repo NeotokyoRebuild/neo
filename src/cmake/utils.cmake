@@ -151,7 +151,7 @@ function(split_debug_information)
     add_custom_command(
         OUTPUT ${SPLITDEBUG_TARGET}
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM} ${SPLITDEBUG_SOURCE} ${SPLITDEBUG_TARGET_DEBUG}
-        COMMAND ${CMAKE_STRIP} ${SPLITDEBUG_SOURCE} -o ${SPLITDEBUG_TARGET}
+        COMMAND ${CMAKE_STRIP} --strip-debug ${SPLITDEBUG_SOURCE} -o ${SPLITDEBUG_TARGET}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink="${SPLITDEBUG_TARGET_DEBUG}" ${SPLITDEBUG_TARGET}
     )
 
@@ -184,13 +184,13 @@ function(add_gamedata_gen_target)
     set(GAMEDATA_LIBRARY "$<TARGET_FILE:${PARSED_ARGS_TARGET}>")
 
     set(GAMEDATA_INPUT_FILES
-        "${CMAKE_SOURCE_DIR}/gamedata/sdkhooks.games/game.neo.txt.in"
-        "${CMAKE_SOURCE_DIR}/gamedata/sdktools.games/game.neo.txt.in"
+        "${CMAKE_SOURCE_DIR}/gamedata/sdkhooks.games/custom/game.neo.txt.in"
+        "${CMAKE_SOURCE_DIR}/gamedata/sdktools.games/custom/game.neo.txt.in"
     )
 
     set(GAMEDATA_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUBDIRECTORY})
-    set(GAMEDATA_SDKHOOKS_OUTPUT_FILE "${GAMEDATA_OUTPUT_DIR}/sdkhooks.games/game.neo.txt")
-    set(GAMEDATA_SDKTOOLS_OUTPUT_FILE "${GAMEDATA_OUTPUT_DIR}/sdktools.games/game.neo.txt")
+    set(GAMEDATA_SDKHOOKS_OUTPUT_FILE "${GAMEDATA_OUTPUT_DIR}/sdkhooks.games/custom/game.neo.txt")
+    set(GAMEDATA_SDKTOOLS_OUTPUT_FILE "${GAMEDATA_OUTPUT_DIR}/sdktools.games/custom/game.neo.txt")
 
     set(GAMEDATA_OUTPUT_FILES
         "${GAMEDATA_SDKHOOKS_OUTPUT_FILE}"
@@ -198,8 +198,8 @@ function(add_gamedata_gen_target)
     )
 
     set(GAMEDATA_OUTPUT_DIRS
-        "${GAMEDATA_OUTPUT_DIR}/sdkhooks.games"
-        "${GAMEDATA_OUTPUT_DIR}/sdktools.games"
+        "${GAMEDATA_OUTPUT_DIR}/sdkhooks.games/custom"
+        "${GAMEDATA_OUTPUT_DIR}/sdktools.games/custom"
     )
 
     add_custom_target(

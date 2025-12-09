@@ -371,12 +371,13 @@ void CFogSystem::LevelInitPostEntity( void )
 		pFogController = static_cast<CFogController*>( gEntList.FindEntityByClassname( pFogController, "env_fog_controller" ) );
 		if ( pFogController )
 		{
+#ifndef NEO
 			// HACK(misyl): If this is an official map then force on radial fog.
 			if ( GameRules()->IsOfficialMap() )
 			{
 				pFogController->m_fog.radial = true;
 			}
-
+#endif
 			if ( m_pMasterController == NULL )
 			{
 				m_pMasterController = pFogController;

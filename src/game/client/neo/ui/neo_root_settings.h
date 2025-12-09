@@ -3,6 +3,7 @@
 #include "tier1/convar.h"
 #include "neo_player_shared.h"
 #include "neo_hud_crosshair.h"
+#include "neo_hud_friendly_marker.h"
 
 // NEO TODO (nullsystem): Implement our own file IO dialog
 #include "vgui_controls/FileOpenDialog.h"
@@ -38,6 +39,14 @@ enum XHairExportNotify
 
 struct NeoSettings
 {
+	enum EquipUtilityPriorityType
+	{
+		EQUIP_UTILITY_PRIORITY_FRAG_SMOKE_DETPACK = 0,
+		EQUIP_UTILITY_PRIORITY_CLASS_SPECIFIC,
+
+		EQUIP_UTILITY_PRIORITY__TOTAL,
+	};
+
 	struct General
 	{
 		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH];
@@ -46,24 +55,17 @@ struct NeoSettings
 		bool bMarkerSpecOnlyClantag;
 		int iFov;
 		int iViewmodelFov;
-		bool bAimHold;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
-		bool bHipFireCrosshair;
 		int iLeanAutomatic;
-		bool bShowSquadList;
+		int iEquipUtilityPriority;
 		bool bShowPlayerSprays;
-		bool bShowHints;
-		bool bShowPos;
-		int iShowFps;
 		int iDlFilter;
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
-		bool bEnableRangeFinder;
-		bool bExtendedKillfeed;
+		bool bTachiFullAutoPreferred;
 		int iBackground;
-		int iKdinfoToggletype;
 	};
 
 	struct Keys
@@ -175,6 +177,35 @@ struct NeoSettings
 		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
 	};
 
+	struct HUD
+	{
+		// Miscellaneous
+		bool bShowSquadList;
+		int iHealthMode;
+		int iIFFVerbosity;
+		bool bIFFHealthbars;
+		int iObjVerbosity;
+		bool bShowHints;
+		bool bShowPos;
+		int iShowFps;
+		bool bEnableRangeFinder;
+		bool bExtendedKillfeed;
+		bool bShowHudContextHints;
+		int iKdinfoToggletype;
+
+		// IFF Markers
+		int optionChosen;
+		FriendlyMarkerInfo options[NeoIFFMarkerOption::NEOIFFMARKER_OPTION_TOTAL];
+
+#ifdef GLOWS_ENABLE
+		// Player Xray
+		bool bEnableXray;
+		float flOutlineWidth;
+		float flCenterOpacity;
+		float flTexturedOpacity;
+#endif // GLOWS_ENABLE
+	};
+
 	General general;
 	Keys keys;
 	Mouse mouse;
@@ -182,6 +213,7 @@ struct NeoSettings
 	Audio audio;
 	Video video;
 	Crosshair crosshair;
+	HUD hud;
 
 	KeyValues* backgrounds;
 	int iCBListSize;
@@ -200,16 +232,17 @@ struct NeoSettings
 		CONVARREF_DEF(neo_name);
 		CONVARREF_DEF(neo_clantag);
 		CONVARREF_DEF(cl_onlysteamnick);
-		CONVARREF_DEF(cl_neo_clantag_friendly_marker_spec_only);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
-		CONVARREF_DEF(neo_aim_hold);
 		CONVARREF_DEF(cl_autoreload_when_empty);
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_neo_lean_automatic);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
+		CONVARREF_DEF(cl_neo_hud_health_mode);
+		CONVARREF_DEF(cl_neo_hud_worldpos_verbose);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
+		CONVARREF_DEF(cl_neo_tachi_prefer_auto);
 		CONVARREF_DEF(cl_neo_showhints);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
@@ -220,6 +253,8 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
+		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
+		CONVARREF_DEF(cl_neo_equip_utility_priority);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
@@ -277,6 +312,22 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_crosshair_network);
 		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
 		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
+
+		// Friendly Markers
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_spectator_marker);
+#ifdef GLOWS_ENABLE
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_friendly_xray_marker);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_spectator_xray_marker);
+
+		// Xray
+		CONVARREF_DEF(glow_outline_effect_enable);
+		CONVARREF_DEF(glow_outline_effect_width);
+		CONVARREF_DEF(glow_outline_effect_center_alpha);
+		CONVARREF_DEF(glow_outline_effect_textured_center_alpha);
+#endif // GLOWS_ENABLE
 	};
 	CVR cvr;
 };
@@ -294,3 +345,4 @@ void NeoSettings_MouseController(NeoSettings *ns);
 void NeoSettings_Audio(NeoSettings *ns);
 void NeoSettings_Video(NeoSettings *ns);
 void NeoSettings_Crosshair(NeoSettings *ns);
+void NeoSettings_HUD(NeoSettings *ns);

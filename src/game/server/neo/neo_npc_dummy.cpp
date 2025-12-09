@@ -1,5 +1,7 @@
 // This was made from Valve's skeleton NPC
 
+#include "neo_npc_dummy.h"
+
 #include "cbase.h"
 #include "ai_default.h"
 #include "ai_task.h"
@@ -20,6 +22,9 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+static CEntityClassList<CNEO_NPCDummy> dummies;
+template <> CNEO_NPCDummy* CEntityClassList<CNEO_NPCDummy>::m_pClassList = nullptr;
+
 // --- This stuff is pretty useless for the Dummy. But it seems like its required
 int	ACT_DUMMY = -1;
 
@@ -38,30 +43,20 @@ enum
 	COND_MYCUSTOMCONDITION = LAST_SHARED_CONDITION,
 };
 
-class CNEO_NPCDummy : public CAI_BaseNPC
+CNEO_NPCDummy::CNEO_NPCDummy()
 {
-	DECLARE_CLASS(CNEO_NPCDummy, CAI_BaseNPC);
-	DECLARE_SERVERCLASS();
+	dummies.Insert(this);
+}
 
-public:
-	virtual void			Precache(void) override;
-	virtual void			Spawn(void) override;
-	virtual Class_T			Classify(void) override;
-	virtual int				ShouldTransmit(const CCheckTransmitInfo* pInfo) override;
-	virtual int				UpdateTransmitState() override;
+CNEO_NPCDummy::~CNEO_NPCDummy()
+{
+	dummies.Remove(this);
+}
 
-	DECLARE_DATADESC();
-
-	DEFINE_CUSTOM_AI;
-
-private:
-	int m_iKeyHealth;
-	string_t m_strKeyModel;
-	string_t m_strKeyWeaponModel;
-	bool m_bKeyDistortEffect;
-
-	void WeaponBonemerge(const char* weaponModelDir);
-};
+CNEO_NPCDummy* CNEO_NPCDummy::GetList()
+{
+	return dummies.m_pClassList;
+}
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_NPCDummy, DT_NEO_NPCDummy)
 END_SEND_TABLE()
@@ -177,10 +172,9 @@ int CNEO_NPCDummy::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 	if (pInfo)
 	{
 		auto otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
-		// If other is spectator or same team
 		if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE
-			otherNeoPlayer->IsDead() || // ...or dead spec, for xray purposes
+			otherNeoPlayer->IsDead() ||
 #endif
 			GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
 		{
@@ -188,11 +182,13 @@ int CNEO_NPCDummy::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 		}
 
 		// Ghoster should receive beacons regardless of PVS
-		auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
-		if (otherWep && otherWep->IsGhost() &&
-			static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+		const auto* otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
+		if (otherWep && otherWep->IsGhost())
 		{
-			return FL_EDICT_ALWAYS;
+			const auto distTo = GetAbsOrigin().DistTo(otherWep->GetAbsOrigin());
+			const auto maxBeaconDist = CWeaponGhost::GetGhostRangeInHammerUnits();
+			if (distTo <= maxBeaconDist)
+				return FL_EDICT_ALWAYS;
 		}
 
 		// NEO TODO (Adam) Check if weapon attached to this npc is of type weapon_ghost? can we draw more than one ghost beacon at once?

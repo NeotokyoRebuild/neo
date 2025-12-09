@@ -175,6 +175,7 @@ extern vgui::IInputInternal *g_InputInternal;
 
 #ifdef NEO
 #include "neo_version.h"
+#include "neo_version_number.h"
 #include "ui/neo_loading.h"
 #include "ui/neo_root_serverbrowser.h"
 #include "neo_player_shared.h"
@@ -366,6 +367,12 @@ static ConVar s_cl_load_hl1_content("cl_load_hl1_content", "0", FCVAR_ARCHIVE, "
 #endif
 
 ConVar r_lightmap_bicubic_set( "r_lightmap_bicubic_set", "0", FCVAR_ARCHIVE | FCVAR_HIDDEN, "Hack to get this convar to be re-set on first launch." );
+
+#ifdef NEO
+// Don't set current version as default here, handle it in version update check
+ConVar cl_neo_cfg_version_major("cl_neo_cfg_version_major", "0", FCVAR_ARCHIVE | FCVAR_HIDDEN, "NT;RE configuration version (major)");
+ConVar cl_neo_cfg_version_minor("cl_neo_cfg_version_minor", "0", FCVAR_ARCHIVE | FCVAR_HIDDEN, "NT;RE configuration version (minor)");
+#endif // NEO
 
 // Physics system
 bool g_bLevelInitialized;
@@ -892,6 +899,38 @@ extern IGameSystem *ViewportClientSystem();
 //-----------------------------------------------------------------------------
 ISourceVirtualReality *g_pSourceVR = NULL;
 
+#ifdef NEO
+// Restrict external cheaty ConVars or ConCommands, where we don't have ctor access to set the flags.
+static void RestrictNeoClientCheats()
+{
+	if (!g_pCVar)
+	{
+		Assert(false);
+		return;
+	}
+
+	// NEO TODO (Rain): list currently incomplete...
+	// These cheat names can be either ConVars or ConCommands
+	constexpr const char* cheats[]{
+		"building_cubemaps",
+		"cl_showerror",
+		"net_showmsg",
+	};
+
+	constexpr auto flags = FCVAR_CHEAT;
+	for (int i = 0; i < ARRAYSIZE(cheats); ++i)
+	{
+		const char* cheatName = cheats[i];
+		if (auto* var = g_pCVar->FindVar(cheatName))
+			var->AddFlags(flags);
+		else if (auto* cmd = g_pCVar->FindCommand(cheatName))
+			cmd->AddFlags(flags);
+		else
+			AssertMsg(false, "convar or concmd named \"%s\" was not found\n", cheatName);
+	}
+}
+#endif
+
 // Purpose: Called when the DLL is first loaded.
 // Input  : engineFactory - 
 // Output : int
@@ -1150,6 +1189,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		RegisterSecureLaunchProcessFunc( pfnUnsafeCmdLineProcessor );
 	}
 
+#ifdef NEO
+	VerifyValidDxLevel();
+#endif
+
 	return true;
 }
 
@@ -1245,6 +1288,10 @@ static void NeoDeleteDownloadedSprays()
 		char szSLSearch[MAX_PATH];
 		V_sprintf_safe(szSLSearch, "%s/*.dat", szSLRelPath);
 
+		// Copy the string before calling FindFirst
+		char szFNameFLDir[MAX_PATH];
+		V_strcpy_safe(szFNameFLDir, pszFNameFLDir);
+
 		FileFindHandle_t findHdlSL;
 		for (const char *pszFNameSLDat = filesystem->FindFirst(szSLSearch, &findHdlSL);
 			 pszFNameSLDat && findHdlSL != FILESYSTEM_INVALID_FIND_HANDLE;
@@ -1271,7 +1318,7 @@ static void NeoDeleteDownloadedSprays()
 			}
 
 			char szFullFPathSLDat[MAX_PATH];
-			V_sprintf_safe(szFullFPathSLDat, SZ_USERCUSTOM_DIR "/%s/%s", pszFNameFLDir, pszFNameSLDat);
+			V_sprintf_safe(szFullFPathSLDat, SZ_USERCUSTOM_DIR "/%s/%s", szFNameFLDir, pszFNameSLDat);
 
 			// NEO JANK (nullsystem): filesystem API seems buggy having earlier file(s) in alphanum order
 			// unable to recognize those files and remove them. When RemoveFile was called wasn't the issue
@@ -1295,6 +1342,23 @@ static void NeoDeleteDownloadedSprays()
 	}
 	filesystem->FindClose(findHdlFL);
 }
+
+// Makes sure that: bind is not set and default button is not set before setting it
+static void SetupBindIfNotSet(const char *pszBindName, const ButtonCode_t bc)
+{
+	const char *pszBinding = gameuifuncs->GetBindingForButtonCode(bc);
+
+	const bool bBindNotUsed = gameuifuncs->GetButtonCodeForBind(pszBindName) <= BUTTON_CODE_NONE;
+	const bool bButtonCodeNotUsed = (!pszBinding || !pszBinding[0]);
+	if (bBindNotUsed && bButtonCodeNotUsed)
+	{
+		const char *pszButtonName = g_pInputSystem->ButtonCodeToString(bc);
+		char szCmd[128];
+		V_sprintf_safe(szCmd, "bind \"%s\" \"%s\"\n", pszButtonName, pszBindName);
+		engine->ClientCmd_Unrestricted(szCmd);
+	}
+}
+
 #endif // NEO
 
 //-----------------------------------------------------------------------------
@@ -1334,6 +1398,58 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_MAX_CLANTAG_LENGTH>);
 		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_XHAIR_SEQMAX>);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
+		RestrictNeoClientCheats();
+
+		// ConVarRef so that it properly sets the ConVar value
+		ConVarRef cvr_cl_neo_cfg_version_major("cl_neo_cfg_version_major");
+		ConVarRef cvr_cl_neo_cfg_version_minor("cl_neo_cfg_version_minor");
+		const int iCfgVerMajor = cvr_cl_neo_cfg_version_major.GetInt();
+		const int iCfgVerMinor = cvr_cl_neo_cfg_version_minor.GetInt();
+		if ((iCfgVerMajor < NEO_VERSION_MAJOR) || ((iCfgVerMajor == NEO_VERSION_MAJOR) && (iCfgVerMinor < NEO_VERSION_MINOR)))
+		{
+			// NEO NOTE (nullsystem):
+			//
+			// If the config version saved in the player's convar is lower than
+			// current version, check if there's need to setup new keybinds.
+			//
+			// Without this, when updating the player's binds will not be updated
+			// with the new keybinds.
+			//
+			// Using SetupBindIfNotSet, this will only do it if the player haven't
+			// set the bind already and if the player haven't set the key for which
+			// the bind defaults to.
+			if (iCfgVerMajor < 22)
+			{
+				SetupBindIfNotSet("+attack3", MOUSE_MIDDLE);	// Ping location
+				SetupBindIfNotSet("kdinfo_toggle", KEY_F11);	// KD-info toggle
+				SetupBindIfNotSet("kdinfo_page_prev", KEY_P);	// KD-info page previous
+				SetupBindIfNotSet("kdinfo_page_next", KEY_N);	// KD-info page next
+				SetupBindIfNotSet("neo_mp3", KEY_M);			// MP3 player toggle
+			
+				// neo_aim_hold removal, +aim split to +aim and toggle_aim
+				// Since neo_aim_hold got removed, cannot tell if player used
+				// it or not, so just force toggle_aim if not set
+				const ButtonCode_t bcTAim = gameuifuncs->GetButtonCodeForBind("toggle_aim");
+				const ButtonCode_t bcPAim = gameuifuncs->GetButtonCodeForBind("+aim");
+				if (bcTAim <= BUTTON_CODE_NONE && bcPAim > BUTTON_CODE_NONE)
+				{
+					const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bcPAim);
+					if (bindBtnName && bindBtnName[0])
+					{
+						char szCmd[128];
+
+						V_sprintf_safe(szCmd, "unbind \"%s\"\n", bindBtnName);
+						engine->ClientCmd_Unrestricted(szCmd);
+
+						V_sprintf_safe(szCmd, "bind \"%s\" \"toggle_aim\"\n", bindBtnName);
+						engine->ClientCmd_Unrestricted(szCmd);
+					}
+				}
+			}
+
+			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
+			cvr_cl_neo_cfg_version_minor.SetValue(NEO_VERSION_MINOR);
+		}
 	}
 	else
 	{

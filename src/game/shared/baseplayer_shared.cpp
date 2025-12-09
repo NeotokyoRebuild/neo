@@ -691,11 +691,10 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 			break;
 		}
 	}
-	
+
 #ifdef NEO
-	// Changing movement direction, looking around, wall-running accelerate the player. Raise the threshold.
-	// Throwing the mouse around quickly while changing direction will still result in footstep sounds, and wall running (as it should)
-	constexpr float SILENT_THRESHOLD_GRACE = 1.25;
+	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
+	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
 #endif //NEO
 	// play the sound
 	// 65% volume if ducking
@@ -703,7 +702,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	{
 		fvol *= 0.65;
 #ifdef NEO
-		if (neoPlayer->IsWalking() && speed <= NEO_CROUCH_WALK_SPEED * SILENT_THRESHOLD_GRACE)
+		if ((neoPlayer->IsInAim() || neoPlayer->IsWalking()) && speed <= (neoPlayer->GetCrouchSpeed() * SILENT_THRESHOLD_GRACE))
 		{
 			return;
 		}
@@ -711,7 +710,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	}
 #ifdef NEO
 
-	else if (neoPlayer->IsWalking() && speed <= NEO_WALK_SPEED * SILENT_THRESHOLD_GRACE)
+	else if ((neoPlayer->IsInAim() || neoPlayer->IsWalking()) && speed <= (neoPlayer->GetNormSpeed() * SILENT_THRESHOLD_GRACE))
 	{
 		return;
 	}

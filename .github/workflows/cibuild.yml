@@ -33,6 +33,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set ownership
       run: |
@@ -52,7 +54,7 @@ jobs:
         echo "preset_name=$preset_name" >> "$GITHUB_ENV"
 
     - name: Git fetch tags
-      run: git fetch origin --tags
+      run: git fetch origin --tags --force
 
     # Libraries
 
@@ -157,6 +159,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set reusable strings
       run: |
@@ -183,7 +187,7 @@ jobs:
         echo "PATH: $PATH"
 
     - name: Git fetch tags
-      run: git fetch origin --tags
+      run: git fetch origin --tags --force
 
     # Libraries
 
@@ -270,6 +274,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set reusable strings
       run: |
@@ -280,6 +286,9 @@ jobs:
         echo "source_dir=$source_dir" >> "$GITHUB_ENV"
         echo "build_dir=$build_dir" >> "$GITHUB_ENV"
         echo "install_dir=$install_dir" >> "$GITHUB_ENV"
+
+    - name: Git fetch tags
+      run: git fetch origin --tags --force
 
     - name: Install packages
       run: choco install -y ninja

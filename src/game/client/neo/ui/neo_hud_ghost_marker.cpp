@@ -85,11 +85,6 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 {
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_JGR)
 	{
-		if (m_ghostInPVS && (!NEORules()->GhostExists() || NEORules()->IsRoundOver()))
-		{
-			m_ghostInPVS = nullptr;
-		}
-
 		if (!NEORules()->GetGhosterPlayer())
 		{
 			const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
@@ -127,7 +122,6 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostMarker::resetHUDState()
 {
-	m_ghostInPVS = nullptr;
 	m_jgrInPVS = nullptr;
 }
 
@@ -148,9 +142,8 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 			return;
 		}
 
-		const bool ghostExists = NEORules()->GhostExists();
-		const auto localPlayer = static_cast<C_NEO_Player*>(C_NEO_Player::GetLocalPlayer());
-		bool hideGhostMarker = (!ghostExists || localPlayer->IsCarryingGhost());
+		const C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		bool hideGhostMarker = (localPlayer->IsCarryingGhost());
 		if (!hideGhostMarker && (localPlayer->GetObserverMode() == OBS_MODE_IN_EYE))
 		{
 			// NEO NOTE (nullsystem): Skip this if we're observing a player in first person
@@ -160,29 +153,6 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		if (hideGhostMarker)
 		{
 			return;
-		}
-
-		// NEO NOTE (nullsystem): Fetch client-side ghost entity when possible, it should be always emitted and therefore
-		// be able to be given on each round start. This itself is an expensive operation but only done once per round
-		// start. The usage of PVS is preferred since it'll give a smoother visual to the player verses relying on server
-		// side positioning.
-		//
-		// (Rain): Could we instead use OnPVSStatusChanged to track this client side?
-		if (!m_ghostInPVS)
-		{
-			C_AllBaseEntityIterator itr;
-			C_BaseEntity* ent = nullptr;
-			while ((ent = itr.Next()) != nullptr)
-			{
-				if (auto* ghostEnt = dynamic_cast<C_WeaponGhost*>(ent))
-				{
-					m_ghostInPVS = ghostEnt;
-					break;
-				}
-			}
-			// It should be valid at this point since it passed hideGhostMarker. Otherwise something very wrong
-			// happened.
-			Assert(m_ghostInPVS);
 		}
 
 		hideText = NEORules()->GetGhosterPlayer();
@@ -201,41 +171,8 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 				ghostColor = (iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
 			}
 		}
-
-		// Use PVS over networked-given position if possible as it'll give a smoother visual
-		// NEO NOTE (Rain): this assignment was segfaulting on Linux, so I've split the logic
-		// and added extra guards, so we can catch it better if it still happens.
-		Vector ghostPos;
-		if (m_ghostInPVS && m_ghostInPVS->IsVisible())
-		{
-			ghostPos = m_ghostInPVS->GetAbsOrigin();
-		}
-		else
-		{
-			if (NEORules())
-			{
-				ghostPos = NEORules()->GetGhostPos();
-			}
-			else
-			{
-				Assert(false);
-				return;
-			}
-		}
-
-		if (const int ghosterPlayerIdx = NEORules()->GetGhosterPlayer();
-			ghosterPlayerIdx > 0)
-		{
-			if (auto ghosterPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(ghosterPlayerIdx)))
-			{
-				if (ghosterPlayer->IsVisible())
-				{
-					ghostPos = ghosterPlayer->EyePosition();
-				}
-			}
-		}
 		
-		GetVectorInScreenSpace(ghostPos, iPosX, iPosY);
+		GetVectorInScreenSpace(NEORules()->GetGhostMarkerPos(), iPosX, iPosY);
 	}
 	else
 	{

@@ -64,9 +64,15 @@ enum NeoXHairSegment
 	NEOXHAIR_SEGMENT_I_CIRCLERAD,
 	NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS,
 	NEOXHAIR_SEGMENT_I_DYNAMICTYPE,
+	NEOXHAIR_SEGMENT_B_SEPARATECOLORDOT,
+	NEOXHAIR_SEGMENT_I_COLORDOT,
+	NEOXHAIR_SEGMENT_I_COLORDOTOUTLINE,
+	NEOXHAIR_SEGMENT_I_COLOROUTLINE,
 
 	NEOXHAIR_SEGMENT__TOTAL,
 	NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V17 = NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS + 1,
+	NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V19 = NEOXHAIR_SEGMENT_I_DYNAMICTYPE + 1,
+	NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V22 = NEOXHAIR_SEGMENT_I_COLOROUTLINE + 1,
 };
 
 struct CrosshairInfo
@@ -84,6 +90,10 @@ struct CrosshairInfo
 	int iCircleRad;
 	int iCircleSegments;
 	int iEDynamicType; // int NeoHudCrosshairDynamicType
+	bool bSeparateColorDot;
+	Color colorDot;
+	Color colorDotOutline;
+	Color colorOutline;
 };
 void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const int y);
 

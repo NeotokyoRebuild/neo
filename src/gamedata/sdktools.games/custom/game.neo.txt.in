@@ -1,0 +1,132 @@
+"Games"
+{
+	"neo"
+	{
+		"Offsets"
+		{
+			"AcceptInput"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseEntity::AcceptInput(char const*, CBaseEntity*, CBaseEntity*, variant_t, int).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseEntity::AcceptInput(char const*, CBaseEntity*, CBaseEntity*, variant_t, int).linux#"
+			}
+			"Activate"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::Activate().windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::Activate().linux#"
+			}
+			"CommitSuicide"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::CommitSuicide(bool, bool).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::CommitSuicide(bool, bool).linux#"
+			}
+			"CreateEntityByName"
+			{
+				"windows64"	"#VTableMethod.CServerTools::CServerTools::CreateEntityByName(char const*).windows#"
+				"linux64"	"#VTableMethod.CServerTools::CServerTools::CreateEntityByName(char const*).linux#"
+			}
+			"DispatchSpawn"
+			{
+				"windows64"	"#VTableMethod.CServerTools::CServerTools::DispatchSpawn(CBaseEntity*).windows#"
+				"linux64"	"#VTableMethod.CServerTools::CServerTools::DispatchSpawn(CBaseEntity*).linux#"
+			}
+			"Extinguish"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseAnimating::Extinguish().windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseAnimating::Extinguish().linux#"
+			}
+			"EyeAngles"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::EyeAngles().windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::EyeAngles().linux#"
+			}
+			"FindEntityByClassname"
+			{
+				"windows64"	"#VTableMethod.CServerTools::CServerTools::FindEntityByClassname(CBaseEntity*, char const*).windows#"
+				"linux64"	"#VTableMethod.CServerTools::CServerTools::FindEntityByClassname(CBaseEntity*, char const*).linux#"
+			}
+			"GetAttachment"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseAnimating::GetAttachment(int, matrix3x4_t&).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseAnimating::GetAttachment(int, matrix3x4_t&).linux#"
+			}
+			"GetVelocity"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseAnimating::GetVelocity(Vector*, Vector*).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseAnimating::GetVelocity(Vector*, Vector*).linux#"
+			}
+			"GiveAmmo"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseCombatCharacter::GiveAmmo(int, int, bool).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseCombatCharacter::GiveAmmo(int, int, bool).linux#"
+			}
+			"GiveNamedItem"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::GiveNamedItem(char const*, int).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::GiveNamedItem(char const*, int).linux#"
+			}
+			"Ignite"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseAnimating::Ignite(float, bool, float, bool).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseAnimating::Ignite(float, bool, float, bool).linux#"
+			}
+			"PlayerRunCmd"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::PlayerRunCommand(CUserCmd*, IMoveHelper*).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::PlayerRunCommand(CUserCmd*, IMoveHelper*).linux#"
+			}
+			"RemovePlayerItem"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBasePlayer::RemovePlayerItem(CBaseCombatWeapon*).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBasePlayer::RemovePlayerItem(CBaseCombatWeapon*).linux#"
+			}
+			"SetOwnerEntity"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseEntity::SetOwnerEntity(CBaseEntity*).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseEntity::SetOwnerEntity(CBaseEntity*).linux#"
+			}
+			"Teleport"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseFlex::Teleport(Vector const*, QAngle const*, Vector const*).windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseFlex::Teleport(Vector const*, QAngle const*, Vector const*).linux#"
+			}
+			"Weapon_GetSlot"
+			{
+				"windows64"	"#VTableMethod.CBasePlayer::CBaseCombatCharacter::Weapon_GetSlot(int) const.windows#"
+				"linux64"	"#VTableMethod.CBasePlayer::CBaseCombatCharacter::Weapon_GetSlot(int) const.linux#"
+			}
+		}
+		"Signatures"
+		{
+			"CreateEntityByName"
+			{
+				"linux64"	"@_Z18CreateEntityByNamePKci"
+				"windows64"	"@?CreateEntityByName@@YAPEAVCBaseEntity@@PEBDH@Z"
+			}
+			"DispatchSpawn"
+			{
+				"linux64"	"@_Z13DispatchSpawnP11CBaseEntity"
+				"windows64"	"@?DispatchSpawn@@YAHPEAVCBaseEntity@@_N@Z"
+			}
+			"FireOutput"
+			{
+				"linux64"	"@_ZN17CBaseEntityOutput10FireOutputE9variant_tP11CBaseEntityS2_f"
+				"windows64"	"@?FireOutput@CBaseEntityOutput@@QEAAXVvariant_t@@PEAVCBaseEntity@@1M@Z"
+			}
+			"LevelShutdown"
+			{
+				"linux64"	"@_ZN14CServerGameDLL13LevelShutdownEv"
+				"windows64"	"@?LevelShutdown@CServerGameDLL@@UEAAXXZ"
+			}
+			"LookupAttachment"
+			{
+				"linux64"	"@_ZN14CBaseAnimating16LookupAttachmentEPKc"
+				"windows64"	"@?LookupAttachment@CBaseAnimating@@QEAAHPEBD@Z"
+			}
+		}
+		"Keys"
+		{
+			"GameRulesDataTable"	"neo_gamerules_data"
+			"GameRulesProxy"		"CNEOGameRulesProxy"
+		}
+	}
+}

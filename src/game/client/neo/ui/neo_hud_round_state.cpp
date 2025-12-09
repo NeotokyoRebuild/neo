@@ -42,6 +42,7 @@ extern ConVar snd_victory_volume;
 extern ConVar sv_neo_readyup_countdown;
 extern ConVar cl_neo_hud_scoreboard_hide_others;
 extern ConVar sv_neo_ctg_ghost_overtime_grace;
+extern ConVar cl_neo_hud_health_mode;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -720,11 +721,13 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 	const char* squadMateRankName = GetRankName(g_PR->GetXP(playerIndex), true);
 	const char* squadMateClass = GetNeoClassName(g_PR->GetClass(playerIndex));
 	const bool isAlive = g_PR->IsAlive(playerIndex);
-	const int squadMateHealth = isAlive ? g_PR->GetHealth(playerIndex) : 0;
 
 	if (isAlive)
 	{
-		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  Integrity %i", g_PR->GetPlayerName(playerIndex), squadMateRankName, squadMateClass, squadMateHealth);
+		const int healthMode = cl_neo_hud_health_mode.GetInt();
+		char playerHealth[7]; // 4 digits + 2 letters
+		V_snprintf(playerHealth, sizeof(playerHealth), healthMode ? "%dhp" : "%d%%", g_PR->GetDisplayedHealth(playerIndex, healthMode));
+		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", g_PR->GetPlayerName(playerIndex), squadMateRankName, squadMateClass, playerHealth);
 	}
 	else
 	{
@@ -798,7 +801,7 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 		return;
 
 	if (health_monochrome) {
-		const int greenBlueValue = (g_PR->GetHealth(playerIndex) / 100.0f) * 255;
+		const int greenBlueValue = (g_PR->GetDisplayedHealth(playerIndex, 0) / 100.0f) * 255;
 		surface()->DrawSetColor(Color(255, greenBlueValue, greenBlueValue, 255));
 	}
 	else {

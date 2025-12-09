@@ -1,0 +1,30 @@
+"Configs"
+{
+	"Games"
+	{
+		"Neotokyo;Rebuild"
+		{
+			"GameDir"		"..\..\neo"
+			"Hammer"
+			{
+				"GameData0"		"..\rebuild.fgd"
+				"TextureFormat"		"5"
+				"MapFormat"		"4"
+				"DefaultTextureScale"		"0.250000"
+				"DefaultLightmapScale"		"16"
+				"GameExe"		"..\..\ntre64.exe"
+				"DefaultSolidEntity"		"func_detail"
+				"DefaultPointEntity"		"info_player_start"
+				"BSP"		"vbsp.exe"
+				"Vis"		"vvis.exe"
+				"Light"		"vrad.exe"
+				"GameExeDir"		"..\..\"
+				"MapDir"		"..\..\neo\mapsrc"
+				"BSPDir"		"..\..\neo\maps"
+				"CordonTexture"		"tools\toolsskybox"
+				"MaterialExcludeCount"		"0"
+			}
+		}
+	}
+	"SDKVersion"		"5"
+}

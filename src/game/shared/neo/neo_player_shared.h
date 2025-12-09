@@ -22,6 +22,10 @@
 #include "weapon_bits.h"
 #include "neo_enums.h"
 
+extern ConVar sv_neo_ghost_delay_secs;
+extern ConVar sv_neo_ghost_view_distance;
+extern ConVar sv_neo_serverside_beacons;
+
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS
 
@@ -39,27 +43,25 @@
 
 // Aim Modifier
 #define NEO_AIM_MODIFIER 0.6
-// Crouch Modifier
-#define NEO_CROUCH_MODIFIER 0.75
-#define NEO_WALK_SPEED 90
-#define NEO_CROUCH_WALK_SPEED 60
+// Crouch/Walk Modifier
+#define NEO_CROUCH_WALK_MODIFIER 0.75
 
 
 // Movement Calculations
 // Recon
 #define NEO_RECON_BASE_SPEED (NEO_BASE_SPEED * NEO_RECON_MODIFIER)
 #define NEO_RECON_SPRINT_SPEED (NEO_RECON_BASE_SPEED * NEO_RECON_SPRINT_MODIFIER)
-#define NEO_RECON_CROUCH_SPEED (NEO_RECON_BASE_SPEED * NEO_CROUCH_MODIFIER)
+#define NEO_RECON_CROUCH_SPEED (NEO_RECON_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER)
 #define NEO_RECON_WALK_SPEED NEO_RECON_CROUCH_SPEED
 // Assault
 #define NEO_ASSAULT_BASE_SPEED (NEO_BASE_SPEED * NEO_ASSAULT_MODIFIER)
 #define NEO_ASSAULT_SPRINT_SPEED (NEO_ASSAULT_BASE_SPEED * NEO_ASSAULT_SPRINT_MODIFIER)
-#define NEO_ASSAULT_CROUCH_SPEED (NEO_ASSAULT_BASE_SPEED * NEO_CROUCH_MODIFIER)
+#define NEO_ASSAULT_CROUCH_SPEED (NEO_ASSAULT_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER)
 #define NEO_ASSAULT_WALK_SPEED NEO_ASSAULT_CROUCH_SPEED
 // Support
 #define NEO_SUPPORT_BASE_SPEED (NEO_BASE_SPEED * NEO_SUPPORT_MODIFIER)
 #define NEO_SUPPORT_SPRINT_SPEED (NEO_SUPPORT_BASE_SPEED * NEO_SUPPORT_SPRINT_MODIFIER) // Redundant, but for future usecases
-#define NEO_SUPPORT_CROUCH_SPEED (NEO_SUPPORT_BASE_SPEED * NEO_CROUCH_MODIFIER)
+#define NEO_SUPPORT_CROUCH_SPEED (NEO_SUPPORT_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER)
 #define NEO_SUPPORT_WALK_SPEED NEO_SUPPORT_CROUCH_SPEED
 // VIP
 #define NEO_VIP_BASE_SPEED NEO_ASSAULT_BASE_SPEED
@@ -170,11 +172,13 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define NEO_ASSAULT_PLAYERMODEL_HEIGHT 67.0
 #define NEO_ASSAULT_PLAYERMODEL_DUCK_HEIGHT 50.0
 
-// These look like magic but are actually taken straight from the og binaries.
-#define NEO_RECON_DAMAGE_MODIFIER 1.485f
-#define NEO_ASSAULT_DAMAGE_MODIFIER 1.2375f
-#define NEO_SUPPORT_DAMAGE_MODIFIER 0.66f
-#define NEO_JUGGERNAUT_DAMAGE_MODIFIER 0.15f
+static constexpr int MAX_HEALTH_FOR_CLASS[NEO_CLASS__ENUM_COUNT] = {
+	100,	// RECON
+	120,	// ASSAULT
+	225,	// SUPPORT
+	100,	// VIP
+	990,	// JUGGERNAUT
+};
 
 #define NEO_ANIMSTATE_LEGANIM_TYPE LegAnimType_t::LEGANIM_9WAY
 #define NEO_ANIMSTATE_USES_AIMSEQUENCES true
@@ -243,12 +247,10 @@ enum NeoLeanDirectionE {
 };
 
 enum NeoWeponAimToggleE {
-	NEO_TOGGLE_DEFAULT = 0,
+	NEO_TOGGLE_NIL = 0,
 	NEO_TOGGLE_FORCE_AIM,
 	NEO_TOGGLE_FORCE_UN_AIM,
 };
-
-bool ClientWantsAimHold(const CNEO_Player* player);
 
 void CheckPingButton(CNEO_Player* player);
 
@@ -319,14 +321,25 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const EClNeoDisplayNameFlag flags = CL_NEODISPLAYNAME_FLAG_NONE);
 
 // NEO NOTE (nullsystem): Max string length is 
-// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;2;"
-// which is ~45 for v3 serialization | 64 length is enough for now till
+// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;2;1;-16711936;-16711936;-16711936;"
+// which is ~77 for v4 serialization | 96 length is enough for now till
 // more comes in
-static constexpr const int NEO_XHAIR_SEQMAX = 64;
-#define NEO_CROSSHAIR_DEFAULT "3;0;-1;0;6;0.000;2;4;0;0;1;0;0;2;"
+static constexpr const size_t NEO_XHAIR_SEQMAX = 96;
+#define NEO_CROSSHAIR_DEFAULT "4;0;-1;0;6;0.000;2;4;0;0;1;0;0;2;0;-16777216;-16777216;-16777216;"
 
 #define TUTORIAL_MAP_CLASSES "ntre_class_tut"
 #define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
+
+#ifdef GLOWS_ENABLE
+enum NeoGlowStencilBits
+{
+	NEO_GLOW_ZERO = 0,
+	NEO_GLOW_OBSTRUCTED = 1 << 0,
+	NEO_GLOW_NOTOBSTRUCTED = 1 << 1,
+	NEO_GLOW_CLOAKED = 1 << 2,
+	NEO_GLOW_VIEWMODEL = 1 << 3,
+};
+#endif // GLOWS_ENABLE
 
 enum
 {

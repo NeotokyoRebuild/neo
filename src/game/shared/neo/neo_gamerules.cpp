@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "neo_gamerules.h"
 #include "neo_version_info.h"
+#include "neo_misc.h"
 #include "in_buttons.h"
 #include "ammodef.h"
 
@@ -28,9 +29,11 @@
 #include "player_resource.h"
 #include "inetchannelinfo.h"
 #include "neo_dm_spawn.h"
-#include "neo_misc.h"
 #include "neo_game_config.h"
 #include "nav_mesh.h"
+#include "neo_npc_dummy.h"
+
+#include <utility>
 
 extern ConVar weaponstay;
 #endif
@@ -41,7 +44,7 @@ ConVar sv_neo_warmup_round_time("sv_neo_warmup_round_time", "45", FCVAR_REPLICAT
 ConVar sv_neo_preround_freeze_time("sv_neo_preround_freeze_time", "15", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
 ConVar sv_neo_latespawn_max_time("sv_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
-ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "1", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
+ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "1.485", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
 ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
 ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
@@ -138,6 +141,10 @@ ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", 
 ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_juggernaut_spawn_bias("sv_neo_juggernaut_spawn_bias", "0", FCVAR_REPLICATED, "Spawn juggernaut in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
+ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
+#ifdef CLIENT_DLL
+ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
+#endif
 
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
@@ -148,6 +155,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_pausematch_enabled.SetValue(bCurrentValue);
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_juggernaut_spawn_bias.SetValue(bCurrentValue);
+	sv_neo_client_autorecord.SetValue(bCurrentValue);
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f
@@ -155,6 +163,8 @@ ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive ga
 	, neoSvCompCallback
 	#endif // GAME_DLL
 );
+
+ConVar sv_neo_comp_name("sv_neo_comp_name", "", FCVAR_REPLICATED, "Name of the competition. Leave blank if unused.");
 
 #ifdef CLIENT_DLL
 extern ConVar snd_victory_volume;
@@ -225,6 +235,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iForcedClass)),
 	RecvPropInt(RECVINFO(m_iForcedSkin)),
 	RecvPropInt(RECVINFO(m_iForcedWeapon)),
+	RecvPropBool(RECVINFO(m_bCyberspaceLevel)),
 	RecvPropString(RECVINFO(m_szNeoJinraiClantag)),
 	RecvPropString(RECVINFO(m_szNeoNSFClantag)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -233,6 +244,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropFloat(RECVINFO(m_flGhostLastHeld)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
+	RecvPropEHandle(RECVINFO(m_hGhost)),
 	RecvPropInt(RECVINFO(m_iJuggernautPlayerIndex)),
 	RecvPropBool(RECVINFO(m_bJuggernautItemExists)),
 	RecvPropVector(RECVINFO(m_vecJuggernautMarkerPos)),
@@ -248,6 +260,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iForcedClass)),
 	SendPropInt(SENDINFO(m_iForcedSkin)),
 	SendPropInt(SENDINFO(m_iForcedWeapon)),
+	SendPropBool(SENDINFO(m_bCyberspaceLevel)),
 	SendPropString(SENDINFO(m_szNeoJinraiClantag)),
 	SendPropString(SENDINFO(m_szNeoNSFClantag)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
@@ -256,6 +269,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropBool(SENDINFO(m_bGhostExists)),
 	SendPropFloat(SENDINFO(m_flGhostLastHeld)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
+	SendPropEHandle(SENDINFO(m_hGhost)),
 	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex)),
 	SendPropBool(SENDINFO(m_bJuggernautItemExists)),
 	SendPropVector(SENDINFO(m_vecJuggernautMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
@@ -493,6 +507,11 @@ static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float f
 		wep = gEntList.NextEntByClass(wep);
 	}
 }
+
+static CNEOGameConfig *GetActiveGameConfig()
+{
+	return static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+}
 #endif
 
 CNEORules::CNEORules()
@@ -523,9 +542,11 @@ CNEORules::CNEORules()
 	m_iForcedClass = -1;
 	m_iForcedSkin = -1;
 	m_iForcedWeapon = -1;
+	m_bCyberspaceLevel = false;
 
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
+	ListenForGameEvent("game_end");
 
 #ifdef GAME_DLL
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
@@ -881,33 +902,28 @@ void CNEORules::CheckGameType()
 	} break;
 	default:
 	{
-		const auto pEntGameCfg = static_cast<CNEOGameConfig *>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
-		m_nGameTypeSelected = (pEntGameCfg) ? pEntGameCfg->m_GameType : NEO_GAME_TYPE_CTG;
+		const auto pEntGameCfg = GetActiveGameConfig();
+		m_nGameTypeSelected = (pEntGameCfg) ? pEntGameCfg->m_GameType : NEO_GAME_TYPE_EMT;
 	} break;
 	}
 	m_bGamemodeTypeBeenInitialized = true;
 	iStaticInitOnCmd = iGamemodeEnforce;
 	iStaticInitOnRandAllow = iGamemodeRandAllow;
-
-	if (CNEOGameConfig::s_pGameRulesToConfig && sv_neo_comp.GetBool())
-	{
-		CNEOGameConfig::s_pGameRulesToConfig->OutputCompetitive();
-	}
 }
 
-void CNEORules::CheckHiddenHudElements()
+void CNEORules::CheckGameConfig()
 {
-	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+	CheckGameType();
+
+	const auto pEntGameCfg = GetActiveGameConfig();
 	m_iHiddenHudElements = (pEntGameCfg) ? pEntGameCfg->m_HiddenHudElements : 0;
-}
 
-void CNEORules::CheckPlayerForced()
-{
-	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
 	m_iForcedTeam = (pEntGameCfg) ? pEntGameCfg->m_ForcedTeam : -1;
 	m_iForcedClass = (pEntGameCfg) ? pEntGameCfg->m_ForcedClass : -1;
 	m_iForcedSkin = (pEntGameCfg) ? pEntGameCfg->m_ForcedSkin : -1;
 	m_iForcedWeapon = (pEntGameCfg) ? pEntGameCfg->m_ForcedWeapon : -1;
+
+	m_bCyberspaceLevel = (pEntGameCfg) ? pEntGameCfg->m_Cyberspace : false;
 }
 #endif
 
@@ -927,11 +943,25 @@ bool CNEORules::CheckShouldNotThink()
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
-	CheckHiddenHudElements();
-	CheckGameType();
-	CheckPlayerForced();
+	CheckGameConfig();
 	if (CheckShouldNotThink())
 	{
+		// This is kind of wonky, but we only need it for the tutorial, in order to play the dummy beacon sounds...
+		if (!m_pGhost && GetGameType() == NEO_GAME_TYPE_TUT)
+		{
+			auto pEnt = gEntList.FirstEnt();
+			while (pEnt)
+			{
+				if (dynamic_cast<CWeaponGhost*>(pEnt))
+				{
+					m_pGhost = static_cast<CWeaponGhost*>(pEnt);
+					m_hGhost = m_pGhost;
+					return;
+				}
+				pEnt = gEntList.NextEnt(pEnt);
+			}
+		}
+		if (m_pGhost) m_pGhost->UpdateNearestGhostBeaconDist();
 		return;
 	}
 
@@ -983,7 +1013,7 @@ void CNEORules::Think(void)
 	}
 
 	// Allow respawn if it's an idle, warmup round, pausing, or deathmatch-type gamemode
-	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_DM || m_nGameTypeSelected == NEO_GAME_TYPE_TDM);
+	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_DM || m_nGameTypeSelected == NEO_GAME_TYPE_TDM || m_nGameTypeSelected == NEO_GAME_TYPE_JGR);
 	if (bIsDMType || bIsIdleState || bIsPause)
 	{
 		CRecipientFilter filter;
@@ -1292,6 +1322,7 @@ void CNEORules::Think(void)
 			nextGhosterTeam = pGhosterPlayer->GetTeamNumber();
 			nextGhosterPlayerIdx = pGhosterPlayer->entindex();
 			Assert(nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF);
+			m_pGhost->UpdateNearestGhostBeaconDist();
 		}
 		m_iGhosterTeam = nextGhosterTeam;
 		m_iGhosterPlayer = nextGhosterPlayerIdx;
@@ -1300,9 +1331,10 @@ void CNEORules::Think(void)
 
 		if (m_pGhost->GetAbsOrigin().IsValid())
 		{
-			// Someone's carrying it, center at their body
-			m_vecGhostMarkerPos = (pGhosterPlayer && (nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF)) ?
-						pGhosterPlayer->EyePosition() : m_pGhost->GetAbsOrigin();
+			// Someone's carrying it
+			m_vecGhostMarkerPos = (nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF) ?
+			// NEO NOTE (Adam) GetGhostMarkerPos() can return m_vecGhostMarkerPos if m_pGhost is invalid, but we've checked for m_pGhost above so should be fine?
+						GetGhostMarkerPos() : m_pGhost->GetAbsOrigin();
 		}
 		else
 		{
@@ -1330,15 +1362,15 @@ void CNEORules::Think(void)
 					pGhostCap->SetActive(false);
 				}
 
-				// And then announce team victory
-				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
-
 				IGameEvent* event = gameeventmanager->CreateEvent("ghost_capture");
 				if (event)
 				{
 					event->SetInt("userid", UTIL_PlayerByIndex(m_iGhosterPlayer)->GetUserID());
 					gameeventmanager->FireEvent(event);
 				}
+
+				// And then announce team victory
+				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
 
 				if (m_iEscortingTeam && m_iEscortingTeam == captorTeam)
 				{
@@ -1361,8 +1393,20 @@ void CNEORules::Think(void)
 			Assert(false);
 		}
 
-		m_iJuggernautPlayerIndex = 0;
 		m_bJuggernautItemExists = true;
+	}
+	else if (m_pJuggernautPlayer)
+	{
+		if (m_pJuggernautPlayer->GetAbsOrigin().IsValid())
+		{
+			m_vecJuggernautMarkerPos = m_pJuggernautPlayer->WorldSpaceCenter();
+		}
+		else
+		{
+			Assert(false);
+		}
+
+		m_bJuggernautItemExists = false;
 	}
 	else
 	{
@@ -1490,42 +1534,29 @@ void CNEORules::Think(void)
 			}
 		}
 	}
-	else if (!IsRoundLive())
+	else if (IsRoundLive())
 	{
-		if (!IsRoundOver())
+		COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
+		if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM && GetGameType() != NEO_GAME_TYPE_JGR)
 		{
-			if (GetGlobalTeam(TEAM_JINRAI)->GetAliveMembers() > 0 && GetGlobalTeam(TEAM_NSF)->GetAliveMembers() > 0)
+			for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
 			{
-				SetRoundStatus(NeoRoundStatus::RoundLive);
+				if (GetGlobalTeam(team)->GetAliveMembers() == 0)
+				{
+					SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
+				}
 			}
 		}
-	}
-	else
-	{
-		if (IsRoundLive())
+		if (GetGameType() == NEO_GAME_TYPE_DM && sv_neo_dm_win_xp.GetInt() > 0)
 		{
-			COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
-			if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM && GetGameType() != NEO_GAME_TYPE_JGR)
+			// End game early if there's already a player past the winning XP
+			CNEO_Player *pHighestPlayers[MAX_PLAYERS + 1] = {};
+			int iWinningTotal = 0;
+			int iWinningXP = 0;
+			GetDMHighestScorers(&pHighestPlayers, &iWinningTotal, &iWinningXP);
+			if (iWinningXP >= sv_neo_dm_win_xp.GetInt() && iWinningTotal == 1)
 			{
-				for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
-				{
-					if (GetGlobalTeam(team)->GetAliveMembers() == 0)
-					{
-						SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
-					}
-				}
-			}
-			if (GetGameType() == NEO_GAME_TYPE_DM && sv_neo_dm_win_xp.GetInt() > 0)
-			{
-				// End game early if there's already a player past the winning XP
-				CNEO_Player *pHighestPlayers[MAX_PLAYERS + 1] = {};
-				int iWinningTotal = 0;
-				int iWinningXP = 0;
-				GetDMHighestScorers(&pHighestPlayers, &iWinningTotal, &iWinningXP);
-				if (iWinningXP >= sv_neo_dm_win_xp.GetInt() && iWinningTotal == 1)
-				{
-					SetWinningDMPlayer(pHighestPlayers[0]);
-				}
+				SetWinningDMPlayer(pHighestPlayers[0]);
 			}
 		}
 	}
@@ -1540,9 +1571,9 @@ void CNEORules::SetWinningDMPlayer(CNEO_Player *pWinner)
 		return;
 	}
 
-	if (CNEOGameConfig::s_pGameRulesToConfig)
+	if (auto pEntGameCfg = GetActiveGameConfig())
 	{
-		CNEOGameConfig::s_pGameRulesToConfig->OutputRoundEnd();
+		pEntGameCfg->m_OnDMRoundEnd.FireOutput(pWinner, pEntGameCfg);
 	}
 
 	SetRoundStatus(NeoRoundStatus::PostRound);
@@ -1589,6 +1620,13 @@ void CNEORules::SetWinningDMPlayer(CNEO_Player *pWinner)
 	}
 
 	GoToIntermission();
+
+	IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+	if (event)
+	{
+		event->SetInt("winner", pWinner->GetUserID());
+		gameeventmanager->FireEvent(event);
+	}
 }
 #endif
 
@@ -1738,10 +1776,25 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 #ifdef CLIENT_DLL
 		engine->ClientCmd("r_cleardecals");
 		engine->ClientCmd("classmenu");
+
+		if (!engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		{
+			StartAutoClientRecording();
+		}
 #endif
 		m_flNeoRoundStartTime = gpGlobals->curtime;
 		m_flNeoNextRoundStartTime = 0;
 	}
+
+#ifdef CLIENT_DLL
+	if (Q_strcmp(type, "game_end") == 0)
+	{
+		if (sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
+		{
+			engine->StopDemoRecording();
+		}
+	}
+#endif
 }
 
 #ifdef GAME_DLL
@@ -1796,8 +1849,9 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		m_pGhost->NetworkStateChanged();
 		spawnedGhostNow = true;
 	}
+	m_hGhost = m_pGhost;
 	m_bGhostExists = true;
-
+	
 	Assert(UTIL_IsValidEntity(m_pGhost));
 
 	if (origin)
@@ -1891,7 +1945,10 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 		}
 		else if (auto* jgr = dynamic_cast<CNEO_Juggernaut*>(pEnt))
 		{
-			m_pJuggernautItem = jgr;
+			if (!jgr->IsMarkedForDeletion())
+			{
+				m_pJuggernautItem = jgr;
+			}
 		}
 
 		pEnt = gEntList.NextEnt(pEnt);
@@ -2021,7 +2078,7 @@ void CNEORules::SelectTheVIP()
 
 	if (m_pVIP)
 	{
-		m_iVIPPreviousClass = m_pVIP->m_iNextSpawnClassChoice.Get() >= 0 ? m_pVIP->m_iNextSpawnClassChoice.Get() : m_pVIP->m_iNeoClass.Get();
+		m_iVIPPreviousClass = m_pVIP->m_iNextSpawnClassChoice.Get() != NEO_CLASS_RANDOM ? m_pVIP->m_iNextSpawnClassChoice.Get() : m_pVIP->m_iNeoClass.Get();
 		m_pVIP->m_iNeoClass.Set(NEO_CLASS_VIP);
 		m_pVIP->m_iNextSpawnClassChoice.Set(NEO_CLASS_VIP);
 		m_pVIP->RequestSetClass(NEO_CLASS_VIP);
@@ -2034,14 +2091,32 @@ void CNEORules::SelectTheVIP()
 		Assert(false);
 }
 
-void CNEORules::JuggernautActivated(CNEO_Player* pPlayer)
+void CNEORules::JuggernautActivated(CNEO_Player *pPlayer)
 {
 	if (GetGameType() == NEO_GAME_TYPE_JGR)
 	{
 		m_pJuggernautPlayer = pPlayer;
 		m_iJuggernautPlayerIndex = pPlayer->entindex();
 		m_pJuggernautItem = nullptr;
-		m_vecJuggernautMarkerPos = vec3_origin;
+
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			CBasePlayer *pTargetPlayer = UTIL_PlayerByIndex(i);
+			if (pTargetPlayer && pTargetPlayer->IsDead() && pTargetPlayer->DeathCount() > 0 && pTargetPlayer->GetTeamNumber() == pPlayer->GetTeamNumber())
+			{
+				pTargetPlayer->ForceRespawn();
+			}
+		}
+	}
+}
+
+void CNEORules::JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut)
+{
+	if (GetGameType() == NEO_GAME_TYPE_JGR)
+	{
+		m_pJuggernautPlayer = nullptr;
+		m_iJuggernautPlayerIndex = 0;
+		m_pJuggernautItem = pJuggernaut;
 	}
 }
 
@@ -2150,11 +2225,22 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 				{
 					UTIL_ClientPrintAll(HUD_PRINTTALK, "All players are ready! Starting soon...");
 				}
+				else
+				{
+					char szReadyText[32];
+					V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
+					UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
+				}
 			}
 			else if (V_strcmp(pSzChat, "unready") == 0)
 			{
 				m_readyAccIDs.Remove(steamID.GetAccountID());
 				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as unready.");
+
+				char szReadyText[32];
+				const auto readyPlayers = FetchReadyPlayers();
+				V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
+				UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
 			}
 			else if (V_strcmp(pSzChat, "start") == 0)
 			{
@@ -2410,11 +2496,13 @@ void CNEORules::StartNextRound()
 				m_bIgnoreOverThreshold = false;
 			}
 
-			char szPrint[512];
-			V_sprintf_safe(szPrint, "- WAITING FOR %dv%d: %d JINRAI, %d NSF PLAYERS READY -\n",
-						   iThres, iThres,
-						   readyPlayers.array[TEAM_JINRAI], readyPlayers.array[TEAM_NSF]);
+			char szPrint[64];
+			int needed = Max(2 * iThres - (readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF]), 0);
+			V_sprintf_safe(szPrint, "- WAITING FOR %d %s TO READY UP -\n",
+				needed,
+				needed == 1 ? "PLAYER" : "PLAYERS");
 			UTIL_CenterPrintAll(szPrint);
+
 			if (bPrintHelpInfo)
 			{
 				V_sprintf_safe(szPrint, "Ready up lobby is on - Type \".help\" for list of commands.");
@@ -2828,9 +2916,11 @@ void CNEORules::CleanUpMap()
 
 	ResetGhostCapPoints();
 
-	if (CNEOGameConfig::s_pGameRulesToConfig && sv_neo_comp.GetBool())
+	// OnCompetitive needs to fire every time the map resets, along with all the entities, props, etc.
+	auto pEntGameCfg = GetActiveGameConfig();
+	if (pEntGameCfg && sv_neo_comp.GetBool())
 	{
-		CNEOGameConfig::s_pGameRulesToConfig->OutputCompetitive();
+		pEntGameCfg->m_OnCompetitive.FireOutput(nullptr, pEntGameCfg);
 	}
 }
 
@@ -3302,9 +3392,9 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		return;
 	}
 
-	if (CNEOGameConfig::s_pGameRulesToConfig)
+	if (auto pEntGameCfg = GetActiveGameConfig())
 	{
-		CNEOGameConfig::s_pGameRulesToConfig->OutputRoundEnd();
+		pEntGameCfg->m_OnRoundEnd.Set(team, nullptr, pEntGameCfg);
 	}
 
 	if (bForceMapReset)
@@ -3544,6 +3634,13 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		{
 			GoToIntermission();
 		}
+
+		IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+		if (event)
+		{
+			event->SetInt("winner", team);
+			gameeventmanager->FireEvent(event);
+		}
 	}
 }
 #endif
@@ -3568,8 +3665,8 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 		}
 
 		const int assistDmg = victim->GetAttackersScores(assistIdx);
-		static const int MIN_DMG_QUALIFY_ASSIST = 50;
-		if (assistDmg >= MIN_DMG_QUALIFY_ASSIST)
+		static const float MIN_DMG_QUALIFY_ASSIST = 0.5f;
+		if ((float)assistDmg / victim->GetMaxHealth() >= MIN_DMG_QUALIFY_ASSIST)
 		{
 			return static_cast<CNEO_Player*>(UTIL_PlayerByIndex(assistIdx));
 		}
@@ -4117,9 +4214,9 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 		{
 			UTIL_CenterPrintAll("- GO! GO! GO! -\n");
 
-			if (CNEOGameConfig::s_pGameRulesToConfig)
+			if (auto pEntGameCfg = GetActiveGameConfig())
 			{
-				CNEOGameConfig::s_pGameRulesToConfig->OutputRoundStart();
+				pEntGameCfg->m_OnRoundStart.FireOutput(nullptr, pEntGameCfg);
 			}
 		}
 #endif
@@ -4177,6 +4274,11 @@ int CNEORules::GetForcedWeapon(void)
 	return m_iForcedWeapon;
 }
 
+bool CNEORules::IsCyberspace()
+{
+	return m_bCyberspaceLevel;
+}
+
 inline const char* CNEORules::GetGameTypeName(void)
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
@@ -4206,6 +4308,40 @@ float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
 	}
 }
 
+const Vector& CNEORules::GetGhostPos() const
+{
+#ifdef GAME_DLL
+	return m_pGhost ? m_pGhost->GetAbsOrigin() : m_vecGhostMarkerPos;
+#else
+	if (auto pGhost = static_cast<CWeaponGhost*>(m_hGhost.Get());
+		pGhost)
+	{
+		return pGhost->GetAbsOrigin();
+	}
+	return m_vecGhostMarkerPos;
+#endif // GAME_DLL
+}
+
+Vector CNEORules::GetGhostMarkerPos() const
+{
+	if (auto pGhosterPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(GetGhosterPlayer()));
+		pGhosterPlayer
+#ifdef CLIENT_DLL
+		&& pGhosterPlayer->IsVisible()
+#endif // CLIENT_DLL
+		)
+	{
+		if (auto pWeapon = static_cast<CNEOBaseCombatWeapon*>(pGhosterPlayer->GetActiveWeapon());
+			pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_GHOST)
+		{
+			constexpr const int GHOST_MARKER_STANDING_PLAYER_OFFSET = 32;
+			constexpr const int GHOST_MARKER_CROUCHING_PLAYER_OFFSET = 24;
+			return pGhosterPlayer->GetAbsOrigin() + Vector(0, 0, pGhosterPlayer->GetFlags() & FL_DUCKING ? GHOST_MARKER_CROUCHING_PLAYER_OFFSET : GHOST_MARKER_STANDING_PLAYER_OFFSET);
+		}
+	}
+	return GetGhostPos();
+}
+
 const char *CNEORules::GetTeamClantag(const int iTeamNum) const
 {
 	switch (iTeamNum)
@@ -4220,5 +4356,243 @@ const char *CNEORules::GetTeamClantag(const int iTeamNum) const
 void CNEORules::OnNavMeshLoad(void)
 {
 	TheNavMesh->SetPlayerSpawnName("info_player_defender");
+}
+
+bool CNEORules::IsOfficialMap(void)
+{
+	static const char *s_OfficialMaps[] =
+	{
+		"background_alley",
+		"background_door",
+		"ntre_ballistrade_ctg",
+		"ntre_bullet_tdm",
+		"ntre_class_tut",
+		"ntre_dawn_ctg",
+		"ntre_decom_ctg",
+		"ntre_disengage_ctg",
+		"ntre_dusk_ctg",
+		"ntre_engage_ctg",
+		"ntre_ghost_ctg",
+		"ntre_isolation_ctg",
+		"ntre_marketa_ctg",
+		"ntre_oilstain_ctg",
+		"ntre_pissalley_ctg",
+		"ntre_redlight_ctg",
+		"ntre_ridgeline_ctg",
+		"ntre_rise_ctg",
+		"ntre_rogue_ctg",
+		"ntre_saitama_ctg",
+		"ntre_sentinel_ctg",
+		"ntre_shooting_tut",
+		"ntre_shrine_ctg",
+		"ntre_skyline_ctg",
+		"ntre_subsurface_ctg",
+		"ntre_tarmac_ctg",
+		"ntre_terminal_jgr",
+		"ntre_threadplate_ctg",
+		"ntre_transit_ctg",
+		"ntre_vtol_ctg",
+	};
+
+	char szCurrentMap[MAX_MAP_NAME];
+	Q_strncpy( szCurrentMap, STRING( gpGlobals->mapname ), sizeof( szCurrentMap ) );
+
+	for ( int i = 0; i < ARRAYSIZE( s_OfficialMaps ); ++i )
+	{
+		if ( !Q_stricmp( s_OfficialMaps[i], szCurrentMap ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void CNEORules::InitDefaultAIRelationships( void )
+{
+		int i, j;
+
+		//  Allocate memory for default relationships
+		CBaseCombatCharacter::AllocateDefaultRelationships();
+
+		// --------------------------------------------------------------
+		// First initialize table so we can report missing relationships
+		// --------------------------------------------------------------
+		for (i=0;i<NUM_AI_CLASSES;i++)
+		{
+			for (j=0;j<NUM_AI_CLASSES;j++)
+			{
+				// By default all relationships are neutral of priority zero
+				CBaseCombatCharacter::SetDefaultRelationship( (Class_T)i, (Class_T)j, D_NU, 0 );
+			}
+		}
+
+		// ------------------------------------------------------------
+		//	> CLASS_BULLSEYE
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_PLAYER,			D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_HEADCRAB,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_MILITARY,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_ZOMBIE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_PLAYER_ALLY,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_PLAYER_ALLY_VITAL,D_NU, 0);
+		
+		// ------------------------------------------------------------
+		//	> CLASS_FLARE
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_PLAYER,			D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_HEADCRAB,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_MILITARY,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_ZOMBIE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_PLAYER_ALLY,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_PLAYER_ALLY_VITAL,D_NU, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_HEADCRAB
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_PLAYER,			D_HT, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_HEADCRAB,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_MILITARY,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_ZOMBIE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_PLAYER_ALLY,		D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_MILITARY
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_PLAYER,			D_HT, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_HEADCRAB,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_MILITARY,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_ZOMBIE,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_PLAYER_ALLY,		D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_MISSILE
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_PLAYER,			D_HT, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_HEADCRAB,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_MILITARY,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_ZOMBIE,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_PLAYER_ALLY,		D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_NONE
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_PLAYER,			D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_BULLSEYE,			D_NU, 0);	
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_HEADCRAB,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_MILITARY,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_ZOMBIE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_PLAYER_ALLY,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_PLAYER_ALLY_VITAL,D_NU, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_PLAYER
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_PLAYER,			D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_BULLSEYE,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_HEADCRAB,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_MILITARY,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_ZOMBIE,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_PLAYER_ALLY,		D_LI, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_PLAYER_ALLY_VITAL,D_LI, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_PLAYER_ALLY
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_PLAYER,			D_LI, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_HEADCRAB,			D_FR, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_MILITARY,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_ZOMBIE,			D_FR, 1);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_PLAYER_ALLY,		D_LI, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_PLAYER_ALLY_VITAL,D_LI, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_PLAYER_ALLY_VITAL
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_PLAYER,			D_LI, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_HEADCRAB,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_MILITARY,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_ZOMBIE,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_PLAYER_ALLY,		D_LI, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_PLAYER_ALLY_VITAL,D_LI, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_ZOMBIE
+		// ------------------------------------------------------------	
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_NONE,				D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_PLAYER,			D_HT, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_FLARE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_HEADCRAB,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_MILITARY,			D_FR, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_MISSILE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_ZOMBIE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_PLAYER_ALLY,		D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
+
+		// ------------------------------------------------------------
+		//	> CLASS_EARTH_FAUNA
+		//
+		// Hates pretty much everything equally except other earth fauna.
+		// This will make the critter choose the nearest thing as its enemy.
+		// ------------------------------------------------------------	
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_NONE,				D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_BULLSEYE,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_FLARE,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_HEADCRAB,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_MILITARY,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_MISSILE,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_ZOMBIE,			D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_EARTH_FAUNA,		D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY,		D_HT, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
 }
 #endif

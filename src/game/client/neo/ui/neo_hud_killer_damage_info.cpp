@@ -135,13 +135,19 @@ void CNEOHud_KillerDamageInfo::resetHUDState()
 		auto *neoAttacker = dynamic_cast<C_NEO_Player *>(UTIL_PlayerByIndex(pIdx));
 		if (neoAttacker)
 		{
-			for (int i = 0; i < MAX_PLAYERS; ++i)
+			for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
 			{
 				neoAttacker->m_rfAttackersScores.GetForModify(i) = 0;
 				neoAttacker->m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
 				neoAttacker->m_rfAttackersHits.GetForModify(i) = 0;
 			}
 		}
+	}
+	
+	C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (localPlayer)
+	{
+		V_memset(localPlayer->m_rfNeoPlayerIdxsKilledByLocal, false, sizeof(localPlayer->m_rfNeoPlayerIdxsKilledByLocal));
 	}
 	ResetDisplayInfos();
 }

@@ -819,10 +819,15 @@
 	{
 		"fieldName"		"NHudCompass"
 		"visible"		"1"
-		"y_bottom_pos"		"3"
-		"needle_visible"	"0"
-		"needle_colored"	"0"
+		"xpos"			"c-100"
+		"ypos"			"469"
+		"wide"			"200"
+		"tall"			"8"
+		"fov"			"90"
+		"separators"	"1"
 		"objective_visible"	"1"
+		"text_fade_exp"	"1"
+		"text_color"	"255 255 255 150"
 		"box_color"		"200 200 200 40"
 	}
 	NHudWeapon
@@ -876,7 +881,7 @@
 		"healthtext_ypos"	"2"
 		"healthbar_xpos"	"86"
 		"healthbar_ypos"	"4"
-		"healthbar_w"		"93"
+		"healthbar_w"		"90"
 		"healthbar_h"		"6"
 		"healthnum_xpos"	"198"
 		"healthnum_ypos"	"2"
@@ -886,7 +891,7 @@
 		"camotext_ypos"		"12"
 		"camobar_xpos"		"86"
 		"camobar_ypos"		"14"
-		"camobar_w"		"93"
+		"camobar_w"		"90"
 		"camobar_h"		"6"
 		"camonum_xpos"		"198"
 		"camonum_ypos"		"12"
@@ -896,7 +901,7 @@
 		"sprinttext_ypos"	"22"
 		"sprintbar_xpos"	"86"
 		"sprintbar_ypos"	"24"
-		"sprintbar_w"		"93"
+		"sprintbar_w"		"90"
 		"sprintbar_h"		"6"
 		"sprintnum_xpos"	"198"
 		"sprintnum_ypos"	"22"
@@ -958,9 +963,9 @@
 		"text_y_offset" "420"
 	}
 
-	neo_iff
+	NHudFriendlyMarker
 	{
-		"fieldName"		"neo_iff"
+		"fieldName"		"NHudFriendlyMarker"
 		"xpos"	"0"
 		"ypos"	"0"
 		"wide"	"640"
@@ -1001,5 +1006,16 @@
 		"wide"	"640"
 		"tall"	"480"
 		"box_color"		"200 200 200 40"
+	}
+
+	neo_context_hint
+	{
+		"fieldName" 	"neo_context_hint"
+		"font"      	"NeoUINormal"
+		"padding_x" 	"4"
+		"padding_y" 	"6"
+		"box_y_factor" 	"0.75"
+		"box_color" 	"20 20 20 0"
+		"text_color" 	"255 255 255 255"
 	}
 }

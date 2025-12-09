@@ -275,21 +275,9 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 #endif
 
 #ifndef CLIENT_DLL
-	QAngle angThrow = pPlayer->LocalEyeAngles();
+	Vector vForward;
 
-	Vector vForward, vRight, vUp;
-
-	if (angThrow.x < 90)
-		angThrow.x = -10 + angThrow.x * ((90 + 10) / 90.0);
-	else
-	{
-		angThrow.x = 360.0f - angThrow.x;
-		angThrow.x = -10 + angThrow.x * -((90 - 10) / 90.0);
-	}
-
-	float flVel = 0;
-
-	AngleVectors(angThrow, &vForward, &vRight, &vUp);
+	pPlayer->EyeVectors(&vForward, nullptr, nullptr);
 
 	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
 

@@ -199,6 +199,10 @@ BEGIN_RECV_TABLE_NOBASE( CPlayerLocalData, DT_Local )
 	RecvPropInt(RECVINFO(m_skybox3d.scale)),
 	RecvPropVector(RECVINFO(m_skybox3d.origin)),
 	RecvPropInt(RECVINFO(m_skybox3d.area)),
+#ifdef NEO
+	RecvPropInt(RECVINFO(m_skybox3d.reflectMode)),
+	RecvPropFloat(RECVINFO(m_skybox3d.waterLevel)),
+#endif
 
 	// 3d skybox fog data
 	RecvPropInt( RECVINFO( m_skybox3d.fog.enable ) ),
@@ -645,12 +649,6 @@ void C_BasePlayer::SetObserverMode ( int iNewMode )
 		{
 			// On a change of viewing mode or target, we may want to reset both head and torso to point at the new target.
 			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
-#ifdef NEO
-			if (iNewMode != OBS_MODE_DEATHCAM)
-			{
-				vieweffects->ClearAllFades();
-			}
-#endif
 		}
 	}
 }

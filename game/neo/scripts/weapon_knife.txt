@@ -24,7 +24,7 @@ WeaponData
 
 	"Damage"			"15"
         "Penetration"			"38.0"
-	"CycleTime"			"0.534"
+	"CycleTime"			"0.545454"
 
 	ViewModelData
 	{

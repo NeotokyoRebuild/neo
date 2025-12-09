@@ -33,6 +33,7 @@ ConVar neo_bot_shotgunner_range("neo_bot_shotgunner_range", "320", FCVAR_NONE);
 ConVar neo_bot_recon_ratio("neo_bot_recon_ratio", "0.2", FCVAR_NONE);
 ConVar neo_bot_support_ratio("neo_bot_support_ratio", "0.2", FCVAR_NONE);
 
+extern ConVar bot_class;
 extern ConVar neo_bot_fire_weapon_min_time;
 extern ConVar neo_bot_difficulty;
 extern ConVar neo_bot_farthest_visible_theater_sample_count;
@@ -175,7 +176,6 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 				pBot->SetAttribute(CNEOBot::QUOTA_MANANGED);
 			}
 
-			pBot->RequestClassOnProfile();
 			engine->SetFakeClientConVarValue(pBot->edict(), "name", pBot->GetPlayerName() );
 			pBot->RequestSetSkin(RandomInt(0, 2));
 			pBot->HandleCommand_JoinTeam(iTeam);
@@ -585,7 +585,7 @@ CNEOBot::~CNEOBot()
 void CNEOBot::Spawn()
 {
 	// CNEOBot do m_iNeoClass a bit earlier
-	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
+	if ((m_iNextSpawnClassChoice != NEO_CLASS_RANDOM) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
 		m_iNeoClass = m_iNextSpawnClassChoice;
 	}
@@ -1803,9 +1803,40 @@ bool CNEOBot::IsLineOfFireClear(const Vector& where, const LineOfFireFlags flags
 
 
 //-----------------------------------------------------------------------------------------------------
+// Return whether there is a friendly player blocking the line of fire
+bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const
+{
+	if (NEORules()->IsTeamplay())
+	{
+		trace_t playerTrace;
+		CTraceFilterSimple playerFilter(this, COLLISION_GROUP_NONE);
+		const Vector to = who->WorldSpaceCenter();
+		UTIL_TraceLine(from, to, MASK_SHOT_HULL, &playerFilter, &playerTrace);
+
+		if (playerTrace.DidHit())
+		{
+			if (playerTrace.m_pEnt && playerTrace.m_pEnt->IsPlayer())
+			{
+				// If it's a friendly player, line of fire is NOT clear
+				if (playerTrace.m_pEnt->GetTeamNumber() == GetTeamNumber())
+				{
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+//-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line between the given point and entity
 bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const
 {
+	if (!IsLineOfFireClearOfFriendlies(from, who))
+	{
+		return false; // Friendly player blocking line of fire
+	}
+
 	trace_t trace;
 	NextBotTraceFilterIgnoreActors botFilter(NULL, COLLISION_GROUP_NONE);
 	CTraceFilterIgnoreFriendlyCombatItems ignoreFriendlyCombatFilter(this, COLLISION_GROUP_NONE, GetTeamNumber());
@@ -2439,8 +2470,16 @@ bool CNEOBot::IsFiring() const
 	return m_nButtons & IN_ATTACK || m_afButtonPressed & IN_ATTACK || m_afButtonLast & IN_ATTACK;
 }
 
-void CNEOBot::RequestClassOnProfile()
+NeoClass CNEOBot::ChooseRandomClass() const
 {
+	{
+		const auto forcedClass = bot_class.GetInt();
+		if (forcedClass != NEO_CLASS_RANDOM)
+		{
+			return static_cast<NeoClass>(forcedClass);
+		}
+	}
+
 	bool bValidClasses[NEO_CLASS__ENUM_COUNT] = {};
 	int iClassCounts = 0;
 	for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
@@ -2473,21 +2512,21 @@ void CNEOBot::RequestClassOnProfile()
 			{
 				if ((bHasPicked = bValidClasses[NEO_CLASS_RECON]))
 				{
-					RequestSetClass(NEO_CLASS_RECON);
+					return NEO_CLASS_RECON;
 				}
 			}
 			else if (flDice >= (1.0f - neo_bot_support_ratio.GetFloat()))
 			{
 				if ((bHasPicked = bValidClasses[NEO_CLASS_SUPPORT]))
 				{
-					RequestSetClass(NEO_CLASS_SUPPORT);
+					return NEO_CLASS_SUPPORT;
 				}
 			}
 			else
 			{
 				if ((bHasPicked = bValidClasses[NEO_CLASS_ASSAULT]))
 				{
-					RequestSetClass(NEO_CLASS_ASSAULT);
+					return NEO_CLASS_ASSAULT;
 				}
 			}
 		}
@@ -2499,11 +2538,13 @@ void CNEOBot::RequestClassOnProfile()
 		{
 			if (bValidClasses[i])
 			{
-				RequestSetClass(i);
-				break;
+				return static_cast<NeoClass>(i);
 			}
 		}
 	}
+
+	AssertMsg(false, "fell through the logic");
+	return NEO_CLASS_RECON;
 }
 
 CNEOBotIntention::CNEOBotIntention(CNEOBot *bot)

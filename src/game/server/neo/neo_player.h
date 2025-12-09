@@ -11,6 +11,7 @@ class INEOPlayerAnimState;
 #include "simtimer.h"
 #include "soundenvelope.h"
 #include "utldict.h"
+#include "utlmap.h"
 #include "hl2mp_player.h"
 #include "in_buttons.h"
 
@@ -27,6 +28,14 @@ enum EMenuSelectType
 {
 	MENU_SELECT_TYPE_NONE = 0,
 	MENU_SELECT_TYPE_PAUSE,
+};
+
+// For rate-limiting thermoptic/etc visibility calculations
+struct CNEO_Player_FogCacheEntry
+{
+    bool m_bIsHidden{false};
+    float m_flUpdateTime{-1.0f};   // ensure update the first time
+    float m_flObscuredRatio{1.0f}; // more handy for debugging
 };
 
 class CNEO_Player : public CHL2MP_Player
@@ -62,6 +71,7 @@ public:
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
 	virtual bool BecomeRagdollOnClient(const Vector &force) OVERRIDE;
+	virtual bool CanBecomeServerRagdoll(void) override { return GetClass() != NEO_CLASS_JUGGERNAUT; }
 	virtual void Event_Killed(const CTakeDamageInfo &info) OVERRIDE;
 	virtual float GetReceivedDamageScale(CBaseEntity* pAttacker) OVERRIDE;
 	virtual bool WantsLagCompensationOnEntity(const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits) const OVERRIDE;
@@ -85,6 +95,7 @@ public:
 	virtual void RemoveSuit(void) OVERRIDE;
 	virtual void GiveDefaultItems(void) OVERRIDE;
 	virtual int	OnTakeDamage_Alive(const CTakeDamageInfo& info) OVERRIDE;
+	virtual CBaseEntity* GiveNamedItem(const char* szName, int iSubType = 0) override;
 
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
@@ -264,16 +275,17 @@ public:
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
-	CNetworkHandle(CBaseEntity, m_hDroppedJuggernautItem);
+	CNetworkHandle(CBaseEntity, m_hServerRagdoll);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
 	CNetworkVar(float, m_flJumpLastTime);
 	CNetworkVar(float, m_flNextPingTime);
 
-	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS);
-	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS);
-	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS);
+	// Used as 1-indexed, need MAX_PLAYERS_ARRAY_SAFE
+	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS_ARRAY_SAFE);
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
@@ -313,6 +325,9 @@ private:
 	// blood decals are client-side, so track injury event count for bots
 	int m_iBotDetectableBleedingInjuryEvents = 0;
 	bool m_bSpectatorTakeoverPlayerPending{false};
+
+	// Cache for GetFogObscuredRatio for each player
+	mutable CUtlMap<int, CNEO_Player_FogCacheEntry> m_mapPlayerFogCache;
 
 private:
 	CNEO_Player(const CNEO_Player&);

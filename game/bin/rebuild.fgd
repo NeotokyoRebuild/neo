@@ -1,0 +1,378 @@
+@include "base.fgd"
+@include "halflife2.fgd"
+
+@PointClass base(Targetname, PlayerClass, Angles) studio("models/editor/attacker_start.mdl") = info_player_attacker :
+	"This entity marks the start point for attackers."
+[
+	StartDisabled(choices) : "Start Disabled" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+
+	input Enable(void) : "Turn spawnpoint on." 
+	input Disable(void) : "Turn spawnpoint off."
+	
+	output OnPlayerSpawn(void) : "Fires when a player spawns from this spawn point."
+]
+
+@PointClass base(Targetname, PlayerClass, Angles) studio("models/editor/defender_start.mdl") = info_player_defender :
+	"This entity marks the start point for defenders."
+[
+	StartDisabled(choices) : "Start Disabled" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	
+	input Enable(void) : "Turn spawnpoint on." 
+	input Disable(void) : "Turn spawnpoint off."
+	
+	output OnPlayerSpawn(void) : "Fires when a player spawns from this spawn point."
+]
+
+@PointClass base(Targetname) iconsprite("vgui/hud/star.vmt") = neo_bloom_controller : "An entity that lets you tweak bloom for your map."
+[
+	bloomamount(float) : "Bloom amount setting" : 0 : "Bloom amounts from 0.4 - 0.6 look best."
+	
+	input SetBloomScale(float) : "Set bloom amount"
+]
+
+@PointClass base(Targetname) iconsprite("vgui/hud/kill_kill.vmt") = neo_game_config : "Game Config Entity"
+[
+	GameType(choices) : "Game Type" : 0 : "Map gamemode" =
+	[
+		0 : "TDM"
+		1 : "CTG"
+		2 : "VIP"
+		3 : "DM"
+		6 : "JGR"
+		4 : "Empty"
+		5 : "Tutorial"
+	]	
+
+	ForcedTeam(choices) : "Forced Team" : -1 : "Skip team menu and spawn as this team" =
+	[
+		-1 : "Disabled"
+		1 : "Spectator"
+		2 : "Jinrai"
+		3 : "NSF"
+	]	
+	
+	ForcedClass(choices) : "Forced Class" : -1 : "Skip class menu and spawn as this class" =
+	[
+		-1 : "Disabled"
+		0 : "Recon"
+		1 : "Assault"
+		2 : "Support"
+		3 : "VIP"
+	]	
+	
+	ForcedSkin(integer) : "Forced Skin" : -1 : "-1 = Do not force skin"
+	
+	ForcedWeapon(integer) : "Forced Weapon" : -1 : "-1 = Do not force weapon"
+	
+	Cyberspace(choices) : "Cyberspace Map?" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	
+	spawnflags(flags) =
+	[
+		         1 : "Hide Ammo" : 0
+		         2 : "Hide Compass" : 0
+		         4 : "Hide Crosshair" : 0
+		         8 : "Hide Damage Indicator" : 0
+		        16 : "Hide Friendly Markers" : 0
+		        32 : "Hide Winscreen" : 0
+		        64 : "Hide Enemy beacons in ghost" : 0
+		       128 : "Hide Ghost caps" : 0
+		       256 : "Hide Ghost marker" : 0
+		       512 : "Hide Ghost uplink" : 0
+		      1024 : "Hide Health" : 0
+		      2048 : "Hide Hints" : 0
+		      4096 : "Hide Round info" : 0
+		      8192 : "Hide WPM" : 0
+		     16384 : "Hide Scoreboard" : 0
+	]
+
+	input FireTeamWin(integer) : "Trigger round win (2 = Jinrai, 3 = NSF)"
+	input FireDMPlayerWin(void) : "Trigger round win for the activator (Deathmatch only)"
+	input FireRoundTie(void) : "Trigger round tie"
+	
+	output OnRoundEnd(integer) : "Fires when a round ends"
+	output OnDMRoundEnd(void) : "Fires when a DM round ends"
+	output OnRoundStart(void) : "Fires when a round starts"
+	output OnCompetitive(void) : "Fires when competitive mode is enabled"
+]
+
+@PointClass base(Angles) sphere() sphere(Radius) iconsprite("vgui/hud/ctg/g_beacon_arrow_down.vmt") = neo_ghost_retrieval_point : "Ghost Retrieval Point"
+[
+	team(choices) : "Owning Team (int)" : 0 : "Team that can capture at this point" =
+	[
+		0 : "Attacker"
+		1 : "Defender"
+	]
+	
+	Radius(integer) : "Radius in inches (48 - 256)" : 128 : "Radius of the Ghost Retrieval Point in inches."	
+
+	output OnCap(void) : "Fires when capped here"
+]
+
+@PointClass base(Angles) studio("models/gameplay/w_ghost.mdl") = neo_ghostspawnpoint :
+	"This entity marks the start point ghosts for CTG gametypes."
+[
+
+]
+
+@FilterClass base(BaseFilter) iconsprite("editor/filter_class.vmt") = filter_activator_neoclass : "A filter that filters by the class (Recon, Assault, Support, etc) of the player who activated it."
+[
+    filterneoclass(choices) : "Player Class" : 0 : "Player class to filter against" =
+    [
+		0 : "Recon"
+		1 : "Assault"
+		2 : "Support"
+		3 : "VIP"
+		4 : "Juggernaut"
+    ]
+]
+
+@FilterClass base(BaseFilter) iconsprite("editor/filter_team.vmt") = filter_activator_team :
+	"A filter that filters by the team of the activator."
+[
+	filterteam(choices) : "Filter Team Number" : 2 : 
+		"The team number to filter by.  If the filter mode is Allow, only entities whose "+
+		"team number matches the given team will pass the filter. If the filter mode is Disallow, "+
+		"all entities EXCEPT those whose team number matches the given team will pass the filter." =
+	[
+		2 : "Jinrai"
+		3 : "NSF"
+	]
+]
+
+@PointClass base(BaseNPC) studio() = neo_npc_dummy : "Dummy NPC for tutorial" [
+    Health(integer) : "Health" : 100 : "Dummy health (greater than 0)"
+    Model(studio) : "Model" : "models/tutorial/dummy_small.mdl" : "Dummy model"
+    Weapon(studio) : "Weapon Model" : "" : "Optional model for dummy to hold"
+    DistortEffect(choices) : "Enable Distortion Effect" : 1 : "Toggles distortion effect on the weapon model" =
+    [
+        0 : "Disabled"
+        1 : "Enabled"
+    ]
+]
+
+@PointClass base(Targetname) iconsprite("vgui/hud/kill_shortbus.vmt") = neo_message : "Displays localised text on screen"
+[
+	sound(sound) : "Sound Effect" : "" : "When the message is shown, this sound effect will be played."
+	volume(float) : "Volume 0-10" : "10" : "Volume of the sound effect."
+	timermode(choices) : "Timer Mode" : "0" : "Enable timer mode, display a timer when message is shown." =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+
+	input ShowMessage(string) : "Show Message"
+	input HideMessage(void) : "Hide Message"
+	input ShowSubMessage(string) : "Show Sub Message"
+	input HideSubMessage(void) : "Hide Sub Message"
+	input StopTimer(void) : "Stop Timer"
+]
+
+@PointClass base(Targetname) studio("models/weapons/w_frag_thrown.mdl") = neo_grenade_frag : "Deployed frag"
+[
+	input SetTimer(float) : "Deploy"
+]
+
+@PointClass base(Targetname) studio("models/weapons/w_smokenade_thrown.mdl") = neo_grenade_smoke : "Deployed smoke"
+[
+	input SetTimer(float) : "Deploy"
+]
+
+@PointClass base(Targetname) studio("models/weapons/w_detpack.mdl") = neo_deployed_detpack : "Deployed detpack"
+[
+	input RemoteDetonate(void) : "Explode"
+]
+
+@PointClass base(Targetname, Parentname, Angles, EnableDisable) studioprop("models/editor/camera.mdl") frustum(fov,0,maxviewdistance,helpercolour,-1) sphere(deadzone) = neo_npc_targetsystem : 
+	"Targeting system that requires direct LOS"
+[
+	fov(float)					: "FOV" : "90" : "Field of view"
+	topclip(float)				: "Top view clip" : "60" : "How far to clip the view frustum from the top"
+	bottomclip(float)			: "Bottom view clip" : "-100" : "How far to clip the view frustum from the bottom"	
+	maxviewdistance(float)		: "View Distance" : "800" : "How far I can see"
+	deadzone(float)				: "Middle Detection distance" : "100" : "How far the player must be from the entity for it to fire OnMiddle"
+	middlebounds(float)			: "Middle Boundry Width" : "20" : "Half of the middle boundry width (this zone is square)"
+	
+	helpercolour(color255)	readonly	: "Helper colour (Editor only)" : "0 0 0" : "Editor only"
+	filtername(filterclass)		: "Filter to use" : "" : "Optional - Player must match the filter to be detected."
+  
+	damagesource(target_name_or_class)	: "Damage source" : "" : "Where you want the damage to come from. Leave empty to disable attacking"
+	damage(float)				: "Damage amount" : "10" : "Damage delt per hit"
+	firerate(float)				: "Rate of fire" : "10" : "Shots fired per second (max 20 probably)"
+
+	output OnSpotted(void)
+	output OnRight(void)
+	output OnLeft(void)
+	output OnMiddle(void)
+	output OnMiddleIgnore(void)
+	output OnExit(void)
+	output OnExitMiddle(void)
+]
+
+@PointClass base(Targetname, Parentname, Angles) = env_muzzleflash : "Muzzle Flash" 
+[
+	parentattachment(string) : "Parent Attachment" : "" : "The name of an attachment on the parent to hierarchically attach to."
+	scale(float) : "Scale" : "1" : "Size of the muzzle flash."
+	loop(choices) : "Loop" : "0" : "Loop this effect?" =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	
+	input Fire(void) : "Fires the effect once."
+	input Stop(void) : "Stops the effect when looping."
+]
+
+@PointClass base(Targetname, Parentname, Angles) worldtext() = point_worldtext : 
+    "An entity that displays a text message oriented in the world, at its origin."
+[
+    message(string) : "Entity Message" : "" : "Text Message. Newline characters are accepted"
+    textsize(float) : "Text Size" : 10 : "Text Size."
+    textspacingX(float) : "Text Spacing X" : 0 : "Spacing between each letter along X axis"
+    textspacingY(float) : "Text Spacing Y" : 0 : "Spacing between each letter along Y axis"
+    color(color255) : "Color" : "255 255 255 255"
+    font(choices) : "Font" : "0" =
+    [
+        0: "TF2 Build"
+        1: "TF2 Build (no outline/shadow)"
+        2: "TF2"
+        3: "TF2 (no outline/shadow)"
+        4: "Liberation Sans"
+        5: "Liberation Sans (no outline/shadow)"
+        6: "TF2 Professor"
+        7: "TF2 Professor (no outline/shadow)"
+        8: "Roboto Mono"
+        9: "Roboto Mono (no outline/shadow)"
+        10: "Roboto Mono (shadow only)"
+        11: "Roboto Mono (green glow, soft edges)"
+        12: "TF2 Build (soft edges)"
+    ]
+    orientation(choices) : "Orientation" : "0" =
+    [
+        0: "Stationary"
+        1: "Face player"
+        2: "Ignore pitch"
+    ]
+    rainbow(choices) : "Rainbow" : 0 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
+
+    input SetText(string) : "Set the message text."
+    input SetTextSize(float) : "Set the message text size."
+    input SetTextSpacingX(float) : "Set the spacing between letters along the X axis."
+    input SetTextSpacingY(float) : "Set the spacing between letters along the Y axis."
+    input SetColor(string) : "Set the message color."
+    input SetFont(integer) : "Set the font."
+    input SetOrientation(integer) : "Set the orientation."
+    input SetRainbow(integer) : "Enable rainbow text."
+]
+
+@PointClass base(Angles) = env_detail_controller : "An entity that lets you control the fade distances for detail props."
+[
+	fademindist(float) : "Start Fade Dist/Pixels" : 400 : "Distance at which the prop starts to fade."
+	fademaxdist(float) : "End Fade Dist/Pixels" : 1200 : "Maximum distance at which the prop is visible."
+]
+
+@SolidClass base(Targetname, Parentname, Global, Inputfilter, EnableDisable) = trigger_brush
+[
+	DontMessageParent(integer) : "Don't alert parent" : 0 : "When 0 forwards OnStartTouch, OnEndTouch outputs or Use input to parented entity"
+
+	input Use(void) : "Fires the OnUse output."
+
+	output OnUse(void) : "Fired when the Use input is given. "
+	output OnStartTouch(void) : "Fired when an entity starts touching this trigger. The touching entity must pass this trigger's InputFilter to cause this output to fire."
+	output OnEndTouch(void) : "Fired when an entity stops touching this trigger. Only entities that passed this trigger's InputFilter will cause this output to fire."
+]
+
+@PointClass base(Targetname) iconsprite("vgui/hud/non_star.vmt") = neo_type_converter : "An entity that lets you convert between parameter types."
+[
+	outputtype(choices) : "Type to convert to" : 0 =
+	[
+		0 : "Float"
+		1 : "Integer"
+		2 : "String"
+	]
+	
+	input SendFloat(float) : "Float input"
+	input SendInteger(integer) : "Integer input"
+	input SendString(string) : "String input"
+	
+	output OutFloat(float) : "Float output"
+	output OutInteger(integer) : "Integer output"
+	output OutString(string) : "String output"
+]
+
+@SolidClass base(Trigger) = neo_trigger_weapon: "Trigger for dropped weapons"
+[
+]
+
+@SolidClass base(Trigger) = neo_ghost_boundary: "Teleports the ghost back to where it was last held"
+[
+]
+
+@PointClass base(Targetname, Angles) studio("models/player/jgr.mdl") = neo_juggernaut : "Juggernaut"
+[
+	output OnPlayerActivate(void) : "Juggernaut activated"
+]
+
+@PointClass base(Angles) studio("models/player/jgr.mdl") = neo_juggernautspawnpoint : "Juggernaut spawn point"
+[
+]
+
+@PointClass base(Targetname) size(-8 -8 -8, 8 8 8) = point_broadcastclientcommand : 
+	"An entity that issues commands to each valid client's console, as if it was typed in by that player locally."
+[
+	// Inputs
+	input Command(string) : "Command to execute."
+]
+
+@PointClass base(Angles) size(-16 -16 -16, 16 16 16) color(0 0 255) line(255 255 255, targetname, waterlevel) = sky_camera : 
+	"An entity used to control the 3D Skybox. Its origin is used to determine the 3D Skybox's position relative to the map. Place this entity, in the 3D Skybox, at the point where the origin of the map should be."
+[
+	scale(integer) : "3D Skybox scale" : 16 : "Scale of the skybox."
+	fogenable(choices) : "Fog Enable" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	fogblend(choices) : "Fog Blend" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	use_angles(choices) : "Use Angles for Fog Dir" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	fogcolor(color255) : "Primary Fog Color" : "255 255 255"
+	fogcolor2(color255) : "Secondary Fog Color" : "255 255 255"
+	fogdir(string) : "Primary Fog Dir" : "1 0 0"
+	fogstart(string) : "Fog Start" : "500.0" : "Distance at which the skybox fog should start."
+	fogend(string) : "Fog End" : "2000.0" : "Distance at which the skybox fog should be fully opaque."
+	fogradial(choices) : "Use Radial Fog?" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	reflectmode(choices) : "Skybox Reflection Mode" : 0 : "Whether or not the skybox should be drawn in water reflections. If using option 2, set a Water Level Designator!" =
+	[
+		0 : "Don't draw skybox"
+		1 : "Draw, with water in skybox"
+		2 : "Draw entire skybox"
+	]
+	waterlevel(target_destination) : "Water Level Designator" : "" : "(Reflections enabled only) Entity to mark the primary body of water in the skybox. The origin must be exactly level with the water, use info_target"
+]

@@ -229,7 +229,7 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 		if (!localPlayer) { return; }
 
 		int currentXP = localPlayer->m_iXP.Get();
-		int currentClass = localPlayer->m_iNextSpawnClassChoice.Get() != -1 ? localPlayer->m_iNextSpawnClassChoice.Get() : localPlayer->m_iNeoClass.Get();
+		int currentClass = localPlayer->m_iNextSpawnClassChoice.Get() != NEO_CLASS_RANDOM ? localPlayer->m_iNextSpawnClassChoice.Get() : localPlayer->m_iNeoClass.Get();
 		int numWeapons = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(currentXP,
 				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : currentClass);
 			
@@ -297,7 +297,7 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	if (!localPlayer) { return; }
 
 	const int currentXP = localPlayer->m_iXP.Get();
-	const int currentClass = localPlayer->m_iNextSpawnClassChoice.Get() != -1 ? localPlayer->m_iNextSpawnClassChoice.Get() : localPlayer->m_iNeoClass.Get();
+	const int currentClass = localPlayer->m_iNextSpawnClassChoice.Get() != NEO_CLASS_RANDOM ? localPlayer->m_iNextSpawnClassChoice.Get() : localPlayer->m_iNeoClass.Get();
 
 	int iLoadout = sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : currentClass;
 	if (IN_BETWEEN_AR(0, iLoadout, NEO_LOADOUT__COUNT) == false)

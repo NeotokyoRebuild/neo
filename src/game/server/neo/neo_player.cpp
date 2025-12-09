@@ -19,6 +19,10 @@
 
 #include "weapon_ghost.h"
 #include "weapon_supa7.h"
+#include "weapon_knife.h"
+#include "weapon_grenade.h"
+#include "weapon_smokegrenade.h"
+#include "weapon_tachi.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -28,16 +32,12 @@
 
 #include "neo_te_tocflash.h"
 
-#include "weapon_grenade.h"
-#include "weapon_smokegrenade.h"
-
-#include "weapon_knife.h"
-
 #include "viewport_panel_names.h"
-
 #include "neo_weapon_loadout.h"
 
+#include "player_resource.h"
 #include "neo_player_shared.h"
+#include "bot/neo_bot.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -52,7 +52,7 @@ SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean)),
-SendPropEHandle(SENDINFO(m_hDroppedJuggernautItem)),
+SendPropEHandle(SENDINFO(m_hServerRagdoll)),
 
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
@@ -142,6 +142,7 @@ extern ConVar sv_neo_clantag_allow;
 extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
 extern ConVar sv_neo_dev_loadout;
+extern ConVar neo_bot_difficulty;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
@@ -150,11 +151,19 @@ ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.2
 ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
 ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
+ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specified class number, or -1 to disable.", true, NEO_CLASS_RANDOM, true, NEO_CLASS_LOADOUTABLE_COUNT-1);
+static void BotChangeClassFn(const CCommand& args);
+ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots to switch to the specified class number.");
+
 void CNEO_Player::RequestSetClass(int newClass)
 {
 	if (newClass < 0 || newClass >= NEO_CLASS_ENUM_COUNT)
 	{
 		Assert(false);
+		return;
+	}
+
+	if (newClass == m_iNeoClass) {
 		return;
 	}
 
@@ -166,14 +175,17 @@ void CNEO_Player::RequestSetClass(int newClass)
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup || status == NeoRoundStatus::Countdown))
 	{
 		m_iNeoClass = newClass;
-		m_iNextSpawnClassChoice = -1;
+		m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 
 		SetPlayerTeamModel();
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 		InitSprinting();
 		RemoveAllItems(false);
 		GiveDefaultItems();
+		RequestSetLoadout(0);
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
+		SetMaxHealth(MAX_HEALTH_FOR_CLASS[newClass]);
+		SetHealth(GetMaxHealth());
 	}
 	else
 	{
@@ -243,7 +255,7 @@ void CNEO_Player::RequestSetStar(int newStar)
 
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 {
-	int classChosen = m_iNextSpawnClassChoice.Get() != -1 ? m_iNextSpawnClassChoice.Get() : m_iNeoClass.Get();
+	int classChosen = m_iNextSpawnClassChoice.Get() != NEO_CLASS_RANDOM ? m_iNextSpawnClassChoice.Get() : m_iNeoClass.Get();
 	const int iLoadoutClass = sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen;
 
 	const char *pszWepName = (IN_BETWEEN_AR(0, iLoadoutClass, NEO_LOADOUT__COUNT) && IN_BETWEEN_AR(0, loadoutNumber, MAX_WEAPON_LOADOUTS)) ?
@@ -296,7 +308,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
-		result = false;
+		result = RequestSetLoadout(0);
 	}
 
 	if (result)
@@ -332,15 +344,15 @@ void SetClass(const CCommand &command)
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
 
-		if (NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP)
+		auto playerIsVip = NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP;
+		auto playerIsSameClass = player->m_iNeoClass == nextClass;
+
+		if (playerIsVip || playerIsSameClass)
 		{
 			return;
 		}
-		else
-		{
-			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
-		}
-
+		
+		nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
 		player->RequestSetClass(nextClass);
 	}
 }
@@ -456,7 +468,7 @@ CNEO_Player::CNEO_Player()
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
-	m_iNextSpawnClassChoice = -1;
+	m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
@@ -466,6 +478,7 @@ CNEO_Player::CNEO_Player()
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 	m_botThermOpticCamoDisruptedTimer.Invalidate();
+	m_mapPlayerFogCache.SetLessFunc( DefLessFunc(int) );
 
 	m_bFirstDeathTick = true;
 	m_bCorpseSet = false;
@@ -494,7 +507,6 @@ void CNEO_Player::Precache( void )
 	BaseClass::Precache();
 }
 
-extern ConVar bot_changeclass;
 void CNEO_Player::Spawn(void)
 {
 	int teamNumber = GetTeamNumber();
@@ -515,14 +527,34 @@ void CNEO_Player::Spawn(void)
 
 		State_Transition(STATE_ACTIVE);
 	}
+
+	if (IsBot())
+	{
+		const int forcedBotClass = bot_class.GetInt();
+
+		if (forcedBotClass == NEO_CLASS_RANDOM)
+		{
+			if (auto* thisBot = ToNEOBot(this))
+				m_iNextSpawnClassChoice = thisBot->ChooseRandomClass();
+			else
+				AssertMsg(false, "this IsBot() but can't convert to NEO bot!?");
+		}
+		else
+		{
+			m_iNextSpawnClassChoice = forcedBotClass;
+		}
+	}
 	
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
-	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
+	if ((m_iNextSpawnClassChoice != NEO_CLASS_RANDOM) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
 		m_iNeoClass = m_iNextSpawnClassChoice;
 	}
 
 	BaseClass::Spawn();
+
+	SetMaxHealth(MAX_HEALTH_FOR_CLASS[m_iNeoClass]);
+	SetHealth(GetMaxHealth());
 
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 
@@ -539,10 +571,10 @@ void CNEO_Player::Spawn(void)
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
-	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS);
-	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS);
-	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS);
-	for (int i = 0; i < MAX_PLAYERS; ++i)
+	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
+	for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
 	{
 		m_rfAttackersScores.GetForModify(i) = 0;
 		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
@@ -561,7 +593,7 @@ void CNEO_Player::Spawn(void)
 	SetPlayerTeamModel();
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
-		GiveLoadoutWeapon();
+		RequestSetLoadout(m_iLoadoutWepChoice);
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	}
 
@@ -574,7 +606,7 @@ void CNEO_Player::Spawn(void)
 			return;
 		}
 		ChangeTeam(forcedTeam);
-
+		
 		if (NEORules()->GetForcedClass() < 0)
 		{
 			engine->ClientCommand(this->edict(), "classmenu");
@@ -696,7 +728,12 @@ void CNEO_Player::CalculateSpeed(void)
 
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= NEO_CROUCH_MODIFIER;
+		speed *= NEO_CROUCH_WALK_MODIFIER;
+	}
+
+	if (m_nButtons & IN_WALK)
+	{
+		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
 	}
 
 	if (IsSprinting())
@@ -721,11 +758,6 @@ void CNEO_Player::CalculateSpeed(void)
 	if (IsInAim())
 	{
 		speed *= NEO_AIM_MODIFIER;
-	}
-
-	if (m_nButtons & IN_WALK)
-	{
-		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
 	}
 
 	speed = MAX(speed, 55);
@@ -796,7 +828,7 @@ void CNEO_Player::HandleSpeedChangesLegacy()
 	}
 
 	bool bIsWalking = IsWalking();
-	// have suit, pressing button, not sprinting or ducking
+	// have suit, pressing button, not sprinting
 	bool bWantWalking;
 
 	if( IsSuitEquipped() )
@@ -1076,7 +1108,8 @@ void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 		EmitSound(filter, edict()->m_EdictIndex, params);
 
 		// for emulating bot visibility of cloak initiation flash
-		m_botThermOpticCamoDisruptedTimer.Start(0.5f);
+		// effect lasts 0.5 seconds, but allow 200-300ms leeway with GetFogObscuredRatio cache window
+		m_botThermOpticCamoDisruptedTimer.Start(0.2f);
 	}
 }
 
@@ -1142,23 +1175,95 @@ void CNEO_Player::CheckThermOpticButtons()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: return true if given target cant be seen because of fog
+// Purpose: return true if given target can't be seen
+// This has been repurposed for cloaking/fog of war logic
+// to fit in with existing bot APIs
 //-----------------------------------------------------------------------------
 bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 {
 	if (!target)
+	{
 		return false;
+	}
 
-	return RandomFloat() < GetFogObscuredRatio(target);
+	auto targetPlayer = ToNEOPlayer(target);
+	if (targetPlayer == nullptr)
+	{
+		return false; // Not a player that is affected by cloaking/etc
+	}
+
+	if (GetTeamNumber() == targetPlayer->GetTeamNumber())
+	{
+		return false; // Teammates are always labeled with IFF
+	}
+
+	// Check visibility cache for this player
+	int playerIndex = targetPlayer->entindex();
+	int cacheIndex = m_mapPlayerFogCache.Find(playerIndex);
+
+	// Ensure an entry exists for this player in the cache
+	if (cacheIndex == m_mapPlayerFogCache.InvalidIndex())
+	{
+		cacheIndex = m_mapPlayerFogCache.Insert(playerIndex, CNEO_Player_FogCacheEntry());
+		Assert(cacheIndex != m_mapPlayerFogCache.InvalidIndex());
+	}
+
+	CNEO_Player_FogCacheEntry& cacheEntry = m_mapPlayerFogCache.Element(cacheIndex);
+
+	// If cache is fresh (within 200ms human reaction time), use cached boolean result
+	if (gpGlobals->curtime - cacheEntry.m_flUpdateTime < 0.2f) // 200ms cache window
+	{
+		return cacheEntry.m_bIsHidden;
+	}
+	else // Cache is stale or new entry, calculate and update
+	{
+		// Bot difficulty attention range
+		float fBotDifficultyRange = 1.0f;
+		if (IsBot())
+		{
+			switch (neo_bot_difficulty.GetInt())
+			{
+			case CNEOBot::EASY:
+				fBotDifficultyRange = 0.85f;
+				break;
+			case CNEOBot::NORMAL:
+				fBotDifficultyRange = 0.90;
+				break;
+			case CNEOBot::HARD:
+				fBotDifficultyRange = 0.95;
+				break;
+			case CNEOBot::EXPERT:
+				//fBotDifficultyRange = 1.0f;
+			default:
+				//fBotDifficultyRange = 1.0f;
+				break;
+			}
+		}
+
+		float obscuredRatio = GetFogObscuredRatio(target);
+		bool isHidden = RandomFloat(0.0f, fBotDifficultyRange) < obscuredRatio;
+
+		cacheEntry.m_flObscuredRatio = obscuredRatio; // for debugging
+		cacheEntry.m_bIsHidden = isHidden;
+		cacheEntry.m_flUpdateTime = gpGlobals->curtime;
+
+		return isHidden;
+	}
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+// NEO JANK: If this function is too expensive,
+// players may report that the game gets laggy when in line of sight bots.
 //-----------------------------------------------------------------------------
 float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 {
+	VPROF_BUDGET(__FUNCTION__, "NextBotExpensive");
+
 	if (!target)
+	{
 		return 0.0f;
+	}
 
 	auto targetPlayer = ToNEOPlayer(target);
 	if (targetPlayer == nullptr)
@@ -1167,39 +1272,20 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return 0.0f;
 	}
 
-	if (!targetPlayer->GetBotPerceivedCloakState())
+	if (GetTeamNumber() == targetPlayer->GetTeamNumber())
 	{
-		// Target is not cloaked, so not obscured
+		// Teammates are always labeled with IFF markers
 		return 0.0f;
 	}
 
-	// --- Base Detection Chance (Per Tick) ---
-	// This is the baseline chance of detection in ideal conditions (stationary, healthy, class-agnostic bot).
-	// Aiming for ~5% detection
-	float detectionChance = 0.05f * gpGlobals->interval_per_tick;
+	// If target is not cloaked, it's not obscured.
+	if (!targetPlayer->GetBotPerceivedCloakState())
+	{
+		return 0.0f; // Not obscured
+	}
 
-	// --- Multipliers for Detection Chance ---
-	// Multipliers > 1.0 increase detection likelihood. Multipliers < 1.0 decrease it.
-
-	// Target Movement Multipliers
-	constexpr float MULT_TARGET_WALKING = 20.0f;   // Walking increases detection chance by 20x
-	constexpr float MULT_TARGET_RUNNING = 50.0f;   // Running increases detection chance by 50x (very high risk)
-
-	// Bot's State Multipliers (How the observer's state affects its perception)
-	constexpr float MULT_MY_PLAYER_MOVING = 0.5f;  // Observer moving: 50% less chance to detect (detectionChance *= 0.5)
-	constexpr float MULT_SUPPORT_BOT_VISION = 0.6; // Support bot: 40% less chance to detect (detectionChance *= 0.6)
-	constexpr float MIN_ASSAULT_DETECTION_CHANCE_PER_TICK = 0.20f; // 20% detection per tick (very high)
-
-	// Per Bleeding Injury Target Percentage Increase (Estimate of client-side bleeding decals)
-	constexpr float MULT_BLEEDING_INJURY_EVENT_FACTOR = 0.05f;
-
-	// Distance Multipliers (How distance affects detection)
-	// These define ranges where detection scales.
-	constexpr float DISTANCE_MAX_DETECTION_SQ = 100.0f * 100.0f;  // Max detection effect at 100 units (100^2)
-	constexpr float DISTANCE_MIN_DETECTION_SQ = 6000.0f * 6000.0f; // Min detection effect at 6000 units (6000^2)
-
-	constexpr float DISTANCE_MULT_CLOSE = 5.0f; // Multiplier when very close (e.g., within 100 units)
-	constexpr float DISTANCE_MULT_FAR = 0.01f;    // Multiplier when very far (e.g., beyond 3000 units)
+	// From this point on, assume we are counting penalties against thermopic effectiveness
+	int nSneakPenaltyCount = 0; // # of factors that are making target more visible
 
 	// --- Helper Lambdas for Movement ---
 	constexpr auto isMoving = [](const CNEO_Player* player, float tolerance = 10.0f) {
@@ -1210,70 +1296,84 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return player->GetAbsVelocity().LengthSqr() > (runSpeedThreshold * runSpeedThreshold);
 		};
 
-	bool myPlayerIsMoving = isMoving(this); // Observer (me) is moving
-	bool targetIsMoving = isMoving(targetPlayer);
 	bool targetIsRunning = isRunning(targetPlayer);
+	bool targetIsMoving  = targetIsRunning || isMoving(targetPlayer);
 
-	// --- Apply Multipliers to Base Detection Chance ---
-
-	// Player Movement Impact
-	if (targetIsRunning) // Running is the most severe penalty
-	{
-		detectionChance *= MULT_TARGET_RUNNING;
-	}
-	else if (targetIsMoving) // Walking/strafing
-	{
-		detectionChance *= MULT_TARGET_WALKING;
-	}
-
-	// Bot Movement Impact
-	if (myPlayerIsMoving)
-	{
-		detectionChance *= MULT_MY_PLAYER_MOVING;
-	}
-
-	// Distance Impact
-	const Vector& myPos = GetAbsOrigin(); // TODO: May need GetBot()->GetPosition() equivalent
-	float currentRangeSq = (target->GetAbsOrigin() - myPos).LengthSqr(); // TODO: May need known.GetLastKnownPosition() equivalent
-
-	float distanceMultiplier;
-	if (currentRangeSq <= DISTANCE_MAX_DETECTION_SQ) // Very close range
-	{
-		distanceMultiplier = DISTANCE_MULT_CLOSE;
-	}
-	else if (currentRangeSq >= DISTANCE_MIN_DETECTION_SQ) // Very far range
-	{
-		distanceMultiplier = DISTANCE_MULT_FAR;
-	}
-	else // Interpolate between max and min detection effects
-	{
-		// Alpha: 1.0 when at DISTANCE_MAX_DETECTION_SQ, 0.0 when at DISTANCE_MIN_DETECTION_SQ
-		float alpha = 1.0f - ((currentRangeSq - DISTANCE_MAX_DETECTION_SQ) / (DISTANCE_MIN_DETECTION_SQ - DISTANCE_MAX_DETECTION_SQ));
-		distanceMultiplier = DISTANCE_MULT_FAR * (1.0f - alpha) + DISTANCE_MULT_CLOSE * alpha;
-	}
-	detectionChance *= distanceMultiplier;
-
-	// Class-specific Bot Perception
-	if (GetClass() == NEO_CLASS_SUPPORT)
-	{
-		detectionChance *= MULT_SUPPORT_BOT_VISION;
-	}
-
-	// Injured Target Impact
-	detectionChance *= 1.0f + (MULT_BLEEDING_INJURY_EVENT_FACTOR * targetPlayer->GetBotDetectableBleedingInjuryEvents());
-
+	// Class Impact:
 	// Assault class motion vision
 	if (GetClass() == NEO_CLASS_ASSAULT && targetIsMoving)
 	{
-		detectionChance = Max(detectionChance, MIN_ASSAULT_DETECTION_CHANCE_PER_TICK);
+		// I have motion vision
+		return 0.0f; // Not obscured
 	}
 
-	// Ensure the final detection chance is within valid bounds [0, 1] (as a ratio)
-	detectionChance = Clamp(detectionChance, 0.0f, 1.0f);
+	if (GetClass() != NEO_CLASS_SUPPORT)
+	{
+		// thermal vision penalty against cloak
+		nSneakPenaltyCount += 5;
+	}
 
-	// Convert detection chance to obscured ratio (invert: high detection = low obscured ratio)
-	float obscuredRatio = 1.0f - detectionChance;
+	bool observerIsRunning = isRunning(this);  // Observer (me) is running
+	bool observerIsMoving  = observerIsRunning || isMoving(this); // Observer (me) is moving
 
+	// Observer Movement Impact
+	if (!observerIsMoving) // is NOT moving
+	{
+		// movement is most obvious if observer is stationary
+		nSneakPenaltyCount += 2;
+	}
+	else if (!observerIsRunning) // is walking, and NOT running
+	{
+		// movement is more obvious when the observer is walking rather than running
+		nSneakPenaltyCount += 1;
+	}
+	// if running, is less likely to notice movement
+
+	// Target Movement Impact
+	if (targetIsRunning)
+	{
+		nSneakPenaltyCount += 2;
+	}
+	else if (targetIsMoving)
+	{
+		nSneakPenaltyCount += 1;
+	}
+
+	if (!targetPlayer->IsDucking()) // is standing, and NOT ducking
+	{
+		// target is more obvious when standing at full height
+		nSneakPenaltyCount += 1;
+	}
+
+	// Distance Impact
+	// Ranges based on IsRangeGreaterThan numbers from EquipBestWeaponForThreat
+	const Vector& myPos = GetAbsOrigin();
+	float targetDistance = (target->GetAbsOrigin() - myPos).LengthSqr();
+
+	constexpr float      scopeRangeSq =  1000.0f * 1000.0f; // also matches GetMaxAttackRange
+	if (targetDistance < scopeRangeSq)
+	{
+		nSneakPenaltyCount += 5;
+	}
+
+	constexpr float      shotgunRangeSq =  250.0f * 250.0f;
+	if (targetDistance < shotgunRangeSq)
+	{
+		nSneakPenaltyCount += 10;
+	}
+
+	constexpr float      meleeRangeSq =  50.0f * 50.0f;
+	if (targetDistance < meleeRangeSq) {
+		nSneakPenaltyCount += 50;
+	}
+
+	// Injured Target Impact
+	nSneakPenaltyCount += targetPlayer->GetBotDetectableBleedingInjuryEvents();
+
+	float obscuredDenominator = 100; // we might have to tune this based on time interval
+	Assert(nSneakPenaltyCount < obscuredDenominator); // something is wrong with our model statistically
+	float obscuredRatio = (obscuredDenominator - nSneakPenaltyCount) / obscuredDenominator;
+	obscuredRatio = Clamp(obscuredRatio, 0.0f, 1.0f);
 	return obscuredRatio;
 }
 
@@ -1391,11 +1491,16 @@ void CNEO_Player::PostThink(void)
 			m_bFirstDeathTick = false;
 
 			Weapon_SetZoom(false);
-			m_bInVision = false;
+			m_bInVision = m_bInThermOpticCamo =false;
 			m_bInLean = NEO_LEAN_NONE;
 		}
 
 		auto observerMode = GetObserverMode();
+		if ((observerMode == OBS_MODE_DEATHCAM || observerMode == OBS_MODE_NONE) && gpGlobals->curtime >= (GetDeathTime() + DEATH_ANIMATION_TIME))
+		{ 
+			SetObserverMode(OBS_MODE_IN_EYE);
+		}
+
 		if (observerMode == OBS_MODE_CHASE || observerMode == OBS_MODE_IN_EYE)
 		{
 			auto target = GetObserverTarget();
@@ -1409,21 +1514,6 @@ void CNEO_Player::PostThink(void)
 			}
 		}
 
-		if ((observerMode == OBS_MODE_DEATHCAM || observerMode == OBS_MODE_NONE) && gpGlobals->curtime >= (GetDeathTime() + DEATH_ANIMATION_TIME))
-		{ // We switch observer mode to none to view own body in third person so assume should still be changing observer targets
-			auto target = GetObserverTarget();
-			if (!IsValidObserverTarget(target))
-			{
-				auto nextTarget = FindNextObserverTarget(false);
-				if (nextTarget && nextTarget != target)
-				{
-					SetObserverTarget(nextTarget);
-				}
-			}
-			SetObserverMode(OBS_MODE_IN_EYE);
-		}
-
-
 		return;
 	}
 	else
@@ -1435,7 +1525,6 @@ void CNEO_Player::PostThink(void)
 
 	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
-		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pNeoWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
@@ -1444,14 +1533,14 @@ void CNEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
+		else if (m_nButtons & IN_AIM && !IsInAim())
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
-				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
+				Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_AIM);
 			}
 		}
-		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
+		else if (m_afButtonReleased & IN_AIM)
 		{
 			Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
@@ -2129,22 +2218,7 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return 0.f;
 	}
 
-	switch (GetClass())
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_VIP:
-		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	case NEO_CLASS_JUGGERNAUT:
-		return NEO_JUGGERNAUT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
-	default:
-		Assert(false);
-		return BaseClass::GetReceivedDamageScale(pAttacker);
-	}
+	return BaseClass::GetReceivedDamageScale(pAttacker);
 }
 
 bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,
@@ -2162,7 +2236,8 @@ void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 	if (!((static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))->GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 	{
 		// cloak disruption from unsuppressed weapons
-		m_botThermOpticCamoDisruptedTimer.Start(0.5f);
+		// effect lasts 0.5 seconds, but allow 200-300ms leeway with GetFogObscuredRatio cache window
+		m_botThermOpticCamoDisruptedTimer.Start(0.2f);
 	}
 }
 
@@ -2320,6 +2395,11 @@ void CNEO_Player::SetPlayerTeamModel( void )
 		return;
 	}
 
+	if (NEORules()->IsCyberspace())
+	{
+		m_bAllowGibbing = false;
+	}
+
 	SetModel(model);
 	SetPlaybackRate(1.0f);
 	//ResetAnimation();
@@ -2438,7 +2518,12 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	pWeapon->m_bInReload = false;
 	pWeapon->StopWeaponSound(RELOAD_NPC);
 
-	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
+
+	Vector vecVel = BodyDirection3D();
+	vecVel.z = vecVel.z + 0.7;
+	vecVel = vecVel.Normalized() * 300;
+
+	BaseClass::Weapon_Drop(pWeapon, pvecTarget, &vecVel);
 }
 
 void CNEO_Player::UpdateOnRemove( void )
@@ -2757,7 +2842,7 @@ int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 	{
 		return m_rfAttackersScores.Get(attackerIdx);
 	}
-	return min(m_rfAttackersScores.Get(attackerIdx), 100);
+	return m_rfAttackersScores.Get(attackerIdx);
 }
 
 int CNEO_Player::GetAttackerHits(const int attackerIdx) const
@@ -2850,7 +2935,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
-				m_rfAttackersScores.GetForModify(attackerIdx) += iDamage;
+				m_rfAttackersScores.GetForModify(attackerIdx) += Min(iDamage, GetHealth());
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
 				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
 
@@ -2866,6 +2951,27 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		}
 	}
 	return BaseClass::OnTakeDamage_Alive(info);
+}
+
+CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
+{
+	auto* item = BaseClass::GiveNamedItem(szName, iSubType);
+
+	if (item)
+	{
+		item->RemoveEffects( EF_BONEMERGE );
+
+		if (szName && FStrEq(szName, "weapon_tachi"))
+		{
+			const char* tachiPref = engine->GetClientConVarValue(entindex(), "cl_neo_tachi_prefer_auto");
+			if (tachiPref && *tachiPref && (V_atoi(tachiPref) != 0))
+			{
+				assert_cast<CWeaponTachi*>(item)->ForceSetFireMode(Tachi::Firemode::Auto);
+			}
+		}
+	}
+
+	return item;
 }
 
 void GiveDet(CNEO_Player* pPlayer)
@@ -3227,7 +3333,7 @@ float CNEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_JUGGERNAUT:
 		return NEO_JUGGERNAUT_CROUCH_SPEED;
 	default:
-		return (NEO_BASE_SPEED * NEO_CROUCH_MODIFIER);
+		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
 	}
 }
 
@@ -3269,44 +3375,63 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
-extern ConVar neo_ctg_ghost_beacons_when_inactive;
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
-	if (pInfo)
-	{
-		auto otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+	if (!pInfo)
+		return BaseClass::ShouldTransmit(pInfo);
 
-		// If other is spectator or same team
-		if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+	// This player is the ghoster, so their location should be networked always, even to enemies,
+	// because we need to be able to draw the warning beacon for them even outside PVS.
+	if (IsCarryingGhost())
+		return FL_EDICT_ALWAYS;
+
+	const auto* otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+
+	if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE
-			otherNeoPlayer->IsDead() ||
+		otherNeoPlayer->IsDead() ||
 #endif
-			GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
-		{
-			return FL_EDICT_ALWAYS;
-		}
+		GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
+	{
+		return FL_EDICT_ALWAYS;
+	}
 
-		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
-		if (neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
-		{
-			return FL_EDICT_ALWAYS;
-		}
+	const CWeaponGhost* ghost = nullptr;
 
-
-		// If the other player is actively using the ghost and therefore fetching beacons
-		auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
-		if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
-			static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+	extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		if (NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
 		{
-			return FL_EDICT_ALWAYS;
-		}
-
-		// If this player is carrying the ghost (whether active or not)
-		if (IsCarryingGhost())
-		{
-			return FL_EDICT_ALWAYS;
+			ghost = assert_cast<const CWeaponGhost*>(GetNeoWepWithBits(otherNeoPlayer, NEO_WEP_GHOST));
+			AssertMsg(ghost, "player was marked as ghoster but they didn't have the ghost");
 		}
 	}
+	if (!ghost)
+	{
+		if (const auto* otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon()))
+			if (otherWep->IsGhost())
+				ghost = assert_cast<const CWeaponGhost*>(otherWep);
+	}
+
+	if (!ghost)
+		return BaseClass::ShouldTransmit(pInfo);
+
+	// If handling ghost client-side, ghoster must know about nearby off-PVS enemies even before the ghost bootup,
+	// because else we couldn't play the ghost beacon sound beeps for the ghoster at the correct interval.
+	if (!sv_neo_serverside_beacons.GetBool())
+		return FL_EDICT_ALWAYS;
+
+	// Actually we just need the server->client latency instead of roundtrip, but this gives us a good safety buffer.
+	// It's also faster to grab from the g_pPlayerResource instead of calculating here.
+	const float avgLatency = g_pPlayerResource->GetPing(NEORules()->GetGhosterPlayer()) / 1000.f;
+	// Don't send beacon data outside the PVS until the client needs it, to make cheating harder.
+	if (!ghost->IsBootupCompleted(avgLatency))
+		return BaseClass::ShouldTransmit(pInfo);
+
+	const auto myDistanceToGhost = GetAbsOrigin().DistTo(ghost->GetAbsOrigin());
+	if (myDistanceToGhost <= CWeaponGhost::GetGhostRangeInHammerUnits())
+		return FL_EDICT_ALWAYS;
 	
 	return BaseClass::ShouldTransmit(pInfo);
 }
@@ -3317,14 +3442,32 @@ float CNEO_Player::GetActiveWeaponSpeedScale() const
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
+// NEO TODO (Adam) move to neo_player_shared
 const Vector CNEO_Player::GetPlayerMins(void) const
 {
-	return VEC_DUCK_HULL_MIN_SCALED(this);
+	if (IsObserver())
+	{
+		return VEC_OBS_HULL_MIN_SCALED(this);
+	}
+	if (GetFlags() & FL_DUCKING)
+	{
+		return VEC_DUCK_HULL_MIN_SCALED(this);
+	}
+	return VEC_HULL_MIN_SCALED(this);
 }
 
+//NEO TODO (Adam) move to neo_player_shared
 const Vector CNEO_Player::GetPlayerMaxs(void) const
 {
-	return VEC_DUCK_HULL_MAX_SCALED(this);
+	if (IsObserver())
+	{
+		return VEC_OBS_HULL_MAX_SCALED(this);
+	}
+	if (GetFlags() & FL_DUCKING)
+	{
+		return VEC_DUCK_HULL_MAX_SCALED(this);
+	}
+	return VEC_HULL_MAX_SCALED(this);
 }
 
 extern ConVar sv_turbophysics;
@@ -3354,9 +3497,10 @@ void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 void CNEO_Player::BecomeJuggernaut()
 {
 	NEORules()->JuggernautActivated(this);
-	if (m_iNextSpawnClassChoice == -1)
+	if (m_iNextSpawnClassChoice == NEO_CLASS_RANDOM)
 	{
 		m_iNextSpawnClassChoice = GetClass(); // Don't let the player respawn as the juggernaut
+		Assert(m_iNextSpawnClassChoice != NEO_CLASS_JUGGERNAUT);
 	}
 	RemoveFlag(FL_DUCKING);
 	m_Local.m_bDucked = false;
@@ -3372,12 +3516,15 @@ void CNEO_Player::BecomeJuggernaut()
 #define COLOR_JGR_FADE color32{170, 170, 170, 255}
 	UTIL_ScreenFade(this, COLOR_JGR_FADE, 1.0f, 0.0f, FFADE_IN);
 
+	RemoveAllItems(false);
 	m_iNeoClass = NEO_CLASS_JUGGERNAUT;
+	GiveDefaultItems();
+	// Set model after weapon change to avoid studio asserts
 	SetPlayerTeamModel();
+
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	InitSprinting();
-	RemoveAllItems(false);
-	GiveDefaultItems();
+	SetMaxHealth(MAX_HEALTH_FOR_CLASS[NEO_CLASS_JUGGERNAUT]);
 	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
 	//SetBloodColor(DONT_BLEED); Check C_HL2MP_Player::TraceAttack
@@ -3409,11 +3556,10 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 			soundFilter.MakeReliable();
 			EmitSound(soundFilter, this->entindex(), soundParams);
 		}
-
-		NEORules()->m_pJuggernautPlayer = nullptr;
-		NEORules()->m_pJuggernautItem = pJuggernautItem;
 	}
-	m_hDroppedJuggernautItem = pJuggernautItem;
+	NEORules()->JuggernautDeactivated(pJuggernautItem);
+
+	m_hServerRagdoll = pJuggernautItem;
 	DispatchSpawn(pJuggernautItem);
 }
 
@@ -3717,5 +3863,35 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 			m_hSpectatorTakeoverPlayerImpersonatingMe->m_hSpectatorTakeoverPlayerTarget = nullptr;
 		}
 		m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
+	}
+}
+
+static void BotChangeClassFn(const CCommand& args)
+{
+	constexpr int minValue = NEO_CLASS_RECON;
+	constexpr int maxValue = NEO_CLASS_LOADOUTABLE_COUNT - 1;
+
+	const auto nag = [&args, minValue, maxValue]() {
+		Msg("Format: %s <number between %d and %d>\n", args.Arg(0), minValue, maxValue);
+	};
+
+	if (args.ArgC() != 2)
+	{
+		nag();
+		return;
+	}
+
+	const int botClass = V_atoi(args.Arg(1));
+	if (botClass < minValue || botClass > maxValue)
+	{
+		nag();
+		return;
+	}
+
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		auto* player = assert_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player && player->IsBot() && player->GetTeamNumber() >= FIRST_GAME_TEAM)
+			player->RequestSetClass(botClass);
 	}
 }

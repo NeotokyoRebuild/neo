@@ -212,6 +212,7 @@ public:
 	bool IsLineOfFireClear(CBaseEntity* who, const LineOfFireFlags flags) const;				// return true if a weapon has no obstructions along the line from our eye to the given entity
 	bool IsLineOfFireClear(const Vector& from, const Vector& to, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given points
 	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given point and entity
+	bool IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const;
 
 	bool IsEntityBetweenTargetAndSelf(CBaseEntity* other, CBaseEntity* target);	// return true if "other" is positioned inbetween us and "target"
 
@@ -428,7 +429,7 @@ public:
 	float m_flLastShouldAimTime = 0.0f;
 
 	CNEOBotProfile m_profile = {};
-	void RequestClassOnProfile();
+	NeoClass ChooseRandomClass() const;
 	int m_iIntendTeam = 0;
 	int m_iProfileIdx = -1;
 

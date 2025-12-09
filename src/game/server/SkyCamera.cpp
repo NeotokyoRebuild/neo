@@ -57,6 +57,10 @@ BEGIN_DATADESC( CSkyCamera )
 	DEFINE_KEYFIELD( m_skyboxData.fog.maxdensity,		FIELD_FLOAT, "fogmaxdensity" ),
 	DEFINE_KEYFIELD( m_skyboxData.fog.radial,			FIELD_BOOLEAN, "fogradial" ),
 
+#ifdef NEO
+	DEFINE_KEYFIELD( m_skyboxData.reflectMode,			FIELD_INTEGER, "reflectmode" ),
+	DEFINE_KEYFIELD( m_strWaterLevelDesignator,			FIELD_STRING, "waterlevel" ),
+#endif
 END_DATADESC()
 
 
@@ -107,6 +111,21 @@ void CSkyCamera::Spawn( void )
 	m_skyboxData.origin = GetLocalOrigin();
 	m_skyboxData.area = engine->GetArea( m_skyboxData.origin );
 	
+#ifdef NEO
+	if ( m_skyboxData.reflectMode.Get() == REFLECT_SKYBOX_WATERCLIPZ )
+	{
+		auto pDesignator = gEntList.FindEntityByName( nullptr, m_strWaterLevelDesignator );
+		if ( m_strWaterLevelDesignator != NULL_STRING && pDesignator )
+		{
+			m_skyboxData.waterLevel = pDesignator->GetAbsOrigin().z;
+		}
+		else
+		{
+			Warning( "sky_camera: Skybox water level entity not found/specified!\n" );
+		}
+	}
+#endif
+
 	Precache();
 }
 

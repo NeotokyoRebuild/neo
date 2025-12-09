@@ -10,6 +10,8 @@ enum NeoSkin {
 static constexpr int NEO_SKIN_ENUM_COUNT = NEO_SKIN__ENUM_COUNT;
 
 enum NeoClass {
+	NEO_CLASS_RANDOM = -1,
+
 	NEO_CLASS_RECON = 0,
 	NEO_CLASS_ASSAULT,
 	NEO_CLASS_SUPPORT,

@@ -60,6 +60,7 @@ enum RootState
 	STATE_SETTINGS,
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
+	STATE_CREDITS,
 
 	// Those that are not the main states goes under here
 	STATE__SUBSTATES,
@@ -82,23 +83,6 @@ enum RootState
 	STATE__TOTAL,
 };
 
-struct WidgetInfo
-{
-	const char *label;
-	bool isFake;
-	const char *command; // TODO: Replace
-	bool isMainMenuCommand;
-	RootState nextState;
-	int flags;
-};
-
-enum WidgetInfoFlags
-{
-	FLAG_NONE = 0,
-	FLAG_SHOWINGAME = 1 << 0,
-	FLAG_SHOWINMAIN = 1 << 1,
-};
-
 enum MainMenuButtons
 {
 	MMBTN_RESUME = 0,
@@ -106,16 +90,12 @@ enum MainMenuButtons
 	MMBTN_CREATESERVER,
 	MMBTN_DISCONNECT,
 	MMBTN_PLAYERLIST,
-	MMBTN_SEPARATOR1,
 	MMBTN_TUTORIAL,
 	MMBTN_FIRINGRANGE,
-	MMBTN_SEPARATOR2,
 	MMBTN_OPTIONS,
 	MMBTN_QUIT,
 
-	BTNS_TOTAL,
-
-	SMBTN_MP3,
+	MMBTN__TOTAL,
 };
 
 struct SprayInfo
@@ -141,12 +121,10 @@ public:
 	void UpdateControls();
 
 	IGameUI *m_gameui = nullptr;
-	int m_iHoverBtn = -1;
 	RootState m_state = STATE_ROOT;
 	CAvatarImage *m_avImage = nullptr;
 
-	wchar_t m_wszDispBtnTexts[BTNS_TOTAL][64] = {};
-	int m_iWszDispBtnTextsSizes[BTNS_TOTAL] = {};
+	wchar_t m_wszCachedTexts[MMBTN__TOTAL][64] = {};
 
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);
@@ -174,6 +152,7 @@ public:
 	void MainLoopSettings(const MainLoopParam param);
 	void MainLoopNewGame(const MainLoopParam param);
 	void MainLoopServerBrowser(const MainLoopParam param);
+	void MainLoopCredits(const MainLoopParam param);
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
 	void MainLoopPlayerList(const MainLoopParam param);
@@ -242,6 +221,7 @@ public:
 	bool m_bOnLoadingScreen = false;
 	float m_flTimeLoadingScreenTransition = 0.0f;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	int m_iSavedXOffsets[NeoUI::MAX_SECTIONS] = {};
 	int m_iSavedActive = 0;
 	int m_iSavedSection = 0;
 	bool m_bSprayGalleryRefresh = false;

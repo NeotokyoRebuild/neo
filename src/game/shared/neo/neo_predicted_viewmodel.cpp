@@ -7,6 +7,7 @@
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
+#include "weapon_neobasecombatweapon.h"
 
 #include "engine/ivdebugoverlay.h"
 #include "iinput.h"
@@ -255,7 +256,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 
 			return 0;
 		}
-		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision() && !glow_outline_effect_enable.GetBool())
+		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision())
 		{
 			IMaterial* pass = materials->FindMaterial("dev/thermal_view_model", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
@@ -273,6 +274,23 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 	}
 
 	return BaseClass::DrawModel(flags);
+}
+
+bool CNEOPredictedViewModel::ShouldDraw()
+{
+	const auto* owner = ToNEOPlayer(GetOwner());
+	if (!owner || !owner->IsInAim())
+		return BaseClass::ShouldDraw();
+
+	const auto* wep = assert_cast<CNEOBaseCombatWeapon*>(GetOwningWeapon());
+	if (!wep)
+		return BaseClass::ShouldDraw();
+
+	const bool isScopedWithSniper = wep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
+	if (!isScopedWithSniper)
+		return BaseClass::ShouldDraw();
+
+	return false;
 }
 #endif
 

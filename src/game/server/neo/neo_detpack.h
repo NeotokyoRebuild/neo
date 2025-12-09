@@ -16,8 +16,8 @@
 #define NEO_DEPLOYED_DETPACK_MODEL "models/weapons/w_detpack.mdl"
 #define NEO_DEPLOYED_DETPACK_RADIUS 4.0f // Inches. NEO TODO (Rain): check correct value!
 
-#define NEO_DETPACK_DAMAGE 200.0f
-#define NEO_DETPACK_DAMAGE_RADIUS 400.0f
+#define NEO_DETPACK_DAMAGE 300.0f
+#define NEO_DETPACK_DAMAGE_RADIUS 350.0f
 
 class CNEODeployedDetpack : public CBaseGrenadeProjectile
 {

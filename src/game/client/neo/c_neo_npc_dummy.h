@@ -14,9 +14,8 @@ public:
     static C_NEO_NPCDummy* GetList();
 
 private:
-    int DrawModel(int flags) override;
-
     friend class C_EntityClassList<C_NEO_NPCDummy>;
     friend class CNEOHud_GhostBeacons;
+    friend class C_WeaponGhost;
     C_NEO_NPCDummy* m_pNext = nullptr;
 };

@@ -31,7 +31,7 @@ public:
 	{ // Returns the player we are spectating if in first person mode, or local player
 		auto localNeoPlayer = GetLocalNEOPlayer();
 		if (localNeoPlayer->IsObserver() && localNeoPlayer->m_iObserverMode == OBS_MODE_IN_EYE)
-		{ // NEOTOD (Adam) clear m_hObserverTarget instead when exiting observer mode?
+		{ // NEOTODO (Adam) clear m_hObserverTarget instead when exiting observer mode?
 			auto targetNeoPlayer = static_cast<C_NEO_Player*>(localNeoPlayer->GetObserverTarget());
 			if (targetNeoPlayer) { return targetNeoPlayer; }
 		}
@@ -104,6 +104,8 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
+	virtual int GetMaxHealth(void) const override;
+
 	float CloakPower_CurrentVisualPercentage(void) const;
 
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
@@ -130,7 +132,7 @@ public:
 
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
-	int GetDisplayedHealth(bool asPercent) const;
+	int GetDisplayedHealth(int mode) const;
 
 	bool IsCarryingGhost(void) const;
 	bool IsObjective(void) const;
@@ -176,6 +178,9 @@ public:
 	void CSpectatorTakeoverPlayerUpdateOnDataChanged();
 	void CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget);
 	CHandle<C_NEO_Player> m_hSpectatorTakeoverTarget;
+#ifdef GLOWS_ENABLE
+	void UpdateGlowEffects(int iNewTeam);
+#endif // GLOWS_ENABLE
 
 private:
 	void CheckThermOpticButtons();
@@ -195,9 +200,9 @@ public:
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
 
-	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS);
-	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS);
-	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS);
+	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS_ARRAY_SAFE);
+	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS_ARRAY_SAFE);
 	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
@@ -214,7 +219,7 @@ public:
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
-	CNetworkHandle(CBaseEntity, m_hDroppedJuggernautItem);
+	CNetworkHandle(CBaseEntity, m_hServerRagdoll);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
@@ -244,7 +249,7 @@ private:
 	mutable int m_szNeoNameLocalDupeIdx;
 
 public:
-	bool m_rfNeoPlayerIdxsKilledByLocal[MAX_PLAYERS + 1];
+	bool m_rfNeoPlayerIdxsKilledByLocal[MAX_PLAYERS_ARRAY_SAFE];
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

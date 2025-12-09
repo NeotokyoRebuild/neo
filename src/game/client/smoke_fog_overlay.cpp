@@ -121,7 +121,9 @@ void DrawSmokeFogOverlay()
 	pMesh->Draw();
 }
 
+#ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 extern ConVar mp_forcecamera;
 void UpdateThermalOverride()
 {
@@ -149,9 +151,13 @@ void UpdateThermalOverride()
 			}
 		}
 	}
+#ifdef GLOWS_ENABLE
 	else if (localPlayer->IsObserver() && glow_outline_effect_enable.GetBool() && (localPlayer->GetTeamNumber() == TEAM_SPECTATOR || mp_forcecamera.GetInt() == OBS_ALLOW_ALL))
 	{
+		g_SmokeFogOverlayThermalOverride = true;
 		g_SmokeFogOverlayAlpha = 0;
+		return;
 	}
+#endif // GLOWS_ENABLE
 	g_SmokeFogOverlayThermalOverride = false;
 }

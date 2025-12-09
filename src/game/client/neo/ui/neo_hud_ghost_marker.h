@@ -1,8 +1,4 @@
-#ifndef NEO_HUD_GHOST_MARKER_H
-#define NEO_HUD_GHOST_MARKER_H
-#ifdef _WIN32
 #pragma once
-#endif
 
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
@@ -31,7 +27,6 @@ protected:
 	virtual ConVar *GetUpdateFrequencyConVar() const override;
 
 private:
-	C_WeaponGhost *m_ghostInPVS = nullptr;
 	CNEO_Juggernaut *m_jgrInPVS = nullptr;
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
@@ -41,5 +36,3 @@ private:
 	vgui::HTexture m_hTex = 0UL;
 	vgui::HFont m_hFont = 0UL;
 };
-
-#endif // NEO_HUD_GHOST_MARKER_H

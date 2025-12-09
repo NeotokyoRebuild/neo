@@ -41,6 +41,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bRoundChambered)),
 	RecvPropBool(RECVINFO(m_bRoundBeingChambered)),
+	RecvPropBool(RECVINFO(m_bTriggerReset)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
@@ -48,6 +49,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bRoundChambered)),
 	SendPropBool(SENDINFO(m_bRoundBeingChambered)),
+	SendPropBool(SENDINFO(m_bTriggerReset)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
 END_NETWORK_TABLE()
@@ -60,6 +62,7 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bRoundChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -73,6 +76,7 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 	DEFINE_FIELD(m_bRoundChambered, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
 
@@ -222,6 +226,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
+	m_bTriggerReset = true;
 }
 
 void CNEOBaseCombatWeapon::Precache()
@@ -259,6 +264,12 @@ void CNEOBaseCombatWeapon::Spawn()
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
+
+	if (NEORules()->IsCyberspace())
+	{
+		SetRenderMode(kRenderTransTexture);
+		m_nRenderFX = kRenderFxDistort;
+	}
 #else
 	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 #endif // GAME_DLL
@@ -447,6 +458,7 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 	if (ret)
 	{
 		AddEffects(EF_BONEMERGE);
+		m_bTriggerReset = true;
 
 #ifdef DEBUG
 		CNEO_Player* pOwner = NULL;
@@ -623,6 +635,11 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	ProcessAnimationEvents();
 
 	UpdateAutoFire();
+
+	if (IsSemiAuto() && (pOwner->m_afButtonLast & IN_ATTACK) && !(pOwner->m_nButtons & IN_ATTACK))
+	{
+		m_bTriggerReset = true;
+	}
 
 	//Track the duration of the fire
 	//FIXME: Check for IN_ATTACK2 as well?
@@ -852,6 +869,9 @@ void CNEOBaseCombatWeapon::AddViewKick()
 void CNEOBaseCombatWeapon::DryFire()
 {
 	WeaponSound(EMPTY);
+#ifdef GAME_DLL
+	CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), SOUNDENT_VOLUME_EMPTY, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+#endif
 	SendWeaponAnim(ACT_VM_DRYFIRE);
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
@@ -862,10 +882,12 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	{
 		return;
 	}
+
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;
 	}
+
 	else if (m_iClip1 == 0)
 	{
 		if (!m_bFireOnEmpty)
@@ -891,14 +913,9 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 
-	if (IsSemiAuto())
+	if (IsSemiAuto() && !m_bTriggerReset)
 	{
-		// Do nothing if we hold fire whilst semi auto
-		if ((pOwner->m_afButtonLast & IN_ATTACK) &&
-			(pOwner->m_nButtons & IN_ATTACK))
-		{
-			return;
-		}
+		return;
 	}
 
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
@@ -921,7 +938,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	// Only the player fires this way so we can cast
 	auto pPlayer = static_cast<CNEO_Player*>(GetOwner());
-
 	if (!pPlayer)
 	{
 		return;
@@ -940,6 +956,10 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
 	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
+	if (IsSemiAuto())
+	{
+		m_bTriggerReset = false;
+	}
 
 	// player "shoot" animation
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
@@ -958,6 +978,9 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	{
 		// MUST call sound before removing a round from the clip of a CMachineGun
 		WeaponSound(SINGLE, m_flNextPrimaryAttack);
+#ifdef GAME_DLL
+		CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), (GetNeoWepBits() & NEO_WEP_SUPPRESSED) ? SOUNDENT_VOLUME_NEO_SUPPRESSED : SOUNDENT_VOLUME_PISTOL, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+#endif
 		m_flNextPrimaryAttack = m_flNextPrimaryAttack + fireRate;
 		info.m_iShots++;
 		if (!fireRate)
@@ -1142,7 +1165,20 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 	// No supernatural gunowners allowed here
 	if (!pOwner->IsAlive())
 	{
-		Assert(false);
+#if DEBUG
+		static int deathTicks[MAX_PLAYERS_ARRAY_SAFE]{};
+		if (!*deathTicks)
+			for (int i = 0; i < ARRAYSIZE(deathTicks); ++i) deathTicks[i] = -1;
+		const int ownerIdx = pOwner->entindex();
+		Assert(pOwner->IsPlayer()); // player index guaranteed within array range
+		const int deathTick = deathTicks[ownerIdx];
+		if (deathTick != -1)
+		{
+			int tickDelta = gpGlobals->tickcount - deathTick;
+			AssertMsg(tickDelta != 1, "Owner has been dead for two consecutive ticks!!");
+		}
+		deathTicks[ownerIdx] = gpGlobals->tickcount;
+#endif
 		return false;
 	}
 
@@ -1197,11 +1233,7 @@ extern ConVar glow_outline_effect_enable;
 #endif // GLOWS_ENABLE
 int CNEOBaseCombatWeapon::DrawModel(int flags)
 {
-#ifdef GLOWS_ENABLE
-	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
-#else
 	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
-#endif // GLOWS_ENABLE
 	if (!pTargetPlayer)
 	{
 		Assert(false);

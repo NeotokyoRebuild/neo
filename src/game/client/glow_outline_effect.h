@@ -115,6 +115,13 @@ public:
 
 	void RenderGlowEffects( const CViewSetup *pSetup, int nSplitScreenSlot );
 
+#ifdef NEO
+	void SetUseTexturedHighlight(int nGlowObjectHandle, const bool useTexturedHighlight)
+	{
+		Assert( !m_GlowObjectDefinitions[nGlowObjectHandle].IsUnused() );
+		m_GlowObjectDefinitions[nGlowObjectHandle].m_bUseTexturedHighlight = useTexturedHighlight;
+	}
+#endif // NEO
 private:
 
 	void RenderGlowModels( const CViewSetup *pSetup, int nSplitScreenSlot, CMatRenderContextPtr &pRenderContext );
@@ -130,13 +137,16 @@ private:
 				   m_hEntity->ShouldDraw() && 
 				   !m_hEntity->IsDormant();
 		}
-
+		
 		bool IsUnused() const { return m_nNextFreeSlot != GlowObjectDefinition_t::ENTRY_IN_USE; }
 		void DrawModel();
 
 		EHANDLE m_hEntity;
 		Vector m_vGlowColor;
 		float m_flGlowAlpha;
+#ifdef NEO
+		bool m_bUseTexturedHighlight;
+#endif // NEO
 
 		bool m_bRenderWhenOccluded;
 		bool m_bRenderWhenUnoccluded;
@@ -205,6 +215,13 @@ public:
 	}
 
 	// Add more accessors/mutators here as needed
+
+#ifdef NEO
+	void SetUseTexturedHighlight(bool value)
+	{
+		g_GlowObjectManager.SetUseTexturedHighlight( m_nGlowObjectHandle, value );
+	}
+#endif // NEO
 
 private:
 	int m_nGlowObjectHandle;

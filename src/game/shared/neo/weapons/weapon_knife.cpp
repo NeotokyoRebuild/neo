@@ -176,6 +176,9 @@ void CWeaponKnife::Swing()
 	}
 
 	WeaponSound(SINGLE);
+#ifdef GAME_DLL
+	CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), SOUNDENT_VOLUME_EMPTY, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+#endif
 
 	// -------------------------
 	//	Miss
@@ -289,7 +292,7 @@ void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity
 
 		static constexpr float maxBackStabAngle = 0.6435011; // ~ asin(0.6);
 
-		static constexpr int damageToOneShotSupport = (100 * (1 / NEO_SUPPORT_DAMAGE_MODIFIER)) + 1;
+		static constexpr int damageToOneShotSupport = MAX_HEALTH_FOR_CLASS[NEO_CLASS_SUPPORT] + 1;
 
 		CTakeDamageInfo info(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
 

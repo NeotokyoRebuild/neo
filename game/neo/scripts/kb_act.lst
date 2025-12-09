@@ -20,6 +20,7 @@
 "+attack"				"#Valve_Primary_Attack"
 "+attack2"				"Special"
 "+aim"	 	            "Aim"
+"toggle_aim"	 	    "Aim (toggle)"
 "+reload"				"#Valve_Reload_Weapon"
 "+use"					"#Valve_Use_Items"
 "slot1"					"Primary Weapon"
