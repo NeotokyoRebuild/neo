@@ -16,9 +16,9 @@ extern ConVar neo_bot_path_reservation_distance;
 static void CNEOBotReservePath(CNEOBot* me, PathFollower& path)
 {
 	if (!neo_bot_path_reservation_enabled.GetBool() || !path.IsValid())
-        {
+	{
 		return;
-        }
+	}
 
 	CNEOBotPathReservations()->ReleaseAllAreas(me);
 
@@ -28,9 +28,9 @@ static void CNEOBotReservePath(CNEOBot* me, PathFollower& path)
 	for (const Path::Segment* seg = path.FirstSegment(); seg; seg = path.NextSegment(seg))
 	{
 		if (seg->distanceFromStart > reservation_distance)
-                {
+		{
 			break;
-                }
+		}
 
 		if (seg->area)
 		{
@@ -41,42 +41,42 @@ static void CNEOBotReservePath(CNEOBot* me, PathFollower& path)
 
 bool CNEOBotPathCompute(CNEOBot* bot, PathFollower& path, const Vector& goal, RouteType route, float maxPathLength, bool includeGoalIfPathFails, bool requireGoalArea)
 {
-       CNEOBotPathCost cost_with_reservations(bot, route);
-       if (path.Compute(bot, goal, cost_with_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea) && path.IsValid())
-       {
-               CNEOBotReservePath(bot, path);
-               return true;
-       }
+	CNEOBotPathCost cost_with_reservations(bot, route);
+	if (path.Compute(bot, goal, cost_with_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea) && path.IsValid())
+	{
+		CNEOBotReservePath(bot, path);
+		return true;
+	}
 
-       CNEOBotPathCost cost_without_reservations(bot, route);
-       cost_without_reservations.m_bIgnoreReservations = true;
-       if (path.Compute(bot, goal, cost_without_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea) && path.IsValid())
-       {
-               CNEOBotReservePath(bot, path);
-               return true;
-       }
+	CNEOBotPathCost cost_without_reservations(bot, route);
+	cost_without_reservations.m_bIgnoreReservations = true;
+	if (path.Compute(bot, goal, cost_without_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea) && path.IsValid())
+	{
+		CNEOBotReservePath(bot, path);
+		return true;
+	}
 
-       return false;
+	return false;
 }
 
-bool CNEOBotPathUpdateChase(CNEOBot* bot, ChasePath& path, CBaseEntity* subject, RouteType route, Vector *pPredictedSubjectPos)
+bool CNEOBotPathUpdateChase(CNEOBot* bot, ChasePath& path, CBaseEntity* subject, RouteType route, Vector* pPredictedSubjectPos)
 {
-       CNEOBotPathCost cost_with_reservations(bot, route);
-       path.Update(bot, subject, cost_with_reservations, pPredictedSubjectPos);
-       if (path.IsValid())
-       {
-               CNEOBotReservePath(bot, path);
-               return true;
-       }
+	CNEOBotPathCost cost_with_reservations(bot, route);
+	path.Update(bot, subject, cost_with_reservations, pPredictedSubjectPos);
+	if (path.IsValid())
+	{
+		CNEOBotReservePath(bot, path);
+		return true;
+	}
 
-       CNEOBotPathCost cost_without_reservations(bot, route);
-       cost_without_reservations.m_bIgnoreReservations = true;
-       path.Update(bot, subject, cost_without_reservations, pPredictedSubjectPos);
-       if (path.IsValid())
-       {
-               CNEOBotReservePath(bot, path);
-               return true;
-       }
+	CNEOBotPathCost cost_without_reservations(bot, route);
+	cost_without_reservations.m_bIgnoreReservations = true;
+	path.Update(bot, subject, cost_without_reservations, pPredictedSubjectPos);
+	if (path.IsValid())
+	{
+		CNEOBotReservePath(bot, path);
+		return true;
+	}
 
-       return false;
+	return false;
 }
