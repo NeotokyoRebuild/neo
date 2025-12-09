@@ -290,11 +290,9 @@ protected:
 	void					OnPrevTrack();
 
 	void					OnPlay();
-#ifdef NEO
-public:
-#endif // NEO
 	void					OnStop();
 #ifdef NEO
+public:
 	void					OnPause();
 protected:
 #endif // NEO
