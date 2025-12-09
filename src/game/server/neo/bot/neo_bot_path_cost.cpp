@@ -109,7 +109,9 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 
 		// ------------------------------------------------------------------------------------------------
 		// New path reservation related cost adjustments
-		if (neo_bot_path_friendly_reservation_enable.GetBool() && !m_bIgnoreReservations)
+		if ( neo_bot_path_friendly_reservation_enable.GetBool()
+			&& !m_bIgnoreReservations
+			&& (m_routeType != FASTEST_ROUTE) )
 		{
 			cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber()) * neo_bot_path_reservation_penalty.GetFloat();
 		}
