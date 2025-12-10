@@ -2657,24 +2657,29 @@ QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me, const QueryResult
 {
 	QueryResultType result = ANSWER_UNDEFINED;
 
-	auto *neoAction = static_cast<CNEOBotMainAction *>(m_action);
-	if ( neoAction )
+	Action<CNEOBot> *action = m_action;
+	if ( action )
 	{
 		// find innermost child action
-		CNEOBotMainAction *action;
-		for( action = neoAction; action->m_child; action = static_cast<CNEOBotMainAction *>(action->m_child) )
-			;
+		while( action->GetActiveChildAction() )
+        {
+			action = action->GetActiveChildAction();
+        }
 
 		// work our way through our containers
 		while( action && result == ANSWER_UNDEFINED )
 		{
-			CNEOBotMainAction *containingAction = static_cast<CNEOBotMainAction *>(action->m_parent);
+			Action<CNEOBot> *containingAction = action->GetParentAction();
 
 			// work our way up the stack
 			while( action && result == ANSWER_UNDEFINED )
 			{
-				result = action->ShouldWalk(me, qShouldAimQuery);
-				action = static_cast<CNEOBotMainAction *>(action->GetActionBuriedUnderMe());
+                auto *query = dynamic_cast<const CNEOBotContextualQueryInterface *>(action);
+                if (query)
+                {
+				    result = query->ShouldWalk(me, qShouldAimQuery);
+                }
+				action = action->GetActionBuriedUnderMe();
 			}
 
 			action = containingAction;
@@ -2693,24 +2698,29 @@ QueryResultType CNEOBotBehavior::ShouldAim(const CNEOBot *me, const bool bWepHas
 {
 	QueryResultType result = ANSWER_UNDEFINED;
 
-	auto *neoAction = static_cast<CNEOBotMainAction *>(m_action);
-	if ( neoAction )
+	Action<CNEOBot> *action = m_action;
+	if ( action )
 	{
 		// find innermost child action
-		CNEOBotMainAction *action;
-		for( action = neoAction; action->m_child; action = static_cast<CNEOBotMainAction *>(action->m_child) )
-			;
+		while( action->GetActiveChildAction() )
+        {
+			action = action->GetActiveChildAction();
+        }
 
 		// work our way through our containers
 		while( action && result == ANSWER_UNDEFINED )
 		{
-			CNEOBotMainAction *containingAction = static_cast<CNEOBotMainAction *>(action->m_parent);
+			Action<CNEOBot> *containingAction = action->GetParentAction();
 
 			// work our way up the stack
 			while( action && result == ANSWER_UNDEFINED )
 			{
-				result = action->ShouldAim(me, bWepHasClip);
-				action = static_cast<CNEOBotMainAction *>(action->GetActionBuriedUnderMe());
+                auto *query = dynamic_cast<const CNEOBotContextualQueryInterface *>(action);
+                if (query)
+                {
+				    result = query->ShouldAim(me, bWepHasClip);
+                }
+				action = action->GetActionBuriedUnderMe();
 			}
 
 			action = containingAction;

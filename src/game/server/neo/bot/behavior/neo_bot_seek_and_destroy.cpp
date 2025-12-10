@@ -227,6 +227,55 @@ QueryResultType CNEOBotSeekAndDestroy::ShouldHurry( const INextBot *me ) const
 	return ANSWER_UNDEFINED;
 }
 
+
+//---------------------------------------------------------------------------------------------
+// Should I slow down to let my teammates catch up?
+QueryResultType	CNEOBotSeekAndDestroy::ShouldWalk( const CNEOBot *me, const QueryResultType qShouldAimQuery ) const
+{
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		if (NEORules()->GhostExists())
+		{
+			// For comparing my distance to the ghost compared to my teammates
+			const Vector &vGhostPos = NEORules()->GetGhostPos();
+			float flMySqDistToGhost = (me->GetAbsOrigin() - vGhostPos).LengthSqr();
+			int iAliveTeammates = 0;
+
+			for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+			{
+				CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+
+				if (!pPlayer || !pPlayer->IsAlive() || pPlayer->GetTeamNumber() != me->GetTeamNumber() || pPlayer == me->GetEntity())
+				{
+					continue;
+				}
+
+				iAliveTeammates++;
+
+				// Check if this teammate is closer to the ghost
+				float flTeammateSqDistToGhost = (pPlayer->GetAbsOrigin() - vGhostPos).LengthSqr();
+				if (flTeammateSqDistToGhost < flMySqDistToGhost)
+				{
+					// Maybe I can catch up to my teammate up ahead
+					return ANSWER_UNDEFINED;
+				}
+			}
+
+			if (iAliveTeammates == 0)
+			{
+				// I'm the sole survivor, don't need to wait for anyone
+				return ANSWER_UNDEFINED;
+			}
+
+			// I should slow down to let my teammates catch up
+			return ANSWER_YES;
+		}
+	}
+
+	return ANSWER_UNDEFINED;
+}
+
 class CNextSpawnFilter : public IEntityFindFilter
 {
 public:
@@ -560,4 +609,17 @@ EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnCommandApproach( CNEOBot*
 	CNEOBotPathCompute( me, m_path, m_vOverrideApproach, SAFEST_ROUTE );
 
 	return TryContinue();
+}
+
+
+//---------------------------------------------------------------------------------------------
+QueryResultType CNEOBotSeekAndDestroy::ShouldAim(const CNEOBot* me, const bool bWepHasClip) const
+{
+	if (ShouldWalk(me, ANSWER_UNDEFINED) == ANSWER_YES)
+	{
+		// aiming is a safe way to slow down for teammates
+		return ANSWER_YES;
+	}
+
+	return ANSWER_UNDEFINED;
 }
