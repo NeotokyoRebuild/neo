@@ -27,17 +27,21 @@ public:
 	void	Spawn(void);
     void	Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
-	bool m_bPostDeath = false;
+	bool	m_bPostDeath = false;
 #endif
 
 	virtual unsigned int PhysicsSolidMaskForEntity() const final override { return MASK_PLAYERSOLID; }
 	virtual void UpdateOnRemove() override;
+
+	CNetworkVar(bool, m_bLocked);
 
 private:
 #ifdef GAME_DLL
 	void	Think(void);
 	void	HoldCancel(void);
 	void	AnimThink(void);
+	void	InputLock(inputdata_t& inputData) { m_bLocked = true; }
+	void	InputUnlock(inputdata_t& inputData) { m_bLocked = false; }
 #else
 	int		DrawModel(int flags) override;
 #endif

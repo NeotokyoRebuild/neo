@@ -325,6 +325,15 @@
 
 @PointClass base(Targetname, Angles) studio("models/player/jgr.mdl") = neo_juggernaut : "Juggernaut"
 [
+	StartLocked(choices) : "Start Locked?" : 0 : "If locked, players can't use the juggernaut" =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+
+	input Lock(void) : "Lock"
+	input Unlock(void) : "Unlock"
+
 	output OnPlayerActivate(void) : "Juggernaut activated"
 ]
 

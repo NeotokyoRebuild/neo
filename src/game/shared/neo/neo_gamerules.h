@@ -14,9 +14,7 @@
 #include "neo_player_shared.h"
 #include "neo_misc.h"
 #include "weapon_ghost.h"
-#ifdef GAME_DLL
 #include "neo_juggernaut.h"
-#endif
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -330,8 +328,10 @@ public:
 	Vector GetGhostMarkerPos() const;
 
 	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
-	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
-	const Vector& GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
+	bool JuggernautItemExists() const;
+	const Vector& GetJuggernautMarkerPos() const;
+	bool IsJuggernautLocked() const;
+
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -420,14 +420,15 @@ public:
 private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
-
+	float m_flJuggernautDeathTime = 0.0f;
+	int m_iLastJuggernautTeam = TEAM_INVALID;
+	
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
 	int m_iVIPPreviousClass = 0;
 
-	float m_flLastPointTime = 0.0f;
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
@@ -462,7 +463,7 @@ private:
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);
 	CNetworkVar(bool, m_bJuggernautItemExists);
-	CNetworkVector(m_vecJuggernautMarkerPos);
+	CNetworkHandle( CBaseEntity, m_hJuggernaut );
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
