@@ -320,18 +320,15 @@ void CWeaponSupa7::PrimaryAttack(void)
 		ammoType = m_iSecondaryAmmoType;
 		WeaponSound(WPN_DOUBLE);
 		WeaponSound(SPECIAL2);
-#ifdef GAME_DLL
-		CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), SOUNDENT_VOLUME_PISTOL, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
-#endif
 	}
 	else
 	{
 		// MUST call sound before removing a round from the clip of a CMachineGun
 		WeaponSound(SINGLE);
-#ifdef GAME_DLL
-		CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), SOUNDENT_VOLUME_PISTOL, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
-#endif
 	}
+#ifdef GAME_DLL
+	CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), SOUNDENT_VOLUME_PISTOL, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+#endif
 
 	FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);
 	if (m_bSlugLoaded)
