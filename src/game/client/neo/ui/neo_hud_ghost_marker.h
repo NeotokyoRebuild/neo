@@ -19,7 +19,6 @@ public:
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
 	virtual void Paint() override;
-	virtual void resetHUDState() override;
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw() override;
@@ -27,7 +26,6 @@ protected:
 	virtual ConVar *GetUpdateFrequencyConVar() const override;
 
 private:
-	CNEO_Juggernaut *m_jgrInPVS = nullptr;
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 
