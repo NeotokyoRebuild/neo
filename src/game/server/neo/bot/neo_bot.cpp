@@ -1771,7 +1771,7 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to, const Line
 	const auto lofMask = LineOfFireMask(flags);
 	UTIL_TraceLine(from, to, lofMask, &filter, &trace);
 
-	const bool bIsClear = !trace.DidHit() || (trace.DidHit() && IsAbleToBreak(trace.m_pEnt));
+	const bool bIsClear = !trace.DidHit() || IsAbleToBreak(trace.m_pEnt);
 
 	if (bIsClear && !(lofMask & CONTENTS_WINDOW))
 	{
@@ -1847,7 +1847,7 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const Line
 	const auto lofMask = LineOfFireMask(flags);
 	UTIL_TraceLine(from, to, lofMask, &filter, &trace);
 
-	const bool bIsClear = !trace.DidHit() || trace.m_pEnt == who || (trace.DidHit() && IsAbleToBreak(trace.m_pEnt));
+	const bool bIsClear = !trace.DidHit() || trace.m_pEnt == who || IsAbleToBreak(trace.m_pEnt);
 
 	if (bIsClear && !(lofMask & CONTENTS_WINDOW))
 	{

@@ -19,7 +19,7 @@ ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT
 ConVar neo_bot_sniper_aim_steady_rate( "neo_bot_sniper_aim_steady_rate", "10", FCVAR_CHEAT );
 ConVar neo_bot_debug_sniper( "neo_bot_debug_sniper", "0", FCVAR_CHEAT );
 ConVar neo_bot_fire_weapon_min_time( "neo_bot_fire_weapon_min_time", "1", FCVAR_CHEAT );
-ConVar neo_bot_fire_at_breakable_weapon_min_time( "neo_bot_fire_at_breakable_weapon_min_time", "0.4", FCVAR_CHEAT );
+ConVar neo_bot_fire_at_breakable_weapon_min_time( "neo_bot_fire_at_breakable_weapon_min_time", "0.4", FCVAR_CHEAT, "Minimum time to fire at breakables", true, 0.0f, true, 60.0f );
 
 ConVar neo_bot_notice_backstab_chance( "neo_bot_notice_backstab_chance", "25", FCVAR_CHEAT );
 ConVar neo_bot_notice_backstab_min_range( "neo_bot_notice_backstab_min_range", "100", FCVAR_CHEAT );
