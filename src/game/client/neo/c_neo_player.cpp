@@ -5,6 +5,7 @@
 #include "takedamageinfo.h"
 #include "neo_gamerules.h"
 #include "in_buttons.h"
+#include "c_playerresource.h"
 #include "iviewrender_beams.h"			// flashlight beam
 #include "r_efx.h"
 #include "dlight.h"
@@ -71,6 +72,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iNeoClass)),
 	RecvPropInt(RECVINFO(m_iNeoSkin)),
 	RecvPropInt(RECVINFO(m_iNeoStar)),
+	RecvPropInt(RECVINFO(m_iClassBeforeTakeover)),
 
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),
@@ -106,6 +108,9 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
 	RecvPropTime(RECVINFO(m_flDeathTime)),
+
+	RecvPropEHandle(RECVINFO(m_hSpectatorTakeoverPlayerTarget)),
+	RecvPropEHandle(RECVINFO(m_hSpectatorTakeoverPlayerImpersonatingMe))
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -1992,28 +1997,27 @@ void __MsgFunc_CSpectatorTakeoverPlayer(bf_read &msg)
 	C_NEO_Player* pPlayerTakeoverTarget = USERID2NEOPLAYER(playerTakeoverTargetUserID);
 
 
-	if (!pPlayerTakeoverTarget || !pSpectatorTakingOver)
+	if (pPlayerTakeoverTarget && pSpectatorTakingOver)
 	{
-		return;
+		// Save for later in C_NEO_Player::OnDataChanged
+		pSpectatorTakingOver->m_hSpectatorTakeoverPlayerTarget = pPlayerTakeoverTarget;
+		pSpectatorTakingOver->m_bCopyOverTakeoverPlayerDetails = true;
 	}
-
-	// Save for later in C_NEO_Player::OnDataChanged
-	pSpectatorTakingOver->m_hSpectatorTakeoverTarget = pPlayerTakeoverTarget;
 }
 
 CUserMessageRegister CSpectatorTakeoverPlayerRegistration("CSpectatorTakeoverPlayer", __MsgFunc_CSpectatorTakeoverPlayer);
 
 void C_NEO_Player::CSpectatorTakeoverPlayerUpdateOnDataChanged()
 {
-    if ( C_NEO_Player* pTarget = m_hSpectatorTakeoverTarget.Get() )
+	if (m_bCopyOverTakeoverPlayerDetails)
 	{
-        // Check if our model is stable from server & matches the target
-        if (GetModel() && (GetModel() == pTarget->GetModel()))
-        {
-            CSpectatorTakeoverPlayerUpdate(pTarget);
-            m_hSpectatorTakeoverTarget = nullptr;
-        }
-    }
+		m_bCopyOverTakeoverPlayerDetails = false;
+
+		if (C_NEO_Player* pTarget = m_hSpectatorTakeoverPlayerTarget.Get())
+		{
+			CSpectatorTakeoverPlayerUpdate(pTarget);
+		}
+	}
 }
 
 void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget)
@@ -2050,5 +2054,36 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 	SetAbsVelocity(pPlayerTakeoverTarget->GetAbsVelocity());
 	SetLocalAngles(pPlayerTakeoverTarget->GetLocalAngles());
 	pl.v_angle = pPlayerTakeoverTarget->pl.v_angle; // mimic SnapEyeAngles in neo_player
+}
+
+const char* C_NEO_Player::GetPlayerNameWithTakeoverContext(int player_index)
+{
+    if (player_index == 0)
+        return "";
+
+    const char* base_name = g_PR->GetPlayerName(player_index);
+    if (!base_name)
+        base_name = "";
+
+    // Does not factor in clan tag since original display did not use clan tag
+    C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(player_index));
+    if (pPlayer)
+    {
+        C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
+        if (pTakeoverTarget)
+        {
+            const char* pTakeoverTargetName = pTakeoverTarget->GetPlayerName();
+            if (!pTakeoverTargetName)
+                pTakeoverTargetName = "";
+
+            int len = V_sprintf_safe(m_sNameWithTakeoverContextProcessingBuffer, "%s (%s)", pTakeoverTargetName, base_name);
+            if (len >= sizeof(m_sNameWithTakeoverContextProcessingBuffer))
+            {
+                m_sNameWithTakeoverContextProcessingBuffer[sizeof(m_sNameWithTakeoverContextProcessingBuffer) - 2] = ')'; // cap off ()
+            }
+            return m_sNameWithTakeoverContextProcessingBuffer;
+        }
+    }
+    return base_name;
 }
 

@@ -86,6 +86,7 @@ protected:
 	void SetColorForNoticePlayer( int iTeamNumber );
 	void RetireExpiredDeathNotices( void );
 	
+	const char* GetPlayerNameWithTakeoverContext(int player_index);
 	virtual void FireGameEvent( IGameEvent * event );
 	void AddPlayerDeath(IGameEvent* event);
 	void AddPlayerRankChange(IGameEvent* event);
@@ -775,6 +776,18 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	if (!victim_name)
 		victim_name = "";
 
+	// Override killer/victim name if they took over another player
+	C_NEO_Player* pKiller = ToNEOPlayer(UTIL_PlayerByIndex(killer));
+	C_NEO_Player* pVictim = ToNEOPlayer(UTIL_PlayerByIndex(victim));
+	C_NEO_Player* pAssist = ToNEOPlayer(UTIL_PlayerByIndex(assist));
+
+	if (pKiller)
+		killer_name = pKiller->GetPlayerNameWithTakeoverContext(killer);
+	if (pVictim)
+		victim_name = pVictim->GetPlayerNameWithTakeoverContext(victim);
+	if (pAssist)
+		assists_name = pAssist->GetPlayerNameWithTakeoverContext(assist);
+
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = killer;
@@ -863,9 +876,8 @@ void CNEOHud_DeathNotice::AddPlayerRankChange(IGameEvent* event)
 	const int newRank = event->GetInt("newRank");
 
 	// Get the name of the player
-	const char* playerRankChangeName = g_PR->GetPlayerName(playerRankChange);
-	if (!playerRankChangeName)
-		playerRankChangeName = "";
+	C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerRankChange));
+	const char* playerRankChangeName = pPlayer ? pPlayer->GetPlayerNameWithTakeoverContext(playerRankChange) : "";
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
@@ -896,9 +908,8 @@ void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
 	const int playerCapturedGhost = engine->GetPlayerForUserID(event->GetInt("userid"));
 
 	// Get the name of the player
-	const char* playerCapturedGhostName = g_PR->GetPlayerName(playerCapturedGhost);
-	if (!playerCapturedGhostName)
-		playerCapturedGhostName = "";
+	C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerCapturedGhost));
+	const char* playerCapturedGhostName = pPlayer ? pPlayer->GetPlayerNameWithTakeoverContext(playerCapturedGhost) : "";
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
@@ -925,9 +936,8 @@ void CNEOHud_DeathNotice::AddVIPExtract(IGameEvent* event)
 	const int playerExtracted = engine->GetPlayerForUserID(event->GetInt("userid"));
 
 	// Name of VIP
-	const char* playerExtractedName = g_PR->GetPlayerName(playerExtracted);
-	if (!playerExtractedName)
-		playerExtractedName = "";
+	C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerExtracted));
+	const char* playerExtractedName = pPlayer ? pPlayer->GetPlayerNameWithTakeoverContext(playerExtracted) : "";
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
@@ -955,12 +965,10 @@ void CNEOHud_DeathNotice::AddVIPDeath(IGameEvent* event)
 	const int VIPKiller = engine->GetPlayerForUserID(event->GetInt("attacker"));
 
 	// Names of vip and killer
-	const char* playerKilledName = g_PR->GetPlayerName(playerKilled);
-	if (!playerKilledName)
-		playerKilledName = "";
-	const char* VIPKillerName = g_PR->GetPlayerName(VIPKiller);
-	if (!VIPKillerName)
-		VIPKillerName = "";
+	C_NEO_Player* pPlayerKilled = ToNEOPlayer(UTIL_PlayerByIndex(playerKilled));
+	const char* playerKilledName = pPlayerKilled ? pPlayerKilled->GetPlayerNameWithTakeoverContext(playerKilled) : "";
+	C_NEO_Player* pVIPKiller = ToNEOPlayer(UTIL_PlayerByIndex(VIPKiller));
+	const char* VIPKillerName = pVIPKiller ? pVIPKiller->GetPlayerNameWithTakeoverContext(VIPKiller) : "";
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;

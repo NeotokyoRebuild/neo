@@ -719,16 +719,38 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 	const char* squadMateClass = GetNeoClassName(g_PR->GetClass(playerIndex));
 	const bool isAlive = g_PR->IsAlive(playerIndex);
 
+	C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
 	if (isAlive)
 	{
+		const char* pPlayerDisplayName = pNeoPlayer ?
+			pNeoPlayer->GetPlayerNameWithTakeoverContext(playerIndex)
+			: g_PR->GetPlayerName(playerIndex);
+
+		const char* displayRankName = squadMateRankName;
+		if (pNeoPlayer)
+		{
+			C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
+			if (pTakeoverTarget)
+			{
+				displayRankName = GetRankName(g_PR->GetXP(pTakeoverTarget->entindex()), true);
+			}
+		}
+
 		const int healthMode = cl_neo_hud_health_mode.GetInt();
 		char playerHealth[7]; // 4 digits + 2 letters
 		V_snprintf(playerHealth, sizeof(playerHealth), healthMode ? "%dhp" : "%d%%", g_PR->GetDisplayedHealth(playerIndex, healthMode));
-		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", g_PR->GetPlayerName(playerIndex), squadMateRankName, squadMateClass, playerHealth);
+		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", pPlayerDisplayName, squadMateRankName, squadMateClass, playerHealth);
 	}
 	else
 	{
-		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", g_PR->GetPlayerName(playerIndex), squadMateClass);
+		auto* pImpersonator = pNeoPlayer ? pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get() : nullptr;
+
+		const char* pPlayerDisplayName = pImpersonator ?
+		    pImpersonator->GetPlayerName()
+			: g_PR->GetPlayerName(playerIndex);
+
+		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
+		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", pPlayerDisplayName, displayClass);
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
 
