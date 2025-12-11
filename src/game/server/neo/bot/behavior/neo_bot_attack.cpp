@@ -4,6 +4,7 @@
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/neo_bot_path_compute.h"
 
 #include "nav_mesh.h"
 
@@ -80,13 +81,11 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 			if ( isUsingCloseRangeWeapon )
 			{
-				CNEOBotPathCost cost( me, FASTEST_ROUTE );
-				m_chasePath.Update( me, threat->GetEntity(), cost );
+				CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), FASTEST_ROUTE );
 			}
 			else
 			{
-				CNEOBotPathCost cost( me, DEFAULT_ROUTE );
-				m_chasePath.Update( me, threat->GetEntity(), cost );
+				CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), DEFAULT_ROUTE );
 			}
 		}
 		else
@@ -115,13 +114,11 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 				if ( isUsingCloseRangeWeapon )
 				{
-					CNEOBotPathCost cost( me, FASTEST_ROUTE );
-					m_path.Compute( me, threat->GetLastKnownPosition(), cost );
+					CNEOBotPathCompute( me, m_path, threat->GetLastKnownPosition(), FASTEST_ROUTE );
 				}
 				else
 				{
-					CNEOBotPathCost cost( me, DEFAULT_ROUTE );
-					m_path.Compute( me, threat->GetLastKnownPosition(), cost );
+					CNEOBotPathCompute( me, m_path, threat->GetLastKnownPosition(), DEFAULT_ROUTE );
 				}
 			}
 		}

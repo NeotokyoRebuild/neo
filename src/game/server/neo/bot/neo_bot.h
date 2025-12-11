@@ -5,6 +5,7 @@
 #include "neo_bot_vision.h"
 #include "neo_bot_body.h"
 #include "neo_bot_locomotion.h"
+#include "neo_bot_path_cost.h"
 #include "neo_player.h"
 #include "neo_bot_squad.h"
 #include "map_entities/neo_bot_generator.h"
@@ -213,6 +214,8 @@ public:
 	bool IsLineOfFireClear(const Vector& from, const Vector& to, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given points
 	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given point and entity
 	bool IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const;
+	bool IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to) const;
+	void RepathIfFriendlyBlockingLineOfFire();
 
 	bool IsEntityBetweenTargetAndSelf(CBaseEntity* other, CBaseEntity* target);	// return true if "other" is positioned inbetween us and "target"
 
@@ -500,6 +503,9 @@ private:
 	float m_flAutoJumpMin;
 	float m_flAutoJumpMax;
 	CountdownTimer m_autoJumpTimer;
+
+	CountdownTimer m_repathAroundFriendlyTimer;
+	PathFollower m_repathAroundFriendlyFollower;
 
 	float m_flPhyscannonPickupTime = 0.0f;
 
@@ -799,121 +805,6 @@ inline const CNEOBot* ToNEOBot(const CBaseEntity* pEntity)
 
 	return static_cast<const CNEOBot*>(pEntity);
 }
-
-//--------------------------------------------------------------------------------------------------------------
-/**
- * Functor used with NavAreaBuildPath()
- */
-class CNEOBotPathCost : public IPathCost
-{
-public:
-	CNEOBotPathCost(CNEOBot* me, RouteType routeType)
-	{
-		m_me = me;
-		m_routeType = routeType;
-		m_stepHeight = me->GetLocomotionInterface()->GetStepHeight();
-		m_maxJumpHeight = me->GetLocomotionInterface()->GetMaxJumpHeight();
-		m_maxDropHeight = me->GetLocomotionInterface()->GetDeathDropHeight();
-	}
-
-	virtual float operator()(CNavArea* baseArea, CNavArea* fromArea, const CNavLadder* ladder, const CFuncElevator* elevator, float length) const
-	{
-		VPROF_BUDGET("CNEOBotPathCost::operator()", "NextBot");
-
-		CNavArea* area = (CNavArea*)baseArea;
-
-		if (fromArea == NULL)
-		{
-			// first area in path, no cost
-			return 0.0f;
-		}
-		else
-		{
-			if (!m_me->GetLocomotionInterface()->IsAreaTraversable(area))
-			{
-				return -1.0f;
-			}
-
-			// compute distance traveled along path so far
-			float dist;
-
-			if (ladder)
-			{
-				dist = ladder->m_length;
-			}
-			else if (length > 0.0)
-			{
-				dist = length;
-			}
-			else
-			{
-				dist = (area->GetCenter() - fromArea->GetCenter()).Length();
-			}
-
-
-			// check height change
-			float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
-
-			if (deltaZ >= m_stepHeight)
-			{
-				if (deltaZ >= m_maxJumpHeight)
-				{
-					// too high to reach
-					return -1.0f;
-				}
-
-				// jumping is slower than flat ground
-				const float jumpPenalty = 2.0f;
-				dist *= jumpPenalty;
-			}
-			else if (deltaZ < -m_maxDropHeight)
-			{
-				// too far to drop
-				return -1.0f;
-			}
-
-			// add a random penalty unique to this character so they choose different routes to the same place
-			float preference = 1.0f;
-
-			if (m_routeType == DEFAULT_ROUTE)
-			{
-				// this term causes the same bot to choose different routes over time,
-				// but keep the same route for a period in case of repaths
-				int timeMod = (int)(gpGlobals->curtime / 10.0f) + 1;
-				preference = 1.0f + 50.0f * (1.0f + FastCos((float)(m_me->GetEntity()->entindex() * area->GetID() * timeMod)));
-			}
-
-			if (m_routeType == SAFEST_ROUTE)
-			{
-				// misyl: combat areas.
-#if 0
-				// avoid combat areas
-				if (area->IsInCombat())
-				{
-					const float combatDangerCost = 4.0f;
-					dist *= combatDangerCost * area->GetCombatIntensity();
-				}
-#endif
-			}
-
-			float cost = (dist * preference);
-
-			if (area->HasAttributes(NAV_MESH_FUNC_COST))
-			{
-				cost *= area->ComputeFuncNavCost(m_me);
-				DebuggerBreakOnNaN_StagingOnly(cost);
-			}
-
-			return cost + fromArea->GetCostSoFar();
-		}
-	}
-
-	CNEOBot* m_me;
-	RouteType m_routeType;
-	float m_stepHeight;
-	float m_maxJumpHeight;
-	float m_maxDropHeight;
-};
 
 
 //---------------------------------------------------------------------------------------------

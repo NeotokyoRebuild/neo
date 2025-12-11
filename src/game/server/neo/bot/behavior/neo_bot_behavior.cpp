@@ -154,6 +154,8 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 		me->m_flLastShouldAimTime = gpGlobals->curtime;
 	}
 	me->m_qPrevShouldAim = qDirectShouldAimQuery;
+	
+	me->RepathIfFriendlyBlockingLineOfFire();
 
 	return Continue();
 }

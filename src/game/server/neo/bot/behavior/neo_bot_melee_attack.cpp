@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_melee_attack.h"
+#include "bot/neo_bot_path_compute.h"
 
 #include "nav_mesh.h"
 
@@ -59,8 +60,7 @@ ActionResult< CNEOBot >	CNEOBotMeleeAttack::Update( CNEOBot *me, float interval 
 	me->PressFireButton();
 
 	// chase them down
-	CNEOBotPathCost cost( me, FASTEST_ROUTE );
-	m_path.Update( me, threat->GetEntity(), cost );
+	CNEOBotPathUpdateChase( me, m_path, threat->GetEntity(), FASTEST_ROUTE );
 
 	return Continue();
 }

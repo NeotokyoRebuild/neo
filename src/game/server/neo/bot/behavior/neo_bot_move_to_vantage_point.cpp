@@ -2,6 +2,7 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_move_to_vantage_point.h"
+#include "bot/neo_bot_path_compute.h"
 
 #include "nav_mesh.h"
 
@@ -46,8 +47,7 @@ ActionResult< CNEOBot >	CNEOBotMoveToVantagePoint::Update( CNEOBot *me, float in
 	{
 		m_repathTimer.Start( 1.0f );
 
-		CNEOBotPathCost cost( me, FASTEST_ROUTE );
-		if ( !m_path.Compute( me, m_vantageArea->GetCenter(), cost ) )
+		if ( !CNEOBotPathCompute( me, m_path, m_vantageArea->GetCenter(), FASTEST_ROUTE ) )
 		{
 			return Done( "No path to vantage point exists" );
 		}

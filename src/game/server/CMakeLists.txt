@@ -1408,6 +1408,12 @@ target_sources_grouped(
     FILES
     neo/bot/neo_bot.cpp
     neo/bot/neo_bot.h
+    neo/bot/neo_bot_path_compute.cpp
+    neo/bot/neo_bot_path_compute.h
+    neo/bot/neo_bot_path_cost.cpp
+    neo/bot/neo_bot_path_cost.h
+    neo/bot/neo_bot_path_reservation.cpp
+    neo/bot/neo_bot_path_reservation.h
     neo/bot/neo_bot_body.cpp
     neo/bot/neo_bot_body.h
     neo/bot/neo_bot_contextual_query_interface.h

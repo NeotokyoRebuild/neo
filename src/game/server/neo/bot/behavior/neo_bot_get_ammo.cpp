@@ -4,6 +4,7 @@
 #include "neo_gamerules.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_get_ammo.h"
+#include "bot/neo_bot_path_compute.h"
 #include "items.h"
 
 extern ConVar neo_bot_path_lookahead_range;
@@ -116,9 +117,8 @@ bool CNEOBotGetAmmo::IsPossible( CNEOBot *me )
 		NDebugOverlay::Cross3D( closestAmmo->WorldSpaceCenter(), 5.0f, 255, 255, 0, true, 999.9 );
 	}
 
-	CNEOBotPathCost cost( me, FASTEST_ROUTE );
 	PathFollower path;
-	if ( !path.Compute( me, closestAmmo->WorldSpaceCenter(), cost ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
+	if ( !CNEOBotComputePath( me, path, closestAmmo->WorldSpaceCenter(), FASTEST_ROUTE ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
 	{
 		if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
 		{
@@ -153,8 +153,7 @@ ActionResult< CNEOBot >	CNEOBotGetAmmo::OnStart( CNEOBot *me, Action< CNEOBot > 
 
 	m_ammo = s_possibleAmmo;
 
-	CNEOBotPathCost cost( me, FASTEST_ROUTE );
-	if ( !m_path.Compute( me, m_ammo->WorldSpaceCenter(), cost ) || !m_path.IsValid() || m_path.GetResult() != Path::COMPLETE_PATH )
+	if ( !CNEOBotComputePath( me, m_path, m_ammo->WorldSpaceCenter(), FASTEST_ROUTE ) || !m_path.IsValid() || m_path.GetResult() != Path::COMPLETE_PATH )
 	{
 		return Done( "No path to ammo!" );
 	}

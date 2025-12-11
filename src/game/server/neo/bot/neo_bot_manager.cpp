@@ -5,6 +5,7 @@
 #include "team.h"
 #include "neo_bot.h"
 #include "neo_gamerules.h"
+#include "neo_bot_path_reservation.h"
 
 
 //----------------------------------------------------------------------------------------------------------------
@@ -111,6 +112,8 @@ void CNEOBotManager::OnMapLoaded( void )
 
 	NEOBotProfileResetPicks();
 	ClearStuckBotData();
+
+	CNEOBotPathReservations()->Clear();
 }
 
 
@@ -526,7 +529,9 @@ void CNEOBotManager::LevelShutdown()
 	{
 		RevertOfflinePracticeConvars();
 		SetIsInOfflinePractice( false );
-	}		
+	}
+	
+	CNEOBotPathReservations()->Clear();
 }
 
 
