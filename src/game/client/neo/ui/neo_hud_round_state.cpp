@@ -621,7 +621,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const int localPlayerTeam = GetLocalPlayerTeam();
 		const int localPlayerIndex = GetLocalPlayerIndex();
 		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
-		const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
+		const int leftTeam = cl_neo_hud_team_swap_sides.GetBool() ? (localPlayerSpec ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
 
 		int offset = 52;
 		if (cl_neo_squad_hud_star_scale.GetFloat() > 0)
@@ -649,7 +649,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 					continue;
 				}
 				const int playerTeam = g_PR->GetTeam(i);
-				if (playerTeam != leftTeam)
+				if (playerTeam != localPlayerTeam)
 				{
 					continue;
 				}
@@ -686,13 +686,16 @@ void CNEOHud_RoundState::DrawPlayerList()
 				{
 					m_iRightPlayersAlive++;
 				}
-				continue;
 			}
 			else {
 				if (g_PR->IsAlive(i))
 				{
 					m_iLeftPlayersAlive++;
 				}
+			}
+			if (playerTeam != localPlayerTeam)
+			{
+				continue;
 			}
 			if (i == localPlayerIndex || localPlayerSpec || hideDueToScoreboard)
 			{
