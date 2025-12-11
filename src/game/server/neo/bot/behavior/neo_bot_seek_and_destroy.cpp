@@ -232,6 +232,18 @@ QueryResultType CNEOBotSeekAndDestroy::ShouldHurry( const INextBot *me ) const
 // Should I slow down to let my teammates catch up?
 QueryResultType	CNEOBotSeekAndDestroy::ShouldWalk( const CNEOBot *me, const QueryResultType qShouldAimQuery ) const
 {
+	// ShouldAim query shorts cuts ShouldWalk to ANSWER_YES as aiming and running blocks each other
+	if (qShouldAimQuery == ANSWER_YES)
+	{
+		return ANSWER_YES;
+	}
+
+	const CKnownEntity* threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if (threat != NULL)
+	{
+		// I need to decide how to deal with a threat
+		return ANSWER_UNDEFINED;
+	}
 
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
 	{
@@ -252,6 +264,13 @@ QueryResultType	CNEOBotSeekAndDestroy::ShouldWalk( const CNEOBot *me, const Quer
 				}
 
 				iAliveTeammates++;
+
+				const CNEO_Player *pNeoPlayer = ToNEOPlayer(pPlayer);
+				if (pNeoPlayer && pNeoPlayer->IsCarryingGhost())
+				{
+					// Maybe I can catch up to my team's ghost carrier
+					return ANSWER_UNDEFINED;
+				}
 
 				// Check if this teammate is closer to the ghost
 				float flTeammateSqDistToGhost = (pPlayer->GetAbsOrigin() - vGhostPos).LengthSqr();
@@ -275,6 +294,14 @@ QueryResultType	CNEOBotSeekAndDestroy::ShouldWalk( const CNEOBot *me, const Quer
 
 	return ANSWER_UNDEFINED;
 }
+
+
+//---------------------------------------------------------------------------------------------
+QueryResultType CNEOBotSeekAndDestroy::ShouldAim(const CNEOBot* me, const bool bWepHasClip) const
+{
+	return ANSWER_UNDEFINED;
+}
+
 
 class CNextSpawnFilter : public IEntityFindFilter
 {
@@ -609,17 +636,4 @@ EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnCommandApproach( CNEOBot*
 	CNEOBotPathCompute( me, m_path, m_vOverrideApproach, SAFEST_ROUTE );
 
 	return TryContinue();
-}
-
-
-//---------------------------------------------------------------------------------------------
-QueryResultType CNEOBotSeekAndDestroy::ShouldAim(const CNEOBot* me, const bool bWepHasClip) const
-{
-	if (ShouldWalk(me, ANSWER_UNDEFINED) == ANSWER_YES)
-	{
-		// aiming is a safe way to slow down for teammates
-		return ANSWER_YES;
-	}
-
-	return ANSWER_UNDEFINED;
 }
