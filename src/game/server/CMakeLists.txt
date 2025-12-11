@@ -623,6 +623,7 @@ target_sources_grouped(
     lights.cpp
     lights.h
     locksounds.h
+    logic_achievement.cpp
     logic_eventlistener.cpp
     logic_eventlistener.h
     logic_measure_movement.cpp

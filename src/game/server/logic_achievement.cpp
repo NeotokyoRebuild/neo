@@ -3,7 +3,11 @@
 //	Defines a logical entity which passes achievement related events to the gamerules system.
 
 #include "cbase.h"
+#ifdef NEO
+#include "neo_gamerules.h"
+#else
 #include "gamerules.h"
+#endif
 #include "entityinput.h"
 #include "entityoutput.h"
 
@@ -136,7 +140,11 @@ CLogicAchievement::CLogicAchievement(void)
 void CLogicAchievement::InputFireEvent( inputdata_t &inputdata )
 {
 	// If we're active, and our string matched a valid achievement ID
+#ifdef NEO
+	if ( !m_bDisabled && NEORules()->IsOfficialMap() && m_iszAchievementEventID != NULL_STRING )
+#else
 	if ( !m_bDisabled  && m_iszAchievementEventID != NULL_STRING)
+#endif
 	{
 		m_OnFired.FireOutput( inputdata.pActivator, this );
 
