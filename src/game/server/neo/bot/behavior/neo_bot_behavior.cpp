@@ -789,6 +789,24 @@ QueryResultType	CNEOBotMainAction::ShouldRetreat( const INextBot *bot ) const
 	if ( me->HasAttribute( CNEOBot::IGNORE_ENEMIES ) )
 		return ANSWER_NO;
 
+	const CKnownEntity* threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if (threat)
+	{
+		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
+		if (myWeapon && myWeapon->m_bInReload)
+		{
+			return ANSWER_YES;
+		}
+
+		if ( me->IsThreatFiringAtMe(threat->GetEntity())
+			&& me->IsLineOfFireClear(threat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT) )
+		{
+			// IsThreatFiringAtMe only checks general aim direction, and does not check if a wall is in the way
+			// IsLineOfFireClear check needed to prevent bots from hiding from gun sounds behind walls
+			return ANSWER_YES;
+		}
+	}
+
 	return ANSWER_NO;
 }
 
