@@ -33,7 +33,7 @@ private:
 
 	ActionResult< CNEOBot > ScavengeForPrimaryWeapon(CNEOBot* me);
 
-	void AvoidBumpingEnemies(CNEOBot* me);
+	void AvoidBumpingFriends(CNEOBot* me);
 	void ReconConsiderSuperJump(CNEOBot *me);
 	ActionResult< CNEOBot > WatchForGrenades(CNEOBot* me);
 };
