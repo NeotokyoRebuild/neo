@@ -1915,6 +1915,12 @@ void CNEOBot::RepathIfFriendlyBlockingLineOfFire()
 		return;
 	}
 
+	const PathFollower* pPath = GetCurrentPath();
+	if (!pPath)
+	{
+		return;
+	}
+
 	if (!m_repathAroundFriendlyTimer.IsElapsed())
 	{
 		return;
@@ -1932,7 +1938,6 @@ void CNEOBot::RepathIfFriendlyBlockingLineOfFire()
 
 	if (!IsLineOfFireClearOfFriendlies(eyePos, targetPos))
 	{
-		const PathFollower* pPath = GetCurrentPath();
 		Vector goal = pPath->GetEndPosition();
 
 		CNEOBotPathCost cost(this, SAFEST_ROUTE);
