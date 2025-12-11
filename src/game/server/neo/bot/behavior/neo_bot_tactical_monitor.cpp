@@ -18,6 +18,7 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
+#include "neo/neo_player_shared.h"
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 
@@ -171,6 +172,113 @@ void CNEOBotTacticalMonitor::AvoidBumpingEnemies( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
+void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
+{
+	CNEO_Player *pNeoMe = ToNEOPlayer(me);
+	if ( !pNeoMe || pNeoMe->GetClass() != NEO_CLASS_RECON )
+	{
+		return;
+	}
+
+	const CKnownEntity *pKnownThreat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if ( !pKnownThreat || !pKnownThreat->GetEntity() )
+	{
+		return;
+	}
+
+	CBaseEntity *pThreatEntity = pKnownThreat->GetEntity();
+
+	if ( !pNeoMe->IsThreatFiringAtMe( pThreatEntity ) )
+	{
+		return;
+	}
+
+	// Don't want to waste aux jumping behind cover
+	if ( !me->IsLineOfFireClear( pThreatEntity, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+	{
+		return;
+	}
+
+	// Check that bot isn't only moving sideways which wastes aux power
+	if ( ( pNeoMe->m_nButtons & IN_SPEED ) == 0 || ( pNeoMe->m_nButtons & ( IN_FORWARD | IN_BACK ) ) == 0 )
+	{
+		return;
+	}
+
+	// Ceiling check
+	const float ceilingCheckHeight = 128.0f;
+	trace_t tr;
+	Vector start = pNeoMe->GetAbsOrigin();
+	Vector end = start + Vector( 0, 0, ceilingCheckHeight );
+	UTIL_TraceLine( start, end, MASK_PLAYERSOLID, pNeoMe, COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
+
+	if ( tr.fraction < 1.0f )
+	{
+		return;
+	}
+
+	// Trajectory checks
+	const float trajectoryCheckDistance = 256.0f;
+	Vector forward;
+	AngleVectors( pNeoMe->EyeAngles(), &forward );
+
+	if (pNeoMe->m_nButtons & IN_FORWARD)
+	{
+		// Forward check
+		Vector forwardDir = forward;
+		forwardDir.z = 1.0f;
+		forwardDir.NormalizeInPlace();
+		end = start + forwardDir * trajectoryCheckDistance;
+		UTIL_TraceLine(start, end, MASK_PLAYERSOLID, pNeoMe, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
+
+		if (tr.fraction < 1.0f)
+		{
+			return;
+		}
+
+		// Feet check
+		forward.z = 0;
+		end = start + forward * trajectoryCheckDistance;
+		UTIL_TraceLine(start, end, MASK_PLAYERSOLID, pNeoMe, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
+		if (tr.fraction < 1.0f)
+		{
+			return;
+		}
+	}
+	else if (pNeoMe->m_nButtons & IN_BACK)
+	{
+		// Backward check
+		Vector backwardDir = -forward;
+		backwardDir.z = 1.0f;
+		backwardDir.NormalizeInPlace();
+		end = start + backwardDir * trajectoryCheckDistance;
+		UTIL_TraceLine(start, end, MASK_PLAYERSOLID, pNeoMe, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
+
+		if (tr.fraction < 1.0f)
+		{
+			return;
+		}
+
+		// Feet check
+		forward.z = 0;
+		end = start - forward * trajectoryCheckDistance;
+		UTIL_TraceLine(start, end, MASK_PLAYERSOLID, pNeoMe, COLLISION_GROUP_PLAYER_MOVEMENT, &tr);
+		if (tr.fraction < 1.0f)
+		{
+			return;
+		}
+	}
+
+	if (pNeoMe->IsAllowedToSuperJump())
+	{
+		me->GetLocomotionInterface()->Jump();
+		// NEO Jank: It's easier to give bots a slight boost to compensate for their erratic movement inputs
+		me->SuperJump();
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
 	if ( neo_bot_force_jump.GetBool() )
@@ -180,6 +288,8 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 			me->GetLocomotionInterface()->Jump();
 		}
 	}
+
+	ReconConsiderSuperJump( me );
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 
