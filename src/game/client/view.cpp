@@ -795,26 +795,26 @@ void CViewRender::SetUpViews()
 		if (pPlayer)
 		{
 			pPlayer->CalcView(viewEye.origin, viewEye.angles, viewEye.zNear, viewEye.zFar, viewEye.fov);
-		}
 		
-		if (viewEye.width && viewEye.height)
-		{
-			int x, y;
-			vgui::input()->GetCursorPos(x, y);
-			float flX = ((float)x / viewEye.width) - 0.5;
-			float flY = ((float)y / viewEye.height) - 0.5;
+			if (viewEye.width && viewEye.height)
+			{
+				int x, y;
+				vgui::input()->GetCursorPos(x, y);
+				float flX = ((float)x / viewEye.width) - 0.5;
+				float flY = ((float)y / viewEye.height) - 0.5;
 
-			// S curve with a minimum value of -0.5 and maximum value of 0.5
-			constexpr float CURVE_STEEPNESS = 5;
-			flX = (1 / (1 + pow(2, -CURVE_STEEPNESS * flX))) - 0.5;
-			flY = (1 / (1 + pow(2, -CURVE_STEEPNESS * flY))) - 0.5;
+				// S curve with a minimum value of -0.5 and maximum value of 0.5
+				constexpr float CURVE_STEEPNESS = 5;
+				flX = (1 / (1 + pow(2, -CURVE_STEEPNESS * flX))) - 0.5;
+				flY = (1 / (1 + pow(2, -CURVE_STEEPNESS * flY))) - 0.5;
 
-			constexpr int CAMERA_MOVEMENT_MULTIPIER = 5;
-			flX *= CAMERA_MOVEMENT_MULTIPIER;
-			flY *= CAMERA_MOVEMENT_MULTIPIER;
+				constexpr int CAMERA_MOVEMENT_MULTIPIER = 5;
+				flX *= CAMERA_MOVEMENT_MULTIPIER;
+				flY *= CAMERA_MOVEMENT_MULTIPIER;
 
-			viewEye.angles.y += flX;
-			viewEye.angles.x -= flY;
+				viewEye.angles.y += flX;
+				viewEye.angles.x -= flY;
+			}
 		}
 		else
 		{
