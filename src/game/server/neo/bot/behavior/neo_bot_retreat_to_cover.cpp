@@ -2,11 +2,14 @@
 
 #include "cbase.h"
 #include "neo_player.h"
+#include "neo_smokelineofsightblocker.h"
 #include "bot/neo_bot.h"
+#include "bot/behavior/neo_bot_grenade_dispatch.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
 
 extern ConVar neo_bot_path_lookahead_range;
+extern ConVar sv_neo_smoke_bloom_duration;
 ConVar neo_bot_retreat_to_cover_range( "neo_bot_retreat_to_cover_range", "1000", FCVAR_CHEAT );
 ConVar neo_bot_debug_retreat_to_cover( "neo_bot_debug_retreat_to_cover", "0", FCVAR_CHEAT );
 ConVar neo_bot_wait_in_cover_min_time( "neo_bot_wait_in_cover_min_time", "1", FCVAR_CHEAT );
@@ -53,7 +56,33 @@ public:
 			{
 				// is area visible by known threat
 				if ( m_area->IsPotentiallyVisible( threatArea ) )
-					++m_exposedThreatCount;
+				{
+					// Is there smoke in this area that I can use for concealment?
+					bool bObscuredBySmoke = false;
+					CNEO_Player *pThreatPlayer = ToNEOPlayer( known.GetEntity() );
+					// Support class can see through smoke
+					if ( pThreatPlayer && (pThreatPlayer->GetClass() != NEO_CLASS_SUPPORT) )
+					{
+						ScopedSmokeLOS smokeScope( false );
+
+						Vector vecThreatEye = known.GetLastKnownPosition() + pThreatPlayer->GetViewOffset();
+						Vector vecCandidateArea = m_area->GetCenter() + m_me->GetViewOffset();
+
+						trace_t tr;
+						CTraceFilterSimple filter( known.GetEntity(), COLLISION_GROUP_NONE);
+						UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS, &filter, &tr );
+
+						if ( tr.fraction < 1.0f )
+						{
+							bObscuredBySmoke = true;
+						}
+					}
+
+					if ( !bObscuredBySmoke )
+					{
+						++m_exposedThreatCount;
+					}
+				}
 			}
 		}
 
@@ -214,6 +243,16 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 
 		if ( threat )
 		{
+			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
+			{
+				m_grenadeThrowCooldownTimer.Start( sv_neo_smoke_bloom_duration.GetFloat() / 2.0f );
+				Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
+				if ( pGrenadeBehavior )
+				{
+					return SuspendFor( pGrenadeBehavior, "Throwing grenade from cover!" );
+				}
+			}
+
 			// threats are still visible - find new cover
 			m_coverArea = FindCoverArea( me );
 
