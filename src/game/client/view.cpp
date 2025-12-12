@@ -59,6 +59,9 @@
 #include "c_prop_portal.h" //portal surface rendering functions
 #endif
 
+#ifdef NEO
+#include "vgui_controls/pch_vgui_controls.h"
+#endif // NEO
 	
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -736,6 +739,7 @@ float CViewRender::GetZFar()
 }
 
 
+ConVar cl_neo_background_pan("cl_neo_background_pan", "1", FCVAR_ARCHIVE, "Pan the camera with the cursor in the main menu background maps");
 //-----------------------------------------------------------------------------
 // Sets up the view parameters
 //-----------------------------------------------------------------------------
@@ -758,7 +762,7 @@ void CViewRender::SetUpViews()
 #ifndef NEO
 	viewEye.fov				= default_fov.GetFloat();
 #else
-        viewEye.fov = engine->IsLevelMainMenuBackground() ? 75 : neo_fov.GetFloat();
+    viewEye.fov = neo_fov.GetFloat();
 #endif
 
 	viewEye.m_bOrtho			= false;
@@ -785,6 +789,44 @@ void CViewRender::SetUpViews()
 		ReplayCamera()->CalcView( viewEye.origin, viewEye.angles, viewEye.fov );
 	}
 #endif
+#if defined NEO
+	else if (engine->IsLevelMainMenuBackground() && cl_neo_background_pan.GetBool())
+	{
+		if (pPlayer)
+		{
+			pPlayer->CalcView(viewEye.origin, viewEye.angles, viewEye.zNear, viewEye.zFar, viewEye.fov);
+		}
+		
+		if (viewEye.width && viewEye.height)
+		{
+			int x, y;
+			vgui::input()->GetCursorPos(x, y);
+			float flX = ((float)x / viewEye.width) - 0.5;
+			float flY = ((float)y / viewEye.height) - 0.5;
+
+			// S curve with a minimum value of -0.5 and maximum value of 0.5
+			constexpr float CURVE_STEEPNESS = 5;
+			flX = (1 / (1 + pow(2, -CURVE_STEEPNESS * flX))) - 0.5;
+			flY = (1 / (1 + pow(2, -CURVE_STEEPNESS * flY))) - 0.5;
+
+			constexpr int CAMERA_MOVEMENT_MULTIPIER = 5;
+			flX *= CAMERA_MOVEMENT_MULTIPIER;
+			flY *= CAMERA_MOVEMENT_MULTIPIER;
+
+			viewEye.angles.y += flX;
+			viewEye.angles.x -= flY;
+		}
+		else
+		{
+			viewEye.origin.Init();
+			viewEye.angles.Init();
+		}
+
+		// Even if the engine is paused need to override the view
+		// for keeping the camera control during pause.
+		g_pClientMode->OverrideView( &viewEye );
+	}
+#endif // NEO
 	else
 	{
 		// FIXME: Are there multiple views? If so, then what?
