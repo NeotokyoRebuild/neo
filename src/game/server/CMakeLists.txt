@@ -1443,6 +1443,14 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_command_follow.h
     neo/bot/behavior/neo_bot_dead.cpp
     neo/bot/behavior/neo_bot_dead.h
+    neo/bot/behavior/neo_bot_grenade_dispatch.cpp
+    neo/bot/behavior/neo_bot_grenade_dispatch.h
+    neo/bot/behavior/neo_bot_grenade_throw.cpp
+    neo/bot/behavior/neo_bot_grenade_throw.h
+    neo/bot/behavior/neo_bot_grenade_throw_frag.cpp
+    neo/bot/behavior/neo_bot_grenade_throw_frag.h
+    neo/bot/behavior/neo_bot_grenade_throw_smoke.cpp
+    neo/bot/behavior/neo_bot_grenade_throw_smoke.h
     neo/bot/behavior/neo_bot_jgr_capture.cpp
     neo/bot/behavior/neo_bot_jgr_capture.h
     neo/bot/behavior/neo_bot_jgr_enemy.cpp
