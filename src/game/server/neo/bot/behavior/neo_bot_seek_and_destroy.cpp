@@ -227,6 +227,82 @@ QueryResultType CNEOBotSeekAndDestroy::ShouldHurry( const INextBot *me ) const
 	return ANSWER_UNDEFINED;
 }
 
+
+//---------------------------------------------------------------------------------------------
+// Should I slow down to let my teammates catch up?
+QueryResultType	CNEOBotSeekAndDestroy::ShouldWalk( const CNEOBot *me, const QueryResultType qShouldAimQuery ) const
+{
+	// ShouldAim query shorts cuts ShouldWalk to ANSWER_YES as aiming and running blocks each other
+	if (qShouldAimQuery == ANSWER_YES)
+	{
+		return ANSWER_YES;
+	}
+
+	const CKnownEntity* threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if (threat != NULL)
+	{
+		// I need to decide how to deal with a threat
+		return ANSWER_UNDEFINED;
+	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		if (NEORules()->GhostExists())
+		{
+			// For comparing my distance to the ghost compared to my teammates
+			const Vector &vGhostPos = NEORules()->GetGhostPos();
+			float flMySqDistToGhost = (me->GetAbsOrigin() - vGhostPos).LengthSqr();
+			int iAliveTeammates = 0;
+
+			for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+			{
+				CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+
+				if (!pPlayer || !pPlayer->IsAlive() || pPlayer->GetTeamNumber() != me->GetTeamNumber() || pPlayer == me->GetEntity())
+				{
+					continue;
+				}
+
+				iAliveTeammates++;
+
+				const CNEO_Player *pNeoPlayer = ToNEOPlayer(pPlayer);
+				if (pNeoPlayer && pNeoPlayer->IsCarryingGhost())
+				{
+					// Maybe I can catch up to my team's ghost carrier
+					return ANSWER_UNDEFINED;
+				}
+
+				// Check if this teammate is closer to the ghost
+				float flTeammateSqDistToGhost = (pPlayer->GetAbsOrigin() - vGhostPos).LengthSqr();
+				if (flTeammateSqDistToGhost < flMySqDistToGhost)
+				{
+					// Maybe I can catch up to my teammate up ahead
+					return ANSWER_UNDEFINED;
+				}
+			}
+
+			if (iAliveTeammates == 0)
+			{
+				// I'm the sole survivor, don't need to wait for anyone
+				return ANSWER_UNDEFINED;
+			}
+
+			// I should slow down to let my teammates catch up
+			return ANSWER_YES;
+		}
+	}
+
+	return ANSWER_UNDEFINED;
+}
+
+
+//---------------------------------------------------------------------------------------------
+QueryResultType CNEOBotSeekAndDestroy::ShouldAim(const CNEOBot* me, const bool bWepHasClip) const
+{
+	return ANSWER_UNDEFINED;
+}
+
+
 class CNextSpawnFilter : public IEntityFindFilter
 {
 public:
