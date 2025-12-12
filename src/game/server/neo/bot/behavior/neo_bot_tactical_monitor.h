@@ -31,5 +31,5 @@ private:
 	void MonitorArmedStickyBombs(CNEOBot* me);
 #endif
 
-	void AvoidBumpingEnemies(CNEOBot* me);
+	void AvoidBumpingFriends(CNEOBot* me);
 };
