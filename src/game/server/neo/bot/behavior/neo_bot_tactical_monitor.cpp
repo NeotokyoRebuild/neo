@@ -206,7 +206,7 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 	}
 
 	// Ceiling check
-	const float ceilingCheckHeight = 128.0f;
+	const float ceilingCheckHeight = me->GetLocomotionInterface()->GetMaxJumpHeight();
 	trace_t tr;
 	Vector start = pNeoMe->GetAbsOrigin();
 	Vector end = start + Vector( 0, 0, ceilingCheckHeight );
