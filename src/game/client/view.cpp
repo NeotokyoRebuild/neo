@@ -815,11 +815,6 @@ void CViewRender::SetUpViews()
 				viewEye.angles.y += flX;
 				viewEye.angles.x -= flY;
 			}
-			else
-			{
-				viewEye.origin.Init();
-				viewEye.angles.Init();
-			}
 		}
 		else
 		{
