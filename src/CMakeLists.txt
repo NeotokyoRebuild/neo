@@ -107,12 +107,14 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWith
         NDEBUG
     )
 
-    add_compile_options(
-        #-fno-strict-aliasing
-        -ffast-math
-        -fno-omit-frame-pointer
-        -ftree-vectorize
-    )
+    if (NOT COMPILER_MSVC)
+        add_compile_options(
+            #-fno-strict-aliasing
+            -ffast-math
+            -fno-omit-frame-pointer
+            -ftree-vectorize
+        )
+    endif()
 endif()
 
 add_compile_definitions(
