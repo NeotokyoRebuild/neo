@@ -213,7 +213,24 @@ private:
 	//-----------------------------------------------------------------------------
 	template<typename T> static void LowLevelByteSwap( T *output, const T *input )
 	{
+#ifdef NEO
+		static_assert(sizeof(T) > 0);
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif // __GNUC__
+		Assert(output);
+		Assert(input);
+#endif // NEO
+
 		T temp = *output;
+
+#ifdef NEO
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif // __GNUC__
+#endif // NEO
+
 #if defined( _X360 )
 		// Intrinsics need the source type to be fixed-point
 		DWORD* word = (DWORD*)input;
@@ -238,7 +255,11 @@ private:
 			Assert( "Invalid size in CByteswap::LowLevelByteSwap" && 0 );
 		}
 #else
+#ifdef NEO
+		for( size_t i = 0; i < sizeof(T); i++ )
+#else
 		for( auto i = 0; i < sizeof(T); i++ )
+#endif
 		{
 			unsigned char *pByteOut = (unsigned char *) &temp;
 			const unsigned char *pByteIn = (const unsigned char *) input;
