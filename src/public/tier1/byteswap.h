@@ -122,7 +122,11 @@ public:
 		if( input == nativeConstant )
 			return 1;
 
+#ifdef NEO
+		T output{};
+#else
 		int output;
+#endif
 		LowLevelByteSwap<T>( &output, &input );
 		if( output == nativeConstant )
 			return 0;
