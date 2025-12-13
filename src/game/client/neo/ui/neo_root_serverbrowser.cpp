@@ -134,8 +134,11 @@ bool ServerBlacklisted(const gameserveritem_t &server)
 	return false;
 }
 
-#ifdef _MSC_VER // msvc quirk: we gotta disable the warning before entering the function scope for this to work
+#if defined(_MSC_VER) // msvc quirk: we gotta disable the warning before entering the function scope for this to work
 #pragma warning( disable : 4701, justification : "iLeft, iRight guaranteed assigned by the previous switch case" )
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 {
@@ -176,9 +179,13 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 		case SBLIST_COL_TYPE:
 		case SBLIST_COL_DATETIME:
 			if (iLeft != iRight) return (sortCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
-#ifdef _MSC_VER
-#pragma warning( default : 4701 ) // undo warning suppression from start of func
+
+#if defined(_MSC_VER) // undo warning suppression from start of func
+#pragma warning( default : 4701 )
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
 #endif
+
 			break;
 		default:
 			break;
@@ -201,8 +208,11 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 	}
 }
 
-#ifdef _MSC_VER // msvc quirk: we gotta disable the warning before entering the function scope for this to work
+#if defined(_MSC_VER) // msvc quirk: we gotta disable the warning before entering the function scope for this to work
 #pragma warning( disable : 4701, justification : "iLeft, iRight guaranteed assigned by the previous switch case" )
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 void CNeoServerList::UpdateFilteredList()
 {
@@ -286,8 +296,10 @@ void CNeoServerList::UpdateFilteredList()
 		default:
 			break;
 		}
-#ifdef _MSC_VER
-#pragma warning( default : 4701 ) // undo warning suppression from start of func
+#if defined(_MSC_VER) // undo warning suppression from start of func
+#pragma warning( default : 4701 )
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
 #endif
 
 		return (m_pSortCtx->bDescending) ? (V_strcmp(szRight, szLeft) > 0) : (V_strcmp(szLeft, szRight) > 0);
