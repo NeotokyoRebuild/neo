@@ -246,12 +246,7 @@ if(OS_WINDOWS)
         add_compile_options(
             #/Z7 # DebugInformationFormat - C7 Compatible
             #/Wp64 # Detect64bitPortabilityIssues
-            #/O2 # Optimization - Maximize Speed
-            /Ob2 # InlineFunctionExpansion - Any Suitable
-            /Oi # EnableIntrinsicFunctions
-            /Ot # FavorSizeOrSpeed - Favor Fast Code
-            /GF # EnableStringPooling
-            /Gy # EnableFunctionLevelLinking
+            /O2 # Optimization - Maximize Speed
             #/Zo
             /MT
         )
