@@ -3,37 +3,27 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
+#include "sdk/sdk_basegrenade_projectile.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar neo_bot_path_lookahead_range;
 ConVar neo_bot_retreat_from_grenade_range( "neo_bot_retreat_from_grenade_range", "1000", FCVAR_CHEAT );
 ConVar neo_bot_debug_retreat_from_grenade( "neo_bot_debug_retreat_from_grenade", "0", FCVAR_CHEAT );
-extern ConVar neo_bot_wait_in_cover_min_time;
-extern ConVar neo_bot_wait_in_cover_max_time;
 
 
 //---------------------------------------------------------------------------------------------
-CNEOBotRetreatFromGrenade::CNEOBotRetreatFromGrenade( CBaseEntity *grenade, float hideDuration )
+CNEOBotRetreatFromGrenade::CNEOBotRetreatFromGrenade( CBaseEntity *grenade )
+	: m_grenade(grenade)
+	, m_coverArea( NULL )
 {
-	m_grenade = grenade;
-	m_hideDuration = hideDuration;
-	m_actionToChangeToOnceCoverReached = NULL;
 }
 
 
 //---------------------------------------------------------------------------------------------
-CNEOBotRetreatFromGrenade::CNEOBotRetreatFromGrenade( CBaseEntity *grenade, Action< CNEOBot > *actionToChangeToOnceCoverReached )
-{
-	m_grenade = grenade;
-	m_hideDuration = -1.0f;
-	m_actionToChangeToOnceCoverReached = actionToChangeToOnceCoverReached;
-}
-
-
-//collect nearby areas that provide cover from our grenade
+// Collect nearby areas that provide cover from our grenade
 class CSearchForCoverFromGrenade : public ISearchSurroundingAreasFunctor
 {
 public:
@@ -41,6 +31,8 @@ public:
 	{
 		m_me = me;
 		m_grenade = grenade;
+		m_pGrenadeStats = dynamic_cast<CBaseGrenadeProjectile *>( grenade );
+		m_safeRadiusSqr = m_pGrenadeStats ? Square(m_pGrenadeStats->m_DmgRadius * 2.0f) : 0.0f;
 
 		if ( neo_bot_debug_retreat_from_grenade.GetBool() )
 			TheNavMesh->ClearSelectedSet();
@@ -54,22 +46,33 @@ public:
 
 		if ( !m_grenade )
 		{
-			return false;
+			// edge case: we just want to bail to let Update exit this behavior
+			return false;  // can't search if there's no threat source
+		}
+
+		if ( m_pGrenadeStats )
+		{
+			if ( ( area->GetCenter() - m_pGrenadeStats->GetAbsOrigin() ).LengthSqr() < m_safeRadiusSqr * 2 )
+			{
+				// using cover that is too near a grenade is prone to errors and it looks oblivious
+				return true;
+			}
 		}
 
 		const CNavArea *grenadeArea = TheNavMesh->GetNavArea( m_grenade->GetAbsOrigin() );
 		if ( grenadeArea )
 		{
-			// if the grenade sees this area, it's not cover
 			if ( area->IsPotentiallyVisible( grenadeArea ) )
 			{
+				// area is exposed to grenade line of sight
 				return true;
 			}
 		}
 
+		// let's add this area to the candidate of escape destinations
 		m_coverAreaVector.AddToTail( area );
 
-		return true;				
+		return true;
 	}
 
 	// return true if 'adjArea' should be included in the ongoing search
@@ -93,6 +96,8 @@ public:
 
 	CNEOBot *m_me;
 	CBaseEntity *m_grenade;
+	CBaseGrenadeProjectile *m_pGrenadeStats;
+	float m_safeRadiusSqr;
 	CUtlVector< CNavArea * > m_coverAreaVector;
 };
 
@@ -103,7 +108,14 @@ CNavArea *CNEOBotRetreatFromGrenade::FindCoverArea( CNEOBot *me )
 	VPROF_BUDGET( "CNEOBotRetreatFromGrenade::FindCoverArea", "NextBot" );
 
 	CSearchForCoverFromGrenade search( me, m_grenade );
-	SearchSurroundingAreas( me->GetLastKnownArea(), search );
+
+	CNavArea *startArea = me->GetLastKnownArea();
+	if ( !startArea )
+	{
+		return NULL;
+	}
+
+	SearchSurroundingAreas( startArea, search );
 
 	if ( search.m_coverAreaVector.Count() == 0 )
 	{
@@ -112,7 +124,7 @@ CNavArea *CNEOBotRetreatFromGrenade::FindCoverArea( CNEOBot *me )
 
 	// first in vector should be closest via travel distance
 	// pick from the closest 10 areas to avoid the whole team bunching up in one spot
-	int last = MIN( 10, search.m_coverAreaVector.Count() );
+	int last = Min( 10, search.m_coverAreaVector.Count() );
 	int which = RandomInt( 0, last-1 );
 	return search.m_coverAreaVector[ which ];
 }
@@ -126,14 +138,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::OnStart( CNEOBot *me, Action<
 	m_coverArea = FindCoverArea( me );
 
 	if ( m_coverArea == NULL )
-		return Done( "No cover available!" );
-
-	if ( m_hideDuration < 0.0f )
-	{
-		m_hideDuration = RandomFloat( neo_bot_wait_in_cover_min_time.GetFloat(), neo_bot_wait_in_cover_max_time.GetFloat() );
-	}
-
-	m_waitInCoverTimer.Start( m_hideDuration );
+		return Done( "No grenade cover available!" );
 
 	return Continue();
 }
@@ -148,7 +153,6 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 		return Done( "Grenade threat is over" );
 	}
 	
-	// move to cover, or stop if we've found opportunistic cover (no visible threats right now)
 	const CNavArea *grenadeArea = TheNavMesh->GetNavArea( m_grenade->GetAbsOrigin() );
 	bool bIsExposed = false;
 	if ( grenadeArea && me->GetLastKnownArea() )
@@ -159,43 +163,25 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 		}
 	}
 
-	if ( me->GetLastKnownArea() == m_coverArea || !bIsExposed )
+	// track projectile and relation to escape destination every update
+	if ( !m_coverArea || ( grenadeArea && m_coverArea->IsPotentiallyVisible( grenadeArea ) ) )
 	{
-		// we are now in cover (or think we are safe)
-
-		if ( bIsExposed )
-		{
-			// threats are still visible - find new cover
-			m_coverArea = FindCoverArea( me );
-
-			if ( m_coverArea == NULL )
-			{
-				return Done( "My cover is exposed, and there is no other cover available!" );
-			}
-		}
-
-		if ( m_actionToChangeToOnceCoverReached )
-		{
-			return ChangeTo( m_actionToChangeToOnceCoverReached, "Doing given action now that I'm in cover" );
-		}
-
-		if ( m_waitInCoverTimer.IsElapsed() )
-		{
-			return Done( "Been in cover long enough" );
-		}
+		m_coverArea = FindCoverArea( me );
 	}
-	else
+
+	if (!m_coverArea)
+	{
+		return SuspendFor(new CNEOBotRetreatToCover, "Reacting to contact instead");
+	}
+
+	if ( me->GetLastKnownArea() != m_coverArea || !bIsExposed )
 	{
 		// not in cover yet
-		m_waitInCoverTimer.Reset();
-
-		if ( m_repathTimer.IsElapsed() )
+		if (m_repathTimer.IsElapsed())
 		{
-			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
-
-			CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
+			CNEOBotPathCompute(me, m_path, m_coverArea->GetCenter(), FASTEST_ROUTE);
+			m_repathTimer.Start(0.2f); // Recompute path every 0.2 seconds
 		}
-
 		m_path.Update( me );
 	}
 
@@ -228,4 +214,27 @@ EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnMoveToFailure( CNEOBo
 QueryResultType CNEOBotRetreatFromGrenade::ShouldHurry( const INextBot *me ) const
 {
 	return ANSWER_YES;
+}
+
+
+//---------------------------------------------------------------------------------------------
+QueryResultType CNEOBotRetreatFromGrenade::ShouldWalk( const CNEOBot *me, const QueryResultType qShouldAimQuery ) const
+{
+	return ANSWER_NO;
+}
+
+
+//---------------------------------------------------------------------------------------------
+QueryResultType CNEOBotRetreatFromGrenade::ShouldRetreat( const CNEOBot *me ) const
+{
+	// Disincentivize CNEOBotTacticalMonitor::Update from interrupting this behavior
+	// as we don't want to switch to CNEOBotRetreatToCover while evading a grenade
+	return ANSWER_NO;
+}
+
+
+//---------------------------------------------------------------------------------------------
+QueryResultType CNEOBotRetreatFromGrenade::ShouldAim( const CNEOBot *me, const bool bWepHasClip ) const
+{
+	return ANSWER_NO;
 }

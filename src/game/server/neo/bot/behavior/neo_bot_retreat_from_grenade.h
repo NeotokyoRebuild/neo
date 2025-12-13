@@ -6,8 +6,7 @@
 class CNEOBotRetreatFromGrenade : public Action< CNEOBot >
 {
 public:
-	CNEOBotRetreatFromGrenade( CBaseEntity *grenade, float hideDuration = -1.0f );
-	CNEOBotRetreatFromGrenade( CBaseEntity *grenade, Action< CNEOBot > *actionToChangeToOnceCoverReached );
+	CNEOBotRetreatFromGrenade( CBaseEntity *grenade );
 
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
@@ -17,19 +16,20 @@ public:
 	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason );
 
 	virtual QueryResultType ShouldHurry( const INextBot *me ) const;					// are we in a hurry?
+	virtual QueryResultType ShouldWalk( const CNEOBot *me, const QueryResultType qShouldAimQuery ) const;
+	virtual QueryResultType ShouldRetreat( const CNEOBot *me ) const;
+	virtual QueryResultType ShouldAim( const CNEOBot *me, const bool bWepHasClip ) const;
 
 	virtual const char *GetName( void ) const	{ return "RetreatFromGrenade"; };
 
 private:
 	CHandle< CBaseEntity > m_grenade;
-	float m_hideDuration;
-	Action< CNEOBot > *m_actionToChangeToOnceCoverReached;
 
 	PathFollower m_path;
+
 	CountdownTimer m_repathTimer;
 
 	CNavArea *m_coverArea;
-	CountdownTimer m_waitInCoverTimer;
 
 	CNavArea *FindCoverArea( CNEOBot *me );
 };
