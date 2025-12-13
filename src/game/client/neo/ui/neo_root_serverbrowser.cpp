@@ -134,9 +134,6 @@ bool ServerBlacklisted(const gameserveritem_t &server)
 	return false;
 }
 
-#ifdef _MSC_VER // msvc quirk: we gotta disable the warning before entering the function scope for this to work
-#pragma warning( disable : 4701, justification : "iLeft, iRight guaranteed assigned by the previous switch case" )
-#endif
 void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 {
 	if (g_blacklistedServers.IsEmpty())
@@ -156,7 +153,7 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 		// Always set wszLeft/wszRight to name as fallback
 		const wchar_t *wszLeft = blLeft.wszName;
 		const wchar_t *wszRight = blRight.wszName;
-		int64 iLeft, iRight;
+		[[maybe_unused]] int64 iLeft{}, iRight{};
 		switch (sortCtx.col)
 		{
 		case SBLIST_COL_TYPE:
@@ -176,9 +173,6 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 		case SBLIST_COL_TYPE:
 		case SBLIST_COL_DATETIME:
 			if (iLeft != iRight) return (sortCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
-#ifdef _MSC_VER
-#pragma warning( default : 4701 ) // undo warning suppression from start of func
-#endif
 			break;
 		default:
 			break;
@@ -201,9 +195,6 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 	}
 }
 
-#ifdef _MSC_VER // msvc quirk: we gotta disable the warning before entering the function scope for this to work
-#pragma warning( disable : 4701, justification : "iLeft, iRight guaranteed assigned by the previous switch case" )
-#endif
 void CNeoServerList::UpdateFilteredList()
 {
 	if (m_iType == GS_BLACKLIST)
@@ -231,8 +222,8 @@ void CNeoServerList::UpdateFilteredList()
 		// Always set szLeft/szRight to name as fallback
 		const char *szLeft = gsiLeft.GetName();
 		const char *szRight = gsiRight.GetName();
-		int iLeft, iRight;
-		bool bLeft, bRight;
+		[[maybe_unused]] int iLeft{}, iRight{};
+		[[maybe_unused]] bool bLeft{}, bRight{};
 		switch (m_pSortCtx->col)
 		{
 		case GSIW_LOCKED:
@@ -286,10 +277,6 @@ void CNeoServerList::UpdateFilteredList()
 		default:
 			break;
 		}
-#ifdef _MSC_VER
-#pragma warning( default : 4701 ) // undo warning suppression from start of func
-#endif
-
 		return (m_pSortCtx->bDescending) ? (V_strcmp(szRight, szLeft) > 0) : (V_strcmp(szLeft, szRight) > 0);
 	});
 
