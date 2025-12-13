@@ -229,7 +229,6 @@ if(OS_WINDOWS)
             /Zc:forScope
             /Zc:inline
             /Zc:forScope
-            /Oy-
             /MTd
         )
 
@@ -256,9 +255,13 @@ if(OS_WINDOWS)
             /GF # EnableStringPooling
             /Gy # EnableFunctionLevelLinking
             #/Zo
-            /Oy-
             /MT
         )
+
+        if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+            # In x64 compilers, /Oy and /Oy- are not available.
+            add_compile_options(/Oy-)
+        endif()
 
         add_link_options(
             /NODEFAULTLIB:libcmtd
