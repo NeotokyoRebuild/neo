@@ -95,7 +95,11 @@ protected:
 	void InputToggle( inputdata_t &inputdata );
 	
 	bool			m_bDisabled;
+#ifdef NEO
+	int				m_iAchievementEventID = ACHIEVEMENT_NEO_INVALID;
+#else
 	string_t		m_iszAchievementEventID;				// Which achievement event this entity marks
+#endif
 
 	COutputEvent	m_OnFired;
 
@@ -109,7 +113,11 @@ LINK_ENTITY_TO_CLASS( logic_achievement, CLogicAchievement );
 BEGIN_DATADESC( CLogicAchievement )
 
 	DEFINE_KEYFIELD( m_bDisabled, FIELD_BOOLEAN, "StartDisabled" ),
+#ifdef NEO
+	DEFINE_KEYFIELD( m_iAchievementEventID, FIELD_INTEGER, "AchievementEvent" ),
+#else
 	DEFINE_KEYFIELD( m_iszAchievementEventID, FIELD_STRING, "AchievementEvent" ),
+#endif
 
 	// Inputs
 	DEFINE_INPUTFUNC( FIELD_VOID, "FireEvent", InputFireEvent ),
@@ -129,7 +137,9 @@ END_DATADESC()
 //-----------------------------------------------------------------------------
 CLogicAchievement::CLogicAchievement(void)
 {
+#ifndef NEO
 	m_iszAchievementEventID		= NULL_STRING;
+#endif
 }
 
 #define ACHIEVEMENT_PREFIX	"ACHIEVEMENT_EVENT_"
@@ -141,13 +151,26 @@ void CLogicAchievement::InputFireEvent( inputdata_t &inputdata )
 {
 	// If we're active, and our string matched a valid achievement ID
 #ifdef NEO
-	if ( !m_bDisabled && NEORules()->IsOfficialMap() && m_iszAchievementEventID != NULL_STRING )
+	if ( !m_bDisabled && NEORules()->IsOfficialMap() && m_iAchievementEventID != ACHIEVEMENT_NEO_INVALID )
 #else
 	if ( !m_bDisabled  && m_iszAchievementEventID != NULL_STRING)
 #endif
 	{
 		m_OnFired.FireOutput( inputdata.pActivator, this );
 
+#ifdef NEO
+		if ( m_iAchievementEventID < ACHIEVEMENT_NEO_MAP_PERMITTED )
+		{
+			if ( auto pPlayer = ToNEOPlayer( inputdata.pActivator ) )
+			{
+				pPlayer->AwardAchievement( m_iAchievementEventID );
+			}
+		}
+		else
+		{
+			Warning( "logic_achievement: This achievment cannot be granted by the map\n" );
+		}
+#else
 		char const *pchName = STRING( m_iszAchievementEventID );
 
 		int nPrefixLen = Q_strlen( ACHIEVEMENT_PREFIX );
@@ -161,6 +184,7 @@ void CLogicAchievement::InputFireEvent( inputdata_t &inputdata )
 				g_pGameRules->MarkAchievement( filter, pchName );
 			}
 		}
+#endif
 	}
 }
 

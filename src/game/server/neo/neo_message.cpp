@@ -123,15 +123,15 @@ void CNEO_Message::InputStopTimer(inputdata_t& inputData)
 		SetNextThink(TICK_NEVER_THINK);
 		DisplayTimer(); // Display the correct time when it stops
 
-		if (NEORules()->IsOfficialMap())
+		if (NEORules()->IsOfficialMap() && ((gpGlobals->curtime - m_flTimerStart) < 50.0f))
 		{
-			if ((gpGlobals->curtime - m_flTimerStart) < 50.0f)
+			if (auto pPlayer = ToNEOPlayer(inputData.pActivator))
 			{
-				g_AchievementMgrNEO.AwardAchievement(ACHIEVEMENT_NEO_TRIAL_50_SECONDS);
+				pPlayer->AwardAchievement(ACHIEVEMENT_NEO_TRIAL_50_SECONDS);
 
 				if ((gpGlobals->curtime - m_flTimerStart) < 40.0f)
 				{
-					g_AchievementMgrNEO.AwardAchievement(ACHIEVEMENT_NEO_TRIAL_40_SECONDS);
+					pPlayer->AwardAchievement(ACHIEVEMENT_NEO_TRIAL_40_SECONDS);
 				}
 			}
 		}
