@@ -116,24 +116,28 @@ jobs:
       with:
         name: ${{ env.libraries }}
         path: ${{ env.install_dir }}/${{ env.libraries }}
+        if-no-files-found: error
 
     - name: Upload libraries debug information
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.libraries_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.libraries_debuginfo }}
+        if-no-files-found: error
 
     - name: Upload dedicated library
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.dedicated }}
         path: ${{ env.install_dir }}/${{ env.dedicated }}
+        if-no-files-found: error
 
     - name: Upload dedicated library debug information
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
+        if-no-files-found: error
 
     - name: Upload SourceMod gamedata
       if: ${{ matrix.preset_build_type.name == 'release' }}
@@ -141,6 +145,7 @@ jobs:
       with:
         name: ${{ env.gamedata }}
         path: ${{ env.install_dir }}/${{ env.gamedata }}
+        if-no-files-found: error
 
   windows-build:
     name: ${{ matrix.platform.display_name }} ${{ matrix.preset_build_type.display_name }}
@@ -245,24 +250,28 @@ jobs:
       with:
         name: ${{ env.libraries }}
         path: ${{ env.install_dir }}/${{ env.libraries }}
+        if-no-files-found: error
 
     - name: Upload libraries debug information
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.libraries_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.libraries_debuginfo }}
+        if-no-files-found: error
 
     - name: Upload dedicated library
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.dedicated }}
         path: ${{ env.install_dir }}/${{ env.dedicated }}
+        if-no-files-found: error
 
     - name: Upload dedicated library debug information
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
+        if-no-files-found: error
 
   pack-resources:
     name: Windows Native Resources
@@ -320,6 +329,7 @@ jobs:
       with:
         name: ${{ env.resources }}
         path: ${{ env.install_dir }}/${{ env.resources }}
+        if-no-files-found: error
 
   upload-latest-build:
     name: Upload Latest Build
