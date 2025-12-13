@@ -623,6 +623,7 @@ target_sources_grouped(
     lights.cpp
     lights.h
     locksounds.h
+    logic_achievement.cpp
     logic_eventlistener.cpp
     logic_eventlistener.h
     logic_measure_movement.cpp
@@ -1343,6 +1344,8 @@ target_sources_grouped(
     TARGET server
     NAME "NEO"
     FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp

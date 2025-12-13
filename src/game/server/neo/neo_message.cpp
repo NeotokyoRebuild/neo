@@ -1,5 +1,7 @@
 #include "cbase.h"
 #include "neo_message.h"
+#include "neo_gamerules.h"
+#include "achievements_neo.h"
 
 LINK_ENTITY_TO_CLASS(neo_message, CNEO_Message);
 
@@ -120,5 +122,18 @@ void CNEO_Message::InputStopTimer(inputdata_t& inputData)
 	{
 		SetNextThink(TICK_NEVER_THINK);
 		DisplayTimer(); // Display the correct time when it stops
+
+		if (NEORules()->IsOfficialMap() && ((gpGlobals->curtime - m_flTimerStart) < 50.0f))
+		{
+			if (auto pPlayer = ToNEOPlayer(inputData.pActivator))
+			{
+				pPlayer->AwardAchievement(ACHIEVEMENT_NEO_TRIAL_50_SECONDS);
+
+				if ((gpGlobals->curtime - m_flTimerStart) < 40.0f)
+				{
+					pPlayer->AwardAchievement(ACHIEVEMENT_NEO_TRIAL_40_SECONDS);
+				}
+			}
+		}
 	}
 }
