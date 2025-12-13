@@ -361,7 +361,7 @@ if(OS_LINUX OR OS_MACOS)
     endif()
 
     # We should always specify -Wl,--build-id, as documented at:
-    # http://linux.die.net/man/1/ld and http://fedoraproject.org/wiki/Releases/FeatureBuildId.http://fedoraproject.org/wiki/Releases/FeatureBuildId
+    # http://linux.die.net/man/1/ld and http://fedoraproject.org/wiki/Releases/FeatureBuildId
     add_link_options(
         -Wl,--build-id
         -static-libgcc
