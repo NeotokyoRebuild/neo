@@ -179,10 +179,6 @@ jobs:
         echo "install_dir=$install_dir" >> "$GITHUB_ENV"
         echo "preset_name=$preset_name" >> "$GITHUB_ENV"
 
-
-    - name: Install packages
-      run: choco install -y ninja
-
     - uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
@@ -294,9 +290,6 @@ jobs:
 
     - name: Git fetch tags
       run: git fetch origin --tags --force
-
-    - name: Install packages
-      run: choco install -y ninja
 
     - uses: ilammy/msvc-dev-cmd@v1
       with:
