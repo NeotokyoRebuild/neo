@@ -401,7 +401,9 @@ public:
 	{
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation" // I dunno what this function is cooking, but apparently this is deliberate...
+		// NEO NOTE (Rain): I dunno what this function is cooking, but apparently this is deliberate...
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif
 		strncpy(out_pOut, pIn, iLengthInChars);
 #ifdef __GNUC__
