@@ -28,13 +28,13 @@ execute_process(
     OUTPUT_VARIABLE GIT_LATESTTAG
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-
-# Get version number from GIT_LATESTTAG
-# EX: v20.0-alpha -> 20 0
 message(STATUS "GIT_LATESTTAG: ${GIT_LATESTTAG}")
 if ("${GIT_LATESTTAG}" STREQUAL "")
     message(FATAL_ERROR "Failed to get git tag")
 endif ()
+
+# Get version number from GIT_LATESTTAG
+# EX: v20.0-alpha -> 20 0
 string(REPLACE "-" ";" GIT_LATESTTAG_SPLIT "${GIT_LATESTTAG}")
 list(GET GIT_LATESTTAG_SPLIT 0 GIT_LATESTTAG_0)
 string(REPLACE "v" "" GIT_LATESTTAG_VERSION "${GIT_LATESTTAG_0}")
@@ -49,6 +49,21 @@ if ("${NEO_VERSION_MINOR}" STREQUAL "")
 endif ()
 message(STATUS "NEO_VERSION_MAJOR: ${NEO_VERSION_MAJOR}")
 message(STATUS "NEO_VERSION_MINOR: ${NEO_VERSION_MINOR}")
+
+# For tagged releases, don't treat warnings as errors to always produce the build
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    execute_process(
+        COMMAND git tag --points-at
+        OUTPUT_VARIABLE GIT_HEADTAG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if("${GIT_HEADTAG}" STREQUAL "${GIT_LATESTTAG}")
+        set(DEFAULT_WARN_AS_ERR OFF)
+    endif()
+endif()
+if(NOT DEFINED DEFAULT_WARN_AS_ERR)
+    set(DEFAULT_WARN_AS_ERR ON)
+endif()
 
 string(TIMESTAMP BUILD_DATE_SHORT "%Y%m%d")
 string(TIMESTAMP BUILD_DATE_LONG "%Y-%m-%d")
