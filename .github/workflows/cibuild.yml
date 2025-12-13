@@ -32,6 +32,11 @@ jobs:
       image: 'registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest'
 
     steps:
+      # Silence a git warning emitted from actions/checkout.
+      # For context: https://git-scm.com/docs/git-init#Documentation/git-init.txt---initial-branchbranch-name
+    - name: Set initial default branch name
+      run: git config --global init.defaultBranch master
+
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
