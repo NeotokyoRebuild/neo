@@ -739,7 +739,9 @@ float CViewRender::GetZFar()
 }
 
 
+#ifdef NEO
 ConVar cl_neo_background_pan("cl_neo_background_pan", "1", FCVAR_ARCHIVE, "Pan the camera with the cursor in the main menu background maps");
+#endif // NEO
 //-----------------------------------------------------------------------------
 // Sets up the view parameters
 //-----------------------------------------------------------------------------
@@ -808,7 +810,7 @@ void CViewRender::SetUpViews()
 				flX = (1 / (1 + pow(2, -CURVE_STEEPNESS * flX))) - 0.5;
 				flY = (1 / (1 + pow(2, -CURVE_STEEPNESS * flY))) - 0.5;
 
-				constexpr int CAMERA_MOVEMENT_MULTIPIER = 5;
+				constexpr int CAMERA_MOVEMENT_MULTIPIER = 3;
 				flX *= CAMERA_MOVEMENT_MULTIPIER;
 				flY *= CAMERA_MOVEMENT_MULTIPIER;
 
