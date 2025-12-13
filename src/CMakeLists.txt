@@ -21,6 +21,8 @@ include(cmake/build_info.cmake)
 if(NOT OS_WINDOWS AND NOT OS_LINUX AND NOT OS_MACOS)
     message(FATAL_ERROR "Unknown OS")
 endif()
+message(STATUS "C compiler: ${CMAKE_C_COMPILER_ID} version ${CMAKE_C_COMPILER_VERSION}")
+message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID} version ${CMAKE_CXX_COMPILER_VERSION}")
 
 option(NEO_CI_BUILD "CI build mode" OFF)
 option(NEO_USE_CCACHE "Use ccache" ${OS_LINUX})
