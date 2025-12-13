@@ -244,9 +244,22 @@ void CGrenadeBeam::GrenadeBeamTouch( CBaseEntity *pOther )
 		m_hBeamChaser->SetLocalOrigin( m_pHitLocation[0] );
 		for (int i=0;i<m_nNumHits-1;i++)
 		{
+#ifdef NEO
+			if (i + 1 >= ARRAYSIZE(m_pHitLocation))
+			{
+				Assert(false); // m_pHitLocation[i+1] would overflow
+				break;
+			}
+#endif
 			m_pHitLocation[i] = m_pHitLocation[i+1];
 		}
+#ifdef NEO
+		Assert(m_nNumHits - 1 >= 0);
+		Assert(m_nNumHits - 1 < ARRAYSIZE(m_pHitLocation));
+		m_pHitLocation[m_nNumHits - 1] = GetLocalOrigin();
+#else
 		m_pHitLocation[m_nNumHits-1]=GetLocalOrigin();
+#endif
 	}
 	UpdateBeams();
 
@@ -296,6 +309,13 @@ void CGrenadeBeam::GetNextTargetPos(Vector *vPosition)
 		{
 			for (int i=0;i<m_nNumHits-1;i++)
 			{
+#ifdef NEO
+				if (i + 1 >= ARRAYSIZE(m_pHitLocation))
+				{
+					Assert(false); // m_pHitLocation[i+1] would overflow
+					break;
+				}
+#endif
 				m_pHitLocation[i] = m_pHitLocation[i+1];
 			}
 			m_nNumHits--;
