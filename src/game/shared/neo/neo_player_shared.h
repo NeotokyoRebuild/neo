@@ -244,7 +244,10 @@ enum NeoLeanDirectionE {
 	NEO_LEAN_NONE = 0,
 	NEO_LEAN_LEFT,
 	NEO_LEAN_RIGHT,
+
+	NEO_LEAN__ENUM_COUNT
 };
+static constexpr int NEO_LEAN_ENUM_COUNT = NEO_LEAN__ENUM_COUNT;
 
 enum NeoWeponAimToggleE {
 	NEO_TOGGLE_NIL = 0,

@@ -214,5 +214,13 @@ inline int NumBitsForCount( int nMaxElements )
 	return nBits;
 }
 
+#ifdef NEO
+// nMinElements should be the minimum value in the range, nMaxElements the count aka largest value parsed +1
+inline int NumBitsForRange( int nMinElements, int nMaxElements )
+{
+	Assert( nMinElements < nMaxElements );
+	return NumBitsForCount( nMaxElements - nMinElements );
+}
+#endif
 
 #endif // DATATABLE_COMMON_H
