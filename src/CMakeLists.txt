@@ -333,6 +333,7 @@ if(OS_LINUX OR OS_MACOS)
         -Wno-switch
         #-Wno-strict-aliasing
         #-Wno-address
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-inconsistent-missing-override>
 
         -Werror=return-type
         -fdiagnostics-show-option
@@ -343,10 +344,10 @@ if(OS_LINUX OR OS_MACOS)
         -Ustrncpy
 
         # Fix for non-clickable vgui buttons when using -O2
-        -fno-devirtualize-speculatively
+        $<$<CXX_COMPILER_ID:GNU>:-fno-devirtualize-speculatively>
 
         # Fix for non-clickable vgui buttons when using -O3
-        -fno-ipa-cp-clone
+        $<$<CXX_COMPILER_ID:GNU>:-fno-ipa-cp-clone>
 
         # Fix for "error: cast from pointer to smaller type 'unsigned int' loses information"
         #-fms-extensions
@@ -356,9 +357,9 @@ if(OS_LINUX OR OS_MACOS)
     if(NOT CMAKE_CXX_COMPILER_VERSION STREQUAL "4.8.4")
         add_compile_options(
             $<$<COMPILE_LANG_AND_ID:CXX,GNU>:-fabi-compat-version=2>
-            $<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>
-            $<$<COMPILE_LANGUAGE:CXX>:-Wno-template-id-cdtor>
-            -Wno-nonnull-compare
+            $<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-class-memaccess>
+            $<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-template-id-cdtor>
+            $<$<CXX_COMPILER_ID:GNU>:-Wno-nonnull-compare>
         )
     endif()
 
