@@ -50,7 +50,7 @@ endif ()
 message(STATUS "NEO_VERSION_MAJOR: ${NEO_VERSION_MAJOR}")
 message(STATUS "NEO_VERSION_MINOR: ${NEO_VERSION_MINOR}")
 
-# For tagged releases, don't treat warnings as errors to always produce the build
+# For tagged releases ("v<major>.<minor>..."), never treat warnings as errors to guarantee build generation.
 if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     execute_process(
         COMMAND git tag --points-at
@@ -62,7 +62,21 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebI
     endif()
 endif()
 if(NOT DEFINED DEFAULT_WARN_AS_ERR)
-    set(DEFAULT_WARN_AS_ERR ON)
+    # If the branch name or the latest commit message contains the phrase "nwae"
+    # (short for: no-warnings-as-errors), allow CI to skip warnings-as-errors for the build.
+    # This is inteded as means for devs to temporarily dodge the warning rules in exceptional
+    # situations (breakage from compiler version changes etc), but the preferred solution almost
+    # always is to actually fix the warning.
+    execute_process(
+        COMMAND git log --oneline -n 1
+        OUTPUT_VARIABLE GIT_LATESTCOMMIT_MSG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if("${GIT_LATESTCOMMIT_MSG}" MATCHES ".*[Nn][Ww][Aa][Ee].*")
+        set(DEFAULT_WARN_AS_ERR OFF)
+    else()
+        set(DEFAULT_WARN_AS_ERR ON)
+    endif()
 endif()
 
 string(TIMESTAMP BUILD_DATE_SHORT "%Y%m%d")
