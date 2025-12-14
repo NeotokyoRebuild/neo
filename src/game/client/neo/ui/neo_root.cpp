@@ -133,7 +133,7 @@ static bool NetAdrIsFavorite(const servernetadr_t &netAdr)
 					nConnPort == netAdr.GetConnectionPort() &&
 					nQueryPort == netAdr.GetQueryPort() &&
 					(unFlags & k_unFavoriteFlagFavorite) &&
-					nAppID == engine->GetAppID())
+					nAppID == static_cast<decltype(nAppID)>(engine->GetAppID()))
 			{
 				return true;
 			}
@@ -738,7 +738,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, BUILD_DISPLAY, textWidth, textHeight);
 
 		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
-		surface()->DrawPrintText(BUILD_DISPLAY, wcslen(BUILD_DISPLAY));
+		surface()->DrawPrintText(BUILD_DISPLAY, V_wcslen(BUILD_DISPLAY));
 	}
 }
 
@@ -817,10 +817,6 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	}
 	NeoUI::EndSection();
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
-
-	const int iBtnWide = m_iTitleWidth + iMargin;
-	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + iMarginHalf;
-	int iRightSideYStart = (iTitleMarginTop + (2 * iTitleNHeight));
 
 	// Draw top steam section portion
 	{
@@ -1917,7 +1913,6 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 
 		m_bSprayGalleryRefresh = false;
 	}
-	const int iGalleryRows = g_iRowsInScreen / 4;
 	const int iNormTall = g_uiCtx.layout.iRowTall;
 	const int iCellTall = iNormTall * 4;
 

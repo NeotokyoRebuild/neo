@@ -884,7 +884,9 @@ void CClient_Precipitation::CreateAshParticle( void )
 
 		float curTime = gpGlobals->frametime;
 
+#ifndef NEO
 		Vector vPushOrigin;
+#endif
 
 		Vector absmins = WorldAlignMins();
 		Vector absmaxs = WorldAlignMaxs();
@@ -2078,7 +2080,9 @@ void CSnowFallManager::CreateOutsideVolumeSnowParticles( float flCurrentTime, fl
 //-----------------------------------------------------------------------------
 void CSnowFallManager::CreateInsideVolumeSnowParticles( float flCurrentTime, float flRadius, const Vector &vecEyePos, const Vector &vecForward, float flZoomScale )
 {
+#ifndef NEO
 	Vector vecParticleSpawn;
+#endif
 
 	// Check/Setup for zoom.
 	bool bZoomed = ( flZoomScale > 1.0f );

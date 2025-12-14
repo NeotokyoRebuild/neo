@@ -1507,7 +1507,9 @@ void C_FireTrail::Update( float fTimeDelta )
 		numPuffs = clamp( numPuffs, 1, 32 );
 
 		SimpleParticle	*pParticle;
+#ifndef NEO
 		Vector			offsetColor;
+#endif
 		float			step = moveLength / numPuffs;
 
 		//Fill in the gaps

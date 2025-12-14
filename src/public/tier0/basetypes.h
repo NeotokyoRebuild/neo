@@ -95,6 +95,9 @@ inline T AlignValue( T val, uintptr_t alignment )
 // lower-case) function can generate more expensive code because of the
 // mixed types involved.
 template< class T >
+#ifdef NEO
+constexpr
+#endif
 T Clamp( T const &val, T const &minVal, T const &maxVal )
 {
 	if( val < minVal )
@@ -108,6 +111,9 @@ T Clamp( T const &val, T const &minVal, T const &maxVal )
 // This is the preferred Min operator. Using the MIN macro can lead to unexpected
 // side-effects or more expensive code.
 template< class T >
+#ifdef NEO
+constexpr
+#endif
 T Min( T const &val1, T const &val2 )
 {
 	return val1 < val2 ? val1 : val2;
@@ -116,6 +122,9 @@ T Min( T const &val1, T const &val2 )
 // This is the preferred Max operator. Using the MAX macro can lead to unexpected
 // side-effects or more expensive code.
 template< class T >
+#ifdef NEO
+constexpr
+#endif
 T Max( T const &val1, T const &val2 )
 {
 	return val1 > val2 ? val1 : val2;

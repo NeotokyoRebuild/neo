@@ -274,7 +274,9 @@ int	C_GunshipFX::DrawModel( int )
 		ent->GetAttachment( m_attachment, m_worldPosition, angles );
 	}
 
+#ifndef NEO
 	Vector test;
+#endif
 	m_t += gpGlobals->frametime;
 	if ( m_tMax > 0 )
 	{

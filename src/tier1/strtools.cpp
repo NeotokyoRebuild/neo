@@ -282,7 +282,11 @@ char *V_strlower( char *start )
 char *V_strnlwr(char *s, size_t count)
 {
 	// Assert( count >= 0 ); tautology since size_t is unsigned
+#ifdef NEO
+	AssertValidStringPtr( s, narrow_cast<int>(count) );
+#else
 	AssertValidStringPtr( s, count );
+#endif
 
 	char* pRet = s;
 	if ( !s || !count )

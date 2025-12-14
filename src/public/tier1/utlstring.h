@@ -396,7 +396,23 @@ class StringFuncs<char>
 public:
 	static char		  *Duplicate( const char *pValue ) { return strdup( pValue ); }
 	// Note that this function takes a character count, and does not guarantee null-termination.
+#ifdef NEO
+	static void		   Copy(OUT_CAP(iLengthInChars) char* out_pOut, const char* pIn, int iLengthInChars)
+	{
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+		// NEO NOTE (Rain): I dunno what this function is cooking, but apparently this is deliberate...
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+		strncpy(out_pOut, pIn, iLengthInChars);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+	}
+#else
 	static void		   Copy( OUT_CAP(iLengthInChars) char *out_pOut, const char *pIn, int iLengthInChars ) { strncpy( out_pOut, pIn, iLengthInChars ); }
+#endif
 	static int		   Compare( const char *pLhs, const char *pRhs ) { return strcmp( pLhs, pRhs ); }
 	static int		   CaselessCompare( const char *pLhs, const char *pRhs ) { return Q_strcasecmp( pLhs, pRhs ); }
 	static int		   Length( const char *pValue ) { return (int)strlen( pValue ); }

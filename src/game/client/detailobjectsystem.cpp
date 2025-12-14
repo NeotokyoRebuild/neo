@@ -2077,7 +2077,9 @@ int CDetailObjectSystem::SortSpritesBackToFront( int nLeaf, const Vector &viewOr
 	{
 		CDetailModel &model = m_DetailObjects[j];
 
+#ifndef NEO
 		Vector v;
+#endif
 		VectorSubtract( model.GetRenderOrigin(), viewOrigin, vecDelta );
 		float flSqDist = vecDelta.LengthSqr();
 		if ( flSqDist >= flMaxSqDist )

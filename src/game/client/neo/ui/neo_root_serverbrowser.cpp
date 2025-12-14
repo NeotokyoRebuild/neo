@@ -134,6 +134,12 @@ bool ServerBlacklisted(const gameserveritem_t &server)
 	return false;
 }
 
+#if defined(_MSC_VER) // msvc quirk: we gotta disable the warning before entering the function scope for this to work
+#pragma warning( disable : 4701, justification : "iLeft, iRight guaranteed assigned by the previous switch case" )
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 {
 	if (g_blacklistedServers.IsEmpty())
@@ -173,6 +179,13 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 		case SBLIST_COL_TYPE:
 		case SBLIST_COL_DATETIME:
 			if (iLeft != iRight) return (sortCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
+
+#if defined(_MSC_VER) // undo warning suppression from start of func
+#pragma warning( default : 4701 )
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 			break;
 		default:
 			break;
@@ -195,6 +208,12 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 	}
 }
 
+#if defined(_MSC_VER) // msvc quirk: we gotta disable the warning before entering the function scope for this to work
+#pragma warning( disable : 4701, justification : "iLeft, iRight guaranteed assigned by the previous switch case" )
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 void CNeoServerList::UpdateFilteredList()
 {
 	if (m_iType == GS_BLACKLIST)
@@ -277,6 +296,11 @@ void CNeoServerList::UpdateFilteredList()
 		default:
 			break;
 		}
+#if defined(_MSC_VER) // undo warning suppression from start of func
+#pragma warning( default : 4701 )
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 		return (m_pSortCtx->bDescending) ? (V_strcmp(szRight, szLeft) > 0) : (V_strcmp(szLeft, szRight) > 0);
 	});

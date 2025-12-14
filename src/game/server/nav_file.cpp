@@ -204,7 +204,11 @@ char *GetBspFilename( const char *navFilename )
 
 	Q_snprintf( bspFilename, sizeof( bspFilename ), FORMAT_BSPFILE, STRING( gpGlobals->mapname ) );
 
+#ifdef NEO
+	int len = V_strlen( bspFilename );
+#else
 	int len = strlen( bspFilename );
+#endif
 	if (len < 3)
 		return NULL;
 

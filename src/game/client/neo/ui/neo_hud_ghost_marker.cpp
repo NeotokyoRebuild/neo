@@ -76,7 +76,7 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 
 	// Override CNEOHud_WorldPosMarker's sizing with our own
-	const int widerAxis = max(m_viewWidth, m_viewHeight);
+	const int widerAxis = Max(m_viewWidth, m_viewHeight);
 	m_viewCentreSize = widerAxis * (cl_neo_hud_center_ghost_marker_size.GetFloat() / 100.0f);
 }
 

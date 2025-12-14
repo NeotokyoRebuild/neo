@@ -354,7 +354,11 @@ void CSave::Log( const char *pName, fieldtype_t fieldType, void *value, int coun
 		}
 	}
 
+#ifdef NEO
+	int nLength = narrow_cast<int>(strlen(szBuf) + 1);
+#else
 	int nLength = strlen( szBuf ) + 1;
+#endif
 	filesystem->Write( szBuf, nLength, m_hLogFile );
 }
 
@@ -419,7 +423,11 @@ void CSave::WriteData( const char *pdata , int size )
 
 void CSave::WriteString( const char *pstring )
 {
+#ifdef NEO
+	BufferData( pstring, narrow_cast<int>(strlen(pstring) + 1) );
+#else
 	BufferData( pstring, strlen(pstring) + 1 );
+#endif
 }
 
 //-------------------------------------
@@ -429,7 +437,11 @@ void CSave::WriteString( const string_t *stringId, int count )
 	for ( int i = 0; i < count; i++ )
 	{
 		const char *pString = STRING(stringId[i]);
+#ifdef NEO
+		BufferData( pString, narrow_cast<int>(strlen(pString)+1) );
+#else
 		BufferData( pString, strlen(pString)+1 );
+#endif
 	}
 }
 
@@ -500,20 +512,28 @@ void CSave::WriteFloat( const char *pname, const float *data, int count )
 
 void CSave::WriteString( const char *pname, const char *pdata )
 {
+#ifdef NEO
+	BufferField( pname, narrow_cast<int>(strlen(pdata) + 1), pdata );
+#else
 	BufferField( pname, strlen(pdata) + 1, pdata );
+#endif
 }
 
 //-------------------------------------
 
 void CSave::WriteString( const char *pname, const string_t *stringId, int count )
 {
+#ifdef NEO
+	int i; size_t size;
+#else
 	int i, size;
+#endif
 
 	size = 0;
 	for ( i = 0; i < count; i++ )
 		size += strlen( STRING( stringId[i] ) ) + 1;
 
-	WriteHeader( pname, size );
+	WriteHeader( pname, narrow_cast<int>(size) );
 	WriteString( stringId, count );
 }
 
@@ -1148,7 +1168,11 @@ void CSave::WriteFunction( datamap_t *pRootMap, const char *pname, inputfunc_t *
 		functionName = "BADFUNCTIONPOINTER";
 	}
 
+#ifdef NEO
+	BufferField( pname, V_strlen(functionName) + 1, functionName );
+#else
 	BufferField( pname, strlen(functionName) + 1, functionName );
+#endif
 }
 
 //-------------------------------------
@@ -1801,8 +1825,12 @@ int CRestore::ReadData( char *pData, int size, int nBytesAvailable )
 void CRestore::ReadString( char *pDest, int nSizeDest, int nBytesAvailable )
 {
 	const char *pString = BufferPointer();
-	if ( !nBytesAvailable )
+	if (!nBytesAvailable)
+#ifdef NEO
+		nBytesAvailable = narrow_cast<int>(strlen(pString) + 1);
+#else
 		nBytesAvailable = strlen( pString ) + 1;
+#endif
 	BufferSkipBytes( nBytesAvailable );
 
 	Q_strncpy(pDest, pString, nSizeDest );
