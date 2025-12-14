@@ -3056,6 +3056,11 @@ bool KeyValues::Dump( IKeyValuesDumpContext *pDump, int nIndentLevel /* = 0 */, 
 	if ( !pDump->KvBeginKey( this, nIndentLevel ) )
 		return false;
 
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-bool-conversion"
+#endif
+
 	if ( bSorted )
 	{
 		CUtlSortVector< KeyValues*, CUtlSortVectorKeyValuesByName > vecSortedKeys;
@@ -3104,6 +3109,10 @@ bool KeyValues::Dump( IKeyValuesDumpContext *pDump, int nIndentLevel /* = 0 */, 
 				return false;
 		}
 	}
+
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic pop
+#endif
 
 	return pDump->KvEndKey( this, nIndentLevel );
 }
