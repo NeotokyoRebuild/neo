@@ -63,10 +63,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebI
 endif()
 if(NOT DEFINED DEFAULT_WARN_AS_ERR)
     # If the branch name or the latest commit message contains the phrase "nwae"
-    # (short for: no-warnings-as-errors), allow CI to skip warnings-as-errors for the build.
+    # (acronym for: "no warnings as errors"), allow CI to skip warnings-as-errors for the build.
     # This is inteded as means for devs to temporarily dodge the warning rules in exceptional
     # situations (breakage from compiler version changes etc), but the preferred solution almost
-    # always is to actually fix the warning.
+    # always is to actually fix the warning or suppress a false positive.
     execute_process(
         COMMAND git log --oneline -n 1
         OUTPUT_VARIABLE GIT_LATESTCOMMIT_MSG
