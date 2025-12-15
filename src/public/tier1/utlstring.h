@@ -759,6 +759,9 @@ private:
 			char *m_pchString;
 			uint32 m_nLength;
 			uint32 m_nCapacity; // without trailing null; ie: m_pchString[m_nCapacity] = '\0' is not out of bounds
+#if defined(NEO) && defined(COMPILER_CLANG)
+			[[maybe_unused]]
+#endif
 			uint8  scrap[3];
 			uint8  sentinel;
 		public:
