@@ -17,6 +17,10 @@
 
 #include "mathlib/math_pfns.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // For MMX intrinsics
 #include <xmmintrin.h>
 
@@ -339,7 +343,16 @@ extern	const Quaternion quat_identity;
 extern const Vector vec3_invalid;
 extern	const int nanmask;
 
+#ifdef NEO
+template <typename T>
+	requires std::is_same_v<T, float>
+inline bool IS_NAN(T x)
+{
+	return (neo::bit_cast<int>(BC_TEST(x, *(int*)&x)) & nanmask) == nanmask;
+}
+#else
 #define	IS_NAN(x) (((*(int *)&x)&nanmask)==nanmask)
+#endif
 
 FORCEINLINE vec_t DotProduct(const vec_t *v1, const vec_t *v2)
 {
@@ -2139,6 +2152,9 @@ float FastLog2(float i);			// log2( i )
 float FastPow2(float i);			// 2^i
 float FastPow(float a, float b);	// a^b
 float FastPow10( float i );			// 10^i
+#if defined(NEO) && defined(DBGFLAG_ASSERT)
+void ValidateFastFuncs();
+#endif
 
 //-----------------------------------------------------------------------------
 // For testing float equality
