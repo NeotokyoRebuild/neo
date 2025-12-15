@@ -27,6 +27,10 @@
 
 #include "mathlib/mathlib.h"
 
+#ifdef NEO
+#include "../../common/neo/bit_cast.h"
+#endif
+
 #if defined( _X360 )
 #pragma bitfield_order( push, lsb_to_msb )
 #endif
@@ -461,7 +465,12 @@ protected:
 	static float Convert16bitFloatTo32bits( unsigned short input )
 	{
 		float32bits output;
+#ifdef NEO
+		const auto inFloat = neo::bit_cast<float16bits>(input);
+		Assert(inFloat.rawWord == ((float16bits*)&input)->rawWord);
+#else
 		const float16bits &inFloat = *((float16bits *)&input);
+#endif
 
 		if( IsInfinity( inFloat ) )
 		{
@@ -488,7 +497,19 @@ protected:
 			biased_exponent = ( (biased_exponent - float16bias + float32bias) * (biased_exponent != 0) ) << 23;
 			mantissa <<= (23-10);
 
+#ifdef NEO
+			output.rawFloat = neo::bit_cast<float>(mantissa | biased_exponent | sign);
+#ifdef DBGFLAG_ASSERT
+			decltype(output) sdkRes;
+			*((unsigned*)&sdkRes) = (mantissa | biased_exponent | sign);
+			Assert(output.rawFloat == sdkRes.rawFloat);
+			Assert(output.bits.biased_exponent == sdkRes.bits.biased_exponent);
+			Assert(output.bits.mantissa == sdkRes.bits.mantissa);
+			Assert(output.bits.sign == sdkRes.bits.sign);
+#endif
+#else
 			*((unsigned *)&output) = ( mantissa | biased_exponent | sign );
+#endif
 		}
 		
 		return output.rawFloat;

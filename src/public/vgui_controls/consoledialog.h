@@ -30,6 +30,9 @@ public:
 	CHistoryItem( void );
 	CHistoryItem( const char *text, const char *extra = NULL );
 	CHistoryItem( const CHistoryItem& src );
+#ifdef NEO
+	CHistoryItem( const CHistoryItem* src );
+#endif
 	~CHistoryItem( void );
 
 	const char *GetText() const;
