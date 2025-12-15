@@ -939,6 +939,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 {
 	InitCRTMemDebug();
 	MathLib_Init( 2.2f, 2.2f, 0.0f, 2.0f );
+#if defined(NEO) && defined(DBGFLAG_ASSERT)
+	Assert(s_bMathlibInitialized);
+	ValidateFastFuncs();
+#endif
 
 
 #ifdef SIXENSE

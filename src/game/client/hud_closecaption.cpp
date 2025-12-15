@@ -23,6 +23,7 @@
 #include "datacache/idatacache.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1685,7 +1686,15 @@ void CHudCloseCaption::AddWorkUnit( CCloseCaptionItem *item,
 	if ( wcslen( params.stream ) > 0 )
 #else
 	// params.stream is still in ucs2 format here so just do a basic zero compare for length or just space
-	if ( ((uint16 *)params.stream)[0] != 0 && ((uint16 *)params.stream)[0] != 32  )		
+#ifdef NEO
+	const auto c = params.stream[0];
+	uint16 punnedC;
+	static_assert(sizeof(c) >= sizeof(punnedC));
+	memcpy(&punnedC, &c, sizeof(punnedC));
+	if (punnedC != 0 && punnedC != 32)
+#else
+	if ( ((uint16 *)params.stream)[0] != 0 && ((uint16 *)params.stream)[0] != 32  )	
+#endif // NEO
 #endif
 	{
 		CCloseCaptionWorkUnit *wu = new CCloseCaptionWorkUnit();

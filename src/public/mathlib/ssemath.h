@@ -25,6 +25,10 @@
 #define _SSE1 1
 #endif
 
+#if (defined(NEO) && (USE_STDC_FOR_SIMD == 0))
+#include "../../common/neo/bit_cast.h"
+#endif
+
 // I thought about defining a class/union for the SIMD packed floats instead of using fltx4,
 // but decided against it because (a) the nature of SIMD code which includes comparisons is to blur
 // the relationship between packed floats and packed integer types and (b) not sure that the
@@ -1832,7 +1836,11 @@ NO_ASAN_FORCEINLINE fltx4 LoadUnaligned3SIMD( const void *pSIMD )
 /// replicate a single 32 bit integer value to all 4 components of an m128
 FORCEINLINE fltx4 ReplicateIX4( int i )
 {
+#ifdef NEO
+	fltx4 value = _mm_set_ss( neo::bit_cast<float>(BC_TEST(i, *((float*)&i) )) );
+#else
 	fltx4 value = _mm_set_ss( * ( ( float *) &i ) );;
+#endif
 	return _mm_shuffle_ps( value, value, 0);
 }
 
