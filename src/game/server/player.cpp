@@ -83,6 +83,7 @@
 #endif
 
 #ifdef NEO
+#include "../../common/neo/bit_cast.h"
 #include "neo_player.h"
 #include "weapon_tachi.h"
 #include "neo_gamerules.h"
@@ -3685,7 +3686,12 @@ void CBasePlayer::ProcessUsercmds( CUserCmd *cmds, int numcmds, int totalcmds,
 		if ( sv_usercmd_custom_random_seed.GetBool() )
 		{
 			float fltTimeNow = float( Plat_FloatTime() * 1000.0 );
+#ifdef NEO
+			pCmd->server_random_seed = neo::bit_cast<decltype(pCmd->server_random_seed)>(
+				BC_TEST(fltTimeNow, *reinterpret_cast<int*>((char*)&fltTimeNow)));
+#else
 			pCmd->server_random_seed = *reinterpret_cast<int*>( (char*)&fltTimeNow );
+#endif
 		}
 		else
 		{

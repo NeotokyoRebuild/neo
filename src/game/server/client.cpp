@@ -48,6 +48,7 @@
 #ifdef NEO
 #include "neo_player.h"
 #include "neo_gamerules.h"
+#include "../../common/neo/bit_cast.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1391,7 +1392,11 @@ static float GetHexFloat( const char *pStr )
 	if ( ( pStr[0] == '0' ) && ( pStr[1] == 'x' ) )
 	{
 		uint32 f = (uint32)V_atoi64( pStr );
+#ifdef NEO
+		return neo::bit_cast<float>(BC_TEST(f, *reinterpret_cast<const float*>(&f)));
+#else
 		return *reinterpret_cast< const float * >( &f );
+#endif
 	}
 	
 	return atof( pStr );

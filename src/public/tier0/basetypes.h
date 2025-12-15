@@ -44,6 +44,10 @@
 
 #include <stdint.h>
 
+#ifdef NEO
+#include "../../common/neo/bit_cast.h"
+#endif
+
 #define ExecuteNTimes( nTimes, x )	\
 	{								\
 		static int __executeCount=0;\
@@ -201,7 +205,11 @@ inline unsigned int const& FloatBits( vec_t const& f )
 
 inline vec_t BitsToFloat( unsigned int i )
 {
+#ifdef NEO
+	return neo::bit_cast<vec_t>(i);
+#else
 	return *reinterpret_cast<vec_t*>(&i);
+#endif
 }
 
 inline bool IsFinite( vec_t f )

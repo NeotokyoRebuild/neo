@@ -140,6 +140,7 @@ target_sources_grouped(
     TARGET tier1
     NAME "Header Files"
     FILES
+    ${CMAKE_SOURCE_DIR}/common/neo/bit_cast.h
     ${CMAKE_SOURCE_DIR}/common/neo/narrow_cast.h
 
     ${CMAKE_SOURCE_DIR}/public/tier1/bitbuf.h

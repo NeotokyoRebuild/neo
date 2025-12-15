@@ -18,6 +18,10 @@
 #include "tier0/vcrmode.h"
 #include "tier0/vprof_telemetry.h"
 
+#ifdef NEO
+#include "../../common/neo/bit_cast.h"
+#endif
+
 #ifdef PLATFORM_WINDOWS_PC
 #include <intrin.h>
 #endif
@@ -619,6 +623,24 @@ private:
 	template <class T>
 	class CThreadLocal : public CThreadLocalBase
 	{
+#if defined(NEO) && defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+		T Ref_Get() const
+		{
+#ifdef PLATFORM_64BITS
+			void* pData = CThreadLocalBase::Get();
+			return *reinterpret_cast<T*>(&pData);
+#else
+#ifdef COMPILER_MSVC
+#pragma warning ( disable : 4311 )
+#endif
+			return reinterpret_cast<T>(CThreadLocalBase::Get());
+#ifdef COMPILER_MSVC
+#pragma warning ( default : 4311 )
+#endif
+#endif
+		}
+#endif
+
 	public:
 		CThreadLocal()
 		{
@@ -633,7 +655,26 @@ private:
 		{
 #ifdef PLATFORM_64BITS
 			void *pData = CThreadLocalBase::Get();
+#ifdef NEO
+#if defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+			const auto neoRes = neo::bit_cast<T>(pData);
+			const auto memcpyImpl = [pData]()->T {
+				T ret;
+				memcpy(&ret, &pData, sizeof(ret));
+				return ret;
+			};
+			const auto memcpyRes = memcpyImpl();
+			const auto refRes = Ref_Get();
+			Assert(neoRes == memcpyRes);
+			Assert(neoRes == refRes);
+			return neoRes;
+#else
+			return neo::bit_cast<T>(pData);
+#endif
+
+#else
 			return *reinterpret_cast<T*>( &pData );
+#endif
 #else
 #ifdef COMPILER_MSVC
 #pragma warning ( disable : 4311 )
@@ -647,6 +688,9 @@ private:
 
 		void Set(T val)
 		{
+#ifdef NEO
+			CThreadLocalBase::Set(reinterpret_cast<void*>(&val));
+#else
 #ifdef PLATFORM_64BITS
 			void *pData = 0;
 			*reinterpret_cast<T*>( &pData ) = val;
@@ -658,6 +702,7 @@ private:
 			CThreadLocalBase::Set( reinterpret_cast<void*>( val ) );
 #ifdef COMPILER_MSVC
 #pragma warning ( default : 4312 )
+#endif
 #endif
 #endif
 		}

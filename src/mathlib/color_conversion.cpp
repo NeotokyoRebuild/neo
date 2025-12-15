@@ -606,7 +606,11 @@ void VectorToColorRGBExp32( const Vector& vin, ColorRGBExp32 &c )
 	float scalar;
 	{
 		unsigned int fbits = (127 - exponent) << 23;
+#ifdef NEO
+		scalar = neo::bit_cast<float>(BC_TEST(fbits, *reinterpret_cast<const float*>(&fbits)));
+#else
 		scalar = *reinterpret_cast<float *>(&fbits);
+#endif
 	}
 
 	// We can totally wind up above 255 and that's okay--but above 256 would be right out.

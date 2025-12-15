@@ -38,6 +38,10 @@
 
 #include "materialsystem/imaterialsystemhardwareconfig.h"
 
+#ifdef NEO
+#include "../../common/neo/bit_cast.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -2026,8 +2030,14 @@ int CDetailObjectSystem::CountSpriteQuadsInLeafList( int nLeafCount, LeafIndex_t
 #endif
 }
 
-
+#ifdef NEO
+constexpr int32 TREATASINT(float x)
+{
+	return neo::bit_cast<int32>(BC_TEST(x, *(((int32 const*)(&(x))))));
+}
+#else
 #define TREATASINT(x) ( *(  ( (int32 const *)( &(x) ) ) ) )
+#endif
 
 //-----------------------------------------------------------------------------
 // Sorts sprites in back-to-front order
