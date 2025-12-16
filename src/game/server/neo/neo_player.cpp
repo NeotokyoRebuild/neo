@@ -556,7 +556,7 @@ CNEO_Player::CNEO_Player()
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 	m_botThermOpticCamoDisruptedTimer.Invalidate();
-	m_mapPlayerFogCache.SetLessFunc( DefLessFunc(int) );
+
 
 	m_bFirstDeathTick = true;
 	m_bCorpseSet = false;
@@ -1280,16 +1280,12 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 
 	// Check visibility cache for this player
 	int playerIndex = targetPlayer->entindex();
-	int cacheIndex = m_mapPlayerFogCache.Find(playerIndex);
-
-	// Ensure an entry exists for this player in the cache
-	if (cacheIndex == m_mapPlayerFogCache.InvalidIndex())
+	if (!IsIndexIntoPlayerArrayValid(playerIndex))
 	{
-		cacheIndex = m_mapPlayerFogCache.Insert(playerIndex, CNEO_Player_FogCacheEntry());
-		Assert(cacheIndex != m_mapPlayerFogCache.InvalidIndex());
+		return false;
 	}
 
-	CNEO_Player_FogCacheEntry& cacheEntry = m_mapPlayerFogCache.Element(cacheIndex);
+	CNEO_Player_FogCacheEntry& cacheEntry = m_playerFogCache[playerIndex];
 
 	// If cache is fresh (within 200ms human reaction time), use cached boolean result
 	if (gpGlobals->curtime - cacheEntry.m_flUpdateTime < 0.2f) // 200ms cache window
