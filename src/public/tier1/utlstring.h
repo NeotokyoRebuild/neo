@@ -399,14 +399,14 @@ public:
 #ifdef NEO
 	static void		   Copy(OUT_CAP(iLengthInChars) char* out_pOut, const char* pIn, int iLengthInChars)
 	{
-#ifdef __GNUC__
+#ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic push
 		// NEO NOTE (Rain): I dunno what this function is cooking, but apparently this is deliberate...
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif
 		strncpy(out_pOut, pIn, iLengthInChars);
-#ifdef __GNUC__
+#ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic pop
 #endif
 	}
