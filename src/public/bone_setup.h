@@ -431,6 +431,9 @@ private:
 	unsigned short	m_cachedBoneCount;
 	unsigned short	m_matrixOffset;
 	unsigned short	m_cachedToStudioOffset;
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	unsigned short	m_boneOutOffset;
 };
 

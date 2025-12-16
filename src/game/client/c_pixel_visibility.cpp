@@ -261,6 +261,9 @@ private:
 	unsigned short					m_wasQueriedThisFrame : 1;
 	unsigned short					m_failed : 1;
 	unsigned short					m_hasValidQueryResults : 1;
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	unsigned short					m_pad : 13;
 	unsigned short					m_viewID;
 
@@ -503,6 +506,9 @@ private:
 	unsigned short m_freeQueriesList;
 	unsigned short m_activeSetsList;
 	unsigned short m_freeSetsList;
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	unsigned short m_pad0;
 
 	IMaterial	*m_pProxyMaterial;

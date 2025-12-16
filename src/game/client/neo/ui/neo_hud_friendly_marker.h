@@ -85,16 +85,11 @@ protected:
 
 private:
 	int m_iIconWidth, m_iIconHeight;
-	
-	int m_x0[MAX_PLAYERS];
-	int m_x1[MAX_PLAYERS];
-	int m_y0[MAX_PLAYERS];
-	int m_y1[MAX_PLAYERS];
 
-	vgui::HTexture m_hStarTex = 0UL;
+	vgui::HTexture m_hStarTex = 0;
 	vgui::HTexture m_hNonStarTex = 0UL;
 	vgui::HTexture m_hUniqueTex = 0UL;
-	vgui::HFont m_hFont = 0UL;
+	vgui::HFont m_hFont = vgui::INVALID_FONT;
 
 	void DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const;
 	static Color GetTeamColour(int team);

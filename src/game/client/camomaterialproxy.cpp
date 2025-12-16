@@ -97,6 +97,9 @@ private:
 #if 0
 	cache_user_t m_camoImageDataCache;
 #endif
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	unsigned char m_CamoPalette[256][3];
 	// these represent that part of the entitiy's bounding box that we 
 	// want to cast rays through to get colors for the camo

@@ -80,6 +80,9 @@ public:
 
 private:
 	// these vars are for hl1-port compatibility
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	int		m_iHistoryGap;
 	int		m_iCurrentHistorySlot;
 	bool	m_bDoNotDraw;

@@ -38,6 +38,9 @@ private:
 
 	int m_iMinutes;
 	int m_iSeconds;
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	wchar_t m_LabelText[32];
 
 	CPanelAnimationVar( float, m_flBlur, "Blur", "0" );
