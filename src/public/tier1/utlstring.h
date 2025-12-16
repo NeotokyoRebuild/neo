@@ -399,7 +399,7 @@ public:
 #ifdef NEO
 	static void		   Copy(OUT_CAP(iLengthInChars) char* out_pOut, const char* pIn, int iLengthInChars)
 	{
-#ifdef __GNUC__
+#ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic push
 #if ((__GNUC__ >= 10) && (__GNUC__ <= 13))
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
@@ -407,7 +407,7 @@ public:
 #endif
 #endif
 		strncpy(out_pOut, pIn, iLengthInChars);
-#ifdef __GNUC__
+#ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic pop
 #endif
 	}

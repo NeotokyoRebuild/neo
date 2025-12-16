@@ -386,10 +386,15 @@ if(OS_LINUX)
     )
 endif()
 
+# Clang may define GCC or MSVC values as some kind of a compatibility thing,
+# but this can break code that relies on accurately identifying the used compiler.
+# The "ACTUALLY_..." defs here can be used for succintly determining the compiler for real.
 if(COMPILER_MSVC)
     add_compile_definitions(COMPILER_MSVC)
+    add_compile_definitions(ACTUALLY_COMPILER_MSVC)
 elseif(COMPILER_GCC)
     add_compile_definitions(COMPILER_GCC)
+    add_compile_definitions(ACTUALLY_COMPILER_GCC)
 elseif(COMPILER_CLANG)
     add_compile_definitions(COMPILER_CLANG)
 endif()

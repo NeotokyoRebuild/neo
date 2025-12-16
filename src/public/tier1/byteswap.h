@@ -215,10 +215,10 @@ private:
 	{
 #ifdef NEO
 		static_assert(sizeof(T) > 0);
-#ifdef __GNUC__
+#ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif // __GNUC__
+#endif // ACTUALLY_COMPILER_GCC
 		Assert(output);
 		Assert(input);
 #endif // NEO
@@ -226,9 +226,9 @@ private:
 		T temp = *output;
 
 #ifdef NEO
-#ifdef __GNUC__
+#ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic pop
-#endif // __GNUC__
+#endif // ACTUALLY_COMPILER_GCC
 #endif // NEO
 
 #if defined( _X360 )

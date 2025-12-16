@@ -153,6 +153,7 @@ Only the x64 (64-bit) architecture is supported.
     * For release builds, it is identical to `static_cast`
   * `narrow_cast`:
     * The preferred cast for narrowing conversions where loss of information may occur
+      * Use to mark narrowing conversions where the input could overflow
       * If you know for a fact it is always a safe cast, you can use `static_cast` instead
     * For debug builds, will runtime-validate narrowing conversions for:
       * Roundtrip equality: `value v of type A equals itself after A->B->A type conversion`
@@ -160,7 +161,7 @@ Only the x64 (64-bit) architecture is supported.
     * For release builds, it is identical to `static_cast`
   * `neo::bit_cast`:
     * Well-formed type punning helper. Mostly used to avoid UB in the SDK code.
-    * For the general case, it is a constexpr wrapper for `std::bit_cast` if it's available, but will also support `memcpy` based conversions for when this is not the case (either `std::bit_cast` unavailable or its constraints not satisfied).
+    * Wrapper for `std::bit_cast` when it's available, else will fall back to `memcpy` based conversions (for example on the steamrt3 default GCC compiler).
     * For debug builds, a runtime assertion test is available as an additional parameter:
       * `auto output = neo::bit_cast<T>(BC_TEST(input, expectedOutput));`
       * When replacing ill-formed type puns, this test syntax can be used to ensure the output of `neo::bit_cast<T>(input)` remains identical to `expectedOutput`
