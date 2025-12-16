@@ -50,6 +50,9 @@ private:
 	bool IsAtGoal( INextBot *bot ) const;			// return true if reached current path goal
 
 	//bool IsOnStairs( INextBot *bot ) const;		// return true if bot is standing on a stairway
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	bool m_isOnStairs;
 
 	Path::ResultType m_result = NO_PATH;
