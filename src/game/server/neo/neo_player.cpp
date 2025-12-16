@@ -1356,9 +1356,10 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return 0.0f;
 	}
 
-	if (GetTeamNumber() == targetPlayer->GetTeamNumber())
+	if ( NEORules()->IsTeamplay()
+		&& (GetTeamNumber() == targetPlayer->GetTeamNumber()) )
 	{
-		// Teammates are always labeled with IFF markers
+		// Teammates are always labeled with IFF markers, unless in free-for-all game modes
 		return 0.0f;
 	}
 
