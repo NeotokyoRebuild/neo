@@ -1649,7 +1649,13 @@ public:
 	virtual bool ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask );
 
 private:
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	const IHandleEntity *m_pPassEnt;
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	int m_collisionGroup;
 };
 
