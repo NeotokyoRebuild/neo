@@ -31,9 +31,9 @@ See [README.md](README.md) in this repo for setting up your build environment (c
 To be safe and avoid problems with VAC, it's recommended to add a [-insecure](https://developer.valvesoftware.com/wiki/Command_Line_Options) launch flag before attaching your debugger.
 
 #### VS2022 + CMake (Windows)
-In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should show a json file. If this doesn't work, try to instead view the main CMakeLists.txt file in the *Folder View*, and choose the corresponding "Add Debug Configuration" menu option from there, instead.
+In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should generate the `src/.vs/launch.vs.json` config file.
 
-Then, make sure it's similar to this (changing the game path to where you have it):
+Modify the config to your liking; example is provided below:
 
 ```
 {
