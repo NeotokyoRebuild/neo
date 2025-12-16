@@ -386,10 +386,16 @@ if(OS_LINUX)
     )
 endif()
 
+# For some mindboggling reason, Clang may pretend to be GCC or MSVC by defining
+# their preprocessor identifiers in some bizarre pursuit of compatibility.
+# This breaks compiler-specific code that relies on the compiler not lying about its identity.
+# The "ACTUALLY_..." defs here can be used to work around that nonsense.
 if(COMPILER_MSVC)
     add_compile_definitions(COMPILER_MSVC)
+    add_compile_definitions(ACTUALLY_COMPILER_MSVC)
 elseif(COMPILER_GCC)
     add_compile_definitions(COMPILER_GCC)
+    add_compile_definitions(ACTUALLY_COMPILER_GCC)
 elseif(COMPILER_CLANG)
     add_compile_definitions(COMPILER_CLANG)
 endif()
