@@ -33,7 +33,7 @@ To be safe and avoid problems with VAC, it's recommended to add a [-insecure](ht
 #### VS2022 + CMake (Windows)
 In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should generate the `src/.vs/launch.vs.json` config file.
 
-Modify the config to your liking; example is provided below:
+Modify the config to fix the directory paths; an example is provided below:
 
 ```
 {
