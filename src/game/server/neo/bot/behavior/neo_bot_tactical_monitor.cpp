@@ -176,30 +176,32 @@ void CNEOBotTacticalMonitor::AvoidBumpingEnemies( CNEOBot *me )
 ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForGrenades( CNEOBot *me )
 {
 	const float flGrenadeCheckRadius = neo_bot_grenade_check_radius.GetFloat();
-	CBaseEntity *pSearch = NULL;
 	CBaseEntity *closestThreat = NULL;
-	float closestThreatDistSqr = FLT_MAX;
 	const char *pszGrenadeClass = "neo_grenade_frag";
-
-	while ((pSearch = gEntList.FindEntityInSphere(pSearch, me->GetAbsOrigin(), flGrenadeCheckRadius)) != NULL)
+	
+	int iSound = CSoundEnt::ActiveList();
+	while ( iSound != SOUNDLIST_EMPTY )
 	{
-		if ( !FClassnameIs( pSearch, pszGrenadeClass ) )
-			continue;
+		CSound *pSound = CSoundEnt::SoundPointerForIndex( iSound );
+		if ( !pSound )
+			break;
 
-		bool bIsVisible = me->GetVisionInterface()->IsLineOfSightClear( pSearch->WorldSpaceCenter() );
-		if ( bIsVisible )
+		if ( (pSound->SoundType() & SOUND_DANGER) && pSound->ValidateOwner() )
 		{
-			// Prioritize evading grenades that the bot can plausibly see
-			closestThreat = pSearch;
-			break; // doesn't need to be perfect, overlapping throws are rare
+			float distSqr = ( pSound->GetSoundOrigin() - me->GetAbsOrigin() ).LengthSqr();
+			if ( distSqr <= (flGrenadeCheckRadius * flGrenadeCheckRadius) )
+			{
+				CBaseEntity *pOwner = pSound->m_hOwner.Get();
+				if ( pOwner && FClassnameIs( pOwner, pszGrenadeClass ) )
+				{
+					// Found a dangerous grenade
+					closestThreat = pOwner;
+					break;
+				}
+			}
 		}
-		else if (!closestThreat)
-		{
-			// fallback for when sometimes too many players are in the way
-			// rationale is that usually the reaction of other players will indicate a grenade as well
-			// otherwise bots can seem unresponsive especially to the bounce sound
-			closestThreat = pSearch;
-		}
+
+		iSound = pSound->NextSound();
 	}
 
 	if ( closestThreat )
