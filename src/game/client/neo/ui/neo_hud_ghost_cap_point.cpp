@@ -81,10 +81,10 @@ void CNEOHud_GhostCapPoint::DrawNeoHudElement()
 	auto *player = C_NEO_Player::GetLocalNEOPlayer();
 	const int playerTeam = player->GetTeamNumber();
 
-	Color targetColor = (m_iCapTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
+	Color targetColor = (m_iCapTeam == TEAM_ANY) ? COLOR_SPEC : ((m_iCapTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF);
 
 	const bool playerIsPlaying = (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF);
-	if (playerIsPlaying)
+	if (playerIsPlaying && m_iCapTeam != TEAM_ANY)
 	{
 		const bool targetIsToDefend = (playerTeam != m_iCapTeam);
 		if (targetIsToDefend)
