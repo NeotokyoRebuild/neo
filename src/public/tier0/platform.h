@@ -38,6 +38,10 @@
 	#undef _XBOX
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
