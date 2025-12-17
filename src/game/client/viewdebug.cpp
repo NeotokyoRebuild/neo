@@ -66,7 +66,11 @@ public:
 		s_bCanAccessCurrentView = true;
 		Frustum frustum;
 		render->Push3DView( *this, 0, NULL, frustum );
+#ifdef NEO
+		BuildWorldRenderLists(true, -1, true, true);
+#else
 		BuildWorldRenderLists( this, true, true );
+#endif
 		render->PopView( frustum );
 		s_bCanAccessCurrentView = false;
 
