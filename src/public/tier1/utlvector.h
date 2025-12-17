@@ -1314,7 +1314,11 @@ void CUtlVector<T, A>::FastRemove( int elem )
 	if (m_Size > 0)
 	{
 		if ( elem != m_Size -1 )
+#ifdef NEO
+			memcpy( (void*)&Element(elem), (void*)&Element(m_Size - 1), sizeof(T));
+#else
 			memcpy( &Element(elem), &Element(m_Size-1), sizeof(T) );
+#endif
 		--m_Size;
 	}
 }
