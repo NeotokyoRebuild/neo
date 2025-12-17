@@ -110,6 +110,12 @@ public:
 // ----------------------------------------------------------------------- //
 
 template<class T>
+inline bool operator==(const CHandle<T>& lhs, const CHandle<T>& rhs)
+{
+	return lhs.Get() == rhs.Get();
+}
+
+template<class T>
 inline CHandle<T>::CHandle()
 {
 }
