@@ -4237,8 +4237,15 @@ void CBaseEntity::ComputeWorldSpaceSurroundingBox( Vector *pMins, Vector *pMaxs 
 //------------------------------------------------------------------------------
 const char *CBaseEntity::GetDebugName(void)
 {
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-undefined-compare"
+#endif
 	if ( this == NULL )
 		return "<<null>>";
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic pop
+#endif
 
 	if ( m_iName != NULL_STRING ) 
 	{
