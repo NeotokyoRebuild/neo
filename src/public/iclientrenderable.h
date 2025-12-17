@@ -17,6 +17,10 @@
 #include "client_render_handle.h"
 #include "engine/ivmodelrender.h"
 
+#ifdef NEO
+#include "basehandle.h"
+#endif
+
 struct model_t;
 struct matrix3x4_t;
 
@@ -263,7 +267,16 @@ public:
 // IClientUnknown implementation.
 public:
 	virtual void SetRefEHandle( const CBaseHandle &handle )	{ Assert( false ); }
+#ifdef NEO
+	virtual const CBaseHandle& GetRefEHandle() const override
+	{
+		Assert(false);
+		const static auto invalidHandle = CBaseHandle(INVALID_EHANDLE);
+		return invalidHandle;
+	}
+#else
 	virtual const CBaseHandle& GetRefEHandle() const		{ Assert( false ); return *((CBaseHandle*)0); }
+#endif
 
 	virtual IClientUnknown*		GetIClientUnknown()		{ return this; }
 	virtual ICollideable*		GetCollideable()		{ return 0; }
