@@ -11,6 +11,7 @@
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
+#include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
@@ -299,6 +300,12 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		}
 	}
 
+	ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
+	if ( scavengeResult.IsRequestingChange() )
+	{
+		return scavengeResult;
+	}
+
 #if 0 // NEO TODO (Adam) search for dropped weapons to resupply ammunition
 	bool isAvailable = ( me->GetIntentionInterface()->ShouldHurry( me ) != ANSWER_YES );
 
@@ -323,6 +330,32 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 #endif
 
 	me->UpdateDelayedThreatNotices();
+
+	return Continue();
+}
+
+
+//-----------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotTacticalMonitor::ScavengeForPrimaryWeapon( CNEOBot *me )
+{
+	if ( me->Weapon_GetSlot( 0 ) )
+	{
+		return Continue();
+	}
+
+	if ( !m_maintainTimer.IsElapsed() )
+	{
+		return Continue();
+	}
+	m_maintainTimer.Start( RandomFloat( 1.0f, 3.0f ) );
+	
+	// Look for any one valid primary weapon, then dispatch into behavior for more optimal search
+	// true parameter: short-circuit the search if any valid primary weapon is found
+	// We just want to sanity check if there's a valid weapon before suspending into the dedicated behavior
+	if ( FindNearestPrimaryWeapon( me->GetAbsOrigin(), true ) )
+	{
+		return SuspendFor( new CNEOBotSeekWeapon, "Scavenging for a primary weapon" );
+	}
 
 	return Continue();
 }
