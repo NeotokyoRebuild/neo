@@ -2152,8 +2152,8 @@ float FastLog2(float i);			// log2( i )
 float FastPow2(float i);			// 2^i
 float FastPow(float a, float b);	// a^b
 float FastPow10( float i );			// 10^i
-#if defined(NEO) && defined(DBGFLAG_ASSERT)
-void ValidateFastFuncs();
+#if defined(NEO) && defined(ACTUALLY_COMPILER_MSVC) && defined(DBGFLAG_ASSERT)
+extern void ValidateFastFuncs();
 #endif
 
 //-----------------------------------------------------------------------------
