@@ -2575,6 +2575,7 @@ bool CGameMovement::CheckJumpButton( void )
 		flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT);
 	}
 #else
+	// NEO JANK: Remember to update NEO_RECON_CROUCH_JUMP_HEIGHT/etc if you change these values.
 	auto neoPlayer = static_cast<CNEO_Player*>(player);
 	if ( g_bMovementOptimizations )
 	{
