@@ -1563,6 +1563,46 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 
 
 //-----------------------------------------------------------------------------------------------------
+// Reload the active weapon if it makes sense for the situation 
+void CNEOBot::ReloadIfLowClip(void)
+{
+	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	if (myWeapon && myWeapon->GetPrimaryAmmoCount() > 0)
+	{
+		bool shouldReload = false;
+		// SUPA7 reload doesn't discard ammo
+		if ((myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+		{
+			shouldReload = true;
+		}
+		else
+		{
+			int maxClip = myWeapon->GetMaxClip1();
+			bool isBarrage = IsBarrageAndReloadWeapon(myWeapon);
+
+			int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
+
+			float aggressionFactor = 1.0f - HealthFraction();
+
+			float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
+
+			if (myWeapon->Clip1() < static_cast<int>(dynamicThreshold))
+			{
+				shouldReload = true;
+			}
+		}
+
+		if (shouldReload)
+		{
+			ReleaseFireButton();
+			PressReloadButton();
+			PressCrouchButton(0.3f);
+		}
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 // Force us to equip and use this weapon until popped off the required stack
 void CNEOBot::PushRequiredWeapon(CNEOBaseCombatWeapon* weapon)
 {
