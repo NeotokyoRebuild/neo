@@ -210,10 +210,22 @@ CBaseEntity *CGameRules::GetPlayerSpawnSpot( CBasePlayer *pPlayer )
 	pPlayer->SetLocalOrigin( pSpawnSpot->GetAbsOrigin() + Vector(0,0,1) );
 #endif // NEO
 	pPlayer->SetAbsVelocity( vec3_origin );
+#ifdef NEO
+	QAngle angles = pSpawnSpot->GetLocalAngles();
+	angles.x = AngleNormalize( angles.x );
+	angles.x = clamp( angles.x, -90.0f, 90.0f );
+
+	pPlayer->SetLocalAngles( angles );
+#else
 	pPlayer->SetLocalAngles( pSpawnSpot->GetLocalAngles() );
+#endif
 	pPlayer->m_Local.m_vecPunchAngle = vec3_angle;
 	pPlayer->m_Local.m_vecPunchAngleVel = vec3_angle;
+#ifdef NEO
+	pPlayer->SnapEyeAngles( angles );
+#else
 	pPlayer->SnapEyeAngles( pSpawnSpot->GetLocalAngles() );
+#endif
 
 	return pSpawnSpot;
 }
