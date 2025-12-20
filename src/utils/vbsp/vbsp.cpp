@@ -787,7 +787,7 @@ static void Compute3DSkyboxAreas( node_t *headnode, CUtlVector<int>& areas )
 {
 	for (int i = 0; i < g_MainMap->num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!strcmp(pEntity, "sky_camera"))
 		{
 			// Found a 3D skybox camera, get a leaf that lies in it
@@ -1241,7 +1241,7 @@ int RunVBSP( int argc, char **argv )
 
 		DeleteCmdLine( argc, argv );
 		CmdLib_Cleanup();
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	// Sanity check
@@ -1252,7 +1252,7 @@ int RunVBSP( int argc, char **argv )
 		         "Use the bspzip utility to update embedded files.\n" );
 		DeleteCmdLine( argc, argv );
 		CmdLib_Cleanup();
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	start = Plat_FloatTime();
@@ -1332,7 +1332,8 @@ int RunVBSP( int argc, char **argv )
 		g_nCubemapSamples = 0;
 
 		// Mark as stale since the lighting could be screwed with new ents.
-		AddBufferToPak( GetPakFile(), "stale.txt", "stale", strlen( "stale" ) + 1, false );
+        auto data = "stale";
+        AddBufferToPak( GetPakFile(), "stale.txt", (void *)(data), strlen(data) + 1, false );
 
 		LoadMapFile (name);
 		SetModelNumbers ();
@@ -1389,7 +1390,8 @@ int RunVBSP( int argc, char **argv )
 		{
 			LoadBSPFile_FileSystemOnly (mapFile);
 			// Mark as stale since the lighting could be screwed with new ents.
-			AddBufferToPak( GetPakFile(), "stale.txt", "stale", strlen( "stale" ) + 1, false );
+            auto data = "stale";
+            AddBufferToPak( GetPakFile(), "stale.txt", (void *)(data), strlen(data) + 1, false );
 		}
 
 		LoadMapFile (name);
