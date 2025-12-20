@@ -113,6 +113,7 @@
 	[
 		0 : "Attacker"
 		1 : "Defender"
+		2 : "Neutral"
 	]
 	
 	Radius(integer) : "Radius in inches (48 - 256)" : 128 : "Radius of the Ghost Retrieval Point in inches."	

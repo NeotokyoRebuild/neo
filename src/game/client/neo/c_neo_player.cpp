@@ -770,6 +770,11 @@ void C_NEO_Player::OnDataChanged( DataUpdateType_t type )
 
 float C_NEO_Player::GetFOV( void )
 {
+	if (engine->IsLevelMainMenuBackground())
+	{
+		constexpr float BACKGROUND_MAP_FOV = 75.f;
+		return BACKGROUND_MAP_FOV;
+	}
 	return BaseClass::GetFOV();
 }
 

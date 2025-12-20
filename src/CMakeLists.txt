@@ -557,7 +557,7 @@ endif()
 
 if(NEO_INSTALL_RESOURCES)
     install(
-        DIRECTORY ${CMAKE_SOURCE_DIR}/../game/neo
+        DIRECTORY ${CMAKE_SOURCE_DIR}/../game
         DESTINATION "${INSTALL_PATH_PREFIX}-resources"
     )
 endif()
