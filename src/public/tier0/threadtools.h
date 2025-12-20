@@ -688,12 +688,23 @@ private:
 
 		void Set(T val)
 		{
-#ifdef NEO
-			CThreadLocalBase::Set(reinterpret_cast<void*>(&val));
-#else
 #ifdef PLATFORM_64BITS
-			void *pData = 0;
+			void* pData = 0;
+#ifdef NEO
+			static_assert(sizeof(T) == sizeof(void*));
+#if defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+			*reinterpret_cast<T*>(&pData) = val;
+			void* sdkRet = pData;
+			memset(&pData, 0x42, sizeof(pData));
+#endif
+			memcpy(&pData, &val, sizeof(pData));
+#if defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+			void* neoRet = pData;
+			Assert(neoRet == sdkRet);
+#endif
+#else
 			*reinterpret_cast<T*>( &pData ) = val;
+#endif
 			CThreadLocalBase::Set( pData );
 #else
 #ifdef COMPILER_MSVC
@@ -702,7 +713,6 @@ private:
 			CThreadLocalBase::Set( reinterpret_cast<void*>( val ) );
 #ifdef COMPILER_MSVC
 #pragma warning ( default : 4312 )
-#endif
 #endif
 #endif
 		}
