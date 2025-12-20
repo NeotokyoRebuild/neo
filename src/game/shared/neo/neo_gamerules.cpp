@@ -2587,29 +2587,32 @@ void CNEORules::StartNextRound()
 			const bool bBotsonlyDontDoWarmup = !sv_neo_botsonly_warmup_round.GetBool();
 			if (bLoopbackDontDoWarmup || bBotsonlyDontDoWarmup)
 			{
-				int iCountBots = 0;
-				int iCountHumans = 0;
-				int iCountLoopback = 0;
+				int iCountBots = 0, iCountHumans = 0, iCountLoopback = 0;
 
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
-					if (auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
-					{
-						const int teamNum = pPlayer->GetTeamNumber();
-						if (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF)
-						{
-							const bool bIsBot = pPlayer->IsBot();
-							const bool bIsHuman = (!bIsBot && !pPlayer->IsHLTV());
-							iCountBots += bIsBot;
-							iCountHumans += bIsHuman;
-							if (bIsHuman)
-							{
-								INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
-								iCountLoopback += nci->IsLoopback();
-							}
-						}
-					}
+					auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+					if (!pPlayer)
+						continue;
+
+					const int teamNum = pPlayer->GetTeamNumber();
+					if (teamNum <= LAST_SHARED_TEAM)
+						continue;
+
+					const bool bIsBot = pPlayer->IsBot();
+					const bool bIsHuman = (!bIsBot && !pPlayer->IsHLTV());
+					Assert(bIsBot || bIsHuman);
+					iCountBots += bIsBot;
+					iCountHumans += bIsHuman;
+					if (!bIsHuman)
+						continue;
+
+					if (auto* nci = engine->GetPlayerNetInfo(i))
+						iCountLoopback += nci->IsLoopback();
+					else
+						Assert(false);
 				}
+
 				if (bLoopbackDontDoWarmup)
 				{
 					loopbackSkipWarmup = (iCountLoopback > 0 && iCountLoopback == iCountHumans);
