@@ -6,11 +6,17 @@ CAchievementMgr g_AchievementMgrNEO;	// global achievement mgr for NEO
 
 class CAchievementNEO_TutorialComplete : public CBaseAchievement
 {
-public:
 	void Init()
 	{
-		SetFlags( ACH_SAVE_GLOBAL );
-		SetGoal( 1 );
+		static const char *szComponents[] =
+		{
+			"NEO_TUTORIAL_RECON", "NEO_TUTORIAL_ASSAULT", "NEO_TUTORIAL_SUPPORT",
+		};
+		m_pszComponentNames = szComponents;
+		m_iNumComponents = ARRAYSIZE( szComponents );
+		SetComponentPrefix( "NEO_TUTORIAL" );
+		SetFlags( ACH_SAVE_GLOBAL | ACH_HAS_COMPONENTS | ACH_LISTEN_COMPONENT_EVENTS );
+		SetGoal( m_iNumComponents );
 		SetMapNameFilter( "ntre_class_tut" );
 	}
 };
@@ -18,7 +24,6 @@ DECLARE_NEO_ACHIEVEMENT( CAchievementNEO_TutorialComplete, ACHIEVEMENT_NEO_TUTOR
 
 class CAchievementNEO_Trial50Seconds : public CBaseAchievement
 {
-public:
 	void Init()
 	{
 		SetFlags( ACH_SAVE_GLOBAL );
@@ -30,7 +35,6 @@ DECLARE_NEO_ACHIEVEMENT( CAchievementNEO_Trial50Seconds, ACHIEVEMENT_NEO_TRIAL_5
 
 class CAchievementNEO_Trial40Seconds : public CBaseAchievement
 {
-public:
 	void Init()
 	{
 		SetFlags( ACH_SAVE_GLOBAL );

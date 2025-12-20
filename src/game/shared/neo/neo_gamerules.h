@@ -180,6 +180,8 @@ public:
 
 	virtual bool IsOfficialMap(void) override;
 
+	virtual void MarkAchievement ( IRecipientFilter& filter, char const *pchAchievementName ) override;
+
 	virtual void InitDefaultAIRelationships(void);
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;

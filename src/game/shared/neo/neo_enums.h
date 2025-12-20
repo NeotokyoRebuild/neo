@@ -56,14 +56,7 @@ static const constexpr short NEO_ENVIRON_KILLED = -1;
 
 enum NeoAchievementID
 {
-	ACHIEVEMENT_NEO_INVALID = -1,
 	ACHIEVEMENT_NEO_TUTORIAL_COMPLETE = 0,
-
-	// If the achievement is awarded from logic_achievement
-	// put it before here. It must be added at the end of the group
-	// or else you will break logic on maps
-	ACHIEVEMENT_NEO_MAP_PERMITTED,
-
 	ACHIEVEMENT_NEO_TRIAL_50_SECONDS,
 	ACHIEVEMENT_NEO_TRIAL_40_SECONDS,
 };
