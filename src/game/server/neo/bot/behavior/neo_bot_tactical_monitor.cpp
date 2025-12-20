@@ -12,6 +12,7 @@
 
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
+#include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
 #endif
@@ -20,6 +21,7 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
+ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -171,6 +173,47 @@ void CNEOBotTacticalMonitor::AvoidBumpingEnemies( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForGrenades( CNEOBot *me )
+{
+	const float flGrenadeCheckRadius = neo_bot_grenade_check_radius.GetFloat();
+	CBaseEntity *closestThreat = NULL;
+	const char *pszGrenadeClass = "neo_grenade_frag";
+	
+	int iSound = CSoundEnt::ActiveList();
+	while ( iSound != SOUNDLIST_EMPTY )
+	{
+		CSound *pSound = CSoundEnt::SoundPointerForIndex( iSound );
+		if ( !pSound )
+			break;
+
+		if ( (pSound->SoundType() & SOUND_DANGER) && pSound->ValidateOwner() )
+		{
+			float distSqr = ( pSound->GetSoundOrigin() - me->GetAbsOrigin() ).LengthSqr();
+			if ( distSqr <= (flGrenadeCheckRadius * flGrenadeCheckRadius) )
+			{
+				CBaseEntity *pOwner = pSound->m_hOwner.Get();
+				if ( pOwner && FClassnameIs( pOwner, pszGrenadeClass ) )
+				{
+					// Found a dangerous grenade
+					closestThreat = pOwner;
+					break;
+				}
+			}
+		}
+
+		iSound = pSound->NextSound();
+	}
+
+	if ( closestThreat )
+	{
+		return SuspendFor( new CNEOBotRetreatFromGrenade( closestThreat ), "Fleeing from grenade!" );
+	}
+
+	return Continue();
+}
+
+
+//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
 	if ( neo_bot_force_jump.GetBool() )
@@ -179,6 +222,12 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		{
 			me->GetLocomotionInterface()->Jump();
 		}
+	}
+
+	ActionResult< CNEOBot > result = WatchForGrenades( me );
+	if ( result.IsRequestingChange() )
+	{
+		return result;
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();

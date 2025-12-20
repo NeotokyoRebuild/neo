@@ -1441,6 +1441,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_move_to_vantage_point.h
     neo/bot/behavior/neo_bot_retreat_to_cover.cpp
     neo/bot/behavior/neo_bot_retreat_to_cover.h
+    neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
+    neo/bot/behavior/neo_bot_retreat_from_grenade.h
     neo/bot/behavior/neo_bot_scenario_monitor.cpp
     neo/bot/behavior/neo_bot_scenario_monitor.h
     neo/bot/behavior/neo_bot_seek_and_destroy.cpp

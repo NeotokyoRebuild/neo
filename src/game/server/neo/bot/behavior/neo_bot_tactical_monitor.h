@@ -32,4 +32,5 @@ private:
 #endif
 
 	void AvoidBumpingEnemies(CNEOBot* me);
+	ActionResult< CNEOBot > WatchForGrenades(CNEOBot* me);
 };
