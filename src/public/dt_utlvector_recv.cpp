@@ -37,7 +37,19 @@ void RecvProxy_UtlVectorLength( const CRecvProxyData *pData, void *pStruct, void
 		// There isn't much we can do at this point - we're deep in the networking stack, it's hard to recover
 		// gracefully and we shouldn't be talking to this server anymore.
 		// So we crash.
+#ifdef NEO
+#ifdef ACTUALLY_COMPILER_MSVC
+		__fastfail(8);
+#elif defined(COMPILER_GCC) || defined(COMPILER_CLANG)
+		__builtin_trap();
+#else
+#error No compiler instrinsic defined
 		*(int *) 1 = 2;
+#endif
+		return;
+#else
+		*(int *) 1 = 2;
+#endif
 	}
 	pExtra->m_ResizeFn( pStruct, pExtra->m_Offset, pData->m_Value.m_Int );
 }
