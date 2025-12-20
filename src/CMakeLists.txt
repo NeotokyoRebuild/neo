@@ -321,7 +321,7 @@ if(OS_LINUX OR OS_MACOS)
         -Wno-multichar
         -Wno-write-strings
         -Wno-unused-variable
-        -Wno-unused-but-set-variable
+        $<$<COMPILE_LANGUAGE:CXX>:-Wno-unused-but-set-variable>
         -Wno-unused-function
         -Wno-unknown-pragmas
         -Wno-unused-parameter
