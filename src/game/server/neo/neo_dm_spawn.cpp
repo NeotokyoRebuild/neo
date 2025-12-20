@@ -60,9 +60,13 @@ static CNEO_Player *LoopbackPlayer()
 			continue;
 		}
 		INetChannelInfo *nci = engine->GetPlayerNetInfo(i);
-		if (nci->IsLoopback())
+		Assert(nci);
+		if (nci)
 		{
-			return pPlayer;
+			if (nci->IsLoopback())
+			{
+				return pPlayer;
+			}
 		}
 	}
 	return nullptr;
