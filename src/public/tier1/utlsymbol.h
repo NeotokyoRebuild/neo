@@ -240,7 +240,7 @@ typedef void* FileNameHandle_t;
 #define FILENAMEHANDLE_INVALID 0
 #ifdef NEO
 // These are used interchangeably elsewhere in the code base, so changing the constant could cause breakage.
-static_assert(FILENAMEHANDLE_INVALID == NULL);
+static_assert(bool(FILENAMEHANDLE_INVALID) == bool(NULL));
 #endif
 
 // Symbol table for more efficiently storing filenames by breaking paths and filenames apart.
