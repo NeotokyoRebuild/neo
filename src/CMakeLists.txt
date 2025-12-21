@@ -560,6 +560,13 @@ if(NEO_INSTALL_RESOURCES)
         DIRECTORY ${CMAKE_SOURCE_DIR}/../game/neo
         DESTINATION "${INSTALL_PATH_PREFIX}-resources"
     )
+    install(
+        FILES
+        ${CMAKE_SOURCE_DIR}/../game/bin/x64/GameConfig.txt
+        ${CMAKE_SOURCE_DIR}/../game/bin/GameConfig.txt
+        ${CMAKE_SOURCE_DIR}/../game/bin/rebuild.fgd
+        DESTINATION "${INSTALL_PATH_PREFIX}-resources"
+    )
 endif()
 
 if(NEO_EXTRA_ASSETS)
