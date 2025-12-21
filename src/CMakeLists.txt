@@ -562,10 +562,14 @@ if(NEO_INSTALL_RESOURCES)
     )
     install(
         FILES
-        ${CMAKE_SOURCE_DIR}/../game/bin/x64/GameConfig.txt
         ${CMAKE_SOURCE_DIR}/../game/bin/GameConfig.txt
         ${CMAKE_SOURCE_DIR}/../game/bin/rebuild.fgd
-        DESTINATION "${INSTALL_PATH_PREFIX}-resources"
+        DESTINATION "${INSTALL_PATH_PREFIX}-resources/bin"
+    )
+    install(
+        FILES
+        ${CMAKE_SOURCE_DIR}/../game/bin/x64/GameConfig.txt
+        DESTINATION "${INSTALL_PATH_PREFIX}-resources/bin/x64"
     )
 endif()
 
