@@ -1397,8 +1397,8 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, con
 	{
 	case MODE_PAINT:
 	{
-		int oldX, oldY, oldW, oldH;
-		vgui::surface()->GetFullscreenViewport(oldX, oldY, oldW, oldH);
+		int oldX = 0, oldY = 0, oldW, oldH;
+		vgui::surface()->GetScreenSize(oldW, oldH);
 		vgui::surface()->SetFullscreenViewport(c->rWidgetArea.x0, c->rWidgetArea.y0, c->irWidgetWide, c->irWidgetTall);
 		vgui::surface()->PushFullscreenViewport();
 
