@@ -4451,6 +4451,13 @@ bool CNEORules::IsOfficialMap(void)
 	return false;
 }
 
+void CNEORules::MarkAchievement( IRecipientFilter& filter, char const *pchAchievementName )
+{
+	UserMessageBegin( filter, "AchievementMark" );
+		WRITE_STRING( pchAchievementName );
+	MessageEnd();
+}
+
 void CNEORules::InitDefaultAIRelationships( void )
 {
 		int i, j;

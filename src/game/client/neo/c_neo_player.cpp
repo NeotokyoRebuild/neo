@@ -47,6 +47,7 @@
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
 #include "ivieweffects.h"
+#include "iachievementmgr.h"
 #include "c_neo_killer_damage_infos.h"
 #include <vgui/ILocalize.h>
 #include <tier3.h>
@@ -140,6 +141,20 @@ static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
 	}
 }
 USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
+
+static void __MsgFunc_AchievementMark(bf_read &msg)
+{
+	IAchievementMgr *pAchievementMgr = engine->GetAchievementMgr();
+	if (!pAchievementMgr)
+	{
+		return;
+	}
+	char szString[2048];
+	msg.ReadString(szString, sizeof(szString));
+
+	pAchievementMgr->OnMapEvent(szString);
+}
+USER_MESSAGE_REGISTER(AchievementMark);
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
