@@ -211,8 +211,6 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 	me->GetLocomotionInterface()->Jump();
 	me->PressJumpButton();
 	me->SuperJump();
-
-	pNeoMe->SuitPower_Drain(SUPER_JMP_COST);
 }
 
 
