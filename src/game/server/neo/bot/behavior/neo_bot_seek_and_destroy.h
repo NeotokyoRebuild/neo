@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Path/NextBotChasePath.h"
-
+#include "bot/neo_bot_contextual_query_interface.h"
 
 //
 // Roam around the map attacking enemies
 //
-class CNEOBotSeekAndDestroy : public Action< CNEOBot >
+class CNEOBotSeekAndDestroy : public Action< CNEOBot >, public CNEOBotContextualQueryInterface
 {
 public:
 	CNEOBotSeekAndDestroy( float duration = -1.0f );
@@ -22,6 +22,8 @@ public:
 
 	virtual QueryResultType	ShouldRetreat( const INextBot *me ) const;					// is it time to retreat?
 	virtual QueryResultType ShouldHurry( const INextBot *me ) const;					// are we in a hurry?
+	virtual QueryResultType ShouldWalk( const CNEOBot *me, const QueryResultType qShouldAimQuery ) const override;					// are we to walk?
+	virtual QueryResultType ShouldAim(const CNEOBot *me, const bool bWepHasClip) const override;
 
 	virtual EventDesiredResult< CNEOBot > OnTerritoryCaptured( CNEOBot *me, int territoryID );
 	virtual EventDesiredResult< CNEOBot > OnTerritoryLost( CNEOBot *me, int territoryID );
