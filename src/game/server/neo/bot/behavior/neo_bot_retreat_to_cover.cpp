@@ -176,6 +176,15 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 
+	if ( threat && threat->GetEntity() && threat->GetEntity()->IsPlayer() )
+	{
+		CNEO_Player *pThreatPlayer = ToNEOPlayer( threat->GetEntity() );
+		if ( pThreatPlayer && pThreatPlayer->IsCarryingGhost() )
+		{
+			return Done( "Stopping retreat because my threat is the ghost carrier" );
+		}
+	}
+
 	if ( ShouldRetreat( me ) == ANSWER_NO )
 		return Done( "No longer need to retreat" );
 
