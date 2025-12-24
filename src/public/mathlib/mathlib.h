@@ -19,6 +19,7 @@
 
 #ifdef NEO
 #include <type_traits>
+#include <utility>
 #endif
 
 // For MMX intrinsics
@@ -745,6 +746,18 @@ template<> FORCEINLINE QAngleByValue Lerp<QAngleByValue>( float flPercent, const
 #endif // VECTOR_NO_SLOW_OPERATIONS
 
 
+#ifdef NEO
+// NEO NOTE (Rain):
+// SDK version was causing problems with modern compilers at more pedantic warning levels.
+// Since we don't appear to run into any problems with std::swap, as noted by the original
+// comment below, switching back.
+
+template <class T>
+constexpr void V_swap(T& x, T& y) noexcept
+{
+	std::swap(x, y);
+}
+#else
 /// Same as swap(), but won't cause problems with std::swap
 template <class T> 
 FORCEINLINE void V_swap( T& x, T& y )
@@ -753,6 +766,7 @@ FORCEINLINE void V_swap( T& x, T& y )
 	x = y;
 	y = temp;
 }
+#endif
 
 template <class T> FORCEINLINE T AVG(T a, T b)
 {
