@@ -1637,8 +1637,11 @@ float Hermite_Spline(
 	float p2,
 	float t );
 
-
+#ifdef NEO
+void Hermite_SplineBasis( float t, float basis[4] );
+#else
 void Hermite_SplineBasis( float t, float basis[] );
+#endif
 
 void Hermite_Spline( 
 	const Quaternion &q0, 
