@@ -186,8 +186,11 @@ void CNEO_Player::RequestSetClass(int newClass)
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 		InitSprinting();
 		RemoveAllItems(false);
-		GiveDefaultItems();
-		RequestSetLoadout(0);
+		if (NEORules()->GetGameType() != NEO_GAME_TYPE_TUT)
+		{
+			GiveDefaultItems();
+			RequestSetLoadout(0);
+		}
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
 		SetMaxHealth(MAX_HEALTH_FOR_CLASS[newClass]);
 		SetHealth(GetMaxHealth());
