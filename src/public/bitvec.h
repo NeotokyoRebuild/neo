@@ -14,6 +14,10 @@
 #include "tier0/dbg.h"
 #include "tier0/basetypes.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 
 class CBitVecAccessor
 {
@@ -448,6 +452,17 @@ typedef CBitVec<32> CDWordBitVec;
 template <typename BITCOUNTTYPE>
 inline CVarBitVecBase<BITCOUNTTYPE>::CVarBitVecBase()
 {
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<std::remove_cvref_t<decltype(*this)>>)
+	{
+		static_assert(std::is_trivially_constructible_v<BITCOUNTTYPE>);
+		m_numBits = {};
+		m_numInts = {};
+		m_iBitStringStorage = {};
+		m_pInt = {};
+	}
+	else
+#endif
 	Plat_FastMemset( this, 0, sizeof( *this ) );
 }
 

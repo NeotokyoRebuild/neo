@@ -39,6 +39,8 @@ bool NPC_CheckBrushExclude( CBaseEntity *pEntity, CBaseEntity *pBrush );
 #include "steam/steam_api.h"
 #ifdef NEO // NEO NOTE (nullsystem): Missing include?
 #include "steam/steamclientpublic.h"
+
+#include <type_traits>
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -581,6 +583,14 @@ void UTIL_TraceModel( const Vector &vecStart, const Vector &vecEnd, const Vector
 	}
 	else
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<trace_t>)
+		{
+			static_assert(std::is_default_constructible_v<trace_t>);
+			*ptr = {};
+		}
+		else
+#endif
 		memset( ptr, 0, sizeof(trace_t) );
 		ptr->fraction = 1.0f;
 	}

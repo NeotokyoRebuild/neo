@@ -17,6 +17,10 @@
 
 #include "utlvector.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 class CUtlBuffer;
 
 #define CACHED_SENTENCE_VERSION			1
@@ -48,7 +52,25 @@ public:
 	CBasePhonemeTag();
 	CBasePhonemeTag( const CBasePhonemeTag& from );
 
+#ifdef NEO
+	CBasePhonemeTag &operator=( const CBasePhonemeTag &from )
+	{
+		if constexpr (std::is_trivially_copyable_v<CBasePhonemeTag>)
+		{
+			memcpy( this, &from, sizeof(*this) );
+		}
+		else
+		{
+			static_assert(sizeof(CBasePhonemeTag) == 12);
+			m_flStartTime = from.m_flStartTime;
+			m_flEndTime = from.m_flEndTime;
+			m_nPhonemeCode = from.m_nPhonemeCode;
+		}
+		return *this;
+	}
+#else
 	CBasePhonemeTag &operator=( const CBasePhonemeTag &from )	{ memcpy( this, &from, sizeof(*this) ); return *this; }
+#endif
 
 	float GetStartTime() const				{ return m_flStartTime; }
 	void SetStartTime( float startTime )	{ m_flStartTime = startTime; }

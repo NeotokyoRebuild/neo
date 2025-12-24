@@ -22,6 +22,10 @@
 	#include "info_darknessmode_lightsource.h"
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -48,6 +52,27 @@ struct AI_Follower_t
 	AI_Follower_t()
 	{
 		slot = -1;
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<decltype(navInfo)>)
+		{
+			static_assert(sizeof(navInfo) == 56);
+			static_assert(std::is_same_v<decltype(navInfo), AI_FollowNavInfo_t>);
+			navInfo.chaseEnemyTolerance = {};
+			navInfo.coverTolerance = {};
+			navInfo.enemyLOSTolerance = {};
+			navInfo.flags = {};
+			navInfo.followPointTolerance = {};
+			navInfo.m_DataMap = {};
+			navInfo.position = {};
+			navInfo.range = {};
+			navInfo.repathOnRouteTolerance = {};
+			navInfo.targetMoveTolerance = {};
+			navInfo.tolerance = {};
+			navInfo.walkTolerance = {};
+			navInfo.Zrange = {};
+		}
+		else
+#endif
 		memset( &navInfo, 0, sizeof(navInfo) );
 		pGroup = NULL;
 	}
@@ -232,6 +257,27 @@ END_DATADESC();
 
 CAI_FollowBehavior::CAI_FollowBehavior( const AI_FollowParams_t &params )
 {
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<decltype(m_FollowNavGoal)>)
+	{
+		static_assert(sizeof(m_FollowNavGoal) == 56);
+		static_assert(std::is_same_v<decltype(m_FollowNavGoal), AI_FollowNavInfo_t>);
+		m_FollowNavGoal.chaseEnemyTolerance = {};
+		m_FollowNavGoal.coverTolerance = {};
+		m_FollowNavGoal.enemyLOSTolerance = {};
+		m_FollowNavGoal.flags = {};
+		m_FollowNavGoal.followPointTolerance = {};
+		m_FollowNavGoal.m_DataMap = {};
+		m_FollowNavGoal.position = {};
+		m_FollowNavGoal.range = {};
+		m_FollowNavGoal.repathOnRouteTolerance = {};
+		m_FollowNavGoal.targetMoveTolerance = {};
+		m_FollowNavGoal.tolerance = {};
+		m_FollowNavGoal.walkTolerance = {};
+		m_FollowNavGoal.Zrange = {};
+	}
+	else
+#endif
 	memset( &m_FollowNavGoal, 0, sizeof( m_FollowNavGoal ) );
 	
 	m_FollowDelay.Set( 1.0, 3.0 );

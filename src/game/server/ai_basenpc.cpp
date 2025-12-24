@@ -107,6 +107,10 @@ extern ConVar sk_healthkit;
 #include "utlbuffer.h"
 #include "gamestats.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -13156,6 +13160,33 @@ void CAI_BaseNPC::AddScriptedNPCInteraction( ScriptedNPCInteraction_t *pInteract
 
 	// Copy the interaction over
 	ScriptedNPCInteraction_t *pNewInt = &(m_ScriptedInteractions[nNewIndex]);
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<std::remove_pointer_t<
+		decltype(pNewInt)>>)
+	{
+		static_assert(sizeof(*pNewInt) == 200);
+		pNewInt->angRelativeAngles = pInteraction->angRelativeAngles;
+		pNewInt->bValidOnCurrentEnemy = pInteraction->bValidOnCurrentEnemy;
+		pNewInt->flDelay = pInteraction->flDelay;
+		pNewInt->flDistSqr = pInteraction->flDistSqr;
+		pNewInt->flNextAttemptTime = pInteraction->flNextAttemptTime;
+		pNewInt->iFlags = pInteraction->iFlags;
+		pNewInt->iLoopBreakTriggerMethod = pInteraction->iLoopBreakTriggerMethod;
+		pNewInt->iszInteractionName = pInteraction->iszInteractionName;
+		pNewInt->iszMyWeapon = pInteraction->iszMyWeapon;
+		pNewInt->iszTheirWeapon = pInteraction->iszTheirWeapon;
+		pNewInt->iTriggerMethod = pInteraction->iTriggerMethod;
+		pNewInt->matDesiredLocalToWorld = pInteraction->matDesiredLocalToWorld;
+		pNewInt->m_DataMap = pInteraction->m_DataMap;
+		for (int i = 0; i < ARRAYSIZE(pNewInt->sPhases); ++i)
+		{
+			pNewInt->sPhases[i] = pInteraction->sPhases[i];
+		}
+		pNewInt->vecRelativeOrigin = pInteraction->vecRelativeOrigin;
+		pNewInt->vecRelativeVelocity = pInteraction->vecRelativeVelocity;
+	}
+	else
+#endif
 	memcpy( pNewInt, pInteraction, sizeof(ScriptedNPCInteraction_t) );
 
 	// Calculate the local to world matrix

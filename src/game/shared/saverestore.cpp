@@ -2019,7 +2019,14 @@ int CRestore::ReadEHandle( EHANDLE *pEHandle, int count, int nBytesAvailable )
 	
 	if ( nRead < count)
 	{
+#ifdef NEO
+		static_assert(sizeof(EHANDLE) == 4);
+		static_assert(sizeof(pEHandle[0]) == sizeof(EHANDLE));
+		// HACK: not trivial! :-(
+		memset( (void*) & pEHandle[nRead], 0xFF, (count - nRead) * sizeof(pEHandle[0]));
+#else
 		memset( &pEHandle[nRead], 0xFF, ( count - nRead ) * sizeof(pEHandle[0]) );
+#endif
 	}
 	
 	return nRead;

@@ -388,7 +388,11 @@ void CSoundParametersInternal::CopyFrom( const CSoundParametersInternal& src )
 		if ( m_nSoundNames > 1 )
 		{
 			m_pSoundNames = (SoundFile*)malloc( sizeof(SoundFile)*m_nSoundNames);
+#ifdef NEO
+			memcpy( (void*)m_pSoundNames, src.m_pSoundNames, m_nSoundNames * sizeof(SoundFile) );
+#else
 			memcpy( m_pSoundNames, src.m_pSoundNames, m_nSoundNames * sizeof(SoundFile) );
+#endif
 		}
 		else
 		{
@@ -406,7 +410,11 @@ void CSoundParametersInternal::CopyFrom( const CSoundParametersInternal& src )
 		if ( m_nConvertedNames > 1 )
 		{
 			m_pConvertedNames = (SoundFile*)malloc( sizeof(SoundFile)*m_nConvertedNames);
+#ifdef NEO
+			memcpy( (void*)m_pConvertedNames, src.m_pConvertedNames, m_nConvertedNames * sizeof(SoundFile) );
+#else
 			memcpy( m_pConvertedNames, src.m_pConvertedNames, m_nConvertedNames * sizeof(SoundFile) );
+#endif
 		}
 		else
 		{

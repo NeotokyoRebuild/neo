@@ -16,6 +16,9 @@
 #include "cmodel.h"
 #include "bitvec.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
 
 class CBoneToWorld;
 class CIKContext;
@@ -251,6 +254,23 @@ struct ikcontextikrule_t
 
 	ikcontextikrule_t()
 	{
+#ifdef NEO
+		using MyType = std::remove_cvref_t<decltype(*this)>;
+		if constexpr (!std::is_trivially_copyable_v<MyType>)
+		{
+			static_assert(sizeof(MyType) == 136, "implement ctor zero-init for changed members!!");
+			index = type = chain = bone = slot = {};
+			height = radius = floor = start = peak = tail = end
+				= top = drop = commit = release = flWeight
+				= flRuleWeight = latched = {};
+			pos.Zero();
+			kneeDir.Zero();
+			kneePos.Zero();
+			q.x = q.y = q.z = q.w = {};
+			szLabel = {};
+		}
+		else
+#endif
 		memset( this, 0, sizeof( *this ) );
 	}
 

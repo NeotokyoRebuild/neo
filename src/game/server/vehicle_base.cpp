@@ -19,6 +19,10 @@
 #include "physics_impact_damage.h"
 #include "entityblocker.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1095,6 +1099,27 @@ void CPropVehicleDriveable::Event_KilledOther( CBaseEntity *pVictim, const CTake
 CFourWheelServerVehicle::CFourWheelServerVehicle( void )
 {
 	// Setup our smoothing data
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<decltype(m_ViewSmoothing)>)
+	{
+		static_assert(sizeof(m_ViewSmoothing) == 128);
+		static_assert(std::is_same_v<decltype(m_ViewSmoothing), ViewSmoothingData_t>);
+		m_ViewSmoothing.bRunningEnterExit =
+			m_ViewSmoothing.bWasRunningAnim = {};
+		m_ViewSmoothing.flEnterExitDuration = {};
+		m_ViewSmoothing.flEnterExitStartTime =
+			m_ViewSmoothing.flFOV = {};
+		m_ViewSmoothing.m_DataMap = {};
+		m_ViewSmoothing.pitchLockData = {};
+		m_ViewSmoothing.pVehicle = {};
+		m_ViewSmoothing.rollLockData = {};
+		m_ViewSmoothing.vecAngleDiffMin.Init();
+		m_ViewSmoothing.vecAngleDiffSaved.Init();
+		m_ViewSmoothing.vecAnglesSaved.Init();
+		m_ViewSmoothing.vecOriginSaved.Zero();
+	}
+	else
+#endif
 	memset( &m_ViewSmoothing, 0, sizeof( m_ViewSmoothing ) );
 
 	m_ViewSmoothing.bClampEyeAngles		= true;

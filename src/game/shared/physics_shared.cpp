@@ -22,6 +22,10 @@
 
 #include "physics_saverestore.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -189,7 +193,11 @@ bool PhysModelParseSolidByIndex( solid_t &solid, CBaseEntity *pEntity, int model
 
 	bool parsed = false;
 
+#ifdef NEO
+	ZeroSolid(solid);
+#else
 	memset( &solid, 0, sizeof(solid) );
+#endif
 	solid.params = g_PhysDefaultObjectParams;
 
 	IVPhysicsKeyParser *pParse = physcollision->VPhysicsKeyParserCreate( pCollide->pKeyValues );
@@ -199,7 +207,11 @@ bool PhysModelParseSolidByIndex( solid_t &solid, CBaseEntity *pEntity, int model
 		if ( !strcmpi( pBlock, "solid" ) )
 		{
 			solid_t tmpSolid;
+#ifdef NEO
+			ZeroSolid(tmpSolid);
+#else
 			memset( &tmpSolid, 0, sizeof(tmpSolid) );
+#endif
 			tmpSolid.params = g_PhysDefaultObjectParams;
 
 			pParse->ParseSolid( &tmpSolid, &g_SolidSetup );
@@ -252,7 +264,11 @@ bool PhysModelParseSolidByIndex( solid_t &solid, CBaseEntity *pEntity, vcollide_
 {
 	bool parsed = false;
 
+#ifdef NEO
+	ZeroSolid(solid);
+#else
 	memset( &solid, 0, sizeof(solid) );
+#endif
 	solid.params = g_PhysDefaultObjectParams;
 
 	IVPhysicsKeyParser *pParse = physcollision->VPhysicsKeyParserCreate( pCollide->pKeyValues );
@@ -262,7 +278,11 @@ bool PhysModelParseSolidByIndex( solid_t &solid, CBaseEntity *pEntity, vcollide_
 		if ( !strcmpi( pBlock, "solid" ) )
 		{
 			solid_t tmpSolid;
+#ifdef NEO
+			ZeroSolid(tmpSolid);
+#else
 			memset( &tmpSolid, 0, sizeof(tmpSolid) );
+#endif
 			tmpSolid.params = g_PhysDefaultObjectParams;
 
 			pParse->ParseSolid( &tmpSolid, &g_SolidSetup );

@@ -72,7 +72,11 @@ C_PropVehicleDriveable::C_PropVehicleDriveable() :
 {
 	m_hPrevPlayer = NULL;
 
+#ifdef NEO
+	ZeroViewSmoothingData(m_ViewSmoothingData);
+#else
 	memset( &m_ViewSmoothingData, 0, sizeof( m_ViewSmoothingData ) );
+#endif
 
 	m_ViewSmoothingData.pVehicle = this;
 	m_ViewSmoothingData.bClampEyeAngles = true;
