@@ -1623,8 +1623,11 @@ void CRestore::StartBlock( SaveRestoreRecordHeader_t *pHeader )
 }
 
 //-------------------------------------
-
+#ifdef NEO
+void CRestore::StartBlock( char szBlockName[SIZE_BLOCK_NAME_BUF] )
+#else
 void CRestore::StartBlock( char szBlockName[] )
+#endif
 {
 	SaveRestoreRecordHeader_t header;
 	StartBlock( &header );

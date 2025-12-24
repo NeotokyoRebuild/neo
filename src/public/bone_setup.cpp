@@ -5120,8 +5120,11 @@ float Studio_GetController( const CStudioHdr *pStudioHdr, int iController, float
 // Purpose: Calculates default values for the pose parameters
 // Output: 	fills in an array
 //-----------------------------------------------------------------------------
-
+#ifdef NEO
+void Studio_CalcDefaultPoseParameters( const CStudioHdr *pStudioHdr, float flPoseParameter[MAXSTUDIOPOSEPARAM], int nCount )
+#else
 void Studio_CalcDefaultPoseParameters( const CStudioHdr *pStudioHdr, float flPoseParameter[], int nCount )
+#endif
 {
 	int nPoseCount = pStudioHdr->GetNumPoseParameters();
 	int nNumParams = MIN( nCount, MAXSTUDIOPOSEPARAM );
