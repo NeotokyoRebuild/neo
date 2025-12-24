@@ -13,7 +13,7 @@
 #include "tier0/dbg.h"
 #include "dt_utlvector_common.h"
 
-#if defined(NEO) && defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+#ifdef NEO
 #include <type_traits>
 #endif
 
@@ -73,6 +73,7 @@ CStandardSendProxies g_StandardSendProxies;
 // ---------------------------------------------------------------------- //
 // Proxies.
 // ---------------------------------------------------------------------- //
+#ifdef NEO
 template <class T>
 void pun(auto& dst, const void* src)
 {
@@ -88,6 +89,7 @@ void pun(auto& dst, const void* src)
 	Assert(neoRes == sdkRes);
 #endif
 }
+#endif
 
 void SendProxy_AngleToFloat( const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID)
 {

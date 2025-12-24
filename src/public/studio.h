@@ -28,6 +28,10 @@
 #include "localflexcontroller.h"
 #include "utlsymbol.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 #define STUDIO_ENABLE_PERF_COUNTERS
 
 #define STUDIO_SEQUENCE_ACTIVITY_LOOKUPS_ARE_SLOW 0 
@@ -3315,18 +3319,106 @@ inline int Studio_LoadVertexes( const vertexFileHeader_t *pTempVvdHdr, vertexFil
 		}
 
 		// copy vertexes
+#ifdef NEO
+		// NEO NOTE (Rain): we don't currently hit this code path anywhere because we aren't building VRAD, hence this is untested...
+		// but see the "paranoidMemcpy" check below for the validation sanity checks.
+		if constexpr (!std::is_trivially_copyable_v<mstudiovertex_t>)
+		{
+			constexpr int increment = 48;
+			static_assert(sizeof(mstudiovertex_t) == increment);
+			for (int vert = 0; vert < numVertexes; ++vert)
+			{
+				const auto offset = vert * increment;
+				auto* dst = (mstudiovertex_t*)((byte*)pNewVvdHdr + pNewVvdHdr->vertexDataStart) + offset;
+				auto* src = (mstudiovertex_t*)((byte*)pTempVvdHdr + pTempVvdHdr->vertexDataStart) + pFixupTable[i].sourceVertexID + offset;
+				Assert(dst);
+				Assert(src);
+				static_assert(std::is_move_assignable_v<std::remove_pointer_t<decltype(dst)>>);
+				static_assert(std::is_same_v<decltype(dst), decltype(src)>);
+				static_assert(std::is_same_v<decltype(dst), mstudiovertex_t*>);
+				*dst = *src;
+			}
+		}
+		else
+#endif
 		memcpy(
 			(mstudiovertex_t *)((byte *)pNewVvdHdr+pNewVvdHdr->vertexDataStart) + target,
 			(mstudiovertex_t *)((byte *)pTempVvdHdr+pTempVvdHdr->vertexDataStart) + pFixupTable[i].sourceVertexID,
 			pFixupTable[i].numVertexes*sizeof(mstudiovertex_t) );
 
+#ifdef NEO
+#if defined(DEBUG) && defined(DBGFLAG_ASSERT)
+		constexpr bool paranoidMemcpy = true && IsWindows(); // because MSVC is more lenient about nontrivial memcpy with Wall
+		if constexpr (paranoidMemcpy)
+		{
+			if (pFixupTable[i].numVertexes > 0)
+			{
+				auto* memBeforeBuf = malloc(pFixupTable[i].numVertexes * sizeof(mstudiovertex_t));
+				Assert(memBeforeBuf);
+				memcpy(memBeforeBuf, (mstudiovertex_t*)((byte*)pNewVvdHdr + pNewVvdHdr->vertexDataStart) + target, pFixupTable[i].numVertexes * sizeof(mstudiovertex_t));
+				memcpy(
+					(mstudiovertex_t *)((byte *)pNewVvdHdr+pNewVvdHdr->vertexDataStart) + target,
+					(mstudiovertex_t *)((byte *)pTempVvdHdr+pTempVvdHdr->vertexDataStart) + pFixupTable[i].sourceVertexID,
+					pFixupTable[i].numVertexes*sizeof(mstudiovertex_t) );
+				const auto res = memcmp((mstudiovertex_t*)((byte*)pNewVvdHdr + pNewVvdHdr->vertexDataStart) + target, memBeforeBuf,
+					pFixupTable[i].numVertexes * sizeof(mstudiovertex_t));
+				free(memBeforeBuf);
+				Assert(0 == res);
+			}
+		}
+#endif // DEBUG && DBGFLAG_ASSERT
+#endif // NEO
+
 		if (bNeedsTangentS)
 		{
+#ifdef NEO
+			if constexpr (!std::is_trivially_copyable_v<Vector4D>)
+			{
+				for (int vert = 0; vert < pFixupTable[i].numVertexes; ++vert)
+				{
+					constexpr int increment = 16;
+					static_assert(sizeof(Vector4D) == increment);
+					const auto offset = vert * increment;
+					auto* src = (Vector4D*)((byte*)pNewVvdHdr + pNewVvdHdr->tangentDataStart) + target + offset;
+					auto* dst = (Vector4D*)((byte*)pTempVvdHdr + pTempVvdHdr->tangentDataStart) + pFixupTable[i].sourceVertexID + offset;
+					static_assert(std::is_move_assignable_v<Vector4D>);
+					static_assert(std::is_same_v<decltype(src), decltype(dst)>);
+					static_assert(std::is_same_v<decltype(src), Vector4D*>);
+					Assert(dst);
+					Assert(src);
+					*src = *dst;
+				}
+			}
+			else
+#endif
 			// copy tangents
 			memcpy(
 				(Vector4D *)((byte *)pNewVvdHdr+pNewVvdHdr->tangentDataStart) + target,
 				(Vector4D *)((byte *)pTempVvdHdr+pTempVvdHdr->tangentDataStart) + pFixupTable[i].sourceVertexID,
 				pFixupTable[i].numVertexes*sizeof(Vector4D) );
+
+#ifdef NEO
+#ifdef DEBUG
+			if constexpr (paranoidMemcpy)
+			{
+				if (pFixupTable[i].numVertexes > 0)
+				{
+					const auto memBeforeBufSize = pFixupTable[i].numVertexes * sizeof(Vector4D);
+					auto* memBeforeBuf = malloc(memBeforeBufSize);
+					Assert(memBeforeBuf);
+					memcpy(memBeforeBuf, (Vector4D*)((byte*)pNewVvdHdr + pNewVvdHdr->tangentDataStart) + target, memBeforeBufSize);
+					memcpy(
+						(Vector4D *)((byte *)pNewVvdHdr+pNewVvdHdr->tangentDataStart) + target,
+						(Vector4D *)((byte *)pTempVvdHdr+pTempVvdHdr->tangentDataStart) + pFixupTable[i].sourceVertexID,
+						memBeforeBufSize );
+					const auto res = memcmp((Vector4D *)((byte *)pNewVvdHdr+pNewVvdHdr->tangentDataStart) + target, memBeforeBuf,
+						memBeforeBufSize );
+					free(memBeforeBuf);
+					Assert(0 == res);
+				}
+			}
+#endif
+#endif
 		}
 
 		// data is placed consecutively

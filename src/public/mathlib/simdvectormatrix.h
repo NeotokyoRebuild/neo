@@ -21,6 +21,10 @@
 #include "tier1/utlsoacontainer.h"
 #include "mathlib/ssemath.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 class CSIMDVectorMatrix
 {
 public:
@@ -85,6 +89,19 @@ public:
 	CSIMDVectorMatrix &operator=( CSIMDVectorMatrix const &src )
 	{
 		SetSize( src.m_nWidth, src.m_nHeight );
+#ifdef NEO
+		using ToT = std::remove_pointer_t<decltype(src.m_pData)>;
+		if constexpr (!std::is_trivially_copyable_v<ToT>)
+		{
+			static_assert(std::is_copy_assignable_v<ToT>);
+			static_assert(std::is_same_v <ToT, std::remove_pointer_t<decltype(src.m_pData)>>);
+			if (m_pData && src.m_pData)
+			{
+				*m_pData = *src.m_pData;
+			}
+		}
+		else
+#endif
 		if ( m_pData )
 			memcpy( m_pData, src.m_pData, m_nHeight*m_nPaddedWidth*sizeof(m_pData[0]) ); 
 		return *this;
@@ -131,6 +148,24 @@ public:
 	void Clear( void )
 	{
 		Assert( m_pData );
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<
+			std::remove_pointer_t<decltype(m_pData)>>)
+		{
+#ifdef DEBUG
+			// Play nice with data alignment to avoid compiler errors
+			struct AssertWrap {
+				decltype(m_pData->x) v;
+			};
+			static_assert(std::is_trivially_move_assignable_v<AssertWrap>);
+#endif
+			
+			m_pData->x = Four_Zeros;
+			m_pData->y = Four_Zeros;
+			m_pData->z = Four_Zeros;
+		}
+		else
+#endif
 		memset( m_pData, 0, m_nHeight*m_nPaddedWidth*sizeof(m_pData[0]) );
 	}
 

@@ -18,6 +18,10 @@
 #include "tier1/strtools.h"
 #include "mapentities_shared.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -604,6 +608,28 @@ CAI_Hint* CAI_HintManager::CreateHint( HintNodeData *pNodeData, const char *pMap
 
 		pHint->SetName( pNodeData->strEntityName );
 		pHint->SetAbsOrigin( pNodeData->vecPosition );
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<std::remove_pointer_t<
+			decltype(pNodeData)>>)
+		{
+			static_assert(std::is_same_v < HintNodeData, decltype(pHint->m_NodeData)>);
+			static_assert(sizeof(pHint->m_NodeData) == 80);
+			pHint->m_NodeData.fIgnoreFacing = pNodeData->fIgnoreFacing;
+			pHint->m_NodeData.iDisabled = pNodeData->iDisabled;
+			pHint->m_NodeData.iszActivityName = pNodeData->iszActivityName;
+			pHint->m_NodeData.maxState = pNodeData->maxState;
+			pHint->m_NodeData.minState = pNodeData->minState;
+			pHint->m_NodeData.m_DataMap = pNodeData->m_DataMap;
+			pHint->m_NodeData.nHintType = pNodeData->nHintType;
+			pHint->m_NodeData.nNodeID = pNodeData->nNodeID;
+			pHint->m_NodeData.nTargetWCNodeID = pNodeData->nTargetWCNodeID;
+			pHint->m_NodeData.nWCNodeID = pNodeData->nWCNodeID;
+			pHint->m_NodeData.strEntityName = pNodeData->strEntityName;
+			pHint->m_NodeData.strGroup = pNodeData->strGroup;
+			pHint->m_NodeData.vecPosition = pNodeData->vecPosition;
+		}
+		else
+#endif
 		memcpy( &(pHint->m_NodeData), pNodeData, sizeof(HintNodeData) );
 		DispatchSpawn( pHint );
 

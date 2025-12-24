@@ -314,7 +314,11 @@ void CHudHistoryResource::Paint( void )
 			if ( m_PickupHistory[i].DisplayTime <= gpGlobals->curtime )
 			{  
 				// pic drawing time has expired
+#ifdef NEO
+				ZeroHistItem(m_PickupHistory[i]);
+#else
 				memset( &m_PickupHistory[i], 0, sizeof(HIST_ITEM) );
+#endif
 				CheckClearHistory();
 				continue;
 			}

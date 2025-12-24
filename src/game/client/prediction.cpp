@@ -25,6 +25,10 @@
 #include "c_basehlplayer.h"
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 #include "tier0/vprof.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -164,6 +168,34 @@ void CPrediction::CheckError( int commands_acknowledged )
 
 	Vector predicted_origin;
 
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<Vector>)
+	{
+		memcpy( predicted_origin.Base(), (Vector*)((byte*)slot + td->fieldOffset[PC_DATA_PACKED]), sizeof(Vector));
+#ifdef DBGFLAG_ASSERT
+		constexpr bool paranoid = false;
+		if constexpr (paranoid)
+		{
+			Assert((void*)& predicted_origin == (void*)predicted_origin.Base());
+
+			void* tmpNeoRes = malloc(sizeof(Vector));
+			Assert(tmpNeoRes);
+			memcpy(tmpNeoRes, predicted_origin.Base(), sizeof(Vector));
+
+			memcpy( (Vector *)&predicted_origin, (Vector *)( (byte *)slot + td->fieldOffset[ PC_DATA_PACKED ] ), sizeof( Vector ) );
+			void* sdkRes = (void*)&predicted_origin;
+			Assert(tmpNeoRes != sdkRes);
+			Assert(((Vector*)tmpNeoRes)->IsValid() == ((Vector*)sdkRes)->IsValid());
+			if (((Vector*)tmpNeoRes)->IsValid())
+				Assert(*((Vector*)tmpNeoRes) == *(Vector*)sdkRes);
+			Assert(0 == memcmp(tmpNeoRes, sdkRes, sizeof(Vector)));
+
+			free(tmpNeoRes);
+		}
+#endif
+	}
+	else
+#endif
 	memcpy( (Vector *)&predicted_origin, (Vector *)( (byte *)slot + td->fieldOffset[ PC_DATA_PACKED ] ), sizeof( Vector ) );
 	
 	// Compare what the server returned with what we had predicted it to be

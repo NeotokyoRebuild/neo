@@ -25,6 +25,10 @@
 	#include "posedebugger.h"
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -3044,6 +3048,15 @@ bool Studio_IKSequenceError( const CStudioHdr *pStudioHdr, mstudioseqdesc_t &seq
 {
 	int i;
 
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<ikcontextikrule_t>)
+	{
+		static_assert(std::is_same_v<ikcontextikrule_t, std::remove_cvref_t<decltype(ikRule)>>);
+		static_assert(std::is_constructible_v<ikcontextikrule_t>);
+		ikRule = {};
+	}
+	else
+#endif
 	memset( &ikRule, 0, sizeof(ikRule) );
 	ikRule.start = ikRule.peak = ikRule.tail = ikRule.end = 0;
 
@@ -3235,7 +3248,11 @@ void CIKContext::Init( const CStudioHdr *pStudioHdr, const QAngle &angles, const
 		if (m_target.Count() == 0)
 		{
 			m_target.SetSize(12);
+#ifdef NEO
+			memset( (void*)m_target.Base(), 0, sizeof(m_target[0])*m_target.Count() );
+#else
 			memset( m_target.Base(), 0, sizeof(m_target[0])*m_target.Count() );
+#endif
 			ClearTargets();
 		}
 
@@ -3310,7 +3327,11 @@ void CIKContext::AddDependencies( mstudioseqdesc_t &seqdesc, int iSequence, floa
 		if (m_target.Count() == 0)
 		{
 			m_target.SetSize(12);
+#ifdef NEO
+			memset( (void*)m_target.Base(), 0, sizeof(m_target[0])*m_target.Count() );
+#else
 			memset( m_target.Base(), 0, sizeof(m_target[0])*m_target.Count() );
+#endif
 			ClearTargets();
 		}
 
@@ -3352,6 +3373,17 @@ void CIKContext::AddAutoplayLocks( Vector pos[], Quaternion q[] )
 	CBoneBitList boneComputed;
 
 	int ikOffset = m_ikLock.AddMultipleToTail( m_pStudioHdr->GetNumIKAutoplayLocks() );
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<ikcontextikrule_t>)
+	{
+		for (int i = 0; i < m_pStudioHdr->GetNumIKAutoplayLocks(); ++i)
+		{
+			static_assert(std::is_constructible_v<ikcontextikrule_t>);
+			m_ikLock[ikOffset + i] = {};
+		}
+	}
+	else
+#endif
 	memset( &m_ikLock[ikOffset], 0, sizeof(ikcontextikrule_t)*m_pStudioHdr->GetNumIKAutoplayLocks() );
 
 	for (int i = 0; i < m_pStudioHdr->GetNumIKAutoplayLocks(); i++)
@@ -3411,6 +3443,17 @@ void CIKContext::AddSequenceLocks( mstudioseqdesc_t &seqdesc, Vector pos[], Quat
 	CBoneBitList boneComputed;
 
 	int ikOffset = m_ikLock.AddMultipleToTail( seqdesc.numiklocks );
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<ikcontextikrule_t>)
+	{
+		for (int i = 0; i < seqdesc.numiklocks; ++i)
+		{
+			static_assert(std::is_constructible_v<ikcontextikrule_t>);
+			m_ikLock[ikOffset + i] = {};
+		}
+	}
+	else
+#endif
 	memset( &m_ikLock[ikOffset], 0, sizeof(ikcontextikrule_t) * seqdesc.numiklocks );
 
 	for (int i = 0; i < seqdesc.numiklocks; i++)
@@ -4327,6 +4370,17 @@ void CIKContext::AddAllLocks( Vector pos[], Quaternion q[] )
 	CBoneBitList boneComputed;
 
 	int ikOffset = m_ikLock.AddMultipleToTail( m_pStudioHdr->GetNumIKChains() );
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<ikcontextikrule_t>)
+	{
+		for (int i = 0; i < m_pStudioHdr->GetNumIKChains(); ++i)
+		{
+			static_assert(std::is_constructible_v<ikcontextikrule_t>);
+			m_ikLock[ikOffset + i] = {};
+		}
+	}
+	else
+#endif
 	memset( &m_ikLock[ikOffset], 0, sizeof(ikcontextikrule_t)*m_pStudioHdr->GetNumIKChains() );
 
 	for (int i = 0; i < m_pStudioHdr->GetNumIKChains(); i++)

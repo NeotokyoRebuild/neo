@@ -104,7 +104,11 @@ END_DATADESC()
 //-----------------------------------------------------------------------------
 C_PropCannon::C_PropCannon( void )
 {
+#ifdef NEO
+	ZeroViewSmoothingData(m_ViewSmoothingData);
+#else
 	memset( &m_ViewSmoothingData, 0, sizeof( m_ViewSmoothingData ) );
+#endif
 	m_ViewSmoothingData.pVehicle = this;
 }
 

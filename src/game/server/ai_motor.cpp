@@ -16,6 +16,10 @@
 #include "ai_moveprobe.h"
 #include "saverestore_utlvector.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -469,6 +473,13 @@ void CAI_Motor::MoveStart()
 
 void CAI_Motor::MoveStop()
 { 
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<decltype(m_vecVelocity)>)
+	{
+		m_vecVelocity.Zero();
+	}
+	else
+#endif
 	memset( &m_vecVelocity, 0, sizeof(m_vecVelocity) ); 
 	GetOuter()->GetLocalNavigator()->ResetMoveCalculations();
 }

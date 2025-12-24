@@ -14,6 +14,10 @@
 
 #include <mempool.h>
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // ----------------------------------------------------------------------------
 // Forward declarations
 // ----------------------------------------------------------------------------
@@ -44,6 +48,22 @@ public:
 	AI_Waypoint_t( const Vector &vecPosition, float flYaw, Navigation_t navType, int fWaypointFlags, int nNodeID );
 	AI_Waypoint_t( const AI_Waypoint_t &from )
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<std::remove_cvref_t<decltype(*this)>>)
+		{
+			static_assert(sizeof(*this) == 56);
+			flYaw = from.flYaw;
+			hPathCorner = from.hPathCorner;
+			iNodeID = from.iNodeID;
+			m_DataMap = from.m_DataMap;
+			m_fWaypointFlags = from.m_fWaypointFlags;
+			m_hData = from.m_hData;
+			m_iWPType = from.m_iWPType;
+			s_Allocator = from.s_Allocator;
+			vecLocation = from.vecLocation;
+		}
+		else
+#endif
 		memcpy( this, &from, sizeof(*this) );
 		flPathDistGoal = -1;
 		pNext = pPrev = NULL;
@@ -51,6 +71,22 @@ public:
 
 	AI_Waypoint_t &operator=( const AI_Waypoint_t &from )
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<std::remove_cvref_t<decltype(*this)>>)
+		{
+			static_assert(sizeof(*this) == 56);
+			flYaw = from.flYaw;
+			hPathCorner = from.hPathCorner;
+			iNodeID = from.iNodeID;
+			m_DataMap = from.m_DataMap;
+			m_fWaypointFlags = from.m_fWaypointFlags;
+			m_hData = from.m_hData;
+			m_iWPType = from.m_iWPType;
+			s_Allocator = from.s_Allocator;
+			vecLocation = from.vecLocation;
+		}
+		else
+#endif
 		memcpy( this, &from, sizeof(*this) );
 		flPathDistGoal = -1;
 		pNext = pPrev = NULL;
