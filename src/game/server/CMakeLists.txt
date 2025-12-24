@@ -1391,6 +1391,7 @@ target_sources_grouped(
     neo/neo_npc_dummy.cpp
     neo/neo_npc_dummy.h
     neo/neo_npc_targetsystem.cpp
+    neo/neo_npc_targetsystem.h
     neo/neo_player.cpp
     neo/neo_player.h
     neo/neo_smokelineofsightblocker.cpp
@@ -1444,6 +1445,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_move_to_vantage_point.h
     neo/bot/behavior/neo_bot_retreat_to_cover.cpp
     neo/bot/behavior/neo_bot_retreat_to_cover.h
+    neo/bot/behavior/neo_bot_retreat_from_apc.cpp
+    neo/bot/behavior/neo_bot_retreat_from_apc.h
     neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
     neo/bot/behavior/neo_bot_retreat_from_grenade.h
     neo/bot/behavior/neo_bot_scenario_monitor.cpp

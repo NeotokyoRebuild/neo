@@ -1,66 +1,9 @@
 #include "cbase.h"
-#include "baseentity.h"
-#include "filters.h"
+#include "neo_npc_targetsystem.h"
 #include "neo_player.h"
 #include "tier0/memdbgon.h"
 
 #define CLOAKED_VELOCITY_THRESHOLD 32400 // 180 horizontal velocity. Slightly under sprint/wigglerun speed
-
-class CNEO_NPCTargetSystem : public CBaseEntity
-{
-public:
-    DECLARE_CLASS(CNEO_NPCTargetSystem, CBaseEntity);
-    DECLARE_DATADESC();
-
-private:
-    // KVs
-    float m_flFOV = 90.0f;
-    float m_flTopClip = 60.0f;
-    float m_flBottomClip = -100.0f;
-    float m_flMaxViewDistance = 800.0f;
-    float m_flDeadzone = 100.0f;
-    float m_flMiddleBoundsHalf = 20.0f;
-    string_t m_iFilterName = NULL_STRING;
-    bool m_bStartDisabled = false;
-    bool m_bMotionVision = true;
-    // Damage trace
-    string_t m_strDamageSourceName = NULL_STRING;
-    float m_flDamage = 10.0f;
-    float m_flFireRate = 1.0f;
-
-    CBaseFilter *m_pFilter = nullptr;
-    EHANDLE m_hDamageSource = nullptr;
-
-    COutputEvent m_OnSpotted;
-    COutputEvent m_OnRight;
-    COutputEvent m_OnLeft;
-    COutputEvent m_OnMiddle;
-    COutputEvent m_OnMiddleIgnore;
-    COutputEvent m_OnExit;
-    COutputEvent m_OnExitMiddle;
-
-    void InputEnable(inputdata_t &inputData);
-    void InputDisable(inputdata_t &inputData);
-
-public:
-    void Spawn();
-    void Think();
-
-private:
-    enum TargetZone_e
-    {
-        ZONE_NONE = 0,
-        ZONE_LEFT,
-        ZONE_MIDDLE,
-        ZONE_RIGHT
-    };
-
-    TargetZone_e m_iLastZone = ZONE_NONE;
-    bool m_bTargetAcquired = false;
-    bool m_bMiddleIgnoreActive = false;
-    float m_flNextFireTime = 0;
-    CBasePlayer *m_pLastBestTarget = nullptr;
-};
 
 LINK_ENTITY_TO_CLASS(neo_npc_targetsystem, CNEO_NPCTargetSystem);
 
@@ -326,3 +269,13 @@ void CNEO_NPCTargetSystem::InputDisable(inputdata_t &inputData)
 {
     SetNextThink(TICK_NEVER_THINK);
 }
+
+bool CNEO_NPCTargetSystem::IsHostileTo( CBaseEntity *pEntity )
+{
+	if ( m_pFilter && !m_pFilter->PassesFilter( this, pEntity ) )
+	{
+		return false;
+	}
+	return true;
+}
+

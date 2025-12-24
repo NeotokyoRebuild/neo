@@ -13,6 +13,9 @@
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_retreat_from_apc.h"
+#include "bot/behavior/neo_bot_retreat_from_apc.h"
+#include "neo_npc_targetsystem.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
 #endif
@@ -214,6 +217,56 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForGrenades( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForAPC( CNEOBot *me )
+{
+	// Only check for APC in map where it exists
+	if ( V_strcmp( STRING( gpGlobals->mapname ), "ntre_rogue_ctg" ) != 0 )
+	{
+		return Continue();
+	}
+
+	CNEO_NPCTargetSystem *pTurret = NULL;
+	while ( ( pTurret = (CNEO_NPCTargetSystem *)gEntList.FindEntityByClassname( pTurret, "neo_npc_targetsystem" ) ) != NULL )
+	{
+		if ( pTurret->IsHostileTo( me->GetEntity() ) )
+		{
+			// Check if we are visible to it
+			// This is expensive if we do too many traces, so rely on IsPotentiallyVisible first
+			CNavArea *myArea = me->GetLastKnownArea();
+			CNavArea *turretArea = TheNavMesh->GetNavArea( pTurret->GetAbsOrigin() );
+			
+			if ( myArea && turretArea && myArea->IsPotentiallyVisible( turretArea ) )
+			{
+				// If Potentially visible, check if actually visible (LOS)
+				// Use the bot's vision interface or a trace
+				// The turret tracks eyes.
+				// Let's do a quick trace if we are relatively close?
+				// Or jus trust PVS? PVS is usually "potentially visible", so it might return true even if blocked by a wall.
+				// However, the turret itself does:
+				// if (!FVisible(pPlayer, MASK_BLOCKLOS, nullptr)) continue;
+				// So if the turret can see us, we should run?
+				// But we don't know if the turret sees us unless we spy on `m_pLastBestTarget`.
+				// Except `CNEO_NPCTargetSystem` doesn't expose who it's targeting perfectly.
+				// But we can check if *we* can see the turret.
+				if ( me->GetVisionInterface()->IsLineOfSightClear( pTurret->GetAbsOrigin() ) )
+				{
+					// If we can see it, it can probably see us (reciprocity usually holds).
+					// Also check range.
+					float distSqr = ( me->GetAbsOrigin() - pTurret->GetAbsOrigin() ).LengthSqr();
+					if ( distSqr < Square( 1500.0f ) ) // Tunable range
+					{
+						return SuspendFor( new CNEOBotRetreatFromAPC( pTurret ), "Retreating from hostilities!" );
+					}
+				}
+			}
+		}
+	}
+
+	return Continue();
+}
+
+
+//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
 	if ( neo_bot_force_jump.GetBool() )
@@ -229,6 +282,13 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	{
 		return result;
 	}
+
+	result = WatchForAPC( me );
+	if ( result.IsRequestingChange() )
+	{
+		return result;
+	}
+
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 
