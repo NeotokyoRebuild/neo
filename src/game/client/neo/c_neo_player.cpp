@@ -1461,7 +1461,7 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 #ifdef GLOWS_ENABLE
 void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 {
-	if (!glow_outline_effect_enable.GetBool())
+	if (!glow_outline_effect_enable.GetBool() || !NEORules()->IsTeamplay() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 	{
 		return;
 	}
