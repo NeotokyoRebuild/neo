@@ -77,10 +77,9 @@ protected:
 	float _progress;
 
 private:
-#if defined(NEO) && defined(COMPILER_CLANG)
-	[[maybe_unused]]
-#endif
+#ifndef NEO
 	int   _segmentCount;
+#endif
 	int _segmentGap;
 	int _segmentWide;
 	int m_iBarInset;
