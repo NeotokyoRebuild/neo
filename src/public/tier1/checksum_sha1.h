@@ -40,8 +40,13 @@
 #include <string.h> // Needed for strcat and strcpy
 #endif
 
+#ifdef NEO
+#include "../public/filesystem.h"
+#include <bit>
+#else
 // If you're compiling big endian, just comment out the following line
 #define SHA1_LITTLE_ENDIAN
+#endif
 
 typedef union
 {
@@ -56,6 +61,10 @@ const unsigned int k_cchHash = 41; // k_cubHash * 2, plus 1 for terminator
 typedef	unsigned char SHADigest_t[ k_cubHash ];
 #pragma pack( pop )
 
+#ifdef NEO
+class IFileSystem;
+#endif
+
 #if !defined(_MINIMUM_BUILD_)
 class CSHA1
 #else 
@@ -63,6 +72,28 @@ class Minimum_CSHA1
 #endif
 {
 public:
+#ifdef NEO
+	// Rotate x bits to the left
+	constexpr static auto ROL32(auto _val32, auto _nBits)
+	{
+		return (((_val32) << (_nBits)) | ((_val32) >> (32 - (_nBits))));
+	}
+
+	constexpr auto SHABLK0(size_t i)
+	{
+		constexpr bool isLittleEndian = (std::endian::native == std::endian::little);
+		if constexpr (isLittleEndian)
+		{
+			return (m_block->l[i] =
+				(ROL32(m_block->l[i], 24) & 0xFF00FF00) | (ROL32(m_block->l[i], 8) & 0x00FF00FF));
+		}
+		else
+		{
+			return (m_block->l[i]);
+		}
+	}
+#endif // NEO
+
 	// Two different formats for ReportHash(...)
 	enum
 	{
@@ -89,7 +120,12 @@ public:
 	// Update the hash value
 	void Update(unsigned char *data, unsigned int len);
 #if !defined(_MINIMUM_BUILD_) 
+#ifdef NEO
+	[[nodiscard]]
+	bool HashFile(const char* szFileName, IFileSystem* fs);
+#else
 	bool HashFile(char *szFileName);
+#endif
 #endif
 
 	// Finalize hash and report
