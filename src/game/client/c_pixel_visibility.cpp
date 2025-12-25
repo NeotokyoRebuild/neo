@@ -261,10 +261,11 @@ private:
 	unsigned short					m_wasQueriedThisFrame : 1;
 	unsigned short					m_failed : 1;
 	unsigned short					m_hasValidQueryResults : 1;
-#if defined(NEO) && defined(COMPILER_CLANG)
-	[[maybe_unused]]
-#endif
+#ifdef NEO // don't name padding bits to make Clang happy
+	unsigned short					: 13;
+#else
 	unsigned short					m_pad : 13;
+#endif
 	unsigned short					m_viewID;
 
 	friend void PixelVisibility_ShiftVisibilityViews( int iSourceViewID, int iDestViewID ); //need direct access to private data to make shifting smooth

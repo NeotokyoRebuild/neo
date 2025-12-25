@@ -81,7 +81,9 @@ protected:
 	float _analogValue;
 
 private:
+#ifndef NEO
 	int   _segmentCount;
+#endif
 	int _segmentGap;
 	int _segmentWide;
 	int m_iBarInset;

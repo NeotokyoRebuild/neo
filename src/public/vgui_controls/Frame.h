@@ -237,10 +237,9 @@ private:
 	int		m_iClientInsetX;
 	int		m_iClientInsetY;
 	int		m_iTitleTextInsetX;
-#if defined(NEO) && defined(COMPILER_CLANG)
-	[[maybe_unused]]
-#endif
+#ifndef NEO
 	int		m_nGripperWidth;
+#endif
 	VPANEL	m_hPreviousModal;
 	HFont	m_hCustomTitleFont;
 
