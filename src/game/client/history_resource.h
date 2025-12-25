@@ -103,10 +103,9 @@ public:
 
 private:
 	// these vars are for hl1-port compatibility
-#if defined(NEO) && defined(COMPILER_CLANG)
-	[[maybe_unused]]
-#endif
+#ifndef NEO
 	int		m_iHistoryGap;
+#endif
 	int		m_iCurrentHistorySlot;
 	bool	m_bDoNotDraw;
 	wchar_t m_wcsAmmoFullMsg[16];
