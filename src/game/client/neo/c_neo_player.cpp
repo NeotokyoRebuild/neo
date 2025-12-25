@@ -1466,7 +1466,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 			}
 			
 			updateGlowColour(pPlayer);
-			if (iNewTeam == TEAM_SPECTATOR || iNewTeam == pPlayer->GetTeamNumber()) {
+			if (iNewTeam == TEAM_SPECTATOR || (NEORules()->IsTeamplay() && iNewTeam == pPlayer->GetTeamNumber())) {
 				pPlayer->SetClientSideGlowEnabled(true);
 			}
 			else { // ditto wrt mp_forcecamera check
@@ -1483,7 +1483,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 		
 		updateGlowColour(this, iNewTeam);
 		int localPlayerTeam = GetLocalPlayerTeam();
-		if (localPlayerTeam == TEAM_SPECTATOR || localPlayerTeam == iNewTeam) {
+		if (localPlayerTeam == TEAM_SPECTATOR || (NEORules()->IsTeamplay() && localPlayerTeam == iNewTeam)) {
 			SetClientSideGlowEnabled(true);
 		}
 		else { // ditto wrt mp_forcecamera check
