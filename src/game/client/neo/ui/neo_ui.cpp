@@ -2369,7 +2369,17 @@ void OpenURL(const char *szBaseUrl, const char *szPath)
 		;
 	char syscmd[512] = {};
 	V_sprintf_safe(syscmd, "%s %s%s", CMD, szBaseUrl, szPath);
-	system(syscmd);
+	[[maybe_unused]] const auto sysRet = system(syscmd);
+#ifdef LINUX
+	// Retvals are implementation-defined.
+	// Linux may declare system with "warn_unused_result", so we gotta check to avoid a warning.
+	constexpr auto linuxErrRet = -1;
+	if (sysRet == linuxErrRet)
+	{
+		Warning("%s system call failed: \"%s\"\n", __FUNCTION__, syscmd);
+		Assert(false);
+	}
+#endif
 }
 
 const wchar_t *HintAlt(const wchar *wszKey, const wchar *wszController)
