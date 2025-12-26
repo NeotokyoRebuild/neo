@@ -18,8 +18,8 @@
 
 #ifdef PARANOID_NARROWING
 template <typename T>
-concept Numeric = std::is_arithmetic_v<std::remove_cvref_t<T>> ||
-	std::is_enum_v<std::remove_cvref_t<T>>;
+concept Numeric = ((std::is_arithmetic_v<std::remove_cvref_t<T>> && std::numeric_limits<std::remove_cvref_t<T>>::is_bounded)
+	|| std::is_enum_v<std::remove_cvref_t<T>>);
 
 template <typename T, typename U>
 concept DifferentTypes = (!std::is_same_v<T, U>);
@@ -32,6 +32,7 @@ constexpr void AssertFitsInto(const Value& input)
 {
 	using inputType = std::remove_reference_t<decltype(input)>;
 	using outputType = std::add_const_t<Container>;
+
 	static_assert(!std::is_reference_v<inputType>);
 	static_assert(!std::is_reference_v<outputType>);
 

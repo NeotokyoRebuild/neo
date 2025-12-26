@@ -174,6 +174,8 @@ extern vgui::IInputInternal *g_InputInternal;
 #endif
 
 #ifdef NEO
+#include "../../common/neo/test_bit_cast.h"
+
 #include "neo_version.h"
 #include "neo_version_number.h"
 #include "ui/neo_loading.h"
@@ -1398,6 +1400,13 @@ void CHLClient::PostInit()
 #endif
 
 #ifdef NEO
+#if defined(DEBUG) && defined(DBGFLAG_ASSERT)
+	// Tests
+	{
+		neo::test::conversions();
+	}
+#endif
+
 	if (g_pCVar)
 	{
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<MAX_PLAYER_NAME_LENGTH>);
