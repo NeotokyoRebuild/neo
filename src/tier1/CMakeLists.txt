@@ -138,6 +138,13 @@ target_sources_grouped(
 
 target_sources_grouped(
     TARGET tier1
+    NAME "Tests"
+    FILES
+    ${CMAKE_SOURCE_DIR}/common/neo/test_bit_cast.h
+)
+
+target_sources_grouped(
+    TARGET tier1
     NAME "Header Files"
     FILES
     ${CMAKE_SOURCE_DIR}/common/neo/bit_cast.h
