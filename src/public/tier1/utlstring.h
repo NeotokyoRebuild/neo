@@ -401,9 +401,10 @@ public:
 	{
 #ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic push
-		// NEO NOTE (Rain): I dunno what this function is cooking, but apparently this is deliberate...
+#if (__GNUC__ == 10) && (__GNUC_MINOR__ == 3)
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
 #endif
 		strncpy(out_pOut, pIn, iLengthInChars);
 #ifdef ACTUALLY_COMPILER_GCC
