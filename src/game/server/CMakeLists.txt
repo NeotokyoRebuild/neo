@@ -1438,6 +1438,16 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_behavior.h
     neo/bot/behavior/neo_bot_dead.cpp
     neo/bot/behavior/neo_bot_dead.h
+    neo/bot/behavior/neo_bot_jgr_capture.cpp
+    neo/bot/behavior/neo_bot_jgr_capture.h
+    neo/bot/behavior/neo_bot_jgr_escort.cpp
+    neo/bot/behavior/neo_bot_jgr_escort.h
+    neo/bot/behavior/neo_bot_jgr_enemy.cpp
+    neo/bot/behavior/neo_bot_jgr_enemy.h
+    neo/bot/behavior/neo_bot_jgr_juggernaut.cpp
+    neo/bot/behavior/neo_bot_jgr_juggernaut.h
+    neo/bot/behavior/neo_bot_jgr_seek.cpp
+    neo/bot/behavior/neo_bot_jgr_seek.h
     neo/bot/behavior/neo_bot_melee_attack.cpp
     neo/bot/behavior/neo_bot_melee_attack.h
     neo/bot/behavior/neo_bot_move_to_vantage_point.cpp

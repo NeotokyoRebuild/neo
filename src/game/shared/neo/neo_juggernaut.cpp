@@ -15,6 +15,16 @@
 
 LINK_ENTITY_TO_CLASS(neo_juggernaut, CNEO_Juggernaut);
 
+float CNEO_Juggernaut::GetUseDuration()
+{
+	return USE_DURATION;
+}
+
+float CNEO_Juggernaut::GetUseDistanceSquared()
+{
+	return USE_DISTANCE_SQUARED;
+}
+
 #ifdef GAME_DLL
 IMPLEMENT_SERVERCLASS_ST(CNEO_Juggernaut, DT_NEO_Juggernaut)
 	SendPropBool(SENDINFO(m_bLocked)),
