@@ -70,6 +70,16 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 {
 	VPROF_BUDGET( "CNEOBotMainAction::Update", "NextBot" );
 
+	// If bot is already dead at this point, make sure it's dead.
+	// This check prevents the main behavior loop from executing on dead bots, which can happen
+	// if a bot dies during a frame or enters an invalid state like Observer mode.
+	// Executing main behavior (like looking for enemies or navigating) on a dead/observer bot
+	// can lead to crashes due to invalid entity state or accessing components that shouldn't be accessed.
+	if ( !me->IsAlive() )
+	{
+		return ChangeTo( new CNEOBotDead, "I'm actually dead" );
+	}
+
 	// TEAM_UNASSIGNED -> deathmatch
 	if ( me->GetTeamNumber() != TEAM_JINRAI && me->GetTeamNumber() != TEAM_NSF && me->GetTeamNumber() != TEAM_UNASSIGNED )
 	{

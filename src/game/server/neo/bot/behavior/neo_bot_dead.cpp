@@ -47,7 +47,12 @@ ActionResult< CNEOBot >	CNEOBotDead::Update( CNEOBot *me, float interval )
 	{
 		if ( g_pGameRules->FPlayerCanRespawn( me ) )
 		{
-			respawn( me, !me->IsObserver() );
+			// Defer respawn to outside of the behavior update loop.
+			// Calling respawn() here triggers CNEOBot::Spawn -> INextBot::Reset -> delete m_behavior.
+			// If we delete the behavior while we are executing a method of an action belonging to it,
+			// we cause a use-after-free when the stack unwinds back to Behavior::Update.
+			me->m_bWantsRespawn = true;
+			me->m_bRespawnCopyCorpse = !me->IsObserver();
 		}
 	}
 

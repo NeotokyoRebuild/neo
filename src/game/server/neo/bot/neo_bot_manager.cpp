@@ -346,7 +346,10 @@ void CNEOBotManager::MaintainBotQuota()
 	{
 		int iTeam = TEAM_UNASSIGNED;
 
-		if ( NEORules()->IsTeamplay() && iTeam == TEAM_UNASSIGNED )
+		// In DeathMatch (DM), bots must still be assigned to valid teams (JINRAI/NSF) instead of TEAM_UNASSIGNED.
+		// TEAM_UNASSIGNED forces bots into a limbo/Observer state that the bot logic isn't designed to handle, leading to crashes.
+		// By forcing them onto teams, we ensure they have a valid state and can participate in the DM logic (treating everyone as enemy).
+		if ( iTeam == TEAM_UNASSIGNED )
 		{
 			CTeam* pJinrai = GetGlobalTeam(TEAM_JINRAI);
 			CTeam* pNSF = GetGlobalTeam(TEAM_NSF);
