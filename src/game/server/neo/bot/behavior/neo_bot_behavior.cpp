@@ -761,7 +761,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 					"Aiming at a visible ghoster threat");
 		}
 
-		if ( me->IsCombatWeapon( myWeapon ) )
+		if ( myWeapon && me->IsCombatWeapon( myWeapon ) )
 		{
 			if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
 			{
@@ -772,7 +772,6 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			}
 			else if (myWeapon->m_iClip1 <= 0)
 			{
-				me->EnableCloak(3.0f);
 				me->PressCrouchButton(0.3f);
 				if (m_isWaitingForFullReload)
 				{
@@ -791,15 +790,9 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				}
 				return;
 			}
-			else if (myWeapon->GetNeoWepBits() & NEO_WEP_SUPPRESSED)
-			{
-				me->EnableCloak(3.0f);
-			}
-			else
-			{
-				// don't waste cloak budget on thermoptic disrupting weapon
-				me->DisableCloak();
-			}
+
+			// Even if my weapon is unsuppressed, better than nothing
+			me->EnableCloak(3.0f);
 
 			if ( me->IsContinuousFireWeapon( myWeapon ) )
 			{
