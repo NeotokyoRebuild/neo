@@ -557,7 +557,7 @@ void C_NEO_Player::CheckVisionButtons()
 
 void C_NEO_Player::CheckLeanButtons()
 {
-	if (!IsAlive())
+	if (!IsAlive() || GetFlags() & FL_FROZEN)
 	{
 		return;
 	}
@@ -1168,7 +1168,7 @@ void C_NEO_Player::PreThink( void )
 		}
 	}
 
-	if (IsAlive() || m_vecLean != vec3_origin)
+	if ((IsAlive() && !(GetFlags() & FL_FROZEN)) || m_vecLean != vec3_origin)
 	{
 		Lean();
 	}

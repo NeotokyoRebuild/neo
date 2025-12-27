@@ -706,7 +706,7 @@ void CNEO_Player::CheckVisionButtons()
 
 void CNEO_Player::CheckLeanButtons()
 {
-	if (!IsAlive())
+	if (!IsAlive() || GetFlags() & FL_FROZEN)
 	{
 		return;
 	}
@@ -1017,7 +1017,7 @@ void CNEO_Player::PreThink(void)
 		m_flCamoAuxLastTime = 0;
 	}
 
-	if (IsAlive() || m_vecLean != vec3_origin)
+	if ((IsAlive() && !(GetFlags() & FL_FROZEN)) || m_vecLean != vec3_origin)
 	{
 		Lean();
 	}
