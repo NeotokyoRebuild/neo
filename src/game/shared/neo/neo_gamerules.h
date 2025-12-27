@@ -111,6 +111,8 @@ enum NeoRoundStatus {
 	PostRound,
 	Pause,
 	Countdown,
+
+	RoundStatusTotal
 };
 
 enum NeoWinReason {
