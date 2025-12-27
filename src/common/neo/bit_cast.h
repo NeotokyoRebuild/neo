@@ -16,10 +16,11 @@
 
 #if STD_BIT_CAST_SUPPORTED
 #include <bit>
+#else
+#include <memory>
 #endif
 
 #include <cstring>
-#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -37,27 +38,19 @@ namespace neo
 			);
 	}
 
-	// Will transparently call std::bit_cast when it's available and its constraints are satisfied.
+	// Will transparently call std::bit_cast when it's available.
 	// Else, will perform a well-defined type pun using memcpy.
 	// If you want a sanity check for the result, see BC_TEST
 	template <class To, class From>
+		requires (IsBitCastable<To, From>())
 	constexpr auto bit_cast(const From& input) noexcept
 	{
-		constexpr bool fromVoidPtr = std::is_same_v<void*, std::remove_const_t<std::decay_t<decltype(input)>>>;
 #if STD_BIT_CAST_SUPPORTED
-		if constexpr (fromVoidPtr)
-#endif
-		{
-			static_assert(fromVoidPtr || IsBitCastable<To, From>());
-			std::remove_cv_t<To> output;
-			memcpy(std::addressof(output), std::addressof(input), sizeof(output));
-			return output;
-		}
-#if STD_BIT_CAST_SUPPORTED
-		else
-		{
-			return std::bit_cast<To>(input);
-		}
+		return std::bit_cast<To>(input);
+#else
+		std::remove_cv_t<To> output;
+		memcpy(std::addressof(output), std::addressof(input), sizeof(output));
+		return output;
 #endif
 	}
 
