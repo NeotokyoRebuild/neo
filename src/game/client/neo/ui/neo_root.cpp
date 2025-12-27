@@ -1402,21 +1402,22 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 			NeoUI::SetPerRowLayout(iColTotal, pirLayout);
 			for (int i = 0; i < iColTotal; ++i)
 			{
-				vgui::surface()->DrawSetColor((m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+				const bool isSortCol = (m_sortCtx.col == i);
+				vgui::surface()->DrawSetColor(isSortCol ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
 				if (NeoUI::Button(pwszNames[i]).bPressed)
 				{
-					if (m_sortCtx.col == i)
+					if (isSortCol)
 					{
 						m_sortCtx.bDescending = !m_sortCtx.bDescending;
 					}
 					else
 					{
-						m_sortCtx.col = static_cast<GameServerInfoW>(i);
+						m_sortCtx.col = i;
 					}
 					m_bSBFiltModified = true;
 				}
 
-				if (m_sortCtx.col == i)
+				if (isSortCol)
 				{
 					DrawSortHint(m_sortCtx.bDescending);
 				}
