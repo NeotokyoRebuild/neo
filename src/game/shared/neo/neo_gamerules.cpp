@@ -3443,7 +3443,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			if (winningTeam->GetRoundsWon() >= neo_score_limit.GetInt())
 			{
 				V_sprintf_safe(victoryMsg, "Team %s wins the match!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-				m_flNeoNextRoundStartTime = FLT_MAX;
 				gotMatchWinner = true;
 			}
 		}
