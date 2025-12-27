@@ -85,40 +85,7 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		me->DisableCloak();
 
 		// Reload when safe
-		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
-		if (myWeapon && myWeapon->GetPrimaryAmmoCount() > 0)
-		{
-			bool shouldReload = false;
-			// SUPA7 reload doesn't discard ammo
-			if ((myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
-			{
-				shouldReload = true;
-			}
-			else
-			{
-				int maxClip = myWeapon->GetMaxClip1();
-				bool isBarrage = me->IsBarrageAndReloadWeapon(myWeapon);
-
-				int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
-
-				float aggressionFactor = 1.0f - me->HealthFraction();
-
-				float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
-
-				if (myWeapon->Clip1() < static_cast<int>(dynamicThreshold))
-				{
-					shouldReload = true;
-				}
-			}
-
-			if (shouldReload)
-			{
-				me->ReleaseFireButton();
-				me->PressReloadButton();
-				me->PressCrouchButton(0.3f);
-			}
-
-		}
+		me->ReloadIfLowClip();
 	}
 
 	// move towards our seek goal
