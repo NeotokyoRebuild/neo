@@ -32,5 +32,6 @@ private:
 #endif
 
 	void AvoidBumpingEnemies(CNEOBot* me);
+	void ReconConsiderSuperJump(CNEOBot *me);
 	ActionResult< CNEOBot > WatchForGrenades(CNEOBot* me);
 };

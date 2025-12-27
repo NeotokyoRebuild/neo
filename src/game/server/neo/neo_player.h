@@ -172,6 +172,7 @@ public:
 	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
+	bool IsAllowedToSuperJump(bool isBot = false);
 
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
@@ -251,8 +252,6 @@ private:
 	void CheckLeanButtons();
 	void PlayCloakSound(bool removeLocalPlayer = true);
 	void SetCloakState(bool state);
-
-	bool IsAllowedToSuperJump(void);
 
 public:
 	CNetworkVar(int, m_iNeoClass);
