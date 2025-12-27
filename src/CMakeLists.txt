@@ -321,7 +321,6 @@ if(OS_LINUX OR OS_MACOS)
         -Wno-multichar
         -Wno-write-strings
         -Wno-unused-variable
-        $<$<COMPILE_LANGUAGE:CXX>:-Wno-unused-but-set-variable>
         -Wno-unused-function
         -Wno-unknown-pragmas
         -Wno-unused-parameter
@@ -334,6 +333,9 @@ if(OS_LINUX OR OS_MACOS)
         #-Wno-strict-aliasing
         #-Wno-address
         $<$<CXX_COMPILER_ID:Clang>:-Wno-inconsistent-missing-override>
+
+        # Unsupported by the steamrt3 Clang compiler
+        $<$<NOT:$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang>,$<CXX_COMPILER_VERSION:11.0.1>>>:-Wno-unused-but-set-variable>
 
         -Werror=return-type
         -fdiagnostics-show-option
