@@ -77,11 +77,11 @@ CStandardSendProxies g_StandardSendProxies;
 template <class T>
 void pun(auto& dst, const void* src)
 {
+	static_assert(sizeof(T) == sizeof(std::remove_cvref_t<decltype(dst)>));
 #if defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
 	*((T*)&dst) = *(T*)src;
 	const auto sdkRes = dst;
-	constexpr std::remove_reference_t<decltype(dst)> dbgVal = 42;
-	memcpy(&dst, &dbgVal, sizeof(dst));
+	memset(&dst, 0xdd, sizeof(dst));
 #endif
 	memcpy(&dst, src, sizeof(dst));
 #if defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
