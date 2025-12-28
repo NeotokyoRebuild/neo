@@ -436,6 +436,9 @@ public:
 	int m_iIntendTeam = 0;
 	int m_iProfileIdx = -1;
 
+	bool m_bWantsRespawn = false;
+	bool m_bRespawnCopyCorpse = false;
+
 private:
 	CNEOBotLocomotion *m_locomotor;
 	CNEOBotBody *m_body;
