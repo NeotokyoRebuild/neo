@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include "tier1/utlvector.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
 
 
 struct GeneratePolyhedronFromPlanes_Point;
@@ -90,7 +93,11 @@ CPolyhedron_AllocByNew *CPolyhedron_AllocByNew::Allocate( unsigned short iVertic
 	pAllocated->iLineCount = iLines;
 	pAllocated->iIndexCount = iIndices;
 	pAllocated->iPolygonCount = iPolygons;
+#ifdef NEO
+	pAllocated->pVertices = (BasicVector *)(pAllocated + 1); //start vertex memory at the end of the class
+#else
 	pAllocated->pVertices = (Vector *)(pAllocated + 1); //start vertex memory at the end of the class
+#endif
 	pAllocated->pLines = (Polyhedron_IndexedLine_t *)(pAllocated->pVertices + iVertices);
 	pAllocated->pIndices = (Polyhedron_IndexedLineReference_t *)(pAllocated->pLines + iLines);
 	pAllocated->pPolygons = (Polyhedron_IndexedPolygon_t *)(pAllocated->pIndices + iIndices);
@@ -130,7 +137,11 @@ CPolyhedron *GetTempPolyhedron( unsigned short iVertices, unsigned short iLines,
 #ifdef DBGFLAG_ASSERT
 	++s_TempMemoryPolyhedron.iReferenceCount;
 #endif
+#ifdef NEO
+	s_TempMemoryPolyhedron_Buffer.SetCount( (sizeof( BasicVector ) * iVertices) +
+#else
 	s_TempMemoryPolyhedron_Buffer.SetCount( (sizeof( Vector ) * iVertices) +
+#endif
 											(sizeof( Polyhedron_IndexedLine_t ) * iLines) +
 											(sizeof( Polyhedron_IndexedLineReference_t ) * iIndices) +
 											(sizeof( Polyhedron_IndexedPolygon_t ) * iPolygons) );
@@ -140,7 +151,11 @@ CPolyhedron *GetTempPolyhedron( unsigned short iVertices, unsigned short iLines,
 	s_TempMemoryPolyhedron.iIndexCount = iIndices;
 	s_TempMemoryPolyhedron.iPolygonCount = iPolygons;
 
+#ifdef NEO
+	s_TempMemoryPolyhedron.pVertices = (BasicVector *)s_TempMemoryPolyhedron_Buffer.Base();
+#else
 	s_TempMemoryPolyhedron.pVertices = (Vector *)s_TempMemoryPolyhedron_Buffer.Base();
+#endif
 	s_TempMemoryPolyhedron.pLines = (Polyhedron_IndexedLine_t *)(&s_TempMemoryPolyhedron.pVertices[s_TempMemoryPolyhedron.iVertexCount]);
 	s_TempMemoryPolyhedron.pIndices = (Polyhedron_IndexedLineReference_t *)(&s_TempMemoryPolyhedron.pLines[s_TempMemoryPolyhedron.iLineCount]);
 	s_TempMemoryPolyhedron.pPolygons = (Polyhedron_IndexedPolygon_t *)(&s_TempMemoryPolyhedron.pIndices[s_TempMemoryPolyhedron.iIndexCount]);
@@ -154,11 +169,19 @@ Vector CPolyhedron::Center( void )
 	if( iVertexCount == 0 )
 		return vec3_origin;
 
+#ifdef NEO
+	BasicVector vAABBMin, vAABBMax;
+#else
 	Vector vAABBMin, vAABBMax;
+#endif
 	vAABBMin = vAABBMax = pVertices[0];
 	for( int i = 1; i != iVertexCount; ++i )
 	{
+#ifdef NEO
+		BasicVector &vPoint = pVertices[i];
+#else
 		Vector &vPoint = pVertices[i];
+#endif
 		if( vPoint.x < vAABBMin.x )
 			vAABBMin.x = vPoint.x;
 		if( vPoint.y < vAABBMin.y )
@@ -173,7 +196,12 @@ Vector CPolyhedron::Center( void )
 		if( vPoint.z > vAABBMax.z )
 			vAABBMax.z = vPoint.z;
 	}
+#ifdef NEO
+	auto ret = ((vAABBMin + vAABBMax) * 0.5f);
+	return Vector{ ret.x, ret.y, ret.z };
+#else
 	return ((vAABBMin + vAABBMax) * 0.5f);
+#endif
 }
 
 enum PolyhedronPointPlanarity
@@ -185,7 +213,11 @@ enum PolyhedronPointPlanarity
 
 struct GeneratePolyhedronFromPlanes_Point
 {
+#ifdef NEO
+	BasicVector ptPosition;
+#else
 	Vector ptPosition;
+#endif
 	GeneratePolyhedronFromPlanes_LineLL *pConnectedLines; //keep these in a clockwise order, circular linking
 	float fPlaneDist; //used in plane cutting
 	PolyhedronPointPlanarity planarity;
@@ -217,7 +249,11 @@ struct GeneratePolyhedronFromPlanes_LineLL
 
 struct GeneratePolyhedronFromPlanes_Polygon
 {
+#ifdef NEO
+	BasicVector vSurfaceNormal;
+#else
 	Vector vSurfaceNormal; 
+#endif
 	GeneratePolyhedronFromPlanes_LineLL *pLines; //keep these in a clockwise order, circular linking
 	
 	bool bMissingASide;
@@ -256,7 +292,11 @@ CPolyhedron *ClipPolyhedron( const CPolyhedron *pExistingPolyhedron, const float
 
 	float *pUsefulPlanes = (float *)stackalloc( sizeof( float ) * 4 * iPlaneCount );
 	int iUsefulPlaneCount = 0;
+#ifdef NEO
+	BasicVector *pExistingVertices = pExistingPolyhedron->pVertices;
+#else
 	Vector *pExistingVertices = pExistingPolyhedron->pVertices;
+#endif
 
 	//A large part of clipping will either eliminate the polyhedron entirely, or clip nothing at all, so lets just check for those first and throw away useless planes
 	{
@@ -271,7 +311,11 @@ CPolyhedron *ClipPolyhedron( const CPolyhedron *pExistingPolyhedron, const float
 
 			for( int j = 0; j != pExistingPolyhedron->iVertexCount; ++j )
 			{
+#ifdef NEO
+				float fPointDist = vNormal.Dot(Vector{ pExistingVertices[j].x, pExistingVertices[j].y, pExistingVertices[j].z }) - fPlaneDist;
+#else
 				float fPointDist = vNormal.Dot( pExistingVertices[j] ) - fPlaneDist;
+#endif
 				
 				if( fPointDist <= fNegativeOnPlaneEpsilon )
 					++iLiveCount;
@@ -316,6 +360,15 @@ CPolyhedron *ClipPolyhedron( const CPolyhedron *pExistingPolyhedron, const float
 														pExistingPolyhedron->iIndexCount, 
 														pExistingPolyhedron->iPolygonCount );
 		}
+
+#ifdef NEO
+		// Assumptions
+		static_assert(std::is_trivially_copyable_v<std::remove_pointer_t<decltype(pReturn->pVertices)>>);
+		static_assert(std::is_trivially_copyable_v<std::remove_pointer_t<decltype(pReturn->pLines)>>);
+		static_assert(std::is_trivially_copyable_v<std::remove_pointer_t<decltype(pReturn->pIndices)>>);
+		static_assert(std::is_trivially_copyable_v<std::remove_pointer_t<decltype(pReturn->pPolygons)>>);
+		static_assert(std::is_trivially_copyable_v<BasicVector>);
+#endif
 
 		memcpy( pReturn->pVertices, pExistingPolyhedron->pVertices, sizeof( Vector ) * pReturn->iVertexCount );
 		memcpy( pReturn->pLines, pExistingPolyhedron->pLines, sizeof( Polyhedron_IndexedLine_t ) * pReturn->iLineCount );
@@ -713,7 +766,11 @@ CPolyhedron *ConvertLinkedGeometryToPolyhedron( GeneratePolyhedronFromPlanes_Uno
 		pReturn = CPolyhedron_AllocByNew::Allocate( iPointCount, iLineCount, iIndexCount, iPolyCount );
 	}
 
+#ifdef NEO
+	BasicVector *pVertexArray = pReturn->pVertices;
+#else
 	Vector *pVertexArray = pReturn->pVertices;
+#endif
 	Polyhedron_IndexedLine_t *pLineArray = pReturn->pLines;
 	Polyhedron_IndexedLineReference_t *pIndexArray = pReturn->pIndices;
 	Polyhedron_IndexedPolygon_t *pPolyArray = pReturn->pPolygons;
@@ -915,7 +972,11 @@ CPolyhedron *ClipLinkedGeometry( GeneratePolyhedronFromPlanes_UnorderedPolygonLL
 		pDeadLineLinkCollection = NULL;
 		pDeadPolygonCollection = NULL;
 
-		Vector vNormal = *((Vector *)&pOutwardFacingPlanes[(iCurrentPlane * 4) + 0]);
+#ifdef NEO
+		BasicVector vNormal = *((BasicVector *)&pOutwardFacingPlanes[(iCurrentPlane * 4) + 0]);
+#else
+		float fPointDist = vNormal.Dot( pPoint->ptPosition ) - fPlaneDist;
+#endif
 		/*double vNormalAsDouble[3];
 		vNormalAsDouble[0] = vNormal.x;
 		vNormalAsDouble[1] = vNormal.y;
@@ -934,7 +995,11 @@ CPolyhedron *ClipLinkedGeometry( GeneratePolyhedronFromPlanes_UnorderedPolygonLL
 			do
 			{
 				GeneratePolyhedronFromPlanes_Point *pPoint = pActivePointWalk->pPoint;
+#ifdef NEO
+				float fPointDist = Vector(vNormal).Dot( pPoint->ptPosition ) - fPlaneDist;
+#else
 				float fPointDist = vNormal.Dot( pPoint->ptPosition ) - fPlaneDist;
+#endif
 				if( fPointDist > fOnPlaneEpsilon )
 				{
 					pPoint->planarity = POINT_DEAD; //point is dead, bang bang
