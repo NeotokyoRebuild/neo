@@ -453,7 +453,7 @@ template <typename BITCOUNTTYPE>
 inline CVarBitVecBase<BITCOUNTTYPE>::CVarBitVecBase()
 {
 #ifdef NEO
-	if constexpr (!std::is_trivially_copyable_v<decltype(this)>)
+	if constexpr (!std::is_trivially_copyable_v<std::remove_pointer_t<decltype(this)>>)
 	{
 		m_numBits = {};
 		m_numInts = {};
