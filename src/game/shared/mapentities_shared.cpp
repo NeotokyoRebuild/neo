@@ -255,7 +255,11 @@ bool CEntityMapData::GetNextKey( char *keyName, char *value )
 	Q_strncpy( keyName, token, MAPKEY_MAXLENGTH );
 
 	// fix up keynames with trailing spaces
+#ifdef NEO
+	int n = V_strlen(keyName);
+#else
 	int n = strlen(keyName);
+#endif
 	while (n && keyName[n-1] == ' ')
 	{
 		keyName[n-1] = 0;
@@ -312,7 +316,11 @@ bool CEntityMapData::SetValue( const char *keyName, char *NewValue, int nKeyInst
 			if ( nCurrKeyInstance > nKeyInstance )
 			{
 				// Find the start & end of the token we're going to replace
+#ifdef NEO
+				int entLen = V_strlen(m_pEntData);
+#else
 				int entLen = strlen(m_pEntData);
+#endif
 				char *postData = new char[entLen];
 				prevData = inputData;
 				inputData = (char*)MapEntity_ParseToken( inputData, token );	// get keyname

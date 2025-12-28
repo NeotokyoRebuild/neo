@@ -448,7 +448,11 @@ void CHudVoiceStatus::Paint()
 		int iTextSpace = item_wide - text_xpos;
 
 		// write as much of the name as will fit, truncate the rest and add ellipses
+#ifdef NEO
+		int iNameLength = V_wcslen(szconverted);
+#else
 		int iNameLength = wcslen(szconverted);
+#endif
 		const wchar_t *pszconverted = szconverted;
 		int iTextWidthCounter = 0;
 		for( int j=0;j<iNameLength;j++ )
@@ -467,7 +471,11 @@ void CHudVoiceStatus::Paint()
 			}
 		}
 
+#ifdef NEO
+		surface()->DrawPrintText( szconverted, V_wcslen(szconverted) );
+#else
 		surface()->DrawPrintText( szconverted, wcslen(szconverted) );
+#endif
 			
 		ypos -= ( item_spacing + item_tall );
 

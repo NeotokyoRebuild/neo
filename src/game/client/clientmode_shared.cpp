@@ -185,6 +185,9 @@ CON_COMMAND( hud_reloadscheme, "Reloads hud layout and animation scripts." )
 CON_COMMAND_F( crash, "Crash the client. Optional parameter -- type of crash:\n 0: read from NULL\n 1: write to NULL\n 2: DmCrashDump() (xbox360 only)", FCVAR_CHEAT )
 {
 	int crashtype = 0;
+#ifdef NEO
+	volatile
+#endif
 	int dummy;
 	if ( args.ArgC() > 1 )
 	{
@@ -193,11 +196,19 @@ CON_COMMAND_F( crash, "Crash the client. Optional parameter -- type of crash:\n 
 	switch (crashtype)
 	{
 		case 0:
+#ifdef NEO
+			dummy = *((volatile int*)NULL);
+#else
 			dummy = *((int *) NULL);
+#endif
 			Msg("Crashed! %d\n", dummy); // keeps dummy from optimizing out
 			break;
 		case 1:
+#ifdef NEO
+			*((volatile int*)NULL) = 42;
+#else
 			*((int *)NULL) = 42;
+#endif
 			break;
 #if defined( _X360 )
 		case 2:

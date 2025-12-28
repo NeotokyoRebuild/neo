@@ -13,6 +13,10 @@
 #include "tier0/dbg.h"
 #include "dt_utlvector_common.h"
 
+#if defined(NEO) && defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -69,6 +73,22 @@ CStandardSendProxies g_StandardSendProxies;
 // ---------------------------------------------------------------------- //
 // Proxies.
 // ---------------------------------------------------------------------- //
+template <class T>
+void pun(auto& dst, const void* src)
+{
+	static_assert(sizeof(T) == sizeof(std::remove_cvref_t<decltype(dst)>));
+#if defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+	*((T*)&dst) = *(T*)src;
+	const auto sdkRes = dst;
+	memset(&dst, 0xdd, sizeof(dst));
+#endif
+	memcpy(&dst, src, sizeof(dst));
+#if defined(DEBUG) && defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+	const auto neoRes = dst;
+	Assert(neoRes == sdkRes);
+#endif
+}
+
 void SendProxy_AngleToFloat( const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID)
 {
 	float angle;
@@ -156,7 +176,11 @@ void SendProxy_UInt16ToInt32( const SendProp *pProp, const void *pStruct, const 
 
 void SendProxy_UInt32ToInt32( const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID)
 {
+#ifdef NEO
+	pun<unsigned long>(pOut->m_Int, pData);
+#else
 	*((unsigned long*)&pOut->m_Int) = *((unsigned long*)pData);
+#endif
 }
 #ifdef SUPPORTS_INT64
 void SendProxy_UInt64ToInt64( const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID)

@@ -2541,7 +2541,11 @@ public:
 			AssertOnce( activityIndex == -1 ); // FIXME: whatever activity this was, it's now being saved out as ACT_RESET
 			pActivityName = ActivityList_NameForIndex( 0 );
 		}
+#ifdef NEO
+		int len = V_strlen(pActivityName) + 1;
+#else
 		int len = strlen(pActivityName) + 1;
+#endif
 		
 		// Use the high 16-bits of this int to signify this file format
 		// this makes this backwards compatible.
