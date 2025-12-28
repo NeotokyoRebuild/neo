@@ -179,7 +179,7 @@ void SendProxy_UInt16ToInt32( const SendProp *pProp, const void *pStruct, const 
 void SendProxy_UInt32ToInt32( const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID)
 {
 #ifdef NEO
-	pun<unsigned long>(pOut->m_Int, pData);
+	pun<uint32_t>(pOut->m_Int, pData);
 #else
 	*((unsigned long*)&pOut->m_Int) = *((unsigned long*)pData);
 #endif
