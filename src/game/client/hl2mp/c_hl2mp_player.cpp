@@ -1583,7 +1583,9 @@ void C_HL2MP_Player::CalculateIKLocks( float currentTime )
 
 	for (int i = 0; i < targetCount; i++)
 	{
+#ifndef NEO
 		trace_t trace;
+#endif
 		CIKTarget *pTarget = &m_pIk->m_target[i];
 
 		if (!pTarget->IsActive())

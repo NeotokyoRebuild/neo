@@ -440,7 +440,9 @@ AI_SuggestorResult_t CAI_PlaneSolver::GenerateObstacleSuggestions( const AILocal
 		int   nSideProbes  = (nProbes - 1) / 2;
 		float yawGoalDir   = UTIL_VecToYaw( goal.dir );
 		
+#ifndef NEO
 		Vector 		  probeTarget;
+#endif
 		AIMoveTrace_t moveTrace;
 		int			  i;
 		

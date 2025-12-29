@@ -578,8 +578,18 @@ inline void VectorClear( Vector& a )
 
 inline Vector& Vector::operator=(const Vector &vOther)	
 {
+#if defined(NEO) && defined(ACTUALLY_COMPILER_GCC)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 	CHECK_VALID(vOther);
 	x=vOther.x; y=vOther.y; z=vOther.z; 
+
+#if defined(NEO) && defined(ACTUALLY_COMPILER_GCC)
+#pragma GCC diagnostic pop
+#endif
+
 	return *this; 
 }
 
@@ -1971,8 +1981,18 @@ inline QAngle RadianEuler::ToQAngle( void) const
 //-----------------------------------------------------------------------------
 inline QAngle& QAngle::operator=(const QAngle &vOther)	
 {
+#if defined(NEO) && defined(ACTUALLY_COMPILER_GCC)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 	CHECK_VALID(vOther);
 	x=vOther.x; y=vOther.y; z=vOther.z; 
+
+#if defined(NEO) && defined(ACTUALLY_COMPILER_GCC)
+#pragma GCC diagnostic pop
+#endif
+
 	return *this; 
 }
 

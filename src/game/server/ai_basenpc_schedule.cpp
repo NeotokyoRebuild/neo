@@ -1025,7 +1025,9 @@ float CAI_BaseNPC::CalcReasonableFacing( bool bIgnoreOriginalFacing )
 	else
 	{
 		// If I'm facing a wall, change my original yaw and try to find a good direction to face.
+#ifndef NEO
 		trace_t tr;
+#endif
 		Vector forward;
 		QAngle angles( 0, 0, 0 );
 

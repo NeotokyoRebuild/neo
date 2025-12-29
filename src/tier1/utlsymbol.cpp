@@ -16,6 +16,10 @@
 #include "utlhashtable.h"
 #include "utlstring.h"
 
+#ifdef NEO
+#include "../common/neo/bit_cast.h"
+#endif
+
 // Ensure that everybody has the right compiler version installed. The version
 // number can be obtained by looking at the compiler output when you type 'cl'
 // and removing the last two digits and the periods: 16.00.40219.01 becomes 160040219
@@ -356,7 +360,11 @@ FileNameHandle_t CUtlFilenameSymbolTable::FindOrAddFileName( const char *pFileNa
 	//handle.file = m_StringPool.ReferenceStringHandle( filename );
 	m_lock.UnlockWrite();
 
+#ifdef NEO
+	return neo::bit_cast<FileNameHandle_t>(BC_TEST(handle, *(FileNameHandle_t*)(&handle)));
+#else
 	return *( FileNameHandle_t * )( &handle );
+#endif
 }
 
 FileNameHandle_t CUtlFilenameSymbolTable::FindFileName( const char *pFileName )
@@ -394,7 +402,11 @@ FileNameHandle_t CUtlFilenameSymbolTable::FindFileName( const char *pFileName )
 	if ( handle.path == 0 || handle.file == 0 )
 		return NULL;
 
+#ifdef NEO
+	return neo::bit_cast<FileNameHandle_t>(BC_TEST(handle, *(FileNameHandle_t*)(&handle)));
+#else
 	return *( FileNameHandle_t * )( &handle );
+#endif
 }
 
 //-----------------------------------------------------------------------------

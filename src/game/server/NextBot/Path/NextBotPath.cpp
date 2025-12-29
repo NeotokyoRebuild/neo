@@ -262,7 +262,11 @@ bool Path::ComputePathDetails( INextBot *bot, const Vector &start )
 		if ( from->how != NUM_TRAVERSE_TYPES && from->how > GO_WEST )
 			continue;
 		
+#ifdef NEO
+		if ( to->how > GO_WEST || to->type != ON_GROUND )
+#else
 		if ( to->how > GO_WEST || !to->type == ON_GROUND )
+#endif
 			continue;
 
 		// if areas are separated, we may need to 'gap jump' between them
@@ -589,7 +593,11 @@ int Path::FindNextOccludedNode( INextBot *bot, int anchorIndex )
 		Segment *to = &m_path[i];
 		
 		// if this segment is not on the ground, or is precise, don't skip past it
+#ifdef NEO
+		if ( to->type != ON_GROUND || (to->area->GetAttributes() & NAV_MESH_PRECISE) )
+#else
 		if ( !to->type == ON_GROUND || (to->area->GetAttributes() & NAV_MESH_PRECISE) )
+#endif
 		{
 			return i;
 		}

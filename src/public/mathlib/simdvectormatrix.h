@@ -21,6 +21,10 @@
 #include "tier1/utlsoacontainer.h"
 #include "mathlib/ssemath.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 class CSIMDVectorMatrix
 {
 public:
@@ -85,6 +89,16 @@ public:
 	CSIMDVectorMatrix &operator=( CSIMDVectorMatrix const &src )
 	{
 		SetSize( src.m_nWidth, src.m_nHeight );
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<std::remove_pointer_t<decltype(src.m_pData)>>)
+		{
+			if (m_pData && src.m_pData)
+			{
+				*m_pData = *src.m_pData;
+			}
+		}
+		else
+#endif
 		if ( m_pData )
 			memcpy( m_pData, src.m_pData, m_nHeight*m_nPaddedWidth*sizeof(m_pData[0]) ); 
 		return *this;

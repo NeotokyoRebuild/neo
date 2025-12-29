@@ -15,6 +15,9 @@
 #include "tier1/utlvector.h"
 #include "tier1/utlqueue.h"
 
+#ifdef NEO
+#include <limits>
+#endif
 
 //---------------------------------------------------------------------------------
 // Handles are 32 bits on 32-bit and 64 bits on 64-bit. Invalid handles are all 1s
@@ -241,20 +244,63 @@ int CUtlHandleTable<T, HandleBits>::GetIndexFromHandle( UtlHandle_t h ) const
 template< class T, int HandleBits >
 unsigned int CUtlHandleTable<T, HandleBits>::GetSerialNumber( UtlHandle_t handle )
 {
+#ifdef NEO
+	static_assert(sizeof(handle) == CHAR_BIT);
+	static_assert(sizeof(HandleType_t) <= sizeof(handle));
+	HandleType_t ret(0, 0);
+	memcpy(&ret, &handle, sizeof(ret));
+#if defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+	decltype(ret) ref(0, 0);
+	ref = *((HandleType_t*)&handle);
+	Assert(ret.nSerial == ref.nSerial);
+	Assert(ret.nIndex == ref.nIndex);
+#endif
+	return ret.nSerial;
+#else
 	return ( ( HandleType_t* )&handle )->nSerial;
+#endif
 }
 
 template< class T, int HandleBits >
 unsigned int CUtlHandleTable<T, HandleBits>::GetListIndex( UtlHandle_t handle )
 {
+#ifdef NEO
+	static_assert(sizeof(handle) == CHAR_BIT);
+	static_assert(sizeof(HandleType_t) <= sizeof(handle));
+	HandleType_t ret(0, 0);
+	memcpy(&ret, &handle, sizeof(ret));
+#if defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+	decltype(ret) ref(0, 0);
+	ref = *((HandleType_t*)&handle);
+	Assert(ret.nSerial == ref.nSerial);
+	Assert(ret.nIndex == ref.nIndex);
+#endif
+	return ret.nIndex;
+#else
 	return ( ( HandleType_t* )&handle )->nIndex;
+#endif
 }
 
 template< class T, int HandleBits >
 UtlHandle_t CUtlHandleTable<T, HandleBits>::CreateHandle( unsigned int nSerial, unsigned int nIndex )
 {
 	HandleType_t h( nIndex, nSerial );
+#ifdef NEO
+	// We could also pad HandleType_t on x64 so that neo::bit_cast works (or relax its constraints),
+	// but that'd widen the object from 4 bytes of data to 4+4 padding, which would need profiling.
+	static_assert(sizeof(h) == 4);
+	static_assert(sizeof(UtlHandle_t) >= sizeof(h));
+	UtlHandle_t ret;
+	memcpy(&ret, &h, sizeof(h));
+#if defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
+	UtlHandle_t ref;
+	ref = *(UtlHandle_t*)&h;
+	Assert(ret == ref);
+#endif
+	return ret;
+#else
 	return *( UtlHandle_t* )&h;
+#endif
 }
 
 

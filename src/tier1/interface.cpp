@@ -36,6 +36,10 @@
 #include "xbox/xbox_win32stubs.h"
 #endif
 
+#ifdef NEO
+#include <cerrno>
+#include <cstring>
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -278,7 +282,18 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 	if ( !Q_IsAbsolutePath( pModuleName ) )
 	{
 		// full path wasn't passed in, using the current working dir
+#ifdef NEO
+		const auto* getCwdRes =
+#endif
 		_getcwd( szCwd, sizeof( szCwd ) );
+#ifdef NEO
+		if (!getCwdRes)
+		{
+			Assert(false);
+			Warning("%s(%s, 0x%X): _getcwd failed: %s\n", __FUNCTION__, pModuleName, flags, strerror(errno));
+			return nullptr;
+		}
+#endif
 		if ( IsX360() )
 		{
 			int i = CommandLine()->FindParm( "-basedir" );

@@ -1759,7 +1759,7 @@ bool PathFollower::JumpOverGaps( INextBot *bot, const Path::Segment *goal, const
 		return false;
 	}
 
-	trace_t result;
+	//trace_t result;
 	NextBotTraversableTraceFilter filter( bot, ILocomotion::IMMEDIATELY );
 
 	const float hullWidth = ( body ) ? body->GetHullWidth() : 1.0f;

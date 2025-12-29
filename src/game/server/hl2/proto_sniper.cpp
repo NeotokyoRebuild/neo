@@ -2476,7 +2476,9 @@ Vector CProtoSniper::LeadTarget( CBaseEntity *pTarget )
 	//float actualShotDist;
 	Vector vecAdjustedShot;
 	Vector vecTarget;
+#ifndef NEO
 	trace_t tr;
+#endif
 
 	/*
 		NDebugOverlay::EntityBounds(pTarget,
@@ -2657,10 +2659,12 @@ void CProtoSniper::InputDisableSniper( inputdata_t &inputdata )
 //---------------------------------------------------------
 bool CProtoSniper::FindFrustratedShot( float flNoise )
 {
+#ifndef NEO
 	Vector vecForward;
 	Vector vecStart;
 	Vector vecAimAt;
 	Vector vecAim;
+#endif
 
 	if( !GetEnemy() )
 	{
