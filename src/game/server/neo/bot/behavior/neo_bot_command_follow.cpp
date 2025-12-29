@@ -10,19 +10,19 @@ ConVar sv_neo_bot_cmdr_debug_pause_uncommanded("sv_neo_bot_cmdr_debug_pause_unco
 
 // NEOTODO: Figure out a clean way to represent config distances as Hammer units, without needing to square on use
 ConVar sv_neo_bot_cmdr_stop_distance_sq("sv_neo_bot_cmdr_stop_distance_sq", "5000",
-	FCVAR_NONE, "Minimum distance gap between following bots", true, 3000, true, 100000);
+	FCVAR_CHEAT, "Minimum distance gap between following bots", true, 3000, true, 100000);
 
 ConVar sv_neo_bot_cmdr_look_weights_friendly_repulsion("sv_neo_bot_cmdr_look_weights_friendly_repulsion", "2",
-	FCVAR_NONE, "Weight for friendly bot repulsion force", true, 1, true, 9999);
+	FCVAR_CHEAT, "Weight for friendly bot repulsion force", true, 1, true, 9999);
 ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights_wall_repulsion", "3",
-	FCVAR_NONE, "Weight for wall repulsion force", true, 1, true, 9999);
+	FCVAR_CHEAT, "Weight for wall repulsion force", true, 1, true, 9999);
 ConVar sv_neo_bot_cmdr_look_weights_explosives_repulsion("sv_neo_bot_cmdr_look_weights_explosives_repulsion", "4",
-	FCVAR_NONE, "Weight for explosive repulsion force", true, 1, true, 9999);
+	FCVAR_CHEAT, "Weight for explosive repulsion force", true, 1, true, 9999);
 
 ConVar sv_neo_bot_cmdr_look_weights_friendly_max_dist("sv_neo_bot_cmdr_look_weights_friendly_max_dist", "5000",
-	FCVAR_NONE, "Distance to compare friendly repulsion forces", true, 1, true, 100000);
+	FCVAR_CHEAT, "Distance to compare friendly repulsion forces", true, 1, true, 100000);
 ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist("sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist", "500",
-	FCVAR_NONE, "Distance to extend whiskers", true, 1, true, 100000);
+	FCVAR_CHEAT, "Distance to extend whiskers", true, 1, true, 100000);
 
 //---------------------------------------------------------------------------------------------
 CNEOBotCommandFollow::CNEOBotCommandFollow()
