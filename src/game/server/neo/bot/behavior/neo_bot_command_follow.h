@@ -4,19 +4,19 @@
 #pragma once
 #endif
 
-#include "Path/NextBotChasePath.h"
+#include "NextBotBehavior.h"
 
 class CNEOBotCommandFollow : public Action< CNEOBot >
 {
 public:
 	CNEOBotCommandFollow();
 
-	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
-	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
-	virtual ActionResult< CNEOBot >	OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction );
-	virtual void					OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval ) override;
+	virtual ActionResult< CNEOBot >	OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
+	virtual void					OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction ) override;
 
-	virtual const char *GetName( void ) const	{ return "CommandFollow"; };
+	virtual const char *GetName( void ) const override { return "CommandFollow"; };
 
 private:
 	bool FollowCommandChain( CNEOBot *me );
@@ -27,7 +27,7 @@ private:
 
 	EHANDLE m_hTargetEntity;
 	bool m_bGoingToTargetEntity = false;
-	Vector m_vGoalPos = vec3_origin;
+	Vector m_vGoalPos;
 	float m_flNextFanOutLookCalcTime = 0.0f;
 };
 

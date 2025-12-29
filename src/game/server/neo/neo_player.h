@@ -317,6 +317,7 @@ public:
 	// Bot Functions
 	void ResetBotCommandState();
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
+	static const Vector VECTOR_INVALID_WAYPOINT;
 
 private:
 	bool m_bFirstDeathTick;

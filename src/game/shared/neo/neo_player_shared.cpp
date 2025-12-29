@@ -186,7 +186,9 @@ void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos)
 		if (distSqrToPing < sv_neo_bot_cmdr_stop_distance_sq_max.GetFloat())
 		{
 			// If pinging close to self, calibrate follow distance of commanded bots based on distance to ping
-			player->m_flBotDynamicFollowDistanceSq = Clamp(distSqrToPing, 5000.0f, sv_neo_bot_cmdr_stop_distance_sq_max.GetFloat());
+			float minFollowDistanceSq = 0.0f;
+			sv_neo_bot_cmdr_stop_distance_sq_max.GetMin(minFollowDistanceSq);
+			player->m_flBotDynamicFollowDistanceSq = Clamp(distSqrToPing, minFollowDistanceSq, sv_neo_bot_cmdr_stop_distance_sq_max.GetFloat());
 		}
 		else
 		{
