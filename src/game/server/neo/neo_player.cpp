@@ -144,6 +144,7 @@ CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
+extern ConVar sv_neo_bot_cmdr_enable;
 extern ConVar sv_neo_ignore_wep_xp_limit;
 extern ConVar sv_neo_clantag_allow;
 extern ConVar sv_neo_dev_test_clantag;
@@ -2042,22 +2043,25 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		SetDeadModel(info);
 	}
 
-	// If teamkilled by commander, other subordinates stop following commander
-	CNEO_Player *pAttacker = ToNEOPlayer(info.GetAttacker());
-	if (pAttacker && m_hCommandingPlayer.Get() == pAttacker)
+	if (sv_neo_bot_cmdr_enable.GetBool())
 	{
-		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		// If teamkilled by commander, other subordinates stop following commander
+		CNEO_Player *pAttacker = ToNEOPlayer(info.GetAttacker());
+		if (pAttacker && m_hCommandingPlayer.Get() == pAttacker)
 		{
-			CNEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
-			if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == pAttacker)
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
 			{
-				pPlayer->m_hCommandingPlayer.Set(NULL);
+				CNEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+				if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == pAttacker)
+				{
+					pPlayer->m_hCommandingPlayer.Set(NULL);
+				}
 			}
 		}
 	}
+	ResetBotCommandState();
 
 	SpectatorTakeoverPlayerRevert(false); // soft reset: may still have live impostor
-	ResetBotCommandState();
 }
 
 void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
@@ -3203,26 +3207,26 @@ void CNEO_Player::SetTestMessageVisible(bool visible)
 
 void CNEO_Player::ResetBotCommandState()
 {
-	m_hLeadingPlayer = nullptr;
-	m_hCommandingPlayer = nullptr;
-	m_tBotPlayerPingCooldown.Invalidate();
-	m_flBotDynamicFollowDistanceSq = 0.0f;
-	for (int i = 0; i < STAR__TOTAL; ++i)
+	if (sv_neo_bot_cmdr_enable.GetBool())
 	{
-		m_vLastPingByStar.GetForModify(i).Init();
-	}
-}
-
-void CNEO_Player::SetAllSquadPingWaypoints(const Vector& vec)
-{
-	for (int i = 0; i < STAR__TOTAL; ++i)
-	{
-		m_vLastPingByStar.GetForModify(i) = vec;
+		m_hLeadingPlayer = nullptr;
+		m_hCommandingPlayer = nullptr;
+		m_tBotPlayerPingCooldown.Invalidate();
+		m_flBotDynamicFollowDistanceSq = 0.0f;
+		for (int i = 0; i < STAR__TOTAL; ++i)
+		{
+			m_vLastPingByStar.GetForModify(i).Init();
+		}
 	}
 }
 
 void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 {
+	if (!sv_neo_bot_cmdr_enable.GetBool())
+	{
+		return;
+	}
+
 	if (!pCommander)
 	{
 		DevMsg("ToggleBotFollowCommander called without valid player handle!\n");
@@ -3284,6 +3288,11 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 void CNEO_Player::PlayerUse( void )
 {
 	BaseClass::PlayerUse();
+
+	if (!sv_neo_bot_cmdr_enable.GetBool())
+	{
+		return;
+	}
 
 	if ( (m_afButtonPressed & IN_USE) && !FindUseEntity() )
 	{

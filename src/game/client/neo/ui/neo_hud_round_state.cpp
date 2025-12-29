@@ -615,6 +615,13 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 
 void CNEOHud_RoundState::DrawPlayerList()
 {
+	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
+	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
+	{
+		DrawPlayerList_BotCmdr();
+		return;
+	}
+
 	if (g_PR)
 	{
 		// Draw members of players squad in an old style list
@@ -634,9 +641,109 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
 
 		// Draw squad mates
-		CUtlVector<int> commandedList;
-		CUtlVector<int> nonCommandedList;
-		CUtlVector<int> nonSquadList;
+		if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != 0 && !hideDueToScoreboard)
+		{
+			bool squadMateFound = false;
+
+			for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+			{
+				if (i == localPlayerIndex)
+				{
+					continue;
+				}
+				if (!g_PR->IsConnected(i))
+				{
+					continue;
+				}
+				const int playerTeam = g_PR->GetTeam(i);
+				if (playerTeam != localPlayerTeam)
+				{
+					continue;
+				}
+				const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
+				if (!isSameSquad)
+				{
+					continue;
+				}
+
+				offset = DrawPlayerRow(i, offset);
+				squadMateFound = true;
+			}
+
+			if (squadMateFound)
+			{
+				offset += 12;
+			}
+		}
+
+		m_iLeftPlayersAlive = 0;
+		m_iRightPlayersAlive = 0;
+
+		// Draw other team mates
+		for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+		{
+			if (!g_PR->IsConnected(i))
+			{
+				continue;
+			}
+			const int playerTeam = g_PR->GetTeam(i);
+			if (playerTeam != leftTeam)
+			{
+				if (g_PR->IsAlive(i)) 
+				{
+					m_iRightPlayersAlive++;
+				}
+			}
+			else {
+				if (g_PR->IsAlive(i))
+				{
+					m_iLeftPlayersAlive++;
+				}
+			}
+			if (playerTeam != localPlayerTeam)
+			{
+				continue;
+			}
+			if (i == localPlayerIndex || localPlayerSpec || hideDueToScoreboard)
+			{
+				continue;
+			}
+			const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
+			if (isSameSquad)
+			{
+				continue;
+			}
+
+			offset = DrawPlayerRow(i, offset, true);
+		}
+	}
+}
+
+void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
+{
+	if (g_PR)
+	{
+		// Draw members of players squad in an old style list
+		const int localPlayerTeam = GetLocalPlayerTeam();
+		const int localPlayerIndex = GetLocalPlayerIndex();
+		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
+		const int leftTeam = cl_neo_hud_team_swap_sides.GetBool() ? (localPlayerSpec ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
+
+		int offset = 52;
+		if (cl_neo_squad_hud_star_scale.GetFloat() > 0)
+		{
+			IntDim res = {};
+			surface()->GetScreenSize(res.w, res.h);
+			offset *= cl_neo_squad_hud_star_scale.GetFloat() * res.h / 1080.0f;
+		}
+
+		const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
+
+		// Draw squad mates
+		m_commandedList.RemoveAll();
+		m_nonCommandedList.RemoveAll();
+		m_nonSquadList.RemoveAll();
+
 		bool squadMateFound = false;
 		m_iLeftPlayersAlive = 0;
 		m_iRightPlayersAlive = 0;
@@ -680,33 +787,33 @@ void CNEOHud_RoundState::DrawPlayerList()
 				bool isCommanded = (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer());
 				if (isCommanded)
 				{
-					commandedList.AddToTail(i);
+					m_commandedList.AddToTail(i);
 				}
 				else
 				{
-					nonCommandedList.AddToTail(i);
+					m_nonCommandedList.AddToTail(i);
 				}
 				squadMateFound = true;
 			}
 			else
 			{
-				nonSquadList.AddToTail(i);
+				m_nonSquadList.AddToTail(i);
 			}
 		}
 
 		// Draw commanded players first
-		const auto player = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(localPlayerIndex));
+		const auto player = ToNEOPlayer(UTIL_PlayerByIndex(localPlayerIndex));
 		TeamLogoColor* pTeamLogoColor = player ? &m_teamLogoColors[player->GetTeamNumber()] : nullptr;
 		const Color* colorOverride = pTeamLogoColor ? &pTeamLogoColor->color : nullptr;
-		for (int i = 0; i < commandedList.Count(); ++i)
+		for (int i = 0; i < m_commandedList.Count(); ++i)
 		{
-			offset = DrawPlayerRow(commandedList[i], offset, false, colorOverride);
+			offset = DrawPlayerRow_BotCmdr(m_commandedList[i], offset, false, colorOverride);
 		}
 
 		// Draw non-commanded players (who are also in the same squad star)
-		for (int i = 0; i < nonCommandedList.Count(); ++i)
+		for (int i = 0; i < m_nonCommandedList.Count(); ++i)
 		{
-			offset = DrawPlayerRow(nonCommandedList[i], offset, false);
+			offset = DrawPlayerRow_BotCmdr(m_nonCommandedList[i], offset, false);
 		}
 
 		if (squadMateFound)
@@ -715,14 +822,75 @@ void CNEOHud_RoundState::DrawPlayerList()
 		}
 
 		// Draw other team mates
-		for (int i = 0; i < nonSquadList.Count(); ++i)
+		for (int i = 0; i < m_nonSquadList.Count(); ++i)
 		{
-			offset = DrawPlayerRow(nonSquadList[i], offset, true);
+			offset = DrawPlayerRow_BotCmdr(m_nonSquadList[i], offset, true);
 		}
 	}
 }
 
-int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small, const Color* colorOverride)
+int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small)
+{
+	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
+	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
+	{
+		return DrawPlayerRow_BotCmdr(playerIndex, yOffset, small);
+	}
+
+	// Draw player
+	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
+	char squadMateText[SQUAD_MATE_TEXT_LENGTH];
+	wchar_t wSquadMateText[SQUAD_MATE_TEXT_LENGTH];
+	const char* squadMateRankName = GetRankName(g_PR->GetXP(playerIndex), true);
+	const char* squadMateClass = GetNeoClassName(g_PR->GetClass(playerIndex));
+	const bool isAlive = g_PR->IsAlive(playerIndex);
+
+	C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+	if (isAlive)
+	{
+		const char* pPlayerDisplayName = pNeoPlayer ?
+			pNeoPlayer->GetPlayerNameWithTakeoverContext(playerIndex)
+			: g_PR->GetPlayerName(playerIndex);
+
+		const char* displayRankName = squadMateRankName;
+		if (pNeoPlayer)
+		{
+			C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
+			if (pTakeoverTarget)
+			{
+				displayRankName = GetRankName(g_PR->GetXP(pTakeoverTarget->entindex()), true);
+			}
+		}
+
+		const int healthMode = cl_neo_hud_health_mode.GetInt();
+		char playerHealth[7]; // 4 digits + 2 letters
+		V_snprintf(playerHealth, sizeof(playerHealth), healthMode ? "%dhp" : "%d%%", g_PR->GetDisplayedHealth(playerIndex, healthMode));
+		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", pPlayerDisplayName, squadMateRankName, squadMateClass, playerHealth);
+	}
+	else
+	{
+		auto* pImpersonator = pNeoPlayer ? pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get() : nullptr;
+
+		const char* pPlayerDisplayName = pImpersonator ?
+			pImpersonator->GetPlayerName()
+			: g_PR->GetPlayerName(playerIndex);
+
+		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
+		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", pPlayerDisplayName, displayClass);
+	}
+	g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
+
+	int fontWidth, fontHeight;
+	surface()->DrawSetTextFont(small ? m_hOCRSmallerFont : m_hOCRSmallFont);
+	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
+	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
+	surface()->DrawSetTextPos(8, yOffset);
+	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
+
+	return yOffset + fontHeight;
+}
+
+int CNEOHud_RoundState::DrawPlayerRow_BotCmdr(int playerIndex, const int yOffset, bool small, const Color* colorOverride)
 {
 	// Draw player
 	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
@@ -759,7 +927,7 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 		auto* pImpersonator = pNeoPlayer ? pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get() : nullptr;
 
 		const char* pPlayerDisplayName = pImpersonator ?
-		    pImpersonator->GetPlayerName()
+			pImpersonator->GetPlayerName()
 			: g_PR->GetPlayerName(playerIndex);
 
 		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
@@ -803,15 +971,19 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 		surface()->DrawSetColor(COLOR_DARK);
 	surface()->DrawTexturedRect(xOffset, Y_POS + 1, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 1);
 
-	// Draw Command Highlight Border on top of the avatar image
-	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
-	if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
+	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
+	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
 	{
-		surface()->DrawSetColor(COLOR_WHITE);
-		// Draw a thicker border inwards
-		for (int borderIndex = 0; borderIndex < 3; ++borderIndex)
+		// Draw Command Highlight Border on top of the avatar image
+		C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
+		if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
 		{
-			surface()->DrawOutlinedRect(xOffset + borderIndex, Y_POS + borderIndex, xOffset + m_ilogoSize - borderIndex, Y_POS + m_ilogoSize - borderIndex);
+			surface()->DrawSetColor(COLOR_WHITE);
+			// Draw a thicker border inwards
+			for (int borderIndex = 0; borderIndex < 3; ++borderIndex)
+			{
+				surface()->DrawOutlinedRect(xOffset + borderIndex, Y_POS + borderIndex, xOffset + m_ilogoSize - borderIndex, Y_POS + m_ilogoSize - borderIndex);
+			}
 		}
 	}
 
