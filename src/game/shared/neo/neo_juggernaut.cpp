@@ -240,7 +240,6 @@ void CNEO_Juggernaut::MakePushThink()
 
 	if (!m_hPush->KeyValue("magnitude", 200.f)) Assert(false);
 	const float radius = BoundingRadius();
-	Assert(radius <= PLAYER_USE_RADIUS);
 	if (!m_hPush->KeyValue("radius", radius)) Assert(false);
 	// inner_radius used for LOS calculations, so we don't push players through thin walls
 	if (!m_hPush->KeyValue("inner_radius", 0.5f * radius)) Assert(false);
