@@ -4,6 +4,9 @@
 #include "bot/behavior/neo_bot_pause.h"
 #include "bot/behavior/neo_bot_command_follow.h"
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 extern ConVar sv_neo_bot_cmdr_debug_pause_uncommanded;
 
 //---------------------------------------------------------------------------------------------
@@ -41,12 +44,9 @@ ActionResult< CNEOBot > CNEOBotPause::Update( CNEOBot* me, float interval )
 	}
 
 	// Stop moving
-	const PathFollower *path = me->GetCurrentPath();
-	if (path)
+	if ( me->GetCurrentPath() )
 	{
-		// Stop existing path
-		const_cast<PathFollower *>(path)->Invalidate();
-		me->SetCurrentPath(NULL);
+		me->SetCurrentPath( NULL );
 	}
 
 	me->GetLocomotionInterface()->Reset();

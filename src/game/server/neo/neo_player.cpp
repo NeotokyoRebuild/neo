@@ -140,6 +140,8 @@ END_SCRIPTDESC();
 
 static constexpr int SHOWMENU_STRLIMIT = 512;
 
+const Vector CNEO_Player::VECTOR_INVALID_WAYPOINT = vec3_invalid;
+
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
@@ -3215,7 +3217,7 @@ void CNEO_Player::ResetBotCommandState()
 		m_flBotDynamicFollowDistanceSq = 0.0f;
 		for (int i = 0; i < STAR__TOTAL; ++i)
 		{
-			m_vLastPingByStar.GetForModify(i).Init();
+			m_vLastPingByStar.GetForModify(i) = VECTOR_INVALID_WAYPOINT;
 		}
 	}
 }
@@ -3229,7 +3231,7 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 
 	if (!pCommander)
 	{
-		DevMsg("ToggleBotFollowCommander called without valid player handle!\n");
+		DevWarning("ToggleBotFollowCommander called without valid player handle!\n");
 		return;
 	}
 

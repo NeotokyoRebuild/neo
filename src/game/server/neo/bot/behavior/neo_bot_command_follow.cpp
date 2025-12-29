@@ -4,6 +4,9 @@
 #include "bot/behavior/neo_bot_command_follow.h"
 #include "nav_mesh.h"
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 
 ConVar sv_neo_bot_cmdr_debug_pause_uncommanded("sv_neo_bot_cmdr_debug_pause_uncommanded", "0",
 	FCVAR_CHEAT, "If true, uncommanded bots in behavior CNEOBotSeekAndDestroy will pause.", false, 0, false, 1);
@@ -19,13 +22,13 @@ ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights
 ConVar sv_neo_bot_cmdr_look_weights_explosives_repulsion("sv_neo_bot_cmdr_look_weights_explosives_repulsion", "4",
 	FCVAR_CHEAT, "Weight for explosive repulsion force", true, 1, true, 9999);
 
-ConVar sv_neo_bot_cmdr_look_weights_friendly_max_dist("sv_neo_bot_cmdr_look_weights_friendly_max_dist", "5000",
+ConVar sv_neo_bot_cmdr_look_weights_friendly_max_dist_sq("sv_neo_bot_cmdr_look_weights_friendly_max_dist_sq", "5000",
 	FCVAR_CHEAT, "Distance to compare friendly repulsion forces", true, 1, true, 100000);
 ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist("sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist", "500",
 	FCVAR_CHEAT, "Distance to extend whiskers", true, 1, true, 100000);
 
 //---------------------------------------------------------------------------------------------
-CNEOBotCommandFollow::CNEOBotCommandFollow()
+CNEOBotCommandFollow::CNEOBotCommandFollow() : m_vGoalPos( CNEO_Player::VECTOR_INVALID_WAYPOINT )
 {
 }
 
@@ -89,28 +92,24 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 	}
 
 	// Mirror behavior of leader if we have one
-	if (me->m_hLeadingPlayer.Get())
+	if ( CNEO_Player *pPlayerToMirror = me->m_hLeadingPlayer.Get() )
 	{
-		CNEO_Player *pPlayerToMirror = me->m_hLeadingPlayer.Get();
-		if (pPlayerToMirror)
+		if (pPlayerToMirror->GetInThermOpticCamo())
 		{
-			if (pPlayerToMirror->GetInThermOpticCamo())
-			{
-				me->EnableCloak(4.0f);
-			}
-			else
-			{
-				me->DisableCloak();
-			}
+			me->EnableCloak(4.0f);
+		}
+		else
+		{
+			me->DisableCloak();
+		}
 
-			if (pPlayerToMirror->IsDucking())
-			{
-				me->PressCrouchButton(0.5f);
-			}
-			else
-			{
-				me->ReleaseCrouchButton();
-			}
+		if (pPlayerToMirror->IsDucking())
+		{
+			me->PressCrouchButton(0.5f);
+		}
+		else
+		{
+			me->ReleaseCrouchButton();
 		}
 	}
 
@@ -121,48 +120,34 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		follow_stop_distance_sq = pCommander->m_flBotDynamicFollowDistanceSq;
 	}
 
-	if (pCommander->IsAlive())
+	if (!pCommander->IsAlive())
 	{
-		// Follow commander if they are close enough to collect you (and ping cooldown elapsed)
-		if (pCommander->m_tBotPlayerPingCooldown.IsElapsed()
-			&& (me->GetStar() == pCommander->GetStar()) // only follow when commander is focused on your squad
-			&& (me->GetAbsOrigin().DistToSqr(pCommander->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat()))
+		// Commander died
+		return false; // This triggers OnEnd which clears vars
+	}
+
+	// Follow commander if they are close enough to collect you (and ping cooldown elapsed)
+	if (pCommander->m_tBotPlayerPingCooldown.IsElapsed()
+		&& (me->GetStar() == pCommander->GetStar()) // only follow when commander is focused on your squad
+		&& (me->GetAbsOrigin().DistToSqr(pCommander->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat()))
+	{
+		// Use sv_neo_bot_cmdr_stop_distance_sq for consistent bot collection range
+		// follow_stop_distance_sq would be confusing if player doesn't know about distance tuning
+		me->m_hLeadingPlayer = pCommander;
+		m_vGoalPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
+		pCommander->m_vLastPingByStar.GetForModify(me->GetStar()) = CNEO_Player::VECTOR_INVALID_WAYPOINT;
+	}
+	// Go to commander's ping
+	else if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != CNEO_Player::VECTOR_INVALID_WAYPOINT)
+	{
+		// Check if there's been an update for this star's ping waypoint
+		if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != me->m_vLastPingByStar.Get(me->GetStar()))
 		{
-			// Use sv_neo_bot_cmdr_stop_distance_sq for consistent bot collection range
-			// follow_stop_distance_sq would be confusing if player doesn't know about distance tuning
-			me->m_hLeadingPlayer = pCommander;
-			m_vGoalPos = vec3_origin;
-			pCommander->m_vLastPingByStar.GetForModify(me->GetStar()) = vec3_origin;
-		}
-		// Go to commander's ping
-		else if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != vec3_origin)
-		{
-			// Check if there's been an update for this star's ping waypoint
-			if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != me->m_vLastPingByStar.Get(me->GetStar()))
-			{
-				me->m_hLeadingPlayer = nullptr; // Stop following and start travelling to ping
-				m_vGoalPos = pCommander->m_vLastPingByStar.Get(me->GetStar());
-				me->m_vLastPingByStar.GetForModify(me->GetStar()) = pCommander->m_vLastPingByStar.Get(me->GetStar());
+			me->m_hLeadingPlayer = nullptr; // Stop following and start travelling to ping
+			m_vGoalPos = pCommander->m_vLastPingByStar.Get(me->GetStar());
+			me->m_vLastPingByStar.GetForModify(me->GetStar()) = pCommander->m_vLastPingByStar.Get(me->GetStar());
 
-				// Force a repath to allow for fine tuned positioning
-				CNEOBotPathCost cost(me, DEFAULT_ROUTE);
-				if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
-				{
-					return true;
-				}
-				else
-				{
-					me->m_hLeadingPlayer = pCommander; // fallback to following commander
-					// continue with leader following logic below
-				}
-			}
-
-			if (FanOutAndCover(me, m_vGoalPos))
-			{
-				// FanOutAndCover true: arrived at destination and settled, so don't recompute path
-				return true;
-			}
-
+			// Force a repath to allow for fine tuned positioning
 			CNEOBotPathCost cost(me, DEFAULT_ROUTE);
 			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
 			{
@@ -174,77 +159,87 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 				// continue with leader following logic below
 			}
 		}
-	}
-	else
-	{
-		// Commander died
-		return false; // This triggers OnEnd which clears vars
+
+		if (FanOutAndCover(me, m_vGoalPos))
+		{
+			// FanOutAndCover true: arrived at destination and settled, so don't recompute path
+			return true;
+		}
+
+		CNEOBotPathCost cost(me, DEFAULT_ROUTE);
+		if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+		{
+			return true;
+		}
+		else
+		{
+			me->m_hLeadingPlayer = pCommander; // fallback to following commander
+			// continue with leader following logic below
+		}
 	}
 
 	// Didn't have order from commander, so follow in snake formation
 	CNEO_Player* pLeader = me->m_hLeadingPlayer.Get();
-	if (pLeader && pLeader->IsAlive())
+	if (!pLeader || !pLeader->IsAlive())
 	{
-		// Commander can swap and order around different squads while having followers
-		// but otherwise bots only follow squadmates in the same star or their commander
-		if ((pLeader != pCommander) && (pLeader->GetStar() != me->GetStar()))
-		{
-			me->m_hLeadingPlayer = nullptr;
-			return true; // restart logic next tick
-		}
-		else if (me->GetAbsOrigin().DistToSqr(pLeader->GetAbsOrigin()) < follow_stop_distance_sq)
-		{
-			// Anti-collision: follow neighbor in snake chain
-			for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
-			{
-				CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
-				if (!pOther || !pOther->IsBot() || pOther == me
-					|| (pOther->m_hLeadingPlayer.Get() != me->m_hLeadingPlayer.Get()))
-				{
-					// Not another bot in the same snake formation
-					continue;
-				}
+		// Leader is no longer valid or alive
+		me->m_hLeadingPlayer = nullptr;
+		return true;
+	}
 
-				if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < follow_stop_distance_sq / 2)
-				{
-					// Follow person I bumped into and link up to snake chain of followers
-					me->m_hLeadingPlayer = pOther;
-					break;
-				}
+	// Commander can swap and order around different squads while having followers
+	// but otherwise bots only follow squadmates in the same star or their commander
+	if ((pLeader != pCommander) && (pLeader->GetStar() != me->GetStar()))
+	{
+		me->m_hLeadingPlayer = nullptr;
+		return true; // restart logic next tick
+	}
+	else if (me->GetAbsOrigin().DistToSqr(pLeader->GetAbsOrigin()) < follow_stop_distance_sq)
+	{
+		// Anti-collision: follow neighbor in snake chain
+		for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
+		{
+			CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
+			if (!pOther || !pOther->IsBot() || pOther == me
+				|| (pOther->m_hLeadingPlayer.Get() != me->m_hLeadingPlayer.Get()))
+			{
+				// Not another bot in the same snake formation
+				continue;
 			}
 
-			m_hTargetEntity = NULL;
-			m_bGoingToTargetEntity = false;
-			m_path.Invalidate();
-			Vector tempLeaderOrigin = pLeader->GetAbsOrigin();  // don't want to override m_vGoalPos
-			FanOutAndCover(me, tempLeaderOrigin, false, follow_stop_distance_sq);
-			return true;
+			if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < follow_stop_distance_sq / 2)
+			{
+				// Follow person I bumped into and link up to snake chain of followers
+				me->m_hLeadingPlayer = pOther;
+				break;
+			}
 		}
 
-		// Set the bot's goal to the leader's position.
-		m_vGoalPos = pLeader->GetAbsOrigin();
-		CNEOBotPathCost cost(me, DEFAULT_ROUTE);
-		if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
-		{
-			// Prioritize following leader.
-			return true;
-		}
-		else if (me->m_hLeadingPlayer.Get() == me->m_hCommandingPlayer.Get())
-		{
-			// Invalid path to leader who is also the commander, so reset both
-			// Returning false will trigger OnEnd which resets vars
-			return false;
-		}
-		else
-		{
-			// check command chain on next tick
-			me->m_hLeadingPlayer = nullptr;
-			return true;
-		}
+		m_hTargetEntity = NULL;
+		m_bGoingToTargetEntity = false;
+		m_path.Invalidate();
+		Vector tempLeaderOrigin = pLeader->GetAbsOrigin();  // don't want to override m_vGoalPos
+		FanOutAndCover(me, tempLeaderOrigin, false, follow_stop_distance_sq);
+		return true;
+	}
+
+	// Set the bot's goal to the leader's position.
+	m_vGoalPos = pLeader->GetAbsOrigin();
+	CNEOBotPathCost cost(me, DEFAULT_ROUTE);
+	if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+	{
+		// Prioritize following leader.
+		return true;
+	}
+	else if (me->m_hLeadingPlayer.Get() == me->m_hCommandingPlayer.Get())
+	{
+		// Invalid path to leader who is also the commander, so reset both
+		// Returning false will trigger OnEnd which resets vars
+		return false;
 	}
 	else
 	{
-		// Leader is no longer valid or alive
+		// check command chain on next tick
 		me->m_hLeadingPlayer = nullptr;
 		return true;
 	}
@@ -253,7 +248,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 // ---------------------------------------------------------------------------------------------
 // Process commander ping waypoint commands for bots
 // The movementTarget is mutable to accomodate spreading out at goal zone 
-bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, bool bMoveToSeparate /*= false*/, float flArrivalZoneSizeSq /*= -1.0f*/)
+bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, bool bMoveToSeparate /*= true*/, float flArrivalZoneSizeSq /*= -1.0f*/)
 {
 	if (flArrivalZoneSizeSq == -1.0f)
 	{
@@ -273,39 +268,39 @@ bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, b
 			if (!pPlayer || pPlayer == me || !pPlayer->IsAlive())
 				continue;
 
-			if (pPlayer->GetTeamNumber() == me->GetTeamNumber())
+			// Only consider friendly players
+			if (pPlayer->GetTeamNumber() != me->GetTeamNumber())
+				continue;
+
+			CNEO_Player* pOther = static_cast<CNEO_Player*>(pPlayer);
+			if (!pOther)
+				continue;
+
+			// Determine if we are too close to any friendly bot
+			if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat() / 2)
 			{
-				// Friendly player
-				CNEO_Player* pOther = static_cast<CNEO_Player*>(pPlayer);
-				if (pOther)
+				bTooClose = true;
+			}
+
+			// Check for line of sight to other player for repulsion
+			trace_t tr;
+			UTIL_TraceLine(me->EyePosition(), pOther->EyePosition(), MASK_PLAYERSOLID, me, COLLISION_GROUP_NONE, &tr);
+
+			if (tr.fraction == 1.0f || tr.m_pEnt == pOther)
+			{
+				Vector vToOther = pOther->GetAbsOrigin() - me->GetAbsOrigin();
+				float flDistSqr = vToOther.LengthSqr();
+				if (flDistSqr > 0.0f)
 				{
-					// Determine if we are too close to any friendly bot
-					if (me->GetAbsOrigin().DistToSqr(pOther->GetAbsOrigin()) < sv_neo_bot_cmdr_stop_distance_sq.GetFloat() / 2)
-					{
-						bTooClose = true;
-					}
+					const float flMaxRepulsionDist = sv_neo_bot_cmdr_look_weights_friendly_max_dist_sq.GetFloat();
+					float flDist = FastSqrt(flDistSqr);
+					float flRepulsionScale = 1.0f - (flDist / flMaxRepulsionDist);
+					flRepulsionScale = Clamp(flRepulsionScale, 0.0f, 1.0f);
+					float flRepulsion = flRepulsionScale * flRepulsionScale;
 
-					// Check for line of sight to other player for repulsion
-					trace_t tr;
-					UTIL_TraceLine(me->EyePosition(), pOther->EyePosition(), MASK_PLAYERSOLID, me, COLLISION_GROUP_NONE, &tr);
-
-					if (tr.fraction == 1.0f || tr.m_pEnt == pOther)
+					if (flRepulsion > 0.0f)
 					{
-						Vector vToOther = pOther->GetAbsOrigin() - me->GetAbsOrigin();
-						float flDistSqr = vToOther.LengthSqr();
-						if (flDistSqr > 0.0f)
-						{
-							const float flMaxRepulsionDist = sv_neo_bot_cmdr_look_weights_friendly_max_dist.GetFloat();
-							float flDist = FastSqrt(flDistSqr);
-							float flRepulsionScale = 1.0f - (flDist / flMaxRepulsionDist);
-							flRepulsionScale = Clamp(flRepulsionScale, 0.0f, 1.0f);
-							float flRepulsion = flRepulsionScale * flRepulsionScale;
-							
-							if (flRepulsion > 0.0f)
-							{
-								vBotRepulsion -= vToOther.Normalized() * flRepulsion;
-							}
-						}
+						vBotRepulsion -= vToOther.Normalized() * flRepulsion;
 					}
 				}
 			}
