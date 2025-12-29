@@ -166,13 +166,14 @@ void CheckPingButton(CNEO_Player* player)
 	}
 }
 
+ConVar sv_neo_bot_cmdr_enable("sv_neo_bot_cmdr_enable", "0",
+	FCVAR_CHEAT | FCVAR_REPLICATED, "Allow bots to follow you after you press use on them", true, 0, true, 1);
+
 #ifdef GAME_DLL
-static ConVar sv_neo_bot_cmdr_enable("sv_neo_bot_cmdr_enable", "1",
-	FCVAR_NONE, "Allow bots to follow you after you press use on them", true, 0, true, 1);
 static ConVar sv_neo_bot_cmdr_stop_distance_sq_max("sv_neo_bot_cmdr_stop_distance_sq_max", "50000",
-	FCVAR_NONE, "Maximum distance bot following gap interval can be set by player pings", true, 5000, true, 500000);
+	FCVAR_CHEAT, "Maximum distance bot following gap interval can be set by player pings", true, 5000, true, 500000);
 static ConVar sv_neo_bot_cmdr_ping_ignore_delay_min_sec("sv_neo_bot_cmdr_ping_ignore_delay_min_sec", "3",
-	FCVAR_NONE, "Minimum time bots ignore pings for new waypoint settings", true, 0, true, 1000);
+	FCVAR_CHEAT, "Minimum time bots ignore pings for new waypoint settings", true, 0, true, 1000);
 #endif // GAME_DLL
 
 void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos)

@@ -26,6 +26,7 @@
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
+extern ConVar sv_neo_bot_cmdr_enable;
 extern ConVar sv_neo_bot_cmdr_debug_pause_uncommanded;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -278,14 +279,17 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return result;
 	}
 
-	if (me->m_hLeadingPlayer.Get() || me->m_hCommandingPlayer.Get())
+	if (sv_neo_bot_cmdr_enable.GetBool())
 	{
-		return SuspendFor(new CNEOBotCommandFollow, "Following commander");
-	}
+		if (me->m_hLeadingPlayer.Get() || me->m_hCommandingPlayer.Get())
+		{
+			return SuspendFor(new CNEOBotCommandFollow, "Following commander");
+		}
 
-	if (sv_neo_bot_cmdr_debug_pause_uncommanded.GetBool())
-	{
-		return SuspendFor( new CNEOBotPause, "Paused by debug convar sv_neo_bot_cmdr_debug_pause_uncommanded" );
+		if (sv_neo_bot_cmdr_debug_pause_uncommanded.GetBool())
+		{
+			return SuspendFor( new CNEOBotPause, "Paused by debug convar sv_neo_bot_cmdr_debug_pause_uncommanded" );
+		}
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
