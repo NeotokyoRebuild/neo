@@ -256,7 +256,7 @@ void CNEO_Juggernaut::DisableSoftCollisionsThink()
 {
 	if (IsMarkedForDeletion()) return;
 
-	[[maybe_unused]] CBaseEntity* ent;
+	CBaseEntity* ent;
 	for (CEntitySphereQuery sphere(WorldSpaceCenter(), BoundingRadius(), FL_CLIENT | FL_FAKECLIENT | FL_NPC);
 		(ent = sphere.GetCurrentEntity());
 		sphere.NextEntity())
