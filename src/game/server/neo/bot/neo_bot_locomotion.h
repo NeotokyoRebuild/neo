@@ -47,12 +47,12 @@ inline float CNEOBotLocomotion::GetMaxJumpHeight( void ) const
 			return NEO_RECON_CROUCH_JUMP_HEIGHT;
 		case NEO_CLASS_JUGGERNAUT:
 			return NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT;
-		case NEO_CLASS_ASSAULT:
-			[[fallthrough]];
 		case NEO_CLASS_SUPPORT:
-			[[fallthrough]];
+			return NEO_SUPPORT_CROUCH_JUMP_HEIGHT;
 		case NEO_CLASS_VIP:
-			return NEO_CROUCH_JUMP_HEIGHT;
+			return NEO_ASSAULT_CROUCH_JUMP_HEIGHT; // vip same as assault
+		case NEO_CLASS_ASSAULT:
+			return NEO_ASSAULT_CROUCH_JUMP_HEIGHT;
 		default:
 			Assert(false);
 			return 0.f;

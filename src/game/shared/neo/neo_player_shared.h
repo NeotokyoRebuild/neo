@@ -152,20 +152,24 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 // Support: 70 - 59 = 11
 // VIP: 65 - 48 = 17
 //
-// Juggernaught: 88 - 75 = 13
+// Juggernaut: 88 - 75 = 13
 //   (Base Hull Max = 70) + (NEO_JUGGERNAUT_MAXHULL_OFFSET.z = 18) = 88
 //   (Base Hull Duck Max = 59) + (NEO_JUGGERNAUT_DUCK_MAXHULL_OFFSET.z = 16) = 75
 //
-// Proposed bot crouch jump heights:
+// Then apply a uniform spare height budget gap of 7 units to all classes.
+// Formula: (Class Jump Height) + (Lift) - (Spare Gap)
+//
+// Precalculated bot crouch jump heights for use in bot locomotion/navigation checks:
 // ---
-// Recon: 54 + 11 = 65
-// Assault/VIP = 36 + 11 = 47
-// Support = 36 + 11 = 47
-// Juggernaut = 50.4 + 11 = 61.4 (rounded for simplicity)
+// Recon: 54 + 18 - 7 = 65
+// Assault/VIP: 36 + 17 - 7 = 46
+// Support: 36 + 11 - 7 = 40
+// Juggernaut: 50.4 + 13 - 7 = 56.4 (rounded down to 56)
 
 #define NEO_RECON_CROUCH_JUMP_HEIGHT 65.f
-#define NEO_CROUCH_JUMP_HEIGHT 47.f
-#define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 62.f
+#define NEO_ASSAULT_CROUCH_JUMP_HEIGHT 46.f
+#define NEO_SUPPORT_CROUCH_JUMP_HEIGHT 40.f
+#define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 56.f
 
 // END OF NEO MOVEMENT DEFINITIONS
 //////////////////////////////////////////////////////
