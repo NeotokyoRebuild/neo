@@ -9,11 +9,11 @@
 class CNEOBotPause : public Action< CNEOBot >
 {
 public:
-	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
-	virtual ActionResult< CNEOBot >	Update( CNEOBot* me, float interval );
-	virtual void					OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
+	virtual ActionResult< CNEOBot >	Update( CNEOBot* me, float interval ) override;
+	virtual void					OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction ) override;
 
-	virtual const char* GetName( void ) const { return "Pause"; };
+	virtual const char* GetName( void ) const override { return "Pause"; };
 };
 
 #endif // NEO_BOT_PAUSE_H
