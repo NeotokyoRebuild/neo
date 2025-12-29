@@ -1241,6 +1241,11 @@ void CHL2MPRules::CheckRestartGame( void )
 
 	if ( iRestartDelay > 0 )
 	{
+#ifdef NEO
+		if (iRestartDelay != MAGIC_NEO_RESTART_THIS)
+		{
+#endif
+
 		if ( iRestartDelay > 60 )
 			iRestartDelay = 60;
 
@@ -1250,6 +1255,11 @@ void CHL2MPRules::CheckRestartGame( void )
 		Q_snprintf( strRestartDelay, sizeof( strRestartDelay ), "%d", iRestartDelay );
 		UTIL_ClientPrintAll( HUD_PRINTCENTER, "Game will restart in %s1 %s2", strRestartDelay, iRestartDelay == 1 ? "SECOND" : "SECONDS" );
 		UTIL_ClientPrintAll( HUD_PRINTCONSOLE, "Game will restart in %s1 %s2", strRestartDelay, iRestartDelay == 1 ? "SECOND" : "SECONDS" );
+
+#ifdef NEO
+		}
+		else iRestartDelay = 0;
+#endif
 
 		m_flRestartGameTime = gpGlobals->curtime + iRestartDelay;
 		m_bCompleteReset = true;
