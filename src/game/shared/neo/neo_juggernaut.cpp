@@ -222,13 +222,14 @@ void CNEO_Juggernaut::MakePushThink()
 {
 	if (IsMarkedForDeletion()) return;
 
+	constexpr const char* pushEnt = "point_push";
+
 	if (m_hPush.Get())
 	{
-		AssertMsg1(false, "push already exists; called %s multiply?", __FUNCTION__);
+		AssertMsg2(false, "%s already exists; called %s multiply?", pushEnt, __FUNCTION__);
 		return;
 	}
 
-	constexpr const char* pushEnt = "point_push";
 	if (!(m_hPush = CreateEntityByName(pushEnt)))
 	{
 		Warning("%s: Failed to create %s\n", __FUNCTION__, pushEnt);
