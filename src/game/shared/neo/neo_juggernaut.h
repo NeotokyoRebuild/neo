@@ -16,6 +16,7 @@ class CNEO_Juggernaut : public CBaseAnimating
 public:
 	DECLARE_CLASS(CNEO_Juggernaut, CBaseAnimating);
 #ifdef GAME_DLL
+	virtual ~CNEO_Juggernaut();
 	DECLARE_SERVERCLASS();
 #else
 	DECLARE_CLIENTCLASS();
@@ -38,6 +39,9 @@ public:
 private:
 #ifdef GAME_DLL
 	void	Think(void);
+	void	SetSoftCollision(bool soft);
+	void	MakePushThink();
+	void	DisableSoftCollisionsThink();
 	void	HoldCancel(void);
 	void	AnimThink(void);
 	void	InputLock(inputdata_t& inputData) { m_bLocked = true; }
@@ -48,6 +52,7 @@ private:
 
 #ifdef GAME_DLL
 	CHandle<CNEO_Player>	m_hPlayer;
+	EHANDLE m_hPush;
 	float m_flWarpedPlaybackRate;
 	float m_flHoldStartTime = 0.0f;
 	bool m_bIsHolding = false;
