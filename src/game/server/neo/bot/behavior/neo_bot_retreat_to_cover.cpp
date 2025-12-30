@@ -222,6 +222,10 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 				return Done( "My cover is exposed, and there is no other cover available!" );
 			}
 		}
+		else
+		{
+			me->DisableCloak();
+		}
 
 		if ( m_actionToChangeToOnceCoverReached )
 		{
@@ -243,6 +247,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	else
 	{
 		// not in cover yet
+		me->EnableCloak( 3.0f );
+
 		m_waitInCoverTimer.Reset();
 
 		if ( m_repathTimer.IsElapsed() )
