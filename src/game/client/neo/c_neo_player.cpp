@@ -1660,7 +1660,6 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	m_bIneligibleForLoadoutPick = true;
-	IN_AimToggleReset();
 
 	if (pWeapon->IsGhost())
 	{
@@ -1850,6 +1849,7 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	else
 	{
 		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
+		IN_AimToggleReset();
 	}
 
 	const int fov = GetDefaultFOV();
