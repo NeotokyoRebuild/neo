@@ -167,7 +167,7 @@ void CheckPingButton(CNEO_Player* player)
 }
 
 ConVar sv_neo_bot_cmdr_enable("sv_neo_bot_cmdr_enable", "0",
-	FCVAR_CHEAT | FCVAR_REPLICATED, "Allow bots to follow you after you press use on them", true, 0, true, 1);
+	FCVAR_REPLICATED | FCVAR_ARCHIVE, "Allow bots to follow you after you press use on them", true, 0, true, 1);
 
 #ifdef GAME_DLL
 static ConVar sv_neo_bot_cmdr_stop_distance_sq_max("sv_neo_bot_cmdr_stop_distance_sq_max", "50000",
