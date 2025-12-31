@@ -1660,6 +1660,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	m_bIneligibleForLoadoutPick = true;
+	IN_AimToggleReset();
 
 	if (pWeapon->IsGhost())
 	{
