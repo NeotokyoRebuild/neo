@@ -1446,10 +1446,10 @@ void CNEO_Player::SuperJump(void)
 	ApplyAbsVelocityImpulse(forward * boostIntensity);
 }
 
-bool CNEO_Player::IsAllowedToSuperJump(bool isBot)
+bool CNEO_Player::IsAllowedToSuperJump(void)
 {
 	// NEOJANK: Bots are exempt from certain checks due to their their erratic input control
-	if (!isBot)
+	if (!IsBot())
 	{
 		if (!IsSprinting())
 			return false;
