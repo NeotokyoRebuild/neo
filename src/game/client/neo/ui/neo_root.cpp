@@ -57,10 +57,6 @@ inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "1", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
 inline int g_iRowsInScreen;
 
-// Note that this is not necessarily the same as "neo_fov" cvar max value.
-// We are restricted to supporting a max of 90 due to an engine limitation.
-constexpr auto maxSupportedFov = 90;
-
 namespace {
 
 int g_iAvatar = 64;

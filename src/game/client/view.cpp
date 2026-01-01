@@ -60,6 +60,7 @@
 #endif
 
 #ifdef NEO
+#include "neo/ui/neo_root_settings.h"
 #include "vgui_controls/pch_vgui_controls.h"
 #endif // NEO
 	
@@ -75,7 +76,14 @@ extern ConVar default_fov;
 extern bool g_bRenderingScreenshot;
 
 #ifdef NEO
-ConVar neo_fov("neo_fov", V_STRINGIFY(DEFAULT_FOV), FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the normal FOV.", true, static_cast<float>(MIN_FOV), true, static_cast<float>(MAX_FOV));
+ConVar neo_fov("neo_fov", V_STRINGIFY(DEFAULT_FOV), FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the normal FOV.", true, static_cast<float>(MIN_FOV), true, static_cast<float>(MAX_FOV),
+	[](IConVar* var, const char* pOldValue, float flOldValue) {
+		int newVal = ((ConVar*)var)->GetInt();
+		if (newVal > maxSupportedFov)
+		{
+			Warning("Current FOV value is %d - values above %d may cause visual artifacts!\n", newVal, maxSupportedFov);
+		}
+	});
 ConVar neo_fov_relay_spec("neo_fov_relay_spec", "0", FCVAR_ARCHIVE | FCVAR_USERINFO,
 		"If enabled, during first-person spectating, it will relay the target player's neo_fov to the spectator."
 		" This ConVar is controlled by the spectator, not the target player.", true, 0.0f, true, 1.0f);

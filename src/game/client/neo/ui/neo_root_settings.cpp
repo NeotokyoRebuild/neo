@@ -1006,7 +1006,7 @@ void NeoSettings_General(NeoSettings *ns)
 		NeoUI::EndOverrideFgColor();
 	}
 
-	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
+	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, MIN_FOV, MAX_FOV);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
 	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
