@@ -23,9 +23,9 @@ ConVar sv_neo_bot_cmdr_look_weights_explosives_repulsion("sv_neo_bot_cmdr_look_w
 	FCVAR_CHEAT, "Weight for explosive repulsion force", true, 1, true, 9999);
 
 ConVar sv_neo_bot_cmdr_look_weights_friendly_max_dist_sq("sv_neo_bot_cmdr_look_weights_friendly_max_dist_sq", "5000",
-	FCVAR_CHEAT, "Distance to compare friendly repulsion forces", true, 1, true, 100000);
+	FCVAR_CHEAT, "Distance to compare friendly repulsion forces", true, 1, true, MAX_TRACE_LENGTH);
 ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist("sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist", "500",
-	FCVAR_CHEAT, "Distance to extend whiskers", true, 1, true, 100000);
+	FCVAR_CHEAT, "Distance to extend whiskers", true, 1, true, MAX_TRACE_LENGTH);
 
 //---------------------------------------------------------------------------------------------
 CNEOBotCommandFollow::CNEOBotCommandFollow() : m_vGoalPos( CNEO_Player::VECTOR_INVALID_WAYPOINT )
