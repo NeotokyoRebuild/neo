@@ -2301,7 +2301,7 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 
 				if (m_ns.general.iFov > maxSupportedFov)
 				{
-					wchar_t warning[256];
+					wchar_t warning[77+1];
 					V_snwprintf(warning, ARRAYSIZE(warning),
 						L"WARNING: Current FOV value is %d%cvalues above %d may cause visual artifacts!",
 						m_ns.general.iFov, wint_t(8212) /* em dash */, maxSupportedFov);
