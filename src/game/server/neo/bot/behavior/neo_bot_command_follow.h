@@ -5,6 +5,7 @@
 #endif
 
 #include "NextBotBehavior.h"
+#include "bot/behavior/neo_bot_ctg_carrier.h"
 
 class CNEOBotCommandFollow : public Action< CNEOBot >
 {
@@ -24,6 +25,7 @@ private:
 
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
+	CNEOBotGhostEquipmentHandler m_ghostEquipmentHandler;
 
 	EHANDLE m_hTargetEntity;
 	bool m_bGoingToTargetEntity = false;

@@ -115,6 +115,15 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 		{
 			cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber()) * neo_bot_path_reservation_penalty.GetFloat();
 			cost += CNEOBotPathReservations()->GetAreaStuckPenalty(area->GetID());
+
+			if (m_routeType == SAFEST_ROUTE)
+			{
+				// NEO Jank Cheat: Incorporate enemy bot paths so that we don't run directly into their line of fire
+				// Intended for use by ghost carrier team, to emulate a team that knows where enemies are likely to ambush
+				// Compensates for bots' lack of meta knowledge by making them prefer routes not reserved by enemies
+				// Adheres to cheat against bots but not against humans philosophy by not considering human players' positions
+				cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), GetEnemyTeam(m_me->GetTeamNumber())) * neo_bot_path_reservation_penalty.GetFloat() * 2;
+			}
 		}
 		// ------------------------------------------------------------------------------------------------
 

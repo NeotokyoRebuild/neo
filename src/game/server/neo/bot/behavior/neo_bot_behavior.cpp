@@ -92,6 +92,13 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 	// make sure our vision FOV matches the player's
 	me->GetVisionInterface()->SetFieldOfView( me->GetFOV() );
 
+	if (me->IsCarryingGhost())
+	{
+		// Don't waste cloak power
+		// Incidentally flashing cloak is fine, everyone can see you anyway
+		me->DisableCloak();
+	}
+
 	// track aim velocity ourselves, since body aim "steady" is too loose
 	float deltaYaw = me->EyeAngles().y - m_priorYaw;
 	m_yawRate = fabs( deltaYaw / ( interval + 0.0001f ) );
