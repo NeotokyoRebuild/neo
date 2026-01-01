@@ -106,6 +106,9 @@ public:
 	virtual void PressReloadButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseReloadButton( void ) = 0;
 	
+	virtual void PressDropButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseDropButton( void ) = 0;
+
 	virtual void PressForwardButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseForwardButton( void ) = 0;
 
@@ -212,6 +215,9 @@ public:
 	virtual void PressReloadButton( float duration = -1.0f );
 	virtual void ReleaseReloadButton( void );
 
+	virtual void PressDropButton( float duration = -1.0f );
+	virtual void ReleaseDropButton( void );
+
 	virtual void PressForwardButton( float duration = -1.0f );
 	virtual void ReleaseForwardButton( void );
 
@@ -277,6 +283,7 @@ protected:
 	CountdownTimer m_specialFireButtonTimer;
 	CountdownTimer m_useButtonTimer;
 	CountdownTimer m_reloadButtonTimer;
+	CountdownTimer m_dropButtonTimer;
 	CountdownTimer m_forwardButtonTimer;
 	CountdownTimer m_backwardButtonTimer;
 	CountdownTimer m_leftButtonTimer;
@@ -428,6 +435,20 @@ inline void NextBotPlayer< PlayerType >::ReleaseReloadButton( void )
 {
 	m_inputButtons &= ~IN_RELOAD;
 	m_reloadButtonTimer.Invalidate();
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressDropButton( float duration )
+{
+	m_inputButtons |= IN_DROP;
+	m_dropButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseDropButton( void )
+{
+	m_inputButtons &= ~IN_DROP;
+	m_dropButtonTimer.Invalidate();
 }
 
 template < typename PlayerType >
@@ -631,6 +652,7 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_specialFireButtonTimer.Invalidate();
 	m_useButtonTimer.Invalidate();
 	m_reloadButtonTimer.Invalidate();
+	m_dropButtonTimer.Invalidate();
 	m_forwardButtonTimer.Invalidate();
 	m_backwardButtonTimer.Invalidate();
 	m_leftButtonTimer.Invalidate();
@@ -757,6 +779,9 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 
 		if ( !m_reloadButtonTimer.IsElapsed() )
 			m_inputButtons |= IN_RELOAD;
+
+		if ( !m_dropButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_DROP;
 
 		if ( !m_forwardButtonTimer.IsElapsed() )
 			m_inputButtons |= IN_FORWARD;

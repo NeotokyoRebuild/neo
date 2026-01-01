@@ -5,6 +5,7 @@
 #include "neo_bot_vision.h"
 #include "neo_player.h"
 #include "neo_gamerules.h"
+#include "neo/weapons/weapon_ghost.h"
 
 ConVar neo_bot_choose_target_interval( "neo_bot_choose_target_interval", "0.3f", FCVAR_CHEAT, "How often, in seconds, a NEOBot can reselect his target" );
 ConVar neo_bot_sniper_choose_target_interval( "neo_bot_sniper_choose_target_interval", "3.0f", FCVAR_CHEAT, "How often, in seconds, a zoomed-in Sniper can reselect his target" );
@@ -178,6 +179,19 @@ bool CNEOBotVision::IsInFieldOfView( CBaseEntity *subject ) const
 
 bool CNEOBotVision::IsAbleToSee(CBaseEntity *subject, FieldOfViewCheckType checkFOV, Vector *visibleSpot) const
 {
+	CNEOBot *me = (CNEOBot *)GetBot()->GetEntity();
+	if (me && me->IsCarryingGhost())
+	{
+		auto *pGhost = dynamic_cast<CWeaponGhost *>(me->GetActiveWeapon());
+		if (pGhost && pGhost->IsGhost() && pGhost->IsBootupCompleted())
+		{
+			if (me->GetAbsOrigin().DistToSqr(subject->GetAbsOrigin()) < Square(CWeaponGhost::GetGhostRangeInHammerUnits()))
+			{
+				return true;
+			}
+		}
+	}
+
 	const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
 	if (iGhosterPlayer > 0)
 	{
