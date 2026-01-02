@@ -937,7 +937,7 @@ int CNEOHud_RoundState::DrawPlayerRow_BotCmdr(int playerIndex, const int yOffset
 		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
 		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", pPlayerDisplayName, displayClass);
 	}
-	g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
+	int wSquadMateTextLen = g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
 
 	int fontWidth, fontHeight;
 	surface()->DrawSetTextFont(small ? m_hOCRSmallerFont : m_hOCRSmallFont);
@@ -945,7 +945,7 @@ int CNEOHud_RoundState::DrawPlayerRow_BotCmdr(int playerIndex, const int yOffset
 
 	surface()->DrawSetTextColor(colorOverride ? *colorOverride : (isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE));
 	surface()->DrawSetTextPos(8, yOffset);
-	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
+	surface()->DrawPrintText(wSquadMateText, wSquadMateTextLen - 1);
 
 	return yOffset + fontHeight;
 }
