@@ -340,8 +340,8 @@ bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, b
 		float friendlyRepulsionWeight = sv_neo_bot_cmdr_look_weights_friendly_repulsion.GetFloat();
 		float wallRepulsionWeight = sv_neo_bot_cmdr_look_weights_wall_repulsion.GetFloat();
 		vFinalForce = (vBotRepulsion * friendlyRepulsionWeight) + (vWallRepulsion * wallRepulsionWeight);
-		vFinalForce.NormalizeInPlace();
 		vFinalForce.z = 0; // avoid tilting awkwardly up or down
+		vFinalForce.NormalizeInPlace();
 		if (!vFinalForce.IsZero())
 		{
 			me->GetBodyInterface()->AimHeadTowards(me->GetBodyInterface()->GetEyePosition() + vFinalForce * 500.0f);
