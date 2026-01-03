@@ -67,6 +67,7 @@ public:
 	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
+	virtual void PlayerUse(void) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
@@ -308,6 +309,15 @@ public:
 
 	// Bot-only usage
 	float m_flRanOutSprintTime = 0.0f;
+	CNetworkHandle(CNEO_Player, m_hCommandingPlayer); // The player this bot is commanded by
+	CHandle<CNEO_Player> m_hLeadingPlayer; // The player this bot is following
+	CountdownTimer m_tBotPlayerPingCooldown; // The cooldown time for following player ping
+	float m_flBotDynamicFollowDistanceSq; // The dynamic follow distance interval for bots
+	CNetworkArray(Vector, m_vLastPingByStar, STAR__TOTAL); // The last ping location from this player for each squad star
+	// Bot Functions
+	void ResetBotCommandState();
+	void ToggleBotFollowCommander( CNEO_Player *pCommander );
+	static const Vector VECTOR_INVALID_WAYPOINT;
 
 private:
 	bool m_bFirstDeathTick;
