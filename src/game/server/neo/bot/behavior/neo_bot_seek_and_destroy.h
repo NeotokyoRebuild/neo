@@ -45,4 +45,5 @@ private:
 	Vector m_vOverrideApproach = vec3_origin;
 
 	CountdownTimer m_giveUpTimer;
+	CountdownTimer m_apcRepathTimer;
 };

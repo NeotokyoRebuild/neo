@@ -34,4 +34,5 @@ private:
 	void AvoidBumpingEnemies(CNEOBot* me);
 	void ReconConsiderSuperJump(CNEOBot *me);
 	ActionResult< CNEOBot > WatchForGrenades(CNEOBot* me);
+	ActionResult< CNEOBot > WatchForAPC(CNEOBot* me);
 };
