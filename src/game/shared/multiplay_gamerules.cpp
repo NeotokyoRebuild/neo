@@ -108,7 +108,7 @@ ConVar neo_restart_this("neo_restart_this", "0", FCVAR_GAMEDLL, "If non-zero, ga
 	[](IConVar* var, const char* pOldValue, float flOldValue)->void {
 		if (ConVarRef(var).GetBool())
 		{
-			if (NEORules()) NEORules()->RestartGame();
+			mp_restartgame.SetValue(MAGIC_NEO_RESTART_THIS);
 		}
 		var->SetValue("0");
 	});
