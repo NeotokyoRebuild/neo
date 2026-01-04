@@ -81,7 +81,7 @@ ConVar neo_fov("neo_fov", V_STRINGIFY(DEFAULT_FOV), FCVAR_ARCHIVE | FCVAR_USERIN
 		int newVal = ((ConVar*)var)->GetInt();
 		if (newVal > maxSupportedFov)
 		{
-			Warning("Current FOV value is %d - values above %d may cause visual artifacts!\n", newVal, maxSupportedFov);
+			Warning("The current FOV value (%d) is above the maximum supported (%d), which may cause visual artifacts!\n", newVal, maxSupportedFov);
 		}
 	});
 ConVar neo_fov_relay_spec("neo_fov_relay_spec", "0", FCVAR_ARCHIVE | FCVAR_USERINFO,

@@ -2303,8 +2303,8 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				{
 					wchar_t warning[77+1];
 					V_swprintf_safe(warning,
-						L"WARNING: Current FOV value is %d%lcvalues above %d may cause visual artifacts!",
-						m_ns.general.iFov, wint_t(8212) /* em dash */, maxSupportedFov);
+						L"Current FOV (%d) is > max. supported (%d), which may cause visual artifacts!",
+						m_ns.general.iFov, maxSupportedFov);
 					NeoUI::Label(warning);
 					g_uiCtx.iLayoutY += (g_uiCtx.layout.iRowTall / 2);
 				}
