@@ -1099,7 +1099,14 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 					if (NeoUI::Button(NeoUI::HintAlt(L"Accept (F8)", L"Accept (START)")).bPressed
 							|| NeoUI::Bind(BTNCODES_ACCEPT, ARRAYSIZE(BTNCODES_ACCEPT)))
 					{
-						NeoSettingsSave(&m_ns);
+						if (m_ns.general.iFov > maxSupportedFov)
+						{
+							m_state = STATE_CONFIRMSETTINGS;
+						}
+						else
+						{
+							NeoSettingsSave(&m_ns);
+						}
 					}
 				}
 			}
@@ -2291,6 +2298,17 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 						L"Settings changed: Do you want to apply the settings?" :
 						L"Error: Invalid settings, cannot save.");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+
+				if (m_ns.general.iFov > maxSupportedFov)
+				{
+					wchar_t warning[77+1];
+					V_swprintf_safe(warning,
+						L"Current FOV (%d) is > max. supported (%d), which may cause visual artifacts!",
+						m_ns.general.iFov, maxSupportedFov);
+					NeoUI::Label(warning);
+					g_uiCtx.iLayoutY += (g_uiCtx.layout.iRowTall / 2);
+				}
+
 				NeoUI::SetPerRowLayout(3);
 				{
 					g_uiCtx.iLayoutX = (g_uiCtx.iMarginX / 2);
