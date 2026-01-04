@@ -15,6 +15,9 @@ class CNEO_Juggernaut : public CBaseAnimating
 {
 public:
 	DECLARE_CLASS(CNEO_Juggernaut, CBaseAnimating);
+	
+	static float GetUseDuration();
+	static float GetUseDistanceSquared();
 #ifdef GAME_DLL
 	virtual ~CNEO_Juggernaut();
 	DECLARE_SERVERCLASS();

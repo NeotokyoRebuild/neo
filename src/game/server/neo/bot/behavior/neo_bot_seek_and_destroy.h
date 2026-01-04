@@ -31,7 +31,11 @@ public:
 
 	virtual const char *GetName( void ) const	{ return "SeekAndDestroy"; };
 
-private:
+protected:
+	virtual ActionResult< CNEOBot > UpdateCommon( CNEOBot *me, float interval );
+
+	virtual void RecomputeSeekPath( CNEOBot *me );
+
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
 	CountdownTimer m_itemStolenTimer;
@@ -39,8 +43,6 @@ private:
 	bool m_bGoingToTargetEntity = false;
 	Vector m_vGoalPos = vec3_origin;
 	bool m_bTimerElapsed = false;
-	void RecomputeSeekPath( CNEOBot *me );
-
 	bool m_bOverrideApproach = false;
 	Vector m_vOverrideApproach = vec3_origin;
 

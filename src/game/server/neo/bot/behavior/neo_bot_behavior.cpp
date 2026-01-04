@@ -777,6 +777,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			{
 				// Minimum viable firing BALC
 				// TODO: Proper heat management for higher difficulty bots
+				me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
 				me->PressFireButton(GetFireDurationByDifficulty(me));
 				return;
 			}
