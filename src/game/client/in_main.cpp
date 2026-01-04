@@ -518,6 +518,13 @@ void ToggleKeyUp( kbutton_t *b )
 	b->state |= 4; 		// impulse up
 }
 
+void LiftAllToggleKeys()
+{
+	for (kbutton_t* button : { &in_walk, &in_aim, &in_lean_left, &in_lean_right }) {
+		ToggleKeyUp(button);
+	}
+}
+
 #endif // NEO
 
 void IN_CommanderMouseMoveDown( const CCommand &args ) {KeyDown(&in_commandermousemove, args[1] );}

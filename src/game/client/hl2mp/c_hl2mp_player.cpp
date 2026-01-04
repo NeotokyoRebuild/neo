@@ -962,7 +962,6 @@ void C_HL2MP_Player::StartSprinting( void )
 
 	m_fIsSprinting = true;
 #ifdef NEO
-	IN_AimToggleReset();
 	IN_LeanToggleReset();
 #endif // NEO
 }
