@@ -199,7 +199,7 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 		return;
 	}
 
-	if (!pNeoMe->IsAllowedToSuperJump(/*isBot*/ true))
+	if (!pNeoMe->IsAllowedToSuperJump())
 	{
 		return;
 	}
