@@ -8,7 +8,7 @@
 class CNEOBotJgrCapture : public Action<CNEOBot>
 {
 public:
-	CNEOBotJgrCapture( CBaseEntity *pObjective );
+	CNEOBotJgrCapture( CNEO_Juggernaut *pObjective );
 	virtual ~CNEOBotJgrCapture() { }
 
 	virtual const char *GetName() const override { return "jgrCapture"; }
@@ -20,7 +20,7 @@ public:
 	virtual ActionResult<CNEOBot> OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction ) override;
 
 private:
-	CHandle<CBaseEntity> m_hObjective;
+	CHandle<CNEO_Juggernaut> m_hObjective;
 	CountdownTimer m_useAttemptTimer;
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;

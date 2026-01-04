@@ -8,6 +8,7 @@
 #include "bot/behavior/neo_bot_jgr_enemy.h"
 #include "bot/behavior/neo_bot_jgr_capture.h"
 #include "bot/behavior/neo_bot_jgr_juggernaut.h"
+#include "neo_juggernaut.h"
 
 
 //---------------------------------------------------------------------------------------------
@@ -24,6 +25,7 @@ ActionResult< CNEOBot > CNEOBotJgrSeek::Update( CNEOBot *me, float interval )
 		if (iJuggernautPlayer > 0)
 		{
 			CNEO_Player* pJuggernaut = ToNEOPlayer(UTIL_PlayerByIndex(iJuggernautPlayer));
+			Assert( pJuggernaut != me );
 			if (pJuggernaut && pJuggernaut != me && pJuggernaut->IsAlive())
 			{
 				if (pJuggernaut->GetTeamNumber() == me->GetTeamNumber())
@@ -50,7 +52,7 @@ ActionResult< CNEOBot > CNEOBotJgrSeek::Update( CNEOBot *me, float interval )
 	// Juggernaut objective capture logic
 	if (m_bGoingToTargetEntity && m_hTargetEntity)
 	{
-		const float useRangeSq = 100.0f * 100.0f;
+		const float useRangeSq = CNEO_Juggernaut::GetUseDistanceSquared() * 0.8f;
 		if ( me->GetAbsOrigin().DistToSqr( m_hTargetEntity->GetAbsOrigin() ) < useRangeSq ) 
 		{
 			if ( !m_hTargetEntity->IsPlayer() )
@@ -61,7 +63,7 @@ ActionResult< CNEOBot > CNEOBotJgrSeek::Update( CNEOBot *me, float interval )
 
 					if ( FStrEq( classname, "neo_juggernaut" ) )
 					{
-						return SuspendFor( new CNEOBotJgrCapture( m_hTargetEntity ), "Capturing Juggernaut" );
+						return SuspendFor( new CNEOBotJgrCapture( static_cast<CNEO_Juggernaut*>(m_hTargetEntity.Get()) ), "Capturing Juggernaut" );
 					}
 				}
 			}

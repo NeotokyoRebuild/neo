@@ -6,7 +6,7 @@
 #include "neo_juggernaut.h"
 
 //---------------------------------------------------------------------------------------------
-CNEOBotJgrCapture::CNEOBotJgrCapture( CBaseEntity *pObjective )
+CNEOBotJgrCapture::CNEOBotJgrCapture( CNEO_Juggernaut *pObjective )
 {
 	m_hObjective = pObjective;
 }
@@ -81,11 +81,22 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 		return Done( "Became the Juggernaut" );
 	}
 
+	const int iJuggernautPlayer = NEORules()->GetJuggernautPlayer();
+	if ( iJuggernautPlayer > 0 )
+	{
+		CNEO_Player *pJuggernautPlayer = ToNEOPlayer( UTIL_PlayerByIndex( iJuggernautPlayer ) );
+		if ( pJuggernautPlayer && pJuggernautPlayer != me )
+		{
+			return Done( "Juggernaut captured by someone else" );
+		}
+	}
+
 	if ( me->GetAbsOrigin().DistToSqr( m_hObjective->GetAbsOrigin() ) < CNEO_Juggernaut::GetUseDistanceSquared() )
 	{
-		CNEO_Juggernaut *pJuggernaut = static_cast<CNEO_Juggernaut*>(m_hObjective.Get());
+		CNEO_Juggernaut *pJuggernaut = m_hObjective.Get();
 		if ( NEORules()->IsJuggernautLocked() || (pJuggernaut && pJuggernaut->m_bLocked) )
 		{
+			Assert( NEORules()->IsJuggernautLocked() == (pJuggernaut && pJuggernaut->m_bLocked) );
 			me->ReleaseUseButton();
 			return SuspendFor( new CNEOBotRetreatToCover( 2.0f ), "Juggernaut is locked, taking cover to wait for it to unlock" );
 		}
@@ -97,8 +108,8 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 		me->ReleaseLeftButton();
 		me->ReleaseRightButton();
 
-		const Vector vecToTarget = m_hObjective->WorldSpaceCenter() - me->EyePosition();
-		Vector vecToTargetDir = vecToTarget;
+		const Vector vecObjectiveCenter = m_hObjective->WorldSpaceCenter();
+		Vector vecToTargetDir = vecObjectiveCenter - me->EyePosition();
 		vecToTargetDir.NormalizeInPlace();
 
 		// Ensure we are facing the target before attempting to use
@@ -107,7 +118,7 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 		const float flDot = vecEyeDirection.Dot( vecToTargetDir );
 		const bool bIsFacing = flDot > 0.9f;
 
-		me->GetBodyInterface()->AimHeadTowards( m_hObjective->WorldSpaceCenter(), IBody::CRITICAL, 0.1f, NULL, "Looking at Juggernaut objective to use" );
+		me->GetBodyInterface()->AimHeadTowards( vecObjectiveCenter, IBody::CRITICAL, 0.1f, NULL, "Looking at Juggernaut objective to use" );
 
 		if ( m_useAttemptTimer.HasStarted() )
 		{
@@ -116,7 +127,7 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 				return Done( "Use timer elapsed, failed to capture" );
 			}
 		}
-		else if ( me->GetBodyInterface()->IsHeadAimingOnTarget() && bIsFacing )
+		else if ( bIsFacing && me->GetBodyInterface()->IsHeadAimingOnTarget() )
 		{
 			m_useAttemptTimer.Start( CNEO_Juggernaut::GetUseDuration() + 1.0f );
 			me->PressUseButton( CNEO_Juggernaut::GetUseDuration() + 1.0f );

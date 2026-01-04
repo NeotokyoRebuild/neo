@@ -188,18 +188,3 @@ EventDesiredResult< CNEOBot > CNEOBotJgrJuggernaut::OnStuck( CNEOBot *me )
 	return TryContinue();
 }
 
-
-//---------------------------------------------------------------------------------------------
-QueryResultType CNEOBotJgrJuggernaut::ShouldWalk( const CNEOBot *me, const QueryResultType qShouldAimQuery ) const
-{
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	if ( threat && threat->GetEntity() )
-	{
-		// BALC weapon doesn't have an aim mode, so need to walk to allow shooting
-		// Sometimes my primary threat is not the one I am aiming at so just walk to be ready to fire
-		return ANSWER_YES;
-	}
-
-	return ANSWER_UNDEFINED;
-}
-
