@@ -1,5 +1,6 @@
 #pragma once
 
+#include "shareddefs.h"
 #include "tier1/convar.h"
 #include "neo_player_shared.h"
 #include "neo_hud_crosshair.h"
@@ -36,6 +37,12 @@ enum XHairExportNotify
 };
 
 #define NEO_BINDS_TOTAL 96
+
+// Note that this is not necessarily the same as "neo_fov" cvar max value.
+// We are restricted to supporting a max of 90 due to an engine limitation.
+constexpr auto maxSupportedFov = 90;
+static_assert(MIN_FOV <= maxSupportedFov);
+static_assert(MAX_FOV >= maxSupportedFov);
 
 struct NeoSettings
 {
