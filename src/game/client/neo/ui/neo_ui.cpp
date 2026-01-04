@@ -872,6 +872,28 @@ void Pad()
 	BeginWidget();
 }
 
+void Divider()
+{
+	Context::Layout tmp;
+	V_memcpy(&tmp, &c->layout, sizeof(Context::Layout));
+	SetPerRowLayout(1, nullptr, tmp.iRowTall);
+
+	BeginWidget(WIDGETFLAG_SKIPACTIVE);
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
+	{
+		const int iDividerTall = c->iMarginY / 2;
+		const int iCenter = c->rWidgetArea.y0 + ((c->rWidgetArea.y1 - c->rWidgetArea.y0) - iDividerTall) / 2;
+
+		vgui::surface()->DrawSetColor(COLOR_NEOPANELDIVIDER);
+		vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, iCenter,
+										c->rWidgetArea.x1, iCenter + iDividerTall);
+		vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+	}
+	EndWidget(GetMouseinFocusedRet{ true, true });
+
+	SetPerRowLayout(tmp.iRowPartsTotal, tmp.iRowParts, tmp.iRowTall);
+}
+
 void LabelWrap(const wchar_t *wszText)
 {
 	if (!wszText || wszText[0] == '\0')

@@ -329,6 +329,7 @@ struct LabelExOpt
 #define COLOR_NEOPANELNORMALBG Color(0, 0, 0, 170)
 #define COLOR_NEOPANELSELECTBG Color(0, 0, 0, 170)
 #define COLOR_NEOPANELACCENTBG Color(0, 0, 0, 0) // TODO: Why is this invisible now?
+#define COLOR_NEOPANELDIVIDER Color(0, 0, 0, 100)
 #define COLOR_NEOPANELTEXTNORMAL Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
 #define COLOR_NEOPANELTEXTBRIGHT Color(255, 255, 255, 255)
 #define COLOR_NEOPANELPOPUPBG Color(0, 0, 0, 170)
@@ -370,6 +371,7 @@ void EndOverrideFgColor();
 
 // Widgets
 /*1W*/ void Pad();
+/*SW*/ void Divider();
 /*1W*/ void LabelWrap(const wchar_t *wszText);
 /*SW*/ void HeadingLabel(const wchar_t *wszText);
 /*1W*/ void Label(const wchar_t *wszText, const bool bNotWidget = false);

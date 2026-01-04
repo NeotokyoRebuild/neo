@@ -984,10 +984,25 @@ static const wchar_t *EQUIP_UTILITY_PRIORITY_LABELS[NeoSettings::EquipUtilityPri
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
+	NeoUI::Divider();
+	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, MIN_FOV, MAX_FOV);
+	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
+	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
+	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
+	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
+	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
+	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pGeneral->iEquipUtilityPriority);
+
+	NeoUI::Divider();
+	NeoUI::HeadingLabel(L"MAIN MENU");
+	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
+
+	NeoUI::Divider();
+	NeoUI::HeadingLabel(L"MULTIPLAYER");
 	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, MAX_PLAYER_NAME_LENGTH - 1);
 	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, NEO_MAX_CLANTAG_LENGTH - 1);
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
-	NeoUI::RingBoxBool(L"Friendly marker spectator only clantags", &pGeneral->bMarkerSpecOnlyClantag);
+	NeoUI::RingBoxBool(L"Only show clantags when spectator", &pGeneral->bMarkerSpecOnlyClantag);
 
 	wchar_t wszTotalClanAndName[NEO_MAX_DISPLAYNAME];
 	ns->bIsValid = GetClNeoDisplayName(wszTotalClanAndName,
@@ -1006,27 +1021,17 @@ void NeoSettings_General(NeoSettings *ns)
 		NeoUI::EndOverrideFgColor();
 	}
 
-	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, MIN_FOV, MAX_FOV);
-	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
-	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
-	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
-	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
-	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
-	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pGeneral->iEquipUtilityPriority);
-
-	NeoUI::HeadingLabel(L"MAIN MENU");
-	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
-
-	NeoUI::HeadingLabel(L"STREAMER MODE");
+	NeoUI::Pad();
+	NeoUI::Pad();
 	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);
 	NeoUI::RingBoxBool(L"Auto streamer mode (requires restart)", &pGeneral->bAutoDetectOBS);
 	NeoUI::Label(L"OBS detection", g_bOBSDetected ? L"OBS detected on startup" : L"Not detected on startup");
 
-	NeoUI::HeadingLabel(L"DOWNLOADING");
-	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);
+	NeoUI::Pad();
+	NeoUI::Pad();
 	NeoUI::RingBox(L"Download filter", DLFILTER_LABELS, ARRAYSIZE(DLFILTER_LABELS), &pGeneral->iDlFilter);
+	NeoUI::RingBoxBool(L"Show player sprays", &pGeneral->bShowPlayerSprays);
 
-	NeoUI::HeadingLabel(L"SPRAY");
 	if (IsInGame())
 	{
 		NeoUI::HeadingLabel(L"Disconnect to update in-game spray");
@@ -1071,6 +1076,7 @@ void NeoSettings_General(NeoSettings *ns)
 void NeoSettings_Keys(NeoSettings *ns)
 {
 	NeoSettings::Keys *pKeys = &ns->keys;
+	NeoUI::Divider();
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pKeys->bWeaponFastSwitch);
 	NeoUI::RingBoxBool(L"Developer console", &pKeys->bDeveloperConsole);
 	NeoUI::Pad();
@@ -1078,15 +1084,18 @@ void NeoSettings_Keys(NeoSettings *ns)
 	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 	static constexpr const int KEYS_LAYOUT[] = { 40, 30, -1 };
 	NeoUI::SetPerRowLayout(ARRAYSIZE(KEYS_LAYOUT), KEYS_LAYOUT);
-	NeoUI::Label(L"Name");
-	NeoUI::Label(L"Primary");
-	NeoUI::Label(L"Secondary");
+	// NEO TODO DG: These are here to stop the developer console bind bit from breaking.
+	// The binding should be moved into the misc section, not sit on top of the divider
+	NeoUI::Pad();
+	NeoUI::Pad();
+	NeoUI::Pad();
 	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 	for (int i = 0; i < pKeys->iBindsSize; ++i)
 	{
 		const auto &bind = pKeys->vBinds[i];
 		if (bind.szBindingCmd[0] == '\0')
 		{
+			NeoUI::Divider();
 			NeoUI::HeadingLabel(bind.wszDisplayText);
 		}
 		else
@@ -1115,6 +1124,7 @@ void NeoSettings_Keys(NeoSettings *ns)
 void NeoSettings_MouseController(NeoSettings *ns)
 {
 	{
+		NeoUI::Divider();
 		NeoUI::HeadingLabel(L"MOUSE");
 		NeoSettings::Mouse *pMouse = &ns->mouse;
 		NeoUI::Slider(L"Sensitivity", &pMouse->flSensitivity, 0.1f, 10.0f, 2, 0.25f);
@@ -1126,6 +1136,7 @@ void NeoSettings_MouseController(NeoSettings *ns)
 		NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
 	}
 	{
+		NeoUI::Divider();
 		NeoUI::HeadingLabel(L"CONTROLLER");
 		NeoSettings::Controller *pController = &ns->controller;
 		NeoUI::RingBoxBool(L"Enable controller", &pController->bEnabled);
@@ -1142,6 +1153,7 @@ void NeoSettings_MouseController(NeoSettings *ns)
 void NeoSettings_Audio(NeoSettings *ns)
 {
 	NeoSettings::Audio *pAudio = &ns->audio;
+	NeoUI::Divider();
 	NeoUI::Slider(L"Main Volume", &pAudio->flVolMain, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Slider(L"Music Volume", &pAudio->flVolMusic, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Slider(L"Victory Volume", &pAudio->flVolVictory, 0.0f, 1.0f, 2, 0.1f);
@@ -1203,6 +1215,7 @@ static const wchar_t *MSAA_LABELS[] = { L"None", L"2x MSAA", L"4x MSAA", L"6x MS
 void NeoSettings_Video(NeoSettings *ns)
 {
 	NeoSettings::Video *pVideo = &ns->video;
+	NeoUI::Divider();
 	NeoUI::RingBox(L"Resolution", const_cast<const wchar_t **>(pVideo->p2WszVmDispList), pVideo->iVMListSize, &pVideo->iResolution);
 	NeoUI::RingBox(L"Window", WINDOW_MODE, WINDOWMODE__TOTAL, &pVideo->iWindow);
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
@@ -1231,6 +1244,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	const bool bTextured = CROSSHAIR_FILES[pCrosshair->info.iStyle][0];
 	NeoUI::BeginSection(NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
 	{
+		NeoUI::Divider();
 		if (bTextured)
 		{
 			NeoSettings::Crosshair::Texture *pTex = &ns->crosshair.arTextures[pCrosshair->info.iStyle];
@@ -1382,6 +1396,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
 			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE_TOTAL, &pCrosshair->info.iEDynamicType);
 		}
+		NeoUI::Divider();
 		NeoUI::HeadingLabel(L"MISCELLANEOUS");
 		NeoUI::RingBoxBool(L"Show other players' crosshairs", &pCrosshair->bNetworkCrosshair);
 		NeoUI::RingBoxBool(L"Inaccuracy in scope", &pCrosshair->bInaccuracyInScope);
@@ -1406,6 +1421,7 @@ L"Spectator (Xray)"
 void NeoSettings_HUD(NeoSettings* ns)
 {
 	NeoSettings::HUD* pHud = &ns->hud;
+	NeoUI::Divider();
 	NeoUI::HeadingLabel(L"MISCELLANEOUS");
 	NeoUI::RingBoxBool(L"Classic squad list", &pHud->bShowSquadList);
 	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, ARRAYSIZE(HEALTHMODE_LABELS), &pHud->iHealthMode);
@@ -1419,6 +1435,7 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
 
 #ifdef GLOWS_ENABLE
+	NeoUI::Divider();
 	NeoUI::HeadingLabel(L"XRAY");
 	NeoUI::RingBoxBool(L"Enable Xray",  &pHud->bEnableXray);
 	NeoUI::Slider(L"Outline Width", &pHud->flOutlineWidth, 0, 2, 2, 0.25f);
@@ -1426,6 +1443,7 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::Slider(L"Texture Opacity (Cloak highlight)", &pHud->flTexturedOpacity, 0, 1, 2, 0.1f);
 #endif // GLOWS_ENABLE
 
+	NeoUI::Divider();
 	NeoUI::HeadingLabel(L"IFF MARKERS");
 	static int optionChosen = 0;
 
@@ -1457,7 +1475,7 @@ void NeoSettings_HUD(NeoSettings* ns)
 	// NEO TODO (Adam) Show what the marker looks like somewhere here
 
 	FriendlyMarkerInfo *pMarker = &pHud->options[optionChosen];
-	NeoUI::SetPerRowLayout(2);
+	NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 	NeoUI::SliderInt(L"Initial offset", &pMarker->iInitialOffset, -64, 64, 1);
 	NeoUI::RingBoxBool(L"Show distance", &pMarker->bShowDistance);
 	NeoUI::RingBoxBool(L"Verbose distance", &pMarker->bVerboseDistance);
