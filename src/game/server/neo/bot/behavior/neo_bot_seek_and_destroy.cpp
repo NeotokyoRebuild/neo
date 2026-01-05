@@ -5,6 +5,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
+#include "bot/behavior/neo_bot_jgr_seek.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "neo_ghost_cap_point.h"
@@ -51,6 +52,22 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNE
 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interval )
+{
+	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
+	if ( result.IsRequestingChange() || result.IsDone() )
+		return result;
+
+	// Check for Game Type Specific behaviors and suspend for them
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+	{
+		return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
+	}
+
+	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float interval )
 {
 	if ( m_giveUpTimer.HasStarted() && m_giveUpTimer.IsElapsed() )
 	{
