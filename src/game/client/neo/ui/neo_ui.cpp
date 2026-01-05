@@ -135,8 +135,8 @@ void MultiWidgetHighlighter(const int iTotalWidgets)
 	};
 
 	// Mostly so the highlight can apply to multi-widget's labels
-	const bool bMouseIn = IN_BETWEEN_EQ(hightlightRect.x0, c->iMouseAbsX, hightlightRect.x1)
-			&& IN_BETWEEN_EQ(hightlightRect.y0, c->iMouseAbsY, hightlightRect.y1);
+	const bool bMouseIn = IN_BETWEEN_EQ(hightlightRect.x0, c->iMouseAbsX, hightlightRect.x1 - 1)
+			&& IN_BETWEEN_EQ(hightlightRect.y0, c->iMouseAbsY, hightlightRect.y1 - 1);
 	if (bMouseIn)
 	{
 		c->iHot = c->iWidget;
@@ -499,7 +499,7 @@ void BeginSection(const ISectionFlags iSectionFlags)
 
 	c->iMouseRelX = c->iMouseAbsX - c->dPanel.x;
 	c->iMouseRelY = c->iMouseAbsY - c->dPanel.y;
-	c->bMouseInPanel = IN_BETWEEN_EQ(0, c->iMouseRelX, c->dPanel.wide) && IN_BETWEEN_EQ(0, c->iMouseRelY, c->dPanel.tall);
+	c->bMouseInPanel = IN_BETWEEN_EQ(0, c->iMouseRelX, c->dPanel.wide - 1) && IN_BETWEEN_EQ(0, c->iMouseRelY, c->dPanel.tall - 1);
 
 	c->iHasMouseInPanel += c->bMouseInPanel;
 
@@ -812,8 +812,8 @@ GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 	if (eWidgetFlag & WIDGETFLAG_MOUSE)
 	{
 		const bool bNotCurHot = (c->iHotPersist != c->iWidget || c->iHotPersistSection != c->iSection);
-		const bool bMouseIn = IN_BETWEEN_EQ(c->rWidgetArea.x0, c->iMouseAbsX, c->rWidgetArea.x1)
-				&& IN_BETWEEN_EQ(c->rWidgetArea.y0, c->iMouseAbsY, c->rWidgetArea.y1);
+		const bool bMouseIn = IN_BETWEEN_EQ(c->rWidgetArea.x0, c->iMouseAbsX, c->rWidgetArea.x1 - 1)
+				&& IN_BETWEEN_EQ(c->rWidgetArea.y0, c->iMouseAbsY, c->rWidgetArea.y1 - 1);
 		if (bMouseIn)
 		{
 			c->iHot = c->iWidget;
