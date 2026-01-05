@@ -1006,7 +1006,7 @@ void NeoSettings_General(NeoSettings *ns)
 		NeoUI::EndOverrideFgColor();
 	}
 
-	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
+	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, MIN_FOV, MAX_FOV);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
 	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
@@ -1392,15 +1392,15 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 static const wchar_t *IFF_LABELS[] = { L"Squad", 
 #ifdef GLOWS_ENABLE
-L"Squad Xray",
+L"Squad (Xray)",
 #endif // GLOWS_ENABLE
-L"Friendly",
+L"Team",
 #ifdef GLOWS_ENABLE
-L"Friendly Xray",
+L"Team (Xray)",
 #endif // GLOWS_ENABLE
-L"Player",
+L"Spectator",
 #ifdef GLOWS_ENABLE
-L"Player Xray"
+L"Spectator (Xray)"
 #endif // GLOWS_ENABLE
 };
 void NeoSettings_HUD(NeoSettings* ns)
@@ -1418,12 +1418,41 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pHud->bExtendedKillfeed);
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
 
+#ifdef GLOWS_ENABLE
+	NeoUI::HeadingLabel(L"XRAY");
+	NeoUI::RingBoxBool(L"Enable Xray",  &pHud->bEnableXray);
+	NeoUI::Slider(L"Outline Width", &pHud->flOutlineWidth, 0, 2, 2, 0.25f);
+	NeoUI::Slider(L"Center Opacity", &pHud->flCenterOpacity, 0, 1, 2, 0.1f);
+	NeoUI::Slider(L"Texture Opacity (Cloak highlight)", &pHud->flTexturedOpacity, 0, 1, 2, 0.1f);
+#endif // GLOWS_ENABLE
+
 	NeoUI::HeadingLabel(L"IFF MARKERS");
 	static int optionChosen = 0;
-	NeoUI::SetPerRowLayout(ARRAYSIZE(IFF_LABELS));
+
+	NeoUI::SetPerRowLayout(
+#ifdef GLOWS_ENABLE
+		pHud->bEnableXray ? 
+#endif // GLOWS_ENABLE
+		ARRAYSIZE(IFF_LABELS) 
+#ifdef GLOWS_ENABLE
+		: ARRAYSIZE(IFF_LABELS) / 2
+#endif // GLOWS_ENABLE
+	);
+
+	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 	for (int i = 0; i < ARRAYSIZE(IFF_LABELS); i++) {
-		if (NeoUI::Button(IFF_LABELS[i]).bPressed) { optionChosen = i; }
+#ifdef GLOWS_ENABLE
+		const bool bIsXrayTab = (i % 2) == 1;
+
+		if (!(bIsXrayTab && !pHud->bEnableXray))
+		{
+#endif // GLOWS_ENABLE
+			if (NeoUI::Button(IFF_LABELS[i]).bPressed) { optionChosen = i; }
+#ifdef GLOWS_ENABLE
+		}
+#endif // GLOWS_ENABLE
 	}
+	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 
 	// NEO TODO (Adam) Show what the marker looks like somewhere here
 
@@ -1439,12 +1468,4 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::RingBoxBool(L"Show name", &pMarker->bShowName);
 	NeoUI::RingBoxBool(L"Prepend clantag", &pMarker->bPrependClantagToName);
 	NeoUI::SliderInt(L"Max name length (including clantag)", &pMarker->iMaxNameLength, 0, MAX_MARKER_STRSIZE, 1);
-
-#ifdef GLOWS_ENABLE
-	NeoUI::HeadingLabel(L"Player Xray");
-	NeoUI::RingBoxBool(L"Enable Xray",  &pHud->bEnableXray);
-	NeoUI::Slider(L"Outline Width", &pHud->flOutlineWidth, 0, 2, 2, 0.25f);
-	NeoUI::Slider(L"Center Opacity", &pHud->flCenterOpacity, 0, 1, 2, 0.1f);
-	NeoUI::Slider(L"Texture Opacity (Cloak highlight)", &pHud->flTexturedOpacity, 0, 1, 2, 0.1f);
-#endif // GLOWS_ENABLE
 }

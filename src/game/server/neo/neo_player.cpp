@@ -186,8 +186,11 @@ void CNEO_Player::RequestSetClass(int newClass)
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 		InitSprinting();
 		RemoveAllItems(false);
-		GiveDefaultItems();
-		RequestSetLoadout(0);
+		if (NEORules()->GetGameType() != NEO_GAME_TYPE_TUT)
+		{
+			GiveDefaultItems();
+			RequestSetLoadout(0);
+		}
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
 		SetMaxHealth(MAX_HEALTH_FOR_CLASS[newClass]);
 		SetHealth(GetMaxHealth());
@@ -706,7 +709,7 @@ void CNEO_Player::CheckVisionButtons()
 
 void CNEO_Player::CheckLeanButtons()
 {
-	if (!IsAlive())
+	if (!IsAlive() || GetFlags() & FL_FROZEN)
 	{
 		return;
 	}
@@ -1017,7 +1020,7 @@ void CNEO_Player::PreThink(void)
 		m_flCamoAuxLastTime = 0;
 	}
 
-	if (IsAlive() || m_vecLean != vec3_origin)
+	if ((IsAlive() && !(GetFlags() & FL_FROZEN)) || m_vecLean != vec3_origin)
 	{
 		Lean();
 	}
@@ -1443,10 +1446,14 @@ void CNEO_Player::SuperJump(void)
 	ApplyAbsVelocityImpulse(forward * boostIntensity);
 }
 
-bool CNEO_Player::IsAllowedToSuperJump(void)
+bool CNEO_Player::IsAllowedToSuperJump(bool isBot)
 {
-	if (!IsSprinting())
-		return false;
+	// NEOJANK: Bots are exempt from certain checks due to their their erratic input control
+	if (!isBot)
+	{
+		if (!IsSprinting())
+			return false;
+	}
 
 	if (IsCarryingGhost())
 		return false;

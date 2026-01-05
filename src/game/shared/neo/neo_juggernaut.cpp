@@ -15,6 +15,16 @@
 
 LINK_ENTITY_TO_CLASS(neo_juggernaut, CNEO_Juggernaut);
 
+float CNEO_Juggernaut::GetUseDuration()
+{
+	return USE_DURATION;
+}
+
+float CNEO_Juggernaut::GetUseDistanceSquared()
+{
+	return USE_DISTANCE_SQUARED;
+}
+
 #ifdef GAME_DLL
 IMPLEMENT_SERVERCLASS_ST(CNEO_Juggernaut, DT_NEO_Juggernaut)
 	SendPropBool(SENDINFO(m_bLocked)),
@@ -42,6 +52,16 @@ BEGIN_DATADESC(CNEO_Juggernaut)
 	DEFINE_OUTPUT(m_OnPlayerActivate, "OnPlayerActivate")
 #endif
 END_DATADESC()
+
+#ifdef GAME_DLL
+CNEO_Juggernaut::~CNEO_Juggernaut()
+{
+	if (m_hPush.Get())
+	{
+		m_hPush->Remove();
+	}
+}
+#endif
 
 void CNEO_Juggernaut::UpdateOnRemove()
 {
@@ -83,6 +103,7 @@ void CNEO_Juggernaut::Spawn(void)
 		ExplosionCreate(explOrigin, GetAbsAngles(), this, 0, 128, SF_ENVEXPLOSION_NODAMAGE);
 		SetPlaybackRate(-m_flWarpedPlaybackRate);
 		SetCycle(1.0f);
+		SetContextThink(&CNEO_Juggernaut::DisableSoftCollisionsThink, gpGlobals->curtime + TICK_INTERVAL, "SoftCollisionsThink");
 	}
 	else
 	{
@@ -92,8 +113,8 @@ void CNEO_Juggernaut::Spawn(void)
 	SetMoveType(MOVETYPE_STEP);
 	SetSolid(SOLID_BBOX);
 	UTIL_SetSize(this, VEC_HULL_MIN, VEC_HULL_MAX); // Needs to be equal or smaller than the player's girth to avoid getting stuck
-	SetCollisionGroup(COLLISION_GROUP_PLAYER); // Behave like a player, make the transition seamless
 	SetFriction(100.0);
+	SetSoftCollision(false);
 
 	m_textParms.channel = 0;
 	m_textParms.x = 0.42;
@@ -128,6 +149,7 @@ void CNEO_Juggernaut::Spawn(void)
 	SetThink(&CNEO_Juggernaut::Think);
 	SetNextThink(TICK_NEVER_THINK);
 	SetContextThink(&CNEO_Juggernaut::AnimThink, gpGlobals->curtime + TICK_INTERVAL, "AnimThink");
+	SetContextThink(&CNEO_Juggernaut::MakePushThink, gpGlobals->curtime + TICK_INTERVAL, "MakePushThink");
 
 	BaseClass::Spawn();
 }
@@ -206,6 +228,61 @@ void CNEO_Juggernaut::Think(void)
 	SetNextThink(gpGlobals->curtime + 0.1f);
 }
 
+void CNEO_Juggernaut::MakePushThink()
+{
+	if (IsMarkedForDeletion()) return;
+
+	constexpr const char* pushEnt = "point_push";
+
+	if (m_hPush.Get())
+	{
+		AssertMsg2(false, "%s already exists; called %s multiply?", pushEnt, __FUNCTION__);
+		return;
+	}
+
+	if (!(m_hPush = CreateEntityByName(pushEnt)))
+	{
+		Warning("%s: Failed to create %s\n", __FUNCTION__, pushEnt);
+		return;
+	}
+
+	constexpr auto SF_PUSH_TEST_LOS = 0x0001, SF_PUSH_PLAYER = 0x0008;
+	m_hPush->AddSpawnFlags(SF_PUSH_TEST_LOS | SF_PUSH_PLAYER);
+
+	if (!m_hPush->KeyValue("magnitude", 200.f)) Assert(false);
+	const float radius = BoundingRadius();
+	if (!m_hPush->KeyValue("radius", radius)) Assert(false);
+	// inner_radius used for LOS calculations, so we don't push players through thin walls
+	if (!m_hPush->KeyValue("inner_radius", 0.5f * radius)) Assert(false);
+
+	m_hPush->Spawn();
+	m_hPush->SetAbsOrigin(WorldSpaceCenter());
+	m_hPush->SetParent(this);
+	m_hPush->Activate();
+	SetSoftCollision(m_bPostDeath);
+}
+
+void CNEO_Juggernaut::DisableSoftCollisionsThink()
+{
+	if (IsMarkedForDeletion()) return;
+
+	CBaseEntity* ent;
+	for (CEntitySphereQuery sphere(WorldSpaceCenter(), BoundingRadius(), FL_CLIENT | FL_FAKECLIENT | FL_NPC);
+		(ent = sphere.GetCurrentEntity());
+		sphere.NextEntity())
+	{
+		auto* combatChar = assert_cast<CBaseCombatCharacter*>(ent);
+		if (!combatChar || !combatChar->IsAlive()) continue;
+		// As long as there's a living player inside my collider, I can't go into "hard" player-blocking collisions mode
+		// because they would get stuck. Try again later to see if they've moved.
+		SetContextThink(&CNEO_Juggernaut::DisableSoftCollisionsThink, gpGlobals->curtime + 1.f, "SoftCollisionsThink");
+		return;
+	}
+
+	// There's no stray players clipping inside the JGR currently, so we can go solid.
+	SetSoftCollision(false);
+}
+
 void CNEO_Juggernaut::HoldCancel(void)
 {
 	if (m_hPlayer)
@@ -224,6 +301,26 @@ void CNEO_Juggernaut::AnimThink(void) // Required for server controlled animatio
 {
 	StudioFrameAdvance();
 	SetContextThink(&CNEO_Juggernaut::AnimThink, gpGlobals->curtime + TICK_INTERVAL, "AnimThink");
+}
+
+void CNEO_Juggernaut::SetSoftCollision(bool soft)
+{
+	// The collision mode to use when the JGR objective is solid and uncontrolled in the world.
+	constexpr auto HARD_COLLISION = COLLISION_GROUP_VEHICLE;
+
+	// The collision mode after the death explosion. Nearby players might be clipping inside the prop,
+	// so we do a soft collision until it's confirmed no one's clipping anymore, so they don't get stuck.
+	constexpr auto SOFT_COLLISION = COLLISION_GROUP_PLAYER;
+
+	if (m_hPush.Get()) // Gotta have the soft collisions entity created and ready in order to do this
+	{
+		SetCollisionGroup(soft ? SOFT_COLLISION : HARD_COLLISION);
+		m_hPush->AcceptInput(soft ? "Enable" : "Disable", this, this, variant_t{}, 0);
+	}
+	else
+	{
+		SetCollisionGroup(HARD_COLLISION);
+	}
 }
 #endif
 

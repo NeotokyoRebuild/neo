@@ -729,6 +729,7 @@ void CNEORules::ResetMapSessionCommon()
 	m_vecPreviousJuggernautSpawn = vec3_origin;
 	m_pJuggernautItem = nullptr;
 	m_pJuggernautPlayer = nullptr;
+	m_bGotMatchWinner = false;
 #endif
 }
 
@@ -1187,7 +1188,21 @@ void CNEORules::Think(void)
 		// Else if it's time to start the next round
 		else if (gpGlobals->curtime >= m_flNeoNextRoundStartTime)
 		{
-			StartNextRound();
+			if (m_bGotMatchWinner)
+			{
+				if (sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
+				{
+					ResetMapSessionCommon();
+				}
+				else
+				{
+					GoToIntermission();
+				}
+			}
+			else
+			{
+				StartNextRound();
+			}
 		}
 
 		return;
@@ -3428,7 +3443,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			if (winningTeam->GetRoundsWon() >= neo_score_limit.GetInt())
 			{
 				V_sprintf_safe(victoryMsg, "Team %s wins the match!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-				m_flNeoNextRoundStartTime = FLT_MAX;
 				gotMatchWinner = true;
 			}
 		}
@@ -3617,15 +3631,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 	if (gotMatchWinner)
 	{
-		if (sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
-		{
-			ResetMapSessionCommon();
-		}
-		else
-		{
-			GoToIntermission();
-		}
-
 		IGameEvent *event = gameeventmanager->CreateEvent("game_end");
 		if (event)
 		{
@@ -3633,6 +3638,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			gameeventmanager->FireEvent(event);
 		}
 	}
+	m_bGotMatchWinner = gotMatchWinner;
 }
 #endif
 
@@ -4442,6 +4448,13 @@ bool CNEORules::IsOfficialMap(void)
 	}
 
 	return false;
+}
+
+void CNEORules::MarkAchievement( IRecipientFilter& filter, char const *pchAchievementName )
+{
+	UserMessageBegin( filter, "AchievementMark" );
+		WRITE_STRING( pchAchievementName );
+	MessageEnd();
 }
 
 void CNEORules::InitDefaultAIRelationships( void )

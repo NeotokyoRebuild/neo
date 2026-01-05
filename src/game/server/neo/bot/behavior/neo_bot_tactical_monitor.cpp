@@ -12,14 +12,17 @@
 
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
+#include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
 #endif
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
+#include "neo/neo_player_shared.h"
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
+ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -171,6 +174,88 @@ void CNEOBotTacticalMonitor::AvoidBumpingEnemies( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
+void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
+{
+	CNEO_Player *pNeoMe = ToNEOPlayer(me);
+	if ( !pNeoMe || pNeoMe->GetClass() != NEO_CLASS_RECON )
+	{
+		return;
+	}
+
+	if ( gpGlobals->curtime - pNeoMe->GetLastDamageTime() > 2.0f )
+	{
+		// Not in immediate danger
+		// NEO Jank: We don't check threats because a bot can be attacked by a non-primary threat
+		// Damage taken tends to be a better indicator for immediate danger
+		return;
+	}
+
+	// Check that bot isn't only moving sideways which wastes aux power
+	// Also determines a direction to jump towards
+	// NEO Jank: We don't check sprint here because bots don't anticipate using sprint in a smart manner
+	if ( ( pNeoMe->m_nButtons & ( IN_FORWARD | IN_BACK ) ) == 0 )
+	{
+		// Remove this check if we add sideways super jump in the future
+		return;
+	}
+
+	if (!pNeoMe->IsAllowedToSuperJump(/*isBot*/ true))
+	{
+		return;
+	}
+
+	// NEO Jank: We allow bots to super jump even if they didn't perform the prerequisite inputs
+	// For example, they don't consistently hold sprint when it's appropriate so we just boost their speed
+	me->GetLocomotionInterface()->Run();
+	me->PressRunButton();
+	me->GetLocomotionInterface()->Jump();
+	me->PressJumpButton();
+	me->SuperJump();
+}
+
+
+//-----------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForGrenades( CNEOBot *me )
+{
+	const float flGrenadeCheckRadius = neo_bot_grenade_check_radius.GetFloat();
+	CBaseEntity *closestThreat = NULL;
+	const char *pszGrenadeClass = "neo_grenade_frag";
+	
+	int iSound = CSoundEnt::ActiveList();
+	while ( iSound != SOUNDLIST_EMPTY )
+	{
+		CSound *pSound = CSoundEnt::SoundPointerForIndex( iSound );
+		if ( !pSound )
+			break;
+
+		if ( (pSound->SoundType() & SOUND_DANGER) && pSound->ValidateOwner() )
+		{
+			float distSqr = ( pSound->GetSoundOrigin() - me->GetAbsOrigin() ).LengthSqr();
+			if ( distSqr <= (flGrenadeCheckRadius * flGrenadeCheckRadius) )
+			{
+				CBaseEntity *pOwner = pSound->m_hOwner.Get();
+				if ( pOwner && FClassnameIs( pOwner, pszGrenadeClass ) )
+				{
+					// Found a dangerous grenade
+					closestThreat = pOwner;
+					break;
+				}
+			}
+		}
+
+		iSound = pSound->NextSound();
+	}
+
+	if ( closestThreat )
+	{
+		return SuspendFor( new CNEOBotRetreatFromGrenade( closestThreat ), "Fleeing from grenade!" );
+	}
+
+	return Continue();
+}
+
+
+//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
 	if ( neo_bot_force_jump.GetBool() )
@@ -179,6 +264,14 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		{
 			me->GetLocomotionInterface()->Jump();
 		}
+	}
+
+	ReconConsiderSuperJump( me );
+
+	ActionResult< CNEOBot > result = WatchForGrenades( me );
+	if ( result.IsRequestingChange() )
+	{
+		return result;
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();

@@ -5,6 +5,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
+#include "bot/behavior/neo_bot_jgr_seek.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "neo_ghost_cap_point.h"
@@ -52,6 +53,22 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNE
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interval )
 {
+	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
+	if ( result.IsRequestingChange() || result.IsDone() )
+		return result;
+
+	// Check for Game Type Specific behaviors and suspend for them
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+	{
+		return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
+	}
+
+	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float interval )
+{
 	if ( m_giveUpTimer.HasStarted() && m_giveUpTimer.IsElapsed() )
 	{
 		return Done( "Behavior duration elapsed" );
@@ -85,40 +102,7 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		me->DisableCloak();
 
 		// Reload when safe
-		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
-		if (myWeapon && myWeapon->GetPrimaryAmmoCount() > 0)
-		{
-			bool shouldReload = false;
-			// SUPA7 reload doesn't discard ammo
-			if ((myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
-			{
-				shouldReload = true;
-			}
-			else
-			{
-				int maxClip = myWeapon->GetMaxClip1();
-				bool isBarrage = me->IsBarrageAndReloadWeapon(myWeapon);
-
-				int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
-
-				float aggressionFactor = 1.0f - me->HealthFraction();
-
-				float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
-
-				if (myWeapon->Clip1() < static_cast<int>(dynamicThreshold))
-				{
-					shouldReload = true;
-				}
-			}
-
-			if (shouldReload)
-			{
-				me->ReleaseFireButton();
-				me->PressReloadButton();
-				me->PressCrouchButton(0.3f);
-			}
-
-		}
+		me->ReloadIfLowClip();
 	}
 
 	// move towards our seek goal

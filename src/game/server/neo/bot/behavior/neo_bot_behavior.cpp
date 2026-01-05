@@ -18,7 +18,6 @@ ConVar neo_bot_path_lookahead_range( "neo_bot_path_lookahead_range", "300" );
 ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT );
 ConVar neo_bot_sniper_aim_steady_rate( "neo_bot_sniper_aim_steady_rate", "10", FCVAR_CHEAT );
 ConVar neo_bot_debug_sniper( "neo_bot_debug_sniper", "0", FCVAR_CHEAT );
-ConVar neo_bot_fire_weapon_min_time( "neo_bot_fire_weapon_min_time", "1", FCVAR_CHEAT );
 ConVar neo_bot_fire_at_breakable_weapon_min_time( "neo_bot_fire_at_breakable_weapon_min_time", "0.4", FCVAR_CHEAT, "Minimum time to fire at breakables", true, 0.0f, true, 60.0f );
 
 ConVar neo_bot_notice_backstab_chance( "neo_bot_notice_backstab_chance", "25", FCVAR_CHEAT );
@@ -70,6 +69,16 @@ ActionResult< CNEOBot >	CNEOBotMainAction::OnStart( CNEOBot *me, Action< CNEOBot
 ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 {
 	VPROF_BUDGET( "CNEOBotMainAction::Update", "NextBot" );
+
+	// If bot is already dead at this point, make sure it's dead.
+	// This check prevents the main behavior loop from executing on dead bots, which can happen
+	// if a bot dies during a frame or enters an invalid state like Observer mode.
+	// Executing main behavior (like looking for enemies or navigating) on a dead/observer bot
+	// can lead to crashes due to invalid entity state or accessing components that shouldn't be accessed.
+	if ( !me->IsAlive() )
+	{
+		return ChangeTo( new CNEOBotDead, "I'm actually dead" );
+	}
 
 	// TEAM_UNASSIGNED -> deathmatch
 	if ( me->GetTeamNumber() != TEAM_JINRAI && me->GetTeamNumber() != TEAM_NSF && me->GetTeamNumber() != TEAM_UNASSIGNED )
@@ -680,6 +689,9 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			vShootablePos = threat->GetEntity()->GetAbsOrigin();
 			if ( !me->IsLineOfFireClear( vShootablePos, lofFlags ) )
 			{
+				// reduce firing at walls after our target ducks behind cover
+				// also reduces firing through friendlies if they cross our line of fire
+				me->ReleaseFireButton();
 				return;
 			}
 		}
@@ -761,7 +773,15 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 		if ( me->IsCombatWeapon( myWeapon ) )
 		{
-			if (myWeapon->m_iClip1 <= 0)
+			if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
+			{
+				// Minimum viable firing BALC
+				// TODO: Proper heat management for higher difficulty bots
+				me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
+				me->PressFireButton(GetFireDurationByDifficulty(me));
+				return;
+			}
+			else if (myWeapon->m_iClip1 <= 0)
 			{
 				me->EnableCloak(3.0f);
 				me->PressCrouchButton(0.3f);
@@ -795,7 +815,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			if ( me->IsContinuousFireWeapon( myWeapon ) )
 			{
 				// spray for a bit
-				me->PressFireButton( neo_bot_fire_weapon_min_time.GetFloat() );
+				me->PressFireButton( GetFireDurationByDifficulty( me ) );
 			}
 			else 
 			{
@@ -836,6 +856,24 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			}
 		}
 	}
+}
+
+
+//---------------------------------------------------------------------------------------------
+/**
+ * Returns fire duration based on difficulty where harder bots waste less ammo spraying
+ */
+float CNEOBotMainAction::GetFireDurationByDifficulty(CNEOBot* me) const
+{
+	switch (me->GetDifficulty())
+	{
+		case CNEOBot::EASY:		return 0.5f;
+		case CNEOBot::NORMAL:	return 0.4f;
+		case CNEOBot::HARD:		return 0.3f;
+		case CNEOBot::EXPERT:	return 0.2f;
+	}
+
+	return 0.4f;
 }
 
 
