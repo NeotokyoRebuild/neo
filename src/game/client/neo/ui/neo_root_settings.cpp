@@ -993,12 +993,10 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
 	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pGeneral->iEquipUtilityPriority);
 
-	NeoUI::Divider();
-	NeoUI::HeadingLabel(L"MAIN MENU");
+	NeoUI::Divider(L"MAIN MENU");
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
 
-	NeoUI::Divider();
-	NeoUI::HeadingLabel(L"MULTIPLAYER");
+	NeoUI::Divider(L"MULTIPLAYER");
 	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, MAX_PLAYER_NAME_LENGTH - 1);
 	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, NEO_MAX_CLANTAG_LENGTH - 1);
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
@@ -1095,8 +1093,7 @@ void NeoSettings_Keys(NeoSettings *ns)
 		const auto &bind = pKeys->vBinds[i];
 		if (bind.szBindingCmd[0] == '\0')
 		{
-			NeoUI::Divider();
-			NeoUI::HeadingLabel(bind.wszDisplayText);
+			NeoUI::Divider(bind.wszDisplayText);
 		}
 		else
 		{
@@ -1124,8 +1121,7 @@ void NeoSettings_Keys(NeoSettings *ns)
 void NeoSettings_MouseController(NeoSettings *ns)
 {
 	{
-		NeoUI::Divider();
-		NeoUI::HeadingLabel(L"MOUSE");
+		NeoUI::Divider(L"MOUSE");
 		NeoSettings::Mouse *pMouse = &ns->mouse;
 		NeoUI::Slider(L"Sensitivity", &pMouse->flSensitivity, 0.1f, 10.0f, 2, 0.25f);
 		NeoUI::Slider(L"Zoom Sensitivity Ratio", &pMouse->flZoomSensitivityRatio, 0.f, 10.0f, 2, 0.25f);
@@ -1136,8 +1132,7 @@ void NeoSettings_MouseController(NeoSettings *ns)
 		NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
 	}
 	{
-		NeoUI::Divider();
-		NeoUI::HeadingLabel(L"CONTROLLER");
+		NeoUI::Divider(L"CONTROLLER");
 		NeoSettings::Controller *pController = &ns->controller;
 		NeoUI::RingBoxBool(L"Enable controller", &pController->bEnabled);
 		if (pController->bEnabled)
@@ -1396,8 +1391,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
 			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE_TOTAL, &pCrosshair->info.iEDynamicType);
 		}
-		NeoUI::Divider();
-		NeoUI::HeadingLabel(L"MISCELLANEOUS");
+		NeoUI::Divider(L"MISCELLANEOUS");
 		NeoUI::RingBoxBool(L"Show other players' crosshairs", &pCrosshair->bNetworkCrosshair);
 		NeoUI::RingBoxBool(L"Inaccuracy in scope", &pCrosshair->bInaccuracyInScope);
 		NeoUI::RingBoxBool(L"Hip fire crosshair", &pCrosshair->bHipFireCrosshair);
@@ -1421,8 +1415,7 @@ L"Spectator (Xray)"
 void NeoSettings_HUD(NeoSettings* ns)
 {
 	NeoSettings::HUD* pHud = &ns->hud;
-	NeoUI::Divider();
-	NeoUI::HeadingLabel(L"MISCELLANEOUS");
+	NeoUI::Divider(L"MISCELLANEOUS");
 	NeoUI::RingBoxBool(L"Classic squad list", &pHud->bShowSquadList);
 	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, ARRAYSIZE(HEALTHMODE_LABELS), &pHud->iHealthMode);
 	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pHud->iObjVerbosity);
@@ -1435,16 +1428,14 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
 
 #ifdef GLOWS_ENABLE
-	NeoUI::Divider();
-	NeoUI::HeadingLabel(L"XRAY");
+	NeoUI::Divider(L"XRAY");
 	NeoUI::RingBoxBool(L"Enable Xray",  &pHud->bEnableXray);
 	NeoUI::Slider(L"Outline Width", &pHud->flOutlineWidth, 0, 2, 2, 0.25f);
 	NeoUI::Slider(L"Center Opacity", &pHud->flCenterOpacity, 0, 1, 2, 0.1f);
 	NeoUI::Slider(L"Texture Opacity (Cloak highlight)", &pHud->flTexturedOpacity, 0, 1, 2, 0.1f);
 #endif // GLOWS_ENABLE
 
-	NeoUI::Divider();
-	NeoUI::HeadingLabel(L"IFF MARKERS");
+	NeoUI::Divider(L"IFF MARKERS");
 	static int optionChosen = 0;
 
 	NeoUI::SetPerRowLayout(

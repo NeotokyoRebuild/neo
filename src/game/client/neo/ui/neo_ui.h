@@ -371,7 +371,7 @@ void EndOverrideFgColor();
 
 // Widgets
 /*1W*/ void Pad();
-/*SW*/ void Divider();
+/*SW*/ void Divider(const wchar_t *wszText = nullptr);
 /*1W*/ void LabelWrap(const wchar_t *wszText);
 /*SW*/ void HeadingLabel(const wchar_t *wszText);
 /*1W*/ void Label(const wchar_t *wszText, const bool bNotWidget = false);
