@@ -31,6 +31,8 @@ public:
 	void	Spawn(void);
     void	Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
+	virtual int UpdateTransmitState() override;
+
 	bool	m_bPostDeath = false;
 #endif
 
@@ -59,6 +61,7 @@ private:
 	float m_flWarpedPlaybackRate;
 	float m_flHoldStartTime = 0.0f;
 	bool m_bIsHolding = false;
+	bool m_bActivationRemoval = false;
 
 	hudtextparms_t	m_textParms;
 	COutputEvent m_OnPlayerActivate;

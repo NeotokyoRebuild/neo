@@ -3397,6 +3397,12 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 	if (IsCarryingGhost())
 		return FL_EDICT_ALWAYS;
 
+	// The Juggernaut position is always displayed on the compass
+	// Don't just check the player class here. We need THE juggernaut
+	// or else we could end up networking JGR players when we dont need to
+	if (NEORules()->GetJuggernautPlayer() == entindex())
+		return FL_EDICT_ALWAYS;
+
 	const auto* otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
 
 	if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||

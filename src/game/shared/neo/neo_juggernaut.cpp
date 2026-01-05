@@ -1,4 +1,5 @@
 #include "neo_juggernaut.h"
+#include "neo_gamerules.h"
 #ifdef GAME_DLL
 #include "engine/IEngineSound.h"
 #include "explode.h"
@@ -66,6 +67,12 @@ CNEO_Juggernaut::~CNEO_Juggernaut()
 void CNEO_Juggernaut::UpdateOnRemove()
 {
 	StopSound("HUD.CPCharge");
+#ifdef GAME_DLL
+	if (!m_bActivationRemoval)
+	{
+		NEORules()->JuggernautTotalRemoval(this);
+	}
+#endif
 	BaseClass::UpdateOnRemove();
 }
 
@@ -215,11 +222,12 @@ void CNEO_Juggernaut::Think(void)
 		m_hPlayer->CreateRagdollEntity();
 		m_hPlayer->Weapon_DropAllOnDeath(CTakeDamageInfo(this, this, 0, DMG_GENERIC));
 		m_hPlayer->Teleport(&GetAbsOrigin(), &GetAbsAngles(), &vec3_origin);
-		m_hPlayer->SnapEyeAngles(GetAbsAngles());
 
 		m_hPlayer->BecomeJuggernaut();
 
 		m_OnPlayerActivate.FireOutput(m_hPlayer, this);
+
+		m_bActivationRemoval = true;
 		UTIL_Remove(this);
 
 		return;
@@ -321,6 +329,11 @@ void CNEO_Juggernaut::SetSoftCollision(bool soft)
 	{
 		SetCollisionGroup(HARD_COLLISION);
 	}
+}
+
+int CNEO_Juggernaut::UpdateTransmitState()
+{
+	return SetTransmitState(FL_EDICT_ALWAYS);
 }
 #endif
 
