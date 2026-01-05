@@ -60,13 +60,12 @@ struct NeoSettings
 		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH];
 		bool bOnlySteamNick;
 		bool bMarkerSpecOnlyClantag;
-		int iFov;
-		int iViewmodelFov;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
 		int iLeanAutomatic;
 		int iEquipUtilityPriority;
+		bool bWeaponFastSwitch;
 		bool bShowPlayerSprays;
 		int iDlFilter;
 		bool bStreamerMode;
@@ -77,7 +76,6 @@ struct NeoSettings
 
 	struct Keys
 	{
-		bool bWeaponFastSwitch;
 		bool bDeveloperConsole;
 
 		struct Bind
@@ -158,6 +156,8 @@ struct NeoSettings
 		bool bMotionBlur;
 		int iHDR;
 		float flGamma;
+		int iFov;
+		int iViewmodelFov;
 
 		// Video modes
 		int iVMListSize;
