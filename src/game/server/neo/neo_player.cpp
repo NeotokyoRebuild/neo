@@ -45,13 +45,13 @@
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
-SendPropInt(SENDINFO(m_iNeoClass), NumBitsForRange(NEO_CLASS_RANDOM, NEO_CLASS_ENUM_COUNT)),
+SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin), NumBitsForCount(NEO_SKIN_ENUM_COUNT), SPROP_UNSIGNED),
 SendPropInt(SENDINFO(m_iNeoStar), NumBitsForCount(STAR__TOTAL), SPROP_UNSIGNED),
-SendPropInt(SENDINFO(m_iClassBeforeTakeover), NumBitsForRange(NEO_CLASS_RANDOM, NEO_CLASS_ENUM_COUNT)),
-SendPropInt(SENDINFO(m_iXP), NumBitsForRange(XP_ANY, XP_EMPTY)),
+SendPropInt(SENDINFO(m_iClassBeforeTakeover)),
+SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice), NumBitsForCount(MAX_WEAPON_LOADOUTS), SPROP_UNSIGNED),
-SendPropInt(SENDINFO(m_iNextSpawnClassChoice), NumBitsForRange(NEO_CLASS_RANDOM, NEO_CLASS_ENUM_COUNT)),
+SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean), NumBitsForCount(NEO_LEAN_ENUM_COUNT), SPROP_UNSIGNED),
 SendPropEHandle(SENDINFO(m_hServerRagdoll)),
 
