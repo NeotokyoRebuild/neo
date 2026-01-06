@@ -93,6 +93,9 @@ BEGIN_DATADESC( CEnvSoundscape )
 	DEFINE_INPUTFUNC( FIELD_VOID, "Enable", InputEnable ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "Disable", InputDisable ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "ToggleEnabled", InputToggleEnabled ),
+#ifdef NEO
+	DEFINE_INPUTFUNC( FIELD_VOID, "PlaySoundscape", InputPlaySoundscape ),
+#endif
 
 	DEFINE_OUTPUT( m_OnPlay, "OnPlay" ),
 
@@ -140,6 +143,17 @@ void CEnvSoundscape::InputToggleEnabled( inputdata_t &inputdata )
 		Enable();
 	}
 }
+
+#ifdef NEO
+void CEnvSoundscape::InputPlaySoundscape( inputdata_t &inputdata )
+{
+	auto pPlayer = ToBasePlayer( inputdata.pActivator );
+	if ( pPlayer )
+	{
+		WriteAudioParamsTo( pPlayer->GetAudioParams() );
+	}
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Returns whether the laser is currently active.
