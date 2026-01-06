@@ -91,6 +91,9 @@ public:
 
 	float			m_FallSpeed;	// extra 'gravity'
 
+#ifdef NEO
+	bool			m_bAffectedByWind;
+#endif
 
 public:
 

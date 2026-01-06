@@ -58,6 +58,9 @@ public:
 
 	CNetworkVar( float, m_FallSpeed );
 
+#ifdef NEO
+	CNetworkVar( bool, m_bAffectedByWind );
+#endif
 public:
 
 	CNetworkVar( int, m_DustFlags );	// Combination of DUSTFLAGS_
@@ -92,6 +95,9 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CFunc_Dust, DT_Func_Dust )
 	SendPropInt( SENDINFO(m_LifetimeMin), 4, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO(m_LifetimeMax), 4, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO(m_DustFlags), DUST_NUMFLAGS, SPROP_UNSIGNED ),
+#ifdef NEO
+	SendPropBool( SENDINFO(m_bAffectedByWind) ),
+#endif
 
 	SendPropModelIndex( SENDINFO(m_nModelIndex) ),
 	SendPropFloat( SENDINFO(m_FallSpeed), 0, SPROP_NOSCALE ),
@@ -113,6 +119,9 @@ BEGIN_DATADESC( CFunc_Dust )
 	DEFINE_KEYFIELD( m_DistMax,		FIELD_INTEGER,	"DistMax" ),
 	DEFINE_FIELD( m_iAlpha,			FIELD_INTEGER ),
 	DEFINE_KEYFIELD( m_FallSpeed,	FIELD_FLOAT,	"FallSpeed" ),
+#ifdef NEO
+	DEFINE_KEYFIELD( m_bAffectedByWind, FIELD_BOOLEAN, "AffectedByWind" ),
+#endif
 
 	DEFINE_INPUTFUNC( FIELD_VOID, "TurnOn",  InputTurnOn ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "TurnOff", InputTurnOff )
@@ -143,6 +152,9 @@ CFunc_Dust::CFunc_Dust()
 {
 	m_DustFlags = DUSTFLAGS_ON;
 	m_FallSpeed = 0.0f;
+#ifdef NEO
+	m_bAffectedByWind = true;
+#endif
 }
 
 
