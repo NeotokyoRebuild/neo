@@ -378,7 +378,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 
 			// If there's a player playing ghost, turn toward cap zones that's
 			// closest to the ghoster player
-			Vector vrTargetCapPos;
+			Vector vrTargetCapPos = vec3_invalid;
 			int iMinCapGhostLength = INT_MAX;
 
 			// Enemy team is carrying the ghost - try to defend the cap zone
@@ -421,6 +421,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 
 			if (bGetCloserToGhoster)
 			{
+				Assert(vGhostPos.IsValid());
 				m_vGoalPos = vGhostPos;
 				bQuickToGoalPos = true;
 			}
@@ -429,14 +430,19 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				// iMinCapGhostLength == INT_MAX should never happen, just disable going to target
 				Assert(iMinCapGhostLength < INT_MAX);
 				bGoToGoalPos = (iMinCapGhostLength < INT_MAX);
+				if (bGoToGoalPos) // else, vrTargetCapPos may be uninitialized
+				{
+					Assert(vrTargetCapPos.IsValid());
+					m_vGoalPos = vrTargetCapPos;
+				}
 
-				m_vGoalPos = vrTargetCapPos;
 				bQuickToGoalPos = (iGhosterTeam != iMyTeam);
 			}
 		}
 		else
 		{
 			// If the ghost exists, go to the ghost
+			Assert(vGhostPos.IsValid());
 			m_vGoalPos = vGhostPos;
 			// NEO TODO (nullsystem): More sophisticated on handling non-ghost playing scenario,
 			// although it kind of already prefer hunting down players when they're in view, but
@@ -445,6 +451,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 
 		if (bGoToGoalPos)
 		{
+			Assert(m_vGoalPos.IsValid());
 			if (bGetCloserToGhoster)
 			{
 				const int iDistSqrConsidered = (iGhosterTeam == iMyTeam) ? 50000 : 5000;

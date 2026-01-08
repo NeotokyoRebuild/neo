@@ -142,7 +142,9 @@ private:
 	vgui::Button		*m_pNewFolderButton;
 	vgui::Button		*m_pOpenInExplorerButton;
 	vgui::ImagePanel 	*m_pFolderIcon;
+#ifndef NEO
 	vgui::Label			*m_pFileTypeLabel;
+#endif
 
 	KeyValues			*m_pContextKeyValues;
 

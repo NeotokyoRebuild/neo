@@ -334,8 +334,13 @@ private:
 	bool 			m_bNeedsSort : 1;
 	bool 			m_bSortAscending : 1;
 	bool 			m_bSortAscendingSecondary : 1;
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]] // Clang false positive
+#endif
 	bool			m_bCanSelectIndividualCells : 1;
+#ifndef NEO
 	bool			m_bShiftHeldDown : 1;
+#endif
 	bool			m_bMultiselectEnabled : 1;
 	bool			m_bAllowUserAddDeleteColumns : 1;
 	bool 			m_bDeleteImageListWhenDone : 1;

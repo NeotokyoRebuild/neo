@@ -1628,7 +1628,11 @@ void CNPC_BaseZombie::HandleAnimEvent( animevent_t *pEvent )
 
 		pString = nexttoken( token, pString, ' ' );
 
+#ifdef NEO
+		if (!*token)
+#else
 		if ( *token == NULL )
+#endif
 		{
 			Warning( "AE_ZOMBIE_POPHEADCRAB event format missing velocity parameter! Usage: event AE_ZOMBIE_POPHEADCRAB \"<BoneName> <Speed>\" \n" );
 			return;
@@ -2087,7 +2091,9 @@ void CNPC_BaseZombie::StartTask( const Task_t *pTask )
 
 	case TASK_ZOMBIE_GET_PATH_TO_PHYSOBJ:
 		{
+#ifndef NEO
 			Vector vecGoalPos;
+#endif
 			Vector vecDir;
 
 			vecDir = GetLocalOrigin() - m_hPhysicsEnt->GetLocalOrigin();

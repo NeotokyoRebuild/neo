@@ -758,7 +758,11 @@ CChoreoScene *C_SceneEntity::LoadScene( const char *filename )
 	Q_FixSlashes( loadfile );
 
 	char *pBuffer = NULL;
+#ifdef NEO
+	const auto bufsize = narrow_cast<int>(scenefilecache->GetSceneBufferSize(loadfile));
+#else
 	size_t bufsize = scenefilecache->GetSceneBufferSize( loadfile );
+#endif
 	if ( bufsize <= 0 )
 		return NULL;
 

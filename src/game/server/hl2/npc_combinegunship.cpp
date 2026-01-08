@@ -945,7 +945,11 @@ void CNPC_CombineGunship::StartGroundAttack( void )
 //-----------------------------------------------------------------------------
 void CNPC_CombineGunship::ManageWarningBeam( void )
 {
+#ifdef NEO
+	Vector vecSrc;
+#else
 	Vector vecSrc, vecShootDir;
+#endif
 	GetAttachment( "BellyGun", vecSrc, NULL, NULL, NULL );
 
 	trace_t	tr;
@@ -1411,7 +1415,9 @@ void CNPC_CombineGunship::MoveHead( void )
 			float	flDot;
 
 			Vector vTargetPos, vGunPosition;
+#ifndef NEO
 			Vector vecTargetOffset;
+#endif
 			QAngle vGunAngles;
 
 			GetAttachment( "muzzle", vGunPosition, vGunAngles );
@@ -1632,8 +1638,10 @@ bool CNPC_CombineGunship::FireGun( void )
 //------------------------------------------------------------------------------
 void CNPC_CombineGunship::FireCannonRound( void )
 {
+#ifndef NEO
 	Vector vecPenetrate;
 	trace_t tr;
+#endif
 
 	Vector vecToEnemy, vecEnemyTarget;
 	Vector vecMuzzle;
@@ -2810,7 +2818,9 @@ void CNPC_CombineGunship::MakeTracer( const Vector &vecTracerSrc, const trace_t 
 		{
 			float flTracerDist;
 			Vector vecDir;
+#ifndef NEO
 			Vector vecEndPos;
+#endif
 
 			vecDir = tr.endpos - vecTracerSrc;
 

@@ -239,7 +239,11 @@ CAI_StandoffBehavior::CAI_StandoffBehavior( CAI_BaseNPC *pOuter )
 	SetPosture( AIP_STANDING );
 	m_SavedDistTooFar = FLT_MAX;
 	m_fForceNewEnemy = false;
+#ifdef NEO
+	m_TimePreventForceNewEnemy.Set( RandomFloat( 3.0, 6.0 ) );
+#else
 	m_TimePreventForceNewEnemy.Set( 3.0, 6.0 );
+#endif
 	m_fIgnoreFronts = false;
 	m_bHasLowCoverActivity = false;
 }

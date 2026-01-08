@@ -27,10 +27,38 @@ void CEventLog::FireGameEvent( IGameEvent *event )
 	PrintEvent ( event );
 }
 
+#ifdef NEO
+template <auto size>
+constexpr bool cmp(const char* a, const char(&b)[size])
+{
+	static_assert(size > 0);
+	Assert(a);
+	return V_strncmp(a, &b[0], size - 1) == 0;
+}
+#endif
+
 bool CEventLog::PrintEvent( IGameEvent *event )
 {
 	const char * name = event->GetName();
 
+#ifdef NEO
+	if (cmp(name, "server_"))
+	{
+		return true; // we don't care about server events (engine does)
+	}
+	else if (cmp(name, "player_"))
+	{
+		return PrintPlayerEvent( event );
+	}
+	else if (cmp(name, "team_"))
+	{
+		return PrintTeamEvent( event );
+	}
+	else if (cmp(name, "game_"))
+	{
+		return PrintGameEvent( event );
+	}
+#else
 	if ( Q_strncmp(name, "server_", strlen("server_")) == 0 )
 	{
 		return true; // we don't care about server events (engine does)
@@ -47,6 +75,7 @@ bool CEventLog::PrintEvent( IGameEvent *event )
 	{
 		return PrintGameEvent( event );
 	}
+#endif
 	else
 	{
 		return PrintOtherEvent( event ); // bomb_, round_, et al

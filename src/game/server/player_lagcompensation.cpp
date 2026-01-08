@@ -446,6 +446,10 @@ void CLagCompensationManager::BacktrackPlayer( CBasePlayer *pPlayer, float flTar
 
 	VPROF_BUDGET( "BacktrackPlayer", "CLagCompensationManager" );
 	int pl_index = pPlayer->entindex() - 1;
+#ifdef NEO
+	Assert(pl_index >= 0);
+	pl_index = Max(0, pl_index);
+#endif
 
 	// get track history of this player
 	CUtlFixedLinkedList< LagRecord > *track = &m_PlayerTrack[ pl_index ];

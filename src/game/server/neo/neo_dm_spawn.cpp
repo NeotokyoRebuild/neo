@@ -60,9 +60,13 @@ static CNEO_Player *LoopbackPlayer()
 			continue;
 		}
 		INetChannelInfo *nci = engine->GetPlayerNetInfo(i);
-		if (nci->IsLoopback())
+		Assert(nci);
+		if (nci)
 		{
-			return pPlayer;
+			if (nci->IsLoopback())
+			{
+				return pPlayer;
+			}
 		}
 	}
 	return nullptr;
@@ -195,7 +199,7 @@ void DMSpawnComCallbackLoad([[maybe_unused]] const CCommand &command)
 		return;
 	}
 
-	const int version = buf.GetInt();
+	/*const int version =*/ (void)buf.GetInt();
 	const int locsSize = buf.GetInt();
 	for (int i = 0; i < locsSize && buf.IsValid(); ++i)
 	{

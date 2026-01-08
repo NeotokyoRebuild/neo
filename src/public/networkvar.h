@@ -633,7 +633,14 @@ private:
 		}
 	};
 
-
+#ifdef NEO
+	class CBaseCombatWeapon;
+	template< class Type, class Changer >
+	bool operator==(CBaseCombatWeapon* lhs, const CNetworkHandleBase<Type, Changer>& rhs)
+	{
+		return lhs == rhs.Get();
+	}
+#endif
 
 	#define CNetworkHandle( type, name ) CNetworkHandleInternal( type, name, NetworkStateChanged )
 

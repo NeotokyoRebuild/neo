@@ -70,7 +70,9 @@
 
 #ifdef NEO
 #include "neo_player.h"
+#include "neo_misc.h"
 #endif // NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -794,7 +796,11 @@ struct TimedOverlay_t
 void CBaseEntity::AddTimedOverlay( const char *msg, int endTime )
 {
 	TimedOverlay_t *pNewTO = new TimedOverlay_t;
+#ifdef NEO
+	int len = V_strlen(msg);
+#else
 	int len = strlen(msg);
+#endif
 	pNewTO->msg = new char[len + 1];
 	Q_strncpy(pNewTO->msg,msg, len+1);
 	pNewTO->msgEndTime = gpGlobals->curtime + endTime;
@@ -2775,7 +2781,9 @@ static void CheckPushedEntity( CBaseEntity *pEntity, pushblock_t &params )
 	pPhysics->GetShadowPosition( &origin, &angles );
 	float fraction = -1.0f;
 
+#ifndef NEO
 	matrix3x4_t parentDelta;
+#endif
 	if ( pEntity == params.pRootParent )
 	{
 		if ( pEntity->GetLocalAngularVelocity() == vec3_angle )
@@ -3849,14 +3857,22 @@ void *CBaseEntity::operator new( size_t stAllocateBlock )
 {
 	// call into engine to get memory
 	Assert( stAllocateBlock != 0 );
+#ifdef NEO
+	return engine->PvAllocEntPrivateData(narrow_cast<long>(stAllocateBlock));
+#else
 	return engine->PvAllocEntPrivateData(stAllocateBlock);
+#endif
 };
 
 void *CBaseEntity::operator new( size_t stAllocateBlock, int nBlockUse, const char *pFileName, int nLine )
 {
 	// call into engine to get memory
 	Assert( stAllocateBlock != 0 );
+#ifdef NEO
+	return engine->PvAllocEntPrivateData(narrow_cast<long>(stAllocateBlock));
+#else
 	return engine->PvAllocEntPrivateData(stAllocateBlock);
+#endif
 }
 
 void CBaseEntity::operator delete( void *pMem )
@@ -4221,8 +4237,15 @@ void CBaseEntity::ComputeWorldSpaceSurroundingBox( Vector *pMins, Vector *pMaxs 
 //------------------------------------------------------------------------------
 const char *CBaseEntity::GetDebugName(void)
 {
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-undefined-compare"
+#endif
 	if ( this == NULL )
 		return "<<null>>";
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic pop
+#endif
 
 	if ( m_iName != NULL_STRING ) 
 	{

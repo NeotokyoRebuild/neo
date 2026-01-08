@@ -232,7 +232,11 @@ void C_BaseViewModel::ApplyBoneMatrixTransform( matrix3x4_t& transform )
 		MatrixInvert( viewMatrixInverse, viewMatrix );
 
 		// Transform into view space.
+#ifdef NEO
+		matrix3x4_t temp;
+#else
 		matrix3x4_t temp, temp2;
+#endif
 		ConcatTransforms( viewMatrix, transform, temp );
 		
 		// Flip it along X.
