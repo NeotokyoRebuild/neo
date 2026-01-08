@@ -867,9 +867,81 @@ void EndWidget(const GetMouseinFocusedRet wdgState)
 	}
 }
 
+// Internal API: Figure out X position from text, font, and text style
+static int XPosFromText(const wchar_t *wszText, const FontInfo *pFontI, const TextStyle eTextStyle)
+{
+	int iFontTextWidth = 0, iFontTextHeight = 0;
+	if (eTextStyle != TEXTSTYLE_LEFT)
+	{
+		vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
+	}
+	int x = 0;
+	switch (eTextStyle)
+	{
+	break; case TEXTSTYLE_LEFT:
+		x = c->iMarginX;
+	break; case TEXTSTYLE_CENTER:
+		x = (c->irWidgetWide / 2) - (iFontTextWidth / 2);
+	break; case TEXTSTYLE_RIGHT:
+		x = c->irWidgetWide - c->iMarginX - iFontTextWidth;
+	}
+	return x;
+}
+
 void Pad()
 {
 	BeginWidget();
+}
+
+void Divider(const wchar_t *wszText)
+{
+	Context::Layout tmp;
+	V_memcpy(&tmp, &c->layout, sizeof(Context::Layout));
+
+	SetPerRowLayout(1, nullptr, tmp.iRowTall);
+	c->eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+
+	BeginWidget(WIDGETFLAG_SKIPACTIVE);
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
+	{
+		const int iDividerTall = c->iMarginY / 2;
+		const int iCenter = c->rWidgetArea.y0 + ((c->rWidgetArea.y1 - c->rWidgetArea.y0) - iDividerTall) / 2;
+
+		vgui::surface()->DrawSetColor(COLOR_NEOPANELDIVIDER);
+
+		if (wszText)
+		{
+			int iFontTextWidth = 0, iFontTextHeight = 0;
+			constexpr int iPadding = 16;
+
+			// Text
+			const auto *pFontI = &c->fonts[c->eFont];
+			const int x = XPosFromText(wszText, pFontI, c->eLabelTextStyle);
+			const int y = pFontI->iYOffset;
+			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
+			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+
+			vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
+
+			// Left Bar
+			vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, iCenter,
+				(c->rWidgetArea.x0 + x) - iPadding, iCenter + iDividerTall);
+
+			// Right Bar
+			vgui::surface()->DrawFilledRect(c->rWidgetArea.x0 + x + iFontTextWidth + iPadding,
+				iCenter, c->rWidgetArea.x1, iCenter + iDividerTall);
+		}
+		else
+		{
+			vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, iCenter,
+				c->rWidgetArea.x1, iCenter + iDividerTall);
+		}
+		vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+	}
+	EndWidget(GetMouseinFocusedRet{true, true});
+
+	c->eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+	SetPerRowLayout(tmp.iRowPartsTotal, tmp.iRowParts, tmp.iRowTall);
 }
 
 void LabelWrap(const wchar_t *wszText)
@@ -945,27 +1017,6 @@ void HeadingLabel(const wchar_t *wszText)
 
 	c->eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 	SetPerRowLayout(tmp.iRowPartsTotal, tmp.iRowParts, tmp.iRowTall);
-}
-
-// Internal API: Figure out X position from text, font, and text style
-static int XPosFromText(const wchar_t *wszText, const FontInfo *pFontI, const TextStyle eTextStyle)
-{
-	int iFontTextWidth = 0, iFontTextHeight = 0;
-	if (eTextStyle != TEXTSTYLE_LEFT)
-	{
-		vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
-	}
-	int x = 0;
-	switch (eTextStyle)
-	{
-	break; case TEXTSTYLE_LEFT:
-		x = c->iMarginX;
-	break; case TEXTSTYLE_CENTER:
-		x = (c->irWidgetWide / 2) - (iFontTextWidth / 2);
-	break; case TEXTSTYLE_RIGHT:
-		x = c->irWidgetWide - c->iMarginX - iFontTextWidth;
-	}
-	return x;
 }
 
 void Label(const wchar_t *wszText, const bool bNotWidget)

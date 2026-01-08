@@ -765,21 +765,13 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	{
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		const bool bIsInGame = IsInGame();
-		if (bIsInGame && NeoUI::Button(m_wszCachedTexts[MMBTN_RESUME]).bPressed)
-		{
-			m_state = STATE_ROOT;
-			GetGameUI()->SendMainMenuCommand("ResumeGame");
-		}
-		if (NeoUI::Button(m_wszCachedTexts[MMBTN_FINDSERVER]).bPressed)
-		{
-			m_state = STATE_SERVERBROWSER;
-		}
-		if (NeoUI::Button(m_wszCachedTexts[MMBTN_CREATESERVER]).bPressed)
-		{
-			m_state = STATE_NEWGAME;
-		}
 		if (bIsInGame)
 		{
+			if (NeoUI::Button(m_wszCachedTexts[MMBTN_RESUME]).bPressed)
+			{
+				m_state = STATE_ROOT;
+				GetGameUI()->SendMainMenuCommand("ResumeGame");
+			}
 			if (NeoUI::Button(m_wszCachedTexts[MMBTN_DISCONNECT]).bPressed)
 			{
 				m_state = STATE_ROOT;
@@ -789,8 +781,17 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			{
 				m_state = STATE_PLAYERLIST;
 			}
+			NeoUI::Pad();
 		}
-		else
+		if (NeoUI::Button(m_wszCachedTexts[MMBTN_FINDSERVER]).bPressed)
+		{
+			m_state = STATE_SERVERBROWSER;
+		}
+		if (NeoUI::Button(m_wszCachedTexts[MMBTN_CREATESERVER]).bPressed)
+		{
+			m_state = STATE_NEWGAME;
+		}
+		if (!bIsInGame)
 		{
 			NeoUI::Pad();
 			if (NeoUI::Button(m_wszCachedTexts[MMBTN_TUTORIAL]).bPressed)
@@ -1034,7 +1035,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 		{NeoSettings_HUD, false},
 	};
 	static const wchar_t *WSZ_TABS_LABELS[ARRAYSIZE(P_FN)] = {
-		L"Multiplayer", L"Keybinds", L"Mouse/Controller", L"Audio", L"Video", L"Crosshair", L"HUD"
+		L"General", L"Keybinds", L"Input", L"Audio", L"Video", L"Crosshair", L"HUD"
 	};
 
 	m_ns.iNextBinding = -1;
@@ -1050,7 +1051,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 	{
 		NeoUI::BeginSection(NeoUI::SECTIONFLAG_ROWWIDGETS | NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
 		{
-			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab, 2);
+			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab, 5);
 		}
 		NeoUI::EndSection();
 		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
@@ -1099,7 +1100,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 					if (NeoUI::Button(NeoUI::HintAlt(L"Accept (F8)", L"Accept (START)")).bPressed
 							|| NeoUI::Bind(BTNCODES_ACCEPT, ARRAYSIZE(BTNCODES_ACCEPT)))
 					{
-						if (m_ns.general.iFov > maxSupportedFov)
+						if (m_ns.video.iFov > maxSupportedFov)
 						{
 							m_state = STATE_CONFIRMSETTINGS;
 						}
@@ -2299,12 +2300,12 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 						L"Error: Invalid settings, cannot save.");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 
-				if (m_ns.general.iFov > maxSupportedFov)
+				if (m_ns.video.iFov > maxSupportedFov)
 				{
 					wchar_t warning[77+1];
 					V_swprintf_safe(warning,
 						L"Current FOV (%d) is > max. supported (%d), which may cause visual artifacts!",
-						m_ns.general.iFov, maxSupportedFov);
+						m_ns.video.iFov, maxSupportedFov);
 					NeoUI::Label(warning);
 					g_uiCtx.iLayoutY += (g_uiCtx.layout.iRowTall / 2);
 				}
@@ -2393,7 +2394,8 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			break;
 			case STATE_SETTINGSRESETDEFAULT:
 			{
-				NeoUI::Label(L"Do you want to reset your settings back to default?");
+				NeoUI::Label(L"Do you want to reset ALL your settings back to default?");
+				NeoUI::Label(L"This cannot be undone.");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 				NeoUI::SetPerRowLayout(3);
 				{
