@@ -22,7 +22,7 @@ ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion("sv_neo_bot_cmdr_look_weights
 ConVar sv_neo_bot_cmdr_look_weights_explosives_repulsion("sv_neo_bot_cmdr_look_weights_explosives_repulsion", "4",
 	FCVAR_CHEAT, "Weight for explosive repulsion force", true, 1, true, 9999);
 
-ConVar sv_neo_bot_cmdr_look_weights_friendly_max_dist_sq("sv_neo_bot_cmdr_look_weights_friendly_max_dist_sq", "5000",
+ConVar sv_neo_bot_cmdr_look_weights_friendly_max_dist("sv_neo_bot_cmdr_look_weights_friendly_max_dist", "5000",
 	FCVAR_CHEAT, "Distance to compare friendly repulsion forces", true, 1, true, MAX_TRACE_LENGTH);
 ConVar sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist("sv_neo_bot_cmdr_look_weights_wall_repulsion_whisker_dist", "500",
 	FCVAR_CHEAT, "Distance to extend whiskers", true, 1, true, MAX_TRACE_LENGTH);
@@ -292,7 +292,7 @@ bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, b
 				float flDistSqr = vToOther.LengthSqr();
 				if (flDistSqr > 0.0f)
 				{
-					const float flMaxRepulsionDist = sv_neo_bot_cmdr_look_weights_friendly_max_dist_sq.GetFloat();
+					const float flMaxRepulsionDist = sv_neo_bot_cmdr_look_weights_friendly_max_dist.GetFloat();
 					float flDist = FastSqrt(flDistSqr);
 					float flRepulsionScale = 1.0f - (flDist / flMaxRepulsionDist);
 					flRepulsionScale = Clamp(flRepulsionScale, 0.0f, 1.0f);
