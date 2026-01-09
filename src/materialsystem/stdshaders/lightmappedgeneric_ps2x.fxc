@@ -22,6 +22,7 @@
 // STATIC: "NORMAL_DECODE_MODE"			"0..0"	[PC]
 // STATIC: "NORMALMASK_DECODE_MODE"		"0..0"	[XBOX]
 // STATIC: "NORMALMASK_DECODE_MODE"		"0..0"	[PC]
+// STATIC: "PARALLAXCORRECT"			"0..1"
 // STATIC: "DETAIL_BLEND_MODE"			"0..11"
 // STATIC: "FLASHLIGHT"					"0..1"	[ps20b] [XBOX]
 
@@ -55,6 +56,7 @@
 //  SKIP: ($DETAIL_BLEND_MODE == 8 ) || ($DETAIL_BLEND_MODE == 9 )
 //  SKIP ($DETAIL_BLEND_MODE == 10 ) && ($BUMPMAP == 0 )
 //  SKIP ($DETAIL_BLEND_MODE == 11 ) && ($BUMPMAP != 0 )
+//	SKIP: $PARALLAXCORRECT && !$CUBEMAP
 
 #include "lightmappedgeneric_ps2_3_x.h"
 
