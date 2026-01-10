@@ -28,6 +28,9 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE( C_Func_Dust, DT_Func_Dust, CFunc_Dust )
 	RecvPropInt( RECVINFO(m_DustFlags) ),
 	RecvPropInt( RECVINFO(m_SpeedMax) ),
 	RecvPropInt( RECVINFO(m_DistMax) ),
+#ifdef NEO
+	RecvPropBool( RECVINFO(m_bAffectedByWind) ),
+#endif
 	RecvPropInt( RECVINFO( m_nModelIndex ) ),
 	RecvPropFloat( RECVINFO( m_FallSpeed ) ),
 	RecvPropDataTable( RECVINFO_DT( m_Collision ), 0, &REFERENCE_RECV_TABLE(DT_CollisionProperty) ),
@@ -88,7 +91,18 @@ void CDustEffect::RenderParticles( CParticleRenderIterator *pIterator )
 void CDustEffect::SimulateParticles( CParticleSimulateIterator *pIterator )
 {
 	Vector vecWind;
+#ifdef NEO
+	if ( m_pDust->m_bAffectedByWind )
+	{
+#endif
 	GetWindspeedAtTime( gpGlobals->curtime, vecWind );
+#ifdef NEO
+	}
+	else
+	{
+		vecWind = vec3_origin;
+	}
+#endif
 
 
 	CFuncDustParticle *pParticle = (CFuncDustParticle*)pIterator->GetFirst();
