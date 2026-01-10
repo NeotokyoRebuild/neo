@@ -114,6 +114,7 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 			&& (m_routeType != FASTEST_ROUTE) )
 		{
 			cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber()) * neo_bot_path_reservation_penalty.GetFloat();
+			cost += CNEOBotPathReservations()->GetAreaStuckPenalty(area->GetID());
 		}
 		// ------------------------------------------------------------------------------------------------
 
