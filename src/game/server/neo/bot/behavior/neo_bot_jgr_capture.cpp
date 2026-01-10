@@ -93,10 +93,12 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 
 	if ( me->GetAbsOrigin().DistToSqr( m_hObjective->GetAbsOrigin() ) < CNEO_Juggernaut::GetUseDistanceSquared() )
 	{
-		CNEO_Juggernaut *pJuggernaut = m_hObjective.Get();
-		if ( NEORules()->IsJuggernautLocked() || (pJuggernaut && pJuggernaut->m_bLocked) )
+		if ( NEORules()->IsJuggernautLocked() )
 		{
+#ifdef DEBUG
+			auto pJuggernaut = m_hObjective.Get();
 			Assert( NEORules()->IsJuggernautLocked() == (pJuggernaut && pJuggernaut->m_bLocked) );
+#endif
 			me->ReleaseUseButton();
 			return SuspendFor( new CNEOBotRetreatToCover( 2.0f ), "Juggernaut is locked, taking cover to wait for it to unlock" );
 		}

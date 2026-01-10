@@ -1182,6 +1182,7 @@ void CNEORules::Think(void)
 			m_iGhosterTeam = TEAM_UNASSIGNED;
 			m_iGhosterPlayer = 0;
 			m_pJuggernautItem = nullptr;
+			m_bJuggernautItemExists = false;
 			m_pJuggernautPlayer = nullptr;
 			m_iJuggernautPlayerIndex = 0;
 		}
@@ -1408,12 +1409,6 @@ void CNEORules::Think(void)
 
 			m_pJuggernautItem->m_bLocked = false;
 		}
-
-		m_bJuggernautItemExists = true;
-	}
-	else
-	{
-		m_bJuggernautItemExists = false;
 	}
 
 	if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
@@ -2091,6 +2086,7 @@ void CNEORules::JuggernautActivated(CNEO_Player *pPlayer)
 		m_pJuggernautPlayer = pPlayer;
 		m_iJuggernautPlayerIndex = pPlayer->entindex();
 		m_pJuggernautItem = nullptr;
+		m_bJuggernautItemExists = false;
 		m_iLastJuggernautTeam = pPlayer->GetTeamNumber();
 
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
@@ -2112,7 +2108,19 @@ void CNEORules::JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut)
 		m_pJuggernautPlayer = nullptr;
 		m_iJuggernautPlayerIndex = 0;
 		m_pJuggernautItem = pJuggernaut;
+		m_bJuggernautItemExists = true;
 		m_flJuggernautDeathTime = gpGlobals->curtime;
+	}
+}
+
+// This should only ever be used in cases where the Juggernaut item was removed unexpectedly
+void CNEORules::JuggernautTotalRemoval(CNEO_Juggernaut *pJuggernaut)
+{
+	if ((GetGameType() == NEO_GAME_TYPE_JGR) && (m_hJuggernaut.Get() == pJuggernaut))
+	{
+		m_hJuggernaut = nullptr;
+		m_pJuggernautItem = nullptr;
+		m_bJuggernautItemExists = false;
 	}
 }
 
