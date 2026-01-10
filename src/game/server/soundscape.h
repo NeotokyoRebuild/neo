@@ -42,6 +42,9 @@ public:
 	void InputEnable( inputdata_t &inputdata );
 	void InputDisable( inputdata_t &inputdata );
 	void InputToggleEnabled( inputdata_t &inputdata );
+#ifdef NEO
+	void InputPlaySoundscape( inputdata_t &inputdata );
+#endif
 
 	string_t GetSoundscapeName() const {return m_soundscapeName;}
 
