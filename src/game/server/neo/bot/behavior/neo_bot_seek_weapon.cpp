@@ -8,15 +8,15 @@
 CBaseEntity *FindNearestPrimaryWeapon( const Vector &searchOrigin, bool bShortCircuit )
 {
 	constexpr float flSearchRadius = 1000.0f;
-	CBaseEntity *pClosestWeapon = NULL;
+	CBaseEntity *pClosestWeapon = nullptr;
 	float flClosestDistSq = FLT_MAX;
 
 	// Iterate through all available weapons, looking for the nearest primary 
-	CBaseEntity *pEntity = NULL;
-	while ( ( pEntity = gEntList.FindEntityByClassnameWithin( pEntity, "weapon_*", searchOrigin, flSearchRadius ) ) != NULL )
+	CBaseEntity *pEntity = nullptr;
+	while ( ( pEntity = gEntList.FindEntityByClassnameWithin( pEntity, "weapon_*", searchOrigin, flSearchRadius ) ) )
 	{
 		CBaseCombatWeapon *pWeapon = pEntity->MyCombatWeaponPointer();
-		if ( pWeapon && pWeapon->GetOwner() == NULL && pWeapon->HasAnyAmmo() && pWeapon->GetSlot() == 0 )
+		if ( pWeapon && !pWeapon->GetOwner() && pWeapon->HasAnyAmmo() && pWeapon->GetSlot() == 0 )
 		{
 			// Prioritize getting any primary class weapon that is NOT the ghost
 			if ( FStrEq( pEntity->GetClassname(), "weapon_ghost" ) )
@@ -44,7 +44,7 @@ CBaseEntity *FindNearestPrimaryWeapon( const Vector &searchOrigin, bool bShortCi
 //---------------------------------------------------------------------------------------------
 CNEOBotSeekWeapon::CNEOBotSeekWeapon( void )
 {
-	m_hTargetWeapon = NULL;
+	m_hTargetWeapon = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ CBaseEntity *CNEOBotSeekWeapon::FindAndPathToWeapon( CNEOBot *me )
 	else
 	{
 		// no weapon found
-		m_hTargetWeapon = NULL;
+		m_hTargetWeapon = nullptr;
 		m_path.Invalidate();
 
 	}
@@ -105,7 +105,7 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::Update( CNEOBot *me, float interval )
 		return Done("Acquired a primary weapon");
 	}
 	
-	if (m_hTargetWeapon == NULL)
+	if (!m_hTargetWeapon)
 	{
 		return Done("No weapon to seek");
 	}
