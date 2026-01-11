@@ -44,7 +44,9 @@ private:
 
 	void CheckActiveStar();
 	void DrawPlayerList();
+	void DrawPlayerList_BotCmdr();
 	int DrawPlayerRow(int playerIndex, int yOffset, bool small = false);
+	int DrawPlayerRow_BotCmdr(int playerIndex, int yOffset, bool small = false, const Color* highlightColor = nullptr);
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
 					const int xOffset, const bool drawHealthClass);
 	void SetTextureToAvatar(int playerIndex);
@@ -97,6 +99,11 @@ private:
 
 	int m_iBeepSecsTotal = 0;
 	NeoRoundStatus m_ePrevRoundStatus = NeoRoundStatus::Idle;
+
+	// Bot Commander Lists
+	CUtlVector<int> m_commandedList;
+	CUtlVector<int> m_nonCommandedList;
+	CUtlVector<int> m_nonSquadList;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");

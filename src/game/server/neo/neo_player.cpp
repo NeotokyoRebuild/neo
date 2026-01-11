@@ -54,6 +54,7 @@ SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean)),
 SendPropEHandle(SENDINFO(m_hServerRagdoll)),
+SendPropEHandle(SENDINFO(m_hCommandingPlayer)),
 
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
@@ -75,6 +76,7 @@ SendPropString(SENDINFO(m_pszTestMessage)),
 SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersScores)), m_rfAttackersScores),
 SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersAccumlator), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersAccumlator),
 SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits),
+SendPropArray(SendPropVector(SENDINFO_ARRAY(m_vLastPingByStar), -1, SPROP_COORD), m_vLastPingByStar),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
@@ -138,10 +140,13 @@ END_SCRIPTDESC();
 
 static constexpr int SHOWMENU_STRLIMIT = 512;
 
+const Vector CNEO_Player::VECTOR_INVALID_WAYPOINT = vec3_invalid;
+
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
+extern ConVar sv_neo_bot_cmdr_enable;
 extern ConVar sv_neo_ignore_wep_xp_limit;
 extern ConVar sv_neo_clantag_allow;
 extern ConVar sv_neo_dev_test_clantag;
@@ -504,6 +509,7 @@ CNEO_Player::CNEO_Player()
 	m_szNameDupePos = 0;
 	
 	m_flNextPingTime = 0;
+	ResetBotCommandState();
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -569,7 +575,6 @@ void CNEO_Player::Spawn(void)
 	m_bIsPendingSpawnForThisRound = false;
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
-	m_iBotDetectableBleedingInjuryEvents = 0;
 	m_flCamoAuxLastTime = 0;
 
 	m_bInVision = false;
@@ -630,6 +635,9 @@ void CNEO_Player::Spawn(void)
 		m_iLoadoutWepChoice = NEORules()->GetForcedWeapon();
 		respawn(this, false);
 	}
+
+	ResetBotCommandState();
+	m_iBotDetectableBleedingInjuryEvents = 0;
 }
 
 extern ConVar neo_lean_angle;
@@ -2037,6 +2045,24 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		SetDeadModel(info);
 	}
 
+	if (sv_neo_bot_cmdr_enable.GetBool())
+	{
+		// If teamkilled by commander, other subordinates stop following commander
+		CNEO_Player *pAttacker = ToNEOPlayer(info.GetAttacker());
+		if (pAttacker && m_hCommandingPlayer.Get() == pAttacker)
+		{
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				CNEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+				if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == pAttacker)
+				{
+					pPlayer->m_hCommandingPlayer.Set(NULL);
+				}
+			}
+		}
+	}
+	ResetBotCommandState();
+
 	SpectatorTakeoverPlayerRevert(false); // soft reset: may still have live impostor
 }
 
@@ -3179,6 +3205,120 @@ void CNEO_Player::SendTestMessage(const char *message)
 void CNEO_Player::SetTestMessageVisible(bool visible)
 {
 	m_bShowTestMessage = visible;
+}
+
+void CNEO_Player::ResetBotCommandState()
+{
+	if (sv_neo_bot_cmdr_enable.GetBool())
+	{
+		m_hLeadingPlayer = nullptr;
+		m_hCommandingPlayer = nullptr;
+		m_tBotPlayerPingCooldown.Invalidate();
+		m_flBotDynamicFollowDistanceSq = 0.0f;
+		for (int i = 0; i < STAR__TOTAL; ++i)
+		{
+			m_vLastPingByStar.GetForModify(i) = VECTOR_INVALID_WAYPOINT;
+		}
+	}
+}
+
+void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
+{
+	if (!sv_neo_bot_cmdr_enable.GetBool())
+	{
+		return;
+	}
+
+	if (!pCommander)
+	{
+		DevWarning("ToggleBotFollowCommander called without valid player handle!\n");
+		return;
+	}
+
+	if (!NEORules()->IsTeamplay())
+	{
+		// Do not allow bot commanding in free for all game modes
+		return;
+	}
+
+	if (pCommander->GetTeamNumber() != GetTeamNumber())
+	{
+		// Commander is not on the same team, do not allow toggling follow state.
+		return;
+	}
+
+	if (m_hLeadingPlayer.Get() == pCommander)
+	{
+		// If already following, check if only star needs updating
+		if (!pCommander->IsBot() && pCommander->GetStar() != GetStar())
+		{
+			// Commander is a player and stars are different, just update bot's star
+			RequestSetStar(pCommander->GetStar());
+
+			// Behavior without resetting pings/commander/leader:
+			// If this is a new squad star with no waypoint this round, bots will leave waypoint to come follow.
+			// If this is an existing squad star with an active waypoint, bots will return to that position.
+			// Might allow for complicated strategems or might be confusing.
+			// e.g. set a fallback position for a squad star and remote use bots to send them there.
+		}
+		else
+		{
+			// Bot is already following this player in same star, so toggle off.
+			// Bot will return to following general uncommanded bot behavior.
+			m_hLeadingPlayer = nullptr;
+			m_hCommandingPlayer = nullptr;
+		}
+	}
+	// Without other checks, players can steal others' bots.
+	else
+	{
+		// Bot starts following this player.
+		m_hLeadingPlayer = pCommander;
+		if (!pCommander->IsBot())
+		{
+			m_hCommandingPlayer = pCommander;
+
+			// If commander is a player and stars are different, update bot's star
+			if (pCommander->GetStar() != GetStar())
+			{
+				RequestSetStar(pCommander->GetStar());
+			}
+		}
+	}
+}
+
+void CNEO_Player::PlayerUse( void )
+{
+	BaseClass::PlayerUse();
+
+	if (!sv_neo_bot_cmdr_enable.GetBool())
+	{
+		return;
+	}
+
+	if ( (m_afButtonPressed & IN_USE) && !FindUseEntity() )
+	{
+		// Select bot under cursor to follow/unfollow.
+		Vector eyePos = EyePosition();
+		Vector forward;
+		EyeVectors( &forward );
+		Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
+
+		trace_t tr;
+		// MASK_SHOT_HULL to match friendly fire warning trace
+		UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr );
+
+		if ( tr.DidHit() && tr.m_pEnt )
+		{
+			CNEO_Player* pTargetPlayer = ToNEOPlayer(tr.m_pEnt);
+			if ( pTargetPlayer && pTargetPlayer->IsBot())
+			{
+				// The hit entity is a bot! Now, toggle its follow state.
+				pTargetPlayer->ToggleBotFollowCommander( this );
+				// TODO: Do we want to allow using players for some kind of communication?
+			}
+		}
+	}
 }
 
 void CNEO_Player::StartAutoSprint(void)
