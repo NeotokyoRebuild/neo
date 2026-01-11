@@ -19,7 +19,7 @@ set tt_all_chkpt=%tt_start%
 
 
 set sourcedir="shaders"
-set targetdir="..\..\..\game\hl2\shaders"
+set targetdir="..\..\..\game\neo\shaders"
 
 set BUILD_SHADER=call buildshaders.bat
 
@@ -39,7 +39,7 @@ REM PC SHADERS
 REM ****************
 
 set SOURCE_DIR="..\..\"
-set GAME_DIR="..\..\..\game\hl2"
+set GAME_DIR="..\..\..\game\neo"
 
 %BUILD_SHADER% misylshaders_dx9_20b -game %GAME_DIR% -source %SOURCE_DIR%
 %BUILD_SHADER% misylshaders_dx9_30 -game %GAME_DIR% -source %SOURCE_DIR% -force30

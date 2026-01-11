@@ -15,6 +15,7 @@
 // ($DETAIL_BLEND_MODE == 2 ) || ($DETAIL_BLEND_MODE == 3 ) || ($DETAIL_BLEND_MODE == 4 )
 // ($DETAIL_BLEND_MODE == 5 ) || ($DETAIL_BLEND_MODE == 6 ) || ($DETAIL_BLEND_MODE == 7 )
 // ($DETAIL_BLEND_MODE == 8 ) || ($DETAIL_BLEND_MODE == 9 )
+// $PARALLAXCORRECT && !$CUBEMAP
 // $BUMPMAP2 && $WARPLIGHTING
 // $WARPLIGHTING && $DETAILTEXTURE
 // $ENVMAPMASK && $BUMPMAP
@@ -80,6 +81,7 @@ class lightmappedgeneric_ps20b_Static_Index
 	unsigned int m_nBUMPMASK : 2;
 	unsigned int m_nNORMAL_DECODE_MODE : 1;
 	unsigned int m_nNORMALMASK_DECODE_MODE : 1;
+	unsigned int m_nPARALLAXCORRECT : 2;
 	unsigned int m_nDETAIL_BLEND_MODE : 4;
 #ifdef _DEBUG
 	bool m_bMASKEDBLENDING : 1;
@@ -104,6 +106,7 @@ class lightmappedgeneric_ps20b_Static_Index
 	bool m_bBUMPMASK : 1;
 	bool m_bNORMAL_DECODE_MODE : 1;
 	bool m_bNORMALMASK_DECODE_MODE : 1;
+	bool m_bPARALLAXCORRECT : 1;
 	bool m_bDETAIL_BLEND_MODE : 1;
 #endif	// _DEBUG
 public:
@@ -305,6 +308,15 @@ public:
 #endif	// _DEBUG
 	}
 
+	void SetPARALLAXCORRECT( int i )
+	{
+		Assert( i >= 0 && i <= 1 );
+		m_nPARALLAXCORRECT = i;
+#ifdef _DEBUG
+		m_bPARALLAXCORRECT = true;
+#endif	// _DEBUG
+	}
+
 	void SetDETAIL_BLEND_MODE( int i )
 	{
 		Assert( i >= 0 && i <= 11 );
@@ -338,6 +350,7 @@ public:
 		m_nBUMPMASK = 0;
 		m_nNORMAL_DECODE_MODE = 0;
 		m_nNORMALMASK_DECODE_MODE = 0;
+		m_nPARALLAXCORRECT = 0;
 		m_nDETAIL_BLEND_MODE = 0;
 #ifdef _DEBUG
 		m_bMASKEDBLENDING = false;
@@ -362,13 +375,14 @@ public:
 		m_bBUMPMASK = false;
 		m_bNORMAL_DECODE_MODE = false;
 		m_bNORMALMASK_DECODE_MODE = false;
+		m_bPARALLAXCORRECT = false;
 		m_bDETAIL_BLEND_MODE = false;
 #endif	// _DEBUG
 	}
 
 	int GetIndex() const
 	{
-		Assert( m_bMASKEDBLENDING && m_bBASETEXTURE2 && m_bDETAILTEXTURE && m_bBUMPMAP && m_bBUMPMAP2 && m_bCUBEMAP && m_bENVMAPMASK && m_bBASEALPHAENVMAPMASK && m_bSELFILLUM && m_bNORMALMAPALPHAENVMAPMASK && m_bDIFFUSEBUMPMAP && m_bBASETEXTURENOENVMAP && m_bBASETEXTURE2NOENVMAP && m_bWARPLIGHTING && m_bFANCY_BLENDING && m_bRELIEF_MAPPING && m_bSEAMLESS && m_bOUTLINE && m_bSOFTEDGES && m_bBUMPMASK && m_bNORMAL_DECODE_MODE && m_bNORMALMASK_DECODE_MODE && m_bDETAIL_BLEND_MODE );
+		Assert( m_bMASKEDBLENDING && m_bBASETEXTURE2 && m_bDETAILTEXTURE && m_bBUMPMAP && m_bBUMPMAP2 && m_bCUBEMAP && m_bENVMAPMASK && m_bBASEALPHAENVMAPMASK && m_bSELFILLUM && m_bNORMALMAPALPHAENVMAPMASK && m_bDIFFUSEBUMPMAP && m_bBASETEXTURENOENVMAP && m_bBASETEXTURE2NOENVMAP && m_bWARPLIGHTING && m_bFANCY_BLENDING && m_bRELIEF_MAPPING && m_bSEAMLESS && m_bOUTLINE && m_bSOFTEDGES && m_bBUMPMASK && m_bNORMAL_DECODE_MODE && m_bNORMALMASK_DECODE_MODE && m_bPARALLAXCORRECT && m_bDETAIL_BLEND_MODE );
 		AssertMsg( !( m_nSEAMLESS && m_nRELIEF_MAPPING ), "Invalid combo combination ( SEAMLESS && RELIEF_MAPPING )" );
 		AssertMsg( !( !m_nDETAILTEXTURE && ( m_nDETAIL_BLEND_MODE != 0 ) ), "Invalid combo combination ( !DETAILTEXTURE && ( DETAIL_BLEND_MODE != 0 ) )" );
 		AssertMsg( !( m_nSEAMLESS && ( m_nOUTLINE || m_nSOFTEDGES ) ), "Invalid combo combination ( SEAMLESS && ( OUTLINE || SOFTEDGES ) )" );
@@ -383,6 +397,7 @@ public:
 		AssertMsg( !( ( m_nDETAIL_BLEND_MODE == 2 ) || ( ( m_nDETAIL_BLEND_MODE == 3 ) || ( m_nDETAIL_BLEND_MODE == 4 ) ) ), "Invalid combo combination ( ( DETAIL_BLEND_MODE == 2 ) || ( ( DETAIL_BLEND_MODE == 3 ) || ( DETAIL_BLEND_MODE == 4 ) ) )" );
 		AssertMsg( !( ( m_nDETAIL_BLEND_MODE == 5 ) || ( ( m_nDETAIL_BLEND_MODE == 6 ) || ( m_nDETAIL_BLEND_MODE == 7 ) ) ), "Invalid combo combination ( ( DETAIL_BLEND_MODE == 5 ) || ( ( DETAIL_BLEND_MODE == 6 ) || ( DETAIL_BLEND_MODE == 7 ) ) )" );
 		AssertMsg( !( ( m_nDETAIL_BLEND_MODE == 8 ) || ( m_nDETAIL_BLEND_MODE == 9 ) ), "Invalid combo combination ( ( DETAIL_BLEND_MODE == 8 ) || ( DETAIL_BLEND_MODE == 9 ) )" );
+		AssertMsg( !( m_nPARALLAXCORRECT && !m_nCUBEMAP ), "Invalid combo combination ( PARALLAXCORRECT && !CUBEMAP )" );
 		AssertMsg( !( m_nBUMPMAP2 && m_nWARPLIGHTING ), "Invalid combo combination ( BUMPMAP2 && WARPLIGHTING )" );
 		AssertMsg( !( m_nWARPLIGHTING && m_nDETAILTEXTURE ), "Invalid combo combination ( WARPLIGHTING && DETAILTEXTURE )" );
 		AssertMsg( !( m_nENVMAPMASK && m_nBUMPMAP ), "Invalid combo combination ( ENVMAPMASK && BUMPMAP )" );
@@ -404,11 +419,11 @@ public:
 		AssertMsg( !( !m_nBUMPMAP && ( m_nNORMAL_DECODE_MODE == 2 ) ), "Invalid combo combination ( !BUMPMAP && ( NORMAL_DECODE_MODE == 2 ) )" );
 		AssertMsg( !( !m_nBUMPMAP && ( m_nNORMALMASK_DECODE_MODE == 1 ) ), "Invalid combo combination ( !BUMPMAP && ( NORMALMASK_DECODE_MODE == 1 ) )" );
 		AssertMsg( !( !m_nBUMPMAP && ( m_nNORMALMASK_DECODE_MODE == 2 ) ), "Invalid combo combination ( !BUMPMAP && ( NORMALMASK_DECODE_MODE == 2 ) )" );
-		return ( 288 * m_nMASKEDBLENDING ) + ( 576 * m_nBASETEXTURE2 ) + ( 1152 * m_nDETAILTEXTURE ) + ( 2304 * m_nBUMPMAP ) + ( 6912 * m_nBUMPMAP2 ) + ( 13824 * m_nCUBEMAP ) + ( 27648 * m_nENVMAPMASK ) + ( 55296 * m_nBASEALPHAENVMAPMASK ) + ( 110592 * m_nSELFILLUM ) + ( 221184 * m_nNORMALMAPALPHAENVMAPMASK ) + ( 442368 * m_nDIFFUSEBUMPMAP ) + ( 884736 * m_nBASETEXTURENOENVMAP ) + ( 1769472 * m_nBASETEXTURE2NOENVMAP ) + ( 3538944 * m_nWARPLIGHTING ) + ( 7077888 * m_nFANCY_BLENDING ) + ( 14155776 * m_nRELIEF_MAPPING ) + ( 14155776 * m_nSEAMLESS ) + ( 28311552 * m_nOUTLINE ) + ( 56623104 * m_nSOFTEDGES ) + ( 113246208 * m_nBUMPMASK ) + ( 226492416 * m_nNORMAL_DECODE_MODE ) + ( 226492416 * m_nNORMALMASK_DECODE_MODE ) + ( 226492416 * m_nDETAIL_BLEND_MODE ) + 0;
+		return ( 288 * m_nMASKEDBLENDING ) + ( 576 * m_nBASETEXTURE2 ) + ( 1152 * m_nDETAILTEXTURE ) + ( 2304 * m_nBUMPMAP ) + ( 6912 * m_nBUMPMAP2 ) + ( 13824 * m_nCUBEMAP ) + ( 27648 * m_nENVMAPMASK ) + ( 55296 * m_nBASEALPHAENVMAPMASK ) + ( 110592 * m_nSELFILLUM ) + ( 221184 * m_nNORMALMAPALPHAENVMAPMASK ) + ( 442368 * m_nDIFFUSEBUMPMAP ) + ( 884736 * m_nBASETEXTURENOENVMAP ) + ( 1769472 * m_nBASETEXTURE2NOENVMAP ) + ( 3538944 * m_nWARPLIGHTING ) + ( 7077888 * m_nFANCY_BLENDING ) + ( 14155776 * m_nRELIEF_MAPPING ) + ( 14155776 * m_nSEAMLESS ) + ( 28311552 * m_nOUTLINE ) + ( 56623104 * m_nSOFTEDGES ) + ( 113246208 * m_nBUMPMASK ) + ( 226492416 * m_nNORMAL_DECODE_MODE ) + ( 226492416 * m_nNORMALMASK_DECODE_MODE ) + ( 226492416 * m_nPARALLAXCORRECT ) + ( 452984832 * m_nDETAIL_BLEND_MODE ) + 0;
 	}
 };
 
-#define shaderStaticTest_lightmappedgeneric_ps20b psh_forgot_to_set_static_MASKEDBLENDING + psh_forgot_to_set_static_BASETEXTURE2 + psh_forgot_to_set_static_DETAILTEXTURE + psh_forgot_to_set_static_BUMPMAP + psh_forgot_to_set_static_BUMPMAP2 + psh_forgot_to_set_static_CUBEMAP + psh_forgot_to_set_static_ENVMAPMASK + psh_forgot_to_set_static_BASEALPHAENVMAPMASK + psh_forgot_to_set_static_SELFILLUM + psh_forgot_to_set_static_NORMALMAPALPHAENVMAPMASK + psh_forgot_to_set_static_DIFFUSEBUMPMAP + psh_forgot_to_set_static_BASETEXTURENOENVMAP + psh_forgot_to_set_static_BASETEXTURE2NOENVMAP + psh_forgot_to_set_static_WARPLIGHTING + psh_forgot_to_set_static_FANCY_BLENDING + psh_forgot_to_set_static_RELIEF_MAPPING + psh_forgot_to_set_static_SEAMLESS + psh_forgot_to_set_static_OUTLINE + psh_forgot_to_set_static_SOFTEDGES + psh_forgot_to_set_static_BUMPMASK + psh_forgot_to_set_static_NORMAL_DECODE_MODE + psh_forgot_to_set_static_NORMALMASK_DECODE_MODE + psh_forgot_to_set_static_DETAIL_BLEND_MODE
+#define shaderStaticTest_lightmappedgeneric_ps20b psh_forgot_to_set_static_MASKEDBLENDING + psh_forgot_to_set_static_BASETEXTURE2 + psh_forgot_to_set_static_DETAILTEXTURE + psh_forgot_to_set_static_BUMPMAP + psh_forgot_to_set_static_BUMPMAP2 + psh_forgot_to_set_static_CUBEMAP + psh_forgot_to_set_static_ENVMAPMASK + psh_forgot_to_set_static_BASEALPHAENVMAPMASK + psh_forgot_to_set_static_SELFILLUM + psh_forgot_to_set_static_NORMALMAPALPHAENVMAPMASK + psh_forgot_to_set_static_DIFFUSEBUMPMAP + psh_forgot_to_set_static_BASETEXTURENOENVMAP + psh_forgot_to_set_static_BASETEXTURE2NOENVMAP + psh_forgot_to_set_static_WARPLIGHTING + psh_forgot_to_set_static_FANCY_BLENDING + psh_forgot_to_set_static_RELIEF_MAPPING + psh_forgot_to_set_static_SEAMLESS + psh_forgot_to_set_static_OUTLINE + psh_forgot_to_set_static_SOFTEDGES + psh_forgot_to_set_static_BUMPMASK + psh_forgot_to_set_static_NORMAL_DECODE_MODE + psh_forgot_to_set_static_NORMALMASK_DECODE_MODE + psh_forgot_to_set_static_PARALLAXCORRECT + psh_forgot_to_set_static_DETAIL_BLEND_MODE
 
 
 class lightmappedgeneric_ps20b_Dynamic_Index
