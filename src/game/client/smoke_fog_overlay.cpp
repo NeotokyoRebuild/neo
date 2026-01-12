@@ -169,9 +169,9 @@ void UpdateThermalOverride()
 		}
 	}
 #ifdef GLOWS_ENABLE
-	else if (localPlayer->IsObserver() && glow_outline_effect_enable.GetBool() && (localPlayer->GetTeamNumber() == TEAM_SPECTATOR || mp_forcecamera.GetInt() == OBS_ALLOW_ALL))
+	else if (localPlayer->IsObserver() && (localPlayer->GetTeamNumber() == TEAM_SPECTATOR || mp_forcecamera.GetInt() == OBS_ALLOW_ALL))
 	{
-		g_SmokeFogOverlayThermalOverride = true;
+		g_SmokeFogOverlayThermalOverride = false;
 		g_SmokeFogOverlayAlpha = 0;
 		return;
 	}
