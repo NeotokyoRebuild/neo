@@ -2508,7 +2508,7 @@ inline void CServerNetworkProperty::CheckTransmit( CCheckTransmitInfo *pInfo )
 } */
 
 #ifdef NEO
-ConVar sv_neo_pvs_cull_roaming_spectators("sv_neo_pvs_cull_roaming_spectators", "0", FCVAR_NONE, "Transmit all entities to players who are spectating and in the roaming observer mode");
+ConVar sv_neo_pvs_cull_roaming_spectators("sv_neo_pvs_cull_roaming_spectators", "0", FCVAR_NONE, "Cull entities against PVS for players who are spectating and in the roaming observer mode");
 #endif // NEO
 void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned short *pEdictIndices, int nEdicts )
 {
