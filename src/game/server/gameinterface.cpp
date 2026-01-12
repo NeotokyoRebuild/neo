@@ -2507,6 +2507,9 @@ inline void CServerNetworkProperty::CheckTransmit( CCheckTransmitInfo *pInfo )
 	}
 } */
 
+#ifdef NEO
+ConVar sv_neo_pvs_cull_roaming_spectators("sv_neo_pvs_cull_roaming_spectators", "0", FCVAR_NONE, "Allow all entities to be network to players who are spectating and in the roaming observer mode");
+#endif // NEO
 void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned short *pEdictIndices, int nEdicts )
 {
 	// NOTE: for speed's sake, this assumes that all networkables are CBaseEntities and that the edict list
@@ -2529,7 +2532,9 @@ void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned s
 #ifndef _X360
 	const bool bIsHLTV = pRecipientPlayer->IsHLTV();
 	const bool bIsReplay = pRecipientPlayer->IsReplay();
-	const bool bIsRoamingSpectator = pRecipientPlayer->GetTeamNumber() == TEAM_SPECTATOR && pRecipientPlayer->GetObserverMode() == OBS_MODE_ROAMING;
+#ifdef NEO
+	const bool bIsRoamingSpectator = !sv_neo_pvs_cull_roaming_spectators.GetBool() && pRecipientPlayer->GetTeamNumber() == TEAM_SPECTATOR && pRecipientPlayer->GetObserverMode() == OBS_MODE_ROAMING;
+#endif // NEO
 
 	// m_pTransmitAlways must be set if HLTV client
 	Assert( bIsHLTV == ( pInfo->m_pTransmitAlways != NULL) ||
