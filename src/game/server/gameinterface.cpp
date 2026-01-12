@@ -2529,6 +2529,7 @@ void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned s
 #ifndef _X360
 	const bool bIsHLTV = pRecipientPlayer->IsHLTV();
 	const bool bIsReplay = pRecipientPlayer->IsReplay();
+	const bool bIsRoamingSpectator = pRecipientPlayer->GetTeamNumber() == TEAM_SPECTATOR && pRecipientPlayer->GetObserverMode() == OBS_MODE_ROAMING;
 
 	// m_pTransmitAlways must be set if HLTV client
 	Assert( bIsHLTV == ( pInfo->m_pTransmitAlways != NULL) ||
@@ -2605,7 +2606,11 @@ void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned s
 		CServerNetworkProperty *netProp = static_cast<CServerNetworkProperty*>( pEdict->GetNetworkable() );
 
 #ifndef _X360
+#ifdef NEO
+		if ( bIsHLTV || bIsReplay || bIsRoamingSpectator )
+#else
 		if ( bIsHLTV || bIsReplay )
+#endif // NEO
 		{
 			// for the HLTV/Replay we don't cull against PVS
 			if ( netProp->AreaNum() == skyBoxArea )
