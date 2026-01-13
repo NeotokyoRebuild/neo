@@ -3,6 +3,7 @@
 
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
+#include "view.h"
 
 #include "iclientmode.h"
 #include <vgui/ILocalize.h>
@@ -103,7 +104,7 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 		const Vector objPos = NEORules()->GetGameType() == NEO_GAME_TYPE_JGR ? NEORules()->GetJuggernautMarkerPos() : NEORules()->GetGhostPos();
 		const Vector objVec = objPos - pFPPlayer->EyePosition();
 		const float objYaw = RAD2DEG(atan2f(objVec.y, objVec.x));
-		float objAngle = safeAngle(- objYaw + pFPPlayer->EyeAngles()[YAW]);
+		float objAngle = safeAngle(- objYaw + MainViewAngles()[YAW]);
 		m_objAngle = Clamp(objAngle, -(float)m_fov / 2, (float)m_fov / 2);
 	}
 
@@ -114,7 +115,7 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 			// Update Rangefinder
 			trace_t tr;
 			Vector vecForward;
-			AngleVectors(pFPPlayer->EyeAngles(), &vecForward);
+			AngleVectors(MainViewAngles(), &vecForward);
 			UTIL_TraceLine(pFPPlayer->EyePosition(), pFPPlayer->EyePosition() + (vecForward * MAX_TRACE_LENGTH),
 						   MASK_SHOT, pFPPlayer, COLLISION_GROUP_NONE, &tr);
 			const float flDist = METERS_PER_INCH * tr.startpos.DistTo(tr.endpos);
@@ -183,7 +184,7 @@ void CNEOHud_Compass::DrawCompass() const
 		m_xPos + m_width, m_yPos + m_height,
 		m_boxColor);
 
-	const float angle = -player->EyeAngles()[YAW];
+	const float angle = -MainViewAngles()[YAW];
 	const int steps = ARRAYSIZE(ROSE);
 	for (int i = 0; i < steps; i += m_separators ? 1 : 2) {
 		const float stepAngle = (float)(i * 360) / steps;
