@@ -23,7 +23,9 @@ ConVar my_mat_fullbright( "mat_fullbright","0", FCVAR_CHEAT );
 
 ConVar r_lightmap_bicubic( "r_lightmap_bicubic", "0", FCVAR_NONE, "Enable bi-cubic (high quality) lightmap sampling." );
 
+#ifndef NEO
 extern ConVar r_flashlight_version2;
+#endif
 
 class CLightmappedGeneric_DX9_Context : public CBasePerMaterialContextData
 {
@@ -167,6 +169,16 @@ void InitParamsLightmappedGeneric_DX9( CBaseVSShader *pShader, IMaterialVar** pa
 	if( !g_pConfig->UseSpecular() && params[info.m_nEnvmap]->IsDefined() && params[info.m_nBaseTexture]->IsDefined() )
 	{
 		params[info.m_nEnvmap]->SetUndefined();
+#ifdef NEO
+		// Don't try parallax without specular
+		params[info.m_nEnvmapParallaxObb1]->SetIntValue( 0 );
+	}
+
+	// Cubemap parallax correction requires all 4 lines (if the 2nd, 3rd, or 4th are undef, undef the first one (checking done on first var)
+	if ( !( params[info.m_nEnvmapParallaxObb2]->IsDefined() && params[info.m_nEnvmapParallaxObb3]->IsDefined() && params[info.m_nEnvmapOrigin]->IsDefined() ) )
+	{
+		params[info.m_nEnvmapParallaxObb1]->SetIntValue( 0 );
+#endif
 	}
 
 	if( !params[info.m_nBaseTextureNoEnvmap]->IsDefined() )
@@ -316,6 +328,9 @@ void DrawLightmappedGeneric_DX9_Internal(CBaseVSShader *pShader, IMaterialVar** 
 			(info.m_nBlendModulateTexture != -1) &&
 			(params[info.m_nBlendModulateTexture]->IsTexture() );
 		bool hasNormalMapAlphaEnvmapMask = IS_FLAG_SET( MATERIAL_VAR_NORMALMAPALPHAENVMAPMASK );
+#ifdef NEO
+		bool hasParallaxCorrection = params[info.m_nEnvmap]->IsDefined() && params[info.m_nEnvmapParallaxObb1]->GetType() == MATERIAL_VAR_TYPE_VECTOR;
+#endif
 
 		if ( hasFlashlight && !IsX360() )				
 		{
@@ -571,6 +586,10 @@ void DrawLightmappedGeneric_DX9_Internal(CBaseVSShader *pShader, IMaterialVar** 
 					SET_STATIC_PIXEL_SHADER_COMBO( SEAMLESS, bSeamlessMapping );
 					SET_STATIC_PIXEL_SHADER_COMBO( OUTLINE, bHasOutline );
 					SET_STATIC_PIXEL_SHADER_COMBO( SOFTEDGES, bHasSoftEdges );
+#ifdef NEO
+					SET_STATIC_PIXEL_SHADER_COMBO( PARALLAXCORRECT, hasParallaxCorrection );
+					// NEO NOTE DG: Put it before DETAIL_BLEND_MODE in the fxc or else you get a fun int overflow.
+#endif
 					SET_STATIC_PIXEL_SHADER_COMBO( DETAIL_BLEND_MODE, nDetailBlendMode );
 					SET_STATIC_PIXEL_SHADER_COMBO( NORMAL_DECODE_MODE, (int)  NORMAL_DECODE_NONE );
 					SET_STATIC_PIXEL_SHADER_COMBO( NORMALMASK_DECODE_MODE, (int) NORMAL_DECODE_NONE );
@@ -860,6 +879,31 @@ void DrawLightmappedGeneric_DX9_Internal(CBaseVSShader *pShader, IMaterialVar** 
 				pContextData->m_SemiStaticCmdsOut.BindTexture( pShader, SHADER_SAMPLER3, info.m_nBlendModulateTexture, -1 );
 			}
 
+#ifdef NEO
+			if ( hasParallaxCorrection )
+			{
+				float envMapOrigin[4] = {0,0,0,0};
+				params[info.m_nEnvmapOrigin]->GetVecValue( envMapOrigin, 3 );
+				pContextData->m_SemiStaticCmdsOut.SetPixelShaderConstant( 21, envMapOrigin );
+
+				float *vecs[3];
+				vecs[0] = const_cast<float *>( params[info.m_nEnvmapParallaxObb1]->GetVecValue() );
+				vecs[1] = const_cast<float *>( params[info.m_nEnvmapParallaxObb2]->GetVecValue() );
+				vecs[2] = const_cast<float *>( params[info.m_nEnvmapParallaxObb3]->GetVecValue() );
+				float matrix[4][4];
+				for ( int i = 0; i < 3; i++ )
+				{
+					for ( int j = 0; j < 4; j++ )
+					{
+						matrix[i][j] = vecs[i][j];
+					}
+				}
+				matrix[3][0] = matrix[3][1] = matrix[3][2] = 0;
+				matrix[3][3] = 1;
+				pContextData->m_SemiStaticCmdsOut.SetPixelShaderConstant( 22, &matrix[0][0], 4 );
+			}
+#endif
+
 			pContextData->m_SemiStaticCmdsOut.End();
 		}
 	}
@@ -1015,11 +1059,13 @@ void DrawLightmappedGeneric_DX9(CBaseVSShader *pShader, IMaterialVar** params,
 										 CBasePerMaterialContextData **pContextDataPtr )
 {
 	bool hasFlashlight = pShader->UsingFlashlight( params );
+#ifndef NEO // what is the point of this??
 	if ( !IsX360() && !r_flashlight_version2.GetInt() )
 	{
 		DrawLightmappedGeneric_DX9_Internal( pShader, params, hasFlashlight, pShaderAPI, pShaderShadow, info, pContextDataPtr );
 		return;
 	}
-	
+#endif
+
 	DrawLightmappedGeneric_DX9_Internal( pShader, params, hasFlashlight, pShaderAPI, pShaderShadow, info, pContextDataPtr );
 }
