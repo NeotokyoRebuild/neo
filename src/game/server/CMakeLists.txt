@@ -1391,6 +1391,7 @@ target_sources_grouped(
     neo/neo_npc_dummy.cpp
     neo/neo_npc_dummy.h
     neo/neo_npc_targetsystem.cpp
+    neo/neo_npc_targetsystem.h
     neo/neo_player.cpp
     neo/neo_player.h
     neo/neo_smokelineofsightblocker.cpp
