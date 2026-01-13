@@ -70,11 +70,10 @@ void CNEOHud_Compass::Paint()
 
 static C_NEO_Player *GetFirstPersonPlayer()
 {
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	C_NEO_Player *pFPPlayer = pLocalPlayer;
-	if (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE)
+	C_NEO_Player *pFPPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (pFPPlayer->GetObserverMode() == OBS_MODE_IN_EYE)
 	{
-		auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget());
+		auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(pFPPlayer->GetObserverTarget());
 		if (pTargetPlayer && !pTargetPlayer->IsObserver())
 		{
 			pFPPlayer = pTargetPlayer;
@@ -102,7 +101,7 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 	if (NEORules()->GhostExists() || NEORules()->GetJuggernautMarkerPos() != vec3_origin)
 	{
 		const Vector objPos = NEORules()->GetGameType() == NEO_GAME_TYPE_JGR ? NEORules()->GetJuggernautMarkerPos() : NEORules()->GetGhostPos();
-		const Vector objVec = objPos - pFPPlayer->EyePosition();
+		const Vector objVec = objPos - MainViewOrigin();
 		const float objYaw = RAD2DEG(atan2f(objVec.y, objVec.x));
 		float objAngle = safeAngle(- objYaw + MainViewAngles()[YAW]);
 		m_objAngle = Clamp(objAngle, -(float)m_fov / 2, (float)m_fov / 2);
@@ -116,7 +115,7 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 			trace_t tr;
 			Vector vecForward;
 			AngleVectors(MainViewAngles(), &vecForward);
-			UTIL_TraceLine(pFPPlayer->EyePosition(), pFPPlayer->EyePosition() + (vecForward * MAX_TRACE_LENGTH),
+			UTIL_TraceLine(MainViewOrigin(), MainViewOrigin() + (vecForward * MAX_TRACE_LENGTH),
 						   MASK_SHOT, pFPPlayer, COLLISION_GROUP_NONE, &tr);
 			const float flDist = METERS_PER_INCH * tr.startpos.DistTo(tr.endpos);
 			if (flDist >= 999.0f || tr.surface.flags & (SURF_SKY | SURF_SKY2D))
