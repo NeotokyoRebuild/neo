@@ -2319,9 +2319,11 @@ void CGameMovement::FullObserverMove( void )
 		forward.z = 0;
 		if (fmove && smove)
 		{
-			const float moveMagnitude = Vector2D(fmove, smove).LengthSqr();
-			fmove *= moveMagnitude / fmove;
-			smove *= moveMagnitude / smove;
+			const float absFMove = fabs(fmove);
+			const float absSMove = fabs(smove);
+			const float moveMagnitude = FastSqrt((absFMove * absFMove) + (absSMove * absSMove));
+			fmove *= absFMove / moveMagnitude;
+			smove *= absSMove / moveMagnitude;
 		}
 	}
 #endif // NEO
@@ -2409,9 +2411,11 @@ void CGameMovement::FullNoClipMove( float factor, float maxacceleration )
 		forward.z = 0;
 		if (fmove && smove)
 		{
-			const float moveMagnitude = Vector2D(fabs(fmove), fabs(smove)).Length();
-			fmove *= fabs(fmove) / moveMagnitude;
-			smove *= fabs(smove) / moveMagnitude;
+			const float absFMove = fabs(fmove);
+			const float absSMove = fabs(smove);
+			const float moveMagnitude = FastSqrt((absFMove * absFMove) + (absSMove * absSMove));
+			fmove *= absFMove / moveMagnitude;
+			smove *= absSMove / moveMagnitude;
 		}
 	}
 #endif // NEO
