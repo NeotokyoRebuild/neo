@@ -2311,7 +2311,20 @@ void CGameMovement::FullObserverMove( void )
 
 	float fmove = mv->m_flForwardMove * factor;
 	float smove = mv->m_flSideMove * factor;
-
+	
+#ifdef NEO
+	const bool bDroneMove = mv->m_nButtons & IN_WALK;
+	if (bDroneMove)
+	{
+		forward.z = 0;
+		if (fmove && smove)
+		{
+			const float moveMagnitude = Vector2D(fmove, smove).LengthSqr();
+			fmove *= moveMagnitude / fmove;
+			smove *= moveMagnitude / smove;
+		}
+	}
+#endif // NEO
 	VectorNormalize (forward);  // Normalize remainder of vectors
 	VectorNormalize (right);    //
 
@@ -2389,6 +2402,19 @@ void CGameMovement::FullNoClipMove( float factor, float maxacceleration )
 	float fmove = mv->m_flForwardMove * factor;
 	float smove = mv->m_flSideMove * factor;
 
+#ifdef NEO
+	const bool bDroneMove = mv->m_nButtons & IN_WALK;
+	if (bDroneMove)
+	{
+		forward.z = 0;
+		if (fmove && smove)
+		{
+			const float moveMagnitude = Vector2D(fabs(fmove), fabs(smove)).Length();
+			fmove *= fabs(fmove) / moveMagnitude;
+			smove *= fabs(smove) / moveMagnitude;
+		}
+	}
+#endif // NEO
 	VectorNormalize (forward);  // Normalize remainder of vectors
 	VectorNormalize (right);    //
 
