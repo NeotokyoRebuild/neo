@@ -261,6 +261,7 @@ void C_HL2MP_Player::TraceAttack( const CTakeDamageInfo &info, const Vector &vec
 
 		int blood = BloodColor();
 		
+#ifndef NEO
 		CBaseEntity *pAttacker = info.GetAttacker();
 
 		if ( pAttacker )
@@ -268,6 +269,7 @@ void C_HL2MP_Player::TraceAttack( const CTakeDamageInfo &info, const Vector &vec
 			if ( HL2MPRules()->IsTeamplay() && pAttacker->InSameTeam( this ) == true )
 				return;
 		}
+#endif // NEO
 
 		if ( blood != DONT_BLEED )
 		{
