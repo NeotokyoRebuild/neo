@@ -1460,6 +1460,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_scenario_monitor.h
     neo/bot/behavior/neo_bot_seek_and_destroy.cpp
     neo/bot/behavior/neo_bot_seek_and_destroy.h
+    neo/bot/behavior/neo_bot_seek_weapon.cpp
+    neo/bot/behavior/neo_bot_seek_weapon.h
     neo/bot/behavior/neo_bot_tactical_monitor.cpp
     neo/bot/behavior/neo_bot_tactical_monitor.h
     neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.cpp
