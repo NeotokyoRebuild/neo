@@ -1718,7 +1718,10 @@ void C_NEO_Player::StartSprinting(void)
 void C_NEO_Player::StopSprinting(void)
 {
 	m_fIsSprinting = false;
-	IN_SpeedReset();
+	if (IsLocalPlayer())
+	{
+		IN_SpeedReset();
+	}
 }
 
 bool C_NEO_Player::CanSprint(void)
