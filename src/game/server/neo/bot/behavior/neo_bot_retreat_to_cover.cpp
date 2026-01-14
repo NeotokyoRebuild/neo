@@ -176,6 +176,15 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 
+	if ( threat && threat->GetEntity() && threat->GetEntity()->IsPlayer() )
+	{
+		CNEO_Player *pThreatPlayer = ToNEOPlayer( threat->GetEntity() );
+		if ( pThreatPlayer && pThreatPlayer->IsCarryingGhost() )
+		{
+			return Done( "Stopping retreat because my threat is the ghost carrier" );
+		}
+	}
+
 	if ( ShouldRetreat( me ) == ANSWER_NO )
 		return Done( "No longer need to retreat" );
 
@@ -213,6 +222,10 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 				return Done( "My cover is exposed, and there is no other cover available!" );
 			}
 		}
+		else
+		{
+			me->DisableCloak();
+		}
 
 		if ( m_actionToChangeToOnceCoverReached )
 		{
@@ -234,6 +247,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	else
 	{
 		// not in cover yet
+		me->EnableCloak( 3.0f );
+
 		m_waitInCoverTimer.Reset();
 
 		if ( m_repathTimer.IsElapsed() )

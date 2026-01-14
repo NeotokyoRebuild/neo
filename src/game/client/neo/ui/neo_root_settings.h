@@ -1,5 +1,6 @@
 #pragma once
 
+#include "shareddefs.h"
 #include "tier1/convar.h"
 #include "neo_player_shared.h"
 #include "neo_hud_crosshair.h"
@@ -37,6 +38,12 @@ enum XHairExportNotify
 
 #define NEO_BINDS_TOTAL 96
 
+// Note that this is not necessarily the same as "neo_fov" cvar max value.
+// We are restricted to supporting a max of 90 due to an engine limitation.
+constexpr auto maxSupportedFov = 90;
+static_assert(MIN_FOV <= maxSupportedFov);
+static_assert(MAX_FOV >= maxSupportedFov);
+
 struct NeoSettings
 {
 	enum EquipUtilityPriorityType
@@ -53,13 +60,12 @@ struct NeoSettings
 		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH];
 		bool bOnlySteamNick;
 		bool bMarkerSpecOnlyClantag;
-		int iFov;
-		int iViewmodelFov;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
 		int iLeanAutomatic;
 		int iEquipUtilityPriority;
+		bool bWeaponFastSwitch;
 		bool bShowPlayerSprays;
 		int iDlFilter;
 		bool bStreamerMode;
@@ -70,7 +76,6 @@ struct NeoSettings
 
 	struct Keys
 	{
-		bool bWeaponFastSwitch;
 		bool bDeveloperConsole;
 
 		struct Bind
@@ -151,6 +156,8 @@ struct NeoSettings
 		bool bMotionBlur;
 		int iHDR;
 		float flGamma;
+		int iFov;
+		int iViewmodelFov;
 
 		// Video modes
 		int iVMListSize;

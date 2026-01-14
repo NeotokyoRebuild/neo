@@ -209,8 +209,8 @@ public:
 
 	virtual void SetPickupTouch(void) override;
 
+	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo) override;
 #ifdef CLIENT_DLL
-	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 	virtual void ItemHolsterFrame() override;
 	virtual bool ShouldDraw(void) override;
 	virtual void ThirdPersonSwitch(bool bThirdPerson) override;

@@ -19,6 +19,7 @@ extern ConVar weaponstay;
 #include "ui/neo_hud_crosshair.h"
 #include "model_types.h"
 #include "c_neo_player.h"
+#include "in_main.h"
 #else
 #include "items.h"
 #include "neo_gamerules.h"
@@ -502,7 +503,6 @@ float CNEOBaseCombatWeapon::GetPenetration() const
 	return GetWpnData().m_flPenetration;
 }
 
-#ifdef CLIENT_DLL
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
 #ifdef DEBUG
@@ -518,12 +518,20 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 
 	if (pOwner)
 	{
-		pOwner->Weapon_SetZoom(false);
+		if (auto pNeoSwitchingTo = static_cast<CNEOBaseCombatWeapon*>(pSwitchingTo);
+			!pNeoSwitchingTo || (pNeoSwitchingTo  && !IsAllowedToZoom(pNeoSwitchingTo)))
+		{
+			pOwner->Weapon_SetZoom(false);
+		}
+#ifdef CLIENT_DLL
+		IN_AimToggleReset();
+#endif // CLIENT_DLL
 	}
 
 	return BaseClass::Holster(pSwitchingTo);
 }
 
+#ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
 { // Overrides the base class behaviour of reloading the weapon after its been holstered for 3 seconds
 	return;

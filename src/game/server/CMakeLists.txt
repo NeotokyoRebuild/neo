@@ -623,6 +623,7 @@ target_sources_grouped(
     lights.cpp
     lights.h
     locksounds.h
+    logic_achievement.cpp
     logic_eventlistener.cpp
     logic_eventlistener.h
     logic_measure_movement.cpp
@@ -1343,6 +1344,8 @@ target_sources_grouped(
     TARGET server
     NAME "NEO"
     FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
@@ -1435,12 +1438,24 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_behavior.h
     neo/bot/behavior/neo_bot_dead.cpp
     neo/bot/behavior/neo_bot_dead.h
+    neo/bot/behavior/neo_bot_jgr_capture.cpp
+    neo/bot/behavior/neo_bot_jgr_capture.h
+    neo/bot/behavior/neo_bot_jgr_enemy.cpp
+    neo/bot/behavior/neo_bot_jgr_enemy.h
+    neo/bot/behavior/neo_bot_jgr_escort.cpp
+    neo/bot/behavior/neo_bot_jgr_escort.h
+    neo/bot/behavior/neo_bot_jgr_juggernaut.cpp
+    neo/bot/behavior/neo_bot_jgr_juggernaut.h
+    neo/bot/behavior/neo_bot_jgr_seek.cpp
+    neo/bot/behavior/neo_bot_jgr_seek.h
     neo/bot/behavior/neo_bot_melee_attack.cpp
     neo/bot/behavior/neo_bot_melee_attack.h
     neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
     neo/bot/behavior/neo_bot_move_to_vantage_point.h
     neo/bot/behavior/neo_bot_retreat_to_cover.cpp
     neo/bot/behavior/neo_bot_retreat_to_cover.h
+    neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
+    neo/bot/behavior/neo_bot_retreat_from_grenade.h
     neo/bot/behavior/neo_bot_scenario_monitor.cpp
     neo/bot/behavior/neo_bot_scenario_monitor.h
     neo/bot/behavior/neo_bot_seek_and_destroy.cpp

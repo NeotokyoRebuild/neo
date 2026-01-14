@@ -25,6 +25,7 @@ void IN_LeanReset();
 void IN_SpeedReset();
 void IN_LeanToggleReset();
 void IN_AimToggleReset();
+void LiftAllToggleKeys();
 #endif // NEO
 
 #endif // IN_MAIN_H

@@ -44,11 +44,13 @@ void CNEOGrenadeFrag::Spawn(void)
 	SetElasticity(sv_neo_grenade_cor.GetFloat());
 	SetGravity(sv_neo_grenade_gravity.GetFloat());
 	SetFriction(sv_neo_grenade_friction.GetFloat());
-	SetCollisionGroup(COLLISION_GROUP_WEAPON);
+	SetCollisionGroup(COLLISION_GROUP_PROJECTILE);
 	SetDetonateTimerLength(FLT_MAX);
 
 	SetThink(&CNEOGrenadeFrag::DelayThink);
 	SetNextThink(gpGlobals->curtime);
+
+	m_flNextSoundTime = gpGlobals->curtime;
 }
 
 void CNEOGrenadeFrag::Precache(void)
@@ -77,15 +79,17 @@ void CNEOGrenadeFrag::DelayThink()
 		return;
 	}
 
-	if (!m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime)
-	{
 #if !defined( CLIENT_DLL )
-		CSoundEnt::InsertSound(SOUND_DANGER, GetAbsOrigin(), 400, 1.5, this);
-#endif
-		m_bHasWarnedAI = true;
+	// Emit danger sound periodically for bots to hear
+	if (gpGlobals->curtime >= m_flNextSoundTime)
+	{
+		// 400 radius, 0.5s duration. Bots need to react quickly.
+		CSoundEnt::InsertSound(SOUND_DANGER, GetAbsOrigin(), 400, 0.5f, this, SOUNDENT_CHANNEL_REPEATED_DANGER);
+		m_flNextSoundTime = gpGlobals->curtime + 0.35f;
 	}
+#endif
 
-	SetNextThink(gpGlobals->curtime + 0.1);
+	SetNextThink(gpGlobals->curtime + 0.1f);
 }
 
 void CNEOGrenadeFrag::Explode(trace_t* pTrace, int bitsDamageType)

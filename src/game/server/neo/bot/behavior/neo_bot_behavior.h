@@ -51,6 +51,7 @@ private:
 	bool m_isWaitingForFullReload;
 
 	void FireWeaponAtEnemy( CNEOBot *me );
+	float GetFireDurationByDifficulty( CNEOBot *me ) const;
 
 	CHandle< CBaseEntity > m_lastTouch;
 	float m_lastTouchTime;
@@ -70,4 +71,5 @@ private:
 	IntervalTimer m_undergroundTimer;
 
 	CountdownTimer m_reevaluateClassTimer;
+	bool m_bPrevBreakBreakableInPath = false;
 };

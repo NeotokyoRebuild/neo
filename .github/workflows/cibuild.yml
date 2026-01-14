@@ -337,7 +337,7 @@ jobs:
       uses: actions/download-artifact@v4
 
     - name: Packing artifacts
-      run: 'parallel 7z a -tzip -mx=9 "{}.zip" "./{}/*" ::: neo-*'
+      run: 'parallel 7z a -t7z -m0=lzma -mx=9 "{}.7z" "./{}/*" ::: neo-*'
 
     - name: Create & upload latest build
       env:
@@ -347,7 +347,7 @@ jobs:
         # Delete old "latest" (delete step always returns true so that even if there's no release, it still uploads)
         gh release delete latest --cleanup-tag --yes --repo "$REPO_INFO" || true
         # Create new "latest"
-        gh release create latest neo-*.zip --prerelease --title "Latest Master Build" --repo "$REPO_INFO"
+        gh release create latest neo-*.7z --prerelease --title "Latest Master Build" --repo "$REPO_INFO"
 
   upload-release:
     name: Upload Release
@@ -366,10 +366,10 @@ jobs:
       run: 'rm -r *-Debug'
 
     - name: Packing artifacts
-      run: 'parallel 7z a -tzip -mx=9 "{= s/neo-(.*)/neo-$GITHUB_REF_NAME-\1.zip/ =}" "./{}/*" ::: neo-*'
+      run: 'parallel 7z a -t7z -m0=lzma -mx=9 "{= s/neo-(.*)/neo-$GITHUB_REF_NAME-\1.7z/ =}" "./{}/*" ::: neo-*'
 
     - name: Upload assets to a release
       env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_INFO: ${{ github.repository }}
-      run: 'gh release upload "$GITHUB_REF_NAME" neo-*.zip --clobber --repo "$REPO_INFO"'
+      run: 'gh release upload "$GITHUB_REF_NAME" neo-*.7z --clobber --repo "$REPO_INFO"'

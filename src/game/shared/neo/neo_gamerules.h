@@ -30,6 +30,11 @@
 	#define CNEOGameRulesProxy C_NEOGameRulesProxy
 #endif
 
+// NEO JANK (Rain): magic value for signaling a mp_restart originated from "neo_restart_this".
+// This is a hack around neo_restart_this leaking edicts for some reason; for now, it just
+// repurposes the mp_restartgame logic but without the HL2DM-style center print.
+constexpr float MAGIC_NEO_RESTART_THIS = 0xdaff;
+
 class CNEOGameRulesProxy : public CHL2MPGameRulesProxy
 {
 public:
@@ -179,6 +184,8 @@ public:
 	CBaseEntity *GetPlayerSpawnSpot(CBasePlayer *pPlayer) override;
 
 	virtual bool IsOfficialMap(void) override;
+
+	virtual void MarkAchievement ( IRecipientFilter& filter, char const *pchAchievementName ) override;
 
 	virtual void InitDefaultAIRelationships(void);
 #endif
@@ -439,6 +446,7 @@ private:
 	friend class CNEO_GhostBoundary;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
+	bool m_bGotMatchWinner = false;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);

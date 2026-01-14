@@ -41,6 +41,7 @@ public:
 protected:
 	bool	m_inSolid;
 	bool	m_punted;
+	float	m_flNextSoundTime;
 };
 
 CBaseGrenadeProjectile *NEOFraggrenade_Create(const Vector &position, const QAngle &angles, const Vector &velocity,
