@@ -218,6 +218,21 @@ void sndVictoryVolumeChangeCallback(IConVar* cvar [[maybe_unused]], const char* 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0, sndVictoryVolumeChangeCallback);
 #endif // CLIENT_DLL
 
+#ifdef CLIENT_DLL
+void CNEOGameRulesProxy::OnDataChanged(DataUpdateType_t updateType)
+{
+	BaseClass::OnDataChanged(updateType);
+
+	static int oldGameType = NEORules()->GetGameType();
+	if (NEORules()->GetGameType() != oldGameType)
+	{
+		oldGameType = NEORules()->GetGameType();
+		C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		pLocalNeoPlayer->UpdateGlowEffects(pLocalNeoPlayer->GetTeamNumber());
+	}
+}
+#endif // CLIENT_DLL
+
 REGISTER_GAMERULES_CLASS( CNEORules );
 
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
