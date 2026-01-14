@@ -41,7 +41,7 @@ IMPLEMENT_SERVERCLASS_ST(CNEOGhostCapturePoint, DT_NEOGhostCapturePoint)
 	SendPropFloat(SENDINFO(m_flCapzoneRadius)),
 
 	SendPropInt(SENDINFO(m_iOwningTeam), NumBitsForCount(TEAM__TOTAL), SPROP_UNSIGNED),
-	SendPropInt(SENDINFO(m_iSuccessfulCaptorClientIndex), NumBitsForCount(MAX_PLAYERS), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iSuccessfulCaptorClientIndex), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 
 	SendPropBool(SENDINFO(m_bGhostHasBeenCaptured)),
 	SendPropBool(SENDINFO(m_bIsActive)),
