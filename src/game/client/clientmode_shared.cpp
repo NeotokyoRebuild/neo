@@ -823,6 +823,13 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 		engine->ClientCmd( "spec_prev" );
 		return 0;
 	}
+#ifdef NEO
+	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+specmouseplayer") == 0)
+	{
+		engine->ClientCmd( "spec_mouse_player" );
+		return 0;
+	}
+#endif // NEO
 	else if ( down && pszCurrentBinding && Q_strcmp( pszCurrentBinding, "+jump" ) == 0 )
 	{
 		engine->ClientCmd( "spec_mode" );
