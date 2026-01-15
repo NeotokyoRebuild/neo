@@ -6952,34 +6952,16 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 		return true;
 	}
 #ifdef NEO
-	else if (stricmp(cmd, "spec_mouse_player") == 0)
+	else if (stricmp(cmd, "spec_player_entity_number") == 0)
 	{
-		if (GetObserverMode() > OBS_MODE_FIXED)
+		if (GetObserverMode() > OBS_MODE_FIXED && args.ArgC() == 2)
 		{
-			CNEO_Player *target = nullptr;
-			float targetDotProduct = -1;
-			for (int i = 1; i < gpGlobals->maxClients; i++)
-			{
-				CNEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
-				if (IsValidObserverTarget(pPlayer))
-				{
-					Vector vecForward;
-					AngleVectors( EyeAngles(), &vecForward );
+			int targetEntIndex = atoi( args[1] );
+			CBasePlayer* target = UTIL_PlayerByIndex(targetEntIndex);
 
-					Vector vecToTarget = pPlayer->WorldSpaceCenter() - EyePosition();
-					vecToTarget.NormalizeInPlace();
-					float dotProduct = DotProduct(vecForward, vecToTarget);
-					if (dotProduct > targetDotProduct)
-					{
-						targetDotProduct = dotProduct;
-						target = pPlayer;
-					}
-				}
-			}
-
-			if (target) {
+			if (SetObserverTarget( target )) {
+				m_bForcedObserverMode = false;
 				SetObserverMode(OBS_MODE_IN_EYE);
-				SetObserverTarget( target );
 			}
 		}
 		return true;
