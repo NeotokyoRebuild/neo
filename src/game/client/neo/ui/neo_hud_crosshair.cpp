@@ -308,6 +308,10 @@ void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQM
 int HalfInaccuracyConeInScreenPixels(C_NEOBaseCombatWeapon* pWeapon, int halfScreenWidth)
 {
 	float spread = pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_FIREARM ? pWeapon->GetBulletSpread().x : 0.f;
+	if (!spread)
+	{
+		return 0;
+	}
 	Vector pointInWorldSpaceOnSpreadCone = MainViewOrigin() + MainViewForward() + (MainViewRight() * spread);
 	Vector pointInScreenSpaceOnSpreadCone = vec3_origin;
 	ScreenTransform(pointInWorldSpaceOnSpreadCone, pointInScreenSpaceOnSpreadCone);
