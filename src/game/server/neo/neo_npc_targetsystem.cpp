@@ -239,11 +239,12 @@ void CNEO_NPCTargetSystem::Think()
 	{
 		if (gpGlobals->curtime >= m_flNextFireTime)
 		{
-			Vector const vecSrc = m_hDamageSource.Get()->GetAbsOrigin();
-			Vector const vecTarget = pBestTarget->EyePosition();
+			const Vector vecSrc = m_hDamageSource.Get()->GetAbsOrigin();
+			const Vector vecTarget = pBestTarget->EyePosition();
 			Vector vecDir = vecTarget - vecSrc;
 			VectorNormalize(vecDir);
 
+			// This intentionally should not create any tracer / decal effects being a server side only operation
 			FireBulletsInfo_t info( 1, vecSrc, vecDir, vec3_origin, MAX_TRACE_LENGTH, GetAmmoDef()->Index("AMMO_PRI"), 28.0f, true );
 			info.m_flDamage = m_flDamage;
 			FireBullets(info);

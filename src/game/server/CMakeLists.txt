@@ -1371,6 +1371,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
     neo/neo_bloom_controller.cpp
     neo/neo_client.cpp
