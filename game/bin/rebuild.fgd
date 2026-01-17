@@ -411,3 +411,42 @@
 [
 	targetname(target_source) : "Name" : : "The name that other entities refer to this entity by."
 ]
+
+@PointClass base(Targetname, Parentname) iconsprite("vgui/hud/cp/cp_1.vmt") = neo_worldpos_marker : "Custom Marker"
+[
+	StartDisabled(choices) : "Start Disabled" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	scale(string) : "Scale" : "0.5" : "Scale multiplier of the sprite."
+	rendercolor(color255) : "Sprite Color (R G B)" : "255 255 255"
+	Name(string) : "Text to Display" : ""
+	showdistance(choices) : "Show Distance" : 1 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	capzoneeffect(choices) : "Capture Point FX" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	SpriteName1(sprite) : "Sprite 1" : "" : "Material of the sprite to be drawn."
+	SpriteName2(sprite) : "Sprite 2" : "" : "Material of the sprite to be drawn."
+	SpriteName3(sprite) : "Sprite 3" : "" : "Material of the sprite to be drawn."
+	SpriteName4(sprite) : "Sprite 4" : "" : "Material of the sprite to be drawn."
+	SpriteName5(sprite) : "Sprite 5" : "" : "Material of the sprite to be drawn."
+	SpriteName6(sprite) : "Sprite 6" : "" : "Material of the sprite to be drawn."
+	SpriteName7(sprite) : "Sprite 7" : "" : "Material of the sprite to be drawn."
+	SpriteName8(sprite) : "Sprite 8" : "" : "Material of the sprite to be drawn."
+	SpriteName9(sprite) : "Sprite 9" : "" : "Material of the sprite to be drawn."
+	SpriteName10(sprite) : "Sprite 10" : "" : "Material of the sprite to be drawn."
+	
+	input Enable(void) : "Turn on." 
+	input Disable(void) : "Turn off."
+	input SetSprite(integer) : "Switch to a sprite from the SpriteName KVs."
+	input SetText(string) : "Set the message text."
+	input Alpha(integer) : "Sets the sprite's alpha (0 - 255)."
+	input Color(color255) : "Sets the sprite's render color (R G B)."
+]
