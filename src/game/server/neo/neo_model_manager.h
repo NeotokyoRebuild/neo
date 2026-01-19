@@ -139,18 +139,18 @@ public:
 
 	void Precache(void) const;
 
-	const char *GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
-		int iTeam, NeoGib nGib = NEO_GIB_ALL) const;
+	static const char *GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
+		int iTeam, NeoGib nGib = NEO_GIB_ALL);
 
-	const char* GetGibModel(NeoSkin nSkin, NeoClass nClass,
-		int iTeam, NeoGibLimb nGib = NEO_GIB_LIMB_HEAD) const;
+	static const char* GetGibModel(NeoSkin nSkin, NeoClass nClass,
+		int iTeam, NeoGibLimb nGib = NEO_GIB_LIMB_HEAD);
 	
-	const char *GetPlayerModel(NeoSkin nSkin,
-		NeoClass nClass, int iTeam) const;
+	static const char *GetPlayerModel(NeoSkin nSkin,
+		NeoClass nClass, int iTeam);
 	
-	const char *GetViewModel(NeoViewmodel nWepVm, int iTeam = TEAM_JINRAI) const;
+	static const char *GetViewModel(NeoViewmodel nWepVm, int iTeam = TEAM_JINRAI);
 
-	const char *GetWeaponModel(NeoWeaponModel nWep) const;
+	static const char *GetWeaponModel(NeoWeaponModel nWep);
 
 private:
 	// We are singleton

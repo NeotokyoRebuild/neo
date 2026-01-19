@@ -485,7 +485,7 @@ static inline int GetTeamArrOffset(int iTeam)
 
 // Returns a third person corpse, or if defined, a related gib body part.
 const char* CNEOModelManager::GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
-	int iTeam, NeoGib nGib) const
+	int iTeam, NeoGib nGib)
 {
 	if (nClass == NEO_CLASS_VIP)
 	{
@@ -509,7 +509,7 @@ const char* CNEOModelManager::GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
 
 // Returns a gib body part.
 const char* CNEOModelManager::GetGibModel(NeoSkin nSkin, NeoClass nClass,
-	int iTeam, NeoGibLimb nGib) const
+	int iTeam, NeoGibLimb nGib)
 {
 	// NEO FIXME (Rain): Shouldn't we get the "models/nt/vipgib..." variants here?
 	if (nClass == NEO_CLASS_VIP)
@@ -541,7 +541,7 @@ const char* CNEOModelManager::GetGibModel(NeoSkin nSkin, NeoClass nClass,
 // Returns a third person player model.
 // NEO FIXME (Rain): this is sometimes off. Are we indexing incorrectly, or is the cvar logic flawed?
 const char *CNEOModelManager::GetPlayerModel(NeoSkin nSkin,
-	NeoClass nClass, int iTeam) const
+	NeoClass nClass, int iTeam)
 {
 	if (nClass == NEO_CLASS_VIP)
 	{
@@ -586,7 +586,7 @@ const char *CNEOModelManager::GetPlayerModel(NeoSkin nSkin,
 }
 
 // Returns a first person view model.
-const char *CNEOModelManager::GetViewModel(NeoViewmodel nWepVm, int iTeam) const
+const char *CNEOModelManager::GetViewModel(NeoViewmodel nWepVm, int iTeam)
 {
 	if (nWepVm == NEO_VM_VIP_SMAC)
 	{
@@ -605,7 +605,7 @@ const char *CNEOModelManager::GetViewModel(NeoViewmodel nWepVm, int iTeam) const
 }
 
 // Returns a third person weapon model.
-const char *CNEOModelManager::GetWeaponModel(NeoWeaponModel nWep) const
+const char *CNEOModelManager::GetWeaponModel(NeoWeaponModel nWep)
 {
 	if (nWep < 0 || nWep >= ARRAYSIZE(weapons))
 	{

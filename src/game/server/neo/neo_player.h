@@ -311,7 +311,6 @@ public:
 
 private:
 	bool m_bFirstDeathTick;
-	bool m_bCorpseSet;
 	bool m_bPreviouslyReloading;
 	bool m_szNeoNameHasSet;
 

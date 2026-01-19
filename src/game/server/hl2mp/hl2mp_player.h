@@ -163,6 +163,9 @@ public:
 
 	// Tracks our ragdoll entity.
 	CNetworkHandle( CBaseEntity, m_hRagdoll );	// networked entity handle 
+#ifdef NEO
+	void SetRagdollModel(const int modelIndex);
+#endif // NEO
 
 	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 

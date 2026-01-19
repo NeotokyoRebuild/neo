@@ -1233,6 +1233,9 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE( C_HL2MPRagdoll, DT_HL2MPRagdoll, CHL2MPRagdoll 
 	RecvPropInt( RECVINFO(m_nForceBone) ),
 	RecvPropVector( RECVINFO(m_vecForce) ),
 	RecvPropVector( RECVINFO( m_vecRagdollVelocity ) )
+#ifdef NEO
+	,RecvPropInt(RECVINFO(m_iRagdollModel))
+#endif // NEO
 END_RECV_TABLE()
 
 
@@ -1241,6 +1244,7 @@ C_HL2MPRagdoll::C_HL2MPRagdoll()
 {
 #ifdef NEO
 	m_flNeoCreateTime = gpGlobals->curtime;
+	m_iRagdollModel = -1;
 #endif // NEO
 }
 
@@ -1321,7 +1325,11 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	// then we can make ourselves start out exactly where the player is.
 	C_HL2MP_Player *pPlayer = dynamic_cast< C_HL2MP_Player* >( m_hPlayer.Get() );
 	
-	if ( pPlayer && !pPlayer->IsDormant() )
+#ifdef NEO
+	SetModelIndex(m_iRagdollModel ? m_iRagdollModel : m_nModelIndex);
+#endif // NEO
+
+	if ( pPlayer /* && !pPlayer->IsDormant() */ )
 	{
 		// move my current model instance to the ragdoll's so decals are preserved.
 		pPlayer->SnatchModelInstance( this );
@@ -1378,7 +1386,9 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 		
 	}
 
+#ifndef NEO
 	SetModelIndex( m_nModelIndex );
+#endif // NEO
 
 	// Make us a ragdoll..
 	m_nRenderFX = kRenderFxRagdoll;

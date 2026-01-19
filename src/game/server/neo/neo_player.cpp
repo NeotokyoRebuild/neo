@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_player.h"
+#include "hl2mp_player.h"
 
 #include "neo_predicted_viewmodel.h"
 #include "neo_predicted_viewmodel_muzzleflash.h"
@@ -38,6 +39,8 @@
 #include "player_resource.h"
 #include "neo_player_shared.h"
 #include "bot/neo_bot.h"
+
+#include <map>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -489,7 +492,6 @@ CNEO_Player::CNEO_Player()
 	m_mapPlayerFogCache.SetLessFunc( DefLessFunc(int) );
 
 	m_bFirstDeathTick = true;
-	m_bCorpseSet = false;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsPendingSpawnForThisRound = false;
@@ -575,7 +577,6 @@ void CNEO_Player::Spawn(void)
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
-	m_bCorpseSet = false;
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
@@ -2005,10 +2006,15 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	BaseClass::Event_Killed(info);
+
 	if (!m_bForceServerRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
 		CreateRagdollEntity();
 	}
+
+	// Handle Corpse and Gibs
+	SetDeadModel(info);
 
 	StopWaterDeathSounds();
 
@@ -2027,14 +2033,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
-	}
-
-	BaseClass::Event_Killed(info);
-
-	// Handle Corpse and Gibs
-	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
-	{
-		SetDeadModel(info);
 	}
 
 	SpectatorTakeoverPlayerRevert(false); // soft reset: may still have live impostor
@@ -2094,7 +2092,6 @@ void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector da
 	
 	if (pNeoWeapon->IsEffectActive( EF_BONEMERGE ))
 	{
-		//int iBIndex = LookupBone("valveBiped.Bip01_R_Hand"); NEOTODO (Adam) Should mimic the behaviour in basecombatcharacter that places the weapon such that the bones used in the bonemerge overlap
 		Vector vFacingDir = BodyDirection2D();
 		pNeoWeapon->SetAbsOrigin(Weapon_ShootPosition() + vFacingDir);
 	}
@@ -2117,90 +2114,47 @@ void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector da
 
 void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 {
-	m_bCorpseSet = true;
-
-	int deadModelType = -1;
-
 	if (!m_bAllowGibbing || m_bForceServerRagdoll) // Prevent gibbing if a custom player model has been set via I/O or the ragdoll is serverside
 	{
 		return;
 	}
 
+	constexpr const int NUM_MODELS_WITHOUT_GIB = 1;
+	std::map<char, char> HITGROUP_TO_MODEL = {
+		{HITGROUP_GENERIC, -1},
+		{HITGROUP_HEAD, NEO_GIB_LIMB_HEAD + NUM_MODELS_WITHOUT_GIB},
+		{HITGROUP_CHEST, -1},
+		{HITGROUP_STOMACH, -1},
+		{HITGROUP_LEFTARM, NEO_GIB_LIMB_LARM + NUM_MODELS_WITHOUT_GIB},
+		{HITGROUP_RIGHTARM, NEO_GIB_LIMB_RARM + NUM_MODELS_WITHOUT_GIB},
+		{HITGROUP_LEFTLEG, NEO_GIB_LIMB_LLEG + NUM_MODELS_WITHOUT_GIB},
+		{HITGROUP_RIGHTLEG, NEO_GIB_LIMB_RLEG + NUM_MODELS_WITHOUT_GIB},
+		{HITGROUP_GEAR, -1},
+	};
+
+	char deadModelType = HITGROUP_TO_MODEL.contains(LastHitGroup()) ? HITGROUP_TO_MODEL[LastHitGroup()] : -1;
 	if (info.GetDamageType() & DMG_BLAST)
 	{
-		deadModelType = 0;
+		deadModelType = NEO_GIB_ALL;
 	}
-	else
-	{ // Set model based on last hitgroup
-		switch (LastHitGroup())
-		{
-		case 1: // Head
-			deadModelType = 1;
-			break;
-		case 4: // Left Arm
-			deadModelType = 2;
-			break;
-		case 5: // Right Arm
-			deadModelType = 4;
-			break;
-		case 6: // Left Leg
-			deadModelType = 3;
-			break;
-		case 7: // Right Leg
-			deadModelType = 5;
-			break;
-		}
-	}
-
 	if (deadModelType == -1)
 		return;
 
-	CNEOModelManager* modelManager = CNEOModelManager::Instance();
-	if (!modelManager)
-	{
-		Assert(false);
-		Warning("Failed to get Neo model manager\n");
-		return;
-	}
-
-	if (deadModelType == 0)
+	if (deadModelType == NEO_GIB_ALL)
 	{
 		for (int i = 0; i < NEO_GIB_LIMB__ENUM_COUNT; i++)
 		{
-			SpawnSpecificGibs(10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(i)));
+			SpawnSpecificGibs(10, 1000, CNEOModelManager::GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(i)));
 		}
 		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_ALL);
 	}
 	else
 	{
-		SpawnSpecificGibs(10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType - 1)));
+		SpawnSpecificGibs(10, 1000, CNEOModelManager::GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType - NUM_MODELS_WITHOUT_GIB)));
 		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_GORE | FX_BLOODSPRAY_DROPS);
 	}
-	SetPlayerCorpseModel(deadModelType);
-}
 
-void CNEO_Player::SetPlayerCorpseModel(int type)
-{
-	CNEOModelManager* modelManager = CNEOModelManager::Instance();
-	if (!modelManager)
-	{
-		Assert(false);
-		Warning("Failed to get Neo model manager\n");
-		return;
-	}
-	const char* model = modelManager->GetCorpseModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGib(type));
-
-	if (!*model)
-	{
-		Assert(false);
-		Warning("Failed to find model string for Neo player corpse\n");
-		return;
-	}
-
-	if (m_hRagdoll)
-	{
-		m_hRagdoll->SetModel(model);
-	}
+	SetRagdollModel(modelinfo->GetModelIndex(CNEOModelManager::GetCorpseModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGib(deadModelType))));
 }
 
 void CNEO_Player::SpawnSpecificGibs(float vMinVelocity, float vMaxVelocity, const char* cModelName)
@@ -3398,6 +3352,11 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 		return FL_EDICT_ALWAYS;
 
 	const auto* otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+	
+	if (IsDead() && otherNeoPlayer != this)
+	{
+		return FL_EDICT_DONTSEND;
+	}
 
 	if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE
@@ -3763,7 +3722,6 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
 			m_botThermOpticCamoDisruptedTimer.Invalidate(); // taken over by player
 			m_bFirstDeathTick = pPlayerTakeoverTarget->m_bFirstDeathTick;
-			m_bCorpseSet = pPlayerTakeoverTarget->m_bCorpseSet;
 			m_bPreviouslyReloading = pPlayerTakeoverTarget->m_bPreviouslyReloading;
 			m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
 			m_bIsPendingSpawnForThisRound = pPlayerTakeoverTarget->m_bIsPendingSpawnForThisRound;
