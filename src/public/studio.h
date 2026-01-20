@@ -28,6 +28,10 @@
 #include "localflexcontroller.h"
 #include "utlsymbol.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 #define STUDIO_ENABLE_PERF_COUNTERS
 
 #define STUDIO_SEQUENCE_ACTIVITY_LOOKUPS_ARE_SLOW 0 
@@ -3315,10 +3319,49 @@ inline int Studio_LoadVertexes( const vertexFileHeader_t *pTempVvdHdr, vertexFil
 		}
 
 		// copy vertexes
+#ifdef NEO
+		// NEO NOTE (Rain): we don't currently hit this code path anywhere because we aren't building VRAD, hence this is untested...
+		// but see the "paranoidMemcpy" check below for the validation sanity checks.
+		if constexpr (!std::is_trivially_copyable_v<mstudiovertex_t>)
+		{
+			constexpr int increment = 48;
+			static_assert(sizeof(mstudiovertex_t) == increment);
+			for (int vert = 0; vert < numVertexes; ++vert)
+			{
+				const auto offset = vert * increment;
+				auto* dst = (mstudiovertex_t*)((byte*)pNewVvdHdr + pNewVvdHdr->vertexDataStart) + offset;
+				auto* src = (mstudiovertex_t*)((byte*)pTempVvdHdr + pTempVvdHdr->vertexDataStart) + pFixupTable[i].sourceVertexID + offset;
+				Assert(dst);
+				Assert(src);
+				*dst = *src;
+			}
+		}
+		else
+#endif
 		memcpy(
 			(mstudiovertex_t *)((byte *)pNewVvdHdr+pNewVvdHdr->vertexDataStart) + target,
 			(mstudiovertex_t *)((byte *)pTempVvdHdr+pTempVvdHdr->vertexDataStart) + pFixupTable[i].sourceVertexID,
 			pFixupTable[i].numVertexes*sizeof(mstudiovertex_t) );
+
+#ifdef NEO
+#ifdef DEBUG
+		constexpr bool paranoidMemcpy = true && IsWindows(); // because MSVC is more lenient about nontrivial memcpy with Wall
+		if constexpr (paranoidMemcpy)
+		{
+			auto* memBeforeBuf = malloc(pFixupTable[i].numVertexes * sizeof(mstudiovertex_t));
+			Assert(memBeforeBuf);
+			memcpy(memBeforeBuf, (mstudiovertex_t*)((byte*)pNewVvdHdr + pNewVvdHdr->vertexDataStart) + target, pFixupTable[i].numVertexes * sizeof(mstudiovertex_t));
+			memcpy(
+				(mstudiovertex_t *)((byte *)pNewVvdHdr+pNewVvdHdr->vertexDataStart) + target,
+				(mstudiovertex_t *)((byte *)pTempVvdHdr+pTempVvdHdr->vertexDataStart) + pFixupTable[i].sourceVertexID,
+				pFixupTable[i].numVertexes*sizeof(mstudiovertex_t) );
+			const auto res = memcmp((mstudiovertex_t*)((byte*)pNewVvdHdr + pNewVvdHdr->vertexDataStart) + target, memBeforeBuf,
+				pFixupTable[i].numVertexes * sizeof(mstudiovertex_t));
+			free(memBeforeBuf);
+			Assert(!!!res);
+		}
+#endif
+#endif
 
 		if (bNeedsTangentS)
 		{
