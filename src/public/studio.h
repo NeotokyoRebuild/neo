@@ -3365,11 +3365,45 @@ inline int Studio_LoadVertexes( const vertexFileHeader_t *pTempVvdHdr, vertexFil
 
 		if (bNeedsTangentS)
 		{
+#ifdef NEO
+			if constexpr (!std::is_trivially_copyable_v<Vector4D>)
+			{
+				for (int vert = 0; vert < pFixupTable[i].numVertexes; ++vert)
+				{
+					const auto offset = vert * sizeof(Vector4D);
+					auto* src = (Vector4D*)((byte*)pNewVvdHdr + pNewVvdHdr->tangentDataStart) + target + offset;
+					auto* dst = (Vector4D*)((byte*)pTempVvdHdr + pTempVvdHdr->tangentDataStart) + pFixupTable[i].sourceVertexID + offset;
+					Assert(dst);
+					Assert(src);
+					*src = *dst;
+				}
+			}
+			else
+#endif
 			// copy tangents
 			memcpy(
 				(Vector4D *)((byte *)pNewVvdHdr+pNewVvdHdr->tangentDataStart) + target,
 				(Vector4D *)((byte *)pTempVvdHdr+pTempVvdHdr->tangentDataStart) + pFixupTable[i].sourceVertexID,
 				pFixupTable[i].numVertexes*sizeof(Vector4D) );
+
+#ifdef NEO
+#ifdef DEBUG
+			if constexpr (paranoidMemcpy)
+			{
+				auto* memBeforeBuf = malloc(pFixupTable[i].numVertexes * sizeof(Vector4D));
+				Assert(memBeforeBuf);
+				memcpy(memBeforeBuf, (Vector4D*)((byte*)pNewVvdHdr + pNewVvdHdr->tangentDataStart) + target, pFixupTable[i].numVertexes * sizeof(Vector4D));
+				memcpy(
+					(Vector4D *)((byte *)pNewVvdHdr+pNewVvdHdr->tangentDataStart) + target,
+					(Vector4D *)((byte *)pTempVvdHdr+pTempVvdHdr->tangentDataStart) + pFixupTable[i].sourceVertexID,
+					pFixupTable[i].numVertexes*sizeof(Vector4D) );
+				const auto res = memcmp((mstudiovertex_t*)((byte*)pNewVvdHdr + pNewVvdHdr->vertexDataStart) + target, memBeforeBuf,
+					pFixupTable[i].numVertexes * sizeof(mstudiovertex_t));
+				free(memBeforeBuf);
+				Assert(!!!res);
+			}
+#endif
+#endif
 		}
 
 		// data is placed consecutively
