@@ -145,6 +145,16 @@ public:
 	void Clear( void )
 	{
 		Assert( m_pData );
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<
+			std::remove_pointer_t<decltype(m_pData)>>)
+		{
+			m_pData->x = Four_Zeros;
+			m_pData->y = Four_Zeros;
+			m_pData->z = Four_Zeros;
+		}
+		else
+#endif
 		memset( m_pData, 0, m_nHeight*m_nPaddedWidth*sizeof(m_pData[0]) );
 	}
 
