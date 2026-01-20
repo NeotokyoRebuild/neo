@@ -84,7 +84,9 @@ void C_BaseEntity::PhysicsPushEntity( const Vector& push, trace_t *pTrace )
 	Vector prevOrigin;
 	VectorCopy( GetAbsOrigin(), prevOrigin );
 
+#ifndef NEO
 	trace_t		trace;
+#endif
 	PhysicsCheckSweep( prevOrigin, push, pTrace );
 
 	if ( pTrace->fraction )

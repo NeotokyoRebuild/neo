@@ -117,12 +117,20 @@ void CHudAnimationInfo::PaintString( int& x, int &y, const char *sz, Color *pLeg
 		surface()->DrawSetTextColor( Color( 0, 0, 0, 0 ) );
 	}
 
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
 
 	surface()->DrawSetTextColor( m_ItemColor );
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	int fontHeight = surface()->GetFontTall( m_ItemFont );
 
@@ -265,7 +273,11 @@ static int HudElementCompletion( const char *partial, char commands[ COMMAND_COM
 		// Insert into lookup
 		if ( substring[0] )
 		{
+#ifdef NEO
+			if ( !V_strncasecmp( e->GetName(), substring, V_strlen( substring ) ) )
+#else
 			if ( !Q_strncasecmp( e->GetName(), substring, strlen( substring ) ) )
+#endif
 			{
 				add = true;
 			}

@@ -50,7 +50,7 @@ void CNEOHud_GhostCapPoint::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetBounds(0, 0, m_iPosX, m_iPosY);
 
 	// Override CNEOHud_WorldPosMarker's sizing with our own
-	const int widerAxis = max(m_viewWidth, m_viewHeight);
+	const int widerAxis = Max(m_viewWidth, m_viewHeight);
 	m_viewCentreSize = widerAxis * (cl_neo_hud_center_ghost_cap_size.GetFloat() / 100.0f);
 }
 

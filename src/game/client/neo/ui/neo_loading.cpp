@@ -148,7 +148,9 @@ void CNeoLoading::FetchGameUIPanels()
 	{
 		const vgui::VPANEL curLoadChPanel = vgui::ipanel()->GetChild(loadingPanel, i);
 		const char *curLoadChPanelName = vgui::ipanel()->GetName(curLoadChPanel);
+#ifdef DBGFLAG_ASSERT
 		const char *curLoadChPanelClass = vgui::ipanel()->GetClassName(curLoadChPanel);
+#endif
 		Panel *pPanel = vgui::ipanel()->GetPanel(curLoadChPanel, "GAMEUI");
 		if (!pPanel)
 		{

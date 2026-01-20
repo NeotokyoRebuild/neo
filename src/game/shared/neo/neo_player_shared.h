@@ -7,12 +7,6 @@
 #include "tier0/valve_minmax_off.h"
 #include <string_view>
 #include <optional>
-#ifndef min
-	#define min(a,b)  (((a) < (b)) ? (a) : (b))
-#endif
-#ifndef max
-	#define max(a,b)  (((a) > (b)) ? (a) : (b))
-#endif
 
 #define USERID2NEOPLAYER(i) ToNEOPlayer( ClientEntityList().GetEnt( engine->GetPlayerForUserID( i ) ) )
 

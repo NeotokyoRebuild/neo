@@ -30,7 +30,6 @@ private:
 	int m_flMyRadius = 0;
 	int m_iCapTeam = TEAM_INVALID;
 	float m_flDistance = 0.0f;
-	float m_flCapTexScale = 1.0f;
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	wchar_t m_wszMarkerTextUnicode[64 + 1] = {};

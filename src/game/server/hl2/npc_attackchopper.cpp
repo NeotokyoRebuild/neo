@@ -1648,9 +1648,11 @@ public:
 	CTraceFilterChopper( const IHandleEntity *passentity, int collisionGroup );
 	virtual bool ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask );
 
+#ifndef NEO
 private:
 	const IHandleEntity *m_pPassEnt;
 	int m_collisionGroup;
+#endif
 };
 
 CTraceFilterChopper::CTraceFilterChopper( const IHandleEntity *passentity, int collisionGroup ) :

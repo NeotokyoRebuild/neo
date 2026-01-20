@@ -3399,8 +3399,10 @@ void CTempEnts::CSEjectBrass( const Vector &vecPosition, const QAngle &angVeloci
 
 	Vector forward, right, up;
 	Vector velocity;
+#ifndef NEO
 	Vector origin;
 	QAngle angle;
+#endif
 	
 	// Add some randomness to the velocity
 

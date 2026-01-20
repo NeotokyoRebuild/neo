@@ -16,6 +16,51 @@
 #include "mathlib/mathlib.h"
 
 
+struct BasicVector
+{
+	vec_t x;
+	vec_t y;
+	vec_t z;
+
+	inline BasicVector operator+(const BasicVector& v) const
+	{
+		BasicVector res;
+		res.x = x + v.x;
+		res.x = y + v.y;
+		res.x = z + v.z;
+		return res;
+	}
+
+	inline BasicVector operator-(const BasicVector& v) const
+	{
+		BasicVector res;
+		res.x = x - v.x;
+		res.x = y - v.y;
+		res.x = z - v.z;
+		return res;
+	}
+
+	inline BasicVector operator*(const float v) const
+	{
+		BasicVector res;
+		res.x = x * v;
+		res.x = y * v;
+		res.x = z * v;
+		return res;
+	}
+
+	inline void Init(vec_t x, vec_t y, vec_t z)
+	{
+		this->x = x;
+		this->y = y;
+		this->z = z;
+	}
+
+	inline operator Vector ()
+	{
+		return Vector{ x,y,z };
+	}
+};
 
 struct Polyhedron_IndexedLine_t
 {
@@ -32,13 +77,13 @@ struct Polyhedron_IndexedPolygon_t
 {
 	unsigned short iFirstIndex;
 	unsigned short iIndexCount;
-	Vector polyNormal;
+	BasicVector polyNormal;
 };
 
 class CPolyhedron //made into a class because it's going virtual to support distinctions between temp and permanent versions
 {
 public:
-	Vector *pVertices;
+	BasicVector *pVertices;
 	Polyhedron_IndexedLine_t *pLines;
 	Polyhedron_IndexedLineReference_t *pIndices;
 	Polyhedron_IndexedPolygon_t *pPolygons;

@@ -632,8 +632,12 @@ private:
 		T Get() const
 		{
 #ifdef PLATFORM_64BITS
+#ifdef NEO
+			return reinterpret_cast<T>( CThreadLocalBase::Get() );
+#else
 			void *pData = CThreadLocalBase::Get();
 			return *reinterpret_cast<T*>( &pData );
+#endif
 #else
 #ifdef COMPILER_MSVC
 #pragma warning ( disable : 4311 )
@@ -648,9 +652,13 @@ private:
 		void Set(T val)
 		{
 #ifdef PLATFORM_64BITS
+#ifdef NEO
+			CThreadLocalBase::Set( reinterpret_cast<void*>( val ) );
+#else
 			void *pData = 0;
 			*reinterpret_cast<T*>( &pData ) = val;
 			CThreadLocalBase::Set( pData );
+#endif
 #else
 #ifdef COMPILER_MSVC
 #pragma warning ( disable : 4312 )
