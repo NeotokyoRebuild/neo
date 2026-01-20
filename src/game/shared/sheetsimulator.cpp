@@ -15,6 +15,10 @@
 #include "edict.h"
 #include "collisionutils.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -390,6 +394,20 @@ void CSheetSimulator::InitPosition( int i )
 		MASK_SOLID_BRUSHONLY, m_CollisionGroup, &tr );
 	if ( tr.fraction - 1.0 < 0 )
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<cplane_t>)
+		{
+			m_pCollisionPlanes[i].normal = tr.plane.normal;
+			m_pCollisionPlanes[i].dist = tr.plane.dist;
+			for (int j = 0; j < ARRAYSIZE(tr.plane.pad); ++j)
+			{
+				m_pCollisionPlanes[i].pad[j] = tr.plane.pad[j];
+			}
+			m_pCollisionPlanes[i].signbits = tr.plane.signbits;
+			m_pCollisionPlanes[i].type = tr.plane.type;
+		}
+		else
+#endif
 		memcpy( &m_pCollisionPlanes[i], &tr.plane, sizeof(cplane_t) );
 		m_pCollisionPlanes[i].dist += COLLISION_PLANE_OFFSET;
 
