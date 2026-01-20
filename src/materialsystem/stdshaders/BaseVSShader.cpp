@@ -1153,7 +1153,11 @@ void CBaseVSShader::DrawWorldBumpedDiffuseLighting( int bumpmapVar, int bumpFram
 			s_pShaderShadow->SetPixelShader( "LightmappedGeneric_SSBumpmappedLightmap" );
 		else
 			s_pShaderShadow->SetPixelShader( "LightmappedGeneric_BumpmappedLightmap" );
+#ifndef NEO
 			FogToFogColor();
+#else
+		FogToFogColor(); // fix bad indentation to silence warning
+#endif
 	}
 	else
 	{
