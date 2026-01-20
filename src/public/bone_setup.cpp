@@ -25,6 +25,10 @@
 	#include "posedebugger.h"
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -3044,6 +3048,13 @@ bool Studio_IKSequenceError( const CStudioHdr *pStudioHdr, mstudioseqdesc_t &seq
 {
 	int i;
 
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<ikcontextikrule_t>)
+	{
+		ikRule = {};
+	}
+	else
+#endif
 	memset( &ikRule, 0, sizeof(ikRule) );
 	ikRule.start = ikRule.peak = ikRule.tail = ikRule.end = 0;
 
