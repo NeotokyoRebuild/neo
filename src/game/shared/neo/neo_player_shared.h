@@ -253,6 +253,7 @@ enum NeoWeponAimToggleE {
 };
 
 void CheckPingButton(CNEO_Player* player);
+void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos);
 
 struct AttackersTotals
 {
