@@ -20,6 +20,10 @@
 #include "entitylist.h"
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -79,6 +83,23 @@ struct PhysObjectHeader_t
 {
 	PhysObjectHeader_t()
 	{
+#ifdef NEO
+		using ThisType = std::remove_pointer_t<decltype(this)>;
+		if constexpr (!std::is_trivially_copyable_v<ThisType>)
+		{
+			static_assert(sizeof(ThisType) == 64, "implement ctor zero-init!!");
+			type = {};
+			hEntity = INVALID_ENTITY_HANDLE;
+			fieldName = NULL_STRING;
+			nObjects = {};
+			modelName = NULL_STRING;
+			bbox.maxs.Zero();
+			bbox.mins.Zero();
+			sphere.radius = {};
+			iCollide = {};
+		}
+		else
+#endif
 		memset( this, 0, sizeof(*this) );
 	}
 
