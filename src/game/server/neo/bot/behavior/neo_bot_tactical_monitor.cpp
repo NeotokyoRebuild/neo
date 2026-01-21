@@ -10,9 +10,12 @@
 #include "bot/behavior/neo_bot_tactical_monitor.h"
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
+#include "bot/behavior/neo_bot_command_follow.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
+#include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_pause.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
 #endif
@@ -23,6 +26,8 @@
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
+extern ConVar sv_neo_bot_cmdr_enable;
+extern ConVar sv_neo_bot_cmdr_debug_pause_uncommanded;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -274,6 +279,19 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return result;
 	}
 
+	if (sv_neo_bot_cmdr_enable.GetBool())
+	{
+		if (me->m_hLeadingPlayer.Get() || me->m_hCommandingPlayer.Get())
+		{
+			return SuspendFor(new CNEOBotCommandFollow, "Following commander");
+		}
+
+		if (sv_neo_bot_cmdr_debug_pause_uncommanded.GetBool())
+		{
+			return SuspendFor( new CNEOBotPause, "Paused by debug convar sv_neo_bot_cmdr_debug_pause_uncommanded" );
+		}
+	}
+
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 
 	// check if we need to get to cover
@@ -297,6 +315,12 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 				}
 			}
 		}
+	}
+
+	ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
+	if ( scavengeResult.IsRequestingChange() )
+	{
+		return scavengeResult;
 	}
 
 #if 0 // NEO TODO (Adam) search for dropped weapons to resupply ammunition
@@ -323,6 +347,32 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 #endif
 
 	me->UpdateDelayedThreatNotices();
+
+	return Continue();
+}
+
+
+//-----------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotTacticalMonitor::ScavengeForPrimaryWeapon( CNEOBot *me )
+{
+	if ( me->Weapon_GetSlot( 0 ) )
+	{
+		return Continue();
+	}
+
+	if ( !m_maintainTimer.IsElapsed() )
+	{
+		return Continue();
+	}
+	m_maintainTimer.Start( RandomFloat( 1.0f, 3.0f ) );
+	
+	// Look for any one valid primary weapon, then dispatch into behavior for more optimal search
+	// true parameter: short-circuit the search if any valid primary weapon is found
+	// We just want to sanity check if there's a valid weapon before suspending into the dedicated behavior
+	if ( FindNearestPrimaryWeapon( me->GetAbsOrigin(), true ) )
+	{
+		return SuspendFor( new CNEOBotSeekWeapon, "Scavenging for a primary weapon" );
+	}
 
 	return Continue();
 }

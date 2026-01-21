@@ -19,6 +19,10 @@
 #include "neo_player.h"
 #endif
 
+#ifdef GAME_DLL
+#include "basetypes.h"
+#endif
+
 #include "convar.h"
 #include "neo_weapon_loadout.h"
 
@@ -157,7 +161,43 @@ void CheckPingButton(CNEO_Player* player)
 		{
 			player->m_flNextPingTime = gpGlobals->curtime;
 		}
+
+		UpdatePingCommands(player, tr.endpos);
 	}
+}
+
+ConVar sv_neo_bot_cmdr_enable("sv_neo_bot_cmdr_enable", "0",
+	FCVAR_REPLICATED | FCVAR_ARCHIVE, "Allow bots to follow you after you press use on them", true, 0, true, 1);
+
+#ifdef GAME_DLL
+static ConVar sv_neo_bot_cmdr_stop_distance_sq_max("sv_neo_bot_cmdr_stop_distance_sq_max", "50000",
+	FCVAR_CHEAT, "Maximum distance bot following gap interval can be set by player pings", true, 5000, true, 500000);
+static ConVar sv_neo_bot_cmdr_ping_ignore_delay_min_sec("sv_neo_bot_cmdr_ping_ignore_delay_min_sec", "3",
+	FCVAR_CHEAT, "Minimum time bots ignore pings for new waypoint settings", true, 0, true, 1000);
+#endif // GAME_DLL
+
+void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos)
+{
+#ifdef GAME_DLL
+	if (sv_neo_bot_cmdr_enable.GetBool())
+	{
+		player->m_vLastPingByStar.GetForModify(player->GetStar()) = pingPos;
+		float distSqrToPing = player->GetAbsOrigin().DistToSqr(pingPos);
+		if (distSqrToPing < sv_neo_bot_cmdr_stop_distance_sq_max.GetFloat())
+		{
+			// If pinging close to self, calibrate follow distance of commanded bots based on distance to ping
+			float minFollowDistanceSq = 0.0f;
+			sv_neo_bot_cmdr_stop_distance_sq_max.GetMin(minFollowDistanceSq);
+			player->m_flBotDynamicFollowDistanceSq = Clamp(distSqrToPing, minFollowDistanceSq, sv_neo_bot_cmdr_stop_distance_sq_max.GetFloat());
+		}
+		else
+		{
+			player->m_flBotDynamicFollowDistanceSq = 0.0f;
+		}
+
+		player->m_tBotPlayerPingCooldown.Start(sv_neo_bot_cmdr_ping_ignore_delay_min_sec.GetFloat());
+	}
+#endif
 }
 
 void KillerLineStr(char* killByLine, const int killByLineMax,

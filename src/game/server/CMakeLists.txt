@@ -1436,6 +1436,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_attack.h
     neo/bot/behavior/neo_bot_behavior.cpp
     neo/bot/behavior/neo_bot_behavior.h
+    neo/bot/behavior/neo_bot_command_follow.cpp
+    neo/bot/behavior/neo_bot_command_follow.h
     neo/bot/behavior/neo_bot_dead.cpp
     neo/bot/behavior/neo_bot_dead.h
     neo/bot/behavior/neo_bot_jgr_capture.cpp
@@ -1452,6 +1454,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_melee_attack.h
     neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
     neo/bot/behavior/neo_bot_move_to_vantage_point.h
+    neo/bot/behavior/neo_bot_pause.cpp
+    neo/bot/behavior/neo_bot_pause.h
     neo/bot/behavior/neo_bot_retreat_to_cover.cpp
     neo/bot/behavior/neo_bot_retreat_to_cover.h
     neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
@@ -1460,6 +1464,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_scenario_monitor.h
     neo/bot/behavior/neo_bot_seek_and_destroy.cpp
     neo/bot/behavior/neo_bot_seek_and_destroy.h
+    neo/bot/behavior/neo_bot_seek_weapon.cpp
+    neo/bot/behavior/neo_bot_seek_weapon.h
     neo/bot/behavior/neo_bot_tactical_monitor.cpp
     neo/bot/behavior/neo_bot_tactical_monitor.h
     neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.cpp
