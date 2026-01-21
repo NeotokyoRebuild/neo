@@ -88,11 +88,6 @@ public:
 	void ResetRagdollSleepAfterTime( void );
 	float GetLastVPhysicsUpdateTime() const { return m_lastUpdate; }
 
-#ifdef NEO
-	void SetInitialVelocity(const Vector& velocity) { m_vecInitialVelocity = velocity; }
-	void SetLastOrigin(const Vector& velocity) { m_vecLastOrigin = velocity; }
-
-#endif // NEO
 private:
 
 	void			CheckSettleStationaryRagdoll();
@@ -106,12 +101,6 @@ private:
 	bool		m_allAsleep;
 	Vector		m_vecLastOrigin;
 	float		m_flLastOriginChangeTime;
-#ifdef NEO
-public:
-	Vector		m_vecLastVelocity;
-private:
-	Vector		m_vecInitialVelocity;
-#endif // NEO
 
 #if RAGDOLL_VISUALIZE
 	matrix3x4_t			m_savedBone1[MAXSTUDIOBONES];

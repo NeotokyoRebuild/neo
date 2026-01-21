@@ -275,14 +275,7 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 	C_BaseAnimating *baseAnimating = pEntity->GetBaseAnimating();
 	C_BaseEntity *rootMoveParent = pEntity->GetRootMoveParent();
 	Vector velocity = vec3_origin;
-	if (baseAnimating && baseAnimating->IsRagdoll())
-	{
-		velocity = baseAnimating->m_pRagdoll->m_vecLastVelocity;
-	}
-	else
-	{
-		rootMoveParent->EstimateAbsVelocity(velocity);
-	}
+	rootMoveParent->EstimateAbsVelocity(velocity);
 	m_pResult->SetFloatValue(velocity.Length());
 #else
 	m_pResult->SetFloatValue( pEntity->GetLocalVelocity().Length() );

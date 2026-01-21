@@ -3271,18 +3271,10 @@ int C_BaseAnimating::DrawModel( int flags )
 		auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 		const bool inMotionVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_ASSAULT;
 		auto rootMoveParent = GetRootMoveParent();
-		Vector vel;
-		if (IsRagdoll())
+		Vector vel = rootMoveParent->GetAbsVelocity();
+		if (vel == vec3_origin)
 		{
-			vel = m_pRagdoll->m_vecLastVelocity;
-		}
-		else
-		{
-			vel = rootMoveParent->GetAbsVelocity();
-			if (vel == vec3_origin)
-			{
-				rootMoveParent->EstimateAbsVelocity(vel);
-			}
+			rootMoveParent->EstimateAbsVelocity(vel);
 		}
 		bool isMoving = false;
 		bool isHot = false;
