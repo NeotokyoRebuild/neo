@@ -40,6 +40,10 @@ class CNEOGameRulesProxy : public CHL2MPGameRulesProxy
 public:
 	DECLARE_CLASS( CNEOGameRulesProxy, CHL2MPGameRulesProxy );
 	DECLARE_NETWORKCLASS();
+
+#ifdef CLIENT_DLL
+	void OnDataChanged(DataUpdateType_t updateType) override;
+#endif // CLIENT_DLL
 };
 
 class NEOViewVectors : public HL2MPViewVectors
