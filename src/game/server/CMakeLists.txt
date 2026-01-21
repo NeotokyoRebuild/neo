@@ -1439,6 +1439,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_attack.h
     neo/bot/behavior/neo_bot_behavior.cpp
     neo/bot/behavior/neo_bot_behavior.h
+    neo/bot/behavior/neo_bot_command_follow.cpp
+    neo/bot/behavior/neo_bot_command_follow.h
     neo/bot/behavior/neo_bot_dead.cpp
     neo/bot/behavior/neo_bot_dead.h
     neo/bot/behavior/neo_bot_jgr_capture.cpp
@@ -1455,6 +1457,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_melee_attack.h
     neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
     neo/bot/behavior/neo_bot_move_to_vantage_point.h
+    neo/bot/behavior/neo_bot_pause.cpp
+    neo/bot/behavior/neo_bot_pause.h
     neo/bot/behavior/neo_bot_retreat_to_cover.cpp
     neo/bot/behavior/neo_bot_retreat_to_cover.h
     neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
