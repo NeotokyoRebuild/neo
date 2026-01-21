@@ -2,27 +2,34 @@ add_library(tier1 STATIC)
 
 add_library(tier1::tier1 ALIAS tier1)
 
-target_compile_definitions(tier1 PRIVATE TIER1_STATIC_LIB)
-
-if (OS_LINUX)
-    set_target_properties(tier1 PROPERTIES
-        POSITION_INDEPENDENT_CODE ON
-    )
-endif ()
+target_compile_definitions(tier1
+    PRIVATE
+    TIER1_STATIC_LIB
+)
 
 target_include_directories(tier1
     PUBLIC
     ${CMAKE_SOURCE_DIR}/public/tier1
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/public
-    ${CMAKE_SOURCE_DIR}/public/tier0
 )
 
 if(OS_WINDOWS)
-    target_link_libraries(tier1 PRIVATE Rpcrt4.lib Ws2_32.lib)
+    target_compile_definitions(tier1
+        PRIVATE
+        fopen=dont_use_fopen
+    )
+
+    target_link_libraries(tier1
+        PRIVATE
+        Rpcrt4.lib
+        Ws2_32.lib
+    )
 elseif(OS_LINUX)
-    target_link_libraries(tier1 PUBLIC
+    set_target_properties(tier1 PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+
+    target_link_libraries(tier1
+        PUBLIC
         dl
     )
 endif()
