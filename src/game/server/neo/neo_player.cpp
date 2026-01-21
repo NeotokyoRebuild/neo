@@ -2006,6 +2006,8 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	Weapon_DropAllOnDeath(info);
+
 	BaseClass::Event_Killed(info);
 
 	if (!m_bForceServerRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
@@ -2017,8 +2019,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	SetDeadModel(info);
 
 	StopWaterDeathSounds();
-
-	Weapon_DropAllOnDeath(info);
 
 	if (GetClass() == NEO_CLASS_JUGGERNAUT)
 	{
@@ -3345,18 +3345,22 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
 	if (!pInfo)
 		return BaseClass::ShouldTransmit(pInfo);
+	
+	const auto* otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+	if (otherNeoPlayer == this)
+		return FL_EDICT_ALWAYS;
+
+	// NEO JANK (Adam) We don't transmit the player the moment they die so that their ragdoll spawns 
+	// smoothly client side, but we need to network at some point so the client knows this player is 
+	// dead, but also NEO TODO once this fact is transmitted we should stop transmitting dead players
+	// in line with CBasePlayer::ShouldTransmit which we don't reach in many cases when dead
+	if (IsDead() && GetDeathTime() >= gpGlobals->curtime)
+		return FL_EDICT_DONTSEND;
 
 	// This player is the ghoster, so their location should be networked always, even to enemies,
 	// because we need to be able to draw the warning beacon for them even outside PVS.
 	if (IsCarryingGhost())
 		return FL_EDICT_ALWAYS;
-
-	const auto* otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
-	
-	if (IsDead() && otherNeoPlayer != this)
-	{
-		return FL_EDICT_DONTSEND;
-	}
 
 	if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE

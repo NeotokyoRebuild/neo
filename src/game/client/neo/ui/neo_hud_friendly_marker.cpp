@@ -13,7 +13,7 @@
 
 #include "neo_gamerules.h"
 #include "c_neo_player.h"
-
+#include "c_playerresource.h"
 #include "c_team.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -179,7 +179,7 @@ void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team *team, const C_NEO_Player 
 	for (int i = 0; i < memberCount; ++i)
 	{
 		auto player = static_cast<C_NEO_Player *>(team->GetPlayer(i));
-		if (player && localPlayer->entindex() != player->entindex() && player->IsAlive())
+		if (player && localPlayer->entindex() != player->entindex() && g_PR->IsAlive(player->entindex()))
 		{
 			if (pTargetPlayer && player->entindex() == pTargetPlayer->entindex())
 			{

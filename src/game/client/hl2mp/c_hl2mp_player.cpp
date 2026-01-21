@@ -1327,9 +1327,10 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	
 #ifdef NEO
 	SetModelIndex(m_iRagdollModel ? m_iRagdollModel : m_nModelIndex);
+	if ( pPlayer )
+#else
+	if ( pPlayer && !pPlayer->IsDormant() )
 #endif // NEO
-
-	if ( pPlayer /* && !pPlayer->IsDormant() */ )
 	{
 		// move my current model instance to the ragdoll's so decals are preserved.
 		pPlayer->SnatchModelInstance( this );
@@ -1338,8 +1339,10 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 
 		// Copy all the interpolated vars from the player entity.
 		// The entity uses the interpolated history to get bone velocity.
+#ifndef NEO
 		bool bRemotePlayer = (pPlayer != C_BasePlayer::GetLocalPlayer());			
 		if ( bRemotePlayer )
+#endif // NEO
 		{
 			Interp_Copy( pPlayer );
 
@@ -1350,6 +1353,7 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 			SetSequence( pPlayer->GetSequence() );
 			m_flPlaybackRate = pPlayer->GetPlaybackRate();
 		}
+#ifndef NEO
 		else
 		{
 			// This is the local player, so set them in a default
@@ -1371,7 +1375,8 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 			SetCycle( 0.0 );
 
 			Interp_Reset( varMap );
-		}		
+		}
+#endif // NEO
 	}
 	else
 	{
@@ -1416,13 +1421,6 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	}
 
 	InitAsClientRagdoll( boneDelta0, boneDelta1, currentBones, boneDt );
-#ifdef NEO
-	if (m_pRagdoll)
-	{
-		m_pRagdoll->SetInitialVelocity(GetInitialRagdollVelocity());
-		m_pRagdoll->SetLastOrigin(GetInitialRagdollOrigin());
-	}
-#endif // NEO
 }
 
 

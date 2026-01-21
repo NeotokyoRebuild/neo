@@ -1960,11 +1960,7 @@ void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
 {
 	if (updateType == DATA_UPDATE_DATATABLE_CHANGED)
 	{
-		if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
-		{
-			return;
-		}
-		else
+		if (gpGlobals->tickcount - m_nVisionLastTick >= TIME_TO_TICKS(0.1f))
 		{
 			m_bIsAllowedToToggleVision = true;
 		}
