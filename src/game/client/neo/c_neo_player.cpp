@@ -1300,8 +1300,12 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = m_bInThermOpticCamo = false;
-			IN_LeanReset();
-			LiftAllToggleKeys();
+
+			if (IsLocalPlayer())
+			{
+				IN_LeanReset();
+				LiftAllToggleKeys();
+			}
 
 			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
@@ -1687,7 +1691,10 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	m_bIneligibleForLoadoutPick = true;
-	IN_AimToggleReset();
+	if (IsLocalPlayer())
+	{
+		IN_AimToggleReset();
+	}
 
 	if (pWeapon->IsGhost())
 	{
@@ -1713,7 +1720,10 @@ void C_NEO_Player::StartSprinting(void)
 void C_NEO_Player::StopSprinting(void)
 {
 	m_fIsSprinting = false;
-	IN_SpeedReset();
+	if (IsLocalPlayer())
+	{
+		IN_SpeedReset();
+	}
 }
 
 bool C_NEO_Player::CanSprint(void)
@@ -1877,7 +1887,10 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	else
 	{
 		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
-		IN_AimToggleReset();
+		if (IsLocalPlayer())
+		{
+			IN_AimToggleReset();
+		}
 	}
 
 	const int fov = GetDefaultFOV();

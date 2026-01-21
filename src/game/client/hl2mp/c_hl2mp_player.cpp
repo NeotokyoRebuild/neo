@@ -962,7 +962,10 @@ void C_HL2MP_Player::StartSprinting( void )
 
 	m_fIsSprinting = true;
 #ifdef NEO
-	IN_LeanToggleReset();
+	if (IsLocalPlayer())
+	{
+		IN_LeanToggleReset();
+	}
 #endif // NEO
 }
 

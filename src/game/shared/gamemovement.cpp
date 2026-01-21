@@ -2668,7 +2668,10 @@ bool CGameMovement::CheckJumpButton( void )
 
 	OnJump(mv->m_outJumpVel.z);
 #if defined NEO && defined CLIENT_DLL
-	IN_LeanToggleReset();
+	if (neoPlayer->IsLocalPlayer())
+	{
+		IN_LeanToggleReset();
+	}
 #endif // NEO && CLIENT_DLL
 
 	// Set jump time.
