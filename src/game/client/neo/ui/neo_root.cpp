@@ -1018,6 +1018,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::EndContext();
 }
 
+extern ConVar neo_fov;
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 {
 	struct NeoSettingsFunc
@@ -1100,7 +1101,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 					if (NeoUI::Button(NeoUI::HintAlt(L"Accept (F8)", L"Accept (START)")).bPressed
 							|| NeoUI::Bind(BTNCODES_ACCEPT, ARRAYSIZE(BTNCODES_ACCEPT)))
 					{
-						if (m_ns.video.iFov > maxSupportedFov)
+						if (m_ns.video.iFov > maxSupportedFov && m_ns.video.iFov != neo_fov.GetInt())
 						{
 							m_state = STATE_CONFIRMSETTINGS;
 						}
@@ -2300,7 +2301,7 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 						L"Error: Invalid settings, cannot save.");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 
-				if (m_ns.video.iFov > maxSupportedFov)
+				if (m_ns.video.iFov > maxSupportedFov && m_ns.video.iFov != neo_fov.GetInt())
 				{
 					wchar_t warning[77+1];
 					V_swprintf_safe(warning,
