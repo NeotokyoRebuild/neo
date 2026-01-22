@@ -3440,6 +3440,16 @@ void CIKContext::AddSequenceLocks( mstudioseqdesc_t &seqdesc, Vector pos[], Quat
 	CBoneBitList boneComputed;
 
 	int ikOffset = m_ikLock.AddMultipleToTail( seqdesc.numiklocks );
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<ikcontextikrule_t>)
+	{
+		for (int i = 0; i < seqdesc.numiklocks; ++i)
+		{
+			m_ikLock[ikOffset + i] = {};
+		}
+	}
+	else
+#endif
 	memset( &m_ikLock[ikOffset], 0, sizeof(ikcontextikrule_t) * seqdesc.numiklocks );
 
 	for (int i = 0; i < seqdesc.numiklocks; i++)
