@@ -3371,6 +3371,16 @@ void CIKContext::AddAutoplayLocks( Vector pos[], Quaternion q[] )
 	CBoneBitList boneComputed;
 
 	int ikOffset = m_ikLock.AddMultipleToTail( m_pStudioHdr->GetNumIKAutoplayLocks() );
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<ikcontextikrule_t>)
+	{
+		for (int i = 0; i < m_pStudioHdr->GetNumIKAutoplayLocks(); ++i)
+		{
+			m_ikLock[ikOffset + i] = {};
+		}
+	}
+	else
+#endif
 	memset( &m_ikLock[ikOffset], 0, sizeof(ikcontextikrule_t)*m_pStudioHdr->GetNumIKAutoplayLocks() );
 
 	for (int i = 0; i < m_pStudioHdr->GetNumIKAutoplayLocks(); i++)
