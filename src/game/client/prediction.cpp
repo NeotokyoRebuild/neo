@@ -186,7 +186,8 @@ void CPrediction::CheckError( int commands_acknowledged )
 			void* sdkRes = (void*)&predicted_origin;
 			Assert(tmpNeoRes != sdkRes);
 			Assert(((Vector*)tmpNeoRes)->IsValid() == ((Vector*)sdkRes)->IsValid());
-			Assert(*((Vector*)tmpNeoRes) == *(Vector*)sdkRes);
+			if (((Vector*)tmpNeoRes)->IsValid())
+				Assert(*((Vector*)tmpNeoRes) == *(Vector*)sdkRes);
 			Assert(0 == memcmp(tmpNeoRes, sdkRes, sizeof(Vector)));
 
 			free(tmpNeoRes);
