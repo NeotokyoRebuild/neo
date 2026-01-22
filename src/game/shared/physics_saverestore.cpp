@@ -457,6 +457,15 @@ public:
 																	// the field name would normally be in the string
 																	// pool anyway. (toml 12-10-02)
 		item.header.modelName = NULL_STRING;
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<decltype(item.header.bbox)>)
+		{
+			static_assert(sizeof(item.header.bbox) == sizeof(Vector)*2);
+			item.header.bbox.maxs.Zero();
+			item.header.bbox.mins.Zero();
+		}
+		else
+#endif
 		memset( &item.header.bbox, 0, sizeof( item.header.bbox ) );
 		item.header.sphere.radius = 0;
 		
