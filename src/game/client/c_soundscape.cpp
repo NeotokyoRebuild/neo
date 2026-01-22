@@ -47,7 +47,9 @@ struct loopingsound_t
 
 ConVar soundscape_fadetime( "soundscape_fadetime", "3.0", FCVAR_CHEAT, "Time to crossfade sound effects between soundscapes" );
 
+#ifndef NEO // bad include order; we fix this in the main top-level include list
 #include "interval.h"
+#endif
 
 struct randomsound_t
 {
