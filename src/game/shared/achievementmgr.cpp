@@ -141,7 +141,11 @@ static void WriteAchievementGlobalState( KeyValues *pKV, bool bPersistToSteamClo
                         if (pData)
                         {
                             // Read in the data from the file system GameState.txt file
+#ifdef NEO
+							FileHandle_t	handle = filesystem->Open(szFilename, "rb");
+#else
                             FileHandle_t    handle = filesystem->Open(szFilename, "r");
+#endif
 
                             if (handle)
                             {
@@ -154,6 +158,12 @@ static void WriteAchievementGlobalState( KeyValues *pKV, bool bPersistToSteamClo
                                     // Write out the data to steam cloud
                                     pRemoteStorage->FileWrite(szFilename, pData, filesize);
                                 }
+#ifdef NEO
+								else
+								{
+									Warning("CAchievementMgr: Failed to write to steam cloud! Expected size %d got size %d\n", filesize, nRead);
+								}
+#endif
                             }
 
                             // Delete the data array

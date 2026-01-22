@@ -18,6 +18,7 @@ class CAchievementNEO_TutorialComplete : public CBaseAchievement
 		SetFlags( ACH_SAVE_GLOBAL | ACH_HAS_COMPONENTS | ACH_LISTEN_COMPONENT_EVENTS );
 		SetGoal( m_iNumComponents );
 		SetMapNameFilter( "ntre_class_tut" );
+		SetStoreProgressInSteam( true );
 	}
 };
 DECLARE_NEO_ACHIEVEMENT( CAchievementNEO_TutorialComplete, ACHIEVEMENT_NEO_TUTORIAL_COMPLETE, "NEO_TUTORIAL_COMPLETE" );
