@@ -3554,7 +3554,62 @@ CRendering3dView::CRendering3dView(CViewRender *pMainView) :
 void CRendering3dView::Setup( const CViewSetup &setup )
 {
 	// @MULTICORE (toml 8/15/2006): don't reset if parameters don't require it. For now, just reset
+#ifdef NEO
+	// NEO NOTE (Rain): not a trivial copy, so we have this wonderful macro
+#pragma push_macro("COPYVALS")
+#pragma push_macro("X")
+#undef COPYVALS
+#undef X
+#define COPYVALS \
+	X(x) \
+	X(m_nUnscaledX) \
+	X(y) \
+	X(m_nUnscaledY) \
+	X(width) \
+	X(m_nUnscaledWidth) \
+	X(height) \
+	X(m_eStereoEye) \
+	X(m_nUnscaledHeight) \
+	X(m_bOrtho) \
+	X(m_OrthoLeft) \
+	X(m_OrthoTop) \
+	X(m_OrthoRight) \
+	X(m_OrthoBottom) \
+	X(fov) \
+	X(fovViewmodel) \
+	X(origin) \
+	X(angles) \
+	X(zNear) \
+	X(zFar) \
+	X(zNearViewmodel) \
+	X(zFarViewmodel) \
+	X(m_bRenderToSubrectOfLargerScreen) \
+	X(m_flAspectRatio) \
+	X(m_bOffCenter) \
+	X(m_flOffCenterTop) \
+	X(m_flOffCenterBottom) \
+	X(m_flOffCenterLeft) \
+	X(m_flOffCenterRight) \
+	X(m_bDoBloomAndToneMapping) \
+	X(m_bCacheFullSceneState) \
+	X(m_bViewToProjectionOverride) \
+	X(m_ViewToProjection)
+
+#define X(x) if constexpr (std::is_trivially_copyable_v<decltype(setup.x)>) \
+{ memcpy(&(this->x), &setup.x, sizeof(setup.x)); } \
+else { static_assert(std::is_move_assignable_v<decltype(setup.x)>); \
+this->x = setup.x; }
+
+	COPYVALS
+
+#undef X
+#undef COPYVALS
+#pragma pop_macro("X")
+#pragma pop_macro("COPYVALS")
+
+#else
 	memcpy( static_cast<CViewSetup *>(this), &setup, sizeof( setup ) );
+#endif
 	ReleaseLists();
 
 	m_pRenderablesList = new CClientRenderablesList; 
