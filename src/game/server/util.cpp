@@ -1217,6 +1217,14 @@ void UTIL_SetTrace(trace_t& trace, const Ray_t &ray, edict_t *ent, float fractio
 
 void UTIL_ClearTrace( trace_t &trace )
 {
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<trace_t>)
+	{
+		static_assert(std::is_default_constructible_v<trace_t>);
+		trace = {};
+	}
+	else
+#endif
 	memset( &trace, 0, sizeof(trace));
 	trace.fraction = 1.f;
 	trace.fractionleftsolid = 0;

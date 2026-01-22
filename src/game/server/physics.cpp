@@ -2099,6 +2099,14 @@ void CCollisionEvent::UpdateFrictionSounds( void )
 void CCollisionEvent::DispatchStartTouch( CBaseEntity *pEntity0, CBaseEntity *pEntity1, const Vector &point, const Vector &normal )
 {
 	trace_t trace;
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<trace_t>)
+	{
+		static_assert(std::is_default_constructible_v<trace_t>);
+		trace = {};
+	}
+	else
+#endif
 	memset( &trace, 0, sizeof(trace) );
 	trace.endpos = point;
 	trace.plane.dist = DotProduct( point, normal );
