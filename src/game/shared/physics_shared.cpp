@@ -207,7 +207,11 @@ bool PhysModelParseSolidByIndex( solid_t &solid, CBaseEntity *pEntity, int model
 		if ( !strcmpi( pBlock, "solid" ) )
 		{
 			solid_t tmpSolid;
+#ifdef NEO
+			ZeroSolid(tmpSolid);
+#else
 			memset( &tmpSolid, 0, sizeof(tmpSolid) );
+#endif
 			tmpSolid.params = g_PhysDefaultObjectParams;
 
 			pParse->ParseSolid( &tmpSolid, &g_SolidSetup );
