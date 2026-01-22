@@ -3602,6 +3602,8 @@ this->x = setup.x; }
 
 	COPYVALS
 
+	static_assert(sizeof(CViewSetup) == 200, "Please update the COPYVALS logic above this error");
+
 #undef X
 #undef COPYVALS
 #pragma pop_macro("X")
