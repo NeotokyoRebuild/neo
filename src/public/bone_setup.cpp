@@ -3325,7 +3325,11 @@ void CIKContext::AddDependencies( mstudioseqdesc_t &seqdesc, int iSequence, floa
 		if (m_target.Count() == 0)
 		{
 			m_target.SetSize(12);
+#ifdef NEO
+			memset( (void*)m_target.Base(), 0, sizeof(m_target[0])*m_target.Count() );
+#else
 			memset( m_target.Base(), 0, sizeof(m_target[0])*m_target.Count() );
+#endif
 			ClearTargets();
 		}
 
