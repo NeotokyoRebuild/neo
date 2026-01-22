@@ -458,6 +458,16 @@ void CSheetSimulator::DetectCollision( int i, float flPlaneOffset )
 	if ( tr.fraction - 1.0 < 0 )
 	{
 		m_pValidCollisionPlane[i] = true;
+
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<cplane_t>)
+		{
+			static_assert(std::is_trivially_move_constructible_v<cplane_t>);
+			static_assert(std::is_same_v<cplane_t, decltype(tr.plane)>);
+			m_pCollisionPlanes[i] = tr.plane;
+		}
+		else
+#endif
 		memcpy( &m_pCollisionPlanes[i], &tr.plane, sizeof(cplane_t) );
 		m_pCollisionPlanes[i].dist += flPlaneOffset;
 	}
