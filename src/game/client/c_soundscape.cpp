@@ -16,6 +16,10 @@
 #include "engine/ivdebugoverlay.h"
 #include "tier0/icommandline.h"
 
+#ifdef NEO
+#include "interval.h" // Do not remove this include!! See comment "bad include order" below in this file for reasoning
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -41,7 +45,9 @@ struct loopingsound_t
 
 ConVar soundscape_fadetime( "soundscape_fadetime", "3.0", FCVAR_CHEAT, "Time to crossfade sound effects between soundscapes" );
 
+#ifndef NEO // bad include order; we fix this in the main top-level include list
 #include "interval.h"
+#endif
 
 struct randomsound_t
 {
