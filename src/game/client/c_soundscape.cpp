@@ -18,6 +18,8 @@
 
 #ifdef NEO
 #include "interval.h" // Do not remove this include!! See comment "bad include order" below in this file for reasoning
+
+#include <type_traits>
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -65,6 +67,21 @@ struct randomsound_t
 
 	void Init()
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<randomsound_t>)
+		{
+			static_assert(sizeof(*this) == 72, "update the Init code if you changed this layout!");
+			static_assert(std::is_trivially_copyable_v<interval_t> && std::is_default_constructible_v<interval_t>);
+
+			position.Zero();
+			nextPlayTime = masterVolume = {};
+			time = volume = pitch = soundlevel = {};
+			waveCount = {};
+			isAmbient = isRandom = {};
+			pWaves = {};
+		}
+		else
+#endif
 		memset( this, 0, sizeof(*this) );
 	}
 };
