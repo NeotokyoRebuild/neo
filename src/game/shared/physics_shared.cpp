@@ -22,6 +22,10 @@
 
 #include "physics_saverestore.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -189,6 +193,20 @@ bool PhysModelParseSolidByIndex( solid_t &solid, CBaseEntity *pEntity, int model
 
 	bool parsed = false;
 
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<std::remove_cvref_t<decltype(solid)>>)
+	{
+		solid.index = 0;
+		solid.name[0] = '\0';
+		solid.parent[0] = '\0';
+		solid.surfaceprop[0] = '\0';
+		solid.massCenterOverride.Zero();
+
+		static_assert(std::is_trivially_move_assignable_v<decltype(solid.params)>);
+		solid.params = {};
+	}
+	else
+#endif
 	memset( &solid, 0, sizeof(solid) );
 	solid.params = g_PhysDefaultObjectParams;
 
