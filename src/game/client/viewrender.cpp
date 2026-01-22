@@ -67,6 +67,7 @@
 #endif
 #ifdef NEO
 #include "neo_player_shared.h"
+#include <type_traits>
 #endif // NEO
 #include "rendertexture.h"
 #include "viewpostprocess.h"
