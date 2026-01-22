@@ -240,6 +240,13 @@ CBasePhonemeTag::CBasePhonemeTag()
 
 CBasePhonemeTag::CBasePhonemeTag( const CBasePhonemeTag& from )
 {
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<CBasePhonemeTag>)
+	{
+		*this = from;
+	}
+	else
+#endif
 	memcpy( this, &from, sizeof(*this) );
 }
 
