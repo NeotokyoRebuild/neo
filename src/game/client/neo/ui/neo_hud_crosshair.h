@@ -101,4 +101,4 @@ void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence);
 void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX]);
 
-int HalfInaccuracyConeInScreenPixels(C_NEO_Player *player, C_NEOBaseCombatWeapon *pWeapon, int halfScreenWidth);
+int HalfInaccuracyConeInScreenPixels(C_NEOBaseCombatWeapon *pWeapon, int halfScreenWidth);
