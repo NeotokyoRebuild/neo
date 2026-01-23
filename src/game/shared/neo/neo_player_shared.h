@@ -156,20 +156,20 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 //   (Base Hull Max = 70) + (NEO_JUGGERNAUT_MAXHULL_OFFSET.z = 18) = 88
 //   (Base Hull Duck Max = 59) + (NEO_JUGGERNAUT_DUCK_MAXHULL_OFFSET.z = 16) = 75
 //
-// Then apply a uniform spare height budget gap of 7 units to all classes.
-// Formula: (Class Jump Height) + (Lift) - (Spare Gap)
-//
-// Precalculated bot crouch jump heights for use in bot locomotion/navigation checks:
+// Theoretical max bot crouch jump heights:
+// Formula: (Class Jump Height) + (Lift)
 // ---
-// Recon: 54 + 18 - 7 = 65
-// Assault/VIP: 36 + 17 - 7 = 46
-// Support: 36 + 11 - 7 = 40
-// Juggernaut: 50.4 + 13 - 7 = 56.4 (rounded down to 56)
-
-#define NEO_RECON_CROUCH_JUMP_HEIGHT 65.f
-#define NEO_ASSAULT_CROUCH_JUMP_HEIGHT 46.f
-#define NEO_SUPPORT_CROUCH_JUMP_HEIGHT 40.f
-#define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 56.f
+// Recon: 54 + 18 = 72
+// Assault/VIP: 36 + 17 = 53
+// Support: 36 + 11 = 47
+// Juggernaut: 50.4 + 13 = 63.4
+#define NEO_RECON_CROUCH_JUMP_HEIGHT 72.0f
+#define NEO_ASSAULT_CROUCH_JUMP_HEIGHT 53.0f
+#define NEO_SUPPORT_CROUCH_JUMP_HEIGHT 47.0f
+#define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 63.4f
+// To ensure bots can safely clear obstacles, we apply a safety buffer (NEO_BOT_JUMP_HEIGHT_BUFFER)
+// when checking traverseability, by subtracting it from these theoretical max heights.
+#define NEO_BOT_JUMP_HEIGHT_BUFFER 7.0f
 
 // END OF NEO MOVEMENT DEFINITIONS
 //////////////////////////////////////////////////////
