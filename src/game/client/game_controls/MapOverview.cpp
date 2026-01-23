@@ -23,6 +23,10 @@
 #include "clientmode.h"
 #include <vgui_controls/AnimationController.h>
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -760,6 +764,22 @@ void CMapOverview::DrawMapPlayers()
 
 		// convert from PlayerObject_t
 		MapObject_t tempObj;
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<decltype(tempObj)>)
+		{
+			static_assert(sizeof(tempObj) == 104);
+			tempObj.objectID = tempObj.index = tempObj.icon = {};
+			tempObj.color.SetColor(0, 0, 0, 0);
+			tempObj.name[0] = '\0';
+			tempObj.position.Zero();
+			tempObj.angle.Init();
+			tempObj.endtime = tempObj.size = tempObj.status = {};
+			tempObj.statusColor.SetColor(0, 0, 0, 0);
+			tempObj.flags = {};
+			tempObj.text = {};
+		}
+		else
+#endif
 		memset( &tempObj, 0, sizeof(MapObject_t) );
 		tempObj.icon = player->icon;
 		tempObj.position = player->position;
