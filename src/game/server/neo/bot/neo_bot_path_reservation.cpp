@@ -37,7 +37,7 @@ void CNEOBotPathReservationSystem::ReserveArea(CNavArea *area, CNEOBot *bot, flo
     }
 
     int team = bot->GetTeamNumber();
-    if (team < 0 || team >= MAX_TEAMS)
+    if (team < 0 || team >= TEAM__TOTAL)
     {
         return;
     }
@@ -92,7 +92,7 @@ void CNEOBotPathReservationSystem::ReleaseArea(CNavArea *area, CNEOBot *bot)
     }
 
     int team = bot->GetTeamNumber();
-    if (team < 0 || team >= MAX_TEAMS)
+    if (team < 0 || team >= TEAM__TOTAL)
     {
         return;
     }
@@ -138,7 +138,7 @@ void CNEOBotPathReservationSystem::ReleaseAllAreas(CNEOBot *bot)
     }
 
     int team = bot->GetTeamNumber();
-    if (team < 0 || team >= MAX_TEAMS)
+    if (team < 0 || team >= TEAM__TOTAL)
     {
         return;
     }
@@ -190,7 +190,7 @@ bool CNEOBotPathReservationSystem::IsAreaReservedByTeammate(CNavArea *area, CNEO
     }
 
     int team = avoider->GetTeamNumber();
-    if (team < 0 || team >= MAX_TEAMS)
+    if (team < 0 || team >= TEAM__TOTAL)
     {
         return false;
     }
@@ -226,7 +226,7 @@ bool CNEOBotPathReservationSystem::IsAreaReservedByTeammate(CNavArea *area, CNEO
  */
 void CNEOBotPathReservationSystem::Clear()
 {
-    for (int team = 0; team < MAX_TEAMS; ++team)
+    for (int team = 0; team < TEAM__TOTAL; ++team)
     {
         m_Reservations[team].RemoveAll();
         m_AreaPathCounts[team].RemoveAll();
@@ -238,7 +238,7 @@ void CNEOBotPathReservationSystem::Clear()
 //-------------------------------------------------------------------------------------------------
 void CNEOBotPathReservationSystem::IncrementPredictedFriendlyPathCount( int areaID, int teamID )
 {
-    if (teamID < 0 || teamID >= MAX_TEAMS)
+    if (teamID < 0 || teamID >= TEAM__TOTAL)
     {
         return;
     }
@@ -257,7 +257,7 @@ void CNEOBotPathReservationSystem::IncrementPredictedFriendlyPathCount( int area
 //-------------------------------------------------------------------------------------------------
 void CNEOBotPathReservationSystem::DecrementPredictedFriendlyPathCount( int areaID, int teamID )
 {
-    if (teamID < 0 || teamID >= MAX_TEAMS)
+    if (teamID < 0 || teamID >= TEAM__TOTAL)
     {
         return;
     }
@@ -276,7 +276,7 @@ void CNEOBotPathReservationSystem::DecrementPredictedFriendlyPathCount( int area
 //-------------------------------------------------------------------------------------------------
 int CNEOBotPathReservationSystem::GetPredictedFriendlyPathCount( int areaID, int teamID ) const
 {
-    if (teamID < 0 || teamID >= MAX_TEAMS)
+    if (teamID < 0 || teamID >= TEAM__TOTAL)
     {
         return 0;
     }
