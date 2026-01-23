@@ -2,6 +2,7 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_command_follow.h"
+#include "bot/behavior/neo_bot_throw_weapon_at_player.h"
 #include "nav_mesh.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -36,6 +37,8 @@ CNEOBotCommandFollow::CNEOBotCommandFollow() : m_vGoalPos( CNEO_Player::VECTOR_I
 ActionResult< CNEOBot >	CNEOBotCommandFollow::OnStart(CNEOBot *me, Action< CNEOBot > *priorAction)
 {
 	m_path.SetMinLookAheadDistance(me->GetDesiredPathLookAheadRange());
+	m_commanderLookingAtMeTimer.Invalidate();
+	m_bWasCommanderLookingAtMe = false;
 
 	if (!FollowCommandChain(me))
 	{
@@ -51,6 +54,81 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::Update(CNEOBot *me, float interval
 	if (!FollowCommandChain(me))
 	{
 		return Done("Lost commander or released");
+	}
+
+	ActionResult<CNEOBot> weaponRequestResult = CheckCommanderWeaponRequest(me);
+	if (weaponRequestResult.IsRequestingChange())
+	{
+		return weaponRequestResult;
+	}
+
+	return Continue();
+}
+
+
+//---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotCommandFollow::CheckCommanderWeaponRequest(CNEOBot *me)
+{
+	CNEO_Player* pCommander = me->m_hCommandingPlayer.Get();
+	if (pCommander && pCommander->IsAlive())
+	{
+		// Check if commander has dropped primary
+		if (!pCommander->Weapon_GetSlot(0))
+		{
+			// Check if looking at me
+			Vector vecToBot = me->EyePosition() - pCommander->EyePosition();
+			vecToBot.NormalizeInPlace();
+			Vector vecCmdrFacing;
+			pCommander->EyeVectors(&vecCmdrFacing);
+
+			if (vecCmdrFacing.Dot(vecToBot) > 0.99f)
+			{
+				if (!m_bWasCommanderLookingAtMe)
+				{
+					// Wait to see if it wasn't just a momentary glance
+					m_commanderLookingAtMeTimer.Start();
+					m_bWasCommanderLookingAtMe = true;
+				}
+
+				if (m_commanderLookingAtMeTimer.GetElapsedTime() > 0.2f)
+				{
+					// Look at commander after 0.5s
+					me->GetBodyInterface()->AimHeadTowards(pCommander->EyePosition(), IBody::CRITICAL, 0.2f, NULL, "Commander looking at me without a primary");
+				}
+
+				if (m_commanderLookingAtMeTimer.GetElapsedTime() > 1.0f)
+				{
+					// Sanity check that commander is really looking at me with more expensive traceline
+					// e.g. for edge case where I am behind the player the commander is looking at
+					trace_t tr;
+					const float estimatedReasonableThrowDistance = 300.0f;
+					Vector traceEnd = pCommander->EyePosition() + vecCmdrFacing * estimatedReasonableThrowDistance;
+					UTIL_TraceLine(pCommander->EyePosition(), traceEnd, MASK_SHOT_HULL, pCommander, COLLISION_GROUP_NONE, &tr);
+
+					if (tr.DidHit() && tr.m_pEnt == me)
+					{
+						m_bWasCommanderLookingAtMe = false; // Reset state
+						return SuspendFor(new CNEOBotThrowWeaponAtPlayer(pCommander), "Donating weapon to commander");
+					}
+					else
+					{
+						// Line of sight blocked
+						m_commanderLookingAtMeTimer.Invalidate();
+						m_bWasCommanderLookingAtMe = false;
+					}
+				}
+			}
+			else
+			{
+				m_commanderLookingAtMeTimer.Invalidate();
+				m_bWasCommanderLookingAtMe = false;
+			}
+		}
+		else
+		{
+			m_commanderLookingAtMeTimer.Invalidate();
+			m_bWasCommanderLookingAtMe = false;
+		}
 	}
 
 	m_path.Update(me);
