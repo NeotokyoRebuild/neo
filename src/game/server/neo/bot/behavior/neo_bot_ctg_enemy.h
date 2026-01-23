@@ -2,7 +2,6 @@
 #define NEO_BOT_CTG_ENEMY_H
 
 #include "bot/neo_bot.h"
-#include "Path/NextBotChasePath.h"
 
 //--------------------------------------------------------------------------------------------------------
 class CNEOBotCtgEnemy : public Action< CNEOBot >
@@ -21,7 +20,6 @@ public:
 	virtual const char *GetName( void ) const override { return "ctgEnemy"; }
 
 private:
-	ChasePath m_chasePath;
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
 };

@@ -163,17 +163,6 @@ float CNEOBotVision::GetMaxVisionRange( void ) const
 
 bool CNEOBotVision::IsInFieldOfView( CBaseEntity *subject ) const
 {
-	// Ghoster is always in FOV of everyone
-	const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
-	if (iGhosterPlayer > 0)
-	{
-		auto *pNEOPlayer = ToNEOPlayer(subject);
-		if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
-		{
-			return true;
-		}
-	}
-
 	return IVision::IsInFieldOfView(subject);
 }
 
@@ -189,16 +178,6 @@ bool CNEOBotVision::IsAbleToSee(CBaseEntity *subject, FieldOfViewCheckType check
 			{
 				return true;
 			}
-		}
-	}
-
-	const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
-	if (iGhosterPlayer > 0)
-	{
-		auto *pNEOPlayer = ToNEOPlayer(subject);
-		if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
-		{
-			return true;
 		}
 	}
 

@@ -46,13 +46,13 @@ ActionResult< CNEOBot >	CNEOBotCtgEnemy::Update( CNEOBot *me, float interval )
 		return SuspendFor( new CNEOBotAttack, "Attacking ghoster team" );
 	}
 
-	// chase the ghost carrier
+	// Investigate the ghost carrier's position
 	if ( m_repathTimer.IsElapsed() )
 	{
-		CNEOBotPathUpdateChase( me, m_chasePath, pGhostCarrier, DEFAULT_ROUTE );
+		CNEOBotPathCompute( me, m_path, pGhostCarrier->GetAbsOrigin(), DEFAULT_ROUTE );
 		m_repathTimer.Start( RandomFloat( 0.2f, 1.0f ) );
 	}
-	m_path.Invalidate();
+	m_path.Update( me );
 	
 	return Continue();
 }
