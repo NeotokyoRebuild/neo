@@ -1654,9 +1654,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	
 	bool bDoServerEffects = true;
 
+#ifndef NEO
 #if defined( HL2MP ) && defined( GAME_DLL )
 	bDoServerEffects = false;
 #endif
+#endif // NEO
 
 #if defined( GAME_DLL )
 	if( IsPlayer() )
@@ -2023,11 +2025,6 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 					}
 					else
 					{
-#if defined NEO && defined HL2MP && defined GAME_DLL
-						// NEO NOTE (Adam) bDoImpacts emits "impact effects", temporary particles when a surface is hit. TE_HL2MPFireBullets doesn't transmit decals 
-						// to other clients, need to do DoImpactEffects on server regardless of bDoServerEffects to transmit blood decals to other players
-						DoImpactEffect(tr, nDamageType);
-#endif // NEO && HL2MP && GAME_DLL
 						bDoImpacts = true;
 					}
 				}
