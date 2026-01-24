@@ -1,5 +1,0 @@
-// Auto Generated on game launch. Set background in game through the options menu from those available in scripts/neo_backgrounds.txt
-"chapters"
-{
-  1 "background01"
-}
