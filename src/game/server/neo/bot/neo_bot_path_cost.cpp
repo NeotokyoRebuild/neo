@@ -6,8 +6,7 @@
 #include "nav_mesh.h"
 #include "neo_bot_path_reservation.h"
 
-ConVar neo_bot_path_reservation_enable("neo_bot_path_reservation_enable", "1", FCVAR_NONE,
-	"Enable bot path reservation system", true, 0, false, 1);
+extern ConVar neo_bot_path_reservation_enable;
 
 ConVar neo_bot_path_around_friendly_cooldown("neo_bot_path_around_friendly_cooldown", "2.0", FCVAR_CHEAT,
 	"How often to check for friendly path dispersion", false, 0, false, 60);
@@ -112,9 +111,7 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 
 		// ------------------------------------------------------------------------------------------------
 		// New path reservation related cost adjustments
-		if ( neo_bot_path_reservation_enable.GetBool()
-			&& !m_bIgnoreReservations
-			&& (m_routeType != FASTEST_ROUTE) )
+		if ( !m_bIgnoreReservations && (m_routeType != FASTEST_ROUTE) )
 		{
 			cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber()) * neo_bot_path_reservation_penalty.GetFloat();
 			cost += CNEOBotPathReservations()->GetAreaStuckPenalty(area->GetID());

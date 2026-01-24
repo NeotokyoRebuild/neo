@@ -77,7 +77,7 @@ private:
 
 CNEOBotPathReservationSystem* CNEOBotPathReservations();
 
-extern ConVar neo_bot_path_reservation_enabled;
+extern ConVar neo_bot_path_reservation_enable;
 extern ConVar neo_bot_path_reservation_penalty;
 extern ConVar neo_bot_path_reservation_duration;
 extern ConVar neo_bot_path_reservation_distance;
