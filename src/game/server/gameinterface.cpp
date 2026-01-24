@@ -2507,8 +2507,8 @@ inline void CServerNetworkProperty::CheckTransmit( CCheckTransmitInfo *pInfo )
 	}
 } */
 
-#ifdef NEO // NEO NOTE (Adam) probably don't need to check observer mode now that we are checking if the camera is out of bounds, but maybe its better to leave the check in case players somehow get out of bounds when playing
-ConVar sv_neo_pvs_cull_roaming_observers("sv_neo_pvs_cull_roaming_observers", "0", FCVAR_NONE, "Cull entities against PVS for players who are out of bounds in the roaming observer mode");
+#ifdef NEO
+ConVar cl_neo_pvs_cull_roaming_observer("cl_neo_pvs_cull_roaming_observer", "0", FCVAR_CLIENTDLL | FCVAR_USERINFO | FCVAR_ARCHIVE, "Cull entities against PVS when out of bounds in the roaming observer mode");
 #endif // NEO
 void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned short *pEdictIndices, int nEdicts )
 {
@@ -2533,7 +2533,9 @@ void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned s
 	const bool bIsHLTV = pRecipientPlayer->IsHLTV();
 	const bool bIsReplay = pRecipientPlayer->IsReplay();
 #ifdef NEO
-	const bool bIsRoamingOOBObserver = !sv_neo_pvs_cull_roaming_observers.GetBool() && pRecipientPlayer->GetObserverMode() == OBS_MODE_ROAMING && engine->GetArea( pRecipientPlayer->GetAbsOrigin()) == 0;
+	const char* recipientPlayerWantsPVSCull = engine->GetClientConVarValue(pRecipientPlayer->entindex(), "cl_neo_pvs_cull_roaming_observer");
+	const bool bRecipientPlayerWantsPVSCull = recipientPlayerWantsPVSCull && *recipientPlayerWantsPVSCull && (V_atoi(recipientPlayerWantsPVSCull) != 0) ? true : false;
+	const bool bIsRoamingOOBObserver = !bRecipientPlayerWantsPVSCull && pRecipientPlayer->GetObserverMode() == OBS_MODE_ROAMING && engine->GetArea( pRecipientPlayer->GetAbsOrigin()) == 0;
 #endif // NEO
 
 	// m_pTransmitAlways must be set if HLTV client
