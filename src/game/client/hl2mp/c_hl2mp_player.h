@@ -235,7 +235,7 @@ private:
 	CNetworkVector( m_vecRagdollOrigin );
 public:
 #ifdef NEO
-	CNetworkVar(int, m_iRagdollModel);
+	CNetworkVar(int, m_nRagdollModelIndex);
 #endif // NEO
 };
 

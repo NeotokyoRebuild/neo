@@ -1246,7 +1246,7 @@ public:
 	CNetworkVector( m_vecRagdollVelocity );
 	CNetworkVector( m_vecRagdollOrigin );
 #ifdef NEO
-	CNetworkVar(int, m_iRagdollModel)
+	CNetworkVar(int, m_nRagdollModelIndex)
 #endif // NEO
 };
 
@@ -1260,7 +1260,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CHL2MPRagdoll, DT_HL2MPRagdoll )
 	SendPropVector	( SENDINFO(m_vecForce), -1, SPROP_NOSCALE ),
 	SendPropVector( SENDINFO( m_vecRagdollVelocity ) )
 #ifdef NEO
-	,SendPropInt		( SENDINFO(m_iRagdollModel))
+	,SendPropInt		( SENDINFO(m_nRagdollModelIndex))
 #endif // NEO
 END_SEND_TABLE()
 
@@ -1304,7 +1304,7 @@ void CHL2MP_Player::SetRagdollModel( const int modelIndex )
 	
 	if ( pRagdoll )
 	{
-		pRagdoll->m_iRagdollModel = modelIndex;
+		pRagdoll->m_nRagdollModelIndex = modelIndex;
 	}
 }
 #endif // NEO

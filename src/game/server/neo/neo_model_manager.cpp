@@ -54,140 +54,140 @@ const char *gibs[NEO_GIB_ENUM_COUNT * NEO_SKIN_ENUM_COUNT * numClasses * numTeam
 	///////////////
 
 	// Recons
-	"models/player/gsf_dead_all.mdl",
 	"models/player/gsf_dead_head.mdl",
 	"models/player/gsf_dead_larm.mdl",
 	"models/player/gsf_dead_lleg.mdl",
 	"models/player/gsf_dead_rarm.mdl",
 	"models/player/gsf_dead_rleg.mdl",
+	"models/player/gsf_dead_all.mdl",
 
-	"models/player/gsf2_dead_all.mdl",
 	"models/player/gsf2_dead_head.mdl",
 	"models/player/gsf2_dead_larm.mdl",
 	"models/player/gsf2_dead_lleg.mdl",
 	"models/player/gsf2_dead_rarm.mdl",
 	"models/player/gsf2_dead_rleg.mdl",
+	"models/player/gsf2_dead_all.mdl",
 
-	"models/player/gsf3_dead_all.mdl",
 	"models/player/gsf3_dead_head.mdl",
 	"models/player/gsf3_dead_larm.mdl",
 	"models/player/gsf3_dead_lleg.mdl",
 	"models/player/gsf3_dead_rarm.mdl",
 	"models/player/gsf3_dead_rleg.mdl",
+	"models/player/gsf3_dead_all.mdl",
 
 	// Assaults
-	"models/player/gam_dead_all.mdl",
 	"models/player/gam_dead_head.mdl",
 	"models/player/gam_dead_larm.mdl",
 	"models/player/gam_dead_lleg.mdl",
 	"models/player/gam_dead_rarm.mdl",
 	"models/player/gam_dead_rleg.mdl",
+	"models/player/gam_dead_all.mdl",
 
-	"models/player/gam2_dead_all.mdl",
 	"models/player/gam2_dead_head.mdl",
 	"models/player/gam2_dead_larm.mdl",
 	"models/player/gam2_dead_lleg.mdl",
 	"models/player/gam2_dead_rarm.mdl",
 	"models/player/gam2_dead_rleg.mdl",
+	"models/player/gam2_dead_all.mdl",
 
-	"models/player/gam3_dead_all.mdl",
 	"models/player/gam3_dead_head.mdl",
 	"models/player/gam3_dead_larm.mdl",
 	"models/player/gam3_dead_lleg.mdl",
 	"models/player/gam3_dead_rarm.mdl",
 	"models/player/gam3_dead_rleg.mdl",
+	"models/player/gam3_dead_all.mdl",
 
 	// Supports
-	"models/player/ghm_dead_all.mdl",
 	"models/player/ghm_dead_head.mdl",
 	"models/player/ghm_dead_larm.mdl",
 	"models/player/ghm_dead_lleg.mdl",
 	"models/player/ghm_dead_rarm.mdl",
 	"models/player/ghm_dead_rleg.mdl",
+	"models/player/ghm_dead_all.mdl",
 
-	"models/player/ghm2_dead_all.mdl",
 	"models/player/ghm2_dead_head.mdl",
 	"models/player/ghm2_dead_larm.mdl",
 	"models/player/ghm2_dead_lleg.mdl",
 	"models/player/ghm2_dead_rarm.mdl",
 	"models/player/ghm2_dead_rleg.mdl",
+	"models/player/ghm2_dead_all.mdl",
 
-	"models/player/ghm3_dead_all.mdl",
 	"models/player/ghm3_dead_head.mdl",
 	"models/player/ghm3_dead_larm.mdl",
 	"models/player/ghm3_dead_lleg.mdl",
 	"models/player/ghm3_dead_rarm.mdl",
 	"models/player/ghm3_dead_rleg.mdl",
+	"models/player/ghm3_dead_all.mdl",
 
 	//////////////////
 	// Jinrai start //
 	//////////////////
 
 	// Recons
-	"models/player/msf_dead_all.mdl",
 	"models/player/msf_dead_head.mdl",
 	"models/player/msf_dead_larm.mdl",
 	"models/player/msf_dead_lleg.mdl",
 	"models/player/msf_dead_rarm.mdl",
 	"models/player/msf_dead_rleg.mdl",
+	"models/player/msf_dead_all.mdl",
 
-	"models/player/msf2_dead_all.mdl",
 	"models/player/msf2_dead_head.mdl",
 	"models/player/msf2_dead_larm.mdl",
 	"models/player/msf2_dead_lleg.mdl",
 	"models/player/msf2_dead_rarm.mdl",
 	"models/player/msf2_dead_rleg.mdl",
+	"models/player/msf2_dead_all.mdl",
 
-	"models/player/msf3_dead_all.mdl",
 	"models/player/msf3_dead_head.mdl",
 	"models/player/msf3_dead_larm.mdl",
 	"models/player/msf3_dead_lleg.mdl",
 	"models/player/msf3_dead_rarm.mdl",
 	"models/player/msf3_dead_rleg.mdl",
+	"models/player/msf3_dead_all.mdl",
 
 	// Assaults
-	"models/player/mam_dead_all.mdl",
 	"models/player/mam_dead_head.mdl",
 	"models/player/mam_dead_larm.mdl",
 	"models/player/mam_dead_lleg.mdl",
 	"models/player/mam_dead_rarm.mdl",
 	"models/player/mam_dead_rleg.mdl",
+	"models/player/mam_dead_all.mdl",
 
-	"models/player/mam2_dead_all.mdl",
 	"models/player/mam2_dead_head.mdl",
 	"models/player/mam2_dead_larm.mdl",
 	"models/player/mam2_dead_lleg.mdl",
 	"models/player/mam2_dead_rarm.mdl",
 	"models/player/mam2_dead_rleg.mdl",
+	"models/player/mam2_dead_all.mdl",
 
-	"models/player/mam3_dead_all.mdl",
 	"models/player/mam3_dead_head.mdl",
 	"models/player/mam3_dead_larm.mdl",
 	"models/player/mam3_dead_lleg.mdl",
 	"models/player/mam3_dead_rarm.mdl",
 	"models/player/mam3_dead_rleg.mdl",
+	"models/player/mam3_dead_all.mdl",
 
 	// Supports
-	"models/player/mhm_dead_all.mdl",
 	"models/player/mhm_dead_head.mdl",
 	"models/player/mhm_dead_larm.mdl",
 	"models/player/mhm_dead_lleg.mdl",
 	"models/player/mhm_dead_rarm.mdl",
 	"models/player/mhm_dead_rleg.mdl",
+	"models/player/mhm_dead_all.mdl",
 
-	"models/player/mhm2_dead_all.mdl",
 	"models/player/mhm2_dead_head.mdl",
 	"models/player/mhm2_dead_larm.mdl",
 	"models/player/mhm2_dead_lleg.mdl",
 	"models/player/mhm2_dead_rarm.mdl",
 	"models/player/mhm2_dead_rleg.mdl",
+	"models/player/mhm2_dead_all.mdl",
 
-	"models/player/mhm3_dead_all.mdl",
 	"models/player/mhm3_dead_head.mdl",
 	"models/player/mhm3_dead_larm.mdl",
 	"models/player/mhm3_dead_lleg.mdl",
 	"models/player/mhm3_dead_rarm.mdl",
 	"models/player/mhm3_dead_rleg.mdl"
+	"models/player/mhm3_dead_all.mdl",
 };
 
 // nsf recons have two gib limb varieties (male and female)

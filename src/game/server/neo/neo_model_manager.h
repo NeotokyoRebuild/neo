@@ -8,12 +8,12 @@
 #include "neo_player_shared.h"
 
 enum NeoGib {
-	NEO_GIB_ALL = 0,
-	NEO_GIB_HEAD,
+	NEO_GIB_HEAD = 0,
 	NEO_GIB_LARM,
 	NEO_GIB_LLEG,
 	NEO_GIB_RARM,
 	NEO_GIB_RLEG,
+	NEO_GIB_ALL,
 
 	NEO_GIB__ENUM_COUNT
 };

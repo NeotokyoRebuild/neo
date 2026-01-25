@@ -2145,16 +2145,15 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 		return;
 	}
 
-	constexpr const int NUM_MODELS_WITHOUT_GIB = 1;
 	std::map<char, char> HITGROUP_TO_MODEL = {
 		{HITGROUP_GENERIC, -1},
-		{HITGROUP_HEAD, NEO_GIB_LIMB_HEAD + NUM_MODELS_WITHOUT_GIB},
+		{HITGROUP_HEAD, NEO_GIB_LIMB_HEAD},
 		{HITGROUP_CHEST, -1},
 		{HITGROUP_STOMACH, -1},
-		{HITGROUP_LEFTARM, NEO_GIB_LIMB_LARM + NUM_MODELS_WITHOUT_GIB},
-		{HITGROUP_RIGHTARM, NEO_GIB_LIMB_RARM + NUM_MODELS_WITHOUT_GIB},
-		{HITGROUP_LEFTLEG, NEO_GIB_LIMB_LLEG + NUM_MODELS_WITHOUT_GIB},
-		{HITGROUP_RIGHTLEG, NEO_GIB_LIMB_RLEG + NUM_MODELS_WITHOUT_GIB},
+		{HITGROUP_LEFTARM, NEO_GIB_LIMB_LARM},
+		{HITGROUP_RIGHTARM, NEO_GIB_LIMB_RARM},
+		{HITGROUP_LEFTLEG, NEO_GIB_LIMB_LLEG},
+		{HITGROUP_RIGHTLEG, NEO_GIB_LIMB_RLEG},
 		{HITGROUP_GEAR, -1},
 	};
 
@@ -2176,7 +2175,7 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 	}
 	else
 	{
-		SpawnSpecificGibs(10, 1000, CNEOModelManager::GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType - NUM_MODELS_WITHOUT_GIB)));
+		SpawnSpecificGibs(10, 1000, CNEOModelManager::GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType)));
 		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_GORE | FX_BLOODSPRAY_DROPS);
 	}
 
