@@ -145,25 +145,15 @@ void CNEOHud_WorldPosMarker_Generic::DrawNeoHudElement()
 		alpha6 = 255 * alpha6;
 
 		targetColor[3] = alpha6;
+	}
 
-		const float halfArrowLength = HALF_BASE_TEX_LENGTH * scale;
-		vgui::surface()->DrawSetColor(targetColor);
-		vgui::surface()->DrawTexturedRect(
-			x - halfArrowLength,
-			y - halfArrowLength,
-			x + halfArrowLength,
-			y + halfArrowLength);
-	}
-	else
-	{
-		const float halfArrowLength = HALF_BASE_TEX_LENGTH * scale;
-		vgui::surface()->DrawSetColor( targetColor );
-		vgui::surface()->DrawTexturedRect(
-			x - halfArrowLength,
-			y - halfArrowLength,
-			x + halfArrowLength,
-			y + halfArrowLength);
-	}
+	const float halfArrowLength = HALF_BASE_TEX_LENGTH * scale;
+	vgui::surface()->DrawSetColor( targetColor );
+	vgui::surface()->DrawTexturedRect(
+		x - halfArrowLength,
+		y - halfArrowLength,
+		x + halfArrowLength,
+		y + halfArrowLength);
 }
 
 void CNEOHud_WorldPosMarker_Generic::Paint()

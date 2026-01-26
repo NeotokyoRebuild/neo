@@ -29,6 +29,6 @@ private:
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	wchar_t m_wszMarkerTextUnicode[64 + 1] = {};
 	Vector m_vecMyPos = vec3_origin;
-	vgui::HFont m_hFont = 0UL;
+	vgui::HFont m_hFont = vgui::INVALID_FONT;
 	vgui::HTexture m_hSprite[MAX_SCREEN_OVERLAYS] = {};
 };

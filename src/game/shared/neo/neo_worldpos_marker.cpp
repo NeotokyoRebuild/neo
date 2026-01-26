@@ -117,7 +117,7 @@ void CNEOWorldPosMarkerEnt::Spawn()
 		m_bEnabled = false;
 	}
 
-	Assert( ICON_TOTAL == ARRAYSIZE(ICON_PATHS) );
+	COMPILE_TIME_ASSERT( ICON_TOTAL == ARRAYSIZE(ICON_PATHS) );
 	if ( m_iIcon > ICON_INVALID && m_iIcon < ICON_TOTAL )
 	{
 		KeyValue( "SpriteName1", ICON_PATHS[m_iIcon] );
@@ -168,7 +168,6 @@ void CNEOWorldPosMarkerEnt::PostDataUpdate( DataUpdateType_t updateType )
 
 	if ( !m_pHUD_WorldPosMarker && updateType == DATA_UPDATE_DATATABLE_CHANGED )
 	{
-		Assert( !m_pHUD_WorldPosMarker );
 		m_pHUD_WorldPosMarker = new CNEOHud_WorldPosMarker_Generic( "hudWPMent", this );
 		m_pHUD_WorldPosMarker->SetVisible( true );
 	}

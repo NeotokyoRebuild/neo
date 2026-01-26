@@ -41,7 +41,7 @@ public:
 	virtual ~CNEOWorldPosMarkerEnt();
 
 #ifdef GAME_DLL
-	virtual void	Spawn();
+	virtual void	Spawn() override;
 	virtual int		UpdateTransmitState() override;
 #else
 	virtual void	PostDataUpdate( DataUpdateType_t updateType ) override;
