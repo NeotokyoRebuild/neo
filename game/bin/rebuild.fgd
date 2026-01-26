@@ -411,3 +411,8 @@
 [
 	targetname(target_source) : "Name" : : "The name that other entities refer to this entity by."
 ]
+
+@PointClass base(BasePropPhysics, RenderFields) studioprop() sphere(radius) = prop_sphere : "Creates a perfect sphere."
+[
+	radius(float) : "Radius" : 12 : ""
+]
