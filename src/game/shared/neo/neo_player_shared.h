@@ -120,8 +120,56 @@ COMPILE_TIME_ASSERT(NEO_RECON_CROUCH_SPEED > NEO_ASSAULT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 
+// NEO Jank: As an optimization, these constants are calculated for default gravity,
+// and bot climbing behavior may be odd if sv_gravity is changed.
+// See [MD]'s g_bMovementOptimizations for additional context.
+//
+// At time of comment, these constants were only used by neo_bot_locomotion.h
+// where these values determine if a bot will attempt to climb a ledge between NavAreas.
+// At time of analysis, NEO_RECON_CROUCH_JUMP_HEIGHT potentially was historically calculated based on
+// (GAMEMOVEMENT_JUMP_HEIGHT * class multiplier) + (Support Hull Crouch/Stand Difference),
+//
+// From this point on we will refer to (GAMEMOVEMENT_JUMP_HEIGHT * class multiplier) as "Class Jump Height".
+// For sake of consistency, we will use the precomputed jump heights assuming g_bMovementOptimizations = true.
+//
+// Class Jump Height: Derived from `sqrt(2 * gravity * jump_height)` from `gamemovement.cpp`.
+// But for simplicity we use the optimized values provided under the g_bMovementOptimizations = true case:
+//    - Recon:		54.0 units
+//    - Juggernaut:	50.4 units
+//    - Others:		36.0 units
+//
+// Hull Crouch/Stand Difference (aka: "Lift"):
+// ---
+// Derived from neo_gamerules.cpp: Vector viewDelta = ( hullSizeNormal - hullSizeCrouch );
+// Variables are defined in shareddefs.h as VEC_HULL_MAX_SCALED and VEC_DUCK_HULL_MAX_SCALED.
+// Instead of deriving these values by hand, a breakpoint can be placed in CGameMovement::CanUnduck()
+// while configuring the bot class with the bot_class command, to log the variable values.
+//
+// Lift = VEC_HULL_MAX_SCALED.z - VEC_DUCK_HULL_MAX_SCALED.z
+// ---
+// Recon: 64 - 46 = 18
+// Assault: 65 - 48 = 17
+// Support: 70 - 59 = 11
+// VIP: 65 - 48 = 17
+//
+// Juggernaut: 88 - 75 = 13
+//   (Base Hull Max = 70) + (NEO_JUGGERNAUT_MAXHULL_OFFSET.z = 18) = 88
+//   (Base Hull Duck Max = 59) + (NEO_JUGGERNAUT_DUCK_MAXHULL_OFFSET.z = 16) = 75
+//
+// Then apply a uniform spare height budget gap of 7 units to all classes.
+// Formula: (Class Jump Height) + (Lift) - (Spare Gap)
+//
+// Precalculated bot crouch jump heights for use in bot locomotion/navigation checks:
+// ---
+// Recon: 54 + 18 - 7 = 65
+// Assault/VIP: 36 + 17 - 7 = 46
+// Support: 36 + 11 - 7 = 40
+// Juggernaut: 50.4 + 13 - 7 = 56.4 (rounded down to 56)
+
 #define NEO_RECON_CROUCH_JUMP_HEIGHT 65.f
-#define NEO_CROUCH_JUMP_HEIGHT 56.f
+#define NEO_ASSAULT_CROUCH_JUMP_HEIGHT 46.f
+#define NEO_SUPPORT_CROUCH_JUMP_HEIGHT 40.f
+#define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 56.f
 
 // END OF NEO MOVEMENT DEFINITIONS
 //////////////////////////////////////////////////////

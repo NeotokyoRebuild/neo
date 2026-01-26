@@ -6,6 +6,8 @@
 #include "neo_gamerules.h"
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_manager.h"
+#include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_cost.h"
 #include "bot/behavior/neo_bot_behavior.h"
 #include "bot/behavior/neo_bot_dead.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
@@ -236,6 +238,38 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 	else
 	{
 		me->PressRightButton();
+	}
+
+	// NEO Jank: For the current match, all bots share where they get stuck
+	// The reasoning is that bots on either team will get stuck in their respective half of the map
+	// so the overall fairness may balance out for both teams sharing common sticking points.
+	if ( const CNavArea *navArea = me->GetLastKnownArea() )
+	{
+		CNEOBotPathReservations()->IncrementAreaStuckPenalty( navArea->GetID() );
+	}
+	else
+	{
+		// Fallback if GetLastKnownArea is null, try finding nearest nav area
+		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
+		if ( nearestArea )
+		{
+			CNEOBotPathReservations()->IncrementAreaStuckPenalty( nearestArea->GetID() );
+		}
+	}
+
+	// Also penalize the immediate next nav area bot was trying to get to
+	if ( const PathFollower *path = me->GetCurrentPath() )
+	{
+		if ( const Path::Segment *currentGoal = path->GetCurrentGoal() )
+		{
+			if ( const Path::Segment *nextSegment = path->NextSegment( currentGoal ) )
+			{
+				if ( nextSegment->area )
+				{
+					CNEOBotPathReservations()->IncrementAreaStuckPenalty( nextSegment->area->GetID() );
+				}
+			}
+		}
 	}
 
 	return TryContinue();

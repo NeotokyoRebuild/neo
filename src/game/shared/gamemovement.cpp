@@ -2311,7 +2311,22 @@ void CGameMovement::FullObserverMove( void )
 
 	float fmove = mv->m_flForwardMove * factor;
 	float smove = mv->m_flSideMove * factor;
-
+	
+#ifdef NEO
+	const bool bDroneMove = mv->m_nButtons & IN_WALK;
+	if (bDroneMove)
+	{
+		forward.z = 0;
+		if (fmove && smove)
+		{
+			const float absFMove = fabs(fmove);
+			const float absSMove = fabs(smove);
+			const float moveMagnitude = FastSqrt((absFMove * absFMove) + (absSMove * absSMove));
+			fmove *= absFMove / moveMagnitude;
+			smove *= absSMove / moveMagnitude;
+		}
+	}
+#endif // NEO
 	VectorNormalize (forward);  // Normalize remainder of vectors
 	VectorNormalize (right);    //
 
@@ -2389,6 +2404,21 @@ void CGameMovement::FullNoClipMove( float factor, float maxacceleration )
 	float fmove = mv->m_flForwardMove * factor;
 	float smove = mv->m_flSideMove * factor;
 
+#ifdef NEO
+	const bool bDroneMove = mv->m_nButtons & IN_WALK;
+	if (bDroneMove)
+	{
+		forward.z = 0;
+		if (fmove && smove)
+		{
+			const float absFMove = fabs(fmove);
+			const float absSMove = fabs(smove);
+			const float moveMagnitude = FastSqrt((absFMove * absFMove) + (absSMove * absSMove));
+			fmove *= absFMove / moveMagnitude;
+			smove *= absSMove / moveMagnitude;
+		}
+	}
+#endif // NEO
 	VectorNormalize (forward);  // Normalize remainder of vectors
 	VectorNormalize (right);    //
 
@@ -2575,6 +2605,7 @@ bool CGameMovement::CheckJumpButton( void )
 		flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT);
 	}
 #else
+	// NEO JANK: Remember to update NEO_RECON_CROUCH_JUMP_HEIGHT/etc if you change these values.
 	auto neoPlayer = static_cast<CNEO_Player*>(player);
 	if ( g_bMovementOptimizations )
 	{
@@ -2668,7 +2699,10 @@ bool CGameMovement::CheckJumpButton( void )
 
 	OnJump(mv->m_outJumpVel.z);
 #if defined NEO && defined CLIENT_DLL
-	IN_LeanToggleReset();
+	if (neoPlayer->IsLocalPlayer())
+	{
+		IN_LeanToggleReset();
+	}
 #endif // NEO && CLIENT_DLL
 
 	// Set jump time.

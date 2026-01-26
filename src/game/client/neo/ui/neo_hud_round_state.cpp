@@ -778,7 +778,7 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 		{
 			continue;
 		}
-		if (i == localPlayerIndex || localPlayerSpec || hideDueToScoreboard || !ArePlayersOnSameTeam(i, localPlayerIndex))
+		if (i == localPlayerIndex || localPlayerSpec || hideDueToScoreboard)
 		{
 			continue;
 		}

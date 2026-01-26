@@ -5461,15 +5461,30 @@ void CPropDoorRotating::InputSetRotationDistance( inputdata_t &inputdata )
 class CPhysSphere : public CPhysicsProp
 {
 	DECLARE_CLASS( CPhysSphere, CPhysicsProp );
+#ifdef NEO
+	DECLARE_DATADESC();
+#endif
 public:
+#ifdef NEO
+	float m_flRadius = 12.0f;
+#else
 	virtual bool OverridePropdata() { return true; }
+#endif
 	bool CreateVPhysics()
 	{
 		SetSolid( SOLID_BBOX );
+#ifdef NEO
+		SetCollisionBounds( -Vector( m_flRadius ), Vector( m_flRadius ) );
+#else
 		SetCollisionBounds( -Vector(12,12,12), Vector(12,12,12) );
+#endif
 		objectparams_t params = g_PhysDefaultObjectParams;
 		params.pGameData = static_cast<void *>(this);
+#ifdef NEO
+		IPhysicsObject *pPhysicsObject = physenv->CreateSphereObject( m_flRadius, GetModelPtr()->GetRenderHdr()->textureindex, GetAbsOrigin(), GetAbsAngles(), &params, false );
+#else
 		IPhysicsObject *pPhysicsObject = physenv->CreateSphereObject( 12, 0, GetAbsOrigin(), GetAbsAngles(), &params, false );
+#endif
 		if ( pPhysicsObject )
 		{
 			VPhysicsSetObject( pPhysicsObject );
@@ -5480,6 +5495,12 @@ public:
 		return true;
 	}
 };
+
+#ifdef NEO
+BEGIN_DATADESC( CPhysSphere )
+	DEFINE_KEYFIELD( m_flRadius, FIELD_FLOAT, "radius"),
+END_DATADESC()
+#endif
 
 void CPropDoorRotating::InputSetSpeed(inputdata_t &inputdata)
 {

@@ -11,6 +11,8 @@ ConVar neo_bot_path_reservation_enabled("neo_bot_path_reservation_enabled", "1",
 ConVar neo_bot_path_reservation_penalty("neo_bot_path_reservation_penalty", "100", FCVAR_NONE, "Pathing cost penalty for a reserved area.");
 ConVar neo_bot_path_reservation_duration("neo_bot_path_reservation_duration", "30.0", FCVAR_NONE, "How long a path reservation lasts, in seconds.");
 ConVar neo_bot_path_reservation_distance("neo_bot_path_reservation_distance", "10000", FCVAR_NONE, "How far along the path to reserve, in Hammer units.");
+ConVar neo_bot_path_reservation_onstuck_penalty_enabled("neo_bot_path_reservation_onstuck_penalty_enabled", "1", FCVAR_NONE, "Whether to update or retrieve the area onstuck penalty.");
+ConVar neo_bot_path_reservation_onstuck_penalty("neo_bot_path_reservation_onstuck_penalty", "10000", FCVAR_NONE, "Path selection penalty added to a nav area each time a bot gets stuck moving through that area.");
 
 
 CNEOBotPathReservationSystem* CNEOBotPathReservations()
@@ -230,6 +232,7 @@ void CNEOBotPathReservationSystem::Clear()
         m_AreaPathCounts[team].RemoveAll();
     }
     m_BotReservedAreas.RemoveAll();
+    m_AreaOnStuckPenalties.RemoveAll();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -285,4 +288,37 @@ int CNEOBotPathReservationSystem::GetPredictedFriendlyPathCount( int areaID, int
     }
 
     return 0;
+}
+
+//-------------------------------------------------------------------------------------------------
+void CNEOBotPathReservationSystem::IncrementAreaStuckPenalty(unsigned int navAreaID)
+{
+    if ( !neo_bot_path_reservation_onstuck_penalty_enabled.GetBool() )
+    {
+        return;
+    }
+
+    unsigned short index = m_AreaOnStuckPenalties.Find(navAreaID);
+    if (index == m_AreaOnStuckPenalties.InvalidIndex())
+    {
+        index = m_AreaOnStuckPenalties.Insert(navAreaID, 0.0f);
+    }
+
+    m_AreaOnStuckPenalties[index] += neo_bot_path_reservation_onstuck_penalty.GetFloat();
+}
+
+//-------------------------------------------------------------------------------------------------
+float CNEOBotPathReservationSystem::GetAreaStuckPenalty(unsigned int navAreaID) const
+{
+    if ( !neo_bot_path_reservation_onstuck_penalty_enabled.GetBool() )
+    {
+        return 0.0f;
+    }
+
+    unsigned short index = m_AreaOnStuckPenalties.Find(navAreaID);
+    if (index != m_AreaOnStuckPenalties.InvalidIndex())
+    {
+        return m_AreaOnStuckPenalties[index];
+    }
+    return 0.0f;
 }

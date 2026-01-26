@@ -450,3 +450,8 @@
 	input Alpha(integer) : "Sets the sprite's alpha (0 - 255)."
 	input Color(color255) : "Sets the sprite's render color (R G B)."
 ]
+  
+@PointClass base(BasePropPhysics, RenderFields) studioprop() sphere(radius) = prop_sphere : "Creates a perfect sphere."
+[
+	radius(float) : "Radius" : 12 : ""
+]

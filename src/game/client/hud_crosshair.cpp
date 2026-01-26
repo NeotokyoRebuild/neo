@@ -503,7 +503,7 @@ void CHudCrosshair::Paint( void )
 		{
 			if (cl_neo_crosshair_scope_inaccuracy.GetBool())
 			{
-				const int size = pWeapon ? HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth) : 0;
+				const int size = pWeapon ? HalfInaccuracyConeInScreenPixels(pWeapon, m_iHalfScreenWidth) : 0;
 				if (size)
 				{
 					surface()->DrawSetTexture(m_hCrosshairLight);
@@ -546,7 +546,7 @@ void CHudCrosshair::Paint( void )
 	}
 	else
 	{
-		PaintCrosshair(*pCrosshairInfo, HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth), iX, iY);
+		PaintCrosshair(*pCrosshairInfo, HalfInaccuracyConeInScreenPixels(pWeapon, m_iHalfScreenWidth), iX, iY);
 	}
 
 	if (bIsScopedWep && pPlayer->m_bInAim)
