@@ -1828,6 +1828,13 @@ void CMultiPlayerAnimState::Update( float eyeYaw, float eyePitch )
 //-----------------------------------------------------------------------------
 bool CMultiPlayerAnimState::ShouldUpdateAnimState()
 {
+#ifdef NEO
+	if (GetBasePlayer()->GetDeathTime() + 0.5f > gpGlobals->curtime)
+	{
+		return true;
+	}
+#endif // NEO
+
 	// Don't update anim state if we're not visible
 	if ( GetBasePlayer()->IsEffectActive( EF_NODRAW ) )
 		return false;
