@@ -206,8 +206,8 @@ void CHL2MPPlayerAnimState::Update( float eyeYaw, float eyePitch )
 	// Check to see if we should be updating the animation state - dead, ragdolled?
 	if ( !ShouldUpdateAnimState() )
 	{
-		ClearAnimationState();
-		return;
+		//ClearAnimationState();
+		//return;
 	}
 
 	// Store the eye angles.

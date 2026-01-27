@@ -1233,9 +1233,6 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE( C_HL2MPRagdoll, DT_HL2MPRagdoll, CHL2MPRagdoll 
 	RecvPropInt( RECVINFO(m_nForceBone) ),
 	RecvPropVector( RECVINFO(m_vecForce) ),
 	RecvPropVector( RECVINFO( m_vecRagdollVelocity ) )
-#ifdef NEO
-	,RecvPropInt(RECVINFO(m_nRagdollModelIndex))
-#endif // NEO
 END_RECV_TABLE()
 
 
@@ -1244,7 +1241,6 @@ C_HL2MPRagdoll::C_HL2MPRagdoll()
 {
 #ifdef NEO
 	m_flNeoCreateTime = gpGlobals->curtime;
-	m_nRagdollModelIndex = -1;
 #endif // NEO
 }
 
@@ -1326,7 +1322,6 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	C_HL2MP_Player *pPlayer = dynamic_cast< C_HL2MP_Player* >( m_hPlayer.Get() );
 	
 #ifdef NEO
-	SetModelIndex(m_nRagdollModelIndex ? m_nRagdollModelIndex : m_nModelIndex);
 	if ( pPlayer )
 #else
 	if ( pPlayer && !pPlayer->IsDormant() )
@@ -1391,9 +1386,7 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 		
 	}
 
-#ifndef NEO
 	SetModelIndex( m_nModelIndex );
-#endif // NEO
 
 	// Make us a ragdoll..
 	m_nRenderFX = kRenderFxRagdoll;

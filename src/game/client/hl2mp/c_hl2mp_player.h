@@ -234,9 +234,6 @@ private:
 	CNetworkVector( m_vecRagdollVelocity );
 	CNetworkVector( m_vecRagdollOrigin );
 public:
-#ifdef NEO
-	CNetworkVar(int, m_nRagdollModelIndex);
-#endif // NEO
 };
 
 #endif //HL2MP_PLAYER_H

@@ -1245,9 +1245,6 @@ public:
 	CNetworkHandle( CBaseEntity, m_hPlayer );	// networked entity handle 
 	CNetworkVector( m_vecRagdollVelocity );
 	CNetworkVector( m_vecRagdollOrigin );
-#ifdef NEO
-	CNetworkVar(int, m_nRagdollModelIndex)
-#endif // NEO
 };
 
 LINK_ENTITY_TO_CLASS( hl2mp_ragdoll, CHL2MPRagdoll );
@@ -1259,9 +1256,6 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CHL2MPRagdoll, DT_HL2MPRagdoll )
 	SendPropInt		( SENDINFO(m_nForceBone), 8, 0 ),
 	SendPropVector	( SENDINFO(m_vecForce), -1, SPROP_NOSCALE ),
 	SendPropVector( SENDINFO( m_vecRagdollVelocity ) )
-#ifdef NEO
-	,SendPropInt		( SENDINFO(m_nRagdollModelIndex))
-#endif // NEO
 END_SEND_TABLE()
 
 
@@ -1296,18 +1290,6 @@ void CHL2MP_Player::CreateRagdollEntity( void )
 	// ragdolls will be removed on round restart automatically
 	m_hRagdoll = pRagdoll;
 }
-
-#ifdef NEO
-void CHL2MP_Player::SetRagdollModel( const int modelIndex )
-{
-	CHL2MPRagdoll *pRagdoll = dynamic_cast< CHL2MPRagdoll* >( m_hRagdoll.Get() );
-	
-	if ( pRagdoll )
-	{
-		pRagdoll->m_nRagdollModelIndex = modelIndex;
-	}
-}
-#endif // NEO
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
