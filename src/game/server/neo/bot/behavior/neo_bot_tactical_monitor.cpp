@@ -135,43 +135,43 @@ void CNEOBotTacticalMonitor::MonitorArmedStickyBombs( CNEOBot *me )
 
 #endif //NEO
 //-----------------------------------------------------------------------------------------
-void CNEOBotTacticalMonitor::AvoidBumpingEnemies( CNEOBot *me )
+void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 {
-	if ( me->GetDifficulty() < CNEOBot::HARD )
-		return;
+	const float avoidRange = 32.0f;
 
-	const float avoidRange = 200.0f;
+	CUtlVector< CNEO_Player * > friendVector;
+	CollectPlayers( &friendVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 
-	CUtlVector< CNEO_Player * > enemyVector;
-	CollectPlayers( &enemyVector, GetEnemyTeam( me->GetTeamNumber() ), COLLECT_ONLY_LIVING_PLAYERS );
-
-	CNEO_Player *closestEnemy = NULL;
+	CNEO_Player *closestFriend = NULL;
 	float closestRangeSq = avoidRange * avoidRange;
 
-	for( int i=0; i<enemyVector.Count(); ++i )
+	for( int i=0; i<friendVector.Count(); ++i )
 	{
-		CNEO_Player *enemy = enemyVector[i];
+		CNEO_Player *friendly = friendVector[i];
 
-		float rangeSq = ( enemy->GetAbsOrigin() - me->GetAbsOrigin() ).LengthSqr();
+		if ( friendly == me->GetEntity() )
+			continue;
+
+		float rangeSq = ( friendly->GetAbsOrigin() - me->GetAbsOrigin() ).LengthSqr();
 		if ( rangeSq < closestRangeSq )
 		{
-			closestEnemy = enemy;
+			closestFriend = friendly;
 			closestRangeSq = rangeSq;
 		}
 	}
 
-	if ( !closestEnemy )
+	if ( !closestFriend )
 		return;
 
 	// avoid unless hindrance returns a definitive "no"
-	if ( me->GetIntentionInterface()->IsHindrance( me, closestEnemy ) == ANSWER_UNDEFINED )
+	if ( me->GetIntentionInterface()->IsHindrance( me, closestFriend ) == ANSWER_UNDEFINED )
 	{
 		me->ReleaseForwardButton();
 		me->ReleaseLeftButton();
 		me->ReleaseRightButton();
 		me->ReleaseBackwardButton();
 
-		Vector away = me->GetAbsOrigin() - closestEnemy->GetAbsOrigin();
+		Vector away = me->GetAbsOrigin() - closestFriend->GetAbsOrigin();
 
 		me->GetLocomotionInterface()->Approach( me->GetLocomotionInterface()->GetFeet() + away );
 	}
@@ -345,6 +345,12 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	// detonate sticky bomb traps when victims are near
 	MonitorArmedStickyBombs( me );
 #endif
+
+	CNEO_Player* pBotPlayer = ToNEOPlayer( me->GetEntity() );
+	if ( pBotPlayer && !(pBotPlayer->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) )
+	{
+		AvoidBumpingFriends( me );
+	}
 
 	me->UpdateDelayedThreatNotices();
 
