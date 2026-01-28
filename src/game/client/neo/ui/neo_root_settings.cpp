@@ -669,6 +669,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 
 		pHUD->bEnableXray = cvr->glow_outline_effect_enable.GetBool();
 		pHUD->flOutlineWidth = cvr->glow_outline_effect_width.GetFloat();
+		pHUD->flOutlineAlpha = cvr->glow_outline_effect_alpha.GetFloat();
 		pHUD->flCenterOpacity = cvr->glow_outline_effect_center_alpha.GetFloat();
 		pHUD->flTexturedOpacity = cvr->glow_outline_effect_textured_center_alpha.GetFloat();
 #endif // GLOWS_ENABLE
@@ -903,6 +904,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 
 		cvr->glow_outline_effect_enable.SetValue(pHUD->bEnableXray);
 		cvr->glow_outline_effect_width.SetValue(pHUD->flOutlineWidth);
+		cvr->glow_outline_effect_alpha.SetValue(pHUD->flOutlineAlpha);
 		cvr->glow_outline_effect_center_alpha.SetValue(pHUD->flCenterOpacity);
 		cvr->glow_outline_effect_textured_center_alpha.SetValue(pHUD->flTexturedOpacity);
 #endif // GLOWS_ENABLE
@@ -1432,6 +1434,7 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::Divider(L"XRAY");
 	NeoUI::RingBoxBool(L"Enable Xray",  &pHud->bEnableXray);
 	NeoUI::Slider(L"Outline Width", &pHud->flOutlineWidth, 0, 2, 2, 0.25f);
+	NeoUI::Slider(L"Outline Opacity", &pHud->flOutlineAlpha, 0, 1, 2, 0.1f);
 	NeoUI::Slider(L"Center Opacity", &pHud->flCenterOpacity, 0, 1, 2, 0.1f);
 	NeoUI::Slider(L"Texture Opacity (Cloak highlight)", &pHud->flTexturedOpacity, 0, 1, 2, 0.1f);
 #endif // GLOWS_ENABLE
