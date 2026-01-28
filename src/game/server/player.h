@@ -1539,21 +1539,20 @@ int CollectPlayers( CUtlVector< T * > *playerVector, int team = TEAM_ANY, bool i
 
 #ifdef NEO
 	int estimatedCount = playerVector->Size();
+
+	const auto incrementEstimate = [&estimatedCount, isAlive](int team) {
+		const auto* pTeam = GetGlobalTeam(team);
+		Assert(pTeam);
+		if (pTeam)
+			estimatedCount += (isAlive ? pTeam->GetAliveMembers() : pTeam->GetNumPlayers());
+		};
+
 	if (team == TEAM_ANY)
 	{
 		const int nTeams = GetNumberOfTeams();
-		for (int i = 0; i < nTeams; ++i)
-		{
-			const auto* pTeam = GetGlobalTeam(i);
-			Assert(pTeam);
-			if (pTeam)
-				estimatedCount += (isAlive ? pTeam->GetAliveMembers() : pTeam->GetNumPlayers());
-		}
+		for (int i = 0; i < nTeams; ++i) incrementEstimate(i);
 	}
-	else if (const auto* pTeam = GetGlobalTeam(team))
-		estimatedCount += (isAlive ? pTeam->GetAliveMembers() : pTeam->GetNumPlayers());
-	else
-		Assert(false);
+	else incrementEstimate(team);
 	playerVector->EnsureCapacity(estimatedCount);
 #endif
 
