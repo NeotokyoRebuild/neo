@@ -7,21 +7,15 @@
 #include "shot_manipulator.h"
 #include "weapon_neobasecombatweapon.h"
 
-#ifdef CLIENT_DLL
-#include "c_neo_player.h"
-#else
-#include "neo_player.h"
-#endif
-
 class CNEOBaseCombatWeapon;
 
 class CNEOShotManipulator : public CShotManipulator {
 public:
-	CNEOShotManipulator(int numBullet, const Vector& vecForward, CNEO_Player* player, CNEOBaseCombatWeapon* neoWep = NULL)
+	CNEOShotManipulator(int numBullet, const Vector& vecForward, CBaseEntity* ent, CNEOBaseCombatWeapon* neoWep = nullptr)
 		: CShotManipulator(vecForward)
 	{
-		Assert(player);
-		m_pPlayer = player;
+		Assert(ent);
+		m_pEnt = ent; // Not always a player
 
 		m_pWeapon = neoWep; // we're ok with a nullptr here (ie. not an NT gun); just handle as a non-recoiled weapon then.
 
@@ -49,7 +43,7 @@ private:
 
 	Vector m_vecRecoilDirection;
 
-	CNEO_Player* m_pPlayer;
+	CBaseEntity* m_pEnt;
 
 	CNEOBaseCombatWeapon* m_pWeapon;
 };
@@ -71,7 +65,7 @@ inline const Vector& CNEOShotManipulator::ApplyRecoil(const Vector& vecSpread, f
 	QAngle myangles;
 	VectorAngles(m_vecShotDirection, myangles);
 
-	QAngle worldangles = TransformAnglesToWorldSpace(myangles, m_pPlayer->EntityToWorldTransform());
+	QAngle worldangles = TransformAnglesToWorldSpace(myangles, m_pEnt->EntityToWorldTransform());
 
 	matrix3x4_t attachedToWorld;
 	AngleMatrix(worldangles, attachedToWorld);
