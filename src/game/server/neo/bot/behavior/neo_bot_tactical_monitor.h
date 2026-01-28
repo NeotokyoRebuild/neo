@@ -36,4 +36,5 @@ private:
 	void AvoidBumpingFriends(CNEOBot* me);
 	void ReconConsiderSuperJump(CNEOBot *me);
 	ActionResult< CNEOBot > WatchForGrenades(CNEOBot* me);
+	ActionResult< CNEOBot > WatchForLadders(CNEOBot* me);
 };

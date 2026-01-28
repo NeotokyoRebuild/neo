@@ -2,6 +2,7 @@
 #include "fmtstr.h"
 
 #include "neo_gamerules.h"
+#include "nav_ladder.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
 
 #include "bot/neo_bot.h"
@@ -14,6 +15,7 @@
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_ladder_approach.h"
 #include "bot/behavior/neo_bot_pause.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
@@ -258,6 +260,48 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForGrenades( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForLadders( CNEOBot *me )
+{
+	// Check if our current path has an approaching ladder segment
+	const PathFollower *path = me->GetCurrentPath();
+	if ( !path || !path->IsValid() )
+	{
+		return Continue();
+	}
+
+	const Path::Segment *goal = path->GetCurrentGoal();
+	if ( !goal || !goal->ladder )
+	{
+		return Continue();
+	}
+
+	// Already using a ladder via locomotion interface
+	ILocomotion *mover = me->GetLocomotionInterface();
+	if ( mover->IsUsingLadder() || mover->IsAscendingOrDescendingLadder() )
+	{
+		return Continue();
+	}
+
+	// We're approaching a ladder - check distance
+	const float ladderApproachRange = 60.0f;
+	Vector ladderPos = (goal->how == GO_LADDER_UP) 
+		? goal->ladder->m_bottom 
+		: goal->ladder->m_top;
+
+	if ( me->GetAbsOrigin().DistToSqr( ladderPos ) < Square(ladderApproachRange) )
+	{
+		bool goingUp = (goal->how == GO_LADDER_UP);
+		return SuspendFor( 
+			new CNEOBotLadderApproach( goal->ladder, goingUp ), 
+			goingUp ? "Approaching ladder up" : "Approaching ladder down" 
+		);
+	}
+
+	return Continue();
+}
+
+
+//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
 	if ( neo_bot_force_jump.GetBool() )
@@ -276,8 +320,11 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return result;
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-#endif
+	result = WatchForLadders( me );
+	if ( result.IsRequestingChange() )
+	{
+		return result;
+	}
 
 	// check if we need to get to cover
 	QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
