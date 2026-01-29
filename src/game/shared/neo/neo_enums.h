@@ -56,7 +56,8 @@ static const constexpr short NEO_ENVIRON_KILLED = -1;
 
 enum NeoAchievementID
 {
-	ACHIEVEMENT_NEO_TUTORIAL_COMPLETE = 0,
+	// Must start greater than 0 always
+	ACHIEVEMENT_NEO_TUTORIAL_COMPLETE = 1,
 	ACHIEVEMENT_NEO_TRIAL_50_SECONDS,
 	ACHIEVEMENT_NEO_TRIAL_40_SECONDS,
 };
