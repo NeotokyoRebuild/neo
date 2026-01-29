@@ -85,7 +85,7 @@ bool SharedDispatch( MessageBuffer *pBuf, int iSource, int iPacketID )
 
 					if ( char *pch = strrchr( chModuleName, '.' ) )
 						*pch = 0;
-					if ( char *pch = strrchr( chModuleName, '\\' ) )
+					if ( char *pch = strrchr( chModuleName, CORRECT_PATH_SEPARATOR ) )
 						*pch = 0, pModuleName = pch + 1;
 
 					// Current time
@@ -187,6 +187,7 @@ int VMPI_SendFileChunk( const void *pvChunkPrefix, int lenPrefix, tchar const *p
 	HANDLE hFile = NULL;
 	HANDLE hMapping = NULL;
 	void const *pvMappedData = NULL;
+    int iMappedFileSize = INVALID_FILE_SIZE;
 	int iResult = 0;
 
 	hFile = ::CreateFile( ptchFileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
@@ -201,7 +202,7 @@ int VMPI_SendFileChunk( const void *pvChunkPrefix, int lenPrefix, tchar const *p
 	if ( !pvMappedData )
 		goto done;
 
-	int iMappedFileSize = ::GetFileSize( hFile, NULL );
+    iMappedFileSize = ::GetFileSize( hFile, NULL );
 	if ( INVALID_FILE_SIZE == iMappedFileSize )
 		goto done;
 
@@ -290,8 +291,8 @@ void VMPI_ExceptionFilter( unsigned long uCode, void *pvExceptionInfo )
 	#define ERR_RECORD( name ) { name, #name }
 	struct
 	{
-		int code;
-		char *pReason;
+        DWORD code;
+        const char *pReason;
 	} errors[] =
 	{
 		ERR_RECORD( EXCEPTION_ACCESS_VIOLATION ),
@@ -319,7 +320,7 @@ void VMPI_ExceptionFilter( unsigned long uCode, void *pvExceptionInfo )
 
 	int nErrors = sizeof( errors ) / sizeof( errors[0] );
 	int i=0;
-	char *pchReason = NULL;
+    const char *pchReason = nullptr;
 	char chUnknownBuffer[32];
 	for ( i; ( i < nErrors ) && !pchReason; i++ )
 	{
@@ -329,7 +330,7 @@ void VMPI_ExceptionFilter( unsigned long uCode, void *pvExceptionInfo )
 
 	if ( i == nErrors )
 	{
-		sprintf( chUnknownBuffer, "Error code 0x%08X", uCode );
+        sprintf( chUnknownBuffer, "Error code 0x%08lX", uCode );
 		pchReason = chUnknownBuffer;
 	}
 	

@@ -28,4 +28,9 @@ elseif(OS_LINUX OR OS_MACOS)
     )
 endif()
 
-set_target_properties(tier0_tier0 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/public/tier0")
+target_include_directories(tier0_tier0
+    INTERFACE
+    "${CMAKE_SOURCE_DIR}/common"
+    "${CMAKE_SOURCE_DIR}/public"
+    "${CMAKE_SOURCE_DIR}/public/tier0"
+)

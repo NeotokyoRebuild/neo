@@ -28,4 +28,7 @@ elseif(OS_LINUX OR OS_MACOS)
     )
 endif()
 
-set_target_properties(vstdlib_vstdlib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/public/vstdlib")
+target_include_directories(vstdlib_vstdlib
+    INTERFACE
+    "${CMAKE_SOURCE_DIR}/public/vstdlib"
+)

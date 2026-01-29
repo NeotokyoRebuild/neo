@@ -7,7 +7,7 @@
 
 #include "vbsp.h"
 #include "bsplib.h"
-#include "tier1/UtlBuffer.h"
+#include "tier1/utlbuffer.h"
 #include "tier1/utlvector.h"
 #include "bitmap/imageformat.h"
 #include <KeyValues.h>
@@ -99,7 +99,7 @@ static const char *FindSkyboxMaterialName( void )
 {
 	for( int i = 0; i < g_MainMap->num_entities; i++ )
 	{
-		char* pEntity = ValueForKey(&g_MainMap->entities[i], "classname");
+        auto pEntity = ValueForKey(&g_MainMap->entities[i], "classname");
 		if (!strcmp(pEntity, "worldspawn"))
 		{
 			return ValueForKey( &g_MainMap->entities[i], "skyname" );

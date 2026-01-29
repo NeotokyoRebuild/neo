@@ -363,7 +363,7 @@ MAKE FACES
 WindingFromFace
 =============
 */
-winding_t	*WindingFromFace (dface_t *f, Vector& origin )
+winding_t	*WindingFromFace (dface_t *f, const Vector& origin )
 {
 	int			i;
 	int			se;
@@ -667,7 +667,7 @@ void MakePatchForFace (int fn, winding_t *w)
 entity_t *EntityForModel (int modnum)
 {
 	int		i;
-	char	*s;
+    const char *s;
 	char	name[16];
 
 	sprintf (name, "*%i", modnum);
@@ -1306,7 +1306,7 @@ void WriteWorld (char *name, int iBump)
 	g_pFileSystem->Close( out );
 }
 
-void WriteRTEnv (char *name)
+void WriteRTEnv (const char *name)
 {
 	FileHandle_t out;
 
@@ -2925,7 +2925,7 @@ int RunVRAD( int argc, char **argv )
 	{
 		PrintUsage( argc, argv );
 		DeleteCmdLine( argc, argv );
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	// Initialize the filesystem, so additional commandline options can be loaded

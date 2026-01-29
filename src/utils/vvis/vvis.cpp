@@ -890,7 +890,7 @@ float DetermineVisRadius( )
 	// Check the max vis range to determine the vis radius
 	for (int i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!stricmp(pEntity, "env_fog_controller"))
 		{
 			flRadius = FloatForKey (&entities[i], "farz");
@@ -1090,12 +1090,19 @@ int RunVVis( int argc, char **argv )
 
 	Msg( "Valve Software - vvis.exe (%s)\n", __DATE__ );
 
-	verbose = false;
+    verbose = false;
 
 	LoadCmdLineFromFile( argc, argv, source, "vvis" );
 	int i = ParseCommandLine( argc, argv );
 
-	CmdLib_InitFileSystem( argv[ argc - 1 ] );
+    if (i != argc - 1)
+    {
+        PrintUsage( argc, argv );
+        DeleteCmdLine( argc, argv );
+        CmdLib_Exit( EXIT_FAILURE );
+    }
+
+    CmdLib_InitFileSystem( argv[ argc - 1 ] );
 
 	// The ExpandPath is just for VMPI. VMPI's file system needs the basedir in front of all filenames,
 	// so we prepend qdir here.
@@ -1111,13 +1118,6 @@ int RunVVis( int argc, char **argv )
 	// Source is just the mapfile without an extension at this point...
 	V_strncpy( source, mapFile, sizeof( mapFile ) );
 	V_StripExtension( source, source, sizeof( source ) );
-
-	if (i != argc - 1)
-	{
-		PrintUsage( argc, argv );
-		DeleteCmdLine( argc, argv );
-		CmdLib_Exit( 1 );
-	}
 
 	start = Plat_FloatTime();
 

@@ -31,7 +31,6 @@ endif()
 target_include_directories(server
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/common
     ${CMAKE_SOURCE_DIR}/game/server
     ${CMAKE_SOURCE_DIR}/game/server/hl2
     ${CMAKE_SOURCE_DIR}/game/server/hl2mp
@@ -44,7 +43,6 @@ target_include_directories(server
     ${CMAKE_SOURCE_DIR}/game/shared/neo
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/utils/common
-    ${CMAKE_SOURCE_DIR}/public
 )
 
 target_compile_definitions(server
@@ -69,9 +67,6 @@ target_link_libraries(server
     choreo_objects::choreo_objects
     dmx_loader::dmx_loader
     particles::particles
-    tier0::tier0
-    tier1::tier1
-    tier2::tier2
     tier3::tier3
     vstdlib::vstdlib
     steam_api::steam_api
@@ -95,6 +90,11 @@ if(OS_LINUX OR OS_MACOS)
 endif()
 
 if(OS_WINDOWS)
+    target_compile_definitions(server
+        PRIVATE
+        fopen=dont_use_fopen
+    )
+
     target_link_libraries(server
         PRIVATE 
         winmm.lib 
