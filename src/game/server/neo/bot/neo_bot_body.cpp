@@ -45,7 +45,7 @@ bool CNEOBotBody::IsCloakEnabled() const
 {
 	// used for determining if bot needs to press thermoptic button
 	// we are only interested in the toggle state not visibility in this context
-	// so do not use GetBotPerceivedCloakState() here
+	// so do not use GetBotCloakStateDisrupted() here
 	auto me = NEOPlayerEnt();
 	return me && me->GetInThermOpticCamo();
 }
