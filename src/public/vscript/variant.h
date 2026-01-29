@@ -425,6 +425,14 @@ template< class CValueAllocator >
 template< typename T > 
 inline void CVariantBase<CValueAllocator>::CopyData( const T &src, bool bForceCopy )
 {
+#ifdef NEO
+#ifdef __clang__
+#if __clang_major__ > 21 || (__clang_major__ == 21 && __clang_minor__ >= 1)
+	Assert( ( ExtendedFieldType_t )VariantDeduceType( T ) != FIELD_TYPEUNKNOWN );
+	if constexpr (false)
+#endif // clang ver
+#endif // __clang__
+#endif // NEO
 	COMPILE_TIME_ASSERT( ( ExtendedFieldType_t )VariantDeduceType( T ) != FIELD_TYPEUNKNOWN );
 
 	Free();
