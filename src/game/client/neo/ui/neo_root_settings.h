@@ -208,6 +208,7 @@ struct NeoSettings
 		// Player Xray
 		bool bEnableXray;
 		float flOutlineWidth;
+		float flOutlineAlpha;
 		float flCenterOpacity;
 		float flTexturedOpacity;
 #endif // GLOWS_ENABLE
@@ -332,6 +333,7 @@ struct NeoSettings
 		// Xray
 		CONVARREF_DEF(glow_outline_effect_enable);
 		CONVARREF_DEF(glow_outline_effect_width);
+		CONVARREF_DEF(glow_outline_effect_alpha);
 		CONVARREF_DEF(glow_outline_effect_center_alpha);
 		CONVARREF_DEF(glow_outline_effect_textured_center_alpha);
 #endif // GLOWS_ENABLE

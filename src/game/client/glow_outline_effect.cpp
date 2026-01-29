@@ -32,6 +32,7 @@ ConVar glow_outline_effect_enable("glow_outline_effect_enable", "1", FCVAR_ARCHI
 	}
 );
 ConVar glow_outline_effect_width( "glow_outline_effect_width", "1.f", FCVAR_ARCHIVE, "Width of glow outline effect.", true, 0.f, false, 0.f);
+ConVar glow_outline_effect_alpha( "glow_outline_effect_alpha", "0.5f", FCVAR_ARCHIVE, "Alpha of glow outline effect.", true, 0.f, true, 1.f);
 ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.1f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when obstructed", true, 0.f, true, 1.f);
 ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_center_alpha", "0.2f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when cloaked", true, 0.f, true, 1.f);
 #else
@@ -371,10 +372,13 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		// Draw quad
 #ifdef NEO
 		const float outlineWidth = glow_outline_effect_width.GetFloat();
-		if (outlineWidth)
+		const float outlineAlpha = glow_outline_effect_alpha.GetFloat();
+		if (outlineWidth && outlineAlpha)
 		{
 			IMaterialVar* pOutlineVar = pMatHaloAddToScreenOutline->FindVar("$C0_X", NULL);
 			pOutlineVar->SetFloatValue(outlineWidth);
+			IMaterialVar* pAlphaVar = pMatHaloAddToScreenOutline->FindVar("$C0_Y", NULL);
+			pAlphaVar->SetFloatValue(outlineAlpha);
 			pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreenOutline, 0, 0, nViewportWidth+1, nViewportHeight+1,
 				0, 0, pRtQuarterSize1->GetActualWidth(), pRtQuarterSize1->GetActualHeight(),
 				pRtQuarterSize1->GetActualWidth(),
