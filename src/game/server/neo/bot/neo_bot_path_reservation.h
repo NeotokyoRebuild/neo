@@ -44,7 +44,7 @@ public:
 
     CNEOBotPathReservationSystem() : m_BotReservedAreas(EHandleLessFunc), m_AreaOnStuckPenalties(DefLessFunc(unsigned int))
     {
-        for (int i = 0; i < MAX_TEAMS; ++i)
+        for (int i = 0; i < TEAM__TOTAL; ++i)
         {
             m_Reservations[i].SetLessFunc(ReservationLessFunc);
             m_AreaPathCounts[i].SetLessFunc(ReservationLessFunc);
@@ -68,16 +68,16 @@ public:
     friend CNEOBotPathReservationSystem* CNEOBotPathReservations();
 
 private:
-    CUtlMap<int, ReservationInfo> m_Reservations[MAX_TEAMS];
+    CUtlMap<int, ReservationInfo> m_Reservations[TEAM__TOTAL];
     CUtlMap<EHANDLE, BotReservedAreas_t> m_BotReservedAreas;
-    CUtlMap<int, int> m_AreaPathCounts[MAX_TEAMS];
+    CUtlMap<int, int> m_AreaPathCounts[TEAM__TOTAL];
     CUtlMap<unsigned int, float> m_AreaOnStuckPenalties;
 };
 
 
 CNEOBotPathReservationSystem* CNEOBotPathReservations();
 
-extern ConVar neo_bot_path_reservation_enabled;
+extern ConVar neo_bot_path_reservation_enable;
 extern ConVar neo_bot_path_reservation_penalty;
 extern ConVar neo_bot_path_reservation_duration;
 extern ConVar neo_bot_path_reservation_distance;
