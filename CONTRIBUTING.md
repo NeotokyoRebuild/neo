@@ -118,23 +118,23 @@ In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serve
 
 ## Supported compilers
 
-Only the x64 (64-bit) architecture is supported.
+Only the x86-64 architecture is supported.
 
 ### Windows
 * MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest)
 * MSVC version used by the latest `windows-2025` [runner image](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md) (Microsoft.VisualStudio.Component.VC.Tools.x86.x64)
 
 ### Linux
-* GCC 10 [steamrt3 'sniper'](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
-* GCC 14 [steamrt3 'sniper'](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
-* GCC 14 [steamrt4](https://gitlab.steamos.cloud/steamrt/steamrt4/sdk)
-* Clang 19 [steamrt4](https://gitlab.steamos.cloud/steamrt/steamrt4/sdk)
+* GCC 10 [steamrt3 'sniper'](https://gitlab.steamos.cloud/steamrt/sniper/sdk#toolchains)
+* GCC 14 [steamrt3 'sniper'](https://gitlab.steamos.cloud/steamrt/sniper/sdk#toolchains)
+* GCC 14 [steamrt4](https://gitlab.steamos.cloud/steamrt/steamrt4/sdk#toolchains)
+* Clang 19 [steamrt4](https://gitlab.steamos.cloud/steamrt/steamrt4/sdk#toolchains)
 
 ### Code style
 
 * C++20, within the [supported compilers'](#supported-compilers) capabilities.
 * Formatting:
-  * No big restrictions on general format, but try to more or less match the surrounding SDK code style for consistency.
+  * No big restrictions on general format, but try to more or less match the surrounding SDK code style for consistency. For example this typically means using tabs for whitespace, but generally go with what the file you're editing is doing stylistically.
 * Warnings are treated as errors.
   * You may choose to suppress a warning with compiler-specific preprocessing directives if it is a false positive, but **please do not suppress valid warnings**; instead resolve it by fixing the underlying issue.
   * For local development, you may disable warnings-as-errors by modifying your `CMAKE_COMPILE_WARNING_AS_ERROR` option, eg. by modifying the entry in your `CMakeCache.txt` file.
@@ -160,8 +160,9 @@ Only the x64 (64-bit) architecture is supported.
       * Signed/unsigned conversion overflow
     * For release builds, it is identical to `static_cast`
   * `neo::bit_cast`:
-    * Well-formed type punning helper. Mostly used to avoid UB in the SDK code.
-    * Wrapper for `std::bit_cast` when it's available, else will fall back to `memcpy` based conversions (for example on the steamrt3 default GCC compiler).
+    * The preferred bit cast function, for performing a well-formed type pun
+    * Mostly used to avoid strict aliasing rule violations in the SDK code
+    * Acts as a wrapper for `std::bit_cast` when it's available, else will fall back to `memcpy` based conversions (for example on the steamrt3 default GCC compiler)
     * For debug builds, a runtime assertion test is available as an additional parameter:
       * `auto output = neo::bit_cast<T>(BC_TEST(input, expectedOutput));`
       * When replacing ill-formed type puns, this test syntax can be used to ensure the output of `neo::bit_cast<T>(input)` remains identical to `expectedOutput`
