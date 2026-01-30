@@ -112,7 +112,11 @@ static void Matrix3x4Offset( matrix3x4_t& dest, const matrix3x4_t& matrixIn, con
 
 // This does the necessary casting / extract to grab a pointer to a member function as a void *
 // UNDONE: Cast to BASEPTR or something else here?
+#ifdef NEO
+#define EXTRACT_INPUTFUNC_FUNCTIONPTR(x)		(static_cast<inputfunc_t*>(&(x)))
+#else
 #define EXTRACT_INPUTFUNC_FUNCTIONPTR(x)		(*(inputfunc_t **)(&(x)))
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Search this datamap for the name of this member function
