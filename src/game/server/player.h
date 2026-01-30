@@ -24,6 +24,10 @@
 #include "econ_item_view.h"
 #endif
 
+#ifdef NEO
+#include "team.h"
+#endif
+
 // For queuing and processing usercmds
 class CCommandContext
 {
@@ -1532,6 +1536,25 @@ int CollectPlayers( CUtlVector< T * > *playerVector, int team = TEAM_ANY, bool i
 	{
 		playerVector->RemoveAll();
 	}
+
+#ifdef NEO
+	int estimatedCount = playerVector->Size();
+
+	const auto incrementEstimate = [&estimatedCount, isAlive](int team) {
+		const auto* pTeam = GetGlobalTeam(team);
+		Assert(pTeam);
+		if (pTeam)
+			estimatedCount += (isAlive ? pTeam->GetAliveMembers() : pTeam->GetNumPlayers());
+		};
+
+	if (team == TEAM_ANY)
+	{
+		const int nTeams = GetNumberOfTeams();
+		for (int i = 0; i < nTeams; ++i) incrementEstimate(i);
+	}
+	else incrementEstimate(team);
+	playerVector->EnsureCapacity(estimatedCount);
+#endif
 
 	for( int i=1; i<=gpGlobals->maxClients; ++i )
 	{
