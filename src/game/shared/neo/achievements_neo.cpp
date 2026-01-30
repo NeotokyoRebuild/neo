@@ -2,7 +2,7 @@
 #ifdef CLIENT_DLL
 #include "achievements_neo.h"
 
-CAchievementMgr g_AchievementMgrNEO;	// global achievement mgr for NEO
+CAchievementMgr g_AchievementMgrNEO( CAchievementMgr::SteamCloudPersist_On );	// global achievement mgr for NEO
 
 class CAchievementNEO_TutorialComplete : public CBaseAchievement
 {

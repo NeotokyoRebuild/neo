@@ -161,7 +161,7 @@ static void WriteAchievementGlobalState( KeyValues *pKV, bool bPersistToSteamClo
 #ifdef NEO
 								else
 								{
-									Warning("CAchievementMgr: Failed to write to steam cloud! Expected size %d got size %d\n", filesize, nRead);
+									Warning("%s: Failed to write to steam cloud! Expected size %d got size %d\n", __FUNCTION__, filesize, nRead);
 								}
 #endif
                             }

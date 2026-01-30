@@ -241,7 +241,11 @@ void CBaseAchievement::IncrementCount( int iOptIncrement )
 			bool bRet = steamapicontext->SteamUserStats()->SetStat( pszProgressName, m_iCount );
 			if ( !bRet )
 			{
+#ifdef NEO
+				DevWarning( "ISteamUserStats::SetStat failed to set progress value in Steam for achievement %s\n", pszProgressName );
+#else
 				DevMsg( "ISteamUserStats::GetStat failed to set progress value in Steam for achievement %s\n", pszProgressName );
+#endif
 			}
 
 			m_pAchievementMgr->SetDirty( true );
@@ -531,7 +535,7 @@ void CBaseAchievement::SetComponentBits( uint64 iComponentBits )
 		bool bRet = steamapicontext->SteamUserStats()->SetStat( pszProgressName, m_iCount );
 		if ( !bRet )
 		{
-			DevMsg( "ISteamUserStats::GetStat failed to set progress value in Steam for achievement %s\n", pszProgressName );
+			DevWarning( "ISteamUserStats::SetStat failed to set progress value in Steam for achievement %s\n", pszProgressName );
 		}
 
 		m_pAchievementMgr->SetDirty( true );

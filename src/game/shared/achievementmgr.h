@@ -34,11 +34,7 @@ public:
         SteamCloudPersist_On,
     };
 
-#ifdef NEO
-	CAchievementMgr( SteamCloudPersisting ePersistToSteamCloud = SteamCloudPersist_On );
-#else
 	CAchievementMgr( SteamCloudPersisting ePersistToSteamCloud = SteamCloudPersist_Off );
-#endif
 
     //=============================================================================
     // HPE_END
