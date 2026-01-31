@@ -131,10 +131,10 @@ static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
 ConVar sv_neo_readyup_teamplayersthres("sv_neo_readyup_teamplayersthres", V_STRINGIFY(DEF_TEAMPLAYERTHRES), FCVAR_REPLICATED, "The exact total players per team to be in and ready up to start a game.", true, 0.0f, true, (MAX_PLAYERS - 1) / 2);
 ConVar sv_neo_readyup_skipwarmup("sv_neo_readyup_skipwarmup", "1", FCVAR_REPLICATED, "Skip the warmup round when already using ready up.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_readyup_autointermission("sv_neo_readyup_autointermission", "0", FCVAR_REPLICATED, "If disabled, skips the automatic intermission at the end of the match.", true, 0.0f, true, 1.0f);
-ConVar sv_neo_ghost_cap_reward("sv_neo_ghost_cap_reward", "0", FCVAR_REPLICATED, "How much XP to reward for capturing the ghost. 0 = Rank up.", true, 0.0f, false, 0.0f);
-ConVar sv_neo_ghost_cap_reward_dead("sv_neo_ghost_cap_reward_dead", "0", FCVAR_REPLICATED, "Whether dead players should receive the ghost capture reward.", true, 0.0f, true, 1.0f);
-ConVar sv_neo_ctg_survivor_bonus("sv_neo_ctg_survivor_bonus", "1", FCVAR_REPLICATED, "Whether surviving players on the winning team should receive extra XP.", true, 0.0f, true, 1.0f);
-ConVar sv_neo_ctg_carrier_bonus("sv_neo_ctg_carrier_bonus", "1", FCVAR_REPLICATED, "Whether the ghost carrier on the winning team should receive extra XP.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_cap_reward("sv_neo_cap_reward", "0", FCVAR_REPLICATED, "How much XP to reward for capturing the ghost or escaping as VIP. 0 = Rank up.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_cap_reward_dead("sv_neo_cap_reward_dead", "0", FCVAR_REPLICATED, "Whether dead players should receive the ghost capture or escape reward.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_survivor_bonus("sv_neo_survivor_bonus", "1", FCVAR_REPLICATED, "Whether surviving players on the winning team in CTG and VIP should receive extra XP.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_ghost_carrier_bonus("sv_neo_ghost_carrier_bonus", "1", FCVAR_REPLICATED, "Whether the ghost carrier on the winning team should receive extra XP.", true, 0.0f, true, 1.0f);
 #endif // GAME_DLL
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
@@ -3560,10 +3560,10 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
                 int xpAward = 1;	// Base reward for being on winning team
                 if (iWinReason == NEO_VICTORY_GHOST_CAPTURE || iWinReason == NEO_VICTORY_VIP_ESCORT || m_bTeamBeenAwardedDueToCapPrevent)
                 {
-                    auto cap_reward = sv_neo_ghost_cap_reward.GetInt();
+                    auto cap_reward = sv_neo_cap_reward.GetInt();
                     if (!cap_reward) // Rank up
                     {
-                        if (sv_neo_ghost_cap_reward_dead.GetBool() || player->IsAlive())
+                        if (sv_neo_cap_reward_dead.GetBool() || player->IsAlive())
                         {
                             // Swap controller and controlee for the purposes of rankup
                             auto playerPossessedByMe = player->m_hSpectatorTakeoverPlayerTarget.Get();
@@ -3579,19 +3579,19 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
                     }
                     else
                     {
-                        if (sv_neo_ghost_cap_reward_dead.GetBool() || player->IsAlive())
+                        if (sv_neo_cap_reward_dead.GetBool() || player->IsAlive())
                         {
                             xpAward = cap_reward;
                         }
                     }
                 }
-                else
+                else if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_VIP)
                 {
-                    if (sv_neo_ctg_survivor_bonus.GetBool() && player->IsAlive())
+                    if (sv_neo_survivor_bonus.GetBool() && player->IsAlive())
                     {
                         ++xpAward;
                     }
-                    if (sv_neo_ctg_carrier_bonus.GetBool() && player->IsCarryingGhost())
+                    if (sv_neo_ghost_carrier_bonus.GetBool() && player->IsCarryingGhost())
                     {
                         ++xpAward;
                     }
