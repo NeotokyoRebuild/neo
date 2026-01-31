@@ -508,6 +508,34 @@ static inline void FireLegacyEvent_NeoRoundEnd()
 }
 
 #ifdef GAME_DLL
+CON_COMMAND( sv_neo_score_set_jinrai, "Set point count for team Jinrai" )
+{
+	if ( 2 != args.ArgC() )
+	{
+		Msg( "Usage: %s <score>\n", __FUNCTION__ );
+		return;
+	}
+	
+	CTeam *jinrai = GetGlobalTeam( TEAM_JINRAI );
+	Assert( jinrai );
+	jinrai->SetScore( atoi( args[1] ) );
+	jinrai->SetRoundsWon( atoi( args[1] ) );
+}
+
+CON_COMMAND( sv_neo_score_set_nsf, "Set point count for team NSF" )
+{
+	if ( 2 != args.ArgC() )
+	{
+		Msg( "Usage: %s <score>\n", __FUNCTION__ );
+		return;
+	}
+	
+	CTeam *nsf = GetGlobalTeam( TEAM_NSF );
+	Assert( nsf );
+	nsf->SetScore( atoi( args[1] ) );
+	nsf->SetRoundsWon( atoi( args[1] ) );
+}
+
 static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float flOldVal)
 {
 	auto wep = gEntList.NextEntByClass((CNEOBaseCombatWeapon*)NULL);
