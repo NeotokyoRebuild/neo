@@ -2643,6 +2643,14 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
+		if (bFromStarting)
+		{
+			pPlayer->Reset();
+			pPlayer->m_iXP.Set(0);
+			pPlayer->m_iTeamDamageInflicted = 0;
+			pPlayer->m_iTeamKillsInflicted = 0;
+		}
+
 		pPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: round restart
 
 		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
@@ -2664,13 +2672,6 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bInVision = false;
 		pPlayer->m_bIneligibleForLoadoutPick = false;
 
-		if (bFromStarting)
-		{
-			pPlayer->Reset();
-			pPlayer->m_iXP.Set(0);
-			pPlayer->m_iTeamDamageInflicted = 0;
-			pPlayer->m_iTeamKillsInflicted = 0;
-		}
 		pPlayer->m_bIsPendingTKKick = false;
 
 		pPlayer->SetTestMessageVisible(false);
@@ -3125,6 +3126,8 @@ void CNEORules::RestartGame()
 		if (!pPlayer)
 			continue;
 
+		pPlayer->m_iXP.GetForModify() = 0;
+
 		pPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: restart game
 
 		if (pPlayer->GetActiveWeapon())
@@ -3134,8 +3137,6 @@ void CNEORules::RestartGame()
 		pPlayer->RemoveAllItems(true);
 		pPlayer->Spawn();
 		pPlayer->Reset();
-
-		pPlayer->m_iXP.GetForModify() = 0;
 
 		pPlayer->SetTestMessageVisible(false);
 	}
