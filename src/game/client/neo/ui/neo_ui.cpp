@@ -1384,6 +1384,7 @@ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		}
 		break;
 		case MODE_MOUSEPRESSED:
+		case MODE_MOUSEDOUBLEPRESSED:
 		{
 			if (wdgState.bHot)
 			{
@@ -1448,8 +1449,6 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, con
 	{
 	case MODE_PAINT:
 	{
-		int oldX = 0, oldY = 0, oldW, oldH;
-		vgui::surface()->GetScreenSize(oldW, oldH);
 		vgui::surface()->SetFullscreenViewport(c->rWidgetArea.x0, c->rWidgetArea.y0, c->irWidgetWide, c->irWidgetTall);
 		vgui::surface()->PushFullscreenViewport();
 
@@ -1490,7 +1489,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, con
 		}
 
 		vgui::surface()->PopFullscreenViewport();
-		vgui::surface()->SetFullscreenViewport(oldX, oldY, oldW, oldH);
+		vgui::surface()->SetFullscreenViewport(0, 0, 0, 0);
 
 		// Draw the side-hints text
 		// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
@@ -1680,6 +1679,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		}
 		break;
 		case MODE_MOUSEPRESSED:
+		case MODE_MOUSEDOUBLEPRESSED:
 		{
 			if (wdgState.bHot)
 			{
