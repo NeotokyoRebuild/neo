@@ -62,6 +62,8 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::Update(CNEOBot *me, float interval
 		return weaponRequestResult;
 	}
 
+	m_path.Update(me);
+
 	return Continue();
 }
 
@@ -69,69 +71,80 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::Update(CNEOBot *me, float interval
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCommandFollow::CheckCommanderWeaponRequest(CNEOBot *me)
 {
-	CNEO_Player* pCommander = me->m_hCommandingPlayer.Get();
-	if (pCommander && pCommander->IsAlive())
+	// Can I even drop my primary? (e.g. Juggernaut's BALC)
+	CNEOBaseCombatWeapon *pMyPrimary = dynamic_cast<CNEOBaseCombatWeapon*>(me->Weapon_GetSlot(0));
+	if (!pMyPrimary || !pMyPrimary->CanDrop())
 	{
-		// Check if commander has dropped primary
-		if (!pCommander->Weapon_GetSlot(0))
+		return Continue();
+	}
+
+	CNEO_Player* pCommander = me->m_hCommandingPlayer.Get();
+
+	if (!pCommander || !pCommander->IsAlive())
+	{
+		return Continue();
+	}
+
+	// Check if commander has dropped primary
+	if (pCommander->Weapon_GetSlot(0))
+	{
+		return Continue();
+	}
+	
+	// Can the commander even pick my primary up? (e.g. Recon can't pick up PZ)
+	if (!pMyPrimary->CanBePickedUpByClass(pCommander->GetClass()))
+	{
+		return Continue();
+	}
+
+	// Check if looking at me
+	Vector vecToBot = me->EyePosition() - pCommander->EyePosition();
+	vecToBot.NormalizeInPlace();
+	Vector vecCmdrFacing;
+	pCommander->EyeVectors(&vecCmdrFacing);
+
+	if (vecCmdrFacing.Dot(vecToBot) <= 0.99f)
+	{
+		m_commanderLookingAtMeTimer.Invalidate();
+		m_bWasCommanderLookingAtMe = false;
+		return Continue();
+	}
+
+	if (!m_bWasCommanderLookingAtMe)
+	{
+		// Wait to see if it wasn't just a momentary glance
+		m_commanderLookingAtMeTimer.Start();
+		m_bWasCommanderLookingAtMe = true;
+		return Continue();
+	}
+
+	if (m_commanderLookingAtMeTimer.GetElapsedTime() > 0.2f)
+	{
+		// Look at commander after 0.5s
+		me->GetBodyInterface()->AimHeadTowards(pCommander->EyePosition(), IBody::CRITICAL, 0.2f, NULL, "Commander looking at me without a primary");
+	}
+
+	if (m_commanderLookingAtMeTimer.GetElapsedTime() > 1.0f)
+	{
+		// Sanity check that commander is really looking at me with more expensive traceline
+		// e.g. for edge case where I am behind the player the commander is looking at
+		trace_t tr;
+		const float estimatedReasonableThrowDistance = 300.0f;
+		Vector traceEnd = pCommander->EyePosition() + vecCmdrFacing * estimatedReasonableThrowDistance;
+		UTIL_TraceLine(pCommander->EyePosition(), traceEnd, MASK_SHOT_HULL, pCommander, COLLISION_GROUP_NONE, &tr);
+
+		if (tr.DidHit() && tr.m_pEnt == me)
 		{
-			// Check if looking at me
-			Vector vecToBot = me->EyePosition() - pCommander->EyePosition();
-			vecToBot.NormalizeInPlace();
-			Vector vecCmdrFacing;
-			pCommander->EyeVectors(&vecCmdrFacing);
-
-			if (vecCmdrFacing.Dot(vecToBot) > 0.99f)
-			{
-				if (!m_bWasCommanderLookingAtMe)
-				{
-					// Wait to see if it wasn't just a momentary glance
-					m_commanderLookingAtMeTimer.Start();
-					m_bWasCommanderLookingAtMe = true;
-				}
-
-				if (m_commanderLookingAtMeTimer.GetElapsedTime() > 0.2f)
-				{
-					// Look at commander after 0.5s
-					me->GetBodyInterface()->AimHeadTowards(pCommander->EyePosition(), IBody::CRITICAL, 0.2f, NULL, "Commander looking at me without a primary");
-				}
-
-				if (m_commanderLookingAtMeTimer.GetElapsedTime() > 1.0f)
-				{
-					// Sanity check that commander is really looking at me with more expensive traceline
-					// e.g. for edge case where I am behind the player the commander is looking at
-					trace_t tr;
-					const float estimatedReasonableThrowDistance = 300.0f;
-					Vector traceEnd = pCommander->EyePosition() + vecCmdrFacing * estimatedReasonableThrowDistance;
-					UTIL_TraceLine(pCommander->EyePosition(), traceEnd, MASK_SHOT_HULL, pCommander, COLLISION_GROUP_NONE, &tr);
-
-					if (tr.DidHit() && tr.m_pEnt == me)
-					{
-						m_bWasCommanderLookingAtMe = false; // Reset state
-						return SuspendFor(new CNEOBotThrowWeaponAtPlayer(pCommander), "Donating weapon to commander");
-					}
-					else
-					{
-						// Line of sight blocked
-						m_commanderLookingAtMeTimer.Invalidate();
-						m_bWasCommanderLookingAtMe = false;
-					}
-				}
-			}
-			else
-			{
-				m_commanderLookingAtMeTimer.Invalidate();
-				m_bWasCommanderLookingAtMe = false;
-			}
+			m_bWasCommanderLookingAtMe = false; // Reset state
+			return SuspendFor(new CNEOBotThrowWeaponAtPlayer(pCommander), "Donating weapon to commander");
 		}
 		else
 		{
+			// Line of sight blocked
 			m_commanderLookingAtMeTimer.Invalidate();
 			m_bWasCommanderLookingAtMe = false;
 		}
 	}
-
-	m_path.Update(me);
 
 	return Continue();
 }
