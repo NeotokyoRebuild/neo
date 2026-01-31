@@ -3095,9 +3095,9 @@ void CNEORules::ResetJGR()
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		auto pPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
-		if (pPlayer)
+		if (pPlayer && pPlayer->m_iXP.Get() > 10)
 		{
-			pPlayer->m_iXP.GetForModify() = 0;
+			pPlayer->m_iXP.GetForModify() = 10;
 		}
 	}
 }
