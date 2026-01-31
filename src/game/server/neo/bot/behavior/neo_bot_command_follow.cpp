@@ -120,8 +120,7 @@ ActionResult< CNEOBot > CNEOBotCommandFollow::CheckCommanderWeaponRequest(CNEOBo
 
 	if (m_commanderLookingAtMeTimer.GetElapsedTime() > 0.2f)
 	{
-		// Look at commander after 0.5s
-		me->GetBodyInterface()->AimHeadTowards(pCommander->EyePosition(), IBody::CRITICAL, 0.2f, NULL, "Commander looking at me without a primary");
+		me->GetBodyInterface()->AimHeadTowards(pCommander->EyePosition(), IBody::CRITICAL, 0.2f, NULL, "Noticed commander looking at me without a primary");
 	}
 
 	if (m_commanderLookingAtMeTimer.GetElapsedTime() > 1.0f)
