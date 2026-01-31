@@ -23,7 +23,8 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 	me->StopLookingAroundForEnemies();
 
 	// Timeout based on ladder length
-	float estimatedClimbTime = m_ladder->m_length / 100.0f + 2.0f;
+	const float averageClimbSpeed = 200.0f;
+	float estimatedClimbTime = m_ladder->m_length / averageClimbSpeed + 1.0f;
 	m_timeoutTimer.Start( estimatedClimbTime );
 
 	m_bHasBeenOnLadder = false;
