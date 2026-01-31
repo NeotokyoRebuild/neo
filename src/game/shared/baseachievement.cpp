@@ -241,7 +241,11 @@ void CBaseAchievement::IncrementCount( int iOptIncrement )
 			bool bRet = steamapicontext->SteamUserStats()->SetStat( pszProgressName, m_iCount );
 			if ( !bRet )
 			{
+#ifdef NEO
+				DevWarning( "ISteamUserStats::SetStat failed to set progress value in Steam for achievement %s\n", pszProgressName );
+#else
 				DevMsg( "ISteamUserStats::GetStat failed to set progress value in Steam for achievement %s\n", pszProgressName );
+#endif
 			}
 
 			m_pAchievementMgr->SetDirty( true );
@@ -519,6 +523,25 @@ void CBaseAchievement::SetComponentBits( uint64 iComponentBits )
 		iComponentBits >>= 1;
 	}
 	m_iCount = iNumBitsSet;
+
+#ifdef NEO
+#ifndef NO_STEAM
+	// if this achievement's progress should be stored in Steam, set the steam stat for it
+	if ( StoreProgressInSteam() && steamapicontext->SteamUserStats() )
+	{
+		// Set the Steam stat with the same name as the achievement.  Only cached locally until we upload it.
+		char pszProgressName[1024];
+		Q_snprintf( pszProgressName, 1024, "%s_STAT", GetStat() );
+		bool bRet = steamapicontext->SteamUserStats()->SetStat( pszProgressName, m_iCount );
+		if ( !bRet )
+		{
+			DevWarning( "ISteamUserStats::SetStat failed to set progress value in Steam for achievement %s\n", pszProgressName );
+		}
+
+		m_pAchievementMgr->SetDirty( true );
+	}
+#endif // NO_STEAM
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
