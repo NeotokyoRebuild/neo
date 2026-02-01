@@ -11,7 +11,6 @@ class INEOPlayerAnimState;
 #include "simtimer.h"
 #include "soundenvelope.h"
 #include "utldict.h"
-#include "utlmap.h"
 #include "hl2mp_player.h"
 #include "in_buttons.h"
 
@@ -177,7 +176,7 @@ public:
 
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
-	bool GetBotPerceivedCloakState() const { return m_botThermOpticCamoDisruptedTimer.IsElapsed() && m_bInThermOpticCamo; }
+	bool GetBotCloakStateDisrupted() const { return !m_botThermOpticCamoDisruptedTimer.IsElapsed(); }
 	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
@@ -337,7 +336,7 @@ private:
 	bool m_bSpectatorTakeoverPlayerPending{false};
 
 	// Cache for GetFogObscuredRatio for each player
-	mutable CUtlMap<int, CNEO_Player_FogCacheEntry> m_mapPlayerFogCache;
+	mutable CNEO_Player_FogCacheEntry m_playerFogCache[MAX_PLAYERS_ARRAY_SAFE];
 
 private:
 	CNEO_Player(const CNEO_Player&);
