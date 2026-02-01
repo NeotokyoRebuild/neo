@@ -2352,8 +2352,8 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					}
 					if (readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres)
 					{
-						const int iNeedJin = max(0, iThres - readyPlayers.array[TEAM_JINRAI]);
-						const int iNeedNSF = max(0, iThres - readyPlayers.array[TEAM_NSF]);
+						const int iNeedJin = Max(0, iThres - readyPlayers.array[TEAM_JINRAI]);
+						const int iNeedNSF = Max(0, iThres - readyPlayers.array[TEAM_NSF]);
 						char szPrintNeed[100];
 						V_sprintf_safe(szPrintNeed, "Jinrai need %d players and NSF need %d players "
 													"to ready up to start.", iNeedJin, iNeedNSF);
@@ -2361,8 +2361,8 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					}
 					else if (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres)
 					{
-						const int iExtraJin = max(0, readyPlayers.array[TEAM_JINRAI] - iThres);
-						const int iExtraNSF = max(0, readyPlayers.array[TEAM_NSF] - iThres);
+						const int iExtraJin = Max(0, readyPlayers.array[TEAM_JINRAI] - iThres);
+						const int iExtraNSF = Max(0, readyPlayers.array[TEAM_NSF] - iThres);
 						char szPrintNeed[100];
 						V_sprintf_safe(szPrintNeed, "Jinrai have %d extra players and NSF have %d extra players "
 													"over the %d per team threshold.", iExtraJin, iExtraNSF, iThres);
@@ -2587,29 +2587,32 @@ void CNEORules::StartNextRound()
 			const bool bBotsonlyDontDoWarmup = !sv_neo_botsonly_warmup_round.GetBool();
 			if (bLoopbackDontDoWarmup || bBotsonlyDontDoWarmup)
 			{
-				int iCountBots = 0;
-				int iCountHumans = 0;
-				int iCountLoopback = 0;
+				int iCountBots = 0, iCountHumans = 0, iCountLoopback = 0;
 
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
-					if (auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
-					{
-						const int teamNum = pPlayer->GetTeamNumber();
-						if (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF)
-						{
-							const bool bIsBot = pPlayer->IsBot();
-							const bool bIsHuman = (!bIsBot && !pPlayer->IsHLTV());
-							iCountBots += bIsBot;
-							iCountHumans += bIsHuman;
-							if (bIsHuman)
-							{
-								INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
-								iCountLoopback += nci->IsLoopback();
-							}
-						}
-					}
+					auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+					if (!pPlayer)
+						continue;
+
+					const int teamNum = pPlayer->GetTeamNumber();
+					if (teamNum <= LAST_SHARED_TEAM)
+						continue;
+
+					const bool bIsBot = pPlayer->IsBot();
+					const bool bIsHuman = (!bIsBot && !pPlayer->IsHLTV());
+					Assert(bIsBot || bIsHuman);
+					iCountBots += bIsBot;
+					iCountHumans += bIsHuman;
+					if (!bIsHuman)
+						continue;
+
+					if (auto* nci = engine->GetPlayerNetInfo(i))
+						iCountLoopback += nci->IsLoopback();
+					else
+						Assert(false);
 				}
+
 				if (bLoopbackDontDoWarmup)
 				{
 					loopbackSkipWarmup = (iCountLoopback > 0 && iCountLoopback == iCountHumans);

@@ -41,6 +41,8 @@ static void CNEOBotReservePath(CNEOBot* me, PathFollower& path)
 
 bool CNEOBotPathCompute(CNEOBot* bot, PathFollower& path, const Vector& goal, RouteType route, float maxPathLength, bool includeGoalIfPathFails, bool requireGoalArea)
 {
+	Assert(goal.IsValid());
+
 	CNEOBotPathCost cost_with_reservations(bot, route);
 	if (path.Compute(bot, goal, cost_with_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea) && path.IsValid())
 	{

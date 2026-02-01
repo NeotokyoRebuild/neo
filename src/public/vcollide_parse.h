@@ -13,6 +13,12 @@
 
 #include "vphysics_interface.h"
 
+#ifdef NEO
+#include "mathlib/vector.h"
+
+#include <type_traits>
+#endif
+
 struct solid_t
 {
 	int		index;
@@ -22,6 +28,27 @@ struct solid_t
 	Vector	massCenterOverride;
 	objectparams_t params;
 };
+
+#ifdef NEO
+inline void ZeroSolid(solid_t& solid)
+{
+	if constexpr (!std::is_trivially_copyable_v<
+		std::remove_cvref_t<decltype(solid)>>)
+	{
+		static_assert(sizeof(solid) == 1616);
+		solid.index = 0;
+		solid.name[0] = '\0';
+		solid.parent[0] = '\0';
+		solid.surfaceprop[0] = '\0';
+		solid.massCenterOverride.Zero();
+
+		static_assert(std::is_trivially_default_constructible_v<
+			decltype(solid.params)>);
+		solid.params = {};
+	}
+	else memset( &solid, 0, sizeof(solid) );
+}
+#endif
 
 struct fluid_t
 {

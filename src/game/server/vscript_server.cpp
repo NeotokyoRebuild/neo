@@ -1852,6 +1852,14 @@ static bool Script_TraceHull( HSCRIPT hTable )
 	ScriptVariant_t rval;
 	Vector vStart, vEnd;
 	Vector vHullMin, vHullMax;
+#if defined(NEO) && defined(ACTUALLY_COMPILER_GCC)
+#if (__GNUC__ >= 14)
+	// suppress maybe-uninitialized false positive
+	// (can't use -Wno-maybe-uninitialized because it's broken at least for GCC 14...)
+	vHullMin = vec3_invalid;
+	vHullMax = vec3_invalid;
+#endif
+#endif
 	CBaseEntity* pIgnoreEnt = NULL;
 	bool bNoParams = false;
 

@@ -2295,7 +2295,11 @@ void CGameMovement::FullObserverMove( void )
 
 	Vector wishvel;
 	Vector forward, right, up;
+#ifdef NEO
+	Vector wishdir;
+#else
 	Vector wishdir, wishend;
+#endif
 	float wishspeed;
 
 	AngleVectors (mv->m_vecViewAngles, &forward, &right, &up);  // Determine movement angles
@@ -4352,7 +4356,9 @@ void CGameMovement::FinishUnDuck( void )
 	Assert(dynamic_cast<CNEO_Player*>(player));
 
 	int i;
+#ifndef NEO
 	trace_t trace;
+#endif
 	Vector newOrigin;
 
 	VectorCopy( mv->GetAbsOrigin(), newOrigin );
@@ -4685,9 +4691,11 @@ void CGameMovement::Duck( void )
 	HandleDuckingSpeedCrop();
 
 	// If the player is holding down the duck button, the player is in duck transition, ducking, or duck-jumping.
+#ifndef NEO
 	bool bFirstTimePredicted = true; // Assumes we never rerun commands on the server.
 #ifdef CLIENT_DLL
 	bFirstTimePredicted = prediction->IsFirstTimePredicted();
+#endif
 #endif
 
 	// If the player is holding down the duck button, the player is in duck transition, ducking, or duck-jumping.

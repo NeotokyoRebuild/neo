@@ -29,6 +29,9 @@
 #ifdef TF_CLIENT_DLL
 #include "rtime.h"
 #endif
+#ifdef NEO
+#include <type_traits>
+#endif
 #include "tier0/icommandline.h"
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1065,6 +1068,16 @@ CParticleMgr::CParticleMgr()
 	m_pMaterialSystem = NULL;
 	m_pThreadPool[0] = 0;
 	m_pThreadPool[1] = 0;
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<decltype(m_DirectionalLight)>)
+	{
+		static_assert(sizeof(m_DirectionalLight) == 28, "please update this zero-init logic for new data");
+		m_DirectionalLight.m_flIntensity = {};
+		m_DirectionalLight.m_vColor.Zero();
+		m_DirectionalLight.m_vPos.Zero();
+	}
+	else
+#endif
 	memset( &m_DirectionalLight, 0, sizeof( m_DirectionalLight ) );
 
 	m_FrameCode = 1;
@@ -1633,7 +1646,11 @@ int CParticleMgr::ComputeParticleDefScreenArea( int nInfoCount, RetireInfo_t *pI
 		pInfo[nCollection].m_pCollection = pCollection;
 		pInfo[nCollection].m_bFirstFrame = false;
 
+#ifdef NEO
+		Vector vecCenter, vecScreenCenter;
+#else
 		Vector vecCenter, vecScreenCenter, vecCenterCam;
+#endif
 		vecCenter = pCollection->GetControlPointAtCurrentTime( pDef->GetCullControlPoint() );
 
 		Vector3DMultiplyPositionProjective( worldToPixels, vecCenter, vecScreenCenter );
@@ -1751,7 +1768,9 @@ bool CParticleMgr::EarlyRetireParticleSystems( int nCount, ParticleSimListEntry_
 		ppEffects[i].m_pNewParticleEffect->MarkShouldPerformCullCheck( true );
 	}
 
+#ifndef NEO
 	Vector vecCameraForward;
+#endif
 	VMatrix worldToView, viewToProjection, worldToProjection, worldToScreen;
 	render->GetMatricesForView( *pViewSetup, &worldToView, &viewToProjection, &worldToProjection, &worldToScreen );
 	float flFocalDist = tan( DEG2RAD( pViewSetup->fov * 0.5f ) );

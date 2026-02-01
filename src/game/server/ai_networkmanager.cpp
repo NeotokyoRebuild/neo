@@ -236,7 +236,11 @@ void CAI_NetworkManager::SaveNetworkGraph( void )
 	Q_snprintf( tempFilename, sizeof( tempFilename ), "%s/%s", szNrpFilename, STRING( gpGlobals->mapname ) );
 	
 	// Remove the filename.
+#ifdef NEO
+	int len = V_strlen( tempFilename );
+#else
 	int len = strlen( tempFilename );
+#endif
 	for ( int i=0; i < len; i++ )
 	{
 		if ( tempFilename[len-i-1] == '/' || tempFilename[len-i-1] == '\\' )

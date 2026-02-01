@@ -11,6 +11,10 @@
 #include "ai_node.h"
 #include "ai_waypoint.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -43,6 +47,21 @@ END_DATADESC()
 
 AI_Waypoint_t::AI_Waypoint_t()
 {
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<
+		std::remove_cvref_t<decltype(*this)>>)
+	{
+		this->flYaw = {};
+		this->hPathCorner = {};
+		this->m_DataMap = {};
+		this->m_fWaypointFlags = {};
+		this->m_hData = {};
+		this->m_iWPType = {};
+		this->pNext = {};
+		this->pPrev = {};
+	}
+	else
+#endif
 	memset( this, 0, sizeof(*this) );
 	vecLocation	= vec3_invalid;
 	iNodeID		= NO_NODE;
@@ -53,6 +72,18 @@ AI_Waypoint_t::AI_Waypoint_t()
 
 AI_Waypoint_t::AI_Waypoint_t( const Vector &initPosition, float initYaw, Navigation_t initNavType, int initWaypointFlags, int initNodeID )
 {
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<
+		std::remove_cvref_t<decltype(*this)>>)
+	{
+		this->hPathCorner = {};
+		this->m_DataMap = {};
+		this->m_hData = {};
+		this->pNext = {};
+		this->pPrev = {};
+	}
+	else
+#endif
 	memset( this, 0, sizeof(*this) );
 
 	// A Route of length one to the endpoint

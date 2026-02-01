@@ -107,6 +107,10 @@ extern ConVar sk_healthkit;
 #include "utlbuffer.h"
 #include "gamestats.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -3836,7 +3840,9 @@ void CAI_BaseNPC::SetPlayerAvoidState( void )
 	//If we are coming out of a script, check if we are stuck inside the player.
 	if ( m_bPerformAvoidance || ( ShouldPlayerAvoid() && bIsMoving ) )
 	{
+#ifndef NEO
 		trace_t trace;
+#endif
 		Vector vMins, vMaxs;
 
 		GetPlayerAvoidBounds( &vMins, &vMaxs );
@@ -12484,7 +12490,11 @@ int CAI_BaseNPC::WalkMove( const Vector& vecPosition, unsigned int mask )
 
 static void AIMsgGuts( CAI_BaseNPC *pAI, unsigned flags, const char *pszMsg )
 {
+#ifdef NEO
+	int			len		= V_strlen( pszMsg );
+#else
 	int			len		= strlen( pszMsg );
+#endif
 	const char *pszFmt2 = NULL;
 
 	if ( len && pszMsg[len-1] == '\n' )
@@ -13150,6 +13160,33 @@ void CAI_BaseNPC::AddScriptedNPCInteraction( ScriptedNPCInteraction_t *pInteract
 
 	// Copy the interaction over
 	ScriptedNPCInteraction_t *pNewInt = &(m_ScriptedInteractions[nNewIndex]);
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<std::remove_pointer_t<
+		decltype(pNewInt)>>)
+	{
+		static_assert(sizeof(*pNewInt) == 200);
+		pNewInt->angRelativeAngles = pInteraction->angRelativeAngles;
+		pNewInt->bValidOnCurrentEnemy = pInteraction->bValidOnCurrentEnemy;
+		pNewInt->flDelay = pInteraction->flDelay;
+		pNewInt->flDistSqr = pInteraction->flDistSqr;
+		pNewInt->flNextAttemptTime = pInteraction->flNextAttemptTime;
+		pNewInt->iFlags = pInteraction->iFlags;
+		pNewInt->iLoopBreakTriggerMethod = pInteraction->iLoopBreakTriggerMethod;
+		pNewInt->iszInteractionName = pInteraction->iszInteractionName;
+		pNewInt->iszMyWeapon = pInteraction->iszMyWeapon;
+		pNewInt->iszTheirWeapon = pInteraction->iszTheirWeapon;
+		pNewInt->iTriggerMethod = pInteraction->iTriggerMethod;
+		pNewInt->matDesiredLocalToWorld = pInteraction->matDesiredLocalToWorld;
+		pNewInt->m_DataMap = pInteraction->m_DataMap;
+		for (int i = 0; i < ARRAYSIZE(pNewInt->sPhases); ++i)
+		{
+			pNewInt->sPhases[i] = pInteraction->sPhases[i];
+		}
+		pNewInt->vecRelativeOrigin = pInteraction->vecRelativeOrigin;
+		pNewInt->vecRelativeVelocity = pInteraction->vecRelativeVelocity;
+	}
+	else
+#endif
 	memcpy( pNewInt, pInteraction, sizeof(ScriptedNPCInteraction_t) );
 
 	// Calculate the local to world matrix
@@ -13875,8 +13912,13 @@ void CAI_BaseNPC::InputForceInteractionWithNPC( inputdata_t &inputdata )
 	int iInteraction = -1;
 	for ( int i = 0; i < m_ScriptedInteractions.Count(); i++ )
 	{
+#ifdef NEO
+		if ( Q_strncmp( pszParam, STRING(m_ScriptedInteractions[i].iszInteractionName), V_strlen(pszParam) ) )
+			continue;
+#else
 		if ( Q_strncmp( pszParam, STRING(m_ScriptedInteractions[i].iszInteractionName), strlen(pszParam) ) )
 			continue;
+#endif
 
 		// Use sequence? or activity?
 		if ( m_ScriptedInteractions[i].sPhases[SNPCINT_SEQUENCE].iActivity != ACT_INVALID )

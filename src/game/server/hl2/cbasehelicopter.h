@@ -55,6 +55,9 @@ enum HelicopterFlags_t
 
 // Wash physics pushing
 struct washentity_t
+#ifdef NEO
+	final
+#endif
 {
 	DECLARE_DATADESC();
 

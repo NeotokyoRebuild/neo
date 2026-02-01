@@ -2523,7 +2523,11 @@ void KeyValues::RecursiveLoadFromBuffer( char const *resourceName, CUtlBuffer &b
 
 			int ival = strtol( value, &pIEnd, 10 );
 			float fval = (float)strtod( value, &pFEnd );
-			bool bOverflow = ( ival == LONG_MAX || ival == LONG_MIN ) && errno == ERANGE;
+#ifdef NEO
+			bool bOverflow = (ival == INT_MAX || ival == INT_MIN) && errno == ERANGE;
+#else
+			bool bOverflow = (ival == LONG_MAX || ival == LONG_MIN) && errno == ERANGE;
+#endif
 #ifdef POSIX
 			// strtod supports hex representation in strings under posix but we DON'T
 			// want that support in keyvalues, so undo it here if needed
@@ -3052,6 +3056,11 @@ bool KeyValues::Dump( IKeyValuesDumpContext *pDump, int nIndentLevel /* = 0 */, 
 	if ( !pDump->KvBeginKey( this, nIndentLevel ) )
 		return false;
 
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-bool-conversion"
+#endif
+
 	if ( bSorted )
 	{
 		CUtlSortVector< KeyValues*, CUtlSortVectorKeyValuesByName > vecSortedKeys;
@@ -3100,6 +3109,10 @@ bool KeyValues::Dump( IKeyValuesDumpContext *pDump, int nIndentLevel /* = 0 */, 
 				return false;
 		}
 	}
+
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic pop
+#endif
 
 	return pDump->KvEndKey( this, nIndentLevel );
 }

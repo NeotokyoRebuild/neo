@@ -221,7 +221,9 @@ void UpdateAvatarEffect(void)
 
 	Vector vel;
 	Vector vvel;
+#ifndef NEO
 	Vector evel;
+#endif
 	QAngle eye;
 	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
 	if(!pPlayer)

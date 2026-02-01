@@ -2113,7 +2113,9 @@ void CPointCombineBallLauncher::SpawnBall()
 	pBall->SetRadius( flRadius );
 
 	Vector vecAbsOrigin = GetAbsOrigin();
+#ifndef NEO
 	Vector zaxis;
+#endif
 	
 	pBall->SetAbsOrigin( vecAbsOrigin );
 	pBall->SetSpawner( this );

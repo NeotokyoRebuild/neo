@@ -533,7 +533,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		m_iRightPlayersTotal = 0;
 		int leftCount = 0;
 		int rightCount = 0;
-		bool bDMRightSide = false;
 		if (NEORules()->IsTeamplay())
 		{
 			for (int i = 1; i <= gpGlobals->maxClients; i++)

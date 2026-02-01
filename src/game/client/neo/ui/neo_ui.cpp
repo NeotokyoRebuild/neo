@@ -74,7 +74,6 @@ void MultiWidgetHighlighter(const int iTotalWidgets)
 
 	// Peek-forward what the area of the multiple widgets will cover without modifying the context
 	int iMulLayoutX = c->iLayoutX;
-	int iMulLayoutY = c->iLayoutY;
 	int iAllXWide = 0;
 	int iMulIdxRowParts = c->iIdxRowParts;
 
@@ -450,9 +449,9 @@ void EndContext()
 			{
 				const int iTotalSection = c->iSection;
 				int iTally = 0;
-				for (int i = 0; i < iTotalSection; ++i)
+				for (decltype(Context::ibfSectionCanActive) i = 0; i < iTotalSection; ++i)
 				{
-					const uint64_t ibfCmp = (1 << i);
+					const auto ibfCmp = (decltype(i))1 << i;
 					iTally += (c->ibfSectionCanActive & ibfCmp) &&
 							(!bSwitchSectionController || (c->ibfSectionCanController & ibfCmp));
 				}
@@ -470,7 +469,7 @@ void EndContext()
 						c->iActiveSection += iIncr;
 						c->iActiveSection = LoopAroundInArray(c->iActiveSection, iTotalSection);
 
-						const uint64_t ibfCmp = (1 << c->iActiveSection);
+						const auto ibfCmp = (decltype(Context::ibfSectionCanActive))1 << c->iActiveSection;
 						bNextCmp = !((c->ibfSectionCanActive & ibfCmp) &&
 								(!bSwitchSectionController || (c->ibfSectionCanController & ibfCmp)));
 					} while (bNextCmp);
@@ -846,10 +845,10 @@ GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 	// Mark this section this widget under as able to be active
 	if (eWidgetFlag & WIDGETFLAG_MARKACTIVE)
 	{
-		c->ibfSectionCanActive |= (1 << c->iSection);
+		c->ibfSectionCanActive |= (decltype(Context::ibfSectionCanActive))1 << c->iSection;
 		if (!(c->iSectionFlags & SECTIONFLAG_EXCLUDECONTROLLER))
 		{
-			c->ibfSectionCanController |= (1 << c->iSection);
+			c->ibfSectionCanController |= (decltype(Context::ibfSectionCanController))1 << c->iSection;
 		}
 	}
 
@@ -1260,7 +1259,7 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 				}
 				else
 				{
-					iDispWide = min(width, height);
+					iDispWide = Min(width, height);
 					iDispTall = iDispWide;
 				}
 
@@ -1618,7 +1617,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			wchar_t wszTmpTest[ARRAYSIZE(pSInfo->wszText)];
 			const int iStrMinLen = V_swprintf_safe(wszTmpTest, wszFormat, flMin);
 			const int iStrMaxLen = V_swprintf_safe(wszTmpTest, wszFormat, flMax);
-			pSInfo->iMaxStrSize = max(iStrMinLen, iStrMaxLen);
+			pSInfo->iMaxStrSize = Max(iStrMinLen, iStrMaxLen);
 			pSInfo->bActive = wdgState.bActive;
 		}
 		SliderInfo *pSInfo = &c->htSliders.Element(hdl);
@@ -2370,7 +2369,17 @@ void OpenURL(const char *szBaseUrl, const char *szPath)
 		;
 	char syscmd[512] = {};
 	V_sprintf_safe(syscmd, "%s %s%s", CMD, szBaseUrl, szPath);
-	system(syscmd);
+	[[maybe_unused]] const auto sysRet = system(syscmd);
+#ifdef LINUX
+	// Retvals are implementation-defined.
+	// Linux may declare system with "warn_unused_result", so we gotta check to avoid a warning.
+	constexpr auto linuxErrRet = -1;
+	if (sysRet == linuxErrRet)
+	{
+		Warning("%s system call failed: \"%s\"\n", __FUNCTION__, syscmd);
+		Assert(false);
+	}
+#endif
 }
 
 const wchar_t *HintAlt(const wchar *wszKey, const wchar *wszController)
