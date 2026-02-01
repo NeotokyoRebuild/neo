@@ -5,10 +5,10 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
+#include "bot/behavior/neo_bot_ctg_seek.h"
 #include "bot/behavior/neo_bot_jgr_seek.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
-#include "neo_ghost_cap_point.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar neo_bot_offense_must_push_time;
@@ -58,7 +58,11 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		return result;
 
 	// Check for Game Type Specific behaviors and suspend for them
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
+	}
+	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
 	{
 		return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
 	}
@@ -353,133 +357,12 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				m_hTargetEntity = pClosestWeapon;
 				m_bGoingToTargetEntity = true;
 				m_vGoalPos = pClosestWeapon->WorldSpaceCenter();
-				if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, SAFEST_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+				if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, DEFAULT_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
 					return;
 			}
 		}
 	}
 #endif
-
-	if (NEORules()->GhostExists())
-	{
-		const Vector vGhostPos = NEORules()->GetGhostPos();
-		const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
-
-		const int iMyTeam = me->GetTeamNumber();
-		const int iGhosterTeam = NEORules()->GetGhosterTeam();
-
-		bool bGoToGoalPos = true;
-		bool bGetCloserToGhoster = false;
-		bool bQuickToGoalPos = false;
-
-		if (iGhosterPlayer > 0)
-		{
-			const int iTargetCapTeam = (iGhosterTeam == iMyTeam) ? iMyTeam : iGhosterTeam;
-
-			// If there's a player playing ghost, turn toward cap zones that's
-			// closest to the ghoster player
-			Vector vrTargetCapPos = vec3_invalid;
-			int iMinCapGhostLength = INT_MAX;
-
-			// Enemy team is carrying the ghost - try to defend the cap zone
-			// You or friendly team is carrying the ghost - go towards the cap point
-
-			for (int i = 0; i < NEORules()->m_pGhostCaps.Count(); i++)
-			{
-				auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint *>(
-						UTIL_EntityByIndex(NEORules()->m_pGhostCaps[i]));
-				if (!pGhostCap)
-				{
-					continue;
-				}
-
-				const Vector vCapPos = pGhostCap->GetAbsOrigin();
-				const Vector vGhostCapDist = vGhostPos - vCapPos;
-				const int iGhostCapLength = static_cast<int>(vGhostCapDist.Length());
-				const int iCapTeam = pGhostCap->owningTeamAlternate();
-
-				if (iCapTeam == iTargetCapTeam && iGhostCapLength < iMinCapGhostLength)
-				{
-					vrTargetCapPos = vCapPos;
-					iMinCapGhostLength = iGhostCapLength;
-				}
-			}
-
-			if (!me->IsCarryingGhost())
-			{
-				// If a ghoster player carrying and nearby, get close to them
-				// Friendly - get closer and assists, enemy - get closer and attack
-				const float flGhosterMeters = METERS_PER_INCH * me->GetAbsOrigin().DistTo(vGhostPos);
-				const float flMinCapMeters = METERS_PER_INCH * iMinCapGhostLength;
-				static const constexpr float FL_NEARBY_FOLLOW_METERS = 26.0f;
-				static const constexpr float FL_NEARBY_CAPZONE_METERS = 18.0f;
-				const bool bGhosterNearby = flGhosterMeters < FL_NEARBY_FOLLOW_METERS;
-				const bool bCapzoneNearby = flMinCapMeters < FL_NEARBY_CAPZONE_METERS;
-				// But a nearby capzone overrides a nearby ghoster
-				bGetCloserToGhoster = !bCapzoneNearby && bGhosterNearby && flMinCapMeters > flGhosterMeters;
-			}
-
-			if (bGetCloserToGhoster)
-			{
-				Assert(vGhostPos.IsValid());
-				m_vGoalPos = vGhostPos;
-				bQuickToGoalPos = true;
-			}
-			else
-			{
-				// iMinCapGhostLength == INT_MAX should never happen, just disable going to target
-				Assert(iMinCapGhostLength < INT_MAX);
-				bGoToGoalPos = (iMinCapGhostLength < INT_MAX);
-				if (bGoToGoalPos) // else, vrTargetCapPos may be uninitialized
-				{
-					Assert(vrTargetCapPos.IsValid());
-					m_vGoalPos = vrTargetCapPos;
-				}
-
-				bQuickToGoalPos = (iGhosterTeam != iMyTeam);
-			}
-		}
-		else
-		{
-			// If the ghost exists, go to the ghost
-			Assert(vGhostPos.IsValid());
-			m_vGoalPos = vGhostPos;
-			// NEO TODO (nullsystem): More sophisticated on handling non-ghost playing scenario,
-			// although it kind of already prefer hunting down players when they're in view, but
-			// just going towards ghost isn't something that always happens in general.
-		}
-
-		if (bGoToGoalPos)
-		{
-			Assert(m_vGoalPos.IsValid());
-			if (bGetCloserToGhoster)
-			{
-				const int iDistSqrConsidered = (iGhosterTeam == iMyTeam) ? 50000 : 5000;
-				if (m_vGoalPos.DistToSqr(me->GetAbsOrigin()) < iDistSqrConsidered)
-				{
-					// Don't stop targeting entity even when near enough
-					return;
-				}
-			}
-			else
-			{
-				constexpr int DISTANCE_CONSIDERED_ARRIVED_SQUARED = 10000;
-				if (m_vGoalPos.DistToSqr(me->GetAbsOrigin()) < DISTANCE_CONSIDERED_ARRIVED_SQUARED)
-				{
-					constexpr float RECHECK_TIME = 30.f;
-					m_repathTimer.Start(RECHECK_TIME);
-					m_bGoingToTargetEntity = false;
-					return;
-				}
-			}
-			m_bGoingToTargetEntity = true;
-			if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, bQuickToGoalPos ? FASTEST_ROUTE : SAFEST_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
-			{
-				return;
-			}
-		}
-	}
-
 	// Fallback and roam random spawn points if we have all weapons.
 	{
 		CNextSpawnFilter spawnFilter( me, 128.0f );
@@ -501,7 +384,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				m_hTargetEntity = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
 				m_bGoingToTargetEntity = true;
 				m_vGoalPos = m_hTargetEntity->WorldSpaceCenter();
-				if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, SAFEST_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+				if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, DEFAULT_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
 					return;
 			}
 		}
@@ -513,7 +396,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 
 		Vector vWanderPoint = TheNavAreas[RandomInt( 0, TheNavAreas.Size() - 1 )]->GetCenter();
 		m_vGoalPos = vWanderPoint;
-		if ( CNEOBotPathCompute( me, m_path, vWanderPoint, SAFEST_ROUTE ) )
+		if ( CNEOBotPathCompute( me, m_path, vWanderPoint, DEFAULT_ROUTE ) )
 			return;
 	}
 
@@ -548,7 +431,7 @@ EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnCommandApproach( CNEOBot*
 	m_bOverrideApproach = true;
 	m_vOverrideApproach = pos;
 
-	CNEOBotPathCompute( me, m_path, m_vOverrideApproach, SAFEST_ROUTE );
+	CNEOBotPathCompute( me, m_path, m_vOverrideApproach, DEFAULT_ROUTE );
 
 	return TryContinue();
 }
