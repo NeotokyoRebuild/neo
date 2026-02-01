@@ -722,8 +722,19 @@ void C_NEO_Player::AddEntity( void )
 	BaseClass::AddEntity();
 }
 
-void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore)
+void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover)
 {
+	if (!bIgnorePlayerTakeover && m_hSpectatorTakeoverPlayerTarget.Get())
+	{
+		if (score >= 0)
+		{
+			// Reward possessed/bot for takeover player's actions
+			m_hSpectatorTakeoverPlayerTarget->AddPoints(score, false);
+			return;
+		}
+		// If a player made a mistake while taking over another player, continue to penalize them
+	}
+
 	// Positive score always adds
 	if (score < 0)
 	{
