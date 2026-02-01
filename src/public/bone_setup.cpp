@@ -3052,7 +3052,7 @@ bool Studio_IKSequenceError( const CStudioHdr *pStudioHdr, mstudioseqdesc_t &seq
 	if constexpr (!std::is_trivially_copyable_v<ikcontextikrule_t>)
 	{
 		static_assert(std::is_same_v<ikcontextikrule_t, std::remove_cvref_t<decltype(ikRule)>>);
-		static_assert(std::is_constructible_v<ikcontextikrule_t>);
+		static_assert(std::is_default_constructible_v<ikcontextikrule_t>);
 		ikRule = {};
 	}
 	else
@@ -3378,7 +3378,9 @@ void CIKContext::AddAutoplayLocks( Vector pos[], Quaternion q[] )
 	{
 		for (int i = 0; i < m_pStudioHdr->GetNumIKAutoplayLocks(); ++i)
 		{
-			static_assert(std::is_constructible_v<ikcontextikrule_t>);
+			using T = std::remove_pointer_t<decltype(m_ikLock.Base())>;
+			static_assert(std::is_same_v <ikcontextikrule_t, T>);
+			static_assert(std::is_default_constructible_v<ikcontextikrule_t>);
 			m_ikLock[ikOffset + i] = {};
 		}
 	}
@@ -3448,7 +3450,9 @@ void CIKContext::AddSequenceLocks( mstudioseqdesc_t &seqdesc, Vector pos[], Quat
 	{
 		for (int i = 0; i < seqdesc.numiklocks; ++i)
 		{
-			static_assert(std::is_constructible_v<ikcontextikrule_t>);
+			using T = std::remove_pointer_t<decltype(m_ikLock.Base())>;
+			static_assert(std::is_same_v <ikcontextikrule_t, T>);
+			static_assert(std::is_default_constructible_v<ikcontextikrule_t>);
 			m_ikLock[ikOffset + i] = {};
 		}
 	}
@@ -4375,7 +4379,9 @@ void CIKContext::AddAllLocks( Vector pos[], Quaternion q[] )
 	{
 		for (int i = 0; i < m_pStudioHdr->GetNumIKChains(); ++i)
 		{
-			static_assert(std::is_constructible_v<ikcontextikrule_t>);
+			using T = std::remove_pointer_t<decltype(m_ikLock.Base())>;
+			static_assert(std::is_same_v <ikcontextikrule_t, T>);
+			static_assert(std::is_default_constructible_v<ikcontextikrule_t>);
 			m_ikLock[ikOffset + i] = {};
 		}
 	}
