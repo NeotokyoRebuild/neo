@@ -10,7 +10,6 @@
 #include "bot/behavior/neo_bot_tactical_monitor.h"
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
-#include "bot/behavior/neo_bot_command_follow.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
@@ -26,8 +25,6 @@
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
-extern ConVar sv_neo_bot_cmdr_enable;
-extern ConVar sv_neo_bot_cmdr_debug_pause_uncommanded;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -279,23 +276,6 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return result;
 	}
 
-	if (sv_neo_bot_cmdr_enable.GetBool())
-	{
-		if (me->m_hLeadingPlayer.Get() || me->m_hCommandingPlayer.Get())
-		{
-			return SuspendFor(new CNEOBotCommandFollow, "Following commander");
-		}
-
-		if (sv_neo_bot_cmdr_debug_pause_uncommanded.GetBool())
-		{
-			return SuspendFor( new CNEOBotPause, "Paused by debug convar sv_neo_bot_cmdr_debug_pause_uncommanded" );
-		}
-	}
-
-#if 0
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-#endif
-
 	// check if we need to get to cover
 	QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
 
@@ -372,7 +352,7 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::ScavengeForPrimaryWeapon( CNEOBo
 	{
 		return Continue();
 	}
-	m_maintainTimer.Start( RandomFloat( 1.0f, 3.0f ) );
+	m_maintainTimer.Start( 1.0f );
 	
 	// Look for any one valid primary weapon, then dispatch into behavior for more optimal search
 	// true parameter: short-circuit the search if any valid primary weapon is found
