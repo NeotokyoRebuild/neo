@@ -536,7 +536,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		bool bDMRightSide = false;
 		if (NEORules()->IsTeamplay())
 		{
-			for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
 			{
 				if (g_PR->IsConnected(i))
 				{
@@ -615,6 +615,14 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 
 void CNEOHud_RoundState::DrawPlayerList()
 {
+	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
+	Assert(cl_neo_bot_cmdr_enable_ref.IsValid());
+	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
+	{
+		DrawPlayerList_BotCmdr();
+		return;
+	}
+
 	if (g_PR)
 	{
 		// Draw members of players squad in an old style list
@@ -638,7 +646,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		{
 			bool squadMateFound = false;
 
-			for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
 			{
 				if (i == localPlayerIndex)
 				{
@@ -673,7 +681,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		m_iRightPlayersAlive = 0;
 
 		// Draw other team mates
-		for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
 			if (!g_PR->IsConnected(i))
 			{
@@ -712,7 +720,181 @@ void CNEOHud_RoundState::DrawPlayerList()
 	}
 }
 
+void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
+{
+	if (!g_PR)
+	{
+		return;
+	}
+
+	// Draw members of players squad in an old style list
+	const int localPlayerTeam = GetLocalPlayerTeam();
+	const int localPlayerIndex = GetLocalPlayerIndex();
+	const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
+	const int leftTeam = cl_neo_hud_team_swap_sides.GetBool() ? (localPlayerSpec ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
+
+	int offset = 52;
+	if (cl_neo_squad_hud_star_scale.GetFloat() > 0)
+	{
+		IntDim res = {};
+		surface()->GetScreenSize(res.w, res.h);
+		offset *= cl_neo_squad_hud_star_scale.GetFloat() * res.h / 1080.0f;
+	}
+
+	const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
+
+	// Draw squad mates
+	m_commandedList.RemoveAll();
+	m_nonCommandedList.RemoveAll();
+	m_nonSquadList.RemoveAll();
+
+	bool squadMateFound = false;
+	m_iLeftPlayersAlive = 0;
+	m_iRightPlayersAlive = 0;
+	const int localStar = g_PR->GetStar(localPlayerIndex);
+
+	// Single pass to collect and categorize players
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		if (!g_PR->IsConnected(i))
+		{
+			continue;
+		}
+		const int playerTeam = g_PR->GetTeam(i);
+		if (playerTeam != leftTeam)
+		{
+			if (g_PR->IsAlive(i)) 
+			{
+				m_iRightPlayersAlive++;
+			}
+		}
+		else {
+			if (g_PR->IsAlive(i))
+			{
+				m_iLeftPlayersAlive++;
+			}
+		}
+		if (playerTeam != localPlayerTeam)
+		{
+			continue;
+		}
+		if (i == localPlayerIndex || localPlayerSpec || hideDueToScoreboard)
+		{
+			continue;
+		}
+
+		// Only consider players in the same squad star as the local player
+		const bool isSameSquadStar = (localStar != STAR_NONE) && (g_PR->GetStar(i) == localStar);
+		if (isSameSquadStar)
+		{
+			C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+			bool isCommanded = (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer());
+			if (isCommanded)
+			{
+				m_commandedList.AddToTail(i);
+			}
+			else
+			{
+				m_nonCommandedList.AddToTail(i);
+			}
+			squadMateFound = true;
+		}
+		else
+		{
+			m_nonSquadList.AddToTail(i);
+		}
+	}
+
+	// Draw commanded players first
+	const auto player = C_NEO_Player::GetLocalNEOPlayer();
+	TeamLogoColor* pTeamLogoColor = player ? &m_teamLogoColors[player->GetTeamNumber()] : nullptr;
+	const Color* colorOverride = pTeamLogoColor ? &pTeamLogoColor->color : nullptr;
+	for (int i = 0; i < m_commandedList.Count(); ++i)
+	{
+		offset = DrawPlayerRow_BotCmdr(m_commandedList[i], offset, false, colorOverride);
+	}
+
+	// Draw non-commanded players (who are also in the same squad star)
+	for (int i = 0; i < m_nonCommandedList.Count(); ++i)
+	{
+		offset = DrawPlayerRow_BotCmdr(m_nonCommandedList[i], offset, false);
+	}
+
+	if (squadMateFound)
+	{
+		offset += 12;
+	}
+
+	// Draw other team mates
+	for (int i = 0; i < m_nonSquadList.Count(); ++i)
+	{
+		offset = DrawPlayerRow_BotCmdr(m_nonSquadList[i], offset, true);
+	}
+}
+
 int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small)
+{
+	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
+	Assert(cl_neo_bot_cmdr_enable_ref.IsValid());
+	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
+	{
+		return DrawPlayerRow_BotCmdr(playerIndex, yOffset, small);
+	}
+
+	// Draw player
+	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
+	char squadMateText[SQUAD_MATE_TEXT_LENGTH];
+	wchar_t wSquadMateText[SQUAD_MATE_TEXT_LENGTH];
+	const char* squadMateRankName = GetRankName(g_PR->GetXP(playerIndex), true);
+	const char* squadMateClass = GetNeoClassName(g_PR->GetClass(playerIndex));
+	const bool isAlive = g_PR->IsAlive(playerIndex);
+
+	C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+	if (isAlive)
+	{
+		const char* pPlayerDisplayName = pNeoPlayer ?
+			pNeoPlayer->GetPlayerNameWithTakeoverContext(playerIndex)
+			: g_PR->GetPlayerName(playerIndex);
+
+		const char* displayRankName = squadMateRankName;
+		if (pNeoPlayer)
+		{
+			C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
+			if (pTakeoverTarget)
+			{
+				displayRankName = GetRankName(g_PR->GetXP(pTakeoverTarget->entindex()), true);
+			}
+		}
+
+		const int healthMode = cl_neo_hud_health_mode.GetInt();
+		char playerHealth[7]; // 4 digits + 2 letters
+		V_snprintf(playerHealth, sizeof(playerHealth), healthMode ? "%dhp" : "%d%%", g_PR->GetDisplayedHealth(playerIndex, healthMode));
+		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", pPlayerDisplayName, squadMateRankName, squadMateClass, playerHealth);
+	}
+	else
+	{
+		auto* pImpersonator = pNeoPlayer ? pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get() : nullptr;
+
+		const char* pPlayerDisplayName = pImpersonator ?
+			pImpersonator->GetPlayerName()
+			: g_PR->GetPlayerName(playerIndex);
+
+		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
+		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", pPlayerDisplayName, displayClass);
+	}
+	g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
+
+	int fontWidth, fontHeight;
+	surface()->DrawSetTextFont(small ? m_hOCRSmallerFont : m_hOCRSmallFont);
+	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
+	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
+	surface()->DrawSetTextPos(8, yOffset);
+	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
+
+	return yOffset + fontHeight;
+}
+
+int CNEOHud_RoundState::DrawPlayerRow_BotCmdr(int playerIndex, const int yOffset, bool small, const Color* colorOverride)
 {
 	// Draw player
 	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
@@ -749,20 +931,21 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 		auto* pImpersonator = pNeoPlayer ? pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get() : nullptr;
 
 		const char* pPlayerDisplayName = pImpersonator ?
-		    pImpersonator->GetPlayerName()
+			pImpersonator->GetPlayerName()
 			: g_PR->GetPlayerName(playerIndex);
 
 		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
 		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", pPlayerDisplayName, displayClass);
 	}
-	g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
+	int wSquadMateTextLen = g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
 
 	int fontWidth, fontHeight;
 	surface()->DrawSetTextFont(small ? m_hOCRSmallerFont : m_hOCRSmallFont);
 	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
+
+	surface()->DrawSetTextColor(colorOverride ? *colorOverride : (isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE));
 	surface()->DrawSetTextPos(8, yOffset);
-	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
+	surface()->DrawPrintText(wSquadMateText, wSquadMateTextLen - 1);
 
 	return yOffset + fontHeight;
 }
@@ -791,6 +974,23 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	if (!g_PR->IsAlive(playerIndex))
 		surface()->DrawSetColor(COLOR_DARK);
 	surface()->DrawTexturedRect(xOffset, Y_POS + 1, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 1);
+
+	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
+	Assert(cl_neo_bot_cmdr_enable_ref.IsValid());
+	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
+	{
+		// Draw Command Highlight Border on top of the avatar image
+		C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
+		if (pPlayer && pPlayer->m_hCommandingPlayer.Get() == C_NEO_Player::GetLocalNEOPlayer())
+		{
+			surface()->DrawSetColor(COLOR_WHITE);
+			// Draw a thicker border inwards
+			for (int borderIndex = 0; borderIndex < 3; ++borderIndex)
+			{
+				surface()->DrawOutlinedRect(xOffset + borderIndex, Y_POS + borderIndex, xOffset + m_ilogoSize - borderIndex, Y_POS + m_ilogoSize - borderIndex);
+			}
+		}
+	}
 
 	// Deathmatch only: Draw XP on everyone
 	if (!NEORules()->IsTeamplay())

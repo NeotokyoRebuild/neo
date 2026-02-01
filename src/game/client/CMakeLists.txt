@@ -1611,6 +1611,8 @@ target_sources_grouped(
     neo/ui/neo_hud_startup_sequence.h
     neo/ui/neo_hud_worldpos_marker.cpp
     neo/ui/neo_hud_worldpos_marker.h
+    neo/ui/neo_hud_worldpos_marker_generic.cpp
+    neo/ui/neo_hud_worldpos_marker_generic.h
     neo/ui/neo_scoreboard.cpp
     neo/ui/neo_scoreboard.h
     neo/ui/neo_hud_context_hint.cpp
@@ -1648,6 +1650,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
 )
 

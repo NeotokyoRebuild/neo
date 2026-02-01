@@ -1679,7 +1679,7 @@ int CInput::GetButtonBits( int bResetState )
 	CalcButtonBits( bits, IN_LEAN_RIGHT, s_ClearInputState, &in_lean_right, bResetState );
 	CalcButtonBits( bits, IN_THERMOPTIC, s_ClearInputState, &in_thermoptic, bResetState);
 	CalcButtonBits( bits, IN_VISION, s_ClearInputState, &in_vision, bResetState);
-	if (KeyState(&in_speed))
+	if (KeyState(&in_speed) && !IsLocalPlayerSpectator())
 	{
 		// Cancel walk toggle if sprinting
 		KeyUp(&in_walk, nullptr);

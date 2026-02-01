@@ -40,6 +40,10 @@ class CNEOGameRulesProxy : public CHL2MPGameRulesProxy
 public:
 	DECLARE_CLASS( CNEOGameRulesProxy, CHL2MPGameRulesProxy );
 	DECLARE_NETWORKCLASS();
+
+#ifdef CLIENT_DLL
+	void OnDataChanged(DataUpdateType_t updateType) override;
+#endif // CLIENT_DLL
 };
 
 class NEOViewVectors : public HL2MPViewVectors
@@ -116,6 +120,8 @@ enum NeoRoundStatus {
 	PostRound,
 	Pause,
 	Countdown,
+
+	RoundStatusTotal
 };
 
 enum NeoWinReason {
@@ -150,6 +156,7 @@ enum NeoHudElements : NEO_HUD_BITS_UNDERLYING_TYPE {
 	NEO_HUD_ELEMENT_WORLDPOS_MARKER = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 13),
 	NEO_HUD_ELEMENT_SCOREBOARD = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 14),
 	NEO_HUD_ELEMENT_PLAYER_PING = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 15),
+	NEO_HUD_ELEMENT_WORLDPOS_MARKER_ENT = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 16),
 };
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -424,6 +431,7 @@ private:
 public:
 	void JuggernautActivated(CNEO_Player *pPlayer);
 	void JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut);
+	void JuggernautTotalRemoval(CNEO_Juggernaut *pJuggernaut);
 private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;

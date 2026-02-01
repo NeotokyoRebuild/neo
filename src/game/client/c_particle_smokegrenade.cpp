@@ -403,29 +403,26 @@ void C_ParticleSmokeGrenade::Start(CParticleMgr *pParticleMgr, IPrototypeArgAcce
 
 void C_ParticleSmokeGrenade::ClientThink()
 {
-	if (!CanSeeThroughSmokeGrenades())
+	if (m_CurrentStage == 1)
 	{
-		if (m_CurrentStage == 1)
+		// Add our influence to the global smoke fog alpha.
+
+		float testDist = (MainViewOrigin() - m_SmokeBasePos).Length();
+
+		float fadeEnd = m_ExpandRadius;
+
+		// The center of the smoke cloud that always gives full fog overlay
+		float flCoreDistance = fadeEnd * 0.3;
+
+		if (testDist < fadeEnd)
 		{
-			// Add our influence to the global smoke fog alpha.
-
-			float testDist = (MainViewOrigin() - m_SmokeBasePos).Length();
-
-			float fadeEnd = m_ExpandRadius;
-
-			// The center of the smoke cloud that always gives full fog overlay
-			float flCoreDistance = fadeEnd * 0.3;
-
-			if (testDist < fadeEnd)
+			if (testDist < flCoreDistance)
 			{
-				if (testDist < flCoreDistance)
-				{
-					EngineGetSmokeFogOverlayAlpha() += m_FadeAlpha;
-				}
-				else
-				{
-					EngineGetSmokeFogOverlayAlpha() += (1 - (testDist - flCoreDistance) / (fadeEnd - flCoreDistance)) * m_FadeAlpha;
-				}
+				EngineGetSmokeFogOverlayAlpha() += m_FadeAlpha;
+			}
+			else
+			{
+				EngineGetSmokeFogOverlayAlpha() += (1 - (testDist - flCoreDistance) / (fadeEnd - flCoreDistance)) * m_FadeAlpha;
 			}
 		}
 	}
@@ -690,87 +687,90 @@ inline void C_ParticleSmokeGrenade::ApplyDynamicLight( const Vector &vParticlePo
 
 void C_ParticleSmokeGrenade::RenderParticles( CParticleRenderIterator *pIterator )
 {
-	if (!CanSeeThroughSmokeGrenades())
+	const SmokeGrenadeParticle* pParticle = (const SmokeGrenadeParticle*)pIterator->GetFirst();
+	while (pParticle)
 	{
-		const SmokeGrenadeParticle* pParticle = (const SmokeGrenadeParticle*)pIterator->GetFirst();
-		while (pParticle)
+		Vector vWorldSpacePos = m_SmokeBasePos + pParticle->m_Pos;
+
+		float sortKey;
+
+		// Draw.
+		float len = pParticle->m_Pos.Length();
+		if (len > m_ExpandRadius)
 		{
-			Vector vWorldSpacePos = m_SmokeBasePos + pParticle->m_Pos;
-
-			float sortKey;
-
-			// Draw.
-			float len = pParticle->m_Pos.Length();
-			if (len > m_ExpandRadius)
+			Vector vTemp;
+			TransformParticle(ParticleMgr()->GetModelView(), vWorldSpacePos, vTemp);
+			sortKey = vTemp.z;
+		}
+		else
+		{
+			// This smooths out the growing sphere. Rather than having particles appear in one spot as the sphere
+			// expands, they stay at the borders.
+			Vector renderPos;
+			if (len > m_ExpandRadius * 0.5f)
 			{
-				Vector vTemp;
-				TransformParticle(ParticleMgr()->GetModelView(), vWorldSpacePos, vTemp);
-				sortKey = vTemp.z;
+				renderPos = m_SmokeBasePos + (pParticle->m_Pos * (m_ExpandRadius * 0.5f)) / len;
 			}
 			else
 			{
-				// This smooths out the growing sphere. Rather than having particles appear in one spot as the sphere
-				// expands, they stay at the borders.
-				Vector renderPos;
-				if (len > m_ExpandRadius * 0.5f)
-				{
-					renderPos = m_SmokeBasePos + (pParticle->m_Pos * (m_ExpandRadius * 0.5f)) / len;
-				}
-				else
-				{
-					renderPos = vWorldSpacePos;
-				}
-
-				// Figure out the alpha based on where it is in the sphere.
-				float alpha = 1 - len / m_ExpandRadius;
-
-				// This changes the ramp to be very solid in the core, then taper off.
-				static float testCutoff = 0.3;
-				if (alpha > testCutoff)
-				{
-					alpha = 1;
-				}
-				else
-				{
-					// at testCutoff it's 1, at 0, it's 0
-					alpha = alpha / testCutoff;
-				}
-
-				// Fade out globally.
-				alpha *= m_FadeAlpha;
-
-				// Apply the precalculated fade alpha from world geometry.
-				alpha *= pParticle->m_FadeAlpha;
-
-				// TODO: optimize this whole routine!
-				Vector color = m_MinColor + (m_MaxColor - m_MinColor) * (pParticle->m_ColorInterp / 255.1f);
-				color.x *= pParticle->m_Color[0] / 255.0f;
-				color.y *= pParticle->m_Color[1] / 255.0f;
-				color.z *= pParticle->m_Color[2] / 255.0f;
-
-				// Lighting.
-				ApplyDynamicLight(renderPos, color);
-
-				color = (color + Vector(0.5, 0.5, 0.5)) / 2;   //Desaturate
-
-				Vector tRenderPos;
-				TransformParticle(ParticleMgr()->GetModelView(), renderPos, tRenderPos);
-				sortKey = tRenderPos.z;
-
-				//debugoverlay->AddBoxOverlay( renderPos, Vector( -2, -2, -2), Vector( 2, 2, 2), vec3_angle, 255, 255, 255, 255, 1.0f );
-
-				RenderParticle_ColorSizeAngle(
-					pIterator->GetParticleDraw(),
-					tRenderPos,
-					color,
-					alpha * GetAlphaDistanceFade(tRenderPos, 0, 10),	// Alpha
-					SMOKEPARTICLE_SIZE,
-					pParticle->m_CurRotation
-				);
+				renderPos = vWorldSpacePos;
 			}
 
-			pParticle = (SmokeGrenadeParticle*)pIterator->GetNext(sortKey);
+			// Figure out the alpha based on where it is in the sphere.
+			float alpha = 1 - len / m_ExpandRadius;
+
+			// This changes the ramp to be very solid in the core, then taper off.
+			static float testCutoff = 0.3;
+			if (alpha > testCutoff)
+			{
+				alpha = 1;
+			}
+			else
+			{
+				// at testCutoff it's 1, at 0, it's 0
+				alpha = alpha / testCutoff;
+			}
+
+			// Fade out globally.
+			alpha *= m_FadeAlpha;
+
+			// Apply the precalculated fade alpha from world geometry.
+			alpha *= pParticle->m_FadeAlpha;
+
+			if (CanSeeThroughSmokeGrenades())
+			{
+				constexpr float THERMAL_VISION_ALPHA_MULTIPLIER = 0.1f;
+				alpha *= THERMAL_VISION_ALPHA_MULTIPLIER;
+			}
+
+			// TODO: optimize this whole routine!
+			Vector color = m_MinColor + (m_MaxColor - m_MinColor) * (pParticle->m_ColorInterp / 255.1f);
+			color.x *= pParticle->m_Color[0] / 255.0f;
+			color.y *= pParticle->m_Color[1] / 255.0f;
+			color.z *= pParticle->m_Color[2] / 255.0f;
+
+			// Lighting.
+			ApplyDynamicLight(renderPos, color);
+
+			color = (color + Vector(0.5, 0.5, 0.5)) / 2;   //Desaturate
+
+			Vector tRenderPos;
+			TransformParticle(ParticleMgr()->GetModelView(), renderPos, tRenderPos);
+			sortKey = tRenderPos.z;
+
+			//debugoverlay->AddBoxOverlay( renderPos, Vector( -2, -2, -2), Vector( 2, 2, 2), vec3_angle, 255, 255, 255, 255, 1.0f );
+
+			RenderParticle_ColorSizeAngle(
+				pIterator->GetParticleDraw(),
+				tRenderPos,
+				color,
+				alpha * GetAlphaDistanceFade(tRenderPos, 0, 10),	// Alpha
+				SMOKEPARTICLE_SIZE,
+				pParticle->m_CurRotation
+			);
 		}
+
+		pParticle = (SmokeGrenadeParticle*)pIterator->GetNext(sortKey);
 	}
 }
 

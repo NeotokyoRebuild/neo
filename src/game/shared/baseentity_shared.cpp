@@ -1642,6 +1642,9 @@ void NormalizeAngles(QAngle& angles)
 #ifdef CLIENT_DLL
 ConVar cl_neo_bullet_trace("cl_neo_bullet_trace", "0", FCVAR_CHEAT, "Show bullet trace", true, 0, true, 1);
 ConVar cl_neo_bullet_trace_max_pen("cl_neo_bullet_trace_max_pen", "65", FCVAR_CHEAT, "How much pen does a bullet need to have to show up as a solid red line. Configure to the current weapon used, or leave on default to see differences in pen between weapons", true, 0.1, true, 999.f);
+#else
+ConVar sv_neo_bullet_trace("sv_neo_bullet_trace", "0", FCVAR_CHEAT, "Show bullet trace", true, 0, true, 1);
+ConVar sv_neo_bullet_trace_max_pen("sv_neo_bullet_trace_max_pen", "65", FCVAR_CHEAT, "How much pen does a bullet need to have to show up as a solid red line. Configure to the current weapon used, or leave on default to see differences in pen between weapons", true, 0.1, true, 999.f);
 #endif // CLIENT_DLL
 #endif // NEO
 void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
@@ -1744,16 +1747,23 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	// Set up our shot manipulator.
 	//-----------------------------------------------------
 #ifdef NEO
-	auto pNeoAttacker = dynamic_cast<CNEO_Player*>(this);
-	Assert(pNeoAttacker);
-	pNeoAttacker->m_bIneligibleForLoadoutPick = true;
+	CNEOBaseCombatWeapon *neoWeapon = nullptr;
+	int numShotsFired = 0;
 
-	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pNeoAttacker->GetActiveWeapon());
-	Assert(neoWeapon);
+	if ( IsPlayer() )
+	{
+		Assert(pAttacker == this);
 
-	const int numShotsFired = neoWeapon ? neoWeapon->GetNumShotsFired() : 0;
+		auto pNeoAttacker = assert_cast<CNEO_Player*>(this);
+		pNeoAttacker->m_bIneligibleForLoadoutPick = true;
+		
+		neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pNeoAttacker->GetActiveWeapon());
+		Assert(neoWeapon);
 
-	CNEOShotManipulator Manipulator(numShotsFired, info.m_vecDirShooting, pNeoAttacker, neoWeapon);
+		numShotsFired = neoWeapon ? neoWeapon->GetNumShotsFired() : 0;
+	}
+
+	CNEOShotManipulator Manipulator(numShotsFired, info.m_vecDirShooting, pAttacker, neoWeapon);
 #else
 	CShotManipulator Manipulator( info.m_vecDirShooting );
 #endif
@@ -1954,9 +1964,15 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 			UpdateShotStatistics( tr );
 
 #ifdef NEO
+			bool bWeaponAutomatic = true;
+			if ( IsPlayer() )
+			{
+				bWeaponAutomatic = neoWeapon->IsAutomatic();
+			}
+
 			const int soundEntChannel = (info.m_nFlags & FIRE_BULLETS_TEMPORARY_DANGER_SOUND)
 				? SOUNDENT_CHANNEL_BULLET_IMPACT
-				: (neoWeapon->IsAutomatic() ? SOUNDENT_CHANNEL_REPEATING : SOUNDENT_CHANNEL_WEAPON);
+				: (bWeaponAutomatic ? SOUNDENT_CHANNEL_REPEATING : SOUNDENT_CHANNEL_WEAPON);
 #else
 			// For shots that don't need persistance
 			int soundEntChannel = ( info.m_nFlags&FIRE_BULLETS_TEMPORARY_DANGER_SOUND ) ? SOUNDENT_CHANNEL_BULLET_IMPACT : SOUNDENT_CHANNEL_UNSPECIFIED;
@@ -2053,6 +2069,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		if (cl_neo_bullet_trace.GetBool())
 		{
 			DebugDrawLine(info.m_vecSrc, tr.endpos, 255, 255 * (1 - (info.m_flPenetration / cl_neo_bullet_trace_max_pen.GetFloat())), 0, 1, 30.f);
+		}
+#else
+		if (sv_neo_bullet_trace.GetBool())
+		{
+			DebugDrawLine(info.m_vecSrc, tr.endpos, 255, 255 * (1 - (info.m_flPenetration / sv_neo_bullet_trace_max_pen.GetFloat())), 0, 1, 30.f);
 		}
 #endif // CLIENT_DLL
 #endif // NEO
@@ -2189,12 +2210,32 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 			DebugDrawLine(x1, x1 + Vector(0, 1, 0), 255, 255, 0, 1, 30.f);
 			DebugDrawLine(x2, x2 + Vector(0, 0, 1), 255, 255, 0, 1, 30.f);
 		}
+#else
+		if (sv_neo_bullet_trace.GetBool())
+		{ // Bullet Block (Yellow STAR)
+			Vector x0 = tr.endpos + Vector(-0.5, 0, 0);
+			Vector x1 = tr.endpos + Vector(0, -0.5, 0);
+			Vector x2 = tr.endpos + Vector(0, 0, -0.5);
+			DebugDrawLine(x0, x0 + Vector(1, 0, 0), 255, 255, 0, 1, 30.f);
+			DebugDrawLine(x1, x1 + Vector(0, 1, 0), 255, 255, 0, 1, 30.f);
+			DebugDrawLine(x2, x2 + Vector(0, 0, 1), 255, 255, 0, 1, 30.f);
+		}
 #endif // CLIENT_DLL
 		return;
 	}
 
 #ifdef CLIENT_DLL
 	if (cl_neo_bullet_trace.GetBool())
+	{ // Entrance (GREEN STAR)
+		Vector x0 = tr.endpos + Vector(-0.5, 0, 0);
+		Vector x1 = tr.endpos + Vector(0, -0.5, 0);
+		Vector x2 = tr.endpos + Vector(0, 0, -0.5);
+		DebugDrawLine(x0, x0 + Vector(1, 0, 0), 0, 255, 0, 1, 30.f);
+		DebugDrawLine(x1, x1 + Vector(0, 1, 0), 0, 255, 0, 1, 30.f);
+		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 0, 255, 0, 1, 30.f);
+	}
+#else
+	if (sv_neo_bullet_trace.GetBool())
 	{ // Entrance (GREEN STAR)
 		Vector x0 = tr.endpos + Vector(-0.5, 0, 0);
 		Vector x1 = tr.endpos + Vector(0, -0.5, 0);
@@ -2261,6 +2302,16 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 
 #ifdef CLIENT_DLL
 	if (cl_neo_bullet_trace.GetBool())
+	{ // Exit (RED STAR)
+		Vector x0 = penetrationTrace.endpos + Vector(-0.5, 0, 0);
+		Vector x1 = penetrationTrace.endpos + Vector(0, -0.5, 0);
+		Vector x2 = penetrationTrace.endpos + Vector(0, 0, -0.5);
+		DebugDrawLine(x0, x0 + Vector(1, 0, 0), 255, 0, 0, 1, 30.f);
+		DebugDrawLine(x1, x1 + Vector(0, 1, 0), 255, 0, 0, 1, 30.f);
+		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 255, 0, 0, 1, 30.f);
+	}
+#else
+	if (sv_neo_bullet_trace.GetBool())
 	{ // Exit (RED STAR)
 		Vector x0 = penetrationTrace.endpos + Vector(-0.5, 0, 0);
 		Vector x1 = penetrationTrace.endpos + Vector(0, -0.5, 0);

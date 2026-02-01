@@ -7,8 +7,10 @@ sampler TexRed : register( s1 );
 sampler TexGreen : register( s2 );
 sampler TexBlue : register( s3 );
 
-float g_flOutlineWidth : register( c0 );
-float2 g_vPixelSize : register( c4 );
+const float2 g_flOutlineProperties 	: register(c0);
+#define g_flOutlineWidth 			g_flOutlineProperties.x
+#define g_flDimValue 				g_flOutlineProperties.y
+const float2 g_vPixelSize 			: register(c4);
 
 struct PS_INPUT
 {
@@ -19,12 +21,20 @@ float4 main( PS_INPUT i ) : COLOR
 {
 	float2 vOffset = g_flOutlineWidth * g_vPixelSize.xy;
 
-	// Take the max of 4 offset texture samples
+	// Take the max of 4(8?) offset texture samples
 	float4 result;
 	result.rgba = tex2D( TexSampler, i.baseTexCoord.xy + float2( vOffset.x, vOffset.y ) );
 	result.rgba = max( result.rgba, tex2D( TexSampler, i.baseTexCoord.xy + float2( vOffset.x, -vOffset.y ) ) );
 	result.rgba = max( result.rgba, tex2D( TexSampler, i.baseTexCoord.xy + float2( -vOffset.x, vOffset.y ) ) );
 	result.rgba = max( result.rgba, tex2D( TexSampler, i.baseTexCoord.xy + float2( -vOffset.x, -vOffset.y ) ) );
+	// Far objects or slim objects have holes in the outline unless we check all 8 surrounding neighbors, is the improved outline worth the extra cost?
+	result.rgba = max( result.rgba, tex2D( TexSampler, i.baseTexCoord.xy + float2( -vOffset.x, 0 ) ) );
+	result.rgba = max( result.rgba, tex2D( TexSampler, i.baseTexCoord.xy + float2( vOffset.x, 0 ) ) );
+	result.rgba = max( result.rgba, tex2D( TexSampler, i.baseTexCoord.xy + float2( 0, -vOffset.y ) ) );
+	result.rgba = max( result.rgba, tex2D( TexSampler, i.baseTexCoord.xy + float2( 0, vOffset.y ) ) );
+
+	// Scale by dim value before computing luminance below
+	result.rgb *= saturate( g_flDimValue );
 
 	// Store max color component in alpha for alpha blend of one/invSrcAlpha
 	float flLuminance = max( result.r, max( result.g, result.b ) );

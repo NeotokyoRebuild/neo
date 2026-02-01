@@ -41,7 +41,7 @@ IMPLEMENT_SERVERCLASS_ST(CNEOGhostCapturePoint, DT_NEOGhostCapturePoint)
 	SendPropFloat(SENDINFO(m_flCapzoneRadius)),
 
 	SendPropInt(SENDINFO(m_iOwningTeam)),
-	SendPropInt(SENDINFO(m_iSuccessfulCaptorClientIndex)),
+	SendPropInt(SENDINFO(m_iSuccessfulCaptorClientIndex), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 
 	SendPropBool(SENDINFO(m_bGhostHasBeenCaptured)),
 	SendPropBool(SENDINFO(m_bIsActive)),
@@ -167,8 +167,10 @@ void CNEOGhostCapturePoint::Spawn(void)
 	{
 		// We could recover, but it's probably better to break the capzone
 		// and throw a nag message in console so the mapper can fix their error.
-		Warning("Capzone had an invalid owning team: %i. Expected %i (Jinrai), or %i (NSF).\n",
-			m_iOwningTeam.Get(), NEO_FGD_TEAMNUM_ATTACKER, NEO_FGD_TEAMNUM_DEFENDER);
+		Warning("Capzone at position %.1f %.1f %.1f had an invalid owning team: %i. "
+			"Expected %i (Jinrai), %i (NSF), or %i (neutral).\n",
+			GetAbsOrigin().x, GetAbsOrigin().y, GetAbsOrigin().z,
+			m_iOwningTeam.Get(), NEO_FGD_TEAMNUM_ATTACKER, NEO_FGD_TEAMNUM_DEFENDER, NEO_FGD_TEAMNUM_NEUTRAL);
 
 		// Nobody will be able to cap here.
 		m_iOwningTeam = TEAM_INVALID;

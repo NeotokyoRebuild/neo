@@ -524,7 +524,10 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 			pOwner->Weapon_SetZoom(false);
 		}
 #ifdef CLIENT_DLL
-		IN_AimToggleReset();
+		if (pOwner->IsLocalPlayer())
+		{
+			IN_AimToggleReset();
+		}
 #endif // CLIENT_DLL
 	}
 

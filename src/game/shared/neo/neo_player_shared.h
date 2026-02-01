@@ -120,8 +120,56 @@ COMPILE_TIME_ASSERT(NEO_RECON_CROUCH_SPEED > NEO_ASSAULT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 
-#define NEO_RECON_CROUCH_JUMP_HEIGHT 65.f
-#define NEO_CROUCH_JUMP_HEIGHT 56.f
+// NEO Jank: As an optimization, these constants are calculated for default gravity,
+// and bot climbing behavior may be odd if sv_gravity is changed.
+// See [MD]'s g_bMovementOptimizations for additional context.
+//
+// At time of comment, these constants were only used by neo_bot_locomotion.h
+// where these values determine if a bot will attempt to climb a ledge between NavAreas.
+// At time of analysis, NEO_RECON_CROUCH_JUMP_HEIGHT potentially was historically calculated based on
+// (GAMEMOVEMENT_JUMP_HEIGHT * class multiplier) + (Support Hull Crouch/Stand Difference),
+//
+// From this point on we will refer to (GAMEMOVEMENT_JUMP_HEIGHT * class multiplier) as "Class Jump Height".
+// For sake of consistency, we will use the precomputed jump heights assuming g_bMovementOptimizations = true.
+//
+// Class Jump Height: Derived from `sqrt(2 * gravity * jump_height)` from `gamemovement.cpp`.
+// But for simplicity we use the optimized values provided under the g_bMovementOptimizations = true case:
+//    - Recon:		54.0 units
+//    - Juggernaut:	50.4 units
+//    - Others:		36.0 units
+//
+// Hull Crouch/Stand Difference (aka: "Lift"):
+// ---
+// Derived from neo_gamerules.cpp: Vector viewDelta = ( hullSizeNormal - hullSizeCrouch );
+// Variables are defined in shareddefs.h as VEC_HULL_MAX_SCALED and VEC_DUCK_HULL_MAX_SCALED.
+// Instead of deriving these values by hand, a breakpoint can be placed in CGameMovement::CanUnduck()
+// while configuring the bot class with the bot_class command, to log the variable values.
+//
+// Lift = VEC_HULL_MAX_SCALED.z - VEC_DUCK_HULL_MAX_SCALED.z
+// ---
+// Recon: 64 - 46 = 18
+// Assault: 65 - 48 = 17
+// Support: 70 - 59 = 11
+// VIP: 65 - 48 = 17
+//
+// Juggernaut: 88 - 75 = 13
+//   (Base Hull Max = 70) + (NEO_JUGGERNAUT_MAXHULL_OFFSET.z = 18) = 88
+//   (Base Hull Duck Max = 59) + (NEO_JUGGERNAUT_DUCK_MAXHULL_OFFSET.z = 16) = 75
+//
+// Theoretical max bot crouch jump heights:
+// Formula: (Class Jump Height) + (Lift)
+// ---
+// Recon: 54 + 18 = 72
+// Assault/VIP: 36 + 17 = 53
+// Support: 36 + 11 = 47
+// Juggernaut: 50.4 + 13 = 63.4
+#define NEO_RECON_CROUCH_JUMP_HEIGHT 72.0f
+#define NEO_ASSAULT_CROUCH_JUMP_HEIGHT 53.0f
+#define NEO_SUPPORT_CROUCH_JUMP_HEIGHT 47.0f
+#define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 63.4f
+// To ensure bots can safely clear obstacles, we apply a safety buffer (NEO_BOT_JUMP_HEIGHT_BUFFER)
+// when checking traverseability, by subtracting it from these theoretical max heights.
+#define NEO_BOT_JUMP_HEIGHT_BUFFER 7.0f
 
 // END OF NEO MOVEMENT DEFINITIONS
 //////////////////////////////////////////////////////
@@ -244,7 +292,10 @@ enum NeoLeanDirectionE {
 	NEO_LEAN_NONE = 0,
 	NEO_LEAN_LEFT,
 	NEO_LEAN_RIGHT,
+
+	NEO_LEAN__ENUM_COUNT
 };
+static constexpr int NEO_LEAN_ENUM_COUNT = NEO_LEAN__ENUM_COUNT;
 
 enum NeoWeponAimToggleE {
 	NEO_TOGGLE_NIL = 0,
@@ -253,6 +304,7 @@ enum NeoWeponAimToggleE {
 };
 
 void CheckPingButton(CNEO_Player* player);
+void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos);
 
 struct AttackersTotals
 {

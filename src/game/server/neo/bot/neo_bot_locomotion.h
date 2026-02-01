@@ -38,21 +38,35 @@ protected:
 
 inline float CNEOBotLocomotion::GetMaxJumpHeight( void ) const
 {
+	// NEO JANK: Assumes [MD]'s g_bMovementOptimizations = true, where we assume sv_gravity is 800 for navigation.
+	// Changing that setting can potentially break bot navigation.
+	extern ConVar sv_gravity;
+	Assert( sv_gravity.GetFloat() == 800.0f );
+
 	auto me = (CNEO_Player*)GetBot()->GetEntity();
+	float theoreticalJumpHeight = 0.0f;
+
 	switch (me->GetClass())
 	{
 		case NEO_CLASS_RECON:
-			return NEO_RECON_CROUCH_JUMP_HEIGHT;
-		case NEO_CLASS_ASSAULT:
-			[[fallthrough]];
-		case NEO_CLASS_SUPPORT:
-			[[fallthrough]];
-		case NEO_CLASS_VIP:
-			[[fallthrough]];
+			theoreticalJumpHeight = NEO_RECON_CROUCH_JUMP_HEIGHT;
+			break;
 		case NEO_CLASS_JUGGERNAUT:
-			return NEO_CROUCH_JUMP_HEIGHT;
+			theoreticalJumpHeight = NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT;
+			break;
+		case NEO_CLASS_SUPPORT:
+			theoreticalJumpHeight = NEO_SUPPORT_CROUCH_JUMP_HEIGHT;
+			break;
+		case NEO_CLASS_VIP:
+			theoreticalJumpHeight = NEO_ASSAULT_CROUCH_JUMP_HEIGHT; // vip same as assault
+			break;
+		case NEO_CLASS_ASSAULT:
+			theoreticalJumpHeight = NEO_ASSAULT_CROUCH_JUMP_HEIGHT;
+			break;
 		default:
 			Assert(false);
 			return 0.f;
 	}
+
+	return theoreticalJumpHeight - NEO_BOT_JUMP_HEIGHT_BUFFER;
 }

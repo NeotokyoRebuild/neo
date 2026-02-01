@@ -218,14 +218,29 @@ void sndVictoryVolumeChangeCallback(IConVar* cvar [[maybe_unused]], const char* 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0, sndVictoryVolumeChangeCallback);
 #endif // CLIENT_DLL
 
+#ifdef CLIENT_DLL
+void CNEOGameRulesProxy::OnDataChanged(DataUpdateType_t updateType)
+{
+	BaseClass::OnDataChanged(updateType);
+
+	static int oldGameType = NEORules()->GetGameType();
+	if (NEORules()->GetGameType() != oldGameType)
+	{
+		oldGameType = NEORules()->GetGameType();
+		C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		pLocalNeoPlayer->UpdateGlowEffects(pLocalNeoPlayer->GetTeamNumber());
+	}
+}
+#endif // CLIENT_DLL
+
 REGISTER_GAMERULES_CLASS( CNEORules );
 
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 // NEO TODO (Rain): NEO specific game modes var (CTG/TDM/...)
 #ifdef CLIENT_DLL
-	RecvPropFloat(RECVINFO(m_flNeoNextRoundStartTime)),
-	RecvPropFloat(RECVINFO(m_flNeoRoundStartTime)),
-	RecvPropFloat(RECVINFO(m_flPauseEnd)),
+	RecvPropTime(RECVINFO(m_flNeoNextRoundStartTime)),
+	RecvPropTime(RECVINFO(m_flNeoRoundStartTime)),
+	RecvPropTime(RECVINFO(m_flPauseEnd)),
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
@@ -241,18 +256,18 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
 	RecvPropInt(RECVINFO(m_iEscortingTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
-	RecvPropFloat(RECVINFO(m_flGhostLastHeld)),
+	RecvPropTime(RECVINFO(m_flGhostLastHeld)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropEHandle(RECVINFO(m_hGhost)),
 	RecvPropInt(RECVINFO(m_iJuggernautPlayerIndex)),
 	RecvPropBool(RECVINFO(m_bJuggernautItemExists)),
 	RecvPropEHandle(RECVINFO(m_hJuggernaut)),
 #else
-	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
-	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
-	SendPropFloat(SENDINFO(m_flPauseEnd)),
-	SendPropInt(SENDINFO(m_nRoundStatus)),
-	SendPropInt(SENDINFO(m_nGameTypeSelected)),
+	SendPropTime(SENDINFO(m_flNeoNextRoundStartTime)),
+	SendPropTime(SENDINFO(m_flNeoRoundStartTime)),
+	SendPropTime(SENDINFO(m_flPauseEnd)),
+	SendPropInt(SENDINFO(m_nRoundStatus), NumBitsForCount(RoundStatusTotal), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_nGameTypeSelected), NumBitsForCount(NEO_GAME_TYPE__TOTAL), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropInt(SENDINFO(m_iHiddenHudElements)),
 	SendPropInt(SENDINFO(m_iForcedTeam)),
@@ -262,14 +277,14 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropBool(SENDINFO(m_bCyberspaceLevel)),
 	SendPropString(SENDINFO(m_szNeoJinraiClantag)),
 	SendPropString(SENDINFO(m_szNeoNSFClantag)),
-	SendPropInt(SENDINFO(m_iGhosterTeam)),
-	SendPropInt(SENDINFO(m_iGhosterPlayer)),
+	SendPropInt(SENDINFO(m_iGhosterTeam), NumBitsForCount(TEAM__TOTAL), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iGhosterPlayer), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iEscortingTeam)),
 	SendPropBool(SENDINFO(m_bGhostExists)),
-	SendPropFloat(SENDINFO(m_flGhostLastHeld)),
+	SendPropTime(SENDINFO(m_flGhostLastHeld)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 	SendPropEHandle(SENDINFO(m_hGhost)),
-	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex)),
+	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropBool(SENDINFO(m_bJuggernautItemExists)),
 	SendPropEHandle(SENDINFO(m_hJuggernaut)),
 #endif
@@ -1182,6 +1197,7 @@ void CNEORules::Think(void)
 			m_iGhosterTeam = TEAM_UNASSIGNED;
 			m_iGhosterPlayer = 0;
 			m_pJuggernautItem = nullptr;
+			m_bJuggernautItemExists = false;
 			m_pJuggernautPlayer = nullptr;
 			m_iJuggernautPlayerIndex = 0;
 		}
@@ -1408,12 +1424,6 @@ void CNEORules::Think(void)
 
 			m_pJuggernautItem->m_bLocked = false;
 		}
-
-		m_bJuggernautItemExists = true;
-	}
-	else
-	{
-		m_bJuggernautItemExists = false;
 	}
 
 	if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
@@ -2091,6 +2101,7 @@ void CNEORules::JuggernautActivated(CNEO_Player *pPlayer)
 		m_pJuggernautPlayer = pPlayer;
 		m_iJuggernautPlayerIndex = pPlayer->entindex();
 		m_pJuggernautItem = nullptr;
+		m_bJuggernautItemExists = false;
 		m_iLastJuggernautTeam = pPlayer->GetTeamNumber();
 
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
@@ -2112,7 +2123,19 @@ void CNEORules::JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut)
 		m_pJuggernautPlayer = nullptr;
 		m_iJuggernautPlayerIndex = 0;
 		m_pJuggernautItem = pJuggernaut;
+		m_bJuggernautItemExists = true;
 		m_flJuggernautDeathTime = gpGlobals->curtime;
+	}
+}
+
+// This should only ever be used in cases where the Juggernaut item was removed unexpectedly
+void CNEORules::JuggernautTotalRemoval(CNEO_Juggernaut *pJuggernaut)
+{
+	if ((GetGameType() == NEO_GAME_TYPE_JGR) && (m_hJuggernaut.Get() == pJuggernaut))
+	{
+		m_hJuggernaut = nullptr;
+		m_pJuggernautItem = nullptr;
+		m_bJuggernautItemExists = false;
 	}
 }
 
@@ -2620,6 +2643,14 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
+		if (bFromStarting)
+		{
+			pPlayer->Reset();
+			pPlayer->m_iXP.Set(0);
+			pPlayer->m_iTeamDamageInflicted = 0;
+			pPlayer->m_iTeamKillsInflicted = 0;
+		}
+
 		pPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: round restart
 
 		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
@@ -2641,13 +2672,6 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bInVision = false;
 		pPlayer->m_bIneligibleForLoadoutPick = false;
 
-		if (bFromStarting)
-		{
-			pPlayer->Reset();
-			pPlayer->m_iXP.Set(0);
-			pPlayer->m_iTeamDamageInflicted = 0;
-			pPlayer->m_iTeamKillsInflicted = 0;
-		}
 		pPlayer->m_bIsPendingTKKick = false;
 
 		pPlayer->SetTestMessageVisible(false);
@@ -3071,9 +3095,9 @@ void CNEORules::ResetJGR()
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		auto pPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
-		if (pPlayer)
+		if (pPlayer && pPlayer->m_iXP.Get() > 10)
 		{
-			pPlayer->m_iXP.GetForModify() = 0;
+			pPlayer->m_iXP.GetForModify() = 10;
 		}
 	}
 }
@@ -3102,6 +3126,8 @@ void CNEORules::RestartGame()
 		if (!pPlayer)
 			continue;
 
+		pPlayer->m_iXP.GetForModify() = 0;
+
 		pPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: restart game
 
 		if (pPlayer->GetActiveWeapon())
@@ -3111,8 +3137,6 @@ void CNEORules::RestartGame()
 		pPlayer->RemoveAllItems(true);
 		pPlayer->Spawn();
 		pPlayer->Reset();
-
-		pPlayer->m_iXP.GetForModify() = 0;
 
 		pPlayer->SetTestMessageVisible(false);
 	}

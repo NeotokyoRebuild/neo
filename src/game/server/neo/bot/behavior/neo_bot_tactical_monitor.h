@@ -31,7 +31,9 @@ private:
 	void MonitorArmedStickyBombs(CNEOBot* me);
 #endif
 
-	void AvoidBumpingEnemies(CNEOBot* me);
+	ActionResult< CNEOBot > ScavengeForPrimaryWeapon(CNEOBot* me);
+
+	void AvoidBumpingFriends(CNEOBot* me);
 	void ReconConsiderSuperJump(CNEOBot *me);
 	ActionResult< CNEOBot > WatchForGrenades(CNEOBot* me);
 };

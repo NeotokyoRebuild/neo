@@ -31,7 +31,11 @@ public:
 	virtual void Event_EntityKilled( CBaseEntity *pVictim, CBaseEntity *pAttacker, CBaseEntity *pInflictor, IGameEvent *event );
 
 	int GetAchievementID() { return m_iAchievementID; }
+#ifdef NEO // NEO NOTE DG: Must be larger than 0. ALWAYS!
+	void SetAchievementID( int iAchievementID ) { Assert( iAchievementID > 0 ); m_iAchievementID = iAchievementID; }
+#else
 	void SetAchievementID( int iAchievementID ) { m_iAchievementID = iAchievementID; }
+#endif
 	void SetName( const char *pszName ) { m_pszName = pszName; }
 	const char *GetName() { return m_pszName; }
 	const char *GetStat() { return m_pszStat?m_pszStat:GetName(); }

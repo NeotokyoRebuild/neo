@@ -30,6 +30,13 @@
 #error "implement me"
 #endif
 
+#ifdef NEO
+#include <concepts>
+#include <type_traits>
+
+template <typename T>
+concept NotBoolean = !std::is_same_v<bool, T>;
+#endif
 
 //-----------------------------------------------------------------------------
 // Forward declarations
@@ -339,7 +346,54 @@ public:
 									bool bCompMin, float fCompMin, bool bCompMax, float fCompMax,
 									FnChangeCallback_t callback );
 
+#ifdef NEO
+								// You may have a typo in your constructor argument order if the compiler is
+								// attempting to invoke one or more of the deleted constructors below.
+								// If you really meant to evaluate bMin/bMax or bCompMin/bCompMax from a non-boolean type,
+								// please cast them to bool to silence the error.
 
+								template <NotBoolean T>
+								ConVar( const char *pName, const char *pDefaultValue, int flags,
+									const char *pHelpString, T bMin, float fMin, bool bMax, float fMax ) = delete;
+
+								template <NotBoolean T>
+								ConVar( const char *pName, const char *pDefaultValue, int flags,
+									const char *pHelpString, bool bMin, float fMin, T bMax, float fMax ) = delete;
+
+								template <NotBoolean T>
+								ConVar( const char *pName, const char *pDefaultValue, int flags,
+									const char *pHelpString, T bMin, float fMin, bool bMax, float fMax,
+									FnChangeCallback_t callback ) = delete;
+
+								template <NotBoolean T>
+								ConVar( const char *pName, const char *pDefaultValue, int flags,
+									const char *pHelpString, bool bMin, float fMin, T bMax, float fMax,
+									FnChangeCallback_t callback ) = delete;
+
+								template <NotBoolean T>
+								ConVar( const char *pName, const char *pDefaultValue, int flags,
+									const char *pHelpString, T bMin, float fMin, bool bMax, float fMax,
+									bool bCompMin, float fCompMin, bool bCompMax, float fCompMax,
+									FnChangeCallback_t callback ) = delete;
+
+								template <NotBoolean T>
+								ConVar( const char *pName, const char *pDefaultValue, int flags,
+									const char *pHelpString, bool bMin, float fMin, T bMax, float fMax,
+									bool bCompMin, float fCompMin, bool bCompMax, float fCompMax,
+									FnChangeCallback_t callback ) = delete;
+
+								template <NotBoolean T>
+								ConVar( const char *pName, const char *pDefaultValue, int flags,
+									const char *pHelpString, bool bMin, float fMin, bool bMax, float fMax,
+									T bCompMin, float fCompMin, bool bCompMax, float fCompMax,
+									FnChangeCallback_t callback ) = delete;
+
+								template <NotBoolean T>
+								ConVar( const char *pName, const char *pDefaultValue, int flags,
+									const char *pHelpString, bool bMin, float fMin, bool bMax, float fMax,
+									bool bCompMin, float fCompMin, T bCompMax, float fCompMax,
+									FnChangeCallback_t callback ) = delete;
+#endif
 
 	virtual						~ConVar( void );
 
