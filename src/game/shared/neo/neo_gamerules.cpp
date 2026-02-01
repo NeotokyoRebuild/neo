@@ -1619,13 +1619,13 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 	{
 		if (pClient->m_iXP.Get() < ranks[i])
 		{
-            pClient->AddPoints(ranks[i] - pClient->m_iXP, false, true);
+			pClient->AddPoints(ranks[i] - pClient->m_iXP, false, true);
 			return;
 		}
 	}
 
 	// If we're beyond max rank, just award +1 point.
-    pClient->AddPoints(1, false, true);
+	pClient->AddPoints(1, false, true);
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
@@ -3555,59 +3555,59 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				player->EmitSound(soundFilter, i, soundParams);
 			}
 
-            if (winningTeamNum != TEAM_SPECTATOR && player->GetTeamNumber() == winningTeamNum)
+			if (winningTeamNum != TEAM_SPECTATOR && player->GetTeamNumber() == winningTeamNum)
 			{
-                int xpAward = 1;	// Base reward for being on winning team
-                if (iWinReason == NEO_VICTORY_GHOST_CAPTURE || iWinReason == NEO_VICTORY_VIP_ESCORT || m_bTeamBeenAwardedDueToCapPrevent)
-                {
-                    auto cap_reward = sv_neo_cap_reward.GetInt();
-                    if (!cap_reward) // Rank up
-                    {
-                        if (sv_neo_cap_reward_dead.GetBool() || player->IsAlive())
-                        {
-                            // Swap controller and controlee for the purposes of rankup
-                            auto playerPossessedByMe = player->m_hSpectatorTakeoverPlayerTarget.Get();
-                            auto playerControllingMe = player->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
-                            auto playerToRankUp = player;
-                            if (playerPossessedByMe)
-                                playerToRankUp = playerPossessedByMe;
-                            if (playerControllingMe)
-                                playerToRankUp = playerControllingMe;
-                            AwardRankUp(playerToRankUp);
-                            xpAward = 0;
-                        }
-                    }
-                    else
-                    {
-                        if (sv_neo_cap_reward_dead.GetBool() || player->IsAlive())
-                        {
-                            xpAward = cap_reward;
-                        }
-                    }
-                }
-                else if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_VIP)
-                {
-                    if (sv_neo_survivor_bonus.GetBool() && player->IsAlive())
-                    {
-                        ++xpAward;
-                    }
-                    if (sv_neo_ghost_carrier_bonus.GetBool() && player->IsCarryingGhost())
-                    {
-                        ++xpAward;
-                    }
-                }
+				int xpAward = 1;	// Base reward for being on winning team
+				if (iWinReason == NEO_VICTORY_GHOST_CAPTURE || iWinReason == NEO_VICTORY_VIP_ESCORT || m_bTeamBeenAwardedDueToCapPrevent)
+				{
+					auto cap_reward = sv_neo_cap_reward.GetInt();
+					if (!cap_reward) // Rank up
+					{
+						if (sv_neo_cap_reward_dead.GetBool() || player->IsAlive())
+						{
+							// Swap controller and controlee for the purposes of rankup
+							auto playerPossessedByMe = player->m_hSpectatorTakeoverPlayerTarget.Get();
+							auto playerControllingMe = player->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
+							auto playerToRankUp = player;
+							if (playerPossessedByMe)
+								playerToRankUp = playerPossessedByMe;
+							if (playerControllingMe)
+								playerToRankUp = playerControllingMe;
+							AwardRankUp(playerToRankUp);
+							xpAward = 0;
+						}
+					}
+					else
+					{
+						if (sv_neo_cap_reward_dead.GetBool() || player->IsAlive())
+						{
+							xpAward = cap_reward;
+						}
+					}
+				}
+				else if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_VIP)
+				{
+					if (sv_neo_survivor_bonus.GetBool() && player->IsAlive())
+					{
+						++xpAward;
+					}
+					if (sv_neo_ghost_carrier_bonus.GetBool() && player->IsCarryingGhost())
+					{
+						++xpAward;
+					}
+				}
 
-                auto playerControllingMe = player->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
-                if (playerControllingMe)
-                {
-                    // Controlling player will be awarded as if they were dead
-                    playerControllingMe->AddPoints(xpAward, false, true);
-                }
-                else
-                {
-                    // This will award the controlled player, if any
-                    player->AddPoints(xpAward, false);
-                }
+				auto playerControllingMe = player->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
+				if (playerControllingMe)
+				{
+					// Controlling player will be awarded as if they were dead
+					playerControllingMe->AddPoints(xpAward, false, true);
+				}
+				else
+				{
+					// This will award the controlled player, if any
+					player->AddPoints(xpAward, false);
+				}
 			}
 
 			// Any human player still alive, show them damage stats in round end
