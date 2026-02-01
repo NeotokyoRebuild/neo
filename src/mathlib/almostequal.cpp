@@ -11,23 +11,40 @@
 
 #include "mathlib/mathlib.h"
 
+#ifdef NEO
+#include "../common/neo/bit_cast.h"
+#include <limits>
+
+static_assert(sizeof(float) == sizeof(int));
+static_assert(std::numeric_limits<float>::is_iec559);
+#endif
+
 static inline bool AE_IsInfinite(float a)
 {
     const int kInfAsInt = 0x7F800000;
 
     // An infinity has an exponent of 255 (shift left 23 positions) and
     // a zero mantissa. There are two infinities - positive and negative.
+#ifdef NEO
+    return ((neo::bit_cast<int>(BC_TEST(a, *(int*)&a)) & 0x7FFFFFFF) == kInfAsInt);
+#else
     if ((*(int*)&a & 0x7FFFFFFF) == kInfAsInt)
         return true;
     return false;
+#endif
 }
 
 static inline bool AE_IsNan(float a)
 {
     // a NAN has an exponent of 255 (shifted left 23 positions) and
     // a non-zero mantissa.
+#ifdef NEO
+    int exp = neo::bit_cast<int>(BC_TEST(a, *(int*)&a)) & 0x7F800000;
+    int mantissa = neo::bit_cast<int>(BC_TEST(a, *(int*)&a)) & 0x007FFFFF;
+#else
     int exp = *(int*)&a & 0x7F800000;
     int mantissa = *(int*)&a & 0x007FFFFF;
+#endif
     if (exp == 0x7F800000 && mantissa != 0)
         return true;
     return false;
@@ -36,7 +53,11 @@ static inline bool AE_IsNan(float a)
 static inline int AE_Sign(float a)
 {
     // The sign bit of a number is the high bit.
+#ifdef NEO
+    return neo::bit_cast<int>(BC_TEST(a, *(int*)&a)) & 0x80000000;
+#else
     return (*(int*)&a) & 0x80000000;
+#endif
 }
 
 // This is the 'final' version of the AlmostEqualUlps function.
@@ -77,12 +98,20 @@ bool AlmostEqual(float a, float b, int maxUlps)
     if (AE_Sign(a) != AE_Sign(b))
         return a == b;
 
+#ifdef NEO
+    int aInt = neo::bit_cast<int>(BC_TEST(a, *(int*)&a));
+#else
     int aInt = *(int*)&a;
+#endif
     // Make aInt lexicographically ordered as a twos-complement int
     if (aInt < 0)
         aInt = 0x80000000 - aInt;
     // Make bInt lexicographically ordered as a twos-complement int
+#ifdef NEO
+    int bInt = neo::bit_cast<int>(BC_TEST(b, *(int*)&b));
+#else
     int bInt = *(int*)&b;
+#endif
     if (bInt < 0)
         bInt = 0x80000000 - bInt;
 

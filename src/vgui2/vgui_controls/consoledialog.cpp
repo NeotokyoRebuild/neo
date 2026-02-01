@@ -135,6 +135,16 @@ CHistoryItem::CHistoryItem( const CHistoryItem& src )
 	SetText( src.GetText(), src.GetExtra() );
 }
 
+#ifdef NEO
+CHistoryItem::CHistoryItem( const CHistoryItem* src )
+{
+	m_text = NULL;
+	m_extraText = NULL;
+	m_bHasExtra = false;
+	SetText( src->GetText(), src->GetExtra() );
+}
+#endif
+
 CHistoryItem::~CHistoryItem( void )
 {
 	delete[] m_text;
@@ -209,7 +219,11 @@ CConsolePanel::CompletionItem::CompletionItem( const CompletionItem& src )
 	m_pCommand = src.m_pCommand;
 	if ( src.m_pText )
 	{
+#ifdef NEO
+		m_pText = new CHistoryItem(src.m_pText);
+#else
 		m_pText = new CHistoryItem( (const CHistoryItem& )src.m_pText );
+#endif
 	}
 	else
 	{

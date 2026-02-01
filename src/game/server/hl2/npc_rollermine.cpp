@@ -2005,7 +2005,9 @@ void CNPC_RollerMine::ShockTouch( CBaseEntity *pOther )
 
 	// jump up at a 30 degree angle away from the guy we hit
 	SetTouch( &CNPC_RollerMine::CloseTouch );
+#ifndef NEO
 	Vector vel;
+#endif
 	pPhysics->SetVelocity( &impulse, NULL );
 	EmitSound( "NPC_RollerMine.Shock" );
 	// Do a shock effect

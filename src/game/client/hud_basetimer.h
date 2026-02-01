@@ -38,7 +38,9 @@ private:
 
 	int m_iMinutes;
 	int m_iSeconds;
+#ifndef NEO
 	wchar_t m_LabelText[32];
+#endif
 
 	CPanelAnimationVar( float, m_flBlur, "Blur", "0" );
 	CPanelAnimationVar( float, m_flAlphaOverride, "Alpha", "255" );

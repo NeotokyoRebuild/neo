@@ -122,8 +122,13 @@ void *CNavVectorNoEditAllocator::Alloc( size_t nSize )
 	{
 		m_memory.Init( 1024*1024, 0, 0, 4 );
 	}
+#ifdef NEO
+	m_pCurrent = (int *)m_memory.Alloc( narrow_cast<unsigned int>(nSize) );
+	m_nBytesCurrent = narrow_cast<decltype(m_nBytesCurrent)>(nSize);
+#else
 	m_pCurrent = (int *)m_memory.Alloc( nSize );
 	m_nBytesCurrent = nSize;
+#endif
 	return m_pCurrent;
 }
 
@@ -136,8 +141,13 @@ void *CNavVectorNoEditAllocator::Realloc( void *pMem, size_t nSize )
 	}
 	if ( nSize > (size_t)m_nBytesCurrent )
 	{
+#ifdef NEO
+		m_memory.Alloc( narrow_cast<unsigned int>(nSize - m_nBytesCurrent) );
+		m_nBytesCurrent = narrow_cast<decltype(m_nBytesCurrent)>(nSize);
+#else
 		m_memory.Alloc( nSize - m_nBytesCurrent );
 		m_nBytesCurrent = nSize;
+#endif
 	}
 	return m_pCurrent;
 }
@@ -2092,7 +2102,9 @@ bool CNavArea::IsFlat( void ) const
  */
 bool CNavArea::IsCoplanar( const CNavArea *area ) const
 {
+#ifndef NEO
 	Vector u, v;
+#endif
 
 	bool isOnDisplacement = ( m_node[ NORTH_WEST ] && m_node[ NORTH_WEST ]->IsOnDisplacement() ) ||
 		( m_node[ NORTH_EAST ] && m_node[ NORTH_EAST ]->IsOnDisplacement() ) ||
@@ -4525,8 +4537,10 @@ float FindGroundZ( const Vector& original, const Vector& corner1, const Vector& 
  */
 void CNavArea::PlaceOnGround( NavCornerType corner, float inset )
 {
+#ifndef NEO
 	trace_t result;
 	Vector from, to;
+#endif
 
 	Vector nw = m_nwCorner + Vector ( inset, inset, 0 );
 	Vector se = m_seCorner + Vector ( -inset, -inset, 0 );

@@ -174,6 +174,8 @@ extern vgui::IInputInternal *g_InputInternal;
 #endif
 
 #ifdef NEO
+#include "../../common/neo/test_bit_cast.h"
+
 #include "neo_version.h"
 #include "neo_version_number.h"
 #include "ui/neo_loading.h"
@@ -926,7 +928,7 @@ static void RestrictNeoClientCheats()
 		else if (auto* cmd = g_pCVar->FindCommand(cheatName))
 			cmd->AddFlags(flags);
 		else
-			AssertMsg(false, "convar or concmd named \"%s\" was not found\n", cheatName);
+			AssertMsg1(false, "convar or concmd named \"%s\" was not found\n", cheatName);
 	}
 }
 #endif
@@ -939,6 +941,12 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 {
 	InitCRTMemDebug();
 	MathLib_Init( 2.2f, 2.2f, 0.0f, 2.0f );
+#if defined(NEO)
+#if defined(ACTUALLY_COMPILER_MSVC) && defined(DBGFLAG_ASSERT)
+	Assert(s_bMathlibInitialized);
+	ValidateFastFuncs();
+#endif
+#endif
 
 
 #ifdef SIXENSE
@@ -1392,6 +1400,13 @@ void CHLClient::PostInit()
 #endif
 
 #ifdef NEO
+#if defined(DEBUG) && defined(DBGFLAG_ASSERT)
+	// Tests
+	{
+		neo::test::conversions();
+	}
+#endif
+
 	if (g_pCVar)
 	{
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<MAX_PLAYER_NAME_LENGTH>);

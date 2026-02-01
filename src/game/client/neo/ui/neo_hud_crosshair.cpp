@@ -74,7 +74,7 @@ void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const
 	{
 		if (crh.iESizeType == CROSSHAIR_SIZETYPE_SCREEN && crh.iEDynamicType == CROSSHAIR_DYNAMICTYPE_NONE)
 		{
-			iSize = (crh.flScrSize * (max(wide, tall) / 2));
+			iSize = (crh.flScrSize * (Max(wide, tall) / 2));
 		}
 
 		const bool bOdd = ((crh.iThick % 2) == 1);

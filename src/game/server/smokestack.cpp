@@ -10,6 +10,10 @@
 #include "particle_light.h"
 #include "filesystem.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -95,7 +99,35 @@ END_DATADESC()
 //-----------------------------------------------------------------------------
 CSmokeStack::CSmokeStack()
 {
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<decltype(m_AmbientLight)>)
+	{
+		static_assert(sizeof(m_AmbientLight) == 40);
+		static_assert(std::is_same_v<
+			decltype(m_AmbientLight), CSmokeStackLightInfo>);
+		m_AmbientLight.m_DataMap = {};
+		m_AmbientLight.m_flIntensity = {};
+		m_AmbientLight.m_vColor.Init();
+		m_AmbientLight.m_vPos.Init();
+		m_AmbientLight.__m_pChainEntity = {};
+	}
+	else
+#endif
 	memset( &m_AmbientLight, 0, sizeof(m_AmbientLight) ); 
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<decltype(m_DirLight)>)
+	{
+		static_assert(sizeof(m_DirLight) == 40);
+		static_assert(std::is_same_v<
+			decltype(m_DirLight), CSmokeStackLightInfo>);
+		m_DirLight.m_DataMap = {};
+		m_DirLight.m_flIntensity = {};
+		m_DirLight.m_vColor.Init();
+		m_DirLight.m_vPos.Init();
+		m_DirLight.__m_pChainEntity = {};
+	}
+	else
+#endif
 	memset( &m_DirLight, 0, sizeof(m_DirLight) ); 
 
 	IMPLEMENT_NETWORKVAR_CHAIN( &m_AmbientLight );

@@ -4044,7 +4044,7 @@ static void BotChangeClassFn(const CCommand& args)
 	constexpr int minValue = NEO_CLASS_RECON;
 	constexpr int maxValue = NEO_CLASS_LOADOUTABLE_COUNT - 1;
 
-	const auto nag = [&args, minValue, maxValue]() {
+	const auto nag = [&args]() {
 		Msg("Format: %s <number between %d and %d>\n", args.Arg(0), minValue, maxValue);
 	};
 

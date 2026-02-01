@@ -2949,7 +2949,7 @@ void RecvProxy_m_iClip(const CRecvProxyData* pData, void* pStruct, void* pOut)
 
 	const float bulletHeatCost = pNeoWeapon->GetNeoWepBits() & (NEO_WEP_SUPA7 | NEO_WEP_AA13) ? 0.5 : 0.1; // NEO TODO (Adam) store this in weapon info text file?
 	constexpr float MAX_WEAPON_TEMPERATURE_WHEN_FIRING = -0.5;
-	pNeoWeapon->m_flTemperature = max(MAX_WEAPON_TEMPERATURE_WHEN_FIRING, pNeoWeapon->m_flTemperature - (bulletsFired * bulletHeatCost));
+	pNeoWeapon->m_flTemperature = Max(MAX_WEAPON_TEMPERATURE_WHEN_FIRING, pNeoWeapon->m_flTemperature - (bulletsFired * bulletHeatCost));
 }
 #endif //CLIENT_DLL
 #endif // NEO

@@ -26,6 +26,10 @@
 #include "tier1/strtools.h"
 #include "vstdlib/random.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 #define FOR_EACH_VEC( vecName, iteratorName ) \
 	for ( int iteratorName = 0; (vecName).IsUtlVector && iteratorName < (vecName).Count(); iteratorName++ )
 #define FOR_EACH_VEC_BACK( vecName, iteratorName ) \
@@ -49,6 +53,11 @@ public:
 template< class T, class A = CUtlMemory<T> >
 class CUtlVector : public base_vector_t
 {
+#ifdef NEO
+	static_assert(std::is_final_v<T> || std::has_virtual_destructor_v<T> || !std::is_polymorphic_v<T>,
+		"Expecting all nonfinal contained elements of type T to either have a virtual destructor "
+		"or be nonpolymorphic, because deleting an object via nonvirtual dtor of a base ptr is UB.");
+#endif
 	typedef A CAllocator;
 public:
 	typedef T ElemType_t;
@@ -424,8 +433,13 @@ public:
 		}
 		else
 		{
+#ifdef NEO
+			auto nNeeded = sizeof(Data_t) + ( num * sizeof(T) );
+			auto nHave = A::GetSize( m_pData );
+#else
 			int nNeeded = sizeof(Data_t) + ( num * sizeof(T) );
 			int nHave = A::GetSize( m_pData );
+#endif
 			if ( nNeeded > nHave )
 			{
 				m_pData = (Data_t *)A::Realloc( m_pData, nNeeded );
@@ -1300,7 +1314,11 @@ void CUtlVector<T, A>::FastRemove( int elem )
 	if (m_Size > 0)
 	{
 		if ( elem != m_Size -1 )
+#ifdef NEO
+			memcpy( (void*)&Element(elem), (void*)&Element(m_Size - 1), sizeof(T));
+#else
 			memcpy( &Element(elem), &Element(m_Size-1), sizeof(T) );
+#endif
 		--m_Size;
 	}
 }

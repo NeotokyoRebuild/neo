@@ -292,7 +292,9 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		}
 	}
 
+#if 0
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+#endif
 
 	// check if we need to get to cover
 	QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );

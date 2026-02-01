@@ -855,7 +855,17 @@ void FileOpenDialog::OnNewFolder()
 void FileOpenDialog::OnOpenInExplorer()
 {
 	char pCurrentDirectory[MAX_PATH];
+#ifdef NEO
+	pCurrentDirectory[0] = '\0';
+#endif
 	GetCurrentDirectory( pCurrentDirectory, sizeof(pCurrentDirectory) );
+#ifdef NEO
+	if (!*pCurrentDirectory)
+	{
+		Assert(false);
+		return;
+	}
+#endif // NEO
 #if !defined( _X360 ) && defined( WIN32 )
 	ShellExecute( NULL, NULL, pCurrentDirectory, NULL, NULL, SW_SHOWNORMAL );
 #elif defined( OSX )
@@ -865,7 +875,18 @@ void FileOpenDialog::OnOpenInExplorer()
 #elif defined( LINUX )
 	char szCmd[ MAX_PATH * 2 ];	
 	Q_snprintf( szCmd, sizeof(szCmd), "xdg-open \"%s\" &", pCurrentDirectory );
+#ifdef NEO
+	const int systemRes =
+#endif // NEO
 	::system( szCmd );
+#ifdef NEO
+	if (systemRes == -1)
+	{
+		Assert(false);
+		Warning("%s: ::system(%s) returned %d. Last error: %s\n",
+			__FUNCTION__, szCmd, systemRes, strerror(errno));
+	}
+#endif // NEO
 #endif
 }
 

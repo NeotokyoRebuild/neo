@@ -154,7 +154,6 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 		iTeam = numJinrai < numNSF ? TEAM_JINRAI : numNSF < numJinrai ? TEAM_NSF : RandomInt(TEAM_JINRAI, TEAM_NSF);
 	}
 
-	char name[MAX_NAME_LENGTH];
 	int iNumAdded = 0;
 	for (i = 0; i < botCount; ++i)
 	{
@@ -1526,10 +1525,11 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 
 	CNEOBaseCombatWeapon* pChosen = NULL;
 
+#if 0
 	bool bCanSeeTarget = threat->GetTimeSinceLastSeen() < 0.2f;
-
 	// Don't stay in melee if they are far away, or we don't know where they are right now.
 	bool bInMeleeRange = !IsRangeGreaterThan(threat->GetLastKnownPosition(), 127.0f) && bCanSeeTarget;
+#endif
 
 	if (throwable)
 	{

@@ -319,7 +319,11 @@ void CPDumpPanel::Paint()
 	surface()->DrawSetTextPos( x[ col ] - 10, y - fonttallBig - 2 );
 	Q_snprintf( sz, sizeof( sz ), "entity # %i: %s%s%s", ent->entindex(), classprefix, classname, classextra );
 	g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	for ( i = 0; i < c; i++ )
 	{
@@ -334,7 +338,11 @@ void CPDumpPanel::Paint()
 			surface()->DrawSetTextPos( x[ col ] - 10, y );
 			Q_snprintf( sz, sizeof( sz ), "%s", slot->classname );
 			g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+			surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 			surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 			y += fonttallMedium-1;
 			Q_strncpy( currentclass, slot->classname, sizeof( currentclass ) );
@@ -349,7 +357,11 @@ void CPDumpPanel::Paint()
 		surface()->DrawSetTextPos( x[ col ], y );
 		Q_snprintf( sz, sizeof( sz ), "%s", slot->fieldstring );
 		g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+		surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 		surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 		y += fonttall;
 
@@ -384,7 +396,11 @@ void CPDumpPanel::Paint()
 	surface()->DrawSetTextPos( xpos, y );
 	Q_strncpy( sz, pFirstAndLongestString, sizeof( sz ) );
 	g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	y += fonttall;
 
@@ -395,7 +411,11 @@ void CPDumpPanel::Paint()
 	surface()->DrawSetTextPos( xpos, y );
 	Q_strncpy( sz, "Networked, not checked", sizeof( sz ) );
 	g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	y += fonttall;
 
@@ -406,7 +426,11 @@ void CPDumpPanel::Paint()
 	surface()->DrawSetTextPos( xpos, y );
 	Q_strncpy( sz, "Networked, error checked", sizeof( sz ) );
 	g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	y += fonttall;
 
@@ -417,7 +441,11 @@ void CPDumpPanel::Paint()
 	surface()->DrawSetTextPos( xpos, y );
 	Q_strncpy( sz, "Differs, but within tolerance", sizeof( sz ) );
 	g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	y += fonttall;
 
@@ -428,7 +456,11 @@ void CPDumpPanel::Paint()
 	surface()->DrawSetTextPos( xpos, y );
 	Q_strncpy( sz, "Differs, but not networked", sizeof( sz ) );
 	g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	y += fonttall;
 
@@ -439,7 +471,11 @@ void CPDumpPanel::Paint()
 	surface()->DrawSetTextPos( xpos, y );
 	Q_strncpy( sz, "Differs, networked", sizeof( sz ) );
 	g_pVGuiLocalize->ConvertANSIToUnicode( sz, szconverted, sizeof(szconverted)  );
+#ifdef NEO
+	surface()->DrawPrintText( szconverted, V_wcslen( szconverted ) );
+#else
 	surface()->DrawPrintText( szconverted, wcslen( szconverted ) );
+#endif
 
 	y += fonttall;
 }

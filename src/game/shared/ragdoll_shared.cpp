@@ -483,7 +483,9 @@ void RagdollApplyAnimationAsVelocity( ragdoll_t &ragdoll, const matrix3x4_t *pBo
 		MatrixAngles( inverse, q, pos );
 
 		Vector velocity;
+#ifndef NEO
 		AngularImpulse angVel;
+#endif
 		float flSpin;
 
 		Vector localVelocity;

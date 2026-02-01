@@ -1727,7 +1727,9 @@ Vector CNPC_CScanner::SpotlightCurrentPos(void)
 	//  Calculate new beam direction
 	// ------------------------------
 	m_vSpotlightDir = m_vSpotlightDir + m_vSpotlightAngVelocity;
+#ifndef NEO
 	m_vSpotlightDir = m_vSpotlightDir;
+#endif
 	VectorNormalize(m_vSpotlightDir);
 
 

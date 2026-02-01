@@ -122,8 +122,8 @@ END_NETWORK_TABLE()
 
 	void CBaseGrenadeProjectile::ClientThink()
 	{
-		constexpr int DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
-		m_flTemperature = min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+		constexpr float DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
+		m_flTemperature = Min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
 		if (m_flTemperature > 0)
 		{
 			SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);

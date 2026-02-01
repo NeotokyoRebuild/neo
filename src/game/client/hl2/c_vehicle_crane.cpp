@@ -44,7 +44,11 @@ END_DATADESC()
 //-----------------------------------------------------------------------------
 C_PropCrane::C_PropCrane( void )
 {
+#ifdef NEO
+	ZeroViewSmoothingData(m_ViewSmoothingData);
+#else
 	memset( &m_ViewSmoothingData, 0, sizeof( m_ViewSmoothingData ) );
+#endif
 	m_ViewSmoothingData.pVehicle = this;
 	m_ViewSmoothingData.flFOV = CRANE_FOV;
 }

@@ -11,6 +11,9 @@ extern ConVar sv_neo_comp_name;
 #define DEMOS_DIRECTORY_NAME "demos"
 #endif
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 [[nodiscard]] bool InRect(const vgui::IntRect &rect, const int x, const int y)
 {
 	return IN_BETWEEN_EQ(rect.x0, x, rect.x1) && IN_BETWEEN_EQ(rect.y0, y, rect.y1);

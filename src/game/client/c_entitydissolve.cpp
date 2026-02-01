@@ -72,7 +72,16 @@ void C_EntityDissolve::GetRenderBounds( Vector& theMins, Vector& theMaxs )
 	else
 	{
 		theMins = GetAbsOrigin();
+
+		// NEO NOTE (Rain): Is this redundant assignment meant to silence an unused variable warning?
+		// Even if so, it seems sketch that we'd leave theMaxs possibly uninitialized, so I'm changing
+		// it to theMins value so at least we're guaranteed to have something valid in it before attempting to use it.
+		// This line would warn for the redundant assignment in Clang 14.
+#ifdef NEO
+		theMaxs = theMins;
+#else
 		theMaxs = theMaxs;
+#endif
 	}
 }
 

@@ -114,7 +114,11 @@ void CHudFilmDemo::Paint()
 			iLength += vgui::surface()->GetCharacterWidth( hFont, *wch );
 		}
 		vgui::surface()->DrawSetTextPos( floor(wide * 0.25) - (iLength / 2), m_iLeftY );
+#ifdef NEO
+		vgui::surface()->DrawPrintText( tempString, narrow_cast<int>(wcslen(tempString)) );
+#else
 		vgui::surface()->DrawPrintText( tempString, wcslen(tempString) );
+#endif
 	}
 
  	tempString = g_pVGuiLocalize->Find( m_pRightStringID );
@@ -126,7 +130,11 @@ void CHudFilmDemo::Paint()
 			iLength += vgui::surface()->GetCharacterWidth( hFont, *wch );
 		}
  		vgui::surface()->DrawSetTextPos( ceil(wide * 0.75) - (iLength / 2), m_iRightY );
+#ifdef NEO
+		vgui::surface()->DrawPrintText( tempString, narrow_cast<int>(wcslen(tempString)) );
+#else
 		vgui::surface()->DrawPrintText( tempString, wcslen(tempString) );
+#endif
 	}
 }
 

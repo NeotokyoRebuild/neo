@@ -63,6 +63,8 @@
 
 #ifdef NEO
 #include "c_neo_player.h"
+
+#include <type_traits>
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1789,6 +1791,25 @@ void C_BaseAnimating::SaveRagdollInfo( int numbones, const matrix3x4_t &cameraTr
 			Msg( "Memory allocation of RagdollInfo_t failed!\n" );
 			return;
 		}
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<RagdollInfo_t>)
+		{
+			static_assert(std::is_same_v<RagdollInfo_t, std::remove_pointer_t<decltype(m_pRagdollInfo)>>);
+			static_assert(sizeof(RagdollInfo_t) == 3596, "update this zero-init code if you changed the layout!");
+			m_pRagdollInfo->m_bActive = {};
+			m_pRagdollInfo->m_flSaveTime = {};
+			m_pRagdollInfo->m_nNumBones = {};
+			for (int i = 0; i < ARRAYSIZE(m_pRagdollInfo->m_rgBonePos); ++i)
+			{
+				m_pRagdollInfo->m_rgBonePos[i].Zero();
+			}
+			for (int i = 0; i < ARRAYSIZE(m_pRagdollInfo->m_rgBoneQuaternion); ++i)
+			{
+				m_pRagdollInfo->m_rgBoneQuaternion[i].Init();
+			}
+		}
+		else
+#endif
 		memset( m_pRagdollInfo, 0, sizeof( *m_pRagdollInfo ) );
 	}
 

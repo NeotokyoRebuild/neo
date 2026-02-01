@@ -882,7 +882,9 @@ void CBaseCombatCharacter::UpdateOnRemove( void )
 //=========================================================
 bool CBaseCombatCharacter::CorpseGib( const CTakeDamageInfo &info )
 {
+#ifndef NEO
 	trace_t		tr;
+#endif
 	bool		gibbed = false;
 
 	EmitSound( "BaseCombatCharacter.CorpseGib" );
@@ -1793,7 +1795,9 @@ void CBaseCombatCharacter::ThrowDirForWeaponStrip( CBaseCombatWeapon *pWeapon, c
 		VMatrix zRot;
 		MatrixBuildRotateZ( zRot, random->RandomFloat( -60.0f, 60.0f ) );
 
+#ifndef NEO
 		Vector vecThrow;
+#endif
 		Vector3DMultiply( zRot, vecForward, *pVecThrowDir );
 
 		pVecThrowDir->z = random->RandomFloat( -0.5f, 0.5f );
@@ -2175,8 +2179,13 @@ void CBaseCombatCharacter::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 		// If SF_NPC_LONG_RANGE spawn flags is set let weapon work from any distance
 		if ( HasSpawnFlags(SF_NPC_LONG_RANGE) )
 		{
+#ifdef NEO
+			m_hActiveWeapon->m_fMaxRange1 = 999999999.f;
+			m_hActiveWeapon->m_fMaxRange2 = 999999999.f;
+#else
 			m_hActiveWeapon->m_fMaxRange1 = 999999999;
 			m_hActiveWeapon->m_fMaxRange2 = 999999999;
+#endif
 		}
 	}
 

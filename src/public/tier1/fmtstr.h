@@ -78,6 +78,9 @@
 
 template <int SIZE_BUF, bool QUIET_TRUNCATION = false >
 class CFmtStrN
+#ifdef NEO
+	final
+#endif
 {
 public:
 	CFmtStrN()	

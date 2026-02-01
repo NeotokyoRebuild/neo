@@ -1259,7 +1259,11 @@ bool CLCD::ExtractArrayIndex( char *str, size_t bufsize, int *index )
 	Q_strncpy( o, s, left );
 	Q_strncat( o, pos2 + 1, sizeof( o ), COPY_ALL_CHARACTERS );
 
+#ifdef NEO
+	V_strncpy( str, o, narrow_cast<int>(bufsize) );
+#else
 	Q_strncpy( str, o, bufsize );
+#endif
 	return true;
 }
 

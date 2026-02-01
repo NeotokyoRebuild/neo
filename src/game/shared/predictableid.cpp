@@ -109,7 +109,11 @@ void CPredictableId::ResetInstanceCounters( void )
 //-----------------------------------------------------------------------------
 bool CPredictableId::IsActive( void ) const
 {
+#ifdef NEO
+	if (neo::bit_cast<int>(BC_TEST_EX(m_PredictableID, this, *(const int*)&m_PredictableID)) == 0)
+#else
 	if ( *(const int *)&m_PredictableID == 0 )
+#endif
 		return false;
 
 	return true;
@@ -267,7 +271,11 @@ bool CPredictableId::GetAcknowledged( void ) const
 //-----------------------------------------------------------------------------
 int CPredictableId::GetRaw( void ) const
 {
+#ifdef NEO
+	return neo::bit_cast<int>(BC_TEST_EX(m_PredictableID, this, *(int*)&m_PredictableID));
+#else
 	return *(int *)&m_PredictableID;
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -276,7 +284,22 @@ int CPredictableId::GetRaw( void ) const
 //-----------------------------------------------------------------------------
 void CPredictableId::SetRaw( int raw )
 {
+#ifdef NEO
+	using T = decltype(m_PredictableID);
+	static_assert(std::is_trivially_copyable_v<T>);
+	m_PredictableID = neo::bit_cast<T>(raw);
+#ifdef DBGFLAG_ASSERT
+	T sdkRet;
+	*(int*)&sdkRet = raw;
+	Assert(sdkRet.ack == m_PredictableID.ack);
+	Assert(sdkRet.command == m_PredictableID.command);
+	Assert(sdkRet.hash == m_PredictableID.hash);
+	Assert(sdkRet.instance == m_PredictableID.instance);
+	Assert(sdkRet.player == m_PredictableID.player);
+#endif
+#else
 	*(int *)&m_PredictableID = raw;
+#endif
 }
 
 //-----------------------------------------------------------------------------

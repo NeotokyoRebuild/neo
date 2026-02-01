@@ -449,7 +449,11 @@ void CHudCommentary::Paint()
 	vgui::surface()->DrawSetTextFont( hFont );
 	vgui::surface()->DrawSetTextColor( clr ); 
 	vgui::surface()->DrawSetTextPos( m_iSpeakersX, m_iSpeakersY );
+#ifdef NEO
+	vgui::surface()->DrawPrintText( m_szSpeakers, narrow_cast<int>(wcslen(m_szSpeakers)) );
+#else
 	vgui::surface()->DrawPrintText( m_szSpeakers, wcslen(m_szSpeakers) );
+#endif
 
 	if ( COMMENTARY_BUTTONS & IN_ATTACK )
 	{
@@ -461,7 +465,11 @@ void CHudCommentary::Paint()
 		{
 			UTIL_ReplaceKeyBindings( pszText, 0, wzFinal, sizeof( wzFinal ) );
 			vgui::surface()->DrawSetTextPos( m_iSpeakersX, iY );
+#ifdef NEO
+			vgui::surface()->DrawPrintText( wzFinal, narrow_cast<int>(wcslen(wzFinal)) );
+#else
 			vgui::surface()->DrawPrintText( wzFinal, wcslen(wzFinal) );
+#endif
 		}
 
 		pszText = g_pVGuiLocalize->Find( "#Commentary_SecondaryAttack" );
@@ -471,7 +479,11 @@ void CHudCommentary::Paint()
 			UTIL_ReplaceKeyBindings( pszText, 0, wzFinal, sizeof( wzFinal ) );
 			vgui::surface()->GetTextSize( hFont, wzFinal, w, h );
 			vgui::surface()->DrawSetTextPos( m_iBarX + m_iBarWide - w, iY );
+#ifdef NEO
+			vgui::surface()->DrawPrintText( wzFinal, narrow_cast<int>(wcslen(wzFinal)) );
+#else
 			vgui::surface()->DrawPrintText( wzFinal, wcslen(wzFinal) );
+#endif
 		}
 	}
 
@@ -480,7 +492,11 @@ void CHudCommentary::Paint()
 	int iCountWide, iCountTall;
 	vgui::surface()->GetTextSize( hFont, m_szCount, iCountWide, iCountTall );
 	vgui::surface()->DrawSetTextPos( wide - m_iCountXFR - iCountWide, m_iCountY );
+#ifdef NEO
+	vgui::surface()->DrawPrintText( m_szCount, narrow_cast<int>(wcslen(m_szCount)) );
+#else
 	vgui::surface()->DrawPrintText( m_szCount, wcslen(m_szCount) );
+#endif
 
 	// Draw the icon
  	vgui::surface()->DrawSetColor( Color(255,170,0,GetAlpha()) );

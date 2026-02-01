@@ -38,6 +38,10 @@
 
 #include "materialsystem/imaterialsystemhardwareconfig.h"
 
+#ifdef NEO
+#include "../../common/neo/bit_cast.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -224,7 +228,16 @@ public:
 	// IHandleEntity stubs.
 public:
 	virtual void SetRefEHandle( const CBaseHandle &handle )	{ Assert( false ); }
+#ifdef NEO
+	virtual const CBaseHandle& GetRefEHandle() const override
+	{
+		Assert(false);
+		const static auto invalidHandle = CBaseHandle(INVALID_EHANDLE);
+		return invalidHandle;
+	}
+#else
 	virtual const CBaseHandle& GetRefEHandle() const		{ Assert( false ); return *((CBaseHandle*)0); }
+#endif
 
 	//---------------------------------
 	struct LightStyleInfo_t
@@ -643,7 +656,12 @@ ClientShadowHandle_t CDetailModel::GetShadowHandle() const
 ClientRenderHandle_t& CDetailModel::RenderHandle()
 {
 	AssertMsg( 0, "CDetailModel has no render handle" );
+#ifdef NEO
+	static ClientRenderHandle_t invalidHandle = INVALID_CLIENT_RENDER_HANDLE;
+	return invalidHandle;
+#else
 	return *((ClientRenderHandle_t*)NULL);
+#endif
 }	
 
 
@@ -2026,8 +2044,14 @@ int CDetailObjectSystem::CountSpriteQuadsInLeafList( int nLeafCount, LeafIndex_t
 #endif
 }
 
-
+#ifdef NEO
+constexpr int32 TREATASINT(float x)
+{
+	return neo::bit_cast<int32>(BC_TEST(x, *(((int32 const*)(&(x))))));
+}
+#else
 #define TREATASINT(x) ( *(  ( (int32 const *)( &(x) ) ) ) )
+#endif
 
 //-----------------------------------------------------------------------------
 // Sorts sprites in back-to-front order
@@ -2077,7 +2101,9 @@ int CDetailObjectSystem::SortSpritesBackToFront( int nLeaf, const Vector &viewOr
 	{
 		CDetailModel &model = m_DetailObjects[j];
 
+#ifndef NEO
 		Vector v;
+#endif
 		VectorSubtract( model.GetRenderOrigin(), viewOrigin, vecDelta );
 		float flSqDist = vecDelta.LengthSqr();
 		if ( flSqDist >= flMaxSqDist )

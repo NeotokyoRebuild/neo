@@ -2061,15 +2061,23 @@ void CPropAirboat::VPhysicsUpdate( IPhysicsObject *pPhysics )
 //-----------------------------------------------------------------------------
 float CPropAirboat::CalculatePhysicsStressDamage( vphysics_objectstress_t *pStressOut, IPhysicsObject *pPhysics )
 {
+#ifdef NEO
+	CalculateObjectStress( pPhysics, this, pStressOut);
+#else
 	vphysics_objectstress_t stressOut;
 	CalculateObjectStress( pPhysics, this, &stressOut );
+#endif
 
 	//if ( ( stressOut.exertedStress > 100 ) || ( stressOut.receivedStress > 100 ) )
 	//	Msg( "stress: %f %d %f\n", stressOut.exertedStress, stressOut.hasNonStaticStress, stressOut.receivedStress );
 
 	// Make sure the stress isn't from being stuck inside some static object.
 	// If we're being crushed by more than the fatal stress amount, kill the driver.
+#ifdef NEO
+	if ( pStressOut->hasNonStaticStress && ( pStressOut->receivedStress > airboat_fatal_stress.GetFloat() ) )
+#else
 	if ( stressOut.hasNonStaticStress && ( stressOut.receivedStress > airboat_fatal_stress.GetFloat() ) )
+#endif
 	{
 		// if stuck, don't do this!
 		if ( !(pPhysics->GetGameFlags() & FVPHYSICS_PENETRATING) )

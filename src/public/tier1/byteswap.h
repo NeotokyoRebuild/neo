@@ -122,7 +122,11 @@ public:
 		if( input == nativeConstant )
 			return 1;
 
+#ifdef NEO
+		T output{};
+#else
 		int output;
+#endif
 		LowLevelByteSwap<T>( &output, &input );
 		if( output == nativeConstant )
 			return 0;
@@ -209,7 +213,24 @@ private:
 	//-----------------------------------------------------------------------------
 	template<typename T> static void LowLevelByteSwap( T *output, const T *input )
 	{
+#ifdef NEO
+		static_assert(sizeof(T) > 0);
+#ifdef ACTUALLY_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif // ACTUALLY_COMPILER_GCC
+		Assert(output);
+		Assert(input);
+#endif // NEO
+
 		T temp = *output;
+
+#ifdef NEO
+#ifdef ACTUALLY_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif // ACTUALLY_COMPILER_GCC
+#endif // NEO
+
 #if defined( _X360 )
 		// Intrinsics need the source type to be fixed-point
 		DWORD* word = (DWORD*)input;
@@ -234,7 +255,11 @@ private:
 			Assert( "Invalid size in CByteswap::LowLevelByteSwap" && 0 );
 		}
 #else
+#ifdef NEO
+		for( size_t i = 0; i < sizeof(T); i++ )
+#else
 		for( auto i = 0; i < sizeof(T); i++ )
+#endif
 		{
 			unsigned char *pByteOut = (unsigned char *) &temp;
 			const unsigned char *pByteIn = (const unsigned char *) input;

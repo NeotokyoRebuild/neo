@@ -4698,7 +4698,9 @@ void CNPC_MetroPolice::RunTask( const Task_t *pTask )
 		{
 			AutoMovement( );
 
+#ifndef NEO
 			Vector vecAimPoint;
+#endif
 			GetMotor()->SetIdealYawToTargetAndUpdate( m_vecBurstTargetPos, AI_KEEP_YAW_SPEED );
 
 			if ( IsActivityFinished() )

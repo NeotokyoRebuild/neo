@@ -113,7 +113,11 @@ END_DATADESC()
 //-----------------------------------------------------------------------------
 C_PropVehiclePrisonerPod::C_PropVehiclePrisonerPod( void )
 {
+#ifdef NEO
+	ZeroViewSmoothingData(m_ViewSmoothingData);
+#else
 	memset( &m_ViewSmoothingData, 0, sizeof( m_ViewSmoothingData ) );
+#endif
 
 	m_ViewSmoothingData.pVehicle = this;
 	m_ViewSmoothingData.bClampEyeAngles = true;

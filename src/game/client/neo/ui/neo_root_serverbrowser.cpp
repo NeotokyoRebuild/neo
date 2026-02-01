@@ -153,12 +153,12 @@ void ServerBlacklistUpdateSortedList(const GameServerSortContext &sortCtx)
 		// Always set wszLeft/wszRight to name as fallback
 		const wchar_t *wszLeft = blLeft.wszName;
 		const wchar_t *wszRight = blRight.wszName;
-		int64 iLeft, iRight;
+		[[maybe_unused]] int64 iLeft{}, iRight{};
 		switch (sortCtx.col)
 		{
 		case SBLIST_COL_TYPE:
-			iLeft = static_cast<int64>(blLeft.eType);
-			iRight = static_cast<int64>(blRight.eType);
+			iLeft = narrow_cast<decltype(iLeft)>(blLeft.eType);
+			iRight = narrow_cast<decltype(iRight)>(blRight.eType);
 			break;
 		case SBLIST_COL_DATETIME:
 			iLeft = blLeft.timeVal;
@@ -222,8 +222,8 @@ void CNeoServerList::UpdateFilteredList()
 		// Always set szLeft/szRight to name as fallback
 		const char *szLeft = gsiLeft.GetName();
 		const char *szRight = gsiRight.GetName();
-		int iLeft, iRight;
-		bool bLeft, bRight;
+		[[maybe_unused]] int iLeft{}, iRight{};
+		[[maybe_unused]] bool bLeft{}, bRight{};
 		switch (m_pSortCtx->col)
 		{
 		case GSIW_LOCKED:
@@ -277,7 +277,6 @@ void CNeoServerList::UpdateFilteredList()
 		default:
 			break;
 		}
-
 		return (m_pSortCtx->bDescending) ? (V_strcmp(szRight, szLeft) > 0) : (V_strcmp(szLeft, szRight) > 0);
 	});
 

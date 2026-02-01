@@ -32,6 +32,11 @@ jobs:
       image: 'registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest'
 
     steps:
+      # Silence a git warning emitted from actions/checkout.
+      # For context: https://git-scm.com/docs/git-init#Documentation/git-init.txt---initial-branchbranch-name
+    - name: Set initial default branch name
+      run: git config --global init.defaultBranch master
+
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
@@ -111,24 +116,28 @@ jobs:
       with:
         name: ${{ env.libraries }}
         path: ${{ env.install_dir }}/${{ env.libraries }}
+        if-no-files-found: error
 
     - name: Upload libraries debug information
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.libraries_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.libraries_debuginfo }}
+        if-no-files-found: error
 
     - name: Upload dedicated library
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.dedicated }}
         path: ${{ env.install_dir }}/${{ env.dedicated }}
+        if-no-files-found: error
 
     - name: Upload dedicated library debug information
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
+        if-no-files-found: error
 
     - name: Upload SourceMod gamedata
       if: ${{ matrix.preset_build_type.name == 'release' }}
@@ -136,6 +145,7 @@ jobs:
       with:
         name: ${{ env.gamedata }}
         path: ${{ env.install_dir }}/${{ env.gamedata }}
+        if-no-files-found: error
 
   windows-build:
     name: ${{ matrix.platform.display_name }} ${{ matrix.preset_build_type.display_name }}
@@ -151,7 +161,7 @@ jobs:
 
       matrix:
         platform:
-        - { display_name: 'Windows Native Libraries', os: windows-latest, preset_os: windows }
+        - { display_name: 'Windows Native Libraries', os: windows-2025, preset_os: windows }
 
         preset_build_type:
         - { display_name: 'Debug', name: debug }
@@ -173,10 +183,6 @@ jobs:
         echo "build_dir=$build_dir" >> "$GITHUB_ENV"
         echo "install_dir=$install_dir" >> "$GITHUB_ENV"
         echo "preset_name=$preset_name" >> "$GITHUB_ENV"
-
-
-    - name: Install packages
-      run: choco install -y ninja
 
     - uses: ilammy/msvc-dev-cmd@v1
       with:
@@ -244,29 +250,33 @@ jobs:
       with:
         name: ${{ env.libraries }}
         path: ${{ env.install_dir }}/${{ env.libraries }}
+        if-no-files-found: error
 
     - name: Upload libraries debug information
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.libraries_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.libraries_debuginfo }}
+        if-no-files-found: error
 
     - name: Upload dedicated library
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.dedicated }}
         path: ${{ env.install_dir }}/${{ env.dedicated }}
+        if-no-files-found: error
 
     - name: Upload dedicated library debug information
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
+        if-no-files-found: error
 
   pack-resources:
     name: Windows Native Resources
 
-    runs-on: windows-latest
+    runs-on: windows-2025
 
     defaults:
       run:
@@ -289,9 +299,6 @@ jobs:
 
     - name: Git fetch tags
       run: git fetch origin --tags --force
-
-    - name: Install packages
-      run: choco install -y ninja
 
     - uses: ilammy/msvc-dev-cmd@v1
       with:
@@ -322,6 +329,7 @@ jobs:
       with:
         name: ${{ env.resources }}
         path: ${{ env.install_dir }}/${{ env.resources }}
+        if-no-files-found: error
 
   upload-latest-build:
     name: Upload Latest Build

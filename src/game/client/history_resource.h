@@ -14,6 +14,10 @@
 
 #include <vgui_controls/Panel.h>
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 enum 
 {
 	HISTSLOT_EMPTY,
@@ -54,6 +58,25 @@ private:
 		CHudTexture *icon;
 	};
 
+#ifdef NEO
+	static void ZeroHistItem(HIST_ITEM& item)
+	{
+		if constexpr (std::is_trivially_constructible_v<HIST_ITEM>)
+		{
+			memset( &item, 0, sizeof(HIST_ITEM) );
+		}
+		else
+		{
+			item.type = {};
+			item.DisplayTime = {};
+			item.iCount = item.iId = {};
+			static_assert(std::is_default_constructible_v<decltype(item.m_hWeapon)>);
+			item.m_hWeapon = {};
+			item.icon = {};
+		}
+	}
+#endif
+
 	CUtlVector<HIST_ITEM> m_PickupHistory;
 
 public:
@@ -80,7 +103,9 @@ public:
 
 private:
 	// these vars are for hl1-port compatibility
+#ifndef NEO
 	int		m_iHistoryGap;
+#endif
 	int		m_iCurrentHistorySlot;
 	bool	m_bDoNotDraw;
 	wchar_t m_wcsAmmoFullMsg[16];

@@ -163,7 +163,9 @@ void CNavMesh::GetEditVectors( Vector *pos, Vector *forward )
 		AngleVectors( player->EyeAngles() + player->GetPunchAngle(), forward );
 	}
 #else
+#ifndef NEO
 	Vector dir;
+#endif
 	AngleVectors( player->EyeAngles() + player->GetPunchAngle(), forward );
 #endif
 

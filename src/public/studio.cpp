@@ -833,10 +833,17 @@ const virtualmodel_t * CStudioHdr::ResetVModel( const virtualmodel_t *pVModel ) 
 
 const studiohdr_t *CStudioHdr::GroupStudioHdr( int i )
 {
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-bool-conversion"
+#endif
 	if ( !this )
 	{
 		ExecuteNTimes( 5, Warning( "Call to NULL CStudioHdr::GroupStudioHdr()\n" ) );
 	}
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic pop
+#endif
 
 	if ( m_nFrameUnlockCounter != *m_pFrameUnlockCounter )
 	{

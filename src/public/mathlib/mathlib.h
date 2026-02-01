@@ -17,8 +17,33 @@
 
 #include "mathlib/math_pfns.h"
 
+#ifdef NEO
+#include <type_traits>
+#include <utility>
+#endif
+
 // For MMX intrinsics
 #include <xmmintrin.h>
+
+#ifdef NEO
+namespace {
+	// Please use "Min" instead.
+	// Alias for Min, so we don't need to ifdef every single SDK location where this is used.
+	template< class T >
+	constexpr T min(T const& val1, T const& val2)
+	{
+		return Min(val1, val2);
+	}
+
+	// Please use "Max" instead.
+	// Alias for Max, so we don't need to ifdef every single SDK location where this is used.
+	template< class T >
+	constexpr T max(T const& val1, T const& val2)
+	{
+		return Max(val1, val2);
+	}
+};
+#endif
 
 // XXX remove me
 #undef clamp
@@ -319,7 +344,16 @@ extern	const Quaternion quat_identity;
 extern const Vector vec3_invalid;
 extern	const int nanmask;
 
+#ifdef NEO
+template <typename T>
+	requires std::is_same_v<T, float>
+inline bool IS_NAN(T x)
+{
+	return (neo::bit_cast<int>(BC_TEST(x, *(int*)&x)) & nanmask) == nanmask;
+}
+#else
 #define	IS_NAN(x) (((*(int *)&x)&nanmask)==nanmask)
+#endif
 
 FORCEINLINE vec_t DotProduct(const vec_t *v1, const vec_t *v2)
 {
@@ -712,6 +746,18 @@ template<> FORCEINLINE QAngleByValue Lerp<QAngleByValue>( float flPercent, const
 #endif // VECTOR_NO_SLOW_OPERATIONS
 
 
+#ifdef NEO
+// NEO NOTE (Rain):
+// SDK version was causing problems with modern compilers at more pedantic warning levels.
+// Since we don't appear to run into any problems with std::swap, as noted by the original
+// comment below, switching back.
+
+template <class T>
+constexpr void V_swap(T& x, T& y) noexcept
+{
+	std::swap(x, y);
+}
+#else
 /// Same as swap(), but won't cause problems with std::swap
 template <class T> 
 FORCEINLINE void V_swap( T& x, T& y )
@@ -720,6 +766,7 @@ FORCEINLINE void V_swap( T& x, T& y )
 	x = y;
 	y = temp;
 }
+#endif
 
 template <class T> FORCEINLINE T AVG(T a, T b)
 {
@@ -1590,8 +1637,11 @@ float Hermite_Spline(
 	float p2,
 	float t );
 
-
+#ifdef NEO
+void Hermite_SplineBasis( float t, float basis[4] );
+#else
 void Hermite_SplineBasis( float t, float basis[] );
+#endif
 
 void Hermite_Spline( 
 	const Quaternion &q0, 
@@ -2119,6 +2169,9 @@ float FastLog2(float i);			// log2( i )
 float FastPow2(float i);			// 2^i
 float FastPow(float a, float b);	// a^b
 float FastPow10( float i );			// 10^i
+#if defined(NEO) && defined(ACTUALLY_COMPILER_MSVC) && defined(DBGFLAG_ASSERT)
+extern void ValidateFastFuncs();
+#endif
 
 //-----------------------------------------------------------------------------
 // For testing float equality

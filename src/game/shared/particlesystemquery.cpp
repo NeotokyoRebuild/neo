@@ -22,6 +22,10 @@
 #include "ai_utils.h"
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -149,6 +153,17 @@ void CParticleSystemQuery::TraceLine( const Vector& vecAbsStart,
 	{
 		trace_t tempTrace;
 		UTIL_TraceLine( vecAbsStart, vecAbsEnd, mask, ignore, collisionGroup, &tempTrace );
+#ifdef NEO
+		using FromT = decltype(tempTrace);
+		using ToT = std::remove_pointer_t<decltype(ptr)>;
+		if constexpr (!std::is_trivially_copyable_v<ToT>)
+		{
+			static_assert(std::is_copy_assignable_v<ToT>);
+			static_assert(std::is_same_v<FromT, ToT> || std::derived_from<FromT, ToT>);
+			*ptr = tempTrace;
+		}
+		else
+#endif
 		memcpy( ptr, &tempTrace, sizeof ( CBaseTrace ) );
 	}
 	else
@@ -484,7 +499,9 @@ bool CParticleSystemQuery::IsPointInControllingObjectHitBox(
 		bool bInBBox = false;
 		Vector vecBBoxMin;
 		Vector vecBBoxMax;
+#ifndef NEO
 		Vector vecOrigin;
+#endif
 
 		vecBBoxMin = pMoveParent->CollisionProp()->OBBMins();
 		vecBBoxMax = pMoveParent->CollisionProp()->OBBMaxs();

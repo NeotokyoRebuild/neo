@@ -40,6 +40,9 @@ extern vehiclesound g_iSoundsToStopOnExit[NUM_SOUNDS_TO_STOP_ON_EXIT];
 // Purpose: 
 //-----------------------------------------------------------------------------
 struct vehicle_gear_t
+#ifdef NEO
+	final
+#endif
 {
 	DECLARE_DATADESC();
 
@@ -49,6 +52,9 @@ struct vehicle_gear_t
 };
 
 struct vehicle_crashsound_t
+#ifdef NEO
+	final
+#endif
 {
 	DECLARE_DATADESC();
 

@@ -112,7 +112,11 @@ static void Matrix3x4Offset( matrix3x4_t& dest, const matrix3x4_t& matrixIn, con
 
 // This does the necessary casting / extract to grab a pointer to a member function as a void *
 // UNDONE: Cast to BASEPTR or something else here?
+#ifdef NEO
+#define EXTRACT_INPUTFUNC_FUNCTIONPTR(x)		(static_cast<inputfunc_t*>(&(x)))
+#else
 #define EXTRACT_INPUTFUNC_FUNCTIONPTR(x)		(*(inputfunc_t **)(&(x)))
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Search this datamap for the name of this member function
@@ -354,7 +358,11 @@ void CSave::Log( const char *pName, fieldtype_t fieldType, void *value, int coun
 		}
 	}
 
+#ifdef NEO
+	int nLength = narrow_cast<int>(strlen(szBuf) + 1);
+#else
 	int nLength = strlen( szBuf ) + 1;
+#endif
 	filesystem->Write( szBuf, nLength, m_hLogFile );
 }
 
@@ -419,7 +427,11 @@ void CSave::WriteData( const char *pdata , int size )
 
 void CSave::WriteString( const char *pstring )
 {
+#ifdef NEO
+	BufferData( pstring, narrow_cast<int>(strlen(pstring) + 1) );
+#else
 	BufferData( pstring, strlen(pstring) + 1 );
+#endif
 }
 
 //-------------------------------------
@@ -429,7 +441,11 @@ void CSave::WriteString( const string_t *stringId, int count )
 	for ( int i = 0; i < count; i++ )
 	{
 		const char *pString = STRING(stringId[i]);
+#ifdef NEO
+		BufferData( pString, narrow_cast<int>(strlen(pString)+1) );
+#else
 		BufferData( pString, strlen(pString)+1 );
+#endif
 	}
 }
 
@@ -500,20 +516,28 @@ void CSave::WriteFloat( const char *pname, const float *data, int count )
 
 void CSave::WriteString( const char *pname, const char *pdata )
 {
+#ifdef NEO
+	BufferField( pname, narrow_cast<int>(strlen(pdata) + 1), pdata );
+#else
 	BufferField( pname, strlen(pdata) + 1, pdata );
+#endif
 }
 
 //-------------------------------------
 
 void CSave::WriteString( const char *pname, const string_t *stringId, int count )
 {
+#ifdef NEO
+	int i; size_t size;
+#else
 	int i, size;
+#endif
 
 	size = 0;
 	for ( i = 0; i < count; i++ )
 		size += strlen( STRING( stringId[i] ) ) + 1;
 
-	WriteHeader( pname, size );
+	WriteHeader( pname, narrow_cast<int>(size) );
 	WriteString( stringId, count );
 }
 
@@ -1148,7 +1172,11 @@ void CSave::WriteFunction( datamap_t *pRootMap, const char *pname, inputfunc_t *
 		functionName = "BADFUNCTIONPOINTER";
 	}
 
+#ifdef NEO
+	BufferField( pname, V_strlen(functionName) + 1, functionName );
+#else
 	BufferField( pname, strlen(functionName) + 1, functionName );
+#endif
 }
 
 //-------------------------------------
@@ -1599,8 +1627,11 @@ void CRestore::StartBlock( SaveRestoreRecordHeader_t *pHeader )
 }
 
 //-------------------------------------
-
+#ifdef NEO
+void CRestore::StartBlock( char szBlockName[SIZE_BLOCK_NAME_BUF] )
+#else
 void CRestore::StartBlock( char szBlockName[] )
+#endif
 {
 	SaveRestoreRecordHeader_t header;
 	StartBlock( &header );
@@ -1801,8 +1832,12 @@ int CRestore::ReadData( char *pData, int size, int nBytesAvailable )
 void CRestore::ReadString( char *pDest, int nSizeDest, int nBytesAvailable )
 {
 	const char *pString = BufferPointer();
-	if ( !nBytesAvailable )
+	if (!nBytesAvailable)
+#ifdef NEO
+		nBytesAvailable = narrow_cast<int>(strlen(pString) + 1);
+#else
 		nBytesAvailable = strlen( pString ) + 1;
+#endif
 	BufferSkipBytes( nBytesAvailable );
 
 	Q_strncpy(pDest, pString, nSizeDest );
@@ -1991,7 +2026,14 @@ int CRestore::ReadEHandle( EHANDLE *pEHandle, int count, int nBytesAvailable )
 	
 	if ( nRead < count)
 	{
+#ifdef NEO
+		static_assert(sizeof(EHANDLE) == 4);
+		static_assert(sizeof(pEHandle[0]) == sizeof(EHANDLE));
+		// HACK: not trivial! :-(
+		memset( (void*) & pEHandle[nRead], 0xFF, (count - nRead) * sizeof(pEHandle[0]));
+#else
 		memset( &pEHandle[nRead], 0xFF, ( count - nRead ) * sizeof(pEHandle[0]) );
+#endif
 	}
 	
 	return nRead;
