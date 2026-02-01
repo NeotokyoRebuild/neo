@@ -18,6 +18,22 @@ ConVar r_drawtracers_firstperson( "r_drawtracers_firstperson", "1", FCVAR_ARCHIV
 
 #define	TRACER_SPEED			5000 
 
+#ifdef NEO
+// null if not sourced from a player or their weapon
+C_BasePlayer *EffectPlayerSource( const CEffectData &data )
+{
+	C_BaseCombatWeapon *pWep = dynamic_cast<C_BaseCombatWeapon*>( data.GetEntity() );
+	if ( pWep )
+	{
+		return ToBasePlayer( pWep->GetOwner() );
+	}
+	else
+	{
+		return ToBasePlayer( data.GetEntity() );
+	}
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -85,7 +101,11 @@ void TracerCallback( const CEffectData &data )
 
 	if ( !r_drawtracers_firstperson.GetBool() )
 	{
+#ifdef NEO
+		C_BasePlayer *pPlayer = EffectPlayerSource( data );
+#else
 		C_BasePlayer *pPlayer = dynamic_cast<C_BasePlayer*>( data.GetEntity() );
+#endif
 
 		if ( pPlayer && !pPlayer->ShouldDrawThisPlayer() )
 			return;
