@@ -253,7 +253,7 @@ if(OS_WINDOWS)
             /MT
         )
 
-        if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+        if(NOT CPU_64BIT)
             # In x64 compilers, /Oy and /Oy- are not available.
             add_compile_options(/Oy-)
         endif()

@@ -101,7 +101,7 @@ if(OS_WINDOWS)
     )
 
     # Currently only need exception handling for 32-bit CPU detection code
-    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    if(CPU_32BIT)
         set_source_files_properties(processor_detect.cpp PROPERTIES COMPILE_FLAGS /EHsc)
     endif()
 endif()
