@@ -191,7 +191,11 @@ public:
 	static C_BaseEntity				*CreatePredictedEntityByName( const char *classname, const char *module, int line, bool persist = false );
 	
 	// FireBullets uses shared code for prediction.
+#ifdef NEO
+	virtual void					FireBullets( const FireBulletsInfo_t &info, bool bDoBulletEffects = true );
+#else
 	virtual void					FireBullets( const FireBulletsInfo_t &info );
+#endif // NEO
 	virtual void					ModifyFireBulletsDamage( CTakeDamageInfo* dmgInfo ) {}
 	virtual bool					ShouldDrawUnderwaterBulletBubbles();
 	virtual bool					ShouldDrawWaterImpacts( void ) { return true; }

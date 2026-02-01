@@ -1646,8 +1646,10 @@ ConVar cl_neo_bullet_trace_max_pen("cl_neo_bullet_trace_max_pen", "65", FCVAR_CH
 ConVar sv_neo_bullet_trace("sv_neo_bullet_trace", "0", FCVAR_CHEAT, "Show bullet trace", true, 0, true, 1);
 ConVar sv_neo_bullet_trace_max_pen("sv_neo_bullet_trace_max_pen", "65", FCVAR_CHEAT, "How much pen does a bullet need to have to show up as a solid red line. Configure to the current weapon used, or leave on default to see differences in pen between weapons", true, 0.1, true, 999.f);
 #endif // CLIENT_DLL
-#endif // NEO
+void CBaseEntity::FireBullets( const FireBulletsInfo_t &info, bool bDoBulletEffects )
+#else
 void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
+#endif // NEO
 {
 	static int	tracerCount;
 	trace_t		tr;
@@ -1655,7 +1657,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	int			nDamageType	= pAmmoDef->DamageType(info.m_iAmmoType);
 	int			nAmmoFlags	= pAmmoDef->Flags(info.m_iAmmoType);
 	
+#ifdef NEO
+	bool bDoServerEffects = bDoBulletEffects;
+#else
 	bool bDoServerEffects = true;
+#endif // NEO
 
 #ifndef NEO
 #if defined( HL2MP ) && defined( GAME_DLL )
@@ -2164,16 +2170,14 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		iSeed++;
 	}
 
+#ifndef NEO
 #if defined( HL2MP ) && defined( GAME_DLL )
 	if ( bDoServerEffects == false )
 	{
-#ifdef NEO
-		TE_HL2MPFireBullets(entindex(), tr.startpos, info.m_vecDirShooting, info.m_iAmmoType, iEffectSeed, info.m_iShots, info.m_vecSpread, bDoTracers, bDoImpacts);
-#else
 		TE_HL2MPFireBullets( entindex(), tr.startpos, info.m_vecDirShooting, info.m_iAmmoType, iEffectSeed, info.m_iShots, info.m_vecSpread.x, bDoTracers, bDoImpacts );
-#endif
 	}
 #endif
+#endif // NEO
 
 #ifdef GAME_DLL
 	ApplyMultiDamage();

@@ -247,7 +247,7 @@ void CNEO_NPCTargetSystem::Think()
 			// This intentionally should not create any tracer / decal effects being a server side only operation
 			FireBulletsInfo_t info( 1, vecSrc, vecDir, vec3_origin, MAX_TRACE_LENGTH, GetAmmoDef()->Index("AMMO_PRI"), 28.0f, true );
 			info.m_flDamage = m_flDamage;
-			FireBullets(info);
+			FireBullets(info, false);
 			
 			if (m_flFireRate > 0)
 			{
