@@ -42,7 +42,7 @@ inline void ZeroSolid(solid_t& solid)
 		solid.surfaceprop[0] = '\0';
 		solid.massCenterOverride.Zero();
 
-		static_assert(std::is_trivially_constructible_v<
+		static_assert(std::is_trivially_default_constructible_v<
 			decltype(solid.params)>);
 		solid.params = {};
 	}
