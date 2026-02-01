@@ -22,7 +22,8 @@ ConVar r_drawtracers_firstperson( "r_drawtracers_firstperson", "1", FCVAR_ARCHIV
 // null if not sourced from a player or their weapon
 C_BasePlayer *EffectPlayerSource( const CEffectData &data )
 {
-	C_BaseCombatWeapon *pWep = dynamic_cast<C_BaseCombatWeapon*>( data.GetEntity() );
+	C_BaseEntity *pEnt = data.GetEntity();
+	C_BaseCombatWeapon *pWep = ( pEnt && pEnt->IsBaseCombatWeapon() ) ? assert_cast<C_BaseCombatWeapon*>( pEnt ) : nullptr;
 	if ( pWep )
 	{
 		return ToBasePlayer( pWep->GetOwner() );
