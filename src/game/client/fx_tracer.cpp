@@ -30,7 +30,7 @@ C_BasePlayer *EffectPlayerSource( const CEffectData &data )
 	}
 	else
 	{
-		return ToBasePlayer( data.GetEntity() );
+		return ToBasePlayer( pEnt );
 	}
 }
 #endif
