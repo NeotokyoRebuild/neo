@@ -1835,50 +1835,90 @@ void CValueChangeTracker::GetValue( char *buf, size_t bufsize )
 		break;
 	case FIELD_FLOAT:
 	case FIELD_TIME:
+#ifdef NEO
+		Q_snprintf( buf, narrow_cast<int>(bufsize), "%f", *(float const *)pInputData );
+#else
 		Q_snprintf( buf, bufsize, "%f", *(float const *)pInputData );
+#endif
 		break;
 	case FIELD_STRING:
+#ifdef NEO
+		Q_snprintf( buf, narrow_cast<int>(bufsize), "%s", (char const*)pInputData );
+#else
 		Q_snprintf( buf, bufsize, "%s", (char const*)pInputData );
+#endif
 		break;
 	case FIELD_VECTOR:
 		{
 			const Vector *pVec = (const Vector *)pInputData;
+#ifdef NEO
+			Q_snprintf( buf, narrow_cast<int>(bufsize), "%f %f %f", pVec->x, pVec->y, pVec->z );
+#else
 			Q_snprintf( buf, bufsize, "%f %f %f", pVec->x, pVec->y, pVec->z );
+#endif
 		}
 		break;
 	case FIELD_QUATERNION:
 		{
 			const Quaternion *p = ( const Quaternion * )pInputData;
+#ifdef NEO
+			Q_snprintf( buf, narrow_cast<int>(bufsize), "%f %f %f %f", p->x, p->y, p->z, p->w );
+#else
 			Q_snprintf( buf, bufsize, "%f %f %f %f", p->x, p->y, p->z, p->w );
+#endif
 		}
 		break;
 
 	case FIELD_COLOR32:
 		{
 			const Color *color = ( const Color * )pInputData;
+#ifdef NEO
+			Q_snprintf( buf, narrow_cast<int>(bufsize), "%d %d %d %d", color->r(), color->g(), color->b(), color->a() );
+#else
 			Q_snprintf( buf, bufsize, "%d %d %d %d", color->r(), color->g(), color->b(), color->a() );
+#endif
 		}
 		break;
 
 	case FIELD_BOOLEAN:
+#ifdef NEO
+		Q_snprintf( buf, narrow_cast<int>(bufsize), "%s", (*(const bool*)pInputData) ? "true" : "false" );
+#else
 		Q_snprintf( buf, bufsize, "%s", (*(const bool *)pInputData) ? "true" : "false" );
+#endif
 		break;
 	case FIELD_INTEGER:
 	case FIELD_TICK:
 	case FIELD_MODELINDEX:
+#ifdef NEO
+		Q_snprintf( buf, narrow_cast<int>(bufsize), "%i", *(const int*)pInputData );
+#else
 		Q_snprintf( buf, bufsize, "%i", *(const int*)pInputData );
+#endif
 		break;
 
 	case FIELD_SHORT:
+#ifdef NEO
+		Q_snprintf( buf, narrow_cast<int>(bufsize), "%i", (int)*(const short*)pInputData );
+#else
 		Q_snprintf( buf, bufsize, "%i", (int)*(const short*)pInputData );
+#endif
 		break;
 
 	case FIELD_CHARACTER:
+#ifdef NEO
+		Q_snprintf( buf, narrow_cast<int>(bufsize), "%c", *(const char *)pInputData );
+#else
 		Q_snprintf( buf, bufsize, "%c", *(const char *)pInputData );
+#endif
 		break;
 
 	case FIELD_EHANDLE:
+#ifdef NEO
+		Q_snprintf( buf, narrow_cast<int>(bufsize), "eh 0x%p", (void const *)((const EHANDLE *)pInputData)->Get() );
+#else
 		Q_snprintf( buf, bufsize, "eh 0x%p", (void const *)((const EHANDLE *)pInputData)->Get() );
+#endif
 		break;
 	}
 }

@@ -184,7 +184,11 @@ static void CreateFleckParticles( const Vector& origin, const Vector &color, tra
 		break;
 	}
 
+#ifdef NEO
+	Vector	dir;
+#else
 	Vector	dir, end;
+#endif
 
 	float	colorRamp;
 
@@ -676,7 +680,11 @@ void FX_AntlionImpact( const Vector &pos, trace_t *trace )
 	// Setup our collision information
 	fleckEmitter->m_ParticleCollision.Setup( spawnOffset, &shotDir, flAngularSpray, 8.0f, flMaxSpeed, FLECK_GRAVITY, FLECK_DAMPEN );
 
+#ifdef NEO
+	Vector	dir;
+#else
 	Vector	dir, end;
+#endif
 	Vector	color = Vector( 1, 0.9, 0.75 );
 	float	colorRamp;
 

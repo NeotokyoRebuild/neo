@@ -22,6 +22,9 @@
 #include "basetypes.h"
 #include "tier0/dbg.h"
 
+#ifdef NEO
+#include "../../common/neo/bit_cast.h"
+#endif
 
 #if _DEBUG
 #define BITBUF_INLINE inline
@@ -471,7 +474,11 @@ BITBUF_INLINE void bf_write::WriteBitFloat(float val)
 	Assert(sizeof(int32) == sizeof(float));
 	Assert(sizeof(float) == 4);
 
+#ifdef NEO
+	intVal = neo::bit_cast<decltype(intVal)>(BC_TEST(val, *((int32*)&val)));
+#else
 	intVal = *((int32*)&val);
+#endif
 	WriteUBitLong( intVal, 32 );
 }
 

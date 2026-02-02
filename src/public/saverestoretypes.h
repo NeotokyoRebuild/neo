@@ -20,6 +20,9 @@
 #include <string_t.h> // NULL_STRING define
 struct edict_t;
 
+#ifdef NEO
+#include <type_traits>
+#endif
 
 #ifdef EHANDLE_H // not available to engine
 #define SR_ENTS_VISIBLE 1
@@ -180,6 +183,27 @@ public:
 	CGameSaveRestoreInfo()
 		: tableCount( 0 ), pTable( 0 ), m_pCurrentEntity( 0 ), m_EntityToIndex( 1024 )
 	{
+#ifdef NEO
+		if (!std::is_trivially_copyable_v<decltype(levelInfo)>)
+		{
+			levelInfo.connectionCount = 0;
+			for (int i = 0; i < ARRAYSIZE(levelInfo.levelList); ++i)
+			{
+				auto& level = levelInfo.levelList[i];
+				level.landmarkName[0] = 0;
+				level.mapName[0] = 0;
+				level.pentLandmark = nullptr;
+				level.vecLandmarkOrigin.Zero();
+			}
+			levelInfo.fUseLandmark = 0;
+			levelInfo.szLandmarkName[0] = 0;
+			levelInfo.vecLandmarkOffset.Zero();
+			levelInfo.time = 0;
+			levelInfo.szCurrentMapName[0] = 0;
+			levelInfo.mapVersion = 0;
+		}
+		else
+#endif
 		memset( &levelInfo, 0, sizeof( levelInfo ) );
 		modelSpaceOffset.Init( 0, 0, 0 );
 	}

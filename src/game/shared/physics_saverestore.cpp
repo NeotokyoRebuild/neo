@@ -20,6 +20,10 @@
 #include "entitylist.h"
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -79,6 +83,23 @@ struct PhysObjectHeader_t
 {
 	PhysObjectHeader_t()
 	{
+#ifdef NEO
+		using ThisType = std::remove_cvref_t<decltype(*this)>;
+		if constexpr (!std::is_trivially_copyable_v<ThisType>)
+		{
+			static_assert(sizeof(ThisType) == 64, "implement ctor zero-init!!");
+			type = {};
+			hEntity = INVALID_ENTITY_HANDLE;
+			fieldName = NULL_STRING;
+			nObjects = {};
+			modelName = NULL_STRING;
+			bbox.maxs.Zero();
+			bbox.mins.Zero();
+			sphere.radius = {};
+			iCollide = {};
+		}
+		else
+#endif
 		memset( this, 0, sizeof(*this) );
 	}
 
@@ -436,6 +457,15 @@ public:
 																	// the field name would normally be in the string
 																	// pool anyway. (toml 12-10-02)
 		item.header.modelName = NULL_STRING;
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<decltype(item.header.bbox)>)
+		{
+			static_assert(sizeof(item.header.bbox) == sizeof(Vector)*2);
+			item.header.bbox.maxs.Zero();
+			item.header.bbox.mins.Zero();
+		}
+		else
+#endif
 		memset( &item.header.bbox, 0, sizeof( item.header.bbox ) );
 		item.header.sphere.radius = 0;
 		

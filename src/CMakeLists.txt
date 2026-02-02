@@ -22,6 +22,7 @@ if(NOT OS_WINDOWS AND NOT OS_LINUX AND NOT OS_MACOS)
     message(FATAL_ERROR "Unknown OS")
 endif()
 
+option(CMAKE_COMPILE_WARNING_AS_ERROR "Treat compile warnings as errors" ${DEFAULT_WARN_AS_ERR})
 option(NEO_CI_BUILD "CI build mode" OFF)
 option(NEO_USE_CCACHE "Use ccache" ${OS_LINUX})
 option(NEO_STAGING_ONLY "Staging mode (STAGING_ONLY)" OFF)
@@ -49,6 +50,7 @@ option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
 
+message(STATUS "Treat compile warnings as errors: ${CMAKE_COMPILE_WARNING_AS_ERROR}")
 message(STATUS "CI build mode: ${NEO_CI_BUILD}")
 message(STATUS "Use ccache: ${NEO_USE_CCACHE}")
 message(STATUS "Staging (STAGING_ONLY): ${NEO_STAGING_ONLY}")
@@ -107,13 +109,21 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWith
         NDEBUG
     )
 
-    add_compile_options(
-        #-fno-strict-aliasing
-        -ffast-math
-        -fno-omit-frame-pointer
-        -ftree-vectorize
-    )
+    if (NOT COMPILER_MSVC)
+        add_compile_options(
+            #-fno-strict-aliasing
+            -ffast-math
+            -fno-omit-frame-pointer
+            -ftree-vectorize
+        )
+    endif()
 endif()
+
+add_compile_definitions(
+	# Whether to validate narrowing conversions done with narrow_cast<T>(...)
+	# If not, will simply alias narrow_cast to static_cast
+	$<$<CONFIG:Debug>:PARANOID_NARROWING>
+)
 
 if(NEO_RAD_TELEMETRY_DISABLED)
     add_compile_definitions(RAD_TELEMETRY_DISABLED)
@@ -142,6 +152,10 @@ add_compile_definitions(
     # NEO NOTE (nullsystem): New defines since 2025-02-18 TF2 SDK Update
     PLATFORM_64BITS
     INCLUDED_STEAM2_USERID_STRUCTS
+
+    # NEO NOTE (Rain): Needed to remove platform specific min/max C macro pollution;
+    # instead you can use the Min/Max templated functions from basetypes.h.
+    NOMINMAX
 )
 
 if(OS_WINDOWS)
@@ -215,7 +229,6 @@ if(OS_WINDOWS)
             /Zc:forScope
             /Zc:inline
             /Zc:forScope
-            /Oy-
             /MTd
         )
 
@@ -235,16 +248,15 @@ if(OS_WINDOWS)
         add_compile_options(
             #/Z7 # DebugInformationFormat - C7 Compatible
             #/Wp64 # Detect64bitPortabilityIssues
-            #/O2 # Optimization - Maximize Speed
-            /Ob2 # InlineFunctionExpansion - Any Suitable
-            /Oi # EnableIntrinsicFunctions
-            /Ot # FavorSizeOrSpeed - Favor Fast Code
-            /GF # EnableStringPooling
-            /Gy # EnableFunctionLevelLinking
+            /O2 # Optimization - Maximize Speed
             #/Zo
-            /Oy-
             /MT
         )
+
+        if(NOT CPU_64BIT)
+            # In x64 compilers, /Oy and /Oy- are not available.
+            add_compile_options(/Oy-)
+        endif()
 
         add_link_options(
             /NODEFAULTLIB:libcmtd
@@ -300,14 +312,15 @@ if(OS_LINUX OR OS_MACOS)
         #-Wextra # if STEAM_BRANCH
         #-Wshadow # if STEAM_BRANCH
 
-        $<$<CXX_COMPILER_ID:GNU>:-mfpmath=sse>
+        # Required for SourceMod gamedata generation
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>
+
+        $<$<CXX_COMPILER_ID:GNU>:-mfpmath=sse>
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual>
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-reorder>
         -Wno-multichar
         -Wno-write-strings
         -Wno-unused-variable
-        -Wno-unused-but-set-variable
         -Wno-unused-function
         -Wno-unknown-pragmas
         -Wno-unused-parameter
@@ -317,8 +330,12 @@ if(OS_LINUX OR OS_MACOS)
         -Wno-float-equal
         -Wno-unused-local-typedefs
         -Wno-switch
-        -Wno-strict-aliasing
-        -Wno-address
+        #-Wno-strict-aliasing
+        #-Wno-address
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-inconsistent-missing-override>
+
+        # Unsupported by the steamrt3 Clang compiler
+        $<$<NOT:$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang>,$<CXX_COMPILER_VERSION:11.0.1>>>:-Wno-unused-but-set-variable>
 
         -Werror=return-type
         -fdiagnostics-show-option
@@ -329,30 +346,27 @@ if(OS_LINUX OR OS_MACOS)
         -Ustrncpy
 
         # Fix for non-clickable vgui buttons when using -O2
-        -fno-devirtualize-speculatively
+        $<$<CXX_COMPILER_ID:GNU>:-fno-devirtualize-speculatively>
 
         # Fix for non-clickable vgui buttons when using -O3
-        -fno-ipa-cp-clone
+        $<$<CXX_COMPILER_ID:GNU>:-fno-ipa-cp-clone>
 
         # Fix for "error: cast from pointer to smaller type 'unsigned int' loses information"
         #-fms-extensions
-
-        # Required for SourceMod gamedata generation
-        -Wno-invalid-offsetof
     )
 
     # Disable option for older compiler in docker
     if(NOT CMAKE_CXX_COMPILER_VERSION STREQUAL "4.8.4")
         add_compile_options(
             $<$<COMPILE_LANG_AND_ID:CXX,GNU>:-fabi-compat-version=2>
-            $<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>
-            $<$<COMPILE_LANGUAGE:CXX>:-Wno-template-id-cdtor>
-            -Wno-nonnull-compare
+            $<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-class-memaccess>
+            $<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-template-id-cdtor>
+            $<$<CXX_COMPILER_ID:GNU>:-Wno-nonnull-compare>
         )
     endif()
 
     # We should always specify -Wl,--build-id, as documented at:
-    # http://linux.die.net/man/1/ld and http://fedoraproject.org/wiki/Releases/FeatureBuildId.http://fedoraproject.org/wiki/Releases/FeatureBuildId
+    # http://linux.die.net/man/1/ld and http://fedoraproject.org/wiki/Releases/FeatureBuildId
     add_link_options(
         -Wl,--build-id
         -static-libgcc
@@ -374,10 +388,15 @@ if(OS_LINUX)
     )
 endif()
 
+# Clang may define GCC or MSVC values as some kind of a compatibility thing,
+# but this can break code that relies on accurately identifying the used compiler.
+# The "ACTUALLY_..." defs here can be used for succintly determining the compiler for real.
 if(COMPILER_MSVC)
     add_compile_definitions(COMPILER_MSVC)
+    add_compile_definitions(ACTUALLY_COMPILER_MSVC)
 elseif(COMPILER_GCC)
     add_compile_definitions(COMPILER_GCC)
+    add_compile_definitions(ACTUALLY_COMPILER_GCC)
 elseif(COMPILER_CLANG)
     add_compile_definitions(COMPILER_CLANG)
 endif()

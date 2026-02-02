@@ -100,7 +100,7 @@ void CNEOHud_Message::DrawNeoHudElement()
     {
         surface()->DrawSetTextPos(m_Padding, yOffset);
         const std::wstring& line = m_Lines[i];
-        surface()->DrawPrintText(line.c_str(), line.size());
+        surface()->DrawPrintText(line.c_str(), narrow_cast<int>(line.size()));
         yOffset += m_LineHeights[i] + (int)(2 * m_fScale);
     }
 

@@ -1936,7 +1936,11 @@ bool CAI_Navigator::OnFailedSteer( AILocalMoveGoal_t *pMoveGoal, float distClear
 	if ( !TestingSteering() && pMoveGoal->directTrace.fStatus == AIMR_BLOCKED_NPC && pMoveGoal->directTrace.vHitNormal != vec3_origin )
 	{
 		AIMoveTrace_t moveTrace;
+#ifdef NEO
+		Vector vDeflection(0, 0, 0); // silence Clang 19 nag
+#else
 		Vector vDeflection;
+#endif
 		CalculateDeflection( GetLocalOrigin(), pMoveGoal->dir, pMoveGoal->directTrace.vHitNormal, &vDeflection );
 
 		if ( pMoveGoal->dir.AsVector2D().Dot( vDeflection.AsVector2D() ) > 0.7 )

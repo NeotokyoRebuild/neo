@@ -1154,7 +1154,11 @@ void CEventQueue::CancelEventOn( CBaseEntity *pTarget, const char *sInputName )
 		bool bDelete = false;
 		if (pCur->m_pEntTarget == pTarget)
 		{
+#ifdef NEO
+			if ( !Q_strncmp( STRING(pCur->m_iTargetInput), sInputName, narrow_cast<int>( strlen(sInputName) ) ) )
+#else
 			if ( !Q_strncmp( STRING(pCur->m_iTargetInput), sInputName, strlen(sInputName) ) )
+#endif
 			{
 				// Found a matching event; delete it from the queue.
 				bDelete = true;
@@ -1191,7 +1195,11 @@ bool CEventQueue::HasEventPending( CBaseEntity *pTarget, const char *sInputName 
 			if ( !sInputName )
 				return true;
 
+#ifdef NEO
+			if ( !Q_strncmp( STRING(pCur->m_iTargetInput), sInputName, narrow_cast<int>( strlen(sInputName) ) ) )
+#else
 			if ( !Q_strncmp( STRING(pCur->m_iTargetInput), sInputName, strlen(sInputName) ) )
+#endif
 				return true;
 		}
 

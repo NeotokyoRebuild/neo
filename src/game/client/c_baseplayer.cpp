@@ -3229,7 +3229,9 @@ void C_BasePlayer::BuildFirstPersonMeathookTransformations( CStudioHdr *hdr, Vec
 	// Find out where the player's head (driven by the HMD) is in the world.
 	// We can't move this with animations or effects without causing nausea, so we need to move
 	// the whole body so that the animated head is in the right place to match the player-controlled head.
+#ifndef NEO
 	Vector vHeadUp;
+#endif
 	Vector vRealPivotPoint;
 	if( UseVR() )
 	{

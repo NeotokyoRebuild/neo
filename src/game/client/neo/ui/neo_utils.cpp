@@ -17,7 +17,7 @@ uint8 *NeoUtils::CropScaleTo256(const uint8 *rgba8888Data, int width, int height
 	// Crop to square
 	if (width != height)
 	{
-		const int targetWH = min(width, height);
+		const int targetWH = Min(width, height);
 		uint8 *croppedData = (uint8 *)(calloc(targetWH * targetWH, sizeof(uint8) * STRIDE));
 
 		const int dstYLines = targetWH * STRIDE;

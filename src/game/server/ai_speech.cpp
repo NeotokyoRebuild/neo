@@ -17,6 +17,10 @@
 #include "isaverestore.h"
 #include "sceneentity.h"
 
+#if defined NEO
+#include "neo_misc.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
@@ -264,7 +268,11 @@ void CAI_Expresser::TestAllResponses()
 
 //-----------------------------------------------------------------------------
 
+#ifdef NEO
+static const int LEN_SPECIFIC_SCENE_MODIFIER = V_strlen( AI_SPECIFIC_SCENE_MODIFIER );
+#else
 static const int LEN_SPECIFIC_SCENE_MODIFIER = strlen( AI_SPECIFIC_SCENE_MODIFIER );
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Searches for a possible response
@@ -510,7 +518,11 @@ bool CAI_Expresser::Speak( AIConcept_t aiconcept, const char *modifiers /*= NULL
 	if ( pszOutResponseChosen )
 	{
         const char *szResponse = response.GetResponsePtr();
+#ifdef NEO
+		V_strncpy( pszOutResponseChosen, szResponse, narrow_cast<int>(bufsize) );
+#else
         Q_strncpy( pszOutResponseChosen, szResponse, bufsize );
+#endif
 	}
 	
 	return spoke;

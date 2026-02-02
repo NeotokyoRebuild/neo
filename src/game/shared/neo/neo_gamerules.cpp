@@ -131,6 +131,10 @@ static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
 ConVar sv_neo_readyup_teamplayersthres("sv_neo_readyup_teamplayersthres", V_STRINGIFY(DEF_TEAMPLAYERTHRES), FCVAR_REPLICATED, "The exact total players per team to be in and ready up to start a game.", true, 0.0f, true, (MAX_PLAYERS - 1) / 2);
 ConVar sv_neo_readyup_skipwarmup("sv_neo_readyup_skipwarmup", "1", FCVAR_REPLICATED, "Skip the warmup round when already using ready up.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_readyup_autointermission("sv_neo_readyup_autointermission", "0", FCVAR_REPLICATED, "If disabled, skips the automatic intermission at the end of the match.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_cap_reward("sv_neo_cap_reward", "0", FCVAR_REPLICATED, "How much XP to reward for capturing the ghost or escaping as VIP. 0 = Rank up.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_cap_reward_dead("sv_neo_cap_reward_dead", "0", FCVAR_REPLICATED, "Whether dead players should receive the ghost capture or escape reward.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_survivor_bonus("sv_neo_survivor_bonus", "1", FCVAR_REPLICATED, "Whether surviving players on the winning team in CTG and VIP should receive extra XP.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_ghost_carrier_bonus("sv_neo_ghost_carrier_bonus", "1", FCVAR_REPLICATED, "Whether the ghost carrier on the winning team should receive extra XP.", true, 0.0f, true, 1.0f);
 #endif // GAME_DLL
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
@@ -1323,44 +1327,6 @@ void CNEORules::Think(void)
 		}
 	}
 
-	auto awardWinningTeamExperience = [&](int winningTeam)
-		{
-			for (int i = 1; i <= gpGlobals->maxClients; i++)
-			{
-				auto player = UTIL_PlayerByIndex(i);
-				if (player && player->GetTeamNumber() == winningTeam)
-				{
-					auto* neoPlayer = static_cast<CNEO_Player*>(player);
-
-
-					// Player takeover logic
-					auto playerControllingMe = neoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
-					if (playerControllingMe)
-					{
-						// Will get XP from player possessing me based on their win conditions
-						continue;
-					}
-					auto playerPossessedByMe = neoPlayer->m_hSpectatorTakeoverPlayerTarget.Get();
-					if (playerPossessedByMe)
-					{
-						// Award takeover player as if they were dead
-						neoPlayer->AddPoints(1, false, true);
-					}
-					auto playerToRankUp = playerPossessedByMe ? playerPossessedByMe : neoPlayer;
-
-
-					if (player->IsAlive())
-					{
-						AwardRankUp(playerToRankUp);
-					}
-					else
-					{
-						neoPlayer->AddPoints(1, false);
-					}
-				}
-			}
-		};
-
 	if (m_pGhost)
 	{
 		// Update ghosting team info
@@ -1422,12 +1388,6 @@ void CNEORules::Think(void)
 				// And then announce team victory
 				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
 
-				if (m_iEscortingTeam && m_iEscortingTeam == captorTeam)
-				{
-					break;
-				}
-
-				awardWinningTeamExperience(captorTeam);
 				break;
 			}
 		}
@@ -1541,7 +1501,6 @@ void CNEORules::Think(void)
 					gameeventmanager->FireEvent(event);
 				}
 
-				awardWinningTeamExperience(captorTeam);
 				break;
 			}
 		}
@@ -1688,13 +1647,13 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 	{
 		if (pClient->m_iXP.Get() < ranks[i])
 		{
-			pClient->AddPoints(ranks[i] - pClient->m_iXP, false);
+			pClient->AddPoints(ranks[i] - pClient->m_iXP, false, true);
 			return;
 		}
 	}
 
 	// If we're beyond max rank, just award +1 point.
-	pClient->AddPoints(1, false);
+	pClient->AddPoints(1, false, true);
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
@@ -1878,7 +1837,7 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 	}
 	m_hGhost = m_pGhost;
 	m_bGhostExists = true;
-	
+
 	Assert(UTIL_IsValidEntity(m_pGhost));
 
 	if (origin)
@@ -2352,8 +2311,8 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					}
 					if (readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres)
 					{
-						const int iNeedJin = max(0, iThres - readyPlayers.array[TEAM_JINRAI]);
-						const int iNeedNSF = max(0, iThres - readyPlayers.array[TEAM_NSF]);
+						const int iNeedJin = Max(0, iThres - readyPlayers.array[TEAM_JINRAI]);
+						const int iNeedNSF = Max(0, iThres - readyPlayers.array[TEAM_NSF]);
 						char szPrintNeed[100];
 						V_sprintf_safe(szPrintNeed, "Jinrai need %d players and NSF need %d players "
 													"to ready up to start.", iNeedJin, iNeedNSF);
@@ -2361,8 +2320,8 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					}
 					else if (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres)
 					{
-						const int iExtraJin = max(0, readyPlayers.array[TEAM_JINRAI] - iThres);
-						const int iExtraNSF = max(0, readyPlayers.array[TEAM_NSF] - iThres);
+						const int iExtraJin = Max(0, readyPlayers.array[TEAM_JINRAI] - iThres);
+						const int iExtraNSF = Max(0, readyPlayers.array[TEAM_NSF] - iThres);
 						char szPrintNeed[100];
 						V_sprintf_safe(szPrintNeed, "Jinrai have %d extra players and NSF have %d extra players "
 													"over the %d per team threshold.", iExtraJin, iExtraNSF, iThres);
@@ -2587,29 +2546,32 @@ void CNEORules::StartNextRound()
 			const bool bBotsonlyDontDoWarmup = !sv_neo_botsonly_warmup_round.GetBool();
 			if (bLoopbackDontDoWarmup || bBotsonlyDontDoWarmup)
 			{
-				int iCountBots = 0;
-				int iCountHumans = 0;
-				int iCountLoopback = 0;
+				int iCountBots = 0, iCountHumans = 0, iCountLoopback = 0;
 
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
-					if (auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
-					{
-						const int teamNum = pPlayer->GetTeamNumber();
-						if (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF)
-						{
-							const bool bIsBot = pPlayer->IsBot();
-							const bool bIsHuman = (!bIsBot && !pPlayer->IsHLTV());
-							iCountBots += bIsBot;
-							iCountHumans += bIsHuman;
-							if (bIsHuman)
-							{
-								INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
-								iCountLoopback += nci->IsLoopback();
-							}
-						}
-					}
+					auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+					if (!pPlayer)
+						continue;
+
+					const int teamNum = pPlayer->GetTeamNumber();
+					if (teamNum <= LAST_SHARED_TEAM)
+						continue;
+
+					const bool bIsBot = pPlayer->IsBot();
+					const bool bIsHuman = (!bIsBot && !pPlayer->IsHLTV());
+					Assert(bIsBot || bIsHuman);
+					iCountBots += bIsBot;
+					iCountHumans += bIsHuman;
+					if (!bIsHuman)
+						continue;
+
+					if (auto* nci = engine->GetPlayerNetInfo(i))
+						iCountLoopback += nci->IsLoopback();
+					else
+						Assert(false);
 				}
+
 				if (bLoopbackDontDoWarmup)
 				{
 					loopbackSkipWarmup = (iCountLoopback > 0 && iCountLoopback == iCountHumans);
@@ -3624,43 +3586,59 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				player->EmitSound(soundFilter, i, soundParams);
 			}
 
-			// Ghost-caps and VIP-escorts are handled separately
-			if (winningTeamNum != TEAM_SPECTATOR && iWinReason != NEO_VICTORY_GHOST_CAPTURE && iWinReason != NEO_VICTORY_VIP_ESCORT && player->GetTeamNumber() == winningTeamNum)
+			if (winningTeamNum != TEAM_SPECTATOR && player->GetTeamNumber() == winningTeamNum)
 			{
 				int xpAward = 1;	// Base reward for being on winning team
-
-
-				// Player takeover logic
-				auto playerControllingMe = player->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
-				if (playerControllingMe)
+				if (iWinReason == NEO_VICTORY_GHOST_CAPTURE || iWinReason == NEO_VICTORY_VIP_ESCORT || m_bTeamBeenAwardedDueToCapPrevent)
 				{
-					// Will get XP from player possessing me based on their win conditions
-					continue;
-				}
-				auto playerPossessedByMe = player->m_hSpectatorTakeoverPlayerTarget.Get();
-				if (playerPossessedByMe)
-				{
-					// Award takeover player as if they were dead
-					player->AddPoints(xpAward, false, true);
-				}
-				auto playerToRankUp = playerPossessedByMe ? playerPossessedByMe : player;
-
-
-				if (player->IsAlive())
-				{
-					if (m_bTeamBeenAwardedDueToCapPrevent)
+					auto cap_reward = sv_neo_cap_reward.GetInt();
+					if (!cap_reward) // Rank up
 					{
-						AwardRankUp(playerToRankUp);
-						xpAward = 0; // Already been rewarded rank-up XPs
-						++iRankupCapPrev;
+						if (sv_neo_cap_reward_dead.GetBool() || player->IsAlive())
+						{
+							// Swap controller and controlee for the purposes of rankup
+							auto playerPossessedByMe = player->m_hSpectatorTakeoverPlayerTarget.Get();
+							auto playerControllingMe = player->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
+							auto playerToRankUp = player;
+							if (playerPossessedByMe)
+								playerToRankUp = playerPossessedByMe;
+							if (playerControllingMe)
+								playerToRankUp = playerControllingMe;
+							AwardRankUp(playerToRankUp);
+							xpAward = 0;
+						}
 					}
 					else
 					{
-						++xpAward;
-						xpAward += static_cast<int>(player->IsCarryingGhost());
+						if (sv_neo_cap_reward_dead.GetBool() || player->IsAlive())
+						{
+							xpAward = cap_reward;
+						}
 					}
 				}
-				player->AddPoints(xpAward, false);
+				else if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_VIP)
+				{
+					if (sv_neo_survivor_bonus.GetBool() && player->IsAlive())
+					{
+						++xpAward;
+					}
+					if (sv_neo_ghost_carrier_bonus.GetBool() && player->IsCarryingGhost())
+					{
+						++xpAward;
+					}
+				}
+
+				auto playerControllingMe = player->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
+				if (playerControllingMe)
+				{
+					// Controlling player will be awarded as if they were dead
+					playerControllingMe->AddPoints(xpAward, false, true);
+				}
+				else
+				{
+					// This will award the controlled player, if any
+					player->AddPoints(xpAward, false);
+				}
 			}
 
 			// Any human player still alive, show them damage stats in round end
@@ -4061,7 +4039,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		event->SetInt("priority", 7);
 		event->SetBool("headshot", pVictim->LastHitGroup() == HITGROUP_HEAD);
 		event->SetBool("suicide", pKiller == pVictim || !pKiller->IsPlayer());
-		
+
 		if (isGrenade)
 		{
 			event->SetString("deathIcon", "2"); // NEO TODO (Adam) get from enum
@@ -4279,7 +4257,7 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 
 #ifdef GAME_DLL
 	if (status == NeoRoundStatus::PreRoundFreeze)
-	{ // we clear these so people who rejoin on a different round to the round when they left aren't prevented from spawning. This is done before all players are 
+	{ // we clear these so people who rejoin on a different round to the round when they left aren't prevented from spawning. This is done before all players are
 	  // spawned on the new round so these values will be overwritten for those players who are still in the game
 		auto currentHandle = m_pRestoredInfos.FirstHandle();
 		while (m_pRestoredInfos.IsValidHandle(currentHandle))
@@ -4531,8 +4509,8 @@ void CNEORules::InitDefaultAIRelationships( void )
 		// ------------------------------------------------------------
 		//	> CLASS_BULLSEYE
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_PLAYER,			D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_PLAYER,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_HEADCRAB,			D_NU, 0);
@@ -4542,12 +4520,12 @@ void CNEORules::InitDefaultAIRelationships( void )
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_EARTH_FAUNA,		D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_PLAYER_ALLY,		D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_BULLSEYE,			CLASS_PLAYER_ALLY_VITAL,D_NU, 0);
-		
+
 		// ------------------------------------------------------------
 		//	> CLASS_FLARE
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_PLAYER,			D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_PLAYER,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_FLARE,			CLASS_HEADCRAB,			D_NU, 0);
@@ -4562,8 +4540,8 @@ void CNEORules::InitDefaultAIRelationships( void )
 		// ------------------------------------------------------------
 		//	> CLASS_HEADCRAB
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_PLAYER,			D_HT, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_PLAYER,			D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_HEADCRAB,			CLASS_HEADCRAB,			D_NU, 0);
@@ -4577,8 +4555,8 @@ void CNEORules::InitDefaultAIRelationships( void )
 		// ------------------------------------------------------------
 		//	> CLASS_MILITARY
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_PLAYER,			D_HT, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_PLAYER,			D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MILITARY,			CLASS_HEADCRAB,			D_HT, 0);
@@ -4592,8 +4570,8 @@ void CNEORules::InitDefaultAIRelationships( void )
 		// ------------------------------------------------------------
 		//	> CLASS_MISSILE
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_PLAYER,			D_HT, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_PLAYER,			D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_MISSILE,			CLASS_HEADCRAB,			D_HT, 0);
@@ -4607,9 +4585,9 @@ void CNEORules::InitDefaultAIRelationships( void )
 		// ------------------------------------------------------------
 		//	> CLASS_NONE
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_PLAYER,			D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_BULLSEYE,			D_NU, 0);	
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_PLAYER,			D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_HEADCRAB,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_NONE,				CLASS_MILITARY,			D_NU, 0);
@@ -4621,8 +4599,8 @@ void CNEORules::InitDefaultAIRelationships( void )
 		// ------------------------------------------------------------
 		//	> CLASS_PLAYER
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_PLAYER,			D_NU, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_PLAYER,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_BULLSEYE,			D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER,			CLASS_HEADCRAB,			D_HT, 0);
@@ -4636,8 +4614,8 @@ void CNEORules::InitDefaultAIRelationships( void )
 		// ------------------------------------------------------------
 		//	> CLASS_PLAYER_ALLY
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_PLAYER,			D_LI, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_PLAYER,			D_LI, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY,			CLASS_HEADCRAB,			D_FR, 0);
@@ -4651,8 +4629,8 @@ void CNEORules::InitDefaultAIRelationships( void )
 		// ------------------------------------------------------------
 		//	> CLASS_PLAYER_ALLY_VITAL
 		// ------------------------------------------------------------
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_PLAYER,			D_LI, 0);			
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_PLAYER,			D_LI, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_PLAYER_ALLY_VITAL,	CLASS_HEADCRAB,			D_HT, 0);
@@ -4665,9 +4643,9 @@ void CNEORules::InitDefaultAIRelationships( void )
 
 		// ------------------------------------------------------------
 		//	> CLASS_ZOMBIE
-		// ------------------------------------------------------------	
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_NONE,				D_NU, 0);			
-		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_PLAYER,			D_HT, 0);			
+		// ------------------------------------------------------------
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_NONE,				D_NU, 0);
+		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_PLAYER,			D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_BULLSEYE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_FLARE,			D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_ZOMBIE,			CLASS_HEADCRAB,			D_NU, 0);
@@ -4683,7 +4661,7 @@ void CNEORules::InitDefaultAIRelationships( void )
 		//
 		// Hates pretty much everything equally except other earth fauna.
 		// This will make the critter choose the nearest thing as its enemy.
-		// ------------------------------------------------------------	
+		// ------------------------------------------------------------
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_NONE,				D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER,			D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_BULLSEYE,			D_NU, 0);

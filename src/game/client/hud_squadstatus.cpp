@@ -272,7 +272,11 @@ void CHudSquadStatus::Paint()
 		surface()->DrawSetTextFont(m_hTextFont);
 		surface()->DrawSetTextColor(m_SquadTextColor);
 		surface()->DrawSetTextPos(text_xpos, text_ypos);
+#ifdef NEO
+		surface()->DrawPrintText(text, narrow_cast<int>(wcslen(text)));
+#else
 		surface()->DrawPrintText(text, wcslen(text));
+#endif
 	}
 }
 

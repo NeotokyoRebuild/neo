@@ -5038,7 +5038,9 @@ void CPropDoorRotating::ComputeDoorExtent( Extent *extent, unsigned int extentTy
 
 	if ( extentType & DOOR_EXTENT_CLOSED )
 	{
+#ifndef NEO
 		Extent closedExtent;
+#endif
 		CalculateDoorVolume( m_angRotationClosed, m_angRotationClosed, &extent->lo, &extent->hi );
 
 		if ( extentType & DOOR_EXTENT_OPEN )

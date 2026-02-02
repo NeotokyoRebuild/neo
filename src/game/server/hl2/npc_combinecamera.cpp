@@ -722,8 +722,10 @@ void CNPC_CombineCamera::TrackTarget( CBaseEntity *pTarget )
 	}
 
 	Vector vecMuzzle, vecMuzzleDir;
+#ifndef NEO
 	QAngle vecMuzzleAng;
-	
+#endif
+
 	GetAttachment("eyes", vecMuzzle, &vecMuzzleDir);
 	
 	SetIdealActivity((Activity) ACT_COMBINE_CAMERA_OPEN_IDLE);

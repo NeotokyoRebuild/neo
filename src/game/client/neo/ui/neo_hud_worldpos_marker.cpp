@@ -30,7 +30,7 @@ void CNEOHud_WorldPosMarker::ApplySchemeSettings(vgui::IScheme* pScheme)
     m_viewCentreX = m_viewWidth / 2;
     m_viewCentreY = m_viewHeight / 2;
 
-    auto widerAxis = max(m_viewWidth, m_viewHeight);
+    auto widerAxis = Max(m_viewWidth, m_viewHeight);
     m_viewCentreSize = widerAxis * (static_cast<float>(cl_neo_hud_centre_size.GetInt()) / 100);
 
     BaseClass::ApplySchemeSettings(pScheme);
@@ -76,7 +76,7 @@ float CNEOHud_WorldPosMarker::GetFadeValueTowardsScreenCentreInverted(int x, int
 
     if(dist <= m_viewCentreSize)
     {
-        return max(min, (dist - innerArea) / innerArea);
+        return Max(min, (dist - innerArea) / innerArea);
     }
 
     return 1;
@@ -88,7 +88,7 @@ float CNEOHud_WorldPosMarker::GetFadeValueTowardsScreenCentreInAndOut(int x, int
     auto dist = DistanceToCentre(x, y);
     if(dist <= innerArea)
     {
-        return max(min, dist / innerArea);
+        return Max(min, dist / innerArea);
     }
 
     if(dist <= m_viewCentreSize)

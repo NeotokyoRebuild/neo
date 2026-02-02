@@ -1021,7 +1021,11 @@ void FX_MicroExplosion( Vector &position, Vector &normal )
 	}
 
 	TrailParticle	*pParticle;
+#ifdef NEO
+	Vector	dir;
+#else
 	Vector	dir, vOfs;
+#endif
 	float	length = 0.2f;
 
 	//Fast lines
@@ -1225,7 +1229,11 @@ void FX_Explosion( Vector& origin, Vector& normal, char materialType )
 
 	// Throw some smoke balls out around the normal
 	int numBalls = 12;
+#ifdef NEO
+	Vector vecRight, vecUp;
+#else
 	Vector vecRight, vecForward, vecUp;
+#endif
 	QAngle vecAngles;
 	VectorAngles( normal, vecAngles );
 	AngleVectors( vecAngles, NULL, &vecRight, &vecUp );

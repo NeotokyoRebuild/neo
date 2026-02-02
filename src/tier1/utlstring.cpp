@@ -94,8 +94,11 @@ void CUtlString::SetDirect( const char *pValue, int nChars )
 			AssertMsg( nChars == Q_strlen(m_pString), "CUtlString::SetDirect does not support resizing strings in place." );
 			return; // Do nothing. Realloc in AllocMemory might move pValue's location resulting in a bad memcpy.
 		}
-
+#ifdef NEO
+		Assert( nChars <= Min( narrow_cast<int>(strnlen(pValue, nChars) + 1), nChars ) );
+#else
 		Assert( nChars <= Min<int>( strnlen(pValue, nChars) + 1, nChars ) );
+#endif
 		AllocMemory( nChars );
 		Q_memcpy( m_pString, pValue, nChars );
 	}

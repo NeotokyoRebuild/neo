@@ -87,10 +87,18 @@ int Templates_Add(CBaseEntity *pEntity, const char *pszMapData, int nLen)
 	// We may modify the values of the keys in this mapdata chunk later on to fix Entity I/O
 	// connections. For this reason, we need to ensure we have enough memory to do that.
 	int iKeys = MapEntity_GetNumKeysInEntity( pszMapData );
+#ifdef NEO
+	auto iExtraSpace = (strlen(ENTITYIO_FIXUP_STRING) + 1) * iKeys;
+#else
 	int iExtraSpace = (strlen(ENTITYIO_FIXUP_STRING)+1) * iKeys;
+#endif
 
 	// Extra 1 because the mapdata passed in isn't null terminated
+#ifdef NEO
+	pEntData->iMapDataLength = narrow_cast<decltype(TemplateEntityData_t::iMapDataLength)>(nLen + iExtraSpace + 1);
+#else
 	pEntData->iMapDataLength = nLen + iExtraSpace + 1;
+#endif
 	pEntData->pszMapData = (char *)malloc( pEntData->iMapDataLength );
 	memcpy(pEntData->pszMapData, pszMapData, nLen + 1);
 	pEntData->pszMapData[nLen] = '\0';
@@ -342,7 +350,11 @@ char *Templates_GetEntityIOFixedMapData( int iIndex )
 		Q_strncpy( g_Templates[iIndex]->pszFixedMapData, g_Templates[iIndex]->pszMapData, g_Templates[iIndex]->iMapDataLength );
 	}
 
+#ifdef NEO
+	int iFixupSize = narrow_cast<int>(strlen(ENTITYIO_FIXUP_STRING)); // don't include \0 when copying in the fixup
+#else
 	int iFixupSize = strlen(ENTITYIO_FIXUP_STRING); // don't include \0 when copying in the fixup
+#endif
 	char *sOurFixup = new char[iFixupSize+1]; // do alloc room here for the null terminator
 	Q_snprintf( sOurFixup, iFixupSize+1, "%c%.4d", ENTITYIO_FIXUP_STRING[0], g_iCurrentTemplateInstance );
 

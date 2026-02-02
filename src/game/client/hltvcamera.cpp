@@ -109,6 +109,13 @@ void C_HLTVCamera::CalcChaseCamView( Vector& eyeOrigin, QAngle& eyeAngles, float
 	bool bManual = !spec_autodirector.GetBool();	// chase camera controlled manually
 	
  	Vector targetOrigin1, targetOrigin2, cameraOrigin, forward;
+#ifdef NEO
+#if (__GNUC__ == 11) && (__GNUC_MINOR__ == 4)
+	// suppress maybe-uninitialized false positive
+	// (can't use -Wno-maybe-uninitialized because it's broken for this compiler...)
+	targetOrigin2 = vec3_invalid;
+#endif
+#endif
 
  	if ( m_iTraget1 == 0 )
 		return;

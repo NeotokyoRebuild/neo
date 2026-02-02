@@ -97,7 +97,9 @@ private:
 #if 0
 	cache_user_t m_camoImageDataCache;
 #endif
+#ifndef NEO
 	unsigned char m_CamoPalette[256][3];
+#endif
 	// these represent that part of the entitiy's bounding box that we 
 	// want to cast rays through to get colors for the camo
 	Vector m_SubBoundingBoxMin; // normalized
@@ -367,14 +369,18 @@ void CCamoMaterialProxy::GenerateCamoTexture( ITexture* pTexture, IVTFTexture *p
 	mins = m_pEnt->WorldAlignMins();
 	maxs = m_pEnt->WorldAlignMaxs();
 	
+#ifndef NEO
 	Vector traceDirection;
 	Vector traceEnd;
 	trace_t	traceResult;
+#endif
 	
 	Vector forward, right, up;
 	AngleVectors( entityAngles, &forward, &right, &up );
 	
+#ifndef NEO
 	Vector position, transformedPosition;
+#endif
 	Vector maxsMinusMins = maxs - mins;
 
 	Vector diffuseColor[256];

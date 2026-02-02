@@ -48,6 +48,7 @@
 #ifdef NEO
 #include "neo_player.h"
 #include "neo_gamerules.h"
+#include "../../common/neo/bit_cast.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -297,7 +298,11 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 		Q_snprintf( text, sizeof(text), "%s: ", pszPlayerName );
 	}
 
+#ifdef NEO
+	j = narrow_cast<int>(sizeof(text) - 2 - strlen(text));  // -2 for /n and null terminator
+#else
 	j = sizeof(text) - 2 - strlen(text);  // -2 for /n and null terminator
+#endif
 	if ( (int)strlen(p) > j )
 		p[j] = 0;
 
@@ -1387,7 +1392,11 @@ static float GetHexFloat( const char *pStr )
 	if ( ( pStr[0] == '0' ) && ( pStr[1] == 'x' ) )
 	{
 		uint32 f = (uint32)V_atoi64( pStr );
+#ifdef NEO
+		return neo::bit_cast<float>(BC_TEST(f, *reinterpret_cast<const float*>(&f)));
+#else
 		return *reinterpret_cast< const float * >( &f );
+#endif
 	}
 	
 	return atof( pStr );

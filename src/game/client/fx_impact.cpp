@@ -18,6 +18,10 @@
 #include "c_impact_effects.h"
 #include "tier0/vprof.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -106,6 +110,14 @@ bool Impact( Vector &vecOrigin, Vector &vecStart, int iMaterial, int iDamageType
 	Assert ( pEntity );
 
 	// Clear out the trace
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<trace_t>)
+	{
+		static_assert(std::is_default_constructible_v<trace_t>);
+		tr = {};
+	}
+	else
+#endif
 	memset( &tr, 0, sizeof(trace_t));
 	tr.fraction = 1.0f;
 

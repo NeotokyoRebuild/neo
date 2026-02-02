@@ -2779,6 +2779,14 @@ void C_BaseEntity::OnStoreLastNetworkedValue()
 	bool bRestore = false;
 	Vector savePos;
 	QAngle saveAng;
+#ifdef NEO
+#if ((__GNUC__ >= 11) && (__GNUC__ <= 13))
+	// suppress maybe-uninitialized false positive
+	// (can't use -Wno-maybe-uninitialized because it's broken for some GCC versions in this range...)
+	savePos = vec3_invalid;
+	saveAng = QAngle(0,0,0);
+#endif
+#endif
 
 	// Kind of a hack, but we want to latch the actual networked value for origin/angles, not what's sitting in m_vecOrigin in the
 	//  ragdoll case where we don't copy it over in MoveToLastNetworkOrigin
@@ -5199,7 +5207,11 @@ void C_BaseEntity::AllocateIntermediateData( void )
 #if !defined( NO_ENTITY_PREDICTION )
 	if ( m_pOriginalData )
 		return;
+#ifdef NEO
+	auto allocsize = GetIntermediateDataSize();
+#else
 	size_t allocsize = GetIntermediateDataSize();
+#endif
 	Assert( allocsize > 0 );
 
 	m_pOriginalData = new unsigned char[ allocsize ];

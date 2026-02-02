@@ -38,6 +38,10 @@
 	#undef _XBOX
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
@@ -1599,6 +1603,10 @@ inline T* CopyConstruct( T* pMemory, T const& src )
 template <class T>
 inline void Destruct( T* pMemory )
 {
+#ifdef NEO
+	if (!std::has_virtual_destructor_v<T>) pMemory->T::~T();
+	else
+#endif
 	pMemory->~T();
 
 #ifdef _DEBUG

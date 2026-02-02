@@ -140,11 +140,19 @@ public:
 	void operator=( uint64 i ) 				{ Free(); m_type = FIELD_UINT64; m_uint64 = i; }
 	void operator=( float f ) 				{ Free(); m_type = FIELD_FLOAT; m_float = f; }
 	void operator=( float64 f ) 			{ Free(); m_type = FIELD_FLOAT64; m_float64 = f; }
+#ifdef NEO
+	void operator=( const Vector2D &vec )	{ CopyData( vec, true ); }
+	void operator=( const Vector &vec )		{ CopyData( vec, true ); }
+//	void operator=( const Vector4D &vec )	{ CopyData( vec, true ); }
+	void operator=( const QAngle &vec )		{ CopyData( vec, true ); }
+	void operator=( const Quaternion &q )	{ CopyData( q, true ); }
+#else
 	void operator=( const Vector2D &vec )	{ CopyData( vec ); }
 	void operator=( const Vector &vec )		{ CopyData( vec ); }
 //	void operator=( const Vector4D &vec )	{ CopyData( vec ); }
 	void operator=( const QAngle &vec )		{ CopyData( vec ); }
 	void operator=( const Quaternion &q )	{ CopyData( q ); }
+#endif
 	void operator=( const Vector2D *vec )	{ CopyData( *vec ); }
 	void operator=( QAngle *a )				{ CopyData( *a ); }
 	void operator=( const QAngle *a )		{ CopyData( *a ); }
@@ -417,6 +425,14 @@ template< class CValueAllocator >
 template< typename T > 
 inline void CVariantBase<CValueAllocator>::CopyData( const T &src, bool bForceCopy )
 {
+#ifdef NEO
+#ifdef __clang__
+#if __clang_major__ > 21 || (__clang_major__ == 21 && __clang_minor__ >= 1)
+	Assert( ( ExtendedFieldType_t )VariantDeduceType( T ) != FIELD_TYPEUNKNOWN );
+	if constexpr (false)
+#endif // clang ver
+#endif // __clang__
+#endif // NEO
 	COMPILE_TIME_ASSERT( ( ExtendedFieldType_t )VariantDeduceType( T ) != FIELD_TYPEUNKNOWN );
 
 	Free();

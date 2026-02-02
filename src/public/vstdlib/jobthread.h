@@ -492,8 +492,15 @@ public:
 	//-----------------------------------------------------
 	// Thread event support (safe for NULL this to simplify code )
 	//-----------------------------------------------------
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-bool-conversion"
+#endif
 	bool WaitForFinish( uint32 dwTimeout = TT_INFINITE ) { if (!this) return true; return ( !IsFinished() ) ? g_pThreadPool->YieldWait( this, dwTimeout ) : true; }
 	bool WaitForFinishAndRelease( uint32 dwTimeout = TT_INFINITE ) { if (!this) return true; bool bResult = WaitForFinish( dwTimeout); Release(); return bResult; }
+#if defined(NEO) && defined(COMPILER_CLANG)
+#pragma clang diagnostic pop
+#endif
 	CThreadEvent *AccessEvent()						{ return &m_CompleteEvent; }
 
 	//-----------------------------------------------------

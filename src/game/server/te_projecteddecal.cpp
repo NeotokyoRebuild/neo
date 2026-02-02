@@ -71,7 +71,9 @@ void CTEProjectedDecal::Test( const Vector& current_origin, const QAngle& curren
 	m_vecOrigin = current_origin;
 	m_angRotation = current_angles;
 
+#ifndef NEO
 	Vector vecEnd;
+#endif
 	
 	Vector forward;
 

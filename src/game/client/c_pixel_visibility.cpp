@@ -51,7 +51,9 @@ const float MIN_PROXY_PIXELS = 25.0f;
 
 float PixelVisibility_DrawProxy( IMatRenderContext *pRenderContext, OcclusionQueryObjectHandle_t queryHandle, Vector origin, float scale, float proxyAspect, IMaterial *pMaterial, bool screenspace )
 {
+#ifndef NEO
 	Vector point;
+#endif
 
 	// don't expand this with distance to fit pixels or the sprite will poke through
 	// only expand the parts perpendicular to the view
@@ -259,7 +261,11 @@ private:
 	unsigned short					m_wasQueriedThisFrame : 1;
 	unsigned short					m_failed : 1;
 	unsigned short					m_hasValidQueryResults : 1;
+#ifdef NEO // don't name padding bits to make Clang happy
+	unsigned short					: 13;
+#else
 	unsigned short					m_pad : 13;
+#endif
 	unsigned short					m_viewID;
 
 	friend void PixelVisibility_ShiftVisibilityViews( int iSourceViewID, int iDestViewID ); //need direct access to private data to make shifting smooth
@@ -501,6 +507,9 @@ private:
 	unsigned short m_freeQueriesList;
 	unsigned short m_activeSetsList;
 	unsigned short m_freeSetsList;
+#if defined(NEO) && defined(COMPILER_CLANG)
+	[[maybe_unused]]
+#endif
 	unsigned short m_pad0;
 
 	IMaterial	*m_pProxyMaterial;

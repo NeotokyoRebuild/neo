@@ -38,11 +38,13 @@ enum ServerBlacklistCols
 // and SDK's blacklist read/write would collide if it's the same filename
 static constexpr const char SERVER_BLACKLIST_DEFFILE[] = "cfg/ntre_server_blacklist.txt";
 
+struct GameServerSortContext;
+
 void ServerBlacklistRead(const char *szPath);
 void ServerBlacklistWrite(const char *szPath);
 void ServerBlacklistCacheWsz(ServerBlacklistInfo *sbInfo);
 bool ServerBlacklisted(const gameserveritem_t &server);
-void ServerBlacklistUpdateSortedList();
+void ServerBlacklistUpdateSortedList(const GameServerSortContext& sortCtx);
 
 enum GameServerType
 {
@@ -89,7 +91,11 @@ enum GameServerPlayerSort
 
 struct GameServerSortContext
 {
-	GameServerInfoW col = GSIW_NAME;
+	// NEO NOTE (Rain): this type is not GameServerInfoW anymore, because it may be treated as ServerBlacklistCols
+	// in the column sorting logic, and that would emit an error for the steamrt4 Clang 19 compiler for linux-debug build:
+	// error: comparison of different enumeration types in switch statement ('GameServerInfoW' and 'ServerBlacklistCols')
+	// Just always make sure col has a meaningful value for the context in which you evaluate it.
+	int col = GSIW_NAME;
 	bool bDescending = false;
 };
 

@@ -1607,7 +1607,9 @@ void CChangeLevel::WarnAboutActiveLead( void )
 void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 {
 	CBaseEntity	*pLandmark;
+#ifndef NEO
 	levellist_t	levels[16];
+#endif
 
 	Assert(!FStrEq(m_szMapName, ""));
 

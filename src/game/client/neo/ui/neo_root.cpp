@@ -133,7 +133,7 @@ static bool NetAdrIsFavorite(const servernetadr_t &netAdr)
 					nConnPort == netAdr.GetConnectionPort() &&
 					nQueryPort == netAdr.GetQueryPort() &&
 					(unFlags & k_unFavoriteFlagFavorite) &&
-					nAppID == engine->GetAppID())
+					nAppID == static_cast<decltype(nAppID)>(engine->GetAppID()))
 			{
 				return true;
 			}
@@ -738,7 +738,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, BUILD_DISPLAY, textWidth, textHeight);
 
 		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
-		surface()->DrawPrintText(BUILD_DISPLAY, wcslen(BUILD_DISPLAY));
+		surface()->DrawPrintText(BUILD_DISPLAY, V_wcslen(BUILD_DISPLAY));
 	}
 }
 
@@ -818,10 +818,6 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	}
 	NeoUI::EndSection();
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
-
-	const int iBtnWide = m_iTitleWidth + iMargin;
-	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + iMarginHalf;
-	int iRightSideYStart = (iTitleMarginTop + (2 * iTitleNHeight));
 
 	// Draw top steam section portion
 	{
@@ -1406,21 +1402,22 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 			NeoUI::SetPerRowLayout(iColTotal, pirLayout);
 			for (int i = 0; i < iColTotal; ++i)
 			{
-				vgui::surface()->DrawSetColor((m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+				const bool isSortCol = (m_sortCtx.col == i);
+				vgui::surface()->DrawSetColor(isSortCol ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
 				if (NeoUI::Button(pwszNames[i]).bPressed)
 				{
-					if (m_sortCtx.col == i)
+					if (isSortCol)
 					{
 						m_sortCtx.bDescending = !m_sortCtx.bDescending;
 					}
 					else
 					{
-						m_sortCtx.col = static_cast<GameServerInfoW>(i);
+						m_sortCtx.col = i;
 					}
 					m_bSBFiltModified = true;
 				}
 
-				if (m_sortCtx.col == i)
+				if (isSortCol)
 				{
 					DrawSortHint(m_sortCtx.bDescending);
 				}
@@ -1926,7 +1923,6 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 
 		m_bSprayGalleryRefresh = false;
 	}
-	const int iGalleryRows = g_iRowsInScreen / 4;
 	const int iNormTall = g_uiCtx.layout.iRowTall;
 	const int iCellTall = iNormTall * 4;
 

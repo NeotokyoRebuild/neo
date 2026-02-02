@@ -63,7 +63,7 @@ BEGIN_VS_SHADER( Neo_Motion_Model_DX9, "Help for motion model shader" )
 			s_pShaderAPI->GetMatrix(MATERIAL_VIEW, mat.m[0]);
 			MatrixTranspose(mat, mat);
 			s_pShaderAPI->SetPixelShaderConstant(0, mat.m[2], 3);
-			const float speed = min(1.f, params[SPEED]->GetFloatValue() * 0.02f);
+			const float speed = Min(1.f, params[SPEED]->GetFloatValue() * 0.02f);
 			s_pShaderAPI->SetPixelShaderConstant(3, &speed);
 		}
 		

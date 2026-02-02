@@ -31,8 +31,13 @@
 #include "tier1/checksum_sha1.h"
 #endif
 
+#if defined(NEO) && defined(DEBUG)
+#include <limits>
+#endif
+
 #define MAX_FILE_READ_BUFFER 8000
 
+#ifndef NEO
 // Rotate x bits to the left
 #ifndef ROL32
 #define ROL32(_val32, _nBits) (((_val32)<<(_nBits))|((_val32)>>(32-(_nBits))))
@@ -43,6 +48,7 @@
 		(ROL32(m_block->l[i],24) & 0xFF00FF00) | (ROL32(m_block->l[i],8) & 0x00FF00FF))
 #else
 	#define SHABLK0(i) (m_block->l[i])
+#endif
 #endif
 
 #define SHABLK(i) (m_block->l[i&15] = ROL32(m_block->l[(i+13)&15] ^ m_block->l[(i+8)&15] \
@@ -172,39 +178,139 @@ void CSHA1::Update(unsigned char *data, unsigned int len)
 
 #if !defined(_MINIMUM_BUILD_)
 // Hash in file contents
+#ifdef NEO
+bool CSHA1::HashFile(const char* szFileName, IFileSystem* fs)
+#else
 bool CSHA1::HashFile(char *szFileName)
+#endif
 {
+#ifdef NEO
+#pragma push_macro("has_fopen")
+#pragma push_macro("dont_use_fopen")
+#undef dont_use_fopen
+#define dont_use_fopen 0xbadc0de
+#if (fopen == dont_use_fopen)
+#define has_fopen 0
+#else
+#define has_fopen 1
+#endif
+#undef dont_use_fopen
+#pragma pop_macro("dont_use_fopen")
+#endif
+
 	uint32 ulFileSize = 0, ulRest = 0, ulBlocks = 0;
 	uint32 i = 0;
 	unsigned char uData[MAX_FILE_READ_BUFFER];
+#if defined(NEO) && !has_fopen
+	FileHandle_t fIn = nullptr;
+#else
 	FILE *fIn = NULL;
+#endif
 
 	if(szFileName == NULL) return(false);
 
+#if defined(NEO) && !has_fopen
+	if (!fs)
+	{
+#ifdef DBGFLAG_ASSERT
+		Assert(false);
+#endif
+		return false;
+	}
+	if (!fs->FileExists(szFileName)) return false;
+
+	fIn = fs->Open(szFileName, "rb");
+	if (!fIn) return false;
+	fs->Seek(fIn, 0, FileSystemSeek_t::FILESYSTEM_SEEK_TAIL);
+	ulFileSize = fs->Tell(fIn);
+	fs->Seek(fIn, 0, FileSystemSeek_t::FILESYSTEM_SEEK_HEAD);
+#else
 	if((fIn = fopen(szFileName, "rb")) == NULL) return(false);
 
 	fseek(fIn, 0, SEEK_END);
 	ulFileSize = ftell(fIn);
 	fseek(fIn, 0, SEEK_SET);
+#endif
 
 	ulRest = ulFileSize % MAX_FILE_READ_BUFFER;
 	ulBlocks = ulFileSize / MAX_FILE_READ_BUFFER;
 
+#ifdef NEO
+	unsigned short freadRes;
+#endif // NEO
 	for(i = 0; i < ulBlocks; i++)
 	{
+#ifdef NEO
+#ifdef DEBUG
+		static_assert(sizeof(uData) == MAX_FILE_READ_BUFFER);
+		static_assert(sizeof(uData) <= std::numeric_limits<decltype(freadRes)>::max());
+		static_assert(sizeof(uData) <= std::numeric_limits<decltype(ulRest)>::max());
+#endif // DEBUG
+#endif // NEO
+
+#ifdef NEO
+		freadRes = (decltype(freadRes))
+#endif
+#if defined(NEO) && !has_fopen
+		fs->Read(uData, 1 * MAX_FILE_READ_BUFFER, fIn);
+#else
 		fread(uData, 1, MAX_FILE_READ_BUFFER, fIn);
+#endif
+
+#ifdef NEO
+		if (freadRes != MAX_FILE_READ_BUFFER)
+		{
+#ifdef DBGFLAG_ASSERT
+			Assert(false);
+#endif // DBGFLAG_ASSERT
+			return false;
+		}
+#endif // NEO
 		Update(uData, MAX_FILE_READ_BUFFER);
 	}
 
 	if(ulRest != 0)
 	{
+#ifdef NEO
+		if (sizeof(uData) < (size_t)1 * ulRest)
+		{
+#ifdef DBGFLAG_ASSERT
+			Assert(false);
+#endif // DBGFLAG_ASSERT
+			return false;
+		}
+		freadRes = (decltype(freadRes))
+#endif // NEO
+
+#if defined(NEO) && !has_fopen
+		fs->Read(uData, ulRest, fIn);
+#else
 		fread(uData, 1, ulRest, fIn);
+#endif
+
+#ifdef NEO
+		if (freadRes != ulRest)
+		{
+#ifdef DBGFLAG_ASSERT
+			Assert(false);
+#endif // DBGFLAG_ASSERT
+			return false;
+		}
+#endif // NEO
 		Update(uData, ulRest);
 	}
 
+#if defined(NEO) && !has_fopen
+	fs->Close(fIn);
+#else
 	fclose(fIn);
+#endif
 	fIn = NULL;
 
+#ifdef NEO
+#undef has_fopen
+#pragma pop_macro("has_fopen")
+#endif
 	return(true);
 }
 #endif

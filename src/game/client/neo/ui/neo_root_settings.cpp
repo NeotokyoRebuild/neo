@@ -260,19 +260,19 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 	ns->backgrounds = new KeyValues( "neo_backgrounds" );
 	ns->iCBListSize = 0;
 
-	constexpr auto allocate = [](NeoSettings *ns, int size) {
+	constexpr auto allocate = [](NeoSettings *ns, size_t size) {
 		ns->p2WszCBList = (wchar_t **)calloc(sizeof(wchar_t *), ns->iCBListSize);
 		ns->p2WszCBList[0] = (wchar_t *)calloc(sizeof(wchar_t) * size, ns->iCBListSize);
 	};
 
 	// Setup Background Map options
-	int dispSize = Max(sizeof(NEO_FALLBACK_BACKGROUND_DISPLAYNAME), sizeof(NEO_RANDOM_BACKGROUND_NAME) + 1);
+	auto dispSize = Max(sizeof(NEO_FALLBACK_BACKGROUND_DISPLAYNAME), sizeof(NEO_RANDOM_BACKGROUND_NAME) + 1);
 	if ( !ns->backgrounds->LoadFromFile( g_pFullFileSystem, NEO_BACKGROUNDS_FILENAME, "MOD" ) )
 	{ // File empty or unable to load, set to static and return early
 		Warning( "Unable to load '%s'\n", NEO_BACKGROUNDS_FILENAME );
 		ns->iCBListSize = 1;
 		allocate(ns, dispSize);
-		g_pVGuiLocalize->ConvertANSIToUnicode(NEO_FALLBACK_BACKGROUND_DISPLAYNAME, ns->p2WszCBList[0], sizeof(wchar_t) * dispSize);
+		g_pVGuiLocalize->ConvertANSIToUnicode(NEO_FALLBACK_BACKGROUND_DISPLAYNAME, ns->p2WszCBList[0], narrow_cast<int>(sizeof(wchar_t) * dispSize));
 		NeoSettingsBackgroundWrite(ns, NEO_FALLBACK_BACKGROUND_FILENAME);
 		return;
 	}
@@ -298,17 +298,17 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 		}
 
 		ns->iCBListSize++;
-		dispSize = Max(dispSize, (V_strlen(displayName) + 1));
+		dispSize = Max<decltype(dispSize)>(dispSize, (V_strlen(displayName) + 1));
 		background = background->GetNextKey();
 	}
-	const int wDispSize = sizeof(wchar_t) * dispSize;
+	const int wDispSize = narrow_cast<int>(sizeof(wchar_t) * dispSize);
 	
 	// Random Background Option
 	ns->iCBListSize++;
 	allocate(ns, dispSize);
 	KeyValues* background = ns->backgrounds->GetFirstSubKey();
 	// iterate through background maps and set their names
-	for (int i = 0, offset = 0; i < ns->iCBListSize - 1; ++i, offset += dispSize)
+	for (int i = 0, offset = 0; i < ns->iCBListSize - 1; ++i, offset = narrow_cast<decltype(i)>(offset+dispSize))
 	{
 		g_pVGuiLocalize->ConvertANSIToUnicode(background->GetName(), ns->p2WszCBList[0] + offset, wDispSize);
 		ns->p2WszCBList[i] = ns->p2WszCBList[0] + offset;
@@ -316,7 +316,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 	}
 
 	// Set last option to random
-	const int offset = (ns->iCBListSize - 1) * dispSize;
+	const int offset = narrow_cast<int>((ns->iCBListSize - 1) * dispSize);
 	g_pVGuiLocalize->ConvertANSIToUnicode(ns->iCBListSize == 1 ? NEO_FALLBACK_BACKGROUND_DISPLAYNAME : NEO_RANDOM_BACKGROUND_NAME, ns->p2WszCBList[0] + offset, wDispSize);
 	ns->p2WszCBList[ns->iCBListSize - 1] = ns->p2WszCBList[0] + offset;
 

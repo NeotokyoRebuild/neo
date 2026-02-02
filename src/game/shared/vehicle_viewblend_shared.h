@@ -10,6 +10,10 @@
 #pragma once
 #endif
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // Definition for how to calculate a point on the remap curve
 enum RemapAngleRange_CurvePart_t
 {
@@ -67,6 +71,41 @@ struct ViewSmoothingData_t
 	QAngle	vecAngleDiffSaved;	// The original angular error between the entry/exit anim and player's view when we started playing the anim.
 	QAngle	vecAngleDiffMin;	// Tracks the minimum angular error achieved so we can converge on the anim's angles.
 };
+
+#ifdef NEO
+inline void ZeroViewSmoothingData(ViewSmoothingData_t& data)
+{
+	if constexpr (std::is_trivially_copyable_v<ViewSmoothingData_t>)
+	{
+		memset(&data, 0, sizeof(data));
+	}
+	else
+	{
+		static_assert(sizeof(ViewSmoothingData_t) == 128, "please update this zero-init function for the changed data layout");
+
+		data.pVehicle = {};
+		data.bClampEyeAngles = {};
+		data.flPitchCurveZero = data.flPitchCurveLinear =
+			data.flRollCurveZero = data.flRollCurveLinear = {};
+		data.flFOV = {};
+
+		static_assert(std::is_trivially_copyable_v<ViewLockData_t>);
+		static_assert(std::is_same_v<ViewLockData_t, decltype(data.pitchLockData)>);
+		static_assert(std::is_same_v<ViewLockData_t, decltype(data.rollLockData)>);
+		memset(&data.pitchLockData, 0, sizeof(data.pitchLockData));
+		memset(&data.rollLockData, 0, sizeof(data.rollLockData));
+
+		data.bDampenEyePosition = {};
+
+		data.bRunningEnterExit = data.bWasRunningAnim = {};
+		data.flEnterExitStartTime = data.flEnterExitDuration = {};
+		data.vecAnglesSaved.Init();
+		data.vecOriginSaved.Zero();
+		data.vecAngleDiffSaved.Init();
+		data.vecAngleDiffMin.Init();
+	}
+}
+#endif
 
 // TEMP: Shared vehicle view smoothing
 void SharedVehicleViewSmoothing(CBasePlayer *pPlayer, 
