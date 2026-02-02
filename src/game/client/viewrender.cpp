@@ -3872,6 +3872,14 @@ void CRendering3dView::DrawWorld( float waterZAdjust )
 		return;
 	}
 
+#ifdef NEO
+	if ( !m_pWorldRenderList )
+	{
+		DevWarning( "CRendering3dView::DrawWorld: m_pWorldRenderList is NULL\n" );
+		return;
+	}
+#endif
+
 	unsigned long engineFlags = BuildEngineDrawWorldListFlags( m_DrawFlags );
 
 	render->DrawWorldLists( m_pWorldRenderList, engineFlags, waterZAdjust );
