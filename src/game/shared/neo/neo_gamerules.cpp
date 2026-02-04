@@ -1768,8 +1768,10 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 			StartAutoClientRecording();
 		}
 #endif
+#ifdef GAME_DLL
 		m_flNeoRoundStartTime = gpGlobals->curtime;
 		m_flNeoNextRoundStartTime = 0;
+#endif
 	}
 
 #ifdef CLIENT_DLL
