@@ -27,7 +27,6 @@ protected:
 	CHandle< CBaseEntity > m_hThreatGrenadeTarget;
 	CountdownTimer m_giveUpTimer;
 	CountdownTimer m_scanTimer;
-	CountdownTimer m_pinPullTimer;
 	bool m_bPinPulled;
 
 	enum ThrowTargetResult

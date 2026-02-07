@@ -19,6 +19,11 @@ ConVar sv_neo_bot_grenade_use_smoke("sv_neo_bot_grenade_use_smoke", "1", FCVAR_N
 //---------------------------------------------------------------------------------------------
 Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *me, const CKnownEntity *threat )
 {
+	if (!sv_neo_bot_grenade_use_frag.GetBool() && !sv_neo_bot_grenade_use_smoke.GetBool())
+	{
+		return nullptr;
+	}
+
 	if ( !threat || !threat->GetEntity() || !threat->GetEntity()->IsPlayer() || !threat->GetEntity()->IsAlive() )
 	{
 		return nullptr;
@@ -26,11 +31,6 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 
 	CNEO_Player *pNEOPlayer = ToNEOPlayer( me->GetEntity() );
 	if ( !pNEOPlayer )
-	{
-		return nullptr;
-	}
-
-	if (!sv_neo_bot_grenade_use_frag.GetBool() && !sv_neo_bot_grenade_use_smoke.GetBool())
 	{
 		return nullptr;
 	}
@@ -69,11 +69,36 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 
 	Vector vecThreatPos = threat->GetLastKnownPosition();
 
+	// Should I toss a smoke grenade?
+	if ( pSmokeGrenade )
+	{
+		if ( pNEOPlayer->GetClass() == NEO_CLASS_SUPPORT )
+		{
+			// I can see through smoke
+			return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
+		}
+
+		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+		{
+			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+			if ( pPlayer && pPlayer->IsAlive() && pPlayer->GetClass() == NEO_CLASS_SUPPORT )
+			{
+			    if ( !pPlayer->InSameTeam(pNEOPlayer) )
+				{
+					return nullptr; // Enemy support could see through smoke
+				}
+			}
+		}
+
+		// Enemy team does not have Support players in the field
+		return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
+	}
+
 	// Should I toss a frag grenade? 
 	if ( pFragGrenade )
 	{
 		float flDistToThreatSqr = me->GetAbsOrigin().DistToSqr( vecThreatPos );
-		float flSafeRadius = sv_neo_grenade_blast_radius.GetFloat();
+		float flSafeRadius = CNEOBotGrenadeThrowFrag::GetFragSafetyRadius();
 		float flSafeRadiusSqr = flSafeRadius * flSafeRadius;
 
 		if ( flDistToThreatSqr < flSafeRadiusSqr )
@@ -110,17 +135,6 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 		}
 
 		return new CNEOBotGrenadeThrowFrag( pFragGrenade, threat );
-	}
-
-	// Should I toss a smoke grenade?
-	if ( pSmokeGrenade )
-	{
-		CNEO_Player *pThreatPlayer = ToNEOPlayer( threat->GetEntity() );
-		// Only smoke if threat is NOT support (supports have thermal vision)
-		if ( pThreatPlayer && pThreatPlayer->GetClass() != NEO_CLASS_SUPPORT )
-		{
-			return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
-		}
 	}
 
 	return nullptr;

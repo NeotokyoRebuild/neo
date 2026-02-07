@@ -9,7 +9,6 @@
 #include "bot/neo_bot_path_compute.h"
 
 extern ConVar neo_bot_path_lookahead_range;
-extern ConVar sv_neo_smoke_bloom_duration;
 ConVar neo_bot_retreat_to_cover_range( "neo_bot_retreat_to_cover_range", "1000", FCVAR_CHEAT );
 ConVar neo_bot_debug_retreat_to_cover( "neo_bot_debug_retreat_to_cover", "0", FCVAR_CHEAT );
 ConVar neo_bot_wait_in_cover_min_time( "neo_bot_wait_in_cover_min_time", "1", FCVAR_CHEAT );
@@ -236,6 +235,20 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	}
 #endif
 
+	// If line of fire broken, consider throwing a grenade
+	if ( threat && !me->IsLineOfFireClear( threat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+	{
+		if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
+		{
+			m_grenadeThrowCooldownTimer.Start( 10.0f );
+			Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
+			if ( pGrenadeBehavior )
+			{
+				return SuspendFor( pGrenadeBehavior, "Throwing grenade while taking cover!" );
+			}
+		}
+	}
+
 	// move to cover, or stop if we've found opportunistic cover (no visible threats right now)
 	if ( me->GetLastKnownArea() == m_coverArea || !threat )
 	{
@@ -243,16 +256,6 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 
 		if ( threat )
 		{
-			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
-			{
-				m_grenadeThrowCooldownTimer.Start( sv_neo_smoke_bloom_duration.GetFloat() / 2.0f );
-				Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
-				if ( pGrenadeBehavior )
-				{
-					return SuspendFor( pGrenadeBehavior, "Throwing grenade from cover!" );
-				}
-			}
-
 			// threats are still visible - find new cover
 			m_coverArea = FindCoverArea( me );
 

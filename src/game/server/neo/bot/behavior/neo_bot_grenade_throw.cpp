@@ -126,64 +126,68 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		return Continue();
 	}
 
-	// NEOJANK: The bots struggle throw to grenades with PressFireButton due to control quirks
-	// As a workaround, we decompose the action into different phases of the bot behavior
-	// Part 1: Primary attack which actually only pulls the pin
-	// Part 2: See below ItemPostFrame() which throws the grenade and triggers throw animation
-	if ( !m_bPinPulled )
-	{
-		// Initiate pull pin animation
-		pWep->PrimaryAttack();
-		m_pinPullTimer.Start( 0.5f ); // RETHROW_DELAY
-		m_bPinPulled = true;
-	}
+	ThrowTargetResult result = UpdateGrenadeTargeting( me, pWep );
 
-	if ( !m_pinPullTimer.IsElapsed() )
+	// Subclasses may decide in the last second that a throw is too dangerous (CANCEL)
+	if ( result == THROW_TARGET_CANCEL )
 	{
-		return Continue();
-	}
-
-	// Continue to call UpdateGrenadeTargeting after THROW_TARGET_READY result
-	// as subclasses may decide in the last second that a throw is too dangerous (CANCEL)
-	switch ( UpdateGrenadeTargeting( me, pWep ) )
-	{
-	case THROW_TARGET_CANCEL:
 		return Done( "Grenade throw aborted" );
+	}
 
-	case THROW_TARGET_WAIT:
-		return Continue();
+	bool bAimOnTarget = false;
 
-	case THROW_TARGET_READY:
+	if ( result == THROW_TARGET_READY )
 	{
-		// Wait until we are aiming at the target
 		if ( m_vecTarget == vec3_invalid )
 		{
 			return Done( "Invalid target coordinate" );
 		}
+		
 		me->GetBodyInterface()->AimHeadTowards( m_vecTarget, IBody::MANDATORY, 0.2f, nullptr, "Aiming grenade" );
+
+		// NEOJANK: The bots struggle to throw grenades with PressFireButton due to control quirks.
+		// As a workaround, we decompose the action into different phases of the bot behavior.
+		// This also allows us to run aiming logic in parallel with the pin-pull animation.
+
+		// PrimaryAttack which actually only pulls the pin
+		if (!m_bPinPulled)
+		{
+			// Initiate pull pin animation
+			pWep->PrimaryAttack();
+			m_bPinPulled = true;
+		}
 
 		Vector vecForward;
 		me->EyeVectors( &vecForward );
 		Vector vecToTarget = m_vecTarget - me->GetEntity()->EyePosition();
 		vecToTarget.NormalizeInPlace();
-		if ( vecForward.Dot( vecToTarget ) < 0.99f )
+		
+		if ( vecForward.Dot( vecToTarget ) >= 0.95f )
 		{
-			return Continue();
+			bAimOnTarget = true;
 		}
+	}
 
-		// NEOJANK Part 2: Throw the grenade with ItemPostFrame
+	// Check Weapon Readiness
+	// m_flNextPrimaryAttack is set by PrimaryAttack() to block firing during the pin-pull anim.
+	bool bWeaponReady = ( pWep->m_flNextPrimaryAttack <= gpGlobals->curtime );
+
+	// Execute Throw
+	// Only throw if both aimed correctly AND the weapon ready animation has finished.
+	if ( bWeaponReady && bAimOnTarget )
+	{
+		// Throw the grenade with ItemPostFrame
 		pWep->ItemPostFrame(); // includes ThrowGrenade() among other triggers like animation
 		return Done( "Grenade throw sequence finished" );
 	}
-
-	default:
-		Assert( false );
-		return Done( "Unknown grenade throw outcome" );
-	}
+	
+	return Continue();
 }
 
 //---------------------------------------------------------------------------------------------
 void CNEOBotGrenadeThrow::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
 {
 	me->PopRequiredWeapon();
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	me->EquipBestWeaponForThreat( threat );
 }

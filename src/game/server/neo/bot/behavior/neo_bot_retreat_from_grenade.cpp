@@ -10,7 +10,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar neo_bot_retreat_from_grenade_range( "neo_bot_retreat_from_grenade_range", "1000", FCVAR_CHEAT );
+extern ConVar sv_neo_bot_grenade_frag_safety_range_multiplier;
+ConVar neo_bot_retreat_from_grenade_range( "neo_bot_retreat_from_grenade_range", "2000", FCVAR_CHEAT );
 ConVar neo_bot_debug_retreat_from_grenade( "neo_bot_debug_retreat_from_grenade", "0", FCVAR_CHEAT );
 
 
@@ -32,7 +33,7 @@ public:
 		m_me = me;
 		m_grenade = grenade;
 		m_pGrenadeStats = dynamic_cast<CBaseGrenadeProjectile *>( grenade );
-		m_safeRadiusSqr = m_pGrenadeStats ? Square(m_pGrenadeStats->m_DmgRadius * 2.0f) : 0.0f;
+		m_safeRadiusSqr = m_pGrenadeStats ? Square(m_pGrenadeStats->m_DmgRadius * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat()) : 0.0f;
 
 		if ( neo_bot_debug_retreat_from_grenade.GetBool() )
 			TheNavMesh->ClearSelectedSet();
