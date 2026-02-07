@@ -154,6 +154,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		return Continue();
 
 	case THROW_TARGET_READY:
+	{
 		// Wait until we are aiming at the target
 		if ( m_vecTarget == vec3_invalid )
 		{
@@ -173,6 +174,8 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		// NEOJANK Part 2: Throw the grenade with ItemPostFrame
 		pWep->ItemPostFrame(); // includes ThrowGrenade() among other triggers like animation
 		return Done( "Grenade throw sequence finished" );
+	}
+
 	default:
 		Assert( false );
 		return Done( "Unknown grenade throw outcome" );
