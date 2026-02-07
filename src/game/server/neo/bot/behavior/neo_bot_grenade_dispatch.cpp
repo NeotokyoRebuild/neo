@@ -13,6 +13,9 @@ extern ConVar sv_neo_grenade_blast_radius;
 extern ConVar sv_neo_grenade_fuse_timer;
 extern ConVar sv_neo_grenade_throw_intensity;
 
+ConVar sv_neo_bot_grenade_use_frag("sv_neo_bot_grenade_use_frag", "1", FCVAR_NONE, "Allow bots to use frag grenades", true, 0, true, 1);
+ConVar sv_neo_bot_grenade_use_smoke("sv_neo_bot_grenade_use_smoke", "1", FCVAR_NONE, "Allow bots to use smoke grenades", true, 0, true, 1);
+
 //---------------------------------------------------------------------------------------------
 Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *me, const CKnownEntity *threat )
 {
@@ -23,6 +26,11 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 
 	CNEO_Player *pNEOPlayer = ToNEOPlayer( me->GetEntity() );
 	if ( !pNEOPlayer )
+	{
+		return nullptr;
+	}
+
+	if (!sv_neo_bot_grenade_use_frag.GetBool() && !sv_neo_bot_grenade_use_smoke.GetBool())
 	{
 		return nullptr;
 	}
@@ -38,14 +46,14 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 			continue;
 		}
 
-		if ( ( pFragGrenade = dynamic_cast< CWeaponGrenade * >( pWep ) ) )
+		if ( sv_neo_bot_grenade_use_frag.GetBool() && ( pFragGrenade = dynamic_cast< CWeaponGrenade * >( pWep ) ) )
 		{
 			if ( pSmokeGrenade )
 			{
 				break; // found both
 			}
 		}
-		else if ( ( pSmokeGrenade = dynamic_cast< CWeaponSmokeGrenade * >( pWep ) ) )
+		else if ( sv_neo_bot_grenade_use_smoke.GetBool() && ( pSmokeGrenade = dynamic_cast< CWeaponSmokeGrenade * >( pWep ) ) )
 		{
 			if ( pFragGrenade )
 			{
