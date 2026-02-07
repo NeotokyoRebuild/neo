@@ -18,6 +18,7 @@
 #include "neo_ui.h"
 #include "neo_root.h"
 #include "neo/ui/neo_utils.h"
+#include "neo_theme.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1075,17 +1076,12 @@ void NeoSettings_General(NeoSettings *ns)
 void NeoSettings_Keys(NeoSettings *ns)
 {
 	NeoSettings::Keys *pKeys = &ns->keys;
-	NeoUI::Divider();
+	NeoUI::Divider(L"CONSOLE");
 	NeoUI::RingBoxBool(L"Developer console", &pKeys->bDeveloperConsole);
 	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 	static constexpr const int KEYS_LAYOUT[] = { 40, 30, -1 };
 	NeoUI::SetPerRowLayout(ARRAYSIZE(KEYS_LAYOUT), KEYS_LAYOUT);
-	// NEO TODO DG: These are here to stop the developer console bind bit from breaking.
-	// The binding should be moved into the misc section, not sit on top of the divider
-	NeoUI::Pad();
-	NeoUI::Pad();
-	NeoUI::Pad();
 	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 	for (int i = 0; i < pKeys->iBindsSize; ++i)
 	{
@@ -1096,7 +1092,7 @@ void NeoSettings_Keys(NeoSettings *ns)
 		}
 		else
 		{
-			NeoUI::MultiWidgetHighlighter(3);
+			NeoUI::BeginMultiWidgetHighlighter(3);
 			NeoUI::Label(bind.wszDisplayText);
 			wchar_t wszBindBtnName[64];
 			const char *szBindBtnName = g_pInputSystem->ButtonCodeToString(bind.bcNext);
@@ -1113,6 +1109,7 @@ void NeoSettings_Keys(NeoSettings *ns)
 				ns->iNextBinding = i;
 				ns->bNextBindingSecondary = true;
 			}
+			NeoUI::EndMultiWidgetHighlighter();
 		}
 	}
 }
@@ -1147,14 +1144,16 @@ void NeoSettings_MouseController(NeoSettings *ns)
 void NeoSettings_Audio(NeoSettings *ns)
 {
 	NeoSettings::Audio *pAudio = &ns->audio;
-	NeoUI::Divider();
+	NeoUI::Divider(L"VOLUME");
 	NeoUI::Slider(L"Main Volume", &pAudio->flVolMain, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Slider(L"Music Volume", &pAudio->flVolMusic, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Slider(L"Victory Volume", &pAudio->flVolVictory, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Slider(L"Ping Volume", &pAudio->flVolPing, 0.0f, 1.0f, 2, 0.1f);
+	NeoUI::Divider(L"SOUND");
 	NeoUI::RingBox(L"Sound Setup", SPEAKER_CFG_LABELS, ARRAYSIZE(SPEAKER_CFG_LABELS), &pAudio->iSoundSetup);
 	NeoUI::RingBox(L"Sound Quality", QUALITY_LABELS, 3, &pAudio->iSoundQuality);
 	NeoUI::RingBoxBool(L"Mute Audio on un-focus", &pAudio->bMuteAudioUnFocus);
+	NeoUI::Divider(L"VOICE");
 	NeoUI::RingBoxBool(L"Voice Enabled", &pAudio->bVoiceEnabled);
 	NeoUI::Slider(L"Voice Receive", &pAudio->flVolVoiceRecv, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::RingBoxBool(L"Microphone Boost", &pAudio->bMicBoost);
@@ -1180,7 +1179,6 @@ void NeoSettings_Audio(NeoSettings *ns)
 										g_uiCtx.rWidgetArea.x0 + (pAudio->flSpeakingVol * g_uiCtx.irWidgetWide),
 										g_uiCtx.rWidgetArea.y1 + g_uiCtx.layout.iRowTall);
 		vgui::surface()->DrawSetColor(COLOR_TRANSPARENT);
-		g_uiCtx.selectBgColor = COLOR_TRANSPARENT;
 	}
 	if (NeoUI::Button(L"Microphone Tester",
 					  bTweaking ? L"Stop testing" : L"Start testing").bPressed)
@@ -1192,7 +1190,6 @@ void NeoSettings_Audio(NeoSettings *ns)
 	if (bTweaking && g_uiCtx.eMode == NeoUI::MODE_PAINT)
 	{
 		vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-		g_uiCtx.selectBgColor = COLOR_NEOPANELSELECTBG;
 	}
 }
 
@@ -1242,7 +1239,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	const bool bTextured = CROSSHAIR_FILES[pCrosshair->info.iStyle][0];
 	NeoUI::BeginSection(NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
 	{
-		NeoUI::Divider();
+		NeoUI::Divider(L"PREVIEW");
 		if (bTextured)
 		{
 			NeoSettings::Crosshair::Texture *pTex = &ns->crosshair.arTextures[pCrosshair->info.iStyle];
@@ -1261,7 +1258,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 						   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
 						   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
 		}
-		vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
+		vgui::surface()->DrawSetColor(g_uiCtx.colors.normalBg);
 
 		NeoUI::SetPerRowLayout(4);
 		{
@@ -1402,22 +1399,20 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	NeoUI::EndSection();
 }
 
-static const wchar_t *IFF_LABELS[] = { L"Squad", 
+static const wchar_t *IFF_LABELS[] = {
+	L"Squad", 
+	L"Team",
+	L"Spectator",
 #ifdef GLOWS_ENABLE
-L"Squad (Xray)",
-#endif // GLOWS_ENABLE
-L"Team",
-#ifdef GLOWS_ENABLE
-L"Team (Xray)",
-#endif // GLOWS_ENABLE
-L"Spectator",
-#ifdef GLOWS_ENABLE
-L"Spectator (Xray)"
+	L"Squad (Xray)",
+	L"Team (Xray)",
+	L"Spectator (Xray)"
 #endif // GLOWS_ENABLE
 };
-void NeoSettings_HUD(NeoSettings* ns)
+
+void NeoSettings_HUD(NeoSettings *ns)
 {
-	NeoSettings::HUD* pHud = &ns->hud;
+	NeoSettings::HUD *pHud = &ns->hud;
 	NeoUI::Divider(L"MISCELLANEOUS");
 	NeoUI::RingBoxBool(L"Classic squad list", &pHud->bShowSquadList);
 	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, pHud->iHealthMode >= 2 ? ARRAYSIZE(HEALTHMODE_LABELS) : 2, &pHud->iHealthMode);
@@ -1432,7 +1427,7 @@ void NeoSettings_HUD(NeoSettings* ns)
 
 #ifdef GLOWS_ENABLE
 	NeoUI::Divider(L"XRAY");
-	NeoUI::RingBoxBool(L"Enable Xray",  &pHud->bEnableXray);
+	NeoUI::RingBoxBool(L"Enable Xray", &pHud->bEnableXray);
 	NeoUI::Slider(L"Outline Width", &pHud->flOutlineWidth, 0, 2, 2, 0.25f);
 	NeoUI::Slider(L"Outline Opacity", &pHud->flOutlineAlpha, 0, 1, 2, 0.1f);
 	NeoUI::Slider(L"Center Opacity", &pHud->flCenterOpacity, 0, 1, 2, 0.1f);
@@ -1442,35 +1437,30 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoUI::Divider(L"IFF MARKERS");
 	static int optionChosen = 0;
 
-	NeoUI::SetPerRowLayout(
+	const bool bEnableXray = 
 #ifdef GLOWS_ENABLE
-		pHud->bEnableXray ? 
-#endif // GLOWS_ENABLE
-		ARRAYSIZE(IFF_LABELS) 
-#ifdef GLOWS_ENABLE
-		: ARRAYSIZE(IFF_LABELS) / 2
-#endif // GLOWS_ENABLE
-	);
+		pHud->bEnableXray
+#else
+		false
+#endif
+		;
 
-	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-	for (int i = 0; i < ARRAYSIZE(IFF_LABELS); i++) {
+	const int iIFFLabelsSize =
 #ifdef GLOWS_ENABLE
-		const bool bIsXrayTab = (i % 2) == 1;
+		bEnableXray ? ARRAYSIZE(IFF_LABELS) : (ARRAYSIZE(IFF_LABELS) / 2)
+#else
+		ARRAYSIZE(IFF_LABELS)
+#endif // GLOWS_ENABLE
+		;
 
-		if (!(bIsXrayTab && !pHud->bEnableXray))
-		{
-#endif // GLOWS_ENABLE
-			if (NeoUI::Button(IFF_LABELS[i]).bPressed) { optionChosen = i; }
-#ifdef GLOWS_ENABLE
-		}
-#endif // GLOWS_ENABLE
-	}
-	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+	NeoUI::SetPerRowLayout(1);
+	NeoUI::Tabs(IFF_LABELS, iIFFLabelsSize, &optionChosen,
+			NeoUI::TABFLAG_NOSIDEKEYS | NeoUI::TABFLAG_NOSTATERESETS);
+	NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 
 	// NEO TODO (Adam) Show what the marker looks like somewhere here
 
 	FriendlyMarkerInfo *pMarker = &pHud->options[optionChosen];
-	NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 	NeoUI::SliderInt(L"Initial offset", &pMarker->iInitialOffset, -64, 64, 1);
 	NeoUI::RingBoxBool(L"Show distance", &pMarker->bShowDistance);
 	NeoUI::RingBoxBool(L"Verbose distance", &pMarker->bVerboseDistance);

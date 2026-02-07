@@ -1569,6 +1569,8 @@ target_sources_grouped(
     neo/ui/neo_loading.h
     neo/ui/neo_ui.cpp
     neo/ui/neo_ui.h
+    neo/ui/neo_theme.cpp
+    neo/ui/neo_theme.h
     neo/ui/neo_utils.cpp
     neo/ui/neo_utils.h
     neo/ui/IOverrideInterface.h
