@@ -10,6 +10,9 @@
 
 extern ConVar sv_neo_grenade_blast_radius;
 
+ConVar sv_neo_bot_grenade_frag_safety_range_multiplier("sv_neo_bot_grenade_frag_safety_range_multiplier", "1.2",
+	FCVAR_NONE, "Multiplier for frag grenade blast radius safety check", true, 0.1, false, 0);
+
 CNEOBotGrenadeThrowFrag::CNEOBotGrenadeThrowFrag( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat )
 	: CNEOBotGrenadeThrow( pWeapon, threat )
 {
@@ -36,8 +39,6 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 {
 	// Should be checked by CNEOBotGrenadeThrow::Update
 	Assert( m_hThreatGrenadeTarget.Get() && m_vecThreatLastKnownPos != vec3_invalid );
-
-	const float flSafeRadius = sv_neo_grenade_blast_radius.GetFloat();
 
 	// Check if there is a more immediate threat interrupting my grenade throw
 	const CKnownEntity* pPrimaryThreat = me->GetVisionInterface()->GetPrimaryKnownThreat();
@@ -90,6 +91,8 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 
 	if ( NEORules()->IsTeamplay() )
 	{
+
+		const float flSafeRadius = GetFragSafetyRadius();
 		const float flSafeRadiusSqr = flSafeRadius * flSafeRadius;
 		const CNEO_Player *pMePlayer = ToNEOPlayer( me->GetEntity() );
 
@@ -108,5 +111,10 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	}
 
 	return THROW_TARGET_READY;
+}
+
+float CNEOBotGrenadeThrowFrag::GetFragSafetyRadius()
+{
+	return sv_neo_grenade_blast_radius.GetFloat() * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat();
 }
 
