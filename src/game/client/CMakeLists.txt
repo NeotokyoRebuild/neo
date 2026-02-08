@@ -811,6 +811,8 @@ target_sources_grouped(
     FILES
     mp3player.cpp
     mp3player.h
+    neo/neo_mp3player.cpp
+    neo/neo_mp3player.h
 )
 
 target_sources_grouped(
@@ -1529,6 +1531,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/vendor/stb_image.h
     ${CMAKE_SOURCE_DIR}/vendor/stb_image_resize2.h
     ${CMAKE_SOURCE_DIR}/vendor/stb_dxt.h
+    ${CMAKE_SOURCE_DIR}/vendor/miniaudio.h
 )
 
 target_sources_grouped(

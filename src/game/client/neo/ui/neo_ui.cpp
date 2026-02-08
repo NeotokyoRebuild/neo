@@ -889,6 +889,11 @@ void EndPopup()
 	c->popupFlags &= ~(POPUPFLAG__NEWOPENPOPUP);
 }
 
+int CurrentPopup()
+{
+	return c->iCurPopupId;
+}
+
 int PopupWideByStr(const char *pszStr)
 {
 	const auto *pFontI = &c->fonts[c->eFont];
@@ -1420,7 +1425,13 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 			switch (eType)
 			{
 			case BASEBUTTONTYPE_TEXT:
+			case BASEBUTTONTYPE_TOGGLE:
 			{
+				if (eType == BASEBUTTONTYPE_TOGGLE)
+				{
+					vgui::surface()->DrawSetColor(bVal ? c->colors.activeBg : c->colors.normalBg);
+					vgui::surface()->DrawSetTextColor(bVal ? c->colors.activeFg : c->colors.normalFg);
+				}
 				vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
 
 				const auto *pFontI = &c->fonts[c->eFont];
@@ -1684,6 +1695,11 @@ NeoUI::RetButton ButtonTexture(const char *szTexturePath)
 NeoUI::RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal)
 {
 	return BaseButton(wszText, "", BASEBUTTONTYPE_CHECKBOX, bVal);
+}
+
+NeoUI::RetButton ButtonToggle(const wchar_t *wszText, const bool bVal)
+{
+	return BaseButton(wszText, "", BASEBUTTONTYPE_TOGGLE, bVal);
 }
 
 void ResetTextures()
@@ -2101,11 +2117,58 @@ void Progress(const float flValue, const float flMin, const float flMax)
 	const auto wdgState = BeginWidget(WIDGETFLAG_SKIPACTIVE);
 	if (wdgState.bInView && c->eMode == MODE_PAINT)
 	{
+		vgui::surface()->DrawSetColor(c->colors.progressBarBg);
 		const float flPerc = (flValue - flMin) / (flMax - flMin);
 		vgui::surface()->DrawFilledRect(c->rWidgetArea.x0,
 										c->rWidgetArea.y0,
 										c->rWidgetArea.x0 + (flPerc * c->irWidgetWide),
 										c->rWidgetArea.y1);
+	}
+	EndWidget(wdgState);
+}
+
+void ProgressDrag(float *flValue, const float flMin, const float flMax)
+{
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
+	if (wdgState.bInView)
+	{
+		switch (c->eMode)
+		{
+		case MODE_PAINT:
+		{
+			vgui::surface()->DrawSetColor(c->colors.progressBarBg);
+			const float flPerc = (*flValue - flMin) / (flMax - flMin);
+			vgui::surface()->DrawFilledRect(c->rWidgetArea.x0,
+											c->rWidgetArea.y0,
+											c->rWidgetArea.x0 + (flPerc * c->irWidgetWide),
+											c->rWidgetArea.y1);
+		} break;
+		case MODE_MOUSEPRESSED:
+		case MODE_MOUSEDOUBLEPRESSED:
+		{
+			if (wdgState.bHot && c->eCode == MOUSE_LEFT)
+			{
+				c->iActive = c->iWidget;
+				c->iActiveSection = c->iSection;
+				c->eMousePressedStart = MOUSESTART_SLIDER;
+			}
+		} [[fallthrough]];
+		case MODE_MOUSEMOVED:
+		{
+			if (wdgState.bActive
+					&& vgui::input()->IsMouseDown(MOUSE_LEFT)
+					&& c->eMousePressedStart == MOUSESTART_SLIDER)
+			{
+				const int iMouseRelXWidget = c->iMouseAbsX - c->rWidgetArea.x0;
+				const float flPerc = static_cast<float>(iMouseRelXWidget) / static_cast<float>(c->irWidgetWide);
+				*flValue = flMin + (flPerc * (flMax - flMin));
+				*flValue = ClampAndLimitDp(*flValue, flMin, flMax, 2);
+				c->bValueEdited = true;
+			}
+		} break;
+		default:
+			break;
+		}
 	}
 	EndWidget(wdgState);
 }

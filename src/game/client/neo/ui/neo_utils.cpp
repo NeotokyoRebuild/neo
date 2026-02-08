@@ -265,3 +265,9 @@ void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 	}
 	buf.Printf( "%s", txt );
 }
+
+bool IsInGame()
+{
+	return (engine->IsInGame() && !engine->IsLevelMainMenuBackground());
+}
+

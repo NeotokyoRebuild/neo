@@ -153,6 +153,7 @@
 #ifdef NEO
 #include <vgui_controls/Button.h>
 #include <vgui_controls/MenuButton.h>
+#include "neo_mp3player.h"
 #endif
 
 extern vgui::IInputInternal *g_InputInternal;
@@ -1395,11 +1396,14 @@ void CHLClient::PostInit()
 	}
 #endif
 
+	NeoMP3::Init();
+
 	if (g_pCVar)
 	{
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarFixPrintable<MAX_PLAYER_NAME_LENGTH>);
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarFixPrintable<NEO_MAX_CLANTAG_LENGTH>);
 		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarCrosshairChangeCallback);
+		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(NeoMP3::MusicVolCallback);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 		RestrictNeoClientCheats();
 
@@ -1623,6 +1627,7 @@ void CHLClient::PostInit()
 void CHLClient::Shutdown( void )
 {
 #ifdef NEO
+	NeoMP3::Deinit();
 	NeoDeleteDownloadedSprays();
 	ServerBlacklistWrite(SERVER_BLACKLIST_DEFFILE);
 #endif

@@ -242,17 +242,11 @@ public:
 
 protected:
 	virtual void			OnCommand( char const *cmd );
-#ifdef NEO
-	void					OnKeyCodePressed(vgui::KeyCode code) override;
-#endif // NEO
 	virtual void			ApplySchemeSettings( vgui::IScheme *pScheme );
 	virtual void			OnTick();
 
 	MESSAGE_FUNC( OnTreeViewItemSelected, "TreeViewItemSelected" );
 	MESSAGE_FUNC( OnSliderMoved, "SliderMoved" );
-#ifdef NEO
-	MESSAGE_FUNC_PARAMS(OnSliderDragEnd, "SliderDragEnd", data);
-#endif // NEO
 
 	void					PopulateTree();
 	void					PopulateLists();
@@ -423,10 +417,5 @@ private:
 
 	bool					m_bEnableAutoAdvance;
 };
-
-#ifdef NEO
-// Singleton
-static CMP3Player* g_pPlayer;
-#endif // NEO
 
 #endif // !MP3PLAYER_H

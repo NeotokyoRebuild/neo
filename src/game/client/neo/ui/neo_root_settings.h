@@ -126,11 +126,15 @@ struct NeoSettings
 	{
 		float flVolMain;
 		float flVolMusic;
+		bool bVolMusicSepInGame;
+		float flVolMusicInGame;
 		float flVolVictory;
 		float flVolPing;
 		int iSoundSetup;
 		int iSoundQuality;
 		bool bMuteAudioUnFocus;
+		bool bPauseMusicInGame;
+		int iMusicStartupType;
 		bool bVoiceEnabled;
 		float flVolVoiceRecv;
 		bool bMicBoost;
@@ -294,12 +298,16 @@ struct NeoSettings
 		// Audio
 		CONVARREF_DEFNOGLOBALPTR(volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_musicvolume);
+		CONVARREF_DEF(cl_neo_radio_volume_separate_ingame);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_radio_volume_ingame);
 		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_ping_volume);
 		CONVARREF_DEF(snd_surround_speakers);
 		CONVARREF_DEF(voice_modenable);
 		CONVARREF_DEF(voice_scale);
 		CONVARREF_DEF(snd_mute_losefocus);
+		CONVARREF_DEF(cl_neo_radio_pause_ingame);
+		CONVARREF_DEF(cl_neo_radio_startup);
 		CONVARREF_DEF(snd_pitchquality);
 		CONVARREF_DEF(dsp_slow_cpu);
 

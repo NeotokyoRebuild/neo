@@ -24,10 +24,10 @@
 #include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
-#include "mp3player.h"
 #include "neo_theme.h"
 #include "neo_player_shared.h"
 #include "steamnetworkingtypes.h"
+#include "neo_mp3player.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -37,11 +37,6 @@
 #include "tier0/memdbgon.h"
 
 using namespace vgui;
-
-bool IsInGame()
-{
-	return (engine->IsInGame() && !engine->IsLevelMainMenuBackground());
-}
 
 // See interface.h/.cpp for specifics:  basically this ensures that we actually Sys_UnloadModule
 // the dll and that we don't call Sys_LoadModule over and over again.
@@ -101,6 +96,7 @@ enum ENeoPopup
 	NEOPOPUP_ACTIONSERVER = NeoUI::INTERNALPOPUP_NIL + 1,
 	NEOPOPUP_ACTIONBLACKLIST,
 	NEOPOPUP_ACTIONSBHEADER,
+	NEOPOPUP_MP3,
 };
 
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
@@ -796,6 +792,10 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 				m_state = STATE_ROOT;
 				engine->ClientCmd("sv_use_steam_networking 0; map " TUTORIAL_MAP_SHOOTING);
 			}
+			if (NeoUI::Button(L"CREDITS").bPressed)
+			{
+				m_state = STATE_CREDITS;
+			}
 		}
 		NeoUI::Pad();
 		if (NeoUI::Button(m_wszCachedTexts[MMBTN_OPTIONS]).bPressed)
@@ -984,24 +984,154 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	}
 	NeoUI::EndSection();
 #endif
-	g_uiCtx.dPanel.x = param.wide - 128;
-	g_uiCtx.dPanel.y = param.tall - 96;
-	g_uiCtx.dPanel.wide = 128;
-	g_uiCtx.dPanel.tall = param.tall;
-
-	NeoUI::BeginSection(NeoUI::SECTIONFLAG_PLAYBUTTONSOUNDS);
+	NeoMP3::State *mps = NeoMP3::GetState();
+	if (mps->iSongsSize > 0)
 	{
-		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-		if (NeoUI::Button(L"Music").bPressed)
+		// Close equivalence to ~400px in 1080p (as 4:3 so 1440x1080)
+		const float flMP3Wide = 0.28f * m_flWideAs43;
+		g_uiCtx.dPanel.x = param.wide - flMP3Wide;
+		g_uiCtx.dPanel.y = param.tall - (flMP3Wide / 2) - g_uiCtx.layout.iRowTall;
+		g_uiCtx.dPanel.wide = flMP3Wide;
+		g_uiCtx.dPanel.tall = param.tall;
+
+		NeoUI::BeginSection(NeoUI::SECTIONFLAG_PLAYBUTTONSOUNDS);
+
+		NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+
+		wchar_t wszText[128] = {};
+
+		NeoUI::SetPerRowLayout(1);
+		if (mps->songs[mps->iCurIdx].wszArtist[0])
 		{
-			engine->ClientCmd("neo_mp3");
+			V_swprintf_safe(wszText, L"%ls - %ls",
+					mps->songs[mps->iCurIdx].wszTitle,
+					mps->songs[mps->iCurIdx].wszArtist);
 		}
-		if (NeoUI::Button(L"Credits").bPressed)
+		else
 		{
-			m_state = STATE_CREDITS;
+			// wszTitle could also be fallback base filename
+			V_wcscpy_safe(wszText, mps->songs[mps->iCurIdx].wszTitle);
+		}
+		NeoUI::Label(wszText);
+
+		const float flNowSecsCursor = mps->flSecsCursor;
+		NeoUI::ProgressDrag(&mps->flSecsCursor, 0.0f, mps->flSecsLength);
+		if (flNowSecsCursor != mps->flSecsCursor)
+		{
+			mps->flagsPlayStateNext = NeoMP3::PLAYSTATE_FLAG_CURSOR;
+		}
+
+		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+		static constexpr int ROWLAYOUT_MP3_TIMES_TINY[] = {30, 40, -1};
+		static constexpr int ROWLAYOUT_MP3_TIMES_SMALL[] = {25, 50, -1};
+		static constexpr int ROWLAYOUT_MP3_TIMES_NORMAL[] = {20, 60, -1};
+		NeoUI::SetPerRowLayout(3,
+				(m_flWideAs43 <= 800)
+					? ROWLAYOUT_MP3_TIMES_TINY
+					: (m_flWideAs43 <= 1280)
+						? ROWLAYOUT_MP3_TIMES_SMALL
+						: ROWLAYOUT_MP3_TIMES_NORMAL);
+		{
+			const int iMin = mps->flSecsCursor / FL_SECSINMIN;
+			const int iSec = mps->flSecsCursor - (iMin * FL_SECSINMIN);
+			V_swprintf_safe(wszText, L"%02d:%02d", iMin, iSec);
+		}
+		NeoUI::Label(wszText);
+		NeoUI::Pad();
+		{
+			const int iMin = mps->flSecsLength / FL_SECSINMIN;
+			const int iSec = mps->flSecsLength - (iMin * FL_SECSINMIN);
+			V_swprintf_safe(wszText, L"%02d:%02d", iMin, iSec);
+		}
+		NeoUI::Label(wszText);
+
+		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {18, 18, 28, 18, -1};
+		NeoUI::SetPerRowLayout(5, ROWLAYOUT_MP3_CONTROLS);
+
+		// Shuffle button
+		if (NeoUI::ButtonToggle(L"\u21B9", cvr_cl_neo_radio_shuffle.GetBool()).bPressed)
+		{
+			cvr_cl_neo_radio_shuffle.SetValue(!cvr_cl_neo_radio_shuffle.GetBool());
+			if (cvr_cl_neo_radio_shuffle.GetBool())
+			{
+				NeoMP3::CreateShuffle();
+				mps->iCurShuffleIdx = 0;
+			}
+		}
+		
+		// Previous button
+		if (NeoUI::Button(L"|\u25C0\u25C0").bPressed)
+		{
+			if (mps->flSecsCursor >= 5.0f)
+			{
+				mps->flSecsCursor = 0.0f;
+				mps->flagsPlayStateNext = NeoMP3::PLAYSTATE_FLAG_CURSOR;
+			}
+			else
+			{
+				mps->flagsPlayStateNext = NeoMP3::PLAYSTATE_FLAG_SONGPREVIOUS;
+			}
+			NeoMP3::Update();
+		}
+
+		// Play/Pause button
+		if (NeoUI::Button(mps->bPlaying ? L"\u25B6" : L"II").bPressed)
+		{
+			mps->flagsPlayStateNext = (mps->bPlaying)
+					? NeoMP3::PLAYSTATE_FLAG_PAUSED : NeoMP3::PLAYSTATE_FLAG_PLAY;
+			NeoMP3::Update();
+		}
+
+		// Next button
+		if (NeoUI::Button(L"\u25B6\u25B6|").bPressed)
+		{
+			mps->flagsPlayStateNext = NeoMP3::PLAYSTATE_FLAG_SONGNEXT;
+			NeoMP3::Update();
+		}
+
+		// Popup button
+		if (NeoUI::ButtonToggle(L"\u2261", NeoUI::CurrentPopup() == NEOPOPUP_MP3).bPressed)
+		{
+			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
+			{
+				NeoUI::ClosePopup();
+			}
+			else
+			{
+				const int iPopupTall = g_uiCtx.layout.iRowTall * 8;
+				NeoUI::OpenPopup(NEOPOPUP_MP3, NeoUI::Dim{
+							.x = g_uiCtx.dPanel.x,
+							.y = g_uiCtx.dPanel.y - iPopupTall,
+							.wide = g_uiCtx.dPanel.wide,
+							.tall = iPopupTall,
+						});
+			}
+		}
+
+		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+		NeoUI::EndSection();
+
+		if (NeoUI::BeginPopup(NEOPOPUP_MP3))
+		{
+			for (int i = 0; i < mps->iSongsSize; ++i)
+			{
+				if (NeoUI::ButtonToggle(mps->songs[i].wszTitle, mps->iCurIdx == i).bPressed)
+				{
+					mps->iCurIdx = i;
+					mps->flagsPlayStateNext = NeoMP3::PLAYSTATE_FLAG_SONGCHANGE;
+					if (cvr_cl_neo_radio_shuffle.GetBool())
+					{
+						NeoMP3::CreateShuffle();
+						mps->iCurShuffleIdx = 0;
+					}
+					NeoMP3::Update();
+				}
+			}
+
+			NeoUI::EndPopup();
 		}
 	}
-	NeoUI::EndSection();
 
 	NeoUI::EndContext();
 }
@@ -2236,8 +2366,6 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 							NeoUI::Label(wszText);
 							NeoUI::Label(player.wszName);
 							{
-								static constexpr float FL_SECSINMIN = 60.0f;
-								static constexpr float FL_SECSINHRS = 60.0f * FL_SECSINMIN;
 								if (player.flTimePlayed < FL_SECSINMIN)
 								{
 									V_swprintf_safe(wszText, L"%.0fs", player.flTimePlayed);
