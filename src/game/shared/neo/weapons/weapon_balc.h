@@ -42,6 +42,8 @@ public:
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 	virtual bool CanDrop() final { return false; }
+	virtual bool UsesTracers() override final { return true; }
+	virtual const char *GetTracerType() override final { return "AirboatGunTracer"; }
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
