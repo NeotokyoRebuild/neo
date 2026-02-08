@@ -3,6 +3,7 @@
 #include <tier1/netadr.h>
 #include <steam/isteammatchmaking.h>
 #include <utlvector.h>
+#include <vector>
 
 enum EServerBlacklistType
 {
@@ -64,9 +65,11 @@ enum GameServerInfoW
 	GSIW_LOCKED = 0,
 	GSIW_VAC,
 	GSIW_NAME,
+	GSIW_IP_ADDRESS,
 	GSIW_MAP,
 	GSIW_PLAYERS,
 	GSIW_PING,
+	GSIW_TAGS,
 
 	GSIW__TOTAL,
 };
@@ -78,6 +81,14 @@ enum AntiCheatMode
 	ANTICHEAT_OFF,
 
 	ANTICHEAT__TOTAL,
+};
+
+enum ETagsFilterMode
+{
+	TAGSFILTER_INCLUDE = 0,
+	TAGSFILTER_EXCLUDE,
+
+	TAGSFILTER__TOTAL,
 };
 
 enum GameServerPlayerSort
@@ -101,7 +112,7 @@ struct GameServerSortContext
 
 struct GameServerPlayerSortContext
 {
-	GameServerPlayerSort col = GSPS_SCORE;
+	int col = GSPS_SCORE;
 	bool bDescending = true;
 };
 
@@ -109,8 +120,11 @@ class CNeoServerList : public ISteamMatchmakingServerListResponse
 {
 public:
 	GameServerType m_iType;
-	CUtlVector<gameserveritem_t> m_servers;
-	CUtlVector<gameserveritem_t> m_filteredServers;
+
+	// NEO JANK (nullsystem): CUtlVector easily corrupts memory with
+	// gameserveritem_t results, so using std::vector instead
+	std::vector<gameserveritem_t> m_servers;
+	std::vector<gameserveritem_t> m_filteredServers;
 
 	void UpdateFilteredList();
 	void RequestList();
@@ -155,4 +169,9 @@ struct ServerBrowserFilters
 	bool bIsNotPasswordProtected = false;
 	int iAntiCheat = 0;
 	int iMaxPing = 0;
+	wchar_t wszMapFilter[k_cbMaxGameServerMapName] = {};
+	int iMaxPlayerCount = 0;
+	int iTagsFilterType = 0;
+	wchar_t wszTagsFilter[k_cbMaxGameServerTags] = {};
 };
+
