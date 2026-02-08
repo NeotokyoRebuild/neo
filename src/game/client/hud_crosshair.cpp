@@ -323,19 +323,8 @@ void CHudCrosshair::Paint( void )
 		return;
 
 #ifdef NEO
-	C_NEO_Player* pPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pPlayer)
+	if (!ShouldDraw())
 		return;
-
-	if (pPlayer->IsObserver())
-	{
-		if (pPlayer->GetObserverMode() != OBS_MODE_IN_EYE)
-			return;
-
-		pPlayer = ToNEOPlayer(ClientEntityList().GetBaseEntity(GetSpectatorTarget()));
-		if (!pPlayer)
-			return;
-	}
 #else
 	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
 	if ( !pPlayer )
@@ -366,6 +355,17 @@ void CHudCrosshair::Paint( void )
 		return;
 	}
 
+
+	C_NEO_Player* pPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pPlayer)
+		return;
+
+	if (pPlayer->IsObserver())
+	{
+		pPlayer = ToNEOPlayer(ClientEntityList().GetBaseEntity(GetSpectatorTarget()));
+		if (!pPlayer)
+			return;
+	}
 	auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(pPlayer->GetActiveWeapon());
 	if ( pWeapon )
 	{
