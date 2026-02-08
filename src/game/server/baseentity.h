@@ -1147,7 +1147,11 @@ public:
 	// UNDONE: Move these virtuals to CBaseCombatCharacter?
 	virtual void MakeTracer( const Vector &vecTracerSrc, const trace_t &tr, int iTracerType );
 	virtual int	GetTracerAttachment( void );
+#ifdef NEO
+	virtual void FireBullets( const FireBulletsInfo_t &info, bool bDoBulletEffects = true );
+#else
 	virtual void FireBullets( const FireBulletsInfo_t &info );
+#endif // NEO
 	virtual void DoImpactEffect( trace_t &tr, int nDamageType ); // give shooter a chance to do a custom impact.
 
 	// OLD VERSION! Use the struct version
