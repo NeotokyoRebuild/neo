@@ -6957,6 +6957,22 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 
 		return true;
 	}
+#ifdef NEO
+	else if (stricmp(cmd, "spec_player_entity_number") == 0)
+	{
+		if (GetObserverMode() > OBS_MODE_FIXED && args.ArgC() == 2)
+		{
+			int targetEntIndex = atoi( args[1] );
+			CBasePlayer* target = UTIL_PlayerByIndex(targetEntIndex);
+
+			if (SetObserverTarget( target )) {
+				m_bForcedObserverMode = false;
+				SetObserverMode(OBS_MODE_IN_EYE);
+			}
+		}
+		return true;
+	}
+#endif // NEO
 	else if ( stricmp( cmd, "spec_player" ) == 0 ) // chase next player
 	{
 		if ( GetObserverMode() > OBS_MODE_FIXED && args.ArgC() == 2 )

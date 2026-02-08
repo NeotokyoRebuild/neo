@@ -736,7 +736,12 @@ bool C_BasePlayer::IsValidObserverTarget(CBaseEntity* target)
 
 	if (player->m_lifeState == LIFE_DEAD || player->m_lifeState == LIFE_DYING)
 	{
+#ifdef NEO
+		constexpr int DEATH_SPEC_TIME = 3.0f; // OGNT switches spectator targets much faster than the DEATH_ANIMATION_TIME
+		if ((player->m_flDeathTime + DEATH_SPEC_TIME) < gpGlobals->curtime)
+#else
 		if ((player->m_flDeathTime + DEATH_ANIMATION_TIME) < gpGlobals->curtime)
+#endif // NEO
 		{
 			return false;	// allow watching until 3 seconds after death to see death animation
 		}

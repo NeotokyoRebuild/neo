@@ -834,6 +834,47 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 		engine->ClientCmd( "spec_prev" );
 		return 0;
 	}
+#ifdef NEO
+	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+specmouseplayer") == 0)
+	{
+		C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (!pNeoPlayer)
+		{
+			Assert(false);
+			return 0;
+		}
+
+		C_BaseEntity* currentTarget = pNeoPlayer->GetObserverTarget();
+		C_NEO_Player *target = nullptr;
+		float targetDotProduct = -1;
+
+		for (int i = 1; i < gpGlobals->maxClients; i++)
+		{
+			C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+			if (currentTarget != pPlayer && pNeoPlayer->IsValidObserverTarget(pPlayer) && pPlayer->IsAlive())
+			{
+				Vector vecForward;
+				AngleVectors( pNeoPlayer->EyeAngles(), &vecForward );
+
+				Vector vecToTarget = pPlayer->WorldSpaceCenter() - pNeoPlayer->EyePosition();
+				vecToTarget.NormalizeInPlace();
+				float dotProduct = DotProduct(vecForward, vecToTarget);
+				if (dotProduct > targetDotProduct && dotProduct > 0)
+				{
+					targetDotProduct = dotProduct;
+					target = pPlayer;
+				}
+			}
+		}
+
+		if (target)
+		{
+			engine->ClientCmd( VarArgs("spec_player_entity_number %d", target->entindex()) );
+		}
+
+		return 0;
+	}
+#endif // NEO
 	else if ( down && pszCurrentBinding && Q_strcmp( pszCurrentBinding, "+jump" ) == 0 )
 	{
 		engine->ClientCmd( "spec_mode" );
