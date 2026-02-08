@@ -100,15 +100,20 @@ void TracerCallback( const CEffectData &data )
 	if ( !r_drawtracers.GetBool() )
 		return;
 
+#ifdef NEO
+	C_BasePlayer *pPlayer = EffectPlayerSource( data );
+	const bool bPlayerFirstperson = ( pPlayer && !pPlayer->ShouldDrawThisPlayer() );
+#endif
+
 	if ( !r_drawtracers_firstperson.GetBool() )
 	{
 #ifdef NEO
-		C_BasePlayer *pPlayer = EffectPlayerSource( data );
+		if ( bPlayerFirstperson )
 #else
 		C_BasePlayer *pPlayer = dynamic_cast<C_BasePlayer*>( data.GetEntity() );
-#endif
 
 		if ( pPlayer && !pPlayer->ShouldDrawThisPlayer() )
+#endif
 			return;
 	}
 
@@ -116,9 +121,14 @@ void TracerCallback( const CEffectData &data )
 	Vector vecStart = GetTracerOrigin( data );
 	float flVelocity = data.m_flScale;
 	bool bWhiz = (data.m_fFlags & TRACER_FLAG_WHIZ);
+
+#ifdef NEO
+	if ( bPlayerFirstperson )
+#else
 	int iEntIndex = data.entindex();
 
 	if ( iEntIndex && iEntIndex == player->index )
+#endif
 	{
 		Vector	foo = data.m_vStart;
 		QAngle	vangles;
