@@ -179,7 +179,6 @@ void CNeoClassMenu::CommandCompletion()
 
 	SetMouseInputEnabled(false);
 	//SetKeyBoardInputEnabled(false);
-	SetCursorAlwaysVisible(false);
 }
 
 void CNeoClassMenu::OnClose()

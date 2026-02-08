@@ -38,7 +38,6 @@ ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
 extern ConVar sv_neo_dm_win_xp;
 extern ConVar cl_neo_streamermode;
-extern ConVar snd_victory_volume;
 extern ConVar sv_neo_readyup_countdown;
 extern ConVar cl_neo_hud_scoreboard_hide_others;
 extern ConVar sv_neo_ctg_ghost_overtime_grace;
@@ -417,8 +416,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 			if (m_iBeepSecsTotal != secsTotal)
 			{
+				DevMsg("beepsTotal: %i, secsTotal: %i\n", m_iBeepSecsTotal, secsTotal);
 				const bool bEndBeep = secsTotal == 0;
-				const float flVol = (bEndBeep) ? (1.3f * snd_victory_volume.GetFloat()) : snd_victory_volume.GetFloat();
+				const float flVol = bEndBeep ? 1.0f : 0.7f;
 				static constexpr int PITCH_END = 165;
 				enginesound->EmitAmbientSound("tutorial/hitsound.wav", flVol, bEndBeep ? PITCH_END : PITCH_NORM);
 				m_iBeepSecsTotal = secsTotal;

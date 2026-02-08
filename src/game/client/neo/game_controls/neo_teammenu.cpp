@@ -214,7 +214,6 @@ void CNeoTeamMenu::CommandCompletion()
 	SetEnabled(false);
 
 	SetMouseInputEnabled(false);
-	SetCursorAlwaysVisible(false);
 }
 
 void CNeoTeamMenu::OnCommand(const char *command)
