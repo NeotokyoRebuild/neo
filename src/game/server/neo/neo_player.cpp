@@ -663,6 +663,7 @@ void CNEO_Player::Spawn(void)
 	m_flNextPingTime = 0.0f;
 
 	Weapon_SetZoom(false);
+	ShowCrosshair(false);
 
 	SetTransmitState(FL_EDICT_PVSCHECK);
 
@@ -1627,29 +1628,10 @@ void CNEO_Player::PostThink(void)
 
 	CheckLeanButtons();
 
+	CheckAimButtons();
+
 	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
-		if (pNeoWep->m_bInReload && !m_bPreviouslyReloading)
-		{
-			Weapon_SetZoom(false);
-		}
-		else if (CanSprint() && m_afButtonPressed & IN_SPEED)
-		{
-			Weapon_SetZoom(false);
-		}
-		else if (m_nButtons & IN_AIM && !IsInAim())
-		{
-			if (!CanSprint() || !(m_nButtons & IN_SPEED))
-			{
-				Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_AIM);
-			}
-		}
-		else if (m_afButtonReleased & IN_AIM)
-		{
-			Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
-		}
-		m_bPreviouslyReloading = pNeoWep->m_bInReload;
-
 		if (m_afButtonPressed & IN_DROP)
 		{
 			Vector eyeForward;
@@ -1680,8 +1662,7 @@ void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon *pNeoWep, const NeoWepon
 	{
 		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM)
 		{
-			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-			Weapon_SetZoom(showCrosshair);
+			Weapon_SetZoom(!IsInAim());
 		}
 		else if (toggleType != NEO_TOGGLE_FORCE_AIM)
 		{
@@ -1792,13 +1773,11 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	}
 
 	ShowCrosshair(bZoomIn);
-	
+
 	const int fov = GetDefaultFOV();
 	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, NEO_ZOOM_SPEED);
 	m_bInAim = bZoomIn;
 }
-
-
 
 // Purpose: Suicide, but cancel the point loss.
 void CNEO_Player::SoftSuicide(void)
@@ -2395,8 +2374,6 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 		activeWeapon->StopWeaponSound(RELOAD_NPC);
 	}
 
-	ShowCrosshair(false);
-	Weapon_SetZoom(false);
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
 

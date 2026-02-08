@@ -1391,39 +1391,7 @@ void C_NEO_Player::PostThink(void)
 
 	CheckLeanButtons();
 
-	if (auto *pNeoWep = static_cast<C_NEOBaseCombatWeapon *>(GetActiveWeapon()))
-	{
-		if (pNeoWep->m_bInReload && !m_bPreviouslyReloading)
-		{
-			Weapon_SetZoom(false);
-		}
-		else if (CanSprint() && m_afButtonPressed & IN_SPEED)
-		{
-			Weapon_SetZoom(false);
-		}
-		else if (m_nButtons & IN_AIM && !IsInAim())
-		{
-			if (!CanSprint() || !(m_nButtons & IN_SPEED))
-			{
-				Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_AIM);
-			}
-		}
-		else if (m_afButtonReleased & IN_AIM)
-		{
-			Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
-		}
-
-#if !defined( NO_ENTITY_PREDICTION )
-		// Can't do aim zoom in prediction, because we can't know
-		// server's reload state for our weapon with certainty.
-		if (!GetPredictable() || !prediction->InPrediction())
-		{
-#else
-		if (true) {
-#endif
-			m_bPreviouslyReloading = pNeoWep->m_bInReload;
-		}
-	}
+	CheckAimButtons();
 }
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
@@ -1640,6 +1608,7 @@ void C_NEO_Player::Spawn( void )
 
 	Weapon_SetZoom(false);
 
+
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
 	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
@@ -1702,10 +1671,6 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	m_bIneligibleForLoadoutPick = true;
-	if (IsLocalPlayer())
-	{
-		IN_AimToggleReset();
-	}
 
 	if (pWeapon->IsGhost())
 	{
@@ -1860,8 +1825,7 @@ void C_NEO_Player::Weapon_AimToggle(C_NEOBaseCombatWeapon *pNeoWep, const NeoWep
 	{
 		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM)
 		{
-			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-			Weapon_SetZoom(showCrosshair);
+			Weapon_SetZoom(!IsInAim());
 		}
 		else if (toggleType != NEO_TOGGLE_FORCE_AIM)
 		{
@@ -1877,6 +1841,15 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 		return;
 	}
 
+	if (bZoomIn)
+	{
+		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
+	}
+	else
+	{
+		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
+	}
+
 	float zoomSpeedSecs = NEO_ZOOM_SPEED;
 
 #if(0)
@@ -1890,19 +1863,6 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	}
 #endif
 #endif
-
-	if (bZoomIn)
-	{
-		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
-	}
-	else
-	{
-		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
-		if (IsLocalPlayer())
-		{
-			IN_AimToggleReset();
-		}
-	}
 
 	const int fov = GetDefaultFOV();
 	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, zoomSpeedSecs);

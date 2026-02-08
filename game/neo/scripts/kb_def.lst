@@ -50,7 +50,7 @@
 "MWHEELDOWN" "invprev"
 "MWHEELUP" "invnext"
 "MOUSE1" "+attack"
-"MOUSE2" "toggle_aim"
+"MOUSE2" "+toggle_aim"
 "MOUSE3" "+attack3"
 "PAUSE" "pause"
 "`" "neo_toggleconsole"
