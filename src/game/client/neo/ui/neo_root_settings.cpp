@@ -1420,7 +1420,7 @@ void NeoSettings_HUD(NeoSettings* ns)
 	NeoSettings::HUD* pHud = &ns->hud;
 	NeoUI::Divider(L"MISCELLANEOUS");
 	NeoUI::RingBoxBool(L"Classic squad list", &pHud->bShowSquadList);
-	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, ARRAYSIZE(HEALTHMODE_LABELS), &pHud->iHealthMode);
+	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, pHud->iHealthMode >= 2 ? ARRAYSIZE(HEALTHMODE_LABELS) : 2, &pHud->iHealthMode);
 	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pHud->iObjVerbosity);
 	NeoUI::RingBoxBool(L"Show hints", &pHud->bShowHints);
 	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pHud->bShowHudContextHints);
