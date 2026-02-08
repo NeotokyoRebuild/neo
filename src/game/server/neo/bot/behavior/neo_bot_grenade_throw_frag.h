@@ -17,6 +17,7 @@ public:
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 
 	static float GetFragSafetyRadius();
+	static bool IsFragSafe( CNEOBot *me, const Vector &vecTarget );
 
 protected:
 	virtual ThrowTargetResult UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon ) override;

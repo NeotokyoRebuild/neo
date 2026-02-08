@@ -3,6 +3,8 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_grenade_throw.h"
 #include "weapon_neobasecombatweapon.h"
+#include "weapon_grenade.h"
+#include "weapon_smokegrenade.h"
 #include "nav_mesh.h"
 #include "nav_pathfind.h"
 
@@ -51,7 +53,7 @@ Vector CNEOBotGrenadeThrow::FindEmergencePointAlongPath( CNEOBot *me, const Vect
 
 				if ( area == familiarArea )
 				{
-					break;
+					return vec3_invalid;
 				}
 			}
 		}
@@ -113,6 +115,8 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		return Done( "Grenade throw timed out" );
 	}
 
+	me->EnableCloak(3.0f);
+
 	if ( me->GetActiveWeapon() != pWep )
 	{
 		// Still waiting to switch
@@ -126,9 +130,21 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		return Continue();
 	}
 
+	// NEOJANK: The bots struggle to throw grenades with PressFireButton due to control quirks.
+	// As a workaround, we decompose the action into different phases of the bot behavior.
+	// This also allows us to run aiming logic in parallel with the pin-pull animation.
+	if (!m_bPinPulled)
+	{
+		// Just play the animation. Do NOT call PrimaryAttack, as that sets up the weapon to 
+		// auto-throw via ItemPostFrame, which we want to control manually here.
+		pWep->SendWeaponAnim( ACT_VM_PULLPIN );
+		pWep->m_flTimeWeaponIdle = FLT_MAX; // Don't let idle anims interrupt us
+		m_bPinPulled = true;
+	}
+
 	ThrowTargetResult result = UpdateGrenadeTargeting( me, pWep );
 
-	// Subclasses may decide in the last second that a throw is too dangerous (CANCEL)
+	// Subclasses may decide in the last second that a throw is too dangerous
 	if ( result == THROW_TARGET_CANCEL )
 	{
 		return Done( "Grenade throw aborted" );
@@ -145,18 +161,6 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		
 		me->GetBodyInterface()->AimHeadTowards( m_vecTarget, IBody::MANDATORY, 0.2f, nullptr, "Aiming grenade" );
 
-		// NEOJANK: The bots struggle to throw grenades with PressFireButton due to control quirks.
-		// As a workaround, we decompose the action into different phases of the bot behavior.
-		// This also allows us to run aiming logic in parallel with the pin-pull animation.
-
-		// PrimaryAttack which actually only pulls the pin
-		if (!m_bPinPulled)
-		{
-			// Initiate pull pin animation
-			pWep->PrimaryAttack();
-			m_bPinPulled = true;
-		}
-
 		Vector vecForward;
 		me->EyeVectors( &vecForward );
 		Vector vecToTarget = m_vecTarget - me->GetEntity()->EyePosition();
@@ -168,16 +172,29 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		}
 	}
 
-	// Check Weapon Readiness
-	// m_flNextPrimaryAttack is set by PrimaryAttack() to block firing during the pin-pull anim.
-	bool bWeaponReady = ( pWep->m_flNextPrimaryAttack <= gpGlobals->curtime );
-
-	// Execute Throw
-	// Only throw if both aimed correctly AND the weapon ready animation has finished.
-	if ( bWeaponReady && bAimOnTarget )
+	// NEO JANK: Force the throwing phase if aimed.
+	// We ignore bWeaponReady/m_flNextPrimaryAttack because we are manually controlling the throw
+	// and want to bypass the weapon's internal scheduled throw to ensure it happens NOW.
+	if ( bAimOnTarget )
 	{
-		// Throw the grenade with ItemPostFrame
-		pWep->ItemPostFrame(); // includes ThrowGrenade() among other triggers like animation
+		// Play first person throw animation
+		pWep->SendWeaponAnim( ACT_VM_THROW );
+
+		CNEO_Player* pPlayer = ToNEOPlayer(me->GetEntity());
+		if ( pWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE )
+		{
+			static_cast<CWeaponGrenade*>(pWep)->ThrowGrenade( pPlayer );
+		}
+		else if ( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE )
+		{
+			static_cast<CWeaponSmokeGrenade*>(pWep)->ThrowGrenade( pPlayer );
+		}
+		else
+		{
+			DevMsg( "CNEOBotGrenadeThrow: Unknown grenade type!\n" );
+			Assert(0);
+		}
+
 		return Done( "Grenade throw sequence finished" );
 	}
 	

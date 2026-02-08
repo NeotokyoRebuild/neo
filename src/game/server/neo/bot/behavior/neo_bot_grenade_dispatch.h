@@ -9,6 +9,8 @@
 class CNEOBot;
 class CKnownEntity;
 
+extern ConVar sv_neo_bot_grenade_throw_cooldown;
+
 class CNEOBotGrenadeDispatch
 {
 public:

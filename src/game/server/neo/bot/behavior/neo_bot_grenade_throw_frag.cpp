@@ -9,6 +9,8 @@
 #include "nav_pathfind.h"
 
 extern ConVar sv_neo_grenade_blast_radius;
+extern ConVar sv_neo_grenade_fuse_timer;
+extern ConVar sv_neo_grenade_throw_intensity;
 
 ConVar sv_neo_bot_grenade_frag_safety_range_multiplier("sv_neo_bot_grenade_frag_safety_range_multiplier", "1.2",
 	FCVAR_NONE, "Multiplier for frag grenade blast radius safety check", true, 0.1, false, 0);
@@ -37,7 +39,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrowFrag::OnStart( CNEOBot *me, Action< C
 
 CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon )
 {
-	// Should be checked by CNEOBotGrenadeThrow::Update
+	// Should be checked by CNEOBotGrenadeThrow::Update by this point
 	Assert( m_hThreatGrenadeTarget.Get() && m_vecThreatLastKnownPos != vec3_invalid );
 
 	// Check if there is a more immediate threat interrupting my grenade throw
@@ -50,27 +52,21 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	}
 	else if (m_vecTarget == vec3_invalid)
 	{
-		if (me->IsLineOfSightClear(m_vecThreatLastKnownPos))
+		// Last known location in view, but don't see threat
+		// Infer where the threat could have gone
+		// CHEAT: calculate a path from the last known position to the actual threat position
+		// and throw at the furthest visible point along that path
+		if ( me->IsLineOfSightClear( m_vecThreatLastKnownPos ) && m_scanTimer.IsElapsed() )
 		{
-			// See the last known location, but don't see threat
-			// Infer where the threat could have gone
-			// CHEAT: calculate a path from the last known position to the actual threat position
-			// and throw at the furthest visible point along that path
-			if (m_hThreatGrenadeTarget.Get())
-			{
-				if ( m_scanTimer.IsElapsed() )
-				{
-					Vector vecThrowTarget = FindEmergencePointAlongPath(me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget->GetAbsOrigin());
+			Vector vecThrowTarget = FindEmergencePointAlongPath( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget->GetAbsOrigin() );
 
-					if (vecThrowTarget != vec3_invalid)
-					{
-						m_vecTarget = vecThrowTarget;
-					}
-					else
-					{
-						m_scanTimer.Start( 0.2f );
-					}
-				}
+			if ( vecThrowTarget != vec3_invalid )
+			{
+				m_vecTarget = vecThrowTarget;
+			}
+			else
+			{
+				m_scanTimer.Start( 0.2f );
 			}
 		}
 		
@@ -89,25 +85,9 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 		return THROW_TARGET_CANCEL; // risk of grenade bouncing back at me
 	}
 
-	if ( NEORules()->IsTeamplay() )
+	if ( !IsFragSafe( me, m_vecTarget ) )
 	{
-
-		const float flSafeRadius = GetFragSafetyRadius();
-		const float flSafeRadiusSqr = flSafeRadius * flSafeRadius;
-		const CNEO_Player *pMePlayer = ToNEOPlayer( me->GetEntity() );
-
-		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-			// Also happen to check my distance, as I am on the same team
-			if ( pPlayer && pPlayer->IsAlive() && pPlayer->InSameTeam( pMePlayer ) )
-			{
-				if ( pPlayer->GetAbsOrigin().DistToSqr( m_vecTarget ) < flSafeRadiusSqr )
-				{
-					return THROW_TARGET_CANCEL; // risk of friendly fire
-				}
-			}
-		}
+		return THROW_TARGET_CANCEL; // risk of friendly fire
 	}
 
 	return THROW_TARGET_READY;
@@ -116,5 +96,50 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 float CNEOBotGrenadeThrowFrag::GetFragSafetyRadius()
 {
 	return sv_neo_grenade_blast_radius.GetFloat() * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat();
+}
+
+bool CNEOBotGrenadeThrowFrag::IsFragSafe( CNEOBot *me, const Vector &vecTarget )
+{
+	const float flDistToTargetSqr = me->GetAbsOrigin().DistToSqr( vecTarget );
+	const float flSafeRadius = GetFragSafetyRadius();
+	const float flSafeRadiusSqr = flSafeRadius * flSafeRadius;
+
+	if ( flDistToTargetSqr < flSafeRadiusSqr )
+	{
+		return false; // Too close to self to safely throw
+	}
+
+	const float flMaxThrowDist = sv_neo_grenade_throw_intensity.GetFloat() * sv_neo_grenade_fuse_timer.GetFloat();
+	if ( flDistToTargetSqr > ( flMaxThrowDist * flMaxThrowDist ) )
+	{
+		return false; // Too far to throw
+	}
+
+	if ( !NEORules()->IsTeamplay() )
+	{
+		return true;
+	}
+
+	const CNEO_Player *pMePlayer = ToNEOPlayer( me->GetEntity() );
+
+	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+	{
+		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+		if ( pPlayer && pPlayer->IsAlive() && pPlayer->InSameTeam( pMePlayer ) )
+		{
+			if ( pPlayer->GetAbsOrigin().DistToSqr( vecTarget ) < flSafeRadiusSqr )
+			{
+				trace_t tr;
+				UTIL_TraceLine( vecTarget, pPlayer->WorldSpaceCenter(), MASK_SHOT_HULL, nullptr, COLLISION_GROUP_NONE, &tr );
+
+				if ( tr.fraction == 1.0f || tr.m_pEnt == pPlayer )
+				{
+					return false; // potentially in blast radius
+				}
+			}
+		}
+	}
+
+	return true;
 }
 

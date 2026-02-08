@@ -11,7 +11,6 @@
 
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar neo_bot_offense_must_push_time;
-extern ConVar sv_neo_smoke_bloom_duration;
 
 ConVar neo_bot_aggressive( "neo_bot_aggressive", "0", FCVAR_NONE );
 
@@ -81,6 +80,17 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			// pre-cloak needs more thermoptic budget when chasing threats
 			me->EnableCloak(6.0f);
 
+			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
+			{
+				m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
+
+				Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
+				if ( pGrenadeBehavior )
+				{
+					return SuspendFor( pGrenadeBehavior, "Throwing grenade before chasing threat!" );
+				}
+			}
+
 			if ( isUsingCloseRangeWeapon )
 			{
 				CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), FASTEST_ROUTE );
@@ -99,17 +109,6 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			{
 				me->GetVisionInterface()->ForgetEntity( threat->GetEntity() );
 				return Done( "I lost my target!" );
-			}
-
-			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
-			{
-				m_grenadeThrowCooldownTimer.Start( sv_neo_smoke_bloom_duration.GetFloat() / 2.0f );
-
-				Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
-				if ( pGrenadeBehavior )
-				{
-					return SuspendFor( pGrenadeBehavior, "Throwing grenade before chasing threat!" );
-				}
 			}
 
 			// look where we last saw him as we approach

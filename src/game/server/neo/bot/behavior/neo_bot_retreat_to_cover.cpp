@@ -240,7 +240,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	{
 		if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
 		{
-			m_grenadeThrowCooldownTimer.Start( 10.0f );
+			m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 			Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
 			if ( pGrenadeBehavior )
 			{

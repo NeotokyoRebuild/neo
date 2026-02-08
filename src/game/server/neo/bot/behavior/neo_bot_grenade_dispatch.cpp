@@ -9,12 +9,9 @@
 #include "weapon_grenade.h"
 #include "weapon_smokegrenade.h"
 
-extern ConVar sv_neo_grenade_blast_radius;
-extern ConVar sv_neo_grenade_fuse_timer;
-extern ConVar sv_neo_grenade_throw_intensity;
-
 ConVar sv_neo_bot_grenade_use_frag("sv_neo_bot_grenade_use_frag", "1", FCVAR_NONE, "Allow bots to use frag grenades", true, 0, true, 1);
 ConVar sv_neo_bot_grenade_use_smoke("sv_neo_bot_grenade_use_smoke", "1", FCVAR_NONE, "Allow bots to use smoke grenades", true, 0, true, 1);
+ConVar sv_neo_bot_grenade_throw_cooldown("sv_neo_bot_grenade_throw_cooldown", "10", FCVAR_NONE, "Cooldown in seconds between grenade throws for bots");
 
 //---------------------------------------------------------------------------------------------
 Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *me, const CKnownEntity *threat )
@@ -38,7 +35,8 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 	CWeaponGrenade *pFragGrenade = nullptr;
 	CWeaponSmokeGrenade *pSmokeGrenade = nullptr;
 
-	for ( int i=0; i<pNEOPlayer->WeaponCount(); ++i )
+	int iWeaponCount = pNEOPlayer->WeaponCount();
+	for ( int i=0; i<iWeaponCount; ++i )
 	{
 		CBaseCombatWeapon *pWep = pNEOPlayer->GetWeapon( i );
 		if ( !pWep )
@@ -46,18 +44,25 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 			continue;
 		}
 
-		if ( sv_neo_bot_grenade_use_frag.GetBool() && ( pFragGrenade = dynamic_cast< CWeaponGrenade * >( pWep ) ) )
+		CNEOBaseCombatWeapon *pNeoWep = static_cast< CNEOBaseCombatWeapon * >( pWep );
+		if ( pNeoWep ) 
 		{
-			if ( pSmokeGrenade )
+			auto bits = pNeoWep->GetNeoWepBits();
+			if ( sv_neo_bot_grenade_use_frag.GetBool() && (bits & NEO_WEP_FRAG_GRENADE) )
 			{
-				break; // found both
+				pFragGrenade = static_cast< CWeaponGrenade * >( pNeoWep );
+				if ( pSmokeGrenade )
+				{
+					break; // found both
+				}
 			}
-		}
-		else if ( sv_neo_bot_grenade_use_smoke.GetBool() && ( pSmokeGrenade = dynamic_cast< CWeaponSmokeGrenade * >( pWep ) ) )
-		{
-			if ( pFragGrenade )
+			else if ( sv_neo_bot_grenade_use_smoke.GetBool() && (bits & NEO_WEP_SMOKE_GRENADE) )
 			{
-				break; // found both
+				pSmokeGrenade = static_cast< CWeaponSmokeGrenade * >( pNeoWep );
+				if ( pFragGrenade )
+				{
+					break; // found both
+				}
 			}
 		}
 	}
@@ -66,8 +71,6 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 	{
 		return nullptr;
 	}
-
-	Vector vecThreatPos = threat->GetLastKnownPosition();
 
 	// Should I toss a smoke grenade?
 	if ( pSmokeGrenade )
@@ -78,6 +81,7 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 			return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
 		}
 
+		bool bEnemySupportInField = false;
 		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 		{
 			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
@@ -85,53 +89,25 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 			{
 			    if ( !pPlayer->InSameTeam(pNEOPlayer) )
 				{
-					return nullptr; // Enemy support could see through smoke
+					bEnemySupportInField = true; // Enemy support could see through smoke
+					break;
 				}
 			}
 		}
 
 		// Enemy team does not have Support players in the field
-		return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
+		if (!bEnemySupportInField)
+		{
+			return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
+		}
 	}
 
 	// Should I toss a frag grenade? 
 	if ( pFragGrenade )
 	{
-		float flDistToThreatSqr = me->GetAbsOrigin().DistToSqr( vecThreatPos );
-		float flSafeRadius = CNEOBotGrenadeThrowFrag::GetFragSafetyRadius();
-		float flSafeRadiusSqr = flSafeRadius * flSafeRadius;
-
-		if ( flDistToThreatSqr < flSafeRadiusSqr )
+		if ( !CNEOBotGrenadeThrowFrag::IsFragSafe( me, threat->GetLastKnownPosition() ) )
 		{
 			return nullptr;
-		}
-
-		float flMaxThrowDist = sv_neo_grenade_throw_intensity.GetFloat() * sv_neo_grenade_fuse_timer.GetFloat();
-		if ( flDistToThreatSqr > ( flMaxThrowDist * flMaxThrowDist ) )
-		{
-			return nullptr;
-		}
-
-		if ( NEORules()->IsTeamplay() )
-		{
-			bool bTeammateTooClose = false;
-			for ( int i = 1; i <= gpGlobals->maxClients; i++ )
-			{
-				CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-				if ( pPlayer && pPlayer->IsAlive() && pPlayer != pNEOPlayer && pPlayer->InSameTeam(me) )
-				{
-					if ( pPlayer->GetAbsOrigin().DistToSqr( vecThreatPos ) < flSafeRadiusSqr )
-					{
-						bTeammateTooClose = true;
-						break;
-					}
-				}
-			}
-
-			if ( bTeammateTooClose )
-			{
-				return nullptr;
-			}
 		}
 
 		return new CNEOBotGrenadeThrowFrag( pFragGrenade, threat );
