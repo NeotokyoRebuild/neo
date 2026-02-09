@@ -966,7 +966,7 @@ void SetModelNumbers (void)
 		}
 		else
 		{
-			sprintf (value, "");
+			//sprintf (value, "");
 		}
 		SetKeyValue (&entities[i], "model", value);
 	}
@@ -984,7 +984,7 @@ void SetLightStyles (void)
 	int		stylenum;
 	entity_t	*e;
 	int		i, j;
-	char	value[10];
+	char	value[12];
 	char	lighttargets[MAX_SWITCHED_LIGHTS][64];
 
 
@@ -1019,7 +1019,7 @@ void SetLightStyles (void)
 			strcpy (lighttargets[j], t);
 			stylenum++;
 		}
-		sprintf (value, "%i", 32 + j);
+		snprintf (value, sizeof(value), "%i", 32 + j);
         auto pCurrentStyle = ValueForKey( e, "style" );
 		// the designer has set a default lightstyle as well as making the light switchable
 		if ( pCurrentStyle )
