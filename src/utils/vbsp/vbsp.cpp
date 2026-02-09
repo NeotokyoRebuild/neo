@@ -25,7 +25,7 @@ extern float		g_maxLightmapDimension;
 char		source[1024];
 char		mapbase[ 64 ];
 char		name[1024];
-char		materialPath[1024];
+char		materialPath[1024 + 16];
 
 vec_t		microvolume = 1.0;
 qboolean	noprune;
@@ -885,7 +885,7 @@ int RunVBSP( int argc, char **argv )
 {
 	int		i;
 	double		start, end;
-	char		path[1024];
+	char		path[1024 + 4];
 
 	CommandLine()->CreateCmdLine( argc, argv );
 	MathLib_Init( 2.2f, 2.2f, 0.0f, OVERBRIGHT, false, false, false, false );
@@ -1280,7 +1280,7 @@ int RunVBSP( int argc, char **argv )
 	numthreads = 1;		// multiple threads aren't helping...
 
 	// Setup the logfile.
-	char logFile[512];
+	char logFile[sizeof(source) + 4];
 	_snprintf( logFile, sizeof(logFile), "%s.log", source );
 	SetSpewFunctionLogFile( logFile );
 
@@ -1293,7 +1293,7 @@ int RunVBSP( int argc, char **argv )
 	Msg( "basegamedir: %s This is the base engine + base game directory (e.g. e:/hl2/hl2/, or d:/tf2/tf2/ )\n", basegamedir );
 #endif
 
-	sprintf( materialPath, "%smaterials", gamedir );
+	snprintf( materialPath, sizeof(materialPath), "%smaterials", gamedir );
 	InitMaterialSystem( materialPath, CmdLib_GetFileSystemFactory() );
 	Msg( "materialPath: %s\n", materialPath );
 

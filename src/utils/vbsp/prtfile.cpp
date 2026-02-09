@@ -322,7 +322,7 @@ WritePortalFile
 */
 void WritePortalFile (tree_t *tree)
 {
-	char	filename[1024];
+	char	filename[1024 + 4];
 	node_t *headnode;
 	int start = Plat_FloatTime();
 
