@@ -8,6 +8,9 @@
 #include "nav_mesh.h"
 #include "nav_pathfind.h"
 
+ConVar sv_neo_grenade_debug_behavior("sv_neo_grenade_debug_behavior", "0", FCVAR_CHEAT,
+	"Draw debug overlays for bot grenade behavior", true, 0, true, 1);
+
 //---------------------------------------------------------------------------------------------
 CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat )
 {
@@ -44,10 +47,29 @@ Vector CNEOBotGrenadeThrow::FindEmergencePointAlongPath( CNEOBot *me, const Vect
 			// search backwards from obscured position to find the first point visible to me
 			for ( CNavArea *area = obscuredArea; area; area = area->GetParent() )
 			{
+				// DEBUG: Draw emergence path
+				// Color: Yellow (255, 255, 0) to distinguish path analysis
+				if ( sv_neo_grenade_debug_behavior.GetBool() )
+				{
+					if ( area->GetParent() )
+					{
+						NDebugOverlay::HorzArrow( area->GetCenter(), area->GetParent()->GetCenter(), 2.0f, 255, 255, 0, 255, true, 2.0f );
+					}
+					else
+					{
+						NDebugOverlay::Cross3D( area->GetCenter(), 16.0f, 255, 255, 0, true, 2.0f );
+					}
+				}
+
 				Vector vecTest = area->GetCenter();
 
 				if ( me->IsLineOfFireClear( vecTest, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )
 				{
+					// DEBUG: Draw emergence point
+					if ( sv_neo_grenade_debug_behavior.GetBool() )
+					{
+						NDebugOverlay::Box( vecTest, Vector(-16,-16,-16), Vector(16,16,16), 255, 255, 0, 50, 2.0f );
+					}
 					return vecTest;
 				}
 
@@ -115,6 +137,26 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		return Done( "Grenade throw timed out" );
 	}
 
+	if ( sv_neo_grenade_debug_behavior.GetBool() && m_hThreatGrenadeTarget.Get() )
+	{
+		// DEBUG Colors: Red = Frag, Gray = Smoke, Purple = Unknown
+		Vector vecStart = me->GetEntity()->WorldSpaceCenter();
+		Vector vecVictim = m_hThreatGrenadeTarget->GetAbsOrigin();
+		int r = 255, g = 0, b = 255; // Default purple just in case
+		if ( pWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE )
+		{
+			r = 255; g = 0; b = 0; // Red
+		}
+		else if ( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE )
+		{
+			r = 128; g = 128; b = 128; // Gray
+		}
+		// Draw box around the bot that is considering the throw
+		NDebugOverlay::Box( me->GetEntity()->GetAbsOrigin(), me->GetEntity()->WorldAlignMins(), me->GetEntity()->WorldAlignMaxs(), r, g, b, 30, 0.1f );
+		// Arrow from bot to threat being targeted
+		NDebugOverlay::HorzArrow( vecStart, vecVictim, 2.0f, r, g, b, 255, true, 0.1f );
+	}
+
 	me->EnableCloak(3.0f);
 
 	if ( me->GetActiveWeapon() != pWep )
@@ -169,6 +211,18 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		if ( vecForward.Dot( vecToTarget ) >= 0.95f )
 		{
 			bAimOnTarget = true;
+		}
+	}
+	
+	// DEBUG: Targeting decisions
+	if ( sv_neo_grenade_debug_behavior.GetBool() )
+	{
+		Vector vecStart = me->GetEntity()->WorldSpaceCenter();
+		// Color: Orange (255, 128, 0) is the final ballistics target
+		if ( m_vecTarget != vec3_invalid )
+		{
+			NDebugOverlay::HorzArrow( vecStart, m_vecTarget, 2.0f, 255, 128, 0, 255, true, 1.0f );
+			NDebugOverlay::Box( m_vecTarget, Vector(-16,-16,-16), Vector(16,16,16), 255, 128, 0, 30, 1.0f );
 		}
 	}
 
