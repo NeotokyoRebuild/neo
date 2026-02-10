@@ -79,8 +79,8 @@ void CWeaponSRS::ItemPreFrame()
 			}
 			pOwner->Weapon_SetZoom(false);
 		}
-		// Only queue the bolting anim; we want to allow the player to cancel
-		// this with manual weapon quick-switching.
+		// Only queue the bolting anim once; we want to allow the player
+		// to cancel this with manual weapon quick-switching.
 		SendWeaponAnim(ACT_VM_PULLBACK);
 		WeaponSound(SPECIAL1);
 		m_bNeedsBolting = false;
