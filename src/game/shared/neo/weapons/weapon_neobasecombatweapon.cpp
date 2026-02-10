@@ -40,16 +40,12 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropTime(RECVINFO(m_flLastAttackTime)),
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
-	RecvPropBool(RECVINFO(m_bRoundChambered)),
-	RecvPropBool(RECVINFO(m_bRoundBeingChambered)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
-	SendPropBool(SENDINFO(m_bRoundChambered)),
-	SendPropBool(SENDINFO(m_bRoundBeingChambered)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
@@ -61,8 +57,6 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bRoundChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
@@ -75,8 +69,6 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_flLastAttackTime, FIELD_TIME),
 	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
-	DEFINE_FIELD(m_bRoundChambered, FIELD_BOOLEAN),
-	DEFINE_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
@@ -613,7 +605,7 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 
 	// NEO JANK (Adam) Why do we have to bombard the zr68l viewmodel with SendWeaponAnim(ACT_VM_IDLE_LOWERED) during sprint to make it act normally? Breakpoint in SendWeaponAnim isn't triggered by anything else after this animation is sent while sprinting
 	const bool loweredCheck = GetNeoWepBits() & NEO_WEP_ZR68_L ? true : !m_bLowered;
-	if (loweredCheck && !m_bInReload && !m_bRoundBeingChambered &&
+	if (loweredCheck && !m_bInReload &&
 		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = true;
@@ -624,12 +616,6 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		m_bLowered = false;
 		next(ACT_VM_IDLE);
 	}
-	else if (m_bLowered && m_bRoundBeingChambered)
-	{ // For bolt action weapons
-		m_bLowered = false;
-		next(ACT_VM_PULLBACK, 1.2f);
-	}
-
 	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
 		SetWeaponIdleTime(gpGlobals->curtime + 0.2);

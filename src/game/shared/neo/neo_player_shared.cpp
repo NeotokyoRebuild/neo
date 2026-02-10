@@ -52,7 +52,7 @@ ConVar sv_neo_serverside_beacons("sv_neo_serverside_beacons", "1", FCVAR_NOTIFY 
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
-	if (!pWep || pWep->m_bInReload || pWep->GetRoundBeingChambered())
+	if (!pWep || pWep->m_bInReload)
 	{
 		return false;
 	}

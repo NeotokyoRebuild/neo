@@ -498,8 +498,7 @@ void CHudCrosshair::Paint( void )
 #endif
 		);
 
-		const bool isSRS = pWeapon->GetNeoWepBits() & NEO_WEP_SRS;
-		if (!isSRS || pWeapon->GetRoundChambered())
+		if (!(pWeapon->GetNeoWepBits() & NEO_WEP_SRS))
 		{
 			if (cl_neo_crosshair_scope_inaccuracy.GetBool())
 			{

@@ -223,8 +223,6 @@ public:
 	virtual bool Deploy(void);
 
 	virtual float GetFireRate() override final;
-	virtual bool GetRoundChambered() const { return 0; }
-	virtual bool GetRoundBeingChambered() const { return 0; }
 	float GetPenetration() const;
 #ifdef CLIENT_DLL
 	float m_flTemperature;
@@ -246,8 +244,6 @@ protected:
 	CNetworkVar(float, m_flAccuracyPenalty);
 
 	CNetworkVar(int, m_nNumShotsFired);
-	CNetworkVar(bool, m_bRoundChambered);
-	CNetworkVar(bool, m_bRoundBeingChambered);
 	CNetworkVar(bool, m_bTriggerReset);
 
 private:
