@@ -44,6 +44,8 @@ public:
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.725f; }
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 
+	inline bool GetNeedsBolting() const { return m_bNeedsBolting; }
+
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
