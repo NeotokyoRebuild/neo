@@ -46,15 +46,20 @@ CWeaponSRS::CWeaponSRS()
 
 void CWeaponSRS::PrimaryAttack()
 {
-	if (!ShootingIsPrevented())
+	if (ShootingIsPrevented() || !m_iClip1)
 	{
-		// Don't bolt an empty gun
-		if (m_iClip1 > 0)
-		{
-			m_bNeedsBolting = true;
-		}
+		Assert(!(m_iClip1 < 0));
+		return BaseClass::PrimaryAttack();
 	}
 
+	const bool tryingToShootTooFast =
+		(gpGlobals->curtime < m_flLastAttackTime + GetFireRate());
+	if (tryingToShootTooFast)
+	{
+		return;
+	}
+
+	m_bNeedsBolting = true;
 	BaseClass::PrimaryAttack();
 }
 
