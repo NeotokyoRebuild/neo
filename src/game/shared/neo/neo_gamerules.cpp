@@ -2197,6 +2197,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					".unpause - Unpause the match\n");
 			ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szHelpText);
 		}
+		ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, ".coin - Flip a coin\n");
 		return;
 	}
 
@@ -2444,6 +2445,25 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					MessageEnd();
 				}
 			}
+		}
+
+		if (V_strcmp(pSzChat, "coin") == 0)
+		{
+			bool bSpecial = (RandomInt(1, 10) <= 1);
+			bool bFlip = (RandomInt(0, 1) == 0);
+
+			const char *pszResult = nullptr;
+
+			if (bSpecial)
+			{
+				pszResult = bFlip ? "Old Man (Heads)\n" : "Cathedral (Tails)\n";
+			}
+			else
+			{
+				pszResult = bFlip ? "Heads\n" : "Tails\n";
+			}
+
+			UTIL_ClientPrintAll(HUD_PRINTTALK, pszResult);
 		}
 	}
 }
