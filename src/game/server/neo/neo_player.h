@@ -247,6 +247,7 @@ private:
 	float GetActiveWeaponSpeedScale() const;
 
 private:
+	void CheckAimButtons();
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
 	void CheckLeanButtons();

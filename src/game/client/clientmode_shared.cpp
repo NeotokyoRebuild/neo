@@ -826,7 +826,7 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 	}
 #ifdef NEO
 	else if (down && pszCurrentBinding &&
-			 (Q_strcmp(pszCurrentBinding, "+specprevplayer") == 0 || Q_strcmp(pszCurrentBinding, "+aim") == 0 || Q_strcmp(pszCurrentBinding, "toggle_aim") == 0))
+			 (Q_strcmp(pszCurrentBinding, "+specprevplayer") == 0 || Q_strcmp(pszCurrentBinding, "+aim") == 0 || Q_strcmp(pszCurrentBinding, "+toggle_aim") == 0))
 #else
 	else if ( down && pszCurrentBinding && Q_strcmp( pszCurrentBinding, "+attack2" ) == 0 )
 #endif

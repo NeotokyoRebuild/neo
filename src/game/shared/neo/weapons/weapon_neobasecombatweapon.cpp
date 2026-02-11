@@ -488,6 +488,23 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 				pOwner->SetMaxSpeed(pOwner->GetNormSpeed_WithWepEncumberment(this));
 			}
 		}
+
+		if (pOwner->m_nButtons & IN_ZOOM && IsAllowedToZoom(this))
+		{
+			// Should already be aiming, but doesn't hurt to check
+			if (!pOwner->IsInAim())
+			{
+				pOwner->Weapon_SetZoom(true);
+			}
+			else
+			{
+				pOwner->SetFOV(pOwner, GetWpnData().iAimFOV, 0.1);
+			}
+		}
+		else
+		{
+			pOwner->Weapon_SetZoom(false);
+		}
 	}
 
 	return ret;
@@ -505,32 +522,6 @@ float CNEOBaseCombatWeapon::GetPenetration() const
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-#ifdef DEBUG
-	CNEO_Player* pOwner = NULL;
-	if (GetOwner())
-	{
-		pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
-		Assert(pOwner);
-	}
-#else
-	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
-#endif
-
-	if (pOwner)
-	{
-		if (auto pNeoSwitchingTo = static_cast<CNEOBaseCombatWeapon*>(pSwitchingTo);
-			!pNeoSwitchingTo || (pNeoSwitchingTo  && !IsAllowedToZoom(pNeoSwitchingTo)))
-		{
-			pOwner->Weapon_SetZoom(false);
-		}
-#ifdef CLIENT_DLL
-		if (pOwner->IsLocalPlayer())
-		{
-			IN_AimToggleReset();
-		}
-#endif // CLIENT_DLL
-	}
-
 	return BaseClass::Holster(pSwitchingTo);
 }
 
@@ -1263,7 +1254,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
 	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 	int ret = 0;
-	
+
 	if (inThermalVision && (!pOwner || (pOwner && !pOwner->IsCloaked())))
 	{
 		IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
