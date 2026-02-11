@@ -147,6 +147,7 @@ public:
 
 	virtual void ItemPreFrame(void) override;
 	virtual void ItemPostFrame(void) override;
+	virtual void ItemBusyFrame(void) override;
 
 	virtual void PrimaryAttack(void) override;
 	virtual void SecondaryAttack(void) override;
@@ -210,8 +211,8 @@ public:
 	virtual void SetPickupTouch(void) override;
 
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo) override;
-#ifdef CLIENT_DLL
 	virtual void ItemHolsterFrame() override;
+#ifdef CLIENT_DLL
 	virtual bool ShouldDraw(void) override;
 	virtual void ThirdPersonSwitch(bool bThirdPerson) override;
 	virtual int RestoreData(const char* context, int slot, int type) override;
