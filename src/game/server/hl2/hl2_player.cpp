@@ -495,6 +495,7 @@ void CHL2_Player::Precache( void )
 //-----------------------------------------------------------------------------
 void CHL2_Player::CheckSuitZoom( void )
 {
+#ifndef NEO
 //#ifndef _XBOX 
 	//Adrian - No zooming without a suit!
 	if ( IsSuitEquipped() )
@@ -509,6 +510,7 @@ void CHL2_Player::CheckSuitZoom( void )
 		}
 	}
 //#endif//_XBOX
+#endif // NEO
 }
 
 void CHL2_Player::EquipSuit( bool bPlayEffects )
@@ -1066,6 +1068,7 @@ void CHL2_Player::PreThink(void)
 	// Update weapon's ready status
 	UpdateWeaponPosture();
 
+#ifndef NEO
 	// Disallow shooting while zooming
 	if ( IsX360() )
 	{
@@ -1091,6 +1094,7 @@ void CHL2_Player::PreThink(void)
 			m_nButtons &= ~(IN_ATTACK|IN_ATTACK2);
 		}
 	}
+#endif // NEO
 
 #ifdef HL2MP
 	UpdateLastKnownArea();
