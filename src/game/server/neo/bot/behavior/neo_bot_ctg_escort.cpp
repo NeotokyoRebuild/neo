@@ -92,7 +92,8 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 			// Look away from the carrier to cover their blind spots
 			Vector vecFromCarrier = me->GetAbsOrigin() - pGhostCarrier->GetAbsOrigin();
 			vecFromCarrier.z = 0.0f; // Bias towards horizontal scanning
-			if ( VectorNormalize( vecFromCarrier ) > 0.1f )
+			// CNEOBotTacticalMonitor::AvoidBumpingFriends handles <32hu distance
+			if ( VectorNormalize( vecFromCarrier ) > 32.0f )
 			{
 				// Look at a point far away in the opposite direction of the carrier
 				Vector vecLookTarget = me->EyePosition() + ( vecFromCarrier * 500.0f );
@@ -176,7 +177,7 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 
 		m_chasePath.Invalidate();
 
-		Vector vecMoveTarget = m_vecGoalPos;
+		Vector& vecMoveTarget = m_vecGoalPos;
 
 
 		if ( m_role == ROLE_SCREEN && pBotGhostCarrier )
@@ -261,7 +262,7 @@ CNEOBotCtgEscort::EscortRole CNEOBotCtgEscort::UpdateRoleAssignment( CNEOBot *me
 	CNEO_Player* pBestToCarrier = nullptr;
 	CNEO_Player* pSecondBestToCarrier = nullptr;
 
-	Vector vecCarrierOrigin = pGhostCarrier->GetAbsOrigin();
+	const Vector& vecCarrierOrigin = pGhostCarrier->GetAbsOrigin();
 
 	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
@@ -271,7 +272,7 @@ CNEOBotCtgEscort::EscortRole CNEOBotCtgEscort::UpdateRoleAssignment( CNEOBot *me
 			continue;
 		}
 
-		Vector vecPlayerOrigin = pPlayer->GetAbsOrigin();
+		const Vector& vecPlayerOrigin = pPlayer->GetAbsOrigin();
 
 		// Check for Scout (Best dist to goal)
 		float goalDist = vecPlayerOrigin.DistToSqr( vecGoalPos );

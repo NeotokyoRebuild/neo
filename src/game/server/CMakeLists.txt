@@ -1441,8 +1441,6 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_behavior.h
     neo/bot/behavior/neo_bot_command_follow.cpp
     neo/bot/behavior/neo_bot_command_follow.h
-    neo/bot/behavior/neo_bot_dead.cpp
-    neo/bot/behavior/neo_bot_dead.h
     neo/bot/behavior/neo_bot_ctg_capture.cpp
     neo/bot/behavior/neo_bot_ctg_capture.h
     neo/bot/behavior/neo_bot_ctg_carrier.cpp
@@ -1455,6 +1453,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_ctg_lone_wolf.h
     neo/bot/behavior/neo_bot_ctg_seek.cpp
     neo/bot/behavior/neo_bot_ctg_seek.h
+    neo/bot/behavior/neo_bot_dead.cpp
+    neo/bot/behavior/neo_bot_dead.h
     neo/bot/behavior/neo_bot_jgr_capture.cpp
     neo/bot/behavior/neo_bot_jgr_capture.h
     neo/bot/behavior/neo_bot_jgr_enemy.cpp

@@ -1,5 +1,4 @@
-#ifndef NEO_BOT_CTG_LONE_WOLF_H
-#define NEO_BOT_CTG_LONE_WOLF_H
+#pragma once
 
 #include "bot/neo_bot.h"
 
@@ -40,5 +39,3 @@ private:
 
 	CUtlVector< CNavArea * > m_visibleAreas;
 };
-
-#endif // NEO_BOT_CTG_LAST_STAND_H

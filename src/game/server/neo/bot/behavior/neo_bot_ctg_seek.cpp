@@ -82,7 +82,7 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 						CBaseCombatWeapon* pWeapon = m_hTargetEntity->MyCombatWeaponPointer();
 						if ( pWeapon && !pWeapon->GetOwner() )
 						{
-							CWeaponGhost *pGhost = dynamic_cast<CWeaponGhost*>( m_hTargetEntity.Get() );
+							CWeaponGhost *pGhost = assert_cast<CWeaponGhost*>( m_hTargetEntity.Get() );
 							return SuspendFor( new CNEOBotCtgCapture( pGhost ), "Capturing Ghost" );
 						}
 					}

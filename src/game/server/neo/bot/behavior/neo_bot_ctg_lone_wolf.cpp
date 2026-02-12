@@ -101,11 +101,11 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	if ( !m_capPointUpdateTimer.HasStarted() || m_capPointUpdateTimer.IsElapsed() )
 	{
 		m_closestCapturePoint = CNEO_Player::VECTOR_INVALID_WAYPOINT;
-		float flNearestCapDist = FLT_MAX;
+		float flNearestCapDistSq = FLT_MAX;
 		
 		if ( NEORules()->m_pGhostCaps.Count() > 0 )
 		{
-			Vector vecStart = me->IsCarryingGhost() ? me->GetAbsOrigin() : m_hGhost->GetAbsOrigin();
+			const Vector& vecStart = me->IsCarryingGhost() ? me->GetAbsOrigin() : m_hGhost->GetAbsOrigin();
 			
 			for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
 			{
@@ -114,10 +114,10 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 
 				if ( pCapPoint->owningTeamAlternate() == me->GetTeamNumber() )
 				{
-					float d = vecStart.DistTo( pCapPoint->GetAbsOrigin() );
-					if ( d < flNearestCapDist )
+					float distSq = vecStart.DistToSqr( pCapPoint->GetAbsOrigin() );
+					if ( distSq < flNearestCapDistSq )
 					{
-						flNearestCapDist = d;
+						flNearestCapDistSq = distSq;
 						m_closestCapturePoint = pCapPoint->GetAbsOrigin();
 					}
 				}
@@ -129,7 +129,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	float flDistGhostToGoal = FLT_MAX;
 	if ( m_closestCapturePoint != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
-		Vector vecStart = me->IsCarryingGhost() ? me->GetAbsOrigin() : m_hGhost->GetAbsOrigin();
+		const Vector& vecStart = me->IsCarryingGhost() ? me->GetAbsOrigin() : m_hGhost->GetAbsOrigin();
 		flDistGhostToGoal = vecStart.DistTo( m_closestCapturePoint );
 	}
 
@@ -147,7 +147,8 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 
 	// Count enemies and find if one is closer to our goal
 	int iEnemyTeamCount = 0;
-	float flClosestEnemyDistToGoal = FLT_MAX;
+	float flClosestEnemyDistToGoalSq = FLT_MAX;
+	float flMyTotalDistSq = ( flMyTotalDist >= FLT_MAX ) ? FLT_MAX : ( flMyTotalDist * flMyTotalDist );
 	
 	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
@@ -157,11 +158,11 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 			iEnemyTeamCount++;
 			if ( m_closestCapturePoint != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 			{
-				float d = pPlayer->GetAbsOrigin().DistTo( m_closestCapturePoint );
-				if ( d < flClosestEnemyDistToGoal )
+				float distSq = pPlayer->GetAbsOrigin().DistToSqr( m_closestCapturePoint );
+				if ( distSq < flClosestEnemyDistToGoalSq )
 				{
-					flClosestEnemyDistToGoal = d;
-					if ( iEnemyTeamCount > 1 && flClosestEnemyDistToGoal < flMyTotalDist )
+					flClosestEnemyDistToGoalSq = distSq;
+					if ( iEnemyTeamCount > 1 && flClosestEnemyDistToGoalSq < flMyTotalDistSq )
 					{
 						// We already know it's not a 1v1 (count > 1)
 						// And we know it's not safe to cap (enemy closer than us)
@@ -177,7 +178,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	// Just try to grab the ghost, even if it might not be the best tactic
 	bool bIs1v1 = (iEnemyTeamCount == 1);
 	
-	bool bSafeToCap = ((m_closestCapturePoint != CNEO_Player::VECTOR_INVALID_WAYPOINT) && (flMyTotalDist < flClosestEnemyDistToGoal));
+	bool bSafeToCap = ((m_closestCapturePoint != CNEO_Player::VECTOR_INVALID_WAYPOINT) && (flMyTotalDistSq < flClosestEnemyDistToGoalSq));
 	
 	CWeaponGhost *pGhostWeapon = m_hGhost.Get();
 	CBaseCombatCharacter *pGhostOwner = pGhostWeapon ? pGhostWeapon->GetOwner() : nullptr;

@@ -125,9 +125,9 @@ void CNEOBotGhostEquipmentHandler::EquipBestWeaponForGhoster( CNEOBot *me )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 
-	CNEOBaseCombatWeapon *pActive = dynamic_cast<CNEOBaseCombatWeapon*>( me->GetActiveWeapon() );
-	CNEOBaseCombatWeapon *pGhost = dynamic_cast<CNEOBaseCombatWeapon*>( me->Weapon_GetSlot( 0 ) );
-	CNEOBaseCombatWeapon *pSecondary = dynamic_cast<CNEOBaseCombatWeapon*>( me->Weapon_GetSlot( 1 ) );
+	CNEOBaseCombatWeapon *pActive =    assert_cast<CNEOBaseCombatWeapon*>( me->GetActiveWeapon() );
+	CNEOBaseCombatWeapon *pGhost =     assert_cast<CNEOBaseCombatWeapon*>( me->Weapon_GetSlot( 0 ) );
+	CNEOBaseCombatWeapon *pSecondary = assert_cast<CNEOBaseCombatWeapon*>( me->Weapon_GetSlot( 1 ) );
 
 	// Sanity check: if we don't have the ghost, we shouldn't be in this behavior, but handle gracefully
 	if ( !pGhost ) 
@@ -177,12 +177,12 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 {
 	CNEO_Player *pBestCallout = nullptr;
 	float flBestCalloutMoved = -1.0f;
-	float flBestCalloutDist = FLT_MAX;
+	float flBestCalloutDistSq = FLT_MAX;
 	bool bBestCalloutIsNew = false;
 	
 	bool bConsideringOnlyLoSEnemies = false;
 	
-	const Vector vecMyPos = me->GetAbsOrigin();
+	const Vector& vecMyPos = me->GetAbsOrigin();
 
 	for ( int i = 0; i < enemies.Count(); ++i )
 	{
@@ -205,7 +205,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 			continue;
 		}
 
-		float flDistToMe = vecMyPos.DistTo( pPlayer->GetAbsOrigin() );
+		float flDistToMeSq = vecMyPos.DistToSqr( pPlayer->GetAbsOrigin() );
 
 		// Also take into account how much the enemy has moved since we last reported them
 		Vector vecLast = m_enemyLastPos[ idx ];
@@ -226,16 +226,16 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 				pBestCallout = pPlayer;
 				bBestCalloutIsNew = bIsNew;
 				flBestCalloutMoved = flMoved;
-				flBestCalloutDist = flDistToMe;
+				flBestCalloutDistSq = flDistToMeSq;
 			}
 			else
 			{
-				if ( flDistToMe < flBestCalloutDist )
+				if ( flDistToMeSq < flBestCalloutDistSq )
 				{
 					pBestCallout = pPlayer;
 					bBestCalloutIsNew = bIsNew;
 					flBestCalloutMoved = flMoved;
-					flBestCalloutDist = flDistToMe;
+					flBestCalloutDistSq = flDistToMeSq;
 				}
 			}
 			continue;
@@ -252,7 +252,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 			pBestCallout = pPlayer;
 			bBestCalloutIsNew = bIsNew;
 			flBestCalloutMoved = flMoved;
-			flBestCalloutDist = flDistToMe;
+			flBestCalloutDistSq = flDistToMeSq;
 			continue;
 		}
 
@@ -261,7 +261,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 		{
 			pBestCallout = pPlayer;
 			bBestCalloutIsNew = true;
-			flBestCalloutDist = flDistToMe;
+			flBestCalloutDistSq = flDistToMeSq;
 			flBestCalloutMoved = 0;
 			continue;
 		}
@@ -276,10 +276,10 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 		if ( bIsNew )
 		{
 			// Both New: Tie breaker is distance to me (closest first)
-			if ( flDistToMe < flBestCalloutDist )
+			if ( flDistToMeSq < flBestCalloutDistSq )
 			{
 				pBestCallout = pPlayer;
-				flBestCalloutDist = flDistToMe;
+				flBestCalloutDistSq = flDistToMeSq;
 			}
 		}
 		else
@@ -291,11 +291,11 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 			if ( FloatMakePositive( diff ) < 100.0f )
 			{
 				// Roughly same movement, tie breaker is closest distance
-				if ( flDistToMe < flBestCalloutDist )
+				if ( flDistToMeSq < flBestCalloutDistSq )
 				{
 					pBestCallout = pPlayer;
 					flBestCalloutMoved = flMoved;
-					flBestCalloutDist = flDistToMe;
+					flBestCalloutDistSq = flDistToMeSq;
 				}
 			}
 			else if ( diff > 0.0f )
@@ -303,7 +303,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 				// Distinctly moved more
 				pBestCallout = pPlayer;
 				flBestCalloutMoved = flMoved;
-				flBestCalloutDist = flDistToMe;
+				flBestCalloutDistSq = flDistToMeSq;
 			}
 		}
 	}
@@ -583,8 +583,8 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 
 	if ( pTargetTeammate )
 	{
-		float flDistToTeammate = me->GetAbsOrigin().DistTo( pTargetTeammate->GetAbsOrigin() );
-		if ( flDistToTeammate < 100.0f )
+		float flDistToTeammateSq = me->GetAbsOrigin().DistToSqr( pTargetTeammate->GetAbsOrigin() );
+		if ( flDistToTeammateSq < ( 100.0f * 100.0f ) )
 		{
 			m_chasePath.Invalidate();
 			return;
