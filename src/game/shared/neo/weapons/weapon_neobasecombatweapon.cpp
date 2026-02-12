@@ -1004,7 +1004,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	info.m_flDistance = MAX_TRACE_LENGTH;
 	info.m_iAmmoType = m_iPrimaryAmmoType;
-	info.m_iTracerFreq = 0;
+	info.m_iTracerFreq = UsesTracers() ? 1 : 0;
 
 #if !defined( CLIENT_DLL )
 	// Fire the bullets

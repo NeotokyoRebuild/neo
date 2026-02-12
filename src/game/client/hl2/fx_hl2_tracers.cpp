@@ -23,6 +23,12 @@ extern void FX_TracerSound( const Vector &start, const Vector &end, int iTracerT
 
 extern ConVar muzzleflash_light;
 
+#ifdef NEO
+extern C_BasePlayer *EffectPlayerSource( const CEffectData &data );
+
+extern ConVar r_drawtracers;
+extern ConVar r_drawtracers_firstperson;
+#endif
 
 CLIENTEFFECT_REGISTER_BEGIN( PrecacheTracers )
 CLIENTEFFECT_MATERIAL( "effects/gunshiptracer" )
@@ -120,6 +126,19 @@ DECLARE_CLIENT_EFFECT( "AirboatGunHeavyTracer", AirboatGunHeavyTracerCallback );
 //-----------------------------------------------------------------------------
 void AirboatGunTracerCallback( const CEffectData &data )
 {
+#ifdef NEO
+	if ( !r_drawtracers.GetBool() )
+		return;
+
+	if ( !r_drawtracers_firstperson.GetBool() )
+	{
+		auto pPlayer = EffectPlayerSource( data );
+
+		if ( pPlayer && !pPlayer->ShouldDrawThisPlayer() )
+			return;
+	}
+#endif
+
 	// Grab the data
 	Vector vecStart = GetTracerOrigin( data );
 	float flVelocity = data.m_flScale;

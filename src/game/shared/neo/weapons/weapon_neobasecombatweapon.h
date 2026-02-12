@@ -206,6 +206,7 @@ public:
 
 	virtual bool CanBePickedUpByClass(int classId);
 	virtual bool CanDrop(void);
+	virtual bool UsesTracers() { return false; }
 
 	virtual void SetPickupTouch(void) override;
 

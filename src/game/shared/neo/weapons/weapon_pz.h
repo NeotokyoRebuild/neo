@@ -39,6 +39,7 @@ public:
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.675f; }
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
+	virtual bool UsesTracers() override final { return true; }
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
