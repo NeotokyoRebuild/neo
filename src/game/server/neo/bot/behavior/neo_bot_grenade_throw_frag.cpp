@@ -15,6 +15,9 @@ extern ConVar sv_neo_grenade_throw_intensity;
 ConVar sv_neo_bot_grenade_frag_safety_range_multiplier("sv_neo_bot_grenade_frag_safety_range_multiplier", "1.2",
 	FCVAR_NONE, "Multiplier for frag grenade blast radius safety check", true, 0.1, false, 0);
 
+ConVar sv_neo_bot_grenade_frag_max_range_ratio("sv_neo_bot_grenade_frag_max_range_ratio", "0.7",
+	FCVAR_NONE, "Ratio of max frag grenade throw distance to account for slowing factors", true, 0.1, true, 1);
+
 CNEOBotGrenadeThrowFrag::CNEOBotGrenadeThrowFrag( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat )
 	: CNEOBotGrenadeThrow( pWeapon, threat )
 {
@@ -48,7 +51,12 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	if (pPrimaryThreat && pPrimaryThreat->GetEntity() && me->IsLineOfFireClear(pPrimaryThreat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT))
 	{
 		// consider panic throwing the grenade at the immediate threat
-		m_vecTarget = pPrimaryThreat->GetLastKnownPosition();
+		if ( m_scanTimer.IsElapsed() )
+		{
+			m_vecTarget = pPrimaryThreat->GetLastKnownPosition();
+			CNEOBotPathCompute( me, m_PathFollower, m_vecTarget, FASTEST_ROUTE );
+			m_scanTimer.Start( 0.2f );
+		}
 	}
 	else if (m_vecTarget == vec3_invalid)
 	{
@@ -109,7 +117,7 @@ bool CNEOBotGrenadeThrowFrag::IsFragSafe( CNEOBot *me, const Vector &vecTarget )
 		return false; // Too close to self to safely throw
 	}
 
-	const float flMaxThrowDist = sv_neo_grenade_throw_intensity.GetFloat() * sv_neo_grenade_fuse_timer.GetFloat();
+	const float flMaxThrowDist = sv_neo_grenade_throw_intensity.GetFloat() * sv_neo_grenade_fuse_timer.GetFloat() * sv_neo_bot_grenade_frag_max_range_ratio.GetFloat();
 	if ( flDistToTargetSqr > ( flMaxThrowDist * flMaxThrowDist ) )
 	{
 		return false; // Too far to throw

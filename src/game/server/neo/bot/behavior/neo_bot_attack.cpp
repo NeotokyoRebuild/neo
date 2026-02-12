@@ -80,6 +80,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			// pre-cloak needs more thermoptic budget when chasing threats
 			me->EnableCloak(6.0f);
 
+			// Consider throwing a grenade
 			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
 			{
 				m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );

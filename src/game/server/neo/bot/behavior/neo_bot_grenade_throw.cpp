@@ -102,7 +102,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOB
 		me->PushRequiredWeapon( m_hGrenadeWeapon );
 	}
 	
-	m_giveUpTimer.Start( 5.0f );
+	m_giveUpTimer.Start( 3.0f );
 	m_bPinPulled = false;
 
 	return Continue();
@@ -221,8 +221,8 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		// Color: Orange (255, 128, 0) is the final ballistics target
 		if ( m_vecTarget != vec3_invalid )
 		{
-			NDebugOverlay::HorzArrow( vecStart, m_vecTarget, 2.0f, 255, 128, 0, 255, true, 1.0f );
-			NDebugOverlay::Box( m_vecTarget, Vector(-16,-16,-16), Vector(16,16,16), 255, 128, 0, 30, 1.0f );
+			NDebugOverlay::HorzArrow( vecStart, m_vecTarget, 2.0f, 255, 128, 0, 255, true, 2.0f );
+			NDebugOverlay::Box( m_vecTarget, Vector(-16,-16,-16), Vector(16,16,16), 255, 128, 0, 30, 2.0f );
 		}
 	}
 

@@ -26,6 +26,12 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 		return nullptr;
 	}
 
+	// Prefer shooting if we have a clear line of fire
+	if ( me->IsLineOfFireClear( threat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+	{
+		return nullptr;
+	}
+
 	CNEO_Player *pNEOPlayer = ToNEOPlayer( me->GetEntity() );
 	if ( !pNEOPlayer )
 	{
@@ -75,31 +81,34 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 	// Should I toss a smoke grenade?
 	if ( pSmokeGrenade )
 	{
-		if ( pNEOPlayer->GetClass() == NEO_CLASS_SUPPORT )
-		{
-			// I can see through smoke
-			return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
-		}
-
-		bool bEnemySupportInField = false;
 		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 		{
 			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-			if ( pPlayer && pPlayer->IsAlive() && pPlayer->GetClass() == NEO_CLASS_SUPPORT )
+			if ( !pPlayer || !pPlayer->IsAlive() || pPlayer == pNEOPlayer )
 			{
-			    if ( !pPlayer->InSameTeam(pNEOPlayer) )
+				continue;
+			}
+
+			if ( pPlayer->InSameTeam( pNEOPlayer ) ) 
+			{
+				if ( !pPlayer->IsBot() && pPlayer->GetClass() != NEO_CLASS_SUPPORT )
 				{
-					bEnemySupportInField = true; // Enemy support could see through smoke
-					break;
+					// Avoid blocking the vision of a friendly human
+					// (Bots benefit from concealment without the disorientation)
+					return nullptr;
+				}
+			}
+			else
+			{
+				if ( pPlayer->GetClass() == NEO_CLASS_SUPPORT )
+				{
+					// Avoid giving an enemy with thermal vision a free smoke screen
+					return nullptr;
 				}
 			}
 		}
 
-		// Enemy team does not have Support players in the field
-		if (!bEnemySupportInField)
-		{
-			return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
-		}
+		return new CNEOBotGrenadeThrowSmoke( pSmokeGrenade, threat );
 	}
 
 	// Should I toss a frag grenade? 

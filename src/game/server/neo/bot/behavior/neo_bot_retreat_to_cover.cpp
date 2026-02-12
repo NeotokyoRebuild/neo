@@ -235,17 +235,14 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	}
 #endif
 
-	// If line of fire broken, consider throwing a grenade
-	if ( threat && !me->IsLineOfFireClear( threat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+	// Consider throwing a grenade
+	if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
 	{
-		if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
+		m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
+		Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
+		if ( pGrenadeBehavior )
 		{
-			m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
-			Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
-			if ( pGrenadeBehavior )
-			{
-				return SuspendFor( pGrenadeBehavior, "Throwing grenade while taking cover!" );
-			}
+			return SuspendFor( pGrenadeBehavior, "Throwing grenade while taking cover!" );
 		}
 	}
 
