@@ -109,6 +109,11 @@ bool CWeaponDetpack::Deploy(void)
 // Output : Returns true on success, false on failure.
 bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
+	// Cannot put away the det once the trigger is pulled (parity).
+	if (m_bRemoteHasBeenTriggered)
+	{
+		return false;
+	}
 
 	m_fDrawbackFinished = false;
 
