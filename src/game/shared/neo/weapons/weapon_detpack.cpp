@@ -232,8 +232,9 @@ void CWeaponDetpack::ItemPostFrame(void)
 					m_bThisDetpackHasBeenThrown = true;
 					TossDetpack(ToBasePlayer(pOwner));
 					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
-					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-					m_fDrawbackFinished = false;
+					m_flNextPrimaryAttack = gpGlobals->curtime + 0.9;
+					GetOwner()->SetNextThink(gpGlobals->curtime);
+					GetOwner()->SetNextAttack(0);
 				}
 			}
 		}
