@@ -1,6 +1,14 @@
 @include "base.fgd"
 @include "halflife2.fgd"
 
+@AutoVisGroup = "Tool Brushes"
+[
+	"Cubemap"
+	[
+		"parallax_obb"
+	]
+]
+
 @PointClass base(Targetname, PlayerClass, Angles) studio("models/editor/attacker_start.mdl") = info_player_attacker :
 	"This entity marks the start point for attackers."
 [
