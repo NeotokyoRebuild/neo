@@ -4487,10 +4487,10 @@ void CGameMovement::FinishDuck( void )
 {
 #ifdef NEO
 	Assert(dynamic_cast<CNEO_Player*>(player));
-#endif
-
+#else
 	if ( player->GetFlags() & FL_DUCKING )
 		return;
+#endif
 
 	player->AddFlag( FL_DUCKING );
 	player->m_Local.m_bDucked = true;
@@ -5271,4 +5271,3 @@ void  CGameMovement::TryTouchGround( const Vector& start, const Vector& end, con
 	ray.Init( start, end, mins, maxs );
 	UTIL_TraceRay( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
 }
-
