@@ -3168,7 +3168,17 @@ void CNEORules::RestartGame()
 
 	ResetMapSessionCommon();
 
-	GatherGameTypeVotes();
+	// NEO FIXME (Rain): this GatherGameTypeVotes business seems a bit wonky,
+	// since it'll just gather the clients' "neo_vote_game_mode" cvar values
+	// without prompting for some kind of a vote. So the most likely result
+	// is the map just switching to the "neo_vote_game_mode" default value (CTG),
+	// which may not be appropriate for the map.
+	const bool bFromStarting = (m_nRoundStatus == NeoRoundStatus::Warmup
+		|| m_nRoundStatus == NeoRoundStatus::Countdown);
+	if (sv_neo_gamemode_enforcement.GetInt() == GAMEMODE_ENFORCEMENT_VOTE && bFromStarting)
+	{
+		GatherGameTypeVotes();
+	}
 
 	SetGameRelatedVars();
 
