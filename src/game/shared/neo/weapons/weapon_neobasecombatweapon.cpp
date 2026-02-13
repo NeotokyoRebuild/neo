@@ -517,13 +517,6 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 	return BaseClass::Holster(pSwitchingTo);
 }
 
-#ifdef CLIENT_DLL
-void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
-{ // Overrides the base class behaviour of reloading the weapon after its been holstered for 3 seconds
-	return;
-}
-#endif
-
 void CNEOBaseCombatWeapon::CheckReload(void)
 {
 	if (!m_bInReload && UsesClipsForAmmo1() && m_iClip1 == 0 && GetOwner() && !ClientWantsAutoReload(GetOwner()))
@@ -567,6 +560,19 @@ void CNEOBaseCombatWeapon::UpdateInaccuracy()
 
 void CNEOBaseCombatWeapon::ItemPreFrame(void)
 {
+	BaseClass::ItemPreFrame();
+	UpdateInaccuracy();
+}
+
+void CNEOBaseCombatWeapon::ItemBusyFrame(void)
+{
+	BaseClass::ItemBusyFrame();
+	UpdateInaccuracy();
+}
+
+void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
+{
+	BaseClass::ItemHolsterFrame();
 	UpdateInaccuracy();
 }
 
