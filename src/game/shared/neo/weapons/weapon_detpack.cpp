@@ -131,6 +131,11 @@ bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 	return res;
 }
 
+int CWeaponDetpack::GetWeaponFlags() const
+{
+	return ITEM_FLAG_EXHAUSTIBLE | BaseClass::GetWeaponFlags();
+}
+
 void CWeaponDetpack::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -207,6 +212,13 @@ void CWeaponDetpack::ItemPostFrame(void)
 				g_EventQueue.AddEvent(m_pDetpack, "RemoteDetonate", 0, GetOwner(), GetOwner());
 				// m_pDetpack->Detonate();
 				m_pDetpack = NULL;
+
+				// Need to reset this to pass the Holster check called via SwitchToNextBestWeapon
+				m_bRemoteHasBeenTriggered = false;
+				if (pOwner)
+				{
+					pOwner->SwitchToNextBestWeapon(this);
+				}
 			}
 			else
 			{
