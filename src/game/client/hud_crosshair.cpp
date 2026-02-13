@@ -29,6 +29,7 @@
 
 #ifdef NEO
 #include "weapon_neobasecombatweapon.h"
+#include "weapon_srs.h"
 #include "neo_gamerules.h"
 #endif
 
@@ -498,8 +499,18 @@ void CHudCrosshair::Paint( void )
 #endif
 		);
 
-		const bool isSRS = pWeapon->GetNeoWepBits() & NEO_WEP_SRS;
-		if (!isSRS || pWeapon->GetRoundChambered())
+		// NEO NOTE (Rain): If we "need" to bolt the gun, don't show the xhair inaccuracy.
+		// This is a special case for SRS handling when un-scoping right after firing a bullet.
+		// If we don't do this check, the player could see the scope inaccuracy effect for a
+		// few frames after shooting, which can hinder the scope's visibility especially at long range
+		// without offering any useful info to the player in return (i.e. the SRS post-fire
+		// inaccuracy doesn't matter because they cannot shoot again anyway until it has decayed).
+		bool weaponNeedsToBeBolted = false;
+		if (pWeapon->GetNeoWepBits() & NEO_WEP_SRS)
+		{
+			weaponNeedsToBeBolted = assert_cast<CWeaponSRS*>(pWeapon)->GetNeedsBolting();
+		}
+		if (!weaponNeedsToBeBolted)
 		{
 			if (cl_neo_crosshair_scope_inaccuracy.GetBool())
 			{
