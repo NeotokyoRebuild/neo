@@ -2979,12 +2979,18 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
-		if (sv_neo_warmup_godmode.GetBool() &&
-				(NEORules()->GetRoundStatus() == NeoRoundStatus::Idle ||
-				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup ||
-				 NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown))
+		if (sv_neo_warmup_godmode.GetBool())
 		{
-			return 0;
+			switch (NEORules()->GetRoundStatus())
+			{
+			case NeoRoundStatus::Idle:
+			case NeoRoundStatus::Warmup:
+			case NeoRoundStatus::Countdown:
+			case NeoRoundStatus::Pause:
+				return 0;
+			default:
+				break;
+			}
 		}
 
 		// Checking because attacker might be prop or world
