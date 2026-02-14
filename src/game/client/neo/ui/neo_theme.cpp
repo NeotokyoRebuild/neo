@@ -17,7 +17,7 @@ void SetupNTRETheme(NeoUI::Context *pNeoUICtx)
 	pColors->titleFg = COLOR_WHITE;
 	pColors->cursor = COLOR_BLACK;
 	pColors->textSelectionBg = COLOR_DARK_RED;
-	pColors->divider = Color(0, 0, 0, 100);
+	pColors->divider = Color(220, 220, 220, 200);
 	pColors->menuFg = COLOR_WHITE;
 	pColors->menuBg = COLOR_BLACK;
 	pColors->menuHotFg = COLOR_BLACK;

@@ -678,7 +678,7 @@ Scheme
 			"1"
 			{
 				"name"  "neotokyo_press_N" // neotokyo_press_n
-				"tall"  "60" [$!LINUX]
+				"tall"  "60" [!$LINUX]
 				"tall"  "102" [$LINUX]
 				"weight" "0"
 				"additive" "0"
@@ -689,7 +689,7 @@ Scheme
 			"2"
 			{
 				"name"  "neotokyo_press_N" // neotokyo_press_n
-				"tall"  "100" [$!LINUX]
+				"tall"  "100" [!$LINUX]
 				"tall"  "170" [$LINUX]
 				"weight" "0"
 				"additive" "0"
@@ -700,7 +700,7 @@ Scheme
 			"3"
 			{
 				"name"  "neotokyo_press_N" // neotokyo_press_n
-				"tall"  "127" [$!LINUX]
+				"tall"  "127" [!$LINUX]
 				"tall"  "216" [$LINUX]
 				"weight" "0"
 				"additive" "0"
@@ -715,7 +715,7 @@ Scheme
 			"1"
 			{
 				"name"  "neotokyo_press_N" // neotokyo_press_n
-				"tall"  "42" [$!LINUX]
+				"tall"  "42" [!$LINUX]
 				"tall"  "72" [$LINUX]
 				"weight" "0"
 				"additive" "0"
@@ -726,7 +726,7 @@ Scheme
 			"2"
 			{
 				"name"  "neotokyo_press_N" // neotokyo_press_n
-				"tall"  "72" [$!LINUX]
+				"tall"  "72" [!$LINUX]
 				"tall"  "122" [$LINUX]
 				"weight" "0"
 				"additive" "0"
@@ -737,7 +737,7 @@ Scheme
 			"3"
 			{
 				"name"  "neotokyo_press_N" // neotokyo_press_n
-				"tall"  "92" [$!LINUX]
+				"tall"  "92" [!$LINUX]
 				"tall"  "156" [$LINUX]
 				"weight" "0"
 				"additive" "0"

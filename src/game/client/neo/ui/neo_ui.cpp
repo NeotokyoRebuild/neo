@@ -25,6 +25,7 @@ static inline Context g_emptyCtx;
 static Context *c = &g_emptyCtx;
 const int ROWLAYOUT_TWOSPLIT[] = { 40, -1 };
 static constexpr int WDGINFO_ALLOC_STEPS = 64;
+static constexpr float FL_BORDER_RATIO = 0.2f;
 #define NEOUI_SCROLL_THICKNESS() (c->iMarginX * 4)
 
 #define DEBUG_NEOUI 0 // NEO NOTE (nullsystem): !!! Always flip to 0 on master + PR !!!
@@ -163,7 +164,7 @@ void EndMultiWidgetHighlighter()
 {
 	if (c->eMode == MODE_PAINT && c->uMultiHighlightFlags & MULTIHIGHLIGHTFLAG_HOT)
 	{
-		const int iHotMargin = static_cast<int>(0.33f * c->iMarginY);
+		const int iHotMargin = static_cast<int>(FL_BORDER_RATIO * c->iMarginY);
 		vgui::surface()->DrawSetColor(c->colors.hotBorder);
 		DrawBorder(c->rMultiHighlightArea, iHotMargin);
 	}
@@ -939,7 +940,7 @@ void EndWidget(const CurrentWidgetState &wdgState)
 			!(c->uMultiHighlightFlags & MULTIHIGHLIGHTFLAG_IN_USE) &&
 			wdgState.bHot)
 	{
-		const int iHotMargin = static_cast<int>(0.33f * c->iMarginY);
+		const int iHotMargin = static_cast<int>(FL_BORDER_RATIO * c->iMarginY);
 		vgui::surface()->DrawSetColor(c->colors.hotBorder);
 		DrawBorder(c->rWidgetArea, iHotMargin);
 	}
@@ -1593,7 +1594,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
 			if (bHotTab)
 			{
-				const int iHotTabMargin = static_cast<int>(0.2f * c->iMarginY);
+				const int iHotTabMargin = static_cast<int>(FL_BORDER_RATIO * c->iMarginY);
 				vgui::surface()->DrawSetColor(c->colors.hotBorder);
 				DrawBorder(tabRect, iHotTabMargin);
 			}
