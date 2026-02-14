@@ -223,7 +223,6 @@ public:
 
 		panel->SetMouseInputEnabled(true);
 		//panel->SetKeyBoardInputEnabled(true);
-		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("Button1", true);
 		panel->SetControlEnabled("Button2", true);
@@ -330,7 +329,6 @@ public:
 
 		panel->SetMouseInputEnabled(true);
 		//panel->SetKeyBoardInputEnabled(true);
-		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("Scout_Button", true);
 		panel->SetControlEnabled("Assault_Button", true);
@@ -402,7 +400,6 @@ public:
 
 		panel->SetMouseInputEnabled(true);
 		//panel->SetKeyBoardInputEnabled(true);
-		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("jinraibutton", true);
 		panel->SetControlEnabled("nsfbutton", true);
@@ -1615,20 +1612,6 @@ void C_NEO_Player::Spawn( void )
 
 	if (localPlayer == nullptr || localPlayer == this)
 	{
-		// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
-		for (const auto pname : {PANEL_CLASS, PANEL_TEAM, PANEL_NEO_LOADOUT})
-		{
-			if (auto *panel = static_cast<vgui::EditablePanel*>
-					(GetClientModeNormal()->GetViewport()->FindChildByName(pname)))
-			{
-				panel->SetVisible(false);
-				panel->SetEnabled(false);
-				panel->SetMouseInputEnabled(false);
-				panel->SetCursorAlwaysVisible(false);
-				//panel->SetKeyBoardInputEnabled(false);
-			}
-		}
-
 		for (auto *hud : gHUD.m_HudList)
 		{
 			if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))

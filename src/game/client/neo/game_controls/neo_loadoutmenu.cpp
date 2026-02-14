@@ -154,7 +154,6 @@ void CNeoLoadoutMenu::CommandCompletion()
 	SetEnabled(false);
 
 	SetMouseInputEnabled(false);
-	SetCursorAlwaysVisible(false);
 }
 
 void CNeoLoadoutMenu::ShowPanel(bool bShow)
