@@ -308,6 +308,9 @@ void Precache_NEO_Sounds( void )
 	CBaseEntity::PrecacheScriptSound("Grenade.Bounce");
 	CBaseEntity::PrecacheScriptSound("BaseGrenade.Explode");
 	CBaseEntity::PrecacheScriptSound("BaseExplosionEffect.Sound");
+	CBaseEntity::PrecacheScriptSound("WaterExplosionEffect.Sound");
+	CBaseEntity::PrecacheScriptSound("NeoGrenade.Explode");
+	CBaseEntity::PrecacheScriptSound("NeoGrenade.Debris");
 
 	CBaseEntity::PrecacheScriptSound("Weapon_Generic.melee_swing");
 

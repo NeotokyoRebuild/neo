@@ -146,7 +146,11 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 			!( contents & MASK_WATER ) ? g_sModelIndexFireball : g_sModelIndexWExplosion,
 			m_DmgRadius * .03, 
 			25,
+#ifdef NEO
+			TE_EXPLFLAG_NOSOUND,
+#else
 			TE_EXPLFLAG_NONE,
+#endif
 			m_DmgRadius,
 			m_flDamage,
 			&vecNormal,
@@ -160,7 +164,11 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 			!( contents & MASK_WATER ) ? g_sModelIndexFireball : g_sModelIndexWExplosion,
 			m_DmgRadius * .03, 
 			25,
+#ifdef NEO
+			TE_EXPLFLAG_NOSOUND,
+#else
 			TE_EXPLFLAG_NONE,
+#endif
 			m_DmgRadius,
 			m_flDamage );
 	}
@@ -178,7 +186,19 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 
 	UTIL_DecalTrace( pTrace, "Scorch" );
 
+#ifdef NEO
+	if ( GetWaterLevel() == 3 )
+	{
+		EmitSound( "WaterExplosionEffect.Sound" );
+	}
+	else
+	{
+		EmitSound( "NeoGrenade.Explode" );
+		EmitSound( "NeoGrenade.Debris" );
+	}
+#else
 	EmitSound( "BaseGrenade.Explode" );
+#endif
 
 	SetThink( &CBaseGrenade::SUB_Remove );
 	SetTouch( NULL );
@@ -502,7 +522,13 @@ void CBaseGrenade::Precache( void )
 {
 	BaseClass::Precache( );
 
+#ifdef NEO
+	PrecacheScriptSound( "WaterExplosionEffect.Sound" );
+	PrecacheScriptSound( "NeoGrenade.Explode" );
+	PrecacheScriptSound( "NeoGrenade.Debris" );
+#else
 	PrecacheScriptSound( "BaseGrenade.Explode" );
+#endif
 }
 
 //-----------------------------------------------------------------------------
