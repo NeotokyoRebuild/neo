@@ -2262,7 +2262,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
 
 	// See if we found the surface again
-	if (penetrationTrace.allsolid || penetrationTrace.startsolid || tr.fraction == 0.0f)
+	if (penetrationTrace.allsolid || penetrationTrace.startsolid || penetrationTrace.fraction == 0.0f)
 	{
 		return;
 	}
