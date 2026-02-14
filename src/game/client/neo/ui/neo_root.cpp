@@ -25,6 +25,7 @@
 #include "neo_gamerules.h"
 #include "neo_misc.h"
 #include "mp3player.h"
+#include "neo_theme.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -358,7 +359,8 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	LoadGameUI();
 	SetVisible(true);
 	SetProportional(false);
-
+	SetupNTRETheme(&g_uiCtx);
+	
 	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
 		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme.res", "ClientScheme");
 	SetScheme(neoscheme);
@@ -732,7 +734,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	if (eMode == NeoUI::MODE_PAINT)
 	{
 		// Draw version info (bottom left corner) - Always
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		surface()->DrawSetTextColor(g_uiCtx.colors.activeFg);
 		int textWidth, textHeight;
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
 		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, BUILD_DISPLAY, textWidth, textHeight);
@@ -754,9 +756,9 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	g_uiCtx.dPanel.tall = param.tall;
 	g_uiCtx.dPanel.x = iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - iMarginHalf;
 	g_uiCtx.dPanel.y = iTitleMarginTop + (2 * iTitleNHeight);
-	g_uiCtx.bgColor = Color(0, 0, 0, 0);
+	g_uiCtx.colors.sectionBg = COLOR_TRANSPARENT;
 
-	vgui::surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
+	vgui::surface()->DrawSetColor(COLOR_BLACK_TRANSPARENT);
 	vgui::surface()->DrawFilledRect(g_uiCtx.dPanel.x, 0,
 									g_uiCtx.dPanel.x + g_uiCtx.dPanel.wide, param.tall);
 
@@ -811,13 +813,13 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			m_state = STATE_SETTINGS;
 			NeoSettingsRestore(&m_ns);
 		}
-		if (NeoUI::Button(m_wszCachedTexts[MMBTN_QUIT]).bPressed)
+		if (NeoUI::Button(m_wszCachedTexts[MMBTN_QUIT]).bPressed || (!IsInGame() && NeoUI::Bind(KEY_ESCAPE)))
 		{
 			m_state = STATE_QUIT;
 		}
 	}
 	NeoUI::EndSection();
-	g_uiCtx.bgColor = COLOR_TRANSPARENT;
+	g_uiCtx.colors.sectionBg = COLOR_TRANSPARENT;
 
 	// Draw top steam section portion
 	{
@@ -829,7 +831,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		surface()->DrawSetTextColor(COLOR_BLACK);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) - iDropShadowOffset, iTitleMarginTop + iDropShadowOffset);
 		surface()->DrawPrintText(WSZ_GAME_TITLE1, SZWSZ_LEN(WSZ_GAME_TITLE1));
-		surface()->DrawSetTextColor(COLOR_NEOTITLE);
+		surface()->DrawSetTextColor(g_uiCtx.colors.titleFg);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5), iTitleMarginTop);
 		surface()->DrawPrintText(WSZ_GAME_TITLE1_a, SZWSZ_LEN(WSZ_GAME_TITLE1_a));
 		surface()->DrawSetTextColor(COLOR_RED);
@@ -842,7 +844,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - iDropShadowOffset, iTitleMarginTop + m_iTitleHeight + iDropShadowOffset);
 		surface()->DrawPrintText(L"G", SZWSZ_LEN(L"G"));
 
-		surface()->DrawSetTextColor(COLOR_NEOTITLE);
+		surface()->DrawSetTextColor(g_uiCtx.colors.titleFg);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), iTitleMarginTop + m_iTitleHeight);
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl);
 		surface()->DrawPrintText(WSZ_GAME_TITLE2, SZWSZ_LEN(WSZ_GAME_TITLE2));
@@ -854,7 +856,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 #if 0	// NEO TODO (Adam) place the current player info in the top right corner maybe?
 	{
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		surface()->DrawSetTextColor(g_uiCtx.colors.activeFg);
 		ISteamUser *steamUser = steamapicontext->SteamUser();
 		ISteamFriends *steamFriends = steamapicontext->SteamFriends();
 		if (steamUser && steamFriends)
@@ -969,7 +971,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
-			NeoUI::SwapColorNormal(COLOR_TRANSPARENT);
+			g_uiCtx.colors.normalBg = COLOR_TRANSPARENT;
 			for (int i = 0; i < m_iNewsSize; ++i)
 			{
 				if (NeoUI::Button(m_news[i].wszTitle).bPressed)
@@ -983,11 +985,11 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			{
 				surface()->DrawSetTextColor(Color(178, 178, 178, 178));
 				NeoUI::Label(L"Link opened in your web browser");
-				surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+				surface()->DrawSetTextColor(COLOR_WHITE);
 			}
 
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-			NeoUI::SwapColorNormal(COLOR_NEOPANELACCENTBG);
+			g_uiCtx.colors.normalBg = COLOR_NEOPANELACCENTBG;
 		}
 	}
 	NeoUI::EndSection();
@@ -1043,12 +1045,13 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
-	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, g_pNeoRoot->m_wszCachedTexts[MMBTN_OPTIONS], "CtxOptions");
 	{
 		NeoUI::BeginSection(NeoUI::SECTIONFLAG_ROWWIDGETS | NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
 		{
-			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab, 5);
+			static int siTabsLabelWide = -1;
+			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab, NeoUI::TABFLAG_DEFAULT, &siTabsLabelWide);
 		}
 		NeoUI::EndSection();
 		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
@@ -1147,7 +1150,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
-	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, m_wszCachedTexts[MMBTN_CREATESERVER], "CtxNewGame");
 	{
 		NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
@@ -1336,7 +1339,7 @@ static void DrawSortHint(const bool bDescending)
 		return;
 	}
 	int iHintTall = g_uiCtx.iMarginY / 3;
-	vgui::surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
+	vgui::surface()->DrawSetColor(COLOR_WHITE);
 	if (!bDescending)
 	{
 		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y0,
@@ -1365,14 +1368,15 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * 2;
-	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, m_wszCachedTexts[MMBTN_FINDSERVER], "CtxServerBrowser");
 	{
 		bool bForceRefresh = false;
 		NeoUI::BeginSection(NeoUI::SECTIONFLAG_ROWWIDGETS);
 		{
 			const int iPrevTab = m_iServerBrowserTab;
-			NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab, 6);
+			static int siGsNamesWide = -1;
+			NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab, NeoUI::TABFLAG_DEFAULT, &siGsNamesWide);
 			if (iPrevTab != m_iServerBrowserTab)
 			{
 				m_iSelectedServer = -1;
@@ -1403,7 +1407,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 			for (int i = 0; i < iColTotal; ++i)
 			{
 				const bool isSortCol = (m_sortCtx.col == i);
-				vgui::surface()->DrawSetColor(isSortCol ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+				vgui::surface()->DrawSetColor(isSortCol ? COLOR_NEOPANELACCENTBG : COLOR_BLACK_TRANSPARENT);
 				if (NeoUI::Button(pwszNames[i]).bPressed)
 				{
 					if (isSortCol)
@@ -1425,7 +1429,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 
 			// TODO: Should give proper controls over colors through NeoUI
 			vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-			vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+			vgui::surface()->DrawSetTextColor(COLOR_WHITE);
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		}
 		NeoUI::EndSection();
@@ -1464,23 +1468,23 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 
 						if (param.eMode == NeoUI::MODE_PAINT)
 						{
-							Color textColor = COLOR_NEOPANELTEXTNORMAL;
-							Color drawColor = COLOR_NEOPANELNORMALBG;
+							Color drawColor = g_uiCtx.colors.normalBg;
+							Color textColor = g_uiCtx.colors.normalFg;
 							if (m_iSelectedServer == i)
 							{
-								drawColor = COLOR_NEOPANELTABLEBG;
-								textColor = COLOR_NEOPANELTABLEFG;
+								drawColor = g_uiCtx.colors.activeBg;
+								textColor = g_uiCtx.colors.activeFg;
 							}
 							else if (btn.bMouseHover)
 							{
-								drawColor = COLOR_NEOPANELSELECTBG;
+								drawColor = COLOR_BLACK_TRANSPARENT;
 							}
 
 							vgui::surface()->DrawSetColor(drawColor);
 							vgui::surface()->DrawSetTextColor(textColor);
 							vgui::surface()->DrawFilledRectArray(&g_uiCtx.rWidgetArea, 1);
 							ServerBlacklistDrawRow(blacklist);
-							vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
+							vgui::surface()->DrawSetColor(g_uiCtx.colors.normalBg);
 						}
 					}
 				}
@@ -1542,16 +1546,16 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 
 						if (param.eMode == NeoUI::MODE_PAINT)
 						{
-							Color textColor = COLOR_NEOPANELTEXTNORMAL;
-							Color drawColor = COLOR_NEOPANELNORMALBG;
+							Color textColor = COLOR_WHITE;
+							Color drawColor = COLOR_BLACK_TRANSPARENT;
 							if (m_iSelectedServer == i)
 							{
-								drawColor = COLOR_NEOPANELTABLEBG;
-								textColor = COLOR_NEOPANELTABLEFG;
+								drawColor = COLOR_WHITE;
+								textColor = COLOR_BLACK;
 							}
 							else if (btn.bMouseHover)
 							{
-								drawColor = COLOR_NEOPANELSELECTBG;
+								drawColor = COLOR_BLACK_TRANSPARENT;
 							}
 
 							vgui::surface()->DrawSetColor(drawColor);
@@ -1559,7 +1563,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y0,
 															g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
 							ServerBrowserDrawRow(server);
-							vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
+							vgui::surface()->DrawSetColor(g_uiCtx.colors.normalBg);
 						}
 					}
 				}
@@ -1772,7 +1776,7 @@ void CNeoRoot::MainLoopCredits(const MainLoopParam param)
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
-	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Credits", "CtxCredits");
 	{
 		NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
@@ -1826,7 +1830,7 @@ void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
-	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Pick map", "CtxMapPicker");
 	{
 		NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
@@ -1931,7 +1935,7 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = iNormTall * (g_iRowsInScreen + 1);
-	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode,
 						(m_state == STATE_SPRAYPICKER) ? L"Pick spray" : L"Delete spray",
 						(m_state == STATE_SPRAYPICKER) ? "CtxSprayPicker" : "CtxSprayDeleter");
@@ -1991,7 +1995,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * 6;
-	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Server details", "CtxServerDetail");
 	{
 		NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
@@ -2061,7 +2065,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 					};
 					for (int i = 0; i < GSPS__TOTAL; ++i)
 					{
-						vgui::surface()->DrawSetColor((m_serverPlayers.m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+						vgui::surface()->DrawSetColor((m_serverPlayers.m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_BLACK_TRANSPARENT);
 						if (NeoUI::Button(PLAYER_HEADERS[i]).bPressed)
 						{
 							m_bSPlayersSortModified = true;
@@ -2199,7 +2203,7 @@ void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
 		g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 		g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
-		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+		g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 		NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Player list", "CtxPlayerList");
 		{
 			NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
@@ -2255,17 +2259,16 @@ void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
 
 void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 {
-	surface()->DrawSetColor(COLOR_NEOPANELPOPUPBG);
+	surface()->DrawSetColor(COLOR_BLACK_TRANSPARENT);
 	surface()->DrawFilledRect(0, 0, param.wide, param.tall);
 	const int tallSplit = param.tall / 3;
-	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 	surface()->DrawFilledRect(0, tallSplit, param.wide, param.tall - tallSplit);
 
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
 	g_uiCtx.dPanel.tall = tallSplit;
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_uiCtx.dPanel.wide / 2);
 	g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.layout.iRowTall;
-	g_uiCtx.bgColor = COLOR_TRANSPARENT;
+	g_uiCtx.colors.sectionBg = COLOR_TRANSPARENT;
 	if (m_state == STATE_SERVERPASSWORD)
 	{
 		g_uiCtx.dPanel.y -= g_uiCtx.layout.iRowTall;
@@ -2358,8 +2361,11 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				NeoUI::Label(L"Enter the server password");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 				{
+					// Do label and textedit separately for visual
 					NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
-					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword), NeoUI::TEXTEDITFLAG_PASSWORD);
+					NeoUI::Label(L"Password:");
+					NeoUI::TextEdit(m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword),
+							NeoUI::TEXTEDITFLAG_PASSWORD | NeoUI::TEXTEDITFLAG_FORCEACTIVE);
 				}
 				NeoUI::SetPerRowLayout(3);
 				{
@@ -2517,7 +2523,8 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 					};
 					NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 					NeoUI::RingBox(BLACKLIST_TYPES_LABELS, SBLIST_TYPE__TOTAL, &m_iServerNewBlacklistType);
-					NeoUI::TextEdit(m_wszServerNewBlacklist, SZWSZ_LEN(m_wszServerNewBlacklist));
+					NeoUI::TextEdit(m_wszServerNewBlacklist, SZWSZ_LEN(m_wszServerNewBlacklist),
+							NeoUI::TEXTEDITFLAG_FORCEACTIVE);
 				}
 				NeoUI::SetPerRowLayout(3);
 				{

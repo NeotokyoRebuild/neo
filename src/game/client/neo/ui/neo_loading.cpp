@@ -10,6 +10,7 @@
 #include "vgui_controls/TextImage.h"
 #include "vgui_controls/Frame.h"
 #include "vgui_controls/Button.h"
+#include "neo_theme.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -23,6 +24,7 @@ CNeoLoading::CNeoLoading()
 	InvalidateLayout(false, true);
 	SetVisible(false);
 	MakePopup(false);
+	SetupNTRETheme(&m_uiCtx);
 
 	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
 		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme.res", "ClientScheme");
@@ -70,7 +72,6 @@ void CNeoLoading::ResetSizes(const int wide, const int tall)
 	m_iRowsInScreen = (tall * 0.85f) / m_uiCtx.layout.iDefRowTall;
 	m_uiCtx.iMarginX = wide / 192;
 	m_uiCtx.iMarginY = tall / 108;
-	m_uiCtx.selectBgColor = COLOR_NEOPANELACCENTBG;
 	const float flWide = static_cast<float>(wide);
 	float flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
 	if (flWideAs43 > flWide) flWideAs43 = flWide;
@@ -222,7 +223,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	m_uiCtx.dPanel.wide = m_iRootSubPanelWide;
 	m_uiCtx.dPanel.tall = (m_iRowsInScreen - BOTTOM_ROWS) * m_uiCtx.layout.iRowTall;
 	m_uiCtx.dPanel.y = (tall / 2) - ((m_iRowsInScreen * m_uiCtx.layout.iRowTall) / 2);
-	m_uiCtx.bgColor = COLOR_TRANSPARENT;
+	m_uiCtx.colors.sectionBg = COLOR_TRANSPARENT;
 
 	// Make the eKeyHints be in sync with the root's one so we can display
 	// either keyboard or controller input message
@@ -248,7 +249,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 			NeoUI::EndSection();
 			m_uiCtx.dPanel.y += m_uiCtx.dPanel.tall;
 			m_uiCtx.dPanel.tall = BOTTOM_ROWS * m_uiCtx.layout.iRowTall;
-			m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+			m_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 			NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
 			{
 				NeoUI::Label(NeoUI::HintAlt(L"Press ESC to cancel", L"Press SELECT to cancel"));
@@ -261,7 +262,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 		{
 			m_uiCtx.dPanel.tall = (m_iRowsInScreen / 2) * m_uiCtx.layout.iRowTall;
 			m_uiCtx.dPanel.y = (tall / 2) - (m_uiCtx.dPanel.tall / 2);
-			m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+			m_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 			NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
 			{
 				if (m_pLabelInfo) NeoUI::LabelWrap(m_pLabelInfo->GetTextImage()->GetUText());
