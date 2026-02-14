@@ -3585,7 +3585,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	soundParams.m_bEmitCloseCaption = false;
 
 	const int winningTeamNum = winningTeam->GetTeamNumber();
-	int iRankupCapPrev = 0;
 
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
@@ -3675,10 +3674,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	{
 		UTIL_ClientPrintAll(HUD_PRINTTALK, "Last player of %s1 suicided vs. ghost carrier; awarding capture to team %s2.",
 							(team == TEAM_JINRAI ? "NSF" : "Jinrai"), (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-		char szHudChatPrint[42];
-		V_sprintf_safe(szHudChatPrint, "Awarding capture rank-up to %d player%s.",
-					   iRankupCapPrev, iRankupCapPrev == 1 ? "" : "s");
-		UTIL_ClientPrintAll(HUD_PRINTTALK, szHudChatPrint);
 	}
 
 	if (gotMatchWinner)
