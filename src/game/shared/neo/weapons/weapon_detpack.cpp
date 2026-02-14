@@ -109,6 +109,11 @@ bool CWeaponDetpack::Deploy(void)
 // Output : Returns true on success, false on failure.
 bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
+	// Cannot put away the det once the trigger is pulled (parity).
+	if (m_bRemoteHasBeenTriggered)
+	{
+		return false;
+	}
 
 	m_fDrawbackFinished = false;
 
@@ -124,6 +129,11 @@ bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 	const bool res = BaseClass::Holster(pSwitchingTo);
 
 	return res;
+}
+
+int CWeaponDetpack::GetWeaponFlags() const
+{
+	return ITEM_FLAG_EXHAUSTIBLE | BaseClass::GetWeaponFlags();
 }
 
 void CWeaponDetpack::PrimaryAttack(void)
@@ -202,6 +212,13 @@ void CWeaponDetpack::ItemPostFrame(void)
 				g_EventQueue.AddEvent(m_pDetpack, "RemoteDetonate", 0, GetOwner(), GetOwner());
 				// m_pDetpack->Detonate();
 				m_pDetpack = NULL;
+
+				// Need to reset this to pass the Holster check called via SwitchToNextBestWeapon
+				m_bRemoteHasBeenTriggered = false;
+				if (pOwner)
+				{
+					pOwner->SwitchToNextBestWeapon(this);
+				}
 			}
 			else
 			{
@@ -232,8 +249,15 @@ void CWeaponDetpack::ItemPostFrame(void)
 					m_bThisDetpackHasBeenThrown = true;
 					TossDetpack(ToBasePlayer(pOwner));
 					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
-					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-					m_fDrawbackFinished = false;
+
+					// NEO NOTE (Rain): Why 0.9? Because we want the explosion to occur after 2.666... seconds of detpack arming,
+					// plus 1.333... seconds of the trigger, for a total of 4 seconds delay. And we just happen to need 0.9 seconds
+					// here to reach that. There's probably some nicer way to arrive at these values, but that's the explanation
+					// for this magic value.
+					m_flNextPrimaryAttack = gpGlobals->curtime + 0.9;
+
+					GetOwner()->SetNextThink(gpGlobals->curtime);
+					GetOwner()->SetNextAttack(0);
 				}
 			}
 		}
