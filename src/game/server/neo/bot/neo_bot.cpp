@@ -1616,7 +1616,6 @@ void CNEOBot::ReloadIfLowClip(void)
 		{
 			ReleaseFireButton();
 			PressReloadButton();
-			PressCrouchButton(0.3f);
 		}
 	}
 }
