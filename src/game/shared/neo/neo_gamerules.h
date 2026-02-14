@@ -418,6 +418,7 @@ public:
 	bool m_bPausedByPreRoundFreeze = false;
 	bool m_bPausingTeamRequestedUnpause = false;
 	bool m_bThinkCheckClantags = false;
+	bool m_bRotatingMapRightNow = false;
 #endif
 	CNetworkVar(float, m_flPauseEnd);
 
