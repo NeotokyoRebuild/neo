@@ -1153,7 +1153,7 @@
 
 "BaseGrenade.Explode"
 {
-	"channel"	"CHAN_VOICE"
+	"channel"	"CHAN_WEAPON"
 	"volume"	"0.45"
 	"soundlevel"  "SNDLVL_75dB"
 
