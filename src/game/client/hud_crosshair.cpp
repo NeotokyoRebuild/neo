@@ -150,16 +150,79 @@ void CHudCrosshair::ApplySchemeSettings( IScheme *scheme )
 //-----------------------------------------------------------------------------
 bool CHudCrosshair::ShouldDraw( void )
 {
+#ifdef NEO
+	if (!m_pCrosshair)
+		return false;
+
+	if ( m_bHideCrosshair )
+		return false;
+
+	const auto* player = C_NEO_Player::GetLocalNEOPlayer();
+	if (!player)
+		return false;
+
+	if (player->IsObserver())
+	{
+		switch (player->GetObserverMode())
+		{
+		case OBS_MODE_IN_EYE:
+			player = ToNEOPlayer(player->GetObserverTarget());
+			break;
+		case OBS_MODE_ROAMING:
+			return cl_observercrosshair.GetBool();
+		default:
+			return false;
+		}
+	}
+
+	if (!player)
+		return false;
+	else
+		Assert(!player->IsObserver());
+
+	if (player->m_lifeState != LIFE_ALIVE)
+		return false;
+
+	if (player->GetFlags() & FL_FROZEN)
+		return false;
+
+	// This is the HL2 player logic from the ifndef NEO path below
+	// that is commented out in the SDK code also.
+	//if (player->m_HL2Local.m_bZooming)
+	//	return false;
+
+	if (player->IsInVGuiInputMode())
+		return false;
+
+	if (!crosshair.GetBool())
+		return false;
+
+	if (!CHudElement::ShouldDraw())
+		return false;
+
+	auto *wep = player->GetActiveWeapon();
+	if (!wep || !wep->ShouldDrawCrosshair())
+		return false;
+
+	if (engine->IsDrawingLoadingImage())
+		return false;
+
+	if (engine->IsPaused())
+		return false;
+
+	if (!g_pClientMode->ShouldDrawCrosshair())
+		return false;
+
+	return true;
+
+#else
+
 	bool bNeedsDraw;
 
 	if ( m_bHideCrosshair )
 		return false;
 
-#ifdef NEO
-	C_BasePlayer* pPlayer = IsLocalPlayerSpectator() ? UTIL_PlayerByIndex(GetSpectatorTarget()) : C_BasePlayer::GetLocalPlayer();
-#else
 	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
-#endif // NEO
 	if ( !pPlayer )
 		return false;
 
@@ -188,11 +251,7 @@ bool CHudCrosshair::ShouldDraw( void )
 			( !pPlayer->IsSuitEquipped() || g_pGameRules->IsMultiplayer() ) &&
 			g_pClientMode->ShouldDrawCrosshair() &&
 			!( pPlayer->GetFlags() & FL_FROZEN ) &&
-#ifdef NEO
-			( GetLocalPlayerIndex() == render->GetViewEntity()) &&
-#else
 			( pPlayer->entindex() == render->GetViewEntity() ) &&
-#endif // NEO
 			( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
 	}
 	else
@@ -203,16 +262,13 @@ bool CHudCrosshair::ShouldDraw( void )
 			!engine->IsPaused() && 
 			g_pClientMode->ShouldDrawCrosshair() &&
 			!( pPlayer->GetFlags() & FL_FROZEN ) &&
-#ifdef NEO
-			(GetLocalPlayerIndex() == render->GetViewEntity()) &&
-#else
 			( pPlayer->entindex() == render->GetViewEntity() ) &&
-#endif // NEO
 			!pPlayer->IsInVGuiInputMode() &&
 			( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
 	}
 
 	return ( bNeedsDraw && CHudElement::ShouldDraw() );
+#endif
 }
 
 #ifdef TF_CLIENT_DLL
