@@ -1563,6 +1563,10 @@ ConVarRef suitcharger( "sk_suitcharger" );
 		g_fGameOver = true;
 		m_flTimeLastMapChangeOrPlayerWasConnected = 0.0f;
 		Msg( "CHANGE LEVEL: %s\n", pszMap );
+#ifdef NEO
+		assert_cast<CNEORules*>(this)->m_ghostSpawns.RemoveAll();
+		assert_cast<CNEORules*>(this)->m_ghostSpawns_BiasHead = 0;
+#endif
 		engine->ChangeLevel( pszMap, NULL );
 	}
 
