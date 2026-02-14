@@ -2268,6 +2268,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	}
 
 	// See if we have enough pen to penetrate
+	Assert(penResistance != 0);
 	const float penUsed = ((1.0f - penetrationTrace.fraction) * MAX_PENETRATION_DEPTH) / penResistance;
 	Assert(info.m_flPenetration > 0);
 	if (penUsed && penUsed > info.m_flPenetration)
