@@ -607,8 +607,6 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 			if ( m_isWaitingForFullReload )
 			{
-				me->PressCrouchButton(0.3f);
-
 				if ( myWeapon->Clip1() < myWeapon->GetMaxClip1() )
 				{
 					return;
@@ -817,7 +815,6 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			}
 			else if (myWeapon->m_iClip1 <= 0)
 			{
-				me->PressCrouchButton(0.3f);
 				if (m_isWaitingForFullReload)
 				{
 					// passthrough: don't introduce decision jitter
