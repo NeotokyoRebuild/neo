@@ -469,6 +469,9 @@ ConVarRef suitcharger( "sk_suitcharger" );
 			int iIdleSeconds = (int)( flNow - m_flTimeLastMapChangeOrPlayerWasConnected );
 			if ( iIdleSeconds >= mp_mapcycle_empty_timeout_seconds.GetInt() )
 			{
+#ifdef NEO
+				assert_cast<CNEORules*>(this)->m_bRotatingMapRightNow = true;
+#endif
 
 				Log( "Server has been empty for %d seconds on this map, cycling map as per mp_mapcycle_empty_timeout_seconds\n", iIdleSeconds );
 				ChangeLevel();
@@ -1564,6 +1567,9 @@ ConVarRef suitcharger( "sk_suitcharger" );
 		m_flTimeLastMapChangeOrPlayerWasConnected = 0.0f;
 		Msg( "CHANGE LEVEL: %s\n", pszMap );
 		engine->ChangeLevel( pszMap, NULL );
+#ifdef NEO
+		assert_cast<CNEORules*>(this)->m_bRotatingMapRightNow = false;
+#endif
 	}
 
 
