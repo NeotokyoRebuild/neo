@@ -17,7 +17,7 @@ bool IsInGame();
 struct NeoNewGame
 {
 	wchar_t wszMap[64] = L"ntre_oilstain_ctg";
-	wchar_t wszHostname[64] = L"NEOTOKYO;REBUILD Listen Server";
+	wchar_t wszHostname[64] = NEO_GAME_NAME L" Listen Server";
 	int iMaxPlayers = 24;
 	int iBotQuota = 10;
 	int iBotDifficulty = 2;
