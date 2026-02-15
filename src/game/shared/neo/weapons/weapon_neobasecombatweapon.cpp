@@ -75,6 +75,7 @@ END_DATADESC()
 
 ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
 ConVar sv_neo_dynamic_viewkick("sv_neo_dynamic_viewkick", "0", FCVAR_REPLICATED, "Enables view kick scaling based on current inaccuracy.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_viewkick("sv_neo_viewkick", "1", FCVAR_REPLICATED, "Enables weapon view kick (aim punch).", true, 0.0f, true, 1.0f);
 
 const char *GetWeaponByLoadoutId(int id)
 {
@@ -822,6 +823,11 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	auto owner = ToNEOPlayer(GetOwner());
 
 	if (!owner)
+	{
+		return;
+	}
+
+	if (!sv_neo_viewkick.GetBool())
 	{
 		return;
 	}
