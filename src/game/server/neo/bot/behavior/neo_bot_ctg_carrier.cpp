@@ -89,6 +89,14 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 	}
 
 	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
+
+	// Store target of bot ghost callout in ghost weapon for retrieval from neo_hud_ghost_beacons
+	CWeaponGhost *pGhost = dynamic_cast<CWeaponGhost*>( me->Weapon_GetSlot( 0 ) );
+	if ( pGhost )
+	{
+		pGhost->SetBotDesignatedTarget( pFocus );
+	}
+
 	if ( pFocus && pFocus->IsAlive() )
 	{
 		// Notify teammates to look at the enemy
