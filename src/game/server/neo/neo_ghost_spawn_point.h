@@ -7,6 +7,8 @@
 class CNEOGhostSpawnPoint : public CPointEntity
 {
 	DECLARE_CLASS(CNEOGhostSpawnPoint, CPointEntity);
+public:
+	virtual void Spawn() override;
 };
 
 class CNEOJuggernautSpawnPoint : public CPointEntity

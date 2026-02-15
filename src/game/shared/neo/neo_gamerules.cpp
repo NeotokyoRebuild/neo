@@ -564,6 +564,7 @@ CNEORules::CNEORules()
 {
 #ifdef GAME_DLL
 	m_bNextClientIsFakeClient = false;
+	m_ghostSpawns.EnsureCapacity(10);
 
 	Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
 		TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
@@ -766,6 +767,7 @@ void CNEORules::ResetMapSessionCommon()
 			pPlayer->m_bKilledInflicted = false;
 		}
 	}
+
 	m_flPrevThinkKick = 0.0f;
 	m_flPrevThinkMirrorDmg = 0.0f;
 	m_bTeamBeenAwardedDueToCapPrevent = false;
@@ -1789,31 +1791,22 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 // Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
 void CNEORules::SpawnTheGhost(const Vector *origin)
 {
-	CBaseEntity* pEnt;
-
-	// Get the amount of ghost spawns available to us
-	int numGhostSpawns = 0;
-
-	pEnt = gEntList.FirstEnt();
-	while (pEnt)
-	{
-		if (dynamic_cast<CNEOGhostSpawnPoint *>(pEnt))
-		{
-			numGhostSpawns++;
-		}
-		else if (auto *ghost = dynamic_cast<CWeaponGhost *>(pEnt))
-		{
-			m_pGhost = ghost;
-		}
-
-		pEnt = gEntList.NextEnt(pEnt);
-	}
-
 	// No ghost spawns and this map isn't named "_ctg". Probably not a CTG map.
-	if (numGhostSpawns == 0 && (V_stristr(GameRules()->MapName(), "_ctg") == 0))
+	if (m_ghostSpawns.IsEmpty() && (V_stristr(GameRules()->MapName(), "_ctg") == 0))
 	{
 		m_pGhost = nullptr;
 		return;
+	}
+
+	auto* pEnt = gEntList.FirstEnt();
+	while (pEnt)
+	{
+		if (auto *ghost = dynamic_cast<CWeaponGhost *>(pEnt))
+		{
+			m_pGhost = ghost;
+			break;
+		}
+		pEnt = gEntList.NextEnt(pEnt);
 	}
 
 	bool spawnedGhostNow = false;
@@ -1853,58 +1846,65 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		m_pGhost->SetAbsOrigin(*origin);
 		m_pGhost->Drop(vec3_origin);
 	}
-	// We didn't have any spawns, spawn ghost at origin
-	else if (numGhostSpawns == 0)
+	else if (m_ghostSpawns.IsEmpty())
 	{
 		Warning("No ghost spawns found! Spawning ghost at map origin, instead.\n");
 		m_pGhost->SetAbsOrigin(vec3_origin);
 		m_pGhost->Drop(vec3_origin);
 	}
-	else if (sv_neo_ghost_spawn_bias.GetBool() == true && roundAlternate())
-	{
-		m_pGhost->SetAbsOrigin(m_vecPreviousGhostSpawn);
-		m_pGhost->Drop(vec3_origin);
-	}
 	else
 	{
-		// Randomly decide on a ghost spawn point we want this time
-		const int desiredSpawn = RandomInt(1, numGhostSpawns);
-		int ghostSpawnIteration = 1;
+		Assert(!m_ghostSpawns.IsEmpty());
+		int desiredSpawn; // zero-indexed
 
-		pEnt = gEntList.FirstEnt();
-		// Second iteration, we pick the ghost spawn we want
-		while (pEnt)
+		// If round number is zero, the match hasn't started yet, so the bias is not meaningful.
+		// Parity behaviour is to not spawn a ghost at all, but it's more useful to just spawn it somewhere.
+		if (!sv_neo_ghost_spawn_bias.GetBool() || roundNumber() == 0)
 		{
-			auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
-
-			if (ghostSpawn)
+			desiredSpawn = RandomInt(0, m_ghostSpawns.Count()-1);
+		}
+		else
+		{
+			// Round numbers are one-indexed
+			Assert(roundNumber() > 0);
+			bool isFirstRound = (roundNumber() == 1);
+			if (isFirstRound)
 			{
-				if (ghostSpawnIteration++ == desiredSpawn)
-				{
-					if (m_pGhost->GetOwner())
-					{
-						Assert(false);
-						m_pGhost->GetOwner()->Weapon_Detach(m_pGhost);
-					}
-
-					if (!ghostSpawn->GetAbsOrigin().IsValid())
-					{
-						m_pGhost->SetAbsOrigin(vec3_origin);
-						m_pGhost->Drop(vec3_origin);
-						Warning("Failed to get ghost spawn coords; spawning ghost at map origin instead!\n");
-						Assert(false);
-					}
-					else
-					{
-						m_pGhost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
-						m_pGhost->Drop(vec3_origin);
-					}
-
-					break;
-				}
+				// Plugin parity: we want to shuffle the list of ghost spawns once at match beginning,
+				// and then play through them in round pairs, using the cycling logic right below this if-block.
+				m_ghostSpawns.Shuffle();
 			}
 
-			pEnt = gEntList.NextEnt(pEnt);
+			desiredSpawn = Ceil2Int(roundNumber() / 2.f) % m_ghostSpawns.Count();
+		}
+		Assert(desiredSpawn >= 0);
+		Assert(desiredSpawn < m_ghostSpawns.Count());
+
+		const auto* ghostSpawn = m_ghostSpawns[desiredSpawn].Get();
+		if (ghostSpawn)
+		{
+			if (m_pGhost->GetOwner())
+			{
+				Assert(false);
+				m_pGhost->GetOwner()->Weapon_Detach(m_pGhost);
+			}
+
+			if (!ghostSpawn->GetAbsOrigin().IsValid())
+			{
+				m_pGhost->SetAbsOrigin(vec3_origin);
+				m_pGhost->Drop(vec3_origin);
+				Warning("Failed to get ghost spawn coords; spawning ghost at map origin instead!\n");
+				Assert(false);
+			}
+			else
+			{
+				m_pGhost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+				m_pGhost->Drop(vec3_origin);
+			}
+		}
+		else
+		{
+			Assert(false);
 		}
 	}
 
@@ -1986,7 +1986,7 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 		Warning("No juggernaut spawns found! Spawning juggernaut at map origin, instead.\n");
 		m_pJuggernautItem->SetAbsOrigin(vec3_origin);
 	}
-	else if (sv_neo_juggernaut_spawn_bias.GetBool() == true && roundAlternate())
+	else if (sv_neo_juggernaut_spawn_bias.GetBool() == true && roundNumberIsEven())
 	{
 		m_pJuggernautItem->SetAbsOrigin(m_vecPreviousJuggernautSpawn);
 	}

@@ -2648,7 +2648,7 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	CBaseEntity *pSpot = NULL;
 	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
 	const char *pSpawnpointName = "info_player_start";
-	const auto alternate = NEORules()->roundAlternate();
+	const auto alternate = NEORules()->roundNumberIsEven();
 
 	// NEO TODO (nullsystem): Teamplay vs non-teamplay
 	// info_player_deathmatch is from HL2MP, but maps can utilize HL2MP and this entity anyway

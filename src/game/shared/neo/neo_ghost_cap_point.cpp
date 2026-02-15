@@ -133,7 +133,7 @@ bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorCl
 
 int CNEOGhostCapturePoint::owningTeamAlternate() const
 {
-	const bool alternate = NEORules()->roundAlternate();
+	const bool alternate = NEORules()->roundNumberIsEven();
 	int owningTeam = m_iOwningTeam;
 	if (!alternate && owningTeam != TEAM_ANY)
 	{
