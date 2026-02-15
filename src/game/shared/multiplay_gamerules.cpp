@@ -1565,7 +1565,6 @@ ConVarRef suitcharger( "sk_suitcharger" );
 		Msg( "CHANGE LEVEL: %s\n", pszMap );
 #ifdef NEO
 		assert_cast<CNEORules*>(this)->m_ghostSpawns.RemoveAll();
-		assert_cast<CNEORules*>(this)->m_ghostSpawns_BiasHead = 0;
 #endif
 		engine->ChangeLevel( pszMap, NULL );
 	}

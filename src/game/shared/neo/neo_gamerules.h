@@ -455,7 +455,6 @@ private:
 	friend class CNEO_GhostBoundary;
 	friend class CNEOGhostSpawnPoint;
 	friend class CMultiplayRules;
-	int m_ghostSpawns_BiasHead = 0;
 	CUtlVector<CHandle<CNEOGhostSpawnPoint>> m_ghostSpawns;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;

@@ -1868,17 +1868,14 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 			// Round numbers are one-indexed
 			Assert(roundNumber() > 0);
 			bool isFirstRound = (roundNumber() == 1);
-
 			if (isFirstRound)
 			{
+				// Plugin parity: we want to shuffle the list of ghost spawns once at match beginning,
+				// and then play through them in round pairs, using the cycling logic right below this if-block.
 				m_ghostSpawns.Shuffle();
 			}
-			// Round numbers are one-indexed, so we want to start incrementing on odd rounds 3, 5, 7...
-			else if (!roundNumberIsEven())
-			{
-				m_ghostSpawns_BiasHead = (m_ghostSpawns_BiasHead + 1) % m_ghostSpawns.Count();
-			}
-			desiredSpawn = m_ghostSpawns_BiasHead;
+
+			desiredSpawn = Ceil2Int(roundNumber() / 2.f) % m_ghostSpawns.Count();
 		}
 		Assert(desiredSpawn >= 0);
 		Assert(desiredSpawn < m_ghostSpawns.Count());
