@@ -734,7 +734,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	if (eMode == NeoUI::MODE_PAINT)
 	{
 		// Draw version info (bottom left corner) - Always
-		surface()->DrawSetTextColor(g_uiCtx.colors.activeFg);
+		surface()->DrawSetTextColor(g_uiCtx.colors.normalFg);
 		int textWidth, textHeight;
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
 		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, BUILD_DISPLAY, textWidth, textHeight);
