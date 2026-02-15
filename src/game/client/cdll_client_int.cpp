@@ -1462,6 +1462,25 @@ void CHLClient::PostInit()
 				}
 			}
 
+			if (iCfgVerMajor < 25)
+			{
+				const ButtonCode_t bcTAim = gameuifuncs->GetButtonCodeForBind("toggle_aim");
+				if (bcTAim > BUTTON_CODE_NONE)
+				{
+					const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bcTAim);
+					if (bindBtnName && bindBtnName[0])
+					{
+						char szCmd[128];
+
+						V_sprintf_safe(szCmd, "unbind \"%s\"\n", bindBtnName);
+						engine->ClientCmd_Unrestricted(szCmd);
+
+						V_sprintf_safe(szCmd, "bind \"%s\" \"+toggle_aim\"\n", bindBtnName);
+						engine->ClientCmd_Unrestricted(szCmd);
+					}
+				}
+			}
+
 			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
 			cvr_cl_neo_cfg_version_minor.SetValue(NEO_VERSION_MINOR);
 		}
