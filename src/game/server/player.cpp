@@ -566,7 +566,7 @@ CBasePlayer *CBasePlayer::CreatePlayer( const char *className, edict_t *ed )
 }
 
 #ifdef NEO
-template <class ConVarType=ConVar, typename T=float, auto&& ConvertFunc=V_atof>
+template <class ConVarType=ConVar, typename T=float, auto& ConvertFunc=V_atof>
 T GetConVarDefault(const char* name)
 {
 	const auto* cvar = g_pCVar->FindVar(name);
