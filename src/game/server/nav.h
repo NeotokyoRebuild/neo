@@ -19,22 +19,17 @@
  * Below are several constants used by the navigation system.
  * @todo Move these into TheNavMesh singleton.
  */
+
 #ifdef NEO
-const float GenerationStepSize = 20.0f;			// NEO: some hallways/openings were missing connection with larger value
+const float GenerationStepSize = 20.0f;			// NEO: some hallways/openings were missing connections with larger value
 #else
 const float GenerationStepSize = 25.0f;			// (30) was 20, but bots can't fit always fit
 #endif
 
-#ifdef NEO
-const float JumpHeight = 54.0f;					// NEO: See NEO_RECON_CROUCH_JUMP_HEIGHT calculations in neo_player_shared.h
-#else
 const float JumpHeight = 41.8f;					// if delta Z is less than this, we can jump up on it
-#endif
 
 #if defined(CSTRIKE_DLL)
 const float JumpCrouchHeight = 58.0f;			// (48) if delta Z is less than or equal to this, we can jumpcrouch up on it
-#elif defined(NEO)
-const float JumpCrouchHeight = 72.0f;			// NEO: See NEO_RECON_CROUCH_JUMP_HEIGHT calculations in neo_player_shared.h
 #else
 const float JumpCrouchHeight = 64.0f;			// (48) if delta Z is less than or equal to this, we can jumpcrouch up on it
 #endif
