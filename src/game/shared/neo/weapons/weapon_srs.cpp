@@ -46,7 +46,7 @@ CWeaponSRS::CWeaponSRS()
 
 void CWeaponSRS::PrimaryAttack()
 {
-	if (ShootingIsPrevented() || !m_iClip1)
+	if (ShootingIsPrevented() || !m_iClip1 || !m_bTriggerReset)
 	{
 		Assert(!(m_iClip1 < 0));
 		return BaseClass::PrimaryAttack();
@@ -70,7 +70,7 @@ void CWeaponSRS::ItemPreFrame()
 		return BaseClass::ItemPreFrame();
 	}
 
-	if (m_flLastAttackTime + 0.08f <= gpGlobals->curtime && m_iClip1 > 0)
+	if (m_flLastAttackTime + 0.08f <= gpGlobals->curtime)
 	{ // Primary attack animation finished, begin chambering a round
 		if (auto* pOwner = ToNEOPlayer(GetOwner())) {
 			if (pOwner->m_nButtons & IN_ATTACK)
@@ -104,15 +104,7 @@ bool CWeaponSRS::Reload()
 	// we don't want to bolt twice.
 	m_bNeedsBolting = false;
 
-	if (auto owner = ToBasePlayer(GetOwner()))
-	{
-		if (!(owner->m_nButtons & IN_ATTACK))
-		{
-			return BaseClass::Reload();
-		}
-		return false;
-	}
-	return false;
+	return BaseClass::Reload();
 }
 
 bool CWeaponSRS::CanBePickedUpByClass(int classId)

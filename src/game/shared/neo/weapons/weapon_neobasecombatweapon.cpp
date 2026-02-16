@@ -631,7 +631,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 
 	UpdateAutoFire();
 
-	if (IsSemiAuto() && (pOwner->m_afButtonLast & IN_ATTACK) && !(pOwner->m_nButtons & IN_ATTACK))
+	if (IsSemiAuto() && !(pOwner->m_nButtons & IN_ATTACK))
 	{
 		m_bTriggerReset = true;
 	}
@@ -760,7 +760,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	// -----------------------
 	//  Reload pressed / Clip Empty
 	//  Can only start the Reload Cycle after the firing cycle
-	if ((pOwner->m_nButtons & IN_RELOAD) && m_flNextPrimaryAttack <= gpGlobals->curtime && UsesClipsForAmmo1() && !m_bInReload)
+	if ((pOwner->m_nButtons & IN_RELOAD) && UsesClipsForAmmo1() && !m_bInReload)
 	{
 		// reload when reload is pressed, or if no buttons are down and weapon is empty.
 		Reload();
