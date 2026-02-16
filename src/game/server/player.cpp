@@ -573,7 +573,7 @@ T GetConVarDefault(const char* name)
 	if (!cvar)
 	{
 		Assert(false);
-		Warning(__FUNCTION__ ": failed to find var \"%s\"\n", name);
+		Warning( "%s failed to find var \"%s\"\n", __FUNCTION__, name);
 		return T{};
 	}
 	const auto* castCvar = assert_cast<const ConVarType*>(cvar);
