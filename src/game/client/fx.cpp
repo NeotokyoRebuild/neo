@@ -225,7 +225,13 @@ void FX_MuzzleEffect(
 			return;
 
 		pParticle->m_flLifetime		= 0.0f;
+#ifdef NEO
+		// NEO NOTE DG: I think this param name is a bit misleading but to
+		// ensure dietime is not broken in other places lets reintroduce it
+		pParticle->m_flDieTime		= bOneFrame ? 0.01f : 0.1f;
+#else
 		pParticle->m_flDieTime		= /*bOneFrame ? 0.0001f : */0.1f;
+#endif
 
 		pParticle->m_vecVelocity.Init();
 
