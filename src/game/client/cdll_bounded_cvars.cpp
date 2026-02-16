@@ -99,9 +99,18 @@ class CBoundedCvar_Interp : public ConVar_ServerBounded
 public:
 	CBoundedCvar_Interp() :
 	  ConVar_ServerBounded( "cl_interp", 
+#ifdef NEO
+		  "0.033",
+#else
 		  "0.1", 
+#endif
 		  FCVAR_USERINFO | FCVAR_NOT_CONNECTED | FCVAR_ARCHIVE, 
+#ifdef NEO
+		  // NEO NOTE (bauxite): // don't think we need to or should allow clients to set > 100ms interp (it's enough for 20 tick)
+		  "Sets the interpolation amount (bounded on low side by server interp ratio settings).", true, 0.0f, true, 0.1f )
+#else
 		  "Sets the interpolation amount (bounded on low side by server interp ratio settings).", true, 0.0f, true, 0.5f )
+#endif
 	  {
 	  }
 
@@ -140,7 +149,7 @@ float GetClientInterpAmount()
 			AssertMsgOnce( false, "GetInterpolationAmount: can't get cl_updaterate cvar." );
 		}
 	
-		return 0.1;
+		return 0.033;
 	}
 }
 
