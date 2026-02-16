@@ -554,14 +554,25 @@ CNEOBot::CNEOBot()
 	edict_t* edict = GetEntity()->edict();
 	if (edict)
 	{
-		engine->SetFakeClientConVarValue(edict, "neo_fov", "90");
-		engine->SetFakeClientConVarValue(edict, "cl_onlysteamnick", "0");
-		engine->SetFakeClientConVarValue(edict, "neo_name", "");
-		engine->SetFakeClientConVarValue(edict, "cl_neo_streamermode", "0");
-		engine->SetFakeClientConVarValue(edict, "neo_clantag", "");
-		engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", NEO_CROSSHAIR_DEFAULT);
-		engine->SetFakeClientConVarValue(edict, "hap_HasDevice", "0");
-		engine->SetFakeClientConVarValue(edict, "cl_neo_taking_damage_sounds", "0");
+		constexpr struct {
+			const char* name, *value;
+		} convars[] = {
+			{ "cl_neo_crosshair", NEO_CROSSHAIR_DEFAULT },
+			{ "cl_neo_pvs_cull_roaming_observer", "0" },
+			{ "cl_neo_streamermode", "0" },
+			{ "cl_neo_tachi_prefer_auto", "1" },
+			{ "cl_neo_taking_damage_sounds", "0" },
+			{ "cl_onlysteamnick", "0" },
+			{ "hap_HasDevice", "0" },
+			{ "neo_clantag", "" },
+			{ "neo_fov", "90" },
+			{ "neo_name", "" },
+		};
+
+		for (const auto& convar : convars)
+		{
+			engine->SetFakeClientConVarValue(edict, convar.name, convar.value);
+		}
 	}
 }
 
