@@ -87,6 +87,7 @@
 #include "neo_player.h"
 #include "weapon_tachi.h"
 #include "neo_gamerules.h"
+#include "tier1/convar_serverbounded.h"
 #endif
 
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
@@ -564,6 +565,23 @@ CBasePlayer *CBasePlayer::CreatePlayer( const char *className, edict_t *ed )
 	return player;
 }
 
+#ifdef NEO
+template <class ConVarType=ConVar, typename T=float, auto&& ConvertFunc=V_atof>
+T GetConVarDefault(const char* name)
+{
+	const auto* cvar = g_pCVar->FindVar(name);
+	if (!cvar)
+	{
+		Assert(false);
+		Warning(__FUNCTION__ ": failed to find var \"%s\"\n", name);
+		return T{};
+	}
+	const auto* castCvar = assert_cast<const ConVarType*>(cvar);
+	const char* res = castCvar->GetDefault();
+	return ConvertFunc(res);
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : 
@@ -618,8 +636,8 @@ CBasePlayer::CBasePlayer( )
 
 	m_bPendingClientSettings = false;
 #ifdef NEO
-	m_nUpdateRate = 20;  // cl_updaterate default, default value lives in engine
-	m_fLerpTime = 0.033f; // cl_interp default
+	m_nUpdateRate = GetConVarDefault<ConVar_ServerBounded>("cl_updaterate");
+	m_fLerpTime = GetConVarDefault<ConVar_ServerBounded>("cl_interp");
 #else
 	m_nUpdateRate = 20;  // cl_updaterate defualt
 	m_fLerpTime = 0.1f; // cl_interp default
