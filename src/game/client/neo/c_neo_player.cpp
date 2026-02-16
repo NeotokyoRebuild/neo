@@ -830,6 +830,19 @@ void C_NEO_Player::ItemPreFrame( void )
 void C_NEO_Player::ItemPostFrame( void )
 {
 	BaseClass::ItemPostFrame();
+
+	auto pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+	{
+		if (IsInAim())
+		{
+			GetNEOViewModel()->AddEffects(EF_NODRAW);
+		}
+		else
+		{
+			GetNEOViewModel()->RemoveEffects(EF_NODRAW);
+		}
+	}
 }
 
 float C_NEO_Player::GetMinFOV() const
