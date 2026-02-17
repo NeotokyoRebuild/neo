@@ -72,6 +72,7 @@ struct NeoSettings
 		bool bAutoDetectOBS;
 		bool bTachiFullAutoPreferred;
 		int iBackground;
+		bool bTakingDamageSounds;
 	};
 
 	struct Keys
@@ -263,6 +264,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 		CONVARREF_DEF(cl_neo_equip_utility_priority);
+		CONVARREF_DEF(cl_neo_taking_damage_sounds);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
