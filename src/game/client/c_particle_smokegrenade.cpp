@@ -854,13 +854,17 @@ void C_ParticleSmokeGrenade::FillVolume()
 				vPos.z = m_SmokeBasePos.z + ((float)z * invNumPerDimZ) * m_SpacingRadius * 2 - m_SpacingRadius;
 
 				// Don't spawn and simulate particles that are inside a wall
-//				int contents = enginetrace->GetPointContents( vPos );
+#ifdef NEO
+				int contents = enginetrace->GetPointContents( vPos );
 
 				// Culling out particles in solid makes smoke not fill up small passageways.
-				//if( contents & CONTENTS_SOLID )
-				//{
-				//	continue;
-				//}
+				// NEO NOTE DG: ^^^ Maybe this is true, but this was performed
+				// in OGNT as far as I am aware and caused no issue.
+				if( contents & CONTENTS_SOLID )
+				{
+					continue;
+				}
+#endif
 
 				if(SmokeParticleInfo *pInfo = GetSmokeParticleInfo(x,y,z))
 				{
