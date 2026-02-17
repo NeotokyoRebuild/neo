@@ -68,7 +68,7 @@ ConVar neo_vip_eligible("cl_neo_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for
 #endif // CLIENT_DLL
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
-ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "30", FCVAR_GAMEDLL, "Maximum points required for a team to win in JGR", true, 1, false, 0);
+ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "20", FCVAR_GAMEDLL, "Maximum points required for a team to win in JGR", true, 1, false, 0);
 #endif
 
 #ifdef GAME_DLL
@@ -401,7 +401,7 @@ ConVar neo_vip_round_timelimit("neo_vip_round_timelimit", "3.25", FCVAR_REPLICAT
 ConVar neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATED, "DM round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
-ConVar neo_jgr_round_timelimit("neo_jgr_round_timelimit", "3.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.",
+ConVar neo_jgr_round_timelimit("neo_jgr_round_timelimit", "4.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
@@ -1290,7 +1290,8 @@ void CNEORules::Think(void)
 		}
 		else if (GetGameType() == NEO_GAME_TYPE_JGR)
 		{
-			if (!m_pJuggernautPlayer)
+			if ((!m_pJuggernautPlayer && m_pJuggernautItem && !m_pJuggernautItem->IsBeingActivatedByLosingTeam()) || 
+				(!m_pJuggernautPlayer && !m_pJuggernautItem)) // Juggernaut is absent entirely
 			{
 				if (GetGlobalTeam(TEAM_JINRAI)->GetScore() > GetGlobalTeam(TEAM_NSF)->GetScore())
 				{
@@ -1311,12 +1312,15 @@ void CNEORules::Think(void)
 					m_nRoundStatus = NeoRoundStatus::Overtime;
 				}
 
-				int jgrTeam = m_pJuggernautPlayer->GetTeamNumber();
-				int oppositeTeam = (m_pJuggernautPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
-				if (GetGlobalTeam(jgrTeam)->GetScore() > GetGlobalTeam(oppositeTeam)->GetScore())
+				if (m_pJuggernautPlayer)
 				{
-					SetWinningTeam(jgrTeam, NEO_VICTORY_POINTS, false, true, false, false);
-					return;
+					const int jgrTeam = m_pJuggernautPlayer->GetTeamNumber();
+					const int oppositeTeam = (m_pJuggernautPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+					if (GetGlobalTeam(jgrTeam)->GetScore() > GetGlobalTeam(oppositeTeam)->GetScore())
+					{
+						SetWinningTeam(jgrTeam, NEO_VICTORY_POINTS, false, true, false, false);
+						return;
+					}
 				}
 
 				return;
@@ -3848,9 +3852,22 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		{
 			attacker->AddPoints(1, false);
 #ifdef GAME_DLL
-			if (GetGameType() == NEO_GAME_TYPE_JGR && attacker->GetClass() == NEO_CLASS_JUGGERNAUT && IsRoundLive())
+			if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
 			{
-				attacker->GetTeam()->AddScore(1);
+				if (attacker->GetClass() == NEO_CLASS_JUGGERNAUT)
+				{
+					attacker->GetTeam()->AddScore(2);
+				}
+				else if (m_pJuggernautPlayer)
+				{
+					const int attackerTeam = attacker->GetTeamNumber();
+					const int jgrTeam = m_pJuggernautPlayer->GetTeamNumber();
+
+					if (attackerTeam == jgrTeam)
+					{
+						attacker->GetTeam()->AddScore(1);
+					}
+				}
 			}
 #endif
 		}
