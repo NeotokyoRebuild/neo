@@ -33,11 +33,6 @@ static constexpr float FL_BORDER_RATIO = 0.2f;
 static_assert(DEBUG_NEOUI == 0);
 #endif
 
-static bool RightClickMenuActive()
-{
-	return (c->iRightClick >= 0 && c->iRightClickSection >= 0 && c->pwszRightClickList && c->ipwszRightClickListSize > 0);
-}
-
 void SwapFont(const EFont eFont, const bool bForce)
 {
 	if (c->eMode != MODE_PAINT || (!bForce && (c->eFont == eFont))) return;
@@ -139,7 +134,20 @@ void BeginMultiWidgetHighlighter(const int iTotalWidgets)
 	}
 
 	// Apply highlight if it's hot/active
-	const bool bHot = c->iHotSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iHot, c->iWidget + iTotalWidgets);
+	bool bHot = c->iHotSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iHot, c->iWidget + iTotalWidgets);
+	if (bHot && (c->dimPopup.wide > 0 && c->dimPopup.tall > 0) &&
+			!(c->popupFlags & POPUPFLAG__INPOPUPSECTION))
+	{
+		const Dim &dim = c->dimPopup;
+		bHot = !(IN_BETWEEN_EQ(dim.x, c->iMouseAbsX, dim.x + dim.wide) &&
+				 IN_BETWEEN_EQ(dim.y, c->iMouseAbsY, dim.y + dim.tall));
+		if (!bHot)
+		{
+			c->iHot = FOCUSOFF_NUM;
+			c->iHotSection = -1;
+		}
+	}
+
 	const bool bActive = c->iActiveSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iActive, c->iWidget + iTotalWidgets);
 	if (bHot || bActive)
 	{
@@ -244,7 +252,8 @@ bool BindKeyEnter()
 
 bool BindKeyBack()
 {
-	return c->eMode == MODE_KEYPRESSED && IsKeyBack();
+	return c->eMode == MODE_KEYPRESSED && IsKeyBack() &&
+			(false == (c->dimPopup.wide > 0 && c->dimPopup.tall > 0));
 }
 
 void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName)
@@ -276,6 +285,14 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 		c->htSliders.RemoveAll();
 		c->pSzCurCtxName = pSzCtxName;
 		c->ibfSectionHasScroll = 0;
+		c->iCurPopupId = 0;
+		V_memset(&c->dimPopup, 0, sizeof(Dim));
+		c->colorEditInfo.r = nullptr;
+		c->colorEditInfo.g = nullptr;
+		c->colorEditInfo.b = nullptr;
+		c->colorEditInfo.a = nullptr;
+		c->iPrePopupActive = c->iPrePopupHot = FOCUSOFF_NUM;
+		c->iPrePopupActiveSection = c->iPrePopupHotSection = -1;
 	}
 
 	switch (c->eMode)
@@ -346,106 +363,37 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 
 void EndContext()
 {
-	if (RightClickMenuActive())
+	if (BeginPopup(INTERNALPOPUP_COLOREDIT, POPUPFLAG_FOCUSONOPEN))
 	{
-		bool bDeInitRightClick = false;
-		switch (c->eMode)
+		static const int ROWLAYOUT_COLORSPLIT[] = { 30, -1 };
+		SetPerRowLayout(2, ROWLAYOUT_COLORSPLIT);
+		SliderU8(L"Red", c->colorEditInfo.r, 0, UCHAR_MAX);
+		SliderU8(L"Green", c->colorEditInfo.g, 0, UCHAR_MAX);
+		SliderU8(L"Blue", c->colorEditInfo.b, 0, UCHAR_MAX);
+		SliderU8(L"Alpha", c->colorEditInfo.a, 0, UCHAR_MAX);
+
+		EndPopup();
+	}
+
+	if (BeginPopup(INTERNALPOPUP_COPYMENU, POPUPFLAG_COLORHOTASACTIVE))
+	{
+		if (Button(L"Cut").bPressed)
 		{
-		case MODE_PAINT:
+			c->eRightClickCopyMenuRet = COPYMENU_CUT;
+			ClosePopup();
+		}
+		if (Button(L"Copy").bPressed)
 		{
-			const Dim &dim = c->dimRightClick;
-			vgui::surface()->DrawSetColor(c->colors.menuBg);
-			vgui::surface()->DrawFilledRect(
-					dim.x,
-					dim.y,
-					dim.x + dim.wide,
-					dim.y + dim.tall);
-			for (int i = 0, iNextY = dim.y;
-					i < c->ipwszRightClickListSize;
-					++i, iNextY += c->layout.iRowTall)
-			{
-				const bool bIsHot = c->iRightClickHotItem == i;
-				if (bIsHot)
-				{
-					vgui::surface()->DrawSetColor(c->colors.menuHotBg);
-					vgui::surface()->DrawFilledRect(
-							dim.x,
-							iNextY,
-							dim.x + dim.wide,
-							iNextY + c->layout.iRowTall);
-				}
-				const wchar *pwszItemLabel = c->pwszRightClickList[i];
-				vgui::surface()->DrawSetTextPos(dim.x + c->iMarginX,
-						iNextY + c->iMarginY);
-				vgui::surface()->DrawSetColor(bIsHot ? c->colors.menuHotFg : c->colors.menuFg);
-				vgui::surface()->DrawPrintText(pwszItemLabel, V_wcslen(pwszItemLabel));
-			}
-		} break;
-		case MODE_KEYPRESSED:
-		case MODE_KEYTYPED:
+			c->eRightClickCopyMenuRet = COPYMENU_COPY;
+			ClosePopup();
+		}
+		if (Button(L"Paste").bPressed)
 		{
-			bDeInitRightClick = true;
-		} break;
-		case MODE_MOUSEPRESSED:
-		{
-			bDeInitRightClick = true;
-			// Wide/tall set to 0 indicates it's a newly initialized right-click menu
-			if (c->dimRightClick.wide == 0 || c->dimRightClick.tall == 0)
-			{
-				const auto *pFontI = &c->fonts[c->eFont];
-				int iMinTextSize = 0;
-				for (int i = 0; i < c->ipwszRightClickListSize; ++i)
-				{
-					const wchar *pwszItemLabel = c->pwszRightClickList[i];
-					iMinTextSize = Max(iMinTextSize, V_wcslen(pwszItemLabel));
-				}
-				// Empty text size should never really happen, but just in-case, just don't
-				// init the menu
-				Assert(iMinTextSize > 0);
-				if (iMinTextSize > 0)
-				{
-					const int iChWidth = vgui::surface()->GetCharacterWidth(pFontI->hdl, 'A');
-					c->dimRightClick.wide = (c->iMarginX * 2) + (iMinTextSize * iChWidth);
-					c->dimRightClick.tall = c->ipwszRightClickListSize * c->layout.iRowTall;
-					bDeInitRightClick = false;
-				}
-			}
-		} break;
-		case MODE_MOUSEMOVED:
-		{
-			const Dim &dim = c->dimRightClick;
-			if (dim.wide > 0 && dim.tall > 0 &&
-					IN_BETWEEN_EQ(dim.x, c->iMouseAbsX, dim.x + dim.wide) &&
-					IN_BETWEEN_EQ(dim.y, c->iMouseAbsY, dim.y + dim.tall))
-			{
-				const int iRelMenuPosY = c->iMouseAbsY - dim.y;
-				c->iRightClickHotItem = (iRelMenuPosY / static_cast<float>(dim.tall)) * c->ipwszRightClickListSize;
-			}
-			else
-			{
-				c->iRightClickHotItem = -1;
-			}
-		} break;
-		default:
-			break;
+			c->eRightClickCopyMenuRet = COPYMENU_PASTE;
+			ClosePopup();
 		}
 
-		if (bDeInitRightClick)
-		{
-			if (c->fnRightClickRet && IN_BETWEEN_AR(0, c->iRightClickHotItem, c->ipwszRightClickListSize))
-			{
-				c->fnRightClickRet(c->pData, c->iRightClickHotItem);
-			}
-
-			// Already set wide/tall indicates right-click menu already initalized before
-			// and can now de-initialize/close
-			c->iRightClick = -1;
-			c->iRightClickSection = -1;
-			c->pwszRightClickList = nullptr;
-			c->ipwszRightClickListSize = 0;
-			c->fnRightClickRet = nullptr;
-			c->pData = nullptr;
-		}
+		EndPopup();
 	}
 
 	if (c->eMode == MODE_MOUSEPRESSED && !c->iHasMouseInPanel)
@@ -526,6 +474,15 @@ void BeginSection(const ISectionFlags iSectionFlags)
 	c->iSectionFlags = iSectionFlags;
 	c->uMultiHighlightFlags = MULTIHIGHLIGHTFLAG_NONE;
 
+	if (iSectionFlags & SECTIONFLAG_POPUP)
+	{
+		c->popupFlags |= POPUPFLAG__INPOPUPSECTION;
+	}
+	else
+	{
+		c->popupFlags &= ~(POPUPFLAG__INPOPUPSECTION);
+	}
+
 	c->iMouseRelX = c->iMouseAbsX - c->dPanel.x;
 	c->iMouseRelY = c->iMouseAbsY - c->dPanel.y;
 	c->bMouseInPanel = IN_BETWEEN_EQ(0, c->iMouseRelX, c->dPanel.wide - 1) && IN_BETWEEN_EQ(0, c->iMouseRelY, c->dPanel.tall - 1);
@@ -535,7 +492,9 @@ void BeginSection(const ISectionFlags iSectionFlags)
 	switch (c->eMode)
 	{
 	case MODE_PAINT:
-		vgui::surface()->DrawSetColor(c->colors.sectionBg);
+		vgui::surface()->DrawSetColor((iSectionFlags & SECTIONFLAG_POPUP)
+				? c->colors.popupBg
+				: c->colors.sectionBg);
 		vgui::surface()->DrawFilledRect(c->dPanel.x,
 										c->dPanel.y,
 										c->dPanel.x + c->dPanel.wide,
@@ -545,9 +504,14 @@ void BeginSection(const ISectionFlags iSectionFlags)
 		vgui::surface()->DrawSetTextColor(c->colors.normalFg);
 		break;
 	case MODE_KEYPRESSED:
-		if ((iSectionFlags & SECTIONFLAG_DEFAULTFOCUS) && c->iActiveSection == -1 && IsKeyChangeWidgetFocus())
+		if (IsKeyChangeWidgetFocus())
 		{
-			c->iActiveSection = c->iSection;
+			const bool bDefaultFocus = (iSectionFlags & SECTIONFLAG_DEFAULTFOCUS) && (c->iActiveSection == -1);
+			const bool bPopupFocus = (iSectionFlags & SECTIONFLAG_POPUP);
+			if (bDefaultFocus || bPopupFocus)
+			{
+				c->iActiveSection = c->iSection;
+			}
 		}
 		break;
 	}
@@ -558,8 +522,10 @@ void BeginSection(const ISectionFlags iSectionFlags)
 
 void EndSection()
 {
+	// If button pressed inside of the section, but after the final
+	// widget, then should also be treated like outside of section
 	if (c->eMode == MODE_MOUSEPRESSED && c->bMouseInPanel &&
-			c->irWidgetLayoutY < c->iMouseRelY)
+			(c->irWidgetLayoutY + c->irWidgetTall) < c->iMouseRelY)
 	{
 		c->iActive = FOCUSOFF_NUM;
 		c->iActiveSection = -1;
@@ -704,6 +670,77 @@ void EndSection()
 	}
 
 	++c->iSection;
+}
+
+void OpenPopup(const int iPopupId, const Dim &dimPopupInit)
+{
+	if (c->iCurPopupId != 0)
+	{
+		ClosePopup();
+	}
+
+	c->iCurPopupId = iPopupId;
+	c->popupFlags |= POPUPFLAG__NEWOPENPOPUP;
+
+	c->iPrePopupHot = c->iHot;
+	c->iPrePopupHotSection = c->iHotSection;
+
+	c->iPrePopupActive = c->iActive;
+	c->iPrePopupActiveSection = c->iActiveSection;
+
+	V_memcpy(&c->dimPopup, &dimPopupInit, sizeof(Dim));
+}
+
+void ClosePopup()
+{
+	c->iCurPopupId = 0;
+
+	c->iHot = c->iPrePopupHot;
+	c->iHotSection = c->iPrePopupHotSection;
+
+	c->iActive = c->iPrePopupActive;
+	c->iActiveSection = c->iPrePopupActiveSection;
+
+	V_memset(&c->dimPopup, 0, sizeof(Dim));
+}
+
+bool BeginPopup(const int iPopupId, const PopupFlags flags)
+{
+	if (iPopupId != c->iCurPopupId)
+	{
+		return false;
+	}
+
+	const Dim &dim = c->dimPopup;
+	const bool bPressOutsidePopup = (c->eMode == MODE_MOUSEPRESSED && c->eCode == MOUSE_LEFT &&
+			!(c->popupFlags & POPUPFLAG__NEWOPENPOPUP) &&
+			!( IN_BETWEEN_EQ(dim.x, c->iMouseAbsX, dim.x + dim.wide)
+			&& IN_BETWEEN_EQ(dim.y, c->iMouseAbsY, dim.y + dim.tall)));
+	if (bPressOutsidePopup || (c->eMode == MODE_KEYPRESSED && IsKeyBack()))
+	{
+		ClosePopup();
+		return false;
+	}
+
+	c->popupFlags &= ~(POPUPFLAG__EXTERNAL);
+	c->popupFlags |= (flags & POPUPFLAG__EXTERNAL);
+
+	V_memcpy(&c->dPanel, &dim, sizeof(Dim));
+	BeginSection(SECTIONFLAG_POPUP);
+	return true;
+}
+
+void EndPopup()
+{
+	EndSection();
+	c->popupFlags &= ~(POPUPFLAG__NEWOPENPOPUP);
+}
+
+int PopupWideByStr(const char *pszStr)
+{
+	const auto *pFontI = &c->fonts[c->eFont];
+	const int iChWidth = vgui::surface()->GetCharacterWidth(pFontI->hdl, 'A');
+	return (c->iMarginX * 2) + (V_strlen(pszStr) * iChWidth);
 }
 
 void SetPerRowLayout(const int iColTotal, const int *iColProportions, const int iRowTall)
@@ -873,22 +910,37 @@ CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag)
 			c->iHotSection = c->iSection;
 		}
 		bHot = (c->iHot == c->iWidget && c->iHotSection == c->iSection);
-		if (bHot && RightClickMenuActive())
+		if (bHot && (c->dimPopup.wide > 0 && c->dimPopup.tall > 0) &&
+				!(c->popupFlags & POPUPFLAG__INPOPUPSECTION))
 		{
-			const Dim &dim = c->dimRightClick;
+			const Dim &dim = c->dimPopup;
 			bHot = !(IN_BETWEEN_EQ(dim.x, c->iMouseAbsX, dim.x + dim.wide) &&
 					 IN_BETWEEN_EQ(dim.y, c->iMouseAbsY, dim.y + dim.tall));
+			if (!bHot)
+			{
+				c->iHot = FOCUSOFF_NUM;
+				c->iHotSection = -1;
+			}
 		}
 
 		bActive = (c->iWidget == c->iActive && c->iSection == c->iActiveSection);
 	}
 
-	if (eWidgetFlag & WIDGETFLAG_FORCEACTIVE)
+	static const PopupFlags POPUPFLAGS_FIRSTACTIVE = POPUPFLAG_FOCUSONOPEN | POPUPFLAG__NEWOPENPOPUP | POPUPFLAG__INPOPUPSECTION;
+	const bool bIsPopupFirstActive =
+			(((c->popupFlags & POPUPFLAGS_FIRSTACTIVE) == POPUPFLAGS_FIRSTACTIVE)
+			&& (eWidgetFlag & WIDGETFLAG_MARKACTIVE));
+
+	if ((eWidgetFlag & WIDGETFLAG_FORCEACTIVE) || bIsPopupFirstActive)
 	{
 		c->iActive = c->iHot = c->iWidget;
 		c->iActiveSection = c->iHotSection = c->iSection;
 		bHot = true;
 		bActive = true;
+		if (bIsPopupFirstActive)
+		{
+			c->popupFlags &= ~(POPUPFLAG_FOCUSONOPEN);
+		}
 	}
 
 	// Mark this section this widget under as able to be active
@@ -902,8 +954,10 @@ CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag)
 	}
 
 	// Deal with inital widget colors, could also color active/hot by mutli-highlighting
+	static const PopupFlags POPUPFLAGS_COLORHOTASACTIVE = POPUPFLAG_COLORHOTASACTIVE | POPUPFLAG__INPOPUPSECTION;
 	const bool bColorHot = bHot || (c->uMultiHighlightFlags & MULTIHIGHLIGHTFLAG_HOT);
-	const bool bColorActive = bActive || (c->uMultiHighlightFlags & MULTIHIGHLIGHTFLAG_ACTIVE);
+	const bool bColorActive = ((bActive || (c->uMultiHighlightFlags & MULTIHIGHLIGHTFLAG_ACTIVE)) ||
+			(((c->popupFlags & POPUPFLAGS_COLORHOTASACTIVE) == POPUPFLAGS_COLORHOTASACTIVE) && bColorHot));
 	if (bColorActive)
 	{
 		vgui::surface()->DrawSetColor(c->colors.activeBg);
@@ -1979,6 +2033,62 @@ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, con
 	}
 }
 
+void ColorEdit(uint8 *r, uint8 *g, uint8 *b, uint8 *a)
+{
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
+
+	if (wdgState.bInView)
+	{
+		bool bShowPopup = false;
+
+		switch (c->eMode)
+		{
+		case MODE_PAINT:
+		{
+			vgui::surface()->DrawSetColor(*r, *g, *b, *a);
+			vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
+		}
+		break;
+		case MODE_MOUSEPRESSED:
+		{
+			bShowPopup = (wdgState.bHot && c->eCode == MOUSE_LEFT);
+		}
+		break;
+		case MODE_KEYPRESSED:
+		{
+			bShowPopup = (wdgState.bActive && IsKeyEnter());
+		}
+		break;
+		default:
+			break;
+		}
+
+		if (bShowPopup)
+		{
+			OpenPopup(INTERNALPOPUP_COLOREDIT, Dim{
+						.x = c->rWidgetArea.x0,
+						.y = c->rWidgetArea.y1,
+						.wide = c->irWidgetWide,
+						.tall = c->layout.iDefRowTall * 4,
+					});
+			c->colorEditInfo.r = r;
+			c->colorEditInfo.g = g;
+			c->colorEditInfo.b = b;
+			c->colorEditInfo.a = a;
+		}
+	}
+
+	EndWidget(wdgState);
+}
+
+void ColorEdit(const wchar_t *wszLeftLabel, uint8 *r, uint8 *g, uint8 *b, uint8 *a)
+{
+	BeginMultiWidgetHighlighter(2);
+	Label(wszLeftLabel);
+	ColorEdit(r, g, b, a);
+	EndMultiWidgetHighlighter();
+}
+
 static int TextEditChIdxFromMouse(const int iWszTextSize)
 {
 	const int iMouseOnXWidth = c->iMouseAbsX - (c->rWidgetArea.x0 + c->iMarginX);
@@ -2067,7 +2177,15 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 
 	if (wdgState.bInView)
 	{
-		int iCopyAction = -1;
+		ECopyMenu iCopyAction = COPYMENU_NIL;
+
+		if (IN_BETWEEN_AR(COPYMENU_CUT, c->eRightClickCopyMenuRet, COPYMENU__TOTAL) &&
+				c->iPrePopupActive == c->iWidget &&
+				c->iPrePopupActiveSection == c->iSection)
+		{
+			iCopyAction = c->eRightClickCopyMenuRet;
+			c->eRightClickCopyMenuRet = COPYMENU_NIL;
+		}
 
 		const bool bHasTextSel = wdgState.bActive;
 		const bool bCurRightStart = (c->iTextSelCur >= c->iTextSelStart);
@@ -2174,14 +2292,7 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 		break;
 		case MODE_MOUSEPRESSED:
 		{
-			if (c->eCode == MOUSE_LEFT &&
-					c->iRightClick == c->iWidget &&
-					c->iRightClickSection == c->iSection)
-			{
-				iCopyAction = c->iRightClickHotItem;
-			}
-
-			if (!IN_BETWEEN_AR(0, iCopyAction, c->ipwszRightClickListSize) && wdgState.bHot)
+			if (!IN_BETWEEN_AR(COPYMENU_CUT, iCopyAction, COPYMENU__TOTAL) && wdgState.bHot)
 			{
 				c->iActive = c->iWidget;
 				c->iActiveSection = c->iSection;
@@ -2202,11 +2313,13 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 				case MOUSE_RIGHT:
 				{
 					// Open right-click menu
-					static const wchar *PWSZ_TEXTEDIT_RIGHTCLICK[COPYMENU__TOTAL] = {
-						L"Cut", L"Copy", L"Paste",
-					};
-					PopupMenu(PWSZ_TEXTEDIT_RIGHTCLICK, ARRAYSIZE(PWSZ_TEXTEDIT_RIGHTCLICK),
-							nullptr, nullptr);
+					OpenPopup(INTERNALPOPUP_COPYMENU, Dim{
+								.x = c->iMouseAbsX,
+								.y = c->iMouseAbsY,
+								.wide = PopupWideByStr("Paste"),
+								.tall = c->layout.iDefRowTall * 3,
+							});
+					c->eRightClickCopyMenuRet = COPYMENU_NIL;
 				} break;
 				default:
 					break;
@@ -2241,7 +2354,7 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 				break; default: break;
 				}
 			}
-			if (!IN_BETWEEN_AR(0, iCopyAction, c->ipwszRightClickListSize) && wdgState.bActive)
+			if (!IN_BETWEEN_AR(COPYMENU_CUT, iCopyAction, COPYMENU__TOTAL) && wdgState.bActive)
 			{
 				const bool bIsShiftDown = (vgui::input()->IsKeyDown(KEY_LSHIFT) || vgui::input()->IsKeyDown(KEY_RSHIFT));
 				switch (c->eCode)
@@ -2539,21 +2652,6 @@ void OpenURL(const char *szBaseUrl, const char *szPath)
 const wchar_t *HintAlt(const wchar *wszKey, const wchar *wszController)
 {
 	return (c->eKeyHints == NeoUI::KEYHINTS_KEYBOARD) ? wszKey : wszController;
-}
-
-void PopupMenu(const wchar **pwszRightClickList, const int ipwszRightClickListSize,
-		void (*fnRightClickRet)(void *, int), void *pData)
-{
-	c->dimRightClick.x = c->iMouseAbsX;
-	c->dimRightClick.y = c->iMouseAbsY;
-	c->dimRightClick.wide = 0;
-	c->dimRightClick.tall = 0;
-	c->iRightClick = c->iWidget;
-	c->iRightClickSection = c->iSection;
-	c->pwszRightClickList = pwszRightClickList;
-	c->ipwszRightClickListSize = ipwszRightClickListSize;
-	c->fnRightClickRet = fnRightClickRet;
-	c->pData = pData;
 }
 
 }  // namespace NeoUI

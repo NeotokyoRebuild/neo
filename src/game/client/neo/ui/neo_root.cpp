@@ -68,6 +68,12 @@ constexpr wchar_t WSZ_GAME_TITLE1_b[] = L"C";
 constexpr wchar_t WSZ_GAME_TITLE2[] = L"Hrebuild";
 #define SZ_WEBSITE "https://neotokyorebuild.github.io"
 
+enum ENeoPopup
+{
+	NEOPOPUP_ACTIONSERVER = NeoUI::INTERNALPOPUP_NIL + 1,
+	NEOPOPUP_ACTIONBLACKLIST,
+};
+
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
 
 struct YMD
@@ -156,68 +162,6 @@ static void AddToBlacklist(const gameserveritem_t *gameServer)
 	ServerBlacklistCacheWsz(&sbInfo);
 
 	g_blacklistedServers.AddToTail(sbInfo);
-}
-
-static void RightClickRetServer(void *pData, const int iItem)
-{
-	CNeoRoot *pNeoRoot = (CNeoRoot *)(pData);
-
-	Assert(pNeoRoot->m_iServerBrowserTab != GS_BLACKLIST && pNeoRoot->m_iSelectedServer >= 0);
-	if (pNeoRoot->m_iServerBrowserTab == GS_BLACKLIST || pNeoRoot->m_iSelectedServer < 0)
-	{
-		return;
-	}
-
-	const auto *gameServer = &pNeoRoot->m_serverBrowser[pNeoRoot->m_iServerBrowserTab].m_filteredServers[pNeoRoot->m_iSelectedServer];
-
-	switch (iItem)
-	{
-	case CNeoRoot::RIGHTCLICKSERVER_FAV:
-	{
-		if (ISteamMatchmaking *smm = SteamMatchmaking())
-		{
-			const servernetadr_t &netAdr = gameServer->m_NetAdr;
-			if (NetAdrIsFavorite(netAdr))
-			{
-				smm->RemoveFavoriteGame(
-						engine->GetAppID(),
-						netAdr.GetIP(),
-						netAdr.GetConnectionPort(),
-						netAdr.GetQueryPort(),
-						k_unFavoriteFlagFavorite);
-			}
-			else
-			{
-				smm->AddFavoriteGame(
-						engine->GetAppID(),
-						netAdr.GetIP(),
-						netAdr.GetConnectionPort(),
-						netAdr.GetQueryPort(),
-						k_unFavoriteFlagFavorite,
-						0);
-			}
-		}
-	} break;
-	case CNeoRoot::RIGHTCLICKSERVER_BLACKLIST:
-		AddToBlacklist(gameServer);
-		break;
-	default:
-		break;
-	}
-}
-
-static void RightClickRetRemoveBlacklist(void *pData, [[maybe_unused]] const int iItem)
-{
-	CNeoRoot *pNeoRoot = (CNeoRoot *)(pData);
-
-	Assert(pNeoRoot->m_iServerBrowserTab == GS_BLACKLIST && pNeoRoot->m_iSelectedServer >= 0);
-	if (pNeoRoot->m_iServerBrowserTab != GS_BLACKLIST || pNeoRoot->m_iSelectedServer < 0)
-	{
-		return;
-	}
-
-	g_blacklistedServers.Remove(pNeoRoot->m_iSelectedServer);
-	pNeoRoot->m_iSelectedServer = -1;
 }
 
 CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
@@ -1460,9 +1404,12 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							m_iSelectedServer = i;
 							if (btn.bMouseRightPressed)
 							{
-								static const wchar_t *PWSZ_BLACKLIST_RIGHTCLICK[] = { L"Remove from blacklist" };
-								NeoUI::PopupMenu(PWSZ_BLACKLIST_RIGHTCLICK, ARRAYSIZE(PWSZ_BLACKLIST_RIGHTCLICK),
-										RightClickRetRemoveBlacklist, (void *)(this));
+								NeoUI::OpenPopup(NEOPOPUP_ACTIONBLACKLIST, NeoUI::Dim{
+											.x = g_uiCtx.iMouseAbsX,
+											.y = g_uiCtx.iMouseAbsY,
+											.wide = NeoUI::PopupWideByStr("Remove from blacklist"),
+											.tall = g_uiCtx.layout.iDefRowTall,
+										});
 							}
 						}
 
@@ -1533,10 +1480,18 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							m_iSelectedServer = i;
 							if (btn.bMouseRightPressed)
 							{
-								const bool bIsFav = NetAdrIsFavorite(server.m_NetAdr);
-								pwszRightclickServer[RIGHTCLICKSERVER_FAV] = bIsFav ? L"Unfavorite" : L"Favorite";
-								NeoUI::PopupMenu(pwszRightclickServer, RIGHTCLICKSERVER__TOTAL,
-										RightClickRetServer, (void *)(this));
+								NeoUI::OpenPopup(NEOPOPUP_ACTIONSERVER, NeoUI::Dim{
+											.x = g_uiCtx.iMouseAbsX,
+											.y = g_uiCtx.iMouseAbsY,
+											.wide = NeoUI::PopupWideByStr("Add to blacklist"),
+											.tall = g_uiCtx.layout.iDefRowTall * 2,
+										});
+
+								// NetAdrIsFavorite cached here for the popup
+								const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+								const servernetadr_t &netAdr = gameServer->m_NetAdr;
+								m_bFavCacheIsFav = NetAdrIsFavorite(netAdr);
+								m_favCacheNetAdr = netAdr;
 							}
 							if (btn.bKeyPressed || btn.bMouseDoublePressed)
 							{
@@ -1718,8 +1673,71 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 		}
 		NeoUI::EndSection();
 	}
-	NeoUI::EndContext();
 
+	if (NeoUI::BeginPopup(NEOPOPUP_ACTIONSERVER, NeoUI::POPUPFLAG_COLORHOTASACTIVE))
+	{
+		const bool bIsValid = (m_iServerBrowserTab != GS_BLACKLIST && m_iSelectedServer >= 0);
+		Assert(bIsValid);
+		const auto *pGameServer = bIsValid ? &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer] : nullptr;
+
+		if (NeoUI::Button(m_bFavCacheIsFav ? L"Unfavorite" : L"Favorite").bPressed)
+		{
+			ISteamMatchmaking *smm = SteamMatchmaking();
+			if (smm && pGameServer)
+			{
+				const servernetadr_t &netAdr = pGameServer->m_NetAdr;
+				if (NetAdrIsFavorite(netAdr))
+				{
+					smm->RemoveFavoriteGame(
+							engine->GetAppID(),
+							netAdr.GetIP(),
+							netAdr.GetConnectionPort(),
+							netAdr.GetQueryPort(),
+							k_unFavoriteFlagFavorite);
+				}
+				else
+				{
+					smm->AddFavoriteGame(
+							engine->GetAppID(),
+							netAdr.GetIP(),
+							netAdr.GetConnectionPort(),
+							netAdr.GetQueryPort(),
+							k_unFavoriteFlagFavorite,
+							0);
+				}
+			}
+			NeoUI::ClosePopup();
+		}
+		if (NeoUI::Button(L"Add to blacklist").bPressed)
+		{
+			if (pGameServer)
+			{
+				AddToBlacklist(pGameServer);
+			}
+			NeoUI::ClosePopup();
+		}
+
+		NeoUI::EndPopup();
+	}
+
+	if (NeoUI::BeginPopup(NEOPOPUP_ACTIONBLACKLIST, NeoUI::POPUPFLAG_COLORHOTASACTIVE))
+	{
+		if (NeoUI::Button(L"Remove from blacklist").bPressed)
+		{
+			const bool bIsValid = (m_iServerBrowserTab == GS_BLACKLIST && m_iSelectedServer >= 0);
+			Assert(bIsValid);
+			if (bIsValid)
+			{
+				g_blacklistedServers.Remove(m_iSelectedServer);
+				m_iSelectedServer = -1;
+			}
+			NeoUI::ClosePopup();
+		}
+
+		NeoUI::EndPopup();
+	}
+
+	NeoUI::EndContext();
 }
 
 static constexpr const wchar_t *CREDITSPEOPLELABEL_NAMES[] = {

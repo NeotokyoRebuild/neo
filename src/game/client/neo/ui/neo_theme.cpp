@@ -22,6 +22,7 @@ void SetupNTRETheme(NeoUI::Context *pNeoUICtx)
 	pColors->menuBg = COLOR_BLACK;
 	pColors->menuHotFg = COLOR_BLACK;
 	pColors->menuHotBg = COLOR_WHITE;
+	pColors->popupBg = COLOR_BLACK;
 	pColors->sectionBg = COLOR_BLACK_TRANSPARENT;
 	pColors->scrollbarBg = COLOR_TRANSPARENT;
 	pColors->scrollbarHandleNormalBg = COLOR_FADED_WHITE;
