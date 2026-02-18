@@ -87,10 +87,14 @@ void CNeoLoading::OnMessage(const KeyValues *params, vgui::VPANEL fromPanel)
 	{
 		FetchGameUIPanels();
 		g_pNeoRoot->m_bOnLoadingScreen = true;
+		vgui::surface()->SetSoftwareCursor(false);
 	}
 	else if (V_strcmp(pSzMsgName, "deactivate") == 0)
 	{
 		g_pNeoRoot->m_bOnLoadingScreen = false;
+		static ConVarRef cl_software_cursor( "cl_software_cursor" );
+		Assert(cl_software_cursor.IsValid());
+		vgui::surface()->SetSoftwareCursor(cl_software_cursor.GetBool());
 		if (engine->IsConnected() && !engine->IsLevelMainMenuBackground())
 		{
 			g_pNeoRoot->m_flTimeLoadingScreenTransition -= (NEO_MENU_SECONDS_DELAY + NEO_MENU_SECONDS_TILL_FULLY_OPAQUE); // Don't fade in the menu on disconnect
