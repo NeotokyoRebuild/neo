@@ -159,6 +159,7 @@ struct NeoSettings
 		float flGamma;
 		int iFov;
 		int iViewmodelFov;
+		bool bSoftwareCursor;
 
 		// Video modes
 		int iVMListSize;
@@ -243,6 +244,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_onlysteamnick);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
+		CONVARREF_DEF(cl_software_cursor);
 		CONVARREF_DEF(cl_autoreload_when_empty);
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
