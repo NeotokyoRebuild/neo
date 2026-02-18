@@ -100,6 +100,13 @@ CFPSPanel::CFPSPanel( vgui::VPANEL parent ) : BaseClass( NULL, "CFPSPanel" )
 
 	vgui::ivgui()->AddTickSignal( GetVPanel(), 250 );
 	m_bLastDraw = false;
+
+#ifdef NEO
+	// Software cursor support
+	SetCursor(vgui::dc_arrow);
+#else
+	SetCursor( null );
+#endif
 }
 
 //-----------------------------------------------------------------------------
