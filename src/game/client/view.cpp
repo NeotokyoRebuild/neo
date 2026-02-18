@@ -150,7 +150,11 @@ void SoftwareCursorChangedCB( IConVar *pVar, const char *pOldValue, float fOldVa
 	ConVar *pConVar = (ConVar *)pVar;
 	vgui::surface()->SetSoftwareCursor( pConVar->GetBool() || UseVR() );
 }
+#ifdef NEO
+static ConVar cl_software_cursor ( "cl_software_cursor", "1", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
+#else
 static ConVar cl_software_cursor ( "cl_software_cursor", "0", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
+#endif
 
 
 static Vector s_DemoView;
