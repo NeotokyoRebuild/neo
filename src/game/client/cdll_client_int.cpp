@@ -1481,6 +1481,17 @@ void CHLClient::PostInit()
 				}
 			}
 
+			if (iCfgVerMajor < 26)
+			{
+				// voice_modenable is used now instead of voice_enable as
+				// that's how the valve settings menu does it now and
+				// force voice_enable back on
+				ConVarRef cvr_voice_enable("voice_enable");
+				ConVarRef cvr_voice_modenable("voice_modenable");
+				cvr_voice_modenable.SetValue(cvr_voice_enable.GetBool());
+				cvr_voice_enable.SetValue(true);
+			}
+
 			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
 			cvr_cl_neo_cfg_version_minor.SetValue(NEO_VERSION_MINOR);
 		}

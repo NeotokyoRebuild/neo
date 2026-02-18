@@ -290,7 +290,7 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_ping_volume);
 		CONVARREF_DEF(snd_surround_speakers);
-		CONVARREF_DEF(voice_enable);
+		CONVARREF_DEF(voice_modenable);
 		CONVARREF_DEF(voice_scale);
 		CONVARREF_DEF(snd_mute_losefocus);
 		CONVARREF_DEF(snd_pitchquality);
@@ -347,6 +347,7 @@ void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys = NeoSettings::Keys::NONE);
 void NeoSettingsSave(const NeoSettings *ns);
 void NeoSettingsResetToDefault(NeoSettings *ns);
+void NeoSettingsEndVoiceTweakMode();
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);

@@ -14,6 +14,7 @@
 #include <steam/steam_api.h>
 #include "vgui/ISystem.h"
 #include "neo_hud_killer_damage_info.h"
+#include "voice_status.h"
 
 #include "neo_ui.h"
 #include "neo_root.h"
@@ -522,7 +523,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 																	  QUALITY_MEDIUM;
 
 		// Input
-		pAudio->bVoiceEnabled = cvr->voice_enable.GetBool();
+		pAudio->bVoiceEnabled = cvr->voice_modenable.GetBool();
 		pAudio->flVolVoiceRecv = cvr->voice_scale.GetFloat();
 		pAudio->bMicBoost = (engine->GetVoiceTweakAPI()->GetControlFloat(MicBoost) > 0.0f);
 	}
@@ -822,7 +823,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->dsp_slow_cpu.SetValue(pAudio->iSoundQuality == QUALITY_LOW);
 
 		// Input
-		cvr->voice_enable.SetValue(pAudio->bVoiceEnabled);
+		cvr->voice_modenable.SetValue(pAudio->bVoiceEnabled);
 		cvr->voice_scale.SetValue(pAudio->flVolVoiceRecv);
 		engine->GetVoiceTweakAPI()->SetControlFloat(MicBoost, static_cast<float>(pAudio->bMicBoost));
 	}
@@ -955,6 +956,15 @@ void NeoSettingsResetToDefault(NeoSettings *ns)
 	// NEO JANK (nullsystem): For some reason, bind -> gameuifuncs->GetButtonCodeForBind is too quick for
 	// the game engine at this point. So just omit setting binds in restore since we already have anyway.
 	NeoSettingsRestore(ns, NeoSettings::Keys::SKIP_KEYS);
+}
+
+void NeoSettingsEndVoiceTweakMode()
+{
+	// NEO JANK (nullsystem): After tweaking, load up a local server and the voice icon
+	// indicator shows it's recording even though it's actually not? Workaround: just
+	// directly set UpdateSpeakerStatus here, -1 = local player.
+	engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
+	GetClientVoiceMgr()->UpdateSpeakerStatus(-1, false);
 }
 
 static const wchar_t *DLFILTER_LABELS[] = {
@@ -1183,7 +1193,7 @@ void NeoSettings_Audio(NeoSettings *ns)
 	if (NeoUI::Button(L"Microphone Tester",
 					  bTweaking ? L"Stop testing" : L"Start testing").bPressed)
 	{
-		bTweaking ? pVoiceTweak->EndVoiceTweakMode() : (void)pVoiceTweak->StartVoiceTweakMode();
+		bTweaking ? NeoSettingsEndVoiceTweakMode() : (void)pVoiceTweak->StartVoiceTweakMode();
 		pAudio->flSpeakingVol = 0.0f;
 		pAudio->flLastFetchInterval = 0.0f;
 	}
