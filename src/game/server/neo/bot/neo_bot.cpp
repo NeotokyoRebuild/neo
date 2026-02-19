@@ -561,6 +561,7 @@ CNEOBot::CNEOBot()
 		engine->SetFakeClientConVarValue(edict, "neo_clantag", "");
 		engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", NEO_CROSSHAIR_DEFAULT);
 		engine->SetFakeClientConVarValue(edict, "hap_HasDevice", "0");
+		engine->SetFakeClientConVarValue(edict, "cl_neo_taking_damage_sounds", "0");
 	}
 }
 

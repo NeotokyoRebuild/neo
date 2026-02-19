@@ -1000,10 +1000,6 @@ void CBasePlayer::TraceAttack( const CTakeDamageInfo &inputInfo, const Vector &v
 	}
 }
 
-#ifdef NEO
-ConVar cl_neo_taking_damage_sounds("cl_neo_taking_damage_sounds", "0", FCVAR_ARCHIVE, "Play sounds when taking bullet damage.", true, 0, true, 1);
-#endif
-
 //------------------------------------------------------------------------------
 // Purpose : Do some kind of damage effect for the type of damage
 // Input   :
@@ -1052,7 +1048,7 @@ void CBasePlayer::DamageEffect(float flDamage, int fDamageType)
 	else if ( fDamageType & DMG_BULLET )
 	{
 #ifdef NEO
-		if (cl_neo_taking_damage_sounds.GetBool())
+		if (Q_atoi(engine->GetClientConVarValue(this->entindex(), "cl_neo_taking_damage_sounds")))
 		{
 			EmitSound( "Flesh.BulletImpact" );
 		}
