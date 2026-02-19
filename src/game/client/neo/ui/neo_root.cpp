@@ -1084,7 +1084,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 					NeoUI::Bind(BTNCODES_DEFAULT, ARRAYSIZE(BTNCODES_DEFAULT)))
 			{
 				m_state = STATE_SETTINGSRESETDEFAULT;
-				engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
+				NeoSettingsEndVoiceTweakMode();
 			}
 			if (m_ns.bModified)
 			{
@@ -1125,7 +1125,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 	{
 		m_ns.bBack = false;
 		m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
-		engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
+		NeoSettingsEndVoiceTweakMode();
 	}
 	else if (m_ns.iNextBinding >= 0)
 	{
