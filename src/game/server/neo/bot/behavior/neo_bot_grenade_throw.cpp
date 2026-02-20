@@ -8,8 +8,11 @@
 #include "nav_mesh.h"
 #include "nav_pathfind.h"
 
-ConVar sv_neo_grenade_debug_behavior("sv_neo_grenade_debug_behavior", "0", FCVAR_CHEAT,
+ConVar sv_neo_bot_grenade_debug_behavior("sv_neo_bot_grenade_debug_behavior", "0", FCVAR_CHEAT,
 	"Draw debug overlays for bot grenade behavior", true, 0, true, 1);
+
+ConVar sv_neo_bot_grenade_give_up_time("sv_neo_bot_grenade_give_up_time", "5.0", FCVAR_NONE,
+	"Time in seconds before bot gives up on grenade throw", true, 1, false, 0);
 
 //---------------------------------------------------------------------------------------------
 CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat )
@@ -49,7 +52,7 @@ const Vector& CNEOBotGrenadeThrow::FindEmergencePointAlongPath( const CNEOBot *m
 			{
 				// DEBUG: Draw emergence path
 				// Color: Yellow (255, 255, 0) to distinguish path analysis
-				if ( sv_neo_grenade_debug_behavior.GetBool() )
+				if ( sv_neo_bot_grenade_debug_behavior.GetBool() )
 				{
 					if ( area->GetParent() )
 					{
@@ -66,7 +69,7 @@ const Vector& CNEOBotGrenadeThrow::FindEmergencePointAlongPath( const CNEOBot *m
 				if ( me->IsLineOfFireClear( vecTest, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )
 				{
 					// DEBUG: Draw emergence point
-					if ( sv_neo_grenade_debug_behavior.GetBool() )
+					if ( sv_neo_bot_grenade_debug_behavior.GetBool() )
 					{
 						NDebugOverlay::Box( vecTest, Vector(-16,-16,-16), Vector(16,16,16), 255, 255, 0, 50, 2.0f );
 					}
@@ -102,8 +105,10 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOB
 		me->PushRequiredWeapon( m_hGrenadeWeapon );
 	}
 	
-	m_giveUpTimer.Start( 3.0f );
+	m_giveUpTimer.Start( sv_neo_bot_grenade_give_up_time.GetFloat() );
 	m_bPinPulled = false;
+
+	me->StopLookingAroundForEnemies();
 
 	return Continue();
 }
@@ -115,6 +120,11 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 	if ( !pWep )
 	{
 		return Done( "Do not have grenade" );
+	}
+
+	if ( !pWep->HasPrimaryAmmo() )
+	{
+		return Done( "Weapon slot out of ammo" );
 	}
 
 	if ( m_vecThreatLastKnownPos == vec3_invalid )
@@ -137,7 +147,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		return Done( "Grenade throw timed out" );
 	}
 
-	if ( sv_neo_grenade_debug_behavior.GetBool() && m_hThreatGrenadeTarget.Get() )
+	if ( sv_neo_bot_grenade_debug_behavior.GetBool() && m_hThreatGrenadeTarget.Get() )
 	{
 		// DEBUG Colors: Red = Frag, Gray = Smoke, Purple = Unknown
 		const Vector& vecStart = me->GetEntity()->WorldSpaceCenter();
@@ -208,14 +218,32 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		Vector vecToTarget = m_vecTarget - me->GetEntity()->EyePosition();
 		vecToTarget.NormalizeInPlace();
 		
-		if ( vecForward.Dot( vecToTarget ) >= 0.95f )
+		float flAimThreshold;
+		switch( me->GetDifficulty() )
+		{
+		case CNEOBot::EXPERT:
+			flAimThreshold = 0.98f;
+			break;
+		case CNEOBot::HARD:
+			flAimThreshold = 0.97f;
+			break;
+		case CNEOBot::NORMAL:
+			flAimThreshold = 0.96f;
+			break;
+		case CNEOBot::EASY:
+		default:
+			flAimThreshold = 0.95f;
+			break;
+		}
+
+		if ( vecForward.Dot( vecToTarget ) >= flAimThreshold )
 		{
 			bAimOnTarget = true;
 		}
 	}
 	
 	// DEBUG: Targeting decisions
-	if ( sv_neo_grenade_debug_behavior.GetBool() )
+	if ( sv_neo_bot_grenade_debug_behavior.GetBool() )
 	{
 		const Vector& vecStart = me->GetEntity()->WorldSpaceCenter();
 		// Color: Orange (255, 128, 0) is the final ballistics target
@@ -260,4 +288,19 @@ void CNEOBotGrenadeThrow::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
 	me->PopRequiredWeapon();
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	me->EquipBestWeaponForThreat( threat );
+	me->StartLookingAroundForEnemies();
+}
+
+//---------------------------------------------------------------------------------------------
+ ActionResult<CNEOBot> CNEOBotGrenadeThrow::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+{
+	return Done( "OnSuspend: Cancel out of grenade throw behavior, situation will likely become stale." );
+	// OnEnd will get called after Done
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult<CNEOBot> CNEOBotGrenadeThrow::OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+{
+	return Done( "OnResume: Cancel out of grenade throw behavior, situation is likely stale." );
+	// OnEnd will get called after Done
 }

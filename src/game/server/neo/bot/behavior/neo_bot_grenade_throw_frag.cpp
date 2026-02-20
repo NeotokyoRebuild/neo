@@ -45,6 +45,12 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	// Should be checked by CNEOBotGrenadeThrow::Update by this point
 	Assert( m_hThreatGrenadeTarget.Get() && m_vecThreatLastKnownPos != vec3_invalid );
 
+	const float flSafeRadius = GetFragSafetyRadius();
+	if ( me->GetAbsOrigin().DistToSqr( m_vecThreatLastKnownPos ) < ( flSafeRadius * flSafeRadius ) )
+	{
+		return THROW_TARGET_CANCEL; // Too close to investigation location
+	}
+
 	// Check if there is a more immediate threat interrupting my grenade throw
 	const CKnownEntity* pPrimaryThreat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	// Not using LINE_OF_FIRE_FLAGS_SHOTGUN because we want to abort grenade throw if threat could shoot us from behind glass
@@ -53,7 +59,11 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 		// consider panic throwing the grenade at the immediate threat
 		if ( m_scanTimer.IsElapsed() || m_vecTarget == vec3_invalid )
 		{
+			// Update target to immediate threat
+			m_hThreatGrenadeTarget = pPrimaryThreat->GetEntity();
 			m_vecTarget = pPrimaryThreat->GetLastKnownPosition();
+			m_vecThreatLastKnownPos = m_vecTarget;
+
 			CNEOBotPathCompute( me, m_PathFollower, m_vecTarget, FASTEST_ROUTE );
 			m_scanTimer.Start( 0.2f );
 		}

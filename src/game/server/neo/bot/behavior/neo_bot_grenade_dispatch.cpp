@@ -52,6 +52,11 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 
 		CNEOBaseCombatWeapon *pNeoWep = static_cast< CNEOBaseCombatWeapon * >( pWep );
 
+		if ( !pNeoWep->HasPrimaryAmmo() )
+		{
+			continue;
+		}
+
 		auto bits = pNeoWep->GetNeoWepBits();
 		if ( sv_neo_bot_grenade_use_frag.GetBool() && (bits & NEO_WEP_FRAG_GRENADE) )
 		{

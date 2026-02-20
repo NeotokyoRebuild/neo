@@ -19,6 +19,8 @@ public:
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval ) override;
 	virtual void					OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction ) override;
+	virtual ActionResult< CNEOBot >	OnSuspend( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
+	virtual ActionResult< CNEOBot >	OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
 
 protected:
 	Vector m_vecTarget; // caches target to aim at during throw action in implementation classes
