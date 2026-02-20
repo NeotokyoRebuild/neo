@@ -1206,7 +1206,14 @@ Particle *CParticleMgr::AllocParticle( int size )
 {
 	// Enforce max particle limit.
 	if ( m_nCurrentParticlesAllocated >= MAX_TOTAL_PARTICLES )
+#ifdef NEO
+	{
+		DevWarning("CParticleMgr::AllocParticle: Too many particles!\n");
 		return NULL;
+	}
+#else
+		return NULL;
+#endif
 		
 	Particle *pRet = (Particle *)malloc( size );
 	if ( pRet )
