@@ -155,7 +155,11 @@ void FX_PlayerTracer( Vector& start, Vector& end )
 
 	//Randomly place the tracer along this line, with a random length
 	VectorMA( start, TRACER_BASE_OFFSET + random->RandomFloat( -24.0f, 64.0f ), shotDir, dStart );
+#ifdef NEO
+	VectorMA( dStart, ( length * random->RandomFloat( 0.1f, 1.6f ) ), shotDir, dEnd );
+#else
 	VectorMA( dStart, ( length * random->RandomFloat( 0.1f, 0.6f ) ), shotDir, dEnd );
+#endif
 
 	//Create the line
 	CFXStaticLine	*t;
@@ -164,7 +168,11 @@ void FX_PlayerTracer( Vector& start, Vector& end )
 	//materialName = ( random->RandomInt( 0, 1 ) ) ? "effects/tracer_middle" : "effects/tracer_middle2";
 	materialName = "effects/spark";
 
+#ifdef NEO
+	t = new CFXStaticLine( "Tracer", dStart, dEnd, random->RandomFloat( 2.5f, 2.75f ), 0.01f, materialName, 0 );
+#else
 	t = new CFXStaticLine( "Tracer", dStart, dEnd, random->RandomFloat( 0.5f, 0.75f ), 0.01f, materialName, 0 );
+#endif
 	assert( t );
 
 	//Throw it into the list

@@ -124,11 +124,12 @@ void TracerCallback( const CEffectData &data )
 
 #ifdef NEO
 	if ( bPlayerFirstperson )
+	{
+		FX_PlayerTracer(vecStart, (Vector&)data.m_vOrigin);
 #else
 	int iEntIndex = data.entindex();
 
 	if ( iEntIndex && iEntIndex == player->index )
-#endif
 	{
 		Vector	foo = data.m_vStart;
 		QAngle	vangles;
@@ -141,6 +142,7 @@ void TracerCallback( const CEffectData &data )
 		foo[2] -= 0.5f;
 
 		FX_PlayerTracer( foo, (Vector&)data.m_vOrigin );
+#endif
 		return;
 	}
 	
