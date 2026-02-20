@@ -824,7 +824,7 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 
 	// We lerp from very accurate to inaccurate over time
 	static Vector cone;
-	auto weaponSpread = GetSpreadInfo();
+	const auto& weaponSpread = GetSpreadInfo();
 	if (pOwner && pOwner->IsInAim())
 	{
 		VectorLerp(
