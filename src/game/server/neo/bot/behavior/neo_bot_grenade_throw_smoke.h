@@ -12,7 +12,7 @@ public:
 	CNEOBotGrenadeThrowSmoke( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat );
 	virtual ~CNEOBotGrenadeThrowSmoke() override { }
 
-	virtual const char *GetName( void ) const override { return "GrenadeThrowSmoke"; }
+	virtual const char *GetName( void ) const override final { return "GrenadeThrowSmoke"; }
 
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 

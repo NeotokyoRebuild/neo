@@ -33,7 +33,7 @@ CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const C
 // Used to anticipate the emergence point from cover ahead of a path
 // Is calculated in reverse of path to find the farthest point from bot
 // (assuming "familiar" position is closer to the bot than the "obscured" position)
-Vector CNEOBotGrenadeThrow::FindEmergencePointAlongPath( CNEOBot *me, const Vector &familiarPos, const Vector &obscuredPos )
+const Vector& CNEOBotGrenadeThrow::FindEmergencePointAlongPath( const CNEOBot *me, const Vector &familiarPos, const Vector &obscuredPos )
 {
 	CNavArea *familiarArea = TheNavMesh->GetNavArea( familiarPos );
 	CNavArea *obscuredArea = TheNavMesh->GetNavArea( obscuredPos );
@@ -41,7 +41,7 @@ Vector CNEOBotGrenadeThrow::FindEmergencePointAlongPath( CNEOBot *me, const Vect
 	if ( familiarArea && obscuredArea )
 	{
 		ShortestPathCost cost;
-		Vector vecGoal = obscuredPos;
+		const Vector& vecGoal = obscuredPos;
 		if ( NavAreaBuildPath( familiarArea, obscuredArea, &vecGoal, cost ) )
 		{
 			// search backwards from obscured position to find the first point visible to me
@@ -61,7 +61,7 @@ Vector CNEOBotGrenadeThrow::FindEmergencePointAlongPath( CNEOBot *me, const Vect
 					}
 				}
 
-				Vector vecTest = area->GetCenter();
+				const Vector& vecTest = area->GetCenter();
 
 				if ( me->IsLineOfFireClear( vecTest, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )
 				{
@@ -140,8 +140,8 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 	if ( sv_neo_grenade_debug_behavior.GetBool() && m_hThreatGrenadeTarget.Get() )
 	{
 		// DEBUG Colors: Red = Frag, Gray = Smoke, Purple = Unknown
-		Vector vecStart = me->GetEntity()->WorldSpaceCenter();
-		Vector vecVictim = m_hThreatGrenadeTarget->GetAbsOrigin();
+		const Vector& vecStart = me->GetEntity()->WorldSpaceCenter();
+		const Vector& vecVictim = m_hThreatGrenadeTarget->GetAbsOrigin();
 		int r = 255, g = 0, b = 255; // Default purple just in case
 		if ( pWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE )
 		{
@@ -217,7 +217,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 	// DEBUG: Targeting decisions
 	if ( sv_neo_grenade_debug_behavior.GetBool() )
 	{
-		Vector vecStart = me->GetEntity()->WorldSpaceCenter();
+		const Vector& vecStart = me->GetEntity()->WorldSpaceCenter();
 		// Color: Orange (255, 128, 0) is the final ballistics target
 		if ( m_vecTarget != vec3_invalid )
 		{
@@ -234,18 +234,17 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		// Play first person throw animation
 		pWep->SendWeaponAnim( ACT_VM_THROW );
 
-		CNEO_Player* pPlayer = ToNEOPlayer(me->GetEntity());
 		if ( pWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE )
 		{
-			static_cast<CWeaponGrenade*>(pWep)->ThrowGrenade( pPlayer );
+			static_cast<CWeaponGrenade*>(pWep)->ThrowGrenade( me );
 		}
 		else if ( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE )
 		{
-			static_cast<CWeaponSmokeGrenade*>(pWep)->ThrowGrenade( pPlayer );
+			static_cast<CWeaponSmokeGrenade*>(pWep)->ThrowGrenade( me );
 		}
 		else
 		{
-			DevMsg( "CNEOBotGrenadeThrow: Unknown grenade type!\n" );
+			DevWarning( "CNEOBotGrenadeThrow: Unknown grenade type!\n" );
 			Assert(0);
 		}
 

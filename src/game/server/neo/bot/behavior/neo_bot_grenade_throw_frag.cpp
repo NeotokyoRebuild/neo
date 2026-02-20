@@ -51,7 +51,7 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	if (pPrimaryThreat && pPrimaryThreat->GetEntity() && me->IsLineOfFireClear(pPrimaryThreat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT))
 	{
 		// consider panic throwing the grenade at the immediate threat
-		if ( m_scanTimer.IsElapsed() )
+		if ( m_scanTimer.IsElapsed() || m_vecTarget == vec3_invalid )
 		{
 			m_vecTarget = pPrimaryThreat->GetLastKnownPosition();
 			CNEOBotPathCompute( me, m_PathFollower, m_vecTarget, FASTEST_ROUTE );
@@ -66,7 +66,7 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 		// and throw at the furthest visible point along that path
 		if ( me->IsLineOfSightClear( m_vecThreatLastKnownPos ) && m_scanTimer.IsElapsed() )
 		{
-			Vector vecThrowTarget = FindEmergencePointAlongPath( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget->GetAbsOrigin() );
+			const Vector& vecThrowTarget = FindEmergencePointAlongPath( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget->GetAbsOrigin() );
 
 			if ( vecThrowTarget != vec3_invalid )
 			{
@@ -106,7 +106,7 @@ float CNEOBotGrenadeThrowFrag::GetFragSafetyRadius()
 	return sv_neo_grenade_blast_radius.GetFloat() * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat();
 }
 
-bool CNEOBotGrenadeThrowFrag::IsFragSafe( CNEOBot *me, const Vector &vecTarget )
+bool CNEOBotGrenadeThrowFrag::IsFragSafe( const CNEOBot *me, const Vector &vecTarget )
 {
 	const float flDistToTargetSqr = me->GetAbsOrigin().DistToSqr( vecTarget );
 	const float flSafeRadius = GetFragSafetyRadius();
@@ -128,12 +128,15 @@ bool CNEOBotGrenadeThrowFrag::IsFragSafe( CNEOBot *me, const Vector &vecTarget )
 		return true;
 	}
 
-	const CNEO_Player *pMePlayer = ToNEOPlayer( me->GetEntity() );
-
 	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
 		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-		if ( pPlayer && pPlayer->IsAlive() && pPlayer->InSameTeam( pMePlayer ) )
+		if ( pPlayer == me->GetEntity() )
+		{
+			continue;
+		}
+
+		if ( pPlayer && pPlayer->IsAlive() && pPlayer->InSameTeam( me->GetEntity() ) )
 		{
 			if ( pPlayer->GetAbsOrigin().DistToSqr( vecTarget ) < flSafeRadiusSqr )
 			{

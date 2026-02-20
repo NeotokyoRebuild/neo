@@ -14,7 +14,7 @@ ConVar sv_neo_bot_grenade_use_smoke("sv_neo_bot_grenade_use_smoke", "1", FCVAR_N
 ConVar sv_neo_bot_grenade_throw_cooldown("sv_neo_bot_grenade_throw_cooldown", "10", FCVAR_NONE, "Cooldown in seconds between grenade throws for bots");
 
 //---------------------------------------------------------------------------------------------
-Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *me, const CKnownEntity *threat )
+Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNEOBot *me, const CKnownEntity *threat )
 {
 	if (!sv_neo_bot_grenade_use_frag.GetBool() && !sv_neo_bot_grenade_use_smoke.GetBool())
 	{
@@ -51,24 +51,22 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( CNEOBot *
 		}
 
 		CNEOBaseCombatWeapon *pNeoWep = static_cast< CNEOBaseCombatWeapon * >( pWep );
-		if ( pNeoWep ) 
+
+		auto bits = pNeoWep->GetNeoWepBits();
+		if ( sv_neo_bot_grenade_use_frag.GetBool() && (bits & NEO_WEP_FRAG_GRENADE) )
 		{
-			auto bits = pNeoWep->GetNeoWepBits();
-			if ( sv_neo_bot_grenade_use_frag.GetBool() && (bits & NEO_WEP_FRAG_GRENADE) )
+			pFragGrenade = static_cast< CWeaponGrenade * >( pNeoWep );
+			if ( pSmokeGrenade )
 			{
-				pFragGrenade = static_cast< CWeaponGrenade * >( pNeoWep );
-				if ( pSmokeGrenade )
-				{
-					break; // found both
-				}
+				break; // found both
 			}
-			else if ( sv_neo_bot_grenade_use_smoke.GetBool() && (bits & NEO_WEP_SMOKE_GRENADE) )
+		}
+		else if ( sv_neo_bot_grenade_use_smoke.GetBool() && (bits & NEO_WEP_SMOKE_GRENADE) )
+		{
+			pSmokeGrenade = static_cast< CWeaponSmokeGrenade * >( pNeoWep );
+			if ( pFragGrenade )
 			{
-				pSmokeGrenade = static_cast< CWeaponSmokeGrenade * >( pNeoWep );
-				if ( pFragGrenade )
-				{
-					break; // found both
-				}
+				break; // found both
 			}
 		}
 	}

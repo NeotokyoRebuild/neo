@@ -14,7 +14,7 @@ extern ConVar sv_neo_bot_grenade_throw_cooldown;
 class CNEOBotGrenadeDispatch
 {
 public:
-	static Action< CNEOBot > *ChooseGrenadeThrowBehavior( CNEOBot *me, const CKnownEntity *threat );
+	static Action< CNEOBot > *ChooseGrenadeThrowBehavior( const CNEOBot *me, const CKnownEntity *threat );
 };
 
 #endif // NEO_BOT_GRENADE_DISPATCH_H

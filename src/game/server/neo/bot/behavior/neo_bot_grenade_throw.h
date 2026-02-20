@@ -36,7 +36,7 @@ protected:
 		THROW_TARGET_WAIT = 1,
 	};
 
-	static Vector FindEmergencePointAlongPath( CNEOBot *me, const Vector &familiarPos, const Vector &obscuredPos );
+	static const Vector& FindEmergencePointAlongPath( const CNEOBot *me, const Vector &familiarPos, const Vector &obscuredPos );
 	
 	virtual ThrowTargetResult UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon ) = 0;
 

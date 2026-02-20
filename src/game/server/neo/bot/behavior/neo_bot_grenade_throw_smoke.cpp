@@ -35,7 +35,7 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowSmoke::UpdateGrenadeTa
 	
 	if (m_vecTarget == vec3_invalid)
 	{
-		Vector vecThrowTarget = FindEmergencePointAlongPath(me, me->GetAbsOrigin(), m_vecThreatLastKnownPos);
+		const Vector& vecThrowTarget = FindEmergencePointAlongPath(me, me->GetAbsOrigin(), m_vecThreatLastKnownPos);
 
 		if (vecThrowTarget != vec3_invalid)
 		{
