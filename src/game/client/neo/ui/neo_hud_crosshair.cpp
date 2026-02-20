@@ -312,8 +312,8 @@ int HalfInaccuracyConeInScreenPixels(C_NEOBaseCombatWeapon* pWeapon, int halfScr
 	{
 		return 0;
 	}
-	Vector pointInWorldSpaceOnSpreadCone = MainViewOrigin() + MainViewForward() + (MainViewRight() * spread);
-	Vector pointInScreenSpaceOnSpreadCone = vec3_origin;
-	ScreenTransform(pointInWorldSpaceOnSpreadCone, pointInScreenSpaceOnSpreadCone);
-	return pointInScreenSpaceOnSpreadCone.x * halfScreenWidth;
+	float scaledFov = DEG2RAD(ScaleFOVByWidthRatio(
+		C_BasePlayer::GetLocalPlayer()->GetFOV(),
+		engine->GetScreenAspectRatio() * 0.75f )) / 2;
+	return halfScreenWidth * spread / tan(scaledFov);
 };
