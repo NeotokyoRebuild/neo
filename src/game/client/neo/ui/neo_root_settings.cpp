@@ -409,6 +409,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bStreamerMode = cvr->cl_neo_streamermode.GetBool();
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bTachiFullAutoPreferred = cvr->cl_neo_tachi_prefer_auto.GetBool();
+		pGeneral->bTakingDamageSounds = cvr->cl_neo_taking_damage_sounds.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
@@ -737,6 +738,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
 		cvr->cl_neo_tachi_prefer_auto.SetValue(pGeneral->bTachiFullAutoPreferred);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
+		cvr->cl_neo_taking_damage_sounds.SetValue(pGeneral->bTakingDamageSounds);
 		NeoSettingsBackgroundWrite(ns);
 	}
 	{
@@ -1004,6 +1006,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
 	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pGeneral->iEquipUtilityPriority);
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pGeneral->bWeaponFastSwitch);
+	NeoUI::RingBoxBool(L"Taking damage sounds", &pGeneral->bTakingDamageSounds);
 
 	NeoUI::Divider(L"MAIN MENU");
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);

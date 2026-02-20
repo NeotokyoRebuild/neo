@@ -1047,7 +1047,14 @@ void CBasePlayer::DamageEffect(float flDamage, int fDamageType)
 	}
 	else if ( fDamageType & DMG_BULLET )
 	{
+#ifdef NEO
+		if (Q_atoi(engine->GetClientConVarValue(this->entindex(), "cl_neo_taking_damage_sounds")))
+		{
+			EmitSound( "Flesh.BulletImpact" );
+		}
+#else
 		EmitSound( "Flesh.BulletImpact" );
+#endif
 	}
 }
 

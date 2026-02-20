@@ -161,13 +161,12 @@ USER_MESSAGE_REGISTER(AchievementMark);
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
-
 ConVar cl_neo_streamermode("cl_neo_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
 ConVar cl_neo_streamermode_autodetect_obs("cl_neo_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn cl_neo_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
 ConVar cl_neo_equip_utility_priority("cl_neo_equip_utility_priority", "1", FCVAR_ARCHIVE, "Utility slot equip priority. 0 = Frag,Smoke,Detpack, 1 = Class Specific First.", true, 0.0f, true, 1.0f);
-
 ConVar cl_neo_tachi_prefer_auto("cl_neo_tachi_prefer_auto", "1", FCVAR_ARCHIVE | FCVAR_USERINFO,
 	"Whether full-auto is the preferred default firing mode for Tachi loadouts.", true, false, true, true);
+ConVar cl_neo_taking_damage_sounds("cl_neo_taking_damage_sounds", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Play sounds when taking damage.", true, 0, true, 1);
 
 extern ConVar sv_neo_clantag_allow;
 extern ConVar sv_neo_dev_test_clantag;
