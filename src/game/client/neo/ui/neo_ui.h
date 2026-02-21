@@ -232,10 +232,6 @@ struct Colors
 	Color cursor;
 	Color textSelectionBg;
 	Color divider;
-	Color menuFg;
-	Color menuBg;
-	Color menuHotFg;
-	Color menuHotBg;
 	Color popupBg;
 	Color sectionBg;
 	Color scrollbarBg;
