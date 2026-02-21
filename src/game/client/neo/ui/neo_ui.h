@@ -90,7 +90,7 @@ enum TextStyle
 };
 
 static constexpr int FOCUSOFF_NUM = -1000;
-static constexpr int MAX_SECTIONS = 5;
+static constexpr int MAX_SECTIONS = 6;
 static constexpr int SIZEOF_SECTIONS = sizeof(int) * MAX_SECTIONS;
 static constexpr int MAX_TEXTINPUT_U8BYTES_LIMIT = 256;
 
@@ -126,6 +126,7 @@ enum EFont
 
 enum ECopyMenu
 {
+	COPYMENU_NIL = 0,
 	COPYMENU_CUT,
 	COPYMENU_COPY,
 	COPYMENU_PASTE,
@@ -154,6 +155,21 @@ struct DynWidgetInfos
 	bool bCannotActive;
 };
 
+enum EInternalPopup
+{
+	INTERNALPOPUP_COLOREDIT = -2,
+	INTERNALPOPUP_COPYMENU = -1,
+	INTERNALPOPUP_NIL = 0,
+};
+
+struct ColorEditInfo
+{
+	uint8 *r;
+	uint8 *g;
+	uint8 *b;
+	uint8 *a;
+};
+
 enum ESectionFlag
 {
 	SECTIONFLAG_NONE = 0,
@@ -168,6 +184,8 @@ enum ESectionFlag
 	SECTIONFLAG_EXCLUDECONTROLLER = 1 << 2,
 	// Allow the hover and button click sound to play on buttons
 	SECTIONFLAG_PLAYBUTTONSOUNDS = 1 << 3,
+	// Internal use only: Mark this section as a popup
+	SECTIONFLAG_POPUP = 1 << 4,
 };
 typedef int ISectionFlags;
 
@@ -185,6 +203,21 @@ enum EMultiHighlightFlag : uint8
 	MULTIHIGHLIGHTFLAG_ACTIVE = 1 << 2,
 };
 
+// This is utilized as both lower BeginPopup options flags and upper internal bool flags
+enum PopupFlag_
+{
+	// Public flags, used as BeginPopup options
+	POPUPFLAG_NIL = 0,
+	POPUPFLAG_FOCUSONOPEN = 1 << 0, // Direct focus to this popup when it opens 
+	POPUPFLAG_COLORHOTASACTIVE = 1 << 1, // Color hot widgets as active, mainly for menu-style popups
+
+	// Internal only flags
+	POPUPFLAG__EXTERNAL = ((1 << 8) - 1), // Mask of all external/options flags below start of internal
+	POPUPFLAG__INPOPUPSECTION = 1 << 8, // Inside a Begin/EndPopup section
+	POPUPFLAG__NEWOPENPOPUP = 1 << 9, // The popup just initialized
+};
+typedef int PopupFlags;
+
 struct Colors
 {
 	Color normalFg;
@@ -199,10 +232,7 @@ struct Colors
 	Color cursor;
 	Color textSelectionBg;
 	Color divider;
-	Color menuFg;
-	Color menuBg;
-	Color menuHotFg;
-	Color menuHotBg;
+	Color popupBg;
 	Color sectionBg;
 	Color scrollbarBg;
 	Color scrollbarHandleNormalBg;
@@ -307,21 +337,34 @@ struct Context
 	int iActiveSection;
 	bool bValueEdited;
 
+	// Saved hot + active when OpenPopup activates
+	// Restored when ClosePopup
+	int iPrePopupHot;
+	int iPrePopupHotSection;
+
+	int iPrePopupActive;
+	int iPrePopupActiveSection;
+
 	MouseStart eMousePressedStart;
 
 	const char *pSzCurCtxName;
 	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;
 	CUtlHashtable<CUtlConstString, int> htTexMap;
 
-	// Right click menu
-	int iRightClick = -1;
-	int iRightClickSection = -1;
-	int iRightClickHotItem = -1;
-	int ipwszRightClickListSize = 0;
-	const wchar **pwszRightClickList = nullptr;
-	Dim dimRightClick = {};
-	void (*fnRightClickRet)(void *, int) = nullptr;
-	void *pData = nullptr;
+	// # Popup mechanism variables
+
+	// Cached popup size to readahead for mouse area checking
+	Dim dimPopup = {};
+	PopupFlags popupFlags = POPUPFLAG_NIL;
+
+	// 0 = reserved for nil ID, negative numbers = reserved for
+	// internal popups, only start using from 1 onwards for
+	// popups done externally
+	int iCurPopupId = 0;
+
+	// # Internal managed popups variables
+	ECopyMenu eRightClickCopyMenuRet = COPYMENU_NIL; // Right-click copy menu
+	ColorEditInfo colorEditInfo; // Color editor popup
 
 	// TextEdit text selection
 	int iTextSelStart = -1;
@@ -379,6 +422,15 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 void EndContext();
 void BeginSection(const ISectionFlags iSectionFlags = SECTIONFLAG_NONE);
 void EndSection();
+
+void OpenPopup(const int iPopupId, const Dim &dimPopupInit);
+void ClosePopup();
+[[nodiscard]] bool BeginPopup(const int iPopupId, const PopupFlags flags = POPUPFLAG_NIL);
+void EndPopup();
+
+// Get a suitable wide size for a popup by the longest text in the popup
+int PopupWideByStr(const char *pszStr);
+
 [[nodiscard]] CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const CurrentWidgetState &wdgState);
 
@@ -429,6 +481,8 @@ typedef int TabsFlags;
 					  const wchar_t *wszSpecialText = nullptr);
 /*2W*/ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
 					 const wchar_t *wszSpecialText = nullptr);
+/*1W*/ void ColorEdit(uint8 *r, uint8 *g, uint8 *b, uint8 *a);
+/*2W*/ void ColorEdit(const wchar_t *wszLeftLabel, uint8 *r, uint8 *g, uint8 *b, uint8 *a);
 
 enum TextEditFlag_
 {
@@ -450,10 +504,6 @@ enum TextureOptFlags
 bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
 			 const char *szTextureGroup = "", const TextureOptFlags texFlags = TEXTUREOPTFLAGS_NONE);
 void ResetTextures();
-
-// Right-click menu
-void PopupMenu(const wchar **pwszRightClickList, const int ipwszRightClickListSize,
-		void (*fnRightClickRet)(void *, int), void *pData);
 
 // Non-widgets/convenience functions
 bool Bind(const ButtonCode_t eCode);

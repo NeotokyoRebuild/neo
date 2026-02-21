@@ -1358,10 +1358,11 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	{
 		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->info.iStyle);
-		NeoUI::SliderU8(L"Red", &pCrosshair->info.color[0], 0, UCHAR_MAX);
-		NeoUI::SliderU8(L"Green", &pCrosshair->info.color[1], 0, UCHAR_MAX);
-		NeoUI::SliderU8(L"Blue", &pCrosshair->info.color[2], 0, UCHAR_MAX);
-		NeoUI::SliderU8(L"Alpha", &pCrosshair->info.color[3], 0, UCHAR_MAX);
+		NeoUI::ColorEdit(L"Crosshair color",
+				&pCrosshair->info.color[0],
+				&pCrosshair->info.color[1],
+				&pCrosshair->info.color[2],
+				&pCrosshair->info.color[3]);
 		if (!bTextured)
 		{
 			NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, &pCrosshair->info.iESizeType);
@@ -1375,10 +1376,11 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::SliderInt(L"Outline", &pCrosshair->info.iOutline, 0, CROSSHAIR_MAX_OUTLINE);
 			if (pCrosshair->info.iOutline > 0)
 			{
-				NeoUI::SliderU8(L"Outline color: Red", &pCrosshair->info.colorOutline[0], 0, UCHAR_MAX);
-				NeoUI::SliderU8(L"Outline color: Green", &pCrosshair->info.colorOutline[1], 0, UCHAR_MAX);
-				NeoUI::SliderU8(L"Outline color: Blue", &pCrosshair->info.colorOutline[2], 0, UCHAR_MAX);
-				NeoUI::SliderU8(L"Outline color: Alpha", &pCrosshair->info.colorOutline[3], 0, UCHAR_MAX);
+				NeoUI::ColorEdit(L"Outline color",
+						&pCrosshair->info.colorOutline[0],
+						&pCrosshair->info.colorOutline[1],
+						&pCrosshair->info.colorOutline[2],
+						&pCrosshair->info.colorOutline[3]);
 			}
 			NeoUI::SliderInt(L"Center dot", &pCrosshair->info.iCenterDot, 0, CROSSHAIR_MAX_CENTER_DOT);
 			if (pCrosshair->info.iCenterDot > 0)
@@ -1386,16 +1388,18 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 				NeoUI::RingBoxBool(L"Separate dot color", &pCrosshair->info.bSeparateColorDot);
 				if (pCrosshair->info.bSeparateColorDot)
 				{
-					NeoUI::SliderU8(L"Dot color: Red", &pCrosshair->info.colorDot[0], 0, UCHAR_MAX);
-					NeoUI::SliderU8(L"Dot color: Green", &pCrosshair->info.colorDot[1], 0, UCHAR_MAX);
-					NeoUI::SliderU8(L"Dot color: Blue", &pCrosshair->info.colorDot[2], 0, UCHAR_MAX);
-					NeoUI::SliderU8(L"Dot color: Alpha", &pCrosshair->info.colorDot[3], 0, UCHAR_MAX);
+					NeoUI::ColorEdit(L"Dot color",
+							&pCrosshair->info.colorDot[0],
+							&pCrosshair->info.colorDot[1],
+							&pCrosshair->info.colorDot[2],
+							&pCrosshair->info.colorDot[3]);
 					if (pCrosshair->info.iOutline > 0)
 					{
-						NeoUI::SliderU8(L"Dot outline color: Red", &pCrosshair->info.colorDotOutline[0], 0, UCHAR_MAX);
-						NeoUI::SliderU8(L"Dot outline color: Green", &pCrosshair->info.colorDotOutline[1], 0, UCHAR_MAX);
-						NeoUI::SliderU8(L"Dot outline color: Blue", &pCrosshair->info.colorDotOutline[2], 0, UCHAR_MAX);
-						NeoUI::SliderU8(L"Dot outline color: Alpha", &pCrosshair->info.colorDotOutline[3], 0, UCHAR_MAX);
+						NeoUI::ColorEdit(L"Dot outline",
+								&pCrosshair->info.colorDotOutline[0],
+								&pCrosshair->info.colorDotOutline[1],
+								&pCrosshair->info.colorDotOutline[2],
+								&pCrosshair->info.colorDotOutline[3]);
 					}
 				}
 			}
