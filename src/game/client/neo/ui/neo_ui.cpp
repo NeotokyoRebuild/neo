@@ -230,13 +230,16 @@ static bool IsKeyDownWidget()
 {
 	return c->eCode == KEY_DOWN || c->eCode == KEY_XBUTTON_DOWN || 
 			c->eCode == KEY_XSTICK1_DOWN || c->eCode == STEAMCONTROLLER_DPAD_DOWN ||
+			(c->iCurPopupId != 0 && c->eCode == KEY_TAB) ||
 			((c->iSectionFlags & SECTIONFLAG_ROWWIDGETS) && IsKeyRight());
 }
 
 static bool IsKeyUpWidget()
 {
+	const bool bIsShiftDown = (vgui::input()->IsKeyDown(KEY_LSHIFT) || vgui::input()->IsKeyDown(KEY_RSHIFT));
 	return c->eCode == KEY_UP || c->eCode == KEY_XBUTTON_UP ||
 			c->eCode == KEY_XSTICK1_UP || c->eCode == STEAMCONTROLLER_DPAD_UP ||
+			(c->iCurPopupId != 0 && c->eCode == KEY_TAB && bIsShiftDown) ||
 			((c->iSectionFlags & SECTIONFLAG_ROWWIDGETS) && IsKeyLeft());
 }
 
@@ -405,7 +408,7 @@ void EndContext()
 	if (c->eMode == MODE_KEYPRESSED)
 	{
 		const bool bSwitchSectionController = c->eCode == KEY_XBUTTON_BACK || c->eCode == STEAMCONTROLLER_SELECT;
-		const bool bSwitchSectionKey = c->eCode == KEY_TAB;
+		const bool bSwitchSectionKey = c->iCurPopupId == 0 && c->eCode == KEY_TAB;
 		if (IsKeyChangeWidgetFocus() || bSwitchSectionKey || bSwitchSectionController)
 		{
 			if (c->iActiveSection == -1)
