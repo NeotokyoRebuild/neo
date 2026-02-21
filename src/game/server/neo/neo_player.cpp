@@ -3144,7 +3144,6 @@ void CNEO_Player::GiveDefaultItems(void)
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
 		break;
 	case NEO_CLASS_VIP:
-		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
