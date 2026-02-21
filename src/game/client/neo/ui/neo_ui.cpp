@@ -2428,7 +2428,7 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 					static wchar_t wszStaticTmpText[MAX_TEXTINPUT_U8BYTES_LIMIT];
 					if (bFromEnd)
 					{
-						V_wcsncat(wszText, wszClipboard, iMaxWszTextSize + 1);
+						V_wcsncat(wszText, wszClipboard, (size_t)iMaxWszTextSize + 1);
 						c->iTextSelCur = V_wcslen(wszText);
 					}
 					else if (bIsCursor)
