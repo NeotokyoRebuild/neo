@@ -2252,6 +2252,20 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		return;
 	}
 
+	// NEO FIX: Detect glass panes (func_breakable_surf) early, before we lose track of them.
+	// CBreakableSurface::TraceAttack() calls Die() immediately, which sets FSOLID_NOT_SOLID.
+	// We need to know which surface we hit while it's still intact in memory.
+	bool bIsBreakableSurface = false;
+	if (material == CHAR_TEX_GLASS && tr.m_pEnt)
+	{
+#ifdef GAME_DLL
+		bIsBreakableSurface = FClassnameIs(tr.m_pEnt, "func_breakable_surf");
+#else
+		const char *cn = tr.m_pEnt->GetClassname();
+		bIsBreakableSurface = cn && strstr(cn, "BreakableSurface");
+#endif
+	}
+
 	material -= 'A';
 	if (material > 0 && material < MATERIALS_NUM)
 	{
@@ -2259,7 +2273,29 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	}
 
 	trace_t	penetrationTrace;
+	if (bIsBreakableSurface)
+	{
+		// BUG FIX: Glass panes (func_breakable_surf) shatter on TraceAttack() before this
+		// function runs, becoming non-solid. When TestPenetrationTrace() fires a forward ray
+		// from the first glass to find the next surface, it passes *through* the now-non-solid
+		// first glass and hits the *front face of the second glass*. It then traces backward
+		// from there, returning an endpos at the second glass's front surface. When the
+		// re-fired bullet starts from that position (on or very near a surface), its
+		// TraceAttack() is skipped, so the second glass doesn't shatter. This cascades —
+		// multiple glass panes in a row all fail to break.
+		//
+		// SOLUTION: Manually synthesize the penetration exit 0.5 units past this glass.
+		// The re-fired bullet then starts in open air and hits the *next* glass cleanly,
+		// allowing TraceAttack() to trigger and shatter it normally.
+		Q_memset(&penetrationTrace, 0, sizeof(penetrationTrace));
+		penetrationTrace.endpos = tr.endpos + vecDir * 0.5f;
+		penetrationTrace.fraction = 1.0f - (0.5f / MAX_PENETRATION_DEPTH);
+		penetrationTrace.plane.normal = -tr.plane.normal;
+	}
+	else
+	{
 	TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
+	}
 
 	// See if we found the surface again
 	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
