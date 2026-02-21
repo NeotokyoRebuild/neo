@@ -2294,7 +2294,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	}
 	else
 	{
-	TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
+		TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
 	}
 
 	// See if we found the surface again
@@ -2334,7 +2334,16 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	behindMaterialInfo.m_flDistance = info.m_flDistance * (1.0f - tr.fraction);
 	behindMaterialInfo.m_iAmmoType = info.m_iAmmoType;
 	behindMaterialInfo.m_iTracerFreq = info.m_iTracerFreq;
-	behindMaterialInfo.m_flDamage = info.m_flDamage * (1.f - (penUsed / info.m_flPenetration));
+
+	if (bIsBreakableSurface)
+	{
+		behindMaterialInfo.m_flDamage = info.m_flDamage; // Preserve full damage for glass
+	}
+	else
+	{
+		behindMaterialInfo.m_flDamage = info.m_flDamage * (1.f - (penUsed / info.m_flPenetration));
+	}
+
 	behindMaterialInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
 	behindMaterialInfo.m_nFlags = info.m_nFlags;
 	behindMaterialInfo.m_flPenetration = info.m_flPenetration - penUsed;
