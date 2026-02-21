@@ -54,6 +54,7 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::Update(CNEOBot *me, float interval
 	}
 
 	m_path.Update(me);
+	m_ghostEquipmentHandler.Update( me );
 
 	return Continue();
 }

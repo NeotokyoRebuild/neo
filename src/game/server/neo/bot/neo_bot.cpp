@@ -1480,7 +1480,8 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	// We do not care about slugs
 	if (bNotPrimary ||
 			(primaryWeapon &&
-			 	(!primaryWeapon->m_iPrimaryAmmoType ||
+			 	((primaryWeapon->GetNeoWepBits() & NEO_WEP_GHOST) ||
+			 	 !primaryWeapon->m_iPrimaryAmmoType ||
 				 (primaryWeapon->Clip1() + primaryWeapon->m_iPrimaryAmmoCount) <= 0)))
 	{
 		primaryWeapon = NULL;
@@ -2001,7 +2002,7 @@ void CNEOBot::RepathIfFriendlyBlockingLineOfFire()
 	{
 		Vector goal = pPath->GetEndPosition();
 
-		CNEOBotPathCost cost(this, SAFEST_ROUTE);
+		CNEOBotPathCost cost(this, DEFAULT_ROUTE);
 		if (m_repathAroundFriendlyFollower.Compute(this, goal, cost))
 		{
 			if (m_repathAroundFriendlyFollower.IsValid())

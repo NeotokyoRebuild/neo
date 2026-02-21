@@ -440,6 +440,11 @@ private:
 	float m_flJuggernautDeathTime = 0.0f;
 	int m_iLastJuggernautTeam = TEAM_INVALID;
 	
+	// For looking up capture zone locations
+	friend class CNEOBotCtgCarrier;
+	friend class CNEOBotCtgEscort;
+	friend class CNEOBotCtgLoneWolf;
+
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;

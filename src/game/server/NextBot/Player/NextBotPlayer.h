@@ -122,6 +122,9 @@ public:
 	virtual void ReleaseJumpButton( void ) = 0;
 	
 #ifdef NEO
+	virtual void PressDropButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseDropButton( void ) = 0;
+
 	virtual void PressThermopticButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseThermopticButton( void ) = 0;
 #endif // NEO
@@ -202,6 +205,9 @@ public:
 	virtual void ReleaseSpecialFireButton( void );
 
 #ifdef NEO
+	virtual void PressDropButton( float duration = -1.0f );
+	virtual void ReleaseDropButton( void );
+
 	virtual void PressThermopticButton( float duration = -1.0f );
 	virtual void ReleaseThermopticButton( void );
 #endif
@@ -286,6 +292,7 @@ protected:
 	CountdownTimer m_walkButtonTimer;
 	CountdownTimer m_buttonScaleTimer;
 #ifdef NEO
+	CountdownTimer m_dropButtonTimer;
 	CountdownTimer m_thermopticButtonTimer;
 	CountdownTimer m_leanLeftButtonTimer;
 	CountdownTimer m_leanRightButtonTimer;
@@ -450,6 +457,20 @@ inline void NextBotPlayer< PlayerType >::ReleaseJumpButton( void )
 }
 
 #ifdef NEO
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressDropButton( float duration )
+{
+	m_inputButtons |= IN_DROP;
+	m_dropButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseDropButton( void )
+{
+	m_inputButtons &= ~IN_DROP;
+	m_dropButtonTimer.Invalidate();
+}
+
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressThermopticButton( float duration )
 {
@@ -642,6 +663,7 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_forwardScale = m_rightScale = 0.04;
 	m_burningTimer.Invalidate();
 #ifdef NEO
+	m_dropButtonTimer.Invalidate();
 	m_thermopticButtonTimer.Invalidate();
 	m_leanLeftButtonTimer.Invalidate();
 	m_leanRightButtonTimer.Invalidate();
@@ -780,6 +802,9 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 			m_inputButtons |= IN_SPEED;
 
 #ifdef NEO
+		if ( !m_dropButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_DROP;
+
 		if ( !m_leanLeftButtonTimer.IsElapsed() )
 			m_inputButtons |= IN_LEAN_LEFT;
 
