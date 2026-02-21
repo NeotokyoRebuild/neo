@@ -535,7 +535,7 @@ CNEO_Player::CNEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
-	m_szNeoNameHasSet = false;
+	m_bNeoNameHasSet = false;
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
@@ -1747,17 +1747,19 @@ const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
 
 const char *CNEO_Player::GetNeoPlayerNameDirect() const
 {
-	return m_szNeoNameHasSet ? m_szNeoName.Get() : NULL;
+	return m_bNeoNameHasSet ? m_szNeoName.Get() : NULL;
 }
 
-void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
+bool CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 {
 	// NEO NOTE (nullsystem): Generally it's never NULL but just incase
 	if (newNeoName)
 	{
 		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName)-1);
-		m_szNeoNameHasSet = true;
+		m_bNeoNameHasSet = (m_szNeoName.Get()[0] != 0);
+		return m_bNeoNameHasSet;
 	}
+	return false;
 }
 
 void CNEO_Player::SetClientWantNeoName(const bool b)

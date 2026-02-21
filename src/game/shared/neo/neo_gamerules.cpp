@@ -3274,10 +3274,20 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		pNEOPlayer->Weapon_SetZoom(pNEOPlayer->m_bInAim);
 	}
 
-	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");
-
 	const bool clientAllowsNeoName = (0 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_onlysteamnick")));
-	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), "neo_name");
+
+	char szSteamName[MAX_PLACE_NAME_LENGTH] = "";
+	const char* pszSteamName = &szSteamName[0];
+	V_strcpy_safe(szSteamName, engine->GetClientConVarValue(pPlayer->entindex(), "name"));
+	V_StripTrailingWhitespace(&szSteamName[0]);
+	V_StripLeadingWhitespace(&szSteamName[0]);
+
+	char szNeoName[MAX_PLAYER_NAME_LENGTH] = "";
+	const char* pszNeoName = &szNeoName[0];
+	V_strcpy_safe(szNeoName, engine->GetClientConVarValue(pNEOPlayer->entindex(), "neo_name"));
+	V_StripTrailingWhitespace(&szNeoName[0]);
+	V_StripLeadingWhitespace(&szNeoName[0]);
+
 	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerNameDirect();
 	bool updateDupeCheck = false;
 
@@ -3293,19 +3303,23 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 			{
 				event->SetInt("userid", pNEOPlayer->GetUserID());
 				event->SetString("oldname", (pszOldNeoName[0] == '\0') ? pszSteamName : pszOldNeoName);
-				event->SetString("newname", (pszNeoName[0] == '\0') ? pszSteamName : pszNeoName);
+				event->SetString("newname", (szNeoName[0] == '\0') ? pszSteamName : pszNeoName);
 				gameeventmanager->FireEvent(event);
 			}
 		}
 
-		pNEOPlayer->SetNeoPlayerName(pszNeoName);
-		updateDupeCheck = true;
+		if (pNEOPlayer->SetNeoPlayerName(pszNeoName))
+			updateDupeCheck = true;
 	}
 	pNEOPlayer->SetClientWantNeoName(clientAllowsNeoName);
 	const auto optClStreamerMode = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_neo_streamermode"));
 	pNEOPlayer->m_bClientStreamermode = (optClStreamerMode && *optClStreamerMode);
 
-	const char *pszNeoClantag = engine->GetClientConVarValue(pNEOPlayer->entindex(), "neo_clantag");
+	char szNeoClanTag[NEO_MAX_CLANTAG_LENGTH] = "";
+	const char* pszNeoClantag = &szNeoClanTag[0];
+	V_strcpy_safe(szNeoClanTag, engine->GetClientConVarValue(pNEOPlayer->entindex(), "neo_clantag"));
+	V_StripTrailingWhitespace(&szNeoClanTag[0]);
+	V_StripLeadingWhitespace(&szNeoClanTag[0]);
 	const char *pszOldNeoClantag = pNEOPlayer->GetNeoClantag();
 	if (V_strcmp(pszOldNeoClantag, pszNeoClantag) != 0)
 	{
