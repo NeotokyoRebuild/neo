@@ -2298,13 +2298,18 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	}
 
 	// See if we found the surface again
-	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
+	if (penetrationTrace.allsolid || penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
 	{
 		return;
 	}
 
 	// See if we have enough pen to penetrate
-	float penUsed = ((1.0f - penetrationTrace.fraction) * MAX_PENETRATION_DEPTH) / penResistance;
+	if (penResistance <= 0.0f || info.m_flPenetration <= 0)
+	{
+		return;
+	}
+
+	const float penUsed = ((1.0f - penetrationTrace.fraction) * MAX_PENETRATION_DEPTH) / penResistance;
 	if (penUsed > info.m_flPenetration)
 	{
 		return;
