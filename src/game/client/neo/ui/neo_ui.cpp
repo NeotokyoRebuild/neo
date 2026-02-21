@@ -1981,6 +1981,11 @@ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, con
 
 static int TextEditChIdxFromMouse(const int iWszTextSize)
 {
+	if (iWszTextSize <= 0)
+	{
+		return 0;
+	}
+
 	const int iMouseOnXWidth = c->iMouseAbsX - (c->rWidgetArea.x0 + c->iMarginX);
 	int iChIdx = -1;
 	for (int i = 0; i < iWszTextSize; ++i)
