@@ -20,12 +20,6 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrowSmoke::OnStart( CNEOBot *me, Action< 
 		return result;
 	}
 
-	m_PathFollower.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
-	if ( !CNEOBotPathCompute( me, m_PathFollower, m_vecThreatLastKnownPos, FASTEST_ROUTE ) )
-	{
-		return Done( "Path to threat last known position unavailable" );
-	}
-
 	return Continue();
 }
 

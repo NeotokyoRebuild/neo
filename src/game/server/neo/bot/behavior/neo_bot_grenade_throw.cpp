@@ -7,6 +7,7 @@
 #include "weapon_smokegrenade.h"
 #include "nav_mesh.h"
 #include "nav_pathfind.h"
+#include "bot/neo_bot_path_compute.h"
 
 ConVar sv_neo_bot_grenade_debug_behavior("sv_neo_bot_grenade_debug_behavior", "0", FCVAR_CHEAT,
 	"Draw debug overlays for bot grenade behavior", true, 0, true, 1);
@@ -90,6 +91,17 @@ const Vector& CNEOBotGrenadeThrow::FindEmergencePointAlongPath( const CNEOBot *m
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	CNEOBaseCombatWeapon *pWep = m_hGrenadeWeapon.Get();
+	if ( pWep )
+	{
+		Assert( ( pWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE ) || ( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE ) );
+		me->PushRequiredWeapon( m_hGrenadeWeapon );
+	}
+	else
+	{
+		return Done( "Grenade input invalid" );
+	}
+
 	if ( !m_hThreatGrenadeTarget.Get() )
 	{
 		return Done( "Targeted Threat is null" );
@@ -99,16 +111,19 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOB
 	{
 		return Done( "Targeted threat is dead" );
 	}
-
-	if ( m_hGrenadeWeapon.Get() )
-	{
-		me->PushRequiredWeapon( m_hGrenadeWeapon );
-	}
 	
 	m_giveUpTimer.Start( sv_neo_bot_grenade_give_up_time.GetFloat() );
 	m_bPinPulled = false;
 
-	me->StopLookingAroundForEnemies();
+	m_PathFollower.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
+	if ( m_vecThreatLastKnownPos != vec3_invalid )
+	{
+		CNEOBotPathCompute( me, m_PathFollower, m_vecThreatLastKnownPos, FASTEST_ROUTE );
+	}
+
+	// Stop distracting looking or weapon handling behavior that could interrupt the throw
+	me->StopLookingAroundForEnemies(); // reduce distractions for manual look aiming
+	me->SetAttribute( CNEOBot::IGNORE_ENEMIES ); // suppress reaction to swap back to firearm
 
 	return Continue();
 }
@@ -147,6 +162,12 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		return Done( "Grenade throw timed out" );
 	}
 
+	CNEO_Player* pNeoMe = ToNEOPlayer(me);
+	if (pNeoMe && (gpGlobals->curtime - pNeoMe->GetLastDamageTime() < 0.5f))
+	{
+		return Done( "Actively getting hurt, too dangerous to throw grenade" );
+	}
+
 	if ( sv_neo_bot_grenade_debug_behavior.GetBool() && m_hThreatGrenadeTarget.Get() )
 	{
 		// DEBUG Colors: Red = Frag, Gray = Smoke, Purple = Unknown
@@ -176,17 +197,16 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		return Continue();
 	}
 
-	// Wait for weapon switch to complete fully
-	if ( pWep->m_flNextPrimaryAttack > gpGlobals->curtime )
-	{
-		return Continue();
-	}
-
 	// NEOJANK: The bots struggle to throw grenades with PressFireButton due to control quirks.
 	// As a workaround, we decompose the action into different phases of the bot behavior.
 	// This also allows us to run aiming logic in parallel with the pin-pull animation.
 	if (!m_bPinPulled)
 	{
+		// Wait for weapon switch to complete fully
+		if ( pWep->m_flNextPrimaryAttack > gpGlobals->curtime )
+		{
+			return Continue();
+		}
 		// Just play the animation. Do NOT call PrimaryAttack, as that sets up the weapon to 
 		// auto-throw via ItemPostFrame, which we want to control manually here.
 		pWep->SendWeaponAnim( ACT_VM_PULLPIN );
@@ -238,7 +258,36 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 
 		if ( vecForward.Dot( vecToTarget ) >= flAimThreshold )
 		{
-			bAimOnTarget = true;
+			if ( me->IsLineOfFireClear( m_vecTarget, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )
+			{
+				bAimOnTarget = true;
+			}
+			else
+			{
+				// Blocked by an obstruction
+				if ( sv_neo_bot_grenade_debug_behavior.GetBool() )
+				{
+					NDebugOverlay::Line( me->GetEntity()->EyePosition(), m_vecTarget, 0, 0, 255, true, 0.1f );
+				}
+
+				m_PathFollower.Update( me );
+
+				if ( m_repathTimer.IsElapsed() )
+				{
+					m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
+					CNEOBotPathCompute( me, m_PathFollower, m_vecTarget, FASTEST_ROUTE );
+				}
+			}
+		}
+	}
+	else if ( result == THROW_TARGET_WAIT )
+	{
+		m_PathFollower.Update( me );
+
+		if ( m_repathTimer.IsElapsed() )
+		{
+			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
+			CNEOBotPathCompute( me, m_PathFollower, m_vecTarget != vec3_invalid ? m_vecTarget : m_vecThreatLastKnownPos, FASTEST_ROUTE );
 		}
 	}
 	
@@ -285,14 +334,23 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 //---------------------------------------------------------------------------------------------
 void CNEOBotGrenadeThrow::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
 {
+	// Restore looking and weapon handling behaviors
 	me->PopRequiredWeapon();
+	me->StartLookingAroundForEnemies();
+	me->ClearAttribute( CNEOBot::IGNORE_ENEMIES );
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	me->EquipBestWeaponForThreat( threat );
-	me->StartLookingAroundForEnemies();
 }
 
 //---------------------------------------------------------------------------------------------
- ActionResult<CNEOBot> CNEOBotGrenadeThrow::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+QueryResultType CNEOBotGrenadeThrow::ShouldRetreat( const INextBot *me ) const
+{
+	// Avoid tactical monitor interrupting the grenade throw behavior
+	return ANSWER_NO;
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult<CNEOBot> CNEOBotGrenadeThrow::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
 {
 	return Done( "OnSuspend: Cancel out of grenade throw behavior, situation will likely become stale." );
 	// OnEnd will get called after Done

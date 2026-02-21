@@ -21,6 +21,7 @@ public:
 	virtual void					OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction ) override;
 	virtual ActionResult< CNEOBot >	OnSuspend( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
 	virtual ActionResult< CNEOBot >	OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
+	virtual QueryResultType			ShouldRetreat( const INextBot *me ) const override;
 
 protected:
 	Vector m_vecTarget; // caches target to aim at during throw action in implementation classes
@@ -29,6 +30,9 @@ protected:
 	CHandle< CBaseEntity > m_hThreatGrenadeTarget;
 	CountdownTimer m_giveUpTimer;
 	CountdownTimer m_scanTimer;
+	CountdownTimer m_repathTimer;
+	PathFollower m_PathFollower;
+
 	bool m_bPinPulled;
 
 	enum ThrowTargetResult

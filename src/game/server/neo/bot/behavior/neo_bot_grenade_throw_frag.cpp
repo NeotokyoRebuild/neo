@@ -31,12 +31,6 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrowFrag::OnStart( CNEOBot *me, Action< C
 		return result;
 	}
 
-	m_PathFollower.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
-	if ( !CNEOBotPathCompute( me, m_PathFollower, m_vecThreatLastKnownPos, FASTEST_ROUTE ) )
-	{
-		return Done( "Path to threat last known position unavailable" );
-	}
-
 	return Continue();
 }
 
@@ -52,19 +46,19 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	}
 
 	// Check if there is a more immediate threat interrupting my grenade throw
+	bool bImmediateThreatPresent = false;
 	const CKnownEntity* pPrimaryThreat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	// Not using LINE_OF_FIRE_FLAGS_SHOTGUN because we want to abort grenade throw if threat could shoot us from behind glass
 	if (pPrimaryThreat && pPrimaryThreat->GetEntity() && me->IsLineOfFireClear(pPrimaryThreat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT))
 	{
 		// consider panic throwing the grenade at the immediate threat
+		bImmediateThreatPresent = true;
 		if ( m_scanTimer.IsElapsed() || m_vecTarget == vec3_invalid )
 		{
 			// Update target to immediate threat
 			m_hThreatGrenadeTarget = pPrimaryThreat->GetEntity();
 			m_vecTarget = pPrimaryThreat->GetLastKnownPosition();
 			m_vecThreatLastKnownPos = m_vecTarget;
-
-			CNEOBotPathCompute( me, m_PathFollower, m_vecTarget, FASTEST_ROUTE );
 			m_scanTimer.Start( 0.2f );
 		}
 	}
@@ -91,7 +85,6 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 		if ( m_vecTarget == vec3_invalid )
 		{
 			// continue investigating last known position
-			m_PathFollower.Update(me);
 			return THROW_TARGET_WAIT;
 		}
 	}
@@ -100,7 +93,11 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	// Safety checks
 	if ( !me->IsLineOfFireClear( m_vecTarget, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )
 	{
-		return THROW_TARGET_CANCEL; // risk of grenade bouncing back at me
+		if (bImmediateThreatPresent)
+		{
+			return THROW_TARGET_CANCEL;
+		}
+		return THROW_TARGET_WAIT; // attempt to reroute if blocked
 	}
 
 	if ( !IsFragSafe( me, m_vecTarget ) )
@@ -148,14 +145,41 @@ bool CNEOBotGrenadeThrowFrag::IsFragSafe( const CNEOBot *me, const Vector &vecTa
 
 		if ( pPlayer && pPlayer->IsAlive() && pPlayer->InSameTeam( me->GetEntity() ) )
 		{
+			// Check if teammate is within a cone in front of the throw trajectory
+			Vector vecToTarget = vecTarget - me->GetBodyInterface()->GetEyePosition();
+			vecToTarget.NormalizeInPlace();
+
+			Vector vecToPlayer = pPlayer->WorldSpaceCenter() - me->GetBodyInterface()->GetEyePosition();
+			vecToPlayer.NormalizeInPlace();
+
+			if ( DotProduct( vecToTarget, vecToPlayer ) > 0.8f )
+			{
+				trace_t tr;
+				UTIL_TraceLine( me->GetBodyInterface()->GetEyePosition(), pPlayer->WorldSpaceCenter(), MASK_SHOT_HULL, me->GetEntity(), COLLISION_GROUP_NONE, &tr );
+
+				if ( tr.m_pEnt && tr.m_pEnt->IsPlayer() )
+				{
+					CNEO_Player *pHitPlayer = ToNEOPlayer( tr.m_pEnt );
+					if ( pHitPlayer && pHitPlayer->InSameTeam( me->GetEntity() ) )
+					{
+						return false; // teammate in path of proposed grenade trajectory
+					}
+				}
+			}
+
+			// Check if teammate would be near blast radius
 			if ( pPlayer->GetAbsOrigin().DistToSqr( vecTarget ) < flSafeRadiusSqr )
 			{
 				trace_t tr;
 				UTIL_TraceLine( vecTarget, pPlayer->WorldSpaceCenter(), MASK_SHOT_HULL, nullptr, COLLISION_GROUP_NONE, &tr );
 
-				if ( tr.fraction == 1.0f || tr.m_pEnt == pPlayer )
+				if ( tr.m_pEnt && tr.m_pEnt->IsPlayer() )
 				{
-					return false; // potentially in blast radius
+					CNEO_Player *pHitPlayer = ToNEOPlayer( tr.m_pEnt );
+					if ( pHitPlayer && pHitPlayer->InSameTeam( me->GetEntity() ) )
+					{
+						return false; // teammate potentially in blast radius
+					}
 				}
 			}
 		}

@@ -18,8 +18,6 @@ public:
 
 protected:
 	virtual ThrowTargetResult UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon ) override;
-
-	PathFollower m_PathFollower;
 };
 
 #endif // NEO_BOT_GRENADE_THROW_SMOKE_H
