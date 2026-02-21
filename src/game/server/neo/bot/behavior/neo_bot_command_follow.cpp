@@ -73,7 +73,7 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::Update(CNEOBot *me, float interval
 ActionResult< CNEOBot > CNEOBotCommandFollow::CheckCommanderWeaponRequest(CNEOBot *me)
 {
 	// Can I even drop my primary? (e.g. Juggernaut's BALC)
-	CNEOBaseCombatWeapon *pMyPrimary = dynamic_cast<CNEOBaseCombatWeapon*>(me->Weapon_GetSlot(0));
+	CNEOBaseCombatWeapon *pMyPrimary = assert_cast<CNEOBaseCombatWeapon*>(me->Weapon_GetSlot(0));
 	if (!pMyPrimary || !pMyPrimary->CanDrop())
 	{
 		return Continue();
@@ -104,7 +104,7 @@ ActionResult< CNEOBot > CNEOBotCommandFollow::CheckCommanderWeaponRequest(CNEOBo
 	Vector vecCmdrFacing;
 	pCommander->EyeVectors(&vecCmdrFacing);
 
-	if (vecCmdrFacing.Dot(vecToBot) <= 0.99f)
+	if (vecCmdrFacing.Dot(vecToBot) <= 0.95f)
 	{
 		m_commanderLookingAtMeTimer.Invalidate();
 		m_bWasCommanderLookingAtMe = false;
@@ -121,7 +121,8 @@ ActionResult< CNEOBot > CNEOBotCommandFollow::CheckCommanderWeaponRequest(CNEOBo
 
 	if (m_commanderLookingAtMeTimer.GetElapsedTime() > 0.2f)
 	{
-		me->GetBodyInterface()->AimHeadTowards(pCommander->EyePosition(), IBody::CRITICAL, 0.2f, NULL, "Noticed commander looking at me without a primary");
+		// The throw behavior triggers drop when the bot is looking at the commander, so practively aim at feet to avoid overthrowing
+		me->GetBodyInterface()->AimHeadTowards(pCommander->GetAbsOrigin(), IBody::IMPORTANT, 0.2f, NULL, "Noticed commander looking at me without a primary");
 	}
 
 	if (m_commanderLookingAtMeTimer.GetElapsedTime() > 1.0f)

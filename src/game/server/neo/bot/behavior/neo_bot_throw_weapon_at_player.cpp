@@ -32,7 +32,7 @@ ActionResult< CNEOBot >	CNEOBotThrowWeaponAtPlayer::Update( CNEOBot *me, float i
 		return Done( "Target player lost or died" );
 	}
 
-	me->GetBodyInterface()->AimHeadTowards( pTarget->EyePosition(), IBody::CRITICAL, 0.2f, NULL, "Aiming at player to throw weapon" );
+	me->GetBodyInterface()->AimHeadTowards( pTarget->GetAbsOrigin(), IBody::MANDATORY, 0.1f, NULL, "Aiming at player's feet to throw weapon" );
 
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
 	if ( pPrimary )
