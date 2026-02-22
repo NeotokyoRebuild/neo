@@ -296,6 +296,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 		c->colorEditInfo.a = nullptr;
 		c->iPrePopupActive = c->iPrePopupHot = FOCUSOFF_NUM;
 		c->iPrePopupActiveSection = c->iPrePopupHotSection = -1;
+		c->iTextSelStart = c->iTextSelCur = -1;
 	}
 
 	switch (c->eMode)
@@ -2198,6 +2199,12 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 		// changing it. Otherwise use V_wcslen directly after changing wszText
 		// contents.
 		const int iWszTextSize = V_wcslen(wszText);
+
+		// Caused by forced input, set it to the end of the text
+		if (bHasTextSel && c->iTextSelStart == -1 && c->iTextSelCur == -1)
+		{
+			c->iTextSelStart = c->iTextSelCur = iWszTextSize;
+		}
 
 		const int iTextSelMin = bCurRightStart ? c->iTextSelStart : c->iTextSelCur;
 		const int iTextSelMax = bCurRightStart ? c->iTextSelCur : c->iTextSelStart;
