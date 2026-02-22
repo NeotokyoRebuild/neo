@@ -232,9 +232,6 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 void CNEOBaseCombatWeapon::Precache()
 {
 	BaseClass::Precache();
-
-	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
-		PrecacheParticleSystem("ntr_muzzle_source");
 }
 
 void CNEOBaseCombatWeapon::Spawn()
@@ -1113,7 +1110,8 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 
 	// Muzzle flash light
 	Vector vAttachment;
-	if (!GetAttachment(iAttachment, vAttachment))
+	QAngle angles;
+	if (!GetAttachment(iAttachment, vAttachment, angles))
 		return;
 
 	// environment light
@@ -1126,9 +1124,9 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 	el->color.g = 192;
 	el->color.b = 64;
 	el->color.exponent = 5;
-
+	
 	// Muzzle flash particle
-	ParticleProp()->Create("ntr_muzzle_source", PATTACH_POINT_FOLLOW, iAttachment);
+	FX_MuzzleEffect( vAttachment, angles, 0.5f, GetRefEHandle(), NULL, true );
 }
 
 void CNEOBaseCombatWeapon::DrawCrosshair()
