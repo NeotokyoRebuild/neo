@@ -1,6 +1,6 @@
 "GameInfo"
 {
-	Game        "Neotokyo: Rebuild"
+	Game        "NEOTOKYO;REBUILD"
 	Title       ""
 	Title2      ""
 	Type        Multiplayer_Only
