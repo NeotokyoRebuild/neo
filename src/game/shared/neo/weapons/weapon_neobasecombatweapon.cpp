@@ -108,6 +108,12 @@ const char *GetWeaponByLoadoutId(int id)
 // TODO: This lookup could be more efficient with sequential IDs a la SDK,
 // but we'll probably move this stuff to the weapon scripts anyway.
 static const WeaponHandlingInfo_t handlingTable[] = {
+	// NOTE: NEO_WEP_INVALID must be the first item!
+	{NEO_WEP_INVALID,
+		{{vec3_invalid, vec3_invalid, vec3_invalid, vec3_invalid}},
+		{0.0, 0.0, 0.0, 0.0},
+	},
+
 	{NEO_WEP_AA13,
 		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
@@ -246,7 +252,12 @@ void CNEOBaseCombatWeapon::Spawn()
 	m_iClip2 = GetWpnData().iMaxClip2;
 	m_iSecondaryAmmoCount = GetWpnData().iDefaultClip2;
 
+	// This case is used for handling guns for which handling doesn't make sense,
+	// for example the ghost, knife, grenades... Typically it is not used but the bot logic
+	// way want to know the spread of the ghost etc, so the invalid first slot is used to handle those.
 	m_weaponHandling = handlingTable[0];
+	AssertMsg(m_weaponHandling.weaponID == NEO_WEP_INVALID, "Expected the first m_weaponHandling item to be NEO_WEP_INVALID");
+	// Assuming this wasn't one of the above-mentioned "invalid" weapon handling entries, this is where we get the real one.
 	for (const auto& handling: handlingTable)
 	{
 		if (handling.weaponID & GetNeoWepBits())
@@ -786,7 +797,24 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 
 const WeaponSpreadInfo_t &CNEOBaseCombatWeapon::GetSpreadInfo()
 {
-	Assert(m_weaponHandling.weaponID & GetNeoWepBits());
+#ifdef DBGFLAG_ASSERT
+	// Special case for gracefully handling the bots requesting spread info for weird weapons
+	static_assert(NEO_WEP_INVALID == 0); // required this value to be zero for the logic to work
+	if (m_weaponHandling.weaponID == NEO_WEP_INVALID)
+	{
+		// Bits for all of the non-invalid guns which are allowed to use the invalid weaponhandling entry.
+		// These are the guns for which concepts like "spread" make no sense.
+		// Or more accurately, guns for which there is no entry in the global handlingTable.
+		const auto allowedInvalidSpreadInfoGuns = (
+			NEO_WEP_GHOST | NEO_WEP_KNIFE | NEO_WEP_EXPLOSIVE);
+		Assert(GetNeoWepBits() & allowedInvalidSpreadInfoGuns);
+	}
+	else
+	{
+		Assert(!(GetNeoWepBits() & NEO_WEP_INVALID));
+		Assert(m_weaponHandling.weaponID & GetNeoWepBits());
+	}
+#endif
 	return m_weaponHandling.spreadInfo[0];
 }
 
@@ -796,7 +824,7 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 
 	// We lerp from very accurate to inaccurate over time
 	static Vector cone;
-	auto weaponSpread = GetSpreadInfo();
+	const auto& weaponSpread = GetSpreadInfo();
 	if (pOwner && pOwner->IsInAim())
 	{
 		VectorLerp(
