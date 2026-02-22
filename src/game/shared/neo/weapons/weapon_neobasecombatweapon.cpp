@@ -20,6 +20,7 @@ extern ConVar weaponstay;
 #include "model_types.h"
 #include "c_neo_player.h"
 #include "in_main.h"
+#include "materialsystem/imaterialsystem.h"
 #else
 #include "items.h"
 #include "neo_gamerules.h"
@@ -1270,31 +1271,74 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	}
 
 	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
-	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
-	int ret = 0;
+	const bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	const bool bIsCloaked = (pOwner && pOwner->IsCloaked());
 
-	if (inThermalVision && (!pOwner || (pOwner && !pOwner->IsCloaked())))
+	if (inThermalVision != bIsCloaked)
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-		return ret;
+#if 0
+		if (IsOpenGL() && pOwner && pTargetPlayer != pOwner &&
+				false == pTargetPlayer->IsAbleToSee(pOwner, C_NEO_Player::DISREGARD_FOV))
+		{
+			return 0;
+		}
+#else
+		if (IsOpenGL() && pOwner && pTargetPlayer != pOwner)
+		{
+			Vector ownerMins, ownerMaxs;
+			pOwner->GetRenderBoundsWorldspace(ownerMins, ownerMaxs);
+			Vector wepMins, wepMaxs;
+			GetRenderBoundsWorldspace(wepMins, wepMaxs);
+
+			Vector renderMins(
+				Min(ownerMins.x, wepMins.x),
+				Min(ownerMins.y, wepMins.y),
+				Min(ownerMins.z, wepMins.z));
+
+			Vector renderMaxs(
+				Max(ownerMaxs.x, wepMaxs.x),
+				Max(ownerMaxs.y, wepMaxs.y),
+				Max(ownerMaxs.z, wepMaxs.z));
+
+			bool bHasHit = false;
+			CTraceFilterSkipTwoEntities filters(pOwner, pTargetPlayer, COLLISION_GROUP_NONE);
+			const auto traceMask = MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE;
+
+			trace_t trMin;
+			UTIL_TraceLine(pTargetPlayer->EyePosition(), renderMins, traceMask, &filters, &trMin);
+			if (false == trMin.DidHit())
+			{
+				trace_t trMax;
+				UTIL_TraceLine(pTargetPlayer->EyePosition(), renderMaxs, traceMask, &filters, &trMax);
+				if (false == trMax.DidHit())
+				{
+					return 0;
+				}
+			}
+		}
+#endif
+
+		int ret = 0;
+		if (inThermalVision && !bIsCloaked)
+		{
+			IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
+			modelrender->ForcedMaterialOverride(pass);
+			ret |= BaseClass::DrawModel(flags);
+			modelrender->ForcedMaterialOverride(nullptr);
+			return ret;
+		}
+		else if (bIsCloaked && !inThermalVision)
+		{
+			mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
+			IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
+			modelrender->ForcedMaterialOverride(pass);
+			ret |= BaseClass::DrawModel(flags);
+			modelrender->ForcedMaterialOverride(nullptr);
+			return ret;
+		}
 	}
 
-	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
-	{
-		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
-		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-		return ret;
-	}
-	else
-	{
-		return BaseClass::DrawModel(flags);
-	}
+	return BaseClass::DrawModel(flags);
 }
 
 RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()
