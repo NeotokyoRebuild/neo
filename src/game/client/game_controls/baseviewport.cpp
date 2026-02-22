@@ -223,7 +223,12 @@ void CBaseViewport::OnScreenSizeChanged(int iOldWide, int iOldTall)
 #ifndef _XBOX
 	m_pBackGround = new CBackGroundPanel( NULL );
 	m_pBackGround->SetZPos( -20 ); // send it to the back 
+#ifdef NEO
+	// The software cursor requires a visible background surface to draw against, even if it's empty.
+	m_pBackGround->SetVisible( true );
+#else
 	m_pBackGround->SetVisible( false );
+#endif
 #endif
 	CreateDefaultPanels();
 #ifndef _XBOX

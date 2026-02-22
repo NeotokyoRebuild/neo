@@ -1483,6 +1483,13 @@ void CHLClient::PostInit()
 
 			if (iCfgVerMajor < 26)
 			{
+				ConVarRef cl_software_cursor( "cl_software_cursor" );
+				Assert(cl_software_cursor.IsValid());
+				if (cl_software_cursor.IsValid())
+				{
+					cl_software_cursor.SetValue(true);
+				}
+
 				// voice_modenable is used now instead of voice_enable as
 				// that's how the valve settings menu does it now and
 				// force voice_enable back on
