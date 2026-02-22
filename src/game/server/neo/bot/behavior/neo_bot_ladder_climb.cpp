@@ -70,7 +70,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 
 	// Get current position and target
 	Vector myPos = mover->GetFeet();
-	float currentZ = me->GetAbsOrigin().z;
+	float currentZ = myPos.z;
 	float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
 
 	if ( m_bGoingUp )
