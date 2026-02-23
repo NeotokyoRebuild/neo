@@ -9,6 +9,7 @@
 #include "bot/behavior/neo_bot_jgr_seek.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
+#include "soundent.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar neo_bot_offense_must_push_time;
@@ -17,6 +18,87 @@ extern ConVar neo_bot_defense_must_defend_time;
 ConVar neo_bot_debug_seek_and_destroy( "neo_bot_debug_seek_and_destroy", "0", FCVAR_CHEAT );
 ConVar neo_bot_disable_seek_and_destroy( "neo_bot_disable_seek_and_destroy", "0", FCVAR_CHEAT );
 
+
+//---------------------------------------------------------------------------------------------
+CSound* CNEOBotSeekAndDestroy::SearchGunfireSounds(CNEOBot* me, const Vector* currentGoalPos)
+{
+	CSound* pClosestSound = nullptr;
+	float flClosestDistSqr = FLT_MAX;
+	const Vector& vecMyOrigin = me->GetAbsOrigin();
+
+	float flGoalDistSqr = FLT_MAX;
+	if (currentGoalPos && *currentGoalPos != vec3_invalid)
+	{
+		flGoalDistSqr = vecMyOrigin.DistToSqr(*currentGoalPos);
+	}
+
+	CSound* pSound = nullptr;
+	for (int iSound = CSoundEnt::ActiveList(); iSound != SOUNDLIST_EMPTY; iSound = pSound->NextSound())
+	{
+		pSound = CSoundEnt::SoundPointerForIndex(iSound);
+		if (!pSound)
+		{
+			break;
+		}
+
+		if (!(pSound->SoundType() & SOUND_COMBAT))
+		{
+			continue;
+		}
+
+		CBaseEntity *pOwner = pSound->m_hOwner.Get();
+
+		// Ignore non-player sounds and sounds we were responsible for
+		if (!pOwner || !pOwner->IsPlayer() || pOwner == me)
+		{
+			continue;
+		}
+
+		// NEO Jank: prevent bots from crowding teammates in teamplay
+		if (NEORules()->IsTeamplay() && me->InSameTeam(pOwner))
+		{
+			continue;
+		}
+
+		// Search for the closest gunfire sounds
+		float distSqr = vecMyOrigin.DistToSqr(pSound->GetSoundOrigin());
+
+		// Only consider sounds that are closer than the current goal
+		if (distSqr >= flGoalDistSqr)
+		{
+			continue;
+		}
+
+		if (distSqr < flClosestDistSqr)
+		{
+			flClosestDistSqr = distSqr;
+			pClosestSound = pSound;
+		}
+	}
+
+	return pClosestSound;
+}
+
+//---------------------------------------------------------------------------------------------
+const Vector& CNEOBotSeekAndDestroy::SearchGunfireLocation(CNEOBot* me, const Vector* currentGoalPos)
+{
+	CSound* pBestSound = SearchGunfireSounds(me, currentGoalPos);
+	if (pBestSound)
+	{
+		if (currentGoalPos && *currentGoalPos != vec3_invalid)
+		{
+			// Only change goal if recent gunfire is radically different than where I was going
+			constexpr float flThresholdSqr = 200.0f * 200.0f;
+			if (currentGoalPos->DistToSqr(pBestSound->GetSoundOrigin()) <= flThresholdSqr)
+			{
+				return vec3_invalid;
+			}
+		}
+		return pBestSound->GetSoundOrigin();
+	}
+
+	return vec3_invalid;
+}
 
 //---------------------------------------------------------------------------------------------
 CNEOBotSeekAndDestroy::CNEOBotSeekAndDestroy( float duration )
@@ -160,6 +242,27 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 		m_repathTimer.Start( 45.0f );
 
 		RecomputeSeekPath( me );
+	}
+	else if ( m_bInvestigateGunfire && (!m_soundSearchTimer.HasStarted() || m_soundSearchTimer.IsElapsed()) )
+	{
+		m_soundSearchTimer.Start( 0.25f );
+
+		const Vector& vGunfireLocation = SearchGunfireLocation(me, &m_vGoalPos);
+		if (vGunfireLocation != vec3_invalid)
+		{
+			m_vGoalPos = vGunfireLocation;
+			m_bGoingToTargetEntity = false;
+
+			if (CNEOBotPathCompute(me, m_path, m_vGoalPos, DEFAULT_ROUTE))
+			{
+				m_repathTimer.Start( 45.0f );
+			}
+			else
+			{
+				// NEO Jank: Sound is unreachable so wait for it clear from the sound list
+				m_soundSearchTimer.Start( 3.0f );
+			}
+		}
 	}
 
 	return Continue();
@@ -363,6 +466,28 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		}
 	}
 #endif
+	
+	// Listen for gunfights
+	if (m_bInvestigateGunfire)
+	{
+		const Vector& vGunfireLocation = SearchGunfireLocation(me);
+		if (vGunfireLocation != vec3_invalid)
+		{
+			m_vGoalPos = vGunfireLocation;
+			m_bGoingToTargetEntity = false;
+
+			if (CNEOBotPathCompute(me, m_path, m_vGoalPos, DEFAULT_ROUTE) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+			{
+				return;
+			}
+			else
+			{
+				// NEO Jank: Sound is unreachable so wait for it clear from the sound list
+				m_soundSearchTimer.Start( 3.0f );
+			}
+		}
+	}
+
 	// Fallback and roam random spawn points if we have all weapons.
 	{
 		CNextSpawnFilter spawnFilter( me, 128.0f );
