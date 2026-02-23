@@ -230,10 +230,23 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 	char textASCII[MAX_MARKER_STRSIZE];
 	int textSize = 0;
 
-	auto DisplayText = [this, &textSize, x](const char *textASCII, int y, int maxLength) {
+	auto DisplayText = [this, &textSize, x](const char *textASCII, const int y, const int maxLength) {
+			if (maxLength <= 0)
+			{
+				textSize = 0;
+				return;
+			}
+
 			wchar_t textUTF[MAX_MARKER_STRSIZE];
 			COMPILE_TIME_ASSERT(sizeof(textUTF) == sizeof(wchar_t) * MAX_MARKER_STRSIZE);
+			textUTF[0] = L'\0';
 			const int numChars = g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, narrow_cast<int>(Min(sizeof(textUTF), sizeof(wchar_t) * maxLength)));
+			if (numChars <= 0)
+			{
+				textSize = 0;
+				return;
+			}
+
 			int textWidth, textHeight;
 			vgui::surface()->GetTextSize(m_hFont, textUTF, textWidth, textHeight);
 			vgui::surface()->DrawSetTextPos(x - (textWidth / 2), y - textHeight);
