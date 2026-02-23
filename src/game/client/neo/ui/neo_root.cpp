@@ -26,6 +26,7 @@
 #include "neo_misc.h"
 #include "mp3player.h"
 #include "neo_theme.h"
+#include "neo_player_shared.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -1781,7 +1782,7 @@ static constexpr const wchar_t *CREDITSPEOPLELABEL_NAMES[] = {
 };
 
 static constexpr const wchar_t *CREDITSTITLELABEL_NAMES[] = {
-	L"NEOTOKYO;REBUILD Contributors",
+	NEO_GAME_NAME L" Contributors",
 	L"STUDIO RADI-8",
 	L"NEOTOKYO\u00B0 Contributors",
 	L"Special Thanks"
