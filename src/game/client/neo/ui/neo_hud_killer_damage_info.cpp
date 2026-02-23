@@ -76,6 +76,7 @@ CNEOHud_KillerDamageInfo::CNEOHud_KillerDamageInfo(const char *pszName, vgui::Pa
 {
 	SetAutoDelete(true);
 	SetupNTRETheme(&m_uiCtx);
+	m_uiCtx.colors.sectionBg = COLOR_TRANSPARENT;
 
 	if (parent)
 	{
