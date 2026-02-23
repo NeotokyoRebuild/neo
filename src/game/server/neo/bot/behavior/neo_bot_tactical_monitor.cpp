@@ -26,7 +26,6 @@
 #include "neo/neo_player_shared.h"
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
-ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -314,10 +313,10 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 
 	ReconConsiderSuperJump( me );
 
-	ActionResult< CNEOBot > result = WatchForGrenades( me );
-	if ( result.IsRequestingChange() )
+	CBaseEntity *dangerousGrenade = CNEOBotRetreatFromGrenade::FindDangerousGrenade( me );
+	if ( dangerousGrenade )
 	{
-		return result;
+		return SuspendFor( new CNEOBotRetreatFromGrenade( dangerousGrenade ), "Fleeing from grenade!" );
 	}
 
 	result = WatchForLadders( me );

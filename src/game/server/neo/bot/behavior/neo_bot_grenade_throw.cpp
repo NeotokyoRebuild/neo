@@ -2,6 +2,7 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_grenade_throw.h"
+#include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #include "weapon_neobasecombatweapon.h"
 #include "weapon_grenade.h"
 #include "weapon_smokegrenade.h"
@@ -332,7 +333,8 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 			Assert(0);
 		}
 
-		return Done( "Grenade throw sequence finished" );
+		// Would exit immediately for smoke, but enemies tend to frag back so look for one now
+		return ChangeTo( new CNEOBotRetreatFromGrenade( nullptr ), "Retreating after throw" );
 	}
 	
 	return Continue();
