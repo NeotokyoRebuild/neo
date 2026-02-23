@@ -32,19 +32,13 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 		return nullptr;
 	}
 
-	CNEO_Player *pNEOPlayer = ToNEOPlayer( me->GetEntity() );
-	if ( !pNEOPlayer )
-	{
-		return nullptr;
-	}
-
 	CWeaponGrenade *pFragGrenade = nullptr;
 	CWeaponSmokeGrenade *pSmokeGrenade = nullptr;
 
-	int iWeaponCount = pNEOPlayer->WeaponCount();
+	int iWeaponCount = me->WeaponCount();
 	for ( int i=0; i<iWeaponCount; ++i )
 	{
-		CBaseCombatWeapon *pWep = pNEOPlayer->GetWeapon( i );
+		CBaseCombatWeapon *pWep = me->GetWeapon( i );
 		if ( !pWep )
 		{
 			continue;
@@ -87,12 +81,12 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 		{
 			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-			if ( !pPlayer || !pPlayer->IsAlive() || pPlayer == pNEOPlayer )
+			if ( !pPlayer || !pPlayer->IsAlive() || pPlayer == me )
 			{
 				continue;
 			}
 
-			if ( pPlayer->InSameTeam( pNEOPlayer ) ) 
+			if ( pPlayer->InSameTeam( me ) ) 
 			{
 				if ( !pPlayer->IsBot() && pPlayer->GetClass() != NEO_CLASS_SUPPORT )
 				{
