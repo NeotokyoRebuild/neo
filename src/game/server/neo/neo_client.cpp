@@ -75,7 +75,10 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 	}
 
 	// notify other clients of player joining the game
-	UTIL_ClientPrintAll( HUD_PRINTNOTIFY, "#Game_connected", sName[0] != 0 ? sName : "<unconnected>" );
+	if (!pPlayer->IsBot())
+	{
+		UTIL_ClientPrintAll( HUD_PRINTNOTIFY, "#Game_connected", sName[0] != 0 ? sName : "<unconnected>" );
+	}
 
 	if ( NEORules()->IsTeamplay() == true && NEORules()->GetGameType() != NEO_GAME_TYPE_TUT && gpGlobals->eLoadType != MapLoad_Background )
 	{
