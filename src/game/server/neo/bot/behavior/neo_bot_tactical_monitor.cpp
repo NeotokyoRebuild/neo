@@ -232,9 +232,9 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 		}
 
 		// Get the bot motion to know which direction the jump will be boosted
-		Vector vecForward = me->GetLocomotionInterface()->GetGroundMotionVector();
-		vecForward.z = 0.0f;
-		vecForward.NormalizeInPlace();
+		Vector vecMovement = me->GetLocomotionInterface()->GetGroundMotionVector();
+		vecMovement.z = 0.0f;
+		vecMovement.NormalizeInPlace();
 
 		// Get the bot's facing direction
 		Vector vecFacing;
@@ -242,22 +242,27 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 		vecFacing.z = 0.0f;
 		vecFacing.NormalizeInPlace();
 
+		if (vecMovement.Dot(vecFacing) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+		{
+			return;
+		}
+
 		// Check that upcoming path is in line of a jump
 		bool bCanJump = false;
 		while (seg)
 		{
 			constexpr int maskAttributesToStopPathEval = (
-				NAV_MESH_AVOID			|	
-				NAV_MESH_CLIFF			|	
-				NAV_MESH_CROUCH			|	
-				NAV_MESH_HAS_ELEVATOR	|	
-				NAV_MESH_JUMP			| // likely to interrupt superjump trajectory
-				NAV_MESH_NAV_BLOCKER	|
-				NAV_MESH_NO_JUMP		|
-				NAV_MESH_OBSTACLE_TOP	|	
-				NAV_MESH_PRECISE		|	
-				NAV_MESH_STAIRS			|	
-				NAV_MESH_STOP			|	
+				NAV_MESH_AVOID |
+				NAV_MESH_CLIFF |
+				NAV_MESH_CROUCH |
+				NAV_MESH_HAS_ELEVATOR |
+				NAV_MESH_JUMP | // likely to interrupt superjump trajectory
+				NAV_MESH_NAV_BLOCKER |
+				NAV_MESH_NO_JUMP |
+				NAV_MESH_OBSTACLE_TOP |
+				NAV_MESH_PRECISE |
+				NAV_MESH_STAIRS |
+				NAV_MESH_STOP |
 				NAV_MESH_TRANSIENT
 			);
 
@@ -274,11 +279,9 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 
 			if (flDist > 1.0f)
 			{
-				// Predictability of jump is too erratic when bot isn't both facing and moving toward waypoint
-				if (vecForward.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat() ||
-					vecFacing.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+				if (vecMovement.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
 				{
-					break;
+					return; // Diverges too much from trajectory
 				}
 			}
 
