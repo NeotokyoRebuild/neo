@@ -24,6 +24,7 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 #include "neo/neo_player_shared.h"
+#include "nav_mesh.h"
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
@@ -177,20 +178,18 @@ void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 }
 
 
+ConVar neo_bot_recon_superjump_min_dist( "neo_bot_recon_superjump_min_dist", "1000", FCVAR_NONE,
+	"Minimum straight-line path distance required for a Recon bot to super jump while moving", true, 0, false, 0 );
+
+ConVar neo_bot_recon_superjump_min_accuracy( "neo_bot_recon_superjump_min_accuracy", "0.95", FCVAR_NONE,
+	"Minimum directional alignment with path required for a Recon bot to super jump while moving", true, 0.1f, false, 1.0f );
+
 //-----------------------------------------------------------------------------------------
 void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 {
 	CNEO_Player *pNeoMe = ToNEOPlayer(me);
 	if ( !pNeoMe || pNeoMe->GetClass() != NEO_CLASS_RECON )
 	{
-		return;
-	}
-
-	if ( gpGlobals->curtime - pNeoMe->GetLastDamageTime() > 2.0f )
-	{
-		// Not in immediate danger
-		// NEO Jank: We don't check threats because a bot can be attacked by a non-primary threat
-		// Damage taken tends to be a better indicator for immediate danger
 		return;
 	}
 
@@ -206,6 +205,96 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 	if (!pNeoMe->IsAllowedToSuperJump())
 	{
 		return;
+	}
+
+	bool bImmediateDanger = gpGlobals->curtime - pNeoMe->GetLastDamageTime() <= 2.0f;
+
+	if (!bImmediateDanger
+		&& (pNeoMe->m_nButtons & IN_FORWARD)
+		&& (neo_bot_recon_superjump_min_dist.GetFloat() > 1))
+	{
+		if (!m_reconSuperJumpPathCheckTimer.IsElapsed())
+		{
+			return;
+		}
+		m_reconSuperJumpPathCheckTimer.Start(1.0f);
+
+		const PathFollower *path = me->GetCurrentPath();
+		if (!path || !path->IsValid())
+		{
+			return;
+		}
+
+		const Path::Segment *seg = path->GetCurrentGoal();
+		if (!seg)
+		{
+			return;
+		}
+
+		// Get the bot motion to know which direction the jump will be boosted
+		Vector vecForward = me->GetLocomotionInterface()->GetGroundMotionVector();
+		vecForward.z = 0.0f;
+		vecForward.NormalizeInPlace();
+
+		// Get the bot's facing direction
+		Vector vecFacing;
+		pNeoMe->EyeVectors( &vecFacing );
+		vecFacing.z = 0.0f;
+		vecFacing.NormalizeInPlace();
+
+		// Check that upcoming path is in line of a jump
+		bool bCanJump = false;
+		while (seg)
+		{
+			constexpr int maskAttributesToStopPathEval = (
+				NAV_MESH_AVOID			|	
+				NAV_MESH_CLIFF			|	
+				NAV_MESH_CROUCH			|	
+				NAV_MESH_HAS_ELEVATOR	|	
+				NAV_MESH_JUMP			| // likely to interrupt superjump trajectory
+				NAV_MESH_NAV_BLOCKER	|
+				NAV_MESH_NO_JUMP		|
+				NAV_MESH_OBSTACLE_TOP	|	
+				NAV_MESH_PRECISE		|	
+				NAV_MESH_STAIRS			|	
+				NAV_MESH_STOP			|	
+				NAV_MESH_TRANSIENT
+			);
+
+			if (seg->area && seg->area->HasAttributes( maskAttributesToStopPathEval ))
+			{
+				return; // Don't superjump toward areas with potentially problematic attributes
+			}
+
+			// Sanity check that each waypoint is relatively aligned with our jump direction
+			Vector vecToWaypoint = seg->pos - pNeoMe->GetAbsOrigin();
+			vecToWaypoint.z = 0.0f;
+			
+			float flDist = vecToWaypoint.NormalizeInPlace();
+
+			if (flDist > 1.0f)
+			{
+				// Predictability of jump is too erratic when bot isn't both facing and moving toward waypoint
+				if (vecForward.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat() ||
+					vecFacing.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+				{
+					break;
+				}
+			}
+
+			if (flDist >= neo_bot_recon_superjump_min_dist.GetFloat())
+			{
+				bCanJump = true;
+				break;
+			}
+
+			seg = path->NextSegment(seg);
+		}
+
+		if (!bCanJump)
+		{
+			return;
+		}
 	}
 
 	// NEO Jank: We allow bots to super jump even if they didn't perform the prerequisite inputs
