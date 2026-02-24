@@ -277,18 +277,19 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 			
 			float flDist = vecToWaypoint.NormalizeInPlace();
 
-			if (flDist > 1.0f)
+			if (vecMovement.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
 			{
-				if (vecMovement.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
-				{
-					return; // Diverges too much from trajectory
-				}
+				return; // Diverges too much from trajectory
 			}
 
 			if (flDist >= neo_bot_recon_superjump_min_dist.GetFloat())
 			{
 				bCanJump = true;
 				break;
+			}
+			else if (flDist < 0)
+			{
+				return; // Just in case of a bad value
 			}
 
 			seg = path->NextSegment(seg);
