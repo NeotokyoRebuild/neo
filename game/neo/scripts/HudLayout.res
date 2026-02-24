@@ -398,7 +398,7 @@
 		"MaxDeathNotices" 	"8"
 		"RightJustify"		"1"
 		"BackgroundColour"	"20 20 20 220"
-		"BackgroundColourInvolved"	"200 200 200 40"
+		"BackgroundColourInvolved"	"150 150 150 60"
 	}
 
 	HudVehicle
@@ -828,7 +828,7 @@
 		"objective_visible"	"1"
 		"text_fade_exp"	"1"
 		"text_color"	"255 255 255 150"
-		"box_color"		"200 200 200 40"
+		"box_color"		"150 150 150 60"
 	}
 	NHudWeapon
 	{
@@ -839,7 +839,7 @@
 		"ypos"			"446"
 		"wide"			"203"
 		"tall"			"32"
-		"box_color"		"200 200 200 40"
+		"box_color"		"150 150 150 60"
 		"top_left_corner"	"1"
 		"top_right_corner"	"0"
 		"bottom_left_corner"	"1"
@@ -872,7 +872,7 @@
 		"ypos"			"446"
 		"wide"			"203"
 		"tall"			"32"
-		"box_color"		"200 200 200 40"
+		"box_color"		"150 150 150 60"
 		"top_left_corner"	"0"
 		"top_right_corner"	"1"
 		"bottom_left_corner"	"0"
@@ -917,7 +917,7 @@
 	NRoundState
 	{
 		"fieldName"		"NRoundState"
-		"box_color"		"200 200 200 40"
+		"box_color"		"150 150 150 60"
 		"health_monochrome"	"1"
 	}
 	NHudPlayerPing
@@ -988,7 +988,7 @@
 		"ypos"	"440"
 		"wide"	"640"
 	}
-	
+
 	neo_message
 	{
 		"fieldName"		"neo_message"
@@ -1005,7 +1005,7 @@
 		"ypos"	"150"
 		"wide"	"640"
 		"tall"	"480"
-		"box_color"		"200 200 200 40"
+		"box_color"		"150 150 150 60"
 	}
 
 	neo_context_hint
