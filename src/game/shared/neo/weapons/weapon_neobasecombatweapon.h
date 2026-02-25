@@ -220,6 +220,8 @@ public:
 	virtual int DrawModel(int flags) override;
 	virtual RenderGroup_t GetRenderGroup() override;
 	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
+	bool m_openGLRender = false;
+	float m_openGLLastCheck = 0.0f;
 #endif
 
 	virtual bool Deploy(void);

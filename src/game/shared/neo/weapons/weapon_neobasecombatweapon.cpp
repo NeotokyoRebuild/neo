@@ -1249,6 +1249,47 @@ int CNEOBaseCombatWeapon::RestoreData(const char* context, int slot, int type)
 	return val;
 }
 
+class CTraceFilterFindWeapon : public CTraceFilterSimple
+{
+public:
+	CTraceFilterFindWeapon( const IHandleEntity *passentity = NULL, int collisionGroup = COLLISION_GROUP_NONE )
+		: CTraceFilterSimple( passentity, collisionGroup )
+	{
+	}
+
+	IHandleEntity *targetEntityCharacter = nullptr;
+	IHandleEntity *targetEntityWeapon = nullptr;
+
+	virtual bool ShouldHitEntity( IHandleEntity *pHandleEntity, int contentsMask )
+	{
+		if ( CTraceFilterSimple::ShouldHitEntity( pHandleEntity, contentsMask ) )
+		{
+			CBaseEntity *pEntity = EntityFromEntityHandle( pHandleEntity );
+			if ( !pEntity )
+				return false;
+
+			if (pEntity->MyCombatCharacterPointer())
+			{
+				return (pEntity->MyCombatCharacterPointer() == targetEntityCharacter);
+			}
+
+			if (pEntity->MyCombatWeaponPointer())
+			{
+				return (pEntity->MyCombatWeaponPointer() == targetEntityWeapon);
+			}
+
+			// Honor BlockLOS - this lets us see through partially-broken doors, etc
+			if ( !pEntity->BlocksLOS() )
+				return false;
+
+			return true;
+		}
+
+		return false;
+	}
+};
+
+
 extern ConVar mat_neo_toc_test;
 #ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
@@ -1276,47 +1317,146 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 
 	if (inThermalVision != bIsCloaked)
 	{
-#if 0
-		if (IsOpenGL() && pOwner && pTargetPlayer != pOwner &&
-				false == pTargetPlayer->IsAbleToSee(pOwner, C_NEO_Player::DISREGARD_FOV))
-		{
-			return 0;
-		}
-#else
 		if (IsOpenGL() && pOwner && pTargetPlayer != pOwner)
 		{
-			Vector ownerMins, ownerMaxs;
-			pOwner->GetRenderBoundsWorldspace(ownerMins, ownerMaxs);
-			Vector wepMins, wepMaxs;
-			GetRenderBoundsWorldspace(wepMins, wepMaxs);
-
-			Vector renderMins(
-				Min(ownerMins.x, wepMins.x),
-				Min(ownerMins.y, wepMins.y),
-				Min(ownerMins.z, wepMins.z));
-
-			Vector renderMaxs(
-				Max(ownerMaxs.x, wepMaxs.x),
-				Max(ownerMaxs.y, wepMaxs.y),
-				Max(ownerMaxs.z, wepMaxs.z));
-
-			bool bHasHit = false;
-			CTraceFilterSkipTwoEntities filters(pOwner, pTargetPlayer, COLLISION_GROUP_NONE);
-			const auto traceMask = MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE;
-
-			trace_t trMin;
-			UTIL_TraceLine(pTargetPlayer->EyePosition(), renderMins, traceMask, &filters, &trMin);
-			if (false == trMin.DidHit())
+			static const constexpr float FL_NEXT_CHECK_SECS = 0.1f;
+			static const constexpr float FL_RENDER_MIN_FRACTION = 0.95f;
+			if ((m_openGLLastCheck + FL_NEXT_CHECK_SECS) <= gpGlobals->curtime)
 			{
-				trace_t trMax;
-				UTIL_TraceLine(pTargetPlayer->EyePosition(), renderMaxs, traceMask, &filters, &trMax);
-				if (false == trMax.DidHit())
+				Vector ownerMins, ownerMaxs;
+				pOwner->GetRenderBoundsWorldspace(ownerMins, ownerMaxs);
+				Vector wepMins, wepMaxs;
+				GetRenderBoundsWorldspace(wepMins, wepMaxs);
+
+				Vector renderMins(
+					Min(ownerMins.x, wepMins.x),
+					Min(ownerMins.y, wepMins.y),
+					Min(ownerMins.z, wepMins.z));
+
+				Vector renderMaxs(
+					Max(ownerMaxs.x, wepMaxs.x),
+					Max(ownerMaxs.y, wepMaxs.y),
+					Max(ownerMaxs.z, wepMaxs.z));
+
+#if 0
+				Vector boneVecTransform;
+				int bone = -1;
 				{
-					return 0;
+					Vector renderMins, renderMaxs;
+					GetRenderBounds(renderMins, renderMaxs);
+
+					bone = pOwner->LookupBone("ValveBiped.Bip01_R_Hand");
+					if (bone != -1)
+					{
+						matrix3x4_t transform;
+						pOwner->GetBoneTransform(bone, transform);
+
+						constexpr float safetyExtra = 4;
+						// Try to figure out how long the gun is
+						Vector offset(safetyExtra + renderMaxs.x + abs(renderMins.x), 0, 0);
+						VectorTransform(offset, transform, boneVecTransform);
+					}
 				}
+#endif
+
+				int iBIndex = -1;
+				int iWeaponBoneIndex = -1;
+
+				CStudioHdr *hdr = GetModelPtr();
+				// If I have a hand, set the weapon position to my hand bone position.
+				if ( hdr && hdr->numbones() > 0 )
+				{
+					// Assume bone zero is the root
+					for ( iWeaponBoneIndex = 0; iWeaponBoneIndex < hdr->numbones(); ++iWeaponBoneIndex )
+					{
+						iBIndex = LookupBone( hdr->pBone( iWeaponBoneIndex )->pszName() );
+						// Found one!
+						if ( iBIndex != -1 )
+						{
+							break;
+						}
+					}
+
+					if ( iBIndex == -1 )
+					{
+						iBIndex = LookupBone( "ValveBiped.Weapon_bone" );
+					}
+				}
+				else
+				{
+					iBIndex = LookupBone( "ValveBiped.Weapon_bone" );
+				}
+
+				Vector boneOrigin;
+				if ( iBIndex != -1)  
+				{
+					QAngle angles;
+					matrix3x4_t transform;
+
+					// Get the transform for the weapon bonetoworldspace in the NPC
+					GetBoneTransform( iBIndex, transform );
+
+					// find offset of root bone from origin in local space
+					// Make sure we're detached from hierarchy before doing this!!!
+					InvalidateBoneCache();
+					matrix3x4_t rootLocal;
+					GetBoneTransform( iWeaponBoneIndex, rootLocal );
+
+					// invert it
+					matrix3x4_t rootInvLocal;
+					MatrixInvert( rootLocal, rootInvLocal );
+
+					matrix3x4_t weaponMatrix;
+					ConcatTransforms( transform, rootInvLocal, weaponMatrix );
+					MatrixAngles( weaponMatrix, angles, boneOrigin );
+				}
+
+
+				Vector targetMins, targetMaxs;
+				pTargetPlayer->GetRenderBoundsWorldspace(targetMins, targetMaxs);
+
+				trace_t resultMin, resultMax, resultSpaceCenter, resultEye;
+				CTraceFilterFindWeapon traceFilter(NULL, COLLISION_GROUP_NONE);
+				traceFilter.targetEntityCharacter = pOwner;
+				traceFilter.targetEntityWeapon = this;
+				static constexpr const int I_TRACE_MASK = MASK_OPAQUE | CONTENTS_IGNORE_NODRAW_OPAQUE | CONTENTS_MONSTER;
+
+				m_openGLRender = false;
+				for (const Vector &fromPos : {pTargetPlayer->EyePosition(), pTargetPlayer->WorldSpaceCenter(), targetMins, targetMaxs})
+				{
+					UTIL_TraceLine(fromPos, renderMins, I_TRACE_MASK, &traceFilter, &resultMin);
+					UTIL_TraceLine(fromPos, renderMaxs, I_TRACE_MASK, &traceFilter, &resultMax);
+					UTIL_TraceLine(fromPos, pOwner->WorldSpaceCenter(), I_TRACE_MASK, &traceFilter, &resultSpaceCenter);
+					UTIL_TraceLine(fromPos, pOwner->EyePosition(), I_TRACE_MASK, &traceFilter, &resultEye);
+					m_openGLRender = (resultMin.fraction >= FL_RENDER_MIN_FRACTION
+							|| resultMax.fraction >= FL_RENDER_MIN_FRACTION
+							|| resultSpaceCenter.fraction >= FL_RENDER_MIN_FRACTION
+							|| resultEye.fraction >= FL_RENDER_MIN_FRACTION);
+					if (m_openGLRender)
+					{
+						break;
+					}
+
+					if (iBIndex != -1)
+					{
+						trace_t resultBone;
+						UTIL_TraceLine(fromPos, boneOrigin, I_TRACE_MASK, &traceFilter, &resultBone);
+						m_openGLRender = (resultBone.fraction >= FL_RENDER_MIN_FRACTION);
+						if (m_openGLRender)
+						{
+							break;
+						}
+					}
+				}
+
+				m_openGLLastCheck = gpGlobals->curtime;
+			}
+
+			if (!m_openGLRender)
+			{
+				return 0;
 			}
 		}
-#endif
 
 		int ret = 0;
 		if (inThermalVision && !bIsCloaked)
