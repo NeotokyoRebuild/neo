@@ -32,6 +32,7 @@
 #include "neo_game_config.h"
 #include "nav_mesh.h"
 #include "neo_npc_dummy.h"
+#include "materialsystem/imaterialsystem.h"
 
 #include <utility>
 
@@ -150,6 +151,13 @@ ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATE
 ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
 #endif
 
+// NEO JANK (nullsystem): REASON/BUG (GH-ISSUE #1717): Linux OpenGL + mesa driver clients can wallhack weapons in thermal vision
+ConVar sv_neo_reject_opengl_mesa_check("sv_neo_reject_opengl_mesa_check", "0", FCVAR_GAMEDLL | FCVAR_REPLICATED,
+									"If enabled, when the server checks the client rendering backend, it will reject OpenGL. "
+									"This is due to a combination of Linux, NT;RE running in OpenGL, and Mesa driver currently having shaders issues. "
+									"OpenGL rendering is only used on Linux."
+									, true, 0.0f, true, 1.0f);
+
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	const bool bCurrentValue = !(bool)flOldValue;
@@ -160,6 +168,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_juggernaut_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_client_autorecord.SetValue(bCurrentValue);
+	sv_neo_reject_opengl_mesa_check.SetValue(bCurrentValue); // NEO NOTE (nullsystem): See comment above variable declaration for reason
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f
@@ -3226,6 +3235,23 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 											 "Client: %.*s | Server: %.*s",
 					   MAX_GITHASH_SHOW, cmpClientGitHash, MAX_GITHASH_SHOW, GIT_LONGHASH);
 			return false;
+		}
+	}
+	if (sv_neo_reject_opengl_mesa_check.GetBool())
+	{
+		static const char *pszOpenGLName = GetRenderBackendName(RENDER_BACKEND_TOGL);
+		const char *pwszClientRendererName = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__cl_neo_renderer");
+		if (0 == V_strcmp(pwszClientRendererName, pszOpenGLName))
+		{
+			const char *pwszClientOpenglVersionStr = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__cl_neo_opengl_version");
+			if (V_strstr(pwszClientOpenglVersionStr, " Mesa "))
+			{
+				V_snprintf(reject, maxrejectlen,
+						"Server does not allow OpenGL + Mesa clients! "
+						"Make sure -gl is not set in startup args and switch to Vulkan. "
+						"Check neo_version.");
+				return false;
+			}
 		}
 	}
 	return BaseClass::ClientConnected(pEntity, pszName, pszAddress,

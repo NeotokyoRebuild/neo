@@ -2,6 +2,10 @@
 
 void NeoVersionPrint();
 
-#if defined(CLIENT_DLL) && defined(DEBUG)
+#ifdef CLIENT_DLL
+void InitializeNeoClRenderer();
+#ifdef DEBUG
 void InitializeDbgNeoClGitHashEdit();
-#endif
+#endif // DEBUG
+#endif // CLIENT_DLL
+
