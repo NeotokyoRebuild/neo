@@ -183,6 +183,22 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 EventDesiredResult<CNEOBot> CNEOBotMainAction::OnKilled( CNEOBot *me, const CTakeDamageInfo& info )
 {
+	// Encourage bots to avoid areas that are deadly, taking into account everyone's death locations
+	// Intended to add some variance to pathing for similar starting scenarios
+	if ( const CNavArea *navArea = me->GetLastKnownArea() )
+	{
+		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_killed_penalty.GetFloat() );
+	}
+	else
+	{
+		// Fallback if GetLastKnownArea is null, try finding nearest nav area
+		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
+		if ( nearestArea )
+		{
+			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_killed_penalty.GetFloat() );
+		}
+	}
+
 	return TryChangeTo( new CNEOBotDead, RESULT_CRITICAL, "I died!" );
 }
 
@@ -252,7 +268,7 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 	// so the overall fairness may balance out for both teams sharing common sticking points.
 	if ( const CNavArea *navArea = me->GetLastKnownArea() )
 	{
-		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID() );
+		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
 	}
 	else
 	{
@@ -260,7 +276,7 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
 		if ( nearestArea )
 		{
-			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID() );
+			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
 		}
 	}
 
@@ -273,7 +289,7 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 			{
 				if ( nextSegment->area )
 				{
-					CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nextSegment->area->GetID() );
+					CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nextSegment->area->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
 				}
 			}
 		}
