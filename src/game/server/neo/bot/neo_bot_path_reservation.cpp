@@ -308,7 +308,7 @@ int CNEOBotPathReservationSystem::GetPredictedFriendlyPathCount( int areaID, int
 }
 
 //-------------------------------------------------------------------------------------------------
-void CNEOBotPathReservationSystem::IncrementAreaStuckPenalty(unsigned int navAreaID)
+void CNEOBotPathReservationSystem::IncrementAreaAvoidPenalty(unsigned int navAreaID)
 {
     if ( !neo_bot_path_reservation_onstuck_penalty_enable.GetBool() )
     {

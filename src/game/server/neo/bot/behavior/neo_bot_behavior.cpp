@@ -252,7 +252,7 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 	// so the overall fairness may balance out for both teams sharing common sticking points.
 	if ( const CNavArea *navArea = me->GetLastKnownArea() )
 	{
-		CNEOBotPathReservations()->IncrementAreaStuckPenalty( navArea->GetID() );
+		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID() );
 	}
 	else
 	{
@@ -260,7 +260,7 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
 		if ( nearestArea )
 		{
-			CNEOBotPathReservations()->IncrementAreaStuckPenalty( nearestArea->GetID() );
+			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID() );
 		}
 	}
 
@@ -273,7 +273,7 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 			{
 				if ( nextSegment->area )
 				{
-					CNEOBotPathReservations()->IncrementAreaStuckPenalty( nextSegment->area->GetID() );
+					CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nextSegment->area->GetID() );
 				}
 			}
 		}

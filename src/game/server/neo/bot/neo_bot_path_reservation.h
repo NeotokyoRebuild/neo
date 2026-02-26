@@ -61,7 +61,7 @@ public:
     void DecrementPredictedFriendlyPathCount( int areaID, int teamID );
     int GetPredictedFriendlyPathCount( int areaID, int teamID ) const;
 
-    void IncrementAreaStuckPenalty(unsigned int navAreaID);
+    void IncrementAreaAvoidPenalty(unsigned int navAreaID);
     float GetAreaStuckPenalty(unsigned int navAreaID) const;
 
     // Allow the global accessor to access private members if needed, though constructor handles init now.
