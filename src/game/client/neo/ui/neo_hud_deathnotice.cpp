@@ -701,7 +701,7 @@ void CNEOHud_DeathNotice::RetireExpiredDeathNotices( void )
 //-----------------------------------------------------------------------------
 // Purpose: Server's told us that someone's died
 //-----------------------------------------------------------------------------
-ConVar cl_neo_hud_extended_killfeed("cl_neo_hud_extended_killfeed", "1", FCVAR_ARCHIVE, "Show extra events in killfeed", true, 0, true, 1);
+ConVar cl_neo_hud_extended_killfeed("cl_neo_hud_extended_killfeed", "1", FCVAR_ARCHIVE, "Show extra events in killfeed. 1 = Objectives, 2 = Objectives and rank-ups", true, 0, true, 2);
 void CNEOHud_DeathNotice::FireGameEvent(IGameEvent* event)
 {
 	if (!g_PR)
@@ -722,13 +722,9 @@ void CNEOHud_DeathNotice::FireGameEvent(IGameEvent* event)
 	{
 		AddPlayerDeath(event);
 	}
-	else if (!cl_neo_hud_extended_killfeed.GetBool())
+	else if (cl_neo_hud_extended_killfeed.GetInt() < 1)
 	{
 		return;
-	}
-	else if (!Q_stricmp(eventName, "player_rankchange"))
-	{
-		AddPlayerRankChange(event);
 	}
 	else if (!Q_stricmp(eventName, "ghost_capture"))
 	{
@@ -741,6 +737,14 @@ void CNEOHud_DeathNotice::FireGameEvent(IGameEvent* event)
 	else if (!Q_stricmp(eventName, "vip_death"))
 	{
 		AddVIPDeath(event);
+	}
+	else if (cl_neo_hud_extended_killfeed.GetInt() < 2)
+	{
+		return;
+	}
+	else if (!Q_stricmp(eventName, "player_rankchange"))
+	{
+		AddPlayerRankChange(event);
 	}
 
 }
