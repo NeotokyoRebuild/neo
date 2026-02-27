@@ -471,9 +471,6 @@ void CNEOModelManager::Precache( void ) const
 
 	PrecacheMaterial("dev/motion_third.vmt");
 	PrecacheMaterial("dev/thermal_model.vmt");
-	PrecacheMaterial("dev/thermal_ragdoll_model.vmt");
-	PrecacheMaterial("dev/thermal_base_animating_model.vmt");
-	PrecacheMaterial("dev/thermal_view_model.vmt");
 	PrecacheMaterial("dev/thermal_weapon_model.vmt");
 	PrecacheMaterial("dev/thermal_grenade_projectile_model.vmt");
 }

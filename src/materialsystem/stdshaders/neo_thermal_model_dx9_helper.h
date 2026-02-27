@@ -30,8 +30,6 @@ struct NeoThermalModel_DX9_Vars_t
 	int m_nAlphaTestReference;
 	int m_nFlashlightTexture;
 	int m_nFlashlightTextureFrame;
-	float m_nTimeSinceDeath;
-	float m_nMaxTemperatureOffset;
 };
 
 void InitParamsNeoThermalModel_DX9( CBaseVSShader *pShader, IMaterialVar** params,

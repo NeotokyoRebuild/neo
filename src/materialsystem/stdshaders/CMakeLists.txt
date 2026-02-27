@@ -86,12 +86,12 @@ target_sources_grouped(
 )
 
 if(OS_LINUX)
-    target_sources_grouped(
-        TARGET game_shader_dx9
-        NAME "Source Files"
-        FILES
-        ${CMAKE_SOURCE_DIR}/game/shared/math_finite_fix.cpp
-    )
+target_sources_grouped(
+    TARGET game_shader_dx9
+    NAME "Source Files"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/math_finite_fix.cpp
+)
 endif()
 
 target_sources_grouped(

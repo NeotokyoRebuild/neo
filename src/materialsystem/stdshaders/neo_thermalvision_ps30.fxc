@@ -2,16 +2,9 @@
 
 sampler FrameBuffer				: register(s0);
 sampler TvTexture               : register(s1);
-//sampler BlurBuffer			    : register(s2);
-sampler NoiseTexture            : register(s3);
+sampler NoiseTexture            : register(s2);
 
-const float g_BrightnessScale : register(c0);
-const float g_XOffset : register(c1);
-const float g_XMultiplier : register(c2);
-const float g_XNoiseOffset : register(c3);
-const float g_YNoiseOffset : register(c4);
-const float g_BrightnessNerfThreshold : register(c5);
-const float g_BrightnessNerf : register(c6);
+const float2 g_noiseTransform	: register(c0);
 
 struct PS_INPUT
 {
@@ -19,15 +12,19 @@ struct PS_INPUT
 };
 
 float4 main( const PS_INPUT i ) : COLOR
-{    
-	const float4 fbColor = tex2D(FrameBuffer, i.texCoord);
-	const float noise =  0.9 + (tex2D(NoiseTexture, i.texCoord + float2(g_XNoiseOffset, g_YNoiseOffset)) / 10);
-    float avgBright = (fbColor.r * 0.3 + fbColor.g * 0.59 + fbColor.b * 0.11) * noise;
-	avgBright = (avgBright * g_XMultiplier) + g_XOffset;
-	if (avgBright > g_BrightnessNerfThreshold)
-	{
-		avgBright = g_BrightnessNerfThreshold + ((avgBright - g_BrightnessNerfThreshold) * g_BrightnessNerf);
-	}
-	float4 colour = tex2D(TvTexture, float2(min(1.0, avgBright), 0.5));
-    return colour;
+{
+	float4 fbColor = tex2D(FrameBuffer, i.texCoord);
+	float4 noiseColor = tex2D(NoiseTexture, i.texCoord + g_noiseTransform);
+	
+	fbColor.xyz = log2(fbColor.xyz);
+	fbColor.xyz = fbColor.xyz * 1.5;
+	fbColor.xyz = exp2(fbColor.xyz);
+	
+	noiseColor.xyz = mad(noiseColor, 0.13, fbColor.xyz);
+	const float3 luminanceWeights = float3(0.3, 0.59, 0.11);
+	noiseColor.x = dot(noiseColor, luminanceWeights);
+	
+	noiseColor = tex1D(TvTexture, noiseColor.x);
+	
+	return noiseColor;
 }

@@ -112,8 +112,8 @@ END_NETWORK_TABLE()
 		m_flSpawnTime = gpGlobals->curtime;
 		BaseClass::Spawn();
 #ifdef NEO
-		m_flTemperature = 0.f;	// NEO NOTE (Adam) The server doesn't know the client side temperature of the weapon that spawned this projectile, and the client doesn't know what weapon spawned this projectile (may not exist already)
-								// NEO TODO use the temperature of the weapon at the time this projectile was created as the starting projectile temperature.
+		m_flTemperature = THERMALS_OBJECT_TEMPERATURE_HELD;	// NEO NOTE (Adam) The server doesn't know the client side temperature of the weapon that spawned this projectile, and the client doesn't know what weapon spawned this projectile (may not exist already)
+															// NEO TODO (Adam) use the temperature of the weapon at the time this projectile was created as the starting projectile temperature.
 		SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 #endif // NEO
 	}
@@ -122,9 +122,8 @@ END_NETWORK_TABLE()
 
 	void CBaseGrenadeProjectile::ClientThink()
 	{
-		constexpr float DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
-		m_flTemperature = Min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
-		if (m_flTemperature > 0)
+		m_flTemperature = Max(THERMALS_OBJECT_MIN_TEMPERATURE, m_flTemperature - (TICK_INTERVAL * THERMALS_OBJECT_COOL_RATE));
+		if (m_flTemperature > THERMALS_OBJECT_MIN_TEMPERATURE)
 		{
 			SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 		}

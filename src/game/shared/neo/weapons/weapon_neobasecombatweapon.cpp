@@ -323,16 +323,9 @@ void CNEOBaseCombatWeapon::Activate(void)
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ClientThink()
 {
-	if (GetOwner() && m_flTemperature > 0)
-	{
-		constexpr float DESIRED_TEMPERATURE_WHEN_HELD = 0;
-		m_flTemperature = Max(DESIRED_TEMPERATURE_WHEN_HELD, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
-	}
-	else if (m_flTemperature < 1)
-	{
-		constexpr float DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
-		m_flTemperature = Min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
-	}
+	const float temperatureChange = GetOwner() && m_flTemperature < THERMALS_OBJECT_TEMPERATURE_HELD ? TICK_INTERVAL * THERMALS_OBJECT_COOL_RATE : -TICK_INTERVAL * THERMALS_OBJECT_COOL_RATE;
+	m_flTemperature = Max(THERMALS_OBJECT_MIN_TEMPERATURE, Min(THERMALS_OBJECT_MAX_TEMPERATURE, m_flTemperature + temperatureChange));
+
 	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 }
 #endif // CLIENT_DLL
