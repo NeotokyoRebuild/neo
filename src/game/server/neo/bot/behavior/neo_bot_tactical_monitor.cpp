@@ -218,47 +218,6 @@ void CNEOBotTacticalMonitor::ReconConsiderSuperJump( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
-ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForGrenades( CNEOBot *me )
-{
-	const float flGrenadeCheckRadius = neo_bot_grenade_check_radius.GetFloat();
-	CBaseEntity *closestThreat = NULL;
-	const char *pszGrenadeClass = "neo_grenade_frag";
-	
-	int iSound = CSoundEnt::ActiveList();
-	while ( iSound != SOUNDLIST_EMPTY )
-	{
-		CSound *pSound = CSoundEnt::SoundPointerForIndex( iSound );
-		if ( !pSound )
-			break;
-
-		if ( (pSound->SoundType() & SOUND_DANGER) && pSound->ValidateOwner() )
-		{
-			float distSqr = ( pSound->GetSoundOrigin() - me->GetAbsOrigin() ).LengthSqr();
-			if ( distSqr <= (flGrenadeCheckRadius * flGrenadeCheckRadius) )
-			{
-				CBaseEntity *pOwner = pSound->m_hOwner.Get();
-				if ( pOwner && FClassnameIs( pOwner, pszGrenadeClass ) )
-				{
-					// Found a dangerous grenade
-					closestThreat = pOwner;
-					break;
-				}
-			}
-		}
-
-		iSound = pSound->NextSound();
-	}
-
-	if ( closestThreat )
-	{
-		return SuspendFor( new CNEOBotRetreatFromGrenade( closestThreat ), "Fleeing from grenade!" );
-	}
-
-	return Continue();
-}
-
-
-//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForLadders( CNEOBot *me )
 {
 	// Check if our current path has an approaching ladder segment
@@ -319,7 +278,7 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return SuspendFor( new CNEOBotRetreatFromGrenade( dangerousGrenade ), "Fleeing from grenade!" );
 	}
 
-	result = WatchForLadders( me );
+	ActionResult< CNEOBot > result = WatchForLadders( me );
 	if ( result.IsRequestingChange() )
 	{
 		return result;
