@@ -198,7 +198,7 @@ struct NeoSettings
 		bool bShowPos;
 		int iShowFps;
 		bool bEnableRangeFinder;
-		bool bExtendedKillfeed;
+		int iExtendedKillfeed;
 		bool bShowHudContextHints;
 		int iKdinfoToggletype;
 
