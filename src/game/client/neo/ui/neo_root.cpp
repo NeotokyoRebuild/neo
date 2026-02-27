@@ -1776,6 +1776,7 @@ static constexpr const wchar_t *CREDITSPEOPLELABEL_NAMES[] = {
 	L"Viktor \"Slick Vick\" Svensson",
 	L"Ryan \"Stenchy\" Anderson",
 	L"[title]", // Special Thanks
+	L"Dragoteryx",
 	L"Kasietti",
 	L"Kerim \"Nbc66\" Camdzic",
 	L"Tony \"omega\" Sergi"

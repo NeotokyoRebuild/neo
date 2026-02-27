@@ -14,6 +14,9 @@ ConVar neo_bot_path_around_friendly_cooldown("neo_bot_path_around_friendly_coold
 ConVar neo_bot_path_penalty_jump_multiplier("neo_bot_path_penalty_jump_multiplier", "100.0", FCVAR_CHEAT,
 	"Maximum penalty multiplier for jump height changes in pathfinding", false, 0.01f, false, 1000.0f);
 
+ConVar neo_bot_path_penalty_ladder_multiplier("neo_bot_path_penalty_ladder_multiplier", "3.0", FCVAR_CHEAT,
+	"Penalty multiplier for ladder traversal in pathfinding", true, 0.1f, true, 100.0f);
+
 //-------------------------------------------------------------------------------------------------
 CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 {
@@ -50,6 +53,10 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 		if (ladder)
 		{
 			dist = ladder->m_length;
+
+			// ladders leave bots exposed, but can be a shortcut
+			const float ladderPenalty = neo_bot_path_penalty_ladder_multiplier.GetFloat();
+			dist *= ladderPenalty;
 		}
 		else if (length > 0.0)
 		{
@@ -60,26 +67,29 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 			dist = (area->GetCenter() - fromArea->GetCenter()).Length();
 		}
 
-
-		// check height change
-		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
-
-		if (deltaZ >= m_stepHeight)
+		// Only apply height restrictions for non-ladder jump paths
+		if (!ladder)
 		{
-			if (deltaZ >= m_maxJumpHeight)
+			// check height change
+			float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
+
+			if (deltaZ >= m_stepHeight)
 			{
-				// too high to reach
+				if (deltaZ >= m_maxJumpHeight)
+				{
+					// too high to reach
+					return -1.0f;
+				}
+
+				// jumping is slower than flat ground
+				const float jumpPenalty = neo_bot_path_penalty_jump_multiplier.GetFloat() * Square( deltaZ / m_maxJumpHeight );
+				dist *= jumpPenalty;
+			}
+			else if (deltaZ < -m_maxDropHeight)
+			{
+				// too far to drop
 				return -1.0f;
 			}
-
-			// jumping is slower than flat ground
-			const float jumpPenalty = neo_bot_path_penalty_jump_multiplier.GetFloat() * Square( deltaZ / m_maxJumpHeight );
-			dist *= jumpPenalty;
-		}
-		else if (deltaZ < -m_maxDropHeight)
-		{
-			// too far to drop
-			return -1.0f;
 		}
 
 		// add a random penalty unique to this character so they choose different routes to the same place

@@ -291,7 +291,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		// Anti-collision: follow neighbor in snake chain
 		for (int idx = 1; idx <= gpGlobals->maxClients; ++idx)
 		{
-			CNEO_Player* pOther = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(idx));
+			CNEO_Player* pOther = ToNEOPlayer(UTIL_PlayerByIndex(idx));
 			if (!pOther || !pOther->IsBot() || pOther == me
 				|| (pOther->m_hLeadingPlayer.Get() != me->m_hLeadingPlayer.Get()))
 			{
@@ -364,7 +364,7 @@ bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, b
 			if (pPlayer->GetTeamNumber() != me->GetTeamNumber())
 				continue;
 
-			CNEO_Player* pOther = static_cast<CNEO_Player*>(pPlayer);
+			CNEO_Player* pOther = ToNEOPlayer(pPlayer);
 			if (!pOther)
 				continue;
 

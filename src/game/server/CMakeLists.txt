@@ -1465,6 +1465,10 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_jgr_juggernaut.h
     neo/bot/behavior/neo_bot_jgr_seek.cpp
     neo/bot/behavior/neo_bot_jgr_seek.h
+    neo/bot/behavior/neo_bot_ladder_approach.cpp
+    neo/bot/behavior/neo_bot_ladder_approach.h
+    neo/bot/behavior/neo_bot_ladder_climb.cpp
+    neo/bot/behavior/neo_bot_ladder_climb.h
     neo/bot/behavior/neo_bot_melee_attack.cpp
     neo/bot/behavior/neo_bot_melee_attack.h
     neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
