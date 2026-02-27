@@ -23,8 +23,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 	me->StopLookingAroundForEnemies();
 
 	// Timeout based on ladder length
-	const float averageClimbSpeed = 200.0f;
-	float estimatedClimbTime = m_ladder->m_length / averageClimbSpeed + 1.0f;
+	float estimatedClimbTime = m_ladder->m_length / MAX_CLIMB_SPEED + 1.0f;
 	m_timeoutTimer.Start( estimatedClimbTime );
 
 	m_bHasBeenOnLadder = false;
@@ -69,7 +68,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	}
 
 	// Get current position and target
-	Vector myPos = mover->GetFeet();
+	const Vector& myPos = mover->GetFeet();
 	float currentZ = myPos.z;
 	float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
 

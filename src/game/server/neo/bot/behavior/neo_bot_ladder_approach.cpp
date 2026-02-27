@@ -58,10 +58,10 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 	ILocomotion *mover = me->GetLocomotionInterface();
 	IBody *body = me->GetBodyInterface();
 
-	Vector myPos = mover->GetFeet();
+	const Vector& myPos = mover->GetFeet();
 
 	// Are we climbing up or down the ladder?
-	Vector targetPos = m_bGoingUp ? m_ladder->m_bottom : m_ladder->m_top;
+	const Vector& targetPos = m_bGoingUp ? m_ladder->m_bottom : m_ladder->m_top;
 
 	// Calculate 2D vector from bot to ladder mount point
 	Vector2D to = ( targetPos - myPos ).AsVector2D();
