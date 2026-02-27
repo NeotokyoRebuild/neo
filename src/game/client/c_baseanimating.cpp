@@ -3313,7 +3313,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			if (!IsFollowingEntity())
 			{
 				InternalDrawModel(flags | extraFlags);
-				IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+				IMaterial* pass = materials->FindMaterial("dev/motion_model", TEXTURE_GROUP_MODEL);
 				Assert(!IsErrorMaterial(pass));
 				modelrender->ForcedMaterialOverride(pass);
 			}
@@ -3361,7 +3361,7 @@ int C_BaseAnimating::DrawModel( int flags )
 					if (isMoving)
 					{ // Drawing an active weapon first draws the entity holding the weapon. This call removes the material override before the draw call on the active weapon can complete, re-override here
 						InternalDrawModel(STUDIO_RENDER | extraFlags);
-						IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+						IMaterial* pass = materials->FindMaterial("dev/motion_model", TEXTURE_GROUP_MODEL);
 						Assert(!IsErrorMaterial(pass));
 						modelrender->ForcedMaterialOverride(pass);
 					}

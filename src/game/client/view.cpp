@@ -386,32 +386,6 @@ void CViewRender::Init( void )
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
-	ITexture *pMVTexBuff1 =
-#endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Buffer1", iW, iH, RT_SIZE_FULL_FRAME_BUFFER,
-			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
-
-#ifdef DEBUG
-	ITexture *pMVTexBuff2 =
-#endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Buffer2", iW, iH, RT_SIZE_FULL_FRAME_BUFFER,
-			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
-
-#ifdef DEBUG
-	ITexture *pMvImTex =
-#endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Intermediate", iW, iH,
-			RT_SIZE_FULL_FRAME_BUFFER, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
-		flags, 0);
-
-#ifdef DEBUG
-	ITexture *pMvIm2Tex =
-#endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Intermediate2", iW, iH,
-			RT_SIZE_FULL_FRAME_BUFFER, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
-			flags, 0);
-
-#ifdef DEBUG
 	ITexture* pTvTex =
 #endif
 		materials->CreateNamedRenderTargetTextureEx("_rt_ThermalVision", iW, iH,
@@ -430,10 +404,6 @@ void CViewRender::Init( void )
 	Assert(pSSAO_ImTex != NULL && !pSSAO_ImTex->IsError());
 	Assert(pNVTex != NULL && !pNVTex->IsError());
 	Assert(pMVTex != NULL && !pMVTex->IsError());
-	Assert(pMvImTex != NULL && !pMvImTex->IsError());
-	Assert(pMvIm2Tex != NULL && !pMvIm2Tex->IsError());
-	Assert(pMVTexBuff1 != NULL && !pMVTexBuff1->IsError());
-	Assert(pMVTexBuff2 != NULL && !pMVTexBuff2->IsError());
 	Assert(pTvTex != NULL && !pTvTex->IsError());
 	Assert(pCbTex != NULL && !pCbTex->IsError());
 #endif

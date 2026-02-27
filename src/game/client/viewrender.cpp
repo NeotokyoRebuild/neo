@@ -860,17 +860,12 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 #endif
 
 #ifdef NEO
-	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_noise")
-	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass2")
-
-	CLIENTEFFECT_MATERIAL("dev/nightvision")
-
 	CLIENTEFFECT_MATERIAL("dev/ssao")
 	CLIENTEFFECT_MATERIAL("dev/ssaoblur")
 	CLIENTEFFECT_MATERIAL("dev/ssao_combine")
 
-	CLIENTEFFECT_MATERIAL("dev/motion")
-
+	CLIENTEFFECT_MATERIAL("dev/neo_nightvision")
+	CLIENTEFFECT_MATERIAL("dev/neo_motionvision")
 	CLIENTEFFECT_MATERIAL("dev/neo_thermalvision")
 
 	CLIENTEFFECT_MATERIAL("dev/neo_colorblind_adjust")
