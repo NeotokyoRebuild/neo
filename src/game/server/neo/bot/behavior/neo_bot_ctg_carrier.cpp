@@ -507,18 +507,14 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 			if ( !bAnyEnemyCloser )
 			{
 				m_chasePath.Invalidate();
-				m_path.Invalidate();
 
-				if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
+				if ( !m_path.IsValid() || !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
 				{
 					CNEOBotPathCompute( me, m_path, vecGoalPos, FASTEST_ROUTE );
-					m_path.Update( me );
 					m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
 				}
-				else
-				{
-					m_path.Update( me );
-				}
+				
+				m_path.Update( me );
 				return;
 			}
 		}
