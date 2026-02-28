@@ -3249,7 +3249,7 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 				V_snprintf(reject, maxrejectlen,
 						"Server does not allow OpenGL + Mesa clients! "
 						"Make sure -gl is not set in startup args and switch to Vulkan. "
-						"Check neo_version.");
+						"Check neo_version");
 				return false;
 			}
 		}
