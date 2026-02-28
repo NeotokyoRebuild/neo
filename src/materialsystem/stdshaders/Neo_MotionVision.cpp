@@ -70,10 +70,14 @@ SHADER_DRAW
 		pShaderShadow->EnableTexture(SHADER_SAMPLER0, true);
 		pShaderShadow->EnableTexture(SHADER_SAMPLER1, true);
 		pShaderShadow->EnableTexture(SHADER_SAMPLER2, true);
+		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, false);
+		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER1, false);
+		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER2, false);
 		
 		pShaderShadow->VertexShaderVertexFormat(VERTEX_POSITION, 1, NULL, 0);
 		
 		pShaderShadow->EnableDepthWrites(false);
+		pShaderShadow->EnableSRGBWrite(false);
 
 		DECLARE_STATIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_STATIC_VERTEX_SHADER(neo_passthrough_vs30);

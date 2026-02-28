@@ -208,7 +208,7 @@ int C_AI_BaseNPC::DrawModel( int flags )
     int ret = 0;
     if (inThermalVision)
     {
-        IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
+        IMaterial* pass = materials->FindMaterial(NEO_THERMAL_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
         modelrender->ForcedMaterialOverride(pass);
         ret = BaseClass::DrawModel(flags);
         modelrender->ForcedMaterialOverride(nullptr);
