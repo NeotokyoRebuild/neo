@@ -1344,8 +1344,7 @@ int GetBreakableSurfaceType( C_BaseEntity *pC_BaseEntity )
 		return -1;
 	}
 
-	C_BreakableSurface *pBreakableEnt = dynamic_cast<C_BreakableSurface *>(pC_BaseEntity);
-	Assert(pBreakableEnt);
+	C_BreakableSurface *pBreakableEnt = assert_cast<C_BreakableSurface *>(pC_BaseEntity);
 
 	if (!pBreakableEnt)
 	{
