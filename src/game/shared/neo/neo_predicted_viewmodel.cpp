@@ -258,7 +258,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 		}
 		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision())
 		{
-			IMaterial* pass = materials->FindMaterial("dev/thermal_view_model", TEXTURE_GROUP_MODEL);
+			IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
 
 			if (pass && !pass->IsErrorMaterial())

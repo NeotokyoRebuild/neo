@@ -33,10 +33,6 @@ ITexture *GetSSAO(void);
 ITexture *GetSSAOIntermediate(void);
 
 ITexture *GetMV(void);
-ITexture *GetMVBuffer(const int index);
-ITexture *GetMVIntermediate(void);
-ITexture *GetMVIntermediate2(void);
-
 ITexture *GetTV(void);
 
 ITexture *GetCBBuffer(void);

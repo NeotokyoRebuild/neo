@@ -115,11 +115,11 @@ target_sources_grouped(
     FILES
     #Neo_MotionVision_ModelShader.cpp
     Neo_GaussianBlur_Shader.cpp
-    Neo_MotionVision_Shader_Pass2.cpp
+    Neo_MotionVision.cpp
     neo_motion_model_dx9.cpp
     neo_motion_model_dx9_helper.cpp
     neo_motion_model_dx9_helper.h
-    Neo_NightVision_Shader.cpp
+    Neo_NightVision.cpp
     Neo_Noise_Shader.cpp
     Neo_SSAO_Combine_Shader.cpp
     Neo_SSAO_Shader.cpp

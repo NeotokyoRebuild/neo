@@ -1088,4 +1088,13 @@ struct collidelist_t
 	Vector			origin;
 	QAngle			angles;
 };
+
+#ifdef NEO
+
+#define THERMALS_OBJECT_TEMPERATURE_HELD 1.25f
+#define THERMALS_OBJECT_MAX_TEMPERATURE 3.f
+#define THERMALS_OBJECT_MIN_TEMPERATURE 0.15f // Weapons actually only either have a value of 3 or 0 in ognt, not here though
+#define THERMALS_OBJECT_COOL_RATE 0.5f // Body takes ~6 seconds to cool from 3 to 0.15. NEO TODO (Adam) Newton's law of cooling states the rate of heat loss of a body is directly proportional to the difference in temperature between the body and its surroundings. in nt its constant.
+
+#endif // NEO
 #endif // SHAREDDEFS_H

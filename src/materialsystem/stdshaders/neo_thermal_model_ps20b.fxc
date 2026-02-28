@@ -43,8 +43,9 @@ sampler ShadowDepthSampler		: register( s4 );	// Flashlight shadow depth map sam
 sampler NormalizeRandRotSampler	: register( s5 );	// Normalization / RandomRotation samplers
 sampler FlashlightSampler		: register( s6 );	// Flashlight cookie
 
-const float3 g_ViewDirection : register(c0);
-const float g_Offset : register(c3);
+const float4 g_eyeVectorAndTemperature : register(c0);
+#define g_eyeVector g_eyeVectorAndTemperature.xyz
+#define g_temperature g_eyeVectorAndTemperature.w
 
 struct PS_INPUT
 {
@@ -58,20 +59,9 @@ struct PS_INPUT
 float4 main( PS_INPUT i ) : COLOR
 {
 	// parts of the model facing the camera directly have a value of 1, and parts facing away have a value of 0
-	float dotProduct = (0.5 * dot(g_ViewDirection, i.worldNormal)) + 0.5;
+	float dotProduct = (0.5 * dot(g_eyeVector, i.worldNormal)) + 0.5;
 	
-	// The colder the object the smaller the difference between the hottest and coldest part of the object
-	dotProduct += (g_Offset * 0.5);
-	dotProduct /= (1 + g_Offset);
-	
-	// get the value from the gradient. Translate so brighter
-	float4 baseColor = tex2D( ModelGradientSampler, float2(dotProduct, 0.5)) + 0.35;
-	
-	// cool down by the offset
-	baseColor.rgb -= g_Offset;
-	
-	float fogFactor = CalcPixelFogFactor( PIXELFOGTYPE, g_FogParams, g_EyePos.z, i.worldPos.z, i.projPos.z );
-	bool bWriteDepthToAlpha = ( WRITE_DEPTH_TO_DESTALPHA != 0 ) && ( WRITEWATERFOGTODESTALPHA == 0 );
-
-	return FinalOutput( baseColor, fogFactor, PIXELFOGTYPE, TONEMAP_SCALE_LINEAR, bWriteDepthToAlpha, i.projPos.z );
+	float4 baseColor = tex1D( ModelGradientSampler, dotProduct);
+	baseColor *= g_temperature;
+	return baseColor;
 }

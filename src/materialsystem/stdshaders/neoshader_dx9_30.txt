@@ -3,5 +3,5 @@
 ////////////////////////////////
 
 neo_nightvision_ps30.fxc
-neo_motionvision_pass2_ps30.fxc
+neo_motionvision_ps30.fxc
 neo_thermalvision_ps30.fxc
