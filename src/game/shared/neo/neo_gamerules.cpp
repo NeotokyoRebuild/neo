@@ -249,6 +249,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
+	RecvPropBool(RECVINFO(m_bIsMatchPoint)),
+	RecvPropBool(RECVINFO(m_bIsInSuddenDeath)),
 	RecvPropInt(RECVINFO(m_iHiddenHudElements)),
 	RecvPropInt(RECVINFO(m_iForcedTeam)),
 	RecvPropInt(RECVINFO(m_iForcedClass)),
@@ -274,6 +276,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_nRoundStatus), NumBitsForCount(RoundStatusTotal), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nGameTypeSelected), NumBitsForCount(NEO_GAME_TYPE__TOTAL), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
+	SendPropBool(SENDINFO(m_bIsMatchPoint)),
+	SendPropBool(SENDINFO(m_bIsInSuddenDeath)),
 	SendPropInt(SENDINFO(m_iHiddenHudElements)),
 	SendPropInt(SENDINFO(m_iForcedTeam)),
 	SendPropInt(SENDINFO(m_iForcedClass)),
@@ -741,6 +745,8 @@ void CNEORules::ResetMapSessionCommon()
 {
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
+	m_bIsMatchPoint = false;
+	m_bIsInSuddenDeath = false;
 	V_memset(m_szNeoJinraiClantag.GetForModify(), 0, NEO_MAX_CLANTAG_LENGTH);
 	V_memset(m_szNeoNSFClantag.GetForModify(), 0, NEO_MAX_CLANTAG_LENGTH);
 	m_iGhosterTeam = TEAM_UNASSIGNED;
@@ -1669,6 +1675,11 @@ float CNEORules::GetRoundRemainingTime() const
 	if (m_nRoundStatus == NeoRoundStatus::Idle)
 	{
 		return 0;
+	}
+
+	if (m_nRoundStatus == NeoRoundStatus::PostRound)
+	{
+		return m_flNeoNextRoundStartTime - gpGlobals->curtime;
 	}
 
 	float roundTimeLimit = 0.f;
@@ -2648,8 +2659,8 @@ void CNEORules::StartNextRound()
 	// NEO TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
 	// for when moving from idle to preroundfreeze, or in the future, competitive with whatever
 	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
-	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 	++m_iRoundNumber;
+	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -3407,6 +3418,9 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 bool CNEORules::RoundIsInSuddenDeath() const
 {
+#ifdef CLIENT_DLL
+	return m_bIsInSuddenDeath;
+#else
 	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
 	if (teamJinrai && teamNSF)
@@ -3414,10 +3428,14 @@ bool CNEORules::RoundIsInSuddenDeath() const
 		return (neo_round_limit.GetInt() != 0 && (m_iRoundNumber > neo_round_limit.GetInt()) && teamJinrai->GetRoundsWon() == teamNSF->GetRoundsWon());
 	}
 	return false;
+#endif
 }
 
 bool CNEORules::RoundIsMatchPoint() const
 {
+#ifdef CLIENT_DLL
+	return m_bIsMatchPoint;
+#else
 	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
 	if (teamJinrai && teamNSF && neo_round_limit.GetInt() != 0)
@@ -3429,6 +3447,7 @@ bool CNEORules::RoundIsMatchPoint() const
 		return false;
 	}
 	return false;
+#endif
 }
 
 #ifdef GAME_DLL
@@ -4314,6 +4333,9 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 			m_pRestoredInfos[currentHandle].deathTime = 0.f;
 			currentHandle = m_pRestoredInfos.NextHandle(currentHandle);
 		}
+
+		m_bIsMatchPoint = RoundIsMatchPoint();
+		m_bIsInSuddenDeath = RoundIsInSuddenDeath();
 	}
 #endif // GAME_DLL
 
