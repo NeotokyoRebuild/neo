@@ -1334,3 +1334,23 @@ IMaterial *CBreakableSurfaceProxy::GetMaterial()
 }
 
 EXPOSE_INTERFACE( CBreakableSurfaceProxy, IMaterialProxy, "BreakableSurface" IMATERIAL_PROXY_INTERFACE_VERSION );
+
+int GetBreakableSurfaceType( C_BaseEntity *pC_BaseEntity )
+{
+	Assert(pC_BaseEntity);
+
+	if (!pC_BaseEntity)
+	{
+		return -1;
+	}
+
+	C_BreakableSurface *pBreakableEnt = dynamic_cast<C_BreakableSurface *>(pC_BaseEntity);
+	Assert(pBreakableEnt);
+
+	if (!pBreakableEnt)
+	{
+		return -1;
+	}
+
+	return pBreakableEnt->m_nSurfaceType;
+}

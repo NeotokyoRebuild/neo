@@ -21,6 +21,7 @@
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #else
+#include "func_breakablesurf.h"
 #include "neo_player.h"
 #endif
 #else
@@ -75,6 +76,10 @@ ConVar hl2_episodic( "hl2_episodic", "0", FCVAR_REPLICATED );
 	ConVar ent_debugkeys( "ent_debugkeys", "" );
 	extern bool ParseKeyvalue( void *pObject, typedescription_t *pFields, int iNumFields, const char *szKeyName, const char *szValue );
 	extern bool ExtractKeyvalue( void *pObject, typedescription_t *pFields, int iNumFields, const char *szKeyName, char *szValue, int iMaxLen );
+#endif
+
+#ifdef CLIENT_DLL
+	extern int GetBreakableSurfaceType(C_BaseEntity *pEnt);
 #endif
 
 bool CBaseEntity::m_bAllowPrecache = false;
@@ -2252,49 +2257,56 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		return;
 	}
 
-	// NEO FIX: Detect glass panes (func_breakable_surf) early, before we lose track of them.
-	// CBreakableSurface::TraceAttack() calls Die() immediately, which sets FSOLID_NOT_SOLID.
-	// We need to know which surface we hit while it's still intact in memory.
+	// NEO FIX: Check if going through a breakable surface in order to preserve shatter effect
+	// when tracing through multiple breakable surfaces in a row.
+	// Have to mark it now before entity becomes non-solid after the first TraceAttack().
+	// In the case it is a breakable, we determine if the entity is supposed to be shatterable glass
+	// to force the correct penetration resistance, else it will default to concrete pen resistance.
 	bool bIsBreakableSurface = false;
-	if (material == CHAR_TEX_GLASS && tr.m_pEnt)
+	bool bIsShatterGlassSurf = false;
+	if ((material == CHAR_TEX_GLASS || material == CHAR_TEX_CONCRETE) && tr.m_pEnt)
 	{
 #ifdef GAME_DLL
 		bIsBreakableSurface = FClassnameIs(tr.m_pEnt, "func_breakable_surf");
-#else
+		if (bIsBreakableSurface)
+		{
+			CBreakableSurface *pSurf = assert_cast<CBreakableSurface*>(tr.m_pEnt);
+			bIsShatterGlassSurf = pSurf->m_nSurfaceType == SHATTERSURFACE_GLASS;
+		}
+#endif
+#ifdef CLIENT_DLL
 		const char *cn = tr.m_pEnt->GetClassname();
 		bIsBreakableSurface = cn && strstr(cn, "BreakableSurface");
+		if (bIsBreakableSurface)
+		{
+			bIsShatterGlassSurf = GetBreakableSurfaceType(tr.m_pEnt) == SHATTERSURFACE_GLASS;
+		}
 #endif
 	}
 
 	material -= 'A';
 	if (material > 0 && material < MATERIALS_NUM)
 	{
+#ifdef GAME_DLL
+		if (bIsBreakableSurface && bIsShatterGlassSurf)
+		{
+			material = CHAR_TEX_GLASS - 'A';
+		}
+#endif
 		penResistance = PENETRATION_RESISTANCE[material];
 	}
 
 	trace_t	penetrationTrace;
+	TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
+
 	if (bIsBreakableSurface)
 	{
-		// BUG FIX: Glass panes (func_breakable_surf) shatter on TraceAttack() before this
-		// function runs, becoming non-solid. When TestPenetrationTrace() fires a forward ray
-		// from the first glass to find the next surface, it passes *through* the now-non-solid
-		// first glass and hits the *front face of the second glass*. It then traces backward
-		// from there, returning an endpos at the second glass's front surface. When the
-		// re-fired bullet starts from that position (on or very near a surface), its
-		// TraceAttack() is skipped, so the second glass doesn't shatter. This cascades —
-		// multiple glass panes in a row all fail to break.
-		//
-		// SOLUTION: Manually synthesize the penetration exit 0.5 units past this glass.
-		// The re-fired bullet then starts in open air and hits the *next* glass cleanly,
-		// allowing TraceAttack() to trigger and shatter it normally.
-		Q_memset(&penetrationTrace, 0, sizeof(penetrationTrace));
-		penetrationTrace.endpos = tr.endpos + vecDir * 0.5f;
-		penetrationTrace.fraction = 1.0f - (0.5f / MAX_PENETRATION_DEPTH);
-		penetrationTrace.plane.normal = -tr.plane.normal;
-	}
-	else
-	{
-		TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
+		// NEO HACK: Force a fake thickness for now non-solid breakable surfaces,
+		// this prevents stopping the function at the open air case (fraction == 1.0f).
+		// This is because there is in fact nothing solid to penetrate, but still we need to 
+		// invoke the effects for the breakable surface at DoImpactEffect.
+		constexpr float kBreakableSurfFakeThickness = 2.3f;
+		penetrationTrace.fraction = 1.0f - (kBreakableSurfFakeThickness / MAX_PENETRATION_DEPTH);
 	}
 
 	// See if we found the surface again
@@ -2319,7 +2331,9 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	//		 would do exactly the same anyway...
 
 	// Impact the other side (will look like an exit effect)
-	DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
+	if (!bIsShatterGlassSurf) {
+		DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
+	}
 
 	CEffectData	data;
 	data.m_vNormal = penetrationTrace.plane.normal;
@@ -2334,16 +2348,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	behindMaterialInfo.m_flDistance = info.m_flDistance * (1.0f - tr.fraction);
 	behindMaterialInfo.m_iAmmoType = info.m_iAmmoType;
 	behindMaterialInfo.m_iTracerFreq = info.m_iTracerFreq;
-
-	if (bIsBreakableSurface)
-	{
-		behindMaterialInfo.m_flDamage = info.m_flDamage; // Preserve full damage for glass
-	}
-	else
-	{
-		behindMaterialInfo.m_flDamage = info.m_flDamage * (1.f - (penUsed / info.m_flPenetration));
-	}
-
+	behindMaterialInfo.m_flDamage = info.m_flDamage * (1.f - (penUsed / info.m_flPenetration));
 	behindMaterialInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
 	behindMaterialInfo.m_nFlags = info.m_nFlags;
 	behindMaterialInfo.m_flPenetration = info.m_flPenetration - penUsed;
