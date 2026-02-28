@@ -26,6 +26,7 @@
 #include "neo_misc.h"
 #include "mp3player.h"
 #include "neo_theme.h"
+#include "neo_player_shared.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -1775,13 +1776,14 @@ static constexpr const wchar_t *CREDITSPEOPLELABEL_NAMES[] = {
 	L"Viktor \"Slick Vick\" Svensson",
 	L"Ryan \"Stenchy\" Anderson",
 	L"[title]", // Special Thanks
+	L"Dragoteryx",
 	L"Kasietti",
 	L"Kerim \"Nbc66\" Camdzic",
 	L"Tony \"omega\" Sergi"
 };
 
 static constexpr const wchar_t *CREDITSTITLELABEL_NAMES[] = {
-	L"NEOTOKYO;REBUILD Contributors",
+	NEO_GAME_NAME L" Contributors",
 	L"STUDIO RADI-8",
 	L"NEOTOKYO\u00B0 Contributors",
 	L"Special Thanks"

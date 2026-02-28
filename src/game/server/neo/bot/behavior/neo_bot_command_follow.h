@@ -22,10 +22,14 @@ public:
 private:
 	bool FollowCommandChain( CNEOBot *me );
 	bool FanOutAndCover( CNEOBot *me, Vector &movementTarget, bool bMoveToSeparate = true, float flArrivalZoneSizeSq = -1.0f );
+	ActionResult< CNEOBot > CheckCommanderWeaponRequest( CNEOBot *me );
 
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
 	CNEOBotGhostEquipmentHandler m_ghostEquipmentHandler;
+
+	IntervalTimer m_commanderLookingAtMeTimer;
+	bool m_bWasCommanderLookingAtMe = false;
 
 	EHANDLE m_hTargetEntity;
 	bool m_bGoingToTargetEntity = false;

@@ -585,6 +585,19 @@ void ClientModeShared::OverrideMouseInput( float *x, float *y )
 //-----------------------------------------------------------------------------
 bool ClientModeShared::ShouldDrawViewModel()
 {
+#ifdef NEO
+	auto pWeapon = static_cast<C_NEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+	{
+		auto pPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		auto pTargetPlayer = static_cast<C_NEO_Player *>(pPlayer->GetObserverTarget());
+		if (pTargetPlayer)
+		{
+			return !pTargetPlayer->IsInAim();
+		}
+		return !pPlayer->IsInAim();
+	}
+#endif
 	return true;
 }
 

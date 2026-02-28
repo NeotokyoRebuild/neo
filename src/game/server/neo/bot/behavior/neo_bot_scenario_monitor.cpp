@@ -13,6 +13,8 @@
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_get_health.h"
 #include "bot/behavior/neo_bot_get_ammo.h"
+#include "bot/behavior/neo_bot_command_follow.h"
+#include "bot/behavior/neo_bot_pause.h"
 
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
@@ -64,10 +66,26 @@ ActionResult< CNEOBot >	CNEOBotScenarioMonitor::OnStart( CNEOBot *me, Action< CN
 ConVar neo_bot_fetch_lost_flag_time( "neo_bot_fetch_lost_flag_time", "10", FCVAR_CHEAT, "How long busy NEOBots will ignore the dropped flag before they give up what they are doing and go after it" );
 ConVar neo_bot_flag_kill_on_touch( "neo_bot_flag_kill_on_touch", "0", FCVAR_CHEAT, "If nonzero, any bot that picks up the flag dies. For testing." );
 
+extern ConVar sv_neo_bot_cmdr_enable;
+extern ConVar sv_neo_bot_cmdr_debug_pause_uncommanded;
+
 
 //-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotScenarioMonitor::Update( CNEOBot *me, float interval )
 {
+	if (sv_neo_bot_cmdr_enable.GetBool())
+	{
+		if (me->m_hLeadingPlayer.Get() || me->m_hCommandingPlayer.Get())
+		{
+			return SuspendFor(new CNEOBotCommandFollow, "Following commander");
+		}
+
+		if (sv_neo_bot_cmdr_debug_pause_uncommanded.GetBool())
+		{
+			return SuspendFor(new CNEOBotPause, "Paused by debug convar sv_neo_bot_cmdr_debug_pause_uncommanded");
+		}
+	}
+
 	return Continue();
 }
 

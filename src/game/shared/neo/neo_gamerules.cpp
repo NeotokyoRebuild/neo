@@ -68,7 +68,7 @@ ConVar neo_vip_eligible("cl_neo_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for
 #endif // CLIENT_DLL
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
-ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "30", FCVAR_GAMEDLL, "Maximum points required for a team to win in JGR", true, 1, false, 0);
+ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "20", FCVAR_GAMEDLL, "Maximum points required for a team to win in JGR", true, 1, false, 0);
 #endif
 
 #ifdef GAME_DLL
@@ -144,6 +144,7 @@ ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", 
 ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_juggernaut_spawn_bias("sv_neo_juggernaut_spawn_bias", "0", FCVAR_REPLICATED, "Spawn juggernaut in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
+ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
 #ifdef CLIENT_DLL
 ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
@@ -401,7 +402,7 @@ ConVar neo_vip_round_timelimit("neo_vip_round_timelimit", "3.25", FCVAR_REPLICAT
 ConVar neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATED, "DM round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
-ConVar neo_jgr_round_timelimit("neo_jgr_round_timelimit", "3.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.",
+ConVar neo_jgr_round_timelimit("neo_jgr_round_timelimit", "4.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
@@ -1290,7 +1291,8 @@ void CNEORules::Think(void)
 		}
 		else if (GetGameType() == NEO_GAME_TYPE_JGR)
 		{
-			if (!m_pJuggernautPlayer)
+			if ((!m_pJuggernautPlayer && m_pJuggernautItem && !m_pJuggernautItem->IsBeingActivatedByLosingTeam()) || 
+				(!m_pJuggernautPlayer && !m_pJuggernautItem)) // Juggernaut is absent entirely
 			{
 				if (GetGlobalTeam(TEAM_JINRAI)->GetScore() > GetGlobalTeam(TEAM_NSF)->GetScore())
 				{
@@ -1311,12 +1313,15 @@ void CNEORules::Think(void)
 					m_nRoundStatus = NeoRoundStatus::Overtime;
 				}
 
-				int jgrTeam = m_pJuggernautPlayer->GetTeamNumber();
-				int oppositeTeam = (m_pJuggernautPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
-				if (GetGlobalTeam(jgrTeam)->GetScore() > GetGlobalTeam(oppositeTeam)->GetScore())
+				if (m_pJuggernautPlayer)
 				{
-					SetWinningTeam(jgrTeam, NEO_VICTORY_POINTS, false, true, false, false);
-					return;
+					const int jgrTeam = m_pJuggernautPlayer->GetTeamNumber();
+					const int oppositeTeam = (m_pJuggernautPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+					if (GetGlobalTeam(jgrTeam)->GetScore() > GetGlobalTeam(oppositeTeam)->GetScore())
+					{
+						SetWinningTeam(jgrTeam, NEO_VICTORY_POINTS, false, true, false, false);
+						return;
+					}
 				}
 
 				return;
@@ -3170,7 +3175,17 @@ void CNEORules::RestartGame()
 
 	ResetMapSessionCommon();
 
-	GatherGameTypeVotes();
+	// NEO FIXME (Rain): this GatherGameTypeVotes business seems a bit wonky,
+	// since it'll just gather the clients' "neo_vote_game_mode" cvar values
+	// without prompting for some kind of a vote. So the most likely result
+	// is the map just switching to the "neo_vote_game_mode" default value (CTG),
+	// which may not be appropriate for the map.
+	const bool bFromStarting = (m_nRoundStatus == NeoRoundStatus::Warmup
+		|| m_nRoundStatus == NeoRoundStatus::Countdown);
+	if (sv_neo_gamemode_enforcement.GetInt() == GAMEMODE_ENFORCEMENT_VOTE && bFromStarting)
+	{
+		GatherGameTypeVotes();
+	}
 
 	SetGameRelatedVars();
 
@@ -3848,9 +3863,22 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		{
 			attacker->AddPoints(1, false);
 #ifdef GAME_DLL
-			if (GetGameType() == NEO_GAME_TYPE_JGR && attacker->GetClass() == NEO_CLASS_JUGGERNAUT && IsRoundLive())
+			if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
 			{
-				attacker->GetTeam()->AddScore(1);
+				if (attacker->GetClass() == NEO_CLASS_JUGGERNAUT)
+				{
+					attacker->GetTeam()->AddScore(2);
+				}
+				else if (m_pJuggernautPlayer)
+				{
+					const int attackerTeam = attacker->GetTeamNumber();
+					const int jgrTeam = m_pJuggernautPlayer->GetTeamNumber();
+
+					if (attackerTeam == jgrTeam)
+					{
+						attacker->GetTeam()->AddScore(1);
+					}
+				}
 			}
 #endif
 		}
@@ -3860,7 +3888,10 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 			// Team kill assist
 			if (assister->GetTeamNumber() == victim->GetTeamNumber())
 			{
-				assister->AddPoints(-1, true);
+				if (sv_neo_teamdamage_assists.GetBool())
+				{
+					assister->AddPoints(-1, true);
+				}
 			}
 			// Enemy kill assist
 			else

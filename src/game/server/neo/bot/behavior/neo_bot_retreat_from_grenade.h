@@ -6,7 +6,9 @@
 class CNEOBotRetreatFromGrenade : public Action< CNEOBot >
 {
 public:
-	CNEOBotRetreatFromGrenade( CBaseEntity *grenade );
+	CNEOBotRetreatFromGrenade( CBaseEntity *grenade = nullptr );
+
+	static CBaseEntity *FindDangerousGrenade( CNEOBot *me );
 
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );

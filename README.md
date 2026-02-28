@@ -339,4 +339,5 @@ shaders\fxc\sdk_screenspaceeffect_vs20.vcs
     * Updated as of the TF2 SDK update: [Commit 0759e2e8e179d5352d81d0d4aaded72c1704b7a9](https://github.com/ValveSoftware/source-sdk-2013/commit/0759e2e8e179d5352d81d0d4aaded72c1704b7a9)
 * [Nbc66/source-sdk-2013-ce](https://github.com/Nbc66/source-sdk-2013-ce) - Community Edition for additional fixes prior to the TF2 SDK update
 * [tonysergi/source-sdk-2013](https://github.com/tonysergi/source-sdk-2013) - tonysergi's commits that were missing from the original SDK
+* [Dragoteryx/drgbase](https://github.com/Dragoteryx/drgbase) - Reference for NextBot ladder climbing behavior
 

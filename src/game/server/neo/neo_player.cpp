@@ -2503,8 +2503,6 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	SetPlaybackRate(1.0f);
 	//ResetAnimation();
 
-	DevMsg("Set model: %s\n", model);
-
 	//SetupPlayerSoundsByModel(model); // TODO
 
 #if(0)
@@ -3138,6 +3136,7 @@ void CNEO_Player::GiveDefaultItems(void)
 		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		break;
 	case NEO_CLASS_SUPPORT:
+		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_kyla");
 		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
@@ -3175,7 +3174,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 			CNEOWeaponLoadout::s_LoadoutWeapons[iLoadoutClass][m_iLoadoutWepChoice].info.m_szWeaponEntityName :
 			"";
 #if DEBUG
-	DevMsg("Loadout slot: %i (\"%s\") for %s\n", m_iLoadoutWepChoice.Get(), szWep, GetPlayerName());
+	//DevMsg("Loadout slot: %i (\"%s\") for %s\n", m_iLoadoutWepChoice.Get(), szWep, GetPlayerName());
 #endif
 
 	// If I already own this type don't create one

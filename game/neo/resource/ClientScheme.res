@@ -246,7 +246,8 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"12"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
 				"weight"	"900"
 				"antialias"	"1"
 				"yres"		"480 599"
@@ -254,7 +255,8 @@ Scheme
 			"2"
 			{
 				"name"		"Verdana"
-				"tall"		"13"
+				"tall"		"13" [!$LINUX]
+				"tall"		"16" [$LINUX]
 				"weight"	"900"
 				"antialias"	"1"
 				"yres"		"600 767"
@@ -262,7 +264,8 @@ Scheme
 			"3"
 			{
 				"name"		"Verdana"
-				"tall"		"14"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
 				"yres"	"768 1023"
@@ -270,7 +273,8 @@ Scheme
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16" // "20"
+				"tall"		"16" [!$LINUX] //"20"
+				"tall"		"20" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
 				"yres"	"1024 1199"
@@ -278,7 +282,8 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"16" // "24"
+				"tall"		"16" [!$LINUX] //"24"
+				"tall"		"20" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
 				"yres"	"1200 10000"
@@ -286,7 +291,8 @@ Scheme
 			"6"
 			{
 				"name"		"Verdana"
-				"tall"		"12"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
 				"range"		"0x0000 0x00FF"
 				"weight"	"900"
 			}
@@ -321,7 +327,8 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"12"
+				"tall"		"12" [!$LINUX]
+				"tall"      "13" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F"
 				"yres"	"480 599"
@@ -329,7 +336,8 @@ Scheme
 			"2"
 			{
 				"name"		"Verdana"
-				"tall"		"13"
+				"tall"		"13" [!$LINUX]
+				"tall"		"14" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F"
 				"yres"	"600 767"
@@ -337,7 +345,8 @@ Scheme
 			"3"
 			{
 				"name"		"Verdana"
-				"tall"		"14"
+				"tall"		"14" [!$LINUX]
+				"tall"		"16" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F"
 				"yres"	"768 1023"
@@ -346,7 +355,8 @@ Scheme
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"20"
+				"tall"		"16" [!$LINUX] //"20"
+				"tall"		"18" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F"
 				"yres"	"1024 1199"
@@ -355,7 +365,8 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		""16" //24"
+				"tall"		"16" [!$LINUX] //"24"
+				"tall"		"18" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F"
 				"yres"	"1200 6000"
@@ -374,7 +385,8 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"12"
+				"tall"		"12" [!$LINUX]
+				"tall"      "13" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"480 599"
@@ -382,7 +394,8 @@ Scheme
 			"2"
 			{
 				"name"		"Verdana"
-				"tall"		"13"
+				"tall"		"13" [!$LINUX]
+				"tall"		"14" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"600 767"
@@ -390,7 +403,8 @@ Scheme
 			"3"
 			{
 				"name"		"Verdana"
-				"tall"		"14"
+				"tall"		"14" [!$LINUX]
+				"tall"		"16" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"768 1023"
@@ -399,7 +413,8 @@ Scheme
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"20"
+				"tall"		"16" [!$LINUX] //"20"
+				"tall"		"18" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1024 1199"
@@ -408,7 +423,8 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"24"
+				"tall"		"16" [!$LINUX] //"24"
+				"tall"		"18" [$LINUX]
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1200 6000"
@@ -417,7 +433,8 @@ Scheme
 			"6"
 			{
 				"name"		"Verdana"
-				"tall"		"12"
+				"tall"		"12" [!$LINUX]
+				"tall"      "13" [$LINUX]
 				"range" 		"0x0000 0x00FF"
 				"weight"		"0"
 			}
@@ -434,35 +451,40 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"12"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
 				"weight"	"700"
 				"yres"	"480 599"
 			}
 			"2"
 			{
 				"name"		"Verdana"
-				"tall"		"13"
+				"tall"		"13" [!$LINUX]
+				"tall"		"16" [$LINUX]
 				"weight"	"700"
 				"yres"	"600 767"
 			}
 			"3"
 			{
 				"name"		"Verdana"
-				"tall"		"14"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
 				"weight"	"700"
 				"yres"	"768 1023"
 			}
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"20"
+				"tall"		"20" [!$LINUX]
+				"tall"		"26" [$LINUX]
 				"weight"	"700"
 				"yres"	"1024 1199"
 			}
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"24"
+				"tall"		"24" [!$LINUX]
+				"tall"		"32" [$LINUX]
 				"weight"	"700"
 				"yres"	"1200 10000"
 			}
@@ -507,7 +529,8 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"11"
+				"tall"		"11" [!$LINUX]
+				"tall"		"14" [$LINUX]
 				"weight"	"700"
 				"antialias" "1"
 				"additive"	"1"
@@ -520,7 +543,8 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"8"
+				"tall"		"8" [!$LINUX]
+				"tall"		"10" [$LINUX]
 				"weight"	"700"
 				"antialias" "1"
 				"yres"	"1 599"
@@ -530,7 +554,8 @@ Scheme
 			"2"
 			{
 				"name"		"Verdana"
-				"tall"		"10"
+				"tall"		"10" [!$LINUX]
+				"tall"		"13" [$LINUX]
 				"weight"	"700"
 				"antialias" "1"
 				"yres"	"600 767"
@@ -540,7 +565,8 @@ Scheme
 			"3"
 			{
 				"name"		"Verdana"
-				"tall"		"12"
+				"tall"		"12" [!$LINUX]
+				"tall"		"15" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
 				"yres"	"768 1023"
@@ -549,7 +575,8 @@ Scheme
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
 				"yres"	"1024 1199"
@@ -558,7 +585,8 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"17"
+				"tall"		"17" [!$LINUX]
+				"tall"		"22" [$LINUX]
 				"weight"	"1000"
 				"antialias" "1"
 				"yres"	"1200 10000"
@@ -1007,7 +1035,8 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"12"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
 				"weight"	"700"
 				"yres"	"480 599"
 				"dropshadow"	"1"
@@ -1015,7 +1044,8 @@ Scheme
 			"2"
 			{
 				"name"		"Verdana"
-				"tall"		"13"
+				"tall"		"13" [!$LINUX]
+				"tall"		"16" [$LINUX]
 				"weight"	"700"
 				"yres"	"600 767"
 				"dropshadow"	"1"
@@ -1023,7 +1053,8 @@ Scheme
 			"3"
 			{
 				"name"		"Verdana"
-				"tall"		"14"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
 				"weight"	"700"
 				"yres"	"768 1023"
 				"dropshadow"	"1"
@@ -1031,7 +1062,8 @@ Scheme
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"20"
+				"tall"		"16" [!$LINUX] //"20"
+				"tall"		"20" [$LINUX]
 				"weight"	"700"
 				"yres"	"1024 1199"
 				"dropshadow"	"1"
@@ -1039,7 +1071,8 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"24"
+				"tall"		"16" [!$LINUX] //"24"
+				"tall"		"20" [$LINUX]
 				"weight"	"700"
 				"yres"	"1200 10000"
 				"dropshadow"	"1"

@@ -296,6 +296,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 		c->colorEditInfo.a = nullptr;
 		c->iPrePopupActive = c->iPrePopupHot = FOCUSOFF_NUM;
 		c->iPrePopupActiveSection = c->iPrePopupHotSection = -1;
+		c->iTextSelStart = c->iTextSelCur = -1;
 	}
 
 	switch (c->eMode)
@@ -2094,6 +2095,11 @@ void ColorEdit(const wchar_t *wszLeftLabel, uint8 *r, uint8 *g, uint8 *b, uint8 
 
 static int TextEditChIdxFromMouse(const int iWszTextSize)
 {
+	if (iWszTextSize <= 0)
+	{
+		return 0;
+	}
+
 	const int iMouseOnXWidth = c->iMouseAbsX - (c->rWidgetArea.x0 + c->iMarginX);
 	int iChIdx = -1;
 	for (int i = 0; i < iWszTextSize; ++i)
@@ -2198,6 +2204,12 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 		// changing it. Otherwise use V_wcslen directly after changing wszText
 		// contents.
 		const int iWszTextSize = V_wcslen(wszText);
+
+		// Caused by forced input, set it to the end of the text
+		if (bHasTextSel && c->iTextSelStart == -1 && c->iTextSelCur == -1)
+		{
+			c->iTextSelStart = c->iTextSelCur = iWszTextSize;
+		}
 
 		const int iTextSelMin = bCurRightStart ? c->iTextSelStart : c->iTextSelCur;
 		const int iTextSelMax = bCurRightStart ? c->iTextSelCur : c->iTextSelStart;
@@ -2544,7 +2556,7 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 					static wchar_t wszStaticTmpText[MAX_TEXTINPUT_U8BYTES_LIMIT];
 					if (bFromEnd)
 					{
-						V_wcsncat(wszText, wszClipboard, iMaxWszTextSize + 1);
+						V_wcsncat(wszText, wszClipboard, (size_t)iMaxWszTextSize + 1);
 						c->iTextSelCur = V_wcslen(wszText);
 					}
 					else if (bIsCursor)
