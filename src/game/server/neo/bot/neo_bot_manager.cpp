@@ -91,6 +91,7 @@ static bool UTIL_KickBotFromTeam( int kickTeam )
 CNEOBotManager::CNEOBotManager()
 	: NextBotManager()
 	, m_flNextPeriodicThink( 0 )
+	, m_bHasWarnedNoNavMesh( false )
 {
 	NextBotManager::SetInstance( this );
 }
@@ -109,6 +110,7 @@ void CNEOBotManager::OnMapLoaded( void )
 	NextBotManager::OnMapLoaded();
 
 	m_flNextPeriodicThink = 0.f;
+	m_bHasWarnedNoNavMesh = false;
 
 	NEOBotProfileResetPicks();
 	ClearStuckBotData();
@@ -206,6 +208,20 @@ void CNEOBotManager::MaintainBotQuota()
 {
 	if ( TheNavMesh->IsGenerating() )
 		return;
+
+	if ( m_bHasWarnedNoNavMesh )
+	{
+		return;
+	}
+	else if ( TheNavMesh->GetNavAreaCount() == 0 )
+	{
+		if ( neo_bot_quota.GetInt() > 0 && !m_bHasWarnedNoNavMesh )
+		{
+			Warning( "No NavMesh available for map %s.  In order to add working bots, map maintainer must create a NavMesh with nav_edit/nav_generate/nav_build_ladder.\n", STRING( gpGlobals->mapname ) );
+			m_bHasWarnedNoNavMesh = true;
+		}
+		return;
+	}
 
 	if ( g_fGameOver )
 		return;

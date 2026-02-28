@@ -100,6 +100,7 @@ protected:
 	void RevertOfflinePracticeConvars();
 
 	float m_flNextPeriodicThink;
+	bool m_bHasWarnedNoNavMesh;
 
 	CUtlVector< CStuckBot * > m_stuckBotVector;
 	CountdownTimer m_stuckDisplayTimer;
