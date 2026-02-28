@@ -159,6 +159,7 @@ if(OS_LINUX)
         pthread
         rt
         z
+        GL
     )
 endif()
 

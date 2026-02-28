@@ -1037,9 +1037,12 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		return false;
 
 
-#if defined(NEO) && defined(DEBUG)
+#ifdef NEO
+	InitializeNeoClRenderer();
+#ifdef DEBUG
 	InitializeDbgNeoClGitHashEdit();
-#endif
+#endif // DEBUG
+#endif // NEO
 
 	// it's ok if this is NULL. That just means the sourcevr.dll wasn't found
 	if ( CommandLine()->CheckParm( "-vr" ) )
