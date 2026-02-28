@@ -487,23 +487,23 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 			{
 				pOwner->SetMaxSpeed(pOwner->GetNormSpeed_WithWepEncumberment(this));
 			}
-		}
 
-		if (pOwner->m_nButtons & IN_ZOOM && IsAllowedToZoom(this))
-		{
-			// Should already be aiming, but doesn't hurt to check
-			if (!pOwner->IsInAim())
+			if (pOwner->m_nButtons & IN_ZOOM && IsAllowedToZoom(this))
 			{
-				pOwner->Weapon_SetZoom(true);
+				// Should already be aiming, but doesn't hurt to check
+				if (!pOwner->IsInAim())
+				{
+					pOwner->Weapon_SetZoom(true);
+				}
+				else
+				{
+					pOwner->SetFOV(pOwner, GetWpnData().iAimFOV, 0.1);
+				}
 			}
 			else
 			{
-				pOwner->SetFOV(pOwner, GetWpnData().iAimFOV, 0.1);
+				pOwner->Weapon_SetZoom(false);
 			}
-		}
-		else
-		{
-			pOwner->Weapon_SetZoom(false);
 		}
 	}
 

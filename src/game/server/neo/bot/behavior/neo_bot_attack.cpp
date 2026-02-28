@@ -4,6 +4,7 @@
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/behavior/neo_bot_grenade_dispatch.h"
 #include "bot/neo_bot_path_compute.h"
 
 #include "nav_mesh.h"
@@ -78,6 +79,17 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		{
 			// pre-cloak needs more thermoptic budget when chasing threats
 			me->EnableCloak(6.0f);
+
+			// Consider throwing a grenade
+			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
+			{
+				Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
+				if ( pGrenadeBehavior )
+				{
+					m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
+					return SuspendFor( pGrenadeBehavior, "Throwing grenade before chasing threat!" );
+				}
+			}
 
 			if ( isUsingCloseRangeWeapon )
 			{

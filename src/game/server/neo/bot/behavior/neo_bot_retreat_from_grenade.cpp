@@ -10,8 +10,48 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar neo_bot_retreat_from_grenade_range( "neo_bot_retreat_from_grenade_range", "1000", FCVAR_CHEAT );
+extern ConVar sv_neo_bot_grenade_frag_safety_range_multiplier;
+ConVar neo_bot_retreat_from_grenade_range( "neo_bot_retreat_from_grenade_range", "2000", FCVAR_CHEAT );
 ConVar neo_bot_debug_retreat_from_grenade( "neo_bot_debug_retreat_from_grenade", "0", FCVAR_CHEAT );
+ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
+
+
+//---------------------------------------------------------------------------------------------
+CBaseEntity *CNEOBotRetreatFromGrenade::FindDangerousGrenade( CNEOBot *me )
+{
+	const float flGrenadeCheckRadius = neo_bot_grenade_check_radius.GetFloat();
+	CBaseEntity *closestThreat = NULL;
+	const char *pszGrenadeClass = "neo_grenade_frag";
+	
+	int iSound = CSoundEnt::ActiveList();
+	while ( iSound != SOUNDLIST_EMPTY )
+	{
+		CSound *pSound = CSoundEnt::SoundPointerForIndex( iSound );
+		if ( !pSound )
+			break;
+
+		if ( (pSound->SoundType() & SOUND_DANGER) && pSound->ValidateOwner() )
+		{
+			float distSqr = ( pSound->GetSoundOrigin() - me->GetAbsOrigin() ).LengthSqr();
+			if ( distSqr <= (flGrenadeCheckRadius * flGrenadeCheckRadius) )
+			{
+				CBaseEntity *pOwner = pSound->m_hOwner.Get();
+				// Use FClassnameIs to check if it's a generic base grenade or our specific ones
+				// FClassnameIs is better than dynamic_cast inside a loop when possible
+				if ( pOwner && ( FClassnameIs( pOwner, pszGrenadeClass ) || FClassnameIs( pOwner, "neo_grenade_smoke" ) ) )
+				{
+					// Found a dangerous grenade
+					closestThreat = pOwner;
+					break;
+				}
+			}
+		}
+
+		iSound = pSound->NextSound();
+	}
+
+	return closestThreat;
+}
 
 
 //---------------------------------------------------------------------------------------------
@@ -32,7 +72,7 @@ public:
 		m_me = me;
 		m_grenade = grenade;
 		m_pGrenadeStats = dynamic_cast<CBaseGrenadeProjectile *>( grenade );
-		m_safeRadiusSqr = m_pGrenadeStats ? Square(m_pGrenadeStats->m_DmgRadius * 2.0f) : 0.0f;
+		m_safeRadiusSqr = m_pGrenadeStats ? Square(m_pGrenadeStats->m_DmgRadius * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat()) : 0.0f;
 
 		if ( neo_bot_debug_retreat_from_grenade.GetBool() )
 			TheNavMesh->ClearSelectedSet();
@@ -134,6 +174,11 @@ CNavArea *CNEOBotRetreatFromGrenade::FindCoverArea( CNEOBot *me )
 ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
+
+	if ( !m_grenade )
+	{
+		m_grenade = FindDangerousGrenade( me );
+	}
 
 	m_coverArea = FindCoverArea( me );
 
