@@ -591,7 +591,7 @@ bool ClientModeShared::ShouldDrawViewModel()
 	{
 		auto pPlayer = C_NEO_Player::GetLocalNEOPlayer();
 		auto pTargetPlayer = static_cast<C_NEO_Player *>(pPlayer->GetObserverTarget());
-		if (pTargetPlayer)
+		if (pPlayer->GetObserverMode() == OBS_MODE_IN_EYE && pTargetPlayer)
 		{
 			return !pTargetPlayer->IsInAim();
 		}
