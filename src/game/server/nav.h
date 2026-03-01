@@ -19,7 +19,13 @@
  * Below are several constants used by the navigation system.
  * @todo Move these into TheNavMesh singleton.
  */
+
+#ifdef NEO
+const float GenerationStepSize = 20.0f;			// NEO: some hallways/openings were missing connections with larger value
+#else
 const float GenerationStepSize = 25.0f;			// (30) was 20, but bots can't fit always fit
+#endif
+
 const float JumpHeight = 41.8f;					// if delta Z is less than this, we can jump up on it
 
 #if defined(CSTRIKE_DLL)
