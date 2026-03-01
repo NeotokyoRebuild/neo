@@ -266,22 +266,6 @@ void CWeaponDetpack::ItemPostFrame(void)
 	BaseClass::ItemPostFrame();
 }
 
-// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
-void CWeaponDetpack::CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEye, Vector& vecSrc)
-{
-	trace_t tr;
-
-	UTIL_TraceHull(vecEye, vecSrc,
-		-Vector(NEO_DEPLOYED_DETPACK_RADIUS + 2, NEO_DEPLOYED_DETPACK_RADIUS + 2, NEO_DEPLOYED_DETPACK_RADIUS + 2),
-		Vector(NEO_DEPLOYED_DETPACK_RADIUS + 2, NEO_DEPLOYED_DETPACK_RADIUS + 2, NEO_DEPLOYED_DETPACK_RADIUS + 2),
-		pPlayer->PhysicsSolidMaskForEntity(), pPlayer, pPlayer->GetCollisionGroup(), &tr);
-
-	if (tr.DidHit())
-	{
-		vecSrc = tr.endpos;
-	}
-}
-
 bool CWeaponDetpack::CanDrop()
 {
 	auto owner = GetOwner();
@@ -305,9 +289,10 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 
 	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
 
-	vecSrc += vForward * 16;
+	GetThrowPos(vForward, vecSrc);
 
-	Vector vecThrow = pPlayer->GetAbsVelocity();
+	Vector vecThrow = vForward + pPlayer->GetAbsVelocity();
+
 	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
 
 	if (m_pDetpack)

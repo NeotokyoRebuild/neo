@@ -1550,6 +1550,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.cpp
