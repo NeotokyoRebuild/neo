@@ -1662,11 +1662,15 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	int			nDamageType	= pAmmoDef->DamageType(info.m_iAmmoType);
 	int			nAmmoFlags	= pAmmoDef->Flags(info.m_iAmmoType);
 	
+#ifdef NEO
+	bool bDoServerEffects = info.m_bDoServerEffects ;
+#else
 	bool bDoServerEffects = true;
 
 #if defined( HL2MP ) && defined( GAME_DLL )
 	bDoServerEffects = false;
 #endif
+#endif // NEO
 
 #if defined( GAME_DLL )
 	if( IsPlayer() )
@@ -1745,9 +1749,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		iSeed = CBaseEntity::GetPredictionRandomSeed( info.m_bUseServerRandomSeed ) & 255;
 	}
 
+#ifndef NEO
 #if defined( HL2MP ) && defined( GAME_DLL )
 	int iEffectSeed = iSeed;
 #endif
+#endif // NEO
 	//-----------------------------------------------------
 	// Set up our shot manipulator.
 	//-----------------------------------------------------
@@ -2169,16 +2175,14 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		iSeed++;
 	}
 
+#ifndef NEO
 #if defined( HL2MP ) && defined( GAME_DLL )
 	if ( bDoServerEffects == false )
 	{
-#ifdef NEO
-		TE_HL2MPFireBullets(entindex(), tr.startpos, info.m_vecDirShooting, info.m_iAmmoType, iEffectSeed, info.m_iShots, info.m_vecSpread, bDoTracers, bDoImpacts);
-#else
 		TE_HL2MPFireBullets( entindex(), tr.startpos, info.m_vecDirShooting, info.m_iAmmoType, iEffectSeed, info.m_iShots, info.m_vecSpread.x, bDoTracers, bDoImpacts );
-#endif
 	}
 #endif
+#endif // NEO
 
 #ifdef GAME_DLL
 	ApplyMultiDamage();
