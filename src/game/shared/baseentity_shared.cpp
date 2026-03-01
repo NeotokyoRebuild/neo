@@ -21,6 +21,7 @@
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #else
+#include "func_breakablesurf.h"
 #include "neo_player.h"
 #endif
 #else
@@ -75,6 +76,12 @@ ConVar hl2_episodic( "hl2_episodic", "0", FCVAR_REPLICATED );
 	ConVar ent_debugkeys( "ent_debugkeys", "" );
 	extern bool ParseKeyvalue( void *pObject, typedescription_t *pFields, int iNumFields, const char *szKeyName, const char *szValue );
 	extern bool ExtractKeyvalue( void *pObject, typedescription_t *pFields, int iNumFields, const char *szKeyName, char *szValue, int iMaxLen );
+#endif
+
+#ifdef NEO
+#ifdef CLIENT_DLL
+	extern int GetBreakableSurfaceType(const C_BaseEntity *pEnt);
+#endif
 #endif
 
 bool CBaseEntity::m_bAllowPrecache = false;
@@ -2252,23 +2259,71 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		return;
 	}
 
+	// NEO FIX: Check if going through a breakable surface in order to preserve shatter effect
+	// when tracing through multiple breakable surfaces in a row.
+	// Have to mark it now before entity becomes non-solid after the first TraceAttack().
+	// In the case it is a breakable, we determine if the entity is supposed to be shatterable glass
+	// to force the correct penetration resistance, else it will default to concrete pen resistance.
+	bool bIsBreakableSurface = false;
+	bool bIsShatterGlassSurf = false;
+	if ((material == CHAR_TEX_GLASS || material == CHAR_TEX_CONCRETE) && tr.m_pEnt)
+	{
+#ifdef GAME_DLL
+		bIsBreakableSurface = FClassnameIs(tr.m_pEnt, "func_breakable_surf");
+		if (bIsBreakableSurface)
+		{
+			CBreakableSurface *pSurf = assert_cast<CBreakableSurface*>(tr.m_pEnt);
+			bIsShatterGlassSurf = pSurf->m_nSurfaceType == SHATTERSURFACE_GLASS;
+		}
+#endif
+#ifdef CLIENT_DLL
+		const char *cn = tr.m_pEnt->GetClassname();
+		bIsBreakableSurface = cn && strstr(cn, "BreakableSurface");
+		if (bIsBreakableSurface)
+		{
+			bIsShatterGlassSurf = GetBreakableSurfaceType(tr.m_pEnt) == SHATTERSURFACE_GLASS;
+		}
+#endif
+	}
+
 	material -= 'A';
 	if (material > 0 && material < MATERIALS_NUM)
 	{
+#ifdef GAME_DLL
+		if (bIsBreakableSurface && bIsShatterGlassSurf)
+		{
+			material = CHAR_TEX_GLASS - 'A';
+		}
+#endif
 		penResistance = PENETRATION_RESISTANCE[material];
 	}
 
 	trace_t	penetrationTrace;
 	TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
 
+	if (bIsBreakableSurface)
+	{
+		// NEO HACK: Force a fake thickness for now non-solid breakable surfaces,
+		// this prevents stopping the function at the open air case (fraction == 1.0f).
+		// This is because there is in fact nothing solid to penetrate, but still we need to 
+		// invoke the effects for the breakable surface.
+		constexpr float kBreakableSurfFakeThickness = 2.3f;
+		penetrationTrace.fraction = 1.0f - (kBreakableSurfFakeThickness / MAX_PENETRATION_DEPTH);
+	}
+
 	// See if we found the surface again
-	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
+	if (penetrationTrace.allsolid || penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
 	{
 		return;
 	}
 
 	// See if we have enough pen to penetrate
-	float penUsed = ((1.0f - penetrationTrace.fraction) * MAX_PENETRATION_DEPTH) / penResistance;
+	if (penResistance <= 0.0f || info.m_flPenetration <= 0)
+	{
+		return;
+	}
+
+	const float penUsed = ((1.0f - penetrationTrace.fraction) * MAX_PENETRATION_DEPTH) / penResistance;
 	if (penUsed > info.m_flPenetration)
 	{
 		return;
@@ -2278,7 +2333,10 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	//		 would do exactly the same anyway...
 
 	// Impact the other side (will look like an exit effect)
-	DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
+	if (!bIsShatterGlassSurf)
+	{
+		DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
+	}
 
 	CEffectData	data;
 	data.m_vNormal = penetrationTrace.plane.normal;
