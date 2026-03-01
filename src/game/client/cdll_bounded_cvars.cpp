@@ -145,7 +145,7 @@ float GetClientInterpAmount()
 			AssertMsgOnce( false, "GetInterpolationAmount: can't get cl_updaterate cvar." );
 		}
 #ifdef NEO
-		return 0.033;
+		return 2.0 / 66;
 #else
 		return 0.1;
 #endif
