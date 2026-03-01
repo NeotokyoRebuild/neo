@@ -1335,7 +1335,8 @@ IMaterial *CBreakableSurfaceProxy::GetMaterial()
 
 EXPOSE_INTERFACE( CBreakableSurfaceProxy, IMaterialProxy, "BreakableSurface" IMATERIAL_PROXY_INTERFACE_VERSION );
 
-int GetBreakableSurfaceType( C_BaseEntity *pC_BaseEntity )
+#ifdef NEO
+int GetBreakableSurfaceType( const C_BaseEntity *pC_BaseEntity )
 {
 	Assert(pC_BaseEntity);
 
@@ -1344,12 +1345,8 @@ int GetBreakableSurfaceType( C_BaseEntity *pC_BaseEntity )
 		return -1;
 	}
 
-	C_BreakableSurface *pBreakableEnt = assert_cast<C_BreakableSurface *>(pC_BaseEntity);
-
-	if (!pBreakableEnt)
-	{
-		return -1;
-	}
+	auto *pBreakableEnt = assert_cast<const C_BreakableSurface *>(pC_BaseEntity);
 
 	return pBreakableEnt->m_nSurfaceType;
 }
+#endif

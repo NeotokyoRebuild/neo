@@ -78,8 +78,10 @@ ConVar hl2_episodic( "hl2_episodic", "0", FCVAR_REPLICATED );
 	extern bool ExtractKeyvalue( void *pObject, typedescription_t *pFields, int iNumFields, const char *szKeyName, char *szValue, int iMaxLen );
 #endif
 
+#ifdef NEO
 #ifdef CLIENT_DLL
-	extern int GetBreakableSurfaceType(C_BaseEntity *pEnt);
+	extern int GetBreakableSurfaceType(const C_BaseEntity *pEnt);
+#endif
 #endif
 
 bool CBaseEntity::m_bAllowPrecache = false;
@@ -2304,7 +2306,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		// NEO HACK: Force a fake thickness for now non-solid breakable surfaces,
 		// this prevents stopping the function at the open air case (fraction == 1.0f).
 		// This is because there is in fact nothing solid to penetrate, but still we need to 
-		// invoke the effects for the breakable surface at DoImpactEffect.
+		// invoke the effects for the breakable surface.
 		constexpr float kBreakableSurfFakeThickness = 2.3f;
 		penetrationTrace.fraction = 1.0f - (kBreakableSurfFakeThickness / MAX_PENETRATION_DEPTH);
 	}
@@ -2331,7 +2333,8 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	//		 would do exactly the same anyway...
 
 	// Impact the other side (will look like an exit effect)
-	if (!bIsShatterGlassSurf) {
+	if (!bIsShatterGlassSurf)
+	{
 		DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
 	}
 
