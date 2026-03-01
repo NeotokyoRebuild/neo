@@ -1656,7 +1656,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	int			nAmmoFlags	= pAmmoDef->Flags(info.m_iAmmoType);
 	
 #ifdef NEO
-	bool bDoServerEffects = info.m_nbDoServerEffects;
+	bool bDoServerEffects = info.m_bDoServerEffects ;
 #else
 	bool bDoServerEffects = true;
 

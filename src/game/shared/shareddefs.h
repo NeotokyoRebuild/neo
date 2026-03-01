@@ -794,7 +794,7 @@ struct FireBulletsInfo_t
 #endif
 		m_bPrimaryAttack = true;
 #ifdef NEO
-		m_nbDoServerEffects = true;
+		m_bDoServerEffects  = true;
 #endif // NEO
 		m_bUseServerRandomSeed = false;
 	}
@@ -819,7 +819,7 @@ struct FireBulletsInfo_t
 #endif
 		m_bPrimaryAttack = bPrimaryAttack;
 #ifdef NEO
-		m_nbDoServerEffects = true;
+		m_bDoServerEffects  = true;
 #endif // NEO
 		m_bUseServerRandomSeed = false;
 	}
@@ -842,7 +842,7 @@ struct FireBulletsInfo_t
 		m_flDamageForceScale = 1.0f;
 		m_flPenetration = flPenetration;
 		m_bPrimaryAttack = bPrimaryAttack;
-		m_nbDoServerEffects = bDoServerEffects;
+		m_bDoServerEffects  = bDoServerEffects;
 		m_bUseServerRandomSeed = false;
 	}
 #endif
@@ -865,7 +865,7 @@ struct FireBulletsInfo_t
 	CBaseEntity *m_pAdditionalIgnoreEnt;
 	bool m_bPrimaryAttack;
 #ifdef NEO
-	bool m_nbDoServerEffects;
+	bool m_bDoServerEffects ;
 #endif // NEO
 	bool m_bUseServerRandomSeed;
 };
