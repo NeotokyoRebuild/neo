@@ -89,7 +89,7 @@ public:
 static CBoundedCvar_InterpRatio cl_interp_ratio_var;
 ConVar_ServerBounded *cl_interp_ratio = &cl_interp_ratio_var;
 
-
+#ifndef NEO
 // ------------------------------------------------------------------------------------------ //
 // cl_interp
 // ------------------------------------------------------------------------------------------ //
@@ -123,6 +123,7 @@ public:
 
 static CBoundedCvar_Interp cl_interp_var;
 ConVar_ServerBounded *cl_interp = &cl_interp_var;
+#endif
 
 float GetClientInterpAmount()
 {
@@ -131,7 +132,11 @@ float GetClientInterpAmount()
 	{
 		// #define FIXME_INTERP_RATIO
 		const ConVar_ServerBounded *pUpdateRateBounded = static_cast< const ConVar_ServerBounded* >( pUpdateRate );
+#ifdef NEO
+		return cl_interp_ratio->GetFloat() / ( pUpdateRateBounded ? pUpdateRateBounded->GetFloat() : pUpdateRate->GetFloat() );
+#else
 		return MAX( cl_interp->GetFloat(), cl_interp_ratio->GetFloat() / ( pUpdateRateBounded ? pUpdateRateBounded->GetFloat() : pUpdateRate->GetFloat() ) );
+#endif
 	}
 	else
 	{
@@ -139,8 +144,11 @@ float GetClientInterpAmount()
 		{
 			AssertMsgOnce( false, "GetInterpolationAmount: can't get cl_updaterate cvar." );
 		}
-	
+#ifdef NEO
+		return 2.0 / 66;
+#else
 		return 0.1;
+#endif
 	}
 }
 

@@ -1418,6 +1418,12 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 		RestrictNeoClientCheats();
 
+		ConVar *sv_maxupdaterate = g_pCVar->FindVar( "sv_maxupdaterate" ); Assert(sv_maxupdaterate);
+		ConVar *cl_updaterate = g_pCVar->FindVar( "cl_updaterate" ); Assert(cl_updaterate);
+		static char svMaxUpdateRateDefault[4];
+		V_strcpy_safe(svMaxUpdateRateDefault, sv_maxupdaterate->GetDefault());
+		cl_updaterate->SetDefault(svMaxUpdateRateDefault);
+
 		// ConVarRef so that it properly sets the ConVar value
 		ConVarRef cvr_cl_neo_cfg_version_major("cl_neo_cfg_version_major");
 		ConVarRef cvr_cl_neo_cfg_version_minor("cl_neo_cfg_version_minor");
@@ -1500,6 +1506,19 @@ void CHLClient::PostInit()
 				ConVarRef cvr_voice_modenable("voice_modenable");
 				cvr_voice_modenable.SetValue(cvr_voice_enable.GetBool());
 				cvr_voice_enable.SetValue(true);
+			}
+
+			if (iCfgVerMajor < 27)
+			{
+				// because cl_interp_ratio is dependent on this, and the default of 20
+				// is a bit too low to produce sensible default interp values:
+				//   2/20 = 0.1 (i.e. the old cl_interp)
+				//   2/66 = 0.03030... (much better)
+				constexpr int oldClUpdaterateDefault = 20;
+				if (cl_updaterate->GetInt() == oldClUpdaterateDefault)
+				{
+					cl_updaterate->SetValue(svMaxUpdateRateDefault);
+				}
 			}
 
 			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
