@@ -151,12 +151,14 @@ ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATE
 ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
 #endif
 
+#ifdef GAME_DLL
 // NEO JANK (nullsystem): REASON/BUG (GH-ISSUE #1717): Linux OpenGL + mesa driver clients can wallhack weapons in thermal vision
-ConVar sv_neo_reject_opengl_mesa_check("sv_neo_reject_opengl_mesa_check", "0", FCVAR_GAMEDLL | FCVAR_REPLICATED,
+ConVar sv_neo_reject_opengl_mesa_check("sv_neo_reject_opengl_mesa_check", "0", 0,
 									"If enabled, when the server checks the client rendering backend, it will reject OpenGL. "
 									"This is due to a combination of Linux, NT;RE running in OpenGL, and Mesa driver currently having shaders issues. "
 									"OpenGL rendering is only used on Linux."
 									, true, 0.0f, true, 1.0f);
+#endif
 
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
@@ -168,7 +170,9 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_juggernaut_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_client_autorecord.SetValue(bCurrentValue);
+#ifdef GAME_DLL
 	sv_neo_reject_opengl_mesa_check.SetValue(bCurrentValue); // NEO NOTE (nullsystem): See comment above variable declaration for reason
+#endif
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f
@@ -444,6 +448,7 @@ static const char *s_NeoPreserveEnts[] =
 	"neo_juggernautspawnpoint",
 
 	// HL2MP inherited below
+	"ambient_generic",
 	"ai_network",
 	"ai_hint",
 	"hl2mp_gamerules",
