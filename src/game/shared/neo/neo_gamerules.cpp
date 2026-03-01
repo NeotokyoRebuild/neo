@@ -448,6 +448,7 @@ static const char *s_NeoPreserveEnts[] =
 	"neo_juggernautspawnpoint",
 
 	// HL2MP inherited below
+	"ambient_generic",
 	"ai_network",
 	"ai_hint",
 	"hl2mp_gamerules",
