@@ -637,7 +637,8 @@ CBasePlayer::CBasePlayer( )
 	m_bPendingClientSettings = false;
 #ifdef NEO
 	m_nUpdateRate = GetConVarDefault<ConVar_ServerBounded>("cl_updaterate");
-	m_fLerpTime = GetConVarDefault<ConVar_ServerBounded>("cl_interp");
+	Assert(m_nUpdateRate != 0);
+	m_fLerpTime = GetConVarDefault<ConVar_ServerBounded>("cl_interp_ratio") / m_nUpdateRate;
 #else
 	m_nUpdateRate = 20;  // cl_updaterate defualt
 	m_fLerpTime = 0.1f; // cl_interp default
@@ -3642,7 +3643,9 @@ void CBasePlayer::ClientSettingsChanged()
 		float flLerpRatio = Q_atof( QUICKGETCVARVALUE("cl_interp_ratio") );
 		if ( flLerpRatio == 0 )
 			flLerpRatio = 1.0f;
+#ifndef NEO
 		float flLerpAmount = Q_atof( QUICKGETCVARVALUE("cl_interp") );
+#endif
 
 		static const ConVar *pMin = g_pCVar->FindVar( "sv_client_min_interp_ratio" );
 		static const ConVar *pMax = g_pCVar->FindVar( "sv_client_max_interp_ratio" );
@@ -3656,7 +3659,11 @@ void CBasePlayer::ClientSettingsChanged()
 				flLerpRatio = 1.0f;
 		}
 		// #define FIXME_INTERP_RATIO
+#ifdef NEO
+		this->m_fLerpTime = flLerpRatio / this->m_nUpdateRate;
+#else
 		this->m_fLerpTime = MAX( flLerpAmount, flLerpRatio / this->m_nUpdateRate );
+#endif
 	}
 	else
 	{

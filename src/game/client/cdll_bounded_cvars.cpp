@@ -89,7 +89,7 @@ public:
 static CBoundedCvar_InterpRatio cl_interp_ratio_var;
 ConVar_ServerBounded *cl_interp_ratio = &cl_interp_ratio_var;
 
-
+#ifndef NEO
 // ------------------------------------------------------------------------------------------ //
 // cl_interp
 // ------------------------------------------------------------------------------------------ //
@@ -99,18 +99,9 @@ class CBoundedCvar_Interp : public ConVar_ServerBounded
 public:
 	CBoundedCvar_Interp() :
 	  ConVar_ServerBounded( "cl_interp", 
-#ifdef NEO
-		  "0.033",
-#else
 		  "0.1", 
-#endif
 		  FCVAR_USERINFO | FCVAR_NOT_CONNECTED | FCVAR_ARCHIVE, 
-#ifdef NEO
-		  // NEO NOTE (bauxite): // don't think we need to or should allow clients to set > 100ms interp (it's enough for 20 tick)
-		  "Sets the interpolation amount (bounded on low side by server interp ratio settings).", true, 0.0f, true, 0.1f )
-#else
 		  "Sets the interpolation amount (bounded on low side by server interp ratio settings).", true, 0.0f, true, 0.5f )
-#endif
 	  {
 	  }
 
@@ -132,6 +123,7 @@ public:
 
 static CBoundedCvar_Interp cl_interp_var;
 ConVar_ServerBounded *cl_interp = &cl_interp_var;
+#endif
 
 float GetClientInterpAmount()
 {
@@ -140,7 +132,11 @@ float GetClientInterpAmount()
 	{
 		// #define FIXME_INTERP_RATIO
 		const ConVar_ServerBounded *pUpdateRateBounded = static_cast< const ConVar_ServerBounded* >( pUpdateRate );
+#ifdef NEO
+		return cl_interp_ratio->GetFloat() / ( pUpdateRateBounded ? pUpdateRateBounded->GetFloat() : pUpdateRate->GetFloat() );
+#else
 		return MAX( cl_interp->GetFloat(), cl_interp_ratio->GetFloat() / ( pUpdateRateBounded ? pUpdateRateBounded->GetFloat() : pUpdateRate->GetFloat() ) );
+#endif
 	}
 	else
 	{
