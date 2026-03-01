@@ -1691,7 +1691,7 @@ void CAchievementMgr::Steam_OnUserStatsReceived( UserStatsReceived_t *pUserStats
 	if ( pUserStatsReceived->m_eResult != k_EResultOK )
 	{
 #ifdef NEO
-		DevMsg( __FUNCTION__ ": failed to download stats from Steam, EResult %d\n", pUserStatsReceived->m_eResult );
+		DevMsg( "%s: failed to download stats from Steam, EResult %d\n", __FUNCTION__, pUserStatsReceived->m_eResult );
 #else
 		DevMsg( "CTFSteamStats: failed to download stats from Steam, EResult %d\n", pUserStatsReceived->m_eResult );
 #endif
