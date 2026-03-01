@@ -21,6 +21,7 @@ public:
 
 private:
 	void DrawPlayer(float distance, const Vector& playerPos) const;
+	void DrawBotGhostCallout();
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw() override;
@@ -30,6 +31,9 @@ protected:
 private:
 	vgui::HFont m_hFont;
 	vgui::HTexture m_hTex;
+
+	CHandle<C_NEO_Player> m_hCachedGhostCarrier;
+	float m_flNextGhostSearchTime;
 
 private:
 	CNEOHud_GhostBeacons(const CNEOHud_GhostBeacons &other);

@@ -24,6 +24,8 @@
 #include "tier0/memdbgon.h"
 
 ConVar sv_neo_ctg_ghost_beacons_when_inactive("sv_neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
+ConVar sv_neo_ghost_target_show_teammates_if_bot("sv_neo_ghost_target_show_teammates_if_bot", "1", FCVAR_NONE|FCVAR_REPLICATED,
+	"Whether teammates can see a bot ghost carrier's designated target.", true, 0, true, 1);
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
@@ -32,6 +34,7 @@ BEGIN_PREDICTION_DATA(CWeaponGhost)
 	DEFINE_NEO_BASE_WEP_PREDICTION
 	DEFINE_PRED_FIELD_TOL(m_flDeployTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TICKS_TO_TIME(1)),
 	DEFINE_PRED_FIELD(m_flNearestEnemyDist, FIELD_FLOAT, FTYPEDESC_INSENDTABLE | FTYPEDESC_NOERRORCHECK),
+	DEFINE_PRED_FIELD(m_hDesignatedTarget, FIELD_EHANDLE, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -41,10 +44,12 @@ BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
 	RecvPropTime(RECVINFO(m_flDeployTime)),
 	RecvPropTime(RECVINFO(m_flNearestEnemyDist)),
 	RecvPropTime(RECVINFO(m_flPickupTime)),
+	RecvPropEHandle(RECVINFO(m_hDesignatedTarget)),
 #else
 	SendPropTime(SENDINFO(m_flDeployTime)),
 	SendPropTime(SENDINFO(m_flNearestEnemyDist)),
 	SendPropTime(SENDINFO(m_flPickupTime)),
+	SendPropEHandle(SENDINFO(m_hDesignatedTarget)),
 #endif
 END_NETWORK_TABLE()
 
@@ -64,6 +69,7 @@ CWeaponGhost::CWeaponGhost(void)
 	m_flDeployTime = 0;
 	m_flNearestEnemyDist = FLT_MAX;
 	m_flPickupTime = 0;
+	m_hDesignatedTarget = nullptr;
 }
 
 #ifdef GAME_DLL
@@ -309,6 +315,19 @@ void CWeaponGhost::UpdateNearestGhostBeaconDist()
 
 	m_flNearestEnemyDist = closestEnemy;
 }
+
+#ifdef GAME_DLL
+void CWeaponGhost::SetBotDesignatedTarget(CBaseEntity* pTarget)
+{
+	if (!sv_neo_ghost_target_show_teammates_if_bot.GetBool())
+	{
+		m_hDesignatedTarget = nullptr;
+		return;
+	}
+
+	m_hDesignatedTarget = pTarget;
+}
+#endif
 
 bool CWeaponGhost::BeaconRange(CBaseEntity* enemy, float& outDistance) const
 {

@@ -97,6 +97,12 @@ public:
 		BaseClass::UpdateOnRemove();
 	};
 
+	CBaseEntity* GetDesignatedTarget() const { return m_hDesignatedTarget.Get(); }
+
+#ifdef GAME_DLL
+	void SetBotDesignatedTarget(CBaseEntity* pTarget);
+#endif
+
 private:
 	void PlayGhostSound(float volume = 1.0f);
 #ifdef CLIENT_DLL
@@ -110,6 +116,7 @@ private:
 	CNetworkVar(float, m_flDeployTime); // The timestamp when the ghost was last equipped as the active weapon.
 	CNetworkVar(float, m_flNearestEnemyDist);
 	CNetworkVar(float, m_flPickupTime); // The timestamp when the ghost was last picked up by a player into their inventory.
+	CNetworkHandle(CBaseEntity, m_hDesignatedTarget);
 
 	CWeaponGhost(const CWeaponGhost &other);
 };
