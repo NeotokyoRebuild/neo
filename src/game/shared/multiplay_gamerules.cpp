@@ -66,7 +66,11 @@ REGISTER_GAMERULES_CLASS( CMultiplayRules );
 
 ConVar mp_chattime(
 		"mp_chattime", 
+#ifdef NEO // this cvar val is 10 in OGNT also, but hardcoded(?) as 15 in reality
+		"15",
+#else
 		"10", 
+#endif
 		FCVAR_REPLICATED,
 		"amount of time players can chat after the game is over",
 		true, 1,
