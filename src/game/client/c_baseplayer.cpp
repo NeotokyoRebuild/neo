@@ -1688,6 +1688,11 @@ void C_BasePlayer::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 	// HPE_END
 	//=============================================================================
 
+#ifdef NEO
+	// Same as above, and in NT players can lean
+	viewangles.z = 0;
+#endif
+
 	m_flObserverChaseDistance += gpGlobals->frametime*48.0f;
 
 	float flMinDistance = CHASE_CAM_DISTANCE_MIN;
