@@ -69,11 +69,29 @@ CSound* CNEOBotSeekAndDestroy::SearchGunfireSounds(CNEOBot* me, const Vector* cu
 			continue;
 		}
 
-		if (distSqr < flClosestDistSqr)
+		if (distSqr >= flClosestDistSqr)
 		{
-			flClosestDistSqr = distSqr;
-			pClosestSound = pSound;
+			continue;
 		}
+
+		bool bInPAS = false;
+		CPASFilter filter(pSound->GetSoundOrigin());
+		for (int i = 0; i < filter.GetRecipientCount(); ++i)
+		{
+			if (filter.GetRecipientIndex(i) == me->entindex())
+			{
+				bInPAS = true;
+				break;
+			}
+		}
+
+		if (!bInPAS)
+		{
+			continue;
+		}
+
+		flClosestDistSqr = distSqr;
+		pClosestSound = pSound;
 	}
 
 	return pClosestSound;
