@@ -29,6 +29,7 @@ private:
 
 	PathFollower m_path;
 
+	CountdownTimer m_expiryTimer;
 	CountdownTimer m_repathTimer;
 
 	CNavArea *m_coverArea;

@@ -11,6 +11,7 @@
 #include "tier0/memdbgon.h"
 
 extern ConVar sv_neo_bot_grenade_frag_safety_range_multiplier;
+extern ConVar sv_neo_grenade_fuse_timer;
 ConVar neo_bot_retreat_from_grenade_range( "neo_bot_retreat_from_grenade_range", "2000", FCVAR_CHEAT );
 ConVar neo_bot_debug_retreat_from_grenade( "neo_bot_debug_retreat_from_grenade", "0", FCVAR_CHEAT );
 ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
@@ -180,6 +181,9 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::OnStart( CNEOBot *me, Action<
 		m_grenade = FindDangerousGrenade( me );
 	}
 
+	// Sometimes grenades can be in a bad limbo state, so force exit eventually
+	m_expiryTimer.Start( sv_neo_grenade_fuse_timer.GetFloat() );
+
 	m_coverArea = FindCoverArea( me );
 
 	if ( m_coverArea == NULL )
@@ -192,6 +196,12 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::OnStart( CNEOBot *me, Action<
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float interval )
 {
+	// Sometimes grenades can be in a bad limbo state, so force exit eventually
+	if ( m_expiryTimer.IsElapsed() )
+	{
+		return Done( "Grenade fuse time elapsed" );
+	}
+
 	// If grenade object is gone, we are done
 	if ( !m_grenade )
 	{
