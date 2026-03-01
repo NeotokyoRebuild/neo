@@ -102,4 +102,10 @@
 	{
 	
 	}
+	
+	// inherited from SDK
+	"player_stats_updated"
+	{
+		"forceupload"   "bool"
+	}
 }
