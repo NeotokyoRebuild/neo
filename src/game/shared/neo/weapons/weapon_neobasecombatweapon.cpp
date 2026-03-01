@@ -16,7 +16,7 @@ extern ConVar weaponstay;
 #include "c_te_effect_dispatch.h"
 #include "prediction.h"
 #include "hud_crosshair.h"
-#include "ui/neo_hud_crosshair.h"
+#include "neo_crosshair.h"
 #include "model_types.h"
 #include "c_neo_player.h"
 #include "in_main.h"
