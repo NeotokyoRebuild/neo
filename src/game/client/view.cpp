@@ -78,11 +78,13 @@ extern bool g_bRenderingScreenshot;
 #ifdef NEO
 ConVar neo_fov("neo_fov", V_STRINGIFY(DEFAULT_FOV), FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the normal FOV.", true, static_cast<float>(MIN_FOV), true, static_cast<float>(MAX_FOV),
 	[](IConVar* var, const char* pOldValue, float flOldValue) {
+#ifndef DEBUG // to reduce console output noise in debug builds
 		int newVal = ((ConVar*)var)->GetInt();
 		if (newVal > maxSupportedFov)
 		{
 			Warning("The current FOV value (%d) is above the maximum supported (%d), which may cause visual artifacts!\n", newVal, maxSupportedFov);
 		}
+#endif
 	});
 ConVar neo_fov_relay_spec("neo_fov_relay_spec", "0", FCVAR_ARCHIVE | FCVAR_USERINFO,
 		"If enabled, during first-person spectating, it will relay the target player's neo_fov to the spectator."
