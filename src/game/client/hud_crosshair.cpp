@@ -17,7 +17,7 @@
 #include "VGuiMatSurface/IMatSystemSurface.h"
 #include "client_virtualreality.h"
 #include "sourcevr/isourcevirtualreality.h"
-#include "ui/neo_hud_crosshair.h"
+#include "neo_crosshair.h"
 
 #ifdef SIXENSE
 #include "sixense/in_sixense.h"
@@ -523,7 +523,7 @@ void CHudCrosshair::Paint( void )
 		{
 			// NEO NOTE (nullsystem): Don't revert, just enforce default if it
 			// is not given properly
-			ImportCrosshair(pCrosshairInfo, NEO_CROSSHAIR_DEFAULT);
+			ResetCrosshairToDefault(pCrosshairInfo);
 		}
 		if (!bTakeSpecCrosshair)
 		{

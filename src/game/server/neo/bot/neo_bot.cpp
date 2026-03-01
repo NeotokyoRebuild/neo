@@ -20,6 +20,7 @@
 #include "decals.h"
 #include "neo_weapon_loadout.h"
 #include "behavior/neo_bot_behavior.h"
+#include "neo_crosshair.h"
 
 ConVar neo_bot_notice_gunfire_range("neo_bot_notice_gunfire_range", "3000", FCVAR_GAMEDLL);
 ConVar neo_bot_notice_quiet_gunfire_range("neo_bot_notice_quiet_gunfire_range", "500", FCVAR_GAMEDLL);
@@ -554,10 +555,15 @@ CNEOBot::CNEOBot()
 	edict_t* edict = GetEntity()->edict();
 	if (edict)
 	{
+		{
+			char szCrhSerial[NEO_XHAIR_SEQMAX] = {};
+			DefaultCrosshairSerial(szCrhSerial);
+			engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", szCrhSerial);
+		}
+
 		constexpr struct {
 			const char* name, *value;
 		} convars[] = {
-			{ "cl_neo_crosshair", NEO_CROSSHAIR_DEFAULT },
 			{ "cl_neo_pvs_cull_roaming_observer", "0" },
 			{ "cl_neo_streamermode", "0" },
 			{ "cl_neo_tachi_prefer_auto", "1" },

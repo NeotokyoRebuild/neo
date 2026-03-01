@@ -617,7 +617,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		const bool bImported = ImportCrosshair(&pCrosshair->info, cvr->cl_neo_crosshair.GetString());
 		if (!bImported)
 		{
-			ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
+			ResetCrosshairToDefault(&pCrosshair->info);
 		}
 		pCrosshair->bPreviewDynamicAccuracy = false;
 		pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_NONE;
@@ -873,7 +873,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 	{
 		const NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
 		char szSequence[NEO_XHAIR_SEQMAX];
-		ExportCrosshair(&pCrosshair->info, szSequence);
+		ExportCrosshair(const_cast<CrosshairInfo *>(&pCrosshair->info), szSequence);
 		cvr->cl_neo_crosshair.SetValue(szSequence);
 		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
 		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
@@ -1335,7 +1335,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 			if (bDefaultPressed)
 			{
-				ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
+				ResetCrosshairToDefault(&pCrosshair->info);
 				pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_RESET_TO_DEFAULT;
 				ns->bModified = true;
 			}
@@ -1368,8 +1368,9 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 				&pCrosshair->info.color[3]);
 		if (!bTextured)
 		{
-			NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, &pCrosshair->info.iESizeType);
-			switch (pCrosshair->info.iESizeType)
+			static_assert(sizeof(int) == sizeof(NeoHudCrosshairSizeType));
+			NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, (int *)(&pCrosshair->info.eSizeType));
+			switch (pCrosshair->info.eSizeType)
 			{
 			case CROSSHAIR_SIZETYPE_ABSOLUTE: NeoUI::SliderInt(L"Size", &pCrosshair->info.iSize, 0, CROSSHAIR_MAX_SIZE); break;
 			case CROSSHAIR_SIZETYPE_SCREEN: NeoUI::Slider(L"Size", &pCrosshair->info.flScrSize, 0.0f, 1.0f, 3, 0.01f); break;
@@ -1409,7 +1410,8 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
 			NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
 			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
-			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE_TOTAL, &pCrosshair->info.iEDynamicType);
+			static_assert(sizeof(int) == sizeof(NeoHudCrosshairDynamicType));
+			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE__TOTAL, (int *)(&pCrosshair->info.eDynamicType));
 		}
 		NeoUI::Divider(L"MISCELLANEOUS");
 		NeoUI::RingBoxBool(L"Show other players' crosshairs", &pCrosshair->bNetworkCrosshair);
