@@ -262,7 +262,23 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 
 	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
 
-	vecSrc += vForward * 16;
+	constexpr float playerMaxsY = 16; // cached for perf
+	Assert(pPlayer->GetPlayerMaxs().y == playerMaxsY);
+
+	// The projectile hull... and a bit of magical leeway, because for slanted surfaces, we might get stuck if doing a hull trace
+	// with the exact radius.
+	constexpr float fuzzFactor = 2;
+	static const Vector nadeMaxs(GRENADE_RADIUS + fuzzFactor, GRENADE_RADIUS + fuzzFactor, GRENADE_RADIUS + fuzzFactor);
+	static const Vector nadeMins = -nadeMaxs;
+
+	// Grenade spawning in front of the player's fwd hull maxs needs a clearance
+	// of at least the size of the grenade collider radius.
+	trace_t tr;
+	UTIL_TraceHull(vecSrc,
+		vecSrc + vForward * (GRENADE_RADIUS + playerMaxsY),
+		nadeMins, nadeMaxs,
+		CONTENTS_SOLID, pPlayer, COLLISION_GROUP_NONE, &tr);
+	vecSrc += vForward * (playerMaxsY * tr.fraction);
 
 	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
 
