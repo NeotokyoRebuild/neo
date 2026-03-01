@@ -42,7 +42,7 @@ public:
         return lhs.GetSerialNumber() < rhs.GetSerialNumber();
     }
 
-    CNEOBotPathReservationSystem() : m_BotReservedAreas(EHandleLessFunc), m_AreaOnStuckPenalties(DefLessFunc(unsigned int))
+    CNEOBotPathReservationSystem() : m_BotReservedAreas(EHandleLessFunc), m_AreaAvoidPenalties(DefLessFunc(unsigned int))
     {
         for (int i = 0; i < TEAM__TOTAL; ++i)
         {
@@ -61,8 +61,8 @@ public:
     void DecrementPredictedFriendlyPathCount( int areaID, int teamID );
     int GetPredictedFriendlyPathCount( int areaID, int teamID ) const;
 
-    void IncrementAreaStuckPenalty(unsigned int navAreaID);
-    float GetAreaStuckPenalty(unsigned int navAreaID) const;
+    void IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount);
+    float GetAreaAvoidPenalty(unsigned int navAreaID) const;
 
     // Allow the global accessor to access private members if needed, though constructor handles init now.
     friend CNEOBotPathReservationSystem* CNEOBotPathReservations();
@@ -71,7 +71,7 @@ private:
     CUtlMap<int, ReservationInfo> m_Reservations[TEAM__TOTAL];
     CUtlMap<EHANDLE, BotReservedAreas_t> m_BotReservedAreas;
     CUtlMap<int, int> m_AreaPathCounts[TEAM__TOTAL];
-    CUtlMap<unsigned int, float> m_AreaOnStuckPenalties;
+    CUtlMap<unsigned int, float> m_AreaAvoidPenalties;
 };
 
 
@@ -81,3 +81,5 @@ extern ConVar neo_bot_path_reservation_enable;
 extern ConVar neo_bot_path_reservation_penalty;
 extern ConVar neo_bot_path_reservation_duration;
 extern ConVar neo_bot_path_reservation_distance;
+extern ConVar neo_bot_path_reservation_onstuck_penalty;
+extern ConVar neo_bot_path_reservation_killed_penalty;

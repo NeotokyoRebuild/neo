@@ -23,11 +23,14 @@ ConVar neo_bot_path_reservation_penalty("neo_bot_path_reservation_penalty", "100
 ConVar neo_bot_path_reservation_friendly_penalty_enable("neo_bot_path_reservation_friendly_penalty_enable", "1", FCVAR_NONE,
     "Whether to update or retrieve the area friendly reservation penalty.", true, 0, true, 1);
 
-ConVar neo_bot_path_reservation_onstuck_penalty_enable("neo_bot_path_reservation_onstuck_penalty_enable", "1", FCVAR_NONE,
-    "Whether to update or retrieve the area onstuck penalty.", true, 0, true, 1);
+ConVar neo_bot_path_reservation_avoid_penalty_enable("neo_bot_path_reservation_avoid_penalty_enable", "1", FCVAR_NONE,
+    "Whether to update or retrieve the area avoid penalty.", true, 0, true, 1);
+
+ConVar neo_bot_path_reservation_killed_penalty("neo_bot_path_reservation_killed_penalty", "10", FCVAR_NONE,
+    "Path selection penalty added to a nav area each time a bot dies moving through that area.", true, 0, false, 0);
 
 ConVar neo_bot_path_reservation_onstuck_penalty("neo_bot_path_reservation_onstuck_penalty", "10000", FCVAR_NONE,
-    "Path selection penalty added to a nav area each time a bot gets stuck moving through that area.", true, 0, true, 1000000);
+    "Path selection penalty added to a nav area each time a bot gets stuck moving through that area.", true, 0, false, 0);
 
 
 
@@ -248,7 +251,7 @@ void CNEOBotPathReservationSystem::Clear()
         m_AreaPathCounts[team].RemoveAll();
     }
     m_BotReservedAreas.RemoveAll();
-    m_AreaOnStuckPenalties.RemoveAll();
+    m_AreaAvoidPenalties.RemoveAll();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -308,34 +311,34 @@ int CNEOBotPathReservationSystem::GetPredictedFriendlyPathCount( int areaID, int
 }
 
 //-------------------------------------------------------------------------------------------------
-void CNEOBotPathReservationSystem::IncrementAreaStuckPenalty(unsigned int navAreaID)
+void CNEOBotPathReservationSystem::IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount)
 {
-    if ( !neo_bot_path_reservation_onstuck_penalty_enable.GetBool() )
+    if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
     {
         return;
     }
 
-    unsigned short index = m_AreaOnStuckPenalties.Find(navAreaID);
-    if (index == m_AreaOnStuckPenalties.InvalidIndex())
+    unsigned short index = m_AreaAvoidPenalties.Find(navAreaID);
+    if (index == m_AreaAvoidPenalties.InvalidIndex())
     {
-        index = m_AreaOnStuckPenalties.Insert(navAreaID, 0.0f);
+        index = m_AreaAvoidPenalties.Insert(navAreaID, 0.0f);
     }
 
-    m_AreaOnStuckPenalties[index] += neo_bot_path_reservation_onstuck_penalty.GetFloat();
+    m_AreaAvoidPenalties[index] += penaltyAmount;
 }
 
 //-------------------------------------------------------------------------------------------------
-float CNEOBotPathReservationSystem::GetAreaStuckPenalty(unsigned int navAreaID) const
+float CNEOBotPathReservationSystem::GetAreaAvoidPenalty(unsigned int navAreaID) const
 {
-    if ( !neo_bot_path_reservation_onstuck_penalty_enable.GetBool() )
+    if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
     {
         return 0.0f;
     }
 
-    unsigned short index = m_AreaOnStuckPenalties.Find(navAreaID);
-    if (index != m_AreaOnStuckPenalties.InvalidIndex())
+    unsigned short index = m_AreaAvoidPenalties.Find(navAreaID);
+    if (index != m_AreaAvoidPenalties.InvalidIndex())
     {
-        return m_AreaOnStuckPenalties[index];
+        return m_AreaAvoidPenalties[index];
     }
     return 0.0f;
 }
