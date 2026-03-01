@@ -106,6 +106,12 @@
 	// inherited from SDK
 	"player_stats_updated"
 	{
-		"forceupload"   "bool"
+		"forceupload"	"bool"
+	}
+	
+	"nav_blocked"
+	{
+		"area"			"long"
+		"blocked"		"bool"
 	}
 }
