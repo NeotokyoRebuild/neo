@@ -475,6 +475,8 @@ private:
 	CNetworkVar(bool, m_bCyberspaceLevel);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
+	CNetworkVar(bool, m_bIsMatchPoint);
+	CNetworkVar(bool, m_bIsInSuddenDeath);
 	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);
 	CNetworkString(m_szNeoNSFClantag, NEO_MAX_CLANTAG_LENGTH);
 
