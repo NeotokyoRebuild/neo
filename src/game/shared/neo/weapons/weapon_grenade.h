@@ -14,7 +14,7 @@
 #include "neo_player.h"
 #endif
 
-#include "weapon_neobasecombatweapon.h"
+#include "weapon_neobaseprojectile.h"
 
 #define GRENADE_PAUSED_NO			0
 #define GRENADE_PAUSED_PRIMARY		1
@@ -26,9 +26,9 @@
 #define CWeaponGrenade C_WeaponGrenade
 #endif
 
-class CWeaponGrenade : public CNEOBaseCombatWeapon
+class CWeaponGrenade : public CNEOBaseProjectile
 {
-	DECLARE_CLASS(CWeaponGrenade, CNEOBaseCombatWeapon);
+	DECLARE_CLASS(CWeaponGrenade, CNEOBaseProjectile);
 public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
@@ -69,9 +69,6 @@ public:
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 private:
-	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
-	void	CheckThrowPosition(CBasePlayer *pPlayer, const Vector &vecEye, Vector &vecSrc);
-
 	CNetworkVar(bool, m_bRedraw);	//Draw the weapon again after throwing a grenade
 
 	CNetworkVar(int, m_AttackPaused);
