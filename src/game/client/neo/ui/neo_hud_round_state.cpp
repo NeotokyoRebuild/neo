@@ -416,7 +416,6 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 			if (m_iBeepSecsTotal != secsTotal)
 			{
-				DevMsg("beepsTotal: %i, secsTotal: %i\n", m_iBeepSecsTotal, secsTotal);
 				const bool bEndBeep = secsTotal == 0;
 				const float flVol = bEndBeep ? 1.0f : 0.7f;
 				static constexpr int PITCH_END = 165;
