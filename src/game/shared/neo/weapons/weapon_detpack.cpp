@@ -289,7 +289,7 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 
 	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
 
-	GetThrowPos(vForward, vecSrc, vecSrc);
+	GetThrowPos(vForward, vecSrc);
 
 	Vector vecThrow = vForward + pPlayer->GetAbsVelocity();
 

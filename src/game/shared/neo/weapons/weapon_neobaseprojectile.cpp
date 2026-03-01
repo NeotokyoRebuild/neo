@@ -7,8 +7,9 @@ constexpr float PROJECTILE_RADIUS = 4;
 #include "neo_detpack.h"
 static_assert(PROJECTILE_RADIUS == GRENADE_RADIUS);
 static_assert(PROJECTILE_RADIUS == NEO_DEPLOYED_DETPACK_RADIUS);
-#elif defined(DBGFLAG_ASSERT)
-#include "c_neo_player.h"
+#endif
+#if defined(DBGFLAG_ASSERT)
+#include "neo_gamerules.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -17,8 +18,9 @@ static_assert(PROJECTILE_RADIUS == NEO_DEPLOYED_DETPACK_RADIUS);
 void CNEOBaseProjectile::GetThrowPos(const Vector& throwFwd, const Vector& pos, Vector& outPos) const
 {
 	constexpr float playerMaxsY = 16; // Cached for perf
-#if defined(CLIENT_DLL) && defined(DBGFLAG_ASSERT)
-	Assert(C_NEO_Player::GetLocalNEOPlayer()->GetPlayerMaxs().y == playerMaxsY);
+#ifdef DBGFLAG_ASSERT
+	Assert(NEORules()->GetViewVectors()->m_vHullMax.y == playerMaxsY);
+	AssertFloatEquals(throwFwd.LengthSqr(), 1.f, 0.01f); // Expecting unit vector
 #endif
 
 	// The projectile hull... and a bit of magical leeway, because for slanted

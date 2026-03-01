@@ -247,7 +247,7 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 
 	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
 
-	GetThrowPos(vForward, vecSrc, vecSrc);
+	GetThrowPos(vForward, vecSrc);
 
 	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
 
