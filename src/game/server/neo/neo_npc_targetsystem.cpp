@@ -245,7 +245,7 @@ void CNEO_NPCTargetSystem::Think()
 			VectorNormalize(vecDir);
 
 			// This intentionally should not create any tracer / decal effects being a server side only operation
-			FireBulletsInfo_t info( 1, vecSrc, vecDir, vec3_origin, MAX_TRACE_LENGTH, GetAmmoDef()->Index("AMMO_PRI"), 28.0f, true );
+			FireBulletsInfo_t info( 1, vecSrc, vecDir, vec3_origin, MAX_TRACE_LENGTH, GetAmmoDef()->Index("AMMO_PRI"), 28.0f, true, false );
 			info.m_flDamage = m_flDamage;
 			FireBullets(info);
 			
