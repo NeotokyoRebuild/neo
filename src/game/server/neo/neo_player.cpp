@@ -1366,6 +1366,11 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return 0.0f; // Not obscured
 	}
 
+	if (targetPlayer->IsCarryingGhost())
+	{
+		return 0.0f;
+	}
+
 	// From this point on, assume we are counting bonus points towards observer detection
 	float flDetectionBonus = 0.0f; // # of factors that are helping the observer detect the target
 
