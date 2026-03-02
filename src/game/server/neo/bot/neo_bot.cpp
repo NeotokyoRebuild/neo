@@ -1600,37 +1600,66 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 void CNEOBot::ReloadIfLowClip(void)
 {
 	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-	if (myWeapon && myWeapon->GetPrimaryAmmoCount() > 0)
+
+	if (!myWeapon)
 	{
-		bool shouldReload = false;
-		// SUPA7 reload doesn't discard ammo
-		if ((myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
-		{
-			shouldReload = true;
-		}
-		else
-		{
-			int maxClip = myWeapon->GetMaxClip1();
-			bool isBarrage = IsBarrageAndReloadWeapon(myWeapon);
+		return;
+	}
 
-			int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
+	if (myWeapon->GetPrimaryAmmoCount() <= 0)
+	{
+		return;
+	}
 
-			float aggressionFactor = 1.0f - HealthFraction();
+	if (myWeapon->Clip1() >= myWeapon->GetMaxClip1())
+	{
+		return;
+	}
 
-			float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
-
-			if (myWeapon->Clip1() < static_cast<int>(dynamicThreshold))
-			{
-				shouldReload = true;
-			}
-		}
-
-		if (shouldReload)
+	if ((myWeapon->GetNeoWepBits() & NEO_WEP_BALC))
+	{
+		return;
+	}
+	else if ((myWeapon->GetNeoWepBits() & NEO_WEP_SMAC))
+	{
+		return;
+	}
+	else if ((myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7))
+	{
+		// Consider loading slug
+		if ( (myWeapon->m_iSecondaryAmmoCount > 0) && (myWeapon->Clip1() == myWeapon->GetMaxClip1() - 1))
 		{
 			ReleaseFireButton();
-			PressReloadButton();
+			PressAltFireButton();
+			return; // attempt to load slug
+		}
+		// SUPA7 reload doesn't discard ammo, continue
+	}
+	else if (myWeapon->Clip1() > 0)
+	{
+		auto* pPlayer = ToNEOPlayer(this);
+		if ( pPlayer->GetTimeSinceWeaponFired() < 3.0f)
+		{
+			return; // still in the middle of a fight
+		}
+
+		int maxClip = myWeapon->GetMaxClip1();
+		bool isBarrage = IsBarrageAndReloadWeapon(myWeapon);
+
+		int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
+
+		float aggressionFactor = 1.0f - HealthFraction();
+
+		float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
+
+		if (myWeapon->Clip1() > static_cast<int>(dynamicThreshold))
+		{
+			return; // reloads drop ammo, still have enough in clip
 		}
 	}
+
+	ReleaseFireButton();
+	PressReloadButton();
 }
 
 

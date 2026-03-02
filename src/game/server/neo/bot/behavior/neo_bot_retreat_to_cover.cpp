@@ -204,7 +204,11 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 
-	if ( threat && threat->GetEntity() && threat->GetEntity()->IsPlayer() )
+	if (!threat)
+	{
+		me->ReloadIfLowClip();
+	}
+	else if ( threat->GetEntity() && threat->GetEntity()->IsPlayer() )
 	{
 		CNEO_Player *pThreatPlayer = ToNEOPlayer( threat->GetEntity() );
 		if ( pThreatPlayer && pThreatPlayer->IsCarryingGhost() )
