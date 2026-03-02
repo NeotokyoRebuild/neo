@@ -21,6 +21,8 @@
 #include "tier1/interface.h"
 #include <ctime>
 #include "ui/neo_loading.h"
+#include "ui/neo_ui.h"
+#include "ui/neo_ui_shared.h"
 #include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
@@ -76,6 +78,18 @@ enum ENeoPopup
 };
 
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
+
+ConVar neo_flash_taskbar("neo_flash_taskbar", "0", FCVAR_ARCHIVE,
+	"0: Never"
+	" 1: When comp match starts"
+	" 2: When comp round starts"
+	" 3: When any match starts"
+	" 4: When any round starts",
+	true, 0, true, NeoUI::ENeoFlashTaskbarOption::MaxValue);
+
+ConVar neo_flash_taskbar_no_spec("neo_flash_taskbar_no_spec", "1", FCVAR_ARCHIVE,
+	"Whether to only use neo_flash_taskbar when you are in a player team.",
+	true, false, true, true);
 
 struct YMD
 {
@@ -388,8 +402,13 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	SetMouseInputEnabled(true);
 	UpdateControls();
 	ivgui()->AddTickSignal(GetVPanel(), 200);
-	ListenForGameEvent("server_spawn");
+	ListenForGameEvent("comp_match_start");
+	ListenForGameEvent("comp_round_start");
 	ListenForGameEvent("game_newmap");
+	ListenForGameEvent("game_start");
+	ListenForGameEvent("match_start");
+	ListenForGameEvent("round_start");
+	ListenForGameEvent("server_spawn");
 
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 	ApplySchemeSettings(pScheme);
@@ -561,6 +580,40 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 	else if (Q_strcmp(type, "game_newmap") == 0)
 	{
 		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("mapname"), m_wszMap, sizeof(m_wszMap));
+	}
+	else if (!neo_flash_taskbar_no_spec.GetBool() ||
+		C_NEO_Player::GetLocalPlayer()->GetObserverMode() == OBS_MODE_NONE)
+	{
+		Assert(engine);
+		if (neo_flash_taskbar.GetBool())// && !engine->IsActiveApp())
+		{
+			const char* targetEvent;
+			using NeoUI::ENeoFlashTaskbarOption;
+			switch (neo_flash_taskbar.GetInt())
+			{
+			case ENeoFlashTaskbarOption::AnyMatchStart:
+				targetEvent = "match_start";
+				break;
+			case ENeoFlashTaskbarOption::AnyRoundStart:
+				targetEvent = "round_start";
+				break;
+			case ENeoFlashTaskbarOption::CompMatchStart:
+				targetEvent = "comp_match_start";
+				break;
+			case ENeoFlashTaskbarOption::CompRoundStart:
+				targetEvent = "comp_round_start";
+				break;
+			default:
+				Assert(false);
+				return;
+			}
+
+			if (FStrEq(targetEvent, type))
+			{
+				DevMsg("Flash window for event: %s\n", type);
+				engine->FlashWindow();
+			}
+		}
 	}
 }
 
