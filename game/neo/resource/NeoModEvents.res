@@ -130,4 +130,8 @@
 	"comp_round_start"
 	{
 	}
+	
+	"lobby_all_players_ready"
+	{
+	}
 }

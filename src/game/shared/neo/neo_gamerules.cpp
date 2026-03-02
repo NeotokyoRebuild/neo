@@ -2587,6 +2587,10 @@ void CNEORules::StartNextRound()
 			m_flNeoRoundStartTime = gpGlobals->curtime;
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + sv_neo_readyup_countdown.GetFloat();
 			UTIL_CenterPrintAll("- ALL PLAYERS READY: MATCH STARTING SOON... -\n");
+
+			auto* event = gameeventmanager->CreateEvent("lobby_all_players_ready");
+			if (event)gameeventmanager->FireEvent(event);
+
 			return;
 		}
 		else
@@ -2751,15 +2755,22 @@ void CNEORules::StartNextRound()
 	SetGameRelatedVars();
 
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
+	Assert(event);
 	if (event)
 	{
 		event->SetInt("fraglimit", 0);
 		event->SetInt("priority", 6); // HLTV event priority, not transmitted
-
 		event->SetString("objective", "DEATHMATCH");
-
 		gameeventmanager->FireEvent(event);
 	}
+
+	if (m_iRoundNumber == 1)
+	{
+		event = gameeventmanager->CreateEvent("match_start");
+		Assert(event);
+		if (event) gameeventmanager->FireEvent(event);
+	}
+
 	FireLegacyEvent_NeoRoundStart();
 
 	DevMsg("New round start here!\n");
