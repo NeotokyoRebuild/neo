@@ -3236,7 +3236,11 @@ void C_BaseEntity::Simulate()
 }
 
 // Defined in engine
+#ifdef NEO
 static ConVar cl_interpolate( "cl_interpolate", "1.0", FCVAR_USERINFO | FCVAR_DEVELOPMENTONLY );
+#else
+static ConVar cl_interpolate( "cl_interpolate", "1.0f", FCVAR_USERINFO | FCVAR_DEVELOPMENTONLY );
+#endif // NEO
 
 // (static function)
 void C_BaseEntity::InterpolateServerEntities()
