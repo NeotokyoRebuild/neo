@@ -20,7 +20,7 @@
 
 using vgui::surface;
 
-ConVar cl_neo_hud_hta_enabled("cl_neo_hud_hta_enabled", "1", FCVAR_USERINFO,
+ConVar cl_neo_hud_hta_enabled("cl_neo_hud_hta_enabled", "1", FCVAR_ARCHIVE,
 	"Whether the HUD Health/ThermOptic/AUX module is enabled or not.", true, 0, true, 1);
 extern ConVar cl_neo_hud_health_mode;
 
