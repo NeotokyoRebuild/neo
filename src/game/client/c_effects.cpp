@@ -222,8 +222,13 @@ static ConVar r_SnowPosScale( "r_SnowPosScale", "1", FCVAR_CHEAT, "Snow." );
 static ConVar r_SnowFallSpeed( "r_SnowFallSpeed", "1.5", FCVAR_CHEAT, "Snow fall speed scale." );
 static ConVar r_SnowWindScale( "r_SnowWindScale", "0.0035", FCVAR_CHEAT, "Snow." );
 static ConVar r_SnowDebugBox( "r_SnowDebugBox", "0", FCVAR_CHEAT, "Snow Debug Boxes." );
+#ifdef NEO
+static ConVar r_SnowZoomOffset( "r_SnowZoomOffset", "384.0", FCVAR_CHEAT, "Snow." );
+static ConVar r_SnowZoomRadius( "r_SnowZoomRadius", "512.0", FCVAR_CHEAT, "Snow." );
+#else
 static ConVar r_SnowZoomOffset( "r_SnowZoomOffset", "384.0f", FCVAR_CHEAT, "Snow." );
 static ConVar r_SnowZoomRadius( "r_SnowZoomRadius", "512.0f", FCVAR_CHEAT, "Snow." );
+#endif // NEO
 static ConVar r_SnowStartAlpha( "r_SnowStartAlpha", "25", FCVAR_CHEAT, "Snow." );
 static ConVar r_SnowEndAlpha( "r_SnowEndAlpha", "255", FCVAR_CHEAT, "Snow." );
 static ConVar r_SnowColorRed( "r_SnowColorRed", "150", FCVAR_CHEAT, "Snow." );
@@ -231,7 +236,11 @@ static ConVar r_SnowColorGreen( "r_SnowColorGreen", "175", FCVAR_CHEAT, "Snow." 
 static ConVar r_SnowColorBlue( "r_SnowColorBlue", "200", FCVAR_CHEAT, "Snow." );
 static ConVar r_SnowStartSize( "r_SnowStartSize", "1", FCVAR_CHEAT, "Snow." );
 static ConVar r_SnowEndSize( "r_SnowEndSize", "0", FCVAR_CHEAT, "Snow." );
+#ifdef NEO
+static ConVar r_SnowRayLength( "r_SnowRayLength", "8192.0", FCVAR_CHEAT, "Snow." );
+#else
 static ConVar r_SnowRayLength( "r_SnowRayLength", "8192.0f", FCVAR_CHEAT, "Snow." );
+#endif // NEO
 static ConVar r_SnowRayRadius( "r_SnowRayRadius", "256", FCVAR_CHEAT, "Snow." );
 static ConVar r_SnowRayEnable( "r_SnowRayEnable", "1", FCVAR_CHEAT, "Snow." );
 
@@ -260,8 +269,13 @@ static bool IsInAir( const Vector& position )
 
 ConVar CClient_Precipitation::s_raindensity( "r_raindensity","0.001", FCVAR_CHEAT);
 ConVar CClient_Precipitation::s_rainwidth( "r_rainwidth", "0.5", FCVAR_CHEAT );
+#ifdef NEO
+ConVar CClient_Precipitation::s_rainlength( "r_rainlength", "0.1", FCVAR_CHEAT );
+ConVar CClient_Precipitation::s_rainspeed( "r_rainspeed", "600.0", FCVAR_CHEAT );
+#else
 ConVar CClient_Precipitation::s_rainlength( "r_rainlength", "0.1f", FCVAR_CHEAT );
 ConVar CClient_Precipitation::s_rainspeed( "r_rainspeed", "600.0f", FCVAR_CHEAT );
+#endif // NEO
 ConVar r_rainalpha( "r_rainalpha", "0.4", FCVAR_CHEAT );
 ConVar r_rainalphapow( "r_rainalphapow", "0.8", FCVAR_CHEAT );
 

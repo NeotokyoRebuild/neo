@@ -3236,7 +3236,7 @@ void C_BaseEntity::Simulate()
 }
 
 // Defined in engine
-static ConVar cl_interpolate( "cl_interpolate", "1.0f", FCVAR_USERINFO | FCVAR_DEVELOPMENTONLY );
+static ConVar cl_interpolate( "cl_interpolate", "1.0", FCVAR_USERINFO | FCVAR_DEVELOPMENTONLY );
 
 // (static function)
 void C_BaseEntity::InterpolateServerEntities()

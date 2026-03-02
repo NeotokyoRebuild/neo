@@ -782,8 +782,13 @@ float C_PointWorldText::GetTextSpacingY() const
 	return m_flTextSpacingY;
 }
 
+#ifdef NEO
+ConVar pointworldtext_rainbowspeed_time( "pointworldtext_rainbowspeed_time", "100.0" );
+ConVar pointworldtext_rainbowspeed_char( "pointworldtext_rainbowspeed_char", "15.0" );
+#else
 ConVar pointworldtext_rainbowspeed_time( "pointworldtext_rainbowspeed_time", "100.0f" );
 ConVar pointworldtext_rainbowspeed_char( "pointworldtext_rainbowspeed_char", "15.0f" );
+#endif // NEO
 
 int C_PointWorldText::DrawModel( int flags )
 {
