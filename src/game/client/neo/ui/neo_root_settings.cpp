@@ -750,6 +750,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_tachi_prefer_auto.SetValue(pGeneral->bTachiFullAutoPreferred);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_taking_damage_sounds.SetValue(pGeneral->bTakingDamageSounds);
+		cvr->neo_flash_taskbar.SetValue(pGeneral->iFlashTaskbarOption);
+		cvr->neo_flash_taskbar_no_spec.SetValue(pGeneral->bDontFlashTaskbarIfObserver);
 		NeoSettingsBackgroundWrite(ns);
 	}
 	{
@@ -1046,7 +1048,7 @@ void NeoSettings_General(NeoSettings *ns)
 		NeoUI::EndOverrideFgColor();
 	}
 
-	NeoUI::RingBox(L"Flash the game window in OS taskbar", FLASH_TASKBAR_LABELS, ARRAYSIZE(FLASH_TASKBAR_LABELS), &pGeneral->iFlashTaskbarOption);
+	NeoUI::RingBox(L"Flash inactive game window in OS taskbar", FLASH_TASKBAR_LABELS, ARRAYSIZE(FLASH_TASKBAR_LABELS), &pGeneral->iFlashTaskbarOption);
 	// Hide this option if it's irrelevant for the user, to make the UI less cluttered.
 	if (pGeneral->iFlashTaskbarOption != NeoUI::ENeoFlashTaskbarOption::Never)
 		NeoUI::RingBoxBool(L"Don't flash the taskbar if spectating", &pGeneral->bDontFlashTaskbarIfObserver);

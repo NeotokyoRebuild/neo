@@ -80,6 +80,7 @@ enum ENeoPopup
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
 
 ConVar neo_flash_taskbar("neo_flash_taskbar", "0", FCVAR_ARCHIVE,
+	"Flash inactive game window in the operating system taskbar. "
 	"0: Never"
 	" 1: When comp match starts"
 	" 2: When comp round starts"
@@ -88,7 +89,7 @@ ConVar neo_flash_taskbar("neo_flash_taskbar", "0", FCVAR_ARCHIVE,
 	true, 0, true, NeoUI::ENeoFlashTaskbarOption::MaxValue);
 
 ConVar neo_flash_taskbar_no_spec("neo_flash_taskbar_no_spec", "1", FCVAR_ARCHIVE,
-	"Whether to only use neo_flash_taskbar when you are in a player team.",
+	"Whether to only apply neo_flash_taskbar when you are in a player (not spectator) team.",
 	true, false, true, true);
 
 struct YMD
@@ -406,6 +407,7 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	ListenForGameEvent("comp_round_start");
 	ListenForGameEvent("game_newmap");
 	ListenForGameEvent("game_start");
+	ListenForGameEvent("lobby_all_players_ready");
 	ListenForGameEvent("match_start");
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("server_spawn");
@@ -587,31 +589,35 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 		Assert(engine);
 		if (neo_flash_taskbar.GetBool())// && !engine->IsActiveApp())
 		{
-			const char* targetEvent;
-			using NeoUI::ENeoFlashTaskbarOption;
+			CUtlVector<CUtlString> targetEvents(0, 2);
 			switch (neo_flash_taskbar.GetInt())
 			{
-			case ENeoFlashTaskbarOption::AnyMatchStart:
-				targetEvent = "match_start";
+			case NeoUI::ENeoFlashTaskbarOption::AnyMatchStart:
+				targetEvents.AddToTail("match_start");
 				break;
-			case ENeoFlashTaskbarOption::AnyRoundStart:
-				targetEvent = "round_start";
+			case NeoUI::ENeoFlashTaskbarOption::AnyRoundStart:
+				targetEvents.AddToTail("round_start");
 				break;
-			case ENeoFlashTaskbarOption::CompMatchStart:
-				targetEvent = "comp_match_start";
+			case NeoUI::ENeoFlashTaskbarOption::CompMatchStart:
+				targetEvents.AddToTail("lobby_all_players_ready");
+				targetEvents.AddToTail("comp_match_start");
 				break;
-			case ENeoFlashTaskbarOption::CompRoundStart:
-				targetEvent = "comp_round_start";
+			case NeoUI::ENeoFlashTaskbarOption::CompRoundStart:
+				targetEvents.AddToTail("comp_round_start");
 				break;
 			default:
 				Assert(false);
 				return;
 			}
 
-			if (FStrEq(targetEvent, type))
+			for (const auto& targetEvent: targetEvents)
 			{
-				DevMsg("Flash window for event: %s\n", type);
-				engine->FlashWindow();
+				if (FStrEq(targetEvent, type))
+				{
+					DevMsg("Flash window for event: %s\n", type);
+					engine->FlashWindow();
+					break;
+				}
 			}
 		}
 	}
