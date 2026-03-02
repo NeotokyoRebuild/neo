@@ -33,11 +33,7 @@ public:
 	int		m_iAmmoID;
 	int		m_iWeaponIndex;
 	int		m_iSeed;
-#ifdef NEO
-	Vector	m_vSpread;
-#else
 	float	m_flSpread;
-#endif
 	int		m_iShots;
 	bool	m_bDoImpacts;
 	bool	m_bDoTracers;
@@ -73,38 +69,22 @@ void C_TEHL2MPFireBullets::CreateEffects( void )
 
 	if ( pEnt )
 	{
-#ifdef NEO
-		C_NEO_Player *pPlayer = dynamic_cast<C_NEO_Player *>(pEnt);
-#else
 		C_BasePlayer *pPlayer = dynamic_cast<C_BasePlayer *>(pEnt);
-#endif
 		if ( pPlayer && pPlayer->GetActiveWeapon() )
 		{
-#ifdef NEO
-			CNEOBaseCombatWeapon *pWpn = dynamic_cast<CNEOBaseCombatWeapon *>( pPlayer->GetActiveWeapon() );
-#else
-			C_BaseCombatWeapon *pWpn = dynamic_cast<C_BaseCombatWeapon *>( pPlayer->GetActiveWeapon() );
-#endif		
+			C_BaseCombatWeapon *pWpn = dynamic_cast<C_BaseCombatWeapon *>( pPlayer->GetActiveWeapon() );		
 
 			if ( pWpn )
 			{
 				int iSeed = m_iSeed;
 					
-#ifdef NEO
-				CNEOShotManipulator Manipulator(m_iShots, m_vecDir, pPlayer, pWpn);
-#else
 				CShotManipulator Manipulator( m_vecDir );
-#endif
 				for (int iShot = 0; iShot < m_iShots; iShot++)
 				{
 					RandomSeed( iSeed );	// init random system with this seed
 
 					// Don't run the biasing code for the player at the moment.
-#ifdef NEO
-					Vector vecDir = Manipulator.ApplySpread( m_vSpread );
-#else
 					Vector vecDir = Manipulator.ApplySpread( Vector( m_flSpread, m_flSpread, m_flSpread ) );
-#endif
 					Vector vecEnd = m_vecOrigin + vecDir * MAX_TRACE_LENGTH;
 					trace_t tr;
 					CTraceFilterSkipPlayerAndViewModelOnly traceFilter;
@@ -175,11 +155,7 @@ BEGIN_RECV_TABLE_NOBASE(C_TEHL2MPFireBullets, DT_TEHL2MPFireBullets )
 	RecvPropInt( RECVINFO( m_iShots ) ),
 	RecvPropInt( RECVINFO( m_iPlayer ) ),
 	RecvPropInt( RECVINFO( m_iWeaponIndex ) ),
-#ifdef NEO
-	RecvPropVector(RECVINFO( m_vSpread )),
-#else
 	RecvPropFloat( RECVINFO( m_flSpread ) ),
-#endif
 	RecvPropBool( RECVINFO( m_bDoImpacts ) ),
 	RecvPropBool( RECVINFO( m_bDoTracers ) ),
 END_RECV_TABLE()
