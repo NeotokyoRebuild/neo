@@ -3362,11 +3362,6 @@ void CNEO_Player::PlayerUse( void )
 {
 	BaseClass::PlayerUse();
 
-	if (!sv_neo_bot_cmdr_enable.GetBool())
-	{
-		return;
-	}
-
 	if ( (m_afButtonPressed & IN_USE) && !FindUseEntity() )
 	{
 		// Select bot under cursor to follow/unfollow.
@@ -3384,9 +3379,19 @@ void CNEO_Player::PlayerUse( void )
 			CNEO_Player* pTargetPlayer = ToNEOPlayer(tr.m_pEnt);
 			if ( pTargetPlayer && pTargetPlayer->IsBot())
 			{
-				// The hit entity is a bot! Now, toggle its follow state.
-				pTargetPlayer->ToggleBotFollowCommander( this );
-				// TODO: Do we want to allow using players for some kind of communication?
+				if (sv_neo_bot_cmdr_enable.GetBool())
+				{
+					// The hit entity is a bot! Now, toggle its follow state.
+					pTargetPlayer->ToggleBotFollowCommander( this );
+					// TODO: Do we want to allow using players for some kind of communication?
+				}
+				else if (NEORules()->IsTeamplay() && pTargetPlayer->GetTeamNumber() == GetTeamNumber())
+				{
+					if (pTargetPlayer->GetActiveWeapon())
+					{
+						pTargetPlayer->Weapon_Drop(pTargetPlayer->GetActiveWeapon());
+					}
+				}
 			}
 		}
 	}
