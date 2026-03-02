@@ -10,7 +10,11 @@
 
 #include "player_voice_listener.h"
 
+#ifdef NEO
+ConVar voice_player_speaking_delay_threshold( "voice_player_speaking_delay_threshold", "0.5", FCVAR_CHEAT );
+#else
 ConVar voice_player_speaking_delay_threshold( "voice_player_speaking_delay_threshold", "0.5f", FCVAR_CHEAT );
+#endif // NEO
 
 BEGIN_SCRIPTDESC_ROOT_NAMED( CPlayerVoiceListener, "CPlayerVoiceListener", SCRIPT_SINGLETON "Player voice listeners" )
 	DEFINE_SCRIPTFUNC_NAMED( ScriptIsPlayerSpeaking, "IsPlayerSpeaking", "Returns whether the player specified is speaking." )

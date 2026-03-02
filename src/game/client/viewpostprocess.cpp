@@ -45,7 +45,11 @@ bool g_bFlashlightIsOn = false;
 ConVar mat_bloomscale( "mat_bloomscale", "1" );
 ConVar mat_hdr_level( "mat_hdr_level", "2", FCVAR_ARCHIVE );
 
+#ifdef NEO
+ConVar mat_bloomamount_rate( "mat_bloomamount_rate", "0.05", FCVAR_CHEAT );
+#else
 ConVar mat_bloomamount_rate( "mat_bloomamount_rate", "0.05f", FCVAR_CHEAT );
+#endif // NEO
 static ConVar debug_postproc( "mat_debug_postprocessing_effects", "0", FCVAR_NONE, "0 = off, 1 = show post-processing passes in quadrants of the screen, 2 = only apply post-processing to the centre of the screen" );
 static ConVar split_postproc( "mat_debug_process_halfscreen", "0", FCVAR_CHEAT );
 static ConVar mat_postprocessing_combine( "mat_postprocessing_combine", "1", FCVAR_NONE, "Combine bloom, software anti-aliasing and color correction into one post-processing pass" );
