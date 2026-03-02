@@ -20,9 +20,18 @@ public:
 	virtual const char *GetName( void ) const override { return "CommandFollow"; };
 
 private:
+	enum EBotCommandGoalType
+	{
+		GOAL_NONE,
+		GOAL_FOLLOWING_COMMANDER,
+		GOAL_MOVING_TO_WAYPOINT,
+	};
+
 	bool FollowCommandChain( CNEOBot *me );
 	bool FanOutAndCover( CNEOBot *me, Vector &movementTarget, bool bMoveToSeparate = true, float flArrivalZoneSizeSq = -1.0f );
 	ActionResult< CNEOBot > CheckCommanderWeaponRequest( CNEOBot *me );
+
+	void SendUpdateToCommander( CNEOBot *me, const char *message );
 
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
@@ -30,6 +39,9 @@ private:
 
 	IntervalTimer m_commanderLookingAtMeTimer;
 	bool m_bWasCommanderLookingAtMe = false;
+
+	CHandle<CBasePlayer> m_hLastLeadingPlayer;
+	EBotCommandGoalType m_lastCommandGoalType = GOAL_NONE;
 
 	EHANDLE m_hTargetEntity;
 	bool m_bGoingToTargetEntity = false;

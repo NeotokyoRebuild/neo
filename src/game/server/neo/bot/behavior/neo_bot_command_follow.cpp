@@ -40,10 +40,15 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::OnStart(CNEOBot *me, Action< CNEOB
 	m_commanderLookingAtMeTimer.Invalidate();
 	m_bWasCommanderLookingAtMe = false;
 
+	m_lastCommandGoalType = GOAL_NONE;
+	m_hLastLeadingPlayer = nullptr;
+
 	if (!FollowCommandChain(me))
 	{
 		return Done("No commander to follow");
 	}
+
+	SendUpdateToCommander( me, "Joining your squad." );
 
 	return Continue();
 }
@@ -166,6 +171,8 @@ void CNEOBotCommandFollow::OnEnd(CNEOBot *me, Action< CNEOBot > *nextAction)
 {
 	me->m_hLeadingPlayer = nullptr;
 	me->m_hCommandingPlayer = nullptr;
+	m_lastCommandGoalType = GOAL_NONE;
+	m_hLastLeadingPlayer = nullptr;
 }
 
 
@@ -228,6 +235,13 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		me->m_hLeadingPlayer = pCommander;
 		m_vGoalPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 		pCommander->m_vLastPingByStar.GetForModify(me->GetStar()) = CNEO_Player::VECTOR_INVALID_WAYPOINT;
+
+		if ( m_lastCommandGoalType != GOAL_FOLLOWING_COMMANDER || m_hLastLeadingPlayer != pCommander )
+		{
+			SendUpdateToCommander( me, "Following you." );
+			m_lastCommandGoalType = GOAL_FOLLOWING_COMMANDER;
+			m_hLastLeadingPlayer = pCommander;
+		}
 	}
 	// Go to commander's ping
 	else if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != CNEO_Player::VECTOR_INVALID_WAYPOINT)
@@ -238,6 +252,13 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 			me->m_hLeadingPlayer = nullptr; // Stop following and start travelling to ping
 			m_vGoalPos = pCommander->m_vLastPingByStar.Get(me->GetStar());
 			me->m_vLastPingByStar.GetForModify(me->GetStar()) = pCommander->m_vLastPingByStar.Get(me->GetStar());
+
+			if ( m_lastCommandGoalType != GOAL_MOVING_TO_WAYPOINT || m_hLastLeadingPlayer != pCommander )
+			{
+				SendUpdateToCommander( me, "Moving to waypoint." );
+				m_lastCommandGoalType = GOAL_MOVING_TO_WAYPOINT;
+				m_hLastLeadingPlayer = pCommander;
+			}
 
 			// Force a repath to allow for fine tuned positioning
 			CNEOBotPathCost cost(me, DEFAULT_ROUTE);
@@ -458,4 +479,19 @@ bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, b
 
 	// Still moving to destination, path will be recomputed by the calling context
 	return false;
+}
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotCommandFollow::SendUpdateToCommander( CNEOBot *me, const char *message )
+{
+	CNEO_Player *pCommander = me->m_hCommandingPlayer.Get();
+	if ( pCommander && pCommander->IsNetClient() )
+	{
+		CSingleUserRecipientFilter user( pCommander );
+		user.MakeReliable();
+
+		char szText[256];
+		V_snprintf( szText, sizeof( szText ), "%s: %s", me->GetNeoPlayerName(), message );
+		UTIL_SayTextFilter( user, szText, me, true );
+	}
 }
