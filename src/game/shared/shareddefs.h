@@ -793,10 +793,13 @@ struct FireBulletsInfo_t
 		m_vecDirShooting.Init( VEC_T_NAN, VEC_T_NAN, VEC_T_NAN );
 #endif
 		m_bPrimaryAttack = true;
+#ifdef NEO
+		m_bDoServerEffects  = true;
+#endif // NEO
 		m_bUseServerRandomSeed = false;
 	}
 
-	FireBulletsInfo_t( int nShots, const Vector &vecSrc, const Vector &vecDir, const Vector &vecSpread, float flDistance, int nAmmoType, bool bPrimaryAttack = true )
+	FireBulletsInfo_t( int nShots, const Vector &vecSrc, const Vector &vecDir, const Vector &vecSpread, float flDistance, int nAmmoType, bool bPrimaryAttack = true, bool bDoServerEffects = true )
 	{
 		m_iShots = nShots;
 		m_vecSrc = vecSrc;
@@ -815,11 +818,14 @@ struct FireBulletsInfo_t
 		m_flPenetration = 0.0f;
 #endif
 		m_bPrimaryAttack = bPrimaryAttack;
+#ifdef NEO
+		m_bDoServerEffects  = true;
+#endif // NEO
 		m_bUseServerRandomSeed = false;
 	}
 
 #ifdef NEO
-	FireBulletsInfo_t(int nShots, const Vector& vecSrc, const Vector& vecDir, const Vector& vecSpread, float flDistance, int nAmmoType, float flPenetration, bool bPrimaryAttack = true)
+	FireBulletsInfo_t(int nShots, const Vector& vecSrc, const Vector& vecDir, const Vector& vecSpread, float flDistance, int nAmmoType, float flPenetration, bool bPrimaryAttack = true, bool bDoServerEffects = true)
 	{
 		m_iShots = nShots;
 		m_vecSrc = vecSrc;
@@ -836,6 +842,7 @@ struct FireBulletsInfo_t
 		m_flDamageForceScale = 1.0f;
 		m_flPenetration = flPenetration;
 		m_bPrimaryAttack = bPrimaryAttack;
+		m_bDoServerEffects  = bDoServerEffects;
 		m_bUseServerRandomSeed = false;
 	}
 #endif
@@ -857,6 +864,9 @@ struct FireBulletsInfo_t
 	CBaseEntity *m_pAttacker;
 	CBaseEntity *m_pAdditionalIgnoreEnt;
 	bool m_bPrimaryAttack;
+#ifdef NEO
+	bool m_bDoServerEffects ;
+#endif // NEO
 	bool m_bUseServerRandomSeed;
 };
 

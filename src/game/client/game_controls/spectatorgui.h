@@ -94,10 +94,6 @@ protected:
 
 	vgui::Panel *m_pTopBar;
 	vgui::Panel *m_pBottomBarBlank;
-#ifdef NEO
-	vgui::Label *m_scoreValueLabelJinrai = nullptr;
-	vgui::Label *m_scoreValueLabelNSF = nullptr;
-#endif
 
 	vgui::ImagePanel *m_pBannerImage;
 	vgui::Label *m_pPlayerLabel;
