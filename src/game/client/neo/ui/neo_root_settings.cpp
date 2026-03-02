@@ -624,6 +624,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pCrosshair->bNetworkCrosshair = cvr->cl_neo_crosshair_network.GetBool();
 		pCrosshair->bInaccuracyInScope = cvr->cl_neo_crosshair_scope_inaccuracy.GetBool();
 		pCrosshair->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
+		pCrosshair->bFriendlyFireWarning = cvr->cl_neo_crosshair_friendly_fire_warning.GetBool();
 	}
 	{
 		NeoSettings::HUD *pHUD = &ns->hud;
@@ -878,6 +879,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
 		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
 		cvr->cl_neo_crosshair_hip_fire.SetValue(pCrosshair->bHipFireCrosshair);
+		cvr->cl_neo_crosshair_friendly_fire_warning.SetValue(pCrosshair->bFriendlyFireWarning);
 	}
 	{
 		const NeoSettings::HUD *pHUD = &ns->hud;
@@ -1415,6 +1417,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		NeoUI::RingBoxBool(L"Show other players' crosshairs", &pCrosshair->bNetworkCrosshair);
 		NeoUI::RingBoxBool(L"Inaccuracy in scope", &pCrosshair->bInaccuracyInScope);
 		NeoUI::RingBoxBool(L"Hip fire crosshair", &pCrosshair->bHipFireCrosshair);
+		NeoUI::RingBoxBool(L"Friendly Fire warning", &pCrosshair->bFriendlyFireWarning);
 	}
 	NeoUI::EndSection();
 }

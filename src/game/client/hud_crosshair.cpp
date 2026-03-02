@@ -71,6 +71,7 @@ ConVar cl_neo_crosshair_hip_fire("cl_neo_crosshair_hip_fire", "0", FCVAR_ARCHIVE
 		}
 	});
 ConVar cl_neo_crosshair_scope_inaccuracy("cl_neo_crosshair_scope_inaccuracy", "1", FCVAR_ARCHIVE, "Show the player's inaccuracy when scoped", true, 0, true, 1);
+ConVar cl_neo_crosshair_friendly_fire_warning("cl_neo_crosshair_friendly_fire_warning", "1", FCVAR_ARCHIVE, "Replace crosshair with friendly fire warning where applicable", true, 0, true, 1);
 #endif
 
 CHudCrosshair::CHudCrosshair( const char *pElementName ) :
@@ -533,12 +534,14 @@ void CHudCrosshair::Paint( void )
 	const int iXHairStyle = pCrosshairInfo->iStyle;
 
 	trace_t iffTrace;
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM)
+	bool traceInitialized = false;
+	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && cl_neo_crosshair_friendly_fire_warning.GetBool())
 	{
 		CTraceFilterSimpleList iffTraceFilter(COLLISION_GROUP_NONE);
 		iffTraceFilter.AddEntityToIgnore(pPlayer);
 		constexpr int IFF_TRACELINE_LENGTH = 8192; // a little over 200m
 		UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
+		traceInitialized = true;
 	}
 
 	if (bIsScopedWep && pPlayer->m_bInAim)
@@ -591,7 +594,7 @@ void CHudCrosshair::Paint( void )
 			}
 		}
 	}
-	else if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
+	else if (traceInitialized && IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
 	{
 		vgui::surface()->DrawSetTexture(m_iTexIFFId);
 		int iTexWide, iTexTall;
