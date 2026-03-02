@@ -13,7 +13,7 @@ enum ENeoFlashTaskbarOption : int
 	AnyRoundStart,
 
 	// Any new options must go ABOVE this line.
-	// Please don't reorder existing choices for config compatability.
+	// Please don't reorder existing choices for config compatibility.
 	EnumCount,
 	MaxValue = EnumCount
 };
