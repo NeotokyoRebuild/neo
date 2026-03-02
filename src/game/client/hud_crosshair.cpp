@@ -533,15 +533,15 @@ void CHudCrosshair::Paint( void )
 	}
 	const int iXHairStyle = pCrosshairInfo->iStyle;
 
-	trace_t iffTrace;
-	bool traceInitialized = false;
+	bool showFriendlyFireCrosshair = false;
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && cl_neo_crosshair_friendly_fire_warning.GetBool())
 	{
+		trace_t iffTrace;
 		CTraceFilterSimpleList iffTraceFilter(COLLISION_GROUP_NONE);
 		iffTraceFilter.AddEntityToIgnore(pPlayer);
 		constexpr int IFF_TRACELINE_LENGTH = 8192; // a little over 200m
 		UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
-		traceInitialized = true;
+		showFriendlyFireCrosshair = IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber();
 	}
 
 	if (bIsScopedWep && pPlayer->m_bInAim)
@@ -594,7 +594,7 @@ void CHudCrosshair::Paint( void )
 			}
 		}
 	}
-	else if (traceInitialized && IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
+	else if (showFriendlyFireCrosshair)
 	{
 		vgui::surface()->DrawSetTexture(m_iTexIFFId);
 		int iTexWide, iTexTall;
