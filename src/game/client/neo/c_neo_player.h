@@ -33,7 +33,7 @@ public:
 	static C_NEO_Player *GetVisionTargetNEOPlayer()
 	{ // Returns the player we are spectating if in first person mode, or local player
 		auto localNeoPlayer = GetLocalNEOPlayer();
-		if (localNeoPlayer->IsObserver() && localNeoPlayer->m_iObserverMode == OBS_MODE_IN_EYE)
+		if (localNeoPlayer->IsObserver() && localNeoPlayer->GetObserverMode() == OBS_MODE_IN_EYE)
 		{ // NEOTODO (Adam) clear m_hObserverTarget instead when exiting observer mode?
 			auto targetNeoPlayer = static_cast<C_NEO_Player*>(localNeoPlayer->GetObserverTarget());
 			if (targetNeoPlayer) { return targetNeoPlayer; }
