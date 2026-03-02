@@ -90,8 +90,8 @@ ConVar mat_tonemap_min_avglum( "mat_tonemap_min_avglum", "3.0", FCVAR_CHEAT );
 ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );
 
 #ifdef NEO
-ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_USERINFO, "Whether to use SSAO.", true, 0.0f, true, 1.0f);
-ConVar mat_neo_colorblind_enable("mat_neo_colorblind_enable", "0", FCVAR_USERINFO, "Main switch to toggle color vision deficiency adjustments.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_ARCHIVE, "Whether to use SSAO.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_colorblind_enable("mat_neo_colorblind_enable", "0", FCVAR_ARCHIVE, "Main switch to toggle color vision deficiency adjustments.", true, 0.0f, true, 1.0f);
 #endif
 
 extern ConVar localplayer_visionflags;
@@ -2237,7 +2237,7 @@ static ConVar mat_postprocess_x( "mat_postprocess_x", "4" );
 static ConVar mat_postprocess_y( "mat_postprocess_y", "1" );
 
 #ifdef NEO
-ConVar mat_neo_ssao_blur("mat_neo_ssao_blur", "1", FCVAR_USERINFO, "Use a blur to smooth the SSAO noise.");
+ConVar mat_neo_ssao_blur("mat_neo_ssao_blur", "1", FCVAR_ARCHIVE, "Use a blur to smooth the SSAO noise.");
 ConVar mat_neo_ssao_combine("mat_neo_ssao_combine", "1", FCVAR_CHEAT);
 ConVar mat_neo_ssao_dump("mat_neo_ssao_dump", "0", FCVAR_CHEAT);
 #endif
