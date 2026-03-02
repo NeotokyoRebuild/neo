@@ -20,6 +20,7 @@ CNEOBotCtgLoneWolf::CNEOBotCtgLoneWolf( void )
 	m_bHasRetreatedFromGhost = false;
 	m_vecDropThreatPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 	m_closestCapturePoint = CNEO_Player::VECTOR_INVALID_WAYPOINT;
+	m_pIgnoredWeapons = std::make_unique<CNEOIgnoredWeaponsCache>();
 }
 
 //---------------------------------------------------------------------------------------------
@@ -33,6 +34,8 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBo
 	m_repathTimer.Invalidate();
 	m_stalemateTimer.Invalidate();
 	m_capPointUpdateTimer.Invalidate();
+	m_scavengeTimer.Invalidate();
+	m_pIgnoredWeapons->Reset();
 	m_vecDropThreatPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 	m_closestCapturePoint = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 	m_hPursueTarget = nullptr;
@@ -62,7 +65,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 		// First, ensure we have a weapon.
 		if ( !me->Weapon_GetSlot( 0 ) )
 		{
-			return SuspendFor( new CNEOBotSeekWeapon(), "Scavenging for weapon to hunt threat" );
+			return SuspendFor( new CNEOBotSeekWeapon(nullptr, m_pIgnoredWeapons.get()), "Scavenging for weapon to hunt threat" );
 		}
 
 		// We have a weapon. Investigate the last known location.
@@ -207,22 +210,19 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 		else
 		{
 			// Enemy is closer to goal (blocking us) or gaining on us.
-
-			// If we see a weapon nearby, drop the ghost and take it
-			CBaseEntity *pNearbyWeapon = FindNearestPrimaryWeapon( me->GetAbsOrigin(), true );
-			if ( pNearbyWeapon )
+			if ( m_scavengeTimer.IsElapsed() )
 			{
-				CBaseCombatWeapon *pGhostWep = me->Weapon_GetSlot( 0 );
-				if ( pGhostWep )
-				{
-					if ( me->GetActiveWeapon() != pGhostWep )
-					{
-						me->Weapon_Switch( pGhostWep );
-						return Continue();
-					}
+				m_scavengeTimer.Start( RandomFloat( 0.5f, 1.0f ) );
 
-					me->PressDropButton( 0.1f );
-					return ChangeTo( new CNEOBotSeekWeapon(), "Dropping ghost to scavenge nearby weapon" );
+				// If we see a weapon nearby, drop the ghost and take it
+				CBaseEntity *pNearbyWeapon = FindNearestPrimaryWeapon( me, true, m_pIgnoredWeapons.get() );
+				if ( pNearbyWeapon )
+				{
+					CBaseCombatWeapon *pGhostWep = me->Weapon_GetSlot( 0 );
+					if ( pGhostWep )
+					{
+						return SuspendFor( new CNEOBotSeekWeapon( pNearbyWeapon, m_pIgnoredWeapons.get() ), "Dropping ghost to scavenge nearby weapon" );
+					}
 				}
 			}
 

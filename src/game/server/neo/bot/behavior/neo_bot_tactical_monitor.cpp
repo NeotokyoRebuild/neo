@@ -28,6 +28,9 @@
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 
+ConVar neo_bot_scavenge_upgrade_delay( "neo_bot_scavenge_upgrade_delay", "4", FCVAR_GAMEDLL,
+	"Delay in seconds between checking for a better weapon if the bot already has a primary weapon.", true, 1, false, 0 );
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +61,14 @@ ActionResult< CNEOBot > CNEODespawn::Update( CNEOBot* me, float interval )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+CNEOBotTacticalMonitor::CNEOBotTacticalMonitor()
+{
+	m_pIgnoredWeapons = std::make_unique<CNEOIgnoredWeaponsCache>();
+}
+
+CNEOBotTacticalMonitor::~CNEOBotTacticalMonitor() = default;
+
+
 Action< CNEOBot > *CNEOBotTacticalMonitor::InitialContainedAction( CNEOBot *me )
 {
 	return new CNEOBotScenarioMonitor;
@@ -67,6 +78,7 @@ Action< CNEOBot > *CNEOBotTacticalMonitor::InitialContainedAction( CNEOBot *me )
 //-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	m_pIgnoredWeapons->Reset();
 	return Continue();
 }
 
@@ -444,23 +456,27 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 //-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotTacticalMonitor::ScavengeForPrimaryWeapon( CNEOBot *me )
 {
-	if ( me->Weapon_GetSlot( 0 ) )
-	{
-		return Continue();
-	}
-
 	if ( !m_maintainTimer.IsElapsed() )
 	{
 		return Continue();
 	}
-	m_maintainTimer.Start( 1.0f );
-	
-	// Look for any one valid primary weapon, then dispatch into behavior for more optimal search
-	// true parameter: short-circuit the search if any valid primary weapon is found
-	// We just want to sanity check if there's a valid weapon before suspending into the dedicated behavior
-	if ( FindNearestPrimaryWeapon( me->GetAbsOrigin(), true ) )
+
+	// Avoid swapping weapon in the middle of a fight
+	CNEO_Player* pBotPlayer = ToNEOPlayer( me->GetEntity() );
+	if ( pBotPlayer && pBotPlayer->GetTimeSinceWeaponFired() < 3.0f )
 	{
-		return SuspendFor( new CNEOBotSeekWeapon, "Scavenging for a primary weapon" );
+		return Continue();
+	}
+
+	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
+	const bool bHasPrimaryAmmo = ( pPrimary != nullptr && pPrimary->HasAnyAmmo() );
+	const float flDelay = bHasPrimaryAmmo ? neo_bot_scavenge_upgrade_delay.GetFloat() : 1.0f;
+	m_maintainTimer.Start( flDelay );
+	
+	CBaseEntity *pNearestWeapon = FindNearestPrimaryWeapon( me, false, m_pIgnoredWeapons.get() );
+	if ( pNearestWeapon )
+	{
+		return SuspendFor( new CNEOBotSeekWeapon( pNearestWeapon, m_pIgnoredWeapons.get() ), "Scavenging for a new primary weapon" );
 	}
 
 	return Continue();
