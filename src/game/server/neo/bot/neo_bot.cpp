@@ -1448,6 +1448,24 @@ bool CNEOBot::EquipRequiredWeapon(void)
 
 
 //-----------------------------------------------------------------------------------------------------
+void CNEOBot::DropPrimaryWeapon(void)
+{
+	CBaseCombatWeapon *pPrimary = Weapon_GetSlot( 0 );
+	if ( pPrimary )
+	{
+		if ( GetActiveWeapon() != pPrimary )
+		{
+			Weapon_Switch( pPrimary );
+		}
+		else
+		{
+			PressDropButton();
+		}
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 // Equip the best weapon we have to attack the given threat
 void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary)
 {

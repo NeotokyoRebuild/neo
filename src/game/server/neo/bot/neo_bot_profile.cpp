@@ -26,45 +26,59 @@ static inline CThreadMutex g_vbBotUsedMutex;
 
 ConVar neo_bot_prefix_name_with_difficulty("neo_bot_prefix_name_with_difficulty", "0", FCVAR_GAMEDLL, "Append the skill level of the bot to the bot's name", true, 0.0f, true, 1.0f);
 
-inline const CNEOBotProfile FIXED_DEFAULT_PROFILE = {
-	// GCC 10 (Steam RT 3.0) designated initalizer bug: Cannot place = string here, fixed in 11+
+static constexpr CNEOBotProfile InitFixedDefaultProfile()
+{
+	CNEOBotProfile profile = {
+		// GCC 10 (Steam RT 3.0) designated initalizer bug: Cannot place = string here, fixed in 11+
 #ifdef WIN32
-	.szName = BOT_DEFAULT_NAME,
+		.szName = BOT_DEFAULT_NAME,
 #endif
-	.flagDifficulty = BOT_DIFFICULTY_FLAG_ALL,
-	.iDifficultyForced = -1,
-	.flagClass = BOT_CLASS_FLAG_ALL,
-	.flagsWepPrefs = {
-		{
-			// Recon
-			NEO_WEP_SRM, 							// Private
-			NEO_WEP_JITTE_S, 						// Corporal
-			NEO_WEP_ZR68_C, 						// Sergeant
-			NEO_WEP_SUPA7, 							// Lieutenant
+		.flagDifficulty = BOT_DIFFICULTY_FLAG_ALL,
+		.iDifficultyForced = -1,
+		.flagClass = BOT_CLASS_FLAG_ALL,
+		.flagsWepPrefs = {
+			{
+				// Recon
+				NEO_WEP_SRM, 							// Private
+				NEO_WEP_JITTE_S, 						// Corporal
+				NEO_WEP_ZR68_C, 						// Sergeant
+				NEO_WEP_SUPA7, 							// Lieutenant
+			},
+			{
+				// Assault
+				NEO_WEP_ZR68_S, 						// Private
+				NEO_WEP_ZR68_S | NEO_WEP_M41_S, 		// Corporal
+				NEO_WEP_MX, 							// Sergeant
+				NEO_WEP_AA13 | NEO_WEP_SRS, 			// Lieutenant
+			},
+			{
+				// Support
+				NEO_WEP_ZR68_C | NEO_WEP_SUPA7, 		// Private
+				NEO_WEP_MX, 							// Corporal
+				NEO_WEP_MX | NEO_WEP_MX_S, 				// Sergeant
+				NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ, // Lieutenant
+			},
+			{
+				// VIP
+				NEO_WEP_SMAC,							// Private
+				NEO_WEP_SRM, 							// Corporal
+				NEO_WEP_SRM | NEO_WEP_JITTE, 			// Sergeant
+				NEO_WEP_ZR68_C | NEO_WEP_SUPA7, 		// Lieutenant
+			},
 		},
-		{
-			// Assault
-			NEO_WEP_ZR68_S, 						// Private
-			NEO_WEP_ZR68_S | NEO_WEP_M41_S, 		// Corporal
-			NEO_WEP_MX, 							// Sergeant
-			NEO_WEP_AA13 | NEO_WEP_SRS, 			// Lieutenant
-		},
-		{
-			// Support
-			NEO_WEP_ZR68_C | NEO_WEP_SUPA7, 		// Private
-			NEO_WEP_MX, 							// Corporal
-			NEO_WEP_MX | NEO_WEP_MX_S, 				// Sergeant
-			NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ, // Lieutenant
-		},
-		{
-			// VIP
-			NEO_WEP_SMAC,							// Private
-			NEO_WEP_SRM, 							// Corporal
-			NEO_WEP_SRM | NEO_WEP_JITTE, 			// Sergeant
-			NEO_WEP_ZR68_C | NEO_WEP_SUPA7, 		// Lieutenant
-		},
-	},
-};
+	};
+
+#ifndef WIN32
+	const char* defName = BOT_DEFAULT_NAME;
+	for (int i = 0; i < sizeof(profile.szName) - 1 && defName[i] != '\0'; ++i) {
+		profile.szName[i] = defName[i];
+	}
+#endif
+	
+	return profile;
+}
+
+const CNEOBotProfile FIXED_DEFAULT_PROFILE = InitFixedDefaultProfile();
 
 template <typename FLAG>
 struct FlagCmp
