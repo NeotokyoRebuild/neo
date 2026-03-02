@@ -6,6 +6,8 @@
 #include "neo_hud_crosshair.h"
 #include "neo_hud_friendly_marker.h"
 
+#include "neo_ui_shared.h"
+
 // NEO TODO (nullsystem): Implement our own file IO dialog
 #include "vgui_controls/FileOpenDialog.h"
 
@@ -73,6 +75,8 @@ struct NeoSettings
 		bool bTachiFullAutoPreferred;
 		int iBackground;
 		bool bTakingDamageSounds;
+		std::underlying_type_t<NeoUI::ENeoFlashTaskbarOption> iFlashTaskbarOption;
+		bool bDontFlashTaskbarIfObserver;
 	};
 
 	struct Keys
@@ -267,6 +271,8 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 		CONVARREF_DEF(cl_neo_equip_utility_priority);
 		CONVARREF_DEF(cl_neo_taking_damage_sounds);
+		CONVARREF_DEF(neo_flash_taskbar);
+		CONVARREF_DEF(neo_flash_taskbar_no_spec);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
