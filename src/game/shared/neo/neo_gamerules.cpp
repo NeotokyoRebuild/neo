@@ -3494,6 +3494,21 @@ void CNEORules::RestartGame()
 	}
 
 	SetGameRelatedVars();
+
+	event = gameeventmanager->CreateEvent("match_start");
+	Assert(event);
+	if (event)
+		gameeventmanager->FireEvent(event);
+
+	if (GetActiveGameConfig() && sv_neo_comp.GetBool())
+	{
+		event = gameeventmanager->CreateEvent("comp_match_start");
+		Assert(event);
+		if (event)
+			gameeventmanager->FireEvent(event);
+	}
+
+	FireLegacyEvent_NeoRoundStart();
 }
 #endif
 
@@ -3819,13 +3834,27 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		return;
 	}
 
-	if (auto pEntGameCfg = GetActiveGameConfig())
+	auto* pEntGameCfg = GetActiveGameConfig();
+	if (pEntGameCfg)
 	{
 		pEntGameCfg->m_OnRoundEnd.Set(team, nullptr, pEntGameCfg);
 	}
 
 	if (bForceMapReset)
 	{
+		auto* event = gameeventmanager->CreateEvent("match_end");
+		Assert(event);
+		if (event)
+			gameeventmanager->FireEvent(event);
+
+		if (pEntGameCfg && sv_neo_comp.GetBool())
+		{
+			event = gameeventmanager->CreateEvent("comp_match_start");
+			Assert(event);
+			if (event)
+				gameeventmanager->FireEvent(event);
+		}
+
 		RestartGame();
 	}
 	else
