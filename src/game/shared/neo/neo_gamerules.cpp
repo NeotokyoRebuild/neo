@@ -3038,6 +3038,8 @@ void CNEORules::StartNextRound()
 	SetGameRelatedVars();
 	MatchSessionBackup();
 
+	gameeventmanager->CreateEvent("noexist");
+
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	Assert(event);
 	if (event)
