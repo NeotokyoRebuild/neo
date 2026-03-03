@@ -1823,7 +1823,7 @@ bool CNEOBot::IsLineOfFirePenetrationClear(const trace_t &tr, const Vector &from
 
 	// Only bother with fire penetration in short distance
 	auto *neoWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
-	if (!neoWeapon)
+	if (!neoWeapon || !(neoWeapon->GetNeoWepBits() & NEO_WEP_FIREARM))
 	{
 		return false;
 	}
