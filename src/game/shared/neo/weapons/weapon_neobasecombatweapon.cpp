@@ -650,7 +650,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	bool bFired = false;
 
 	// Secondary attack has priority
-	if (pOwner->m_nButtons & IN_ATTACK2 && CanPerformSecondaryAttack())
+	if ((pOwner->m_nButtons & IN_ATTACK2) && CanPerformSecondaryAttack())
 	{
 		if (UsesSecondaryAmmo() && m_iSecondaryAmmoCount <= 0)
 		{
