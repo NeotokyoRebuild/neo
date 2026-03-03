@@ -164,6 +164,117 @@ public:
 	virtual IGameEvent *UnserializeEvent( bf_read *buf ) = 0; // create new KeyValues, must be deleted
 };
 
+#if defined(NEO) && defined(DBGFLAG_ASSERT)
+// Debug shim for IGameEventManager2 with extra asserts
+class IDebugGameEventManager : public IGameEventManager2
+{
+	IGameEventManager2* m_impl;
+
+public:
+	IDebugGameEventManager(IGameEventManager2* impl)
+		: m_impl(impl)
+	{
+		Assert(impl);
+	}
+
+	virtual ~IDebugGameEventManager()
+	{
+		delete m_impl;
+	}
+
+	// load game event descriptions from a file eg "resource\gameevents.res"
+	virtual int LoadEventsFromFile(const char* filename)
+	{
+		return m_impl->LoadEventsFromFile(filename);
+	}
+
+	// removes all and anything
+	virtual void  Reset()
+	{
+		return m_impl->Reset();
+	}
+
+	// adds a listener for a particular event
+	virtual bool AddListener(IGameEventListener2* listener, const char* name, bool bServerSide)
+	{
+		return m_impl->AddListener(listener, name, bServerSide);
+	}
+
+	// returns true if this listener is listens to given event
+	virtual bool FindListener(IGameEventListener2* listener, const char* name)
+	{
+		auto ret = m_impl->FindListener(listener, name);
+		Assert(ret);
+		return ret;
+	}
+
+	// removes a listener
+	virtual void RemoveListener(IGameEventListener2* listener)
+	{
+		return m_impl->RemoveListener(listener);
+	}
+
+	// create an event by name, but doesn't fire it. returns NULL is event is not
+	// known or no listener is registered for it. bForce forces the creation even if no listener is active
+	virtual IGameEvent* CreateEvent(const char* name, bool bForce = false)
+	{
+		auto ret = m_impl->CreateEvent(name, bForce);
+		constexpr const char* modEventsFile = "resource/NeoModEvents.res";
+		if (bForce)
+		{
+			AssertMsg2(ret, "Event \"%s\" unknown or lacks listener; check %s", name, modEventsFile);
+		}
+		else
+		{
+			AssertMsg2(ret, "Event \"%s\" unknown; check %s", name, modEventsFile);
+		}
+		return ret;
+	}
+
+	// fires a server event created earlier, if bDontBroadcast is set, event is not send to clients
+	virtual bool FireEvent(IGameEvent* event, bool bDontBroadcast = false)
+	{
+		auto ret = m_impl->FireEvent(event, bDontBroadcast);
+		Assert(ret);
+		return ret;
+	}
+
+	// fires an event for the local client only, should be used only by client code
+	virtual bool FireEventClientSide(IGameEvent* event)
+	{
+		auto ret = m_impl->FireEventClientSide(event);
+		Assert(ret);
+		return ret;
+	}
+
+	// create a new copy of this event, must be free later
+	virtual IGameEvent* DuplicateEvent(IGameEvent* event)
+	{
+		return m_impl->DuplicateEvent(event);
+	}
+
+	// if an event was created but not fired for some reason, it has to bee freed, same UnserializeEvent
+	virtual void FreeEvent(IGameEvent* event)
+	{
+		return m_impl->FreeEvent(event);
+	}
+
+	// write/read event to/from bitbuffer
+	virtual bool SerializeEvent(IGameEvent* event, bf_write* buf)
+	{
+		auto res = m_impl->SerializeEvent(event, buf);
+		Assert(res);
+		return res;
+	}
+
+	// create new KeyValues, must be deleted
+	virtual IGameEvent *UnserializeEvent( bf_read *buf )
+	{
+		return m_impl->UnserializeEvent(buf);
+	}
+};
+#endif
+
 // the old game event manager interface, don't use it. Rest is legacy support:
 
 abstract_class IGameEventListener
