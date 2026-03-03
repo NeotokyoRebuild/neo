@@ -71,8 +71,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		// SUPA7 reload can be interrupted so proactively reload
 		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
 		{
-			me->ReleaseFireButton();
-			me->PressReloadButton();
+			me->ReloadIfLowClip(true);
 		}
 		
 		if ( threat->IsVisibleRecently() )

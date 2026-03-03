@@ -622,10 +622,9 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if ( myWeapon->Clip1() <= 0 )
 			{
-				me->ReleaseFireButton();
 				me->EnableCloak(3.0f);
 				m_isWaitingForFullReload = true;
-				me->PressReloadButton();
+				me->ReloadIfLowClip(true);
 			}
 
 			if ( m_isWaitingForFullReload )
@@ -670,8 +669,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 		if (myWeapon->Clip1() <= 0)
 		{
-			me->ReleaseFireButton();
-			me->PressReloadButton();
+			me->ReloadIfLowClip(true);
 			m_isWaitingForFullReload = true;
 		}
 
@@ -849,8 +847,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				}
 				else
 				{
-					me->ReleaseFireButton();
-					me->PressReloadButton();
+					me->ReloadIfLowClip(true);
 					m_isWaitingForFullReload = true;
 				}
 				return;
