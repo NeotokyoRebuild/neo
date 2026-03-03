@@ -9,15 +9,15 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
-#include "bot/behavior/neo_bot_tactical_monitor.h"
-#include "bot/behavior/neo_bot_retreat_to_cover.h"
-#include "bot/behavior/neo_bot_get_health.h"
-#include "bot/behavior/neo_bot_get_ammo.h"
-#include "bot/behavior/neo_bot_command_follow.h"
-#include "bot/behavior/neo_bot_pause.h"
-
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/behavior/neo_bot_command_follow.h"
+#include "bot/behavior/neo_bot_get_ammo.h"
+#include "bot/behavior/neo_bot_get_health.h"
+#include "bot/behavior/neo_bot_pause.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
+#include "bot/behavior/neo_bot_tactical_monitor.h"
+#include "bot/behavior/neo_bot_throw_weapon_at_user.h"
 
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
@@ -83,6 +83,18 @@ ActionResult< CNEOBot >	CNEOBotScenarioMonitor::Update( CNEOBot *me, float inter
 		if (sv_neo_bot_cmdr_debug_pause_uncommanded.GetBool())
 		{
 			return SuspendFor(new CNEOBotPause, "Paused by debug convar sv_neo_bot_cmdr_debug_pause_uncommanded");
+		}
+	}
+	else
+	{
+		if (me->m_hCommandingPlayer.Get())
+		{
+			CNEO_Player* pCommander = me->m_hCommandingPlayer.Get();
+
+			if (CNEOBotThrowWeaponAtUser::ReadyAimToThrowWeapon(me, pCommander))
+			{
+				return SuspendFor(new CNEOBotThrowWeaponAtUser(pCommander), "Throwing primary weapon to user");
+			}
 		}
 	}
 
