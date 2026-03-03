@@ -1499,3 +1499,19 @@
 	"volume"				"0.5"
 	"wave"					"weapons/balc/balc_ready.wav"	
 }
+
+"weapon_balc.charge"
+{
+	"channel"				"CHAN_WEAPON"
+	"volume"				"0.5"
+	"wave"					"weapons/balc/balc_charge.wav"	
+}
+
+"weapon_balc.burst"
+{
+	"channel"				"CHAN_WEAPON"
+	"soundlevel"			"SNDLVL_130dB"
+	"volume"				"0.8"
+	"pitch"					"90,100"
+	"wave"					"weapons/balc/balc_burst.wav"
+}

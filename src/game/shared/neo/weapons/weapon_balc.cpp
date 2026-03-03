@@ -143,19 +143,11 @@ void CWeaponBALC::SecondaryAttack(void)
 	}
 	m_flLastAttackTime = gpGlobals->curtime;
 
-	// FX
-	pPlayer->DoMuzzleFlash();
-#ifdef GAME_DLL
-	if (pPlayer->m_bInThermOpticCamo)
-	{
-		pPlayer->CloakFlash(0.1);
-	}
-#endif
 	SendWeaponAnim(GetPrimaryAttackActivity());
 	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
-	WeaponSound(SINGLE);
+	WeaponSound(BURST);
 
 #ifdef GAME_DLL
 	const Vector vecSrc = pPlayer->Weapon_ShootPosition();

@@ -9,14 +9,14 @@ WeaponData
 	"anim_prefix"		"m4"
 	"bucket"		"0"
 	"bucket_position"	"0"
-	"Damage"		"25"
-	"Penetration"		"28.0"
+	"Damage"		"36"
+	"Penetration"		"40.0"
 	"CycleTime"		"0.1"		// time between shots
 	
 	"TPMuzzleFlashScale"	"2.0"
 
 	"clip_size"		"-1"
-	"default_clip"	"40"
+	"default_clip"	"50"
 	"autoswitchfrom"        "0"
 	"primary_ammo"		"AMMO_PRI"
 	"secondary_ammo"	"None"
@@ -79,8 +79,10 @@ WeaponData
 		"empty"				"weapon_pz.empty"
 		"single_shot"		"weapon_balc.single"
 		"single_shot_npc"	"weapon_balc.single"
+		"burst"				"weapon_balc.burst"
 		"special1"			"weapon_balc.overheat"
 		"special2"			"weapon_balc.ready"
+		"special3"			"weapon_balc.charge"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.
