@@ -48,11 +48,16 @@ public:
 	virtual bool UsesTracers() override final { return true; }
 	virtual const char *GetTracerType() override final { return "AirboatGunTracer"; }
 	virtual bool CanDrop() final { return false; }
-	virtual bool CanAim() final { return false; }
+	virtual bool CanAim() final { return true; }
+	inline virtual bool IsAutomatic(void) const override final
+	{
+		return m_bIsPrimaryFireMode;
+	}
 
 	CNetworkVar(bool, m_bOverheated);
 	CNetworkVar(bool, m_bCharging);
 	CNetworkVar(bool, m_bCharged);
+	CNetworkVar(bool, m_bIsPrimaryFireMode);
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

@@ -14,6 +14,7 @@
 #define BALC_CHARGE_SHOT_RATE 0.35f
 #define BALC_CHARGE_SHOT_MAX 2
 #define BALC_CHARGE_SHOT_DAMAGE 270.0f
+#define BALC_SWITCH_TIME 0.2f
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponBALC, DT_WeaponBALC)
 
@@ -22,12 +23,14 @@ BEGIN_NETWORK_TABLE(CWeaponBALC, DT_WeaponBALC)
 	RecvPropBool(RECVINFO(m_bOverheated)),
 	RecvPropBool(RECVINFO(m_bCharging)),
 	RecvPropBool(RECVINFO(m_bCharged)),
+	RecvPropBool(RECVINFO(m_bIsPrimaryFireMode)),
 	RecvPropTime(RECVINFO(m_flOverheatStartTime)),
 	RecvPropTime(RECVINFO(m_flChargeStartTime)),
 #else
 	SendPropBool(SENDINFO(m_bOverheated)),
 	SendPropBool(SENDINFO(m_bCharging)),
 	SendPropBool(SENDINFO(m_bCharged)),
+	SendPropBool(SENDINFO(m_bIsPrimaryFireMode)),
 	SendPropTime(SENDINFO(m_flOverheatStartTime)),
 	SendPropTime(SENDINFO(m_flChargeStartTime)),
 #endif
@@ -38,6 +41,7 @@ BEGIN_PREDICTION_DATA(CWeaponBALC)
 	DEFINE_PRED_FIELD(m_bOverheated, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bCharging, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bCharged, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bIsPrimaryFireMode, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -50,6 +54,7 @@ BEGIN_DATADESC(CWeaponBALC)
 	DEFINE_FIELD(m_bOverheated, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bCharging, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bCharged, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bIsPrimaryFireMode, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
 
@@ -78,6 +83,7 @@ CWeaponBALC::CWeaponBALC()
 	m_bOverheated = false;
 	m_bCharging = false;
 	m_bCharged = false;
+	m_bIsPrimaryFireMode = true;
 	m_flOverheatStartTime = 0.0f;
 	m_flChargeStartTime = 0.0f;
 }
@@ -111,88 +117,111 @@ void CWeaponBALC::PrimaryAttack(void)
 		return;
 	}
 
-	BaseClass::PrimaryAttack();
+	if (m_bIsPrimaryFireMode)
+	{
+		BaseClass::PrimaryAttack();
+	}
+	else
+	{
+		if (ShootingIsPrevented() || !m_bCharged)
+		{
+			return;
+		}
+
+		if (gpGlobals->curtime < m_flSoonestAttack)
+		{
+			return;
+		}
+
+		auto pPlayer = ToNEOPlayer(GetOwner());
+		if (!pPlayer)
+		{
+			Assert(false);
+			return;
+		}
+
+		if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
+		{
+			m_nNumShotsFired = 0;
+		}
+		else
+		{
+			++m_nNumShotsFired;
+		}
+		m_flLastAttackTime = gpGlobals->curtime;
+
+		SendWeaponAnim(GetPrimaryAttackActivity());
+		SetWeaponIdleTime(gpGlobals->curtime + 2.0);
+		pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
+
+		WeaponSound(BURST);
+
+#ifdef GAME_DLL
+		const Vector vecSrc = pPlayer->Weapon_ShootPosition();
+		Vector vecThrow;
+
+		AngleVectors(pPlayer->EyeAngles() + pPlayer->GetPunchAngle(), &vecThrow);
+		VectorScale(vecThrow, 2000.0f, vecThrow);
+
+		QAngle angles;
+		VectorAngles(vecThrow, angles);
+		CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create("grenade_ar2", vecSrc, angles, pPlayer);
+		pGrenade->SetAbsVelocity(vecThrow);
+
+		pGrenade->SetLocalAngularVelocity(RandomAngle(-400, 400));
+		pGrenade->SetMoveType(MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE);
+		pGrenade->SetThrower(GetOwner());
+		pGrenade->SetDamage(BALC_CHARGE_SHOT_DAMAGE);
+
+		CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), 1000, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+#endif
+		const int iAmmoCost = int((GetDefaultClip1() + 10) / BALC_CHARGE_SHOT_MAX);
+		m_iPrimaryAmmoCount = MAX(0, m_iPrimaryAmmoCount - iAmmoCost);
+
+		m_flNextPrimaryAttack = m_flNextPrimaryAttack + BALC_CHARGE_SHOT_RATE;
+
+		m_bCharging = false;
+		m_bCharged = false;
+
+		//View kick
+		pPlayer->ViewPunchReset();
+		AddViewKick();
+	}
 }
 
 void CWeaponBALC::SecondaryAttack(void)
 {
-	if (ShootingIsPrevented() || !m_bCharged)
-	{
-		return;
-	}
-
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;
 	}
 
-	auto pPlayer = ToNEOPlayer(GetOwner());
-	if (!pPlayer)
+	if (m_flNextSecondaryAttack > gpGlobals->curtime)
 	{
-		Assert(false);
 		return;
 	}
 
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		++m_nNumShotsFired;
-	}
-	m_flLastAttackTime = gpGlobals->curtime;
+	m_bIsPrimaryFireMode = !m_bIsPrimaryFireMode;
 
-	SendWeaponAnim(GetPrimaryAttackActivity());
-	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
-	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
+	WeaponSound(RELOAD);
+	SendWeaponAnim(ACT_VM_DRYFIRE);
 
-	WeaponSound(BURST);
-
-#ifdef GAME_DLL
-	const Vector vecSrc = pPlayer->Weapon_ShootPosition();
-	Vector vecThrow;
-
-	AngleVectors(pPlayer->EyeAngles() + pPlayer->GetPunchAngle(), &vecThrow);
-	VectorScale(vecThrow, 2000.0f, vecThrow);
-
-	QAngle angles;
-	VectorAngles(vecThrow, angles);
-	CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create("grenade_ar2", vecSrc, angles, pPlayer);
-	pGrenade->SetAbsVelocity(vecThrow);
-
-	pGrenade->SetLocalAngularVelocity(RandomAngle(-400, 400));
-	pGrenade->SetMoveType(MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE);
-	pGrenade->SetThrower(GetOwner());
-	pGrenade->SetDamage(BALC_CHARGE_SHOT_DAMAGE);
-
-	CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), 1000, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
-#endif
-	const int iAmmoCost = int((GetDefaultClip1() + 10) / BALC_CHARGE_SHOT_MAX);
-	m_iPrimaryAmmoCount = MAX(0, m_iPrimaryAmmoCount - iAmmoCost);
-
-	m_flNextSecondaryAttack = m_flNextSecondaryAttack + BALC_CHARGE_SHOT_RATE;
-
-	m_bCharging = false;
-	m_bCharged = false;
-
-	//View kick
-	pPlayer->ViewPunchReset();
-	AddViewKick();
+	m_flSoonestAttack = gpGlobals->curtime + BALC_SWITCH_TIME;
+	m_flNextSecondaryAttack = gpGlobals->curtime + BALC_SWITCH_TIME;
 }
 
 void CWeaponBALC::ItemPostFrame(void)
 {
 	auto pOwner = ToBasePlayer(GetOwner());
-	if (pOwner && !m_bOverheated && !ShootingIsPrevented() && !(pOwner->m_nButtons & IN_ATTACK))
+	if (!m_bIsPrimaryFireMode && pOwner && !m_bOverheated && !ShootingIsPrevented() && !(pOwner->m_nButtons & IN_ATTACK2))
 	{
-		if (pOwner->m_afButtonPressed & (IN_AIM | IN_ZOOM) && !m_bCharging)
+		if (pOwner->m_afButtonPressed & IN_ATTACK && !m_bCharging)
 		{
 			m_bCharging = true;
 			m_flChargeStartTime = gpGlobals->curtime;
 			WeaponSound(SPECIAL3);
 		}
-		else if (pOwner->m_afButtonReleased & (IN_AIM | IN_ZOOM) && m_bCharging)
+		else if (pOwner->m_afButtonReleased & IN_ATTACK && m_bCharging)
 		{
 			m_bCharging = false;
 			m_bCharged = false;
@@ -211,7 +240,7 @@ void CWeaponBALC::ItemPostFrame(void)
 		if (flTimeCharged >= BALC_CHARGE_DURATION && !m_bCharged)
 		{
 			m_bCharged = true;
-			m_flNextSecondaryAttack = gpGlobals->curtime;
+			m_flNextPrimaryAttack = gpGlobals->curtime;
 		}
 	}
 

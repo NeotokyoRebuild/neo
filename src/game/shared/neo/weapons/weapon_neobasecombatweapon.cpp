@@ -119,7 +119,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{0.25, 0.5, -0.6, 0.6},
 	},
 	{NEO_WEP_BALC,
-		{{VECTOR_CONE_1DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_5DEGREES}},
+		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_6DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
 		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
 	},
@@ -637,8 +637,6 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 		m_bTriggerReset = true;
 	}
 
-	const bool bInSecondaryAttack = CanAim() ? pOwner->m_nButtons & IN_ATTACK2 : pOwner->m_nButtons & (IN_AIM | IN_ZOOM);
-
 	//Track the duration of the fire
 	//FIXME: Check for IN_ATTACK2 as well?
 	//FIXME: What if we're calling ItemBusyFrame?
@@ -652,7 +650,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	bool bFired = false;
 
 	// Secondary attack has priority
-	if (bInSecondaryAttack && CanPerformSecondaryAttack())
+	if (pOwner->m_nButtons & IN_ATTACK2 && CanPerformSecondaryAttack())
 	{
 		if (UsesSecondaryAmmo() && m_iSecondaryAmmoCount <= 0)
 		{
@@ -742,7 +740,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 			//			first shot.  Right now that's too much of an architecture change -- jdw
 
 			// If the firing button was just pressed, or the alt-fire just released, reset the firing time
-			if ((pOwner->m_afButtonPressed & IN_ATTACK) || bInSecondaryAttack)
+			if ((pOwner->m_afButtonPressed & IN_ATTACK) || (pOwner->m_afButtonReleased & IN_ATTACK2))
 			{
 				m_flNextPrimaryAttack = gpGlobals->curtime;
 			}
@@ -773,7 +771,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	// -----------------------
 	//  No buttons down
 	// -----------------------
-	if (!(((pOwner->m_nButtons & IN_ATTACK) && !(pOwner->IsSprinting())) || bInSecondaryAttack || (CanReload() && pOwner->m_nButtons & IN_RELOAD)))
+	if (!(((pOwner->m_nButtons & IN_ATTACK) && !(pOwner->IsSprinting())) || (pOwner->m_nButtons & IN_ATTACK2) || (CanReload() && pOwner->m_nButtons & IN_RELOAD)))
 	{
 		// no fire buttons down or reloading
 		if (m_flTimeWeaponIdle <= gpGlobals->curtime)

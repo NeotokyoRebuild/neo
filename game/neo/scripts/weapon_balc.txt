@@ -30,7 +30,7 @@ WeaponData
 	"item_flags"		"37"
 	// "item_flags"		"0"
 	
-	"AimType"		"0"
+	"AimType"		"1"
 	
 	"VMFov"			"30.0"	
 	"VMOffsetForward"	"0.0"
@@ -38,10 +38,11 @@ WeaponData
 	"VMOffsetUp"		"-1.0"
 	"VMAngleYaw"		"4.0"
 	
-	"VMAimFov"				"40.0"	
-	"VMAimOffsetForward"	"10.0"
-	"VMAimOffsetRight"		"1.16"	
-	"VMAimOffsetUp"			"2.59"
+	"VMAimFov"				"20.0"	
+	"VMAimOffsetForward"	"0.0"
+	"VMAimOffsetRight"		"0.0"	
+	"VMAimOffsetUp"		"-2.0"
+	"VMAimAngleYaw"		"4.0"
 
 	"AimFov"		"45.0"
 	
@@ -57,24 +58,28 @@ WeaponData
 
 	"ZoomOffset"
 	{
-		"fov"		"54"
-		"forward"	"8"
-		"right"		"7"
-		"up"		"2"
+		"fov"		"20"
+		"forward"	"0"
+		"right"		"0"
+		"up"		"-2"
+		"yaw"		"4"
+		"pitch"		"-9"
 	}
 	
 	"AimOffset"
 	{
-		"fov"		"40"
-		"forward"	"10"
-		"right"		"1.16"
-		"up"		"2.59"
+		"fov"		"20"
+		"forward"	"0"
+		"right"		"0"
+		"up"		"-2"
+		"yaw"		"4"
+		"pitch"		"-9"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
 	{
-		"reload"			"Weapon_pz.Reload"
+		"reload"			"weapon_tachi.special1"
 		"reload_npc"		"Weapon_pz.NPC_Reload"
 		"empty"				"weapon_pz.empty"
 		"single_shot"		"weapon_balc.single"
