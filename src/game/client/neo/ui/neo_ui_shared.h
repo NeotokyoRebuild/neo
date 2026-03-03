@@ -1,6 +1,6 @@
 #pragma once
+// Stuff shared by NeoUI, without necessarily wanting to bring in a whole other header.
 
-// Stuff shared by NeoUI, without necessarily wanting to bring in a whole other module.
 namespace NeoUI {
 
 // Whether to flash the app window in OS task bar to get user's attention for whatever reason
