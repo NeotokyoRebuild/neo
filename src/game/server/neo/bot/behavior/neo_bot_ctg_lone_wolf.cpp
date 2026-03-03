@@ -47,13 +47,10 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 
 	CBaseCombatWeapon *pWeapon = me->GetActiveWeapon();
-	if ( !threat && pWeapon && pWeapon->UsesClipsForAmmo1() )
+	if ( !threat && pWeapon )
 	{
-		if ( pWeapon->Clip1() < pWeapon->GetMaxClip1() && me->GetAmmoCount( pWeapon->GetPrimaryAmmoType() ) > 0 )
-		{
-			// Aggressively reload due to lack of backup
-			me->PressReloadButton();
-		}
+		// Aggressively reload due to lack of backup
+		me->ReloadIfLowClip(true); // force reload true
 	}
 
 	// We dropped the ghost to hunt a threat.
