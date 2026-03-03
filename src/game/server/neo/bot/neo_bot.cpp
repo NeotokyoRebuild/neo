@@ -1603,7 +1603,7 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 
 //-----------------------------------------------------------------------------------------------------
 // Reload the active weapon if it makes sense for the situation 
-void CNEOBot::ReloadIfLowClip(void)
+void CNEOBot::ReloadIfLowClip(bool bForceReload)
 {
 	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
 
@@ -1622,15 +1622,22 @@ void CNEOBot::ReloadIfLowClip(void)
 		return;
 	}
 
-	if ((myWeapon->GetNeoWepBits() & NEO_WEP_BALC))
+	if (!(myWeapon->GetNeoWepBits() & NEO_WEP_FIREARM))
 	{
 		return;
 	}
-	else if ((myWeapon->GetNeoWepBits() & NEO_WEP_SMAC))
+
+	if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
 	{
 		return;
 	}
-	else if ((myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7))
+
+	if (myWeapon->GetNeoWepBits() & NEO_WEP_SMAC)
+	{
+		return;
+	}
+
+	if (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
 	{
 		// Consider loading slug
 		if ( (myWeapon->m_iSecondaryAmmoCount > 0) && (myWeapon->Clip1() == myWeapon->GetMaxClip1() - 1))
@@ -1658,7 +1665,7 @@ void CNEOBot::ReloadIfLowClip(void)
 
 		float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
 
-		if (myWeapon->Clip1() > static_cast<int>(dynamicThreshold))
+		if (!bForceReload && myWeapon->Clip1() > static_cast<int>(dynamicThreshold))
 		{
 			return; // reloads drop ammo, still have enough in clip
 		}
