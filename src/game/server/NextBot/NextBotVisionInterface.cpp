@@ -32,6 +32,14 @@
 ConVar nb_blind( "nb_blind", "0", FCVAR_CHEAT, "Disable vision" );
 ConVar nb_debug_known_entities( "nb_debug_known_entities", "0", FCVAR_CHEAT, "Show the 'known entities' for the bot that is the current spectator target" );
 
+#ifdef NEO
+ConVar neo_bot_remember_incoming_threat( "neo_bot_remember_incoming_threat", "1", FCVAR_CHEAT,
+	"If true, bots will refresh their memory timers when an unseen enemy is moving towards them.", true, 0, true, 1 );
+
+ConVar neo_bot_remember_incoming_threat_debug( "neo_bot_remember_incoming_threat_debug", "0", FCVAR_CHEAT,
+	"Show debug arrows for neo_bot_remember_incoming_threat. Yellow = Last known position. Red = Actual position.", true, 0, true, 1 );
+#endif
+
 
 //------------------------------------------------------------------------------------------
 IVision::IVision( INextBot *bot ) : INextBotComponent( bot )
@@ -464,6 +472,31 @@ void IVision::UpdateKnownEntities( void )
 					{
 						known.MarkLastKnownPositionAsSeen();
 					}
+#ifdef NEO
+					// NEO Jank: To address bots forgetting enemies that are rushing them
+					// Intended to prevent bots from looking away from known incoming threats
+					else if ( neo_bot_remember_incoming_threat.GetBool()
+						&& known.GetEntity()
+						&& known.GetEntity()->IsAlive()
+						&& GetBot()->GetEntity()->IsAlive()
+						&& GetBot()->IsEnemy( known.GetEntity() ) )
+					{
+						Vector vecToBot = GetBot()->GetEntity()->WorldSpaceCenter() - known.GetEntity()->WorldSpaceCenter();
+
+						// If the enemy is moving closer to me, keep memory of them alive
+						if ( DotProduct( known.GetEntity()->GetAbsVelocity(), vecToBot ) > 0.0f )
+						{
+							known.UpdateLastSeenTime();
+							if ( neo_bot_remember_incoming_threat_debug.GetBool() )
+							{
+								// Yellow: where I last saw the enemy bot
+								NDebugOverlay::HorzArrow( GetBot()->GetEntity()->WorldSpaceCenter(), known.GetLastKnownPosition(), 2.0f, 255, 255, 0, 255, true, 0.1f );
+								// Red: from last known position to actual position
+								NDebugOverlay::HorzArrow( known.GetLastKnownPosition(), known.GetEntity()->WorldSpaceCenter(), 2.0f, 255, 0, 0, 255, true, 0.1f );
+							}
+						}
+					}
+#endif
 				}
 			}
 		}

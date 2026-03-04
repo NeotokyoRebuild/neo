@@ -101,6 +101,13 @@ public:
 		m_isVisible = visible;
 	}
 
+#ifdef NEO
+	void UpdateLastSeenTime( void )
+	{
+		m_whenLastSeen = gpGlobals->curtime;
+	}
+#endif
+
 	virtual bool IsVisibleInFOVNow( void ) const	// return true if this entity is currently visible and in my field of view
 	{
 		return m_isVisible;
