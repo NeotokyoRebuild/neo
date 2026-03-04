@@ -47,44 +47,45 @@ public:
 	{
 		VPROF_BUDGET( "CTestAreaAgainstThreats::Inspect", "NextBot" );
 
-		if ( m_me->IsEnemy( known.GetEntity() ) )
+		if ( !m_me->IsEnemy( known.GetEntity() ) )
 		{
-			const CNavArea *threatArea = known.GetLastKnownArea();
+			return true; // Known entity is not my enemy
+		}
 
-			if ( threatArea )
+		const CNavArea *threatArea = known.GetLastKnownArea();
+
+		if ( !threatArea )
+		{
+			return true; // Can't test area if we don't know last area of threat
+		}
+
+		if ( !m_area->IsPotentiallyVisible( threatArea ) )
+		{
+			return true; // Candidate area is not visible by threat
+		}
+
+		// Only consider smoke as concealment if I can see through it but the enemy cannot (thermal vision)
+		CNEO_Player *pThreatPlayer = ToNEOPlayer( known.GetEntity() );
+		if ( pThreatPlayer && (pThreatPlayer->GetClass() != NEO_CLASS_SUPPORT) && (m_me->GetClass() == NEO_CLASS_SUPPORT) )
+		{
+			ScopedSmokeLOS smokeScope( false );
+
+			Vector vecThreatEye = known.GetLastKnownPosition() + pThreatPlayer->GetViewOffset();
+			Vector vecCandidateArea = m_area->GetCenter() + m_me->GetViewOffset();
+
+			trace_t tr;
+			CTraceFilterSimple filter( known.GetEntity(), COLLISION_GROUP_NONE);
+			UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS, &filter, &tr );
+
+			if ( tr.fraction < 1.0f )
 			{
-				// is area visible by known threat
-				if ( m_area->IsPotentiallyVisible( threatArea ) )
-				{
-					// Is there smoke in this area that I can use for concealment?
-					bool bObscuredBySmoke = false;
-					CNEO_Player *pThreatPlayer = ToNEOPlayer( known.GetEntity() );
-					// Support class can see through smoke
-					if ( pThreatPlayer && (pThreatPlayer->GetClass() != NEO_CLASS_SUPPORT) )
-					{
-						ScopedSmokeLOS smokeScope( false );
-
-						Vector vecThreatEye = known.GetLastKnownPosition() + pThreatPlayer->GetViewOffset();
-						Vector vecCandidateArea = m_area->GetCenter() + m_me->GetViewOffset();
-
-						trace_t tr;
-						CTraceFilterSimple filter( known.GetEntity(), COLLISION_GROUP_NONE);
-						UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS, &filter, &tr );
-
-						if ( tr.fraction < 1.0f )
-						{
-							bObscuredBySmoke = true;
-						}
-					}
-
-					if ( !bObscuredBySmoke )
-					{
-						++m_exposedThreatCount;
-					}
-				}
+				return true; // Smoke provides concealment from this threat
 			}
 		}
 
+		++m_exposedThreatCount;  // Area is exposed to threat
+
+		// Return true to continue searching other known entities
 		return true;
 	}
 
