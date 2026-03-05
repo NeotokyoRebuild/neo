@@ -40,6 +40,7 @@ public:
 
 private:
 	CountdownTimer m_reloadTimer;
+	CountdownTimer m_reconSuperJumpPathCheckTimer;
 	mutable CountdownTimer m_aimAdjustTimer;
 	mutable float m_aimErrorRadius;
 	mutable float m_aimErrorAngle;
@@ -67,6 +68,7 @@ private:
 
 
 	void Dodge( CNEOBot *me );
+	void ReconConsiderSuperJump(CNEOBot *me);
 
 	IntervalTimer m_undergroundTimer;
 
