@@ -21,7 +21,6 @@ public:
 
 private:
 	CountdownTimer m_maintainTimer;
-	CountdownTimer m_reconSuperJumpPathCheckTimer;
 
 	CountdownTimer m_acknowledgeAttentionTimer;
 	CountdownTimer m_acknowledgeRetryTimer;
@@ -35,6 +34,5 @@ private:
 	ActionResult< CNEOBot > ScavengeForPrimaryWeapon(CNEOBot* me);
 
 	void AvoidBumpingFriends(CNEOBot* me);
-	void ReconConsiderSuperJump(CNEOBot *me);
 	ActionResult< CNEOBot > WatchForLadders(CNEOBot* me);
 };
