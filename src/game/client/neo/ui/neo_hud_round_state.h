@@ -94,7 +94,7 @@ private:
 	int m_iPreviouslyActiveStar = -1;
 	int m_iPreviouslyActiveTeam = -1;
 
-	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
+	int m_iClassIcons = 0;
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
 	int m_iBeepSecsTotal = 0;
@@ -104,6 +104,9 @@ private:
 	CUtlVector<int> m_commandedList;
 	CUtlVector<int> m_nonCommandedList;
 	CUtlVector<int> m_nonSquadList;
+
+	// Top Squad List
+	CUtlVector<int> m_nPlayerList;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");
