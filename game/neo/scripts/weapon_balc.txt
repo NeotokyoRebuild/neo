@@ -81,7 +81,7 @@ WeaponData
 	{
 		"reload"			"weapon_tachi.special1"
 		"reload_npc"		"Weapon_pz.NPC_Reload"
-		"empty"				"weapon_pz.empty"
+		"empty"				"weapon_balc.empty"
 		"single_shot"		"weapon_balc.single"
 		"single_shot_npc"	"weapon_balc.single"
 		"burst"				"weapon_balc.burst"

@@ -1481,7 +1481,7 @@
 {
 	"channel"				"CHAN_WEAPON"
 	"soundlevel"			"SNDLVL_150dB"
-	"volume"				"0.8"
+	"volume"				"0.9"
 	"pitch"					"90,100"
 	"wave"					"^weapons/balc/balc_fire.wav"
 }
@@ -1511,7 +1511,13 @@
 {
 	"channel"				"CHAN_WEAPON"
 	"soundlevel"			"SNDLVL_130dB"
-	"volume"				"0.8"
-	"pitch"					"90,100"
-	"wave"					"weapons/balc/balc_burst.wav"
+	"pitch"					"95,100"
+	"wave"					"^weapons/balc/balc_burst.wav"
+}
+
+"weapon_balc.empty"
+{
+	"channel"				"CHAN_WEAPON"
+	"soundlevel"			"SNDLVL_NORM"
+	"wave"					"weapons/balc/balc_empty.wav"
 }
