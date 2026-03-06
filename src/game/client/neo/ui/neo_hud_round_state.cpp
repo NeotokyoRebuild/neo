@@ -490,7 +490,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	surface()->DrawPrintText(m_pWszStatusUnicode, m_iStatusUnicodeSize);
 
 	const int localPlayerTeam = GetLocalPlayerTeam();
-	//const int localPlayerIndex = GetLocalPlayerIndex();
 	const bool localPlayerSpecOrNoTeam = !NEORules()->IsTeamplay() || !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
 
 	bool swapTeamSides = cl_neo_hud_team_swap_sides.GetBool();
