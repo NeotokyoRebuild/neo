@@ -458,7 +458,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	m_ePrevRoundStatus = NEORules()->GetRoundStatus();
 }
 
-ConVar cl_neo_squad_hud_sort_players_by_class_alive_and_star("cl_neo_squad_hud_sort_players_by_class_alive_and_star", "1", FCVAR_NONE, "whether to sort the top element by squad, then within the squad by alive status and then within the two status by class", true, 0, true, 1);
+ConVar cl_neo_squad_hud_sort_players_by_class_alive_and_star("cl_neo_squad_hud_sort_players_by_class_alive_and_star", "1", FCVAR_ARCHIVE, "whether to sort the top element by squad, then within the squad by alive status and then within the two status by class", true, 0, true, 1);
 void CNEOHud_RoundState::DrawNeoHudElement()
 {
 	CheckActiveStar();
