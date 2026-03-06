@@ -134,7 +134,7 @@ void CNEOHud_RoundState::LevelShutdown(void)
 	// NEO NOTE (Adam) set m_iPreviouslyActiveStar && m_iPreviouslyActiveTeam to -1? Seems to work fine without 
 }
 
-ConVar cl_neo_hud_squad_avatar_size("cl_neo_hud_squad_avatar_size", "0", FCVAR_ARCHIVE, "Size of squad hud avatars, 0 to scale with screen size (specifically size of font used in the hud)", true, 0, false, 0,
+ConVar cl_neo_squad_hud_avatar_size("cl_neo_squad_hud_avatar_size", "0", FCVAR_ARCHIVE, "Size of squad hud avatars, 0 to scale with screen size (specifically size of font used in the hud)", true, 0, false, 0,
 	[](IConVar* pConVar, char const* pOldString, float flOldValue) -> void {
 		CNEOHud_RoundState *pPanel = GET_NAMED_HUDELEMENT( CNEOHud_RoundState, NRoundState );
 		if (!pPanel)
@@ -145,7 +145,7 @@ ConVar cl_neo_hud_squad_avatar_size("cl_neo_hud_squad_avatar_size", "0", FCVAR_A
 
 void CNEOHud_RoundState::UpdateAvatarSize()
 {
-	const int overrideAvatarSize = cl_neo_hud_squad_avatar_size.GetInt();
+	const int overrideAvatarSize = cl_neo_squad_hud_avatar_size.GetInt();
 	if (overrideAvatarSize)
 	{
 		m_ilogoSize = overrideAvatarSize;
@@ -458,7 +458,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	m_ePrevRoundStatus = NEORules()->GetRoundStatus();
 }
 
-ConVar cl_neo_hud_team_sort_players_by_class_alive_and_star("cl_neo_hud_team_sort_players_by_class_alive_and_star", "1", FCVAR_NONE, "whether to sort the top element by squad, then within the squad by alive status and then within the two status by class", true, 0, true, 1);
+ConVar cl_neo_squad_hud_sort_players_by_class_alive_and_star("cl_neo_squad_hud_sort_players_by_class_alive_and_star", "1", FCVAR_NONE, "whether to sort the top element by squad, then within the squad by alive status and then within the two status by class", true, 0, true, 1);
 void CNEOHud_RoundState::DrawNeoHudElement()
 {
 	CheckActiveStar();
@@ -580,7 +580,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			const int playerTeam = g_PR->GetTeam(m_nPlayerList[i].first);
 			m_nPlayerList[i].second = m_nPlayerList[i].first + 
 					((playerTeam - FIRST_GAME_TEAM) << (INDEX_SHIFT + CLASS_SHIFT + ALIVE_SHIFT + STAR_SHIFT));
-			if (cl_neo_hud_team_sort_players_by_class_alive_and_star.GetBool())
+			if (cl_neo_squad_hud_sort_players_by_class_alive_and_star.GetBool())
 			{
 				m_nPlayerList[i].second +=
 					(g_PR->GetClass(m_nPlayerList[i].first) << INDEX_SHIFT) +
