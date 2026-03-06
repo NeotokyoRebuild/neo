@@ -626,13 +626,13 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			if (playerTeam == leftTeam)
 			{
 				const int xOffset = (m_iLeftOffset - 2) - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
-				DrawPlayer(m_nPlayerList[i].first, leftCount, leftTeamInfo, xOffset, !g_PR->IsAlive(m_nPlayerList[i].first) || localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
+				DrawPlayer(m_nPlayerList[i].first, leftCount, leftTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
 				leftCount++;
 			}
 			else if (playerTeam == rightTeam)
 			{
 				const int xOffset = (m_iRightOffset + 2) + (rightCount * m_ilogoSize) + (rightCount * 2);
-				DrawPlayer(m_nPlayerList[i].first, rightCount, rightTeamInfo, xOffset, !g_PR->IsAlive(m_nPlayerList[i].first) || localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
+				DrawPlayer(m_nPlayerList[i].first, rightCount, rightTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
 				rightCount++;
 			}
 		}
