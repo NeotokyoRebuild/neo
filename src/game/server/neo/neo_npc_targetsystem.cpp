@@ -1,6 +1,7 @@
 #include "neo_npc_targetsystem.h"
 #include "neo_player.h"
 #include "ammodef.h"
+#include "bot/neo_bot.h"
 
 #include "tier0/memdbgon.h"
 
@@ -77,6 +78,7 @@ void CNEO_NPCTargetSystem::Think()
 	float flBestForward = 0.0f;
 	Vector vBestLateral;
 	CBasePlayer *pBestTarget = nullptr;
+	CBasePlayer *pOldBestTarget = m_pLastBestTarget;
 
 	const float flMaxViewDistanceSqr = m_flMaxViewDistance * m_flMaxViewDistance;
 	const float flTanFOV = tan(DEG2RAD(m_flFOV * 0.5f));
@@ -181,10 +183,13 @@ void CNEO_NPCTargetSystem::Think()
 	// Fire outputs
 	if (pBestTarget)
 	{
+		bool bNotifyBotTargeted = (pBestTarget != pOldBestTarget);
+
 		if (!m_bTargetAcquired)
 		{
 			m_OnSpotted.FireOutput(pBestTarget, this);
 			m_bTargetAcquired = true;
+			bNotifyBotTargeted = true;
 		}
 
 		if (bMiddleIgnore && !m_bMiddleIgnoreActive)
@@ -216,6 +221,17 @@ void CNEO_NPCTargetSystem::Think()
 				break;
 			default:
 				break;
+			}
+
+			bNotifyBotTargeted = true;
+		}
+
+		if (bNotifyBotTargeted && pBestTarget->IsBot())
+		{
+			CNEOBot *pBot = dynamic_cast<CNEOBot*>(pBestTarget);
+			if (pBot)
+			{
+				pBot->GetVisionInterface()->AddKnownEntity(this);
 			}
 		}
 	}
@@ -267,6 +283,11 @@ bool CNEO_NPCTargetSystem::CanSee(CBaseEntity *pEntity)
 		return true;
 	}
 	return false;
+}
+
+bool CNEO_NPCTargetSystem::IsTargeting(CBaseEntity *pEntity) const
+{
+	return m_bTargetAcquired && (m_pLastBestTarget == pEntity);
 }
 
 void CNEO_NPCTargetSystem::InputEnable(inputdata_t &inputData)

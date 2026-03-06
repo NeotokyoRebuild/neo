@@ -15,6 +15,7 @@
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_retreat_from_npc_targetsystem.h"
 #include "bot/behavior/neo_bot_ladder_approach.h"
 #include "bot/behavior/neo_bot_pause.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
@@ -382,6 +383,11 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 
 	if ( shouldRetreat == ANSWER_YES )
 	{
+		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
+		if ( threat && threat->GetEntity() && threat->GetEntity()->ClassMatches( "neo_npc_targetsystem" ) )
+		{
+			return SuspendFor( new CNEOBotRetreatFromNPCTargetSystem, "Backing off from target system" );
+		}
 		return SuspendFor( new CNEOBotRetreatToCover, "Backing off" );
 	}
 	else if ( shouldRetreat != ANSWER_NO )
