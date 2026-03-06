@@ -2334,6 +2334,16 @@ Scheme
 				"antialias" "1"
 			}
 		}
+		NHudTinyText
+		{
+			"1"
+			{
+				"name"		"Roboto-Condensed"
+				"tall"		"11"
+				"weight"	"400"
+				"antialias"	"1"
+			}
+		}
 		MVP
 		{
 			"1"
@@ -3196,6 +3206,7 @@ Scheme
 		"13"		"resource/neotokyo_press_n.ttf"
 		"14"		"resource/killfeedicons.ttf"
 		"15"		"resource/montserrat-regular.ttf"
+		"16"		"resource/RobotoCondensed-Regular.ttf"
 	}
 
 }

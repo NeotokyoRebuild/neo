@@ -28,6 +28,8 @@ public:
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
+	
+	void UpdateAvatarSize();
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw();
@@ -58,6 +60,8 @@ private:
 	vgui::HFont m_hOCRFont = 0UL;
 	vgui::HFont m_hOCRSmallFont = 0UL;
 	vgui::HFont m_hOCRSmallerFont = 0UL;
+	vgui::HFont m_hTinyText = 0UL;
+	int m_iTinyTextHeight = 0;
 
 	int m_iXpos = 0;
 
