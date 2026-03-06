@@ -111,7 +111,12 @@ private:
 
 	// Top Squad List
 	// Players who are connected, in a game team etc will have a positive value and sit at the front of the list. Order of negative value players (not connected, non-game team etc) not guaranteed
-	CUtlVector<std::pair<int,int>> m_nPlayerList;
+	struct playerIndexAndTheirValue
+	{
+		int playerIndex;
+		int playerValue;
+	};
+	CUtlVector<playerIndexAndTheirValue> m_nPlayerList;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");

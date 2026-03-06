@@ -96,7 +96,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	m_nPlayerList.RemoveAll();
 	for (int i = 0; i < MAX_PLAYERS; i++)
 	{
-		m_nPlayerList.AddToTail(std::pair(i + 1, 0));
+		m_nPlayerList.AddToTail(playerIndexAndTheirValue(i + 1, -1));
 	}
 
 	struct TeamLogoColorInfo
@@ -576,38 +576,45 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			COMPILE_TIME_ASSERT(STAR__TOTAL < (1 << STAR_SHIFT));
 			COMPILE_TIME_ASSERT(INT_MAX > ((TEAM__TOTAL - FIRST_GAME_TEAM) + 1) << (INDEX_SHIFT + CLASS_SHIFT + ALIVE_SHIFT + STAR_SHIFT));
 
-			const int playerTeam = g_PR->GetTeam(m_nPlayerList[i].first);
-			m_nPlayerList[i].second = m_nPlayerList[i].first + 
+			// m_nPlayerList[x].playerValue is used to sort players by team, within that team by star, within that star by isAlive, between the two isAlive options by class, and within each class by playerIndex
+			//              unused, somewhere left of team      star   class
+			//                                       /|\          /|  /|
+			// m_nPlayerList[x].playerValue = 10000000000000000001110111000000
+			//							      |                \|   |       \|
+			//	                           sign              team   alive    playerIndex			
+
+			const int playerTeam = g_PR->GetTeam(m_nPlayerList[i].playerIndex);
+			m_nPlayerList[i].playerValue = m_nPlayerList[i].playerIndex + 
 					((playerTeam - FIRST_GAME_TEAM) << (INDEX_SHIFT + CLASS_SHIFT + ALIVE_SHIFT + STAR_SHIFT));
 			if (cl_neo_squad_hud_sort_players_by_class_alive_and_star.GetBool())
 			{
-				m_nPlayerList[i].second +=
-					(g_PR->GetClass(m_nPlayerList[i].first) << INDEX_SHIFT) +
-					(g_PR->IsAlive(m_nPlayerList[i].first) << (INDEX_SHIFT + CLASS_SHIFT)) + 
-					((STAR__TOTAL - g_PR->GetStar(m_nPlayerList[i].first)) << (INDEX_SHIFT + CLASS_SHIFT + ALIVE_SHIFT));
+				m_nPlayerList[i].playerValue +=
+					(g_PR->GetClass(m_nPlayerList[i].playerIndex) << INDEX_SHIFT) +
+					(g_PR->IsAlive(m_nPlayerList[i].playerIndex) << (INDEX_SHIFT + CLASS_SHIFT)) + 
+					((STAR__TOTAL - g_PR->GetStar(m_nPlayerList[i].playerIndex)) << (INDEX_SHIFT + CLASS_SHIFT + ALIVE_SHIFT));
 			}
 
-			if (!g_PR->IsConnected(m_nPlayerList[i].first) || playerTeam < FIRST_GAME_TEAM)
+			if (!g_PR->IsConnected(m_nPlayerList[i].playerIndex) || playerTeam < FIRST_GAME_TEAM)
 			{
-				m_nPlayerList[i].second = -1;
+				m_nPlayerList[i].playerValue = -1;
 				continue;
 			}
 
 			if (playerTeam == leftTeam)
 			{
-				if (g_PR->IsAlive(m_nPlayerList[i].first))
+				if (g_PR->IsAlive(m_nPlayerList[i].playerIndex))
 					m_iLeftPlayersAlive++;
 				m_iLeftPlayersTotal++;
 			}
 			else if (playerTeam == rightTeam)
 			{
-				if (g_PR->IsAlive(m_nPlayerList[i].first))
+				if (g_PR->IsAlive(m_nPlayerList[i].playerIndex))
 					m_iRightPlayersAlive++;
 				m_iRightPlayersTotal++;
 			}
 		}
 
-		m_nPlayerList.Sort([](const std::pair<int, int> *first, const std::pair<int, int> *second)->int{return second->second - first->second;});
+		m_nPlayerList.Sort([](const playerIndexAndTheirValue *first, const playerIndexAndTheirValue *second)->int{return second->playerValue - first->playerValue;});
 
 		// Fade background to make names easier to see
 		surface()->DrawSetColor(COLOR_DARK);
@@ -616,22 +623,24 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		surface()->DrawFilledRectFade(m_iRightOffset, 0,
 			(m_iRightOffset + 2) + (m_iRightPlayersTotal * m_ilogoSize) + (m_iRightPlayersTotal * 2), Y_POS + m_ilogoSize + 6, 255, 0, false);
 
+		// The list is sorted by team, so could just iterate through one team and then the other, but cl_neo_hud_team_swap_sides and whether the local player is a spectator or not makes this
+		// complicated, NEO TODO (Adam) optimize the if (playerTeam == leftTeam or rightTeam) and if (!g_PR->IsConnected(m_nPlayerList[i].first)) checks away
 		for (int i = 0; i < gpGlobals->maxClients; i++)
 		{
-			if (!g_PR->IsConnected(m_nPlayerList[i].first))
+			if (!g_PR->IsConnected(m_nPlayerList[i].playerIndex))
 				return; // List is sorted, no more connected players after first not connected player
 
-			const int playerTeam = g_PR->GetTeam(m_nPlayerList[i].first);
+			const int playerTeam = g_PR->GetTeam(m_nPlayerList[i].playerIndex);
 			if (playerTeam == leftTeam)
 			{
 				const int xOffset = (m_iLeftOffset - 2) - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
-				DrawPlayer(m_nPlayerList[i].first, leftCount, leftTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
+				DrawPlayer(m_nPlayerList[i].playerIndex, leftCount, leftTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
 				leftCount++;
 			}
 			else if (playerTeam == rightTeam)
 			{
 				const int xOffset = (m_iRightOffset + 2) + (rightCount * m_ilogoSize) + (rightCount * 2);
-				DrawPlayer(m_nPlayerList[i].first, rightCount, rightTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
+				DrawPlayer(m_nPlayerList[i].playerIndex, rightCount, rightTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
 				rightCount++;
 			}
 		}
