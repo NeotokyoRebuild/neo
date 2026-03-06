@@ -85,9 +85,20 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	if (!ShouldDraw())
 		return;
 
-	auto ghoster = IsLocalPlayerSpectator()
-		? ToNEOPlayer(UTIL_PlayerByIndex(GetSpectatorTarget()))
-		: C_NEO_Player::GetLocalNEOPlayer();
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!localPlayer)
+		return;
+
+	// Only consider drawing beacons if alive or dead, but not LIFE_DYING (the death animation)
+	if (localPlayer->m_lifeState != LIFE_ALIVE &&
+		localPlayer->m_lifeState != LIFE_DEAD)
+	{
+		return;
+	}
+
+	auto ghoster = localPlayer->IsObserver()
+		? ToNEOPlayer(localPlayer->GetObserverTarget())
+		: localPlayer;
 
 	if (!ghoster || !ghoster->m_bCarryingGhost ||
 		ghoster->GetTeamNumber() < FIRST_GAME_TEAM ||
