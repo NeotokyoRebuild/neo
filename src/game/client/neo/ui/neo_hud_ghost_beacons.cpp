@@ -108,19 +108,19 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	}
 	Assert(ghoster->GetTeamNumber() < TEAM__TOTAL);
 
-	C_WeaponGhost* ghost;
+	const C_WeaponGhost* ghost;
 	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
-		ghost = assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST));
+		ghost = assert_cast<const C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST));
 		AssertMsg(ghoster->m_bCarryingGhost == !!ghost,
 			"ghost ptr and m_bCarryingGhost mismatch");
 	}
 	else
 	{
 		auto weapon = assert_cast<C_NEOBaseCombatWeapon*>(ghoster->GetActiveWeapon());
-		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
+		ghost = (weapon && weapon->IsGhost()) ? static_cast<const C_WeaponGhost*>(weapon) : nullptr;
 		AssertMsg(ghoster->m_bCarryingGhost ==
-			!!assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST)),
+			!!assert_cast<const C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST)),
 			"ghost ptr and m_bCarryingGhost mismatch");
 	}
 
