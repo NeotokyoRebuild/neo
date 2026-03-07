@@ -2334,6 +2334,16 @@ Scheme
 				"antialias" "1"
 			}
 		}
+		NHudTinyText
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"10"
+				"weight"	"0"
+				"antialias"	"1"
+			}
+		}
 		MVP
 		{
 			"1"
@@ -3196,6 +3206,8 @@ Scheme
 		"13"		"resource/neotokyo_press_n.ttf"
 		"14"		"resource/killfeedicons.ttf"
 		"15"		"resource/montserrat-regular.ttf"
+		"16"		"resource/RobotoCondensed-VariableFont_wght.ttf"
+		"17"		"resource/PressStart2P-Regular.ttf"
 	}
 
 }

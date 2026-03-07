@@ -319,7 +319,7 @@ void CNEO_Player::RequestSetStar(int newStar)
 	{
 		return;
 	}
-	if (newStar < STAR_NONE || newStar > STAR_FOXTROT)
+	if (newStar < STAR_ALPHA || newStar > STAR_NONE)
 	{
 		return;
 	}
