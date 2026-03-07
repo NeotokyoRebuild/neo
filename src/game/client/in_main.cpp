@@ -157,7 +157,6 @@ static	kbutton_t	in_thermoptic;
 static	kbutton_t	in_vision;
 static	kbutton_t	in_spec_next;
 static	kbutton_t	in_spec_prev;
-static	kbutton_t	in_spec_mouse_player;
 #endif
 
 /*
@@ -641,9 +640,6 @@ void IN_SpecNextDown(const CCommand &args) { KeyDown(&in_spec_next, args[1]); }
 
 void IN_SpecPrevUp(const CCommand &args) { KeyUp(&in_spec_prev, args[1]); }
 void IN_SpecPrevDown(const CCommand &args) { KeyDown(&in_spec_prev, args[1]); }
-
-void IN_SpecMousePlayerDown(const CCommand &args) { KeyUp(&in_spec_mouse_player, args[1]); }
-void IN_SpecMousePlayerUp(const CCommand &args) { KeyDown(&in_spec_mouse_player, args[1]); }
 
 void IN_LeanLeftToggle(const CCommand& args)
 {
@@ -1880,9 +1876,6 @@ static ConCommand endspecnextplayer("-specnextplayer", IN_SpecNextUp);
 
 static ConCommand startspecprevplayer("+specprevplayer", IN_SpecPrevDown);
 static ConCommand endspecprevplayer("-specprevplayer", IN_SpecPrevUp);
-
-static ConCommand startspecmouseplayer("+specmouseplayer", IN_SpecMousePlayerDown);
-static ConCommand endspecmouseplayer("-specmouseplayer", IN_SpecMousePlayerUp);
 #endif
 
 /*
