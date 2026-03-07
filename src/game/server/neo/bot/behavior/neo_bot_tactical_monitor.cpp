@@ -432,7 +432,10 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	CNEO_Player* pBotPlayer = ToNEOPlayer( me->GetEntity() );
 	if ( pBotPlayer && !(pBotPlayer->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) )
 	{
-		AvoidBumpingFriends( me );
+		if ( me->GetMoveType() != MOVETYPE_LADDER && me->GetLocomotionInterface()->GetGround() )
+		{
+			AvoidBumpingFriends( me );
+		}
 	}
 
 	me->UpdateDelayedThreatNotices();

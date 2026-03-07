@@ -31,4 +31,12 @@ private:
 	bool m_bGoingUp;
 	CountdownTimer m_timeoutTimer;
 	bool m_bHasBeenOnLadder;
+
+	float m_flLastZ;
+	float m_flHighestZ;
+	CountdownTimer m_stuckTimer;
+
+	static constexpr float STUCK_CHECK_INTERVAL = 1.0f;
+	static constexpr float STUCK_Z_TOLERANCE = 5.0f;
+	static constexpr float DISMOUNT_PUSH_DISTANCE = 16.0f;	// How close to target Z before we start pushing toward exit
 };
