@@ -48,10 +48,13 @@ constexpr int Y_POS = 0;
 constexpr bool STARS_HW_FILTERED = false;
 }
 
+CNEOHud_RoundState *g_pNeoHudRoundState;
+
 CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName)
 	, Panel(parent, pElementName)
 {
+	g_pNeoHudRoundState = this;
 	m_pWszStatusUnicode = L"";
 	SetAutoDelete(true);
 	m_iHideHudElementNumber = NEO_HUD_ELEMENT_ROUND_STATE;
@@ -136,11 +139,8 @@ void CNEOHud_RoundState::LevelShutdown(void)
 
 ConVar cl_neo_squad_hud_avatar_size("cl_neo_squad_hud_avatar_size", "0", FCVAR_ARCHIVE, "Size of squad hud avatars, 0 to scale with screen size (specifically size of font used in the hud)", true, 0, false, 0,
 	[](IConVar* pConVar, char const* pOldString, float flOldValue) -> void {
-		CNEOHud_RoundState *pPanel = GET_NAMED_HUDELEMENT( CNEOHud_RoundState, NRoundState );
-		if (!pPanel)
-			return;
-		
-		pPanel->UpdateAvatarSize();
+		if (g_pNeoHudRoundState)
+			g_pNeoHudRoundState->UpdateAvatarSize();
 });
 
 void CNEOHud_RoundState::UpdateAvatarSize()
@@ -583,7 +583,11 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			//							      |                \|   |       \|
 			//	                           sign              team   alive    playerIndex			
 
-			const int playerTeam = g_PR->GetTeam(m_nPlayerList[i].playerIndex);
+			int playerTeam = g_PR->GetTeam(m_nPlayerList[i].playerIndex);
+			if (playerTeam >= FIRST_GAME_TEAM)
+			{ // reorder the teams in the list, jinrai appear before nsf even though they have a lower index
+				playerTeam = TEAM__TOTAL - 1 - (playerTeam - FIRST_GAME_TEAM);
+			}
 			m_nPlayerList[i].playerValue = m_nPlayerList[i].playerIndex + 
 					((playerTeam - FIRST_GAME_TEAM) << (INDEX_SHIFT + CLASS_SHIFT + ALIVE_SHIFT + STAR_SHIFT));
 			if (cl_neo_squad_hud_sort_players_by_class_alive_and_star.GetBool())
@@ -623,6 +627,8 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		surface()->DrawFilledRectFade(m_iRightOffset, 0,
 			(m_iRightOffset + 2) + (m_iRightPlayersTotal * m_ilogoSize) + (m_iRightPlayersTotal * 2), Y_POS + m_ilogoSize + 6, 255, 0, false);
 
+		int selectedPlayerIndexInList = localPlayerSpecOrNoTeam ? m_iSelectedPlayer : 0;
+
 		// The list is sorted by team, so could just iterate through one team and then the other, but cl_neo_hud_team_swap_sides and whether the local player is a spectator or not makes this
 		// complicated, NEO TODO (Adam) optimize the if (playerTeam == leftTeam or rightTeam) and if (!g_PR->IsConnected(m_nPlayerList[i].first)) checks away
 		for (int i = 0; i < gpGlobals->maxClients; i++)
@@ -634,13 +640,13 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			if (playerTeam == leftTeam)
 			{
 				const int xOffset = (m_iLeftOffset - 2) - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
-				DrawPlayer(m_nPlayerList[i].playerIndex, leftCount, leftTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
+				DrawPlayer(m_nPlayerList[i].playerIndex, leftCount, leftTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam, -(leftCount+1) == selectedPlayerIndexInList);
 				leftCount++;
 			}
 			else if (playerTeam == rightTeam)
 			{
 				const int xOffset = (m_iRightOffset + 2) + (rightCount * m_ilogoSize) + (rightCount * 2);
-				DrawPlayer(m_nPlayerList[i].playerIndex, rightCount, rightTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam);
+				DrawPlayer(m_nPlayerList[i].playerIndex, rightCount, rightTeamInfo, xOffset, localPlayerTeam == playerTeam || localPlayerSpecOrNoTeam, (rightCount+1) == selectedPlayerIndexInList);
 				rightCount++;
 			}
 		}
@@ -1023,7 +1029,7 @@ int CNEOHud_RoundState::DrawPlayerRow_BotCmdr(int playerIndex, const int yOffset
 }
 
 void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
-									const int xOffset, const bool drawHealthClass)
+									const int xOffset, const bool drawHealthClass, const bool isSelected)
 {
 	C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalNeoPlayer)
@@ -1109,6 +1115,13 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 					highlightPlayerIndex = pObserverTarget->entindex();
 				}
 			}
+
+			if (isSelected)
+			{
+				surface()->DrawSetColor(COLOR_NEO_ORANGE);
+				const int alpha = (g_PR->IsAlive(playerIndex) ? 200 : 50) * Max(0.f, 1.f - (gpGlobals->curtime - m_flSelectedPlayerChangeTime));
+				surface()->DrawFilledRectFade(xOffset + TEXTURE_BORDER_WIDTH, Y_POS + 1 + m_iTinyTextHeight + TEXTURE_BORDER_WIDTH, xOffset + m_ilogoSize - TEXTURE_BORDER_WIDTH, Y_POS + 1 + m_iTinyTextHeight + m_ilogoSize - TEXTURE_BORDER_WIDTH, 0, alpha, false);
+			}
 		}
 		if (highlightPlayerIndex == playerIndex)
 		{
@@ -1118,6 +1131,7 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 				alpha = 50;
 				surface()->DrawSetColor(COLOR_RED);
 			}
+			surface()->DrawSetColor(COLOR_WHITE);
 			surface()->DrawFilledRectFade(xOffset + TEXTURE_BORDER_WIDTH, Y_POS + 1 + m_iTinyTextHeight + TEXTURE_BORDER_WIDTH, xOffset + m_ilogoSize - TEXTURE_BORDER_WIDTH, Y_POS + 1 + m_iTinyTextHeight + m_ilogoSize - TEXTURE_BORDER_WIDTH, g_PR->IsAlive(playerIndex) ? 200 : 50, 0, false);
 		}
 	}
@@ -1253,4 +1267,161 @@ void CNEOHud_RoundState::Paint()
 {
 	BaseClass::Paint();
 	PaintNeoElement();
+}
+
+void CNEOHud_RoundState::SelectNextEntityInHud()
+{
+	if (!g_PR)
+		return;
+
+	bool found = false;
+	int i = 0;
+	int current = m_iSelectedPlayer;
+	while (!found && i < m_iLeftPlayersTotal + m_iRightPlayersTotal)
+	{
+		i++;
+		current++;
+		if (current == 0)
+		{
+			current = 1;
+		}
+		else if (current > m_iRightPlayersTotal)
+		{
+			current = -m_iLeftPlayersTotal;
+		}
+
+		if (g_PR->IsAlive(m_nPlayerList[current > 0 ? m_iLeftPlayersTotal + current - 1 : -current - 1].playerIndex))
+		{
+			found = true;
+		}
+	}
+
+	if (found)
+	{
+		m_flSelectedPlayerChangeTime = gpGlobals->curtime;
+		m_iSelectedPlayer = current;
+	}
+}
+
+void CNEOHud_RoundState::SelectPreviousEntityInHud()
+{
+	/*m_iSelectedPlayer--;
+	if (m_iSelectedPlayer == 0)
+	{
+		m_iSelectedPlayer = -1;
+	}
+	else if (m_iSelectedPlayer < -m_iRightPlayersTotal)
+	{
+		m_iSelectedPlayer = m_iRightPlayersTotal;
+	}*/
+	if (!g_PR)
+		return;
+
+	bool found = false;
+	int i = 0;
+	int current = m_iSelectedPlayer;
+	while (!found && i < m_iLeftPlayersTotal + m_iRightPlayersTotal)
+	{
+		i++;
+		current--;
+		if (current == 0)
+		{
+			current = -1;
+		}
+		else if (current < -m_iLeftPlayersTotal)
+		{
+			current = m_iRightPlayersTotal;
+		}
+
+		if (g_PR->IsAlive(m_nPlayerList[current > 0 ? m_iLeftPlayersTotal + current - 1 : -current - 1].playerIndex))
+		{
+			found = true;
+		}
+	}
+
+	if (found)
+	{
+		m_flSelectedPlayerChangeTime = gpGlobals->curtime;
+		m_iSelectedPlayer = current;
+	}
+}
+
+int CNEOHud_RoundState::GetSelectedEntityInHud()
+{
+	return m_nPlayerList[m_iSelectedPlayer > 0 ? m_iLeftPlayersTotal + m_iSelectedPlayer - 1 : -m_iSelectedPlayer - 1].playerIndex;
+}
+//
+//CON_COMMAND_F( spec_entity_by_hud_position, "Spectate entity by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
+//{
+//	if (!g_pNeoHudRoundState)
+//		return;
+//	
+//	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+//	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
+//		return;
+//
+//	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud();
+//}
+//
+//CON_COMMAND_F( spec_next_entity_in_hud, "Spectate entity by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
+//{
+//	if (!g_pNeoHudRoundState)
+//		return;
+//	
+//	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+//	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
+//		return;
+//
+//	const int playerIndex = g_pNeoHudRoundState->GetNextEntityInHud();
+//	engine->ClientCmd( VarArgs("spec_player_entity_number %d", playerIndex) );
+//}
+//
+//CON_COMMAND_F( spec_previous_entity_in_hud, "Spectate entity by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
+//{
+//	if (!g_pNeoHudRoundState)
+//		return;
+//	
+//	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+//	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
+//		return;
+//
+//	const int playerIndex = g_pNeoHudRoundState->GetPreviousEntityInHud();
+//	engine->ClientCmd( VarArgs("spec_player_entity_number %d", playerIndex) );
+//}
+
+CON_COMMAND_F( select_next_entity_in_hud, "Spectate entity by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!g_pNeoHudRoundState)
+		return;
+	
+	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
+		return;
+
+	g_pNeoHudRoundState->SelectNextEntityInHud();
+}
+
+CON_COMMAND_F( select_previous_entity_in_hud, "Spectate entity by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!g_pNeoHudRoundState)
+		return;
+	
+	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
+		return;
+
+	g_pNeoHudRoundState->SelectPreviousEntityInHud();
+}
+
+CON_COMMAND_F( spectate_entity_selected_in_hud, "Spectate entity by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!g_pNeoHudRoundState)
+		return;
+	
+	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
+		return;
+
+	const int playerIndex = g_pNeoHudRoundState->GetSelectedEntityInHud();
+	engine->ClientCmd( VarArgs("spec_player_entity_number %d", playerIndex) );
 }

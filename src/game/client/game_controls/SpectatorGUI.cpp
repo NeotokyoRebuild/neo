@@ -986,5 +986,50 @@ CON_COMMAND_F( spec_player, "Spectate player by partial name, steamid, or userid
 	}
 }
 
+#ifdef NEO 
+CON_COMMAND_F( spec_player_under_mouse, "Spectate player by partial name, steamid, or userid", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
+		return;
+
+	if (!engine->IsHLTV() || !HLTVCamera()->IsPVSLocked())
+	{
+		C_BaseEntity* currentTarget = pNeoPlayer->GetObserverTarget();
+		C_NEO_Player *target = nullptr;
+		float targetDotProduct = -1;
+		for (int i = 1; i < gpGlobals->maxClients; i++)
+		{
+			C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+			if (currentTarget != pPlayer && pNeoPlayer->IsValidObserverTarget(pPlayer) && pPlayer->IsAlive())
+			{
+				Vector vecForward;
+				AngleVectors( pNeoPlayer->EyeAngles(), &vecForward );
+
+				Vector vecToTarget = pPlayer->WorldSpaceCenter() - pNeoPlayer->EyePosition();
+				vecToTarget.NormalizeInPlace();
+				float dotProduct = DotProduct(vecForward, vecToTarget);
+				if (dotProduct > targetDotProduct && dotProduct > 0.5)
+				{
+					targetDotProduct = dotProduct;
+					target = pPlayer;
+				}
+			}
+		}
+
+		if (target)
+		{
+			if (engine->IsHLTV())
+			{
+				HLTVCamera()->SetPrimaryTarget(target->entindex());
+			}
+			else
+			{
+				engine->ClientCmd( VarArgs("spec_player_entity_number %d", target->entindex()) );
+			}
+		}
+	}
+}
+#endif // NEO
 
 

@@ -30,6 +30,10 @@ public:
 	virtual void Paint();
 	
 	void UpdateAvatarSize();
+	int GetEntityIndexAtPositionInHud();
+	void SelectNextEntityInHud();
+	void SelectPreviousEntityInHud();
+	int GetSelectedEntityInHud();
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw();
@@ -50,7 +54,7 @@ private:
 	int DrawPlayerRow(int playerIndex, int yOffset, bool small = false);
 	int DrawPlayerRow_BotCmdr(int playerIndex, int yOffset, bool small = false, const Color* highlightColor = nullptr);
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
-					const int xOffset, const bool drawHealthClass);
+					const int xOffset, const bool drawHealthClass, const bool isSelected = false);
 	void SetTextureToAvatar(int playerIndex);
 
 	virtual void LevelShutdown(void) override;
@@ -117,6 +121,9 @@ private:
 		int playerValue;
 	};
 	CUtlVector<playerIndexAndTheirValue> m_nPlayerList;
+	int m_iSelectedPlayer = 0;	// Used to index the list above. Index of 0 is invalid. Positive values correspond to team NSF, with index 1 being the first member of NSF. 
+								// Negative values correspond to team Jinrai, with index -1 being the first member of Jinrai (Team Jinrai is drawn right to left, while moving left to right starting at index 0 in m_nPlayerList)
+	float m_flSelectedPlayerChangeTime = -1;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");
@@ -129,4 +136,9 @@ private:
 	CNEOHud_RoundState(const CNEOHud_RoundState &other);
 };
 
+extern CNEOHud_RoundState *g_pNeoHudRoundState;
+inline CNEOHud_RoundState* NeoHudRoundState()
+{
+	return g_pNeoHudRoundState;
+}
 #endif // NEO_HUD_ROUND_STATE_H
