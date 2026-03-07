@@ -200,8 +200,8 @@ void ResetCrosshairToDefault(CrosshairInfo *crh)
 	crh->eDynamicType = CROSSHAIR_DYNAMICTYPE_NONE;
 	crh->bSeparateColorDot = false;
 	crh->colorDot = COLOR_WHITE;
-	crh->colorDotOutline = COLOR_WHITE;
-	crh->colorOutline = COLOR_WHITE;
+	crh->colorDotOutline = COLOR_BLACK;
+	crh->colorOutline = COLOR_BLACK;
 }
 
 void DefaultCrosshairSerial(char (&szSequence)[NEO_XHAIR_SEQMAX])
@@ -357,20 +357,22 @@ static void ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 				? static_cast<NeoHudCrosshairDynamicType>(SerialInt(crh->eDynamicType, eSerialMode, szMutSeq, iSeqSize, &idx))
 				: CROSSHAIR_DYNAMICTYPE_NONE;
 
-		if (eSerialMode == SERIALMODE_DESERIALIZE)
+		if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V22)
 		{
-			crh->bSeparateColorDot = false;
-			crh->colorDot = COLOR_BLACK;
-			crh->colorDotOutline = COLOR_BLACK;
-			crh->colorOutline = COLOR_BLACK;
-		}
-		if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V22 && (bNotCompact || crh->iCenterDot > 0))
-		{
-			crh->bSeparateColorDot = SerialBool(crh->bSeparateColorDot, eSerialMode, szMutSeq, iSeqSize, &idx);
-			if (bNotCompact || crh->bSeparateColorDot)
+			if (bNotCompact || crh->iCenterDot > 0)
 			{
-				crh->colorDot.SetRawColor(SerialInt(crh->colorDot.GetRawColor(), eSerialMode, szMutSeq, iSeqSize, &idx));
-				crh->colorDotOutline.SetRawColor(SerialInt(crh->colorDotOutline.GetRawColor(), eSerialMode, szMutSeq, iSeqSize, &idx));
+				crh->bSeparateColorDot = SerialBool(crh->bSeparateColorDot, eSerialMode, szMutSeq, iSeqSize, &idx);
+				if (bNotCompact || crh->bSeparateColorDot)
+				{
+					crh->colorDot.SetRawColor(SerialInt(crh->colorDot.GetRawColor(), eSerialMode, szMutSeq, iSeqSize, &idx));
+					if (bNotCompact || crh->iOutline > 0)
+					{
+						crh->colorDotOutline.SetRawColor(SerialInt(crh->colorDotOutline.GetRawColor(), eSerialMode, szMutSeq, iSeqSize, &idx));
+					}
+				}
+			}
+			if (bNotCompact || crh->iOutline > 0)
+			{
 				crh->colorOutline.SetRawColor(SerialInt(crh->colorOutline.GetRawColor(), eSerialMode, szMutSeq, iSeqSize, &idx));
 			}
 		}
@@ -389,6 +391,7 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 	V_memcpy(szMutSeq, pszSequence, sizeof(char) * iSeqSize);
 	szMutSeq[iSeqSize] = '\0';
 
+	ResetCrosshairToDefault(crh);
 	ImportOrExportCrosshair(SERIALMODE_DESERIALIZE, crh, szMutSeq, iSeqSize);
 	return true;
 }
