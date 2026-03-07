@@ -11,6 +11,9 @@ class C_NEO_Player;
 
 #include "neo_player_shared.h"
 
+#define NEO_THERMAL_MODEL_MATERIAL "dev/thermal_model"
+#define NEO_MOTION_MODEL_MATERIAL "dev/motion_model"
+
 class C_NEOPredictedViewModel;
 class INEOPlayerAnimState;
 
@@ -40,7 +43,7 @@ public:
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
-	virtual void AddPoints(int score, bool bAllowNegativeScore);
+	virtual void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
 
 	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
 
@@ -188,6 +191,7 @@ public:
 
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
+	void CheckAimButtons();
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
 	void CheckLeanButtons();
@@ -217,6 +221,8 @@ public:
 
 	CNetworkVar(float, m_flNextPingTime);
 
+	CNetworkArray(Vector, m_vLastPingByStar, STAR__TOTAL);
+
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
@@ -225,6 +231,7 @@ public:
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 	CNetworkHandle(CBaseEntity, m_hServerRagdoll);
+	CNetworkHandle(CBasePlayer, m_hCommandingPlayer);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);

@@ -11,6 +11,7 @@
 #include "neo_misc.h"
 #include "c_user_message_register.h"
 #include "igamesystem.h"
+#include "neo_theme.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -74,6 +75,8 @@ CNEOHud_KillerDamageInfo::CNEOHud_KillerDamageInfo(const char *pszName, vgui::Pa
 	, vgui::Panel(parent, pszName)
 {
 	SetAutoDelete(true);
+	SetupNTRETheme(&m_uiCtx);
+	m_uiCtx.colors.sectionBg = COLOR_TRANSPARENT;
 
 	if (parent)
 	{
@@ -296,6 +299,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 	const C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 
 	// Show info box while it just died spectating itself
+	m_uiCtx.colors.normalFg = COLOR_WHITE;
 	DrawNeoHudRoundedBox(m_uiCtx.dPanel.x, m_uiCtx.dPanel.y, m_uiCtx.dPanel.x + m_uiCtx.dPanel.wide, m_uiCtx.dPanel.y + m_uiCtx.dPanel.tall, m_boxColor);
 	NeoUI::BeginContext(&m_uiCtx, NeoUI::MODE_PAINT, nullptr, "NeoHudKillerDmgInfo");
 	NeoUI::BeginSection();
@@ -448,11 +452,11 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 					if (bYouKilled)
 					{
-						vgui::surface()->DrawSetTextColor(COLOR_RED);
+						m_uiCtx.colors.normalFg = COLOR_RED;
 					}
 					V_swprintf_safe(wszLabel, L"%d", attackerInfo.dealtDmgs);
 					NeoUI::Label(wszLabel);
-					vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+					m_uiCtx.colors.normalFg = COLOR_WHITE;
 
 					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 					V_swprintf_safe(wszLabel, L"%d hit%ls", attackerInfo.dealtHits, (attackerInfo.dealtHits <= 1) ? L"" : L"s");
@@ -470,9 +474,9 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 					Assert(iDmgerTeam == TEAM_JINRAI || iDmgerTeam == TEAM_NSF);
 
 					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
-					vgui::surface()->DrawSetTextColor((iDmgerTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF);
+					m_uiCtx.colors.normalFg = (iDmgerTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
 					NeoUI::Label(m_wszDmgerNamesList[i]);
-					vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+					m_uiCtx.colors.normalFg = COLOR_WHITE;
 
 					NeoUI::Label(GetNeoClassNameW(m_iClassIdxsList[i]));
 				}
@@ -483,11 +487,11 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 					if (bKilledYou)
 					{
-						vgui::surface()->DrawSetTextColor(COLOR_RED);
+						m_uiCtx.colors.normalFg = COLOR_RED;
 					}
 					V_swprintf_safe(wszLabel, L"%d", attackerInfo.takenDmgs);
 					NeoUI::Label(wszLabel);
-					vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+					m_uiCtx.colors.normalFg = COLOR_WHITE;
 
 					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 					V_swprintf_safe(wszLabel, L"%d hit%ls", attackerInfo.takenHits, (attackerInfo.takenHits <= 1) ? L"" : L"s");

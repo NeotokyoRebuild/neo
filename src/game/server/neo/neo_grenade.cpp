@@ -29,6 +29,7 @@ DEFINE_THINKFUNC(DelayThink),
 DEFINE_INPUTFUNC(FIELD_FLOAT, "SetTimer", InputSetTimer),
 END_DATADESC()
 
+ConVar sv_neo_frag_bot_danger_sound_radius("sv_neo_frag_bot_danger_sound_radius", "1000", FCVAR_CHEAT, "Radius of the SOUND_DANGER signal emitted by frag grenades for bot AI awareness.", true, 0.0, false, 0);
 ConVar sv_neo_frag_showdebug("sv_neo_frag_showdebug", "0", FCVAR_CHEAT, "Show frag collision debug", true, 0.0, true, 1.0);
 ConVar sv_neo_frag_vphys_reawaken_vel("sv_neo_frag_vphys_reawaken_vel", "200", FCVAR_CHEAT);
 extern ConVar sv_neo_grenade_cor;
@@ -83,8 +84,7 @@ void CNEOGrenadeFrag::DelayThink()
 	// Emit danger sound periodically for bots to hear
 	if (gpGlobals->curtime >= m_flNextSoundTime)
 	{
-		// 400 radius, 0.5s duration. Bots need to react quickly.
-		CSoundEnt::InsertSound(SOUND_DANGER, GetAbsOrigin(), 400, 0.5f, this, SOUNDENT_CHANNEL_REPEATED_DANGER);
+		CSoundEnt::InsertSound(SOUND_DANGER, GetAbsOrigin(), sv_neo_frag_bot_danger_sound_radius.GetFloat(), 0.5f, this, SOUNDENT_CHANNEL_REPEATED_DANGER);
 		m_flNextSoundTime = gpGlobals->curtime + 0.35f;
 	}
 #endif

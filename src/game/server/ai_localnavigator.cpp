@@ -13,6 +13,10 @@
 #include "ai_moveprobe.h"
 #include "ai_motor.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -38,6 +42,36 @@ CAI_LocalNavigator::CAI_LocalNavigator(CAI_BaseNPC *pOuter) : CAI_Component( pOu
 	m_pPlaneSolver = new CAI_PlaneSolver( pOuter );
 
 	m_fLastWasClear = false;
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<decltype(m_LastMoveGoal)>)
+	{
+		static_assert(sizeof(m_LastMoveGoal) ==
+#ifdef DEBUG
+			224
+#else
+			216
+#endif
+		);
+		static_assert(std::is_same_v<decltype(m_LastMoveGoal), AILocalMoveGoal_t>);
+		m_LastMoveGoal.bHasTraced = {};
+		m_LastMoveGoal.curExpectedDist = {};
+		m_LastMoveGoal.dir = {};
+		m_LastMoveGoal.directTrace = {};
+		m_LastMoveGoal.facing = {};
+		m_LastMoveGoal.flags = {};
+		m_LastMoveGoal.maxDist = {};
+		m_LastMoveGoal.navType = {};
+		m_LastMoveGoal.pMoveTarget = {};
+		m_LastMoveGoal.pPath = {};
+#ifdef DEBUG
+		m_LastMoveGoal.solveCookie = {};
+#endif
+		m_LastMoveGoal.speed = {};
+		m_LastMoveGoal.target = {};
+		m_LastMoveGoal.thinkTrace = {};
+	}
+	else
+#endif
 	memset( &m_LastMoveGoal, 0, sizeof(m_LastMoveGoal) );
 }
 

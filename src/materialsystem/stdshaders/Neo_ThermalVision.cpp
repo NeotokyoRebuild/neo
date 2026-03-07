@@ -6,27 +6,17 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_tv_brightness_scale("mat_neo_tv_brightness_scale", "", FCVAR_CHEAT);
-ConVar mat_neo_tv_xoffset("mat_neo_tv_xoffset", "0.13", FCVAR_CHEAT);
-ConVar mat_neo_tv_xmultiplier("mat_neo_tv_xmultiplier", "3", FCVAR_CHEAT);
-ConVar mat_neo_tv_brightness_nerf_threshold("mat_neo_tv_brightness_nerf_threshold", "0.325", FCVAR_CHEAT);
-ConVar mat_neo_tv_brightness_nerf("mat_neo_tv_brightness_nerf", "0.325", FCVAR_CHEAT);
-
-BEGIN_SHADER_FLAGS(Neo_ThermalVision, "Help for my shader.", SHADER_NOT_EDITABLE)
+BEGIN_SHADER_FLAGS(Neo_ThermalVision, "Help for the thermalvision shader.", SHADER_NOT_EDITABLE)
 
 BEGIN_SHADER_PARAMS
-#if(1)
-SHADER_PARAM(FBTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_ThermalVision", "")
-//SHADER_PARAM(BLURTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_SmallHDR0", "")
+SHADER_PARAM(FBTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_FullFrameFB", "")
 SHADER_PARAM(TVTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/tvgrad2", "")
 SHADER_PARAM(NOISETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/noise", "")
-SHADER_PARAM(NOISETRANSFORM, SHADER_PARAM_TYPE_VEC3, "[0 0 0]", "")
-#endif
+SHADER_PARAM(NOISETRANSFORM, SHADER_PARAM_TYPE_VEC2, "[0 0]", "")
 END_SHADER_PARAMS
 
 SHADER_INIT
 {
-#if(1)
 	if (params[FBTEXTURE]->IsDefined())
 	{
 		LoadTexture(FBTEXTURE);
@@ -35,15 +25,6 @@ SHADER_INIT
 	{
 		Assert(false);
 	}
-
-	//if (params[BLURTEXTURE]->IsDefined())
-	//{
-	//	LoadTexture(BLURTEXTURE);
-	//}
-	//else
-	//{
-	//	Assert(false);
-	//}
 
 	if (params[TVTEXTURE]->IsDefined())
 	{
@@ -62,7 +43,6 @@ SHADER_INIT
 	{
 		Assert(false);
 	}
-#endif
 }
 
 SHADER_FALLBACK
@@ -81,16 +61,11 @@ SHADER_DRAW
 {
 	SHADOW_STATE
 	{
-#if(1)
 		pShaderShadow->EnableTexture(SHADER_SAMPLER0, true);
 		pShaderShadow->EnableTexture(SHADER_SAMPLER1, true);
-		//pShaderShadow->EnableTexture(SHADER_SAMPLER2, true);
-		pShaderShadow->EnableTexture(SHADER_SAMPLER3, true);
-#endif
-
-		const int fmt = VERTEX_POSITION;
-		const int nTexCoordCount = 1;
-		pShaderShadow->VertexShaderVertexFormat(fmt, nTexCoordCount, NULL, 0);
+		pShaderShadow->EnableTexture(SHADER_SAMPLER2, true);
+		
+		pShaderShadow->VertexShaderVertexFormat(VERTEX_POSITION, 1, NULL, 0);
 		
 		pShaderShadow->EnableDepthWrites(false);
 
@@ -99,46 +74,18 @@ SHADER_DRAW
 
 		DECLARE_STATIC_PIXEL_SHADER(neo_thermalvision_ps30);
 		SET_STATIC_PIXEL_SHADER(neo_thermalvision_ps30);
-
-		// On DX9, get the gamma read and write correct
-		if (g_pHardwareConfig->SupportsSRGB())
-		{
-#if(1)
-			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, true);
-			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER1, true);
-			//pShaderShadow->EnableSRGBRead(SHADER_SAMPLER2, true);
-			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER3, true);
-#endif
-			pShaderShadow->EnableSRGBWrite(true);
-		}
-		else
-		{
-			Assert(false);
-		}
 	}
 
 	DYNAMIC_STATE
 	{
-#if(1)
 		BindTexture(SHADER_SAMPLER0, FBTEXTURE);
-		//BindTexture(SHADER_SAMPLER1, BLURTEXTURE);
 		BindTexture(SHADER_SAMPLER1, TVTEXTURE);
-		BindTexture(SHADER_SAMPLER3, NOISETEXTURE);
-#endif
-		const float flBrightnessScale = mat_neo_tv_brightness_scale.GetFloat();
-		const float flXOffset = mat_neo_tv_xoffset.GetFloat();
-		const float flXMultiplier = mat_neo_tv_xmultiplier.GetFloat();
-		const float* noiseTransformVector = params[NOISETRANSFORM]->GetVecValue();
-		const float flBrightnessNerfThreshold = mat_neo_tv_brightness_nerf_threshold.GetFloat();
-		const float flBrightnessNerf = mat_neo_tv_brightness_nerf.GetFloat();
-
-		pShaderAPI->SetPixelShaderConstant(0, &flBrightnessScale);
-		pShaderAPI->SetPixelShaderConstant(1, &flXOffset);
-		pShaderAPI->SetPixelShaderConstant(2, &flXMultiplier);
-		pShaderAPI->SetPixelShaderConstant(3, &noiseTransformVector[0]);
-		pShaderAPI->SetPixelShaderConstant(4, &noiseTransformVector[1]);
-		pShaderAPI->SetPixelShaderConstant(5, &flBrightnessNerfThreshold);
-		pShaderAPI->SetPixelShaderConstant(6, &flBrightnessNerf);
+		BindTexture(SHADER_SAMPLER2, NOISETEXTURE);
+		
+		//s_pShaderAPI->SetPixelShaderConstant(0, NOISETRANSFORM);
+		float vNoiseTransform[2] = {0, 0};
+		params[NOISETRANSFORM]->GetVecValue(vNoiseTransform, 2);
+		s_pShaderAPI->SetPixelShaderConstant(0, vNoiseTransform);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);

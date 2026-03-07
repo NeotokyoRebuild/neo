@@ -13,6 +13,10 @@
 
 #include "ai_navtype.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 class CAI_Path;
 
 //-----------------------------------------------------------------------------
@@ -77,6 +81,20 @@ struct AIMoveTrace_t
 {
 	AIMoveTrace_t()
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<std::remove_cvref_t<decltype(*this)>>)
+		{
+			static_assert(sizeof(*this) == 64);
+			fStatus = {};
+			vEndPosition.Zero();
+			vHitNormal.Zero();
+			pObstruction = {};
+			flTotalDist = flDistObstructed = {};
+			vJumpVelocity.Zero();
+			flStepUpDistance = {};
+		}
+		else
+#endif
 		memset( this, 0, sizeof(*this) );
 	}
 	
@@ -124,6 +142,34 @@ struct AILocalMoveGoal_t
 {
 	AILocalMoveGoal_t()
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<std::remove_cvref_t<decltype(*this)>>)
+		{
+			static_assert(sizeof(*this) ==
+#ifdef DEBUG
+				224
+#else
+				216
+#endif
+			);
+
+			target.Zero();
+			dir.Zero();
+			facing.Zero();
+			speed = maxDist = curExpectedDist = {};
+			navType = {};
+			pMoveTarget = {};
+			flags = {};
+			pPath = {};
+			bHasTraced = {};
+			directTrace = {};
+			thinkTrace = {};
+#ifdef DEBUG
+			solveCookie = {};
+#endif
+		}
+		else
+#endif
 		memset( this, 0, sizeof(*this) );
 	}
 	

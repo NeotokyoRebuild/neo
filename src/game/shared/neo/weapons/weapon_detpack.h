@@ -12,7 +12,7 @@
 #include "neo_player.h"
 #endif
 
-#include "weapon_neobasecombatweapon.h"
+#include "weapon_neobaseprojectile.h"
 
 #ifdef CLIENT_DLL
 #define CWeaponDetpack C_WeaponDetpack
@@ -20,9 +20,9 @@
 class CNEODeployedDetpack;
 #endif
 
-class CWeaponDetpack : public CNEOBaseCombatWeapon
+class CWeaponDetpack : public CNEOBaseProjectile
 {
-	DECLARE_CLASS(CWeaponDetpack, CNEOBaseCombatWeapon);
+	DECLARE_CLASS(CWeaponDetpack, CNEOBaseProjectile);
 public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
@@ -44,6 +44,7 @@ public:
 
 	bool	Deploy(void);
 	virtual bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL) OVERRIDE;
+	virtual int GetWeaponFlags() const override;
 
 	virtual float GetFastestDryRefireTime() const { return 1.f; } // is called if attack button spammed, doesn't really mean much for grenades
 	const char* GetWorldModel(void) const override { return	m_bThisDetpackHasBeenThrown ? "models/weapons/w_detremote.mdl" : "models/weapons/w_detpack.mdl"; };
@@ -77,9 +78,6 @@ public:
 	CNetworkVar(bool, m_bRemoteHasBeenTriggered);
 
 private:
-	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
-	void	CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEye, Vector& vecSrc);
-
 	CWeaponDetpack(const CWeaponDetpack &other);
 
 #ifdef GAME_DLL

@@ -8,11 +8,17 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSRS, DT_WeaponSRS)
 
 BEGIN_NETWORK_TABLE(CWeaponSRS, DT_WeaponSRS)
 	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
+#ifdef CLIENT_DLL
+	RecvPropBool(RECVINFO(m_bNeedsBolting)),
+#else
+	SendPropBool(SENDINFO(m_bNeedsBolting)),
+#endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponSRS)
 	DEFINE_NEO_BASE_WEP_PREDICTION
+	DEFINE_PRED_FIELD(m_bNeedsBolting, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -28,7 +34,7 @@ CWeaponSRS::CWeaponSRS()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
-	m_bRoundChambered = true;
+	m_bNeedsBolting = false;
 
 	m_weaponSeeds = {
 		"srspx",
@@ -38,60 +44,67 @@ CWeaponSRS::CWeaponSRS()
 	};
 }
 
-void CWeaponSRS::PrimaryAttack(void)
+void CWeaponSRS::PrimaryAttack()
 {
-	if (!ShootingIsPrevented() && GetRoundChambered()) {
-		BaseClass::PrimaryAttack();
-		if (m_flLastAttackTime == gpGlobals->curtime) {
-			m_bRoundChambered = false;
-		}
+	if (ShootingIsPrevented() || !m_iClip1 || !m_bTriggerReset)
+	{
+		Assert(!(m_iClip1 < 0));
+		return BaseClass::PrimaryAttack();
 	}
+
+	const bool tryingToShootTooFast =
+		(gpGlobals->curtime < m_flLastAttackTime + GetFireRate());
+	if (tryingToShootTooFast)
+	{
+		return;
+	}
+
+	m_bNeedsBolting = true;
+	BaseClass::PrimaryAttack();
 }
 
 void CWeaponSRS::ItemPreFrame()
 {
-	if (m_flChamberFinishTime <= gpGlobals->curtime && m_bRoundBeingChambered == true)
-	{ // Finished chambering a round, enable Primary attack
-		m_bRoundBeingChambered = false;
-		m_bRoundChambered = true;
+	if (!m_bNeedsBolting)
+	{
+		return BaseClass::ItemPreFrame();
 	}
 
-	if (m_flLastAttackTime + 0.08f <= gpGlobals->curtime && !m_bRoundChambered && !m_bRoundBeingChambered && m_iClip1 > 0)
+	if (m_flLastAttackTime + 0.08f <= gpGlobals->curtime)
 	{ // Primary attack animation finished, begin chambering a round
-		if (CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()))) {
+		if (auto* pOwner = ToNEOPlayer(GetOwner())) {
 			if (pOwner->m_nButtons & IN_ATTACK)
 			{
-				BaseClass::ItemPreFrame();
-				return;
+				return BaseClass::ItemPreFrame();
 			}
 			pOwner->Weapon_SetZoom(false);
 		}
+		// Only queue the bolting anim once; we want to allow the player
+		// to cancel this with manual weapon quick-switching.
 		SendWeaponAnim(ACT_VM_PULLBACK);
 		WeaponSound(SPECIAL1);
-		m_bRoundBeingChambered = true;
-		m_flChamberFinishTime = gpGlobals->curtime + 1.2f;
+		m_bNeedsBolting = false;
 	}
 
 	BaseClass::ItemPreFrame();
 }
 
-bool CWeaponSRS::Reload()
+bool CWeaponSRS::Deploy()
 {
-	if (auto owner = ToBasePlayer(GetOwner()))
-	{
-		if (!(owner->m_nButtons & IN_ATTACK))
-		{
-			return BaseClass::Reload();
-		}
-		return false;
-	}
-	return false;
+	// This is on purpose; the player is allowed to cancel the bolting animation
+	// with a quick-switch input.
+	m_bNeedsBolting = false;
+
+	return BaseClass::Deploy();
 }
 
-void CWeaponSRS::FinishReload()
+bool CWeaponSRS::Reload()
 {
-	m_bRoundChambered = true;
-	BaseClass::FinishReload();
+	// The reloading animation already contains the bolting motion;
+	// we don't want to bolt twice.
+	m_bNeedsBolting = false;
+
+	return BaseClass::Reload();
 }
 
 bool CWeaponSRS::CanBePickedUpByClass(int classId)

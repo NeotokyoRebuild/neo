@@ -973,7 +973,9 @@ void CRagdollProp::VPhysicsUpdate( IPhysicsObject *pPhysics )
 
 	matrix3x4_t boneToWorld[MAXSTUDIOBONES];
 	QAngle angles;
+#ifndef NEO
 	Vector surroundingMins, surroundingMaxs;
+#endif
 
 	int i;
 	for ( i = 0; i < m_ragdoll.listCount; i++ )

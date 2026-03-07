@@ -16,6 +16,12 @@
 #include "engine/ivdebugoverlay.h"
 #include "tier0/icommandline.h"
 
+#ifdef NEO
+#include "interval.h" // Do not remove this include!! See comment "bad include order" below in this file for reasoning
+
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -41,7 +47,9 @@ struct loopingsound_t
 
 ConVar soundscape_fadetime( "soundscape_fadetime", "3.0", FCVAR_CHEAT, "Time to crossfade sound effects between soundscapes" );
 
+#ifndef NEO // bad include order; we fix this in the main top-level include list
 #include "interval.h"
+#endif
 
 struct randomsound_t
 {
@@ -59,6 +67,21 @@ struct randomsound_t
 
 	void Init()
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<randomsound_t>)
+		{
+			static_assert(sizeof(*this) == 72, "update the Init code if you changed this layout!");
+			static_assert(std::is_trivially_copyable_v<interval_t> && std::is_default_constructible_v<interval_t>);
+
+			position.Zero();
+			nextPlayTime = masterVolume = {};
+			time = volume = pitch = soundlevel = {};
+			waveCount = {};
+			isAmbient = isRandom = {};
+			pWaves = {};
+		}
+		else
+#endif
 		memset( this, 0, sizeof(*this) );
 	}
 };
@@ -430,7 +453,11 @@ static int SoundscapeCompletion( const char *partial, char commands[ COMMAND_COM
 	if ( Q_strstr( partial, cmdname ) && strlen(partial) > strlen(cmdname) + 1 )
 	{
 		substring = (char *)partial + strlen( cmdname ) + 1;
+#ifdef NEO
+		substringLen = V_strlen(substring);
+#else
 		substringLen = strlen(substring);
+#endif
 	}
 	
 	int i = 0;
@@ -752,7 +779,11 @@ void C_SoundscapeSystem::ProcessPlayLooping( KeyValues *pAmbient, const subsound
 		}
 		else if ( !Q_strcasecmp( pKey->GetName(), "soundlevel" ) )
 		{
+#ifdef NEO
+			if ( !Q_strncasecmp( pKey->GetString(), "SNDLVL_", sizeof( "SNDLVL_" )-1 ) )
+#else
 			if ( !Q_strncasecmp( pKey->GetString(), "SNDLVL_", strlen( "SNDLVL_" ) ) )
+#endif
 			{
 				soundlevel = TextToSoundLevel( pKey->GetString() );
 			}
@@ -932,7 +963,11 @@ void C_SoundscapeSystem::ProcessPlayRandom( KeyValues *pPlayRandom, const subsou
 		}
 		else if ( !Q_strcasecmp( pKey->GetName(), "soundlevel" ) )
 		{
+#ifdef NEO
+			if ( !Q_strncasecmp( pKey->GetString(), "SNDLVL_", sizeof( "SNDLVL_" )-1 ) )
+#else
 			if ( !Q_strncasecmp( pKey->GetString(), "SNDLVL_", strlen( "SNDLVL_" ) ) )
+#endif
 			{
 				sound.soundlevel.start = TextToSoundLevel( pKey->GetString() );
 				sound.soundlevel.range = 0;

@@ -42,12 +42,11 @@
  * NeoUI::EndContext();
  *
  * For a better example, just take a look at the CNeoRoot source code.
- *
- * NEO TODO (nullsystem)
- * - Change how styling works
- * 		- Colors
- * 		- Padding/margins
- * - Cut/copy/paste for text edits
+ * TODO:
+ * - Fonts refactor
+ *   - Change to union of anon-struct + array
+ *   - Fixated on category (like Colors) rather than relying on eFont/SwapFont
+ * - Sizing: Padding/margin
  */
 
 #define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
@@ -91,7 +90,7 @@ enum TextStyle
 };
 
 static constexpr int FOCUSOFF_NUM = -1000;
-static constexpr int MAX_SECTIONS = 5;
+static constexpr int MAX_SECTIONS = 6;
 static constexpr int SIZEOF_SECTIONS = sizeof(int) * MAX_SECTIONS;
 static constexpr int MAX_TEXTINPUT_U8BYTES_LIMIT = 256;
 
@@ -127,17 +126,12 @@ enum EFont
 
 enum ECopyMenu
 {
+	COPYMENU_NIL = 0,
 	COPYMENU_CUT,
 	COPYMENU_COPY,
 	COPYMENU_PASTE,
 
 	COPYMENU__TOTAL,
-};
-
-enum ETextEditFlags
-{
-	TEXTEDITFLAG_NONE = 0,
-	TEXTEDITFLAG_PASSWORD = 1 << 0,
 };
 
 enum EBaseButtonType
@@ -161,6 +155,21 @@ struct DynWidgetInfos
 	bool bCannotActive;
 };
 
+enum EInternalPopup
+{
+	INTERNALPOPUP_COLOREDIT = -2,
+	INTERNALPOPUP_COPYMENU = -1,
+	INTERNALPOPUP_NIL = 0,
+};
+
+struct ColorEditInfo
+{
+	uint8 *r;
+	uint8 *g;
+	uint8 *b;
+	uint8 *a;
+};
+
 enum ESectionFlag
 {
 	SECTIONFLAG_NONE = 0,
@@ -175,6 +184,8 @@ enum ESectionFlag
 	SECTIONFLAG_EXCLUDECONTROLLER = 1 << 2,
 	// Allow the hover and button click sound to play on buttons
 	SECTIONFLAG_PLAYBUTTONSOUNDS = 1 << 3,
+	// Internal use only: Mark this section as a popup
+	SECTIONFLAG_POPUP = 1 << 4,
 };
 typedef int ISectionFlags;
 
@@ -184,16 +195,60 @@ enum EKeyHints
 	KEYHINTS_CONTROLLER,
 };
 
+enum EMultiHighlightFlag : uint8
+{
+	MULTIHIGHLIGHTFLAG_NONE = 0,
+	MULTIHIGHLIGHTFLAG_IN_USE = 1 << 0,
+	MULTIHIGHLIGHTFLAG_HOT = 1 << 1,
+	MULTIHIGHLIGHTFLAG_ACTIVE = 1 << 2,
+};
+
+// This is utilized as both lower BeginPopup options flags and upper internal bool flags
+enum PopupFlag_
+{
+	// Public flags, used as BeginPopup options
+	POPUPFLAG_NIL = 0,
+	POPUPFLAG_FOCUSONOPEN = 1 << 0, // Direct focus to this popup when it opens 
+	POPUPFLAG_COLORHOTASACTIVE = 1 << 1, // Color hot widgets as active, mainly for menu-style popups
+
+	// Internal only flags
+	POPUPFLAG__EXTERNAL = ((1 << 8) - 1), // Mask of all external/options flags below start of internal
+	POPUPFLAG__INPOPUPSECTION = 1 << 8, // Inside a Begin/EndPopup section
+	POPUPFLAG__NEWOPENPOPUP = 1 << 9, // The popup just initialized
+};
+typedef int PopupFlags;
+
+struct Colors
+{
+	Color normalFg;
+	Color normalBg;
+	Color hotFg;
+	Color hotBg;
+	Color hotBorder;
+	Color activeFg;
+	Color activeBg;
+	Color overrideFg;
+	Color titleFg;
+	Color cursor;
+	Color textSelectionBg;
+	Color divider;
+	Color popupBg;
+	Color sectionBg;
+	Color scrollbarBg;
+	Color scrollbarHandleNormalBg;
+	Color scrollbarHandleActiveBg;
+	Color sliderNormalBg;
+	Color sliderHotBg;
+	Color sliderActiveBg;
+	Color tabHintsFg;
+};
+
 struct Context
 {
 	Mode eMode;
 	ButtonCode_t eCode;
 	wchar_t unichar;
-	Color bgColor;
-	Color selectBgColor;
-	Color normalBgColor;
 
-	Color cOverrideFgColor;
 	bool bIsOverrideFgColor = false;
 
 	ISectionFlags iSectionFlags;
@@ -220,6 +275,15 @@ struct Context
 		const int *iVertParts;
 	};
 	Layout layout;
+
+	// Themes
+	Colors colors;
+	FontInfo fonts[FONT__TOTAL] = {};
+	EFont eFont = FONT_NTNORMAL;
+
+	// Multi-widget highlight
+	uint8 uMultiHighlightFlags;
+	vgui::IntRect rMultiHighlightArea;
 
 	// Absolute positioning/wide/tall of the widget
 	vgui::IntRect rWidgetArea;
@@ -251,14 +315,15 @@ struct Context
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
 
-	FontInfo fonts[FONT__TOTAL] = {};
-	EFont eFont = FONT_NTNORMAL;
-
 	// Input management
 	int iWidget; // Always increments per widget use
 	int iSection;
 	uint64_t ibfSectionCanActive = 0;
 	uint64_t ibfSectionCanController = 0;
+
+	// Caches/read-ahead this section has scroll is
+	// known in previous frame(s)
+	uint64_t ibfSectionHasScroll = 0;
 
 	int iHot;
 	int iHotSection;
@@ -272,21 +337,34 @@ struct Context
 	int iActiveSection;
 	bool bValueEdited;
 
+	// Saved hot + active when OpenPopup activates
+	// Restored when ClosePopup
+	int iPrePopupHot;
+	int iPrePopupHotSection;
+
+	int iPrePopupActive;
+	int iPrePopupActiveSection;
+
 	MouseStart eMousePressedStart;
 
 	const char *pSzCurCtxName;
 	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;
 	CUtlHashtable<CUtlConstString, int> htTexMap;
 
-	// Right click menu
-	int iRightClick = -1;
-	int iRightClickSection = -1;
-	int iRightClickHotItem = -1;
-	int ipwszRightClickListSize = 0;
-	const wchar **pwszRightClickList = nullptr;
-	Dim dimRightClick = {};
-	void (*fnRightClickRet)(void *, int) = nullptr;
-	void *pData = nullptr;
+	// # Popup mechanism variables
+
+	// Cached popup size to readahead for mouse area checking
+	Dim dimPopup = {};
+	PopupFlags popupFlags = POPUPFLAG_NIL;
+
+	// 0 = reserved for nil ID, negative numbers = reserved for
+	// internal popups, only start using from 1 onwards for
+	// popups done externally
+	int iCurPopupId = 0;
+
+	// # Internal managed popups variables
+	ECopyMenu eRightClickCopyMenuRet = COPYMENU_NIL; // Right-click copy menu
+	ColorEditInfo colorEditInfo; // Color editor popup
 
 	// TextEdit text selection
 	int iTextSelStart = -1;
@@ -298,13 +376,6 @@ struct Context
 	// Sound paths
 	const char *pszSoundBtnPressed = "ui/buttonclickrelease.wav";
 	const char *pszSoundBtnRollover = "ui/buttonrollover.wav";
-};
-
-struct GetMouseinFocusedRet
-{
-	bool bActive;
-	bool bHot;
-	bool bNewHot;
 };
 
 struct RetButton
@@ -323,48 +394,53 @@ struct LabelExOpt
 	EFont eFont;
 };
 
-// NEO TODO (nullsystem): Depreciate fixed colors, instead define outside of NeoUI and give proper way to
-// define color schemes
-// !!!Also the change to COLOR_NEOPANELACCENTBG makes element invisible! Should never been set to fully transparent!!!
-#define COLOR_NEOPANELNORMALBG Color(0, 0, 0, 170)
-#define COLOR_NEOPANELSELECTBG Color(0, 0, 0, 170)
-#define COLOR_NEOPANELACCENTBG Color(0, 0, 0, 0) // TODO: Why is this invisible now?
-#define COLOR_NEOPANELDIVIDER Color(0, 0, 0, 100)
-#define COLOR_NEOPANELTEXTNORMAL Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
-#define COLOR_NEOPANELTEXTBRIGHT Color(255, 255, 255, 255)
-#define COLOR_NEOPANELPOPUPBG Color(0, 0, 0, 170)
-#define COLOR_NEOPANELFRAMEBG Color(0, 0, 0, 170)
-#define COLOR_NEOTITLE Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
-#define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
-#define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
-#define COLOR_NEOPANELTABLEBG Color(255, 255, 255, 255)
-#define COLOR_NEOPANELTABLEFG Color(0, 0, 0, 255)
-
 enum WidgetFlag_
 {
 	WIDGETFLAG_NONE = 0,
 	WIDGETFLAG_SKIPACTIVE = 1 << 0,
 	WIDGETFLAG_MOUSE = 1 << 1,
 	WIDGETFLAG_MARKACTIVE = 1 << 2, // Mark section as having an active widget
+	WIDGETFLAG_NOHOTBORDER = 1 << 3,
+	WIDGETFLAG_FORCEACTIVE = 1 << 4, // Make this widget active no matter what
 };
 typedef int WidgetFlag;
 
+struct CurrentWidgetState
+{
+	bool bActive;
+	bool bHot;
+	bool bNewHot;
+	bool bInView;
+	WidgetFlag eWidgetFlag;
+};
+
+// Current (global) context - Useful if wanting to implement a new widget externally
+NeoUI::Context *CurrentContext();
 void FreeContext(NeoUI::Context *pCtx);
 
 void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName);
 void EndContext();
 void BeginSection(const ISectionFlags iSectionFlags = SECTIONFLAG_NONE);
 void EndSection();
-GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
-void EndWidget(const GetMouseinFocusedRet wdgState);
+
+void OpenPopup(const int iPopupId, const Dim &dimPopupInit);
+void ClosePopup();
+[[nodiscard]] bool BeginPopup(const int iPopupId, const PopupFlags flags = POPUPFLAG_NIL);
+void EndPopup();
+
+// Get a suitable wide size for a popup by the longest text in the popup
+int PopupWideByStr(const char *pszStr);
+
+[[nodiscard]] CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
+void EndWidget(const CurrentWidgetState &wdgState);
 
 void SetPerRowLayout(const int iColTotal, const int *iColProportions = nullptr, const int iRowHeight = -1);
 // Layout a vertical within the (horizontal) column, iRowTotal = 0 to disable
 void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions = nullptr);
 
 void SwapFont(const EFont eFont, const bool bForce = false);
-void SwapColorNormal(const Color &color);
-void MultiWidgetHighlighter(const int iTotalWidgets);
+void BeginMultiWidgetHighlighter(const int iTotalWidgets);
+void EndMultiWidgetHighlighter();
 
 void BeginOverrideFgColor(const Color &fgColor);
 void EndOverrideFgColor();
@@ -377,7 +453,18 @@ void EndOverrideFgColor();
 /*1W*/ void Label(const wchar_t *wszText, const bool bNotWidget = false);
 /*1W*/ void Label(const wchar_t *wszText, const LabelExOpt &opt);
 /*2W*/ void Label(const wchar_t *wszLabel, const wchar_t *wszText);
-/*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex, const int iLongestTab = 0);
+
+// If piTabWide == nullptr, fills the whole layout width, otherwise only length of the tabs.
+// Initialize the variable to -1 and NeoUI::Tabs will auto-figure it out.
+enum TabsFlag_
+{
+	TABFLAG_DEFAULT = 0,
+	TABFLAG_NOSIDEKEYS = 1 << 0,  // Don't show hints and don't recognize keys EX: F1-F3/L-R on left-right side
+	TABFLAG_NOSTATERESETS = 1 << 1, // Don't reset scroll/hot/active states
+};
+typedef int TabsFlags;
+/*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
+		const TabsFlags flags = TABFLAG_DEFAULT, int *piTabWide = nullptr);
 /*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType);
 /*1W*/ RetButton Button(const wchar_t *wszText);
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
@@ -394,8 +481,18 @@ void EndOverrideFgColor();
 					  const wchar_t *wszSpecialText = nullptr);
 /*2W*/ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
 					 const wchar_t *wszSpecialText = nullptr);
-/*1W*/ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags flags = TEXTEDITFLAG_NONE);
-/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags flags = TEXTEDITFLAG_NONE);
+/*1W*/ void ColorEdit(uint8 *r, uint8 *g, uint8 *b, uint8 *a);
+/*2W*/ void ColorEdit(const wchar_t *wszLeftLabel, uint8 *r, uint8 *g, uint8 *b, uint8 *a);
+
+enum TextEditFlag_
+{
+	TEXTEDITFLAG_NONE = 0,
+	TEXTEDITFLAG_PASSWORD = 1 << 0, // Replace all characters with "*"
+	TEXTEDITFLAG_FORCEACTIVE = 1 << 1, // Enforce hot+active focusing in this text edit widget all time, only suitable for single-textedit popups
+};
+typedef int TextEditFlags;
+/*1W*/ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
+/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
 /*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "");
 
 // NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
@@ -407,10 +504,6 @@ enum TextureOptFlags
 bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
 			 const char *szTextureGroup = "", const TextureOptFlags texFlags = TEXTUREOPTFLAGS_NONE);
 void ResetTextures();
-
-// Right-click menu
-void PopupMenu(const wchar **pwszRightClickList, const int ipwszRightClickListSize,
-		void (*fnRightClickRet)(void *, int), void *pData);
 
 // Non-widgets/convenience functions
 bool Bind(const ButtonCode_t eCode);

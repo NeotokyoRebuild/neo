@@ -225,7 +225,13 @@ void FX_MuzzleEffect(
 			return;
 
 		pParticle->m_flLifetime		= 0.0f;
+#ifdef NEO
+		// NEO NOTE DG: I think this param name is a bit misleading but to
+		// ensure dietime is not broken in other places lets reintroduce it
+		pParticle->m_flDieTime		= bOneFrame ? 0.01f : 0.1f;
+#else
 		pParticle->m_flDieTime		= /*bOneFrame ? 0.0001f : */0.1f;
+#endif
 
 		pParticle->m_vecVelocity.Init();
 
@@ -865,7 +871,11 @@ void FX_GunshipMuzzleEffect( const Vector &origin, const QAngle &angles, float s
 void FX_GunshipTracer( Vector& start, Vector& end, int velocity, bool makeWhiz )
 {
 	VPROF_BUDGET( "FX_GunshipTracer", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
+#ifdef NEO
+	Vector	shotDir;
+#else
 	Vector	vNear, dStart, dEnd, shotDir;
+#endif
 	float	totalDist;
 
 	//Get out shot direction and length
@@ -915,7 +925,11 @@ void FX_StriderMuzzleEffect( const Vector &origin, const QAngle &angles, float s
 void FX_StriderTracer( Vector& start, Vector& end, int velocity, bool makeWhiz )
 {
 	VPROF_BUDGET( "FX_StriderTracer", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
+#ifdef NEO
+	Vector	shotDir;
+#else
 	Vector	vNear, dStart, dEnd, shotDir;
+#endif
 	float	totalDist;
 
 	//Get out shot direction and length
@@ -949,7 +963,11 @@ void FX_StriderTracer( Vector& start, Vector& end, int velocity, bool makeWhiz )
 void FX_HunterTracer( Vector& start, Vector& end, int velocity, bool makeWhiz )
 {
 	VPROF_BUDGET( "FX_HunterTracer", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
+#ifdef NEO
+	Vector	shotDir;
+#else
 	Vector	vNear, dStart, dEnd, shotDir;
+#endif
 	float	totalDist;
 
 	// Get out shot direction and length
@@ -983,7 +1001,11 @@ void FX_HunterTracer( Vector& start, Vector& end, int velocity, bool makeWhiz )
 void FX_GaussTracer( Vector& start, Vector& end, int velocity, bool makeWhiz )
 {
 	VPROF_BUDGET( "FX_GaussTracer", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
+#ifdef NEO
+	Vector	shotDir;
+#else
 	Vector	vNear, dStart, dEnd, shotDir;
+#endif
 	float	totalDist;
 
 	//Get out shot direction and length

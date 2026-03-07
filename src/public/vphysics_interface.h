@@ -18,6 +18,9 @@
 #include "mathlib/vector4d.h"
 #include "vcollide.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
 
 // ------------------------------------------------------------------------------------
 // UNITS:
@@ -1043,6 +1046,21 @@ struct springparams_t
 {
 	springparams_t()
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<springparams_t>)
+		{
+			static_assert(sizeof(*this) == 44);
+			constant = 0;
+			naturalLength = 0;
+			damping = 0;
+			relativeDamping = 0;
+			startPosition.Zero();
+			endPosition.Zero();
+			useLocalPositions = false;
+			onlyStretch = false;
+		}
+		else
+#endif
 		memset( this, 0, sizeof(*this) );
 	}
 	float	constant;		// spring constant

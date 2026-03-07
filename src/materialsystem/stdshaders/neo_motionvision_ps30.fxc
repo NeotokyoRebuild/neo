@@ -1,0 +1,33 @@
+#include "common_ps_fxc.h"
+
+sampler FrameBuffer				: register(s0);
+sampler MvTexture               : register(s1);
+sampler NoiseTexture            : register(s2);
+
+const float2 g_noiseTransform	: register(c0);
+
+struct PS_INPUT
+{
+	float2 texCoord	: TEXCOORD0;
+};
+
+float4 main( const PS_INPUT i ) : COLOR
+{
+	float4 fbColor = tex2D(FrameBuffer, i.texCoord);
+	
+	fbColor.xyz = log2(fbColor.xyz);
+	fbColor.xyz = fbColor.xyz * 1.5;
+	fbColor.xyz = exp2(fbColor.xyz);
+	
+	const float3 luminanceWeights = float3(0.3, 0.59, 0.11);
+	float grayScale = dot(fbColor.xyz, luminanceWeights);
+
+	fbColor = tex2D(NoiseTexture, i.texCoord + g_noiseTransform);
+	
+	float4 gradientColor = tex1D(MvTexture, grayScale.x);
+	float3 lerpValue = lerp(grayScale, gradientColor, grayScale);
+	
+	fbColor.xyz = mad(fbColor, 0.13, lerpValue);
+	
+	return fbColor;
+}

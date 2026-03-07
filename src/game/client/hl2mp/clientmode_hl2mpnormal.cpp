@@ -121,6 +121,21 @@ ClientModeHL2MPNormal::ClientModeHL2MPNormal()
 {
 	m_pViewport = new CHudViewport();
 	m_pViewport->Start(gameuifuncs, gameeventmanager);
+#ifdef NEO
+	ConVarRef cl_software_cursor( "cl_software_cursor" );
+	Assert(cl_software_cursor.IsValid());
+	if (cl_software_cursor.IsValid())
+	{
+		if (auto* surface = vgui::surface())
+		{
+			surface->SetSoftwareCursor(cl_software_cursor.GetBool());
+		}
+		else
+		{
+			Assert(false);
+		}
+	}
+#endif
 }
 
 

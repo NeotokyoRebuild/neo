@@ -261,6 +261,7 @@ void C_HL2MP_Player::TraceAttack( const CTakeDamageInfo &info, const Vector &vec
 
 		int blood = BloodColor();
 		
+#ifndef NEO
 		CBaseEntity *pAttacker = info.GetAttacker();
 
 		if ( pAttacker )
@@ -268,6 +269,7 @@ void C_HL2MP_Player::TraceAttack( const CTakeDamageInfo &info, const Vector &vec
 			if ( HL2MPRules()->IsTeamplay() && pAttacker->InSameTeam( this ) == true )
 				return;
 		}
+#endif // NEO
 
 		if ( blood != DONT_BLEED )
 		{
@@ -962,7 +964,10 @@ void C_HL2MP_Player::StartSprinting( void )
 
 	m_fIsSprinting = true;
 #ifdef NEO
-	IN_LeanToggleReset();
+	if (IsLocalPlayer())
+	{
+		IN_LeanToggleReset();
+	}
 #endif // NEO
 }
 
@@ -1133,12 +1138,14 @@ void C_HL2MP_Player::ItemPreFrame( void )
 	if ( GetFlags() & FL_FROZEN )
 		 return;
 
+#ifndef NEO
 	// Disallow shooting while zooming
 	if ( m_nButtons & IN_ZOOM )
 	{
 		//FIXME: Held weapons like the grenade get sad when this happens
 		m_nButtons &= ~(IN_ATTACK|IN_ATTACK2);
 	}
+#endif
 
 	BaseClass::ItemPreFrame();
 
@@ -1487,7 +1494,7 @@ int C_HL2MPRagdoll::DrawModel(int flags)
 	bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 	if (inThermalVision)
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_ragdoll_model", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial(NEO_THERMAL_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		int ret = BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
@@ -1582,7 +1589,9 @@ void C_HL2MP_Player::CalculateIKLocks( float currentTime )
 
 	for (int i = 0; i < targetCount; i++)
 	{
+#ifndef NEO
 		trace_t trace;
+#endif
 		CIKTarget *pTarget = &m_pIk->m_target[i];
 
 		if (!pTarget->IsActive())

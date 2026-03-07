@@ -87,12 +87,6 @@ ConVar cl_spec_mode(
 	FCVAR_ARCHIVE | FCVAR_USERINFO | FCVAR_SERVER_CAN_EXECUTE,
 	"spectator mode" );
 
-namespace {
-constexpr char LABEL_JINRAI[] = "CTScoreValue";
-constexpr char LABEL_NSF[] = "TERScoreValue";
-}
-
-
 //-----------------------------------------------------------------------------
 // Purpose: left and right buttons pointing buttons
 //-----------------------------------------------------------------------------
@@ -506,8 +500,8 @@ void CSpectatorGUI::ApplySchemeSettings(IScheme *pScheme)
 	m_pTopBar->SetVisible( true );
 
 #ifdef NEO
-	m_scoreValueLabelJinrai = nullptr;
-	m_scoreValueLabelNSF = nullptr;
+	m_pTopBar->SetVisible(false);
+	m_pBottomBarBlank->SetVisible(false);
 #endif
 
 	BaseClass::ApplySchemeSettings( pScheme );
@@ -552,21 +546,6 @@ void CSpectatorGUI::OnThink()
 
 	if ( IsVisible() )
 	{
-#ifdef NEO
-		// Temp fix to hide team scores etc when closing scoreboard.
-		auto pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-		if (pLocalNeoPlayer && pLocalNeoPlayer->IsAlive())
-		{
-			auto scoreboard = gViewPortInterface->FindPanelByName(PANEL_SCOREBOARD);
-			Assert(scoreboard);
-			if (!scoreboard->IsVisible())
-			{
-				SetVisible(false);
-				return;
-			}
-		}
-#endif
-
 		if ( m_bSpecScoreboard != spec_scoreboard.GetBool() )
 		{
 			if ( !spec_scoreboard.GetBool() || !gViewPortInterface->GetActivePanel() )
@@ -577,33 +556,11 @@ void CSpectatorGUI::OnThink()
 		}
 
 #ifdef NEO
-		if (!m_scoreValueLabelJinrai)
-		{
-			m_scoreValueLabelJinrai = static_cast<Label*>(FindChildByName(LABEL_JINRAI));
-		}
-		if (!m_scoreValueLabelNSF)
-		{
-			m_scoreValueLabelNSF = static_cast<Label*>(FindChildByName(LABEL_NSF));
-		}
-		Assert(m_scoreValueLabelJinrai);
-		Assert(m_scoreValueLabelNSF);
-
-		auto pJinTeam = GetGlobalTeam(TEAM_JINRAI);
-		auto pNsfTeam = GetGlobalTeam(TEAM_NSF);
-		if (m_scoreValueLabelJinrai && m_scoreValueLabelNSF && pJinTeam && pNsfTeam)
-		{
-			char scoreBuff[3];
-			V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, pJinTeam->GetRoundsWon())));
-			m_scoreValueLabelJinrai->SetText(scoreBuff);
-			V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, pNsfTeam->GetRoundsWon())));
-			m_scoreValueLabelNSF->SetText(scoreBuff);
-		}
-
 		// Update player health
 		if (m_pPlayerLabel->IsVisible())
 		{
 			UpdatePlayerLabel();
-                }
+		}
 
 #endif // NEO
 #ifdef TF_CLIENT_DLL
@@ -714,9 +671,13 @@ void CSpectatorGUI::Update()
 	GetHudSize(wide, tall);
 	m_pTopBar->GetBounds( bx, by, bwide, btall );
 
+#ifndef NEO
 	IGameResources *gr = GameResources();
+#endif
 	int specmode = GetSpectatorMode();
+#ifndef NEO
 	int playernum = GetSpectatorTarget();
+#endif
 
 	IViewPortPanel *overview = gViewPortInterface->FindPanelByName( PANEL_OVERVIEW );
 
@@ -782,7 +743,6 @@ void CSpectatorGUI::Update()
 	{
 		m_pPlayerLabel->SetText( L"" );
 	}
-#endif
 
 	// update extra info field
 	wchar_t szEtxraInfo[1024];
@@ -812,6 +772,7 @@ void CSpectatorGUI::Update()
 
 	SetLabelText("extrainfo", szEtxraInfo );
 	SetLabelText("titlelabel", szTitleLabel );
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -851,7 +812,6 @@ extern ConVar cl_neo_hud_health_mode;
 void CSpectatorGUI::UpdatePlayerLabel()
 {
 	IGameResources* gr = GameResources();
-	int specmode = GetSpectatorMode();
 	int playernum = GetSpectatorTarget();
 
 	// update player name filed, text & color

@@ -240,6 +240,15 @@ CBasePhonemeTag::CBasePhonemeTag()
 
 CBasePhonemeTag::CBasePhonemeTag( const CBasePhonemeTag& from )
 {
+#ifdef NEO
+	using ThisT = std::remove_cvref_t<decltype(*this)>;
+	if constexpr (!std::is_trivially_copyable_v<ThisT>)
+	{
+		static_assert(std::is_move_assignable_v<ThisT>);
+		*this = from;
+	}
+	else
+#endif
 	memcpy( this, &from, sizeof(*this) );
 }
 

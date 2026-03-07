@@ -51,6 +51,9 @@ out
 /game/neo/resource/mp3player_db.txt
 /game/neo/resource/mp3settings.txt
 
+# Achievement state
+/game/neo/[Gg]ame[Ss]tate.txt
+
 # Object files
 *.o
 *.p

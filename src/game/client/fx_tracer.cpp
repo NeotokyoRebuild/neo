@@ -18,6 +18,23 @@ ConVar r_drawtracers_firstperson( "r_drawtracers_firstperson", "1", FCVAR_ARCHIV
 
 #define	TRACER_SPEED			5000 
 
+#ifdef NEO
+// null if not sourced from a player or their weapon
+C_BasePlayer *EffectPlayerSource( const CEffectData &data )
+{
+	C_BaseEntity *pEnt = data.GetEntity();
+	C_BaseCombatWeapon *pWep = ( pEnt && pEnt->IsBaseCombatWeapon() ) ? assert_cast<C_BaseCombatWeapon*>( pEnt ) : nullptr;
+	if ( pWep )
+	{
+		return ToBasePlayer( pWep->GetOwner() );
+	}
+	else
+	{
+		return ToBasePlayer( pEnt );
+	}
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -83,11 +100,20 @@ void TracerCallback( const CEffectData &data )
 	if ( !r_drawtracers.GetBool() )
 		return;
 
+#ifdef NEO
+	C_BasePlayer *pPlayer = EffectPlayerSource( data );
+	const bool bPlayerFirstperson = ( pPlayer && !pPlayer->ShouldDrawThisPlayer() );
+#endif
+
 	if ( !r_drawtracers_firstperson.GetBool() )
 	{
+#ifdef NEO
+		if ( bPlayerFirstperson )
+#else
 		C_BasePlayer *pPlayer = dynamic_cast<C_BasePlayer*>( data.GetEntity() );
 
 		if ( pPlayer && !pPlayer->ShouldDrawThisPlayer() )
+#endif
 			return;
 	}
 
@@ -95,6 +121,12 @@ void TracerCallback( const CEffectData &data )
 	Vector vecStart = GetTracerOrigin( data );
 	float flVelocity = data.m_flScale;
 	bool bWhiz = (data.m_fFlags & TRACER_FLAG_WHIZ);
+
+#ifdef NEO
+	if ( bPlayerFirstperson )
+	{
+		FX_PlayerTracer(vecStart, (Vector&)data.m_vOrigin);
+#else
 	int iEntIndex = data.entindex();
 
 	if ( iEntIndex && iEntIndex == player->index )
@@ -110,6 +142,7 @@ void TracerCallback( const CEffectData &data )
 		foo[2] -= 0.5f;
 
 		FX_PlayerTracer( foo, (Vector&)data.m_vOrigin );
+#endif
 		return;
 	}
 	

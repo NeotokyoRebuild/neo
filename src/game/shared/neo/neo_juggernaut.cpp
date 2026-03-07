@@ -1,4 +1,5 @@
 #include "neo_juggernaut.h"
+#include "neo_gamerules.h"
 #ifdef GAME_DLL
 #include "engine/IEngineSound.h"
 #include "explode.h"
@@ -66,6 +67,12 @@ CNEO_Juggernaut::~CNEO_Juggernaut()
 void CNEO_Juggernaut::UpdateOnRemove()
 {
 	StopSound("HUD.CPCharge");
+#ifdef GAME_DLL
+	if (!m_bActivationRemoval)
+	{
+		NEORules()->JuggernautTotalRemoval(this);
+	}
+#endif
 	BaseClass::UpdateOnRemove();
 }
 
@@ -167,19 +174,19 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 	if (pNEOPlayer->GetClass() == NEO_CLASS_JUGGERNAUT)
 		return;
 
-	if (m_bIsHolding && m_hPlayer.Get() != pNEOPlayer) // One player at a time
+	if (m_bIsHolding && m_hHoldingPlayer.Get() != pNEOPlayer) // One player at a time
 		return;
 
 	// Either I'm dumb, or USE_TYPE is non-functional. Always sends USE_TOGGLE no matter what. Just checking the key instead
 	if (pNEOPlayer->m_afButtonPressed & IN_USE)
 	{
 		m_bIsHolding = true;
-		m_hPlayer = pNEOPlayer;
+		m_hHoldingPlayer = pNEOPlayer;
 		m_flHoldStartTime = gpGlobals->curtime;
 		SetNextThink(gpGlobals->curtime + 0.1f);
 		SetPlaybackRate(m_flWarpedPlaybackRate);
-		m_hPlayer->AddFlag(FL_FROZEN);
-		UTIL_HudMessage(m_hPlayer, m_textParms, "BOOTING JGR56"); // TODO localise this text
+		m_hHoldingPlayer->AddFlag(FL_FROZEN);
+		UTIL_HudMessage(m_hHoldingPlayer, m_textParms, "BOOTING JGR56"); // TODO localise this text
 		EmitSound("HUD.CPCharge");
 	}
 	else
@@ -190,13 +197,13 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 
 void CNEO_Juggernaut::Think(void)
 {
-	if (!m_bIsHolding || !m_hPlayer || !m_hPlayer->IsAlive() || !(m_hPlayer->m_nButtons & IN_USE))
+	if (!m_bIsHolding || !m_hHoldingPlayer || !m_hHoldingPlayer->IsAlive() || !(m_hHoldingPlayer->m_nButtons & IN_USE))
 	{
 		HoldCancel();
 		return;
 	}
 
-	if (((m_hPlayer->GetAbsOrigin() - GetAbsOrigin()).LengthSqr()) > USE_DISTANCE_SQUARED)
+	if (((m_hHoldingPlayer->GetAbsOrigin() - GetAbsOrigin()).LengthSqr()) > USE_DISTANCE_SQUARED)
 	{
 		HoldCancel();
 		return;
@@ -209,17 +216,18 @@ void CNEO_Juggernaut::Think(void)
 		SetNextThink(TICK_NEVER_THINK);
 		StopSound("HUD.CPCharge");
 		EmitSound("HUD.CPCaptured");
-		UTIL_HudMessage(m_hPlayer, m_textParms, ""); // Find a better way of hiding the text. This doesn't remove the old message from the user messages list and thus makes a weird overlapping visual bug
+		UTIL_HudMessage(m_hHoldingPlayer, m_textParms, ""); // Find a better way of hiding the text. This doesn't remove the old message from the user messages list and thus makes a weird overlapping visual bug
 
-		m_hPlayer->RemoveFlag(FL_FROZEN);
-		m_hPlayer->CreateRagdollEntity();
-		m_hPlayer->Weapon_DropAllOnDeath(CTakeDamageInfo(this, this, 0, DMG_GENERIC));
-		m_hPlayer->Teleport(&GetAbsOrigin(), &GetAbsAngles(), &vec3_origin);
-		m_hPlayer->SnapEyeAngles(GetAbsAngles());
+		m_hHoldingPlayer->RemoveFlag(FL_FROZEN);
+		m_hHoldingPlayer->CreateRagdollEntity();
+		m_hHoldingPlayer->Weapon_DropAllOnDeath(CTakeDamageInfo(this, this, 0, DMG_GENERIC));
+		m_hHoldingPlayer->Teleport(&GetAbsOrigin(), &GetAbsAngles(), &vec3_origin);
 
-		m_hPlayer->BecomeJuggernaut();
+		m_hHoldingPlayer->BecomeJuggernaut();
 
-		m_OnPlayerActivate.FireOutput(m_hPlayer, this);
+		m_OnPlayerActivate.FireOutput(m_hHoldingPlayer, this);
+
+		m_bActivationRemoval = true;
 		UTIL_Remove(this);
 
 		return;
@@ -285,14 +293,14 @@ void CNEO_Juggernaut::DisableSoftCollisionsThink()
 
 void CNEO_Juggernaut::HoldCancel(void)
 {
-	if (m_hPlayer)
+	if (m_hHoldingPlayer)
 	{
-		m_hPlayer->RemoveFlag(FL_FROZEN);
-		UTIL_HudMessage(m_hPlayer, m_textParms, "");
+		m_hHoldingPlayer->RemoveFlag(FL_FROZEN);
+		UTIL_HudMessage(m_hHoldingPlayer, m_textParms, "");
 	}
 	SetNextThink(TICK_NEVER_THINK);
 	SetPlaybackRate(-m_flWarpedPlaybackRate);
-	m_hPlayer = nullptr;
+	m_hHoldingPlayer = nullptr;
 	m_bIsHolding = false;
 	StopSound("HUD.CPCharge");
 }
@@ -322,6 +330,26 @@ void CNEO_Juggernaut::SetSoftCollision(bool soft)
 		SetCollisionGroup(HARD_COLLISION);
 	}
 }
+
+const bool CNEO_Juggernaut::IsBeingActivatedByLosingTeam()
+{
+	if (m_bIsHolding && m_hHoldingPlayer)
+	{
+		const int playerTeam = m_hHoldingPlayer->GetTeamNumber();
+		const int oppositeTeam = (m_hHoldingPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+		if (GetGlobalTeam(playerTeam)->GetScore() < GetGlobalTeam(oppositeTeam)->GetScore())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+int CNEO_Juggernaut::UpdateTransmitState()
+{
+	return SetTransmitState(FL_EDICT_ALWAYS);
+}
 #endif
 
 #ifdef CLIENT_DLL
@@ -344,7 +372,7 @@ int CNEO_Juggernaut::DrawModel(int flags)
 	int ret = 0;
 	if (inThermalVision)
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial(NEO_THERMAL_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret = BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);

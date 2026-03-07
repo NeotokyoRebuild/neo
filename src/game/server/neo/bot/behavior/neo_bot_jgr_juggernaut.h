@@ -23,6 +23,5 @@ protected:
 
 private:
 	CUtlVector<CHandle<CBaseEntity>> m_jgrSpawns;
-	CountdownTimer m_soundSearchTimer;
 };
 #endif // NEO_BOT_JGR_JUGGERNAUT_H

@@ -11,7 +11,6 @@ class INEOPlayerAnimState;
 #include "simtimer.h"
 #include "soundenvelope.h"
 #include "utldict.h"
-#include "utlmap.h"
 #include "hl2mp_player.h"
 #include "in_buttons.h"
 
@@ -67,6 +66,7 @@ public:
 	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
+	virtual void PlayerUse(void) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
@@ -176,7 +176,7 @@ public:
 
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
-	bool GetBotPerceivedCloakState() const { return m_botThermOpticCamoDisruptedTimer.IsElapsed() && m_bInThermOpticCamo; }
+	bool GetBotCloakStateDisrupted() const { return !m_botThermOpticCamoDisruptedTimer.IsElapsed(); }
 	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
@@ -247,6 +247,7 @@ private:
 	float GetActiveWeaponSpeedScale() const;
 
 private:
+	void CheckAimButtons();
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
 	void CheckLeanButtons();
@@ -308,6 +309,15 @@ public:
 
 	// Bot-only usage
 	float m_flRanOutSprintTime = 0.0f;
+	CNetworkHandle(CNEO_Player, m_hCommandingPlayer); // The player this bot is commanded by
+	CHandle<CNEO_Player> m_hLeadingPlayer; // The player this bot is following
+	CountdownTimer m_tBotPlayerPingCooldown; // The cooldown time for following player ping
+	float m_flBotDynamicFollowDistanceSq; // The dynamic follow distance interval for bots
+	CNetworkArray(Vector, m_vLastPingByStar, STAR__TOTAL); // The last ping location from this player for each squad star
+	// Bot Functions
+	void ResetBotCommandState();
+	void ToggleBotFollowCommander( CNEO_Player *pCommander );
+	static const Vector VECTOR_INVALID_WAYPOINT;
 
 private:
 	bool m_bFirstDeathTick;
@@ -327,7 +337,7 @@ private:
 	bool m_bSpectatorTakeoverPlayerPending{false};
 
 	// Cache for GetFogObscuredRatio for each player
-	mutable CUtlMap<int, CNEO_Player_FogCacheEntry> m_mapPlayerFogCache;
+	mutable CNEO_Player_FogCacheEntry m_playerFogCache[MAX_PLAYERS_ARRAY_SAFE];
 
 private:
 	CNEO_Player(const CNEO_Player&);

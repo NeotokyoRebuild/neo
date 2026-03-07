@@ -66,7 +66,11 @@ REGISTER_GAMERULES_CLASS( CMultiplayRules );
 
 ConVar mp_chattime(
 		"mp_chattime", 
+#ifdef NEO // this cvar val is 10 in OGNT also, but hardcoded(?) as 15 in reality
+		"15",
+#else
 		"10", 
+#endif
 		FCVAR_REPLICATED,
 		"amount of time players can chat after the game is over",
 		true, 1,
@@ -469,6 +473,9 @@ ConVarRef suitcharger( "sk_suitcharger" );
 			int iIdleSeconds = (int)( flNow - m_flTimeLastMapChangeOrPlayerWasConnected );
 			if ( iIdleSeconds >= mp_mapcycle_empty_timeout_seconds.GetInt() )
 			{
+#ifdef NEO
+				assert_cast<CNEORules*>(this)->m_bRotatingMapRightNow = true;
+#endif
 
 				Log( "Server has been empty for %d seconds on this map, cycling map as per mp_mapcycle_empty_timeout_seconds\n", iIdleSeconds );
 				ChangeLevel();
@@ -1563,7 +1570,13 @@ ConVarRef suitcharger( "sk_suitcharger" );
 		g_fGameOver = true;
 		m_flTimeLastMapChangeOrPlayerWasConnected = 0.0f;
 		Msg( "CHANGE LEVEL: %s\n", pszMap );
+#ifdef NEO
+		assert_cast<CNEORules*>(this)->m_ghostSpawns.RemoveAll();
+#endif
 		engine->ChangeLevel( pszMap, NULL );
+#ifdef NEO
+		assert_cast<CNEORules*>(this)->m_bRotatingMapRightNow = false;
+#endif
 	}
 
 

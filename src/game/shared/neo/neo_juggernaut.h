@@ -31,6 +31,10 @@ public:
 	void	Spawn(void);
     void	Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
+	virtual int UpdateTransmitState() override;
+
+	const bool IsBeingActivatedByLosingTeam();
+
 	bool	m_bPostDeath = false;
 #endif
 
@@ -54,11 +58,12 @@ private:
 #endif
 
 #ifdef GAME_DLL
-	CHandle<CNEO_Player>	m_hPlayer;
+	CHandle<CNEO_Player> m_hHoldingPlayer;
 	EHANDLE m_hPush;
 	float m_flWarpedPlaybackRate;
 	float m_flHoldStartTime = 0.0f;
 	bool m_bIsHolding = false;
+	bool m_bActivationRemoval = false;
 
 	hudtextparms_t	m_textParms;
 	COutputEvent m_OnPlayerActivate;

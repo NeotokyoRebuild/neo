@@ -28,6 +28,8 @@ public:
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
+	
+	void UpdateAvatarSize();
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw();
@@ -44,7 +46,9 @@ private:
 
 	void CheckActiveStar();
 	void DrawPlayerList();
+	void DrawPlayerList_BotCmdr();
 	int DrawPlayerRow(int playerIndex, int yOffset, bool small = false);
+	int DrawPlayerRow_BotCmdr(int playerIndex, int yOffset, bool small = false, const Color* highlightColor = nullptr);
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
 					const int xOffset, const bool drawHealthClass);
 	void SetTextureToAvatar(int playerIndex);
@@ -56,6 +60,8 @@ private:
 	vgui::HFont m_hOCRFont = 0UL;
 	vgui::HFont m_hOCRSmallFont = 0UL;
 	vgui::HFont m_hOCRSmallerFont = 0UL;
+	vgui::HFont m_hTinyText = 0UL;
+	int m_iTinyTextHeight = 0;
 
 	int m_iXpos = 0;
 
@@ -92,11 +98,25 @@ private:
 	int m_iPreviouslyActiveStar = -1;
 	int m_iPreviouslyActiveTeam = -1;
 
-	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
+	int m_iClassIcons = 0;
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
 	int m_iBeepSecsTotal = 0;
 	NeoRoundStatus m_ePrevRoundStatus = NeoRoundStatus::Idle;
+
+	// Bot Commander Lists
+	CUtlVector<int> m_commandedList;
+	CUtlVector<int> m_nonCommandedList;
+	CUtlVector<int> m_nonSquadList;
+
+	// Top Squad List
+	// Players who are connected, in a game team etc will have a positive value and sit at the front of the list. Order of negative value players (not connected, non-game team etc) not guaranteed
+	struct playerIndexAndTheirValue
+	{
+		int playerIndex;
+		int playerValue;
+	};
+	CUtlVector<playerIndexAndTheirValue> m_nPlayerList;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");

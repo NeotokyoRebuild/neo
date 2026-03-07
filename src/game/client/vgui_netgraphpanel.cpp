@@ -216,7 +216,12 @@ CNetGraphPanel::CNetGraphPanel( VPANEL parent )
 	SetSize( w, h );
 	SetPos( 0, 0 );
 	SetVisible( false );
+#ifdef NEO
+	// Software cursor support
+	SetCursor(vgui::dc_arrow);
+#else
 	SetCursor( null );
+#endif
 
 	m_hFont = 0;
 	m_hFontProportional = 0;

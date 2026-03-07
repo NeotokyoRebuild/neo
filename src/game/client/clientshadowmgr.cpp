@@ -2360,7 +2360,11 @@ void CClientShadowMgr::BuildOrthoShadow( IClientRenderable* pRenderable,
 	worldOrigin.z = (int)(worldOrigin.z / dx) * dx;
 
 	// NOTE: We gotta use the general matrix because xvec and yvec aren't perp
+#ifdef NEO
+	VMatrix matWorldToTexture;
+#else
 	VMatrix matWorldToShadow, matWorldToTexture;
+#endif
 	BuildGeneralWorldToShadowMatrix( m_Shadows[handle].m_WorldToShadow, worldOrigin, vecShadowDir, xvec, yvec );
 	BuildWorldToTextureMatrix( m_Shadows[handle].m_WorldToShadow, size, matWorldToTexture );
 	Vector2DCopy( size, m_Shadows[handle].m_WorldSize );

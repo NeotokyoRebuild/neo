@@ -175,7 +175,7 @@ ActionResult< CNEOBot >	CNEOBotGetHealth::OnStart( CNEOBot *me, Action< CNEOBot 
 	m_healthKit = s_possibleHealth;
 	m_isGoalCharger = m_healthKit->ClassMatches( "*charger*" );
 
-	if (!CNEOBotPathCompute(me, m_path, m_healthKit->WorldSpaceCenter(), SAFEST_ROUTE))
+	if (!CNEOBotPathCompute(me, m_path, m_healthKit->WorldSpaceCenter(), DEFAULT_ROUTE))
 	{
 		return Done( "No path to health!" );
 	}
@@ -211,7 +211,7 @@ ActionResult< CNEOBot >	CNEOBotGetHealth::Update( CNEOBot *me, float interval )
 	{
 		// this can occur if we overshoot the health kit's location
 		// because it is momentarily gone
-		if ( !CNEOBotPathCompute( me, m_path, m_healthKit->WorldSpaceCenter(), SAFEST_ROUTE ) )
+		if ( !CNEOBotPathCompute( me, m_path, m_healthKit->WorldSpaceCenter(), DEFAULT_ROUTE ) )
 		{
 			return Done( "No path to health!" );
 		}

@@ -74,6 +74,15 @@ void DrawSmokeFogOverlay()
 	
 	CMatRenderContextPtr pRenderContext( materials );
 
+#ifdef NEO
+	VMatrix matrixProjection;
+	pRenderContext->GetMatrix(MATERIAL_PROJECTION, &matrixProjection);
+	VMatrix matrixView;
+	pRenderContext->GetMatrix(MATERIAL_VIEW, &matrixView);
+	VMatrix matrixModel;
+	pRenderContext->GetMatrix(MATERIAL_MODEL, &matrixModel);
+#endif // NEO
+
 	pRenderContext->MatrixMode( MATERIAL_PROJECTION );
 	pRenderContext->LoadIdentity();
 	pRenderContext->Ortho( 0, 0, 1, 1, -99999, 99999 );
@@ -119,6 +128,14 @@ void DrawSmokeFogOverlay()
 
 	meshBuilder.End();
 	pMesh->Draw();
+	
+#ifdef NEO
+	pRenderContext->LoadMatrix(matrixModel);
+	pRenderContext->MatrixMode( MATERIAL_PROJECTION );
+	pRenderContext->LoadMatrix(matrixProjection);
+	pRenderContext->MatrixMode( MATERIAL_VIEW );
+	pRenderContext->LoadMatrix(matrixView);
+#endif // NEO
 }
 
 #ifdef GLOWS_ENABLE
@@ -152,9 +169,9 @@ void UpdateThermalOverride()
 		}
 	}
 #ifdef GLOWS_ENABLE
-	else if (localPlayer->IsObserver() && glow_outline_effect_enable.GetBool() && (localPlayer->GetTeamNumber() == TEAM_SPECTATOR || mp_forcecamera.GetInt() == OBS_ALLOW_ALL))
+	else if (localPlayer->IsObserver() && (localPlayer->GetTeamNumber() == TEAM_SPECTATOR || mp_forcecamera.GetInt() == OBS_ALLOW_ALL))
 	{
-		g_SmokeFogOverlayThermalOverride = true;
+		g_SmokeFogOverlayThermalOverride = false;
 		g_SmokeFogOverlayAlpha = 0;
 		return;
 	}

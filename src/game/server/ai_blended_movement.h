@@ -12,6 +12,10 @@
 #include "ai_motor.h"
 #include "ai_navigator.h"
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 struct AI_Waypoint_t;
 
 //-----------------------------------------------------------------------------
@@ -121,6 +125,21 @@ private:
 
 		void Init( void )
 		{
+#ifdef NEO
+			if constexpr (!std::is_trivially_copyable_v<
+				std::remove_cvref_t<decltype(*this)>>)
+			{
+				static_assert(sizeof(*this) == 72);
+				flTime = flElapsedTime = flDist = flMaxVelocity =
+					flYaw = flAngularVelocity = {};
+				bLooping = {};
+				nFlags = {};
+				pWaypoint = {};
+				pNext = pPrev = {};
+				vecLocation.Zero();
+			}
+			else
+#endif
 			memset( this, 0, sizeof(*this) );
 		};
 

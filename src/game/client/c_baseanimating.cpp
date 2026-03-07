@@ -63,6 +63,8 @@
 
 #ifdef NEO
 #include "c_neo_player.h"
+
+#include <type_traits>
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -398,7 +400,7 @@ int C_ClientRagdoll::DrawModel(int flags)
 	const bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 	if (inThermalVision)
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_ragdoll_model", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial(NEO_THERMAL_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		const int ret = BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
@@ -1789,6 +1791,25 @@ void C_BaseAnimating::SaveRagdollInfo( int numbones, const matrix3x4_t &cameraTr
 			Msg( "Memory allocation of RagdollInfo_t failed!\n" );
 			return;
 		}
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<RagdollInfo_t>)
+		{
+			static_assert(std::is_same_v<RagdollInfo_t, std::remove_pointer_t<decltype(m_pRagdollInfo)>>);
+			static_assert(sizeof(RagdollInfo_t) == 3596, "update this zero-init code if you changed the layout!");
+			m_pRagdollInfo->m_bActive = {};
+			m_pRagdollInfo->m_flSaveTime = {};
+			m_pRagdollInfo->m_nNumBones = {};
+			for (int i = 0; i < ARRAYSIZE(m_pRagdollInfo->m_rgBonePos); ++i)
+			{
+				m_pRagdollInfo->m_rgBonePos[i].Zero();
+			}
+			for (int i = 0; i < ARRAYSIZE(m_pRagdollInfo->m_rgBoneQuaternion); ++i)
+			{
+				m_pRagdollInfo->m_rgBoneQuaternion[i].Init();
+			}
+		}
+		else
+#endif
 		memset( m_pRagdollInfo, 0, sizeof( *m_pRagdollInfo ) );
 	}
 
@@ -3292,7 +3313,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			if (!IsFollowingEntity())
 			{
 				InternalDrawModel(flags | extraFlags);
-				IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+				IMaterial* pass = materials->FindMaterial(NEO_MOTION_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
 				Assert(!IsErrorMaterial(pass));
 				modelrender->ForcedMaterialOverride(pass);
 			}
@@ -3301,7 +3322,7 @@ int C_BaseAnimating::DrawModel( int flags )
 		const bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 		if (m_bIsGib && inThermalVision)
 		{
-			IMaterial* pass = materials->FindMaterial("dev/thermal_base_animating_model", TEXTURE_GROUP_MODEL);
+			IMaterial* pass = materials->FindMaterial(NEO_THERMAL_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
 			Assert(!IsErrorMaterial(pass));
 			modelrender->ForcedMaterialOverride(pass);
 			isHot = true;
@@ -3340,7 +3361,7 @@ int C_BaseAnimating::DrawModel( int flags )
 					if (isMoving)
 					{ // Drawing an active weapon first draws the entity holding the weapon. This call removes the material override before the draw call on the active weapon can complete, re-override here
 						InternalDrawModel(STUDIO_RENDER | extraFlags);
-						IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+						IMaterial* pass = materials->FindMaterial(NEO_MOTION_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
 						Assert(!IsErrorMaterial(pass));
 						modelrender->ForcedMaterialOverride(pass);
 					}

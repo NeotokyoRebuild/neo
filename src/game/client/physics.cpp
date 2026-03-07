@@ -23,6 +23,9 @@
 #include "fx_water.h"
 #include "positionwatcher.h"
 #include "vphysics/constraints.h"
+#ifdef NEO
+#include <type_traits>
+#endif
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -612,6 +615,14 @@ void CCollisionEvent::StartTouch( IPhysicsObject *pObject1, IPhysicsObject *pObj
 void CCollisionEvent::DispatchStartTouch( C_BaseEntity *pEntity0, C_BaseEntity *pEntity1, const Vector &point, const Vector &normal )
 {
 	trace_t trace;
+#ifdef NEO
+	if constexpr (!std::is_trivially_copyable_v<trace_t>)
+	{
+		static_assert(std::is_default_constructible_v<trace_t>);
+		trace = {};
+	}
+	else
+#endif
 	memset( &trace, 0, sizeof(trace) );
 	trace.endpos = point;
 	trace.plane.dist = DotProduct( point, normal );

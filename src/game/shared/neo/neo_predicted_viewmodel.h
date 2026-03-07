@@ -41,7 +41,6 @@ public:
 	virtual void ClientThink() override;
 
 	virtual int DrawModel(int flags);
-	virtual bool ShouldDraw() override;
 	virtual void ProcessMuzzleFlashEvent() final override;
 
 	virtual RenderGroup_t GetRenderGroup() override;

@@ -181,7 +181,14 @@ void CNEODeployedDetpack::InputRemoteDetonate(inputdata_t& inputdata)
 					SF_ENVEXPLOSION_NOSPARKS | SF_ENVEXPLOSION_NODLIGHTS | SF_ENVEXPLOSION_NOSMOKE | SF_ENVEXPLOSION_NOSOUND, 0.0f, this);
 	m_hasBeenTriggeredToDetonate = true;
 	DevMsg("CNEODeployedDetpack::InputRemoteDetonate triggered\n");
-	EmitSound("weapon_remotedet.npc_single");
+	if (GetWaterLevel() == 3)
+	{
+		EmitSound("WaterExplosionEffect.Sound");
+	}
+	else
+	{
+		EmitSound("weapon_remotedet.npc_single");
+	}
 	UTIL_Remove(this);
 }
 

@@ -698,6 +698,9 @@ void CTeamplayRoundBasedRules::Think( void )
 			else
 			{
 				IGameEvent * event = gameeventmanager->CreateEvent( "player_stats_updated" );
+#ifdef NEO
+				Assert(event);
+#endif
 				if ( event )
 				{
 					event->SetBool( "forceupload", true );

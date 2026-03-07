@@ -41,7 +41,13 @@ public:
 #endif
 		if ( gameeventmanager )
 		{
+#if defined(NEO) && defined(DBGFLAG_ASSERT)
+			bool ok =
+#endif
 			gameeventmanager->AddListener( this, name, bServerSide );
+#ifdef NEO
+			AssertMsg1(ok, "Failed to add listener for event: %s", name);
+#endif
 		}
 		
 		AssertMsg1( gameeventmanager, "Failed to subscribe to event %s!", name );

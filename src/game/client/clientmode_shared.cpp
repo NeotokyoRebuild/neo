@@ -185,6 +185,9 @@ CON_COMMAND( hud_reloadscheme, "Reloads hud layout and animation scripts." )
 CON_COMMAND_F( crash, "Crash the client. Optional parameter -- type of crash:\n 0: read from NULL\n 1: write to NULL\n 2: DmCrashDump() (xbox360 only)", FCVAR_CHEAT )
 {
 	int crashtype = 0;
+#ifdef NEO
+	volatile
+#endif
 	int dummy;
 	if ( args.ArgC() > 1 )
 	{
@@ -193,11 +196,19 @@ CON_COMMAND_F( crash, "Crash the client. Optional parameter -- type of crash:\n 
 	switch (crashtype)
 	{
 		case 0:
+#ifdef NEO
+			dummy = *((volatile int*)NULL);
+#else
 			dummy = *((int *) NULL);
+#endif
 			Msg("Crashed! %d\n", dummy); // keeps dummy from optimizing out
 			break;
 		case 1:
+#ifdef NEO
+			*((volatile int*)NULL) = 42;
+#else
 			*((int *)NULL) = 42;
+#endif
 			break;
 #if defined( _X360 )
 		case 2:
@@ -574,6 +585,19 @@ void ClientModeShared::OverrideMouseInput( float *x, float *y )
 //-----------------------------------------------------------------------------
 bool ClientModeShared::ShouldDrawViewModel()
 {
+#ifdef NEO
+	auto pWeapon = static_cast<C_NEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+	{
+		auto pPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		auto pTargetPlayer = static_cast<C_NEO_Player *>(pPlayer->GetObserverTarget());
+		if (pPlayer->GetObserverMode() == OBS_MODE_IN_EYE && pTargetPlayer)
+		{
+			return !pTargetPlayer->IsInAim();
+		}
+		return !pPlayer->IsInAim();
+	}
+#endif
 	return true;
 }
 
@@ -815,7 +839,7 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 	}
 #ifdef NEO
 	else if (down && pszCurrentBinding &&
-			 (Q_strcmp(pszCurrentBinding, "+specprevplayer") == 0 || Q_strcmp(pszCurrentBinding, "+aim") == 0 || Q_strcmp(pszCurrentBinding, "toggle_aim") == 0))
+			 (Q_strcmp(pszCurrentBinding, "+specprevplayer") == 0 || Q_strcmp(pszCurrentBinding, "+aim") == 0 || Q_strcmp(pszCurrentBinding, "+toggle_aim") == 0))
 #else
 	else if ( down && pszCurrentBinding && Q_strcmp( pszCurrentBinding, "+attack2" ) == 0 )
 #endif

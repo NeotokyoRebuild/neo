@@ -35,7 +35,7 @@ inline const CLoadoutWeapon s_LoadoutWeapons[NEO_LOADOUT__COUNT][MAX_WEAPON_LOAD
 	{
 		{XP_ANY, WEAPON(mpn)},			{XP_PRIVATE, WEAPON(srm)},		{XP_PRIVATE, WEAPON(jitte)},
 		{XP_PRIVATE, WEAPON(zr68c)},	{XP_PRIVATE, WEAPON(zr68s)},	{XP_CORPORAL, WEAPON(supa7)},
-		{XP_CORPORAL, WEAPON(mosok)},	{XP_SERGEANT, WEAPON(mosokl)},	{XP_SERGEANT, WEAPON(mx)},
+		{XP_CORPORAL, WEAPON(mosok)},	{XP_CORPORAL, WEAPON(mosokl)},	{XP_SERGEANT, WEAPON(mx)},
 		{XP_SERGEANT, WEAPON(mxs)},		{XP_LIEUTENANT, WEAPON(aa13)},	{XP_LIEUTENANT, WEAPON(srs)},
 	},
 	// Support

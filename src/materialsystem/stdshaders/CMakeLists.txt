@@ -24,7 +24,7 @@ target_include_directories(game_shader_dx9
 target_compile_definitions(game_shader_dx9
     PRIVATE
     FAST_MATERIALVAR_ACCESS
-    GAME_SHADER_DLL
+    #GAME_SHADER_DLL
     STDSHADER_DX9_DLL_EXPORT
 )
 
@@ -80,6 +80,8 @@ target_sources_grouped(
     Bloom.cpp
     example_model_dx9.cpp
     example_model_dx9_helper.cpp
+    lightmappedgeneric_dx9.cpp
+    lightmappedgeneric_dx9_helper.cpp
     screenspace_general.cpp
 )
 
@@ -103,6 +105,7 @@ target_sources_grouped(
     common_vertexlitgeneric_dx9.h
     common_vs_fxc.h
     example_model_dx9_helper.h
+    lightmappedgeneric_dx9_helper.h
     shader_constant_register_map.h
 )
 
@@ -112,11 +115,11 @@ target_sources_grouped(
     FILES
     #Neo_MotionVision_ModelShader.cpp
     Neo_GaussianBlur_Shader.cpp
-    Neo_MotionVision_Shader_Pass2.cpp
+    Neo_MotionVision.cpp
     neo_motion_model_dx9.cpp
     neo_motion_model_dx9_helper.cpp
     neo_motion_model_dx9_helper.h
-    Neo_NightVision_Shader.cpp
+    Neo_NightVision.cpp
     Neo_Noise_Shader.cpp
     Neo_SSAO_Combine_Shader.cpp
     Neo_SSAO_Shader.cpp

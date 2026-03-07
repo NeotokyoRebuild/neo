@@ -147,6 +147,7 @@ public:
 
 	virtual void ItemPreFrame(void) override;
 	virtual void ItemPostFrame(void) override;
+	virtual void ItemBusyFrame(void) override;
 
 	virtual void PrimaryAttack(void) override;
 	virtual void SecondaryAttack(void) override;
@@ -206,12 +207,13 @@ public:
 
 	virtual bool CanBePickedUpByClass(int classId);
 	virtual bool CanDrop(void);
+	virtual bool UsesTracers() { return false; }
 
 	virtual void SetPickupTouch(void) override;
 
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo) override;
-#ifdef CLIENT_DLL
 	virtual void ItemHolsterFrame() override;
+#ifdef CLIENT_DLL
 	virtual bool ShouldDraw(void) override;
 	virtual void ThirdPersonSwitch(bool bThirdPerson) override;
 	virtual int RestoreData(const char* context, int slot, int type) override;
@@ -223,8 +225,6 @@ public:
 	virtual bool Deploy(void);
 
 	virtual float GetFireRate() override final;
-	virtual bool GetRoundChambered() const { return 0; }
-	virtual bool GetRoundBeingChambered() const { return 0; }
 	float GetPenetration() const;
 #ifdef CLIENT_DLL
 	float m_flTemperature;
@@ -246,8 +246,6 @@ protected:
 	CNetworkVar(float, m_flAccuracyPenalty);
 
 	CNetworkVar(int, m_nNumShotsFired);
-	CNetworkVar(bool, m_bRoundChambered);
-	CNetworkVar(bool, m_bRoundBeingChambered);
 	CNetworkVar(bool, m_bTriggerReset);
 
 private:

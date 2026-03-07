@@ -218,20 +218,6 @@ void CWeaponGrenade::ItemPostFrame(void)
 	BaseClass::ItemPostFrame();
 }
 
-// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
-void CWeaponGrenade::CheckThrowPosition(CBasePlayer *pPlayer, const Vector &vecEye, Vector &vecSrc)
-{
-	trace_t tr;
-
-	UTIL_TraceHull(vecEye, vecSrc, -Vector(GRENADE_RADIUS + 2, GRENADE_RADIUS + 2, GRENADE_RADIUS + 2), Vector(GRENADE_RADIUS + 2, GRENADE_RADIUS + 2, GRENADE_RADIUS + 2),
-		pPlayer->PhysicsSolidMaskForEntity(), pPlayer, pPlayer->GetCollisionGroup(), &tr);
-
-	if (tr.DidHit())
-	{
-		vecSrc = tr.endpos;
-	}
-}
-
 void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntity *pAttacker)
 {
 	if (!sv_neo_infinite_frag_grenades.GetBool())
@@ -243,8 +229,6 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 
 #ifndef CLIENT_DLL
 	QAngle angThrow = pPlayer->LocalEyeAngles();
-
-	Vector vForward, vRight, vUp;
 
 	if (angThrow.x >= 0)
 		// Below horizon
@@ -258,11 +242,12 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 	if (flVel > sv_neo_grenade_throw_intensity.GetFloat())
 		flVel = sv_neo_grenade_throw_intensity.GetFloat();
 
-	AngleVectors(angThrow, &vForward, &vRight, &vUp);
+	Vector vForward;
+	AngleVectors(angThrow, &vForward, nullptr, nullptr);
 
 	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
 
-	vecSrc += vForward * 16;
+	GetThrowPos(vForward, vecSrc);
 
 	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
 

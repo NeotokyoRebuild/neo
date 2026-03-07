@@ -2295,7 +2295,11 @@ void CGameMovement::FullObserverMove( void )
 
 	Vector wishvel;
 	Vector forward, right, up;
+#ifdef NEO
+	Vector wishdir;
+#else
 	Vector wishdir, wishend;
+#endif
 	float wishspeed;
 
 	AngleVectors (mv->m_vecViewAngles, &forward, &right, &up);  // Determine movement angles
@@ -2311,7 +2315,22 @@ void CGameMovement::FullObserverMove( void )
 
 	float fmove = mv->m_flForwardMove * factor;
 	float smove = mv->m_flSideMove * factor;
-
+	
+#ifdef NEO
+	const bool bDroneMove = mv->m_nButtons & IN_WALK;
+	if (bDroneMove)
+	{
+		forward.z = 0;
+		if (fmove && smove)
+		{
+			const float absFMove = fabs(fmove);
+			const float absSMove = fabs(smove);
+			const float moveMagnitude = FastSqrt((absFMove * absFMove) + (absSMove * absSMove));
+			fmove *= absFMove / moveMagnitude;
+			smove *= absSMove / moveMagnitude;
+		}
+	}
+#endif // NEO
 	VectorNormalize (forward);  // Normalize remainder of vectors
 	VectorNormalize (right);    //
 
@@ -2389,6 +2408,21 @@ void CGameMovement::FullNoClipMove( float factor, float maxacceleration )
 	float fmove = mv->m_flForwardMove * factor;
 	float smove = mv->m_flSideMove * factor;
 
+#ifdef NEO
+	const bool bDroneMove = mv->m_nButtons & IN_WALK;
+	if (bDroneMove)
+	{
+		forward.z = 0;
+		if (fmove && smove)
+		{
+			const float absFMove = fabs(fmove);
+			const float absSMove = fabs(smove);
+			const float moveMagnitude = FastSqrt((absFMove * absFMove) + (absSMove * absSMove));
+			fmove *= absFMove / moveMagnitude;
+			smove *= absSMove / moveMagnitude;
+		}
+	}
+#endif // NEO
 	VectorNormalize (forward);  // Normalize remainder of vectors
 	VectorNormalize (right);    //
 
@@ -2575,6 +2609,7 @@ bool CGameMovement::CheckJumpButton( void )
 		flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT);
 	}
 #else
+	// NEO JANK: Remember to update NEO_RECON_CROUCH_JUMP_HEIGHT/etc if you change these values.
 	auto neoPlayer = static_cast<CNEO_Player*>(player);
 	if ( g_bMovementOptimizations )
 	{
@@ -2668,7 +2703,10 @@ bool CGameMovement::CheckJumpButton( void )
 
 	OnJump(mv->m_outJumpVel.z);
 #if defined NEO && defined CLIENT_DLL
-	IN_LeanToggleReset();
+	if (neoPlayer->IsLocalPlayer())
+	{
+		IN_LeanToggleReset();
+	}
 #endif // NEO && CLIENT_DLL
 
 	// Set jump time.
@@ -4318,7 +4356,9 @@ void CGameMovement::FinishUnDuck( void )
 	Assert(dynamic_cast<CNEO_Player*>(player));
 
 	int i;
+#ifndef NEO
 	trace_t trace;
+#endif
 	Vector newOrigin;
 
 	VectorCopy( mv->GetAbsOrigin(), newOrigin );
@@ -4447,10 +4487,10 @@ void CGameMovement::FinishDuck( void )
 {
 #ifdef NEO
 	Assert(dynamic_cast<CNEO_Player*>(player));
-#endif
-
+#else
 	if ( player->GetFlags() & FL_DUCKING )
 		return;
+#endif
 
 	player->AddFlag( FL_DUCKING );
 	player->m_Local.m_bDucked = true;
@@ -4651,9 +4691,11 @@ void CGameMovement::Duck( void )
 	HandleDuckingSpeedCrop();
 
 	// If the player is holding down the duck button, the player is in duck transition, ducking, or duck-jumping.
+#ifndef NEO
 	bool bFirstTimePredicted = true; // Assumes we never rerun commands on the server.
 #ifdef CLIENT_DLL
 	bFirstTimePredicted = prediction->IsFirstTimePredicted();
+#endif
 #endif
 
 	// If the player is holding down the duck button, the player is in duck transition, ducking, or duck-jumping.
@@ -5229,4 +5271,3 @@ void  CGameMovement::TryTouchGround( const Vector& start, const Vector& end, con
 	ray.Init( start, end, mins, maxs );
 	UTIL_TraceRay( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
 }
-

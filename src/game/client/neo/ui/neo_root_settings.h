@@ -72,6 +72,7 @@ struct NeoSettings
 		bool bAutoDetectOBS;
 		bool bTachiFullAutoPreferred;
 		int iBackground;
+		bool bTakingDamageSounds;
 	};
 
 	struct Keys
@@ -158,6 +159,7 @@ struct NeoSettings
 		float flGamma;
 		int iFov;
 		int iViewmodelFov;
+		bool bSoftwareCursor;
 
 		// Video modes
 		int iVMListSize;
@@ -196,7 +198,7 @@ struct NeoSettings
 		bool bShowPos;
 		int iShowFps;
 		bool bEnableRangeFinder;
-		bool bExtendedKillfeed;
+		int iExtendedKillfeed;
 		bool bShowHudContextHints;
 		int iKdinfoToggletype;
 
@@ -208,6 +210,7 @@ struct NeoSettings
 		// Player Xray
 		bool bEnableXray;
 		float flOutlineWidth;
+		float flOutlineAlpha;
 		float flCenterOpacity;
 		float flTexturedOpacity;
 #endif // GLOWS_ENABLE
@@ -241,6 +244,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_onlysteamnick);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
+		CONVARREF_DEF(cl_software_cursor);
 		CONVARREF_DEF(cl_autoreload_when_empty);
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
@@ -262,6 +266,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 		CONVARREF_DEF(cl_neo_equip_utility_priority);
+		CONVARREF_DEF(cl_neo_taking_damage_sounds);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
@@ -289,7 +294,7 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_ping_volume);
 		CONVARREF_DEF(snd_surround_speakers);
-		CONVARREF_DEF(voice_enable);
+		CONVARREF_DEF(voice_modenable);
 		CONVARREF_DEF(voice_scale);
 		CONVARREF_DEF(snd_mute_losefocus);
 		CONVARREF_DEF(snd_pitchquality);
@@ -332,6 +337,7 @@ struct NeoSettings
 		// Xray
 		CONVARREF_DEF(glow_outline_effect_enable);
 		CONVARREF_DEF(glow_outline_effect_width);
+		CONVARREF_DEF(glow_outline_effect_alpha);
 		CONVARREF_DEF(glow_outline_effect_center_alpha);
 		CONVARREF_DEF(glow_outline_effect_textured_center_alpha);
 #endif // GLOWS_ENABLE
@@ -345,6 +351,7 @@ void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys = NeoSettings::Keys::NONE);
 void NeoSettingsSave(const NeoSettings *ns);
 void NeoSettingsResetToDefault(NeoSettings *ns);
+void NeoSettingsEndVoiceTweakMode();
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);

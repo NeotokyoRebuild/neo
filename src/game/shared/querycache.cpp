@@ -12,6 +12,9 @@
 #include "datacache/imdlcache.h"
 #include "vstdlib/jobthread.h"
 
+#ifdef NEO
+#include "../../common/neo/bit_cast.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -47,7 +50,11 @@ void QueryCacheKey_t::ComputeHashIndex( void )
 		ret += ( unsigned int ) m_pEntities[i].ToInt();
 		ret += size_cast< unsigned int >( (uintp)m_nOffsetMode );
 	}
+#ifdef NEO
+	ret += neo::bit_cast<uint32>(BC_TEST_EX(m_flMinimumUpdateInterval, this, *((uint32*)&m_flMinimumUpdateInterval)));
+#else
 	ret += *( ( uint32 *) &m_flMinimumUpdateInterval );
+#endif
 	ret += m_nTraceMask;
 	m_nHashIdx = ret % QUERYCACHE_HASH_SIZE;
 }

@@ -3,6 +3,7 @@
 
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
+#include "view.h"
 
 #include "iclientmode.h"
 #include <vgui/ILocalize.h>
@@ -69,11 +70,10 @@ void CNEOHud_Compass::Paint()
 
 static C_NEO_Player *GetFirstPersonPlayer()
 {
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	C_NEO_Player *pFPPlayer = pLocalPlayer;
-	if (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE)
+	C_NEO_Player *pFPPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (pFPPlayer->GetObserverMode() == OBS_MODE_IN_EYE)
 	{
-		auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget());
+		auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(pFPPlayer->GetObserverTarget());
 		if (pTargetPlayer && !pTargetPlayer->IsObserver())
 		{
 			pFPPlayer = pTargetPlayer;
@@ -101,9 +101,9 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 	if (NEORules()->GhostExists() || NEORules()->GetJuggernautMarkerPos() != vec3_origin)
 	{
 		const Vector objPos = NEORules()->GetGameType() == NEO_GAME_TYPE_JGR ? NEORules()->GetJuggernautMarkerPos() : NEORules()->GetGhostPos();
-		const Vector objVec = objPos - pFPPlayer->EyePosition();
+		const Vector objVec = objPos - MainViewOrigin();
 		const float objYaw = RAD2DEG(atan2f(objVec.y, objVec.x));
-		float objAngle = safeAngle(- objYaw + pFPPlayer->EyeAngles()[YAW]);
+		float objAngle = safeAngle(- objYaw + MainViewAngles()[YAW]);
 		m_objAngle = Clamp(objAngle, -(float)m_fov / 2, (float)m_fov / 2);
 	}
 
@@ -114,8 +114,8 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 			// Update Rangefinder
 			trace_t tr;
 			Vector vecForward;
-			AngleVectors(pFPPlayer->EyeAngles(), &vecForward);
-			UTIL_TraceLine(pFPPlayer->EyePosition(), pFPPlayer->EyePosition() + (vecForward * MAX_TRACE_LENGTH),
+			AngleVectors(MainViewAngles(), &vecForward);
+			UTIL_TraceLine(MainViewOrigin(), MainViewOrigin() + (vecForward * MAX_TRACE_LENGTH),
 						   MASK_SHOT, pFPPlayer, COLLISION_GROUP_NONE, &tr);
 			const float flDist = METERS_PER_INCH * tr.startpos.DistTo(tr.endpos);
 			if (flDist >= 999.0f || tr.surface.flags & (SURF_SKY | SURF_SKY2D))
@@ -183,7 +183,7 @@ void CNEOHud_Compass::DrawCompass() const
 		m_xPos + m_width, m_yPos + m_height,
 		m_boxColor);
 
-	const float angle = -player->EyeAngles()[YAW];
+	const float angle = -MainViewAngles()[YAW];
 	const int steps = ARRAYSIZE(ROSE);
 	for (int i = 0; i < steps; i += m_separators ? 1 : 2) {
 		const float stepAngle = (float)(i * 360) / steps;

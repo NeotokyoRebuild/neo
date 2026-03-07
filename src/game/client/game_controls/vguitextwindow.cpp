@@ -142,6 +142,9 @@ void CTextWindow::ApplySchemeSettings( IScheme *pScheme )
 CTextWindow::~CTextWindow()
 {
 	// remove temp file again
+#ifdef NEO
+	if (g_pFullFileSystem->FileExists(TEMP_HTML_FILE, "DEFAULT_WRITE_PATH"))
+#endif
 	g_pFullFileSystem->RemoveFile( TEMP_HTML_FILE, "DEFAULT_WRITE_PATH" );
 }
 

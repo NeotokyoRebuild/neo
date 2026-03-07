@@ -88,6 +88,7 @@ private:
 	CNetworkVar(bool, m_bSlugLoaded); // Slug currently loaded in chamber
 	CNetworkVar(bool, m_bWeaponRaised); // Slug currently loaded in chamber
 	CNetworkVar(bool, m_bShellInChamber); // Slug currently loaded in chamber
+	CNetworkVar(float, m_flNextReload); // Time to load the next shell
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);

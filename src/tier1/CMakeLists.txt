@@ -15,6 +15,7 @@ target_include_directories(tier1
     ${CMAKE_SOURCE_DIR}/public/tier1
     PRIVATE
     ${CMAKE_SOURCE_DIR}/common
+    ${CMAKE_SOURCE_DIR}/common/neo
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/public/tier0
 )
@@ -99,7 +100,10 @@ if(OS_WINDOWS)
         processor_detect.cpp
     )
 
-    set_source_files_properties(processor_detect.cpp PROPERTIES COMPILE_FLAGS /EHsc)
+    # Currently only need exception handling for 32-bit CPU detection code
+    if(CPU_32BIT)
+        set_source_files_properties(processor_detect.cpp PROPERTIES COMPILE_FLAGS /EHsc)
+    endif()
 endif()
 
 if(OS_LINUX OR OS_MACOS)
@@ -134,8 +138,18 @@ target_sources_grouped(
 
 target_sources_grouped(
     TARGET tier1
+    NAME "Tests"
+    FILES
+    ${CMAKE_SOURCE_DIR}/common/neo/test_bit_cast.h
+)
+
+target_sources_grouped(
+    TARGET tier1
     NAME "Header Files"
     FILES
+    ${CMAKE_SOURCE_DIR}/common/neo/bit_cast.h
+    ${CMAKE_SOURCE_DIR}/common/neo/narrow_cast.h
+
     ${CMAKE_SOURCE_DIR}/public/tier1/bitbuf.h
     ${CMAKE_SOURCE_DIR}/public/tier1/byteswap.h
     ${CMAKE_SOURCE_DIR}/public/tier1/callqueue.h

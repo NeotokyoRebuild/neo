@@ -1207,7 +1207,9 @@ void C_WaterExplosionEffect::CreateMisc( void )
 
 	int		numDrops = 32;
 	float	length = 0.1f;
+#ifndef NEO
 	Vector	vForward, vRight, vUp;
+#endif
 	Vector	offDir;
 
 	TrailParticle	*tParticle;
@@ -1332,7 +1334,11 @@ void C_WaterExplosionEffect::PlaySound( void )
 	CLocalPlayerFilter filter;
 	C_BaseEntity::EmitSound( filter, SOUND_FROM_WORLD, "Physics.WaterSplash", &m_vecWaterSurface );
 
+#ifdef NEO
+	if ( m_flDepth > 32 )
+#else
 	if ( m_flDepth > 128 )
+#endif
 	{
 		C_BaseEntity::EmitSound( filter, SOUND_FROM_WORLD, "WaterExplosionEffect.Sound", &m_vecOrigin );
 	}

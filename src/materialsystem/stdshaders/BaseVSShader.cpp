@@ -44,6 +44,10 @@
 #include "lightmappedgeneric_bumpmappedlightmap.inc"
 #endif // GAME_SHADER_DLL
 
+#ifdef NEO
+#include <type_traits>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -580,6 +584,14 @@ void CBaseVSShader::LoadBumpLightmapCoordinateAxes_PixelShader( int pixelReg )
 	Vector4D basis[3];
 	for (int i = 0; i < 3; ++i)
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<
+			std::remove_all_extents_t<decltype(basis)>>)
+		{
+			basis[i].AsVector3D() = g_localBumpBasis[i];
+		}
+		else
+#endif
 		memcpy( &basis[i], &g_localBumpBasis[i], 3 * sizeof(float) );
 		basis[i][3] = 0.0f;
 	}
@@ -606,6 +618,14 @@ void CBaseVSShader::LoadBumpLightmapCoordinateAxes_VertexShader( int vertexReg )
 	s_pShaderAPI->SetVertexShaderConstant( vertexReg, (float*)basis, 3 );
 	for (i = 0; i < 3; ++i)
 	{
+#ifdef NEO
+		if constexpr (!std::is_trivially_copyable_v<
+			std::remove_all_extents_t<decltype(basis)>>)
+		{
+			basis[i].AsVector3D() = g_localBumpBasis[i];
+		}
+		else
+#endif
 		memcpy( &basis[i], &g_localBumpBasis[i], 3 * sizeof(float) );
 		basis[i][3] = 0.0f;
 	}
@@ -1133,7 +1153,11 @@ void CBaseVSShader::DrawWorldBumpedDiffuseLighting( int bumpmapVar, int bumpFram
 			s_pShaderShadow->SetPixelShader( "LightmappedGeneric_SSBumpmappedLightmap" );
 		else
 			s_pShaderShadow->SetPixelShader( "LightmappedGeneric_BumpmappedLightmap" );
+#ifndef NEO
 			FogToFogColor();
+#else
+		FogToFogColor(); // fix bad indentation to silence warning
+#endif
 	}
 	else
 	{

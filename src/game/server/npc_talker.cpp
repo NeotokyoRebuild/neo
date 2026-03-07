@@ -314,7 +314,9 @@ CBaseEntity	*CNPCSimpleTalker::EnumFriends( CBaseEntity *pPrevious, int listNumb
 	CBaseEntity *pFriend = pPrevious;
 	const char *pszFriend;
 	trace_t tr;
+#ifndef NEO
 	Vector vecCheck;
+#endif
 
 	pszFriend = m_szFriends[ FriendNumber(listNumber) ];
 	while ( pszFriend != NULL && ((pFriend = gEntList.FindEntityByClassname( pFriend, pszFriend )) != NULL) )

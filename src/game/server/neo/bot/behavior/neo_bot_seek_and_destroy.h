@@ -2,6 +2,7 @@
 
 #include "Path/NextBotChasePath.h"
 
+class CSound;
 
 //
 // Roam around the map attacking enemies
@@ -36,11 +37,16 @@ protected:
 
 	virtual void RecomputeSeekPath( CNEOBot *me );
 
+	static CSound* SearchGunfireSounds(CNEOBot* me, const Vector* currentGoalPos = nullptr);
+	static const Vector& SearchGunfireLocation(CNEOBot* me, const Vector* currentGoalPos = nullptr);
+
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
+	CountdownTimer m_soundSearchTimer;
 	CountdownTimer m_itemStolenTimer;
 	EHANDLE m_hTargetEntity;
 	bool m_bGoingToTargetEntity = false;
+	bool m_bInvestigateGunfire = true;
 	Vector m_vGoalPos = vec3_origin;
 	bool m_bTimerElapsed = false;
 	bool m_bOverrideApproach = false;

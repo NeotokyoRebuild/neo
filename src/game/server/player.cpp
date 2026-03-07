@@ -83,9 +83,11 @@
 #endif
 
 #ifdef NEO
+#include "../../common/neo/bit_cast.h"
 #include "neo_player.h"
 #include "weapon_tachi.h"
 #include "neo_gamerules.h"
+#include "tier1/convar_serverbounded.h"
 #endif
 
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
@@ -563,6 +565,23 @@ CBasePlayer *CBasePlayer::CreatePlayer( const char *className, edict_t *ed )
 	return player;
 }
 
+#ifdef NEO
+template <class ConVarType=ConVar, typename T=float, auto& ConvertFunc=V_atof>
+T GetConVarDefault(const char* name)
+{
+	const auto* cvar = g_pCVar->FindVar(name);
+	if (!cvar)
+	{
+		Assert(false);
+		Warning( "%s failed to find var \"%s\"\n", __FUNCTION__, name);
+		return T{};
+	}
+	const auto* castCvar = assert_cast<const ConVarType*>(cvar);
+	const char* res = castCvar->GetDefault();
+	return ConvertFunc(res);
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : 
@@ -616,8 +635,14 @@ CBasePlayer::CBasePlayer( )
 	m_hZoomOwner = NULL;
 
 	m_bPendingClientSettings = false;
+#ifdef NEO
+	m_nUpdateRate = GetConVarDefault<ConVar_ServerBounded>("cl_updaterate");
+	Assert(m_nUpdateRate != 0);
+	m_fLerpTime = GetConVarDefault<ConVar_ServerBounded>("cl_interp_ratio") / m_nUpdateRate;
+#else
 	m_nUpdateRate = 20;  // cl_updaterate defualt
 	m_fLerpTime = 0.1f; // cl_interp default
+#endif
 	m_bPredictWeapons = true;
 	m_bRequestPredict = true;
 	m_bLagCompensation = false;
@@ -1046,7 +1071,14 @@ void CBasePlayer::DamageEffect(float flDamage, int fDamageType)
 	}
 	else if ( fDamageType & DMG_BULLET )
 	{
+#ifdef NEO
+		if (Q_atoi(engine->GetClientConVarValue(this->entindex(), "cl_neo_taking_damage_sounds")))
+		{
+			EmitSound( "Flesh.BulletImpact" );
+		}
+#else
 		EmitSound( "Flesh.BulletImpact" );
+#endif
 	}
 }
 
@@ -3611,7 +3643,9 @@ void CBasePlayer::ClientSettingsChanged()
 		float flLerpRatio = Q_atof( QUICKGETCVARVALUE("cl_interp_ratio") );
 		if ( flLerpRatio == 0 )
 			flLerpRatio = 1.0f;
+#ifndef NEO
 		float flLerpAmount = Q_atof( QUICKGETCVARVALUE("cl_interp") );
+#endif
 
 		static const ConVar *pMin = g_pCVar->FindVar( "sv_client_min_interp_ratio" );
 		static const ConVar *pMax = g_pCVar->FindVar( "sv_client_max_interp_ratio" );
@@ -3625,7 +3659,11 @@ void CBasePlayer::ClientSettingsChanged()
 				flLerpRatio = 1.0f;
 		}
 		// #define FIXME_INTERP_RATIO
+#ifdef NEO
+		this->m_fLerpTime = flLerpRatio / this->m_nUpdateRate;
+#else
 		this->m_fLerpTime = MAX( flLerpAmount, flLerpRatio / this->m_nUpdateRate );
+#endif
 	}
 	else
 	{
@@ -3685,7 +3723,12 @@ void CBasePlayer::ProcessUsercmds( CUserCmd *cmds, int numcmds, int totalcmds,
 		if ( sv_usercmd_custom_random_seed.GetBool() )
 		{
 			float fltTimeNow = float( Plat_FloatTime() * 1000.0 );
+#ifdef NEO
+			pCmd->server_random_seed = neo::bit_cast<decltype(pCmd->server_random_seed)>(
+				BC_TEST(fltTimeNow, *reinterpret_cast<int*>((char*)&fltTimeNow)));
+#else
 			pCmd->server_random_seed = *reinterpret_cast<int*>( (char*)&fltTimeNow );
+#endif
 		}
 		else
 		{
@@ -3940,7 +3983,7 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 			}
 
 			ucmd->buttons &= ~(IN_ATTACK | IN_JUMP | IN_SPEED |
-				IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_ZOOM);
+                IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN);
 			const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
 			if (!isTachi)
 			{

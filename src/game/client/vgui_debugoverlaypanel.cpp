@@ -115,7 +115,11 @@ void CDebugOverlay::Paint()
 	OverlayText_t* pCurrText = debugoverlay->GetFirst();
 	while (pCurrText) 
 	{
+#ifdef NEO
+		if (*pCurrText->text)
+#else
 		if ( pCurrText->text != NULL ) 
+#endif
 		{
 			// --------------
 			// Draw the text

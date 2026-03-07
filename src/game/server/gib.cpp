@@ -285,9 +285,6 @@ void CGib::SpawnSpecificGibs(	CBaseEntity*	pVictim,
 		{
 			pGib->SetOwnerEntity( pVictim );
 		}
-#ifdef NEO
-		pGib->m_bIsGib = true;
-#endif // NEO
 	}
 }
 
@@ -555,7 +552,9 @@ void CGib::BounceGibTouch ( CBaseEntity *pOther )
 //
 void CGib::StickyGibTouch ( CBaseEntity *pOther )
 {
+#ifndef NEO
 	Vector	vecSpot;
+#endif
 	trace_t tr;
 	
 	SetThink ( &CGib::SUB_Remove );
@@ -606,6 +605,9 @@ void CGib::Spawn( const char *szGibModel )
 	SetElasticity( 1.0 );
 	UTIL_SetSize( this, vec3_origin, vec3_origin );
 #endif//HL1_DLL
+#ifdef NEO
+	m_bIsGib = true;
+#endif // NEO
 
 	SetNextThink( gpGlobals->curtime + 4 );
 	m_lifeTime = 25;

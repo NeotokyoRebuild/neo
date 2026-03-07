@@ -1120,7 +1120,52 @@
 
 //-------------------
 
+"BaseExplosionEffect.Sound"
+{
+	"channel"	"CHAN_STATIC"
+	"volume"	"1.0"
+	"soundlevel"	"SNDLVL_140dB"
+	"pitch"	"PITCH_NORM"
+
+	"rndwave"
+	{
+			"wave"	"^weapons/explode3.wav"
+			"wave"	"^weapons/explode4.wav"
+			"wave"	"^weapons/explode5.wav"
+	}
+
+}
+
+"WaterExplosionEffect.Sound"
+{
+	"channel"	"CHAN_STATIC"
+	"volume"	"1.0"
+	"soundlevel"	"SNDLVL_140dB"
+	"pitch"	"80,130"
+
+	"rndwave"
+	{
+			"wave"	"^weapons/underwater_explode3.wav"
+			"wave"	"^weapons/underwater_explode4.wav"
+	}
+
+}
+
 "BaseGrenade.Explode"
+{
+	"channel"	"CHAN_WEAPON"
+	"volume"	"0.45"
+	"soundlevel"  "SNDLVL_75dB"
+
+	"rndwave"
+	{
+		"wave"	"weapons/debris1.wav"
+		"wave"	"weapons/debris2.wav"
+		"wave"	"weapons/debris3.wav"
+	}
+}
+
+"NeoGrenade.Explode"
 {
 	"channel"		        "CHAN_WEAPON"
         "soundlevel"  	                "SNDLVL_150dB"
@@ -1129,9 +1174,7 @@
 	"wave"				"^weapons/hegrenade/frag_explode.wav"
 }
 
-//-------------------
-
-"BaseExplosionEffect.Sound"
+"NeoGrenade.Debris"
 {
 	"channel"	               "CHAN_STATIC"
 	"volume"	               "0.2"

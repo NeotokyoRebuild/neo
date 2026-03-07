@@ -8,14 +8,14 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar neo_bot_path_reservation_enabled;
+extern ConVar neo_bot_path_reservation_enable;
 extern ConVar neo_bot_path_reservation_penalty;
 extern ConVar neo_bot_path_reservation_duration;
 extern ConVar neo_bot_path_reservation_distance;
 
 static void CNEOBotReservePath(CNEOBot* me, PathFollower& path)
 {
-	if (!neo_bot_path_reservation_enabled.GetBool() || !path.IsValid())
+	if (!neo_bot_path_reservation_enable.GetBool() || !path.IsValid())
 	{
 		return;
 	}
@@ -41,6 +41,8 @@ static void CNEOBotReservePath(CNEOBot* me, PathFollower& path)
 
 bool CNEOBotPathCompute(CNEOBot* bot, PathFollower& path, const Vector& goal, RouteType route, float maxPathLength, bool includeGoalIfPathFails, bool requireGoalArea)
 {
+	Assert(goal.IsValid());
+
 	CNEOBotPathCost cost_with_reservations(bot, route);
 	if (path.Compute(bot, goal, cost_with_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea) && path.IsValid())
 	{

@@ -261,7 +261,11 @@ int KB_ConvertString( char *in, char **ppout )
 
 	*pOut = '\0';
 
+#ifdef NEO
+	int maxlen = V_strlen( sz ) + 1;
+#else
 	int maxlen = strlen( sz ) + 1;
+#endif
 	pOut = ( char * )malloc( maxlen );
 	Q_strncpy( pOut, sz, maxlen );
 	*ppout = pOut;
@@ -640,22 +644,6 @@ void IN_SpecPrevDown(const CCommand &args) { KeyDown(&in_spec_prev, args[1]); }
 
 void IN_SpecMousePlayerDown(const CCommand &args) { KeyUp(&in_spec_mouse_player, args[1]); }
 void IN_SpecMousePlayerUp(const CCommand &args) { KeyDown(&in_spec_mouse_player, args[1]); }
-
-void IN_AimToggle(const CCommand& args)
-{
-	if (::input->KeyState(&in_aim))
-	{
-		KeyUp(&in_aim, args[1]);
-	}
-	else
-	{
-		KeyDown(&in_aim, args[1]);
-	}
-}
-void IN_AimToggleReset()
-{
-	ToggleKeyUp(&in_aim);
-}
 
 void IN_LeanLeftToggle(const CCommand& args)
 {
@@ -1683,7 +1671,7 @@ int CInput::GetButtonBits( int bResetState )
 	CalcButtonBits( bits, IN_LEAN_RIGHT, s_ClearInputState, &in_lean_right, bResetState );
 	CalcButtonBits( bits, IN_THERMOPTIC, s_ClearInputState, &in_thermoptic, bResetState);
 	CalcButtonBits( bits, IN_VISION, s_ClearInputState, &in_vision, bResetState);
-	if (KeyState(&in_speed))
+	if (KeyState(&in_speed) && !IsLocalPlayerSpectator())
 	{
 		// Cancel walk toggle if sprinting
 		KeyUp(&in_walk, nullptr);
@@ -1864,10 +1852,11 @@ static ConCommand xboxlook("xlook", IN_XboxStub);
 static ConCommand startdrop("+toss", IN_DropDown);
 static ConCommand enddrop("-toss", IN_DropUp);
 
-static ConCommand startaim("+aim", IN_AimDown);
-static ConCommand endaim("-aim", IN_AimUp);
+static ConCommand startaim("+aim", IN_ZoomDown);
+static ConCommand endaim("-aim", IN_ZoomUp);
 
-static ConCommand toggle_aim("toggle_aim", IN_AimToggle);
+static ConCommand starttoggleaim("+toggle_aim", IN_AimDown);
+static ConCommand stoptoggleaim("-toggle_aim", IN_AimUp);
 
 static ConCommand startleanleft("+leanl", IN_LeanLeftDown);
 static ConCommand endleanleft("-leanl", IN_LeanLeftUp);

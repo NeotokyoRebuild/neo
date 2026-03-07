@@ -6,6 +6,8 @@
 #include "neo_gamerules.h"
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_manager.h"
+#include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_cost.h"
 #include "bot/behavior/neo_bot_behavior.h"
 #include "bot/behavior/neo_bot_dead.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
@@ -89,6 +91,13 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 
 	// make sure our vision FOV matches the player's
 	me->GetVisionInterface()->SetFieldOfView( me->GetFOV() );
+
+	if (me->IsCarryingGhost())
+	{
+		// Don't waste cloak power
+		// Incidentally flashing cloak is fine, everyone can see you anyway
+		me->DisableCloak();
+	}
 
 	// track aim velocity ourselves, since body aim "steady" is too loose
 	float deltaYaw = me->EyeAngles().y - m_priorYaw;
@@ -174,6 +183,22 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 EventDesiredResult<CNEOBot> CNEOBotMainAction::OnKilled( CNEOBot *me, const CTakeDamageInfo& info )
 {
+	// Encourage bots to avoid areas that are deadly, taking into account everyone's death locations
+	// Intended to add some variance to pathing for similar starting scenarios
+	if ( const CNavArea *navArea = me->GetLastKnownArea() )
+	{
+		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_killed_penalty.GetFloat() );
+	}
+	else
+	{
+		// Fallback if GetLastKnownArea is null, try finding nearest nav area
+		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
+		if ( nearestArea )
+		{
+			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_killed_penalty.GetFloat() );
+		}
+	}
+
 	return TryChangeTo( new CNEOBotDead, RESULT_CRITICAL, "I died!" );
 }
 
@@ -236,6 +261,38 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 	else
 	{
 		me->PressRightButton();
+	}
+
+	// NEO Jank: For the current match, all bots share where they get stuck
+	// The reasoning is that bots on either team will get stuck in their respective half of the map
+	// so the overall fairness may balance out for both teams sharing common sticking points.
+	if ( const CNavArea *navArea = me->GetLastKnownArea() )
+	{
+		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
+	}
+	else
+	{
+		// Fallback if GetLastKnownArea is null, try finding nearest nav area
+		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
+		if ( nearestArea )
+		{
+			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
+		}
+	}
+
+	// Also penalize the immediate next nav area bot was trying to get to
+	if ( const PathFollower *path = me->GetCurrentPath() )
+	{
+		if ( const Path::Segment *currentGoal = path->GetCurrentGoal() )
+		{
+			if ( const Path::Segment *nextSegment = path->NextSegment( currentGoal ) )
+			{
+				if ( nextSegment->area )
+				{
+					CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nextSegment->area->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
+				}
+			}
+		}
 	}
 
 	return TryContinue();
@@ -573,8 +630,6 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 			if ( m_isWaitingForFullReload )
 			{
-				me->PressCrouchButton(0.3f);
-
 				if ( myWeapon->Clip1() < myWeapon->GetMaxClip1() )
 				{
 					return;
@@ -771,7 +826,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 					"Aiming at a visible ghoster threat");
 		}
 
-		if ( me->IsCombatWeapon( myWeapon ) )
+		if ( myWeapon && me->IsCombatWeapon( myWeapon ) )
 		{
 			if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
 			{
@@ -783,8 +838,6 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			}
 			else if (myWeapon->m_iClip1 <= 0)
 			{
-				me->EnableCloak(3.0f);
-				me->PressCrouchButton(0.3f);
 				if (m_isWaitingForFullReload)
 				{
 					// passthrough: don't introduce decision jitter
@@ -802,15 +855,9 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				}
 				return;
 			}
-			else if (myWeapon->GetNeoWepBits() & NEO_WEP_SUPPRESSED)
-			{
-				me->EnableCloak(3.0f);
-			}
-			else
-			{
-				// don't waste cloak budget on thermoptic disrupting weapon
-				me->DisableCloak();
-			}
+
+			// Even if my weapon is unsuppressed, better than nothing
+			me->EnableCloak(3.0f);
 
 			if ( me->IsContinuousFireWeapon( myWeapon ) )
 			{

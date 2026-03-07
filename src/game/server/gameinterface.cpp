@@ -1797,7 +1797,11 @@ void CServerGameDLL::GetSaveComment( char *text, int maxlength, float flMinutes,
 	// Try to find a matching title comment for this mapname
 	for ( i = 0; i < ARRAYSIZE(gTitleComments) && !pName; i++ )
 	{
+#ifdef NEO
+		if ( !V_strnicmp( mapname, gTitleComments[i].pBSPName, narrow_cast<int>( strlen(gTitleComments[i].pBSPName) ) ) )
+#else
 		if ( !Q_strnicmp( mapname, gTitleComments[i].pBSPName, strlen(gTitleComments[i].pBSPName) ) )
+#endif
 		{
 			// found one
 			int j;
@@ -2163,7 +2167,11 @@ void UpdateChapterRestrictions( const char *mapname )
 	chapterTitle[0] = 0;
 	for ( int i = 0; i < ARRAYSIZE(gTitleComments); i++ )
 	{
+#ifdef NEO
+		if ( !V_strnicmp( mapname, gTitleComments[i].pBSPName, narrow_cast<int>( strlen(gTitleComments[i].pBSPName) ) ) )
+#else
 		if ( !Q_strnicmp( mapname, gTitleComments[i].pBSPName, strlen(gTitleComments[i].pBSPName) ) )
+#endif
 		{
 			// found
 			Q_strncpy( chapterTitle, gTitleComments[i].pTitleName, sizeof( chapterTitle ) );
@@ -2507,6 +2515,9 @@ inline void CServerNetworkProperty::CheckTransmit( CCheckTransmitInfo *pInfo )
 	}
 } */
 
+#ifdef NEO
+ConVar cl_neo_pvs_cull_roaming_observer("cl_neo_pvs_cull_roaming_observer", "0", FCVAR_CLIENTDLL | FCVAR_USERINFO | FCVAR_ARCHIVE, "Cull entities against PVS when out of bounds in the roaming observer mode");
+#endif // NEO
 void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned short *pEdictIndices, int nEdicts )
 {
 	// NOTE: for speed's sake, this assumes that all networkables are CBaseEntities and that the edict list
@@ -2529,6 +2540,11 @@ void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned s
 #ifndef _X360
 	const bool bIsHLTV = pRecipientPlayer->IsHLTV();
 	const bool bIsReplay = pRecipientPlayer->IsReplay();
+#ifdef NEO
+	const char* recipientPlayerWantsPVSCull = engine->GetClientConVarValue(pRecipientPlayer->entindex(), "cl_neo_pvs_cull_roaming_observer");
+	const bool bRecipientPlayerWantsPVSCull = recipientPlayerWantsPVSCull && *recipientPlayerWantsPVSCull && (V_atoi(recipientPlayerWantsPVSCull) != 0) ? true : false;
+	const bool bIsRoamingOOBObserver = !bRecipientPlayerWantsPVSCull && pRecipientPlayer->GetObserverMode() == OBS_MODE_ROAMING && engine->GetArea( pRecipientPlayer->GetAbsOrigin()) == 0;
+#endif // NEO
 
 	// m_pTransmitAlways must be set if HLTV client
 	Assert( bIsHLTV == ( pInfo->m_pTransmitAlways != NULL) ||
@@ -2605,7 +2621,11 @@ void CServerGameEnts::CheckTransmit( CCheckTransmitInfo *pInfo, const unsigned s
 		CServerNetworkProperty *netProp = static_cast<CServerNetworkProperty*>( pEdict->GetNetworkable() );
 
 #ifndef _X360
+#ifdef NEO
+		if ( bIsHLTV || bIsReplay || bIsRoamingOOBObserver )
+#else
 		if ( bIsHLTV || bIsReplay )
+#endif // NEO
 		{
 			// for the HLTV/Replay we don't cull against PVS
 			if ( netProp->AreaNum() == skyBoxArea )

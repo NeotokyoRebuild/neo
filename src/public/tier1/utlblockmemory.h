@@ -136,10 +136,27 @@ CUtlBlockMemory<T,I>::~CUtlBlockMemory()
 template< class T, class I >
 void CUtlBlockMemory<T,I>::Swap( CUtlBlockMemory< T, I > &mem )
 {
+#ifdef NEO // non-const reference cannot bind to bit-field
+	decltype(m_pMemory) tmpMemory = m_pMemory;
+	decltype(m_nBlocks) blocks = m_nBlocks;
+	decltype(m_nIndexMask) idxMask = m_nIndexMask;
+	decltype(m_nIndexShift) idxShift = m_nIndexShift;
+
+	m_pMemory = mem.m_pMemory;
+	m_nBlocks = mem.m_nBlocks;
+	m_nIndexMask = mem.m_nIndexMask;
+	m_nIndexShift = mem.m_nIndexShift;
+
+	mem.m_pMemory = tmpMemory;
+	mem.m_nBlocks = blocks;
+	mem.m_nIndexMask = idxMask;
+	mem.m_nIndexShift = idxShift;
+#else
 	V_swap( m_pMemory, mem.m_pMemory );
 	V_swap( m_nBlocks, mem.m_nBlocks );
 	V_swap( m_nIndexMask, mem.m_nIndexMask );
 	V_swap( m_nIndexShift, mem.m_nIndexShift );
+#endif
 }
 
 

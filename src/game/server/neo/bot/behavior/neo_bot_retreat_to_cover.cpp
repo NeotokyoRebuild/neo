@@ -2,7 +2,9 @@
 
 #include "cbase.h"
 #include "neo_player.h"
+#include "neo_smokelineofsightblocker.h"
 #include "bot/neo_bot.h"
+#include "bot/behavior/neo_bot_grenade_dispatch.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
 
@@ -53,7 +55,33 @@ public:
 			{
 				// is area visible by known threat
 				if ( m_area->IsPotentiallyVisible( threatArea ) )
-					++m_exposedThreatCount;
+				{
+					// Is there smoke in this area that I can use for concealment?
+					bool bObscuredBySmoke = false;
+					CNEO_Player *pThreatPlayer = ToNEOPlayer( known.GetEntity() );
+					// Support class can see through smoke
+					if ( pThreatPlayer && (pThreatPlayer->GetClass() != NEO_CLASS_SUPPORT) )
+					{
+						ScopedSmokeLOS smokeScope( false );
+
+						Vector vecThreatEye = known.GetLastKnownPosition() + pThreatPlayer->GetViewOffset();
+						Vector vecCandidateArea = m_area->GetCenter() + m_me->GetViewOffset();
+
+						trace_t tr;
+						CTraceFilterSimple filter( known.GetEntity(), COLLISION_GROUP_NONE);
+						UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS, &filter, &tr );
+
+						if ( tr.fraction < 1.0f )
+						{
+							bObscuredBySmoke = true;
+						}
+					}
+
+					if ( !bObscuredBySmoke )
+					{
+						++m_exposedThreatCount;
+					}
+				}
 			}
 		}
 
@@ -206,6 +234,18 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		}
 	}
 #endif
+
+	// Consider throwing a grenade
+	if ( ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() ) &&
+	     threat && threat->GetEntity() && !me->IsLineOfFireClear( threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+	{
+		Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
+		if ( pGrenadeBehavior )
+		{
+			m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
+			return SuspendFor( pGrenadeBehavior, "Throwing grenade while taking cover!" );
+		}
+	}
 
 	// move to cover, or stop if we've found opportunistic cover (no visible threats right now)
 	if ( me->GetLastKnownArea() == m_coverArea || !threat )

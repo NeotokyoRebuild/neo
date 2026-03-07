@@ -40,16 +40,12 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropTime(RECVINFO(m_flLastAttackTime)),
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
-	RecvPropBool(RECVINFO(m_bRoundChambered)),
-	RecvPropBool(RECVINFO(m_bRoundBeingChambered)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
-	SendPropBool(SENDINFO(m_bRoundChambered)),
-	SendPropBool(SENDINFO(m_bRoundBeingChambered)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
@@ -61,8 +57,6 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bRoundChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
@@ -75,8 +69,6 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_flLastAttackTime, FIELD_TIME),
 	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
-	DEFINE_FIELD(m_bRoundChambered, FIELD_BOOLEAN),
-	DEFINE_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
@@ -116,6 +108,12 @@ const char *GetWeaponByLoadoutId(int id)
 // TODO: This lookup could be more efficient with sequential IDs a la SDK,
 // but we'll probably move this stuff to the weapon scripts anyway.
 static const WeaponHandlingInfo_t handlingTable[] = {
+	// NOTE: NEO_WEP_INVALID must be the first item!
+	{NEO_WEP_INVALID,
+		{{vec3_invalid, vec3_invalid, vec3_invalid, vec3_invalid}},
+		{0.0, 0.0, 0.0, 0.0},
+	},
+
 	{NEO_WEP_AA13,
 		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
@@ -234,9 +232,6 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 void CNEOBaseCombatWeapon::Precache()
 {
 	BaseClass::Precache();
-
-	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
-		PrecacheParticleSystem("ntr_muzzle_source");
 }
 
 void CNEOBaseCombatWeapon::Spawn()
@@ -254,7 +249,12 @@ void CNEOBaseCombatWeapon::Spawn()
 	m_iClip2 = GetWpnData().iMaxClip2;
 	m_iSecondaryAmmoCount = GetWpnData().iDefaultClip2;
 
+	// This case is used for handling guns for which handling doesn't make sense,
+	// for example the ghost, knife, grenades... Typically it is not used but the bot logic
+	// way want to know the spread of the ghost etc, so the invalid first slot is used to handle those.
 	m_weaponHandling = handlingTable[0];
+	AssertMsg(m_weaponHandling.weaponID == NEO_WEP_INVALID, "Expected the first m_weaponHandling item to be NEO_WEP_INVALID");
+	// Assuming this wasn't one of the above-mentioned "invalid" weapon handling entries, this is where we get the real one.
 	for (const auto& handling: handlingTable)
 	{
 		if (handling.weaponID & GetNeoWepBits())
@@ -323,16 +323,9 @@ void CNEOBaseCombatWeapon::Activate(void)
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ClientThink()
 {
-	if (GetOwner() && m_flTemperature > 0)
-	{
-		constexpr int DESIRED_TEMPERATURE_WHEN_HELD = 0;
-		m_flTemperature = max(DESIRED_TEMPERATURE_WHEN_HELD, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
-	}
-	else if (m_flTemperature < 1)
-	{
-		constexpr int DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
-		m_flTemperature = min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
-	}
+	const float temperatureChange = GetOwner() && m_flTemperature < THERMALS_OBJECT_TEMPERATURE_HELD ? TICK_INTERVAL * THERMALS_OBJECT_COOL_RATE : -TICK_INTERVAL * THERMALS_OBJECT_COOL_RATE;
+	m_flTemperature = Max(THERMALS_OBJECT_MIN_TEMPERATURE, Min(THERMALS_OBJECT_MAX_TEMPERATURE, m_flTemperature + temperatureChange));
+
 	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 }
 #endif // CLIENT_DLL
@@ -487,6 +480,23 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 			{
 				pOwner->SetMaxSpeed(pOwner->GetNormSpeed_WithWepEncumberment(this));
 			}
+
+			if (pOwner->m_nButtons & IN_ZOOM && IsAllowedToZoom(this))
+			{
+				// Should already be aiming, but doesn't hurt to check
+				if (!pOwner->IsInAim())
+				{
+					pOwner->Weapon_SetZoom(true);
+				}
+				else
+				{
+					pOwner->SetFOV(pOwner, GetWpnData().iAimFOV, 0.1);
+				}
+			}
+			else
+			{
+				pOwner->Weapon_SetZoom(false);
+			}
 		}
 	}
 
@@ -505,38 +515,8 @@ float CNEOBaseCombatWeapon::GetPenetration() const
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-#ifdef DEBUG
-	CNEO_Player* pOwner = NULL;
-	if (GetOwner())
-	{
-		pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
-		Assert(pOwner);
-	}
-#else
-	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
-#endif
-
-	if (pOwner)
-	{
-		if (auto pNeoSwitchingTo = static_cast<CNEOBaseCombatWeapon*>(pSwitchingTo);
-			!pNeoSwitchingTo || (pNeoSwitchingTo  && !IsAllowedToZoom(pNeoSwitchingTo)))
-		{
-			pOwner->Weapon_SetZoom(false);
-		}
-#ifdef CLIENT_DLL
-		IN_AimToggleReset();
-#endif // CLIENT_DLL
-	}
-
 	return BaseClass::Holster(pSwitchingTo);
 }
-
-#ifdef CLIENT_DLL
-void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
-{ // Overrides the base class behaviour of reloading the weapon after its been holstered for 3 seconds
-	return;
-}
-#endif
 
 void CNEOBaseCombatWeapon::CheckReload(void)
 {
@@ -581,6 +561,19 @@ void CNEOBaseCombatWeapon::UpdateInaccuracy()
 
 void CNEOBaseCombatWeapon::ItemPreFrame(void)
 {
+	BaseClass::ItemPreFrame();
+	UpdateInaccuracy();
+}
+
+void CNEOBaseCombatWeapon::ItemBusyFrame(void)
+{
+	BaseClass::ItemBusyFrame();
+	UpdateInaccuracy();
+}
+
+void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
+{
+	BaseClass::ItemHolsterFrame();
 	UpdateInaccuracy();
 }
 
@@ -604,13 +597,13 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		{
 			return;
 		}
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack);
+		m_flNextPrimaryAttack = Max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack.Get());
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	};
 
 	// NEO JANK (Adam) Why do we have to bombard the zr68l viewmodel with SendWeaponAnim(ACT_VM_IDLE_LOWERED) during sprint to make it act normally? Breakpoint in SendWeaponAnim isn't triggered by anything else after this animation is sent while sprinting
 	const bool loweredCheck = GetNeoWepBits() & NEO_WEP_ZR68_L ? true : !m_bLowered;
-	if (loweredCheck && !m_bInReload && !m_bRoundBeingChambered &&
+	if (loweredCheck && !m_bInReload &&
 		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = true;
@@ -621,16 +614,10 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		m_bLowered = false;
 		next(ACT_VM_IDLE);
 	}
-	else if (m_bLowered && m_bRoundBeingChambered)
-	{ // For bolt action weapons
-		m_bLowered = false;
-		next(ACT_VM_PULLBACK, 1.2f);
-	}
-
 	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
 		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextPrimaryAttack = Max(gpGlobals->curtime + 0.2f, m_flNextPrimaryAttack.Get());
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 }
@@ -645,7 +632,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 
 	UpdateAutoFire();
 
-	if (IsSemiAuto() && (pOwner->m_afButtonLast & IN_ATTACK) && !(pOwner->m_nButtons & IN_ATTACK))
+	if (IsSemiAuto() && !(pOwner->m_nButtons & IN_ATTACK))
 	{
 		m_bTriggerReset = true;
 	}
@@ -774,7 +761,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	// -----------------------
 	//  Reload pressed / Clip Empty
 	//  Can only start the Reload Cycle after the firing cycle
-	if ((pOwner->m_nButtons & IN_RELOAD) && m_flNextPrimaryAttack <= gpGlobals->curtime && UsesClipsForAmmo1() && !m_bInReload)
+	if ((pOwner->m_nButtons & IN_RELOAD) && UsesClipsForAmmo1() && !m_bInReload)
 	{
 		// reload when reload is pressed, or if no buttons are down and weapon is empty.
 		Reload();
@@ -800,7 +787,24 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 
 const WeaponSpreadInfo_t &CNEOBaseCombatWeapon::GetSpreadInfo()
 {
-	Assert(m_weaponHandling.weaponID & GetNeoWepBits());
+#ifdef DBGFLAG_ASSERT
+	// Special case for gracefully handling the bots requesting spread info for weird weapons
+	static_assert(NEO_WEP_INVALID == 0); // required this value to be zero for the logic to work
+	if (m_weaponHandling.weaponID == NEO_WEP_INVALID)
+	{
+		// Bits for all of the non-invalid guns which are allowed to use the invalid weaponhandling entry.
+		// These are the guns for which concepts like "spread" make no sense.
+		// Or more accurately, guns for which there is no entry in the global handlingTable.
+		const auto allowedInvalidSpreadInfoGuns = (
+			NEO_WEP_GHOST | NEO_WEP_KNIFE | NEO_WEP_EXPLOSIVE);
+		Assert(GetNeoWepBits() & allowedInvalidSpreadInfoGuns);
+	}
+	else
+	{
+		Assert(!(GetNeoWepBits() & NEO_WEP_INVALID));
+		Assert(m_weaponHandling.weaponID & GetNeoWepBits());
+	}
+#endif
 	return m_weaponHandling.spreadInfo[0];
 }
 
@@ -810,7 +814,7 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 
 	// We lerp from very accurate to inaccurate over time
 	static Vector cone;
-	auto weaponSpread = GetSpreadInfo();
+	const auto& weaponSpread = GetSpreadInfo();
 	if (pOwner && pOwner->IsInAim())
 	{
 		VectorLerp(
@@ -1010,7 +1014,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	info.m_flDistance = MAX_TRACE_LENGTH;
 	info.m_iAmmoType = m_iPrimaryAmmoType;
-	info.m_iTracerFreq = 0;
+	info.m_iTracerFreq = UsesTracers() ? 1 : 0;
 
 #if !defined( CLIENT_DLL )
 	// Fire the bullets
@@ -1030,7 +1034,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
 
-	m_flAccuracyPenalty = min(
+	m_flAccuracyPenalty = Min(
 		GetMaxAccuracyPenalty(),
 		m_flAccuracyPenalty + GetAccuracyPenalty() * sv_neo_accuracy_penalty_scale.GetFloat()
 	);
@@ -1099,7 +1103,8 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 
 	// Muzzle flash light
 	Vector vAttachment;
-	if (!GetAttachment(iAttachment, vAttachment))
+	QAngle angles;
+	if (!GetAttachment(iAttachment, vAttachment, angles))
 		return;
 
 	// environment light
@@ -1112,9 +1117,9 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 	el->color.g = 192;
 	el->color.b = 64;
 	el->color.exponent = 5;
-
+	
 	// Muzzle flash particle
-	ParticleProp()->Create("ntr_muzzle_source", PATTACH_POINT_FOLLOW, iAttachment);
+	FX_MuzzleEffect( vAttachment, angles, 0.5f, GetRefEHandle(), NULL, true );
 }
 
 void CNEOBaseCombatWeapon::DrawCrosshair()
@@ -1260,7 +1265,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
 	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 	int ret = 0;
-	
+
 	if (inThermalVision && (!pOwner || (pOwner && !pOwner->IsCloaked())))
 	{
 		IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);

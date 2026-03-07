@@ -14,6 +14,8 @@
 #include "toolframework_client.h"
 #ifdef NEO
 #include "c_hl2mp_player.h"
+#include "weapon_neobasecombatweapon.h"
+#include "sdk/sdk_basegrenade_projectile.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -299,15 +301,15 @@ EXPOSE_INTERFACE( CEntitySpeedProxy, IMaterialProxy, "EntitySpeed" IMATERIAL_PRO
 
 #ifdef NEO
 //-----------------------------------------------------------------------------
-// Returns how long ragdoll has existed, or 0 if not a C_BaseAnimating object
+// Returns Temperature of object
 //-----------------------------------------------------------------------------
-class CRagdollLifeTime : public CResultProxy
+class CBaseAnimatingTemperature : public CResultProxy
 {
 public:
 	void OnBind(void* pC_BaseEntity);
 };
 
-void CRagdollLifeTime::OnBind(void* pC_BaseEntity)
+void CBaseAnimatingTemperature::OnBind(void* pC_BaseEntity)
 {
 	Assert(m_pResult);
 
@@ -316,10 +318,14 @@ void CRagdollLifeTime::OnBind(void* pC_BaseEntity)
 	{
 		m_pResult->SetFloatValue(0);
 	}
+	else if (pEntity->IsPlayer())
+	{
+		m_pResult->SetFloatValue(THERMALS_OBJECT_MAX_TEMPERATURE);
+	}
 	else
 	{
 		const float lifeTime = gpGlobals->curtime - pEntity->m_flNeoCreateTime;
-		m_pResult->SetFloatValue(lifeTime);
+		m_pResult->SetFloatValue(Max(THERMALS_OBJECT_MIN_TEMPERATURE, THERMALS_OBJECT_MAX_TEMPERATURE - (THERMALS_OBJECT_COOL_RATE * lifeTime)));
 	}
 
 	if (ToolsEnabled())
@@ -328,41 +334,8 @@ void CRagdollLifeTime::OnBind(void* pC_BaseEntity)
 	}
 }
 
-EXPOSE_INTERFACE(CRagdollLifeTime, IMaterialProxy, "RagdollLifeTime" IMATERIAL_PROXY_INTERFACE_VERSION);
+EXPOSE_INTERFACE(CBaseAnimatingTemperature, IMaterialProxy, "BaseAnimatingTemperature" IMATERIAL_PROXY_INTERFACE_VERSION);
 
-//-----------------------------------------------------------------------------
-// Returns how long object existed client side
-//-----------------------------------------------------------------------------
-class CBaseAnimatingLifeTime : public CResultProxy
-{
-public:
-	void OnBind(void* pC_BaseEntity);
-};
-
-void CBaseAnimatingLifeTime::OnBind(void* pC_BaseEntity)
-{
-	Assert(m_pResult);
-
-	auto pEntity = dynamic_cast<C_BaseAnimating*>(BindArgToEntity(pC_BaseEntity));
-	if (!pEntity)
-	{
-		m_pResult->SetFloatValue(0);
-	}
-	else
-	{
-		const float lifeTime = gpGlobals->curtime - pEntity->m_flNeoCreateTime;
-		m_pResult->SetFloatValue(lifeTime);
-	}
-
-	if (ToolsEnabled())
-	{
-		ToolFramework_RecordMaterialParams(GetMaterial());
-	}
-}
-
-EXPOSE_INTERFACE(CBaseAnimatingLifeTime, IMaterialProxy, "BaseAnimatingLifeTime" IMATERIAL_PROXY_INTERFACE_VERSION);
-
-#include "weapon_neobasecombatweapon.h"
 //-----------------------------------------------------------------------------
 // Returns weapon temperature
 //-----------------------------------------------------------------------------
@@ -404,7 +377,6 @@ void CWeaponTemperature::OnBind(void* pC_BaseEntity)
 
 EXPOSE_INTERFACE(CWeaponTemperature, IMaterialProxy, "WeaponTemperature" IMATERIAL_PROXY_INTERFACE_VERSION);
 
-#include "sdk/sdk_basegrenade_projectile.h"
 //-----------------------------------------------------------------------------
 // Returns grenade projectile temperature
 //-----------------------------------------------------------------------------

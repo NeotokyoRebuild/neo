@@ -22,6 +22,11 @@ void CNEOBotLocomotion::Update( void )
 	// always 'crouch jump'
 	if ( IsOnGround() )
 	{
+		CNavArea* currentArea = me->GetLastKnownArea();
+		if (currentArea && (currentArea->GetAttributes() & NAV_MESH_CROUCH))
+		{
+			me->PressCrouchButton( 0.3f );
+		}
 #ifdef NEO
 		// NEO JANK resetting of crouch timer moved to NextBotPlayer::PressJumpButton
 		// so far crouch jump seems to still be working, but watch out for a regression

@@ -17,7 +17,7 @@ bool IsInGame();
 struct NeoNewGame
 {
 	wchar_t wszMap[64] = L"ntre_oilstain_ctg";
-	wchar_t wszHostname[64] = L"NEOTOKYO;REBUILD Listen Server";
+	wchar_t wszHostname[64] = NEO_GAME_NAME L" Listen Server";
 	int iMaxPlayers = 24;
 	int iBotQuota = 10;
 	int iBotDifficulty = 2;
@@ -231,15 +231,6 @@ public:
 	servernetadr_t m_favCacheNetAdr = {};
 	bool m_bFavCacheIsFav = false;
 	bool m_bAutoRefreshFav = false;
-
-	enum ERightClickServer
-	{
-		RIGHTCLICKSERVER_FAV = 0,
-		RIGHTCLICKSERVER_BLACKLIST,
-
-		RIGHTCLICKSERVER__TOTAL,
-	};
-	const wchar_t *pwszRightclickServer[RIGHTCLICKSERVER__TOTAL] = { L"", L"Add to blacklist" };
 };
 
 extern CNeoRoot *g_pNeoRoot;

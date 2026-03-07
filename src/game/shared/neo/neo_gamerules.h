@@ -20,6 +20,7 @@
 	#include "c_neo_player.h"
 #else
 	#include "neo_player.h"
+	#include "neo_ghost_spawn_point.h"
 	#include "utlhashtable.h"
 #endif
 
@@ -40,6 +41,10 @@ class CNEOGameRulesProxy : public CHL2MPGameRulesProxy
 public:
 	DECLARE_CLASS( CNEOGameRulesProxy, CHL2MPGameRulesProxy );
 	DECLARE_NETWORKCLASS();
+
+#ifdef CLIENT_DLL
+	void OnDataChanged(DataUpdateType_t updateType) override;
+#endif // CLIENT_DLL
 };
 
 class NEOViewVectors : public HL2MPViewVectors
@@ -116,6 +121,8 @@ enum NeoRoundStatus {
 	PostRound,
 	Pause,
 	Countdown,
+
+	RoundStatusTotal
 };
 
 enum NeoWinReason {
@@ -150,6 +157,7 @@ enum NeoHudElements : NEO_HUD_BITS_UNDERLYING_TYPE {
 	NEO_HUD_ELEMENT_WORLDPOS_MARKER = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 13),
 	NEO_HUD_ELEMENT_SCOREBOARD = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 14),
 	NEO_HUD_ELEMENT_PLAYER_PING = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 15),
+	NEO_HUD_ELEMENT_WORLDPOS_MARKER_ENT = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 16),
 };
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -359,8 +367,8 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
-    int roundNumber() const { return m_iRoundNumber; }
-    bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+    inline int roundNumber() const { return m_iRoundNumber; }
+    inline bool roundNumberIsEven() const { return (roundNumber() % 2 == 0); }
 
 #ifdef GLOWS_ENABLE
 	void GetTeamGlowColor(int teamNumber, float &r, float &g, float &b)
@@ -411,6 +419,7 @@ public:
 	bool m_bPausedByPreRoundFreeze = false;
 	bool m_bPausingTeamRequestedUnpause = false;
 	bool m_bThinkCheckClantags = false;
+	bool m_bRotatingMapRightNow = false;
 #endif
 	CNetworkVar(float, m_flPauseEnd);
 
@@ -424,12 +433,18 @@ private:
 public:
 	void JuggernautActivated(CNEO_Player *pPlayer);
 	void JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut);
+	void JuggernautTotalRemoval(CNEO_Juggernaut *pJuggernaut);
 private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
 	float m_flJuggernautDeathTime = 0.0f;
 	int m_iLastJuggernautTeam = TEAM_INVALID;
 	
+	// For looking up capture zone locations
+	friend class CNEOBotCtgCarrier;
+	friend class CNEOBotCtgEscort;
+	friend class CNEOBotCtgLoneWolf;
+
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
@@ -444,6 +459,9 @@ private:
 	int m_iPrintHelpCounter = 0;
 	bool m_bGamemodeTypeBeenInitialized = false;
 	friend class CNEO_GhostBoundary;
+	friend class CNEOGhostSpawnPoint;
+	friend class CMultiplayRules;
+	CUtlVector<CHandle<CNEOGhostSpawnPoint>> m_ghostSpawns;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
@@ -457,6 +475,8 @@ private:
 	CNetworkVar(bool, m_bCyberspaceLevel);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
+	CNetworkVar(bool, m_bIsMatchPoint);
+	CNetworkVar(bool, m_bIsInSuddenDeath);
 	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);
 	CNetworkString(m_szNeoNSFClantag, NEO_MAX_CLANTAG_LENGTH);
 

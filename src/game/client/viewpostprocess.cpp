@@ -91,9 +91,6 @@ ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );
 
 #ifdef NEO
 ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_USERINFO, "Whether to use SSAO.", true, 0.0f, true, 1.0f);
-//ConVar mat_neo_nv_enable("mat_neo_nv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
-ConVar mat_neo_mv_enable("mat_neo_mv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
-ConVar mat_neo_mv_noise_enable("mat_neo_noise_enable", "1", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
 ConVar mat_neo_colorblind_enable("mat_neo_colorblind_enable", "0", FCVAR_USERINFO, "Main switch to toggle color vision deficiency adjustments.", true, 0.0f, true, 1.0f);
 #endif
 
@@ -2337,7 +2334,7 @@ void DoSSAO(const int x, const int y, const int w, const int h)
 	}
 }
 
-void DoNightVision(const int x, const int y, const int w, const int h)
+void DoNEOVision(const int neoClass, const int x, const int y, const int w, const int h)
 {
 	CMatRenderContextPtr pRenderContext(materials);
 
@@ -2345,9 +2342,24 @@ void DoNightVision(const int x, const int y, const int w, const int h)
 	const int nSrcWidth = pFbTex->GetActualWidth();
 	const int nSrcHeight = pFbTex->GetActualHeight();
 
-	IMaterial *pNvMat = materials->FindMaterial("dev/nightvision", TEXTURE_GROUP_OTHER, true);
+	IMaterial* pVMat;
+	switch (neoClass)
+	{
+	case NEO_CLASS_RECON:
+	case NEO_CLASS_JUGGERNAUT:
+		pVMat = materials->FindMaterial("dev/neo_nightvision", TEXTURE_GROUP_OTHER, true);
+		break;
+	case NEO_CLASS_ASSAULT:
+		pVMat = materials->FindMaterial("dev/neo_motionvision", TEXTURE_GROUP_OTHER, true);
+		break;
+	case NEO_CLASS_SUPPORT:
+		pVMat = materials->FindMaterial("dev/neo_thermalvision", TEXTURE_GROUP_OTHER, true);
+		break;
+	default:
+		return;
+	}
 
-	if (!pNvMat || pNvMat->IsErrorMaterial())
+	if (IsErrorMaterial(pVMat))
 	{
 		Assert(false);
 		return;
@@ -2358,100 +2370,10 @@ void DoNightVision(const int x, const int y, const int w, const int h)
 
 	pRenderContext->CopyRenderTargetToTextureEx(pFbTex, renderTargetId, &DestRect, NULL);
 
-	pRenderContext->DrawScreenSpaceRectangle(pNvMat,
+	pRenderContext->DrawScreenSpaceRectangle(pVMat,
 		0, 0, w, h,
 		0, 0, nSrcWidth - 1, nSrcHeight - 1,
 		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
-}
-
-void DoThermalVision(const int x, const int y, const int w, const int h)
-{
-	CMatRenderContextPtr pRenderContext(materials);
-
-	ITexture* pFbTex = GetTV();
-	Assert((pFbTex != NULL) && (!pFbTex->IsError()));
-	const int nSrcWidth = pFbTex->GetActualWidth();
-	const int nSrcHeight = pFbTex->GetActualHeight();
-
-#ifdef DEBUG
-	// Our shader pipeline expects this to exist, so checking in debug
-	auto pGradMat = materials->FindTexture("dev/tvgrad2", TEXTURE_GROUP_OTHER, true);
-	Assert((pGradMat != NULL) && (!pGradMat->IsError()));
-#endif
-
-	IMaterial* pTvMat = materials->FindMaterial("dev/neo_thermalvision", TEXTURE_GROUP_OTHER, true);
-	if (!pTvMat || pTvMat->IsErrorMaterial())
-	{
-		Assert(false);
-		return;
-	}
-
-	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
-	const int renderTargetId = 0;
-	
-	pRenderContext->CopyRenderTargetToTextureEx(pFbTex, renderTargetId, &DestRect, NULL);
-
-	pRenderContext->DrawScreenSpaceRectangle(pTvMat,
-		0, 0, w, h,
-		0, 0, nSrcWidth - 1, nSrcHeight - 1,
-		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
-}
-
-void DoMotionVision(const int x, const int y, const int w, const int h)
-{
-	CMatRenderContextPtr pRenderContext(materials);
-
-	ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
-	const int nSrcWidth = pSrc->GetActualWidth();
-	const int nSrcHeight = pSrc->GetActualHeight();
-
-	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
-	const int renderTargetId = 0;
-
-	ITexture *pVM_MV = GetMV();
-	ITexture *pVM_MV_IM = GetMVIntermediate();
-
-	static int bufferIdx = 0;
-	const int numBuffers = 2;
-	ITexture *pVM_Buffer = GetMVBuffer(bufferIdx);
-	bufferIdx = (bufferIdx + 1) % numBuffers;
-
-	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
-	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV_IM, renderTargetId, &DestRect, NULL);
-	pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, renderTargetId, &DestRect, NULL);
-	
-	IMaterial *pMVMat_2 = materials->FindMaterial("dev/neo_motionvision_pass2", TEXTURE_GROUP_OTHER, true);
-	if (!pMVMat_2 || pMVMat_2->IsErrorMaterial())
-	{
-		Assert(false);
-		return;
-	}
-
-	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
-
-	pRenderContext->DrawScreenSpaceRectangle(
-		pMVMat_2,
-		0, 0, w, h,
-		0, 0, nSrcWidth - 1, nSrcHeight - 1,
-		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
-
-	if (mat_neo_mv_noise_enable.GetBool())
-	{
-		pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
-
-		IMaterial *pNoiseMat = materials->FindMaterial("dev/neo_motionvision_noise", TEXTURE_GROUP_OTHER, true);
-		if (!pNoiseMat || pNoiseMat->IsErrorMaterial())
-		{
-			Assert(false);
-			return;
-		}
-
-		pRenderContext->DrawScreenSpaceRectangle(
-			pNoiseMat,
-			0, 0, w, h,
-			0, 0, nSrcWidth - 1, nSrcHeight - 1,
-			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
-	}
 }
 
 void DoColorblindnessPostProcessing(const int x, const int y, const int w, const int h)
@@ -2937,45 +2859,10 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 		DoSSAO(x, y, w, h);
 	}
 
-	/*if (mat_neo_nv_enable.GetBool())
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+	if (pTargetPlayer && pTargetPlayer->IsInVision())
 	{
-		DoNightVision(x, y, w, h);
-	}*/
-
-	if (mat_neo_mv_enable.GetBool())
-	{
-		DoMotionVision(x, y, w, h);
-	}
-	else
-	{
-		auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
-		if (pTargetPlayer && pTargetPlayer->IsInVision())
-		{
-			switch (pTargetPlayer->GetClass())
-			{
-			case NEO_CLASS_RECON:
-			case NEO_CLASS_JUGGERNAUT:
-			{
-				DoNightVision(x, y, w, h);
-				break;
-			}
-			case NEO_CLASS_ASSAULT:
-			{
-				DoMotionVision(x, y, w, h);
-				break;
-			}
-			case NEO_CLASS_SUPPORT:
-			{
-				DoThermalVision(x, y, w, h);
-				break;
-			}
-			case NEO_CLASS_VIP:
-				// Cry a little
-				break;
-			default:
-				Assert(false);
-			}
-		}
+		DoNEOVision(pTargetPlayer->GetClass(), x, y, w, h);
 	}
 
 	if (mat_neo_colorblind_enable.GetBool())

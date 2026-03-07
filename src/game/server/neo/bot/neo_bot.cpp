@@ -154,7 +154,6 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 		iTeam = numJinrai < numNSF ? TEAM_JINRAI : numNSF < numJinrai ? TEAM_NSF : RandomInt(TEAM_JINRAI, TEAM_NSF);
 	}
 
-	char name[MAX_NAME_LENGTH];
 	int iNumAdded = 0;
 	for (i = 0; i < botCount; ++i)
 	{
@@ -555,13 +554,25 @@ CNEOBot::CNEOBot()
 	edict_t* edict = GetEntity()->edict();
 	if (edict)
 	{
-		engine->SetFakeClientConVarValue(edict, "neo_fov", "90");
-		engine->SetFakeClientConVarValue(edict, "cl_onlysteamnick", "0");
-		engine->SetFakeClientConVarValue(edict, "neo_name", "");
-		engine->SetFakeClientConVarValue(edict, "cl_neo_streamermode", "0");
-		engine->SetFakeClientConVarValue(edict, "neo_clantag", "");
-		engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", NEO_CROSSHAIR_DEFAULT);
-		engine->SetFakeClientConVarValue(edict, "hap_HasDevice", "0");
+		constexpr struct {
+			const char* name, *value;
+		} convars[] = {
+			{ "cl_neo_crosshair", NEO_CROSSHAIR_DEFAULT },
+			{ "cl_neo_pvs_cull_roaming_observer", "0" },
+			{ "cl_neo_streamermode", "0" },
+			{ "cl_neo_tachi_prefer_auto", "1" },
+			{ "cl_neo_taking_damage_sounds", "0" },
+			{ "cl_onlysteamnick", "0" },
+			{ "hap_HasDevice", "0" },
+			{ "neo_clantag", "" },
+			{ "neo_fov", "90" },
+			{ "neo_name", "" },
+		};
+
+		for (const auto& convar : convars)
+		{
+			engine->SetFakeClientConVarValue(edict, convar.name, convar.value);
+		}
 	}
 }
 
@@ -1480,7 +1491,8 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	// We do not care about slugs
 	if (bNotPrimary ||
 			(primaryWeapon &&
-			 	(!primaryWeapon->m_iPrimaryAmmoType ||
+			 	((primaryWeapon->GetNeoWepBits() & NEO_WEP_GHOST) ||
+			 	 !primaryWeapon->m_iPrimaryAmmoType ||
 				 (primaryWeapon->Clip1() + primaryWeapon->m_iPrimaryAmmoCount) <= 0)))
 	{
 		primaryWeapon = NULL;
@@ -1526,10 +1538,11 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 
 	CNEOBaseCombatWeapon* pChosen = NULL;
 
+#if 0
 	bool bCanSeeTarget = threat->GetTimeSinceLastSeen() < 0.2f;
-
 	// Don't stay in melee if they are far away, or we don't know where they are right now.
 	bool bInMeleeRange = !IsRangeGreaterThan(threat->GetLastKnownPosition(), 127.0f) && bCanSeeTarget;
+#endif
 
 	if (throwable)
 	{
@@ -1616,7 +1629,6 @@ void CNEOBot::ReloadIfLowClip(void)
 		{
 			ReleaseFireButton();
 			PressReloadButton();
-			PressCrouchButton(0.3f);
 		}
 	}
 }
@@ -2001,7 +2013,7 @@ void CNEOBot::RepathIfFriendlyBlockingLineOfFire()
 	{
 		Vector goal = pPath->GetEndPosition();
 
-		CNEOBotPathCost cost(this, SAFEST_ROUTE);
+		CNEOBotPathCost cost(this, DEFAULT_ROUTE);
 		if (m_repathAroundFriendlyFollower.Compute(this, goal, cost))
 		{
 			if (m_repathAroundFriendlyFollower.IsValid())

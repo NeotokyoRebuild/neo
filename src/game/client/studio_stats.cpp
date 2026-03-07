@@ -101,7 +101,9 @@ void StudioStats_FindClosestEntity( CClientRenderablesList *pClientRenderablesLi
 		return;
 	}
 
+#ifndef NEO
 	trace_t tr;
+#endif
 	Vector vecStart, vecEnd;
 	VectorMA( MainViewOrigin(), MAX_TRACE_LENGTH, MainViewForward(), vecEnd );
 	VectorMA( MainViewOrigin(), 10,   MainViewForward(), vecStart );
