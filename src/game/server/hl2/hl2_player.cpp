@@ -3973,8 +3973,7 @@ void CHL2_Player::ItemPostFrame()
 	{
 		m_bPlayUseDenySound = false;
 #ifdef NEO
-		CRecipientFilter filter;
-		filter.AddRecipient( this );
+		CSingleUserRecipientFilter filter( this );
 		EmitSound( filter, entindex(), "HL2Player.UseDeny" );
 #else
 		EmitSound( "HL2Player.UseDeny" );
