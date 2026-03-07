@@ -1409,7 +1409,10 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			}
 			NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
 			NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
-			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
+			if (pCrosshair->info.iCircleRad > 0)
+			{
+				NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
+			}
 			static_assert(sizeof(int) == sizeof(NeoHudCrosshairDynamicType));
 			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE__TOTAL, (int *)(&pCrosshair->info.eDynamicType));
 		}
