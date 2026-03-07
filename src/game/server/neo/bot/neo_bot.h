@@ -157,6 +157,7 @@ public:
 	bool EquipRequiredWeapon(void);								// if we're required to equip a specific weapon, do it.
 	void EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary = false);	// equip the best weapon we have to attack the given threat
 	void ReloadIfLowClip(bool bForceReload = false);
+	bool DropGhost();
 
 	void DropPrimaryWeapon(void);
 
@@ -171,6 +172,7 @@ public:
 	bool IsQuietWeapon(CNEOBaseCombatWeapon* weapon) const;				// return true if given weapon doesn't make much sound when used (ie: spy knife, etc)
 
 	bool IsEnvironmentNoisy(void) const;							// return true if there are/have been loud noises (ie: non-quiet weapons) nearby very recently
+	Vector GetAudibleEnemySoundPos(const Vector& vecReferencePos = CNEO_Player::VECTOR_INVALID_WAYPOINT, float flMaxRangeSq = -1.0f) const;
 
 	bool IsEnemy(const CBaseEntity* them) const OVERRIDE;
 
