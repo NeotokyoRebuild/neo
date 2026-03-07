@@ -16,6 +16,7 @@
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #include "bot/behavior/neo_bot_ladder_approach.h"
+#include "bot/behavior/neo_bot_ladder_climb.h"
 #include "bot/behavior/neo_bot_pause.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
@@ -326,22 +327,25 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForLadders( CNEOBot *me )
 		return Continue();
 	}
 
-	// Already using a ladder via locomotion interface
-	ILocomotion *mover = me->GetLocomotionInterface();
-	if ( mover->IsUsingLadder() || mover->IsAscendingOrDescendingLadder() )
-	{
-		return Continue();
-	}
-
 	// We're approaching a ladder - check distance
 	const float ladderApproachRange = 60.0f;
+	bool goingUp = (goal->how == GO_LADDER_UP);
 	Vector ladderPos = (goal->how == GO_LADDER_UP) 
 		? goal->ladder->m_bottom 
 		: goal->ladder->m_top;
 
+	// Already using a ladder via locomotion interface
+	ILocomotion *mover = me->GetLocomotionInterface();
+	if ( mover->IsUsingLadder() || mover->IsAscendingOrDescendingLadder() )
+	{
+		return SuspendFor(
+			new CNEOBotLadderClimb( goal->ladder, goingUp ),
+			goingUp ? "Encountered ladder up" : "Encountered ladder down" 
+		);
+	}
+
 	if ( me->GetAbsOrigin().DistToSqr( ladderPos ) < Square(ladderApproachRange) )
 	{
-		bool goingUp = (goal->how == GO_LADDER_UP);
 		return SuspendFor( 
 			new CNEOBotLadderApproach( goal->ladder, goingUp ), 
 			goingUp ? "Approaching ladder up" : "Approaching ladder down" 

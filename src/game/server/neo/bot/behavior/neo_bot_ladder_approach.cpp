@@ -22,7 +22,7 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 	}
 
 	// Timeout for approach phase
-	m_timeoutTimer.Start( 3.0f );
+	m_timeoutTimer.Start( 2.0f );
 
 	if ( me->IsDebugging( NEXTBOT_PATH ) )
 	{
@@ -31,6 +31,9 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 			m_bGoingUp ? "up" : "down",
 			m_ladder->m_length );
 	}
+
+	me->StopLookingAroundForEnemies();
+	me->SetAttribute( CNEOBot::IGNORE_ENEMIES );
 
 	return Continue();
 }
@@ -44,7 +47,7 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 		return Done( "Ladder approach timeout" );
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
 	if ( threat && threat->IsVisibleRecently() )
 	{
 		if ( me->IsDebugging( NEXTBOT_PATH ) )
@@ -129,7 +132,11 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 	else
 	{
 		// Within mount range - check if aligned to start climbing
-		if ( dot < ALIGN_DOT_THRESHOLD )
+		bool onLadder = ( me->GetMoveType() == MOVETYPE_LADDER ) ||
+						mover->IsUsingLadder() ||
+						mover->IsAscendingOrDescendingLadder();
+
+		if ( onLadder || dot < ALIGN_DOT_THRESHOLD )
 		{
 			if ( me->IsDebugging( NEXTBOT_PATH ) )
 			{
@@ -148,4 +155,28 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 	}
 
 	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotLadderApproach::OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction )
+{
+	me->StartLookingAroundForEnemies();
+	me->ClearAttribute( CNEOBot::IGNORE_ENEMIES );
+
+	if ( me->IsDebugging( NEXTBOT_PATH ) )
+	{
+		DevMsg( "%s: Finished ladder approach\n", me->GetDebugIdentifier() );
+	}
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult<CNEOBot> CNEOBotLadderApproach::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+{
+	return Done( "OnSuspend: Cancel out of ladder approach, situation will likely become stale." );
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult<CNEOBot> CNEOBotLadderApproach::OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+{
+	return Done( "OnResume: Cancel out of ladder approach, situation is likely stale." );
 }
