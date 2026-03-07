@@ -43,6 +43,9 @@ public:
 	virtual void Think() override;
 
 	bool CanSee(CBaseEntity *pEntity);
+	bool IsTargeting(CBaseEntity *pEntity) const;
+
+	CBaseEntity *GetDamageSource() const { return m_hDamageSource.Get(); }
 
 private:
 	enum TargetZone_e

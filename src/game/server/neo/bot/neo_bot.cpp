@@ -2546,6 +2546,11 @@ bool CNEOBot::IsEnemy(const CBaseEntity* them) const
 	if (them == this)
 		return false;
 
+	if ( FStrEq(STRING(them->m_iClassname), "neo_npc_targetsystem") )
+	{
+		return true;
+	}
+
 	if (!them->IsPlayer())
 		return false;
 

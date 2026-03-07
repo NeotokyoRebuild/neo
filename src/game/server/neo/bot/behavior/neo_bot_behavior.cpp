@@ -10,6 +10,7 @@
 #include "bot/neo_bot_path_cost.h"
 #include "bot/behavior/neo_bot_behavior.h"
 #include "bot/behavior/neo_bot_dead.h"
+#include "neo_npc_targetsystem.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
@@ -393,6 +394,17 @@ bool CNEOBotMainAction::IsImmediateThreat( const CBaseCombatCharacter *subject, 
 	if ( !me->IsLineOfFireClear( threat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 		return false;
 
+	CBaseEntity *pThreatEnt = threat->GetEntity();
+	if (pThreatEnt && pThreatEnt->ClassMatches("neo_npc_targetsystem"))
+	{
+		CNEO_NPCTargetSystem* pTargetSystem = static_cast<CNEO_NPCTargetSystem*>(pThreatEnt);
+		if (pTargetSystem->IsTargeting(me->GetEntity()))
+		{
+			// Target systems locking onto us are always an immediate threat regardless of range
+			return true;
+		}
+	}
+
 	Vector to = me->GetAbsOrigin() - threat->GetLastKnownPosition();
 	float threatRange = to.NormalizeInPlace();
 
@@ -485,6 +497,21 @@ const CKnownEntity *CNEOBotMainAction::SelectMoreDangerousThreatInternal( const 
 
 	bool isImmediateThreat1 = IsImmediateThreat( subject, threat1 );
 	bool isImmediateThreat2 = IsImmediateThreat( subject, threat2 );
+
+	// Prioritize target systems if they are an active threat over players
+	CBaseEntity *pThreatEnt1 = threat1->GetEntity();
+	CBaseEntity *pThreatEnt2 = threat2->GetEntity();
+	bool isTargetSystem1 = pThreatEnt1 && pThreatEnt1->ClassMatches("neo_npc_targetsystem");
+	bool isTargetSystem2 = pThreatEnt2 && pThreatEnt2->ClassMatches("neo_npc_targetsystem");
+
+	if (isTargetSystem1 && isImmediateThreat1 && (!isTargetSystem2 || !isImmediateThreat2))
+	{
+		return threat1;
+	}
+	else if (isTargetSystem2 && isImmediateThreat2 && (!isTargetSystem1 || !isImmediateThreat1))
+	{
+		return threat2;
+	}
 
 	if ( isImmediateThreat1 && !isImmediateThreat2 )
 	{
@@ -954,6 +981,17 @@ QueryResultType	CNEOBotMainAction::ShouldRetreat( const INextBot *bot ) const
 		if (myWeapon && myWeapon->m_bInReload)
 		{
 			return ANSWER_YES;
+		}
+
+		// Register Jeff the tank as a threat (ntre_rogue_ctg)
+		CBaseEntity *pThreatEnt = threat->GetEntity();
+		if (pThreatEnt && pThreatEnt->ClassMatches("neo_npc_targetsystem"))
+		{
+			CNEO_NPCTargetSystem* pTargetSystem = static_cast<CNEO_NPCTargetSystem*>(pThreatEnt);
+			if (pTargetSystem->IsTargeting(me->GetEntity()))
+			{
+				return ANSWER_YES;
+			}
 		}
 
 		if ( me->IsThreatFiringAtMe(threat->GetEntity())
