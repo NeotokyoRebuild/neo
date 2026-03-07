@@ -19,23 +19,28 @@ public:
 
 	virtual const char *GetName( void ) const override { return "ctgLoneWolf"; }
 
-private:
-	PathFollower m_path;
+protected:
+	static float GetDetpackDeployDistanceSq( CNEOBot *me );
+	Vector GetNearestCapturePoint( CNEOBot *me, bool bEnemyCapPoint );
+	bool UpdateGhostHandle( CNEOBot *me );
+	ActionResult< CNEOBot > UpdateLookAround( CNEOBot *me );
+
 	CHandle<CWeaponGhost> m_hGhost;
 	CountdownTimer m_repathTimer;
-	CountdownTimer m_useAttemptTimer;
-	bool m_bHasRetreatedFromGhost;
+	PathFollower m_path;
 
-	Vector m_vecDropThreatPos;
-	CHandle<CBaseEntity> m_hPursueTarget;
+private:
 	bool m_bPursuingDropThreat;
 
-	ActionResult< CNEOBot > UpdateLookAround( CNEOBot *me, const Vector &anchorPos );
-	CountdownTimer m_lookAroundTimer;
-	CountdownTimer m_stalemateTimer;
+	CHandle<CBaseEntity> m_hPursueTarget;
 
 	CountdownTimer m_capPointUpdateTimer;
-	Vector m_closestCapturePoint;
+	CountdownTimer m_lookAroundTimer;
+	CountdownTimer m_stalemateTimer;
+	CountdownTimer m_useAttemptTimer;
 
 	CUtlVector< CNavArea * > m_visibleAreas;
+
+	Vector m_closestCapturePoint;
+	Vector m_vecDropThreatPos;
 };
