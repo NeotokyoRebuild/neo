@@ -146,6 +146,10 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 			m_bInvestigatingGunfire = false;
 			m_vecAmbushHidingSpot = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 		}
+		else
+		{
+			me->EquipBestWeaponForThreat(threat);
+		}
 	}
 
 	if ( m_vecAmbushHidingSpot == CNEO_Player::VECTOR_INVALID_WAYPOINT )
@@ -307,6 +311,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 
 	if ( bShouldDetonate )
 	{
+		m_bInvestigatingGunfire = false;
 		if ( me->GetActiveWeapon() == m_hDetpackWeapon )
 		{
 			me->PressFireButton();
