@@ -86,6 +86,7 @@ class CNEO_Player;
 class CWeaponGhost;
 class CNEOBotCtgLoneWolf;
 class CNEOBotCtgLoneWolfAmbush;
+class CNEOBotCtgLoneWolfDetpack;
 class CNEOBotCtgLoneWolfSeek;
 class CNEOBotSeekAndDestroy;
 

@@ -5,6 +5,7 @@
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_ambush.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
+#include "bot/behavior/neo_bot_detpack_deploy.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 #include "neo_ghost_cap_point.h"
@@ -46,17 +47,21 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 		me->ReloadIfLowClip(true); // force reload true
 	}
 
-	const CWeaponDetpack *pDetpackWeapon = assert_cast<CWeaponDetpack*>( me->Weapon_OwnsThisType( "weapon_remotedet" ) );
+	CWeaponDetpack *const pDetpackWeapon = assert_cast<CWeaponDetpack*>( me->Weapon_OwnsThisType( "weapon_remotedet" ) );
 
 	if ( pDetpackWeapon && pDetpackWeapon->m_bThisDetpackHasBeenThrown && !pDetpackWeapon->m_bRemoteHasBeenTriggered )
 	{
 		return ChangeTo( new CNEOBotCtgLoneWolfAmbush(), "Detpack deployed, transitioning to ambush" );
 	}
 
-	const CNavArea *ghostArea = TheNavMesh->GetNearestNavArea( NEORules()->GetGhostPos() );
-	const CNavArea *myArea = me->GetLastKnownArea();
+	CNavArea *const ghostArea = TheNavMesh->GetNearestNavArea( NEORules()->GetGhostPos() );
+	CNavArea *const myArea = me->GetLastKnownArea();
 	if ( ghostArea && myArea && ghostArea->IsPotentiallyVisible( myArea ) )
 	{
+		if ( pDetpackWeapon && !pDetpackWeapon->m_bThisDetpackHasBeenThrown && NEORules()->m_pGhost )
+		{
+			return ChangeTo( new CNEOBotDetpackDeploy( NEORules()->GetGhostPos(), new CNEOBotCtgLoneWolfAmbush() ), "Moving to plant detpack" );
+		}
 		return ChangeTo( new CNEOBotCtgLoneWolfAmbush(), "Waiting in ambush near ghost" );
 	}
 
@@ -87,7 +92,7 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostInterception( CNEOBot *
 		return SuspendFor( new CNEOBotAttack, "Attacking the ghost carrier!" );
 	}
 
-	const Vector& vecInterceptGoal = NEORules()->GetGhostPos();
+	Vector vecInterceptGoal = NEORules()->GetGhostPos();
 	if ( vecInterceptGoal != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
 		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
@@ -123,7 +128,7 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostVisualCheck( CNEOBot *m
 	}
 
 	// Move to ghost's location to gain visual contact
-	const Vector& vecAcquireGoal = NEORules()->GetGhostPos();
+	Vector vecAcquireGoal = NEORules()->GetGhostPos();
 	if ( vecAcquireGoal != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
 		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
@@ -165,18 +170,16 @@ EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolf::OnStuck( CNEOBot *me )
 
 
 //---------------------------------------------------------------------------------------------
-Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
+Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me )
 {
 	if ( !me )
-	{
 		return CNEO_Player::VECTOR_INVALID_WAYPOINT;
-	}
 
 	const int iEnemyTeam = NEORules()->GetOpposingTeam( me->GetTeamNumber() );
 
 	if ( NEORules()->m_pGhostCaps.Count() > 0 )
 	{
-		const Vector* pBestPos = nullptr;
+		Vector bestPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 		float flNearestSq = FLT_MAX;
 		for ( int i = 0; i < NEORules()->m_pGhostCaps.Count(); ++i )
 		{
@@ -193,11 +196,11 @@ Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
 				if ( distSq < flNearestSq )
 				{
 					flNearestSq = distSq;
-					pBestPos = &pCapPoint->GetAbsOrigin();
-				}
+				bestPos = pCapPoint->GetAbsOrigin();
 			}
 		}
-		return pBestPos ? *pBestPos : CNEO_Player::VECTOR_INVALID_WAYPOINT;
+	}
+	return bestPos;
 	}
 
 	return CNEO_Player::VECTOR_INVALID_WAYPOINT;

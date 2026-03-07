@@ -21,7 +21,7 @@ protected:
 	virtual ActionResult< CNEOBot > ConsiderGhostInterception( CNEOBot *me, const CBaseCombatCharacter *pGhostOwner = nullptr );
 	virtual ActionResult< CNEOBot > ConsiderGhostVisualCheck( CNEOBot *me );
 
-	Vector GetNearestEnemyCapPoint( CNEOBot *me ) const;
+	Vector GetNearestEnemyCapPoint( CNEOBot *me );
 
 	CountdownTimer m_repathTimer;
 	PathFollower m_path;

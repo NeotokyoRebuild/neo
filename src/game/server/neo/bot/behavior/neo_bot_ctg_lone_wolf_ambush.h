@@ -3,6 +3,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 
+class CWeaponDetpack;
 //--------------------------------------------------------------------------------------------------------
 class CNEOBotCtgLoneWolfAmbush : public CNEOBotCtgLoneWolf
 {
