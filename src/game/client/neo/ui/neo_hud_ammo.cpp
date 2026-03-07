@@ -160,7 +160,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
 		
-	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || activeWep->GetNeoWepBits() & NEO_WEP_BALC)
+	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || (activeWep->GetNeoWepBits() & NEO_WEP_BALC))
 	{
 		char fireModeText[2]{ '\0' };
 

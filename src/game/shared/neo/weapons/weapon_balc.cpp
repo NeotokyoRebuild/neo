@@ -19,6 +19,7 @@
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponBALC, DT_WeaponBALC)
 
 BEGIN_NETWORK_TABLE(CWeaponBALC, DT_WeaponBALC)
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 #ifdef CLIENT_DLL
 	RecvPropBool(RECVINFO(m_bOverheated)),
 	RecvPropBool(RECVINFO(m_bCharging)),
@@ -38,6 +39,8 @@ END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponBALC)
+	DEFINE_NEO_BASE_WEP_PREDICTION
+
 	DEFINE_PRED_FIELD(m_bOverheated, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bCharging, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bCharged, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
@@ -165,7 +168,7 @@ void CWeaponBALC::PrimaryAttack(void)
 
 		QAngle angles;
 		VectorAngles(vecThrow, angles);
-		CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create("grenade_ar2", vecSrc, angles, pPlayer);
+		CGrenadeAR2 *pGrenade = assert_cast<CGrenadeAR2*>(Create("grenade_ar2", vecSrc, angles, pPlayer));
 		pGrenade->SetAbsVelocity(vecThrow);
 
 		pGrenade->SetLocalAngularVelocity(RandomAngle(-400, 400));
@@ -176,7 +179,7 @@ void CWeaponBALC::PrimaryAttack(void)
 		CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), 1000, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
 #endif
 		const int iAmmoCost = int((GetDefaultClip1() + 10) / BALC_CHARGE_SHOT_MAX);
-		m_iPrimaryAmmoCount = MAX(0, m_iPrimaryAmmoCount - iAmmoCost);
+		m_iPrimaryAmmoCount = Max(0, m_iPrimaryAmmoCount - iAmmoCost);
 
 		m_flNextPrimaryAttack = m_flNextPrimaryAttack + BALC_CHARGE_SHOT_RATE;
 
@@ -278,10 +281,10 @@ void CWeaponBALC::Think(void)
 	SetNextThink(gpGlobals->curtime + GetCoolingRate());
 }
 
-float CWeaponBALC::GetCoolingRate()
+const float CWeaponBALC::GetCoolingRate()
 {
 	auto pOwner = GetOwner();
-	if ((pOwner && pOwner->GetWaterLevel() == 3) || GetWaterLevel() == 3)
+	if ((pOwner && pOwner->GetWaterLevel() == WL_Eyes) || GetWaterLevel() == WL_Feet)
 	{
 		return BALC_UNDERWATER_COOLING_RATE;
 	}

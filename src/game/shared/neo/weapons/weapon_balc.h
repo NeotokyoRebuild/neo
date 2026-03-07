@@ -66,7 +66,7 @@ private:
 	CWeaponBALC(const CWeaponBALC &other);
 #ifdef GAME_DLL
 	virtual void Think() override;
-	float GetCoolingRate();
+	const float GetCoolingRate();
 #endif
 
 	CountdownTimer m_chargeTimer;
