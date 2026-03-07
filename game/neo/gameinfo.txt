@@ -4,7 +4,7 @@
 	Title       ""
 	Title2      ""
 	Type        Multiplayer_Only
-	Icon        "resource/icon"
+	Icon        "resource/icon_big"
 	NoModels    1
 	NoHIModel   1
 	NoCrosshair 1
