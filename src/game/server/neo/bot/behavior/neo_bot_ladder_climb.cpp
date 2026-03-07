@@ -9,7 +9,7 @@
 //---------------------------------------------------------------------------------------------
 CNEOBotLadderClimb::CNEOBotLadderClimb( const CNavLadder *ladder, bool goingUp )
 	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_bHasBeenOnLadder( false ),
-	  m_flLastZ( 0.0f ), m_flHighestZ( -FLT_MAX )
+	  m_flLastZ( 0.0f ), m_flHighestZ( -FLT_MAX ), m_bHasLeftGround( false )
 {
 }
 
@@ -33,6 +33,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 	ILocomotion *mover = me->GetLocomotionInterface();
 	m_flLastZ = mover->GetFeet().z;
 	m_flHighestZ = m_flLastZ;
+	m_bHasLeftGround = !mover->GetGround();
 	m_stuckTimer.Start( STUCK_CHECK_INTERVAL );
 
 	if ( me->IsDebugging( NEXTBOT_PATH ) )
@@ -58,13 +59,22 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	ILocomotion *mover = me->GetLocomotionInterface();
 	IBody *body = me->GetBodyInterface();
 
-	// Check if we're on the ladder (MOVETYPE_LADDER or locomotion says so)
+	// Check if we're on the ground
+	bool onGround = ( mover->GetGround() != nullptr );
+
+	// Update onLadder status
 	// Also treat being in the air (no ground entity) as "still on ladder" to prevent
 	// premature exit when the bot briefly pops off at the top of a ladder.
+	bool inAir = !onGround;
+	if ( inAir )
+	{
+		m_bHasLeftGround = true;
+	}
+
 	bool onLadder = ( me->GetMoveType() == MOVETYPE_LADDER ) ||
 	                mover->IsUsingLadder() ||
 	                mover->IsAscendingOrDescendingLadder() ||
-	                !mover->GetGround();
+	                inAir;
 
 	if ( onLadder )
 	{
@@ -74,6 +84,14 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	{
 		// We were on the ladder and are now firmly on ground - climb is complete
 		return Done( "Dismounted ladder - on solid ground" );
+	}
+
+	// Exit if we touch ground after having actually left it (e.g. at the bottom or top exit)
+	// This helps prevent "ladder tunnel vision" where the bot stays attached to the 
+	// ladder state while standing on a ledge.
+	if ( m_bHasBeenOnLadder && onGround && m_bHasLeftGround )
+	{
+		return Done( "Touched ground after progress - ladder climb finished" );
 	}
 
 	// Get current position and target
@@ -115,7 +133,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 		body->SetDesiredPosture( IBody::STAND );
 
 		// Check if we've reached the top
-		if ( currentZ >= targetZ - mover->GetStepHeight() && mover->GetGround() )
+		if ( currentZ >= targetZ - mover->GetStepHeight() && onGround )
 		{
 			return Done( "Reached top of ladder" );
 		}
@@ -165,7 +183,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	}
 	else
 	{
-		if ( currentZ <= targetZ + mover->GetStepHeight() && mover->GetGround() )
+		if ( currentZ <= targetZ + mover->GetStepHeight() && onGround )
 		{
 			return Done( "Reached bottom of ladder" );
 		}
