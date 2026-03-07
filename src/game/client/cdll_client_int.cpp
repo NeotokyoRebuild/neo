@@ -181,6 +181,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "ui/neo_loading.h"
 #include "ui/neo_root_serverbrowser.h"
 #include "neo_player_shared.h"
+#include "neo_crosshair.h"
 extern bool NeoRootCaptureESC();
 extern CNeoLoading *g_pNeoLoading;
 extern ConVar cl_neo_streamermode_autodetect_obs;
@@ -1039,6 +1040,7 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 
 #ifdef NEO
 	InitializeNeoClRenderer();
+	InitializeClNeoCrosshair();
 #ifdef DEBUG
 	InitializeDbgNeoClGitHashEdit();
 #endif // DEBUG

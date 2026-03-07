@@ -5,6 +5,7 @@
 #endif
 
 #include "in_buttons.h"
+#include "neo_crosshair.h"
 
 class C_NEO_Player;
 #include "c_hl2mp_player.h"

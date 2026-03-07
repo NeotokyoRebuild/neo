@@ -13,6 +13,7 @@ class INEOPlayerAnimState;
 #include "utldict.h"
 #include "hl2mp_player.h"
 #include "in_buttons.h"
+#include "neo_crosshair.h"
 
 #include "neo_player_shared.h"
 
