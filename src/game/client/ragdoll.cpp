@@ -271,7 +271,11 @@ void CRagdoll::PhysForceRagdollToSleep()
 }
 
 #define RAGDOLL_SLEEP_TOLERANCE	1.0f
+#ifdef NEO
+static ConVar ragdoll_sleepaftertime( "ragdoll_sleepaftertime", "5.0", 0, "After this many seconds of being basically stationary, the ragdoll will go to sleep." );
+#else
 static ConVar ragdoll_sleepaftertime( "ragdoll_sleepaftertime", "5.0f", 0, "After this many seconds of being basically stationary, the ragdoll will go to sleep." );
+#endif // NEO
 
 void CRagdoll::CheckSettleStationaryRagdoll()
 {

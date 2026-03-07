@@ -170,7 +170,11 @@ static ConVar mat_clipz( "mat_clipz", "1" );
 static ConVar r_screenfademinsize( "r_screenfademinsize", "0" );
 static ConVar r_screenfademaxsize( "r_screenfademaxsize", "0" );
 static ConVar cl_drawmonitors( "cl_drawmonitors", "1" );
+#ifdef NEO
+static ConVar r_eyewaterepsilon( "r_eyewaterepsilon", "10.0", FCVAR_CHEAT );
+#else
 static ConVar r_eyewaterepsilon( "r_eyewaterepsilon", "10.0f", FCVAR_CHEAT );
+#endif // NEO
 
 #ifdef TF_CLIENT_DLL
 static ConVar pyro_dof( "pyro_dof", "1", FCVAR_ARCHIVE );

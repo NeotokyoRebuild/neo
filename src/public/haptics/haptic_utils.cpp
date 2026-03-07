@@ -213,7 +213,11 @@ void HapticsHandleMsg_HapMeleeContact()
 {
 	haptics->HapticsPunch(hap_melee_scale.GetFloat(), QAngle(0,0,0));
 }
+#ifdef NEO
+ConVar hap_noclip_avatar_scale("hap_noclip_avatar_scale", "0.10", FCVAR_RELEASE|FCVAR_NEVER_AS_STRING);
+#else
 ConVar hap_noclip_avatar_scale("hap_noclip_avatar_scale", "0.10f", FCVAR_RELEASE|FCVAR_NEVER_AS_STRING);
+#endif // NEO
 void UpdateAvatarEffect(void)
 {
 	if(!haptics->HasDevice())
