@@ -52,6 +52,7 @@ public:
 	bool	Reload(void) { return false; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
+	static float GetArmingTime() { return 2.66f; } // see Rain's comment in DecrementAmmo
 
 	bool	CanDrop(void) OVERRIDE;
 	virtual bool CanAim() final { return false; }
