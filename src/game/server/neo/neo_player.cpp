@@ -3756,7 +3756,7 @@ void CNEO_Player::BecomeJuggernaut()
 	SetMaxHealth(MAX_HEALTH_FOR_CLASS[NEO_CLASS_JUGGERNAUT]);
 	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
-	//SetBloodColor(DONT_BLEED); Check C_HL2MP_Player::TraceAttack
+	SetBloodColor(DONT_BLEED);
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 	m_bAllowGibbing = false;
 	m_bInVision = false;

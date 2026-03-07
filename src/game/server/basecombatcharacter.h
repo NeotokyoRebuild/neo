@@ -481,7 +481,11 @@ private:
 	void				DestroyGlowEffect( void );
 
 protected:
+#ifdef NEO
+	CNetworkVar( int, m_bloodColor );
+#else
 	int			m_bloodColor;			// color of blood particless
+#endif
 
 	// -------------------
 	// combat ability data
