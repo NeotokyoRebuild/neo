@@ -53,22 +53,12 @@ ConVar sv_neo_serverside_beacons("sv_neo_serverside_beacons", "1", FCVAR_NOTIFY 
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
-	if (!pWep || pWep->m_bInReload)
+	if (!pWep || pWep->m_bInReload || !pWep->CanAim())
 	{
 		return false;
 	}
 
-	// These weapons are not allowed to be zoomed in with.
-	const auto forbiddenZooms =
-		NEO_WEP_DETPACK |
-		NEO_WEP_FRAG_GRENADE |
-		NEO_WEP_GHOST |
-		NEO_WEP_KNIFE |
-		NEO_WEP_PROX_MINE |
-		NEO_WEP_SMOKE_GRENADE |
-		NEO_WEP_BALC;
-
-	return !(pWep->GetNeoWepBits() & forbiddenZooms);
+	return true;
 }
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits)
