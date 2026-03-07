@@ -59,6 +59,9 @@ CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel
 	Assert(m_hTex > 0);
 	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/ctg/g_beacon_enemy", 1, false);
 
+	m_hCachedGhostCarrier = nullptr;
+	m_flNextGhostSearchTime = 0.0f;
+
 	SetVisible(true);
 }
 
@@ -93,6 +96,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		ghoster->GetTeamNumber() < FIRST_GAME_TEAM ||
 		!ghoster->IsAlive() || NEORules()->IsRoundOver())
 	{
+		DrawBotGhostCallout();
 		return;
 	}
 	Assert(ghoster->GetTeamNumber() < TEAM__TOTAL);
@@ -137,6 +141,85 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		float distTo;
 		if (ghost->BeaconRange(dummy, distTo))
 			DrawPlayer(distTo, dummy->GetAbsOrigin());
+	}
+}
+
+extern ConVar sv_neo_ghost_delay_secs;
+void CNEOHud_GhostBeacons::DrawBotGhostCallout()
+{
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!localPlayer)
+	{
+		return;
+	}
+
+	CNEO_Player* ghoster = nullptr;
+
+	// Check cache of last known ghoster
+	if (m_hCachedGhostCarrier.Get() && m_hCachedGhostCarrier->m_bCarryingGhost && m_hCachedGhostCarrier->IsAlive())
+	{
+		ghoster = m_hCachedGhostCarrier;
+	}
+	else if (gpGlobals->curtime >= m_flNextGhostSearchTime)
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			auto* player = ToNEOPlayer(UTIL_PlayerByIndex(i));
+			if (!player || !player->IsAlive() || !player->m_bCarryingGhost)
+			{
+				continue;
+			}
+
+			ghoster = player;
+			m_hCachedGhostCarrier = player;
+			break;
+		}
+
+		if (!ghoster)
+		{
+			m_hCachedGhostCarrier = nullptr;
+			// The ghost might be on the ground or not spawned yet.
+			// Throttle based on minimum ghost bootup time, since display is not relevant until then.
+			m_flNextGhostSearchTime = gpGlobals->curtime + Max(0.1f, sv_neo_ghost_delay_secs.GetFloat());
+		}
+	}
+
+	if (!ghoster || !ghoster->m_bCarryingGhost ||
+		ghoster->GetTeamNumber() < FIRST_GAME_TEAM ||
+		!ghoster->IsAlive() || NEORules()->IsRoundOver())
+	{
+		return;
+	}
+
+	if (!localPlayer->InSameTeam(ghoster))
+	{
+		return;
+	}
+
+	C_WeaponGhost* ghost;
+	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		ghost = assert_cast<C_WeaponGhost*>(GetNeoWepWithBits(ghoster, NEO_WEP_GHOST));
+	}
+	else
+	{
+		auto weapon = assert_cast<C_NEOBaseCombatWeapon*>(ghoster->GetActiveWeapon());
+		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
+	}
+
+	if (!ghost || !ghost->IsBootupCompleted())
+		return;
+
+	if (auto target = ghost->GetDesignatedTarget())
+	{
+		if (target->IsAlive())
+		{
+			float distTo;
+			if (ghost->BeaconRange(target, distTo))
+			{
+				DrawPlayer(distTo, target->GetAbsOrigin());
+			}
+		}
 	}
 }
 
