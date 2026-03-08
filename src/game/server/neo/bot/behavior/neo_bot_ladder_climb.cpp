@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_ladder_climb.h"
 #include "nav_ladder.h"
 #include "NextBot/Path/NextBotPathFollow.h"
@@ -86,6 +87,17 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	if ( m_timeoutTimer.IsElapsed() )
 	{
 		return Done( "Ladder climb timeout" );
+	}
+
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
+	if ( threat && threat->IsVisibleRecently() )
+	{
+		if ( me->IsDebugging( NEXTBOT_PATH ) )
+		{
+			DevMsg( "%s: Threat detected during ladder approach - engaging\n", me->GetDebugIdentifier() );
+		}
+		// ChangeTo: We may move away from ladder when fighting, so don't want to get stuck in ladder climb behavior
+		return ChangeTo( new CNEOBotAttack, "Interrupting climb to engage enemy" );
 	}
 
 	ILocomotion *mover = me->GetLocomotionInterface();
@@ -311,6 +323,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 void CNEOBotLadderClimb::OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction )
 {
 	me->StartLookingAroundForEnemies();
+	me->ClearAttribute( CNEOBot::IGNORE_ENEMIES );
 
 	if ( me->IsDebugging( NEXTBOT_PATH ) )
 	{

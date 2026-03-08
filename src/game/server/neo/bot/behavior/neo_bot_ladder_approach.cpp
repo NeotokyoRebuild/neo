@@ -47,7 +47,7 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 		return Done( "Ladder approach timeout" );
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
 	if ( threat && threat->IsVisibleRecently() )
 	{
 		if ( me->IsDebugging( NEXTBOT_PATH ) )
