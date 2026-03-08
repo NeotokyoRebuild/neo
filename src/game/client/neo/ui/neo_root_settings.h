@@ -174,6 +174,7 @@ struct NeoSettings
 		bool bNetworkCrosshair;
 		bool bInaccuracyInScope;
 		bool bHipFireCrosshair;
+		bool bFriendlyFireWarning;
 		bool bPreviewDynamicAccuracy;
 
 		// Textures
@@ -324,6 +325,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_crosshair_network);
 		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
 		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
+		CONVARREF_DEF(cl_neo_crosshair_friendly_fire_warning);
 
 		// Friendly Markers
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_marker);
