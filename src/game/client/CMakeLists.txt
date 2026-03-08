@@ -1656,6 +1656,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.h
 )
 
 target_sources_grouped(
@@ -1725,6 +1727,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_types.h
 )
 
 if(NEO_BUILD_WEAPON_PBK56S)
