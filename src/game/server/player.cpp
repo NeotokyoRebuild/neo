@@ -7008,6 +7008,7 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 
 		return true;
 	}
+
 	else if ( stricmp( cmd, "spec_goto" ) == 0 ) // chase next player
 	{
 		if ( ( GetObserverMode() == OBS_MODE_FIXED ||
