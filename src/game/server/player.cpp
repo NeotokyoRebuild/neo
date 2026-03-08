@@ -2779,7 +2779,7 @@ bool CBasePlayer::SetObserverTarget(CBaseEntity *target)
 {
 	if ( !IsValidObserverTarget( target ) )
 		return false;
-	
+
 	// set new target
 	m_hObserverTarget.Set( target ); 
 
@@ -7024,6 +7024,29 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 
 		return true;
 	}
+#ifdef NEO
+	else if ( stricmp( cmd, "spec_fastest_player" ) == 0 ) // chase next player
+	{
+		if ( GetObserverMode() > OBS_MODE_FIXED )
+		{
+			int fastestSpeedSquared = 0;
+			CBaseEntity* pFastestEntity = nullptr;
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				CBaseEntity* pPlayer = UTIL_EntityByIndex(i);
+				if (pPlayer && pPlayer->GetAbsVelocity().LengthSqr() > fastestSpeedSquared)
+				{
+					fastestSpeedSquared = pPlayer->GetAbsVelocity().LengthSqr();
+					pFastestEntity = pPlayer;
+				}
+			}
+
+			SetObserverTarget( pFastestEntity );
+		}
+
+		return true;
+	}
+#endif // NEO
 
 	else if ( stricmp( cmd, "spec_goto" ) == 0 ) // chase next player
 	{
