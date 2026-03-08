@@ -24,6 +24,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 
 	// Ignore enemies while climbing
 	me->StopLookingAroundForEnemies();
+	me->SetAttribute( CNEOBot::IGNORE_ENEMIES ); // suppress reaction to swap back to firearm
 
 	// Timeout based on ladder length
 	float estimatedClimbTime = m_ladder->m_length / MAX_CLIMB_SPEED + 2.0f;

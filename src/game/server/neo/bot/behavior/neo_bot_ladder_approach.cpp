@@ -32,6 +32,9 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 			m_ladder->m_length );
 	}
 
+	me->StopLookingAroundForEnemies();
+	me->SetAttribute( CNEOBot::IGNORE_ENEMIES );
+
 	return Continue();
 }
 
@@ -152,6 +155,18 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 	}
 
 	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotLadderApproach::OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction )
+{
+	me->StartLookingAroundForEnemies();
+	me->ClearAttribute( CNEOBot::IGNORE_ENEMIES );
+
+	if ( me->IsDebugging( NEXTBOT_PATH ) )
+	{
+		DevMsg( "%s: Finished ladder approach\n", me->GetDebugIdentifier() );
+	}
 }
 
 //---------------------------------------------------------------------------------------------
