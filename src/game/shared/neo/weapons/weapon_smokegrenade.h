@@ -39,6 +39,7 @@ public:
 
 	CWeaponSmokeGrenade();
 
+	NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const override { return NEO_WIDX_SMOKE_GRENADE; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_SMOKE_GRENADE | NEO_WEP_THROWABLE; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }

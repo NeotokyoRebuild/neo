@@ -1399,9 +1399,18 @@ void CHLClient::PostInit()
 	{
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarFixPrintable<MAX_PLAYER_NAME_LENGTH>);
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarFixPrintable<NEO_MAX_CLANTAG_LENGTH>);
-		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarFixPrintable<NEO_XHAIR_SEQMAX>);
+		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarCrosshairChangeCallback);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 		RestrictNeoClientCheats();
+
+		// Fixup invalid crosshair to default
+		ConVarRef cl_neo_crosshair("cl_neo_crosshair");
+		if (false == ValidateCrosshairSerial(cl_neo_crosshair.GetString()))
+		{
+			char szSequence[NEO_XHAIR_SEQMAX] = {};
+			DefaultCrosshairSerial(szSequence);
+			cl_neo_crosshair.SetValue(szSequence);
+		}
 
 		ConVar *sv_maxupdaterate = g_pCVar->FindVar( "sv_maxupdaterate" ); Assert(sv_maxupdaterate);
 		ConVar *cl_updaterate = g_pCVar->FindVar( "cl_updaterate" ); Assert(cl_updaterate);
@@ -1503,6 +1512,18 @@ void CHLClient::PostInit()
 				if (cl_updaterate->GetInt() == oldClUpdaterateDefault)
 				{
 					cl_updaterate->SetValue(svMaxUpdateRateDefault);
+				}
+			}
+
+			if (iCfgVerMajor < 29)
+			{
+				// Upgrade pre NEOXHAIR_SERIAL_ALPHA_V29 crosshairs to NEOXHAIR_SERIAL_ALPHA_V29+
+				CrosshairInfo xhairInfo = {};
+				if (ImportCrosshair(&xhairInfo, cl_neo_crosshair.GetString()))
+				{
+					char szExportSeq[NEO_XHAIR_SEQMAX];
+					ExportCrosshair(&xhairInfo, szExportSeq);
+					cl_neo_crosshair.SetValue(szExportSeq);
 				}
 			}
 

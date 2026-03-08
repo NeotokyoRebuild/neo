@@ -9,6 +9,9 @@ out
 
 /src/CMakeSettings.json
 
+# ctest
+/src/Testing
+
 # Possible symlink for fixing tools that hardcode "game/mod_hl2mp" - we use "game/neo".
 /game/mod_hl2mp
 
