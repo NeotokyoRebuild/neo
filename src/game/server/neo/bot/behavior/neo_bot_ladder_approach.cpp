@@ -22,7 +22,7 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 	}
 
 	// Timeout for approach phase
-	m_timeoutTimer.Start( 3.0f );
+	m_timeoutTimer.Start( 5.0f );
 
 	if ( me->IsDebugging( NEXTBOT_PATH ) )
 	{
@@ -129,7 +129,11 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 	else
 	{
 		// Within mount range - check if aligned to start climbing
-		if ( dot < ALIGN_DOT_THRESHOLD )
+		bool onLadder = ( me->GetMoveType() == MOVETYPE_LADDER ) ||
+						mover->IsUsingLadder() ||
+						mover->IsAscendingOrDescendingLadder();
+
+		if ( onLadder || dot < ALIGN_DOT_THRESHOLD )
 		{
 			if ( me->IsDebugging( NEXTBOT_PATH ) )
 			{
