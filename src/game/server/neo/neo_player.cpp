@@ -1363,19 +1363,12 @@ float CNEO_Player::GetFogObscuredRatio( float range ) const
 
 	if ( controller )
 	{
-		fogparams_t fog;
-		fog = controller->m_fog;
+		const fogparams_t fog = controller->m_fog;
 
 		if ( !fog.enable )
 			return 0.0f;
 
-		if ( range <= fog.start )
-			return 0.0f;
-
-		if ( range >= fog.end )
-			return 1.0f;
-
-		float ratio = (range - fog.start) / (fog.end - fog.start);
+		float ratio = RemapValClamped( range, fog.start, fog.end, 0.0f, 1.0f );
 		ratio = MIN( ratio, fog.maxdensity );
 		return ratio;
 	}
