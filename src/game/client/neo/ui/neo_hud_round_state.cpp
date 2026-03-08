@@ -554,17 +554,8 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	if (!g_PR)
 		return;
 
-	if (cl_neo_squad_hud_original.GetBool())
-	{
-		DrawPlayerList();
-		return;
-	}
-
-	// Draw players on top
-	int leftCount = 0;
-	int rightCount = 0;
-	if (NEORules()->IsTeamplay())
-	{
+	if (NEORules()->IsTeamplay() && (!cl_neo_squad_hud_original.GetBool() || localPlayerSpecOrNoTeam))
+	{ // Sort player list even if not drawing new hud so spectators can use commands
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{ // First pass update player values, and count them while we're doing it
 			constexpr const int INDEX_SHIFT = 6;
@@ -619,7 +610,19 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		}
 
 		m_nPlayerList.Sort([](const playerIndexAndTheirValue *first, const playerIndexAndTheirValue *second)->int{return second->playerValue - first->playerValue;});
+	}
 
+	if (cl_neo_squad_hud_original.GetBool())
+	{
+		DrawPlayerList();
+		return;
+	}
+
+	// Draw players on top
+	int leftCount = 0;
+	int rightCount = 0;
+	if (NEORules()->IsTeamplay())
+	{
 		// Fade background to make names easier to see
 		surface()->DrawSetColor(COLOR_DARK);
 		surface()->DrawFilledRectFade((m_iLeftOffset - 2) - (m_iLeftPlayersTotal * m_ilogoSize) - (m_iLeftPlayersTotal * 2), 0,
