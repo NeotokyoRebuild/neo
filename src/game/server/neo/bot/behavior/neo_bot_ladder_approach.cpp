@@ -153,3 +153,15 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 
 	return Continue();
 }
+
+//---------------------------------------------------------------------------------------------
+ActionResult<CNEOBot> CNEOBotLadderApproach::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+{
+	return Done( "OnSuspend: Cancel out of ladder approach, situation will likely become stale." );
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult<CNEOBot> CNEOBotLadderApproach::OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+{
+	return Done( "OnResume: Cancel out of ladder approach, situation is likely stale." );
+}

@@ -320,13 +320,11 @@ void CNEOBotLadderClimb::OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction )
 //---------------------------------------------------------------------------------------------
 ActionResult<CNEOBot> CNEOBotLadderClimb::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
 {
-	me->StartLookingAroundForEnemies();
-	return Continue();
+	return Done( "OnSuspend: Cancel out of ladder climb, situation will likely become stale." );
 }
 
 //---------------------------------------------------------------------------------------------
 ActionResult<CNEOBot> CNEOBotLadderClimb::OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction )
 {
-	me->StopLookingAroundForEnemies();
-	return Continue();
+	return Done( "OnResume: Cancel out of ladder climb, situation is likely stale." );
 }
