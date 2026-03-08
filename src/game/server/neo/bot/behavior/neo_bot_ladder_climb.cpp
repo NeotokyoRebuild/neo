@@ -25,7 +25,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 
 	// Ignore enemies while climbing
 	me->StopLookingAroundForEnemies();
-	me->SetAttribute( CNEOBot::IGNORE_ENEMIES ); // suppress reaction to swap back to firearm
+	me->SetAttribute( CNEOBot::IGNORE_ENEMIES );
 
 	// Timeout based on ladder length
 	float estimatedClimbTime = m_ladder->m_length / MAX_CLIMB_SPEED + 2.0f;
@@ -166,15 +166,10 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	//------------------------------------------------------------
 	// Normal ladder climbing phase
 	//------------------------------------------------------------
-
-	// Get current position and target (needed by both status checks and movement logic below)
 	const Vector& myPos = mover->GetFeet();
 	float currentZ = myPos.z;
 	float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
 
-	// Update onLadder status
-	// Also treat being in the air (no ground entity) as "still on ladder" to prevent
-	// premature exit when the bot briefly pops off at the top of a ladder.
 	bool inAir = !onGround;
 	if ( inAir )
 	{
@@ -189,33 +184,6 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	if ( onLadder )
 	{
 		m_bHasBeenOnLadder = true;
-	}
-	else if ( m_bHasBeenOnLadder )
-	{
-		// We were on the ladder and are now firmly on ground.
-		// For downward descents, only trigger dismount once we're near the bottom;
-		// the bot may still be standing on the upper staging platform when it first
-		// touches the ladder, so guard against a premature transition.
-		const float bottomZ = m_ladder->m_bottom.z;
-		const float nearBottomThreshold = mover->GetStepHeight() * 4.0f;
-		if ( m_bGoingUp || ( myPos.z <= bottomZ + nearBottomThreshold ) )
-		{
-			EnterDismountPhase( me );
-			return Continue();
-		}
-	}
-
-	// Transition to dismount if we touch ground after having left it.
-	// Same downward guard: don't fire while still on the upper platform.
-	if ( m_bHasBeenOnLadder && onGround && m_bHasLeftGround )
-	{
-		const float bottomZ = m_ladder->m_bottom.z;
-		const float nearBottomThreshold = mover->GetStepHeight() * 4.0f;
-		if ( m_bGoingUp || ( myPos.z <= bottomZ + nearBottomThreshold ) )
-		{
-			EnterDismountPhase( me );
-			return Continue();
-		}
 	}
 
 	// Track peak height for progress detection
@@ -234,7 +202,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 			float distToTarget = fabsf( currentZ - targetZ );
 			if ( distToTarget < mover->GetStepHeight() * 2.0f )
 			{
-				return Done( "Near target height with no vertical progress - considering climb complete" );
+				EnterDismountPhase( me );
 			}
 
 			if ( me->IsDebugging( NEXTBOT_PATH ) )
@@ -304,7 +272,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	else
 	{
 		// Check if we've reached the bottom - transition to dismount instead of exiting
-		if ( currentZ <= targetZ + mover->GetStepHeight() && onGround )
+		if ( currentZ <= targetZ + mover->GetStepHeight() )
 		{
 			EnterDismountPhase( me );
 			return Continue();
