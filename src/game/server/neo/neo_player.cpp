@@ -1926,21 +1926,26 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 	}
 	else if (FStrEq(args[0], "spec_player_entity_number"))
 	{
-		if (GetObserverMode() > OBS_MODE_FIXED && args.ArgC() == 2)
+		int observerMode = GetObserverMode();
+		if (observerMode > OBS_MODE_FIXED && args.ArgC() == 2)
 		{
 			int targetEntIndex = atoi( args[1] );
 			CBasePlayer* target = UTIL_PlayerByIndex(targetEntIndex);
 
 			if (SetObserverTarget( target )) {
 				m_bForcedObserverMode = false;
-				SetObserverMode(OBS_MODE_IN_EYE);
+				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
+				{
+					SetObserverMode(OBS_MODE_IN_EYE);
+				}
 			}
 		}
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_fastest_player" )) // chase fastest player
+	else if ( FStrEq(args[0], "spec_fastest_player" ))
 	{
-		if ( GetObserverMode() > OBS_MODE_FIXED )
+		int observerMode = GetObserverMode();
+		if ( observerMode > OBS_MODE_FIXED )
 		{
 			int fastestSpeedSquared = 0;
 			CBaseEntity* pFastestEntity = nullptr;
@@ -1953,68 +1958,116 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 					pFastestEntity = pPlayer;
 				}
 			}
-
-			SetObserverTarget( pFastestEntity );
+			
+			if (SetObserverTarget( pFastestEntity )) {
+				m_bForcedObserverMode = false;
+				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
+				{
+					SetObserverMode(OBS_MODE_IN_EYE);
+				}
+			}
 		}
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_hurt" )) // 
+	else if ( FStrEq(args[0], "spec_last_hurt" ))
 	{
-		if ( GetObserverMode() > OBS_MODE_FIXED )
+		int observerMode = GetObserverMode();
+		if ( observerMode > OBS_MODE_FIXED )
 		{
 			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastHurt);
-			SetObserverTarget(pPlayer);
+			if (SetObserverTarget( pPlayer )) {
+				m_bForcedObserverMode = false;
+				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
+				{
+					SetObserverMode(OBS_MODE_IN_EYE);
+				}
+			}
 		}
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_shooter" )) // 
+	else if ( FStrEq(args[0], "spec_last_shooter" ))
 	{
-		if ( GetObserverMode() > OBS_MODE_FIXED )
+		int observerMode = GetObserverMode();
+		if ( observerMode > OBS_MODE_FIXED )
 		{
 			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastShooter);
-			SetObserverTarget(pPlayer);
+			if (SetObserverTarget( pPlayer )) {
+				m_bForcedObserverMode = false;
+				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
+				{
+					SetObserverMode(OBS_MODE_IN_EYE);
+				}
+			}
 		}
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_event" )) // 
+	else if ( FStrEq(args[0], "spec_last_event" ))
 	{
-		if ( GetObserverMode() > OBS_MODE_FIXED )
+		int observerMode = GetObserverMode();
+		if ( observerMode > OBS_MODE_FIXED )
 		{
 			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastEvent);
-			SetObserverTarget(pPlayer);
+			if (SetObserverTarget( pPlayer )) {
+				m_bForcedObserverMode = false;
+				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
+				{
+					SetObserverMode(OBS_MODE_IN_EYE);
+				}
+			}
 		}
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_attacker" )) // 
+	else if ( FStrEq(args[0], "spec_last_attacker" ))
 	{
-		if ( GetObserverMode() > OBS_MODE_FIXED )
+		int observerMode = GetObserverMode();
+		if ( observerMode > OBS_MODE_FIXED )
 		{
 			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastAttacker);
-			SetObserverTarget(pPlayer);
+			if (SetObserverTarget( pPlayer )) {
+				m_bForcedObserverMode = false;
+				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
+				{
+					SetObserverMode(OBS_MODE_IN_EYE);
+				}
+			}
 		}
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_killer" )) // 
+	else if ( FStrEq(args[0], "spec_last_killer" ))
 	{
-		if ( GetObserverMode() > OBS_MODE_FIXED )
+		int observerMode = GetObserverMode();
+		if ( observerMode > OBS_MODE_FIXED )
 		{
 			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastKiller);
-			SetObserverTarget(pPlayer);
+			if (SetObserverTarget( pPlayer )) {
+				m_bForcedObserverMode = false;
+				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
+				{
+					SetObserverMode(OBS_MODE_IN_EYE);
+				}
+			}
 		}
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_ghoster" )) // 
+	else if ( FStrEq(args[0], "spec_last_ghoster" ))
 	{
-		if ( GetObserverMode() > OBS_MODE_FIXED )
+		int observerMode = GetObserverMode();
+		if ( observerMode > OBS_MODE_FIXED )
 		{
 			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastGhoster);
-			SetObserverTarget(pPlayer);
+			if (SetObserverTarget( pPlayer )) {
+				m_bForcedObserverMode = false;
+				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
+				{
+					SetObserverMode(OBS_MODE_IN_EYE);
+				}
+			}
 		}
 
 		return true;
@@ -2181,11 +2234,26 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 	}
 }
 
+ConVar cl_neo_spec_auto_observe_killer_if_observing_victim("cl_neo_spec_auto_observe_killer_if_observing_victim", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_USERINFO, "If the current observer target is killed when in eye or following, switch observer target to the killer", true, 0, true, 1);
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
 	CBaseEntity* pAttacker = info.GetAttacker();
-	if (pAttacker)
+	if (pAttacker && pAttacker->IsPlayer()) // we can only have players as a spectate target atm
+	{
 		m_iLastKiller = m_iLastEvent = pAttacker->entindex();
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			CBasePlayer* pObserver = dynamic_cast<CBasePlayer*>(UTIL_EntityByIndex(i));
+			if (pObserver && pObserver->IsObserver() && pObserver->GetObserverTarget() == this && (pObserver->GetObserverMode() == OBS_MODE_IN_EYE || pObserver->GetObserverMode() == OBS_MODE_CHASE))
+			{
+				const char* changeTarget = engine->GetClientConVarValue(pObserver->entindex(), "cl_neo_spec_auto_observe_killer_if_observing_victim");
+				if (changeTarget && *changeTarget && (V_atoi(changeTarget) != 0))
+				{
+					pObserver->SetObserverTarget(pAttacker);
+				}
+			}
+		}
+	}
 
 	if (!m_bForceServerRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
