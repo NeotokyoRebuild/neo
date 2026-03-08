@@ -9,7 +9,8 @@
 //---------------------------------------------------------------------------------------------
 CNEOBotLadderClimb::CNEOBotLadderClimb( const CNavLadder *ladder, bool goingUp )
 	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_bHasBeenOnLadder( false ),
-	  m_flLastZ( 0.0f ), m_flHighestZ( -FLT_MAX ), m_bHasLeftGround( false )
+	  m_flLastZ( 0.0f ), m_flHighestZ( -FLT_MAX ), m_bHasLeftGround( false ),
+	  m_bDismountPhase( false ), m_pExitArea( nullptr )
 {
 }
 
@@ -48,6 +49,36 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 }
 
 //---------------------------------------------------------------------------------------------
+void CNEOBotLadderClimb::EnterDismountPhase( CNEOBot *me )
+{
+	m_bDismountPhase = true;
+	m_dismountTimer.Start( DISMOUNT_TIMEOUT );
+
+	// Try to resolve the exit area from the current path
+	const PathFollower *path = me->GetCurrentPath();
+	if ( path && path->IsValid() )
+	{
+		const Path::Segment *seg = path->GetCurrentGoal();
+		// Walk forward past any ladder segments to find the ground exit
+		while ( seg && seg->ladder )
+		{
+			seg = path->NextSegment( seg );
+		}
+		if ( seg && seg->area )
+		{
+			m_pExitArea = seg->area;
+		}
+	}
+
+	if ( me->IsDebugging( NEXTBOT_PATH ) )
+	{
+		DevMsg( "%s: Entering dismount phase (exit area %s)\n",
+			me->GetDebugIdentifier(),
+			m_pExitArea ? "found" : "NOT found" );
+	}
+}
+
+//---------------------------------------------------------------------------------------------
 // Implementation based on ladder climbing logic in https://github.com/Dragoteryx/drgbase/
 ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 {
@@ -61,6 +92,67 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 
 	// Check if we're on the ground
 	bool onGround = ( mover->GetGround() != nullptr );
+
+	//------------------------------------------------------------
+	// Dismount phase: we've left the ladder, walk to exit NavArea
+	//------------------------------------------------------------
+	if ( m_bDismountPhase )
+	{
+		// Done: reached the target NavArea
+		if ( m_pExitArea && me->GetLastKnownArea() == m_pExitArea )
+		{
+			return Done( "Reached next NavArea after dismount" );
+		}
+
+		// Safety timeout
+		if ( m_dismountTimer.IsElapsed() )
+		{
+			return Done( "Dismount walk timed out" );
+		}
+
+		// Build look target toward exit area center with vertical bias preserved
+		const Vector& myPos = mover->GetFeet();
+		if ( m_pExitArea )
+		{
+			Vector exitCenter = m_pExitArea->GetCenter();
+
+			// Flatten the direction to horizontal, then re-add vertical look bias
+			Vector dir = exitCenter - myPos;
+			dir.z = 0.0f;
+
+			Vector lookTarget = myPos + dir;
+			if ( m_bGoingUp )
+			{
+				lookTarget.z += 64.0f;	// Look slightly upward while dismounting up
+			}
+			else
+			{
+				lookTarget.z -= 64.0f;	// Look slightly downward while dismounting down
+			}
+
+			body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr, "Walking to exit area" );
+			mover->Approach( exitCenter, 9999999.9f );
+
+			if ( me->IsDebugging( NEXTBOT_PATH ) )
+			{
+				NDebugOverlay::Line( myPos, exitCenter, 0, 255, 255, true, 0.1f );
+			}
+		}
+		else
+		{
+			// No exit area resolved - just push forward along the ladder normal
+			Vector pushDir = -m_ladder->GetNormal();
+			Vector pushTarget = myPos + 100.0f * pushDir;
+			body->AimHeadTowards( pushTarget, IBody::MANDATORY, 0.1f, nullptr, "Dismount push forward" );
+			mover->Approach( pushTarget, 9999999.9f );
+		}
+
+		return Continue();
+	}
+
+	//------------------------------------------------------------
+	// Normal ladder climbing phase
+	//------------------------------------------------------------
 
 	// Update onLadder status
 	// Also treat being in the air (no ground entity) as "still on ladder" to prevent
@@ -82,16 +174,16 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	}
 	else if ( m_bHasBeenOnLadder )
 	{
-		// We were on the ladder and are now firmly on ground - climb is complete
-		return Done( "Dismounted ladder - on solid ground" );
+		// We were on the ladder and are now firmly on ground - transition to dismount
+		EnterDismountPhase( me );
+		return Continue();
 	}
 
-	// Exit if we touch ground after having actually left it (e.g. at the bottom or top exit)
-	// This helps prevent "ladder tunnel vision" where the bot stays attached to the 
-	// ladder state while standing on a ledge.
+	// Transition to dismount if we touch ground after having left it
 	if ( m_bHasBeenOnLadder && onGround && m_bHasLeftGround )
 	{
-		return Done( "Touched ground after progress - ladder climb finished" );
+		EnterDismountPhase( me );
+		return Continue();
 	}
 
 	// Get current position and target
@@ -132,10 +224,11 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	{
 		body->SetDesiredPosture( IBody::STAND );
 
-		// Check if we've reached the top
+		// Check if we've reached the top - transition to dismount instead of exiting
 		if ( currentZ >= targetZ - mover->GetStepHeight() && onGround )
 		{
-			return Done( "Reached top of ladder" );
+			EnterDismountPhase( me );
+			return Continue();
 		}
 
 		// Near the top of the ladder: try to push toward the navmesh exit area
@@ -183,9 +276,11 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	}
 	else
 	{
+		// Check if we've reached the bottom - transition to dismount instead of exiting
 		if ( currentZ <= targetZ + mover->GetStepHeight() && onGround )
 		{
-			return Done( "Reached bottom of ladder" );
+			EnterDismountPhase( me );
+			return Continue();
 		}
 
 		// Climb down: Stare at bottom of ladder while moving forward to it

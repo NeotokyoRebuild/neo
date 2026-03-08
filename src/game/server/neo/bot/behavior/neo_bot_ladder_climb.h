@@ -2,6 +2,7 @@
 
 #include "NextBotBehavior.h"
 #include "bot/neo_bot.h"
+#include "nav_area.h"
 
 class CNavLadder;
 
@@ -30,15 +31,21 @@ private:
 	bool m_bGoingUp;
 	bool m_bHasBeenOnLadder;
 	bool m_bHasLeftGround;
+	bool m_bDismountPhase;
 
 	float m_flLastZ;
 	float m_flHighestZ;
 
 	const CNavLadder *m_ladder;
+	const CNavArea *m_pExitArea;
 	CountdownTimer m_timeoutTimer;
 	CountdownTimer m_stuckTimer;
+	CountdownTimer m_dismountTimer;
+
+	void EnterDismountPhase( CNEOBot *me );
 
 	static constexpr float STUCK_CHECK_INTERVAL = 1.0f;
 	static constexpr float STUCK_Z_TOLERANCE = 5.0f;
 	static constexpr float DISMOUNT_PUSH_DISTANCE = 16.0f;	// How close to target Z before we start pushing toward exit
+	static constexpr float DISMOUNT_TIMEOUT = 3.0f;			// Max time to walk toward exit area after leaving ladder
 };
