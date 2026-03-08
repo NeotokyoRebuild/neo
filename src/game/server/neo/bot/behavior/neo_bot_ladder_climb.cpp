@@ -154,6 +154,11 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	// Normal ladder climbing phase
 	//------------------------------------------------------------
 
+	// Get current position and target (needed by both status checks and movement logic below)
+	const Vector& myPos = mover->GetFeet();
+	float currentZ = myPos.z;
+	float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
+
 	// Update onLadder status
 	// Also treat being in the air (no ground entity) as "still on ladder" to prevent
 	// premature exit when the bot briefly pops off at the top of a ladder.
@@ -174,22 +179,31 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float interval )
 	}
 	else if ( m_bHasBeenOnLadder )
 	{
-		// We were on the ladder and are now firmly on ground - transition to dismount
-		EnterDismountPhase( me );
-		return Continue();
+		// We were on the ladder and are now firmly on ground.
+		// For downward descents, only trigger dismount once we're near the bottom;
+		// the bot may still be standing on the upper staging platform when it first
+		// touches the ladder, so guard against a premature transition.
+		const float bottomZ = m_ladder->m_bottom.z;
+		const float nearBottomThreshold = mover->GetStepHeight() * 4.0f;
+		if ( m_bGoingUp || ( myPos.z <= bottomZ + nearBottomThreshold ) )
+		{
+			EnterDismountPhase( me );
+			return Continue();
+		}
 	}
 
-	// Transition to dismount if we touch ground after having left it
+	// Transition to dismount if we touch ground after having left it.
+	// Same downward guard: don't fire while still on the upper platform.
 	if ( m_bHasBeenOnLadder && onGround && m_bHasLeftGround )
 	{
-		EnterDismountPhase( me );
-		return Continue();
+		const float bottomZ = m_ladder->m_bottom.z;
+		const float nearBottomThreshold = mover->GetStepHeight() * 4.0f;
+		if ( m_bGoingUp || ( myPos.z <= bottomZ + nearBottomThreshold ) )
+		{
+			EnterDismountPhase( me );
+			return Continue();
+		}
 	}
-
-	// Get current position and target
-	const Vector& myPos = mover->GetFeet();
-	float currentZ = myPos.z;
-	float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
 
 	// Track peak height for progress detection
 	if ( currentZ > m_flHighestZ )
