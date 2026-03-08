@@ -2,11 +2,9 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/neo_bot_path_compute.h"
-#include "tier1/utlstringmap.h"
 #include "weapon_neobasecombatweapon.h"
 #include "neo_player_shared.h"
 #include "nav_mesh.h"
-#include <bit>
 
 //---------------------------------------------------------------------------------------------
 // Mask of non-identity "tag" bits that GetNeoWepBits() may include
@@ -19,7 +17,12 @@ static constexpr int BOT_WEP_PREF_RANK_EMPTY = -2;
 //---------------------------------------------------------------------------------------------
 bool IsUndroppablePrimary( CBaseCombatWeapon *pPrimary )
 {
-	CNEOBaseCombatWeapon *pNeoWep = assert_cast<CNEOBaseCombatWeapon*>( pPrimary );
+	if ( !pPrimary )
+	{
+		return false;
+	}
+
+	CNEOBaseCombatWeapon *pNeoWep = ToNEOWeapon( pPrimary );
 	if ( !pNeoWep )
 	{
 		return false;
@@ -128,7 +131,7 @@ CBaseEntity *FindNearestPrimaryWeapon( CNEOBot *me, bool bAllowDropGhost, CNEOIg
 	{
 		myPrefRank = BOT_WEP_PREF_RANK_UNPREFERRED;
 		bHasReserveAmmo = pPrimary->GetPrimaryAmmoCount() > 0;
-		CNEOBaseCombatWeapon *pMyNeoWep = assert_cast<CNEOBaseCombatWeapon*>( pPrimary->MyCombatWeaponPointer() );
+		CNEOBaseCombatWeapon *pMyNeoWep = ToNEOWeapon( pPrimary );
 		if ( pMyNeoWep )
 		{
 			myPrefRank = GetBotWeaponPreferenceRank( me, pMyNeoWep->GetNeoWepBits() );
@@ -159,7 +162,7 @@ CBaseEntity *FindNearestPrimaryWeapon( CNEOBot *me, bool bAllowDropGhost, CNEOIg
 				continue;
 			}
 
-			CNEOBaseCombatWeapon *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon*>(pWeapon);
+			CNEOBaseCombatWeapon *pNeoWeapon = ToNEOWeapon( pWeapon );
 			if ( !pNeoWeapon )
 			{
 				continue;
@@ -249,11 +252,11 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::OnStart( CNEOBot *me, Action< CNEOBot
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
 	if ( IsUndroppablePrimary( pPrimary ) )
 	{
-		// Don't scavenge if we have an weapon like the balc or smac
+		// Don't scavenge if we have a weapon like the balc or smac
 		return Done("Equipped with an un-droppable weapon, will not seek");
 	}
 
-	if ( !m_hTargetWeapon || m_hTargetWeapon.Get() == nullptr )
+	if ( !m_hTargetWeapon )
 	{
 		m_hTargetWeapon = FindNearestPrimaryWeapon( me, false, m_pIgnoredWeapons );
 	}
@@ -276,7 +279,7 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::OnStart( CNEOBot *me, Action< CNEOBot
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekWeapon::Update( CNEOBot *me, float interval )
 {
-	if (!m_hTargetWeapon || m_hTargetWeapon.Get() == nullptr)
+	if ( !m_hTargetWeapon )
 	{
 		return Done("No weapon to seek");
 	}
@@ -317,13 +320,18 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::Update( CNEOBot *me, float interval )
 	if ( pPrimary )
 	{
 		int myPrefRank = BOT_WEP_PREF_RANK_UNPREFERRED;
-		CNEOBaseCombatWeapon *pMyNeoWep = assert_cast<CNEOBaseCombatWeapon*>( pPrimary->MyCombatWeaponPointer() );
+		CNEOBaseCombatWeapon *pMyNeoWep = ToNEOWeapon( pPrimary );
 		if ( pMyNeoWep )
 		{
 			myPrefRank = GetBotWeaponPreferenceRank( me, pMyNeoWep->GetNeoWepBits() );
 		}
 
-		CNEOBaseCombatWeapon *pTargetNeoWep = assert_cast<CNEOBaseCombatWeapon*>( m_hTargetWeapon->MyCombatWeaponPointer() );
+		CNEOBaseCombatWeapon *pTargetNeoWep = ToNEOWeapon( m_hTargetWeapon.Get() );
+		if ( !pTargetNeoWep )
+		{
+			return Done( "Target weapon is invalid or not a NEO weapon" );
+		}
+
 		const bool bIsUpgrade = IsWeaponPreferenceUpgrade( me, pTargetNeoWep, myPrefRank, pPrimary->GetPrimaryAmmoCount() > 0 );
 
 		if ( bIsUpgrade )
@@ -352,7 +360,10 @@ ActionResult< CNEOBot > CNEOBotSeekWeapon::OnResume( CNEOBot *me, Action< CNEOBo
 {
 	m_hTargetWeapon = nullptr;
 	m_repathTimer.Invalidate();
-	FindAndPathToWeapon(me);
+	if ( !FindAndPathToWeapon( me ) )
+	{
+		return Done( "No weapon found on resume" );
+	}
 	return Continue();
 }
 
@@ -368,7 +379,7 @@ EventDesiredResult< CNEOBot > CNEOBotSeekWeapon::OnStuck( CNEOBot *me )
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotSeekWeapon::OnMoveToSuccess( CNEOBot *me, const Path *path )
 {
-	return TryContinue();
+	return TryDone();
 }
 
 //---------------------------------------------------------------------------------------------

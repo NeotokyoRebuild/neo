@@ -24,6 +24,9 @@ CNEOBotCtgLoneWolf::CNEOBotCtgLoneWolf( void )
 }
 
 //---------------------------------------------------------------------------------------------
+CNEOBotCtgLoneWolf::~CNEOBotCtgLoneWolf() = default;
+
+//---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_hGhost = nullptr;

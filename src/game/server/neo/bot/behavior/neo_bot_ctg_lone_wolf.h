@@ -10,6 +10,7 @@ class CNEOBotCtgLoneWolf : public Action< CNEOBot >
 {
 public:
 	CNEOBotCtgLoneWolf( void );
+	virtual ~CNEOBotCtgLoneWolf();
 
 	virtual ActionResult< CNEOBot > OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot > Update( CNEOBot *me, float interval ) override;
