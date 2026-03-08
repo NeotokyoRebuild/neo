@@ -46,6 +46,6 @@ private:
 
 	static constexpr float STUCK_CHECK_INTERVAL = 1.0f;
 	static constexpr float STUCK_Z_TOLERANCE = 5.0f;
-	static constexpr float DISMOUNT_PUSH_DISTANCE = 16.0f;	// How close to target Z before we start pushing toward exit
-	static constexpr float DISMOUNT_TIMEOUT = 3.0f;			// Max time to walk toward exit area after leaving ladder
+	static constexpr float DISMOUNT_PUSH_DISTANCE = 16.0f; // How close to target Z before we start pushing toward exit
+	static constexpr float DISMOUNT_TIMEOUT = 3.0f;	// Max time to walk toward exit area after leaving ladder
 };
