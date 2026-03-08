@@ -226,6 +226,9 @@ void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 		return;
 
 	auto neoOwner = assert_cast<CNEO_Player*>(pNewOwner);
+#ifdef GAME_DLL
+	neoOwner->SetLastGhoster();
+#endif // GAME_DLL
 
 	// Prevent ghoster from sprinting
 	if (neoOwner->IsSprinting())

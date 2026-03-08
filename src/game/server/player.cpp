@@ -6994,22 +6994,6 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-#ifdef NEO
-	else if (stricmp(cmd, "spec_player_entity_number") == 0)
-	{
-		if (GetObserverMode() > OBS_MODE_FIXED && args.ArgC() == 2)
-		{
-			int targetEntIndex = atoi( args[1] );
-			CBasePlayer* target = UTIL_PlayerByIndex(targetEntIndex);
-
-			if (SetObserverTarget( target )) {
-				m_bForcedObserverMode = false;
-				SetObserverMode(OBS_MODE_IN_EYE);
-			}
-		}
-		return true;
-	}
-#endif // NEO
 	else if ( stricmp( cmd, "spec_player" ) == 0 ) // chase next player
 	{
 		if ( GetObserverMode() > OBS_MODE_FIXED && args.ArgC() == 2 )
@@ -7024,30 +7008,6 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-#ifdef NEO
-	else if ( stricmp( cmd, "spec_fastest_player" ) == 0 ) // chase next player
-	{
-		if ( GetObserverMode() > OBS_MODE_FIXED )
-		{
-			int fastestSpeedSquared = 0;
-			CBaseEntity* pFastestEntity = nullptr;
-			for (int i = 1; i <= gpGlobals->maxClients; i++)
-			{
-				CBaseEntity* pPlayer = UTIL_EntityByIndex(i);
-				if (pPlayer && pPlayer->GetAbsVelocity().LengthSqr() > fastestSpeedSquared)
-				{
-					fastestSpeedSquared = pPlayer->GetAbsVelocity().LengthSqr();
-					pFastestEntity = pPlayer;
-				}
-			}
-
-			SetObserverTarget( pFastestEntity );
-		}
-
-		return true;
-	}
-#endif // NEO
-
 	else if ( stricmp( cmd, "spec_goto" ) == 0 ) // chase next player
 	{
 		if ( ( GetObserverMode() == OBS_MODE_FIXED ||

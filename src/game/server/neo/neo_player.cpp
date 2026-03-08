@@ -141,6 +141,13 @@ END_SCRIPTDESC();
 
 static constexpr int SHOWMENU_STRLIMIT = 512;
 
+int CNEO_Player::m_iLastHurt = -1;
+int CNEO_Player::m_iLastShooter = -1;
+int CNEO_Player::m_iLastEvent = -1;
+int CNEO_Player::m_iLastAttacker = -1;
+int CNEO_Player::m_iLastKiller = -1;
+int CNEO_Player::m_iLastGhoster = -1;
+
 const Vector CNEO_Player::VECTOR_INVALID_WAYPOINT = vec3_invalid;
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -1917,6 +1924,101 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
+	else if (FStrEq(args[0], "spec_player_entity_number"))
+	{
+		if (GetObserverMode() > OBS_MODE_FIXED && args.ArgC() == 2)
+		{
+			int targetEntIndex = atoi( args[1] );
+			CBasePlayer* target = UTIL_PlayerByIndex(targetEntIndex);
+
+			if (SetObserverTarget( target )) {
+				m_bForcedObserverMode = false;
+				SetObserverMode(OBS_MODE_IN_EYE);
+			}
+		}
+		return true;
+	}
+	else if ( FStrEq(args[0], "spec_fastest_player" )) // chase fastest player
+	{
+		if ( GetObserverMode() > OBS_MODE_FIXED )
+		{
+			int fastestSpeedSquared = 0;
+			CBaseEntity* pFastestEntity = nullptr;
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				CBaseEntity* pPlayer = UTIL_EntityByIndex(i);
+				if (pPlayer && pPlayer->GetAbsVelocity().LengthSqr() > fastestSpeedSquared)
+				{
+					fastestSpeedSquared = pPlayer->GetAbsVelocity().LengthSqr();
+					pFastestEntity = pPlayer;
+				}
+			}
+
+			SetObserverTarget( pFastestEntity );
+		}
+
+		return true;
+	}
+	else if ( FStrEq(args[0], "spec_last_hurt" )) // 
+	{
+		if ( GetObserverMode() > OBS_MODE_FIXED )
+		{
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastHurt);
+			SetObserverTarget(pPlayer);
+		}
+
+		return true;
+	}
+	else if ( FStrEq(args[0], "spec_last_shooter" )) // 
+	{
+		if ( GetObserverMode() > OBS_MODE_FIXED )
+		{
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastShooter);
+			SetObserverTarget(pPlayer);
+		}
+
+		return true;
+	}
+	else if ( FStrEq(args[0], "spec_last_event" )) // 
+	{
+		if ( GetObserverMode() > OBS_MODE_FIXED )
+		{
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastEvent);
+			SetObserverTarget(pPlayer);
+		}
+
+		return true;
+	}
+	else if ( FStrEq(args[0], "spec_last_attacker" )) // 
+	{
+		if ( GetObserverMode() > OBS_MODE_FIXED )
+		{
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastAttacker);
+			SetObserverTarget(pPlayer);
+		}
+
+		return true;
+	}
+	else if ( FStrEq(args[0], "spec_last_killer" )) // 
+	{
+		if ( GetObserverMode() > OBS_MODE_FIXED )
+		{
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastKiller);
+			SetObserverTarget(pPlayer);
+		}
+
+		return true;
+	}
+	else if ( FStrEq(args[0], "spec_last_ghoster" )) // 
+	{
+		if ( GetObserverMode() > OBS_MODE_FIXED )
+		{
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastGhoster);
+			SetObserverTarget(pPlayer);
+		}
+
+		return true;
+	}
 
 	return BaseClass::ClientCommand(args);
 }
@@ -2081,6 +2183,10 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	CBaseEntity* pAttacker = info.GetAttacker();
+	if (pAttacker)
+		m_iLastKiller = m_iLastEvent = pAttacker->entindex();
+
 	if (!m_bForceServerRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
 		CreateRagdollEntity();
@@ -2980,6 +3086,7 @@ AttackersTotals CNEO_Player::GetAttackersTotals() const
 
 int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
+	m_iLastHurt = entindex();
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
 		if (sv_neo_warmup_godmode.GetBool())
@@ -3000,6 +3107,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		if (auto *attacker = ToNEOPlayer(info.GetAttacker()))
 		{
 			const int attackerIdx = attacker->entindex();
+			m_iLastAttacker = m_iLastEvent = attackerIdx; // NEO TODO (Adam) Once we can spectate non-players, let last attacker be non-neoplayer (Jeff)
 
 			// Separate the fractional amount of damage from the whole
 			const float flFractionalDamage = info.GetDamage() - floor(info.GetDamage());
