@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "neo_player.h"
 #include "neo_gamerules.h"
+#include "neo_smokelineofsightblocker.h"
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
@@ -17,6 +18,7 @@ ConVar neo_bot_aggressive( "neo_bot_aggressive", "0", FCVAR_NONE );
 //---------------------------------------------------------------------------------------------
 CNEOBotAttack::CNEOBotAttack( void ) : m_chasePath( ChasePath::LEAD_SUBJECT )
 {
+	m_attackCoverArea = nullptr;
 }
 
 
@@ -24,9 +26,108 @@ CNEOBotAttack::CNEOBotAttack( void ) : m_chasePath( ChasePath::LEAD_SUBJECT )
 ActionResult< CNEOBot >	CNEOBotAttack::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
+	m_attackCoverTimer.Invalidate();
 
 	return Continue();
 }
+
+
+//---------------------------------------------------------------------------------------------
+// for finding cover closer to our threat
+class CSearchForAttackCover : public ISearchSurroundingAreasFunctor
+{
+public:
+	CSearchForAttackCover( CNEOBot *me, const CKnownEntity *threat ) : m_me( me ), m_threat( threat )
+	{
+		m_attackCoverArea = nullptr;
+		m_threatArea = threat->GetLastKnownArea();
+		m_distToThreatSq = ( threat->GetLastKnownPosition() - me->GetAbsOrigin() ).LengthSqr();
+	}
+
+	virtual bool operator() ( CNavArea *baseArea, CNavArea *priorArea, float travelDistanceSoFar )
+	{
+		// return true to keep searching, false when suitable cover is found
+		CNavArea *area = static_cast<CNavArea *>(baseArea);
+
+		if ( !m_threatArea )
+		{
+			return false; // threat area is unknown
+		}
+
+		constexpr float distanceThresholdRatio = 1.2f;
+		float candidateDistFromMeSq = ( m_me->GetAbsOrigin() - area->GetCenter() ).LengthSqr();
+		if ( candidateDistFromMeSq > m_distToThreatSq * distanceThresholdRatio )
+		{
+			return true; // not close enough to justify rerouting
+		}
+
+		if ( area->IsPotentiallyVisible( m_threatArea ) )
+		{
+			// Even if area does not have hard cover, see if Support can use smoke concealment
+			if ( m_me->GetClass() == NEO_CLASS_SUPPORT )
+			{
+				CNEO_Player *pThreatPlayer = ToNEOPlayer( m_threat->GetEntity() );
+				if ( pThreatPlayer && ( pThreatPlayer->GetClass() != NEO_CLASS_SUPPORT ) )
+				{
+					ScopedSmokeLOS smokeScope( false );
+
+					Vector vecThreatEye = m_threat->GetLastKnownPosition() + pThreatPlayer->GetViewOffset();
+					Vector vecCandidateArea = area->GetCenter() + m_me->GetViewOffset();
+
+					trace_t tr;
+					CTraceFilterSimple filter( m_threat->GetEntity(), COLLISION_GROUP_NONE );
+					UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS, &filter, &tr );
+
+					if ( tr.fraction < 1.0f )
+					{
+						m_attackCoverArea = area;
+						return false; // found smoke as concealment
+					}
+				}
+			}
+
+			return true; // not cover
+		}
+
+		// found hard cover
+		m_attackCoverArea = area;
+		return false; // found suitable cover
+	}
+
+	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar )
+	{
+		if ( travelDistanceSoFar > 1000.0f )
+		{
+			return false;
+		}
+
+		// For considering areas off to the side of current area
+		constexpr float distanceThresholdRatio = 0.9f;
+
+		// The adjacent area to search should not be farther from the threat
+		float adjThreatDistance = ( m_threatArea->GetCenter() - adjArea->GetCenter() ).LengthSqr();
+		float curThreatDistance = ( m_threatArea->GetCenter() - currentArea->GetCenter() ).LengthSqr();
+		if ( adjThreatDistance * distanceThresholdRatio > curThreatDistance )
+		{
+			return false; // Candidate adjacent area veers farther from threat
+		}
+
+		// The adjacent area to search should not be beyond the threat
+		if ( adjThreatDistance > m_distToThreatSq )
+		{
+			return false; // Candidate adjacent area is beyond threat distance
+		}
+
+		// Don't consider areas that require jumping when engaging enemy
+		return ( currentArea->ComputeAdjacentConnectionHeightChange( adjArea ) < m_me->GetLocomotionInterface()->GetStepHeight() );
+	}
+
+	CNEOBot *m_me;
+	const CKnownEntity *m_threat;
+	CNavArea *m_attackCoverArea;
+	const CNavArea *m_threatArea; // reference point of the threat
+	float m_distToThreatSq; // the bot's current distance to the threat
+};
 
 
 //---------------------------------------------------------------------------------------------
@@ -91,6 +192,55 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 				}
 			}
 
+			// Look for opportunities to leap frog from cover to cover
+			if ( m_attackCoverTimer.IsElapsed() )
+			{
+				m_attackCoverTimer.Start( 5.0f );
+
+				CSearchForAttackCover search( me, threat );
+				SearchSurroundingAreas( me->GetLastKnownArea(), search );
+
+				if ( search.m_attackCoverArea )
+				{
+					m_attackCoverArea = search.m_attackCoverArea;
+					m_path.Invalidate(); // recompute path
+					m_chasePath.Invalidate();
+				}
+			}
+
+			if ( m_attackCoverArea )
+			{
+				if ( me->GetLastKnownArea() == m_attackCoverArea )
+				{
+					// Immediately look for new cover
+					m_attackCoverArea = nullptr;
+					m_attackCoverTimer.Invalidate();
+				}
+				else
+				{
+					if ( !m_path.IsValid() )
+					{
+						if ( !CNEOBotPathCompute( me, m_path, m_attackCoverArea->GetCenter(), DEFAULT_ROUTE ) )
+						{
+							// If no valid path, fallback to chasing threat
+							m_attackCoverArea = nullptr;
+							m_path.Invalidate();
+						}
+					}
+
+					if ( m_attackCoverArea )
+					{
+						m_path.Update( me );
+						return Continue();
+					}
+				}
+			}
+			else
+			{
+				m_path.Invalidate();
+			}
+
+			// Fallback when there is no advancing cover
 			if ( isUsingCloseRangeWeapon )
 			{
 				CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), FASTEST_ROUTE );

@@ -25,6 +25,8 @@ public:
 private:
 	PathFollower m_path;
 	ChasePath m_chasePath;
+	CountdownTimer m_attackCoverTimer;
 	CountdownTimer m_grenadeThrowCooldownTimer;
 	CountdownTimer m_repathTimer;
+	CNavArea *m_attackCoverArea;
 };
