@@ -255,4 +255,14 @@ private:
 
 };
 
+
+inline CNEOBaseCombatWeapon *ToNEOWeapon(CBaseCombatWeapon *pWeapon)
+{
+	if (!pWeapon)
+	{
+		return nullptr;
+	}
+	return dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+}
+
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H
