@@ -251,7 +251,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	float roundTimeLeft = NEORules()->GetRoundRemainingTime();
 	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
 	const bool inSuddenDeath = NEORules()->RoundIsInSuddenDeath();
-	const bool inMatchPoint = NEORules()->RoundIsMatchPoint();
+	const bool inDoOrDie = NEORules()->RoundIsDoOrDie();
+	const bool inMatchPoint = !inDoOrDie && NEORules()->RoundIsMatchPoint(); // we don't care about matchpoint if in do or die
 
 	m_pWszStatusUnicode = L"";
 	if (roundStatus == NeoRoundStatus::Idle)
@@ -269,6 +270,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	else if (inSuddenDeath)
 	{
 		m_pWszStatusUnicode = L"Sudden death";
+	}
+	else if (inDoOrDie)
+	{
+		m_pWszStatusUnicode = L"Do or Die";
 	}
 	else if (inMatchPoint)
 	{
