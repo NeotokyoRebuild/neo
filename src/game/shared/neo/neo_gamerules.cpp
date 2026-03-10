@@ -263,6 +263,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
 	RecvPropBool(RECVINFO(m_bIsMatchPoint)),
+	RecvPropBool(RECVINFO(m_bIsDoOrDie)),
 	RecvPropBool(RECVINFO(m_bIsInSuddenDeath)),
 	RecvPropInt(RECVINFO(m_iHiddenHudElements)),
 	RecvPropInt(RECVINFO(m_iForcedTeam)),
@@ -290,6 +291,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_nGameTypeSelected), NumBitsForCount(NEO_GAME_TYPE__TOTAL), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropBool(SENDINFO(m_bIsMatchPoint)),
+	SendPropBool(SENDINFO(m_bIsDoOrDie)),
 	SendPropBool(SENDINFO(m_bIsInSuddenDeath)),
 	SendPropInt(SENDINFO(m_iHiddenHudElements)),
 	SendPropInt(SENDINFO(m_iForcedTeam)),
@@ -760,6 +762,7 @@ void CNEORules::ResetMapSessionCommon()
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
 	m_bIsMatchPoint = false;
+	m_bIsDoOrDie = false;
 	m_bIsInSuddenDeath = false;
 	V_memset(m_szNeoJinraiClantag.GetForModify(), 0, NEO_MAX_CLANTAG_LENGTH);
 	V_memset(m_szNeoNSFClantag.GetForModify(), 0, NEO_MAX_CLANTAG_LENGTH);
@@ -3489,6 +3492,24 @@ bool CNEORules::RoundIsMatchPoint() const
 #endif
 }
 
+bool CNEORules::RoundIsDoOrDie() const
+{
+#ifdef CLIENT_DLL
+	return m_bIsDoOrDie;
+#else
+	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
+	auto teamNSF = GetGlobalTeam(TEAM_NSF);
+	if (teamJinrai && teamNSF && neo_round_limit.GetInt() != 0)
+	{
+		const int roundsLeft = neo_round_limit.GetInt() - m_iRoundNumber + 1;
+		if ((teamJinrai->GetRoundsWon() + roundsLeft) == teamNSF->GetRoundsWon()) return true;
+		if ((teamNSF->GetRoundsWon() + roundsLeft) == teamJinrai->GetRoundsWon()) return true;
+		return false;
+	}
+	return false;
+#endif
+}
+
 #ifdef GAME_DLL
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
@@ -4367,6 +4388,7 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 			currentHandle = m_pRestoredInfos.NextHandle(currentHandle);
 		}
 
+		m_bIsDoOrDie = RoundIsDoOrDie();
 		m_bIsMatchPoint = RoundIsMatchPoint();
 		m_bIsInSuddenDeath = RoundIsInSuddenDeath();
 	}

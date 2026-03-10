@@ -249,6 +249,7 @@ public:
 
 	bool RoundIsInSuddenDeath() const;
 	bool RoundIsMatchPoint() const;
+	bool RoundIsDoOrDie() const;
 
 	virtual int DefaultFOV(void) override;
 
@@ -476,6 +477,7 @@ private:
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 	CNetworkVar(bool, m_bIsMatchPoint);
+	CNetworkVar(bool, m_bIsDoOrDie);
 	CNetworkVar(bool, m_bIsInSuddenDeath);
 	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);
 	CNetworkString(m_szNeoNSFClantag, NEO_MAX_CLANTAG_LENGTH);
