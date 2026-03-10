@@ -23,6 +23,8 @@ private:
 	CHandle< CBaseEntity > m_hBreakable;
 	bool m_isWaitingForFullReload = false;
 	bool m_bDidSwitchWeapon = false;
+	CountdownTimer m_giveUpTimer;
+	CountdownTimer m_meleeTimeoutTimer;
 };
 
 #endif // NEO_BOT_PATH_CLEAR_BREAKABLE_H
