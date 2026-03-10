@@ -44,8 +44,6 @@ bool CNEOTocMaterialProxy::Init(IMaterial *pMaterial, KeyValues *pKeyValues)
 	return foundVar;
 }
 
-ConVar mat_neo_toc_test("mat_neo_toc_test", "0.1", FCVAR_CHEAT);
-
 void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 {
 	if (!m_pResultVar)
@@ -58,9 +56,6 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 		return;
 	}
 
-	m_pResultVar->SetFloatValue(mat_neo_toc_test.GetFloat());
-	return;
-
 	auto renderable = static_cast<IClientRenderable*>(pC_BaseEntity);
 	Assert(renderable);
 
@@ -68,9 +63,7 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 	auto pNeoPlayer = dynamic_cast<C_NEO_Player*>(renderable);
 	if (pNeoPlayer)
 	{
-		m_pResultVar->SetIntValue(pNeoPlayer->IsCloaked() ? 1 : 0);
-
-		//DevMsg("Camo for weapon is %s\n", isCloaked ? "enabled" : "disabled");
+		m_pResultVar->SetFloatValue(pNeoPlayer->GetCloakFactor());
 		return;
 	}
 
@@ -79,8 +72,10 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 	if (pVM)
 	{
 		auto pOwner = static_cast<C_NEO_Player*>(pVM->GetOwner());
-		Assert(pOwner);
-		m_pResultVar->SetIntValue(pOwner->IsCloaked() ? 1 : 0);
+		if (pOwner)
+		{
+			m_pResultVar->SetFloatValue(pOwner->GetCloakFactor());
+		}
 		return;
 	}
 
@@ -91,11 +86,7 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 		auto pOwner = static_cast<C_NEO_Player*>(pWep->GetOwner());
 		if (pOwner)
 		{
-			m_pResultVar->SetIntValue(pOwner->IsCloaked() ? 1 : 0);
-		}
-		else
-		{
-			m_pResultVar->SetIntValue(0);
+			m_pResultVar->SetFloatValue(pOwner->GetCloakFactor());
 		}
 		return;
 	}
@@ -104,7 +95,7 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 	// Probably a mistake if we reach here. If not, add your use case above.
 	Assert(false);
 
-	m_pResultVar->SetIntValue(0);
+	m_pResultVar->SetFloatValue(0);
 }
 
 IMaterial *CNEOTocMaterialProxy::GetMaterial()

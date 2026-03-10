@@ -667,7 +667,6 @@ int C_NEO_Player::GetMaxHealth() const
 	return g_PR ? g_PR->GetMaxHealth(entindex()) : 1;
 }
 
-extern ConVar mat_neo_toc_test;
 #ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
 #endif // GLOWS_ENABLE
@@ -695,7 +694,6 @@ int C_NEO_Player::DrawModel(int flags)
 
 	if (IsCloaked() && !inThermalVision)
 	{
-		mat_neo_toc_test.SetValue(m_flTocFactor);
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
@@ -1253,35 +1251,23 @@ void C_NEO_Player::ClientThink(void)
 {
 	BaseClass::ClientThink();
 
-	if (IsCloaked())
-	{ // PreThink and PostThink are only ran for local player, update every in pvs player's cloak strength here
-		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-		if (pLocalPlayer)
-		{
-			auto vel = GetAbsVelocity().Length();
-			if (this == pLocalPlayer)
-			{
-				if (vel > 0.5) { m_flTocFactor = Min(0.3f, m_flTocFactor + 0.01f); } // NEO TODO (Adam) base on time rather than think rate
-				else { m_flTocFactor = Max(0.1f, m_flTocFactor - 0.01f); }
-			}
-			else
-			{
-				if (vel > 0.5) { m_flTocFactor = 0.3f; } // 0.345f
-				else { m_flTocFactor = 0.2f; } // 0.255f
-			}
-		}
-#ifdef GLOWS_ENABLE
-		if (auto glowObject = GetGlowObject()) {
-			glowObject->SetUseTexturedHighlight(true);
-		}
-#endif // GLOWS_ENABLE
-	} else {
-#ifdef GLOWS_ENABLE
-		if (auto glowObject = GetGlowObject()) {
-			glowObject->SetUseTexturedHighlight(false);
-		}
-#endif // GLOWS_ENABLE
+	{ // calculate cloak factor
+		Vector velocity;
+		EstimateAbsVelocity(velocity);
+		float speed = velocity.Length2D();
+
+		if (speed <= 20.f)
+			m_flTocFactor -= (gpGlobals->interval_per_tick) * 1.1f;
+		else
+			m_flTocFactor += speed * 0.004 * gpGlobals->interval_per_tick;
+
+		m_flTocFactor = Max(0.f, Min(1.f, m_flTocFactor));
 	}
+
+#ifdef GLOWS_ENABLE
+	if (auto glowObject = GetGlowObject(); glowObject)
+		glowObject->SetUseTexturedHighlight(IsCloaked());
+#endif // GLOWS_ENABLE
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
