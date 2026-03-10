@@ -1555,12 +1555,15 @@ void CNEORules::Think(void)
 		COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
 		if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM && GetGameType() != NEO_GAME_TYPE_JGR)
 		{
-			for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
-			{
-				if (GetGlobalTeam(team)->GetAliveMembers() == 0)
-				{
-					SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
-				}
+			auto jinraiAlive = GetGlobalTeam(TEAM_JINRAI)->GetAliveMembers();
+			auto nsfAlive = GetGlobalTeam(TEAM_NSF)->GetAliveMembers();
+
+			if (jinraiAlive == 0 && nsfAlive == 0) {
+				SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
+			}
+			else if(jinraiAlive == 0 || nsfAlive == 0) {
+				auto winningTeam = jinraiAlive > nsfAlive ? TEAM_JINRAI : TEAM_NSF;
+				SetWinningTeam(winningTeam, NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
 			}
 		}
 		if (GetGameType() == NEO_GAME_TYPE_DM && sv_neo_dm_win_xp.GetInt() > 0)
