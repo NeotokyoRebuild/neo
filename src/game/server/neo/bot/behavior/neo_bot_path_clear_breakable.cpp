@@ -196,6 +196,8 @@ ActionResult< CNEOBot > CNEOBotPathClearBreakable::Update( CNEOBot *me, float in
 			}
 		}
 
+		// Try to avoid hitting friends if clustered together
+		me->AvoidBumpingFriends();
 		// Prevent bot from missing breakable because of leaning
 		me->ReleaseLeanLeftButton();
 		me->ReleaseLeanRightButton();

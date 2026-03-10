@@ -134,48 +134,6 @@ void CNEOBotTacticalMonitor::MonitorArmedStickyBombs( CNEOBot *me )
 
 
 #endif //NEO
-//-----------------------------------------------------------------------------------------
-void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
-{
-	const float avoidRange = 32.0f;
-
-	CUtlVector< CNEO_Player * > friendVector;
-	CollectPlayers( &friendVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
-
-	CNEO_Player *closestFriend = NULL;
-	float closestRangeSq = avoidRange * avoidRange;
-
-	for( int i=0; i<friendVector.Count(); ++i )
-	{
-		CNEO_Player *friendly = friendVector[i];
-
-		if ( friendly == me->GetEntity() )
-			continue;
-
-		float rangeSq = ( friendly->GetAbsOrigin() - me->GetAbsOrigin() ).LengthSqr();
-		if ( rangeSq < closestRangeSq )
-		{
-			closestFriend = friendly;
-			closestRangeSq = rangeSq;
-		}
-	}
-
-	if ( !closestFriend )
-		return;
-
-	// avoid unless hindrance returns a definitive "no"
-	if ( me->GetIntentionInterface()->IsHindrance( me, closestFriend ) == ANSWER_UNDEFINED )
-	{
-		me->ReleaseForwardButton();
-		me->ReleaseLeftButton();
-		me->ReleaseRightButton();
-		me->ReleaseBackwardButton();
-
-		Vector away = me->GetAbsOrigin() - closestFriend->GetAbsOrigin();
-
-		me->GetLocomotionInterface()->Approach( me->GetLocomotionInterface()->GetFeet() + away );
-	}
-}
 
 
 ConVar neo_bot_recon_superjump_min_dist( "neo_bot_recon_superjump_min_dist", "1000", FCVAR_NONE,
@@ -438,7 +396,7 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	CNEO_Player* pBotPlayer = ToNEOPlayer( me->GetEntity() );
 	if ( pBotPlayer && !(pBotPlayer->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) )
 	{
-		AvoidBumpingFriends( me );
+		me->AvoidBumpingFriends();
 	}
 
 	me->UpdateDelayedThreatNotices();
