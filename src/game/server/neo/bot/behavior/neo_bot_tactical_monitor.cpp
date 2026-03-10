@@ -17,6 +17,7 @@
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #include "bot/behavior/neo_bot_ladder_approach.h"
 #include "bot/behavior/neo_bot_ladder_climb.h"
+#include "bot/behavior/neo_bot_path_clear_breakable.h"
 #include "bot/behavior/neo_bot_pause.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
@@ -269,6 +270,11 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		}
 	}
 
+	if ( CBaseEntity *breakable = CNEOBotPathClearBreakable::GetBreakableInPath( me ) )
+	{
+		return SuspendFor( new CNEOBotPathClearBreakable( breakable ), "Clearing breakable in path" );
+	}
+
 	ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
 	if ( scavengeResult.IsRequestingChange() )
 	{
@@ -300,7 +306,7 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 
 	if ( !(me->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_USE)) )
 	{
-		AvoidBumpingFriends( me );
+		AvoidBumpingFriends(me);
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
