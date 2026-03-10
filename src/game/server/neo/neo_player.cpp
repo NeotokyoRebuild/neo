@@ -3228,8 +3228,15 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 					attacker->m_iTeamDamageInflicted += iDamage;
 				}
 
-				if (info.GetDamageType() & (DMG_BULLET | DMG_SLASH | DMG_BUCKSHOT)) {
+				constexpr const int botDamageTypes = DMG_SLASH | DMG_BULLET | DMG_BUCKSHOT;
+				if (info.GetDamageType() & botDamageTypes)
+				{
 					++m_iBotDetectableBleedingInjuryEvents;
+				}
+
+				if (bIsTeamDmg && NEORules()->IsTeamplay() && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
+				{
+					attacker->m_botPauseFiringTimer.Start(1.0f);
 				}
 			}
 		}
