@@ -82,7 +82,7 @@ ActionResult< CNEOBot > CNEOBotPathClearBreakable::OnStart( CNEOBot *me, Action<
 {
 	m_isWaitingForFullReload = false;
 	m_bDidSwitchWeapon = false;
-	m_giveUpTimer.Start( 5.0f );
+	m_giveUpTimer.Start( 10.0f );
 	m_meleeTimeoutTimer.Start( 2.0f );
 
 	if ( !m_hBreakable.Get() )
