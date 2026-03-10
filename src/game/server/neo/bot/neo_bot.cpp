@@ -469,7 +469,7 @@ void CNEOBot::PressFireButton(float duration)
 {
 	// can't fire if stunned
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if ( GetBotPauseFiring() || HasAttribute(CNEOBot::SUPPRESS_FIRE) )
 	{
 		ReleaseFireButton();
 		return;
