@@ -9,8 +9,6 @@ extern ConVar falldamage;
 //-----------------------------------------------------------------------------------------
 void CNEOBotLocomotion::Update( void )
 {
-	m_bBreakBreakableInPath = false;
-
 	CNEOBot* me = ToNEOBot( GetBot()->GetEntity() );
 	if ( !me || me->GetNeoFlags() & NEO_FL_FREEZETIME)
 	{
@@ -110,8 +108,6 @@ bool CNEOBotLocomotion::IsAreaTraversable( const CNavArea* area ) const
 //-----------------------------------------------------------------------------------------
 bool CNEOBotLocomotion::IsEntityTraversable( CBaseEntity* obstacle, TraverseWhenType when ) const
 {
-	m_bBreakBreakableInPath = false;
-
 	// assume all players are "traversable" in that they will move or can be killed
 	if ( obstacle && obstacle->IsPlayer() )
 	{
@@ -142,9 +138,5 @@ bool CNEOBotLocomotion::IsEntityTraversable( CBaseEntity* obstacle, TraverseWhen
 	}
 
 	const bool bIsTraversable = PlayerLocomotion::IsEntityTraversable( obstacle, when );
-	if (bIsTraversable)
-	{
-		m_bBreakBreakableInPath = GetBot()->IsAbleToBreak(obstacle);
-	}
-	return bIsTraversable;
+	return bIsTraversable || GetBot()->IsAbleToBreak(obstacle);
 }

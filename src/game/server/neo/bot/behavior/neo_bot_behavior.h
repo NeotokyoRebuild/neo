@@ -69,7 +69,4 @@ private:
 	void Dodge( CNEOBot *me );
 
 	IntervalTimer m_undergroundTimer;
-
-	CountdownTimer m_reevaluateClassTimer;
-	bool m_bPrevBreakBreakableInPath = false;
 };
