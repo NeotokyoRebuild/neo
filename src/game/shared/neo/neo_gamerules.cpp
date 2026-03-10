@@ -2692,6 +2692,14 @@ void CNEORules::StartNextRound()
 			pPlayer->m_iTeamDamageInflicted = 0;
 			pPlayer->m_iTeamKillsInflicted = 0;
 		}
+		else
+		{
+			// Any human player still alive, show them damage stats in round end
+			if (!pPlayer->IsBot() && !pPlayer->IsHLTV() && pPlayer->IsAlive())
+			{
+				pPlayer->StartShowDmgStats(nullptr);
+			}
+		}
 
 		pPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: round restart
 
@@ -3725,12 +3733,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 					// This will award the controlled player, if any
 					player->AddPoints(xpAward, false);
 				}
-			}
-
-			// Any human player still alive, show them damage stats in round end
-			if (!player->IsBot() && !player->IsHLTV() && player->IsAlive())
-			{
-				player->StartShowDmgStats(nullptr);
 			}
 		}
 	}
