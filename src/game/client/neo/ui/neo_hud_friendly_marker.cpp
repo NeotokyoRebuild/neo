@@ -358,23 +358,6 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 	}
 }
 
-
-	//if (settings->bShowName) {
-	//	auto playerName = player->GetPlayerNameWithTakeoverContext(player->entindex());
-	//	const char *playerClantag = player->GetNeoClantag();
-
-	//	const int maxLength = Min(narrow_cast<int>(sizeof(textASCII)), settings->iMaxNameLength);
-	//	if (settings->bPrependClantagToName && playerClantag && playerClantag[0])
-	//	{
-	//		V_snprintf(textASCII, maxLength, "[%s] %s", playerClantag, playerName);
-	//	}
-	//	else
-	//	{
-	//		V_snprintf(textASCII, maxLength, "%s", playerName);
-	//	}
-	//	DisplayText(textASCII, y, maxLength);
-	//}
-
 Color CNEOHud_FriendlyMarker::GetTeamColour(int team)
 {
 	return (team == TEAM_NSF) ? COLOR_NSF : COLOR_JINRAI;
