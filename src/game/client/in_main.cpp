@@ -663,7 +663,7 @@ void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); 
 void IN_LeanRightDown(const CCommand& args) { KeyDown(&in_lean_right, args[1]); IN_LeanToggleReset(); }
 
 void IN_ThermOpticUp(const CCommand &args) { KeyUp(&in_thermoptic, args[1]); }
-void IN_ThermOpticDown(const CCommand& args) { KeyDownWithMouseWheelDelay(&in_thermoptic, args[1]); }
+void IN_ThermOpticDown(const CCommand &args) { KeyDownWithMouseWheelDelay(&in_thermoptic, args[1]); }
 
 void IN_VisionUp(const CCommand &args) { KeyUp(&in_vision, args[1]); }
 void IN_VisionDown(const CCommand &args) { KeyDownWithMouseWheelDelay(&in_vision, args[1]); }
