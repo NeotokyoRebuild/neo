@@ -728,7 +728,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
 
 		// Draw squad mates
-		if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != 0 && !hideDueToScoreboard)
+		if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != STAR_NONE && !hideDueToScoreboard)
 		{
 			bool squadMateFound = false;
 
