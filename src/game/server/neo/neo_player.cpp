@@ -1363,7 +1363,7 @@ float CNEO_Player::GetFogObscuredRatio( float range ) const
 
 	if ( controller )
 	{
-		const fogparams_t fog = controller->m_fog;
+		const fogparams_t &fog = controller->m_fog;
 
 		if ( !fog.enable )
 			return 0.0f;
