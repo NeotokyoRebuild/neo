@@ -456,6 +456,39 @@ void KeyDownHoldReplaceToggle( kbutton_t *b, const char *c )
 		return;		// still down
 	b->state |= 1 + 2;	// down + impulse down
 }
+
+/*
+============
+KeyDown with a minimum time between any two keydowns of a button. Not intended to limit players, rather its to help players not accidentally execute actions bound to the mouse wheel more than once
+============
+*/
+ConVar cl_neo_mouse_wheel_action_cool_down("cl_neo_mouse_wheel_action_cool_down", "0.3", FCVAR_ARCHIVE, "If the mouse wheel is bound to an action with a mouse wheel delay, controls how long that delay is to prevent accidental activations of the action", true, 0, false, 0);
+void KeyDownWithMouseWheelDelay(kbutton_t* b, const char* c)
+{
+	static float nextMouseWheelUp = 0.f;
+	static float nextMouseWheelDown = 0.f;
+	if (cl_neo_mouse_wheel_action_cool_down.GetFloat() > 0.f && c && c[0])
+	{
+		int k = atoi(&c[0]);
+		if (k == MOUSE_WHEEL_UP)
+		{
+			if (gpGlobals->curtime < nextMouseWheelUp)
+			{
+				return;
+			}
+			nextMouseWheelUp = gpGlobals->curtime + cl_neo_mouse_wheel_action_cool_down.GetFloat();
+		}
+		else if (k == MOUSE_WHEEL_DOWN)
+		{
+			if (gpGlobals->curtime < nextMouseWheelDown)
+			{
+				return;
+			}
+			nextMouseWheelDown = gpGlobals->curtime + cl_neo_mouse_wheel_action_cool_down.GetFloat();
+		}
+	}
+	KeyDown(b, c);
+}
 #endif // NEO
 
 /*
@@ -630,10 +663,10 @@ void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); 
 void IN_LeanRightDown(const CCommand& args) { KeyDown(&in_lean_right, args[1]); IN_LeanToggleReset(); }
 
 void IN_ThermOpticUp(const CCommand &args) { KeyUp(&in_thermoptic, args[1]); }
-void IN_ThermOpticDown(const CCommand &args) { KeyDown(&in_thermoptic, args[1]); }
+void IN_ThermOpticDown(const CCommand& args) { KeyDownWithMouseWheelDelay(&in_thermoptic, args[1]); }
 
 void IN_VisionUp(const CCommand &args) { KeyUp(&in_vision, args[1]); }
-void IN_VisionDown(const CCommand &args) { KeyDown(&in_vision, args[1]); }
+void IN_VisionDown(const CCommand &args) { KeyDownWithMouseWheelDelay(&in_vision, args[1]); }
 
 void IN_SpecNextUp(const CCommand &args) { KeyUp(&in_spec_next, args[1]); }
 void IN_SpecNextDown(const CCommand &args) { KeyDown(&in_spec_next, args[1]); }
