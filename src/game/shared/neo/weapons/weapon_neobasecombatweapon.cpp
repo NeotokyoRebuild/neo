@@ -16,7 +16,7 @@ extern ConVar weaponstay;
 #include "c_te_effect_dispatch.h"
 #include "prediction.h"
 #include "hud_crosshair.h"
-#include "ui/neo_hud_crosshair.h"
+#include "neo_crosshair.h"
 #include "model_types.h"
 #include "c_neo_player.h"
 #include "in_main.h"
@@ -956,6 +956,9 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 
+#ifdef GAME_DLL
+	pPlayer->SetLastShooter();
+#endif // GAME_DLL
 	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 	{
 		pPlayer->DoMuzzleFlash();
@@ -1241,7 +1244,6 @@ int CNEOBaseCombatWeapon::RestoreData(const char* context, int slot, int type)
 	return val;
 }
 
-extern ConVar mat_neo_toc_test;
 #ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
 #endif // GLOWS_ENABLE
@@ -1277,7 +1279,6 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 
 	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
 	{
-		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);

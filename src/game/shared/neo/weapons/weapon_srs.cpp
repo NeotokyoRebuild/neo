@@ -77,7 +77,6 @@ void CWeaponSRS::ItemPreFrame()
 			{
 				return BaseClass::ItemPreFrame();
 			}
-			pOwner->Weapon_SetZoom(false);
 		}
 		// Only queue the bolting anim once; we want to allow the player
 		// to cancel this with manual weapon quick-switching.

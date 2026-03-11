@@ -175,8 +175,7 @@ void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
 
 	// If to show or not
 	const bool bNextPlayerShownHud = localPlayer
-			&& ((const_cast<C_NEO_Player *>(localPlayer)->IsPlayerDead() && g_neoKDmgInfos.bHasDmgInfos) ||
-				(NEORules()->GetRoundStatus() == NeoRoundStatus::PostRound && NEORules()->roundNumber() > 0))
+			&& (const_cast<C_NEO_Player *>(localPlayer)->IsPlayerDead() && g_neoKDmgInfos.bHasDmgInfos)
 			&& (localPlayer->GetTeamNumber() == TEAM_JINRAI ||
 				localPlayer->GetTeamNumber() == TEAM_NSF);
 	const bool bToShownStateChanged = (bNextPlayerShownHud && bNextPlayerShownHud != m_bPlayerShownHud);
@@ -424,9 +423,9 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 			m_uiCtx.iLayoutY += iYOffsetting;
 
 			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
-			NeoUI::Label(L"Dealt");
+			NeoUI::Label(L"Dealt to");
 			NeoUI::Label(L"Player");
-			NeoUI::Label(L"Taken");
+			NeoUI::Label(L"Taken from");
 
 			m_uiCtx.iLayoutY -= iYOffsetting;
 
@@ -643,19 +642,19 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 			char infoLine[128] = {};
 			if (attackerInfo.dealtDmgs > 0 && attackerInfo.takenDmgs > 0)
 			{
-				V_sprintf_safe(infoLine, "%s [%s]: Dealt: %d in %d hits | Taken: %d in %d hits\n",
+				V_sprintf_safe(infoLine, "%s [%s]: Dealt to: %d in %d hits | Taken from: %d in %d hits\n",
 						   dmgerName, dmgerClass,
 						   attackerInfo.dealtDmgs, attackerInfo.dealtHits, attackerInfo.takenDmgs, attackerInfo.takenHits);
 			}
 			else if (attackerInfo.dealtDmgs > 0)
 			{
-				V_sprintf_safe(infoLine, "%s [%s]: Dealt: %d in %d hits\n",
+				V_sprintf_safe(infoLine, "%s [%s]: Dealt to: %d in %d hits\n",
 						   dmgerName, dmgerClass,
 						   attackerInfo.dealtDmgs, attackerInfo.dealtHits);
 			}
 			else if (attackerInfo.takenDmgs > 0)
 			{
-				V_sprintf_safe(infoLine, "%s [%s]: Taken: %d in %d hits\n",
+				V_sprintf_safe(infoLine, "%s [%s]: Taken from: %d in %d hits\n",
 						   dmgerName, dmgerClass,
 						   attackerInfo.takenDmgs, attackerInfo.takenHits);
 			}

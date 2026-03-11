@@ -58,6 +58,10 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 		return false;
 	}
 
+	if (pWep->GetNeoWepBits() & NEO_WEP_SRS && pWep->GetIdealActivity() == ACT_VM_PULLBACK) {
+		return false;
+	}
+
 	return true;
 }
 

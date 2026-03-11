@@ -204,6 +204,10 @@ BEGIN_RECV_TABLE(C_BaseCombatCharacter, DT_BaseCombatCharacter)
 	RecvPropInt( RECVINFO( m_iPowerups ) ),
 #endif
 
+#ifdef NEO
+	RecvPropInt( RECVINFO( m_bloodColor ) ),
+#endif
+
 END_RECV_TABLE()
 
 

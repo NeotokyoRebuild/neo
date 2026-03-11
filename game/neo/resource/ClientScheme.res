@@ -2334,6 +2334,16 @@ Scheme
 				"antialias" "1"
 			}
 		}
+		NHudTinyText
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"10"
+				"weight"	"0"
+				"antialias"	"1"
+			}
+		}
 		MVP
 		{
 			"1"

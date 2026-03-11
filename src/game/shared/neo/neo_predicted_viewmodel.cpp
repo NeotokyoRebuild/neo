@@ -225,7 +225,6 @@ void CNEOPredictedViewModel::ClientThink()
 	BaseClass::ClientThink();
 }
 
-extern ConVar mat_neo_toc_test;
 extern ConVar glow_outline_effect_enable;
 int CNEOPredictedViewModel::DrawModel(int flags)
 {
@@ -245,8 +244,6 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 					PrecacheMaterial(pass->GetName());
 					Assert(pass->IsPrecached());
 				}
-
-				mat_neo_toc_test.SetValue(pPlayer->GetCloakFactor());
 
 				modelrender->ForcedMaterialOverride(pass);
 				int ret = BaseClass::DrawModel(flags);

@@ -263,6 +263,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
 	RecvPropBool(RECVINFO(m_bIsMatchPoint)),
+	RecvPropBool(RECVINFO(m_bIsDoOrDie)),
 	RecvPropBool(RECVINFO(m_bIsInSuddenDeath)),
 	RecvPropInt(RECVINFO(m_iHiddenHudElements)),
 	RecvPropInt(RECVINFO(m_iForcedTeam)),
@@ -290,6 +291,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_nGameTypeSelected), NumBitsForCount(NEO_GAME_TYPE__TOTAL), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropBool(SENDINFO(m_bIsMatchPoint)),
+	SendPropBool(SENDINFO(m_bIsDoOrDie)),
 	SendPropBool(SENDINFO(m_bIsInSuddenDeath)),
 	SendPropInt(SENDINFO(m_iHiddenHudElements)),
 	SendPropInt(SENDINFO(m_iForcedTeam)),
@@ -760,6 +762,7 @@ void CNEORules::ResetMapSessionCommon()
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
 	m_bIsMatchPoint = false;
+	m_bIsDoOrDie = false;
 	m_bIsInSuddenDeath = false;
 	V_memset(m_szNeoJinraiClantag.GetForModify(), 0, NEO_MAX_CLANTAG_LENGTH);
 	V_memset(m_szNeoNSFClantag.GetForModify(), 0, NEO_MAX_CLANTAG_LENGTH);
@@ -1552,12 +1555,15 @@ void CNEORules::Think(void)
 		COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
 		if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM && GetGameType() != NEO_GAME_TYPE_JGR)
 		{
-			for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
-			{
-				if (GetGlobalTeam(team)->GetAliveMembers() == 0)
-				{
-					SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
-				}
+			auto jinraiAlive = GetGlobalTeam(TEAM_JINRAI)->GetAliveMembers();
+			auto nsfAlive = GetGlobalTeam(TEAM_NSF)->GetAliveMembers();
+
+			if (jinraiAlive == 0 && nsfAlive == 0) {
+				SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
+			}
+			else if(jinraiAlive == 0 || nsfAlive == 0) {
+				auto winningTeam = jinraiAlive > nsfAlive ? TEAM_JINRAI : TEAM_NSF;
+				SetWinningTeam(winningTeam, NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
 			}
 		}
 		if (GetGameType() == NEO_GAME_TYPE_DM && sv_neo_dm_win_xp.GetInt() > 0)
@@ -2692,6 +2698,14 @@ void CNEORules::StartNextRound()
 			pPlayer->m_iTeamDamageInflicted = 0;
 			pPlayer->m_iTeamKillsInflicted = 0;
 		}
+		else
+		{
+			// Any human player still alive, show them damage stats in round end
+			if (!pPlayer->IsBot() && !pPlayer->IsHLTV() && pPlayer->IsAlive())
+			{
+				pPlayer->StartShowDmgStats(nullptr);
+			}
+		}
 
 		pPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: round restart
 
@@ -3481,6 +3495,24 @@ bool CNEORules::RoundIsMatchPoint() const
 #endif
 }
 
+bool CNEORules::RoundIsDoOrDie() const
+{
+#ifdef CLIENT_DLL
+	return m_bIsDoOrDie;
+#else
+	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
+	auto teamNSF = GetGlobalTeam(TEAM_NSF);
+	if (teamJinrai && teamNSF && neo_round_limit.GetInt() != 0)
+	{
+		const int roundsLeft = neo_round_limit.GetInt() - m_iRoundNumber + 1;
+		if ((teamJinrai->GetRoundsWon() + roundsLeft) == teamNSF->GetRoundsWon()) return true;
+		if ((teamNSF->GetRoundsWon() + roundsLeft) == teamJinrai->GetRoundsWon()) return true;
+		return false;
+	}
+	return false;
+#endif
+}
+
 #ifdef GAME_DLL
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
@@ -3725,12 +3757,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 					// This will award the controlled player, if any
 					player->AddPoints(xpAward, false);
 				}
-			}
-
-			// Any human player still alive, show them damage stats in round end
-			if (!player->IsBot() && !player->IsHLTV() && player->IsAlive())
-			{
-				player->StartShowDmgStats(nullptr);
 			}
 		}
 	}
@@ -4365,6 +4391,7 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 			currentHandle = m_pRestoredInfos.NextHandle(currentHandle);
 		}
 
+		m_bIsDoOrDie = RoundIsDoOrDie();
 		m_bIsMatchPoint = RoundIsMatchPoint();
 		m_bIsInSuddenDeath = RoundIsInSuddenDeath();
 	}

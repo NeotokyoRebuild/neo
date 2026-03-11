@@ -15,7 +15,7 @@
 #include <vgui_controls/Panel.h>
 
 #ifdef NEO
-#include "ui/neo_hud_crosshair.h"
+#include "neo_crosshair.h"
 #endif
 
 namespace vgui

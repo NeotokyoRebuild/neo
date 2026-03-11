@@ -1,8 +1,19 @@
 #pragma once
 
-#include "neo_player_shared.h"
-#include "c_neo_player.h"
+#include <cstddef>
+#include "Color.h"
 
+#ifdef CLIENT_DLL
+#include "neo_player_shared.h"
+
+class C_NEOBaseCombatWeapon;
+#endif // CLIENT_DLL
+
+// NEO NOTE (nullsystem): Max string length is 
+// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;2;1;-16711936;-16711936;-16711936;"
+// which is ~77 for v5 serialization | 96 length is enough for now till
+// more comes in
+static constexpr const size_t NEO_XHAIR_SEQMAX = 96;
 static constexpr int CROSSHAIR_MAX_SIZE = 100;
 static constexpr int CROSSHAIR_MAX_THICKNESS = 25;
 static constexpr int CROSSHAIR_MAX_GAP = 25;
@@ -35,9 +46,10 @@ enum NeoHudCrosshairDynamicType
 	CROSSHAIR_DYNAMICTYPE_CIRCLE,
 	CROSSHAIR_DYNAMICTYPE_SIZE,
 
-	CROSSHAIR_DYNAMICTYPE_TOTAL,
+	CROSSHAIR_DYNAMICTYPE__TOTAL,
 };
 
+#ifdef CLIENT_DLL
 extern ConVar cl_neo_crosshair;
 extern ConVar cl_neo_crosshair_network;
 
@@ -45,41 +57,13 @@ extern const char **CROSSHAIR_FILES;
 extern const wchar_t **CROSSHAIR_LABELS;
 extern const wchar_t **CROSSHAIR_SIZETYPE_LABELS;
 extern const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS;
-
-// NEO_CROSSHAIR_DEFAULT and NEO_XHAIR_SEQMAX defined in neo_player_shared.h instead
-
-enum NeoXHairSegment
-{
-	NEOXHAIR_SEGMENT_I_VERSION = 0,
-	NEOXHAIR_SEGMENT_I_STYLE,
-	NEOXHAIR_SEGMENT_I_COLOR,
-	NEOXHAIR_SEGMENT_I_SIZETYPE,
-	NEOXHAIR_SEGMENT_I_SIZE,
-	NEOXHAIR_SEGMENT_FL_SCRSIZE,
-	NEOXHAIR_SEGMENT_I_THICK,
-	NEOXHAIR_SEGMENT_I_GAP,
-	NEOXHAIR_SEGMENT_I_OUTLINE,
-	NEOXHAIR_SEGMENT_I_CENTERDOT,
-	NEOXHAIR_SEGMENT_B_TOPLINE,
-	NEOXHAIR_SEGMENT_I_CIRCLERAD,
-	NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS,
-	NEOXHAIR_SEGMENT_I_DYNAMICTYPE,
-	NEOXHAIR_SEGMENT_B_SEPARATECOLORDOT,
-	NEOXHAIR_SEGMENT_I_COLORDOT,
-	NEOXHAIR_SEGMENT_I_COLORDOTOUTLINE,
-	NEOXHAIR_SEGMENT_I_COLOROUTLINE,
-
-	NEOXHAIR_SEGMENT__TOTAL,
-	NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V17 = NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS + 1,
-	NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V19 = NEOXHAIR_SEGMENT_I_DYNAMICTYPE + 1,
-	NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V22 = NEOXHAIR_SEGMENT_I_COLOROUTLINE + 1,
-};
+#endif // CLIENT_DLL
 
 struct CrosshairInfo
 {
 	int iStyle;
 	Color color;
-	int iESizeType; // int NeoHudCrosshairSizeType
+	NeoHudCrosshairSizeType eSizeType;
 	int iSize;
 	float flScrSize;
 	int iThick;
@@ -89,16 +73,24 @@ struct CrosshairInfo
 	bool bTopLine;
 	int iCircleRad;
 	int iCircleSegments;
-	int iEDynamicType; // int NeoHudCrosshairDynamicType
+	NeoHudCrosshairDynamicType eDynamicType;
 	bool bSeparateColorDot;
 	Color colorDot;
 	Color colorDotOutline;
 	Color colorOutline;
 };
+
+#ifdef CLIENT_DLL
 void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const int y);
+int HalfInaccuracyConeInScreenPixels(C_NEOBaseCombatWeapon *pWeapon, int halfScreenWidth);
+
+void InitializeClNeoCrosshair();
+#endif // CLIENT_DLL
+
+void ResetCrosshairToDefault(CrosshairInfo *crh);
+void DefaultCrosshairSerial(char (&szSequence)[NEO_XHAIR_SEQMAX]);
 
 // NEO NOTE (nullsystem): (*&)[NUM] enforces array size
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence);
-void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX]);
+void ExportCrosshair(CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX]);
 
-int HalfInaccuracyConeInScreenPixels(C_NEOBaseCombatWeapon *pWeapon, int halfScreenWidth);

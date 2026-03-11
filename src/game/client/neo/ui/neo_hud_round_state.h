@@ -28,6 +28,16 @@ public:
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
+	
+	void UpdateAvatarSize();
+	// sunk cost fallacy and all that, in hindsight I should have made all of this only work with two teams and split players into separate resizeable cutlvectors by team instead of doing this minus index stuff.
+	// basically any minusindexed n index works such that negative values give the -nth player in the player list, and any positive values give the (n - leftTeamTotal)th player in the list
+	int GetEntityIndexAtPositionInHud(int position, bool positionIsZeroIndexed = false);
+	int GetMinusIndexedPositionOfPlayerInHud(int entIndex);
+	int GetNextAlivePlayerInHud(int minusIndexedPosition = 0, bool reverse = false);
+	void SelectNextAlivePlayerInHud();
+	void SelectPreviousAlivePlayerInHud();
+	int GetSelectedPlayerInHud();
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw();
@@ -48,7 +58,7 @@ private:
 	int DrawPlayerRow(int playerIndex, int yOffset, bool small = false);
 	int DrawPlayerRow_BotCmdr(int playerIndex, int yOffset, bool small = false, const Color* highlightColor = nullptr);
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
-					const int xOffset, const bool drawHealthClass);
+					const int xOffset, const bool drawHealthClass, const bool isSelected = false);
 	void SetTextureToAvatar(int playerIndex);
 
 	virtual void LevelShutdown(void) override;
@@ -58,6 +68,8 @@ private:
 	vgui::HFont m_hOCRFont = 0UL;
 	vgui::HFont m_hOCRSmallFont = 0UL;
 	vgui::HFont m_hOCRSmallerFont = 0UL;
+	vgui::HFont m_hTinyText = 0UL;
+	int m_iTinyTextHeight = 0;
 
 	int m_iXpos = 0;
 
@@ -94,7 +106,7 @@ private:
 	int m_iPreviouslyActiveStar = -1;
 	int m_iPreviouslyActiveTeam = -1;
 
-	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
+	int m_iClassIcons = 0;
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
 	int m_iBeepSecsTotal = 0;
@@ -104,6 +116,20 @@ private:
 	CUtlVector<int> m_commandedList;
 	CUtlVector<int> m_nonCommandedList;
 	CUtlVector<int> m_nonSquadList;
+
+	// Top Squad List
+	// Players who are connected, in a game team etc will have a positive value and sit at the front of the list. Order of negative value players (not connected, non-game team etc) not guaranteed
+	struct playerIndexAndTheirValue
+	{
+		int playerIndex;
+		int playerValue;
+	};
+	CUtlVector<playerIndexAndTheirValue> m_nPlayerList;
+
+	// Used to index the list above. Index of 0 is invalid. Positive values correspond to team NSF, with index 1 being the first member of NSF. 
+	// Negative values correspond to team Jinrai, with index -1 being the first member of Jinrai (Team Jinrai is drawn right to left, while moving left to right starting at index 0 in m_nPlayerList)
+	int m_iSelectedPlayer = 0;		
+	float m_flSelectedPlayerChangeTime = -1;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");
@@ -116,4 +142,9 @@ private:
 	CNEOHud_RoundState(const CNEOHud_RoundState &other);
 };
 
+extern CNEOHud_RoundState *g_pNeoHudRoundState;
+inline CNEOHud_RoundState* NeoHudRoundState()
+{
+	return g_pNeoHudRoundState;
+}
 #endif // NEO_HUD_ROUND_STATE_H

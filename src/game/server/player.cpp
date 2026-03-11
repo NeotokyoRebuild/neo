@@ -2779,7 +2779,7 @@ bool CBasePlayer::SetObserverTarget(CBaseEntity *target)
 {
 	if ( !IsValidObserverTarget( target ) )
 		return false;
-	
+
 	// set new target
 	m_hObserverTarget.Set( target ); 
 

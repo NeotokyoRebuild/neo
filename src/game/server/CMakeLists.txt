@@ -1374,6 +1374,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.h
     neo/neo_bloom_controller.cpp
     neo/neo_client.cpp
     neo/neo_detpack.cpp

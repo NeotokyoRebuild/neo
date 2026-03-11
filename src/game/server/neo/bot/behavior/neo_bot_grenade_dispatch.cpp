@@ -55,9 +55,9 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 		if ( sv_neo_bot_grenade_use_frag.GetBool() && (bits & NEO_WEP_FRAG_GRENADE) )
 		{
 			pFragGrenade = static_cast< CWeaponGrenade * >( pNeoWep );
-			if ( pSmokeGrenade )
+			if ( pSmokeGrenade || (me->GetClass() != NEO_CLASS_SUPPORT) )
 			{
-				break; // found both
+				break; // done searching
 			}
 		}
 		else if ( sv_neo_bot_grenade_use_smoke.GetBool() && (bits & NEO_WEP_SMOKE_GRENADE) )
@@ -65,7 +65,7 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 			pSmokeGrenade = static_cast< CWeaponSmokeGrenade * >( pNeoWep );
 			if ( pFragGrenade )
 			{
-				break; // found both
+				break; // done searching
 			}
 		}
 	}
@@ -76,7 +76,7 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 	}
 
 	// Should I toss a smoke grenade?
-	if ( pSmokeGrenade )
+	if ( pSmokeGrenade && (me->GetClass() == NEO_CLASS_SUPPORT) )
 	{
 		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 		{

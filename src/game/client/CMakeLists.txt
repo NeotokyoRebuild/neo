@@ -1582,8 +1582,6 @@ target_sources_grouped(
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_compass.cpp
     neo/ui/neo_hud_compass.h
-    neo/ui/neo_hud_crosshair.cpp
-    neo/ui/neo_hud_crosshair.h
     neo/ui/neo_hud_damage_indicator.cpp
     neo/ui/neo_hud_deathnotice.cpp
     neo/ui/neo_hud_friendly_marker.cpp
@@ -1656,6 +1654,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.h
 )
 
 target_sources_grouped(
