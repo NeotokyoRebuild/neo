@@ -1070,7 +1070,10 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 
 	// Draw Avatar
 	{
+		// There are 4 rows, the first has generic colour icons, second has jinrai colour icons, third has nsf colour icons and last has dead colour icons with a skull on top
 		const float TEXTURE_HEIGHT = 1 / 4.f;
+		// There are 8 rows. The first column contains the icon for team jinrai, the second for team nsf (for the team colour rows instead two versions of that teams icon are in column 0 and 1)
+		// column 2 onwards contains class specific icons, the last column is unused since vtfs need to have power of 2 dimensions
 		const float TEXTURE_WIDTH = 1 / 8.f;
 		float textureYOffset = 3.f * TEXTURE_HEIGHT;
 		if (g_PR->IsAlive(playerIndex))
@@ -1085,8 +1088,6 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 			}
 		}
 
-		// The team coloured icons have two types of logos corresponding to their team in slot 0 and 1, but we always know the class of
-		// our squad mates (which is the only time they are used) so this is not a problem
 		float textureXOffset = g_PR->GetTeam(playerIndex) == TEAM_JINRAI ? 0 : TEXTURE_WIDTH;
 		if (drawHealthClass)
 		{
