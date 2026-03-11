@@ -240,7 +240,12 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			wchar_t textUTF[MAX_MARKER_STRSIZE];
 			COMPILE_TIME_ASSERT(sizeof(textUTF) == sizeof(wchar_t) * MAX_MARKER_STRSIZE);
 			textUTF[0] = L'\0';
+#ifdef WIN32
+			g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, narrow_cast<int>(Min(sizeof(textUTF), sizeof(wchar_t) * maxLength)));
+			const int numChars = (int)wcslen(textUTF);
+#else
 			const int numChars = g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, narrow_cast<int>(Min(sizeof(textUTF), sizeof(wchar_t) * maxLength)));
+#endif // WIN32
 			if (numChars <= 0)
 			{
 				textSize = 0;
@@ -352,6 +357,23 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 		DisplayText(textASCII, y, settings->iMaxNameLength);
 	}
 }
+
+
+	//if (settings->bShowName) {
+	//	auto playerName = player->GetPlayerNameWithTakeoverContext(player->entindex());
+	//	const char *playerClantag = player->GetNeoClantag();
+
+	//	const int maxLength = Min(narrow_cast<int>(sizeof(textASCII)), settings->iMaxNameLength);
+	//	if (settings->bPrependClantagToName && playerClantag && playerClantag[0])
+	//	{
+	//		V_snprintf(textASCII, maxLength, "[%s] %s", playerClantag, playerName);
+	//	}
+	//	else
+	//	{
+	//		V_snprintf(textASCII, maxLength, "%s", playerName);
+	//	}
+	//	DisplayText(textASCII, y, maxLength);
+	//}
 
 Color CNEOHud_FriendlyMarker::GetTeamColour(int team)
 {
