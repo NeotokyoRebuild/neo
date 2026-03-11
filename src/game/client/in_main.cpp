@@ -462,7 +462,7 @@ void KeyDownHoldReplaceToggle( kbutton_t *b, const char *c )
 KeyDown with a minimum time between any two keydowns of a button. Not intended to limit players, rather its to help players not accidentally execute actions bound to the mouse wheel more than once
 ============
 */
-ConVar cl_neo_mouse_wheel_action_cool_down("cl_neo_mouse_wheel_action_cool_down", "0.3", FCVAR_ARCHIVE, "If the mouse wheel is bound to an action with a mouse wheel delay, controls how long that delay is to prevent accidental activations of the action", true, 0, false, 0);
+ConVar cl_neo_mouse_wheel_action_cool_down("cl_neo_mouse_wheel_action_cool_down", "0.3", FCVAR_ARCHIVE, "If the mouse wheel is bound to an action with a mouse wheel delay, controls how long that delay is to prevent accidental activations of the action", true, 0, true, 1.f);
 void KeyDownWithMouseWheelDelay(kbutton_t* b, const char* c)
 {
 	static float nextMouseWheelUp = 0.f;
