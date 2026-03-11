@@ -1085,6 +1085,8 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 			}
 		}
 
+		// The team coloured icons have two types of logos corresponding to their team in slot 0 and 1, but we always know the class of
+		// our squad mates (which is the only time they are used) so this is not a problem
 		float textureXOffset = g_PR->GetTeam(playerIndex) == TEAM_JINRAI ? 0 : TEXTURE_WIDTH;
 		if (drawHealthClass)
 		{
