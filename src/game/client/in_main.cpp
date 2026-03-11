@@ -463,10 +463,10 @@ KeyDown with a minimum time between any two keydowns of a button. Not intended t
 ============
 */
 ConVar cl_neo_mouse_wheel_action_cool_down("cl_neo_mouse_wheel_action_cool_down", "0.3", FCVAR_ARCHIVE, "If the mouse wheel is bound to an action with a mouse wheel delay, controls how long that delay is to prevent accidental activations of the action", true, 0, true, 1.f);
+static float nextMouseWheelUp = 0.f;
+static float nextMouseWheelDown = 0.f;
 void KeyDownWithMouseWheelDelay(kbutton_t* b, const char* c)
 {
-	static float nextMouseWheelUp = 0.f;
-	static float nextMouseWheelDown = 0.f;
 	if (cl_neo_mouse_wheel_action_cool_down.GetFloat() > 0.f && c && c[0])
 	{
 		int k = atoi(&c[0]);
@@ -1978,5 +1978,9 @@ void CInput::LevelInit( void )
 	// Remove any IK information
 	m_EntityGroundContact.RemoveAll();
 #endif
+#ifdef NEO
+	nextMouseWheelUp = 0.f;
+	nextMouseWheelDown = 0.f;
+#endif // NEO
 }
 
