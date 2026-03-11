@@ -242,7 +242,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			textUTF[0] = L'\0';
 #ifdef WIN32
 			g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, narrow_cast<int>(Min(sizeof(textUTF), sizeof(wchar_t) * maxLength)));
-			const int numChars = (int)wcslen(textUTF);
+			const int numChars = narrow_cast<int>(wcslen(textUTF));
 #else
 			const int numChars = g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, narrow_cast<int>(Min(sizeof(textUTF), sizeof(wchar_t) * maxLength)));
 #endif // WIN32
