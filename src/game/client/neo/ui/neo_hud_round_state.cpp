@@ -1086,14 +1086,7 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 		}
 
 		float textureXOffset = g_PR->GetTeam(playerIndex) == TEAM_JINRAI ? 0 : TEXTURE_WIDTH;
-		if (!drawHealthClass)
-		{
-			if (!g_PR->IsAlive(playerIndex))
-			{
-				textureXOffset = (g_PR->GetTeam(playerIndex) - TEAM_NSF + 1) * TEXTURE_WIDTH;
-			}
-		}
-		else
+		if (drawHealthClass)
 		{
 			textureXOffset = (2 + g_PR->GetClass(playerIndex)) * TEXTURE_WIDTH;
 		}
