@@ -42,7 +42,7 @@ void CNEOHud_WorldPosMarker::ApplySchemeSettings(vgui::IScheme* pScheme)
     BaseClass::ApplySchemeSettings(pScheme);
 }
 
-const float CNEOHud_WorldPosMarker::GetHudCentreSize() const
+float CNEOHud_WorldPosMarker::GetHudCentreSize() const
 {
     return viewCentreSize;
 }

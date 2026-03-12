@@ -62,7 +62,7 @@ void CNEOHud_GhostCapPoint::ApplySchemeSettings(vgui::IScheme *pScheme)
 	ghostCapViewCentreSizeChangeCallBack();
 }
 
-const float CNEOHud_GhostCapPoint::GetHudCentreSize() const
+float CNEOHud_GhostCapPoint::GetHudCentreSize() const
 {
 	return ghostCapViewCentreSize;
 }

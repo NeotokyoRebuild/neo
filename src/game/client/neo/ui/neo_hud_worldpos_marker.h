@@ -22,7 +22,7 @@ public:
 protected:
     int m_viewWidth, m_viewHeight;
 
-    virtual inline const float GetHudCentreSize() const;
+    virtual inline float GetHudCentreSize() const;
 
     static Color FadeColour(const Color& originalColour, float alphaMultiplier);
 

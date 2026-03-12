@@ -87,7 +87,7 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
-const float CNEOHud_GhostMarker::GetHudCentreSize() const
+float CNEOHud_GhostMarker::GetHudCentreSize() const
 {
 	return ghostViewCentreSize;
 }
