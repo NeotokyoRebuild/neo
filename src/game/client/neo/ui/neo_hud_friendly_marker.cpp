@@ -240,7 +240,12 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			wchar_t textUTF[MAX_MARKER_STRSIZE];
 			COMPILE_TIME_ASSERT(sizeof(textUTF) == sizeof(wchar_t) * MAX_MARKER_STRSIZE);
 			textUTF[0] = L'\0';
+#ifdef WIN32
+			g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, narrow_cast<int>(Min(sizeof(textUTF), sizeof(wchar_t) * maxLength)));
+			const int numChars = narrow_cast<int>(wcslen(textUTF));
+#else
 			const int numChars = g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, narrow_cast<int>(Min(sizeof(textUTF), sizeof(wchar_t) * maxLength)));
+#endif // WIN32
 			if (numChars <= 0)
 			{
 				textSize = 0;
