@@ -20,7 +20,7 @@ public:
 	virtual void DrawNeoHudElement() override;
 	virtual ConVar *GetUpdateFrequencyConVar() const override;
 	
-    inline float GetHudCentreSize() const override;
+    float GetHudCentreSize() const override;
 
 	void SetTeam(const int team) { m_iCapTeam = team; }
 	void SetRadius(const float radius) { m_flMyRadius = radius; }
