@@ -124,12 +124,6 @@ void CNEOHud_Ammo::DrawAmmo() const
 	if(activeWep->IsGhost())
 		return;
 
-	if (activeWep->GetNeoWepBits() & NEO_WEP_BALC)
-	{
-		DrawHeatMeter(activeWep);
-		return;
-	}
-
 	const int maxClip = activeWep->GetMaxClip1();
 	if (maxClip == 0 || activeWep->IsMeleeWeapon())
 		return;
@@ -166,7 +160,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
 		
-	if (activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) 
+	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || (activeWep->GetNeoWepBits() & NEO_WEP_BALC))
 	{
 		char fireModeText[2]{ '\0' };
 
@@ -207,6 +201,12 @@ void CNEOHud_Ammo::DrawAmmo() const
 			ammoChar = "g";
 			magSizeMax = magSizeCurrent = ammoCount;
 		}			
+	}
+
+	if (activeWep->GetNeoWepBits() & NEO_WEP_BALC)
+	{
+		DrawHeatMeter(activeWep);
+		return;
 	}
 
 	surface()->DrawSetTextColor(ammo_color);
@@ -310,9 +310,9 @@ void CNEOHud_Ammo::DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep) const
 	
 	if (activeWep->GetPrimaryAmmoCount() == 0)
 	{
-		surface()->DrawSetTextFont(m_hBulletFont);
-		surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
-		surface()->DrawPrintText(L"HOT", 3);
+		surface()->DrawSetTextFont(m_hSmallTextFont);
+		surface()->DrawSetTextPos(heatbar_xpos + xpos, (heatbar_ypos + ypos) - 22);
+		surface()->DrawPrintText(L"OVERHEAT", 8);
 	}
 
 	surface()->DrawSetColor(heatColorLerp);

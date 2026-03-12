@@ -39,6 +39,7 @@ public:
 
 	virtual bool CanBePickedUpByClass(int classId) final;
 	virtual bool CanDrop() final { return false; }
+	virtual bool CanAim() final { return false; }
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 #ifdef CLIENT_DLL

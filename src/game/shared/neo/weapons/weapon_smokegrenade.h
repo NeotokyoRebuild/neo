@@ -56,6 +56,7 @@ public:
 	bool	Reload(void);
 	void	Drop(const Vector& vecVelocity) OVERRIDE;
 	bool	CanDrop() OVERRIDE;
+	virtual bool CanAim() final { return false; }
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 #ifndef CLIENT_DLL

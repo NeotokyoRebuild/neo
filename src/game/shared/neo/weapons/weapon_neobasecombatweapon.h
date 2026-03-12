@@ -191,7 +191,7 @@ public:
 	{
 		return ((GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
-			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C | NEO_WEP_ZR68_S | NEO_WEP_BALC
+			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C | NEO_WEP_ZR68_S
 #ifdef INCLUDE_WEP_PBK
 			| NEO_WEP_PBK56S
 #endif
@@ -207,6 +207,7 @@ public:
 
 	virtual bool CanBePickedUpByClass(int classId);
 	virtual bool CanDrop(void);
+	virtual bool CanAim(void) { return true; }
 	virtual bool UsesTracers() { return false; }
 
 	virtual void SetPickupTouch(void) override;

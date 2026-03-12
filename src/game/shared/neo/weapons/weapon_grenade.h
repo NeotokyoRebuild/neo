@@ -58,6 +58,7 @@ public:
 
 	void	Drop(const Vector& vecVelocity) OVERRIDE;
 	bool	CanDrop(void) OVERRIDE;
+	virtual bool CanAim() final { return false; }
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 #ifndef CLIENT_DLL

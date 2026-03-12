@@ -66,6 +66,7 @@ public:
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE;};
 	void HandleGhostUnequip(void);
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
+	virtual bool CanAim() final { return false; }
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
