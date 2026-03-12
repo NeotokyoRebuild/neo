@@ -116,6 +116,14 @@ static const wchar_t* AUTOMATIC_LEAN_LABELS[] = {
 	L"Always",
 };
 
+static const wchar_t* FLASH_TASKBAR_LABELS[NeoUI::ENeoFlashTaskbarOption::EnumCount] = {
+	L"Never",
+	L"When competitive match starts",
+	L"When competitive round starts",
+	L"When any match starts",
+	L"When any round starts",
+};
+
 static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
 
 ConVarRefEx::ConVarRefEx(const char *pName, const bool bExcludeGlobalPtrs)
@@ -410,6 +418,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bTachiFullAutoPreferred = cvr->cl_neo_tachi_prefer_auto.GetBool();
 		pGeneral->bTakingDamageSounds = cvr->cl_neo_taking_damage_sounds.GetBool();
+		pGeneral->iFlashTaskbarOption = cvr->neo_flash_taskbar.GetInt();
+		pGeneral->bDontFlashTaskbarIfObserver = cvr->neo_flash_taskbar_no_spec.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
@@ -741,6 +751,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_tachi_prefer_auto.SetValue(pGeneral->bTachiFullAutoPreferred);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_taking_damage_sounds.SetValue(pGeneral->bTakingDamageSounds);
+		cvr->neo_flash_taskbar.SetValue(pGeneral->iFlashTaskbarOption);
+		cvr->neo_flash_taskbar_no_spec.SetValue(pGeneral->bDontFlashTaskbarIfObserver);
 		NeoSettingsBackgroundWrite(ns);
 	}
 	{
@@ -1037,6 +1049,11 @@ void NeoSettings_General(NeoSettings *ns)
 		NeoUI::Label(L"Display name (invalid)", wszTotalClanAndName);
 		NeoUI::EndOverrideFgColor();
 	}
+
+	NeoUI::RingBox(L"Flash inactive game window in OS taskbar", FLASH_TASKBAR_LABELS, ARRAYSIZE(FLASH_TASKBAR_LABELS), &pGeneral->iFlashTaskbarOption);
+	// Hide this option if it's irrelevant for the user, to make the UI less cluttered.
+	if (pGeneral->iFlashTaskbarOption != NeoUI::ENeoFlashTaskbarOption::Never)
+		NeoUI::RingBoxBool(L"Don't flash the taskbar if spectating", &pGeneral->bDontFlashTaskbarIfObserver);
 
 	NeoUI::Pad();
 	NeoUI::Pad();
