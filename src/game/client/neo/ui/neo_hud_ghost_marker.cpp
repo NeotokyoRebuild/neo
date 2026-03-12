@@ -25,9 +25,18 @@ using vgui::surface;
 
 ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "1", FCVAR_ARCHIVE,
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
-ConVar cl_neo_hud_center_ghost_marker_size("cl_neo_hud_center_ghost_marker_size", "12.5", FCVAR_ARCHIVE,
-	"HUD center size in percentage to fade ghost marker.", true, 1, false, 0);
 
+static float ghostViewCentreSize = 0;
+extern ConVar cl_neo_hud_center_ghost_marker_size;
+void ghostViewCentreSizeChangeCallBack(IConVar* pConVar [[maybe_unused]] = nullptr, char const* pOldString [[maybe_unused]] = nullptr, float flOldValue [[maybe_unused]] = 0.f) {
+	int w, h;
+    vgui::surface()->GetScreenSize(w, h);
+
+    const auto widerAxis = Max(w, h);
+    ghostViewCentreSize = widerAxis * (static_cast<float>(cl_neo_hud_center_ghost_marker_size.GetInt()) / 100);
+}
+ConVar cl_neo_hud_center_ghost_marker_size("cl_neo_hud_center_ghost_marker_size", "12.5", FCVAR_ARCHIVE,
+	"HUD center size in percentage to fade ghost marker.", true, 1, false, 0, ghostViewCentreSizeChangeCallBack);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostMarker, neo_ghost_marker);
 
@@ -71,13 +80,16 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 	int wide, tall;
 	surface()->GetScreenSize(wide, tall);
 	SetBounds(0, 0, wide, tall);
+	
+	ghostViewCentreSizeChangeCallBack();
 
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
+}
 
-	// Override CNEOHud_WorldPosMarker's sizing with our own
-	const int widerAxis = Max(m_viewWidth, m_viewHeight);
-	m_viewCentreSize = widerAxis * (cl_neo_hud_center_ghost_marker_size.GetFloat() / 100.0f);
+float CNEOHud_GhostMarker::GetHudCentreSize() const
+{
+	return ghostViewCentreSize;
 }
 
 extern ConVar cl_neo_hud_worldpos_verbose;

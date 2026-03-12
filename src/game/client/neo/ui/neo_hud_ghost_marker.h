@@ -19,6 +19,8 @@ public:
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
 	virtual void Paint() override;
+	
+    float GetHudCentreSize() const override;
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw() override;

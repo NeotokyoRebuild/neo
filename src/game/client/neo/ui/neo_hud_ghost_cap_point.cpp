@@ -10,8 +10,18 @@
 
 ConVar neo_ghost_cap_point_hud_scale_factor("neo_ghost_cap_point_hud_scale_factor", "1", FCVAR_ARCHIVE,
 	"Ghost cap HUD element scaling factor", true, 0.01, false, 0);
+
+static float ghostCapViewCentreSize = 0;
+extern ConVar cl_neo_hud_center_ghost_cap_size;
+void ghostCapViewCentreSizeChangeCallBack(IConVar* pConVar [[maybe_unused]] = nullptr, char const* pOldString [[maybe_unused]] = nullptr, float flOldValue [[maybe_unused]] = 0.f) {
+	int w, h;
+    vgui::surface()->GetScreenSize(w, h);
+
+    const auto widerAxis = Max(w, h);
+    ghostCapViewCentreSize = widerAxis * (static_cast<float>(cl_neo_hud_center_ghost_cap_size.GetInt()) / 100);
+}
 ConVar cl_neo_hud_center_ghost_cap_size("cl_neo_hud_center_ghost_cap_size", "12.5", FCVAR_ARCHIVE,
-	"HUD center size in percentage to fade ghost cap point.", true, 1, false, 0);
+	"HUD center size in percentage to fade ghost cap point.", true, 1, false, 0, ghostCapViewCentreSizeChangeCallBack);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostCapPoint, 0.01)
 
@@ -48,10 +58,13 @@ void CNEOHud_GhostCapPoint::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	vgui::surface()->GetScreenSize(m_iPosX, m_iPosY);
 	SetBounds(0, 0, m_iPosX, m_iPosY);
+	
+	ghostCapViewCentreSizeChangeCallBack();
+}
 
-	// Override CNEOHud_WorldPosMarker's sizing with our own
-	const int widerAxis = Max(m_viewWidth, m_viewHeight);
-	m_viewCentreSize = widerAxis * (cl_neo_hud_center_ghost_cap_size.GetFloat() / 100.0f);
+float CNEOHud_GhostCapPoint::GetHudCentreSize() const
+{
+	return ghostCapViewCentreSize;
 }
 
 extern ConVar cl_neo_hud_worldpos_verbose;
