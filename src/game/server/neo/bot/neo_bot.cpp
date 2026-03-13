@@ -662,7 +662,6 @@ void CNEOBot::Spawn()
 	m_didReselectClass = false;
 	m_isLookingAroundForEnemies = true;
 	m_attentionFocusEntity = NULL;
-	GetLocomotionInterface()->m_bBreakBreakableInPath = false;
 
 	m_delayedNoticeVector.RemoveAll();
 
@@ -2027,6 +2026,50 @@ void CNEOBot::RepathIfFriendlyBlockingLineOfFire()
 				SetCurrentPath(&m_repathAroundFriendlyFollower);
 			}
 		}
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+void CNEOBot::AvoidBumpingFriends()
+{
+	const float avoidRange = 32.0f;
+
+	CUtlVector< CNEO_Player * > friendVector;
+	CollectPlayers( &friendVector, GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
+
+	CNEO_Player *closestFriend = NULL;
+	float closestRangeSq = avoidRange * avoidRange;
+
+	for ( int i = 0; i < friendVector.Count(); ++i )
+	{
+		CNEO_Player *friendly = friendVector[i];
+
+		if ( friendly == GetEntity() )
+			continue;
+
+		float rangeSq = ( friendly->GetAbsOrigin() - GetAbsOrigin() ).LengthSqr();
+		if ( rangeSq < closestRangeSq )
+		{
+			closestFriend = friendly;
+			closestRangeSq = rangeSq;
+		}
+	}
+
+	if ( !closestFriend )
+		return;
+
+	// avoid unless hindrance returns a definitive "no"
+	if ( GetIntentionInterface()->IsHindrance( this, closestFriend ) == ANSWER_UNDEFINED )
+	{
+		ReleaseForwardButton();
+		ReleaseLeftButton();
+		ReleaseRightButton();
+		ReleaseBackwardButton();
+
+		Vector away = GetAbsOrigin() - closestFriend->GetAbsOrigin();
+
+		GetLocomotionInterface()->Approach( GetLocomotionInterface()->GetFeet() + away );
 	}
 }
 

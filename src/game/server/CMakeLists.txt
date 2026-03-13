@@ -1483,6 +1483,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_melee_attack.h
     neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
     neo/bot/behavior/neo_bot_move_to_vantage_point.h
+    neo/bot/behavior/neo_bot_path_clear_breakable.cpp
+    neo/bot/behavior/neo_bot_path_clear_breakable.h
     neo/bot/behavior/neo_bot_pause.cpp
     neo/bot/behavior/neo_bot_pause.h
     neo/bot/behavior/neo_bot_retreat_to_cover.cpp
