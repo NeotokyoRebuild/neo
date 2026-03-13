@@ -25,6 +25,9 @@
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
+#ifdef NEO
+#define LADDER_BRUSH_GEN_DEBUG false // Don't enable this unless you need to debug the ladder brush autogen
+#endif
 
 enum { MAX_BLOCKED_AREAS = 256 };
 static unsigned int blockedID[ MAX_BLOCKED_AREAS ];
@@ -3437,6 +3440,8 @@ void CNavMesh::AddWalkableSeeds( void )
  */
 void CNavMesh::BeginGeneration( bool incremental )
 {
+#ifdef NEO
+#if LADDER_BRUSH_GEN_DEBUG // Fast debug path while skipping the other nav stuff. Don't enable this expect for ladder debug!
 	if (!BuildBrushLaddersFromBsp())
 	{
 		Warning("Generating brush ladders...FAIL\n");
@@ -3446,6 +3451,8 @@ void CNavMesh::BeginGeneration( bool incremental )
 		Msg( "Generating brush ladders...DONE\n" );
 	}
 	return;
+#endif
+#endif
 
 	IGameEvent *event = gameeventmanager->CreateEvent( "nav_generate" );
 	if ( event )
@@ -4058,7 +4065,8 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 				m_isAnalyzed = true;
 			}
 
-#if 0 //def NEO
+#ifdef NEO
+#if !(LADDER_BRUSH_GEN_DEBUG)
 			// Post-gen because we want automatic merge with the final navmesh
 			if (!BuildBrushLaddersFromBsp())
 			{
@@ -4068,6 +4076,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			{
 				Msg( "Generating brush ladders...DONE\n" );
 			}
+#endif
 #endif
 
 			// generation complete!
