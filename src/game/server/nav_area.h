@@ -520,6 +520,10 @@ public:
 	virtual bool IsPartiallyVisible( const Vector &eye, const CBaseEntity *ignore = NULL ) const;				// return true if any portion of the area is visible from given eyepoint (CPU intensive)
 
 	virtual bool IsPotentiallyVisible( const CNavArea *area ) const;		// return true if given area is potentially visible from somewhere in this area (very fast)
+#ifdef NEO
+	int GetPotentiallyVisibleAreaCount() const { return m_visibleAreaCount; }
+	void ComputePotentiallyVisibleAreaCount();
+#endif
 	virtual bool IsPotentiallyVisibleToTeam( int team ) const;				// return true if any portion of this area is visible to anyone on the given team (very fast)
 
 	virtual bool IsCompletelyVisible( const CNavArea *area ) const;			// return true if given area is completely visible from somewhere in this area (very fast)
@@ -662,6 +666,9 @@ private:
 	*/
 
 	static unsigned int m_nextID;								// used to allocate unique IDs
+#ifdef NEO
+	int m_visibleAreaCount;
+#endif
 	unsigned int m_id;											// unique area ID
 	unsigned int m_debugid;
 

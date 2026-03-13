@@ -258,7 +258,36 @@ CNavArea::CNavArea( void )
 	m_funcNavCostVector.RemoveAll();
 
 	m_nVisTestCounter = (uint32)-1;
+
+#ifdef NEO
+	m_visibleAreaCount = 0;
+#endif
 }
+
+
+#ifdef NEO
+//--------------------------------------------------------------------------------------------------------------
+struct CountPotentiallyVisibleAreas
+{
+	int count;
+	CountPotentiallyVisibleAreas() : count(0) {}
+	bool operator()( CNavArea* area )
+	{
+		count++;
+		return true;
+	}
+};
+
+
+//--------------------------------------------------------------------------------------------------------------
+void CNavArea::ComputePotentiallyVisibleAreaCount()
+{
+	CountPotentiallyVisibleAreas counter;
+	const_cast<CNavArea*>(this)->ForAllPotentiallyVisibleAreas( counter );
+	m_visibleAreaCount = counter.count;
+}
+#endif
+
 
 //--------------------------------------------------------------------------------------------------------------
 /**
