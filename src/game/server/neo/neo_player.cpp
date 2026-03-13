@@ -3456,16 +3456,13 @@ void CNEO_Player::SetTestMessageVisible(bool visible)
 
 void CNEO_Player::ResetBotCommandState()
 {
-	if (sv_neo_bot_cmdr_enable.GetBool())
+	m_hLeadingPlayer = nullptr;
+	m_hCommandingPlayer = nullptr;
+	m_tBotPlayerPingCooldown.Invalidate();
+	m_flBotDynamicFollowDistanceSq = 0.0f;
+	for (int i = 0; i < STAR__TOTAL; ++i)
 	{
-		m_hLeadingPlayer = nullptr;
-		m_hCommandingPlayer = nullptr;
-		m_tBotPlayerPingCooldown.Invalidate();
-		m_flBotDynamicFollowDistanceSq = 0.0f;
-		for (int i = 0; i < STAR__TOTAL; ++i)
-		{
-			m_vLastPingByStar.GetForModify(i) = VECTOR_INVALID_WAYPOINT;
-		}
+		m_vLastPingByStar.GetForModify(i) = VECTOR_INVALID_WAYPOINT;
 	}
 }
 
@@ -3538,11 +3535,6 @@ void CNEO_Player::PlayerUse( void )
 {
 	BaseClass::PlayerUse();
 
-	if (!sv_neo_bot_cmdr_enable.GetBool())
-	{
-		return;
-	}
-
 	if ( (m_afButtonPressed & IN_USE) && !FindUseEntity() )
 	{
 		// Select bot under cursor to follow/unfollow.
@@ -3560,9 +3552,18 @@ void CNEO_Player::PlayerUse( void )
 			CNEO_Player* pTargetPlayer = ToNEOPlayer(tr.m_pEnt);
 			if ( pTargetPlayer && pTargetPlayer->IsBot())
 			{
-				// The hit entity is a bot! Now, toggle its follow state.
-				pTargetPlayer->ToggleBotFollowCommander( this );
-				// TODO: Do we want to allow using players for some kind of communication?
+				if (sv_neo_bot_cmdr_enable.GetBool())
+				{
+					// The hit entity is a bot! Now, toggle its follow state.
+					pTargetPlayer->ToggleBotFollowCommander( this );
+					// TODO: Do we want to allow using players for some kind of communication?
+				}
+				else if (NEORules()->IsTeamplay() && pTargetPlayer->GetTeamNumber() == GetTeamNumber())
+				{
+					// Alt: Triggers throwing primary weapon to user
+					// see neo_bot_scenario_monitor for behavior transition
+					pTargetPlayer->m_hCommandingPlayer = this;
+				}
 			}
 		}
 	}
