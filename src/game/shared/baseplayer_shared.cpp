@@ -693,7 +693,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	}
 
 #ifdef NEO
-	if (neoPlayer->ShouldPlayerMakeFootsteps(speed))
+	if (!neoPlayer->ShouldPlayerMakeFootsteps(speed))
 	{
 		return;
 	}

@@ -69,9 +69,11 @@ void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 	vgui::surface()->DrawSetColor(COLOR_WHITE);
 	const float ICON_WIDTH = 1 / 2.f;
 	const float ICON_HEIGHT = 1 / 2.f;
-	vgui::surface()->DrawTexturedSubRect(0, 0, wide, tall, 0, ICON_WIDTH, ICON_HEIGHT, 2 * ICON_HEIGHT);
+	vgui::surface()->DrawTexturedSubRect(0, 0, wide, tall * (1 - fractionTowardsMakingSound), 
+		0, ICON_HEIGHT, ICON_WIDTH, ICON_HEIGHT + (ICON_HEIGHT * (1 - fractionTowardsMakingSound)));
 	vgui::surface()->DrawSetColor(255, 255 - (255 * fractionTowardsMakingSound), 255 - (255 * fractionTowardsMakingSound), 255);
-	vgui::surface()->DrawTexturedSubRect(0, tall * (1 - fractionTowardsMakingSound), wide, tall, 0, ICON_HEIGHT * (1 - fractionTowardsMakingSound), ICON_WIDTH, ICON_HEIGHT);
+	vgui::surface()->DrawTexturedSubRect(0, tall * (1 - fractionTowardsMakingSound), wide, tall, 
+		0, ICON_HEIGHT * (1 - fractionTowardsMakingSound), ICON_WIDTH, ICON_HEIGHT);
 }
 
 void CNEOHud_WalkingIndicator::Paint()
