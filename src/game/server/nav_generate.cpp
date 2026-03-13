@@ -3441,6 +3441,16 @@ void CNavMesh::AddWalkableSeeds( void )
  */
 void CNavMesh::BeginGeneration( bool incremental )
 {
+	if (!BuildBrushLaddersFromBsp())
+	{
+		Warning("Generating brush ladders...FAIL\n");
+	}
+	else
+	{
+		Msg( "Generating brush ladders...DONE\n" );
+	}
+	return;
+
 	IGameEvent *event = gameeventmanager->CreateEvent( "nav_generate" );
 	if ( event )
 	{
@@ -4096,6 +4106,18 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			{
 				m_isAnalyzed = true;
 			}
+
+#if 0 //def NEO
+			// Post-gen because we want automatic merge with the final navmesh
+			if (!BuildBrushLaddersFromBsp())
+			{
+				Warning("Generating brush ladders...FAIL\n");
+			}
+			else
+			{
+				Msg( "Generating brush ladders...DONE\n" );
+			}
+#endif
 
 			// generation complete!
 			float generationTime = Plat_FloatTime() - m_generationStartTime;
