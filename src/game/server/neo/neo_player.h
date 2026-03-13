@@ -178,6 +178,7 @@ public:
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotCloakStateDisrupted() const { return !m_botThermOpticCamoDisruptedTimer.IsElapsed(); }
+	bool GetBotPauseFiring() const { return !m_botPauseFiringTimer.IsElapsed(); }
 	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
@@ -243,6 +244,8 @@ private:
 
 	// tracks time since last cloak disruption event for bots who can't actually see
 	CountdownTimer m_botThermOpticCamoDisruptedTimer;
+	// cooldown after inflicting accidental team damage
+	CountdownTimer m_botPauseFiringTimer;
 
 private:
 	float GetActiveWeaponSpeedScale() const;
