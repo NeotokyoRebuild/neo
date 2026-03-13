@@ -59,12 +59,18 @@ CNEOHud_ChildElement::XYHudPos CNEOHud_ChildElement::DrawNeoHudRoundedCommon(
 	const int x0, const int y0, const int x1, const int y1, Color color,
 	bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const
 {
-	const XYHudPos p{
+	XYHudPos p{
 		.x0w = x0 + m_rounded_width,
 		.x1w = x1 - m_rounded_width,
 		.y0h = y0 + m_rounded_height,
 		.y1h = y1 - m_rounded_height,
 	};
+
+	if (p.y1h < p.y0h)
+		p.y1h = p.y0h = y0 + (0.5 * (y1 - y0));
+
+	if (p.x1w < p.x0w)
+		p.x1w = p.x0w = x0 + (0.5 * (x1 - x0));
 
 	surface()->DrawSetColor(color);
 
