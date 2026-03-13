@@ -111,6 +111,8 @@ public:
 	// -----------------------
 	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of "fog"
 	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+	virtual float		GetFogObscuredRatio(float range) const OVERRIDE;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+	float				GetCloakObscuredRatio(CNEO_Player* target) const;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 
 	void AddNeoFlag(int flags)
 	{
