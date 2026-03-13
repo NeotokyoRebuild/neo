@@ -3365,7 +3365,7 @@ namespace Neo
 		center = VectorLerp(polyMins, polyMaxs, 0.5);
 		UTIL_AddDebugLine(center, center + (polygon.polyNormal * GenerationStepSize), true, false);
 
-		return true; // TODO
+		CreateLadder(polyMins, polyMaxs, HumanHeight);
 	}
 
 	return true;
