@@ -26,6 +26,12 @@
 #include "tf/nav_mesh/tf_nav_area.h"
 #endif
 
+#ifdef NEO
+#include "mathlib/polyhedron.h"
+#include "nav.h"
+#include "polylib.h"
+#endif
+
 #ifdef NEXT_BOT
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
 #endif
@@ -3019,6 +3025,465 @@ void CNavMesh::DestroyLadders( void )
 	m_markedLadder = NULL;
 	m_selectedLadder = NULL;
 }
+
+#ifdef NEO
+namespace Neo
+{
+	struct MockBspHdr {
+		decltype(dheader_t::ident) ident;
+		decltype(dheader_t::version) version;
+	};
+
+	// Sanity check BSP header, version, and endianness compatibility.
+	// Has the side-effect of reading sizeof(Neo::MockBspHdr) into the file handle.
+	static bool ValidateBspHeader(FileHandle_t f)
+	{
+		static_assert(VALVE_LITTLE_ENDIAN);
+
+		MockBspHdr hdr;
+		filesystem->Read(&hdr, sizeof(hdr), f);
+		if (hdr.ident != IDBSPHEADER)
+		{
+			CByteswap().SwapBuffer(&hdr.ident, &hdr.ident);
+			if (hdr.ident != IDBSPHEADER)
+			{
+				Warning("%s: invalid BSP file ident 0x%x (expected 0x%x)\n",
+					__FUNCTION__, hdr.ident, IDBSPHEADER);
+				return false;
+			}
+			else
+			{
+				Warning("%s: BSP had unsupported endianness (expected %s, was %s)\n",
+					__FUNCTION__,
+					VALVE_LITTLE_ENDIAN ? "little" : "big",
+					VALVE_LITTLE_ENDIAN ? "big" : "little");
+				return false;
+			}
+		}
+		else if (hdr.version < MINBSPVERSION || hdr.version > BSPVERSION)
+		{
+			Warning("%s: unsupported BSP file version %d (expected in range %d-%d)\n",
+				__FUNCTION__, hdr.version, MINBSPVERSION, BSPVERSION);
+			return false;
+		}
+
+		return true;
+	}
+
+	constexpr static auto LumpHdrOffs(GameLumpId_t id)
+	{
+		auto lumpBegin = _hacky_datamap_offsetof(dheader_t, lumps);
+		return narrow_cast<int>(lumpBegin + id * sizeof(lump_t));
+	}
+
+	[[nodiscard]] static bool ReadLumpHdr(GameLumpId_t id, FileHandle_t f, lump_t* out)
+	{
+		constexpr auto lumpSize = sizeof(std::remove_pointer_t<decltype(out)>);
+		static_assert(lumpSize > 0);
+
+		Assert(filesystem);
+		Assert(f);
+
+		const auto seekOffs = LumpHdrOffs(id);
+		if (seekOffs < 0)
+		{
+			Assert(false);
+			return false;
+		}
+		else if (seekOffs > filesystem->Size(f) + lumpSize)
+		{
+			Assert(false);
+			return false;
+		}
+
+		filesystem->Seek(f, LumpHdrOffs(id), FILESYSTEM_SEEK_HEAD);
+
+		const auto totalRead = filesystem->Read(out, lumpSize, f);
+		const bool ok = (totalRead == lumpSize);
+		Assert(ok);
+		return ok;
+	}
+
+	template <class T>
+	[[nodiscard]] static bool ReadLump(GameLumpId_t id, FileHandle_t f, T* out,
+		int startLump = 0, int numLumpsToRead = 1, const lump_t* lump = {})
+	{
+		if (numLumpsToRead == 0)
+		{
+			return true; // if they want to read nothing, that's fine I suppose
+		}
+		else
+		{
+			Assert(filesystem);
+		}
+
+		if (numLumpsToRead < 0)
+		{
+			Warning("%s: Cannot read negative amount of lumps (%d)\n", __FUNCTION__, numLumpsToRead);
+			return false;
+		}
+		if (startLump < 0)
+		{
+			Warning("%s: Lump start position cannot be negative\n", __FUNCTION__);
+			return false;
+		}
+		if (!f)
+		{
+			Warning("%s: Invalid file handle\n", __FUNCTION__);
+			return false;
+		}
+
+		lump_t hdr;
+		if (!ReadLumpHdr(id, f, &hdr))
+		{
+			Warning("%s: Failed to read BSP header for lump %d\n", __FUNCTION__, id);
+			return false;
+		}
+		if (hdr.fileofs < 0)
+		{
+			Warning("%s: Lump hdr reported negative target lump offset %d\n", __FUNCTION__, hdr.fileofs);
+			return false;
+		}
+		if (hdr.filelen < 0)
+		{
+			Warning("%s: File hdr reported negative target lump length %d\n", __FUNCTION__, hdr.filelen);
+			return false;
+		}
+
+		const auto fileTargetLumpOffset = hdr.fileofs + startLump * sizeof(T);
+		if (fileTargetLumpOffset <= 0)
+		{
+			Warning("%s: Expected a positive target lump offset for lump %d but got %zu\n", __FUNCTION__, id, fileTargetLumpOffset);
+			return false;
+		}
+		else if (fileTargetLumpOffset > std::numeric_limits<int>::max())
+		{
+			Warning("%s: Reading starting to read lumpid(s) of type %d from index %d would require lump offset of %zu which is >max: %d\n",
+				__FUNCTION__, id, fileTargetLumpOffset, std::numeric_limits<int>::max());
+			return false;
+		}
+
+		const auto numLumpsAvailable = hdr.filelen / sizeof(T);
+		Assert(numLumpsAvailable >= 0);
+
+		if (numLumpsToRead > numLumpsAvailable)
+		{
+			Warning("%s: Requested %d lump(s) of type %d but only %zu such lump(s) available\n",
+				__FUNCTION__, numLumpsToRead, id, numLumpsAvailable);
+			return false;
+		}
+
+		const auto fileSize = filesystem->Size(f);
+		const auto sizeToRead = sizeof(T) * numLumpsToRead;
+		if (sizeToRead > std::numeric_limits<int>::max())
+		{
+			Warning("%s: Reading %d lumps of lumpid %d would require %zu bytes which >max: %d\n",
+				__FUNCTION__, numLumpsToRead, id, sizeToRead, std::numeric_limits<int>::max());
+			return false;
+		}
+
+		const auto requiredSize = fileTargetLumpOffset + sizeToRead;
+		Assert(fileSize > 0);
+		Assert(requiredSize > 0);
+		if (fileSize < requiredSize)
+		{
+			Warning("%s: File size (%d bytes) not large enough to process %d lump(s) offset for lumpid %d (%zu bytes)\n",
+				__FUNCTION__, fileSize, numLumpsToRead, id, requiredSize);
+			return false;
+		}
+
+		filesystem->Seek(f, narrow_cast<int>(fileTargetLumpOffset), FILESYSTEM_SEEK_HEAD);
+
+		const auto bytesReadTotal = filesystem->Read(out, narrow_cast<int>(sizeToRead), f);
+		if (bytesReadTotal != sizeToRead)
+		{
+			Warning("%s: Expected to read %d bytes from %d lump(s) of type %d, but read %d bytes\n",
+				__FUNCTION__, sizeToRead, numLumpsToRead, id, bytesReadTotal);
+			return false;
+		}
+
+		return true;
+	}
+
+	template <class T>
+	[[nodiscard]] static bool ReadLump(GameLumpId_t id, FileHandle_t f, T& out,
+		int startLump = 0, const lump_t* lump = {})
+	{
+		return ReadLump(id, f, &out, startLump, 1, lump);
+	}
+
+	[[nodiscard]] static bool ReadBrushes(FileHandle_t f, CUtlVector<dbrush_t>& out)
+	{
+		lump_t brushHdr;
+		if (!ReadLumpHdr(LUMP_BRUSHES, f, &brushHdr))
+		{
+			Warning("%s: failed to read brush lump hdr\n", __FUNCTION__);
+			return false;
+		}
+		const auto mapBrushCount = narrow_cast<int>(brushHdr.filelen / sizeof(dbrush_t));
+		if (mapBrushCount <= 0)
+		{
+			Warning("%s: could not find any brushes for bsp\n", __FUNCTION__);
+			return false;
+		}
+		else if (mapBrushCount > MAX_MAP_BRUSHES)
+		{
+			Warning("%s: map reported to contain %d brushes but max is %d\n",
+				__FUNCTION__, mapBrushCount, MAX_MAP_BRUSHES);
+			return false;
+		}
+
+		out.EnsureCapacity(mapBrushCount);
+		dbrush_t brush;
+		for (int i = 0; i < mapBrushCount; ++i)
+		{
+			if (!ReadLump(LUMP_BRUSHES, f, brush, i, &brushHdr))
+			{
+				Warning("%s: failed to read brush %d lump contents\n", __FUNCTION__, i);
+				return false;
+			}
+
+			if (!(brush.contents & CONTENTS_LADDER))
+			{
+				continue;
+			}
+
+			if (brush.numsides < 4)
+			{
+				Warning("%s ladder brush %d reported %d numsides which is insufficient to construct a polyhedron\n",
+					__FUNCTION__, i, brush.numsides);
+				continue;
+			}
+
+			if (brush.numsides > MAX_MAP_BRUSHSIDES)
+			{
+				Warning("%s ladder brush %d reported %d numsides which is more than max supported: %d\n",
+					__FUNCTION__, i, brush.numsides, MAX_MAP_BRUSHSIDES);
+				continue;
+			}
+
+			out.AddToTail(brush);
+		}
+
+		return true;
+	}
+
+	[[nodiscard]] static bool ReadCSG(FileHandle_t f,
+		CUtlVector<CUtlVector<Vector4D>>& out)
+	{
+		CUtlVector<dbrush_t> brushes;
+		if (!ReadBrushes(f, brushes))
+		{
+			return false;
+		}
+
+		CUtlVector<dbrushside_t> ladderSides;
+		CUtlVector<dplane_t> ladderPlanes;
+
+		out.EnsureCapacity(brushes.Count());
+		Assert(out.Count() == 0);
+		for (const auto& brush : brushes)
+		{
+			ladderSides.SetCount(brush.numsides);
+			if (!Neo::ReadLump(LUMP_BRUSHSIDES, f, ladderSides.Base(), brush.firstside, brush.numsides))
+			{
+				Warning("%s: failed to read brush sides lump contents %d - %d\n", __FUNCTION__, brush.firstside, brush.firstside + brush.numsides);
+				return false;
+			}
+
+			ladderPlanes.Purge();
+			for (int j = 0; j < ladderSides.Count(); ++j)
+			{
+				auto* storeAddr = ladderPlanes.AddToTailGetPtr();
+				Assert(storeAddr);
+				if (!Neo::ReadLump(LUMP_PLANES, f, storeAddr, ladderSides[j].planenum))
+				{
+					Warning("%s: failed to read plane lump contents for ladder side %d of plane num %d\n", __FUNCTION__,
+						j, ladderSides[j].planenum);
+					return false;
+				}
+				Assert(storeAddr->normal.IsValid());
+				Assert(IsFinite(storeAddr->dist));
+			}
+			Assert(ladderPlanes.Count() > 0);
+
+			auto* nextPlanes = out.AddToTailGetPtr();
+			nextPlanes->EnsureCapacity(ladderPlanes.Count());
+			Assert(nextPlanes->Count() == 0);
+			for (const auto& p : ladderPlanes)
+			{
+				Vector4D alignedPlane{ p.normal.x, p.normal.y, p.normal.z, p.dist };
+				Assert(alignedPlane.IsValid());
+				nextPlanes->AddToTail(alignedPlane);
+			}
+			Assert(nextPlanes->Count() == ladderPlanes.Count());
+		}
+		Assert(out.Count() == brushes.Count());
+
+		return true;
+	}
+
+	[[nodiscard]] static bool LadderFromPolyhedron(const CPolyhedron* polyhedron)
+	{
+		Assert(polyhedron);
+
+		Vector polyMins, polyMaxs, center;
+		for (int i = 0; i < polyhedron->iPolygonCount; ++i)
+		{
+			const auto& polygon = polyhedron->pPolygons[i];
+			DevMsg("---\n\t%d POLYGON: %d\n", i, polygon.iIndexCount);
+
+			ClearBounds(polyMins, polyMaxs);
+
+			for (int j = 0; j < polygon.iIndexCount; ++j)
+			{
+				auto index = polygon.iFirstIndex + j;
+				const auto& idxLineRef = polyhedron->pIndices[index];
+				const auto& pointIndices = polyhedron->pLines[idxLineRef.iLineIndex].iPointIndices;
+				
+				const Vector& linePos1 = polyhedron->pVertices[pointIndices[0]];
+				const Vector& linePos2 = polyhedron->pVertices[pointIndices[1]];
+				Assert(linePos1.IsValid());
+				Assert(linePos2.IsValid());
+				Assert(linePos1 != linePos2);
+				DevMsg("\t\tVERT: %f %f %f ->  %f %f %f\n",
+					linePos1.x, linePos1.y, linePos1.z,
+					linePos2.x, linePos2.y, linePos2.z);
+
+				AddPointToBounds(linePos1, polyMins, polyMaxs);
+				AddPointToBounds(linePos2, polyMins, polyMaxs);
+
+				static int r = 0;
+				r = (r + 25) % 255;
+				Color color{ r,255,255,255 };
+				UTIL_AddDebugLine(linePos1, linePos2,
+					true, false, color);
+			}
+			DevMsg("\t\tPOLY NORMAL: %f %f %f\n", polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z);
+
+			center = VectorLerp(polyMins, polyMaxs, 0.5);
+			UTIL_AddDebugLine(center, center + (polygon.polyNormal * GenerationStepSize), true, false);
+		}
+
+		return true; // TODO
+	}
+}
+
+bool CNavMesh::BuildBrushLaddersFromBsp()
+{
+	bool ok = true;
+
+	FileHandle_t f = {};
+	CUtlVector<CUtlVector<Vector4D>> planesOfLadderBrushes;
+
+	Assert(gpGlobals);
+	if (gpGlobals->bMapLoadFailed)
+	{
+		Warning("%s: map load failed\n", __FUNCTION__);
+		goto fail;
+	}
+
+	char mapPath[MAX_PATH];
+	Assert(!!gpGlobals->mapname && *gpGlobals->mapname.ToCStr());
+	Assert(V_strlen(gpGlobals->mapname.ToCStr()) < MAX_MAP_NAME);
+	V_sprintf_safe(mapPath, "maps/%s.bsp", gpGlobals->mapname.ToCStr());
+	if (!(mapPath || *mapPath))
+	{
+		Warning("%s: failed to get map name\n", __FUNCTION__);
+		goto fail;
+	}
+
+	Assert(filesystem);
+	if (!filesystem->FileExists(mapPath))
+	{
+		Warning("%s: failed to locate map from filesystem: \"%s\"\n",
+			__FUNCTION__, mapPath);
+		goto fail;
+	}
+
+	f = filesystem->Open(mapPath, "rb");
+	if (!f)
+	{
+		Warning("%s: failed to open map file handle\n", __FUNCTION__);
+		goto fail;
+	}
+
+	if (!Neo::ValidateBspHeader(f))
+	{
+		goto fail;
+	}
+
+	if (!Neo::ReadCSG(f, planesOfLadderBrushes))
+	{
+		goto fail;
+	}
+
+	if (planesOfLadderBrushes.Count() == 0) // no ladders?
+	{
+		goto cleanup;
+	}
+
+	for (const auto& planesOfLadderBrush : planesOfLadderBrushes)
+	{
+		auto* polyhedron = GeneratePolyhedronFromPlanes(
+			planesOfLadderBrush.Base()->Base(),
+			planesOfLadderBrush.Count(),
+			ON_EPSILON, true);
+		
+		if (!polyhedron)
+		{
+			Assert(false);
+			goto fail;
+		}
+
+		const bool ladderGenOk = Neo::LadderFromPolyhedron(polyhedron);
+
+		polyhedron->Release();
+
+		if (!ladderGenOk)
+		{
+			Warning("%s: failed to generate ladder from polyhedron\n", __FUNCTION__);
+
+			if (polyhedron->iVertexCount <= 0)
+			{
+				Warning("\tAdditionally, generated polyhedron reports %d sides but expected >0\n",
+					polyhedron->iVertexCount);
+				Assert(false);
+				continue;
+			}
+
+			CUtlVector<decltype(polyhedron->pVertices)> vertices;
+			vertices.EnsureCapacity(polyhedron->iVertexCount);
+			for (int i = 0; i < polyhedron->iVertexCount; ++i)
+			{
+				auto** pVert = vertices.AddToTailGetPtr();
+				*pVert = polyhedron->pVertices + i;
+				Assert(*pVert);
+			}
+			Assert(vertices.Count() == polyhedron->iVertexCount);
+
+			CUtlString errMsg;
+			errMsg.Format("\t%d verts: ", polyhedron->iVertexCount);
+			for (const auto& vert : vertices)
+			{
+				errMsg.Format("%s [%f %f %f],", errMsg.String(), vert->x, vert->y, vert->z);
+			}
+			errMsg.SetLength(errMsg.Length() - 1); // remove final comma from the above loop
+			Warning("%s\n", errMsg.String());
+		}
+	}
+
+cleanup:
+	if (f)
+	{
+		filesystem->Close(f);
+	}
+	return ok;
+fail:
+	ok = false;
+	goto cleanup;
+}
+#endif
 
 //--------------------------------------------------------------------------------------------------------------
 /**
