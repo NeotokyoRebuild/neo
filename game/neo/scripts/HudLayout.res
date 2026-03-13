@@ -908,6 +908,16 @@
 		"sprint_text_color"		"255 255 255 100"
 		"sprint_color"		"255 255 255 150"
 	}
+	neo_walking_indicator
+	{
+		"fieldName"		"neo_walking_indicator"
+		"xpos"	"208"
+		"ypos"	"470"
+		"wide"	"24"
+		"tall"  "24"
+		"visible" "1"
+		"enabled" "1"
+	}
 	RoundResult
 	{
 		"fieldName"		"RoundResult"

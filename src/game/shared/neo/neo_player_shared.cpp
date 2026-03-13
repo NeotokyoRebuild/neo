@@ -393,3 +393,39 @@ void CNEO_Player::CheckAimButtons()
 	    Weapon_SetZoom(false);
 	}
 }
+
+// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
+constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
+bool CNEO_Player::ShouldPlayerMakeFootsteps(float speed) // Could simply always get speed from the player, but didnt want to risk changing the behavior of UpdateStepSound in baseplayer_shared
+{
+	if (speed < 0)
+	{
+		speed = GetAbsVelocity().Length();
+	}
+
+	if ( GetFlags() & FL_DUCKING && (IsInAim() || IsWalking()) && speed <= (GetCrouchSpeed() * SILENT_THRESHOLD_GRACE) )
+	{
+		return false;
+	}
+	else if ((IsInAim() || IsWalking()) && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+float CNEO_Player::SpeedFractionToSoundThreshold(float speed)
+{
+	if (speed < 0)
+	{
+		speed = GetAbsVelocity().Length();
+	}
+
+	if (IsInAim() || IsWalking())
+	{
+		const float difference = ((GetFlags() & FL_DUCKING ? GetCrouchSpeed() : GetNormSpeed()) * SILENT_THRESHOLD_GRACE) - GetPlayerMaxSpeed();
+		return (speed - GetPlayerMaxSpeed()) / difference;
+	}
+	return 1.f;
+}
