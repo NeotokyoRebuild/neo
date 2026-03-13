@@ -445,6 +445,10 @@ static const char *s_NeoPreserveEnts[] =
 {
 	"neo_gamerules",
 	"neo_game_config",
+	"info_hint",
+	"info_node_air",
+	"info_node_air_hint",
+	"info_node_climb",
 	"info_player_attacker",
 	"info_player_defender",
 	"info_player_start",
