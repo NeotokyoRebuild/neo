@@ -3158,8 +3158,8 @@ namespace Neo
 		}
 		else if (fileTargetLumpOffset > std::numeric_limits<int>::max())
 		{
-			Warning("%s: Reading starting to read lumpid(s) of type %d from index %d would require lump offset of %zu which is >max: %d\n",
-				__FUNCTION__, id, fileTargetLumpOffset, std::numeric_limits<int>::max());
+			Warning("%s: Starting to read lumpid(s) of type %d from index %d would require lump offset of %zu which is >max: %d\n",
+				__FUNCTION__, id, startLump, fileTargetLumpOffset, std::numeric_limits<int>::max());
 			return false;
 		}
 
@@ -3197,7 +3197,7 @@ namespace Neo
 		const auto bytesReadTotal = filesystem->Read(out, narrow_cast<int>(sizeToRead), f);
 		if (bytesReadTotal != sizeToRead)
 		{
-			Warning("%s: Expected to read %d bytes from %d lump(s) of type %d, but read %d bytes\n",
+			Warning("%s: Expected to read %zu bytes from %d lump(s) of type %d, but read %d bytes\n",
 				__FUNCTION__, sizeToRead, numLumpsToRead, id, bytesReadTotal);
 			return false;
 		}
