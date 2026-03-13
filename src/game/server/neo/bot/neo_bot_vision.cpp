@@ -7,8 +7,8 @@
 #include "neo_gamerules.h"
 #include "neo/weapons/weapon_ghost.h"
 
-ConVar neo_bot_choose_target_interval( "neo_bot_choose_target_interval", "0.3f", FCVAR_CHEAT, "How often, in seconds, a NEOBot can reselect his target" );
-ConVar neo_bot_sniper_choose_target_interval( "neo_bot_sniper_choose_target_interval", "3.0f", FCVAR_CHEAT, "How often, in seconds, a zoomed-in Sniper can reselect his target" );
+ConVar neo_bot_choose_target_interval( "neo_bot_choose_target_interval", "0.3", FCVAR_CHEAT, "How often, in seconds, a NEOBot can reselect his target" );
+ConVar neo_bot_sniper_choose_target_interval( "neo_bot_sniper_choose_target_interval", "3.0", FCVAR_CHEAT, "How often, in seconds, a zoomed-in Sniper can reselect his target" );
 
 extern ConVar neo_bot_ignore_real_players;
 
