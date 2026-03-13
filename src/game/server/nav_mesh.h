@@ -1194,6 +1194,10 @@ private:
 	NavLadderVector m_ladders;									// list of ladder navigation representations
 	void BuildLadders( void );
 	void DestroyLadders( void );
+#ifdef NEO
+	// Build ladders from the BSP brush lump ladders (rather than func_ladder)
+	[[nodiscard]] bool BuildBrushLaddersFromBsp();
+#endif
 
 	bool SampleStep( void );									// sample the walkable areas of the map
 	void CreateNavAreasFromNodes( void );						// cover all of the sampled nodes with nav areas
