@@ -188,7 +188,8 @@ public:
 #ifdef GLOWS_ENABLE
 	void UpdateGlowEffects(int iNewTeam);
 #endif // GLOWS_ENABLE
-
+	bool ShouldPlayerMakeFootsteps(float speed = -1.f);
+	float SpeedFractionToSoundThreshold(float speed = -1.f);
 
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
