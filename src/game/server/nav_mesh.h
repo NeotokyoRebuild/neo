@@ -1214,6 +1214,8 @@ private:
 #ifdef NEO
 	// Build ladders from the BSP brush lump ladders (rather than func_ladder)
 	[[nodiscard]] bool BuildBrushLaddersFromBsp();
+private:
+	[[nodiscard]] bool LadderFromPolyhedron(const CPolyhedron* polyhedron);
 #endif
 
 	bool SampleStep( void );									// sample the walkable areas of the map
