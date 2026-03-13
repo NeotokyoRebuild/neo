@@ -63,17 +63,19 @@ void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 	if (!pTargetPlayer->IsAlive() || !pTargetPlayer->IsWalking())// && !pTargetPlayer->IsInAim()) player is also silent if aiming and not abusing the threshold, but its much harder to make noise when aiming, better for the indicator to strictly appear when walk is pressed
 		return;
 
-	const float fractionTowardsMakingSound = Max(0.f, Min(1.f, pTargetPlayer->SpeedFractionToSoundThreshold()));
+	// we don't want the subrectangle taken from the texture to vary in size when speed changes but the split between the top and bottom image remains in the same spot since texture can be larger than the area its drawn to
+	const int pictureSplitDistanceInPixels = tall * (1 - Max(0.f, Min(1.f, pTargetPlayer->SpeedFractionToSoundThreshold())));
+	const float pictureSplitDistanceFraction = (float)pictureSplitDistanceInPixels / tall;
 
 	vgui::surface()->DrawSetTexture(m_hWalkingIndicatorTexture);
 	vgui::surface()->DrawSetColor(COLOR_WHITE);
 	const float ICON_WIDTH = 1 / 2.f;
 	const float ICON_HEIGHT = 1 / 2.f;
-	vgui::surface()->DrawTexturedSubRect(0, 0, wide, tall * (1 - fractionTowardsMakingSound), 
-		0, ICON_HEIGHT, ICON_WIDTH, ICON_HEIGHT + (ICON_HEIGHT * (1 - fractionTowardsMakingSound)));
-	vgui::surface()->DrawSetColor(255, 255 - (255 * fractionTowardsMakingSound), 255 - (255 * fractionTowardsMakingSound), 255);
-	vgui::surface()->DrawTexturedSubRect(0, tall * (1 - fractionTowardsMakingSound), wide, tall, 
-		0, ICON_HEIGHT * (1 - fractionTowardsMakingSound), ICON_WIDTH, ICON_HEIGHT);
+	vgui::surface()->DrawTexturedSubRect(0, 0, wide, pictureSplitDistanceInPixels, 
+		0, ICON_HEIGHT, ICON_WIDTH, ICON_HEIGHT + (ICON_HEIGHT * pictureSplitDistanceFraction));
+	vgui::surface()->DrawSetColor(255, 255 * pictureSplitDistanceFraction, 255 * pictureSplitDistanceFraction, 255);
+	vgui::surface()->DrawTexturedSubRect(0, pictureSplitDistanceInPixels, wide, tall, 
+		0, ICON_HEIGHT * pictureSplitDistanceFraction, ICON_WIDTH, ICON_HEIGHT);
 }
 
 void CNEOHud_WalkingIndicator::Paint()
