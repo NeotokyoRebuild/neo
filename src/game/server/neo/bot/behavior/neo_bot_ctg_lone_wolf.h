@@ -1,12 +1,16 @@
 #pragma once
 
 #include "bot/neo_bot.h"
+#include <memory>
+
+class CNEOIgnoredWeaponsCache;
 
 //--------------------------------------------------------------------------------------------------------
 class CNEOBotCtgLoneWolf : public Action< CNEOBot >
 {
 public:
 	CNEOBotCtgLoneWolf( void );
+	virtual ~CNEOBotCtgLoneWolf();
 
 	virtual ActionResult< CNEOBot > OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot > Update( CNEOBot *me, float interval ) override;
@@ -29,6 +33,8 @@ private:
 	Vector m_vecDropThreatPos;
 	CHandle<CBaseEntity> m_hPursueTarget;
 	bool m_bPursuingDropThreat;
+	std::unique_ptr<CNEOIgnoredWeaponsCache> m_pIgnoredWeapons;
+	CountdownTimer m_scavengeTimer;
 
 	ActionResult< CNEOBot > UpdateLookAround( CNEOBot *me, const Vector &anchorPos );
 	CountdownTimer m_lookAroundTimer;
