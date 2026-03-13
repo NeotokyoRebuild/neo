@@ -3322,51 +3322,53 @@ namespace Neo
 
 		return true;
 	}
+}
 
-	[[nodiscard]] static bool LadderFromPolyhedron(const CPolyhedron* polyhedron)
+[[nodiscard]] bool CNavMesh::LadderFromPolyhedron(const CPolyhedron* polyhedron)
+{
+	Assert(polyhedron);
+
+	Vector polyMins, polyMaxs, center;
+	for (int i = 0; i < polyhedron->iPolygonCount; ++i)
 	{
-		Assert(polyhedron);
+		const auto& polygon = polyhedron->pPolygons[i];
+		DevMsg("---\n\t%d POLYGON: %d\n", i, polygon.iIndexCount);
 
-		Vector polyMins, polyMaxs, center;
-		for (int i = 0; i < polyhedron->iPolygonCount; ++i)
+		ClearBounds(polyMins, polyMaxs);
+
+		for (int j = 0; j < polygon.iIndexCount; ++j)
 		{
-			const auto& polygon = polyhedron->pPolygons[i];
-			DevMsg("---\n\t%d POLYGON: %d\n", i, polygon.iIndexCount);
+			auto index = polygon.iFirstIndex + j;
+			const auto& idxLineRef = polyhedron->pIndices[index];
+			const auto& pointIndices = polyhedron->pLines[idxLineRef.iLineIndex].iPointIndices;
 
-			ClearBounds(polyMins, polyMaxs);
+			const Vector& linePos1 = polyhedron->pVertices[pointIndices[0]];
+			const Vector& linePos2 = polyhedron->pVertices[pointIndices[1]];
+			Assert(linePos1.IsValid());
+			Assert(linePos2.IsValid());
+			Assert(linePos1 != linePos2);
+			DevMsg("\t\tVERT: %f %f %f ->  %f %f %f\n",
+				linePos1.x, linePos1.y, linePos1.z,
+				linePos2.x, linePos2.y, linePos2.z);
 
-			for (int j = 0; j < polygon.iIndexCount; ++j)
-			{
-				auto index = polygon.iFirstIndex + j;
-				const auto& idxLineRef = polyhedron->pIndices[index];
-				const auto& pointIndices = polyhedron->pLines[idxLineRef.iLineIndex].iPointIndices;
-				
-				const Vector& linePos1 = polyhedron->pVertices[pointIndices[0]];
-				const Vector& linePos2 = polyhedron->pVertices[pointIndices[1]];
-				Assert(linePos1.IsValid());
-				Assert(linePos2.IsValid());
-				Assert(linePos1 != linePos2);
-				DevMsg("\t\tVERT: %f %f %f ->  %f %f %f\n",
-					linePos1.x, linePos1.y, linePos1.z,
-					linePos2.x, linePos2.y, linePos2.z);
+			AddPointToBounds(linePos1, polyMins, polyMaxs);
+			AddPointToBounds(linePos2, polyMins, polyMaxs);
 
-				AddPointToBounds(linePos1, polyMins, polyMaxs);
-				AddPointToBounds(linePos2, polyMins, polyMaxs);
-
-				static int r = 0;
-				r = (r + 25) % 255;
-				Color color{ r,255,255,255 };
-				UTIL_AddDebugLine(linePos1, linePos2,
-					true, false, color);
-			}
-			DevMsg("\t\tPOLY NORMAL: %f %f %f\n", polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z);
-
-			center = VectorLerp(polyMins, polyMaxs, 0.5);
-			UTIL_AddDebugLine(center, center + (polygon.polyNormal * GenerationStepSize), true, false);
+			static int r = 0;
+			r = (r + 25) % 255;
+			Color color{ r,255,255,255 };
+			UTIL_AddDebugLine(linePos1, linePos2,
+				true, false, color);
 		}
+		DevMsg("\t\tPOLY NORMAL: %f %f %f\n", polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z);
+
+		center = VectorLerp(polyMins, polyMaxs, 0.5);
+		UTIL_AddDebugLine(center, center + (polygon.polyNormal * GenerationStepSize), true, false);
 
 		return true; // TODO
 	}
+
+	return true;
 }
 
 bool CNavMesh::BuildBrushLaddersFromBsp()
@@ -3436,7 +3438,7 @@ bool CNavMesh::BuildBrushLaddersFromBsp()
 			goto fail;
 		}
 
-		const bool ladderGenOk = Neo::LadderFromPolyhedron(polyhedron);
+		const bool ladderGenOk = LadderFromPolyhedron(polyhedron);
 
 		polyhedron->Release();
 
