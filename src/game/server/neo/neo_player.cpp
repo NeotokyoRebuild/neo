@@ -176,10 +176,10 @@ ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots 
 // Bot Cloak Detection Thresholds
 // Base detection chance ratio (0.0 - 1.0) for bots to notice a cloaked target based on difficulty
 // e.g. 0 implies the bot is oblivious to anything, while 1.0 implies a bot that can roll very high on detection checks
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_easy("sv_neo_bot_cloak_detection_threshold_ratio_easy", "0.65", FCVAR_NONE, "Bot cloak detection threshold for easy difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detection_threshold_ratio_normal", "0.70", FCVAR_NONE, "Bot cloak detection threshold for normal difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.75", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.80", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_easy("sv_neo_bot_cloak_detection_threshold_ratio_easy", "0.35", FCVAR_NONE, "Bot cloak detection threshold for easy difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detection_threshold_ratio_normal", "0.40", FCVAR_NONE, "Bot cloak detection threshold for normal difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.45", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.50", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
 
 // Bot Cloak Detection Bonus Factors
 // Used in CNEO_Player::GetFogObscuredRatio to determine if the bot (me) can detect a cloaked target given circumstances
@@ -199,6 +199,10 @@ ConVar sv_neo_bot_cloak_detection_bonus_assault_motion_vision("sv_neo_bot_cloak_
 // Support has difficulty seeing cloak in thermal vision
 ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "1", FCVAR_NONE,
 	"Bot cloak detection bonus for non-support classes", true, 0, true, 100);
+
+// 0.7 dot product is about a 45 degree half hangle for a 90 degree cone
+ConVar sv_neo_bot_cloak_detection_aim_bonus_dot_threshold("sv_neo_bot_cloak_detection_aim_bonus_dot_threshold", "0.3", FCVAR_NONE,
+	"Bot cloak detection bonus minimum dot product threshold for aim bonus", true, 0.01, true, 0.7);
 
 ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "2", FCVAR_NONE,
 	"Bot cloak detection bonus for observer being stationary", true, 0, true, 100);
@@ -1341,10 +1345,54 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 
 //-----------------------------------------------------------------------------
 // Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+// Including cloak for players
+//-----------------------------------------------------------------------------
+float CNEO_Player::GetFogObscuredRatio( CBaseEntity *target ) const
+{
+	if ( !target )
+		return 0.0f;
+
+	const float range = CBaseCombatCharacter::EyePosition().DistTo( target->WorldSpaceCenter() );
+	const float flFogRatio = GetFogObscuredRatio( range );
+
+	auto targetPlayer = ToNEOPlayer( target );
+	if ( targetPlayer )
+	{
+		const float flCloakRatio = GetCloakObscuredRatio( targetPlayer );
+		return 1.0f - ( 1.0f - flFogRatio ) * ( 1.0f - flCloakRatio );
+	}
+
+	return flFogRatio;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+//-----------------------------------------------------------------------------
+float CNEO_Player::GetFogObscuredRatio( float range ) const
+{
+	auto controller = m_Local.m_PlayerFog.m_hCtrl.Get();
+
+	if ( controller )
+	{
+		const fogparams_t &fog = controller->m_fog;
+
+		if ( !fog.enable )
+			return 0.0f;
+
+		float ratio = RemapValClamped( range, fog.start, fog.end, 0.0f, 1.0f );
+		ratio = MIN( ratio, fog.maxdensity );
+		return ratio;
+	}
+
+	return 0.0f;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 // NEO JANK: If this function is too expensive,
 // players may report that the game gets laggy when in line of sight bots.
 //-----------------------------------------------------------------------------
-float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
+float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 {
 	VPROF_BUDGET(__FUNCTION__, "NextBotExpensive");
 
@@ -1353,27 +1401,20 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return 0.0f;
 	}
 
-	auto targetPlayer = ToNEOPlayer(target);
-	if (targetPlayer == nullptr)
-	{
-		// If it's not a player, this cloaking logic doesn't apply, so it is not obscured
-		return 0.0f;
-	}
-
 	if ( NEORules()->IsTeamplay()
-		&& (GetTeamNumber() == targetPlayer->GetTeamNumber()) )
+		&& (GetTeamNumber() == target->GetTeamNumber()) )
 	{
 		// Teammates are always labeled with IFF markers, unless in free-for-all game modes
 		return 0.0f;
 	}
 
 	// If target is not cloaked, it's not obscured.
-	if (!targetPlayer->GetInThermOpticCamo() && !sv_neo_bot_cloak_debug_perceive_always_on.GetBool())
+	if (!target->GetInThermOpticCamo() && !sv_neo_bot_cloak_debug_perceive_always_on.GetBool())
 	{
 		return 0.0f; // Not obscured
 	}
 
-	if (targetPlayer->IsCarryingGhost())
+	if (target->IsCarryingGhost())
 	{
 		return 0.0f;
 	}
@@ -1381,7 +1422,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	// From this point on, assume we are counting bonus points towards observer detection
 	float flDetectionBonus = 0.0f; // # of factors that are helping the observer detect the target
 
-	if (targetPlayer->GetBotCloakStateDisrupted())
+	if (target->GetBotCloakStateDisrupted())
 	{
 		flDetectionBonus += sv_neo_bot_cloak_detection_bonus_disruption_effect.GetFloat();
 	}
@@ -1395,8 +1436,8 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return player->GetAbsVelocity().LengthSqr() > (runSpeedThreshold * runSpeedThreshold);
 		};
 
-	bool targetIsRunning = isRunning(targetPlayer);
-	bool targetIsMoving  = targetIsRunning || isMoving(targetPlayer);
+	bool targetIsRunning = isRunning(target);
+	bool targetIsMoving  = targetIsRunning || isMoving(target);
 
 	// Class Impact:
 	// Assault class motion vision
@@ -1438,7 +1479,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		flDetectionBonus += sv_neo_bot_cloak_detection_bonus_target_moving.GetFloat();
 	}
 
-	if (!targetPlayer->IsDucking()) // is standing, and NOT ducking
+	if (!target->IsDucking()) // is standing, and NOT ducking
 	{
 		// target is more obvious when standing at full height
 		flDetectionBonus += sv_neo_bot_cloak_detection_bonus_target_standing.GetFloat();
@@ -1467,7 +1508,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	}
 
 	// Injured Target Impact
-	flDetectionBonus += (float)targetPlayer->GetBotDetectableBleedingInjuryEvents() * sv_neo_bot_cloak_detection_bonus_per_injury.GetFloat();
+	flDetectionBonus += (float)target->GetBotDetectableBleedingInjuryEvents() * sv_neo_bot_cloak_detection_bonus_per_injury.GetFloat();
 
 	// Lighting Impact
 	// NEO JANK: See "FIXMEL4DTOMAINMERGE" for why this doesn't have any effect yet.
@@ -1483,9 +1524,22 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		}
 	}
 
+	// The closer a target is to the bot's center aim, the more noticeable they are
+	Vector vEyeForward;
+	AngleVectors(pl.v_angle, &vEyeForward);
+	Vector vToTarget = target->WorldSpaceCenter() - (GetAbsOrigin() + GetViewOffset());
+	vToTarget.NormalizeInPlace();
+	float flDot = vEyeForward.Dot(vToTarget);
+	float flFovBonusRatio = RemapValClamped(flDot, sv_neo_bot_cloak_detection_aim_bonus_dot_threshold.GetFloat(), 1.0f, 0.0f, 1.0f);
+	// Make bonus more pronounced closer to the center and less so at edges
+	flFovBonusRatio *= flFovBonusRatio;
+
 	float obscuredDenominator = 100.0f; // scale from 0-100 percent likelyhood to detect every 200ms
-	
-	float obscuredRatio = Max(0.0f, obscuredDenominator - flDetectionBonus) / obscuredDenominator;
+
+	float obscuredNumerator = Max(0.0f, obscuredDenominator - flDetectionBonus);
+	obscuredNumerator *= (1.0f - flFovBonusRatio);
+
+	float obscuredRatio = obscuredNumerator / obscuredDenominator;
 	obscuredRatio = Clamp(obscuredRatio, 0.0f, 1.0f);
 	return obscuredRatio;
 }
