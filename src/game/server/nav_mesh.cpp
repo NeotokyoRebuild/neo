@@ -3459,22 +3459,20 @@ namespace Neo
 			}
 			DevMsg("\t\tPOLY NORMAL: %f %f %f\n",
 				polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z);
-			if (filter != ThisIsFine)
-			{
-				DevMsg("\t\t\tREJECTED! enum: %d\n", filter);
-			}
 			DrawLine(center, center + (polygon.polyNormal * GenerationStepSize),
 				nav_generate_debug_brushladders.GetFloat(), c.r(), c.g(), c.b());
 		}
 
-		if (filter)
+		if (filter != ThisIsFine)
 		{
+			if (nav_generate_debug_brushladders.GetBool())
+			{
+				DevMsg("\t\tREJECTED! enum: %d\n", filter);
+			}
 			continue;
 		}
 
-		continue; // TODO: debug
-
-		CreateLadder(polyMins, polyMaxs, HumanHeight);
+		//CreateLadder(polyMins, polyMaxs, HumanHeight);
 	}
 
 	return true;
