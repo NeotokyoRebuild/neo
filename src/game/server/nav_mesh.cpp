@@ -3472,7 +3472,11 @@ namespace Neo
 			continue;
 		}
 
-		//CreateLadder(polyMins, polyMaxs, HumanHeight);
+		// Create for real only if we're not debugging this logic
+		if (!nav_generate_debug_brushladders.GetBool())
+		{
+			CreateLadder(polyMins, polyMaxs, HumanHeight);
+		}
 	}
 
 	return true;
