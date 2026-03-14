@@ -3349,25 +3349,37 @@ namespace Neo
 	// To be used for the center position of each polygon of the polyhedron.
 	// By reference, because the final CommandNavBuildLadder call which actually builds the ladder
 	// depends on this state, and we can spare the extra Vector by just assigning to it directly.
-	Vector& center = m_editCursorPos;
+	Vector& polyCenter = m_editCursorPos;
+	Vector& polyNormal = m_surfaceNormal;
 
 	Vector polyMins, polyMaxs;
 	trace_t tr;
 	for (int i = 0; i < polyhedron->iPolygonCount; ++i)
 	{
 		const auto& polygon = polyhedron->pPolygons[i];
+		polyNormal = { polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z };
 #ifdef DBGFLAG_ASSERT
 		{
-			const Vector dbgVec{ polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z };
-			Assert(dbgVec.IsValid());
-			Assert(!dbgVec.IsZero());
-			AssertFloatEquals(dbgVec.Length(), 1.f, 0.01f); // unit vector
+			Assert(polyNormal.IsValid());
+			Assert(!polyNormal.IsZero());
+			AssertFloatEquals(polyNormal.Length(), 1.f, 0.01f); // unit vector
 		}
 #endif
 		// Can't build up/down facing ladder mounting points, skip
-		if (!polygon.polyNormal.x && !polygon.polyNormal.y)
+		if (!polyNormal.x && !polyNormal.y)
 		{
 			continue;
+		}
+		// Also reject sides that the nav system considers too flat for ladders
+		if (polyNormal.z)
+		{
+			extern ConVar nav_slope_limit;
+			Assert(nav_slope_limit.GetFloat() >= 0);
+			Assert(nav_slope_limit.GetFloat() <= 1);
+			if (abs(polyNormal.z) > nav_slope_limit.GetFloat())
+			{
+				continue;
+			}
 		}
 
 		if (nav_generate_debug_brushladders.GetBool())
@@ -3404,7 +3416,7 @@ namespace Neo
 					nav_generate_debug_brushladders.GetFloat(), r, 255, 255);
 			}
 		}
-		center = VectorLerp(polyMins, polyMaxs, 0.5);
+		polyCenter = VectorLerp(polyMins, polyMaxs, 0.5);
 
 		enum LadderPolyFilterReason {
 			ThisIsFine = 0, // No problems detected, do not filter this poly.
@@ -3423,7 +3435,6 @@ namespace Neo
 		nSmaller += (polyMaxs.x - polyMins.x < smallestLadderDimToConsider);
 		nSmaller += (polyMaxs.y - polyMins.y < smallestLadderDimToConsider);
 		nSmaller += (polyMaxs.z - polyMins.z < smallestLadderDimToConsider);
-
 		// Because the poly mins/maxs are modeling a 2D surface, it is expected for
 		// one of the dimensions to be 0 or near 0. But if 2 or more are below
 		// smallestLadderDimToConsider, then we do want to filter.
@@ -3432,14 +3443,14 @@ namespace Neo
 			filter = TooSlim;
 		}
 
-		if (filter == ThisIsFine)
+		else if (filter == ThisIsFine)
 		{
 			// Cull ladder sides facing the wall etc.
 			// Need clearance of at least GenerationStepSize in front of the ladder to mount.
 			UTIL_TraceLine(
-				center + (polygon.polyNormal * ON_EPSILON),
-				center + (polygon.polyNormal * GenerationStepSize),
-				MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &tr);
+				polyCenter + (polyNormal * ON_EPSILON),
+				polyCenter + (polyNormal * GenerationStepSize),
+				GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, &tr);
 			if (tr.DidHit())
 			{
 				filter = TooCramped;
@@ -3466,8 +3477,8 @@ namespace Neo
 				break;
 			}
 			DevMsg("\t\tPOLY NORMAL: %f %f %f\n",
-				polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z);
-			DrawLine(center, center + (polygon.polyNormal * GenerationStepSize),
+				polyNormal.x, polyNormal.y, polyNormal.z);
+			DrawLine(polyCenter, polyCenter + (polyNormal * GenerationStepSize),
 				nav_generate_debug_brushladders.GetFloat(), c.r(), c.g(), c.b());
 		}
 
@@ -3487,7 +3498,6 @@ namespace Neo
 		}
 
 		// Set up state as required by the CommandNavBuildLadder call below
-		m_surfaceNormal = Vector{ polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z };
 		m_editMode = EditModeType::NORMAL;
 		m_climbableSurface = true;
 
