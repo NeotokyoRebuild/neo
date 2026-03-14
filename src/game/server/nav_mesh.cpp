@@ -3347,9 +3347,24 @@ namespace Neo
 	}
 
 	Vector polyMins, polyMaxs, center;
+	trace_t tr;
 	for (int i = 0; i < polyhedron->iPolygonCount; ++i)
 	{
 		const auto& polygon = polyhedron->pPolygons[i];
+#ifdef DBGFLAG_ASSERT
+		{
+			const Vector dbgVec{ polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z };
+			Assert(dbgVec.IsValid());
+			Assert(!dbgVec.IsZero());
+			AssertFloatEquals(dbgVec.Length(), 1.f, 0.01f); // unit vector
+		}
+#endif
+		// Can't build up/down facing ladder mounting points, skip
+		if (!polygon.polyNormal.x && !polygon.polyNormal.y)
+		{
+			continue;
+		}
+
 		DevMsg("---\n\t%d POLYGON: %d\n", i, polygon.iIndexCount);
 
 		ClearBounds(polyMins, polyMaxs);
@@ -3381,21 +3396,83 @@ namespace Neo
 					nav_generate_debug_brushladders.GetFloat(), r, 255, 255);
 			}
 		}
-
 		center = VectorLerp(polyMins, polyMaxs, 0.5);
+
+		enum LadderPolyFilterReason {
+			ThisIsFine = 0, // No problems detected, do not filter this poly.
+			TooSlim, // At least one of the dimensions of this 2D poly is unacceptably slim for bot navigation.
+			TooCramped, // Insufficient nav clearance for bots to meaningfully mount here.
+		} filter = ThisIsFine;
+
+		// Ignore ladder polygons that are super slim, because it's likely either a side
+		// or a bevel of the actual intended mounting point.
+		// While such surfaces *could* sometimes be used by humans, they require a lot of
+		// finesse to meaningfully traverse, so it's better for the bots to prefer the obvious
+		// large mapper-intended primary climb surfaces. Of course, the mapper could opt
+		// to manually markup their custom slim ladders as usual outside the auto-gen.
+		constexpr float smallestLadderDimToConsider = 4;
+		int nSmaller = 0;
+		nSmaller += (polyMaxs.x - polyMins.x < smallestLadderDimToConsider);
+		nSmaller += (polyMaxs.y - polyMins.y < smallestLadderDimToConsider);
+		nSmaller += (polyMaxs.z - polyMins.z < smallestLadderDimToConsider);
+
+		// Because the poly mins/maxs are modeling a 2D surface, it is expected for
+		// one of the dimensions to be 0 or near 0. But if 2 or more are below
+		// smallestLadderDimToConsider, then we do want to filter.
+		if (nSmaller > 1)
+		{
+			filter = TooSlim;
+		}
+
+		if (filter == ThisIsFine)
+		{
+			// Cull ladder sides facing the wall etc.
+			// Need clearance of at least GenerationStepSize in front of the ladder to mount.
+			UTIL_TraceLine(
+				center + (polygon.polyNormal * ON_EPSILON),
+				center + (polygon.polyNormal * GenerationStepSize),
+				MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &tr);
+			if (tr.DidHit())
+			{
+				filter = TooCramped;
+			}
+		}
 
 		if (nav_generate_debug_brushladders.GetBool())
 		{
+			Color c;
+			switch (filter)
+			{
+			case ThisIsFine:
+				c = COLOR_LIME;
+				break;
+			case TooSlim:
+				c = COLOR_DARK_ORANGE;
+				break;
+			case TooCramped:
+				c = COLOR_NEON_PINK;
+				break;
+			default:
+				c = COLOR_BLACK;
+				Assert(false);
+				break;
+			}
 			DevMsg("\t\tPOLY NORMAL: %f %f %f\n",
 				polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z);
-			const Color c = COLOR_BLUE;
+			if (filter != ThisIsFine)
+			{
+				DevMsg("\t\t\tREJECTED! enum: %d\n", filter);
+			}
 			DrawLine(center, center + (polygon.polyNormal * GenerationStepSize),
 				nav_generate_debug_brushladders.GetFloat(), c.r(), c.g(), c.b());
+		}
 
+		if (filter)
+		{
 			continue;
 		}
 
-		// TODO: filter
+		continue; // TODO: debug
 
 		CreateLadder(polyMins, polyMaxs, HumanHeight);
 	}
