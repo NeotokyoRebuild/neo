@@ -41,8 +41,15 @@
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
-
+#ifdef NEO
+static auto DrawLine(const Vector& from, const Vector& to, float duration = NDEBUG_PERSIST_TILL_NEXT_SERVER,
+	int r = 255, int g=255, int b=255)
+{
+	return NDebugOverlay::Line(from, to, r, g, b, true, duration);
+}
+#else
 #define DrawLine( from, to, duration, red, green, blue )		NDebugOverlay::Line( from, to, red, green, blue, true, NDEBUG_PERSIST_TILL_NEXT_SERVER )
+#endif
 
 
 /**
@@ -62,6 +69,12 @@ ConVar nav_max_vis_delta_list_length( "nav_max_vis_delta_list_length", "64", FCV
 
 extern ConVar nav_show_potentially_visible;
 
+#ifdef NEO
+ConVar nav_generate_debug_brushladders("nav_generate_debug_brushladders", "0", FCVAR_CHEAT,
+	"If non-zero, will only visualize ladder brush generation during nav_generate and do nothing else. "
+	"The visualization will remain visible for the amount of seconds specified by cvar value.",
+	true, false, false, 0);
+#endif
 
 
 bool FindGroundForNode( Vector *pos, Vector *normal );
@@ -3328,6 +3341,11 @@ namespace Neo
 {
 	Assert(polyhedron);
 
+	if (nav_generate_debug_brushladders.GetBool())
+	{
+		Assert(debugoverlay);
+	}
+
 	Vector polyMins, polyMaxs, center;
 	for (int i = 0; i < polyhedron->iPolygonCount; ++i)
 	{
@@ -3347,23 +3365,37 @@ namespace Neo
 			Assert(linePos1.IsValid());
 			Assert(linePos2.IsValid());
 			Assert(linePos1 != linePos2);
-			DevMsg("\t\tVERT: %f %f %f ->  %f %f %f\n",
-				linePos1.x, linePos1.y, linePos1.z,
-				linePos2.x, linePos2.y, linePos2.z);
 
 			AddPointToBounds(linePos1, polyMins, polyMaxs);
 			AddPointToBounds(linePos2, polyMins, polyMaxs);
 
-			static int r = 0;
-			r = (r + 25) % 255;
-			Color color{ r,255,255,255 };
-			UTIL_AddDebugLine(linePos1, linePos2,
-				true, false, color);
+			if (nav_generate_debug_brushladders.GetBool())
+			{
+				DevMsg("\t\tLINE: %f %f %f ->  %f %f %f\n",
+					linePos1.x, linePos1.y, linePos1.z,
+					linePos2.x, linePos2.y, linePos2.z);
+
+				static int r = 0;
+				r = (r + 25) % 255;
+				DrawLine(linePos1, linePos2,
+					nav_generate_debug_brushladders.GetFloat(), r, 255, 255);
+			}
 		}
-		DevMsg("\t\tPOLY NORMAL: %f %f %f\n", polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z);
 
 		center = VectorLerp(polyMins, polyMaxs, 0.5);
-		UTIL_AddDebugLine(center, center + (polygon.polyNormal * GenerationStepSize), true, false);
+
+		if (nav_generate_debug_brushladders.GetBool())
+		{
+			DevMsg("\t\tPOLY NORMAL: %f %f %f\n",
+				polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z);
+			const Color c = COLOR_BLUE;
+			DrawLine(center, center + (polygon.polyNormal * GenerationStepSize),
+				nav_generate_debug_brushladders.GetFloat(), c.r(), c.g(), c.b());
+
+			continue;
+		}
+
+		// TODO: filter
 
 		CreateLadder(polyMins, polyMaxs, HumanHeight);
 	}
