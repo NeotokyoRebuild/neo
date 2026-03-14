@@ -24,7 +24,6 @@
 
 #ifdef NEO
 #include "neo/neo_bsp_lighting.h"
-#include "nav_mesh.h"
 #endif // NEO
 
 // NOTE: This has to be the last file included!
