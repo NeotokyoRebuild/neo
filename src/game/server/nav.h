@@ -21,7 +21,7 @@
  */
 
 #ifdef NEO
-const float GenerationStepSize = 20.0f;			// NEO: some hallways/openings were missing connections with larger value
+constexpr float GenerationStepSize = 20.0f;			// NEO: some hallways/openings were missing connections with larger value
 #else
 const float GenerationStepSize = 25.0f;			// (30) was 20, but bots can't fit always fit
 #endif
