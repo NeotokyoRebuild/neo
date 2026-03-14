@@ -3346,12 +3346,12 @@ namespace Neo
 		Assert(debugoverlay);
 	}
 
-	decltype(m_surfaceNormal) backup_m_surfaceNormal;
-	decltype(m_editCursorPos) backup_m_editCursorPos;
-	decltype(m_editMode) backup_m_editMode;
-	decltype(m_climbableSurface) backup_m_climbableSurface;
+	// To be used for the center position of each polygon of the polyhedron.
+	// By reference, because the final CommandNavBuildLadder call which actually builds the ladder
+	// depends on this state, and we can spare the extra Vector by just assigning to it directly.
+	Vector& center = m_editCursorPos;
 
-	Vector polyMins, polyMaxs, center;
+	Vector polyMins, polyMaxs;
 	trace_t tr;
 	for (int i = 0; i < polyhedron->iPolygonCount; ++i)
 	{
@@ -3370,7 +3370,10 @@ namespace Neo
 			continue;
 		}
 
-		DevMsg("---\n\t%d POLYGON: %d\n", i, polygon.iIndexCount);
+		if (nav_generate_debug_brushladders.GetBool())
+		{
+			DevMsg("---\n\t%d POLYGON: %d\n", i, polygon.iIndexCount);
+		}
 
 		ClearBounds(polyMins, polyMaxs);
 
@@ -3483,40 +3486,12 @@ namespace Neo
 			continue;
 		}
 
-		// NEO JANK (Rain): manipulate edit mode state to fake a ladder build.
-		// Should probs just make our own version of the function to clean this up.
-		{
-			// Backup state
-			{
-				backup_m_surfaceNormal = m_surfaceNormal;
-				backup_m_editCursorPos = m_editCursorPos;
-				backup_m_editMode = m_editMode;
-				backup_m_climbableSurface = m_climbableSurface;
-			}
-			// Overwrite the state in preparetion for CommandNavBuildLadder
-			{
-				m_editCursorPos = center;
-				m_surfaceNormal = Vector{
-					polygon.polyNormal.x,
-					polygon.polyNormal.y,
-					polygon.polyNormal.z };
-				m_editMode = EditModeType::NORMAL;
-				m_climbableSurface = true;
-			}
-			// The state-dependent ladder build call
-			{
-				CommandNavBuildLadder();
-			}
-			// Finally, restore state
-			{
-				m_editMode = backup_m_editMode;
-				m_editCursorPos = backup_m_editCursorPos;
-				m_surfaceNormal = backup_m_surfaceNormal;
-				m_climbableSurface = backup_m_climbableSurface;
-			}
+		// Set up state as required by the CommandNavBuildLadder call below
+		m_surfaceNormal = Vector{ polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z };
+		m_editMode = EditModeType::NORMAL;
+		m_climbableSurface = true;
 
-			//CreateLadder( topEdge, bottomEdge, leftEdge.DistTo( rightEdge ), m_ladderNormal.AsVector2D(), 0.0f );
-		}
+		CommandNavBuildLadder();
 	}
 
 	return true;
