@@ -159,7 +159,11 @@ void CGlowOverlay::UpdateSkyGlowObstruction( float zFar, bool bCacheFullSceneSta
 	if ( PixelVisibility_IsAvailable() )
 	{
 		// Trace a ray at the object. 
+#ifdef NEO
+		Vector pos = CurrentViewOrigin() + m_vDirection * zFar * 0.99f;
+#else
 		Vector pos = CurrentViewOrigin() + m_vDirection * zFar * 0.999f;
+#endif
 
 		// UNDONE: Can probably do only the pixelvis query in this case if you can figure out where
 		// to put it - or save the position of this trace
