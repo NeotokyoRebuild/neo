@@ -3446,6 +3446,9 @@ void CNavMesh::BeginGeneration( bool incremental )
 		gameeventmanager->FireEvent( event );
 	}
 
+#ifdef NEO
+	engine->ServerCommand( "neo_bot_kick all\n" );
+#else
 #ifdef TERROR
 	engine->ServerCommand( "director_stop\nnb_delete_all\n" );
 	if ( !incremental && !engine->IsDedicatedServer() )
@@ -3459,6 +3462,7 @@ void CNavMesh::BeginGeneration( bool incremental )
 #else
 	engine->ServerCommand( "bot_kick\n" );
 #endif
+#endif // NEO
 
 	// Right now, incrementally-generated areas won't connect to existing areas automatically.
 	// Since this means hand-editing will be necessary, don't do a full analyze.
