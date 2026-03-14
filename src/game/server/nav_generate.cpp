@@ -22,10 +22,6 @@
 #include "func_simpleladder.h"
 #endif
 
-#ifdef NEO
-#include "nav_mesh.h"
-#endif
-
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
