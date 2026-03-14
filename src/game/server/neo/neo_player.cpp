@@ -169,10 +169,10 @@ ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots 
 // Bot Cloak Detection Thresholds
 // Base detection chance ratio (0.0 - 1.0) for bots to notice a cloaked target based on difficulty
 // e.g. 0 implies the bot is oblivious to anything, while 1.0 implies a bot that can roll very high on detection checks
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_easy("sv_neo_bot_cloak_detection_threshold_ratio_easy", "0.65", FCVAR_NONE, "Bot cloak detection threshold for easy difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detection_threshold_ratio_normal", "0.70", FCVAR_NONE, "Bot cloak detection threshold for normal difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.75", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.80", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_easy("sv_neo_bot_cloak_detection_threshold_ratio_easy", "0.35", FCVAR_NONE, "Bot cloak detection threshold for easy difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detection_threshold_ratio_normal", "0.40", FCVAR_NONE, "Bot cloak detection threshold for normal difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.45", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.50", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
 
 // Bot Cloak Detection Bonus Factors
 // Used in CNEO_Player::GetFogObscuredRatio to determine if the bot (me) can detect a cloaked target given circumstances
@@ -192,6 +192,10 @@ ConVar sv_neo_bot_cloak_detection_bonus_assault_motion_vision("sv_neo_bot_cloak_
 // Support has difficulty seeing cloak in thermal vision
 ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "1", FCVAR_NONE,
 	"Bot cloak detection bonus for non-support classes", true, 0, true, 100);
+
+// 0.7 dot product is about a 45 degree half hangle for a 90 degree cone
+ConVar sv_neo_bot_cloak_detection_aim_bonus_dot_threshold("sv_neo_bot_cloak_detection_aim_bonus_dot_threshold", "0.3", FCVAR_NONE,
+	"Bot cloak detection bonus minimum dot product threshold for aim bonus", true, 0.01, true, 0.7);
 
 ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "2", FCVAR_NONE,
 	"Bot cloak detection bonus for observer being stationary", true, 0, true, 100);
@@ -1513,9 +1517,22 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		}
 	}
 
+	// The closer a target is to the bot's center aim, the more noticeable they are
+	Vector vEyeForward;
+	AngleVectors(pl.v_angle, &vEyeForward);
+	Vector vToTarget = target->WorldSpaceCenter() - (GetAbsOrigin() + GetViewOffset());
+	vToTarget.NormalizeInPlace();
+	float flDot = vEyeForward.Dot(vToTarget);
+	float flFovBonusRatio = RemapValClamped(flDot, sv_neo_bot_cloak_detection_aim_bonus_dot_threshold.GetFloat(), 1.0f, 0.0f, 1.0f);
+	// Make bonus more pronounced closer to the center and less so at edges
+	flFovBonusRatio *= flFovBonusRatio;
+
 	float obscuredDenominator = 100.0f; // scale from 0-100 percent likelyhood to detect every 200ms
-	
-	float obscuredRatio = Max(0.0f, obscuredDenominator - flDetectionBonus) / obscuredDenominator;
+
+	float obscuredNumerator = Max(0.0f, obscuredDenominator - flDetectionBonus);
+	obscuredNumerator *= (1.0f - flFovBonusRatio);
+
+	float obscuredRatio = obscuredNumerator / obscuredDenominator;
 	obscuredRatio = Clamp(obscuredRatio, 0.0f, 1.0f);
 	return obscuredRatio;
 }
