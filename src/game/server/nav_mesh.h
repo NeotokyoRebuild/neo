@@ -36,6 +36,9 @@ extern ConVar nav_edit;
 extern ConVar nav_quicksave;
 extern ConVar nav_show_approach_points;
 extern ConVar nav_show_danger;
+#ifdef NEO
+extern ConVar nav_generate_debug_brushladders;
+#endif
 
 //--------------------------------------------------------------------------------------------------------
 class NavAreaCollector
