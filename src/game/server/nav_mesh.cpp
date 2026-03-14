@@ -3346,6 +3346,11 @@ namespace Neo
 		Assert(debugoverlay);
 	}
 
+	decltype(m_surfaceNormal) backup_m_surfaceNormal;
+	decltype(m_editCursorPos) backup_m_editCursorPos;
+	decltype(m_editMode) backup_m_editMode;
+	decltype(m_climbableSurface) backup_m_climbableSurface;
+
 	Vector polyMins, polyMaxs, center;
 	trace_t tr;
 	for (int i = 0; i < polyhedron->iPolygonCount; ++i)
@@ -3473,9 +3478,44 @@ namespace Neo
 		}
 
 		// Create for real only if we're not debugging this logic
-		if (!nav_generate_debug_brushladders.GetBool())
+		if (nav_generate_debug_brushladders.GetBool())
 		{
-			CreateLadder(polyMins, polyMaxs, HumanHeight);
+			continue;
+		}
+
+		// NEO JANK (Rain): manipulate edit mode state to fake a ladder build.
+		// Should probs just make our own version of the function to clean this up.
+		{
+			// Backup state
+			{
+				backup_m_surfaceNormal = m_surfaceNormal;
+				backup_m_editCursorPos = m_editCursorPos;
+				backup_m_editMode = m_editMode;
+				backup_m_climbableSurface = m_climbableSurface;
+			}
+			// Overwrite the state in preparetion for CommandNavBuildLadder
+			{
+				m_editCursorPos = center;
+				m_surfaceNormal = Vector{
+					polygon.polyNormal.x,
+					polygon.polyNormal.y,
+					polygon.polyNormal.z };
+				m_editMode = EditModeType::NORMAL;
+				m_climbableSurface = true;
+			}
+			// The state-dependent ladder build call
+			{
+				CommandNavBuildLadder();
+			}
+			// Finally, restore state
+			{
+				m_editMode = backup_m_editMode;
+				m_editCursorPos = backup_m_editCursorPos;
+				m_surfaceNormal = backup_m_surfaceNormal;
+				m_climbableSurface = backup_m_climbableSurface;
+			}
+
+			//CreateLadder( topEdge, bottomEdge, leftEdge.DistTo( rightEdge ), m_ladderNormal.AsVector2D(), 0.0f );
 		}
 	}
 
