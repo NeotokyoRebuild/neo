@@ -43,6 +43,10 @@ public:
 #ifdef NEO
 	virtual void ClientThink() override;
 	float m_flTemperature;
+private:
+	void DrawPath();
+	Vector m_vLastDrawPosition = Vector(VEC_T_NAN, VEC_T_NAN, VEC_T_NAN);
+public:
 #endif // NEO
 	float m_flSpawnTime;
 #else
@@ -62,6 +66,21 @@ public:
 	// Without this, the entity wouldn't have an interpolation history initially, so it would
 	// sit still until it had gotten a few updates from the server.
 	void SetupInitialTransmittedGrenadeVelocity( const Vector &velocity );
+
+	int ShouldTransmit(const CCheckTransmitInfo* pInfo) override
+	{
+		CBaseEntity *pRecipientEntity = CBaseEntity::Instance( pInfo->m_pClientEnt );
+
+		if ( pRecipientEntity->GetTeamNumber() == TEAM_SPECTATOR ) 
+		{
+			const char* wantsToSeeProjectilePath = engine->GetClientConVarValue(pRecipientEntity->entindex(), "cl_neo_grenade_show_path");
+			if (wantsToSeeProjectilePath && *wantsToSeeProjectilePath && (V_atof(wantsToSeeProjectilePath) != 0.f))
+			{
+				return FL_EDICT_ALWAYS;
+			}
+		}
+		return FL_EDICT_PVSCHECK;
+	}
 
 protected:
 
