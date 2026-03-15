@@ -102,7 +102,8 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 
 	if (!ghoster || !ghoster->m_bCarryingGhost ||
 		ghoster->GetTeamNumber() < FIRST_GAME_TEAM ||
-		!ghoster->IsAlive() || NEORules()->IsRoundOver())
+		!ghoster->IsAlive() || NEORules()->IsRoundOver() ||
+		(engine->IsHLTV() && (localPlayer->GetObserverMode() != OBS_MODE_IN_EYE && localPlayer->GetObserverMode() != OBS_MODE_CHASE)))
 	{
 		return;
 	}
