@@ -3137,6 +3137,14 @@ bool CGameMovement::LadderMove( void )
 	if ( mv->m_nButtons & IN_MOVERIGHT )
 		rightSpeed += climbSpeed;
 
+#ifdef NEO
+	if (mv->m_flUpMove)
+	{
+		forwardSpeed = mv->m_flUpMove > 0 ? climbSpeed : -climbSpeed;
+		rightSpeed = 0;
+	}
+#endif // NEO
+
 	if ( mv->m_nButtons & IN_JUMP )
 	{
 		player->SetMoveType( MOVETYPE_WALK );
@@ -3154,7 +3162,11 @@ bool CGameMovement::LadderMove( void )
 			//	pev->velocity.x, pev->velocity.y, pev->velocity.z);
 			// Calculate player's intended velocity
 			//Vector velocity = (forward * gpGlobals->v_forward) + (right * gpGlobals->v_right);
+#ifdef NEO
+			VectorScale( mv->m_flUpMove ? -player->m_vecLadderNormal : m_vecForward, forwardSpeed, velocity );
+#else
 			VectorScale( m_vecForward, forwardSpeed, velocity );
+#endif // NEO
 			VectorMA( velocity, rightSpeed, m_vecRight, velocity );
 
 			// Perpendicular in the ladder plane
