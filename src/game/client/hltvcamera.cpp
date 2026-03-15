@@ -399,7 +399,22 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		// Copy movement amounts
 		float fmove = m_LastCmd.forwardmove * factor;
 		float smove = m_LastCmd.sidemove * factor;
-
+		
+#ifdef NEO
+		const bool bDroneMove = m_LastCmd.buttons & IN_WALK;
+		if (bDroneMove)
+		{
+			forward.z = 0;
+			if (fmove && smove)
+			{
+				const float absFMove = fabs(fmove);
+				const float absSMove = fabs(smove);
+				const float moveMagnitude = FastSqrt((absFMove * absFMove) + (absSMove * absSMove));
+				fmove *= absFMove / moveMagnitude;
+				smove *= absSMove / moveMagnitude;
+			}
+		}
+#endif // NEO
 		VectorNormalize (forward);  // Normalize remainder of vectors
 		VectorNormalize (right);    // 
 

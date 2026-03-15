@@ -418,7 +418,7 @@ void CHudCrosshair::Paint( void )
 	if (!pPlayer)
 		return;
 
-	if (pPlayer->IsObserver())
+	if (pPlayer->IsObserver() && !cl_observercrosshair.GetBool())
 	{
 		pPlayer = ToNEOPlayer(ClientEntityList().GetBaseEntity(GetSpectatorTarget()));
 		if (!pPlayer)
@@ -489,7 +489,7 @@ void CHudCrosshair::Paint( void )
 	bool bTakeSpecCrosshair = false;
 	CrosshairInfo *pCrosshairInfo = &m_crosshairInfo;
 	const char *pszNeoCrosshair = cl_neo_crosshair.GetString();
-	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator())
+	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator() && !cl_observercrosshair.GetBool())
 	{
 		const int iPlayerIdx = pNeoPlayer->entindex();
 		const bool bPlayerIdxValid = ((iPlayerIdx >= 0) && (iPlayerIdx < MAX_PLAYERS));
