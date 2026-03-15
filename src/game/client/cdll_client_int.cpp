@@ -1949,7 +1949,7 @@ void CHLClient::DecodeUserCmdFromBuffer( bf_read& buf, int slot )
 #ifdef NEO
 static void FixupDemoSmoother()
 {
-	VPROF_BUDGET(__FUNCTION__, VPROF_BUDGETGROUP_OTHER_VGUI);
+	VPROF_BUDGET(__FUNCTION__, VPROF_BUDGETGROUP_REPLAY);
 
 	static bool ok = false;
 	if (ok)
