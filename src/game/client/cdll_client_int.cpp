@@ -151,6 +151,7 @@
 #endif
 
 #ifdef NEO
+#include <vgui_controls/Button.h>
 #include <vgui_controls/MenuButton.h>
 #endif
 
@@ -1947,102 +1948,75 @@ void CHLClient::DecodeUserCmdFromBuffer( bf_read& buf, int slot )
 }
 
 #ifdef NEO
+inline static vgui::VPANEL ChildOf(const vgui::VPANEL parent, const char* childName)
+{
+	Assert(parent);
+	const auto& children = vgui::ipanel()->GetChildren(parent);
+	for (const auto& child : children)
+	{
+		const char* name = vgui::ipanel()->GetName(child);
+		Assert(childName && *childName);
+		if (name && V_strcmp(name, childName) == 0)
+			return child;
+	}
+	return {};
+}
+
 static void FixupDemoSmoother()
 {
 	VPROF_BUDGET(__FUNCTION__, VPROF_BUDGETGROUP_REPLAY);
 
-	static bool ok = false;
-	if (ok)
-	{
+	static bool alreadyDone = false;
+	if (alreadyDone)
 		return;
-	}
 
-	Assert(enginevgui);
-	Assert(vgui::ipanel());
-	auto parent = enginevgui->GetPanel(PANEL_TOOLS);
-	auto childCount = vgui::ipanel()->GetChildCount(parent);
-
-	const char* menuButtonsToFix[]{
-		"DemoSmoothFixFrameButton",
-		"DemoSmootherType",
-	};
-
-	int numFixed = 0;
-	for (int i = 0; i < childCount; ++i)
+	// Don't spam the vgui iteration attempts too often...
+	static float lastAttemptTime{};
+	if (gpGlobals->curtime - lastAttemptTime < 1)
 	{
-		auto child = vgui::ipanel()->GetChild(parent, i);
-		auto childName = vgui::ipanel()->GetName(child);
-		if (!childName || V_strcmp(childName, "DemoUIPanel"))
-		{
-			continue;
-		}
-
-		parent = child;
-
-		auto* panel = vgui::ipanel()->GetPanel(parent, "BaseUI");
-		if (!panel || !panel->IsVisible())
+		// ...except if we're not ticking, since who knows how long it's been.
+		// Luckily perf doesn't really matter if the entire game is currently frozen.
+		if (!engine->IsPaused())
 		{
 			return;
 		}
-
-		childCount = vgui::ipanel()->GetChildCount(parent);
-		for (i = 0; i < childCount; ++i)
-		{
-			child = vgui::ipanel()->GetChild(parent, i);
-			childName = vgui::ipanel()->GetName(child);
-			if (!childName || V_strcmp(childName, "DemoSmootherPanel"))
-			{
-				continue;
-			}
-
-			parent = child;
-			childCount = vgui::ipanel()->GetChildCount(parent);
-			for (i = 0; i < childCount; ++i)
-			{
-				child = vgui::ipanel()->GetChild(parent, i);
-				childName = vgui::ipanel()->GetName(child);
-				if (!childName)
-					continue;
-
-				bool foundPanelToFix = false;
-				for (int j = 0; j < ARRAYSIZE(menuButtonsToFix); ++j)
-				{
-					if (!V_strcmp(childName, menuButtonsToFix[j]))
-					{
-						foundPanelToFix = true;
-						break;
-					}
-				}
-
-				if (!foundPanelToFix)
-					continue;
-
-				auto target = vgui::ipanel()->GetPanel(child, "BaseUI");
-				if (!target)
-				{
-					Assert(false);
-					return;
-				}
-
-				auto btnTarget = dynamic_cast<vgui::MenuButton*>(target);
-				if (!btnTarget)
-				{
-					Assert(false);
-					return;
-				}
-				btnTarget->SetButtonActivationType(vgui::Button::ACTIVATE_ONPRESSED);
-
-				++numFixed;
-				ok = (numFixed >= ARRAYSIZE(menuButtonsToFix));
-				if (ok)
-				{
-					break;
-				}
-			}
-			break;
-		}
-		break;
 	}
+
+	lastAttemptTime = gpGlobals->curtime;
+
+	Assert(enginevgui);
+	const auto toolsPanel = enginevgui->GetPanel(PANEL_TOOLS);
+	const auto demoUiPanel = ChildOf(toolsPanel, "DemoUIPanel");
+	const auto demoSmootherPanel = ChildOf(demoUiPanel, "DemoSmootherPanel");
+	if (!demoSmootherPanel)
+		return;
+
+	constexpr const char* demoSmootherPanelButtonsToFix[]{
+		"DemoSmoothFixFrameButton",
+		"DemoSmootherType" };
+
+	int numFixed = 0;
+	for (const auto& buttonName : demoSmootherPanelButtonsToFix)
+	{
+		auto button = vgui::ipanel()->GetPanel(ChildOf(demoSmootherPanel, buttonName), "BaseUI");
+		if (!button)
+			continue;
+
+		// The buttons live in engine dll, so this could theoretically change in SDK update.
+		using ExpectedButtonType = vgui::MenuButton;
+		// And so we check
+		if (!dynamic_cast<ExpectedButtonType*>(button))
+		{
+			Assert(false);
+			alreadyDone = true; // nothing we can do until code fix... just mark as done
+			return;
+		}
+
+		((ExpectedButtonType*)button)->SetButtonActivationType(vgui::Button::ACTIVATE_ONPRESSED);
+		++numFixed;
+	}
+
+	alreadyDone = (numFixed == ARRAYSIZE(demoSmootherPanelButtonsToFix));
 }
 #endif
 
