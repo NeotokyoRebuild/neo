@@ -430,7 +430,7 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 #endif
 
 	CNEO_Player* pBotPlayer = ToNEOPlayer( me->GetEntity() );
-	if ( pBotPlayer && !(pBotPlayer->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) )
+	if ( pBotPlayer && !(pBotPlayer->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_USE)) )
 	{
 		AvoidBumpingFriends( me );
 	}
