@@ -2582,7 +2582,7 @@ bool CNEOBot::IsEnemy(const CBaseEntity* them) const
 }
 
 
-bool CNEOBot::IsOnLadder() const
+bool CNEOBot::IsBotOnLadder() const
 {
 	ILocomotion* mover = GetLocomotionInterface();
 	if ( !mover )

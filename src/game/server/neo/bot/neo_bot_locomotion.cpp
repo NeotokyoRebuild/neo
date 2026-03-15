@@ -39,7 +39,7 @@ void CNEOBotLocomotion::Update( void )
 	{
 #ifdef NEO
 		// Don't try to crouch jump if we are climbing a ladder
-		if (me->GetMoveType() != MOVETYPE_LADDER)
+		if (!me->IsBotOnLadder())
 		{
 			me->PressCrouchButton( 0.3f );
 		}

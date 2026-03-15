@@ -188,7 +188,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 	}
 
 	// Check if we're on the ladder (MOVETYPE_LADDER or locomotion says so)
-	bool onLadder = me->IsOnLadder();
+	bool onLadder = me->IsBotOnLadder();
 
 	if ( !onLadder )
 	{
@@ -201,7 +201,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		{
 			Vector ladderClosestPoint;
 			CalcClosestPointOnLineSegment( myPos, m_ladder->m_bottom, m_ladder->m_top, ladderClosestPoint );
-			if ( myPos.DistToSqr( ladderClosestPoint ) > Square( 100.0f ) )
+			if ( myPos.DistToSqr( ladderClosestPoint ) > Square( MAX_DEVIATION_DIST ) )
 			{
 				return Done( "Fallen too far from ladder, resetting" );
 			}
@@ -227,6 +227,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 				if ( distToTarget < mover->GetStepHeight() * 2.0f )
 				{
 					EnterDismountPhase( me );
+					return Continue();
 				}
 				else
 				{
@@ -260,96 +261,60 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		if ( m_bGoingUp )
 		{
 			body->SetDesiredPosture( IBody::STAND );
+		}
 
-			float dismountZ = targetZ;
-
-			if ( m_pExitArea && bExitIsBehind )
+		float dismountZ = targetZ;
+		if ( m_pExitArea )
+		{
+			if ( m_bGoingUp )
 			{
-				dismountZ = MIN( m_exitAreaCenter.z, targetZ );
-			}
-
-			if ( currentZ >= dismountZ )
-			{
-				EnterDismountPhase( me );
-				return Continue();
-			}
-
-			bool bIsClimbingDown = false;
-			if ( m_pExitArea )
-			{
-				if ( currentZ < m_exitAreaCenter.z )
+				if ( bExitIsBehind )
 				{
-					me->PressMoveUpButton();
-				}
-				else
-				{
-					me->PressMoveDownButton();
-					bIsClimbingDown = true;
+					dismountZ = Min( m_exitAreaCenter.z, targetZ );
 				}
 			}
 			else
 			{
-				me->PressMoveUpButton();
+				// Allow early drop-off at intermediate floors
+				dismountZ = Max( m_exitAreaCenter.z, targetZ );
 			}
-
-			if ( !bIsClimbingDown )
-			{
-				me->PressForwardButton();
-			}
-
-			// Look at the dismount height, slightly behind the ladder
-			Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
-			lookTarget -= m_ladder->GetNormal() * 50.0f;
-			body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr, "Climbing up (looking at dismount position)" );
 		}
-		else
-		{
-			float dismountZ = targetZ;
 
+		// Check if we've reached the target exit height
+		if ( m_bGoingUp ? ( currentZ >= dismountZ ) : ( currentZ <= dismountZ ) )
+		{
+			EnterDismountPhase( me );
+			return Continue();
+		}
+
+		// Adjust vertical height based on target exit area
+		bool bIsClimbingDown = false;
+		if ( onLadder )
+		{
+			bool bShouldGoUp = m_bGoingUp;
 			if ( m_pExitArea )
 			{
-				// Allow early drop-off at intermediate floors
-				dismountZ = MAX( m_exitAreaCenter.z, targetZ );
+				bShouldGoUp = ( currentZ < m_exitAreaCenter.z );
 			}
 
-			// Check if we've reached the bottom or intermediate exit height
-			if ( currentZ <= dismountZ )
+			if ( bShouldGoUp )
 			{
-				EnterDismountPhase( me );
-				return Continue();
+				me->PressMoveUpButton();
 			}
-
-			// Adjust vertical height based on target exit area
-			bool bIsClimbingDown = false;
-			if ( m_pExitArea && onLadder )
-			{
-				if ( currentZ < m_exitAreaCenter.z )
-				{
-					me->PressMoveUpButton();
-				}
-				else
-				{
-					me->PressMoveDownButton();
-					bIsClimbingDown = true;
-				}
-			}
-			else if ( onLadder )
+			else
 			{
 				me->PressMoveDownButton();
 				bIsClimbingDown = true;
 			}
-
-			// Sanity check: don't press forward if we are actively climbing down
-			if ( !bIsClimbingDown )
-			{
-				me->PressForwardButton();
-			}
-
-			// Look at the dismount height, slightly behind the ladder
-			Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
-			lookTarget -= m_ladder->GetNormal() * 50.0f;
-			body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr, "Climbing down (looking at dismount position)" );
 		}
+
+
+		// Look at and move to the dismount height, slightly behind the ladder
+		Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
+		lookTarget -= m_ladder->GetNormal() * 50.0f;
+		body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr,
+			m_bGoingUp ? "Climbing up (looking at dismount position)" : "Climbing down (looking at dismount position)" );
+		me->PressForwardButton(0.1f);
 	}
 
 	//------------------------------------------------------------
@@ -372,9 +337,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		// Build look target toward exit area center with vertical bias preserved
 		if ( m_pExitArea )
 		{
-			Vector dir = m_exitAreaCenter - myPos;
-			Vector lookTarget = myPos + dir;
-
+			bool bDroppingEarly = ( myPos.z >= m_exitAreaCenter.z ); 
 			// Maintain Z-height while on the ladder in the dismount phase
 			if ( onLadder )
 			{
@@ -387,12 +350,15 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 					me->PressMoveDownButton();
 				}
 			}
+			else
+			{
+				bDroppingEarly = true;
+			}
 
-			body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr, "Walking to exit area" );
+			body->AimHeadTowards( m_exitAreaCenter, IBody::MANDATORY, 0.1f, nullptr, "Walking to exit area" );
 
 			// Jump to detach from ladder if exit is not straight ahead, or if we have reached the exit height
 			float dot = DotProduct( toExit, m_ladderForward );
-			bool bDroppingEarly = ( myPos.z >= m_exitAreaCenter.z ); 
 
 			if ( dot < 0.5f || bDroppingEarly )
 			{
@@ -401,14 +367,10 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 				{
 					me->PressJumpButton(); // mostly to trigger animation if possible
 
-					// Zero Z velocity to avoid additive momentum from climbing, reducing overshoots
-					Vector currentVel = me->GetAbsVelocity();
-					currentVel.z = 0.0f;
 					mover->Reset(); // clear velocity cache in locomotion interface
-					me->SetAbsVelocity( currentVel );
 
 					Vector jumpVelocity = toExit * 150.0f;
-					jumpVelocity.z = 150.0f;
+					jumpVelocity.z = 150.0f - me->GetAbsVelocity().z;
 
 					me->ApplyAbsVelocityImpulse( jumpVelocity );
 					m_bJumpedOffLadder = true;
@@ -450,10 +412,6 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 //---------------------------------------------------------------------------------------------
 void CNEOBotLadderClimb::EnterDismountPhase( CNEOBot *me )
 {
-	me->ReleaseMoveUpButton();
-	me->ReleaseMoveDownButton();
-	me->ReleaseForwardButton(); 
-	me->GetLocomotionInterface()->Reset(); // clear velocity cache in locomotion interface
 	me->SetAbsVelocity( vec3_origin ); // stop momentum
 	m_bDismountPhase = true;
 	m_dismountTimer.Start( DISMOUNT_TIMEOUT );
