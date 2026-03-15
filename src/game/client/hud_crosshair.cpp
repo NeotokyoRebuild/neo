@@ -62,14 +62,6 @@ void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldStri
 	}
 }
 
-ConVar cl_neo_crosshair_hip_fire("cl_neo_crosshair_hip_fire", "0", FCVAR_ARCHIVE, "Show the crosshair when not aiming", true, 0, true, 1,
-	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldString, [[maybe_unused]] float flOldValue)->void{
-		CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair);
-		if (crosshair)
-		{
-			crosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR));
-		}
-	});
 ConVar cl_neo_crosshair_scope_inaccuracy("cl_neo_crosshair_scope_inaccuracy", "1", FCVAR_ARCHIVE, "Show the player's inaccuracy when scoped", true, 0, true, 1);
 ConVar cl_neo_crosshair_friendly_fire_warning("cl_neo_crosshair_friendly_fire_warning", "1", FCVAR_ARCHIVE, "Replace crosshair with friendly fire warning where applicable", true, 0, true, 1);
 #endif
@@ -116,7 +108,7 @@ CHudCrosshair::CHudCrosshair( const char *pElementName ) :
 	surface()->DrawSetTextureFile(m_hCrosshairLight, "vgui/hud/scopes/scope03-1", 1, false);
 	surface()->DrawGetTextureSize(m_hCrosshairLight, m_iCrosshairLightWidth, m_iCrosshairLightHeight);
 
-	SetHiddenBits( HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR) );
+	SetHiddenBits( HIDEHUD_PLAYERDEAD );
 #else
 	SetHiddenBits( HIDEHUD_PLAYERDEAD | HIDEHUD_CROSSHAIR );
 #endif // NEO
@@ -531,7 +523,21 @@ void CHudCrosshair::Paint( void )
 			m_bRefreshCrosshair = false;
 		}
 	}
-	const int iXHairStyle = pCrosshairInfo->iStyle;
+
+	bool bHideCrosshair = (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_CROSSHAIR);
+
+	ENeoCrosshairWep eNeoXHairWep = CROSSHAIR_WEP_DEFAULT;
+	if (pWeapon)
+	{
+		int iNeoXHairWep = MAP_WEAPON_TYPE_TO_XHAIR[NEO_WEAPON_TYPE[pWeapon->WeaponIndex()]];
+		if (iNeoXHairWep >= CROSSHAIR_WEP_DEFAULT && false == pNeoPlayer->m_bInAim)
+		{
+			iNeoXHairWep += CROSSHAIR_WEP_DEFAULT_HIPFIRE;
+		}
+		eNeoXHairWep = static_cast<ENeoCrosshairWep>(
+				UseCrosshairIndexFor(pCrosshairInfo, iNeoXHairWep, &bHideCrosshair));
+	}
+	CrosshairWepInfo *crh = &pCrosshairInfo->wep[eNeoXHairWep];
 
 	bool showFriendlyFireCrosshair = false;
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && cl_neo_crosshair_friendly_fire_warning.GetBool())
@@ -604,19 +610,19 @@ void CHudCrosshair::Paint( void )
 		vgui::surface()->DrawSetColor(COLOR_RED);
 		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
 	}
-	else if (m_iTexXHId[iXHairStyle] > 0)
+	else if (m_iTexXHId[crh->iStyle] > 0)
 	{
-		vgui::surface()->DrawSetTexture(m_iTexXHId[iXHairStyle]);
+		vgui::surface()->DrawSetTexture(m_iTexXHId[crh->iStyle]);
 		int iTexWide, iTexTall;
-		vgui::surface()->DrawGetTextureSize(m_iTexXHId[iXHairStyle], iTexWide, iTexTall);
+		vgui::surface()->DrawGetTextureSize(m_iTexXHId[crh->iStyle], iTexWide, iTexTall);
 		iTexWide >>= 1;
 		iTexTall >>= 1;
-		vgui::surface()->DrawSetColor(pCrosshairInfo->color);
+		vgui::surface()->DrawSetColor(crh->color);
 		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
 	}
-	else
+	else if (!bHideCrosshair)
 	{
-		PaintCrosshair(*pCrosshairInfo, HalfInaccuracyConeInScreenPixels(pWeapon, m_iHalfScreenWidth), iX, iY);
+		PaintCrosshair(crh, HalfInaccuracyConeInScreenPixels(pWeapon, m_iHalfScreenWidth), iX, iY);
 	}
 
 	if (bIsScopedWep && pPlayer->m_bInAim)

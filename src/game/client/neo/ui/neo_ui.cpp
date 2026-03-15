@@ -1467,18 +1467,44 @@ void ResetTextures()
 	pHtTexMap->Purge();
 }
 
-void RingBoxBool(bool *bChecked)
+void RingBoxFlag(const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList)
 {
-	int iIndex = static_cast<int>(*bChecked);
-	RingBox(ENABLED_LABELS, 2, &iIndex);
-	*bChecked = static_cast<bool>(iIndex);
+	const bool bWasOnFlag = (*iFlags & iToggleFlag);
+	bool bNowOnFlag = bWasOnFlag;
+	RingBoxBool(&bNowOnFlag, wszLabelsCustomList);
+	if (bNowOnFlag != bWasOnFlag)
+	{
+		if (bNowOnFlag)
+		{
+			*iFlags |= iToggleFlag;
+		}
+		else
+		{
+			*iFlags &= ~(iToggleFlag);
+		}
+	}
 }
 
-void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked)
+void RingBoxFlag(const wchar_t *wszLeftLabel, const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList)
 {
 	BeginMultiWidgetHighlighter(2);
 	Label(wszLeftLabel);
-	RingBoxBool(bChecked);
+	RingBoxFlag(iToggleFlag, iFlags, wszLabelsCustomList);
+	EndMultiWidgetHighlighter();
+}
+
+void RingBoxBool(bool *bChecked, const wchar_t **wszLabelsCustomList)
+{
+	int iIndex = static_cast<int>(*bChecked);
+	RingBox((wszLabelsCustomList) ? wszLabelsCustomList : ENABLED_LABELS, 2, &iIndex);
+	*bChecked = static_cast<bool>(iIndex);
+}
+
+void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked, const wchar_t **wszLabelsCustomList)
+{
+	BeginMultiWidgetHighlighter(2);
+	Label(wszLeftLabel);
+	RingBoxBool(bChecked, wszLabelsCustomList);
 	EndMultiWidgetHighlighter();
 }
 
@@ -1591,168 +1617,171 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 	// Sanity check if iLabelsSize dynamically changes
 	*iIndex = clamp(*iIndex, 0, iLabelsSize - 1);
 
-	SwapFont(FONT_NTNORMAL);
+	if (wdgState.bInView)
+	{
+		SwapFont(FONT_NTNORMAL);
 
-	int iTabWide = 0;
-	if (piTabWide)
-	{
-		if (*piTabWide <= 0)
+		int iTabWide = 0;
+		if (piTabWide)
 		{
-			for (int i = 0; i < iLabelsSize; ++i)
+			if (*piTabWide <= 0)
 			{
-				int iCurTabWide, iTabTall;
-				vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, wszLabelsList[i], iCurTabWide, iTabTall);
-				iTabWide = Max(iCurTabWide, iTabWide);
-			}
-			iTabWide += 2 * c->iMarginX;
-			*piTabWide = iTabWide;
-			Assert(iTabWide > 0);
-		}
-		iTabWide = *piTabWide;
-	}
-	else
-	{
-		iTabWide = (c->dPanel.wide / iLabelsSize);
-	}
-	
-	const int iTotalTabsWidth = (iTabWide * iLabelsSize);
-	const int iCenterTabsXOffset = iTotalTabsWidth < c->irWidgetWide ? (c->irWidgetWide - iTotalTabsWidth) * 0.5 : 0;
-	bool bResetSectionStates = false;
-	
-	const int iMWheelJump = iTabWide * 0.2;
-	switch (c->eMode)
-	{
-	case MODE_PAINT:
-	{
-		vgui::surface()->SetFullscreenViewport(c->rWidgetArea.x0, c->rWidgetArea.y0, c->irWidgetWide, c->irWidgetTall);
-		vgui::surface()->PushFullscreenViewport();
-
-		const auto *pFontI = &c->fonts[c->eFont];
-		for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
-		{
-			vgui::IntRect tabRect = {
-				.x0 = c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab,
-				.y0 = 0,
-				.x1 = c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab + iTabWide,
-				.y1 = c->irWidgetTall,
-			};
-			const bool bHotTab = IN_BETWEEN_EQ(tabRect.x0, c->iMouseAbsX - c->rWidgetArea.x0, tabRect.x1) &&
-					IN_BETWEEN_EQ(tabRect.y0, c->iMouseAbsY - c->rWidgetArea.y0, tabRect.y1);
-			const bool bActiveTab = i == *iIndex;
-			if (bHotTab || bActiveTab)
-			{
-				vgui::surface()->DrawSetColor(bActiveTab ? c->colors.activeBg : c->colors.hotBg);
-				vgui::surface()->DrawFilledRectArray(&tabRect, 1);
-			}
-			const wchar_t *wszText = wszLabelsList[i];
-			int wide, tall;
-			vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, wszText, wide, tall);
-			vgui::surface()->DrawSetTextPos(c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab + ((iTabWide - wide) * 0.5), pFontI->iYOffset);
-			vgui::surface()->DrawSetTextColor(bActiveTab ? c->colors.activeFg : bHotTab ? c->colors.hotFg : c->colors.normalFg);
-			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
-			if (bHotTab)
-			{
-				const int iHotTabMargin = static_cast<int>(FL_BORDER_RATIO * c->iMarginY);
-				vgui::surface()->DrawSetColor(c->colors.hotBorder);
-				DrawBorder(tabRect, iHotTabMargin);
-			}
-		}
-		if (c->iXOffset[c->iSection] != 0)
-		{
-			// more tab content to the left
-			vgui::surface()->DrawSetColor(COLOR_WHITE);
-			vgui::surface()->DrawFilledRect(0, 0, 2, c->irWidgetTall);
-		}
-		const int iTabsWiderBy = c->dPanel.wide - iTotalTabsWidth;
-		if (iTabsWiderBy < 0 && c->iXOffset[c->iSection] != iTabsWiderBy)
-		{
-			// more tab content to the right
-			vgui::surface()->DrawSetColor(COLOR_WHITE);
-			vgui::surface()->DrawFilledRect(c->irWidgetWide, 0, c->irWidgetWide-2, c->irWidgetTall);
-		}
-
-		vgui::surface()->PopFullscreenViewport();
-		vgui::surface()->SetFullscreenViewport(0, 0, 0, 0);
-
-		if (!(flags & TABFLAG_NOSIDEKEYS))
-		{
-			// Draw the side-hints text
-			// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
-			int iFontWidth, iFontHeight;
-			vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, L"F #", iFontWidth, iFontHeight);
-			const int iHintYPos = c->rWidgetArea.y0 + pFontI->iYOffset;
-
-			vgui::surface()->DrawSetTextColor(c->colors.tabHintsFg);
-			vgui::surface()->DrawSetTextPos(c->dPanel.x - c->iMarginX - iFontWidth, iHintYPos);
-			vgui::surface()->DrawPrintText((c->eKeyHints == KEYHINTS_KEYBOARD) ? L"F 1" : L"L 1", 3);
-			vgui::surface()->DrawSetTextPos(c->dPanel.x + c->dPanel.wide + c->iMarginX, iHintYPos);
-			vgui::surface()->DrawPrintText((c->eKeyHints == KEYHINTS_KEYBOARD) ? L"F 3" : L"R 1", 3);
-		}
-	}
-	break;
-	case MODE_MOUSEPRESSED:
-	{
-		if (wdgState.bHot && c->eCode == MOUSE_LEFT && c->iMouseAbsX >= (c->rWidgetArea.x0 + iCenterTabsXOffset) && c->iMouseAbsX <= c->rWidgetArea.x0 + iCenterTabsXOffset + (iTabWide * iLabelsSize))
-		{
-			const int iNextIndex = ((-c->iXOffset[c->iSection] + c->iMouseAbsX - c->rWidgetArea.x0 - iCenterTabsXOffset) / iTabWide);
-			if (iNextIndex != *iIndex)
-			{
-				*iIndex = clamp(iNextIndex, 0, iLabelsSize - 1);
-				bResetSectionStates = true;
-			}
-		}
-	}
-	break;
-	case MODE_KEYPRESSED:
-	{
-		if (!(flags & TABFLAG_NOSIDEKEYS))
-		{
-			const bool bLeftKey = c->eCode == KEY_F1 || c->eCode == KEY_XBUTTON_LEFT_SHOULDER ||
-					c->eCode == STEAMCONTROLLER_LEFT_TRIGGER;
-			const bool bRightKey = c->eCode == KEY_F3 || c->eCode == KEY_XBUTTON_RIGHT_SHOULDER ||
-					c->eCode == STEAMCONTROLLER_RIGHT_TRIGGER;
-			if (bLeftKey || bRightKey) // Global keybind
-			{
-				*iIndex += (bLeftKey) ? -1 : +1;
-				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
-				const int distanceToStartOfButton = *iIndex * iTabWide;
-				if (-c->iXOffset[c->iSection] > distanceToStartOfButton)
+				for (int i = 0; i < iLabelsSize; ++i)
 				{
-					c->iXOffset[c->iSection] = -distanceToStartOfButton;
+					int iCurTabWide, iTabTall;
+					vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, wszLabelsList[i], iCurTabWide, iTabTall);
+					iTabWide = Max(iCurTabWide, iTabWide);
 				}
-				const int distanceToEndOfButton = (*iIndex + 1) * iTabWide;
-				if (-c->iXOffset[c->iSection] + c->irWidgetWide < distanceToEndOfButton)
+				iTabWide += 2 * c->iMarginX;
+				*piTabWide = iTabWide;
+				Assert(iTabWide > 0);
+			}
+			iTabWide = *piTabWide;
+		}
+		else
+		{
+			iTabWide = (c->dPanel.wide / iLabelsSize);
+		}
+		
+		const int iTotalTabsWidth = (iTabWide * iLabelsSize);
+		const int iCenterTabsXOffset = iTotalTabsWidth < c->irWidgetWide ? (c->irWidgetWide - iTotalTabsWidth) * 0.5 : 0;
+		bool bResetSectionStates = false;
+		
+		const int iMWheelJump = iTabWide * 0.2;
+		switch (c->eMode)
+		{
+		case MODE_PAINT:
+		{
+			vgui::surface()->SetFullscreenViewport(c->rWidgetArea.x0, c->rWidgetArea.y0, c->irWidgetWide, c->irWidgetTall);
+			vgui::surface()->PushFullscreenViewport();
+
+			const auto *pFontI = &c->fonts[c->eFont];
+			for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
+			{
+				vgui::IntRect tabRect = {
+					.x0 = c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab,
+					.y0 = 0,
+					.x1 = c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab + iTabWide,
+					.y1 = c->irWidgetTall,
+				};
+				const bool bHotTab = IN_BETWEEN_EQ(tabRect.x0, c->iMouseAbsX - c->rWidgetArea.x0, tabRect.x1) &&
+						IN_BETWEEN_EQ(tabRect.y0, c->iMouseAbsY - c->rWidgetArea.y0, tabRect.y1);
+				const bool bActiveTab = i == *iIndex;
+				if (bHotTab || bActiveTab)
 				{
-					c->iXOffset[c->iSection] = c->irWidgetWide - distanceToEndOfButton;
+					vgui::surface()->DrawSetColor(bActiveTab ? c->colors.activeBg : c->colors.hotBg);
+					vgui::surface()->DrawFilledRectArray(&tabRect, 1);
 				}
-				bResetSectionStates = true;
+				const wchar_t *wszText = wszLabelsList[i];
+				int wide, tall;
+				vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, wszText, wide, tall);
+				vgui::surface()->DrawSetTextPos(c->iXOffset[c->iSection] + iCenterTabsXOffset + iXPosTab + ((iTabWide - wide) * 0.5), pFontI->iYOffset);
+				vgui::surface()->DrawSetTextColor(bActiveTab ? c->colors.activeFg : bHotTab ? c->colors.hotFg : c->colors.normalFg);
+				vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				if (bHotTab)
+				{
+					const int iHotTabMargin = static_cast<int>(FL_BORDER_RATIO * c->iMarginY);
+					vgui::surface()->DrawSetColor(c->colors.hotBorder);
+					DrawBorder(tabRect, iHotTabMargin);
+				}
+			}
+			if (c->iXOffset[c->iSection] != 0)
+			{
+				// more tab content to the left
+				vgui::surface()->DrawSetColor(COLOR_WHITE);
+				vgui::surface()->DrawFilledRect(0, 0, 2, c->irWidgetTall);
+			}
+			const int iTabsWiderBy = c->dPanel.wide - iTotalTabsWidth;
+			if (iTabsWiderBy < 0 && c->iXOffset[c->iSection] != iTabsWiderBy)
+			{
+				// more tab content to the right
+				vgui::surface()->DrawSetColor(COLOR_WHITE);
+				vgui::surface()->DrawFilledRect(c->irWidgetWide, 0, c->irWidgetWide-2, c->irWidgetTall);
+			}
+
+			vgui::surface()->PopFullscreenViewport();
+			vgui::surface()->SetFullscreenViewport(0, 0, 0, 0);
+
+			if (!(flags & TABFLAG_NOSIDEKEYS))
+			{
+				// Draw the side-hints text
+				// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
+				int iFontWidth, iFontHeight;
+				vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, L"F #", iFontWidth, iFontHeight);
+				const int iHintYPos = c->rWidgetArea.y0 + pFontI->iYOffset;
+
+				vgui::surface()->DrawSetTextColor(c->colors.tabHintsFg);
+				vgui::surface()->DrawSetTextPos(c->dPanel.x - c->iMarginX - iFontWidth, iHintYPos);
+				vgui::surface()->DrawPrintText((c->eKeyHints == KEYHINTS_KEYBOARD) ? L"F 1" : L"L 1", 3);
+				vgui::surface()->DrawSetTextPos(c->dPanel.x + c->dPanel.wide + c->iMarginX, iHintYPos);
+				vgui::surface()->DrawPrintText((c->eKeyHints == KEYHINTS_KEYBOARD) ? L"F 3" : L"R 1", 3);
 			}
 		}
-	}
-	break;
-	case MODE_MOUSEWHEELED:
-		if (!(c->bMouseInPanel))
+		break;
+		case MODE_MOUSEPRESSED:
 		{
+			if (wdgState.bHot && c->eCode == MOUSE_LEFT && c->iMouseAbsX >= (c->rWidgetArea.x0 + iCenterTabsXOffset) && c->iMouseAbsX <= c->rWidgetArea.x0 + iCenterTabsXOffset + (iTabWide * iLabelsSize))
+			{
+				const int iNextIndex = ((-c->iXOffset[c->iSection] + c->iMouseAbsX - c->rWidgetArea.x0 - iCenterTabsXOffset) / iTabWide);
+				if (iNextIndex != *iIndex)
+				{
+					*iIndex = clamp(iNextIndex, 0, iLabelsSize - 1);
+					bResetSectionStates = true;
+				}
+			}
+		}
+		break;
+		case MODE_KEYPRESSED:
+		{
+			if (!(flags & TABFLAG_NOSIDEKEYS))
+			{
+				const bool bLeftKey = c->eCode == KEY_F1 || c->eCode == KEY_XBUTTON_LEFT_SHOULDER ||
+						c->eCode == STEAMCONTROLLER_LEFT_TRIGGER;
+				const bool bRightKey = c->eCode == KEY_F3 || c->eCode == KEY_XBUTTON_RIGHT_SHOULDER ||
+						c->eCode == STEAMCONTROLLER_RIGHT_TRIGGER;
+				if (bLeftKey || bRightKey) // Global keybind
+				{
+					*iIndex += (bLeftKey) ? -1 : +1;
+					*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
+					const int distanceToStartOfButton = *iIndex * iTabWide;
+					if (-c->iXOffset[c->iSection] > distanceToStartOfButton)
+					{
+						c->iXOffset[c->iSection] = -distanceToStartOfButton;
+					}
+					const int distanceToEndOfButton = (*iIndex + 1) * iTabWide;
+					if (-c->iXOffset[c->iSection] + c->irWidgetWide < distanceToEndOfButton)
+					{
+						c->iXOffset[c->iSection] = c->irWidgetWide - distanceToEndOfButton;
+					}
+					bResetSectionStates = true;
+				}
+			}
+		}
+		break;
+		case MODE_MOUSEWHEELED:
+			if (!(c->bMouseInPanel))
+			{
+				break;
+			}
+			c->iXOffset[c->iSection] += (c->eCode == MOUSE_WHEEL_UP) ? iMWheelJump : -iMWheelJump; // NEO TODO (Adam) customizable horizontal scroll direction?
+			c->iXOffset[c->iSection] = clamp(c->iXOffset[c->iSection], -(iTotalTabsWidth - c->dPanel.wide), 0);
+			break;
+		default:
 			break;
 		}
-		c->iXOffset[c->iSection] += (c->eCode == MOUSE_WHEEL_UP) ? iMWheelJump : -iMWheelJump; // NEO TODO (Adam) customizable horizontal scroll direction?
-		c->iXOffset[c->iSection] = clamp(c->iXOffset[c->iSection], -(iTotalTabsWidth - c->dPanel.wide), 0);
-		break;
-	default:
-		break;
-	}
 
-	if (bResetSectionStates && !(flags & TABFLAG_NOSTATERESETS))
-	{
-		V_memset(c->iYOffset, 0, sizeof(c->iYOffset));
-		c->iActive = FOCUSOFF_NUM;
-		c->iActiveSection = -1;
-		c->iHot = FOCUSOFF_NUM;
-		c->iHotSection = -1;
+		if (bResetSectionStates && !(flags & TABFLAG_NOSTATERESETS))
+		{
+			V_memset(c->iYOffset, 0, sizeof(c->iYOffset));
+			c->iActive = FOCUSOFF_NUM;
+			c->iActiveSection = -1;
+			c->iHot = FOCUSOFF_NUM;
+			c->iHotSection = -1;
+		}
+		SwapFont(FONT_NTNORMAL);
 	}
 
 	EndWidget(wdgState);
-	SwapFont(FONT_NTNORMAL);
 }
 
 static float ClampAndLimitDp(const float curValue, const float flMin, const float flMax, const int iDp)

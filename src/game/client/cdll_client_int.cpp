@@ -1523,6 +1523,19 @@ void CHLClient::PostInit()
 				}
 			}
 
+			if (iCfgVerMajor < 29)
+			{
+				// Upgrade pre NEOXHAIR_SERIAL_ALPHA_V29 crosshairs to NEOXHAIR_SERIAL_ALPHA_V29+
+				ConVarRef cl_neo_crosshair("cl_neo_crosshair");
+				CrosshairInfo xhairInfo = {};
+				if (ImportCrosshair(&xhairInfo, cl_neo_crosshair.GetString()))
+				{
+					char szExportSeq[NEO_XHAIR_SEQMAX];
+					ExportCrosshair(&xhairInfo, szExportSeq);
+					cl_neo_crosshair.SetValue(szExportSeq);
+				}
+			}
+
 			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
 			cvr_cl_neo_cfg_version_minor.SetValue(NEO_VERSION_MINOR);
 		}
