@@ -418,7 +418,8 @@ void CHudCrosshair::Paint( void )
 	if (!pPlayer)
 		return;
 
-	if (pPlayer->IsObserver() && !cl_observercrosshair.GetBool())
+	const bool drawRoamingObserverCrosshair = cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING;
+	if (pPlayer->IsObserver() && !drawRoamingObserverCrosshair)
 	{
 		pPlayer = ToNEOPlayer(ClientEntityList().GetBaseEntity(GetSpectatorTarget()));
 		if (!pPlayer)
@@ -489,7 +490,7 @@ void CHudCrosshair::Paint( void )
 	bool bTakeSpecCrosshair = false;
 	CrosshairInfo *pCrosshairInfo = &m_crosshairInfo;
 	const char *pszNeoCrosshair = cl_neo_crosshair.GetString();
-	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator() && !cl_observercrosshair.GetBool())
+	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator() && !drawRoamingObserverCrosshair)
 	{
 		const int iPlayerIdx = pNeoPlayer->entindex();
 		const bool bPlayerIdxValid = ((iPlayerIdx >= 0) && (iPlayerIdx < MAX_PLAYERS));
