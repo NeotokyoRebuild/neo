@@ -15,6 +15,7 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 #include "bot/behavior/neo_bot_tactical_monitor.h"
+#include "weapons/weapon_balc.h"
 
 ConVar neo_bot_path_lookahead_range( "neo_bot_path_lookahead_range", "300" );
 ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT );
@@ -830,10 +831,22 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
 			{
+				auto *pBalc = static_cast<CWeaponBALC *>(myWeapon);
 				// Minimum viable firing BALC
 				// TODO: Proper heat management for higher difficulty bots
 				me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
-				me->PressFireButton(GetFireDurationByDifficulty(me));
+
+				// NEO JANK: To simplify alt fire input management
+				// we allow the bot to bypass button-hold charge firing requirement
+				if ( (me->GetTimeSinceWeaponFired() >= pBalc->GetChargeDuration())
+					&& threatRange >= 300.0f )
+				{
+					pBalc->ShootGrenade(me);
+				}
+				else
+				{
+					me->PressFireButton(GetFireDurationByDifficulty(me));
+				}
 				return;
 			}
 			else if (myWeapon->m_iClip1 <= 0)
