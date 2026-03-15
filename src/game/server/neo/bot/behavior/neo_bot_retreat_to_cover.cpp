@@ -211,7 +211,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		CBaseEntity *dangerousGrenade = CNEOBotRetreatFromGrenade::FindDangerousGrenade( me );
 		if ( dangerousGrenade )
 		{
-			return SuspendFor( new CNEOBotRetreatFromGrenade( dangerousGrenade ), "Encountered grenade while retreating to cover!" );
+			// ChangeTo: Avoid behavior pingpong if grenade avoidance can't find cover
+			return ChangeTo( new CNEOBotRetreatFromGrenade( dangerousGrenade ), "Encountered grenade while retreating to cover!" );
 		}
 	}
 
