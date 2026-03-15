@@ -150,6 +150,9 @@
 
 #endif
 
+#ifdef NEO
+#include <vgui_controls/MenuButton.h>
+#endif
 
 extern vgui::IInputInternal *g_InputInternal;
 
@@ -1943,6 +1946,106 @@ void CHLClient::DecodeUserCmdFromBuffer( bf_read& buf, int slot )
 	input->DecodeUserCmdFromBuffer( buf, slot );
 }
 
+#ifdef NEO
+static void FixupDemoSmoother()
+{
+	VPROF_BUDGET(__FUNCTION__, VPROF_BUDGETGROUP_REPLAY);
+
+	static bool ok = false;
+	if (ok)
+	{
+		return;
+	}
+
+	Assert(enginevgui);
+	Assert(vgui::ipanel());
+	auto parent = enginevgui->GetPanel(PANEL_TOOLS);
+	auto childCount = vgui::ipanel()->GetChildCount(parent);
+
+	const char* menuButtonsToFix[]{
+		"DemoSmoothFixFrameButton",
+		"DemoSmootherType",
+	};
+
+	int numFixed = 0;
+	for (int i = 0; i < childCount; ++i)
+	{
+		auto child = vgui::ipanel()->GetChild(parent, i);
+		auto childName = vgui::ipanel()->GetName(child);
+		if (!childName || V_strcmp(childName, "DemoUIPanel"))
+		{
+			continue;
+		}
+
+		parent = child;
+
+		auto* panel = vgui::ipanel()->GetPanel(parent, "BaseUI");
+		if (!panel || !panel->IsVisible())
+		{
+			return;
+		}
+
+		childCount = vgui::ipanel()->GetChildCount(parent);
+		for (i = 0; i < childCount; ++i)
+		{
+			child = vgui::ipanel()->GetChild(parent, i);
+			childName = vgui::ipanel()->GetName(child);
+			if (!childName || V_strcmp(childName, "DemoSmootherPanel"))
+			{
+				continue;
+			}
+
+			parent = child;
+			childCount = vgui::ipanel()->GetChildCount(parent);
+			for (i = 0; i < childCount; ++i)
+			{
+				child = vgui::ipanel()->GetChild(parent, i);
+				childName = vgui::ipanel()->GetName(child);
+				if (!childName)
+					continue;
+
+				bool foundPanelToFix = false;
+				for (int j = 0; j < ARRAYSIZE(menuButtonsToFix); ++j)
+				{
+					if (!V_strcmp(childName, menuButtonsToFix[j]))
+					{
+						foundPanelToFix = true;
+						break;
+					}
+				}
+
+				if (!foundPanelToFix)
+					continue;
+
+				auto target = vgui::ipanel()->GetPanel(child, "BaseUI");
+				if (!target)
+				{
+					Assert(false);
+					return;
+				}
+
+				auto btnTarget = dynamic_cast<vgui::MenuButton*>(target);
+				if (!btnTarget)
+				{
+					Assert(false);
+					return;
+				}
+				btnTarget->SetButtonActivationType(vgui::Button::ACTIVATE_ONPRESSED);
+
+				++numFixed;
+				ok = (numFixed >= ARRAYSIZE(menuButtonsToFix));
+				if (ok)
+				{
+					break;
+				}
+			}
+			break;
+		}
+		break;
+	}
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -1956,6 +2059,12 @@ void CHLClient::View_Render( vrect_t *rect )
 
 	view->Render( rect );
 	UpdatePerfStats();
+#ifdef NEO
+	if (engine->IsPlayingDemo())
+	{
+		FixupDemoSmoother();
+	}
+#endif
 }
 
 
