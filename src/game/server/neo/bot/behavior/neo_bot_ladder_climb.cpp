@@ -109,6 +109,9 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 //---------------------------------------------------------------------------------------------
 void CNEOBotLadderClimb::ResolveExitArea( CNEOBot *me )
 {
+	// Clear potentially stale exit area
+	m_pExitArea = nullptr;
+
 	const PathFollower *path = me->GetCurrentPath();
 	if ( path && path->IsValid() )
 	{
@@ -118,8 +121,9 @@ void CNEOBotLadderClimb::ResolveExitArea( CNEOBot *me )
 			return;
 		}
 
+		constexpr int MAX_PATH_SEARCH_STEPS = 100;
 		int safetyCounter = 0;
-		while ( seg && safetyCounter < 100 )
+		while ( seg && safetyCounter < MAX_PATH_SEARCH_STEPS )
 		{
 			if ( !seg->ladder )
 			{
@@ -129,8 +133,9 @@ void CNEOBotLadderClimb::ResolveExitArea( CNEOBot *me )
 			seg = path->NextSegment( seg );
 			safetyCounter++;
 		}
+		Assert( safetyCounter < MAX_PATH_SEARCH_STEPS );
 
-		if ( seg && seg->area )
+		if ( seg && !seg->ladder && seg->area )
 		{
 			m_pExitArea = seg->area;
 			m_exitAreaCenter = m_pExitArea->GetCenter();
