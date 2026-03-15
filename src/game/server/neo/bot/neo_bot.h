@@ -172,7 +172,7 @@ public:
 
 	bool IsEnemy(const CBaseEntity* them) const OVERRIDE;
 
-	bool IsOnLadder( ) const;
+	bool IsBotOnLadder( ) const;
 
 	CNEOBaseCombatWeapon* GetBludgeonWeapon(void);
 

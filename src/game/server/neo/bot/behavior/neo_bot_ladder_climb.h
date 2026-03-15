@@ -49,4 +49,5 @@ private:
 	static constexpr float STUCK_Z_TOLERANCE = 2.0f;
 	static constexpr float DISMOUNT_TIMEOUT = 3.0f;	// Max time to walk toward exit area after leaving ladder
 	static constexpr float SAFE_FALL_DIST = 200.0f;	// Max height to safely drop off a ladder
+	static constexpr float MAX_DEVIATION_DIST = 100.0f; // Distance from ladder before canceling
 };
