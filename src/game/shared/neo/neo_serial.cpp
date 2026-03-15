@@ -24,7 +24,7 @@ enum ESerialVariantType
 static void StrCatCh(char (&szMutStr)[NEO_XHAIR_SEQMAX], const char ch)
 {
 	const int iSize = V_strlen(szMutStr);
-	if (iSize < NEO_XHAIR_SEQMAX)
+	if ((iSize + 1) < NEO_XHAIR_SEQMAX)
 	{
 		szMutStr[iSize] = ch;
 		szMutStr[iSize + 1] = '\0';

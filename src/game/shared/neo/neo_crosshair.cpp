@@ -14,6 +14,17 @@ extern int g_verbose;
 #include "mathlib/mathlib.h"
 #include "neo_serial.h"
 
+const ENeoCrosshairWep MAP_WEAPON_TYPE_TO_XHAIR[WEP_TYPE__TOTAL] = {
+	CROSSHAIR_WEP_NONE,			// WEP_TYPE_NIL
+	CROSSHAIR_WEP_NONE,			// WEP_TYPE_THROWABLE
+	CROSSHAIR_WEP_SECONDARY,	// WEP_TYPE_PISTOL
+	CROSSHAIR_WEP_DEFAULT,		// WEP_TYPE_SMG
+	CROSSHAIR_WEP_SHOTGUN,		// WEP_TYPE_SHOTGUN
+	CROSSHAIR_WEP_DEFAULT,		// WEP_TYPE_RIFLE
+	CROSSHAIR_WEP_DEFAULT,		// WEP_TYPE_MACHINEGUN
+	CROSSHAIR_WEP_NONE,			// WEP_TYPE_SNIPER
+};
+
 #ifdef CLIENT_DLL
 #include "neo_gamerules.h"
 #include "weapon_neobasecombatweapon.h"

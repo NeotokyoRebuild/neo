@@ -1521,6 +1521,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h

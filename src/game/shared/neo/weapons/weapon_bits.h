@@ -73,16 +73,7 @@ enum NeoWepBits : NEO_WEP_BITS_UNDERLYING_TYPE
 #endif
 };
 
-#define DEFINE_CROSSHAIR_TYPE(_x1, _x2, _x3, weptype) weptype,
-#define DEFINE_CROSSHAIR_TYPE_ALT(_x1, _x2, _x3, _x4, weptype) weptype,
-
-static const ENeoWeaponType NEO_WEAPON_TYPE[NEO_WIDX__TOTAL] = {
-	WEP_TYPE_NIL, // 0 = invalid, set none
-	FOR_LIST_WEAPONS(DEFINE_CROSSHAIR_TYPE, DEFINE_CROSSHAIR_TYPE_ALT)
-#ifdef INCLUDE_WEP_PBK
-	WEP_TYPE_MACHINEGUN,
-#endif
-};
+extern const ENeoWeaponType NEO_WEAPON_TYPE[NEO_WIDX__TOTAL];
 
 // Some other related type safety checks also rely on this equaling zero.
 static_assert(NEO_WEP_INVALID == 0);

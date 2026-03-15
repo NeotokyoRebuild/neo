@@ -339,7 +339,7 @@ void TestSerial_LongestLength()
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
 	// Make sure it's not maxing out the string
-	TEST_VERIFY(V_strlen(szExportSeq) < (NEO_XHAIR_SEQMAX - 1));
+	TEST_VERIFY(V_strlen(szExportSeq) < (NEO_XHAIR_SEQMAX - 1 - 1));
 	TEST_COMPARE_STR(szExportSeq, SERIAL_TEST_STR);
 }
 
