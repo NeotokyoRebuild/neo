@@ -2581,6 +2581,21 @@ bool CNEOBot::IsEnemy(const CBaseEntity* them) const
 	}
 }
 
+
+bool CNEOBot::IsBotOnLadder() const
+{
+	ILocomotion* mover = GetLocomotionInterface();
+	if ( !mover )
+	{
+		return false;
+	}
+	
+	return ( GetMoveType() == MOVETYPE_LADDER ) ||
+		mover->IsUsingLadder() ||
+		mover->IsAscendingOrDescendingLadder();
+}
+
+
 CNEOBaseCombatWeapon* CNEOBot::GetBludgeonWeapon(void)
 {
 	return static_cast<CNEOBaseCombatWeapon *>(Weapon_GetSlot(2));

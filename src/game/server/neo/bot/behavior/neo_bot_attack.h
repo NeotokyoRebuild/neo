@@ -1,6 +1,9 @@
 #pragma once
 
+#include "NextBotBehavior.h"
 #include "Path/NextBotChasePath.h"
+
+class CNEOBot;
 
 
 //-------------------------------------------------------------------------------
