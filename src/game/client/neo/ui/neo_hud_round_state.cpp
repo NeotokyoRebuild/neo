@@ -21,6 +21,8 @@
 #include "vgui_avatarimage.h"
 #include "neo_scoreboard.h"
 
+#include "hltvcamera.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1388,6 +1390,12 @@ int CNEOHud_RoundState::GetSelectedPlayerInHud()
 
 CON_COMMAND_F( spec_player_by_hud_position, "Spectate player by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		return;
+	}
+
 	if ( args.ArgC() != 2 )
 	{
 		ConMsg( "Usage: spec_player_by_hud_position { player position in top hud, 0 indexed }\n" );
@@ -1411,12 +1419,18 @@ CON_COMMAND_F( spec_player_by_hud_position, "Spectate player by position in the 
 	const int entityIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(positionInHud, true);
 	if (entityIndex)
 	{
-		engine->ClientCmd( VarArgs("spec_player_entity_number %d", entityIndex) );
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(entityIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", entityIndex));
 	}
 }
 
 CON_COMMAND_F( spec_next_entity_in_hud, "Spectate next valid player to the right of the current spectate target", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1434,12 +1448,18 @@ CON_COMMAND_F( spec_next_entity_in_hud, "Spectate next valid player to the right
 	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(g_pNeoHudRoundState->GetNextAlivePlayerInHud(spectateTargetMinusIndexedPositionInHud, false));
 	if (playerIndex)
 	{
-		engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(playerIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
 	}
 }
 
 CON_COMMAND_F( spec_previous_entity_in_hud, "Spectate next valid player to the left of the current spectate target", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1457,12 +1477,18 @@ CON_COMMAND_F( spec_previous_entity_in_hud, "Spectate next valid player to the l
 	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(g_pNeoHudRoundState->GetNextAlivePlayerInHud(spectateTargetMinusIndexedPositionInHud, true));
 	if (playerIndex)
 	{
-		engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(playerIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
 	}
 }
 
 CON_COMMAND_F( select_next_alive_player_in_hud, "Select the next alive player in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1475,6 +1501,12 @@ CON_COMMAND_F( select_next_alive_player_in_hud, "Select the next alive player in
 
 CON_COMMAND_F( select_previous_alive_player_in_hud, "Select the previous alive player in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1487,6 +1519,12 @@ CON_COMMAND_F( select_previous_alive_player_in_hud, "Select the previous alive p
 
 CON_COMMAND_F( spectate_player_selected_in_hud, "Spectate entity selected in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1497,6 +1535,6 @@ CON_COMMAND_F( spectate_player_selected_in_hud, "Spectate entity selected in the
 	const int entityIndex = g_pNeoHudRoundState->GetSelectedPlayerInHud();
 	if (entityIndex)
 	{
-		engine->ClientCmd( VarArgs("spec_player_entity_number %d", entityIndex) );
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(entityIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", entityIndex));
 	}
 }
