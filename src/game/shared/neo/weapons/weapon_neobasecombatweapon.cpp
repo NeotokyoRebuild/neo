@@ -957,7 +957,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	}
 
 #ifdef GAME_DLL
-	pPlayer->SetLastShooter();
+	NEORules()->SetLastShooter(pPlayer->entindex());
 #endif // GAME_DLL
 	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 	{

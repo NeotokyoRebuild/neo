@@ -141,13 +141,6 @@ END_SCRIPTDESC();
 
 static constexpr int SHOWMENU_STRLIMIT = 512;
 
-int CNEO_Player::m_iLastHurt = -1;
-int CNEO_Player::m_iLastShooter = -1;
-int CNEO_Player::m_iLastEvent = -1;
-int CNEO_Player::m_iLastAttacker = -1;
-int CNEO_Player::m_iLastKiller = -1;
-int CNEO_Player::m_iLastGhoster = -1;
-
 const Vector CNEO_Player::VECTOR_INVALID_WAYPOINT = vec3_invalid;
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -582,6 +575,36 @@ CNEO_Player::CNEO_Player()
 	
 	m_flNextPingTime = 0;
 	ResetBotCommandState();
+
+	// set default values for convars only present on the client and read by the server
+	edict_t* pEdict = edict();
+	if (pEdict)
+	{
+		{
+			char szCrhSerial[NEO_XHAIR_SEQMAX] = {};
+			DefaultCrosshairSerial(szCrhSerial);
+			engine->SetFakeClientConVarValue(pEdict, "cl_neo_crosshair", szCrhSerial);
+		}
+
+		constexpr struct {
+			const char* name, *value;
+		} convars[] = {
+			{ "cl_neo_pvs_cull_roaming_observer", "0" },
+			{ "cl_neo_streamermode", "0" },
+			{ "cl_neo_tachi_prefer_auto", "1" },
+			{ "cl_neo_taking_damage_sounds", "0" },
+			{ "cl_onlysteamnick", "0" },
+			{ "hap_HasDevice", "0" },
+			{ "neo_clantag", "" },
+			{ "neo_fov", "90" },
+			{ "neo_name", "" },
+		};
+
+		for (const auto& convar : convars)
+		{
+			engine->SetFakeClientConVarValue(pEdict, convar.name, convar.value);
+		}
+	}
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -1942,7 +1965,7 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		}
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_fastest_player" ))
+	else if ( FStrEq(args[0], "spectate_fastest_player" ))
 	{
 		int observerMode = GetObserverMode();
 		if ( observerMode > OBS_MODE_FIXED )
@@ -1970,12 +1993,12 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_hurt" ))
+	else if ( FStrEq(args[0], "spectate_last_hurt" ))
 	{
 		int observerMode = GetObserverMode();
 		if ( observerMode > OBS_MODE_FIXED )
 		{
-			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastHurt);
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(NEORules()->GetLastHurt());
 			if (SetObserverTarget( pPlayer )) {
 				m_bForcedObserverMode = false;
 				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
@@ -1987,12 +2010,12 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_shooter" ))
+	else if ( FStrEq(args[0], "spectate_last_shooter" ))
 	{
 		int observerMode = GetObserverMode();
 		if ( observerMode > OBS_MODE_FIXED )
 		{
-			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastShooter);
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(NEORules()->GetLastShooter());
 			if (SetObserverTarget( pPlayer )) {
 				m_bForcedObserverMode = false;
 				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
@@ -2004,12 +2027,12 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_event" ))
+	else if ( FStrEq(args[0], "spectate_last_event" ))
 	{
 		int observerMode = GetObserverMode();
 		if ( observerMode > OBS_MODE_FIXED )
 		{
-			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastEvent);
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(NEORules()->GetLastEvent());
 			if (SetObserverTarget( pPlayer )) {
 				m_bForcedObserverMode = false;
 				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
@@ -2021,12 +2044,12 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_attacker" ))
+	else if ( FStrEq(args[0], "spectate_last_attacker" ))
 	{
 		int observerMode = GetObserverMode();
 		if ( observerMode > OBS_MODE_FIXED )
 		{
-			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastAttacker);
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(NEORules()->GetLastAttacker());
 			if (SetObserverTarget( pPlayer )) {
 				m_bForcedObserverMode = false;
 				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
@@ -2038,12 +2061,12 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_killer" ))
+	else if ( FStrEq(args[0], "spectate_last_killer" ))
 	{
 		int observerMode = GetObserverMode();
 		if ( observerMode > OBS_MODE_FIXED )
 		{
-			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastKiller);
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(NEORules()->GetLastKiller());
 			if (SetObserverTarget( pPlayer )) {
 				m_bForcedObserverMode = false;
 				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
@@ -2055,12 +2078,12 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-	else if ( FStrEq(args[0], "spec_last_ghoster" ))
+	else if ( FStrEq(args[0], "spectate_last_ghoster" ))
 	{
 		int observerMode = GetObserverMode();
 		if ( observerMode > OBS_MODE_FIXED )
 		{
-			CBaseEntity* pPlayer = UTIL_EntityByIndex(m_iLastGhoster);
+			CBaseEntity* pPlayer = UTIL_EntityByIndex(NEORules()->GetLastGhoster());
 			if (SetObserverTarget( pPlayer )) {
 				m_bForcedObserverMode = false;
 				if (observerMode != OBS_MODE_IN_EYE && observerMode != OBS_MODE_CHASE)
@@ -2240,7 +2263,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	CBaseEntity* pAttacker = info.GetAttacker();
 	if (pAttacker && pAttacker->IsPlayer()) // we can only have players as a spectate target atm
 	{
-		m_iLastKiller = m_iLastEvent = pAttacker->entindex();
+		NEORules()->SetLastAttacker(pAttacker->entindex());
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
 			CBasePlayer* pObserver = dynamic_cast<CBasePlayer*>(UTIL_EntityByIndex(i));
@@ -3154,7 +3177,7 @@ AttackersTotals CNEO_Player::GetAttackersTotals() const
 
 int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
-	m_iLastHurt = entindex();
+	NEORules()->SetLastHurt(entindex());
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
 		if (sv_neo_warmup_godmode.GetBool())
@@ -3175,7 +3198,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		if (auto *attacker = ToNEOPlayer(info.GetAttacker()))
 		{
 			const int attackerIdx = attacker->entindex();
-			m_iLastAttacker = m_iLastEvent = attackerIdx; // NEO TODO (Adam) Once we can spectate non-players, let last attacker be non-neoplayer (Jeff)
+			NEORules()->SetLastAttacker(entindex()); // NEO TODO (Adam) Once we can spectate non-players, let last attacker be non-neoplayer (Jeff)
 
 			// Separate the fractional amount of damage from the whole
 			const float flFractionalDamage = info.GetDamage() - floor(info.GetDamage());

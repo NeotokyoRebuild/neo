@@ -23,6 +23,7 @@
 #endif
 
 #ifdef NEO
+#include "neo_gamerules.h"
 #include "c_neo_player.h"
 #include "shareddefs.h"
 #endif // NEO
@@ -692,6 +693,37 @@ void C_HLTVCamera::SetPrimaryTarget( int nEntity )
 		gameeventmanager->FireEventClientSide( event );
 	}
 }
+#ifdef NEO
+void C_HLTVCamera::SpectateEvent(NeoSpectateEvent event)
+{
+	int lastEventEntityIndex = -1;
+	switch (event)
+	{
+		case NEO_SPECTATE_EVENT_LAST_HURT:
+			lastEventEntityIndex = NEORules()->GetLastHurt();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_SHOOTER:
+			lastEventEntityIndex = NEORules()->GetLastShooter();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_ATTACKER:
+			lastEventEntityIndex = NEORules()->GetLastAttacker();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_KILLER:
+			lastEventEntityIndex = NEORules()->GetLastKiller();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_GHOSTER:
+			lastEventEntityIndex = NEORules()->GetLastGhoster();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_EVENT:
+		default:
+			lastEventEntityIndex = NEORules()->GetLastEvent();
+			break;
+	}
+
+	if (lastEventEntityIndex > 0)
+		SetPrimaryTarget(lastEventEntityIndex);
+}
+#endif // NEO
 
 void C_HLTVCamera::SpecNextPlayer( bool bInverse )
 {
