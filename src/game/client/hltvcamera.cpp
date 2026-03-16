@@ -22,6 +22,11 @@
 	#include "c_cs_player.h"
 #endif
 
+#ifdef NEO
+#include "c_neo_player.h"
+#include "shareddefs.h"
+#endif // NEO
+
 ConVar spec_autodirector( "spec_autodirector", "1", FCVAR_CLIENTDLL | FCVAR_CLIENTCMD_CAN_EXECUTE, "Auto-director chooses best view modes while spectating" );
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -309,7 +314,11 @@ C_BaseEntity *C_HLTVCamera::GetCameraMan()
 
 void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov )
 {
+#ifdef NEO
+	C_NEO_Player *pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex( m_iTraget1 ));
+#else
 	C_BasePlayer *pPlayer = UTIL_PlayerByIndex( m_iTraget1 );
+#endif // NEO
 
 	if ( !pPlayer )
 		return;
@@ -327,11 +336,19 @@ void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float
 
 	if ( pPlayer->GetFlags() & FL_DUCKING )
 	{
+#ifdef NEO
+		m_vCamOrigin += VEC_DUCK_VIEW_NEOSCALE(pPlayer);
+#else
 		m_vCamOrigin += VEC_DUCK_VIEW;
+#endif // NEO
 	}
 	else
 	{
+#ifdef NEO
+		m_vCamOrigin += VEC_VIEW_NEOSCALE(pPlayer);
+#else
 		m_vCamOrigin += VEC_VIEW;
+#endif // NEO
 	}
 
 	eyeOrigin = m_vCamOrigin;
@@ -809,8 +826,8 @@ void C_HLTVCamera::FireGameEvent( IGameEvent * event)
 #ifdef NEO
 	if (Q_strcmp("player_death", type) == 0)
 	{
-		const int victimIndex = event->GetInt( "userid" ) - 1;
- 		const int killerIndex = event->GetInt( "attacker" ) - 1;
+		const int victimIndex = engine->GetPlayerForUserID(event->GetInt("userid"));
+ 		const int killerIndex = engine->GetPlayerForUserID(event->GetInt("attacker"));
 		if (victimIndex && m_iTraget1 == victimIndex && killerIndex && cl_neo_hltvcamera_auto_observe_killer_if_observing_victim.GetBool())
 		{
 			SetPrimaryTarget( killerIndex );
