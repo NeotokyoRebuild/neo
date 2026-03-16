@@ -72,6 +72,7 @@ extern ConVar replay_rendersetting_renderglow;
 #include <GameUI/IGameUI.h>
 #include "ui/neo_loading.h"
 #include "neo_gamerules.h"
+#include "c_neo_path_effect.h"
 #endif
 
 #ifdef GLOWS_ENABLE
@@ -930,6 +931,9 @@ bool ClientModeShared::DoPostScreenSpaceEffects( const CViewSetup *pSetup )
 #ifdef GLOWS_ENABLE
 	g_GlowObjectManager.RenderGlowEffects(pSetup, 0);
 #endif
+#ifdef NEO
+	g_PathObjectManager->RenderPaths();
+#endif // NEO
 #if defined( REPLAY_ENABLED )
 	if ( engine->IsPlayingDemo() )
 	{

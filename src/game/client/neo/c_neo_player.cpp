@@ -59,6 +59,8 @@
 
 #include "c_playerresource.h"
 
+#include "c_neo_path_effect.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -1268,6 +1270,8 @@ void C_NEO_Player::ClientThink(void)
 	if (auto glowObject = GetGlowObject(); glowObject)
 		glowObject->SetUseTexturedHighlight(IsCloaked());
 #endif // GLOWS_ENABLE
+
+	g_PathObjectManager->RegisterPathObject(this, Vector4D(255, 255, 255, 255), Vector4D(255, 255, 255, 255), 0.f, 1.f, false);
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);

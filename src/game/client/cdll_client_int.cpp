@@ -182,6 +182,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "ui/neo_root_serverbrowser.h"
 #include "neo_player_shared.h"
 #include "neo_crosshair.h"
+#include "c_neo_path_effect.h"
 extern bool NeoRootCaptureESC();
 extern CNeoLoading *g_pNeoLoading;
 extern ConVar cl_neo_streamermode_autodetect_obs;
@@ -1203,6 +1204,7 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	}
 
 #ifdef NEO
+	static CPathObjectManager pathObjectManager = CPathObjectManager();
 	VerifyValidDxLevel();
 #endif
 
