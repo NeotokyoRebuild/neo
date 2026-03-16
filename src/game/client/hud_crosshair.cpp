@@ -531,6 +531,7 @@ void CHudCrosshair::Paint( void )
 			m_bRefreshCrosshair = false;
 		}
 	}
+	Assert(IN_BETWEEN_AR(0, pCrosshairInfo->iStyle, CROSSHAIR_STYLE__TOTAL));
 	const int iXHairStyle = pCrosshairInfo->iStyle;
 
 	bool showFriendlyFireCrosshair = false;

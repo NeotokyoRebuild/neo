@@ -2,6 +2,7 @@
 
 #include "cbase.h"
 #include "shareddefs.h"
+#include "neo_misc.h"
 
 #ifdef CLIENT_DLL
 #include "neo_gamerules.h"
@@ -317,44 +318,48 @@ enum ESerialMode
 	}
 }
 
-static void ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo *crh,
+static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo *crh,
 		char (&szMutSeq)[NEO_XHAIR_SEQMAX], const int iSeqSize)
 {
 	int idx = 0;
 
 	const int iSerialVersion = SerialInt(NEOXHAIR_SERIAL_CURRENT, eSerialMode,
 			szMutSeq, iSeqSize, &idx);
+	if (false == IN_BETWEEN_EQ(NEOXHAIR_SERIAL_ALPHA_V17, iSerialVersion, NEOXHAIR_SERIAL_CURRENT))
+	{
+		return false;
+	}
 
 	// v28 onwards cuts out segments if unused
 	const bool bNotCompact = (iSerialVersion < NEOXHAIR_SERIAL_ALPHA_V28);
 
-	crh->iStyle = SerialInt(crh->iStyle, eSerialMode, szMutSeq, iSeqSize, &idx);
+	crh->iStyle = clamp(SerialInt(crh->iStyle, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_STYLE__TOTAL - 1);
 	crh->color.SetRawColor(SerialInt(crh->color.GetRawColor(), eSerialMode, szMutSeq, iSeqSize, &idx));
 
 	if (bNotCompact || crh->iStyle == CROSSHAIR_STYLE_CUSTOM)
 	{
-		crh->eSizeType = static_cast<NeoHudCrosshairSizeType>(SerialInt(crh->eSizeType, eSerialMode, szMutSeq, iSeqSize, &idx));
+		crh->eSizeType = static_cast<NeoHudCrosshairSizeType>(clamp(SerialInt(crh->eSizeType, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_SIZETYPE__TOTAL - 1));
 		if (bNotCompact || crh->eSizeType == CROSSHAIR_SIZETYPE_ABSOLUTE)
 		{
-			crh->iSize = SerialInt(crh->iSize, eSerialMode, szMutSeq, iSeqSize, &idx);
+			crh->iSize = clamp(SerialInt(crh->iSize, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_MAX_SIZE);
 		}
 		if (bNotCompact || crh->eSizeType == CROSSHAIR_SIZETYPE_SCREEN)
 		{
-			crh->flScrSize = SerialFloat(crh->flScrSize, eSerialMode, szMutSeq, iSeqSize, &idx);
+			crh->flScrSize = clamp(SerialFloat(crh->flScrSize, eSerialMode, szMutSeq, iSeqSize, &idx), 0, 1.0f);
 		}
-		crh->iThick = SerialInt(crh->iThick, eSerialMode, szMutSeq, iSeqSize, &idx);
-		crh->iGap = SerialInt(crh->iGap, eSerialMode, szMutSeq, iSeqSize, &idx);
-		crh->iOutline = SerialInt(crh->iOutline, eSerialMode, szMutSeq, iSeqSize, &idx);
-		crh->iCenterDot = SerialInt(crh->iCenterDot, eSerialMode, szMutSeq, iSeqSize, &idx);
+		crh->iThick = clamp(SerialInt(crh->iThick, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_MAX_THICKNESS);
+		crh->iGap = clamp(SerialInt(crh->iGap, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_MAX_GAP);
+		crh->iOutline = clamp(SerialInt(crh->iOutline, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_MAX_OUTLINE);
+		crh->iCenterDot = clamp(SerialInt(crh->iCenterDot, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_MAX_CENTER_DOT);
 		crh->bTopLine = SerialBool(crh->bTopLine, eSerialMode, szMutSeq, iSeqSize, &idx);
-		crh->iCircleRad = SerialInt(crh->iCircleRad, eSerialMode, szMutSeq, iSeqSize, &idx);
+		crh->iCircleRad = clamp(SerialInt(crh->iCircleRad, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_MAX_CIRCLE_RAD);
 		if (bNotCompact || crh->iCircleRad > 0)
 		{
-			crh->iCircleSegments = SerialInt(crh->iCircleSegments, eSerialMode, szMutSeq, iSeqSize, &idx);
+			crh->iCircleSegments = clamp(SerialInt(crh->iCircleSegments, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
 		}
 		
 		crh->eDynamicType = (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V19)
-				? static_cast<NeoHudCrosshairDynamicType>(SerialInt(crh->eDynamicType, eSerialMode, szMutSeq, iSeqSize, &idx))
+				? static_cast<NeoHudCrosshairDynamicType>(clamp(SerialInt(crh->eDynamicType, eSerialMode, szMutSeq, iSeqSize, &idx), 0, CROSSHAIR_DYNAMICTYPE__TOTAL - 1))
 				: CROSSHAIR_DYNAMICTYPE_NONE;
 
 		if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V22)
@@ -377,6 +382,8 @@ static void ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 			}
 		}
 	}
+
+	return true;
 }
 
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
@@ -392,8 +399,7 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 	szMutSeq[iSeqSize] = '\0';
 
 	ResetCrosshairToDefault(crh);
-	ImportOrExportCrosshair(SERIALMODE_DESERIALIZE, crh, szMutSeq, iSeqSize);
-	return true;
+	return ImportOrExportCrosshair(SERIALMODE_DESERIALIZE, crh, szMutSeq, iSeqSize);
 }
 
 void ExportCrosshair(CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX])
