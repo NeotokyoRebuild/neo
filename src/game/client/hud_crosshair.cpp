@@ -168,6 +168,10 @@ bool CHudCrosshair::ShouldDraw( void )
 		{
 		case OBS_MODE_IN_EYE:
 			player = ToNEOPlayer(player->GetObserverTarget());
+			if (engine->IsHLTV() && player->IsObserver())
+			{ // HLTV can spectate other spectators (and doesn't switch away from dead players by default)
+				return false;
+			}
 			break;
 		case OBS_MODE_ROAMING:
 			return cl_observercrosshair.GetBool();
