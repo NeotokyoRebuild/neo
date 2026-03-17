@@ -466,6 +466,7 @@ private:
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
+	int m_iMatchWinnder = -1;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);

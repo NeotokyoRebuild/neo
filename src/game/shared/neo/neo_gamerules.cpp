@@ -1267,6 +1267,13 @@ void CNEORules::Think(void)
 		{
 			if (m_bGotMatchWinner)
 			{
+				IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+				if (event)
+				{
+					event->SetInt("winner", m_iMatchWinnder);
+					gameeventmanager->FireEvent(event);
+				}
+
 				if (sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
 				{
 					ResetMapSessionCommon();
@@ -3781,16 +3788,8 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 							(team == TEAM_JINRAI ? "NSF" : "Jinrai"), (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 	}
 
-	if (gotMatchWinner)
-	{
-		IGameEvent *event = gameeventmanager->CreateEvent("game_end");
-		if (event)
-		{
-			event->SetInt("winner", team);
-			gameeventmanager->FireEvent(event);
-		}
-	}
 	m_bGotMatchWinner = gotMatchWinner;
+	m_iMatchWinnder = team;
 }
 #endif
 
