@@ -126,6 +126,6 @@ bool StartAutoRecording()
 	return engine->IsRecordingDemo();
 #else
 	engine->ServerCommand(UTIL_VarArgs("tv_stoprecord;tv_record \"%s/%s\";\n", DEMOS_DIRECTORY_NAME, replayName));
-	return true; // hopefully we're recording
+	return true; // hopefully we're recording. Last line of tv_status prints if a demo is being recorded but don't see how to get at that value here
 #endif // CLIENT_DLL
 }

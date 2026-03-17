@@ -147,6 +147,7 @@ ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED,
 ConVar sv_neo_juggernaut_spawn_bias("sv_neo_juggernaut_spawn_bias", "0", FCVAR_REPLICATED, "Spawn juggernaut in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
+ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
 #ifdef CLIENT_DLL
 ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
 #endif
@@ -1793,9 +1794,6 @@ float CNEORules::MirrorDamageMultiplier() const
 }
 #endif
 
-#ifdef GAME_DLL
-ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record server demos", true, 0, true, 1);
-#endif // GAME_DLL
 void CNEORules::FireGameEvent(IGameEvent* event)
 {
 #ifdef GAME_DLL
