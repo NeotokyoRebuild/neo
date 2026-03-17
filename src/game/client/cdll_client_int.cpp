@@ -150,6 +150,10 @@
 
 #endif
 
+#ifdef NEO
+#include <vgui_controls/Button.h>
+#include <vgui_controls/MenuButton.h>
+#endif
 
 extern vgui::IInputInternal *g_InputInternal;
 
@@ -1943,6 +1947,79 @@ void CHLClient::DecodeUserCmdFromBuffer( bf_read& buf, int slot )
 	input->DecodeUserCmdFromBuffer( buf, slot );
 }
 
+#ifdef NEO
+inline static vgui::VPANEL ChildOf(const vgui::VPANEL parent, const char* childName)
+{
+	Assert(parent);
+	const auto& children = vgui::ipanel()->GetChildren(parent);
+	for (const auto& child : children)
+	{
+		const char* name = vgui::ipanel()->GetName(child);
+		Assert(childName && *childName);
+		if (name && V_strcmp(name, childName) == 0)
+			return child;
+	}
+	return {};
+}
+
+static void FixupDemoSmoother()
+{
+	VPROF_BUDGET(__FUNCTION__, VPROF_BUDGETGROUP_REPLAY);
+
+	static bool alreadyDone = false;
+	if (alreadyDone)
+		return;
+
+	// Don't spam the vgui iteration attempts too often...
+	static float lastAttemptTime{};
+	if (gpGlobals->curtime - lastAttemptTime < 1)
+	{
+		// ...except if we're not ticking, since who knows how long it's been.
+		// Luckily perf doesn't really matter if the entire game is currently frozen.
+		if (!engine->IsPaused())
+		{
+			return;
+		}
+	}
+
+	lastAttemptTime = gpGlobals->curtime;
+
+	Assert(enginevgui);
+	const auto toolsPanel = enginevgui->GetPanel(PANEL_TOOLS);
+	const auto demoUiPanel = ChildOf(toolsPanel, "DemoUIPanel");
+	const auto demoSmootherPanel = ChildOf(demoUiPanel, "DemoSmootherPanel");
+	if (!demoSmootherPanel)
+		return;
+
+	constexpr const char* demoSmootherPanelButtonsToFix[]{
+		"DemoSmoothFixFrameButton",
+		"DemoSmootherType" };
+
+	int numFixed = 0;
+	for (const auto& buttonName : demoSmootherPanelButtonsToFix)
+	{
+		auto button = vgui::ipanel()->GetPanel(ChildOf(demoSmootherPanel, buttonName), "BaseUI");
+		if (!button)
+			continue;
+
+		// The buttons live in engine dll, so this could theoretically change in SDK update.
+		using ExpectedButtonType = vgui::MenuButton;
+		// And so we check
+		if (!dynamic_cast<ExpectedButtonType*>(button))
+		{
+			Assert(false);
+			alreadyDone = true; // nothing we can do until code fix... just mark as done
+			return;
+		}
+
+		((ExpectedButtonType*)button)->SetButtonActivationType(vgui::Button::ACTIVATE_ONPRESSED);
+		++numFixed;
+	}
+
+	alreadyDone = (numFixed == ARRAYSIZE(demoSmootherPanelButtonsToFix));
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -1956,6 +2033,12 @@ void CHLClient::View_Render( vrect_t *rect )
 
 	view->Render( rect );
 	UpdatePerfStats();
+#ifdef NEO
+	if (engine->IsPlayingDemo())
+	{
+		FixupDemoSmoother();
+	}
+#endif
 }
 
 
