@@ -4821,7 +4821,7 @@ void CNEORules::InitDefaultAIRelationships( void )
 auto spectateChecks = []() {
 	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
 	{
-		ConMsg("%s: HLTV Camera is PVS locked", __FUNCTION__);
+		ConMsg("%s: HLTV Camera is PVS locked\n", __FUNCTION__);
 		return false;
 	}
 
