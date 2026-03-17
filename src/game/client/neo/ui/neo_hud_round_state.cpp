@@ -168,7 +168,7 @@ void CNEOHud_RoundState::UpdateStarSize()
 {
 	IntDim res = {};
 	surface()->GetScreenSize(res.w, res.h);
-	const float scale = cl_neo_squad_hud_star_scale.GetFloat() != 0 ? cl_neo_squad_hud_star_scale.GetFloat() * (res.h / 1080.0)
+	const float scale = cl_neo_squad_hud_star_scale.GetFloat() != 0 ? cl_neo_squad_hud_star_scale.GetFloat() * (res.h / 1080.0f)
 																	: 1.f;
 
 	for (auto* star : m_ipStars)

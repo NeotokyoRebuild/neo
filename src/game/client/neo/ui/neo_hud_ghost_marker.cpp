@@ -27,15 +27,15 @@ ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "1
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
 
 static float ghostViewCentreSize = 0;
-extern ConVar cl_neo_hud_center_ghost_marker_size;
+extern ConVar cl_neo_hud_centre_ghost_marker_size;
 void ghostViewCentreSizeChangeCallBack(IConVar* pConVar [[maybe_unused]] = nullptr, char const* pOldString [[maybe_unused]] = nullptr, float flOldValue [[maybe_unused]] = 0.f) {
 	int w, h;
     vgui::surface()->GetScreenSize(w, h);
 
     const auto widerAxis = Max(w, h);
-    ghostViewCentreSize = widerAxis * (static_cast<float>(cl_neo_hud_center_ghost_marker_size.GetInt()) / 100);
+    ghostViewCentreSize = widerAxis * (cl_neo_hud_centre_ghost_marker_size.GetFloat() / 100);
 }
-ConVar cl_neo_hud_center_ghost_marker_size("cl_neo_hud_center_ghost_marker_size", "12.5", FCVAR_ARCHIVE,
+ConVar cl_neo_hud_centre_ghost_marker_size("cl_neo_hud_centre_ghost_marker_size", "12.5", FCVAR_ARCHIVE,
 	"HUD center size in percentage to fade ghost marker.", true, 1, false, 0, ghostViewCentreSizeChangeCallBack);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostMarker, neo_ghost_marker);

@@ -13,7 +13,7 @@ void viewCentreSizeChangeCallBack(IConVar* pConVar [[maybe_unused]] = nullptr, c
     vgui::surface()->GetScreenSize(w, h);
 
     const auto widerAxis = Max(w, h);
-    viewCentreSize = widerAxis * (static_cast<float>(cl_neo_hud_centre_size.GetInt()) / 100);
+    viewCentreSize = widerAxis * (cl_neo_hud_centre_size.GetFloat() / 100);
 }
 ConVar cl_neo_hud_centre_size("cl_neo_hud_centre_size", "25", FCVAR_ARCHIVE, "HUD centre size in percentage to fade markers.", true, 1, false, 0, viewCentreSizeChangeCallBack);
 ConVar cl_neo_hud_worldpos_verbose("cl_neo_hud_worldpos_verbose", "1", FCVAR_ARCHIVE, "Display full world pos marker string", true, 0, true, 1);

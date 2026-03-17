@@ -12,15 +12,15 @@ ConVar neo_ghost_cap_point_hud_scale_factor("neo_ghost_cap_point_hud_scale_facto
 	"Ghost cap HUD element scaling factor", true, 0.01, false, 0);
 
 static float ghostCapViewCentreSize = 0;
-extern ConVar cl_neo_hud_center_ghost_cap_size;
+extern ConVar cl_neo_hud_centre_ghost_cap_size;
 void ghostCapViewCentreSizeChangeCallBack(IConVar* pConVar [[maybe_unused]] = nullptr, char const* pOldString [[maybe_unused]] = nullptr, float flOldValue [[maybe_unused]] = 0.f) {
 	int w, h;
     vgui::surface()->GetScreenSize(w, h);
 
     const auto widerAxis = Max(w, h);
-    ghostCapViewCentreSize = widerAxis * (static_cast<float>(cl_neo_hud_center_ghost_cap_size.GetInt()) / 100);
+    ghostCapViewCentreSize = widerAxis * (cl_neo_hud_centre_ghost_cap_size.GetFloat() / 100);
 }
-ConVar cl_neo_hud_center_ghost_cap_size("cl_neo_hud_center_ghost_cap_size", "12.5", FCVAR_ARCHIVE,
+ConVar cl_neo_hud_centre_ghost_cap_size("cl_neo_hud_centre_ghost_cap_size", "12.5", FCVAR_ARCHIVE,
 	"HUD center size in percentage to fade ghost cap point.", true, 1, false, 0, ghostCapViewCentreSizeChangeCallBack);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostCapPoint, 0.01)
