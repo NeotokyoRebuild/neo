@@ -642,6 +642,10 @@ void C_HLTVCamera::SpecNextPlayer( bool bInverse )
 			continue;
 
 		// only follow living players 
+#ifdef NEO
+		if ( pPlayer->IsPlayerDead() )
+			continue;
+#endif
 		if ( pPlayer->IsObserver() )
 			continue;
 
