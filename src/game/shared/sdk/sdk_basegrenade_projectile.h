@@ -71,7 +71,7 @@ public:
 	{
 		CBaseEntity *pRecipientEntity = CBaseEntity::Instance( pInfo->m_pClientEnt );
 
-		if ( pRecipientEntity->GetTeamNumber() == TEAM_SPECTATOR ) 
+		if ( pRecipientEntity && pRecipientEntity->GetTeamNumber() == TEAM_SPECTATOR ) 
 		{
 			const char* wantsToSeeProjectilePath = engine->GetClientConVarValue(pRecipientEntity->entindex(), "cl_neo_grenade_show_path");
 			if (wantsToSeeProjectilePath && *wantsToSeeProjectilePath && (V_atof(wantsToSeeProjectilePath) != 0.f))

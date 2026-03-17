@@ -164,7 +164,7 @@ ConVar cl_neo_grenade_show_path("cl_neo_grenade_show_path", "0", FCVAR_ARCHIVE |
 		if (m_vLastDrawPosition.DistToSqr(origin) < 0.1f)
 			return;
 
-		float r, g, b = 0;
+		float r = 0, g = 0, b = 0;
 		NEORules()->GetTeamGlowColor(GetTeamNumber(), r, g, b);
 		r *= 255;
 		g *= 255;
@@ -172,9 +172,9 @@ ConVar cl_neo_grenade_show_path("cl_neo_grenade_show_path", "0", FCVAR_ARCHIVE |
 		if (GetDamage())
 		{
 			const float timeAlive = (gpGlobals->curtime - m_flNeoCreateTime) * 0.5f;
-			r = Min(255.f, Max(0.f, r * (1 - timeAlive) + (255 * timeAlive)));
-			g = Max(0.f, g * (1 - timeAlive));
-			b = Max(0.f, b * (1 - timeAlive));
+			r = clamp(r * (1 - timeAlive) + (255.f * timeAlive), 0.f, 255.f);
+			g = clamp(g * (1 - timeAlive), 0.f, 255.f);
+			b = clamp(b * (1 - timeAlive), 0.f, 255.f);
 		}
 		DebugDrawLine(m_vLastDrawPosition, origin, r, g, b, true, showPathWhenServerEnabled ? sv_neo_grenade_show_path.GetFloat() : cl_neo_grenade_show_path.GetFloat());
 		m_vLastDrawPosition = origin;
