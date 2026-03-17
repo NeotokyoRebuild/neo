@@ -3619,12 +3619,15 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 #ifdef NEO
 	if (IsViewModel())
 	{ // view models become dark when standing close to and facing a wall, change lighting origin
-		auto pOwner = UTIL_PlayerByIndex(GetLocalPlayerIndex());
-		if (pOwner)
+		if (!engine->IsHLTV())
 		{
-			static Vector ownerOrigin;
-			ownerOrigin = pOwner->EyePosition();
-			pInfo->pLightingOrigin = &ownerOrigin;
+			auto pOwner = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+			if (pOwner)
+			{
+				static Vector ownerOrigin;
+				ownerOrigin = pOwner->EyePosition();
+				pInfo->pLightingOrigin = &ownerOrigin;
+			}
 		}
 	}
 	else if (IsBaseCombatWeapon())

@@ -956,9 +956,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 
-#ifdef GAME_DLL
-	NEORules()->SetLastShooter(pPlayer->entindex());
-#endif // GAME_DLL
 	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 	{
 		pPlayer->DoMuzzleFlash();

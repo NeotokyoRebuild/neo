@@ -2263,7 +2263,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	CBaseEntity* pAttacker = info.GetAttacker();
 	if (pAttacker && pAttacker->IsPlayer()) // we can only have players as a spectate target atm
 	{
-		NEORules()->SetLastAttacker(pAttacker->entindex());
+		NEORules()->SetLastKiller(pAttacker->entindex());
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
 			CBasePlayer* pObserver = dynamic_cast<CBasePlayer*>(UTIL_EntityByIndex(i));
@@ -2542,6 +2542,8 @@ void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 		// effect lasts 0.5 seconds, but allow 200-300ms leeway with GetFogObscuredRatio cache window
 		m_botThermOpticCamoDisruptedTimer.Start(0.2f);
 	}
+
+	NEORules()->SetLastShooter(entindex());
 }
 
 void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)

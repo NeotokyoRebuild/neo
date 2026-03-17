@@ -993,7 +993,7 @@ CON_COMMAND_F( spec_player_under_mouse, "Spectate player by partial name, steami
 {
 	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
 	{
-		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
 		return;
 	}
 
@@ -1036,7 +1036,7 @@ CON_COMMAND_F( spec_fastest_player, "Spectate the fastest player", FCVAR_CLIENTC
 	{
 		if (HLTVCamera()->IsPVSLocked())
 		{
-			ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+			ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
 			return;
 		}
 

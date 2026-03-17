@@ -452,12 +452,12 @@ public:
 	void SetLastGhoster(const int index) { m_iLastGhoster = m_iLastEvent = index; }
 #endif // GAME_DLL
 public:
-	const int GetLastHurt() { return m_iLastHurt; }
-	const int GetLastShooter() { return m_iLastShooter; }
-	const int GetLastEvent() { return m_iLastEvent; }
-	const int GetLastAttacker() { return m_iLastAttacker; }
-	const int GetLastKiller() { return m_iLastKiller; }
-	const int GetLastGhoster() { return m_iLastGhoster; }
+	const int GetLastHurt() const { return m_iLastHurt; }
+	const int GetLastShooter() const { return m_iLastShooter; }
+	const int GetLastEvent() const { return m_iLastEvent; }
+	const int GetLastAttacker() const { return m_iLastAttacker; }
+	const int GetLastKiller() const { return m_iLastKiller; }
+	const int GetLastGhoster() const { return m_iLastGhoster; }
 #ifdef GAME_DLL
 private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;

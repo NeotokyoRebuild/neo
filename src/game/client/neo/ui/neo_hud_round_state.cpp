@@ -1392,7 +1392,7 @@ CON_COMMAND_F( spec_player_by_hud_position, "Spectate player by position in the 
 {
 	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
 	{
-		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
 		return;
 	}
 
@@ -1427,7 +1427,7 @@ CON_COMMAND_F( spec_next_entity_in_hud, "Spectate next valid player to the right
 {
 	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
 	{
-		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
 		return;
 	}
 
@@ -1456,7 +1456,7 @@ CON_COMMAND_F( spec_previous_entity_in_hud, "Spectate next valid player to the l
 {
 	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
 	{
-		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
 		return;
 	}
 
@@ -1485,7 +1485,7 @@ CON_COMMAND_F( select_next_alive_player_in_hud, "Select the next alive player in
 {
 	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
 	{
-		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked", __FUNCTION__ );
+		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked\n", __FUNCTION__ );
 		return;
 	}
 
@@ -1503,7 +1503,7 @@ CON_COMMAND_F( select_previous_alive_player_in_hud, "Select the previous alive p
 {
 	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
 	{
-		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked", __FUNCTION__ );
+		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked\n", __FUNCTION__ );
 		return;
 	}
 
@@ -1521,7 +1521,7 @@ CON_COMMAND_F( spectate_player_selected_in_hud, "Spectate entity selected in the
 {
 	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
 	{
-		ConMsg( "%s: HLTV Camera is PVS locked", __FUNCTION__ );
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
 		return;
 	}
 

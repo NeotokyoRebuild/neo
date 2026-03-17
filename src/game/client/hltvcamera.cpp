@@ -510,7 +510,7 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 	eyeOrigin = m_vCamOrigin;
 	eyeAngles = m_aCamAngle;
 #ifdef NEO
-	fov = neo_fov.GetInt();
+	fov = neo_fov.GetFloat();
 #else
 	fov = m_flFOV;
 #endif // NEO
@@ -635,7 +635,7 @@ enum
 
 	NEO_HLTV_ON_TARGET_MODE__TOTAL = NEO_HLTV_ON_TARGET_MODE_CHASE
 };
-ConVar cl_neo_hltvcamera_default_mode_when_setting_primary_target("cl_neo_hltvcamera_default_mode_when_setting_primary_target", "1", FCVAR_ARCHIVE, "What to do if changing primary targets and not in in-eye or chase. 0 = do nothing, 1 = switch to in-eye, 2 = switch to chase", true, NEO_HLTV_ON_TARGET_MODE_NOTHING, true, NEO_HLTV_ON_TARGET_MODE__TOTAL);
+ConVar cl_neo_hltvcamera_default_mode_when_setting_primary_target("cl_neo_hltvcamera_default_mode_when_setting_primary_target", "1", FCVAR_ARCHIVE, "What to do if changing primary targets and not in in-eye or chase. 0 = do nothing, 1 = switch to in-eye, 2 = switch to chase", true, 0, true, NEO_HLTV_ON_TARGET_MODE__TOTAL);
 #endif // NEO
 void C_HLTVCamera::SetPrimaryTarget( int nEntity ) 
 {
@@ -696,32 +696,32 @@ void C_HLTVCamera::SetPrimaryTarget( int nEntity )
 #ifdef NEO
 void C_HLTVCamera::SpectateEvent(NeoSpectateEvent event)
 {
-	int lastEventEntityIndex = -1;
+	int entIndexLastPlayerMatchingEvent = -1;
 	switch (event)
 	{
 		case NEO_SPECTATE_EVENT_LAST_HURT:
-			lastEventEntityIndex = NEORules()->GetLastHurt();
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastHurt();
 			break;
 		case NEO_SPECTATE_EVENT_LAST_SHOOTER:
-			lastEventEntityIndex = NEORules()->GetLastShooter();
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastShooter();
 			break;
 		case NEO_SPECTATE_EVENT_LAST_ATTACKER:
-			lastEventEntityIndex = NEORules()->GetLastAttacker();
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastAttacker();
 			break;
 		case NEO_SPECTATE_EVENT_LAST_KILLER:
-			lastEventEntityIndex = NEORules()->GetLastKiller();
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastKiller();
 			break;
 		case NEO_SPECTATE_EVENT_LAST_GHOSTER:
-			lastEventEntityIndex = NEORules()->GetLastGhoster();
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastGhoster();
 			break;
 		case NEO_SPECTATE_EVENT_LAST_EVENT:
 		default:
-			lastEventEntityIndex = NEORules()->GetLastEvent();
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastEvent();
 			break;
 	}
 
-	if (lastEventEntityIndex > 0)
-		SetPrimaryTarget(lastEventEntityIndex);
+	if (entIndexLastPlayerMatchingEvent > 0)
+		SetPrimaryTarget(entIndexLastPlayerMatchingEvent);
 }
 #endif // NEO
 
@@ -858,9 +858,12 @@ void C_HLTVCamera::FireGameEvent( IGameEvent * event)
 #ifdef NEO
 	if (Q_strcmp("player_death", type) == 0)
 	{
+		if (!cl_neo_hltvcamera_auto_observe_killer_if_observing_victim.GetBool() || (m_nCameraMode != OBS_MODE_IN_EYE && m_nCameraMode != OBS_MODE_CHASE))
+			return;
+
 		const int victimIndex = engine->GetPlayerForUserID(event->GetInt("userid"));
  		const int killerIndex = engine->GetPlayerForUserID(event->GetInt("attacker"));
-		if (victimIndex && m_iTraget1 == victimIndex && killerIndex && cl_neo_hltvcamera_auto_observe_killer_if_observing_victim.GetBool())
+		if (victimIndex && m_iTraget1 == victimIndex && killerIndex)
 		{
 			SetPrimaryTarget( killerIndex );
 		}
