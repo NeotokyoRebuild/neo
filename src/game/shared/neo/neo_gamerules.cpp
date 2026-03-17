@@ -3958,22 +3958,22 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 			}
 #endif
 		}
+	}
 
-		if (auto *assister = FetchAssists(attacker, victim))
+	if (auto *assister = FetchAssists(attacker, victim))
+	{
+		// Team kill assist
+		if (assister->GetTeamNumber() == victim->GetTeamNumber())
 		{
-			// Team kill assist
-			if (assister->GetTeamNumber() == victim->GetTeamNumber())
+			if (sv_neo_teamdamage_assists.GetBool())
 			{
-				if (sv_neo_teamdamage_assists.GetBool())
-				{
-					assister->AddPoints(-1, true);
-				}
+				assister->AddPoints(-1, true);
 			}
-			// Enemy kill assist
-			else
-			{
-				assister->AddPoints(1, false);
-			}
+		}
+		// Enemy kill assist
+		else
+		{
+			assister->AddPoints(1, false);
 		}
 	}
 }
