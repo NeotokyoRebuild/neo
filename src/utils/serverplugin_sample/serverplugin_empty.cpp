@@ -337,6 +337,9 @@ CON_COMMAND( DoAskConnect, "Server plugin example of using the ask connect dialo
 		kv->SetString( "title", pServerIP );	// The IP address of the server to connect to goes in the "title" field.
 		kv->SetInt( "time", 3 );
 
+#ifdef NEO
+		// If using this as an example consider the below will miss the client with entindex gpGlobals->maxClients
+#endif // NEO
 		for ( int i=1; i < gpGlobals->maxClients; i++ )
 		{
 			edict_t *pEdict = engine->PEntityOfEntIndex( i );

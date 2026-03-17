@@ -1004,7 +1004,7 @@ CON_COMMAND_F( spec_player_under_mouse, "Spectate player by partial name, steami
 	C_BaseEntity* currentTarget = pNeoPlayer->GetObserverTarget();
 	C_NEO_Player *target = nullptr;
 	float targetDotProduct = -1;
-	for (int i = 1; i < gpGlobals->maxClients; i++)
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
 		if (currentTarget != pPlayer && pNeoPlayer->IsValidObserverTarget(pPlayer) && pPlayer->IsAlive())
