@@ -129,10 +129,16 @@
 	output OnCap(void) : "Fires when capped here"
 ]
 
-@PointClass base(Angles) studio("models/gameplay/w_ghost.mdl") = neo_ghostspawnpoint :
+@PointClass base(Targetname, Angles, EnableDisable) studio("models/gameplay/w_ghost.mdl") = neo_ghostspawnpoint :
 	"This entity marks the start point ghosts for CTG gametypes."
 [
-
+	StartDisabled(choices) : "Start Disabled" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	
+	output OnSpawnedHere(void) : "Fires when a ghost spawns here"
 ]
 
 @FilterClass base(BaseFilter) iconsprite("editor/filter_class.vmt") = filter_activator_neoclass : "A filter that filters by the class (Recon, Assault, Support, etc) of the player who activated it."
@@ -346,8 +352,15 @@
 	output OnPlayerActivate(void) : "Juggernaut activated"
 ]
 
-@PointClass base(Angles) studio("models/player/jgr.mdl") = neo_juggernautspawnpoint : "Juggernaut spawn point"
+@PointClass base(Targetname, Angles, EnableDisable) studio("models/player/jgr.mdl") = neo_juggernautspawnpoint : "Juggernaut spawn point"
 [
+	StartDisabled(choices) : "Start Disabled" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	
+	output OnSpawnedHere(void) : "Fires when a juggernaut spawns here"
 ]
 
 @PointClass base(Targetname) size(-8 -8 -8, 8 8 8) = point_broadcastclientcommand : 
