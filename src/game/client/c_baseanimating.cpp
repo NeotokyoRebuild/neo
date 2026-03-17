@@ -3630,8 +3630,8 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 			}
 		}
 	}
-	else if (IsBaseCombatWeapon())
-	{
+	else if (IsBaseCombatWeapon() && !GetMoveParent())
+	{ // dropped weapons can become dark when they rotate such that their origin falls through the floor
 		static Vector worldSpaceCenter;
 		worldSpaceCenter = WorldSpaceCenter();
 		pInfo->pLightingOrigin = &worldSpaceCenter;
