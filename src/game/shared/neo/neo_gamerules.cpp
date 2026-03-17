@@ -1269,7 +1269,7 @@ void CNEORules::Think(void)
 				IGameEvent *event = gameeventmanager->CreateEvent("game_end");
 				if (event)
 				{
-					event->SetInt("winner", m_iMatchWinnder);
+					event->SetInt("winner", m_iMatchWinner);
 					gameeventmanager->FireEvent(event);
 				}
 
@@ -3788,7 +3788,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	}
 
 	m_bGotMatchWinner = gotMatchWinner;
-	m_iMatchWinnder = team;
+	m_iMatchWinner = team;
 }
 #endif
 

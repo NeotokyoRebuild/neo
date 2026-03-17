@@ -47,7 +47,7 @@ bool StartAutoRecording()
 {
 #ifdef GAME_DLL
 	CBasePlayer* sourceTV = nullptr;
-	for (int i = 0; i < gpGlobals->maxClients; i++)
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
 		if (pPlayer && pPlayer->IsHLTV())
@@ -58,7 +58,7 @@ bool StartAutoRecording()
 	}
 	if (!sourceTV)
 	{
-		ConMsg("SourceTV client not found, server side demo not recording.\n");
+		ConLog("SourceTV client not found, server side demo not recording.\n");
 		return false;
 	}
 #endif // GAME_DLL
