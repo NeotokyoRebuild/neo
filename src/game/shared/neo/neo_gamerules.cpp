@@ -160,9 +160,10 @@ ConVar sv_neo_reject_opengl_mesa_check("sv_neo_reject_opengl_mesa_check", "0", 0
 									, true, 0.0f, true, 1.0f);
 #endif
 
+extern ConVar sv_neo_comp;
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
-	const bool bCurrentValue = !(bool)flOldValue;
+	const bool bCurrentValue = sv_neo_comp.GetBool();
 	sv_neo_readyup_lobby.SetValue(bCurrentValue);
 	mp_forcecamera.SetValue(bCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
 	sv_neo_spraydisable.SetValue(bCurrentValue);
@@ -170,6 +171,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_juggernaut_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_client_autorecord.SetValue(bCurrentValue);
+	sv_neo_server_autorecord.SetValue(bCurrentValue);
 #ifdef GAME_DLL
 	sv_neo_reject_opengl_mesa_check.SetValue(bCurrentValue); // NEO NOTE (nullsystem): See comment above variable declaration for reason
 #endif
@@ -1791,8 +1793,14 @@ float CNEORules::MirrorDamageMultiplier() const
 }
 #endif
 
+#ifdef GAME_DLL
+ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record server demos", true, 0, true, 1);
+#endif // GAME_DLL
 void CNEORules::FireGameEvent(IGameEvent* event)
 {
+#ifdef GAME_DLL
+	static bool isServerRecording = false;
+#endif // GAME_DLL
 	const char *type = event->GetName();
 
 	if (Q_strcmp(type, "round_start") == 0)
@@ -1803,24 +1811,32 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 
 		if (!engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
-			StartAutoClientRecording();
+			StartAutoRecording();
 		}
 #endif
 #ifdef GAME_DLL
 		m_flNeoRoundStartTime = gpGlobals->curtime;
 		m_flNeoNextRoundStartTime = 0;
+		if (sv_neo_server_autorecord.GetBool() && !isServerRecording)
+		{
+			isServerRecording = StartAutoRecording();
+		}
 #endif
 	}
 
-#ifdef CLIENT_DLL
 	if (Q_strcmp(type, "game_end") == 0)
 	{
+#ifdef CLIENT_DLL
 		if (sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
 			engine->StopDemoRecording();
 		}
-	}
 #endif
+#ifdef GAME_DLL
+		engine->ServerCommand("tv_stoprecord;");
+		isServerRecording = false;
+#endif // GAME_DLL
+	}
 }
 
 #ifdef GAME_DLL
