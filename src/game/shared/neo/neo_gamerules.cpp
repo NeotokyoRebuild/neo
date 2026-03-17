@@ -4835,7 +4835,7 @@ auto spectateChecks = []() {
 
 CON_COMMAND_F( spec_last_hurt, "Spectate the last hurt player", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
-	if (!spectateChecks)
+	if (!spectateChecks())
 		return;
 
 	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_HURT) : engine->ClientCmd(VarArgs("spectate_last_hurt"));
@@ -4843,7 +4843,7 @@ CON_COMMAND_F( spec_last_hurt, "Spectate the last hurt player", FCVAR_CLIENTCMD_
 
 CON_COMMAND_F( spec_last_shooter, "Spectate the last shooter", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
-	if (!spectateChecks)
+	if (!spectateChecks())
 		return;
 
 	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_SHOOTER) : engine->ClientCmd(VarArgs("spectate_last_shooter"));
@@ -4851,7 +4851,7 @@ CON_COMMAND_F( spec_last_shooter, "Spectate the last shooter", FCVAR_CLIENTCMD_C
 
 CON_COMMAND_F( spec_last_event, "Spectate the last attacker, killer or ghoster", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
-	if (!spectateChecks)
+	if (!spectateChecks())
 		return;
 
 	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_EVENT) : engine->ClientCmd(VarArgs("spectate_last_event"));
@@ -4859,7 +4859,7 @@ CON_COMMAND_F( spec_last_event, "Spectate the last attacker, killer or ghoster",
 
 CON_COMMAND_F( spec_last_attacker, "Spectate the last attacker", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
-	if (!spectateChecks)
+	if (!spectateChecks())
 		return;
 
 	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_ATTACKER) : engine->ClientCmd(VarArgs("spectate_last_attacker"));
@@ -4867,7 +4867,7 @@ CON_COMMAND_F( spec_last_attacker, "Spectate the last attacker", FCVAR_CLIENTCMD
 
 CON_COMMAND_F( spec_last_killer, "Spectate the last killer", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
-	if (!spectateChecks)
+	if (!spectateChecks())
 		return;
 
 	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_KILLER) : engine->ClientCmd(VarArgs("spectate_last_killer"));
@@ -4875,7 +4875,7 @@ CON_COMMAND_F( spec_last_killer, "Spectate the last killer", FCVAR_CLIENTCMD_CAN
 
 CON_COMMAND_F( spec_last_ghoster, "Spectate the last ghoster", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
-	if (!spectateChecks)
+	if (!spectateChecks())
 		return;
 
 	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_GHOSTER) : engine->ClientCmd(VarArgs("spectate_last_ghoster"));

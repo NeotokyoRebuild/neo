@@ -1970,7 +1970,7 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		int observerMode = GetObserverMode();
 		if ( observerMode > OBS_MODE_FIXED )
 		{
-			int fastestSpeedSquared = 0;
+			float fastestSpeedSquared = 0;
 			CBaseEntity* pFastestEntity = nullptr;
 			for (int i = 1; i <= gpGlobals->maxClients; i++)
 			{

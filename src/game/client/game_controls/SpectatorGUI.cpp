@@ -1041,7 +1041,7 @@ CON_COMMAND_F( spec_fastest_player, "Spectate the fastest player", FCVAR_CLIENTC
 		}
 
 		// We have up to date information on all the players, just do it here
-		int fastestSpeedSquared = 0;
+		float fastestSpeedSquared = 0;
 		CBasePlayer* pFastestEntity = nullptr;
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
