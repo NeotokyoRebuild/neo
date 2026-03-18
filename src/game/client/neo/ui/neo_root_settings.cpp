@@ -1007,14 +1007,6 @@ template <int maxlen>
 	requires (maxlen > 1)
 FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
 {
-	for (int i = maxlen - 1; i >= 0; --i)
-	{
-		// Zero-pad until we find the terminator
-		if (!input[i])
-			break;
-		input[i] = '\0';
-	}
-
 	auto zeroIdx = Clamp(V_wcslen(input), 0, maxlen - 1);
 	for (int i = 0; i < zeroIdx; ++i)
 	{
