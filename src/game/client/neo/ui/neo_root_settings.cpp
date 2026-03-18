@@ -1007,34 +1007,39 @@ template <int maxlen>
 	requires (maxlen > 1)
 FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
 {
-	constexpr auto sizeOfElem = sizeof(input[0]);
-	const auto zeroIdx = Clamp(V_wcslen(input), 0, maxlen - 1);
-	// First disallow any bad characters
+	for (int i = maxlen - 1; i >= 0; --i)
+	{
+		// Zero-pad until we find the terminator
+		if (!input[i])
+			break;
+		input[i] = '\0';
+	}
+
+	auto zeroIdx = Clamp(V_wcslen(input), 0, maxlen - 1);
 	for (int i = 0; i < zeroIdx; ++i)
 	{
-		if (V_IsDeprecatedW(input[i]) ||
-			V_IsMeanSpaceW(input[i]))
+		const bool hasBadCharInPos = (
+			V_IsDeprecatedW(input[i]) ||
+			V_IsMeanSpaceW(input[i]));
+
+		const bool hasDoubleBlankInPos = (
+			(i + 1 < zeroIdx) &&
+			std::iswblank(input[i]) &&
+			std::iswblank(input[i + 1]));
+
+		if (hasBadCharInPos || hasDoubleBlankInPos)
 		{
 			std::wmemmove(&input[i], &input[i + 1], zeroIdx-i);
-			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = i;
-			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = i;
+			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = i+hasDoubleBlankInPos;
+			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = i+hasDoubleBlankInPos;
 		}
 	}
-	// Then block leading spaces
+	// Block leading spaces
 	if (std::iswblank(input[0]))
 	{
-		std::memmove(input, &input[1], maxlen - sizeOfElem);
+		std::wmemmove(input, &input[1], maxlen - 1);
 		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = 0;
 		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = 0;
-	}
-	// Finally block trailing multi-spaces
-	const auto lastNonTerminatingChar = Min<int>(V_wcslen(input) - 1, ARRAYSIZE(input) - 2);
-	if (lastNonTerminatingChar > 1 && std::iswblank(input[lastNonTerminatingChar]))
-	{
-		if (std::iswblank(input[lastNonTerminatingChar - 1]))
-		{
-			input[lastNonTerminatingChar] = L'\0';
-		}
 	}
 }
 
