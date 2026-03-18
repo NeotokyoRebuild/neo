@@ -53,10 +53,10 @@ ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If
 ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
 
 #ifdef CLIENT_DLL
-ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
+ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_PRINTABLEONLY, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
 
-ConVar neo_clantag("neo_clantag", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The clantag to set.");
+ConVar neo_clantag("neo_clantag", "", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_PRINTABLEONLY, "The clantag to set.");
 #endif
 ConVar sv_neo_clantag_allow("sv_neo_clantag_allow", "1", FCVAR_REPLICATED, "", true, 0.0f, true, 1.0f);
 #ifdef DEBUG
