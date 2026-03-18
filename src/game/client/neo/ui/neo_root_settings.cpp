@@ -1003,28 +1003,35 @@ static const wchar_t *EQUIP_UTILITY_PRIORITY_LABELS[NeoSettings::EquipUtilityPri
 
 // Trims empty whitespaces from the left-hand side of a text variable.
 // Allows one contiguous whitespace on the right side for space-separated input, but no more.
-template <size_t maxlen>
+template <int maxlen>
 	requires (maxlen > 1)
 FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
 {
-	constexpr auto predicate = [](wchar_t c)->bool {
-		return (V_IsDeprecatedW(c) ||
-			V_IsMeanSpaceW(c) ||
-			std::iswblank(c));
-		};
-
-	if (predicate(input[0]))
+	constexpr auto sizeOfElem = sizeof(input[0]);
+	const auto zeroIdx = Clamp(V_wcslen(input), 0, maxlen - 1);
+	// First disallow any bad characters
+	for (int i = 0; i < zeroIdx; ++i)
 	{
-		std::memmove(input, &input[1], sizeof(input) - sizeof(input[0]));
+		if (V_IsDeprecatedW(input[i]) ||
+			V_IsMeanSpaceW(input[i]))
+		{
+			std::wmemmove(&input[i], &input[i + 1], zeroIdx-i);
+			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = i;
+			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = i;
+		}
+	}
+	// Then block leading spaces
+	if (std::iswblank(input[0]))
+	{
+		std::memmove(input, &input[1], maxlen - sizeOfElem);
 		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = 0;
 		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = 0;
 	}
-
+	// Finally block trailing multi-spaces
 	const auto lastNonTerminatingChar = Min<int>(V_wcslen(input) - 1, ARRAYSIZE(input) - 2);
-	if (lastNonTerminatingChar > 1 && predicate(input[lastNonTerminatingChar]))
+	if (lastNonTerminatingChar > 1 && std::iswblank(input[lastNonTerminatingChar]))
 	{
-		// Two spaces in a row, delete one. But don't delete both so people can have singular spaces in their variable.
-		if (predicate(input[lastNonTerminatingChar - 1]))
+		if (std::iswblank(input[lastNonTerminatingChar - 1]))
 		{
 			input[lastNonTerminatingChar] = L'\0';
 		}
