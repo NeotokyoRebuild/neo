@@ -6,8 +6,16 @@
 
 using vgui::surface;
 
-ConVar cl_neo_hud_centre_size("cl_neo_hud_centre_size", "25", FCVAR_ARCHIVE,
-                              "HUD centre size in percentage to fade markers.", true, 1, false, 0);
+static float viewCentreSize = 0;
+extern ConVar cl_neo_hud_centre_size;
+void viewCentreSizeChangeCallBack(IConVar* pConVar [[maybe_unused]] = nullptr, char const* pOldString [[maybe_unused]] = nullptr, float flOldValue [[maybe_unused]] = 0.f) {
+	int w, h;
+    vgui::surface()->GetScreenSize(w, h);
+
+    const auto widerAxis = Max(w, h);
+    viewCentreSize = widerAxis * (cl_neo_hud_centre_size.GetFloat() / 100);
+}
+ConVar cl_neo_hud_centre_size("cl_neo_hud_centre_size", "25", FCVAR_ARCHIVE, "HUD centre size in percentage to fade markers.", true, 1, false, 0, viewCentreSizeChangeCallBack);
 ConVar cl_neo_hud_worldpos_verbose("cl_neo_hud_worldpos_verbose", "1", FCVAR_ARCHIVE, "Display full world pos marker string", true, 0, true, 1);
 
 CNEOHud_WorldPosMarker::CNEOHud_WorldPosMarker(const char* pElementName, Panel* parent)
@@ -15,7 +23,6 @@ CNEOHud_WorldPosMarker::CNEOHud_WorldPosMarker(const char* pElementName, Panel* 
       Panel(parent, pElementName),
       m_viewWidth(0),
       m_viewHeight(0),
-      m_viewCentreSize(0),
       m_viewCentreX(0),
       m_viewCentreY(0)
 {
@@ -30,10 +37,14 @@ void CNEOHud_WorldPosMarker::ApplySchemeSettings(vgui::IScheme* pScheme)
     m_viewCentreX = m_viewWidth / 2;
     m_viewCentreY = m_viewHeight / 2;
 
-    auto widerAxis = Max(m_viewWidth, m_viewHeight);
-    m_viewCentreSize = widerAxis * (static_cast<float>(cl_neo_hud_centre_size.GetInt()) / 100);
+    viewCentreSizeChangeCallBack(); // value of viewCentreSize depends on screen size, so update during applySchemeSettings
 
     BaseClass::ApplySchemeSettings(pScheme);
+}
+
+float CNEOHud_WorldPosMarker::GetHudCentreSize() const
+{
+    return viewCentreSize;
 }
 
 void CNEOHud_WorldPosMarker::RectToPoint(int x0, int x1, int y0, int y1, int& x, int& y)
@@ -50,14 +61,14 @@ float CNEOHud_WorldPosMarker::DistanceToCentre(int x, int y) const
 
 float CNEOHud_WorldPosMarker::GetFadeValueTowardsScreenCentre(int x, int y) const
 {
-    float innerArea = m_viewCentreSize / 2.f;
+    float innerArea = GetHudCentreSize() / 2.f;
     auto dist = DistanceToCentre(x, y);
     if(dist <= innerArea)
     {
         return 1;
     }
 
-    if(dist <= m_viewCentreSize)
+    if(dist <= GetHudCentreSize())
     {
         return (innerArea - (dist - innerArea)) / innerArea;
     }
@@ -67,14 +78,14 @@ float CNEOHud_WorldPosMarker::GetFadeValueTowardsScreenCentre(int x, int y) cons
 
 float CNEOHud_WorldPosMarker::GetFadeValueTowardsScreenCentreInverted(int x, int y, float min) const
 {
-    float innerArea = m_viewCentreSize / 2.f;
+    float innerArea = GetHudCentreSize() / 2.f;
     auto dist = DistanceToCentre(x, y);
     if(dist <= innerArea)
     {
         return min;
     }
 
-    if(dist <= m_viewCentreSize)
+    if(dist <= GetHudCentreSize())
     {
         return Max(min, (dist - innerArea) / innerArea);
     }
@@ -84,14 +95,14 @@ float CNEOHud_WorldPosMarker::GetFadeValueTowardsScreenCentreInverted(int x, int
 
 float CNEOHud_WorldPosMarker::GetFadeValueTowardsScreenCentreInAndOut(int x, int y, float min) const
 {
-    float innerArea = m_viewCentreSize / 2.f;
+    float innerArea = GetHudCentreSize() / 2.f;
     auto dist = DistanceToCentre(x, y);
     if(dist <= innerArea)
     {
         return Max(min, dist / innerArea);
     }
 
-    if(dist <= m_viewCentreSize)
+    if(dist <= GetHudCentreSize())
     {
         return (innerArea - (dist - innerArea)) / innerArea;
     }
