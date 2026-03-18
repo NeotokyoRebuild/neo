@@ -2161,14 +2161,6 @@ static void BuildUpIrTextWidths(const wchar_t *wszVisText, const int iWszTextSiz
 	}
 }
 
-void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags)
-{
-	BeginMultiWidgetHighlighter(2);
-	Label(wszLeftLabel);
-	TextEdit(wszText, iMaxWszTextSize, flags);
-	EndMultiWidgetHighlighter();
-}
-
 void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags)
 {
 	WidgetFlag wdgFlags = WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE;

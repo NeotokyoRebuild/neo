@@ -11,7 +11,6 @@
 #include <ivoicetweak.h>
 #include <vgui_controls/Controls.h>
 #include <vgui/ISurface.h>
-#include <steam/steam_api.h>
 #include "vgui/ISystem.h"
 #include "neo_hud_killer_damage_info.h"
 #include "voice_status.h"
@@ -20,6 +19,8 @@
 #include "neo_root.h"
 #include "neo/ui/neo_utils.h"
 #include "neo_theme.h"
+
+#include <cwctype>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1000,6 +1001,36 @@ static const wchar_t *EQUIP_UTILITY_PRIORITY_LABELS[NeoSettings::EquipUtilityPri
 	L"Class Specific First" // EQUIP_UTILITY_PRIORITY_CLASS_SPECIFIC
 };
 
+// Trims empty whitespaces from the left-hand side of a text variable.
+// Allows one contiguous whitespace on the right side for space-separated input, but no more.
+template <size_t maxlen>
+	requires (maxlen > 1)
+FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
+{
+	constexpr auto predicate = [](wchar_t c)->bool {
+		return (V_IsDeprecatedW(c) ||
+			V_IsMeanSpaceW(c) ||
+			std::iswblank(c));
+		};
+
+	if (predicate(input[0]))
+	{
+		std::memmove(input, &input[1], sizeof(input) - sizeof(input[0]));
+		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = 0;
+		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = 0;
+	}
+
+	const auto lastNonTerminatingChar = Min<int>(V_wcslen(input) - 1, ARRAYSIZE(input) - 2);
+	if (lastNonTerminatingChar > 1 && predicate(input[lastNonTerminatingChar]))
+	{
+		// Two spaces in a row, delete one. But don't delete both so people can have singular spaces in their variable.
+		if (predicate(input[lastNonTerminatingChar - 1]))
+		{
+			input[lastNonTerminatingChar] = L'\0';
+		}
+	}
+}
+
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
@@ -1016,8 +1047,8 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
 
 	NeoUI::Divider(L"MULTIPLAYER");
-	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, MAX_PLAYER_NAME_LENGTH - 1);
-	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, NEO_MAX_CLANTAG_LENGTH - 1);
+	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, ARRAYSIZE(pGeneral->wszNeoName) - 1, 0, [pGeneral]() { VarTrimmer(pGeneral->wszNeoName); });
+	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, NEO_MAX_CLANTAG_LENGTH - 1, 0, [pGeneral]() { VarTrimmer(pGeneral->wszNeoClantag); });
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
 	NeoUI::RingBoxBool(L"Only show clantags when spectator", &pGeneral->bMarkerSpecOnlyClantag);
 

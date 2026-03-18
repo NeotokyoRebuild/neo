@@ -3942,6 +3942,9 @@ bool V_IsMeanUnderscoreW( wchar_t wch )
 //			characters in this set are removed from the beginning and/or end of strings
 //			by Q_AggressiveStripPrecedingAndTrailingWhitespaceW() 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+constexpr
+#endif
 bool V_IsMeanSpaceW( wchar_t wch )
 {
 	bool bIsMean = false;
@@ -4029,6 +4032,9 @@ bool V_IsMeanSpaceW( wchar_t wch )
 // Ideally, we'd perfectly support these end-to-end but we never realistically will.
 // The benefit of doing so far outweighs the cost, anyway.
 //-----------------------------------------------------------------------------
+#ifdef NEO
+constexpr
+#endif
 bool V_IsDeprecatedW( wchar_t wch )
 {
 	bool bIsDeprecated = false;

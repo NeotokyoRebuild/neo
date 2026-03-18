@@ -890,10 +890,16 @@ bool V_BBCodeToHTML( OUT_Z_CAP( nDestSize ) char *pDest, const int nDestSize, ch
 
 // helper to identify "mean" spaces, which we don't like in visible identifiers
 // such as player Name
+#ifdef NEO
+constexpr
+#endif
 bool V_IsMeanSpaceW( wchar_t wch );
 
 // helper to identify characters which are deprecated in Unicode,
 // and we simply don't accept
+#ifdef NEO
+constexpr
+#endif
 bool V_IsDeprecatedW( wchar_t wch );
 
 //-----------------------------------------------------------------------------
