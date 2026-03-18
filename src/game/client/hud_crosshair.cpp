@@ -173,8 +173,9 @@ bool CHudCrosshair::ShouldDraw( void )
 				return false;
 			}
 			break;
-		case OBS_MODE_ROAMING:
-			return cl_observercrosshair.GetBool();
+			// NEO NOTE (Adam) technically cl_observercrosshair should allow us to see a crosshair when roaming, but we're early returning in the draw function anyway if we dont have a valid target so 
+			// I removed the OBS_MODE_ROAMING clause here so stv demo watchers, who still have an observer target even when roaming, dont see a crosshair when normal spectators watching live dont.
+			// NEO TODO Fix cl_observercrosshair for both
 		default:
 			return false;
 		}
@@ -422,8 +423,7 @@ void CHudCrosshair::Paint( void )
 	if (!pPlayer)
 		return;
 
-	const bool drawRoamingObserverCrosshair = cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING;
-	if (pPlayer->IsObserver() && !drawRoamingObserverCrosshair)
+	if (pPlayer->IsObserver())
 	{
 		pPlayer = ToNEOPlayer(ClientEntityList().GetBaseEntity(GetSpectatorTarget()));
 		if (!pPlayer)
@@ -494,7 +494,7 @@ void CHudCrosshair::Paint( void )
 	bool bTakeSpecCrosshair = false;
 	CrosshairInfo *pCrosshairInfo = &m_crosshairInfo;
 	const char *pszNeoCrosshair = cl_neo_crosshair.GetString();
-	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator() && !drawRoamingObserverCrosshair)
+	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator())
 	{
 		const int iPlayerIdx = pNeoPlayer->entindex();
 		const bool bPlayerIdxValid = ((iPlayerIdx >= 0) && (iPlayerIdx < MAX_PLAYERS));
