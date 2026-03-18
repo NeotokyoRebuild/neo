@@ -35,7 +35,11 @@ ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHI
 		g_pNeoScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
 	});
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
-ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
+ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling", 
+	[](IConVar* pConVar, char const* pOldString, float flOldValue) -> void {
+		if (g_pNeoHudRoundState)
+			g_pNeoHudRoundState->UpdateStarSize();
+});
 extern ConVar sv_neo_dm_win_xp;
 extern ConVar cl_neo_streamermode;
 extern ConVar sv_neo_readyup_countdown;
@@ -160,6 +164,20 @@ void CNEOHud_RoundState::UpdateAvatarSize()
 	}
 }
 
+void CNEOHud_RoundState::UpdateStarSize()
+{
+	IntDim res = {};
+	surface()->GetScreenSize(res.w, res.h);
+	const float scale = cl_neo_squad_hud_star_scale.GetFloat() != 0 ? cl_neo_squad_hud_star_scale.GetFloat() * (res.h / 1080.0f)
+																	: 1.f;
+
+	for (auto* star : m_ipStars)
+	{
+		star->SetWide(192 * scale);
+		star->SetTall(48 * scale);
+	}
+}
+
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
@@ -179,23 +197,6 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	surface()->GetScreenSize(res.w, res.h);
 	m_iXpos = (res.w / 2);
 
-	if (cl_neo_squad_hud_star_scale.GetFloat())
-	{
-		const float scale = cl_neo_squad_hud_star_scale.GetFloat() * (res.h / 1080.0);
-		for (auto* star : m_ipStars)
-		{
-			star->SetWide(192 * scale);
-			star->SetTall(48 * scale);
-		}
-	}
-	else {
-		for (auto* star : m_ipStars)
-		{
-			star->SetWide(192);
-			star->SetTall(48);
-		}
-	}
-
 	// Box dimensions
 	[[maybe_unused]] int iSmallFontWidth = 0;
 	int iFontHeight = 0;
@@ -214,6 +215,7 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_iBoxYEnd = Y_POS + iBoxHeight;
 
 	UpdateAvatarSize();
+	UpdateStarSize();
 
 	m_rectLeftTeamTotalLogo = vgui::IntRect{
 		.x0 = m_iLeftOffset,

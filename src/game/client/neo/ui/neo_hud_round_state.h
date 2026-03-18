@@ -30,6 +30,7 @@ public:
 	virtual void Paint();
 	
 	void UpdateAvatarSize();
+	void UpdateStarSize();
 	// sunk cost fallacy and all that, in hindsight I should have made all of this only work with two teams and split players into separate resizeable cutlvectors by team instead of doing this minus index stuff.
 	// basically any minusindexed n index works such that negative values give the -nth player in the player list, and any positive values give the (n - leftTeamTotal)th player in the list
 	int GetEntityIndexAtPositionInHud(int position, bool positionIsZeroIndexed = false);
