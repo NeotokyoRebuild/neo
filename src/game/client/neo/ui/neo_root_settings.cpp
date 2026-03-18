@@ -1047,8 +1047,10 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
 
 	NeoUI::Divider(L"MULTIPLAYER");
-	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, ARRAYSIZE(pGeneral->wszNeoName) - 1, 0, [pGeneral]() { VarTrimmer(pGeneral->wszNeoName); });
-	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, NEO_MAX_CLANTAG_LENGTH - 1, 0, [pGeneral]() { VarTrimmer(pGeneral->wszNeoClantag); });
+	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, ARRAYSIZE(pGeneral->wszNeoName) - 1);
+	VarTrimmer(pGeneral->wszNeoName);
+	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, ARRAYSIZE(pGeneral->wszNeoClantag) - 1);
+	VarTrimmer(pGeneral->wszNeoClantag);
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
 	NeoUI::RingBoxBool(L"Only show clantags when spectator", &pGeneral->bMarkerSpecOnlyClantag);
 

@@ -491,19 +491,8 @@ enum TextEditFlag_
 	TEXTEDITFLAG_FORCEACTIVE = 1 << 1, // Enforce hot+active focusing in this text edit widget all time, only suitable for single-textedit popups
 };
 typedef int TextEditFlags;
-/*1W*/ void TextEdit(wchar_t* wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
-template<class NextFn=std::nullptr_t>
-	requires (std::is_invocable_v<NextFn> || std::is_same_v<NextFn, std::nullptr_t>)
-/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize,
-					 const TextEditFlags flags = TEXTEDITFLAG_NONE,
-					 const NextFn&& next=nullptr)
-{
-	BeginMultiWidgetHighlighter(2);
-	Label(wszLeftLabel);
-	TextEdit(wszText, iMaxWszTextSize, flags);
-	EndMultiWidgetHighlighter();
-	if constexpr (std::is_invocable_v<NextFn>) next();
-}
+/*1W*/ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
+/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
 /*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "");
 
 // NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
