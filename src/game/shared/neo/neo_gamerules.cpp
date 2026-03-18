@@ -318,12 +318,12 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropBool(SENDINFO(m_bJuggernautItemExists)),
 	SendPropEHandle(SENDINFO(m_hJuggernaut)),
-	SendPropInt(SENDINFO(m_iLastHurt)),
-	SendPropInt(SENDINFO(m_iLastShooter)),
-	SendPropInt(SENDINFO(m_iLastEvent)),
-	SendPropInt(SENDINFO(m_iLastAttacker)),
-	SendPropInt(SENDINFO(m_iLastKiller)),
-	SendPropInt(SENDINFO(m_iLastGhoster)),
+	SendPropInt(SENDINFO(m_iLastHurt), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastShooter), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastEvent), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastAttacker), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastKiller), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastGhoster), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 #endif
 END_NETWORK_TABLE()
 
