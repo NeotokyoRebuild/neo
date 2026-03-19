@@ -22,10 +22,10 @@ public:
 protected:
 	static float GetDetpackDeployDistanceSq( CNEOBot *me );
 	Vector GetNearestCapturePoint( CNEOBot *me, bool bEnemyCapPoint );
-	bool UpdateGhostHandle( CNEOBot *me );
+	Vector GetGhostPosition( CNEOBot *me );
+	CWeaponGhost* GetGhost();
 	ActionResult< CNEOBot > UpdateLookAround( CNEOBot *me );
 
-	CHandle<CWeaponGhost> m_hGhost;
 	CountdownTimer m_repathTimer;
 	PathFollower m_path;
 
