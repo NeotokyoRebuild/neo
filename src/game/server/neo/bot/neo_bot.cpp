@@ -550,36 +550,6 @@ CNEOBot::CNEOBot()
 	SetAutoJump(0.f, 0.f);
 
 	V_memcpy(&m_profile, &FIXED_DEFAULT_PROFILE, sizeof(CNEOBotProfile));
-
-	// set default values for convars only present on the client
-	edict_t* edict = GetEntity()->edict();
-	if (edict)
-	{
-		{
-			char szCrhSerial[NEO_XHAIR_SEQMAX] = {};
-			DefaultCrosshairSerial(szCrhSerial);
-			engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", szCrhSerial);
-		}
-
-		constexpr struct {
-			const char* name, *value;
-		} convars[] = {
-			{ "cl_neo_pvs_cull_roaming_observer", "0" },
-			{ "cl_neo_streamermode", "0" },
-			{ "cl_neo_tachi_prefer_auto", "1" },
-			{ "cl_neo_taking_damage_sounds", "0" },
-			{ "cl_onlysteamnick", "0" },
-			{ "hap_HasDevice", "0" },
-			{ "neo_clantag", "" },
-			{ "neo_fov", "90" },
-			{ "neo_name", "" },
-		};
-
-		for (const auto& convar : convars)
-		{
-			engine->SetFakeClientConVarValue(edict, convar.name, convar.value);
-		}
-	}
 }
 
 

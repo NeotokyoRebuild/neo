@@ -160,6 +160,15 @@ enum NeoHudElements : NEO_HUD_BITS_UNDERLYING_TYPE {
 	NEO_HUD_ELEMENT_WORLDPOS_MARKER_ENT = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 16),
 };
 
+enum NeoSpectateEvent {
+	NEO_SPECTATE_EVENT_LAST_HURT = 0,
+	NEO_SPECTATE_EVENT_LAST_SHOOTER,
+	NEO_SPECTATE_EVENT_LAST_EVENT,
+	NEO_SPECTATE_EVENT_LAST_ATTACKER,
+	NEO_SPECTATE_EVENT_LAST_KILLER,
+	NEO_SPECTATE_EVENT_LAST_GHOSTER,
+};
+
 class CNEORules : public CHL2MPRules, public CGameEventListener
 {
 public:
@@ -435,6 +444,21 @@ public:
 	void JuggernautActivated(CNEO_Player *pPlayer);
 	void JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut);
 	void JuggernautTotalRemoval(CNEO_Juggernaut *pJuggernaut);
+
+	void SetLastHurt(const int index) { m_iLastHurt = index; }
+	void SetLastShooter(const int index) { m_iLastShooter = index; }
+	void SetLastAttacker(const int index) { m_iLastAttacker = m_iLastEvent = index; }
+	void SetLastKiller(const int index) { m_iLastKiller = m_iLastEvent = index; }
+	void SetLastGhoster(const int index) { m_iLastGhoster = m_iLastEvent = index; }
+#endif // GAME_DLL
+public:
+	const int GetLastHurt() const { return m_iLastHurt; }
+	const int GetLastShooter() const { return m_iLastShooter; }
+	const int GetLastEvent() const { return m_iLastEvent; }
+	const int GetLastAttacker() const { return m_iLastAttacker; }
+	const int GetLastKiller() const { return m_iLastKiller; }
+	const int GetLastGhoster() const { return m_iLastGhoster; }
+#ifdef GAME_DLL
 private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
@@ -498,6 +522,14 @@ private:
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
+
+	// For spectator commands. Networked so can be saved in demos for hltv
+	CNetworkVar(int, m_iLastHurt);
+	CNetworkVar(int, m_iLastShooter);
+	CNetworkVar(int, m_iLastEvent);
+	CNetworkVar(int, m_iLastAttacker);
+	CNetworkVar(int, m_iLastKiller);
+	CNetworkVar(int, m_iLastGhoster);
 
 public:
 	// VIP networked variables
