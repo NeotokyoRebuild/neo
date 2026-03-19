@@ -15,6 +15,7 @@
 #include "engine/SndInfo.h"
 #include "engine/IEngineSound.h"
 #include "filesystem.h"
+#include "hltvcamera.h"
 #else
 #include "neo_player.h"
 #include "team.h"
@@ -285,6 +286,12 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iJuggernautPlayerIndex)),
 	RecvPropBool(RECVINFO(m_bJuggernautItemExists)),
 	RecvPropEHandle(RECVINFO(m_hJuggernaut)),
+	RecvPropInt(RECVINFO(m_iLastHurt)),
+	RecvPropInt(RECVINFO(m_iLastShooter)),
+	RecvPropInt(RECVINFO(m_iLastEvent)),
+	RecvPropInt(RECVINFO(m_iLastAttacker)),
+	RecvPropInt(RECVINFO(m_iLastKiller)),
+	RecvPropInt(RECVINFO(m_iLastGhoster)),
 #else
 	SendPropTime(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropTime(SENDINFO(m_flNeoRoundStartTime)),
@@ -313,6 +320,12 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropBool(SENDINFO(m_bJuggernautItemExists)),
 	SendPropEHandle(SENDINFO(m_hJuggernaut)),
+	SendPropInt(SENDINFO(m_iLastHurt), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastShooter), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastEvent), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastAttacker), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastKiller), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastGhoster), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 #endif
 END_NETWORK_TABLE()
 
@@ -372,8 +385,8 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 	}
 
 	BEGIN_RECV_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
-		RecvPropDataTable( "neo_gamerules_data", 0, 0,
-			&REFERENCE_RECV_TABLE( DT_NEORules ),
+		RecvPropDataTable( "neo_gamerules_data", 0, 0,	
+			&REFERENCE_RECV_TABLE( DT_NEORules ), 
 			RecvProxy_NEORules )
 	END_RECV_TABLE()
 #else
@@ -4815,3 +4828,68 @@ void CNEORules::InitDefaultAIRelationships( void )
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
 }
 #endif
+
+#ifdef CLIENT_DLL
+auto spectateChecks = []() {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg("%s: HLTV Camera is PVS locked\n", __FUNCTION__);
+		return false;
+	}
+
+	C_NEO_Player* pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pNeoPlayer || !pNeoPlayer->IsObserver())
+		return false;
+
+	return true;
+
+};
+
+CON_COMMAND_F( spec_last_hurt, "Spectate the last hurt player", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_HURT) : engine->ClientCmd(VarArgs("spectate_last_hurt"));
+}
+
+CON_COMMAND_F( spec_last_shooter, "Spectate the last shooter", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_SHOOTER) : engine->ClientCmd(VarArgs("spectate_last_shooter"));
+}
+
+CON_COMMAND_F( spec_last_event, "Spectate the last attacker, killer or ghoster", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_EVENT) : engine->ClientCmd(VarArgs("spectate_last_event"));
+}
+
+CON_COMMAND_F( spec_last_attacker, "Spectate the last attacker", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_ATTACKER) : engine->ClientCmd(VarArgs("spectate_last_attacker"));
+}
+
+CON_COMMAND_F( spec_last_killer, "Spectate the last killer", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_KILLER) : engine->ClientCmd(VarArgs("spectate_last_killer"));
+}
+
+CON_COMMAND_F( spec_last_ghoster, "Spectate the last ghoster", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_GHOSTER) : engine->ClientCmd(VarArgs("spectate_last_ghoster"));
+}
+#endif // CLIENT_DLL

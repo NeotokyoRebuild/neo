@@ -22,6 +22,12 @@
 	#include "c_cs_player.h"
 #endif
 
+#ifdef NEO
+#include "neo_gamerules.h"
+#include "c_neo_player.h"
+#include "shareddefs.h"
+#endif // NEO
+
 ConVar spec_autodirector( "spec_autodirector", "1", FCVAR_CLIENTDLL | FCVAR_CLIENTCMD_CAN_EXECUTE, "Auto-director chooses best view modes while spectating" );
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -74,6 +80,9 @@ void C_HLTVCamera::Init()
 	ListenForGameEvent( "hltv_message" );
 	ListenForGameEvent( "hltv_title" );
 	ListenForGameEvent( "hltv_status" );
+#ifdef NEO
+	ListenForGameEvent( "player_death" );
+#endif // NEO
 	
 	Reset();
 
@@ -306,7 +315,11 @@ C_BaseEntity *C_HLTVCamera::GetCameraMan()
 
 void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov )
 {
+#ifdef NEO
+	C_NEO_Player *pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex( m_iTraget1 ));
+#else
 	C_BasePlayer *pPlayer = UTIL_PlayerByIndex( m_iTraget1 );
+#endif // NEO
 
 	if ( !pPlayer )
 		return;
@@ -324,11 +337,19 @@ void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float
 
 	if ( pPlayer->GetFlags() & FL_DUCKING )
 	{
+#ifdef NEO
+		m_vCamOrigin += VEC_DUCK_VIEW_NEOSCALE(pPlayer);
+#else
 		m_vCamOrigin += VEC_DUCK_VIEW;
+#endif // NEO
 	}
 	else
 	{
+#ifdef NEO
+		m_vCamOrigin += VEC_VIEW_NEOSCALE(pPlayer);
+#else
 		m_vCamOrigin += VEC_VIEW;
+#endif // NEO
 	}
 
 	eyeOrigin = m_vCamOrigin;
@@ -375,6 +396,9 @@ void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel )
 }
 
 
+#ifdef NEO
+extern ConVar neo_fov;
+#endif // NEO
 // movement code is a copy of CGameMovement::FullNoClipMove()
 void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
 {
@@ -399,7 +423,22 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		// Copy movement amounts
 		float fmove = m_LastCmd.forwardmove * factor;
 		float smove = m_LastCmd.sidemove * factor;
-
+		
+#ifdef NEO
+		const bool bDroneMove = m_LastCmd.buttons & IN_WALK;
+		if (bDroneMove)
+		{
+			forward.z = 0;
+			if (fmove && smove)
+			{
+				const float absFMove = fabs(fmove);
+				const float absSMove = fabs(smove);
+				const float moveMagnitude = FastSqrt((absFMove * absFMove) + (absSMove * absSMove));
+				fmove *= absFMove / moveMagnitude;
+				smove *= absSMove / moveMagnitude;
+			}
+		}
+#endif // NEO
 		VectorNormalize (forward);  // Normalize remainder of vectors
 		VectorNormalize (right);    // 
 
@@ -470,7 +509,11 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 
 	eyeOrigin = m_vCamOrigin;
 	eyeAngles = m_aCamAngle;
+#ifdef NEO
+	fov = neo_fov.GetFloat();
+#else
 	fov = m_flFOV;
+#endif // NEO
 }
 
 void C_HLTVCamera::CalcFixedView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
@@ -551,6 +594,10 @@ void C_HLTVCamera::CalcView(Vector& origin, QAngle& angles, float& fov)
 	}
 }
 
+#ifdef NEO
+ConVar cl_neo_hltvcamera_spectate_next_target_on_set_mode("cl_neo_hltvcamera_spectate_next_target_on_set_mode", "1", FCVAR_ARCHIVE, "Spectate next target when changing to in-eye or chase and don't have a valid target", true, 0, true, 1);
+static bool bAllowChangingModeWhenSettingPrimaryTarget = true;
+#endif // NEO
 void C_HLTVCamera::SetMode(int iMode)
 {
 	if ( m_nCameraMode == iMode )
@@ -561,6 +608,14 @@ void C_HLTVCamera::SetMode(int iMode)
 	int iOldMode = m_nCameraMode;
 	m_nCameraMode = iMode;
 
+#ifdef NEO
+	if (cl_neo_hltvcamera_spectate_next_target_on_set_mode.GetBool() && (iMode == OBS_MODE_IN_EYE || iMode == OBS_MODE_CHASE) && !GetPrimaryTarget())
+	{
+		bAllowChangingModeWhenSettingPrimaryTarget = false;
+		SpecNextPlayer(false);
+		bAllowChangingModeWhenSettingPrimaryTarget = true;
+	}
+#endif // NEO
 	IGameEvent *event = gameeventmanager->CreateEvent( "hltv_changed_mode" );
 	if ( event )
 	{
@@ -571,6 +626,17 @@ void C_HLTVCamera::SetMode(int iMode)
 	}
 }
 
+#ifdef NEO
+enum
+{
+	NEO_HLTV_ON_TARGET_MODE_NOTHING = 0,
+	NEO_HLTV_ON_TARGET_MODE_IN_EYE,
+	NEO_HLTV_ON_TARGET_MODE_CHASE,
+
+	NEO_HLTV_ON_TARGET_MODE__TOTAL = NEO_HLTV_ON_TARGET_MODE_CHASE
+};
+ConVar cl_neo_hltvcamera_default_mode_when_setting_primary_target("cl_neo_hltvcamera_default_mode_when_setting_primary_target", "1", FCVAR_ARCHIVE, "What to do if changing primary targets and not in in-eye or chase. 0 = do nothing, 1 = switch to in-eye, 2 = switch to chase", true, 0, true, NEO_HLTV_ON_TARGET_MODE__TOTAL);
+#endif // NEO
 void C_HLTVCamera::SetPrimaryTarget( int nEntity ) 
 {
  	if ( m_iTraget1 == nEntity )
@@ -579,6 +645,24 @@ void C_HLTVCamera::SetPrimaryTarget( int nEntity )
 	int iOldTarget = m_iTraget1;
 	m_iTraget1 = nEntity;
 
+#ifdef NEO
+	if (GetMode() != OBS_MODE_IN_EYE && GetMode() != OBS_MODE_CHASE && bAllowChangingModeWhenSettingPrimaryTarget)
+	{
+		switch (cl_neo_hltvcamera_default_mode_when_setting_primary_target.GetInt())
+		{
+		case NEO_HLTV_ON_TARGET_MODE_IN_EYE:
+			SetMode(OBS_MODE_IN_EYE);
+			break;
+		case NEO_HLTV_ON_TARGET_MODE_CHASE:
+			SetMode(OBS_MODE_CHASE);
+			break;
+		case NEO_HLTV_ON_TARGET_MODE_NOTHING:
+		default:
+			break;
+		}
+	}
+
+#endif // NEO
 	if ( GetMode() == OBS_MODE_ROAMING )
 	{
 		Vector vOrigin;
@@ -609,6 +693,37 @@ void C_HLTVCamera::SetPrimaryTarget( int nEntity )
 		gameeventmanager->FireEventClientSide( event );
 	}
 }
+#ifdef NEO
+void C_HLTVCamera::SpectateEvent(NeoSpectateEvent event)
+{
+	int entIndexLastPlayerMatchingEvent = -1;
+	switch (event)
+	{
+		case NEO_SPECTATE_EVENT_LAST_HURT:
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastHurt();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_SHOOTER:
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastShooter();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_ATTACKER:
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastAttacker();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_KILLER:
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastKiller();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_GHOSTER:
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastGhoster();
+			break;
+		case NEO_SPECTATE_EVENT_LAST_EVENT:
+		default:
+			entIndexLastPlayerMatchingEvent = NEORules()->GetLastEvent();
+			break;
+	}
+
+	if (entIndexLastPlayerMatchingEvent > 0)
+		SetPrimaryTarget(entIndexLastPlayerMatchingEvent);
+}
+#endif // NEO
 
 void C_HLTVCamera::SpecNextPlayer( bool bInverse )
 {
@@ -672,6 +787,9 @@ void C_HLTVCamera::SpecPlayerByPredicate( const char *szSearch )
 	return;
 }
 
+#ifdef NEO
+ConVar cl_neo_hltvcamera_auto_observe_killer_if_observing_victim("cl_neo_hltvcamera_auto_observe_killer_if_observing_victim", "1", FCVAR_ARCHIVE, "If the current observer target is killed when in eye or following, switch observer target to the killer", true, 0, true, 1);
+#endif // NEO
 void C_HLTVCamera::FireGameEvent( IGameEvent * event)
 {
 	if ( !engine->IsHLTV() )
@@ -687,6 +805,7 @@ void C_HLTVCamera::FireGameEvent( IGameEvent * event)
 		if ( !gViewPortInterface )
 			return;
 
+#ifndef NEO
 		if ( engine->IsPlayingDemo() )
         {
 			// for demo playback show full menu
@@ -695,6 +814,7 @@ void C_HLTVCamera::FireGameEvent( IGameEvent * event)
 			SetMode( OBS_MODE_ROAMING );
 		}
 		else
+#endif // NEO
 		{
 			// during live broadcast only show black bars
 			gViewPortInterface->ShowPanel( PANEL_SPECGUI, true );
@@ -739,6 +859,22 @@ void C_HLTVCamera::FireGameEvent( IGameEvent * event)
 		return;
 	}
 
+#ifdef NEO
+	if (Q_strcmp("player_death", type) == 0)
+	{
+		if (!cl_neo_hltvcamera_auto_observe_killer_if_observing_victim.GetBool() || (m_nCameraMode != OBS_MODE_IN_EYE && m_nCameraMode != OBS_MODE_CHASE))
+			return;
+
+		const int victimIndex = engine->GetPlayerForUserID(event->GetInt("userid"));
+ 		const int killerIndex = engine->GetPlayerForUserID(event->GetInt("attacker"));
+		if (victimIndex && m_iTraget1 == victimIndex && killerIndex)
+		{
+			SetPrimaryTarget( killerIndex );
+		}
+		return;
+	}
+
+#endif // NEO
 	// after this only auto-director commands follow
 	// don't execute them if autodirector is off and PVS is unlocked
 	if ( !spec_autodirector.GetBool() && !IsPVSLocked() )

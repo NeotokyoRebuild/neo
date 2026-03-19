@@ -339,19 +339,6 @@ private:
 
 	// Cache for GetFogObscuredRatio for each player
 	mutable CNEO_Player_FogCacheEntry m_playerFogCache[MAX_PLAYERS_ARRAY_SAFE];
-	
-	static int m_iLastHurt;
-	static int m_iLastShooter;
-public:
-	void SetLastShooter() { m_iLastShooter = entindex(); };
-
-private:
-	static int m_iLastEvent;
-	static int m_iLastAttacker;
-	static int m_iLastKiller;
-	static int m_iLastGhoster;
-public:
-	void SetLastGhoster() { m_iLastGhoster = m_iLastEvent = entindex(); };
 
 private:
 	CNEO_Player(const CNEO_Player&);

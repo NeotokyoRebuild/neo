@@ -1444,7 +1444,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 	};
 
 	if (IsLocalPlayer()) {
-		for (int i = 1; i < gpGlobals->maxClients; i++) {
+		for (int i = 1; i <= gpGlobals->maxClients; i++) {
 			CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
 			if (!pPlayer || pPlayer == this) {
 				continue;
