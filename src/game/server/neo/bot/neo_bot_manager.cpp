@@ -316,7 +316,7 @@ void CNEOBotManager::MaintainBotQuota()
 				nNonNEOBotsOnGameTeams++;
 				naCountClasses[iPlayerTeam][iClass]++;
 			}
-			else if ( iPlayerTeam == TEAM_SPECTATOR )
+			else if ( iPlayerTeam == TEAM_SPECTATOR && !pPlayer->IsHLTV() )
 			{
 				nSpectators++;
 			}

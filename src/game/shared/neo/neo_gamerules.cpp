@@ -15,6 +15,7 @@
 #include "engine/SndInfo.h"
 #include "engine/IEngineSound.h"
 #include "filesystem.h"
+#include "hltvcamera.h"
 #else
 #include "neo_player.h"
 #include "team.h"
@@ -147,6 +148,7 @@ ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED,
 ConVar sv_neo_juggernaut_spawn_bias("sv_neo_juggernaut_spawn_bias", "0", FCVAR_REPLICATED, "Spawn juggernaut in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
+ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
 #ifdef CLIENT_DLL
 ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
 #endif
@@ -160,9 +162,10 @@ ConVar sv_neo_reject_opengl_mesa_check("sv_neo_reject_opengl_mesa_check", "0", 0
 									, true, 0.0f, true, 1.0f);
 #endif
 
+extern ConVar sv_neo_comp;
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
-	const bool bCurrentValue = !(bool)flOldValue;
+	const bool bCurrentValue = sv_neo_comp.GetBool();
 	sv_neo_readyup_lobby.SetValue(bCurrentValue);
 	mp_forcecamera.SetValue(bCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
 	sv_neo_spraydisable.SetValue(bCurrentValue);
@@ -283,6 +286,12 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iJuggernautPlayerIndex)),
 	RecvPropBool(RECVINFO(m_bJuggernautItemExists)),
 	RecvPropEHandle(RECVINFO(m_hJuggernaut)),
+	RecvPropInt(RECVINFO(m_iLastHurt)),
+	RecvPropInt(RECVINFO(m_iLastShooter)),
+	RecvPropInt(RECVINFO(m_iLastEvent)),
+	RecvPropInt(RECVINFO(m_iLastAttacker)),
+	RecvPropInt(RECVINFO(m_iLastKiller)),
+	RecvPropInt(RECVINFO(m_iLastGhoster)),
 #else
 	SendPropTime(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropTime(SENDINFO(m_flNeoRoundStartTime)),
@@ -311,6 +320,12 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropBool(SENDINFO(m_bJuggernautItemExists)),
 	SendPropEHandle(SENDINFO(m_hJuggernaut)),
+	SendPropInt(SENDINFO(m_iLastHurt), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastShooter), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastEvent), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastAttacker), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastKiller), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iLastGhoster), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 #endif
 END_NETWORK_TABLE()
 
@@ -370,8 +385,8 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 	}
 
 	BEGIN_RECV_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
-		RecvPropDataTable( "neo_gamerules_data", 0, 0,
-			&REFERENCE_RECV_TABLE( DT_NEORules ),
+		RecvPropDataTable( "neo_gamerules_data", 0, 0,	
+			&REFERENCE_RECV_TABLE( DT_NEORules ), 
 			RecvProxy_NEORules )
 	END_RECV_TABLE()
 #else
@@ -1264,6 +1279,13 @@ void CNEORules::Think(void)
 		{
 			if (m_bGotMatchWinner)
 			{
+				IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+				if (event)
+				{
+					event->SetInt("winner", m_iMatchWinner);
+					gameeventmanager->FireEvent(event);
+				}
+
 				if (sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
 				{
 					ResetMapSessionCommon();
@@ -1793,6 +1815,9 @@ float CNEORules::MirrorDamageMultiplier() const
 
 void CNEORules::FireGameEvent(IGameEvent* event)
 {
+#ifdef GAME_DLL
+	static bool isServerRecording = false;
+#endif // GAME_DLL
 	const char *type = event->GetName();
 
 	if (Q_strcmp(type, "round_start") == 0)
@@ -1803,24 +1828,32 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 
 		if (!engine->IsRecordingDemo() && sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
-			StartAutoClientRecording();
+			StartAutoRecording();
 		}
 #endif
 #ifdef GAME_DLL
 		m_flNeoRoundStartTime = gpGlobals->curtime;
 		m_flNeoNextRoundStartTime = 0;
+		if (sv_neo_server_autorecord.GetBool() && !isServerRecording)
+		{
+			isServerRecording = StartAutoRecording();
+		}
 #endif
 	}
 
-#ifdef CLIENT_DLL
 	if (Q_strcmp(type, "game_end") == 0)
 	{
+#ifdef CLIENT_DLL
 		if (sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
 		{
 			engine->StopDemoRecording();
 		}
-	}
 #endif
+#ifdef GAME_DLL
+		engine->ServerCommand("tv_stoprecord;");
+		isServerRecording = false;
+#endif // GAME_DLL
+	}
 }
 
 #ifdef GAME_DLL
@@ -3767,16 +3800,8 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 							(team == TEAM_JINRAI ? "NSF" : "Jinrai"), (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 	}
 
-	if (gotMatchWinner)
-	{
-		IGameEvent *event = gameeventmanager->CreateEvent("game_end");
-		if (event)
-		{
-			event->SetInt("winner", team);
-			gameeventmanager->FireEvent(event);
-		}
-	}
 	m_bGotMatchWinner = gotMatchWinner;
+	m_iMatchWinner = team;
 }
 #endif
 
@@ -4803,3 +4828,68 @@ void CNEORules::InitDefaultAIRelationships( void )
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
 }
 #endif
+
+#ifdef CLIENT_DLL
+auto spectateChecks = []() {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg("%s: HLTV Camera is PVS locked\n", __FUNCTION__);
+		return false;
+	}
+
+	C_NEO_Player* pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pNeoPlayer || !pNeoPlayer->IsObserver())
+		return false;
+
+	return true;
+
+};
+
+CON_COMMAND_F( spec_last_hurt, "Spectate the last hurt player", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_HURT) : engine->ClientCmd(VarArgs("spectate_last_hurt"));
+}
+
+CON_COMMAND_F( spec_last_shooter, "Spectate the last shooter", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_SHOOTER) : engine->ClientCmd(VarArgs("spectate_last_shooter"));
+}
+
+CON_COMMAND_F( spec_last_event, "Spectate the last attacker, killer or ghoster", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_EVENT) : engine->ClientCmd(VarArgs("spectate_last_event"));
+}
+
+CON_COMMAND_F( spec_last_attacker, "Spectate the last attacker", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_ATTACKER) : engine->ClientCmd(VarArgs("spectate_last_attacker"));
+}
+
+CON_COMMAND_F( spec_last_killer, "Spectate the last killer", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_KILLER) : engine->ClientCmd(VarArgs("spectate_last_killer"));
+}
+
+CON_COMMAND_F( spec_last_ghoster, "Spectate the last ghoster", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (!spectateChecks())
+		return;
+
+	engine->IsHLTV() ? HLTVCamera()->SpectateEvent(NEO_SPECTATE_EVENT_LAST_GHOSTER) : engine->ClientCmd(VarArgs("spectate_last_ghoster"));
+}
+#endif // CLIENT_DLL

@@ -168,9 +168,14 @@ bool CHudCrosshair::ShouldDraw( void )
 		{
 		case OBS_MODE_IN_EYE:
 			player = ToNEOPlayer(player->GetObserverTarget());
+			if (engine->IsHLTV() && player && player->IsObserver())
+			{ // HLTV can spectate other spectators (and doesn't switch away from dead players by default)
+				return false;
+			}
 			break;
-		case OBS_MODE_ROAMING:
-			return cl_observercrosshair.GetBool();
+			// NEO NOTE (Adam) technically cl_observercrosshair should allow us to see a crosshair when roaming, but we're early returning in the draw function anyway if we dont have a valid target so 
+			// I removed the OBS_MODE_ROAMING clause here so stv demo watchers, who still have an observer target even when roaming, dont see a crosshair when normal spectators watching live dont.
+			// NEO TODO Fix cl_observercrosshair for both
 		default:
 			return false;
 		}

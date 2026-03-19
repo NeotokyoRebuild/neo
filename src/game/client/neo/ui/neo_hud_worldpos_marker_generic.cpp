@@ -7,7 +7,6 @@
 #include "neo_gamerules.h"
 
 extern ConVar neo_ghost_cap_point_hud_scale_factor;
-extern ConVar cl_neo_hud_center_ghost_cap_size;
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR( WorldPosMarker_Generic, 0 )
 
@@ -52,9 +51,6 @@ void CNEOHud_WorldPosMarker_Generic::ApplySchemeSettings( vgui::IScheme *pScheme
 
 	vgui::surface()->GetScreenSize(m_iPosX, m_iPosY);
 	SetBounds(0, 0, m_iPosX, m_iPosY);
-
-	const int widerAxis = max(m_viewWidth, m_viewHeight);
-	m_viewCentreSize = widerAxis * (cl_neo_hud_center_ghost_cap_size.GetFloat() / 100.0f);
 }
 
 void CNEOHud_WorldPosMarker_Generic::UpdateStateForNeoHudElementDraw()

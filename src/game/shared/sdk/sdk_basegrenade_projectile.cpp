@@ -14,6 +14,8 @@ float GetCurrentGravity( void );
 
 #ifndef NEO
 	#include "c_sdk_player.h"
+#else
+#include "neo_gamerules.h"
 #endif // NEO
 #else
 
@@ -42,7 +44,14 @@ BEGIN_NETWORK_TABLE( CBaseGrenadeProjectile, DT_BaseGrenadeProjectile )
 END_NETWORK_TABLE()
 
 
+#ifdef NEO
+ConVar sv_neo_grenade_show_path("sv_neo_grenade_show_path", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Whether to show a grenade's path to all players, and for how long", true, 0, true, 15.f);
+#endif // NEO
 #ifdef CLIENT_DLL
+#ifdef NEO
+// We're not clearing the debug overlay atm, make sure this is very short
+ConVar cl_neo_grenade_show_path("cl_neo_grenade_show_path", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Whether to show a grenade's path when spectating, and for how long", true, 0, true, 2.f);
+#endif // NEO
 
 
 	void CBaseGrenadeProjectile::PostDataUpdate( DataUpdateType_t type )
@@ -127,6 +136,48 @@ END_NETWORK_TABLE()
 		{
 			SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 		}
+		if (cl_neo_grenade_show_path.GetBool() || sv_neo_grenade_show_path.GetBool())
+		{
+			DrawPath();
+			SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+		}
+	}
+	
+	void CBaseGrenadeProjectile::DrawPath()
+	{
+		CBasePlayer *player = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+		if ( player == NULL )
+			return;
+
+		const bool showPathInSpec = cl_neo_grenade_show_path.GetBool() && player->GetTeamNumber() == TEAM_SPECTATOR;
+		const bool showPathWhenServerEnabled = sv_neo_grenade_show_path.GetBool();
+		if (!showPathInSpec && !showPathWhenServerEnabled)
+			return;
+
+		const Vector origin = GetAbsOrigin();
+		if (!m_vLastDrawPosition.IsValid())
+		{
+			m_vLastDrawPosition = origin;
+			return;
+		}
+
+		if (m_vLastDrawPosition.DistToSqr(origin) < 0.1f)
+			return;
+
+		float r = 0, g = 0, b = 0;
+		NEORules()->GetTeamGlowColor(GetTeamNumber(), r, g, b);
+		r *= 255;
+		g *= 255;
+		b *= 255;
+		if (GetDamage())
+		{
+			const float timeAlive = (gpGlobals->curtime - m_flNeoCreateTime) * 0.5f;
+			r = clamp(r * (1 - timeAlive) + (255.f * timeAlive), 0.f, 255.f);
+			g = clamp(g * (1 - timeAlive), 0.f, 255.f);
+			b = clamp(b * (1 - timeAlive), 0.f, 255.f);
+		}
+		DebugDrawLine(m_vLastDrawPosition, origin, r, g, b, true, showPathWhenServerEnabled ? sv_neo_grenade_show_path.GetFloat() : cl_neo_grenade_show_path.GetFloat());
+		m_vLastDrawPosition = origin;
 	}
 #endif // NEO
 
@@ -142,6 +193,15 @@ END_NETWORK_TABLE()
 
 		// smaller, cube bounding box so we rest on the ground
 		SetSize( Vector ( -2, -2, -2 ), Vector ( 2, 2, 2 ) );
+
+		if (sv_neo_grenade_show_path.GetBool())
+		{ // Transmit the grenade to all players so they can see the path outside their pvs
+			SetTransmitState(FL_EDICT_ALWAYS);
+		}
+		else
+		{ // Spectators will still want to see the grenade if they have cl_neo_grenade_show_path set
+			SetTransmitState(FL_EDICT_FULLCHECK);
+		}
 	}
 
 	void CBaseGrenadeProjectile::DangerSoundThink( void )
