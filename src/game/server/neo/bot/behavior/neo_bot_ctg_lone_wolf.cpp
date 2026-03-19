@@ -267,9 +267,9 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 			
 			if ( flDistToGhostSq < flAmbushDistSq)
 			{
-				if ( !bSafeToCap && me->Weapon_OwnsThisType("weapon_remotedet") )
+				if ( !bSafeToCap )
 				{
-					return ChangeTo(new CNEOBotCtgLoneWolfAmbush(), "Setting up detpack ambush at ghost");
+					return ChangeTo(new CNEOBotCtgLoneWolfAmbush(), "Ambushing near the ghost during stalemate");
 				}
 				else
 				{
