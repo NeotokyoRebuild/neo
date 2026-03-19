@@ -50,7 +50,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::OnStart( CNEOBot *me, Action< 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float interval )
 {
-	if ( !UpdateGhostHandle( me ) )
+	if ( !GetGhost() )
 	{
 		return Done( "Ghost not found" );
 	}
@@ -63,7 +63,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 	// For now, assume the bot is forgetful of exact detpack deploy location and uses ghost beacon as reference
 	// We could trace line of sight to the detpack, but most of the time bot is hiding around a corner
 	// Players could move ghost by shooting it, but ideally the bot would investigate the gunshot sources
-	Vector myVecDetpackPosChoice = m_hGhost->GetAbsOrigin(); // ghost can be moved
+	Vector myVecDetpackPosChoice = GetGhostPosition( me ); // ghost can be moved
 	float myDistToDetpackPosChoiceSq = me->GetAbsOrigin().DistToSqr( myVecDetpackPosChoice );
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
@@ -111,7 +111,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 		// Move closer to ghost
 		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
 		{
-			CNEOBotPathCompute( me, m_path, m_hGhost->GetAbsOrigin(), FASTEST_ROUTE );
+			CNEOBotPathCompute( me, m_path, GetGhostPosition( me ), FASTEST_ROUTE );
 			m_path.Update( me );
 			m_repathTimer.Start( 0.5f );
 
@@ -127,9 +127,9 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 	else if ( me->IsCarryingGhost() )
 	{
 		// Drop ghost if accidentally picked it up and have set up ambush/detpack
-		if (me->GetActiveWeapon() != m_hGhost )
+		if (me->GetActiveWeapon() != GetGhost() )
 		{
-			me->Weapon_Switch( m_hGhost );
+			me->Weapon_Switch( GetGhost() );
 		}
 		else
 		{
@@ -198,7 +198,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 
 	// Detpack trigger condition checks
 	bool bShouldDetonate = false;
-	CBaseCombatCharacter *pGhostOwner = m_hGhost ? m_hGhost->GetOwner() : nullptr;
+	CBaseCombatCharacter *pGhostOwner = GetGhost() ? GetGhost()->GetOwner() : nullptr;
 
 	if (!bIsDetpackDeployed)
 	{
@@ -285,7 +285,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 				}
 
 				// Check if the sound happened within the detpack radius around the ghost
-				float distSqr = pSound->GetSoundOrigin().DistToSqr( m_hGhost->GetAbsOrigin() );
+				float distSqr = pSound->GetSoundOrigin().DistToSqr( GetGhostPosition( me ) );
 				if ( distSqr <= Square( NEO_DETPACK_DAMAGE_RADIUS * flThreshold ) )
 				{
 					bTriggerDetpack = true;

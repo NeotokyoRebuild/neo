@@ -17,7 +17,6 @@
 //---------------------------------------------------------------------------------------------
 CNEOBotCtgLoneWolf::CNEOBotCtgLoneWolf( void )
 {
-	m_hGhost = nullptr;
 	m_bPursuingDropThreat = false;
 	m_vecDropThreatPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 	m_closestCapturePoint = CNEO_Player::VECTOR_INVALID_WAYPOINT;
@@ -26,7 +25,6 @@ CNEOBotCtgLoneWolf::CNEOBotCtgLoneWolf( void )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
-	m_hGhost = nullptr;
 	m_hPursueTarget = nullptr;
 	m_bPursuingDropThreat = false;
 	m_useAttemptTimer.Invalidate();
@@ -84,7 +82,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	}
 
 	// Always need to find the ghost to act on it
-	if ( !UpdateGhostHandle( me ) )
+	if ( !GetGhost() )
 	{
 		return Done( "Ghost not found" );
 	}
@@ -99,7 +97,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	float flDistGhostToGoal = FLT_MAX;
 	if ( m_closestCapturePoint != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
-		const Vector& vecStart = me->IsCarryingGhost() ? me->GetAbsOrigin() : m_hGhost->GetAbsOrigin();
+		const Vector& vecStart = GetGhostPosition( me );
 		flDistGhostToGoal = vecStart.DistTo( m_closestCapturePoint );
 	}
 
@@ -112,7 +110,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	float flMyTotalDist = flDistGhostToGoal; 
 	if ( !me->IsCarryingGhost() )
 	{
-		flMyTotalDist += me->GetAbsOrigin().DistTo( m_hGhost->GetAbsOrigin() );
+		flMyTotalDist += me->GetAbsOrigin().DistTo( GetGhostPosition( me ) );
 	}
 
 	// Count enemies and find if one is closer to our goal
@@ -150,7 +148,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	
 	bool bSafeToCap = ((m_closestCapturePoint != CNEO_Player::VECTOR_INVALID_WAYPOINT) && (flMyTotalDistSq < flClosestEnemyDistToGoalSq));
 	
-	CWeaponGhost *pGhostWeapon = m_hGhost.Get();
+	CWeaponGhost *pGhostWeapon = GetGhost();
 	CBaseCombatCharacter *pGhostOwner = pGhostWeapon ? pGhostWeapon->GetOwner() : nullptr;
 	bool bGhostHeldByEnemy = (pGhostOwner && pGhostOwner->GetTeamNumber() != me->GetTeamNumber());
 
@@ -249,7 +247,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 
 		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
 		{
-			CNEOBotPathCompute(me, m_path, m_hGhost->GetAbsOrigin(), FASTEST_ROUTE);
+			CNEOBotPathCompute(me, m_path, GetGhostPosition( me ), FASTEST_ROUTE);
 			m_path.Update(me);
 			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
 		}
@@ -264,7 +262,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 		// Ghost is free for taking
 		if ( bSafeToCap || (bIs1v1 && m_stalemateTimer.HasStarted() && m_stalemateTimer.IsElapsed()) )
 		{
-			float flDistToGhostSq = me->GetAbsOrigin().DistToSqr(m_hGhost->GetAbsOrigin());
+			float flDistToGhostSq = me->GetAbsOrigin().DistToSqr(GetGhostPosition( me ));
 			float flAmbushDistSq = CNEOBotCtgLoneWolf::GetDetpackDeployDistanceSq( me );
 			
 			if ( flDistToGhostSq < flAmbushDistSq)
@@ -276,13 +274,13 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 				else
 				{
 					// Try to cap before enemy can stop us.
-					return SuspendFor(new CNEOBotCtgCapture(m_hGhost.Get()), "Picking up ghost to make a run for it!");
+					return SuspendFor(new CNEOBotCtgCapture(GetGhost()), "Picking up ghost to make a run for it!");
 				}
 			}
 			
 			if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
 			{
-				CNEOBotPathCompute(me, m_path, m_hGhost->GetAbsOrigin(), FASTEST_ROUTE);
+				CNEOBotPathCompute(me, m_path, GetGhostPosition( me ), FASTEST_ROUTE);
 				m_path.Update(me);
 				m_repathTimer.Start( RandomFloat( 0.2f, 0.5f ) );
 			}
@@ -303,7 +301,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 			}
 
 			// Hide out of sight of ghost to ambush anyone that picks up the ghost
-			float flDistToGhostSq = me->GetAbsOrigin().DistToSqr(m_hGhost->GetAbsOrigin());
+			float flDistToGhostSq = me->GetAbsOrigin().DistToSqr(GetGhostPosition( me ));
 			float flAmbushDistSq = CNEOBotCtgLoneWolf::GetDetpackDeployDistanceSq( me );
 			if (flDistToGhostSq < flAmbushDistSq)
 			{
@@ -314,7 +312,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 				// Get near the ghost first before surveying hiding spots
 				if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
 				{
-					CNEOBotPathCompute(me, m_path, m_hGhost->GetAbsOrigin(), FASTEST_ROUTE);
+					CNEOBotPathCompute(me, m_path, GetGhostPosition( me ), FASTEST_ROUTE);
 					m_path.Update(me);
 					m_repathTimer.Start( RandomFloat( 0.5f, 1.0f ) );
 				}
@@ -391,7 +389,7 @@ Vector CNEOBotCtgLoneWolf::GetNearestCapturePoint( CNEOBot *me, bool bEnemyCapPo
 	
 	if ( NEORules()->m_pGhostCaps.Count() > 0 )
 	{
-		const Vector& vecStart = me->IsCarryingGhost() ? me->GetAbsOrigin() : ( m_hGhost.Get() ? m_hGhost->GetAbsOrigin() : me->GetAbsOrigin() );
+		const Vector& vecStart = GetGhostPosition( me );
 		
 		for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
 		{
@@ -446,14 +444,31 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------
-bool CNEOBotCtgLoneWolf::UpdateGhostHandle( CNEOBot *me )
+Vector CNEOBotCtgLoneWolf::GetGhostPosition( CNEOBot *me )
 {
-	if ( !m_hGhost )
+	if ( me->IsCarryingGhost() )
 	{
-		m_hGhost = dynamic_cast<CWeaponGhost*>( gEntList.FindEntityByClassname( nullptr, "weapon_ghost" ) );
+		return me->GetAbsOrigin();
 	}
 
-	return ( m_hGhost != nullptr );
+	CWeaponGhost *pGhost = GetGhost();
+	if ( pGhost )
+	{
+		CBaseEntity *pParent = pGhost->GetMoveParent();
+		if ( pParent )
+		{
+			return pParent->GetAbsOrigin();
+		}
+		return pGhost->GetAbsOrigin();
+	}
+
+	return me->GetAbsOrigin();
+}
+
+//---------------------------------------------------------------------------------------------
+CWeaponGhost* CNEOBotCtgLoneWolf::GetGhost()
+{
+	return NEORules()->m_pGhost;
 }
 
 //---------------------------------------------------------------------------------------------
