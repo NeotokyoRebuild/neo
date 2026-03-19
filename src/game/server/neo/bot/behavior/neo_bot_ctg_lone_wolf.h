@@ -6,7 +6,7 @@
 class CNEOBotCtgLoneWolf : public Action< CNEOBot >
 {
 public:
-	CNEOBotCtgLoneWolf( void );
+	CNEOBotCtgLoneWolf( void ) = default;
 
 	virtual ActionResult< CNEOBot > OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot > Update( CNEOBot *me, float interval ) override;
@@ -14,33 +14,15 @@ public:
 	virtual ActionResult< CNEOBot > OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
 
 	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me ) override;
-	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path ) override;
-	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason ) override;
 
 	virtual const char *GetName( void ) const override { return "ctgLoneWolf"; }
 
 protected:
-	static float GetDetpackDeployDistanceSq( CNEOBot *me );
-	Vector GetNearestCapturePoint( CNEOBot *me, bool bEnemyCapPoint );
-	Vector GetGhostPosition( CNEOBot *me );
-	CWeaponGhost* GetGhost();
-	ActionResult< CNEOBot > UpdateLookAround( CNEOBot *me );
+	virtual ActionResult< CNEOBot > ConsiderGhostInterception( CNEOBot *me, const CBaseCombatCharacter *pGhostOwner = nullptr );
+	virtual ActionResult< CNEOBot > ConsiderGhostVisualCheck( CNEOBot *me );
+
+	Vector GetNearestEnemyCapPoint( CNEOBot *me );
 
 	CountdownTimer m_repathTimer;
 	PathFollower m_path;
-
-private:
-	bool m_bPursuingDropThreat;
-
-	CHandle<CBaseEntity> m_hPursueTarget;
-
-	CountdownTimer m_capPointUpdateTimer;
-	CountdownTimer m_lookAroundTimer;
-	CountdownTimer m_stalemateTimer;
-	CountdownTimer m_useAttemptTimer;
-
-	CUtlVector< CNavArea * > m_visibleAreas;
-
-	Vector m_closestCapturePoint;
-	Vector m_vecDropThreatPos;
 };

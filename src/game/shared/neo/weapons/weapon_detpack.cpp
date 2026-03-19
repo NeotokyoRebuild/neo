@@ -308,7 +308,7 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 
 	// Notify bots after pressing keypad since reacting immediately to press fire is unforgiving
 	// especially since the sound clip has some silence at the beginning
-	CSoundEnt::InsertSound(SOUND_COMBAT, pPlayer->GetAbsOrigin(), SOUNDENT_VOLUME_EMPTY, 0.2, pPlayer, SOUNDENT_CHANNEL_WEAPON);
+	CSoundEnt::InsertSound( SOUND_COMBAT, pPlayer->GetAbsOrigin(), 256, 0.2, pPlayer, SOUNDENT_CHANNEL_WEAPON );
 #endif
 	if (GetOwner()->IsPlayer()) // NEO NOTE (Adam) if else taken from CBaseCombatWeapon::Equip, this must be what was fixing the viewmodel previously after dropping and picking up the detremote
 	{

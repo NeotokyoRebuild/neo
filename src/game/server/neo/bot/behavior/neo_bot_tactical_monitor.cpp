@@ -8,6 +8,7 @@
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_manager.h"
 
+#include "bot/behavior/neo_bot_detpack_trigger.h"
 #include "bot/behavior/neo_bot_tactical_monitor.h"
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
@@ -25,6 +26,9 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 #include "neo/neo_player_shared.h"
+#include "neo_detpack.h"
+#include "weapon_detpack.h"
+#include "weapon_ghost.h"
 #include "nav_mesh.h"
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
@@ -68,6 +72,122 @@ Action< CNEOBot > *CNEOBotTacticalMonitor::InitialContainedAction( CNEOBot *me )
 //-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	return Continue();
+}
+
+
+//-----------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotTacticalMonitor::MonitorArmedDetpack( CNEOBot *me )
+{
+	if ( !m_detpackCheckTimer.IsElapsed() )
+	{
+		return Continue();
+	}
+	m_detpackCheckTimer.Start( 0.2f );
+
+	CWeaponDetpack *pDetWeapon = assert_cast<CWeaponDetpack*>( me->Weapon_OwnsThisType( "weapon_remotedet" ) );
+	if ( !pDetWeapon || !pDetWeapon->m_bThisDetpackHasBeenThrown || pDetWeapon->m_bRemoteHasBeenTriggered )
+	{
+		return Continue();
+	}
+
+	CBaseEntity *pDetpackEnt = pDetWeapon->GetDetpackEntity();
+	if ( !pDetpackEnt )
+	{
+		return Continue();
+	}
+
+	const Vector vecDetpackPos = pDetpackEnt->GetAbsOrigin();
+
+	// Check if I am too close to the detpack
+	if ( me->GetAbsOrigin().DistToSqr( vecDetpackPos ) <= Square( NEO_DETPACK_DAMAGE_RADIUS ) )
+	{
+		return Continue();
+	}
+
+	float flThresholdMultiplier;
+	switch ( me->GetDifficulty() )
+	{
+	case CNEOBot::EASY:
+		flThresholdMultiplier = 1.05f;
+		break;
+	case CNEOBot::NORMAL:
+		flThresholdMultiplier = 0.95f;
+		break;
+	case CNEOBot::HARD:
+		flThresholdMultiplier = 0.85f;
+		break;
+	case CNEOBot::EXPERT:
+		flThresholdMultiplier = 0.75f;
+		break;
+	default:
+		flThresholdMultiplier = 0.95f;
+		break;
+	}
+
+	const float flMaxRadiusSq = Square( NEO_DETPACK_DAMAGE_RADIUS * flThresholdMultiplier );
+	bool bShouldDetonate = false;
+
+	// Check if any known threat or teammate is in range
+	CUtlVector< CKnownEntity > knownVector;
+	me->GetVisionInterface()->CollectKnownEntities( &knownVector );
+	bool bIsTeamplay = NEORules()->IsTeamplay();
+
+	for ( int i = 0; i < knownVector.Count(); ++i )
+	{
+		if ( knownVector[i].IsObsolete() )
+		{
+			continue;
+		}
+
+		CBaseEntity *pEntity = knownVector[i].GetEntity();
+		if ( !pEntity )
+		{
+			continue;
+		}
+
+		if ( vecDetpackPos.DistToSqr( knownVector[i].GetLastKnownPosition() ) <= flMaxRadiusSq )
+		{
+			if ( bIsTeamplay && me->InSameTeam( pEntity ) )
+			{
+				// Teammate in blast radius
+				return Continue();
+			}
+
+			// Enemy in range.
+			bShouldDetonate = true;
+		}
+	}
+
+	// Check if ghost carrier is in range
+	if ( !bShouldDetonate )
+	{
+		if ( CWeaponGhost *pGhost = NEORules()->m_pGhost )
+		{
+			CBaseCombatCharacter *pGhostOwner = pGhost->GetOwner();
+			if ( pGhostOwner && !me->InSameTeam( pGhostOwner ) )
+			{
+				if ( vecDetpackPos.DistToSqr( pGhostOwner->GetAbsOrigin() ) <= flMaxRadiusSq )
+				{
+					bShouldDetonate = true;
+				}
+			}
+		}
+	}
+
+	if ( !bShouldDetonate )
+	{
+		if ( me->GetAudibleEnemySoundPos( vecDetpackPos, flMaxRadiusSq ) != CNEO_Player::VECTOR_INVALID_WAYPOINT )
+		{
+			bShouldDetonate = true;
+		}
+	}
+
+	if ( bShouldDetonate )
+	{
+		return SuspendFor( new CNEOBotDetpackTrigger(), "Triggering detpack!" );
+	}
+
 	return Continue();
 }
 
@@ -292,6 +412,12 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		}
 	}
 #endif
+
+	ActionResult< CNEOBot > detpackResult = MonitorArmedDetpack( me );
+	if ( detpackResult.IsRequestingChange() )
+	{
+		return detpackResult;
+	}
 
 #if 0 // NEO TODO (Adam) detonate remote detpacks
 	// detonate sticky bomb traps when victims are near

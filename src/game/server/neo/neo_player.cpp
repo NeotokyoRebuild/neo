@@ -1225,7 +1225,7 @@ void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 		m_botThermOpticCamoDisruptedTimer.Start(0.2f);
 	}
 
-	// Cloak activation is intentionally loud; bots investigate this as a combat sound.
+	// For bots to notice cloak sound
 	CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), 600, 0.2, this);
 }
 
@@ -2810,8 +2810,8 @@ void CNEO_Player::PickupObject( CBaseEntity *pObject,
 void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 	surfacedata_t *psurface, float fvol, bool force )
 {
-	// Bots in ambush behavior pay more attention to player sounds
-	CSoundEnt::InsertSound(SOUND_PLAYER, GetAbsOrigin(), 300, 0.2, this);
+	// For bots to hear footsteps
+	CSoundEnt::InsertSound(SOUND_PLAYER, GetAbsOrigin(), 150, 0.1, this);
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 

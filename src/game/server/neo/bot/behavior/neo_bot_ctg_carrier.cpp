@@ -4,6 +4,7 @@
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/neo_bot_path_compute.h"
+#include "nav_mesh.h"
 #include "neo_gamerules.h"
 #include "neo_ghost_cap_point.h"
 #include "debugoverlay_shared.h"
@@ -368,9 +369,26 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 	m_teammates.RemoveAll();
 	CollectPlayers( me, &m_teammates );
 
+	// Check if bot should transition into lone wolf behavior
 	if ( m_teammates.Count() == 0 )
 	{
-		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one!" );
+		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
+		if ( threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
+		{
+			CNavArea *destArea = TheNavMesh->GetNearestNavArea( m_closestCapturePoint );
+			CNavArea *myArea = me->GetLastKnownArea();
+
+			if ( !destArea || !myArea || !destArea->IsPotentiallyVisible( myArea ) )
+			{
+				return SuspendFor( new CNEOBotCtgLoneWolf, "Last one standing and blocked from capturing!" );
+			}
+		}
+
+		// Lone wolf will drop the ghost and go into enemy seeking behavior
+		if ( m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+		{
+			return SuspendFor( new CNEOBotCtgLoneWolf, "Looking for enemy since there is no capture point" );
+		}
 	}
 
 	UpdateFollowPath( me, m_teammates );
