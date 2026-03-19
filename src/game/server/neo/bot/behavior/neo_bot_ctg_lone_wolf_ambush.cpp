@@ -44,6 +44,12 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::OnStart( CNEOBot *me, Action< 
 	m_repathTimer.Invalidate();
 	m_ambushExpirationTimer.Start( RandomFloat( 30.0f, 90.0f ) );
 
+	if ( !m_hDetpackWeapon )
+	{
+		// Don't need to plant detpack
+		m_path.Invalidate();
+	}
+
 	return Continue();
 }
 
