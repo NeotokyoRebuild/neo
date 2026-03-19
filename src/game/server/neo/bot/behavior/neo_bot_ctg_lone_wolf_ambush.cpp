@@ -2,53 +2,26 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_ambush.h"
+#include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
+#include "nav_mesh.h"
 #include "neo_detpack.h"
 #include "neo_gamerules.h"
-#include "neo_ghost_cap_point.h"
 #include "neo_player.h"
-#include "soundent.h"
 #include "weapon_detpack.h"
-
-//---------------------------------------------------------------------------------------------
-bool CNEOBotCtgLoneWolfAmbush::CanBotHearPosition( CNEOBot *me, const Vector &pos )
-{
-	CPASFilter filter( pos );
-	for ( int i = 0; i < filter.GetRecipientCount(); ++i )
-	{
-		// Is bot in recipient list?
-		if ( filter.GetRecipientIndex( i ) == me->entindex() )
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-//---------------------------------------------------------------------------------------------
-void CNEOBotCtgLoneWolfAmbush::EquipDetpackIfOwned( CNEOBot *me )
-{
-	if ( m_hDetpackWeapon && me->GetActiveWeapon() != m_hDetpackWeapon )
-	{
-		me->Weapon_Switch( m_hDetpackWeapon );
-	}
-}
+#include "weapon_ghost.h"
 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
-	m_bInvestigatingGunfire = false;
-	m_vecAmbushHidingSpot = CNEO_Player::VECTOR_INVALID_WAYPOINT;
-	m_hDetpackWeapon = assert_cast<CWeaponDetpack*>( me->Weapon_OwnsThisType( "weapon_remotedet" ) );
+	BaseClass::OnStart( me, priorAction );
+	m_lookAroundTimer.Invalidate();
+	m_vecAmbushGoal = GetNearestEnemyCapPoint( me );
 
-	m_repathTimer.Invalidate();
-	m_ambushExpirationTimer.Start( RandomFloat( 30.0f, 90.0f ) );
-
-	if ( !m_hDetpackWeapon )
-	{
-		// Don't need to plant detpack
-		m_path.Invalidate();
-	}
+	m_bIs1v1 = false;
+	m_1v1Timer.Invalidate();
+	m_1v1TransitionTimer.Start( RandomFloat( 5.0f, 30.0f ) );
 
 	return Continue();
 }
@@ -56,298 +29,247 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::OnStart( CNEOBot *me, Action< 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float interval )
 {
-	if ( !GetGhost() )
+	CWeaponGhost *pGhost = NEORules()->m_pGhost;
+	if ( !pGhost )
 	{
 		return Done( "Ghost not found" );
 	}
-	
-	if ( m_ambushExpirationTimer.HasStarted() && m_ambushExpirationTimer.IsElapsed() )
+
+	if ( me->DropGhost() )
 	{
-		return Done( "Ran out of patience waiting at ambush" );
+		return Continue(); // ghost drop in progress
 	}
 
-	// For now, assume the bot is forgetful of exact detpack deploy location and uses ghost beacon as reference
-	// We could trace line of sight to the detpack, but most of the time bot is hiding around a corner
-	// Players could move ghost by shooting it, but ideally the bot would investigate the gunshot sources
-	Vector myVecDetpackPosChoice = GetGhostPosition( me ); // ghost can be moved
-	float myDistToDetpackPosChoiceSq = me->GetAbsOrigin().DistToSqr( myVecDetpackPosChoice );
+	const CBaseCombatCharacter *const pGhostOwner = pGhost->GetOwner();
+	ActionResult< CNEOBot > ghostAction = ConsiderGhostInterception( me, pGhostOwner );
+	if ( !ghostAction.IsContinue() )
+	{
+		return ghostAction;
+	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
 	if ( threat && threat->GetEntity() )
 	{
-		if ( m_hDetpackWeapon && (me->GetActiveWeapon() == m_hDetpackWeapon)
-			&& (m_hDetpackWeapon->m_bThisDetpackHasBeenThrown)
-			&& (myDistToDetpackPosChoiceSq > Square(NEO_DETPACK_DAMAGE_RADIUS)) )
-		{
-			// Detonate detpack in case enemy's friend is grabbing the ghost
-			// or simply as a distraction
-			me->PressFireButton();
-		}
 		return ChangeTo( new CNEOBotAttack(), "Engaging enemy from ambush" );
 	}
 
-	// Consider setting up detpack ambush
-	bool bIsDetpackDeployed = m_hDetpackWeapon && m_hDetpackWeapon->m_bThisDetpackHasBeenThrown && !m_hDetpackWeapon->m_bRemoteHasBeenTriggered;
-	if ( m_hDetpackWeapon && !bIsDetpackDeployed )
+	if ( !threat && me->GetActiveWeapon() )
 	{
-		// Close enough to ghost to place it?
-		float flStartArmingDistSq = GetDetpackDeployDistanceSq( me );
+		// Aggressively reload due to lack of backup
+		me->ReloadIfLowClip(true); // force reload true
+	}
 
-		if ( myDistToDetpackPosChoiceSq < flStartArmingDistSq )
+	if ( pGhostOwner && !me->InSameTeam( pGhostOwner ) )
+	{
+		if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
 		{
-			if ( m_hDetpackWeapon && me->GetActiveWeapon() != m_hDetpackWeapon )
-			{
-				EquipDetpackIfOwned( me );
-			}
-			else
-			{
-				// Start arming
-				me->PressFireButton();
-				// Reset patience since just set trap
-				m_ambushExpirationTimer.Start( RandomFloat( 30.0f, 60.0f ) );
-
-				// Reduce movement jitter
-				if (myDistToDetpackPosChoiceSq < Square(64.0f))
-				{
-					m_path.Invalidate();
-				}
-			}
+			DevMsg( "Lone Wolf Ambush: Intercepting enemy ghost carrier\n" );
 		}
-		
-		// Move closer to ghost
-		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
-		{
-			CNEOBotPathCompute( me, m_path, GetGhostPosition( me ), FASTEST_ROUTE );
-			m_path.Update( me );
-			m_repathTimer.Start( 0.5f );
-
-			// Reset patience timer since actively travelling
-			m_ambushExpirationTimer.Start( RandomFloat( 30.0f, 60.0f ) );
-		}
-		else
-		{
-			m_path.Update( me );
-		}
+		// Don't interrupt enemy chasing with ambush pathing
 		return Continue();
 	}
-	else if ( me->IsCarryingGhost() )
+
+	if ( m_1v1TransitionTimer.IsElapsed() && Is1v1( me ) )
 	{
-		// Drop ghost if accidentally picked it up and have set up ambush/detpack
-		if (me->GetActiveWeapon() != GetGhost() )
+		return ChangeTo( new CNEOBotCtgLoneWolfSeek(), "Searching for other lone wolf" );
+	}
+
+	// Wait far enough from the ghost and out of sight, but not too far away that it's hard to intercept
+	const float flDistToGoalSq = ( m_vecAmbushGoal != CNEO_Player::VECTOR_INVALID_WAYPOINT ) ? me->GetAbsOrigin().DistToSqr( m_vecAmbushGoal ) : FLT_MAX;
+	const Vector vecGhostPos = NEORules()->GetGhostPos();
+	const float flDistToGhostSq = me->GetAbsOrigin().DistToSqr( vecGhostPos );
+
+	bool bShouldHoldPosition = ( flDistToGoalSq < Square( 200.0f ) );
+	if ( !bShouldHoldPosition )
+	{
+		const float flMinSafeDistSq = Square( NEO_DETPACK_DAMAGE_RADIUS * 2.0f );
+		const float flMaxLurkDistSq = Square( NEO_DETPACK_DAMAGE_RADIUS * 3.0f );
+
+		if ( flDistToGhostSq > flMinSafeDistSq && flDistToGhostSq < flMaxLurkDistSq )
 		{
-			me->Weapon_Switch( GetGhost() );
-		}
-		else
-		{
-			me->PressDropButton();
+			CNavArea *ghostArea = TheNavMesh->GetNearestNavArea( vecGhostPos );
+			CNavArea *myArea = me->GetLastKnownArea();
+			bShouldHoldPosition = ( !ghostArea || !myArea || !myArea->IsPotentiallyVisible( ghostArea ) );
 		}
 	}
 
-	// Investigate gunshots
-	if ( m_bInvestigatingGunfire )
+	// Wait here in ambush by invalidating path to nearest enemy cap zone
+	if ( bShouldHoldPosition )
 	{
-		if ( me->GetAbsOrigin().DistToSqr( m_vecAmbushHidingSpot ) < Square( 100.0f ) )
+		if ( m_path.IsValid() && me->IsDebugging( NEXTBOT_BEHAVIOR ) )
 		{
-			// Didn't find source of gunshots, reconsidering ambush
-			m_bInvestigatingGunfire = false;
-			m_vecAmbushHidingSpot = CNEO_Player::VECTOR_INVALID_WAYPOINT;
+			DevMsg( "Lone Wolf Ambush: Holding position at %f %f %f\n", m_vecAmbushGoal.x, m_vecAmbushGoal.y, m_vecAmbushGoal.z );
 		}
-		else
-		{
-			me->EquipBestWeaponForThreat(threat);
-		}
+		m_path.Invalidate();
+		me->GetLocomotionInterface()->Stop();
+		me->PressCrouchButton( 0.3f );
+		return UpdateLookAround( me );
 	}
 
-	if ( m_vecAmbushHidingSpot == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+	if ( m_vecAmbushGoal == CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
-		m_vecAmbushHidingSpot = GetNearestCapturePoint( me, true );
-
-		if ( m_vecAmbushHidingSpot == CNEO_Player::VECTOR_INVALID_WAYPOINT )
-		{
-			// Rare edge case: No cap points defined on this map?
-			m_vecAmbushHidingSpot = me->GetAbsOrigin();
-		}
+		return Done( "No ambush spot found" );
 	}
 
-	
-	if ( !m_bInvestigatingGunfire && myDistToDetpackPosChoiceSq > Square( NEO_DETPACK_DAMAGE_RADIUS * 2.0f ) &&
-		 !me->GetVisionInterface()->IsLineOfSightClear( myVecDetpackPosChoice ) )
+	if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() || !m_path.IsValid() )
 	{
-		// At a good enough hiding spot
-		if ( m_vecAmbushHidingSpot != me->GetAbsOrigin() )
-		{
-			m_vecAmbushHidingSpot = me->GetAbsOrigin();
-			m_path.Invalidate();
-		}
-	}
-	else if ( me->GetAbsOrigin().DistToSqr(m_vecAmbushHidingSpot) > Square(64.0f) )
-	{
-		// Moving to ambush spot
-		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
-		{
-			CNEOBotPathCompute( me, m_path, m_vecAmbushHidingSpot, SAFEST_ROUTE );
-			m_path.Update( me );
-			m_ambushExpirationTimer.Start( RandomFloat( 30.0f, 60.0f ) );
-			m_repathTimer.Start( 0.5f );
-		}
-		else
-		{
-			m_path.Update( me );
-		}
+		CNEOBotPathCompute( me, m_path, m_vecAmbushGoal, SAFEST_ROUTE );
+		m_path.Update( me );
+		m_repathTimer.Start( RandomFloat( 0.5f, 1.5f ) );
 	}
 	else
 	{
-		// Waiting in place
-		EquipDetpackIfOwned( me );
-		UpdateLookAround( me );
-	}
-
-	// Detpack trigger condition checks
-	bool bShouldDetonate = false;
-	CBaseCombatCharacter *pGhostOwner = GetGhost() ? GetGhost()->GetOwner() : nullptr;
-
-	if (!bIsDetpackDeployed)
-	{
-		return Continue(); // assumes detpack trigger conditions are last
-	}
-	else if ( myDistToDetpackPosChoiceSq < Square( NEO_DETPACK_DAMAGE_RADIUS ) )
-	{
-		return Continue(); // either move away from detpack or engage threat next tick
-	}
-	else if ( pGhostOwner && !me->InSameTeam( pGhostOwner ) )
-	{
-		// Ghost picked up by enemy
-		bShouldDetonate = true;
-	}
-	else if ( gpGlobals->curtime - me->GetLastDamageTime() < 1.0f )
-	{
-		// Panic! Took damage and don't necessarily know where enemy is coming from
-		bShouldDetonate = true;
-	}
-	else
-	{
-		// Listen for activity around the ghost/detpack
-		CSound *pSound = nullptr;
-		for ( int iSound = CSoundEnt::ActiveList(); iSound != SOUNDLIST_EMPTY; iSound = pSound->NextSound() )
-		{
-			pSound = CSoundEnt::SoundPointerForIndex( iSound );
-			if ( !pSound )
-			{
-				break;
-			}
-
-
-			if ( ( pSound->SoundType() & ( SOUND_COMBAT | SOUND_PLAYER ) ) == 0 )
-			{
-				continue;
-			}
-
-			CBaseEntity *pOwner = pSound->m_hOwner.Get();
-
-			// Ignore non-player sounds and sounds we were responsible for
-			if ( !pOwner || !pOwner->IsPlayer() || pOwner == me )
-			{
-				continue;
-			}
-
-			// Only care about sounds from the enemy
-			if ( me->InSameTeam( pOwner ) )
-			{
-				continue;
-			}
-
-			bool bCanHearSound = CanBotHearPosition( me, pSound->GetSoundOrigin() );
-
-			Vector vecShooterOrigin = pOwner->GetAbsOrigin();
-			bool bCanHearShooter = CanBotHearPosition( me, vecShooterOrigin );
-
-			if ( !bCanHearSound && !bCanHearShooter )
-			{
-				continue;
-			}
-
-			bool bTriggerDetpack = false;
-			
-			if ( bCanHearSound )
-			{
-				float flThreshold;
-				switch ( me->GetDifficulty() )
-				{
-				case CNEOBot::EASY:
-					flThreshold = 1.05f;
-					break;
-				case CNEOBot::NORMAL:
-					flThreshold = 0.95f;
-					break;
-				case CNEOBot::HARD:
-					flThreshold = 0.85f;
-					break;
-				case CNEOBot::EXPERT:
-					flThreshold = 0.75f;
-					break;
-				default:
-					flThreshold = 0.95f;
-					break;
-				}
-
-				// Check if the sound happened within the detpack radius around the ghost
-				float distSqr = pSound->GetSoundOrigin().DistToSqr( GetGhostPosition( me ) );
-				if ( distSqr <= Square( NEO_DETPACK_DAMAGE_RADIUS * flThreshold ) )
-				{
-					bTriggerDetpack = true;
-				}
-			}
-
-			if ( bTriggerDetpack )
-			{
-				bShouldDetonate = true;
-				break;
-			}
-			else
-			{
-				if ( m_vecAmbushHidingSpot != vecShooterOrigin )
-				{
-					m_bInvestigatingGunfire = true;
-					m_vecAmbushHidingSpot = vecShooterOrigin;
-					m_path.Invalidate();
-				}
-			}
-		}
-	}
-
-	if ( bShouldDetonate )
-	{
-		m_bInvestigatingGunfire = false;
-		if ( me->GetActiveWeapon() == m_hDetpackWeapon )
-		{
-			me->PressFireButton();
-		}
-		else
-		{
-			EquipDetpackIfOwned( me );
-		}
+		m_path.Update( me );
 	}
 
 	return Continue();
 }
 
 //---------------------------------------------------------------------------------------------
-QueryResultType CNEOBotCtgLoneWolfAmbush::ShouldRetreat( const INextBot *me ) const
+ActionResult<CNEOBot> CNEOBotCtgLoneWolfAmbush::OnSuspend( CNEOBot *me, Action<CNEOBot > *interruptingAction )
 {
-	// Avoid tactical monitor interrupting detpack detonation
-	return ANSWER_NO;
+	m_path.Invalidate();
+	BaseClass::OnSuspend( me, interruptingAction );
+	return Continue();
 }
 
 //---------------------------------------------------------------------------------------------
-ActionResult<CNEOBot> CNEOBotCtgLoneWolfAmbush::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+ActionResult<CNEOBot> CNEOBotCtgLoneWolfAmbush::OnResume( CNEOBot *me, Action<CNEOBot > *interruptingAction )
 {
-	return Done( "OnSuspend: Cancel out of ambush, need to reevaluate situation later" );
-	// OnEnd will get called after Done
+	BaseClass::OnResume( me, interruptingAction );
+	return Continue();
 }
 
 //---------------------------------------------------------------------------------------------
-ActionResult<CNEOBot> CNEOBotCtgLoneWolfAmbush::OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolfAmbush::OnStuck( CNEOBot *me )
 {
-	return Done( "OnResume: Cancel out of ambush, need to reevaluate situation later" );
-	// OnEnd will get called after Done
+	m_path.Invalidate();
+	return TryContinue();
 }
+
+//---------------------------------------------------------------------------------------------
+EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolfAmbush::OnMoveToSuccess( CNEOBot *me, const Path *path )
+{
+	return TryContinue();
+}
+
+//---------------------------------------------------------------------------------------------
+EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolfAmbush::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
+{
+	m_path.Invalidate();
+	return TryContinue();
+}
+
+//---------------------------------------------------------------------------------------------
+// Helper for "UpdateLookAround" - inspired from how CNavArea CollectPotentiallyVisibleAreas works
+class CCollectPotentiallyVisibleAreas
+{
+public:
+	CCollectPotentiallyVisibleAreas( CUtlVector< CNavArea * > *collection )
+	{
+		m_collection = collection;
+	}
+
+	bool operator() ( CNavArea *baseArea )
+	{
+		m_collection->AddToTail( baseArea );
+		return true;
+	}
+
+	CUtlVector< CNavArea * > *m_collection;
+};
+
+//---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotCtgLoneWolfAmbush::UpdateLookAround( CNEOBot *me )
+{
+	if ( !m_lookAroundTimer.HasStarted() || m_lookAroundTimer.IsElapsed() )
+	{
+		// NEO Jank Cheat: Bots don't have a good intuition for where to look for threats
+		// So the compromise is to have them retreat from a threat when the latter shows up
+		// The looking around logic below is performative for spectators to justify why a bot might incidentally turn to see threat
+		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+		{
+			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+			if ( pPlayer && pPlayer->IsAlive() && !me->InSameTeam( pPlayer ) )
+			{
+				if ( me->IsLineOfFireClear( pPlayer->WorldSpaceCenter(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+				{
+					me->GetVisionInterface()->AddKnownEntity( pPlayer );
+					me->GetBodyInterface()->AimHeadTowards( pPlayer->WorldSpaceCenter(), IBody::CRITICAL, 0.2f, nullptr, "Ambush Cheat: Reacting to enemy in LOF" );
+					return SuspendFor( new CNEOBotRetreatToCover(), "Ambush Prep: Retreating from sensed enemy" );
+				}
+			}
+		}
+
+		m_lookAroundTimer.Start( 0.2f );
+
+		// Logic inspired from neo_bot.cpp UpdateLookingAroundForIncomingPlayers
+		// Update our view to watch where enemies might be coming from
+		CNavArea *myArea = me->GetLastKnownArea();
+		if ( myArea )
+		{
+			m_visibleAreas.RemoveAll();
+			CCollectPotentiallyVisibleAreas collect( &m_visibleAreas );
+			myArea->ForAllPotentiallyVisibleAreas( collect );
+
+			if ( m_visibleAreas.Count() > 0 )
+			{
+				// Pick a random area
+				int which = RandomInt( 0, m_visibleAreas.Count()-1 );
+				CNavArea *area = m_visibleAreas[ which ];
+
+				// Look at a spot in it
+				int retryCount = 5;
+				for( int i=0; i<retryCount; ++i )
+				{
+					Vector spot = area->GetRandomPoint() + Vector( 0, 0, HumanEyeHeight * 0.75f );
+					
+					// Ensure we can see it
+					if ( me->GetVisionInterface()->IsLineOfSightClear( spot ) )
+					{
+						me->GetBodyInterface()->AimHeadTowards( spot, IBody::IMPORTANT, 1.0f, nullptr, "Ambush: Scanning area" );
+						m_lookAroundTimer.Start(RandomFloat(0.5f, 2.0f));
+						return Continue();
+					}
+				}
+			}
+		}
+
+		// Fallback scanning delay if we failed to find a spot
+		m_lookAroundTimer.Start(RandomFloat(0.3f, 1.0f));
+	}
+
+	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+bool CNEOBotCtgLoneWolfAmbush::Is1v1( CNEOBot *me )
+{
+	if ( m_bIs1v1 )
+	{
+		return true;
+	}
+
+	// NEO JANK: Assume I have no teammates given that
+	// I entered this function because my teammates are dead
+	if ( !m_1v1Timer.HasStarted() || m_1v1Timer.IsElapsed() )
+	{
+		int iAliveEnemyCount = 0;
+		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+		{
+			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+			if ( pPlayer && pPlayer->IsAlive() && !me->InSameTeam( pPlayer ) )
+			{
+				if ( ++iAliveEnemyCount > 1 )
+				{
+					break;
+				}
+			}
+		}
+		m_bIs1v1 = ( iAliveEnemyCount == 1 );
+		m_1v1Timer.Start( 2.0f );
+	}
+
+	return m_bIs1v1;
+}
+
