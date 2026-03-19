@@ -29,7 +29,7 @@ bool IsUndroppablePrimary( CBaseCombatWeapon *pPrimary )
 	}
 
 	const NEO_WEP_BITS_UNDERLYING_TYPE wepBits = pNeoWep->GetNeoWepBits();
-	return ( wepBits & ( NEO_WEP_BALC | NEO_WEP_SMAC ) ) != 0;
+	return ( wepBits & NEO_WEP_BALC ) != 0;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -104,14 +104,16 @@ CBaseEntity *FindNearestPrimaryWeapon( CNEOBot *me, bool bAllowDropGhost, CNEOIg
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
 	if ( pPrimary )
 	{
-		if ( IsUndroppablePrimary( pPrimary ) )
+		CNEOBaseCombatWeapon *pNeoPrimary = ToNEOWeapon( pPrimary );
+		if ( pNeoPrimary && ( pNeoPrimary->GetNeoWepBits() & NEO_WEP_BALC ) )
 		{
 			// can't switch these weapons
 			return nullptr;
 		}
+
 		if ( !bAllowDropGhost )
 		{
-			if ( FStrEq( pPrimary->GetClassname(), "weapon_ghost" ) )
+			if ( pNeoPrimary->GetNeoWepBits() & NEO_WEP_GHOST )
 			{
 				// Hold onto the ghost unless we are allowed to by the situation
 				return nullptr;
@@ -157,13 +159,8 @@ CBaseEntity *FindNearestPrimaryWeapon( CNEOBot *me, bool bAllowDropGhost, CNEOIg
 		CBaseCombatWeapon *pWeapon = pEntity->MyCombatWeaponPointer();
 		if ( pWeapon && !pWeapon->GetOwner() && pWeapon->HasAnyAmmo() && pWeapon->GetSlot() == 0 )
 		{
-			if ( FStrEq( pWeapon->GetClassname(), "weapon_ghost" ) )
-			{
-				continue;
-			}
-
 			CNEOBaseCombatWeapon *pNeoWeapon = ToNEOWeapon( pWeapon );
-			if ( !pNeoWeapon )
+			if ( !pNeoWeapon || ( pNeoWeapon->GetNeoWepBits() & NEO_WEP_GHOST ) )
 			{
 				continue;
 			}
@@ -252,7 +249,7 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::OnStart( CNEOBot *me, Action< CNEOBot
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
 	if ( IsUndroppablePrimary( pPrimary ) )
 	{
-		// Don't scavenge if we have a weapon like the balc or smac
+		// Don't scavenge if we have a weapon like the balc
 		return Done("Equipped with an un-droppable weapon, will not seek");
 	}
 
@@ -266,7 +263,8 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::OnStart( CNEOBot *me, Action< CNEOBot
 		return Done("No valid replacement primary found");
 	}
 
-	if ( pPrimary && FStrEq( pPrimary->GetClassname(), "weapon_ghost" ) )
+	CNEOBaseCombatWeapon *pNeoPrimary = ToNEOWeapon( pPrimary );
+	if ( pNeoPrimary && ( pNeoPrimary->GetNeoWepBits() & NEO_WEP_GHOST ) )
 	{
 		// Try to drop once, but sometimes the environment causes a bounce back
 		me->DropPrimaryWeapon();
@@ -305,7 +303,7 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::Update( CNEOBot *me, float interval )
 	
 	// Verify the path actually reaches the weapon
 	const float flMaxEndpointDistSqr = 150.0f * 150.0f;
-	if ( ( m_path.GetEndPosition() - m_hTargetWeapon->GetAbsOrigin() ).LengthSqr() > flMaxEndpointDistSqr )
+	if ( m_path.GetEndPosition().DistToSqr( m_hTargetWeapon->GetAbsOrigin() ) > flMaxEndpointDistSqr )
 	{
 		if ( m_pIgnoredWeapons && !m_pIgnoredWeapons->Has( m_hTargetWeapon ) )
 		{
@@ -338,7 +336,8 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::Update( CNEOBot *me, float interval )
 		{
 			// We are seeking a better weapon, check if we are close enough to drop ours
 			const float flDropDistSqr = 100.0f * 100.0f;
-			if ( ( me->GetAbsOrigin() - m_hTargetWeapon->GetAbsOrigin() ).LengthSqr() <= flDropDistSqr || FStrEq( pPrimary->GetClassname(), "weapon_ghost" ) )
+			if ( me->GetAbsOrigin().DistToSqr( m_hTargetWeapon->GetAbsOrigin() ) <= flDropDistSqr || 
+				( pMyNeoWep && ( pMyNeoWep->GetNeoWepBits() & NEO_WEP_GHOST ) ) )
 			{
 				me->DropPrimaryWeapon();
 			}
