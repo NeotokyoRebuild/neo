@@ -610,7 +610,7 @@ void CBreakableSurface::Die( CBaseEntity *pBreaker, const Vector &vAttackDir )
 
 	// Play a break sound
 #ifdef NEO
-	PhysBreakSound( this, VPhysicsGetObject(), pBreaker ? pBreaker->EyePosition() + vAttackDir : GetAbsOrigin() );
+	PhysBreakSound( this, VPhysicsGetObject(), WorldSpaceCenter() );
 #else
 	PhysBreakSound( this, VPhysicsGetObject(), GetAbsOrigin() );
 #endif // NEO
