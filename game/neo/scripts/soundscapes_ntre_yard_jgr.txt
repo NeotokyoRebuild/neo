@@ -1,0 +1,61 @@
+"yard.outdoors"
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".07"
+		"pitch"		"100"
+		"wave"		"windbirds01.wav"
+	}
+	
+	"playlooping"
+	{
+		"volume"	".03"
+		"pitch"		"100"
+		"wave"		"cicada01.wav"
+	}
+	
+    "playrandom"
+	{
+
+		"time"		"10,20"
+		"volume"	".1"
+		"pitch"		"100"
+
+		"rndwave"
+		{
+			
+			"wave"	"forest/wind_thru_trees_1.wav"
+			"wave"	"forest/wind_thru_trees_2.wav"	
+		}
+	}
+
+}
+
+
+"yard.indoors"
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".06"
+		"pitch"		"100"
+		"wave"		"office/ambience.wav"
+	}
+
+	"playrandom"
+	{
+
+		"time"		"10,15"
+		"volume"	".06"
+		"pitch"		"70,100"
+
+		"rndwave"
+		{
+					
+			"wave"	"ambient\materials\metal9.wav"
+			"wave"	"ambient\atmosphere\metallic1.wav"	
+		}
+	}
+}
+	
