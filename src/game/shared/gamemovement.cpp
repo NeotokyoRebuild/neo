@@ -4034,12 +4034,6 @@ void CGameMovement::CategorizePosition( void )
 	if ( player->IsObserver() )
 		return;
 
-#ifdef NEO
-	// don't glide along the ground when noclipping as a player
-	if (player->GetMoveType() == MOVETYPE_NOCLIP)
-		return;
-
-#endif // NEO
 	float flOffset = 2.0f;
 
 	point[0] = mv->GetAbsOrigin()[0];
@@ -4103,11 +4097,19 @@ void CGameMovement::CategorizePosition( void )
 			}
 			else
 			{
+#ifdef NEO
+				// don't glide along a slope when noclipping as a player
+				if (player->GetMoveType() != MOVETYPE_NOCLIP)
+#endif // NEO
 				SetGroundEntity( &pm );
 			}
 		}
 		else
 		{
+#ifdef NEO
+			// don't glide along the ground when noclipping as a player
+			if (player->GetMoveType() != MOVETYPE_NOCLIP)
+#endif // NEO
 			SetGroundEntity( &pm );  // Otherwise, point to index of ent under us.
 		}
 
