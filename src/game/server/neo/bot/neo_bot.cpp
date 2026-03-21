@@ -1592,22 +1592,24 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 		return;
 	}
 
-	if (!(myWeapon->GetNeoWepBits() & NEO_WEP_FIREARM))
+	const unsigned int wepBits = myWeapon->GetNeoWepBits();
+
+	if (!(wepBits & NEO_WEP_FIREARM))
 	{
 		return;
 	}
 
-	if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
+	if (wepBits & NEO_WEP_BALC)
 	{
 		return;
 	}
 
-	if (myWeapon->GetNeoWepBits() & NEO_WEP_SMAC)
+	if (wepBits & NEO_WEP_SMAC)
 	{
 		return;
 	}
 
-	if (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
+	if (wepBits & NEO_WEP_SUPA7)
 	{
 		// Consider loading slug
 		if ( (myWeapon->m_iSecondaryAmmoCount > 0) && (myWeapon->Clip1() == myWeapon->GetMaxClip1() - 1))
