@@ -1447,6 +1447,7 @@ set(UNITY_SOURCE_NEO_SRC_SERVER
     neo/neo_te_tocflash.cpp
     neo/neo_typeconverter.cpp
     neo/neo_dm_spawn.cpp
+    neo/neo_gamerules_restore.cpp
 )
 
 set_source_files_properties(
@@ -1497,6 +1498,7 @@ target_sources_grouped(
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
     neo/neo_dm_spawn.h
+    neo/neo_gamerules_restore.h
     ${UNITY_SOURCE_NEO_SRC_SERVER}
 )
 
