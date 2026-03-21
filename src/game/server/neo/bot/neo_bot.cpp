@@ -1592,7 +1592,7 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 		return;
 	}
 
-	const unsigned int wepBits = myWeapon->GetNeoWepBits();
+	const auto wepBits = myWeapon->GetNeoWepBits();
 
 	if (!(wepBits & NEO_WEP_FIREARM))
 	{
