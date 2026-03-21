@@ -1364,10 +1364,54 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 
 //-----------------------------------------------------------------------------
 // Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+// Including cloak for players
+//-----------------------------------------------------------------------------
+float CNEO_Player::GetFogObscuredRatio( CBaseEntity *target ) const
+{
+	if ( !target )
+		return 0.0f;
+
+	const float range = CBaseCombatCharacter::EyePosition().DistTo( target->WorldSpaceCenter() );
+	const float flFogRatio = GetFogObscuredRatio( range );
+
+	auto targetPlayer = ToNEOPlayer( target );
+	if ( targetPlayer )
+	{
+		const float flCloakRatio = GetCloakObscuredRatio( targetPlayer );
+		return 1.0f - ( 1.0f - flFogRatio ) * ( 1.0f - flCloakRatio );
+	}
+
+	return flFogRatio;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+//-----------------------------------------------------------------------------
+float CNEO_Player::GetFogObscuredRatio( float range ) const
+{
+	auto controller = m_Local.m_PlayerFog.m_hCtrl.Get();
+
+	if ( controller )
+	{
+		const fogparams_t &fog = controller->m_fog;
+
+		if ( !fog.enable )
+			return 0.0f;
+
+		float ratio = RemapValClamped( range, fog.start, fog.end, 0.0f, 1.0f );
+		ratio = MIN( ratio, fog.maxdensity );
+		return ratio;
+	}
+
+	return 0.0f;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 // NEO JANK: If this function is too expensive,
 // players may report that the game gets laggy when in line of sight bots.
 //-----------------------------------------------------------------------------
-float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
+float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 {
 	VPROF_BUDGET(__FUNCTION__, "NextBotExpensive");
 
@@ -1376,27 +1420,20 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return 0.0f;
 	}
 
-	auto targetPlayer = ToNEOPlayer(target);
-	if (targetPlayer == nullptr)
-	{
-		// If it's not a player, this cloaking logic doesn't apply, so it is not obscured
-		return 0.0f;
-	}
-
 	if ( NEORules()->IsTeamplay()
-		&& (GetTeamNumber() == targetPlayer->GetTeamNumber()) )
+		&& (GetTeamNumber() == target->GetTeamNumber()) )
 	{
 		// Teammates are always labeled with IFF markers, unless in free-for-all game modes
 		return 0.0f;
 	}
 
 	// If target is not cloaked, it's not obscured.
-	if (!targetPlayer->GetInThermOpticCamo() && !sv_neo_bot_cloak_debug_perceive_always_on.GetBool())
+	if (!target->GetInThermOpticCamo() && !sv_neo_bot_cloak_debug_perceive_always_on.GetBool())
 	{
 		return 0.0f; // Not obscured
 	}
 
-	if (targetPlayer->IsCarryingGhost())
+	if (target->IsCarryingGhost())
 	{
 		return 0.0f;
 	}
@@ -1404,7 +1441,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	// From this point on, assume we are counting bonus points towards observer detection
 	float flDetectionBonus = 0.0f; // # of factors that are helping the observer detect the target
 
-	if (targetPlayer->GetBotCloakStateDisrupted())
+	if (target->GetBotCloakStateDisrupted())
 	{
 		flDetectionBonus += sv_neo_bot_cloak_detection_bonus_disruption_effect.GetFloat();
 	}
@@ -1418,8 +1455,8 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		return player->GetAbsVelocity().LengthSqr() > (runSpeedThreshold * runSpeedThreshold);
 		};
 
-	bool targetIsRunning = isRunning(targetPlayer);
-	bool targetIsMoving  = targetIsRunning || isMoving(targetPlayer);
+	bool targetIsRunning = isRunning(target);
+	bool targetIsMoving  = targetIsRunning || isMoving(target);
 
 	// Class Impact:
 	// Assault class motion vision
@@ -1461,7 +1498,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 		flDetectionBonus += sv_neo_bot_cloak_detection_bonus_target_moving.GetFloat();
 	}
 
-	if (!targetPlayer->IsDucking()) // is standing, and NOT ducking
+	if (!target->IsDucking()) // is standing, and NOT ducking
 	{
 		// target is more obvious when standing at full height
 		flDetectionBonus += sv_neo_bot_cloak_detection_bonus_target_standing.GetFloat();
@@ -1490,7 +1527,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	}
 
 	// Injured Target Impact
-	flDetectionBonus += (float)targetPlayer->GetBotDetectableBleedingInjuryEvents() * sv_neo_bot_cloak_detection_bonus_per_injury.GetFloat();
+	flDetectionBonus += (float)target->GetBotDetectableBleedingInjuryEvents() * sv_neo_bot_cloak_detection_bonus_per_injury.GetFloat();
 
 	// Lighting Impact
 	// NEO JANK: See "FIXMEL4DTOMAINMERGE" for why this doesn't have any effect yet.
