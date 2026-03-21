@@ -37,6 +37,9 @@ out
 /game/neo/cfg/config.cfg
 /game/neo/cfg/rain.cfg
 
+# Match session restore file
+/game/neo/scripts/match_session_restore_point.txt
+
 # Shader state debug image dumps
 /game/neo/*.tga
 
