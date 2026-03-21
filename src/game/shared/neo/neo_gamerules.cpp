@@ -580,7 +580,7 @@ CON_COMMAND( sv_neo_score_set_nsf, "Set point count for team NSF" )
 	nsf->SetRoundsWon( atoi( args[1] ) );
 }
 
-CON_COMMAND(sv_neo_round_set, "Set the next round's number")
+CON_COMMAND(sv_neo_round_set, "Set the next round number")
 {
 	if (2 != args.ArgC())
 	{
