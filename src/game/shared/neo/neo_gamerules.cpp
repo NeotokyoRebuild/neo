@@ -16,6 +16,7 @@
 #include "engine/IEngineSound.h"
 #include "filesystem.h"
 #include "hltvcamera.h"
+#include "hud_crosshair.h"
 #else
 #include "neo_player.h"
 #include "team.h"
@@ -745,6 +746,17 @@ void CNEORules::ClientSpawned(edict_t* pPlayer)
 	}
 #endif
 #endif
+
+#ifdef CLIENT_DLL
+	C_NEO_Player *pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (pLocalPlayer->index == pPlayer->m_EdictIndex)
+	{
+		if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+		{
+			crosshair->resetPlayersCrosshair();
+		}
+	}
+#endif
 }
 
 int CNEORules::DefaultFOV(void)
@@ -822,6 +834,11 @@ void CNEORules::ResetMapSessionCommon()
 	m_pJuggernautItem = nullptr;
 	m_pJuggernautPlayer = nullptr;
 	m_bGotMatchWinner = false;
+#else // CLIENT_DLL
+	if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+	{
+		crosshair->resetPlayersCrosshair();
+	}
 #endif
 }
 
