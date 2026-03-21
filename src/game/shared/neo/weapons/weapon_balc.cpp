@@ -194,8 +194,11 @@ void CWeaponBALC::ShootGrenade(CNEO_Player *pPlayer)
 	m_bCharged = false;
 
 	// View kick
-	pPlayer->ViewPunchReset();
-	AddViewKick();
+	if (!pPlayer->IsBot())
+	{
+		pPlayer->ViewPunchReset();
+		AddViewKick();
+	}
 }
 
 float CWeaponBALC::GetChargeDuration() const
