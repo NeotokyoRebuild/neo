@@ -964,22 +964,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
 			{
-				auto *pBalc = static_cast<CWeaponBALC *>(myWeapon);
-				// Minimum viable firing BALC
-				// TODO: Proper heat management for higher difficulty bots
-				me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
-
-				// NEO JANK: To simplify alt fire input management
-				// we allow the bot to bypass button-hold charge firing requirement
-				if ( (me->GetTimeSinceWeaponFired() >= pBalc->GetChargeDuration())
-					&& threatRange >= 300.0f )
-				{
-					pBalc->ShootGrenade(me);
-				}
-				else
-				{
-					me->PressFireButton(GetFireDurationByDifficulty(me));
-				}
+				FireBalcAtEnemy( me, myWeapon, threat, threatRange );
 				return;
 			}
 			else if (myWeapon->m_iClip1 <= 0)
@@ -1048,6 +1033,33 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			}
 		}
 	}
+}
+
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotMainAction::FireBalcAtEnemy( CNEOBot *me, CNEOBaseCombatWeapon *myWeapon, const CKnownEntity *threat, float threatRange )
+{
+	Assert( myWeapon->GetNeoWepBits() & NEO_WEP_BALC );
+	auto *pBalc = static_cast<CWeaponBALC *>( myWeapon );
+	me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
+
+	// NEO JANK: To simplify alt fire input management
+	// we allow the bot to bypass button-hold charge firing requirement
+	// with approximation of charge fire delay
+	if ( threatRange > 300.0f && ( me->GetTimeSinceWeaponFired() > pBalc->GetChargeDuration() * 1.2f ) )
+	{
+		// Check if threat is clearly exposed for a shot
+		const CNavArea *meArea = me->GetLastKnownArea();
+		const CNavArea *targetArea = TheNavMesh->GetNearestNavArea( threat->GetEntity()->GetAbsOrigin() );
+		if ( meArea && targetArea && meArea->IsCompletelyVisible( targetArea ) )
+		{
+			pBalc->ShootGrenade( me );
+			return;
+		}
+	}
+
+	// Fallback to using the primary fire mode
+	me->PressFireButton( GetFireDurationByDifficulty( me ) );
 }
 
 

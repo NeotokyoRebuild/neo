@@ -52,6 +52,7 @@ private:
 	bool m_isWaitingForFullReload;
 
 	void FireWeaponAtEnemy( CNEOBot *me );
+	void FireBalcAtEnemy( CNEOBot *me, CNEOBaseCombatWeapon *myWeapon, const CKnownEntity *threat, float threatRange );
 	float GetFireDurationByDifficulty( CNEOBot *me ) const;
 
 	CHandle< CBaseEntity > m_lastTouch;
