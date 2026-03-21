@@ -435,6 +435,12 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		AvoidBumpingFriends( me );
 	}
 
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if ( !threat )
+	{
+		me->ReloadIfLowClip();
+	}
+
 	me->UpdateDelayedThreatNotices();
 
 	return Continue();

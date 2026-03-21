@@ -35,6 +35,7 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::OnStart( CNEOBot *me, Action<CNEOBot> *
 
 	// Ignore enemies while capturing juggernaut
 	me->StopLookingAroundForEnemies();
+	me->ReloadIfLowClip(); // might as well as we're preoccupied
 	return Continue();
 }
 
