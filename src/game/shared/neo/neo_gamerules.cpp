@@ -580,6 +580,47 @@ CON_COMMAND( sv_neo_score_set_nsf, "Set point count for team NSF" )
 	nsf->SetRoundsWon( atoi( args[1] ) );
 }
 
+CON_COMMAND(sv_neo_round_set, "Set the next round's number")
+{
+	if (2 != args.ArgC())
+	{
+		Msg( "Usage: %s <round number>\n", __FUNCTION__ );
+		return;
+	}
+
+	NEORules()->SetNextRoundNumber(atoi(args[1]));
+}
+
+CON_COMMAND(sv_neo_xp_deaths_set, "Set xp and number of deaths next round for player by SteamID, UserID or partial name match (if unique)")
+{
+	if (!IN_BETWEEN_EQ(3, args.ArgC(), 4))
+	{
+		Msg("Usage: %s <player argument> <xp> <deaths (optional)>\n", __FUNCTION__);
+		return;
+	}
+
+	const int deaths = args.ArgC() == 4 ? atoi(args[3]) : -1;
+	if (atoi(args[3]) < 0)
+	{
+		Msg("Usage: %s <player argument> <xp> <deaths (optional)>\n", __FUNCTION__);
+		return;
+	}
+
+	CNEO_Player* pPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByCommandArg(args[1]));
+	if (!pPlayer)
+	{
+		Warning("%s: Cannot find player by argument %s\n", __FUNCTION__, args[1]);
+		return;
+	}
+
+	const int xp = atoi(args[2]);
+	if (deaths == -1)
+		Msg("%s: Setting player: %s xp: %i next round\n", __FUNCTION__, pPlayer->GetPlayerName(), xp);
+	else
+		Msg("%s: Setting player: %s xp: %i deaths: %i next round\n", __FUNCTION__, pPlayer->GetPlayerName(), xp, deaths);
+	NEORules()->SetNextRoundPlayerXPDeaths(pPlayer->GetUserID(), xp, deaths);
+}
+
 static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float flOldVal)
 {
 	auto wep = gEntList.NextEntByClass((CNEOBaseCombatWeapon*)NULL);
@@ -2716,7 +2757,15 @@ void CNEORules::StartNextRound()
 	// NEO TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
 	// for when moving from idle to preroundfreeze, or in the future, competitive with whatever
 	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
-	++m_iRoundNumber;
+	if (m_inextRoundNumber == -1)
+	{
+		++m_iRoundNumber;
+	}
+	else
+	{
+		m_iRoundNumber = m_inextRoundNumber;
+		m_inextRoundNumber = -1;
+	}
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
@@ -2741,6 +2790,17 @@ void CNEORules::StartNextRound()
 			if (!pPlayer->IsBot() && !pPlayer->IsHLTV() && pPlayer->IsAlive())
 			{
 				pPlayer->StartShowDmgStats(nullptr);
+			}
+		}
+
+		const int userID = pPlayer->GetUserID();
+		if (const auto hdl = m_pNextRoundXPDeaths.Find(userID); m_pNextRoundXPDeaths.IsValidHandle(hdl))
+		{
+			pPlayer->m_iXP.Set(m_pNextRoundXPDeaths[hdl].xp);
+			if (m_pNextRoundXPDeaths[hdl].deaths != -1)
+			{
+				pPlayer->ResetDeathCount();
+				pPlayer->IncrementDeathCount(m_pNextRoundXPDeaths[hdl].deaths);
 			}
 		}
 
@@ -2770,6 +2830,7 @@ void CNEORules::StartNextRound()
 		pPlayer->SetTestMessageVisible(false);
 	}
 
+	m_pNextRoundXPDeaths.Purge();
 	m_flPrevThinkKick = 0.0f;
 	m_flPrevThinkMirrorDmg = 0.0f;
 	m_flIntermissionEndTime = 0;
@@ -4830,6 +4891,17 @@ void CNEORules::InitDefaultAIRelationships( void )
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_EARTH_FAUNA,		D_NU, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY,		D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
+}
+
+void CNEORules::SetNextRoundPlayerXPDeaths(int iEntityIndex, int iNextRoundXP, int iNextRoundDeaths)
+{ 
+	bool didInsert = false;
+	const NextRoundXPDeaths info { iNextRoundXP, iNextRoundDeaths };
+	const UtlHashHandle_t hdl = m_pNextRoundXPDeaths.Insert(iEntityIndex, info, &didInsert);
+	if (!didInsert)
+	{
+		m_pNextRoundXPDeaths[hdl] = info;
+	}
 }
 #endif
 

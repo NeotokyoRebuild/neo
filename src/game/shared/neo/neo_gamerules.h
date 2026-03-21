@@ -407,7 +407,10 @@ public:
 	const char *GetTeamClantag(const int iTeamNum) const;
 #ifdef GAME_DLL
 	void OnNavMeshLoad() override;
-#endif // GAME_DL:
+
+	void SetNextRoundNumber(int iNextRoundNum) { m_inextRoundNumber = iNextRoundNum; };
+	void SetNextRoundPlayerXPDeaths(int iEntityIndex, int iNextRoundXP, int iNextRoundDeaths = -1);
+#endif // GAME_DLL
 
 public:
 #ifdef GAME_DLL
@@ -422,6 +425,13 @@ public:
 	};
 	// AccountID_t <- CSteamID::GetAccountID
 	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;
+
+	struct NextRoundXPDeaths
+	{
+		int xp;
+		int deaths;
+	};
+	CUtlHashtable<int, NextRoundXPDeaths> m_pNextRoundXPDeaths;
 
 	float m_flPauseDur = 0.0f;
 	int m_iPausingTeam = 0;
@@ -491,6 +501,7 @@ private:
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
 	int m_iMatchWinner = TEAM_UNASSIGNED;
+	int m_inextRoundNumber = -1;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
