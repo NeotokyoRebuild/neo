@@ -483,6 +483,7 @@ private:
 	int m_iEntPrevCapSize = 0;
 	int m_iPrintHelpCounter = 0;
 	bool m_bGamemodeTypeBeenInitialized = false;
+	bool m_bServerIsCurrentlyAutoRecording = false;
 	friend class CNEO_GhostBoundary;
 	friend class CNEOGhostSpawnPoint;
 	friend class CMultiplayRules;
