@@ -471,6 +471,18 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 							}
 						}
 					}
+					else
+					{
+						// NEO JANK (Rain): gameuifuncs->GetButtonCodeForBind seems to treat
+						// "+duck" and "toggle_duck" as the same thing, which makes NeoUI
+						// incorrectly display the "toggle_duck" bind key for "+duck".
+						// If we couldn't find "+duck", explicitly mark it as unbound here to fix.
+						if (bind->bcNext != BUTTON_CODE_NONE &&
+							V_strcmp(bind->szBindingCmd, "+duck") == 0)
+						{
+							bind->bcNext =  BUTTON_CODE_NONE;
+						}
+					}
 				}
 			}
 		}
