@@ -1511,8 +1511,7 @@ void CNEORules::Think(void)
 				gameeventmanager->FireEvent(event);
 			}
 		}
-
-		if (!m_pVIP->IsAlive())
+		else if (!m_pVIP->IsAlive())
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
@@ -4255,7 +4254,13 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 
 		if (pNeoPlayer->GetClass() == NEO_CLASS_JUGGERNAUT && pNeoPlayer->IsAlive())
 		{
+			m_pJuggernautPlayer = nullptr;
 			pNeoPlayer->SpawnJuggernautPostDeath();
+		}
+
+		if (pNeoPlayer->GetClass() == NEO_CLASS_VIP)
+		{ // can't check if m_pVIP is this player, assume only one vip per round. NEO TODO (Adam) Use CHandles or entity indexes for m_pVIP, m_pJuggernautPlayer
+			m_pVIP = nullptr;
 		}
 
 		// Save XP/death counts
