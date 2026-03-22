@@ -1437,7 +1437,7 @@ void CNEORules::Think(void)
 				IGameEvent* event = gameeventmanager->CreateEvent("ghost_capture");
 				if (event)
 				{
-					CBasePlayer* pCaptorClient = captorClient >= 1 && captorClient <= gpGlobals->maxClients ? UTIL_PlayerByIndex(captorClient) : nullptr;
+					CBasePlayer* pCaptorClient = UTIL_PlayerByIndex(captorClient);
 					event->SetInt("userid", pCaptorClient ? pCaptorClient->GetUserID() : INVALID_USER_ID);
 					gameeventmanager->FireEvent(event);
 				}
