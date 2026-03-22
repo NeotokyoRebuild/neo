@@ -437,6 +437,9 @@ private:
 	void ResetMapSessionCommon();
 
 #ifdef GAME_DLL
+	const int GetScoreLimit() const;
+	const int GetRoundLimit() const;
+
 	void SpawnTheGhost(const Vector *origin = nullptr);
 	void SpawnTheJuggernaut(const Vector *origin = nullptr);
 	void SelectTheVIP();

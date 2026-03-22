@@ -418,12 +418,60 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 		// convert a velocity in ft/sec and a mass in grains to an impulse in kg in/s
 #define BULLET_IMPULSE(grains, ftpersec)	((ftpersec)*12*BULLET_MASS_GRAINS_TO_KG(grains)*BULLET_IMPULSE_EXAGGERATION)
 
+extern ConVar neo_score_limit;
+extern ConVar neo_round_limit;
+extern ConVar sv_neo_ctg_score_limit;
+extern ConVar sv_neo_ctg_round_limit;
 
-ConVar neo_score_limit("neo_score_limit", "7", FCVAR_REPLICATED, "Neo score limit.", true, 0.0f, true, 99.0f);
-ConVar neo_round_limit("neo_round_limit", "0", FCVAR_REPLICATED, "Max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+static void neoScoreLimitLegacyCallback(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	Warning("Using legacy neo_score_limit cvar. Use sv_neo_[gamemode]_score_limit instead!\n");
+	sv_neo_ctg_score_limit.SetValue(neo_score_limit.GetInt());
+}
+
+static void neoRoundLimitLegacyCallback(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	Warning("Using legacy neo_round_limit cvar. Use sv_neo_[gamemode]_round_limit instead!\n");
+	sv_neo_ctg_round_limit.SetValue(neo_round_limit.GetInt());
+}
+
+ConVar neo_score_limit("neo_score_limit", "7", FCVAR_REPLICATED | FCVAR_HIDDEN, "(Legacy) Neo score limit.", true, 0.0f, true, 99.0f
+#ifdef GAME_DLL
+	, neoScoreLimitLegacyCallback
+#endif
+);
+ConVar neo_round_limit("neo_round_limit", "0", FCVAR_REPLICATED | FCVAR_HIDDEN, "(Legacy) Max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f
+#ifdef GAME_DLL
+	, neoRoundLimitLegacyCallback
+#endif
+);
+
 ConVar neo_round_sudden_death("neo_round_sudden_death", "1", FCVAR_REPLICATED, "If neo_round_limit is not 0 and round is past "
 	"neo_round_limit, go into sudden death where match won't end until a team won.", true, 0.0f, true, 1.0f);
 
+// Score Limit
+ConVar sv_neo_tdm_score_limit("sv_neo_tdm_score_limit", "1", FCVAR_REPLICATED, "TDM score limit", true, 0.0f, true, 99.0f);
+
+ConVar sv_neo_ctg_score_limit("sv_neo_ctg_score_limit", "7", FCVAR_REPLICATED, "CTG score limit", true, 0.0f, true, 99.0f);
+
+ConVar sv_neo_vip_score_limit("sv_neo_vip_score_limit", "7", FCVAR_REPLICATED, "VIP score limit", true, 0.0f, true, 99.0f);
+
+ConVar sv_neo_dm_score_limit("sv_neo_dm_score_limit", "7", FCVAR_REPLICATED, "DM score limit", true, 0.0f, true, 99.0f);
+
+ConVar sv_neo_jgr_score_limit("sv_neo_jgr_score_limit", "0", FCVAR_REPLICATED, "JGR score limit", true, 0.0f, true, 99.0f);
+
+// Round Limit
+ConVar sv_neo_tdm_round_limit("sv_neo_tdm_round_limit", "0", FCVAR_REPLICATED, "TDM max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+
+ConVar sv_neo_ctg_round_limit("sv_neo_ctg_round_limit", "0", FCVAR_REPLICATED, "CTG max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+
+ConVar sv_neo_vip_round_limit("sv_neo_vip_round_limit", "0", FCVAR_REPLICATED, "VIP max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+
+ConVar sv_neo_dm_round_limit("sv_neo_dm_round_limit", "0", FCVAR_REPLICATED, "DM max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+
+ConVar sv_neo_jgr_round_limit("sv_neo_jgr_round_limit", "5", FCVAR_REPLICATED, "JGR max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+
+// Round Time Limit (make these sv_neo at some point)
 ConVar neo_tdm_round_timelimit("neo_tdm_round_timelimit", "10.25", FCVAR_REPLICATED, "TDM round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
@@ -2573,6 +2621,56 @@ CNEORules::ReadyPlayers CNEORules::FetchReadyPlayers() const
 	return readyPlayers;
 }
 
+const int CNEORules::GetScoreLimit() const
+{
+	switch (m_nGameTypeSelected)
+	{
+	case NEO_GAME_TYPE_TDM:
+		return sv_neo_tdm_score_limit.GetInt();
+		break;
+	case NEO_GAME_TYPE_CTG:
+		return sv_neo_ctg_score_limit.GetInt();
+		break;
+	case NEO_GAME_TYPE_VIP:
+		return sv_neo_vip_score_limit.GetInt();
+		break;
+	case NEO_GAME_TYPE_DM:
+		return sv_neo_dm_score_limit.GetInt();
+		break;
+	case NEO_GAME_TYPE_JGR:
+		return sv_neo_jgr_score_limit.GetInt();
+		break;
+	default:
+		return sv_neo_ctg_score_limit.GetInt();
+		break;
+	}
+}
+
+const int CNEORules::GetRoundLimit() const
+{
+	switch (m_nGameTypeSelected)
+	{
+	case NEO_GAME_TYPE_TDM:
+		return sv_neo_tdm_round_limit.GetInt();
+		break;
+	case NEO_GAME_TYPE_CTG:
+		return sv_neo_ctg_round_limit.GetInt();
+		break;
+	case NEO_GAME_TYPE_VIP:
+		return sv_neo_vip_round_limit.GetInt();
+		break;
+	case NEO_GAME_TYPE_DM:
+		return sv_neo_dm_round_limit.GetInt();
+		break;
+	case NEO_GAME_TYPE_JGR:
+		return sv_neo_jgr_round_limit.GetInt();
+		break;
+	default:
+		return sv_neo_ctg_round_limit.GetInt();
+		break;
+	}
+}
+
 void CNEORules::StartNextRound()
 {
 	// Only check ready-up on idle state
@@ -3518,7 +3616,7 @@ bool CNEORules::RoundIsInSuddenDeath() const
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
 	if (teamJinrai && teamNSF)
 	{
-		return (neo_round_limit.GetInt() != 0 && (m_iRoundNumber > neo_round_limit.GetInt()) && teamJinrai->GetRoundsWon() == teamNSF->GetRoundsWon());
+		return (GetRoundLimit() != 0 && (m_iRoundNumber > GetRoundLimit()) && teamJinrai->GetRoundsWon() == teamNSF->GetRoundsWon());
 	}
 	return false;
 #endif
@@ -3531,10 +3629,10 @@ bool CNEORules::RoundIsMatchPoint() const
 #else
 	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
-	if (teamJinrai && teamNSF && neo_round_limit.GetInt() != 0)
+	if (teamJinrai && teamNSF && GetRoundLimit() != 0)
 	{
 		if (RoundIsInSuddenDeath()) return false;
-		const int roundDiff = neo_round_limit.GetInt() - m_iRoundNumber;
+		const int roundDiff = GetRoundLimit() - m_iRoundNumber;
 		if ((teamJinrai->GetRoundsWon() + 1) > (teamNSF->GetRoundsWon() + roundDiff)) return true;
 		if ((teamNSF->GetRoundsWon() + 1) > (teamJinrai->GetRoundsWon() + roundDiff)) return true;
 		return false;
@@ -3550,9 +3648,9 @@ bool CNEORules::RoundIsDoOrDie() const
 #else
 	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
-	if (teamJinrai && teamNSF && neo_round_limit.GetInt() != 0)
+	if (teamJinrai && teamNSF && GetRoundLimit() != 0)
 	{
-		const int roundsLeft = neo_round_limit.GetInt() - m_iRoundNumber + 1;
+		const int roundsLeft = GetRoundLimit() - m_iRoundNumber + 1;
 		if ((teamJinrai->GetRoundsWon() + roundsLeft) == teamNSF->GetRoundsWon()) return true;
 		if ((teamNSF->GetRoundsWon() + roundsLeft) == teamJinrai->GetRoundsWon()) return true;
 		return false;
@@ -3614,14 +3712,9 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 		auto teamNSF = GetGlobalTeam(TEAM_NSF);
 
-		if (neo_score_limit.GetInt() != 0)
+		if (GetScoreLimit() != 0)
 		{
-#ifdef DEBUG
-			float neoScoreLimitMin = -1.0f;
-			AssertOnce(neo_score_limit.GetMin(neoScoreLimitMin));
-			AssertOnce(neoScoreLimitMin >= 0);
-#endif
-			if (winningTeam->GetRoundsWon() >= neo_score_limit.GetInt())
+			if (winningTeam->GetRoundsWon() >= GetScoreLimit())
 			{
 				V_sprintf_safe(victoryMsg, "Team %s wins the match!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 				gotMatchWinner = true;
@@ -3630,14 +3723,14 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 		// If a hard round limit is set, end the game and show the team
 		// that won with the most score, sudden death, or tie out
-		if (neo_round_limit.GetInt() != 0 && teamJinrai && teamNSF)
+		if (GetRoundLimit() != 0 && teamJinrai && teamNSF)
 		{
 			// If there's a round limit and the other team cannot really catch up with the
 			// winning team, then end the match early.
 			bool earlyWin = false;
 			if (!RoundIsInSuddenDeath())
 			{
-				const int roundDiff = neo_round_limit.GetInt() - m_iRoundNumber;
+				const int roundDiff = GetRoundLimit() - m_iRoundNumber;
 				earlyWin = (earlyWin || (teamJinrai->GetRoundsWon() > (teamNSF->GetRoundsWon() + roundDiff)));
 				earlyWin = (earlyWin || (teamNSF->GetRoundsWon() > (teamJinrai->GetRoundsWon() + roundDiff)));
 			}
@@ -3647,7 +3740,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 						((teamJinrai->GetRoundsWon() > teamNSF->GetRoundsWon()) ? "Jinrai" : "NSF"));
 				gotMatchWinner = true;
 			}
-			else if (m_iRoundNumber >= neo_round_limit.GetInt())
+			else if (m_iRoundNumber >= GetRoundLimit())
 			{
 				if (teamJinrai->GetRoundsWon() == teamNSF->GetRoundsWon())
 				{
