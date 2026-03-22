@@ -1431,6 +1431,11 @@ void CNEORules::Think(void)
 				for (int i = 0; i < m_pGhostCaps.Count(); i++)
 				{
 					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+					if (!pGhostCap)
+					{
+						Assert(false);
+						continue;
+					}	
 					pGhostCap->SetActive(false);
 				}
 
@@ -1545,6 +1550,11 @@ void CNEORules::Think(void)
 				for (int i = 0; i < m_pGhostCaps.Count(); i++)
 				{
 					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+					if (!pGhostCap)
+					{
+						Assert(false);
+						continue;
+					}
 					pGhostCap->SetActive(false);
 				}
 
@@ -1554,7 +1564,8 @@ void CNEORules::Think(void)
 				IGameEvent* event = gameeventmanager->CreateEvent("vip_extract");
 				if (event)
 				{
-					event->SetInt("userid", m_pVIP->GetUserID());
+					CBasePlayer* pCaptorClient = UTIL_PlayerByIndex(captorClient);
+					event->SetInt("userid", pCaptorClient ? pCaptorClient->GetUserID() : INVALID_USER_ID);
 					gameeventmanager->FireEvent(event);
 				}
 

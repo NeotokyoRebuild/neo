@@ -938,18 +938,19 @@ void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
 void CNEOHud_DeathNotice::AddVIPExtract(IGameEvent* event)
 {
 	// the event should be "vip_extract"
-	const int playerExtracted = engine->GetPlayerForUserID(event->GetInt("userid"));
+	const int playerExtractedUserID = event->GetInt("userid");
+	const int playerExtractedIndex = playerExtractedUserID != INVALID_USER_ID ? engine->GetPlayerForUserID(playerExtractedUserID) : 0;
 
 	// Name of VIP
-	C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerExtracted));
-	const char* playerExtractedName = pPlayer ? pPlayer->GetPlayerNameWithTakeoverContext(playerExtracted) : "";
+	C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerExtractedIndex));
+	const char* playerExtractedName = pPlayer ? pPlayer->GetPlayerNameWithTakeoverContext(playerExtractedIndex) : "";
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
-	deathMsg.Killer.iEntIndex = playerExtracted;
+	deathMsg.Killer.iEntIndex = playerExtractedIndex;
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerExtractedName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
 	deathMsg.Killer.iNameLength = V_wcslen(deathMsg.Killer.szName);
-	if (const auto playerExtractedTeam = GetPlayersTeam(playerExtracted))
+	if (const auto playerExtractedTeam = GetPlayersTeam(playerExtractedIndex))
 	{
 		deathMsg.Killer.iTeam = playerExtractedTeam->GetTeamNumber();
 	}
