@@ -2,12 +2,13 @@
 
 #ifdef CLIENT_DLL
 #include "steamclientpublic.h"
+#include "vgui/ISystem.h"
 #endif // CLIENT_DLL
 #include "cbase.h"
 #include "neo_gamerules.h"
-#include "vgui/ISystem.h"
 #include "tier3.h"
 #include <filesystem.h>
+#include <ctime>
 
 extern ConVar sv_neo_comp_name;
 
@@ -88,9 +89,10 @@ bool StartAutoRecording()
 
 	// Time and date
 	char timeSection[16];
-	int year, month, dayOfWeek, day, hour, minute, second;
-	g_pVGuiSystem->GetCurrentTimeAndDate(&year, &month, &dayOfWeek, &day, &hour, &minute, &second);
-	V_snprintf(timeSection, sizeof(timeSection), "%04d%02d%02d-%02d%02d", year, month, day, hour, minute);
+	const time_t timeVal = time(nullptr);
+	std::tm tmStruct{};
+	std::tm tmd = *(Plat_localtime(&timeVal, &tmStruct));
+	V_sprintf_safe(timeSection, "%04d%02d%02d-%02d%02d", tmd.tm_year + 1900, tmd.tm_mon + 1, tmd.tm_mday, tmd.tm_hour, tmd.tm_min);
 
 	// Competition name
 	char compSection[32];
