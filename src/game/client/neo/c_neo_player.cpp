@@ -1155,6 +1155,9 @@ void C_NEO_Player::PreThink( void )
 		m_flCamoAuxLastTime = 0;
 	}
 
+	// If spectating, won't be "alive/dead" so have its own
+	// path of resetting the cache of other players crosshair
+	// data on pre-round freeze time
 	if (IsLocalPlayer() && GetTeamNumber() == TEAM_SPECTATOR)
 	{
 		if (NEORules()->IsRoundPreRoundFreeze())
@@ -1189,6 +1192,7 @@ void C_NEO_Player::PreThink( void )
 			CLocalPlayerFilter filter;
 			enginesound->SetPlayerDSP(filter, 0, true);
 
+			// Reset the cache of other players crosshair data on spawning in
 			if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
 			{
 				crosshair->resetPlayersCrosshair();
@@ -1632,11 +1636,13 @@ void C_NEO_Player::Spawn( void )
 		}
 	}
 
-	// Only do crosshair reset for confirmed local player
-	if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair);
-			crosshair && IsLocalPlayer())
+	// Only do cached crosshair reset for confirmed local player
+	if (IsLocalPlayer())
 	{
-		crosshair->resetPlayersCrosshair();
+		if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+		{
+			crosshair->resetPlayersCrosshair();
+		}
 	}
 }
 

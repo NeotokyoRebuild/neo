@@ -748,6 +748,7 @@ void CNEORules::ClientSpawned(edict_t* pPlayer)
 #endif
 
 #ifdef CLIENT_DLL
+	// Reset other players crosshair cache on spawning in here
 	C_NEO_Player *pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (pLocalPlayer->index == pPlayer->m_EdictIndex)
 	{
@@ -835,6 +836,7 @@ void CNEORules::ResetMapSessionCommon()
 	m_pJuggernautPlayer = nullptr;
 	m_bGotMatchWinner = false;
 #else // CLIENT_DLL
+	// Reset other players crosshair cache on full map reset
 	if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
 	{
 		crosshair->resetPlayersCrosshair();
