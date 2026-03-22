@@ -474,6 +474,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
+	m_bSpecRefreshedStates = false;
 
 	m_flTocFactor = 0.15f;
 
@@ -1154,6 +1155,28 @@ void C_NEO_Player::PreThink( void )
 		m_flCamoAuxLastTime = 0;
 	}
 
+	// If spectating, won't be "alive/dead" so have its own
+	// path of resetting the cache of other players crosshair
+	// data on pre-round freeze time
+	if (IsLocalPlayer() && GetTeamNumber() == TEAM_SPECTATOR)
+	{
+		if (NEORules()->IsRoundPreRoundFreeze())
+		{
+			if (false == m_bSpecRefreshedStates)
+			{
+				if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+				{
+					crosshair->resetPlayersCrosshair();
+				}
+			}
+			m_bSpecRefreshedStates = true;
+		}
+		else
+		{
+			m_bSpecRefreshedStates = false;
+		}
+	}
+
 	if (IsAlive())
 	{
 		if (IsLocalPlayer() && m_bFirstAliveTick)
@@ -1168,6 +1191,12 @@ void C_NEO_Player::PreThink( void )
 			// so it could arrive too late.
 			CLocalPlayerFilter filter;
 			enginesound->SetPlayerDSP(filter, 0, true);
+
+			// Reset the cache of other players crosshair data on spawning in
+			if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+			{
+				crosshair->resetPlayersCrosshair();
+			}
 		}
 	}
 	else
@@ -1604,6 +1633,15 @@ void C_NEO_Player::Spawn( void )
 				neoHud->resetLastUpdateTime();
 				neoHud->resetHUDState();
 			}
+		}
+	}
+
+	// Only do cached crosshair reset for confirmed local player
+	if (IsLocalPlayer())
+	{
+		if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+		{
+			crosshair->resetPlayersCrosshair();
 		}
 	}
 }
