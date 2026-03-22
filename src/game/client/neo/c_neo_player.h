@@ -252,6 +252,7 @@ private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 	bool m_bIsAllowedToToggleVision;
+	bool m_bSpecRefreshedStates;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
