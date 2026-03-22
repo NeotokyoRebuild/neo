@@ -908,7 +908,7 @@ void CNEOHud_DeathNotice::AddPlayerRankChange(IGameEvent* event)
 
 void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
 {
-	// the event should be "player_ghost_capture"
+	// the event should be "ghost_capture"
 	const int playerCapturedGhostUserID = event->GetInt("userid");
 	const int playerCapturedGhostIndex = playerCapturedGhostUserID != INVALID_USER_ID ? engine->GetPlayerForUserID(playerCapturedGhostUserID) : 0;
 
