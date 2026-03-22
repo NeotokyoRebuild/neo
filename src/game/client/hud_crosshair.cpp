@@ -377,6 +377,17 @@ void CHudCrosshair::GetDrawPosition ( float *pX, float *pY, bool *pbBehindCamera
 ConVar cl_neo_scope_restrict_to_rectangle("cl_neo_scope_restrict_to_rectangle", "1", FCVAR_CHEAT,
 	"Whether to enforce rectangular sniper scope shape regardless of screen ratio.", true, 0.0, true, 1.0);
 
+#ifdef NEO
+
+void CHudCrosshair::resetPlayersCrosshair()
+{
+	V_memset(m_szLocalStrPlayersCrosshair, 0, sizeof(m_szLocalStrPlayersCrosshair));
+	V_memset(m_playersCrosshairInfos, 0, sizeof(m_playersCrosshairInfos));
+	V_memset(m_aflLastCheckedPlayersCrosshair, 0, sizeof(m_aflLastCheckedPlayersCrosshair));
+}
+
+#endif // NEO
+
 void CHudCrosshair::Paint( void )
 {
 	if ( !m_pCrosshair )
@@ -502,7 +513,6 @@ void CHudCrosshair::Paint( void )
 		if (bPlayerIdxValid)
 		{
 			bTakeSpecCrosshair = true;
-			m_playersCrosshairInfos;
 			bThisFrameRefreshCrosshair = false;
 			pCrosshairInfo = &m_playersCrosshairInfos[iPlayerIdx];
 			pszNeoCrosshair = pNeoPlayer->m_szNeoCrosshair.Get();
