@@ -1872,6 +1872,9 @@ static ConCommand endattack3("-attack3", IN_Attack3Up);
 #ifdef TF_CLIENT_DLL
 static ConCommand toggle_duck( "toggle_duck", IN_DuckToggle );
 #endif
+#ifdef NEO
+static ConCommand toggle_duck( "toggle_duck", IN_DuckToggle );
+#endif
 
 // Xbox 360 stub commands
 static ConCommand xboxmove("xmove", IN_XboxStub);
