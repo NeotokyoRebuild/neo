@@ -1427,13 +1427,19 @@ void CNEORules::Think(void)
 				for (int i = 0; i < m_pGhostCaps.Count(); i++)
 				{
 					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+					if (!pGhostCap)
+					{
+						Assert(false);
+						continue;
+					}	
 					pGhostCap->SetActive(false);
 				}
 
 				IGameEvent* event = gameeventmanager->CreateEvent("ghost_capture");
 				if (event)
 				{
-					event->SetInt("userid", UTIL_PlayerByIndex(m_iGhosterPlayer)->GetUserID());
+					CBasePlayer* pCaptorClient = UTIL_PlayerByIndex(captorClient);
+					event->SetInt("userid", pCaptorClient ? pCaptorClient->GetUserID() : INVALID_USER_ID);
 					gameeventmanager->FireEvent(event);
 				}
 
@@ -1501,8 +1507,7 @@ void CNEORules::Think(void)
 				gameeventmanager->FireEvent(event);
 			}
 		}
-
-		if (!m_pVIP->IsAlive())
+		else if (!m_pVIP->IsAlive())
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
@@ -1540,6 +1545,11 @@ void CNEORules::Think(void)
 				for (int i = 0; i < m_pGhostCaps.Count(); i++)
 				{
 					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+					if (!pGhostCap)
+					{
+						Assert(false);
+						continue;
+					}
 					pGhostCap->SetActive(false);
 				}
 
@@ -1549,7 +1559,8 @@ void CNEORules::Think(void)
 				IGameEvent* event = gameeventmanager->CreateEvent("vip_extract");
 				if (event)
 				{
-					event->SetInt("userid", m_pVIP->GetUserID());
+					CBasePlayer* pCaptorClient = UTIL_PlayerByIndex(captorClient);
+					event->SetInt("userid", pCaptorClient ? pCaptorClient->GetUserID() : INVALID_USER_ID);
 					gameeventmanager->FireEvent(event);
 				}
 
@@ -4239,7 +4250,13 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 
 		if (pNeoPlayer->GetClass() == NEO_CLASS_JUGGERNAUT && pNeoPlayer->IsAlive())
 		{
+			m_pJuggernautPlayer = nullptr;
 			pNeoPlayer->SpawnJuggernautPostDeath();
+		}
+
+		if (pNeoPlayer->GetClass() == NEO_CLASS_VIP)
+		{ // can't check if m_pVIP is this player, assume only one vip per round. NEO TODO (Adam) Use CHandles or entity indexes for m_pVIP, m_pJuggernautPlayer
+			m_pVIP = nullptr;
 		}
 
 		// Save XP/death counts
