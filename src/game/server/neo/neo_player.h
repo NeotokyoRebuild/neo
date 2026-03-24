@@ -272,7 +272,7 @@ public:
 		int iXP;
 		int iDeaths;
 	};
-	NeoRestore m_iNextRestore;
+	NeoRestore m_iNextRestore = {};
 
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
