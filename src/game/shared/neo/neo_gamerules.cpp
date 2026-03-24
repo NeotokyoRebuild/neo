@@ -1849,9 +1849,6 @@ float CNEORules::MirrorDamageMultiplier() const
 
 void CNEORules::FireGameEvent(IGameEvent* event)
 {
-#ifdef GAME_DLL
-	static bool isServerRecording = false;
-#endif // GAME_DLL
 	const char *type = event->GetName();
 
 	if (Q_strcmp(type, "round_start") == 0)
@@ -1868,9 +1865,9 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 #ifdef GAME_DLL
 		m_flNeoRoundStartTime = gpGlobals->curtime;
 		m_flNeoNextRoundStartTime = 0;
-		if (sv_neo_server_autorecord.GetBool() && !isServerRecording)
+		if (sv_neo_server_autorecord.GetBool() && !m_bServerIsCurrentlyAutoRecording)
 		{
-			isServerRecording = StartAutoRecording();
+			m_bServerIsCurrentlyAutoRecording = StartAutoRecording();
 		}
 #endif
 	}
@@ -1885,7 +1882,7 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 #endif
 #ifdef GAME_DLL
 		engine->ServerCommand("tv_stoprecord;");
-		isServerRecording = false;
+		m_bServerIsCurrentlyAutoRecording = false;
 #endif // GAME_DLL
 	}
 }
