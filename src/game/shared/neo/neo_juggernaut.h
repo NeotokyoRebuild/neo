@@ -33,6 +33,8 @@ public:
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
 	virtual int UpdateTransmitState() override;
 
+	CNEO_Player* GetActivatingPlayer() const { return m_hHoldingPlayer.Get(); }
+	bool IsBeingActivated() const { return m_bIsHolding; }
 	const bool IsBeingActivatedByLosingTeam();
 
 	bool	m_bPostDeath = false;

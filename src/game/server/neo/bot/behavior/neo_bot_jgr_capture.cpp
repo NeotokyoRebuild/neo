@@ -1,9 +1,27 @@
 #include "cbase.h"
 #include "bot/behavior/neo_bot_jgr_capture.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
+#include "bot/behavior/neo_bot_attack.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 #include "neo_juggernaut.h"
+
+static const float JGR_CAPTURE_FACING_DOT = 0.9f;
+static const float JGR_CAPTURE_LOCKED_RETREAT_TIME = 2.0f;
+static const float JGR_CAPTURE_MAX_REPATH_DELAY = 5.0f;
+static const float JGR_CAPTURE_MIN_REPATH_DELAY = 1.0f;
+static const float JGR_CAPTURE_REPOSITION_RATIO = 0.7f;
+static const float JGR_CAPTURE_TIMER_BUFFER = 1.0f;
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotJgrCapture::StopMoving( CNEOBot *me )
+{
+	m_path.Invalidate();
+	me->ReleaseForwardButton();
+	me->ReleaseBackwardButton();
+	me->ReleaseLeftButton();
+	me->ReleaseRightButton();
+}
 
 //---------------------------------------------------------------------------------------------
 CNEOBotJgrCapture::CNEOBotJgrCapture( CNEO_Juggernaut *pObjective )
@@ -17,6 +35,7 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::OnStart( CNEOBot *me, Action<CNEOBot> *
 	m_useAttemptTimer.Invalidate();
 	m_path.Invalidate();
 	m_repathTimer.Invalidate();
+	m_bStrafeRight = ( RandomInt( 0, 1 ) == 1 );
 	
 	if ( !m_hObjective )
 	{
@@ -35,6 +54,7 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::OnStart( CNEOBot *me, Action<CNEOBot> *
 
 	// Ignore enemies while capturing juggernaut
 	me->StopLookingAroundForEnemies();
+	me->SetAttribute( CNEOBot::IGNORE_ENEMIES );
 	me->ReloadIfLowClip(); // might as well as we're preoccupied
 	return Continue();
 }
@@ -44,24 +64,21 @@ void CNEOBotJgrCapture::OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction )
 {
 	me->ReleaseUseButton();
 	me->StartLookingAroundForEnemies();
+	me->ClearAttribute( CNEOBot::IGNORE_ENEMIES );
 }
 
 //---------------------------------------------------------------------------------------------
 ActionResult<CNEOBot> CNEOBotJgrCapture::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
 {
-	// CNEOBotTacticalMonitor -> CNEOBotRetreatToCover will handle reacting to enemies if under fire
-	// Debatably, maybe bots should just ignore enemies, but that would require a change to CNEOBotTacticalMonitor
-	// Also it might be more fun for humans if they can interrupt bots from taking the Juggernaut.
-	me->ReleaseUseButton();
-	me->StartLookingAroundForEnemies();
-	return Continue();
+	// Situation around juggernaut is possibly stale, reevaluate
+	return Done( "OnSuspend: Reevaluating capture situation" );
 }
 
 //---------------------------------------------------------------------------------------------
 ActionResult<CNEOBot> CNEOBotJgrCapture::OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction )
 {
-	me->StopLookingAroundForEnemies();
-	return Continue();
+	// Situation around juggernaut is possibly stale, reevaluate
+	return Done( "OnResume: Reevaluating capture situation" );
 }
 
 //---------------------------------------------------------------------------------------------
@@ -92,6 +109,29 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 		}
 	}
 
+	CBasePlayer *pActivatingPlayer = m_hObjective->GetActivatingPlayer();
+	if ( pActivatingPlayer )
+	{
+		if ( !me->InSameTeam( pActivatingPlayer ) )
+		{
+			return SuspendFor( new CNEOBotAttack, "Attacking enemy capturing the juggernaut" );
+		}
+		else if ( pActivatingPlayer != me )
+		{
+			if ( me->GetVisionInterface()->GetPrimaryKnownThreat() )
+			{
+				return SuspendFor( new CNEOBotAttack, "Defending teammate capturing the juggernaut" );
+			}
+
+			// Look away from the juggernaut to watch for threats
+			CNEOBotJgrCapture::LookAwayFrom( me, m_hObjective );
+
+			me->ReleaseUseButton();
+			m_useAttemptTimer.Invalidate();
+			return Continue();
+		}
+	}
+
 	if ( me->GetAbsOrigin().DistToSqr( m_hObjective->GetAbsOrigin() ) < CNEO_Juggernaut::GetUseDistanceSquared() )
 	{
 		if ( NEORules()->IsJuggernautLocked() )
@@ -101,47 +141,76 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 			Assert( NEORules()->IsJuggernautLocked() == (pJuggernaut && pJuggernaut->m_bLocked) );
 #endif
 			me->ReleaseUseButton();
-			return SuspendFor( new CNEOBotRetreatToCover( 2.0f ), "Juggernaut is locked, taking cover to wait for it to unlock" );
+			m_useAttemptTimer.Invalidate();
+
+			// Look away from the juggernaut while it's locked to watch for threats
+			CNEOBotJgrCapture::LookAwayFrom( me, m_hObjective );
 		}
-		
-		// Stop moving while using
-		m_path.Invalidate();
-		me->ReleaseForwardButton();
-		me->ReleaseBackwardButton();
-		me->ReleaseLeftButton();
-		me->ReleaseRightButton();
 
 		const Vector vecObjectiveCenter = m_hObjective->WorldSpaceCenter();
+		me->GetBodyInterface()->AimHeadTowards( vecObjectiveCenter, IBody::MANDATORY, 0.1f, nullptr, "Focusing on Juggernaut objective" );
+
+		// Check if we are facing juggernaut and have a clear line of sight
 		Vector vecToTargetDir = vecObjectiveCenter - me->EyePosition();
 		vecToTargetDir.NormalizeInPlace();
 
-		// Ensure we are facing the target before attempting to use
 		Vector vecEyeDirection;
 		me->EyeVectors( &vecEyeDirection );
 		const float flDot = vecEyeDirection.Dot( vecToTargetDir );
-		const bool bIsFacing = flDot > 0.9f;
+		const bool bIsFacing = flDot > JGR_CAPTURE_FACING_DOT;
 
-		me->GetBodyInterface()->AimHeadTowards( vecObjectiveCenter, IBody::CRITICAL, 0.1f, NULL, "Looking at Juggernaut objective to use" );
+		trace_t trace;
+		UTIL_TraceLine( me->EyePosition(), vecObjectiveCenter, MASK_PLAYERSOLID, me, COLLISION_GROUP_NONE, &trace );
 
-		if ( m_useAttemptTimer.HasStarted() )
+		if ( trace.m_pEnt == m_hObjective )
 		{
-			if ( m_useAttemptTimer.IsElapsed() )
+			if ( bIsFacing && me->GetBodyInterface()->IsHeadAimingOnTarget() )
 			{
-				return Done( "Use timer elapsed, failed to capture" );
+				if ( !m_useAttemptTimer.HasStarted() )
+				{
+					m_useAttemptTimer.Start( CNEO_Juggernaut::GetUseDuration() + JGR_CAPTURE_TIMER_BUFFER );
+				}
+
+				me->PressUseButton();
+				StopMoving( me );
+
+				if ( m_useAttemptTimer.IsElapsed() )
+				{
+					return Done( "Activation attempt expired" );
+				}
 			}
 		}
-		else if ( bIsFacing && me->GetBodyInterface()->IsHeadAimingOnTarget() )
+		else
 		{
-			m_useAttemptTimer.Start( CNEO_Juggernaut::GetUseDuration() + 1.0f );
-			me->PressUseButton( CNEO_Juggernaut::GetUseDuration() + 1.0f );
+			// Trace blocked (usually by teammate), reposition to get a better angle
+			me->ReleaseUseButton();
+			m_useAttemptTimer.Invalidate();
+			m_path.Invalidate();
+
+			const float flRepositionDistSqr = JGR_CAPTURE_REPOSITION_RATIO * CNEO_Juggernaut::GetUseDistanceSquared();
+			if ( me->GetAbsOrigin().DistToSqr( m_hObjective->GetAbsOrigin() ) > flRepositionDistSqr )
+			{
+				me->PressForwardButton( 0.2f );
+			}
+
+			if ( m_bStrafeRight )
+			{
+				me->PressRightButton( 1.0f );
+				me->ReleaseLeftButton();
+			}
+			else
+			{
+				me->PressLeftButton( 1.0f );
+				me->ReleaseRightButton();
+			}
 		}
 	}
 	else
 	{
-		// Objective is farther than we can reach for cpature
-		if ( m_repathTimer.IsElapsed() )
+		// Objective is farther than we can reach for capture
+		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
 		{
-			m_repathTimer.Start( RandomFloat( 1.0f, 5.0f ) );
+			m_repathTimer.Start( RandomFloat( JGR_CAPTURE_MIN_REPATH_DELAY, JGR_CAPTURE_MAX_REPATH_DELAY ) );
 			if ( !CNEOBotPathCompute( me, m_path, m_hObjective->GetAbsOrigin(), FASTEST_ROUTE ) )
 			{
 				return Done( "Unable to find a path to the Juggernaut objective" );
@@ -151,4 +220,20 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 	}
 
 	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotJgrCapture::LookAwayFrom( CNEOBot *me, CBaseEntity *pTarget )
+{
+	if ( !pTarget )
+	{
+		return;
+	}
+
+	Vector vecAwayFromTarget = me->GetAbsOrigin() - pTarget->GetAbsOrigin();
+	Vector2D vecLookDir2D = vecAwayFromTarget.AsVector2D();
+	vecLookDir2D.NormalizeInPlace();
+
+	const Vector vecLookPos = me->EyePosition() + Vector( vecLookDir2D.x, vecLookDir2D.y, 0.0f ) * 500.0f;
+	me->GetBodyInterface()->AimHeadTowards( vecLookPos, IBody::IMPORTANT, 0.1f, nullptr, "Facing away from target to watch for threats" );
 }
