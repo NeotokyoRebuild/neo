@@ -3,6 +3,10 @@
 
 #include "neo_gamerules.h"
 
+#ifdef GAME_DLL
+#include "neo_spawn_manager.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -56,7 +60,9 @@ CNEOSpawnPoint::CNEOSpawnPoint()
 
 CNEOSpawnPoint::~CNEOSpawnPoint()
 {
-	
+#ifdef GAME_DLL
+	NeoSpawnManager::Unregister(this);
+#endif
 }
 
 void CNEOSpawnPoint::Spawn()
@@ -70,6 +76,10 @@ void CNEOSpawnPoint::Spawn()
 	DevMsg("Neo spawnpoint for %s at %f %f %f\n",
 		(m_iOwningTeam == TEAM_JINRAI ? "Jinrai" : "NSF"),
 		GetAbsOrigin().x, GetAbsOrigin().y, GetAbsOrigin().z);
+#endif
+
+#ifdef GAME_DLL
+	NeoSpawnManager::Register(this);
 #endif
 }
 

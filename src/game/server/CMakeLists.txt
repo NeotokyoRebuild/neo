@@ -1400,6 +1400,8 @@ target_sources_grouped(
     neo/neo_player.h
     neo/neo_smokelineofsightblocker.cpp
     neo/neo_smokelineofsightblocker.h
+    neo/neo_spawn_manager.cpp
+    neo/neo_spawn_manager.h
     neo/neo_smokegrenade.cpp
     neo/neo_smokegrenade.h
     neo/neo_te_tocflash.cpp
