@@ -1779,9 +1779,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	CShotManipulator Manipulator( info.m_vecDirShooting );
 #endif
 
+#ifndef NEO
 	bool bDoImpacts = false;
 	bool bDoTracers = false;
-	
+#endif
+
 	float flCumulativeDamage = 0.0f;
 
 	for (int iShot = 0; iShot < info.m_iShots; iShot++)
@@ -2050,10 +2052,12 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 					{
 						DoImpactEffect( tr, nDamageType );
 					}
+#ifndef NEO
 					else
 					{
 						bDoImpacts = true;
 					}
+#endif
 				}
 				else
 				{
