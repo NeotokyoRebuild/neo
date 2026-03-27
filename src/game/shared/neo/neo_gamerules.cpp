@@ -35,9 +35,15 @@
 #include "nav_mesh.h"
 #include "neo_npc_dummy.h"
 #include "materialsystem/imaterialsystem.h"
+#include <world.h>
 
 #include <utility>
+#endif
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
+#ifdef GAME_DLL
 extern ConVar weaponstay;
 #endif
 
@@ -681,10 +687,12 @@ CNEORules::CNEORules()
 	m_bCyberspaceLevel = false;
 
 	ResetMapSessionCommon();
-	ListenForGameEvent("round_start");
-	ListenForGameEvent("game_end");
 
+	ListenForGameEvent("game_end");
+	ListenForGameEvent("round_start");
 #ifdef GAME_DLL
+	ListenForGameEvent("player_hurt");
+
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
 #endif
 }
@@ -1920,7 +1928,7 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 #endif
 	}
 
-	if (Q_strcmp(type, "game_end") == 0)
+	else if (Q_strcmp(type, "game_end") == 0)
 	{
 #ifdef CLIENT_DLL
 		if (sv_neo_client_autorecord.GetBool() && cl_neo_client_autorecord_allow.GetBool())
@@ -1933,6 +1941,33 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 		m_bServerIsCurrentlyAutoRecording = false;
 #endif // GAME_DLL
 	}
+
+#ifdef GAME_DLL
+	else if (V_strcmp(type, "player_hurt") == 0)
+	{
+		const int victimUserid = event->GetInt("userid", INVALID_USER_ID);
+		const auto victim = static_cast<CBaseEntity*>(UTIL_PlayerByUserId(victimUserid));
+		if (!victim)
+			return;
+
+		const int attackerUserid = event->GetInt("attacker", INVALID_USER_ID);
+		const auto attacker = attackerUserid
+			? static_cast<CBaseEntity*>(UTIL_PlayerByUserId(attackerUserid))
+			: GetWorldEntity();
+		if (!attacker)
+			return;
+
+		const auto dmg = event->GetFloat("damageamount");
+		if (!dmg)
+			return;
+
+		AssertFitsArray(attacker->entindex(), victim->entindex(), m_flDamageDealt);
+		m_flDamageDealt[attacker->entindex()][victim->entindex()] += dmg;
+
+		AssertFitsArray(attacker->entindex(), victim->entindex(), m_iNumHits);
+		m_iNumHits[attacker->entindex()][victim->entindex()] += 1;
+	}
+#endif
 }
 
 #ifdef GAME_DLL

@@ -495,6 +495,13 @@ private:
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
 	int m_iMatchWinner = TEAM_UNASSIGNED;
+
+	// Attackers and their respective damage dealt to everyone else.
+	// Index 0 is the damage attributed to the world, like damage by gravity.
+	float m_flDamageDealt[MAX_PLAYERS_ARRAY_SAFE][MAX_PLAYERS_ARRAY_SAFE] = {};
+	// Attackers and their respective number of hits that landed on enemies.
+	// Index 0 is the damage attributed to the world, like damage by gravity.
+	int m_iNumHits[MAX_PLAYERS_ARRAY_SAFE][MAX_PLAYERS_ARRAY_SAFE] = {};
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);

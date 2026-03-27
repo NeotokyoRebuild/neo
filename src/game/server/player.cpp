@@ -1730,7 +1730,11 @@ int CBasePlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	{
 		event->SetInt("userid", GetUserID() );
 		event->SetInt("health", MAX(0, m_iHealth) );
+#ifdef NEO
+		event->SetFloat("damageamount", info.GetDamage());
+#else
 		event->SetInt("priority", 5 );	// HLTV event priority, not transmitted
+#endif
 
 		if ( attacker->IsPlayer() )
 		{
