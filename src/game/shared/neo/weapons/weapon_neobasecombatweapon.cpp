@@ -227,6 +227,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
 	m_bTriggerReset = true;
+	m_flReloadStartTime = 0.0f;
 }
 
 void CNEOBaseCombatWeapon::Precache()

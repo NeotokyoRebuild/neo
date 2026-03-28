@@ -823,6 +823,52 @@ void C_NEO_Player::ItemPreFrame( void )
 			Weapon_Drop(neoWep);
 		}
 	}
+
+	// Debug reload timing
+	if (prediction && prediction->IsFirstTimePredicted())
+	{
+		static ConVarRef host_timescale("host_timescale");
+		float ts = host_timescale.IsValid() ? host_timescale.GetFloat() : 1.0f;
+		if (ts <= 0.0f) ts = 1.0f;
+
+		if (m_afButtonPressed & IN_RELOAD)
+		{
+			Msg("[Client] RELOAD KEY PRESSED: GameTime: %.4f (ts: %.2f)\n", gpGlobals->curtime, ts);
+		}
+
+		if (auto pWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
+		{
+			if (pWep->m_bInReload)
+			{
+				bool bIsStart = false;
+				if (pWep->m_flReloadStartTime == 0.0f)
+				{
+					pWep->m_flReloadStartTime = gpGlobals->curtime;
+					bIsStart = true;
+				}
+
+				float gameTime = gpGlobals->curtime - pWep->m_flReloadStartTime;
+				float realTime = gameTime / ts;
+
+				if (bIsStart)
+				{
+					Msg("[Client] RELOAD START (m_bInReload) - %s: GameTime: %.4f, Perceived: %.4f (ts: %.2f)\n", pWep->GetClassname(), gameTime, realTime, ts);
+				}
+				else
+				{
+					Msg("[Client] Reloading %s: GameTime: %.4f, Perceived: %.4f (ts: %.2f)\n", pWep->GetClassname(), gameTime, realTime, ts);
+				}
+			}
+			else if (pWep->m_flReloadStartTime != 0.0f)
+			{
+				float gameTime = gpGlobals->curtime - pWep->m_flReloadStartTime;
+				float realTime = gameTime / ts;
+
+				Msg("[Client] RELOAD STOP - %s: Total GameTime: %.4f, Total Perceived: %.4f\n", pWep->GetClassname(), gameTime, realTime);
+				pWep->m_flReloadStartTime = 0.0f;
+			}
+		}
+	}
 }
 
 void C_NEO_Player::ItemPostFrame( void )

@@ -249,6 +249,9 @@ protected:
 	CNetworkVar(int, m_nNumShotsFired);
 	CNetworkVar(bool, m_bTriggerReset);
 
+public:
+	float m_flReloadStartTime;
+
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
 
