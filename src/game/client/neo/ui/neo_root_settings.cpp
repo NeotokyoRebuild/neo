@@ -1451,6 +1451,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			L"Default hipfire",
 			L"Secondary hipfire",
 			L"Shotgun hipfire",
+			L"Grenades",
 		};
 		NeoUI::SetPerRowLayout(1);
 		static_assert(sizeof(int) == sizeof(ENeoCrosshairWep));

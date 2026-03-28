@@ -6,7 +6,7 @@
 #define FOR_LIST_WEAPONS(X, X_ALT) \
 	X(AA13, 		aa13, 			"AA13", 							WEP_TYPE_SHOTGUN) \
 	X(BALC, 		balc, 			"BALC3", 							WEP_TYPE_MACHINEGUN) \
-	X(DETPACK, 		detpack, 		"Detpack", 							WEP_TYPE_THROWABLE) \
+	X(DETPACK, 		detpack, 		"Detpack", 							WEP_TYPE_NIL) \
 	X(GHOST, 		ghost, 			"Ghost", 							WEP_TYPE_NIL) \
 	X(FRAG_GRENADE, grenade, 		"Grenade", 							WEP_TYPE_THROWABLE) \
 	X(JITTE, 		jitte, 			"Jitte", 							WEP_TYPE_SMG) \

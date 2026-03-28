@@ -16,8 +16,8 @@ class C_NEOBaseCombatWeapon;
 #endif // CLIENT_DLL
 
 // NEO NOTE (nullsystem): Check in test/test_neo_crosshair.cpp TestSerial_LongestLength unit test
-// on longest length. Currently it sits under 400.
-static constexpr const size_t NEO_XHAIR_SEQMAX = 400;
+// on longest length. Currently it sits under 512.
+static constexpr const size_t NEO_XHAIR_SEQMAX = 512;
 
 static constexpr int CROSSHAIR_MAX_SIZE = 100;
 static constexpr int CROSSHAIR_MAX_THICKNESS = 25;
@@ -63,6 +63,7 @@ enum ENeoCrosshairWep
 	CROSSHAIR_WEP_DEFAULT_HIPFIRE,
 	CROSSHAIR_WEP_SECONDARY_HIPFIRE,
 	CROSSHAIR_WEP_SHOTGUN_HIPFIRE,
+	CROSSHAIR_WEP_THROWABLE_HIPFIRE,
 
 	CROSSHAIR_WEP__TOTAL,
 };
@@ -77,7 +78,8 @@ enum NeoCrosshairWepFlag_
 	CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE = 1 << 2,	// Default hipfire
 	CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE = 1 << 3,	// Pistols hipfire
 	CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE = 1 << 4,	// Shotguns hipfire
-	
+	CROSSHAIR_WEP_FLAG_THROWABLE_HIPFIRE = 1 << 5,	// Throwables (Grenades, Smokes, NOT detpack)
+
 	CROSSHAIR_WEP_FLAG__FINALENUM,
 	CROSSHAIR_WEP_FLAG__HIGHESTFLAG = 2 * (CROSSHAIR_WEP_FLAG__FINALENUM - 1),
 };
@@ -97,7 +99,8 @@ enum NeoCrosshairHipfireCustomFlag_
 	CROSSHAIR_HIPFIRECUSTOM_FLAG_DEFAULT = 1 << 0,		// If not set: Fallback to non-hipfire default
 	CROSSHAIR_HIPFIRECUSTOM_FLAG_SECONDARY = 1 << 1,	// If not set: Fallback to hipfire default
 	CROSSHAIR_HIPFIRECUSTOM_FLAG_SHOTGUN = 1 << 2,		// If not set: Fallback to hipfire default
-	
+	CROSSHAIR_HIPFIRECUSTOM_FLAG_THROWABLE = 1 << 3,	// If not set: Fallback to hipfire default
+
 	CROSSHAIR_HIPFIRECUSTOM_FLAG__FINALENUM,
 	CROSSHAIR_HIPFIRECUSTOM_FLAG__HIGHESTFLAG = 2 * (CROSSHAIR_HIPFIRECUSTOM_FLAG__FINALENUM - 1),
 };

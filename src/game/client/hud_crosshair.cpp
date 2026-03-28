@@ -545,7 +545,9 @@ void CHudCrosshair::Paint( void )
 	if (pWeapon)
 	{
 		int iNeoXHairWep = MAP_WEAPON_TYPE_TO_XHAIR[NEO_WEAPON_TYPE[pWeapon->WeaponIndex()]];
-		if (iNeoXHairWep >= CROSSHAIR_WEP_DEFAULT && false == pNeoPlayer->m_bInAim)
+		if (iNeoXHairWep >= CROSSHAIR_WEP_DEFAULT
+				&& iNeoXHairWep < CROSSHAIR_WEP_DEFAULT_HIPFIRE
+				&& false == pNeoPlayer->m_bInAim)
 		{
 			iNeoXHairWep += CROSSHAIR_WEP_DEFAULT_HIPFIRE;
 		}

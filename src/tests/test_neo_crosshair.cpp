@@ -51,11 +51,12 @@ void TestDeserial_V2_ALPHA_V17()
 	TEST_COMPARE_INT(chr->colorDotOutline.GetRawColor(), defChr->colorDotOutline.GetRawColor());
 	TEST_COMPARE_INT(chr->colorOutline.GetRawColor(), defChr->colorDotOutline.GetRawColor());
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -105,11 +106,12 @@ void TestDeserial_V3_ALPHA_V19()
 	TEST_COMPARE_INT(chr->colorDotOutline.GetRawColor(), defChr->colorDotOutline.GetRawColor());
 	TEST_COMPARE_INT(chr->colorOutline.GetRawColor(), defChr->colorDotOutline.GetRawColor());
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -153,11 +155,12 @@ void TestDeserial_V4_ALPHA_V22()
 	TEST_COMPARE_INT(chr->colorDotOutline.GetRawColor(), Color(0, 255, 0, 255).GetRawColor());
 	TEST_COMPARE_INT(chr->colorOutline.GetRawColor(), Color(0, 0, 255, 255).GetRawColor());
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -207,11 +210,12 @@ void TestDeserial_V5_ALPHA_V28()
 	// Test default values
 	TEST_COMPARE_FLT(chr->flScrSize, defChr->flScrSize, 0.0001f);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -263,11 +267,12 @@ void TestDeserial_V6_ALPHA_V29()
 	// Test default values
 	TEST_COMPARE_FLT(chr->flScrSize, defChr->flScrSize, 0.0001f);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -281,11 +286,11 @@ void TestDeserial_V6_ALPHA_V29()
 
 void TestSerial_LongestLength()
 {
-	static const char SERIAL_TEST_STR[] = CURRENT_VER ";31;7;3;2;-1;1;0.999;10;10;5;10;10;10;1;-1;-1;-1;2;;-16777217;0;11;11;11;4;11;11;11;2;-16777217;-16777217;-16777217;2;;-16777217;0;11;11;11;4;11;11;11;2;-16777217;-16777217;-16777217;2;;-16777217;0;11;11;11;4;11;11;11;2;-16777217;-16777217;-16777217;3;;-33554433;1;0.997;12;12;3;12;12;12;3;-33554433;-33554433;-33554433;3;;-33554433;1;0.997;12;12;3;12;12;12;3;-33554433;-33554433;-33554433;";
+	static const char SERIAL_TEST_STR[] = CURRENT_VER ";63;15;3;2;-1;1;0.999;10;10;5;10;10;10;1;-1;-1;-1;2;;-16777217;0;11;11;11;4;11;11;11;2;-16777217;-16777217;-16777217;2;;-16777217;0;11;11;11;4;11;11;11;2;-16777217;-16777217;-16777217;2;;-16777217;0;11;11;11;4;11;11;11;2;-16777217;-16777217;-16777217;3;;-33554433;1;0.997;12;12;3;12;12;12;3;-33554433;-33554433;-33554433;3;;-33554433;1;0.997;12;12;3;12;12;12;3;-33554433;-33554433;-33554433;3;;-33554433;1;0.997;12;12;3;12;12;12;3;-33554433;-33554433;-33554433;";
 
 	CrosshairInfo xhairInfo = {};
-	xhairInfo.wepFlags = CROSSHAIR_WEP_FLAG_SECONDARY | CROSSHAIR_WEP_FLAG_SHOTGUN | CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE | CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE | CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE;
-	xhairInfo.hipfireFlags = CROSSHAIR_HIPFIRECUSTOM_FLAG_DEFAULT | CROSSHAIR_HIPFIRECUSTOM_FLAG_SECONDARY | CROSSHAIR_HIPFIRECUSTOM_FLAG_SHOTGUN;
+	xhairInfo.wepFlags = CROSSHAIR_WEP_FLAG_SECONDARY | CROSSHAIR_WEP_FLAG_SHOTGUN | CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE | CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE | CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE | CROSSHAIR_WEP_FLAG_THROWABLE_HIPFIRE;
+	xhairInfo.hipfireFlags = CROSSHAIR_HIPFIRECUSTOM_FLAG_DEFAULT | CROSSHAIR_HIPFIRECUSTOM_FLAG_SECONDARY | CROSSHAIR_HIPFIRECUSTOM_FLAG_SHOTGUN | CROSSHAIR_HIPFIRECUSTOM_FLAG_THROWABLE;
 
 	{
 		CrosshairWepInfo *chr = &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT];
@@ -400,11 +405,12 @@ void TestFailure_OutOfBoundStr_Over()
 
 	// Because both wepFlags and hipfireFlags are 0, the rest should really just be
 	// copies of the default segments, nothing will pick up the "12;24;48;" at the end
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 }
 
 void TestFailure_OutOfBoundValues()
@@ -444,11 +450,12 @@ void TestFailure_OutOfBoundValues()
 	// Test default values
 	TEST_COMPARE_FLT(chr->flScrSize, defChr->flScrSize, 0.0001f);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -476,11 +483,12 @@ void TestFeature_Omit_Style_Default()
 	TEST_COMPARE_INT(chr->flags, CROSSHAIR_FLAG_DEFAULT);
 	TEST_COMPARE_INT(chr->eSizeType, CROSSHAIR_SIZETYPE_ABSOLUTE);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -506,11 +514,12 @@ void TestFeature_Omit_Style_AltB()
 	TEST_COMPARE_INT(chr->flags, CROSSHAIR_FLAG_DEFAULT);
 	TEST_COMPARE_INT(chr->eSizeType, CROSSHAIR_SIZETYPE_ABSOLUTE);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -818,11 +827,12 @@ void TestFeature_Flags_OldBool_None()
 	// Test values that's from the string itself
 	TEST_COMPARE_INT(chr->flags, CROSSHAIR_FLAG_DEFAULT);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -851,11 +861,12 @@ void TestFeature_Flags_OldBool_ToplineOff()
 	// Test values that's from the string itself
 	TEST_COMPARE_INT(chr->flags, CROSSHAIR_FLAG_NOTOPLINE);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -884,11 +895,12 @@ void TestFeature_Flags_OldBool_SepDotColor()
 	// Test values that's from the string itself
 	TEST_COMPARE_INT(chr->flags, CROSSHAIR_FLAG_SEPERATEDOTCOLOR);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -917,11 +929,12 @@ void TestFeature_Flags_OldBool_ToplineOff_SepDotColor()
 	// Test values that's from the string itself
 	TEST_COMPARE_INT(chr->flags, CROSSHAIR_FLAG_NOTOPLINE | CROSSHAIR_FLAG_SEPERATEDOTCOLOR);
 
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
-	TEST_VERIFY(0 == V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SECONDARY_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_SHOTGUN_HIPFIRE], sizeof(CrosshairWepInfo)));
+	TEST_COMPARE_INT(0, V_memcmp(chr, &xhairInfo.wep[CROSSHAIR_WEP_THROWABLE_HIPFIRE], sizeof(CrosshairWepInfo)));
 
 	char szExportSeq[NEO_XHAIR_SEQMAX];
 	ExportCrosshair(&xhairInfo, szExportSeq);
@@ -979,12 +992,12 @@ void TestFeature_Flags_Topline_Off_SepDotColor()
 
 void TestFeature_RunLengthEncode_Full()
 {
-	static const char SERIAL_TEST_STR[] = CURRENT_VER ";31;7;3;2;-1;0;10;10;10;5;10;10;10;1;-1;-1;-1;75^";
+	static const char SERIAL_TEST_STR[] = CURRENT_VER ";63;15;3;2;-1;0;10;10;10;5;10;10;10;1;-1;-1;-1;90^";
 
 	CrosshairInfo xhairInfo = {};
 	ResetCrosshairToDefault(&xhairInfo);
-	xhairInfo.wepFlags = CROSSHAIR_WEP_FLAG_SECONDARY | CROSSHAIR_WEP_FLAG_SHOTGUN | CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE | CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE | CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE;
-	xhairInfo.hipfireFlags = CROSSHAIR_HIPFIRECUSTOM_FLAG_DEFAULT | CROSSHAIR_HIPFIRECUSTOM_FLAG_SECONDARY | CROSSHAIR_HIPFIRECUSTOM_FLAG_SHOTGUN;
+	xhairInfo.wepFlags = CROSSHAIR_WEP_FLAG_SECONDARY | CROSSHAIR_WEP_FLAG_SHOTGUN | CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE | CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE | CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE | CROSSHAIR_WEP_FLAG_THROWABLE_HIPFIRE;
+	xhairInfo.hipfireFlags = CROSSHAIR_HIPFIRECUSTOM_FLAG_DEFAULT | CROSSHAIR_HIPFIRECUSTOM_FLAG_SECONDARY | CROSSHAIR_HIPFIRECUSTOM_FLAG_SHOTGUN | CROSSHAIR_HIPFIRECUSTOM_FLAG_THROWABLE;
 
 	for (int i = 0; i < CROSSHAIR_WEP__TOTAL; ++i)
 	{
@@ -1039,12 +1052,12 @@ void TestFeature_RunLengthEncode_Full()
 
 void TestFeature_RunLengthEncode_Partial()
 {
-	static const char SERIAL_TEST_STR[] = CURRENT_VER ";31;7;2;2;-1;1;0.999;10;10;5;10;10;10;1;-1;-1;-1;;;-16777217;0;10;;11;7^-16777217;;;-16777217;0;10;;11;7^-16777217;;;-16777217;0;10;;11;7^-16777217;;;-33554433;;12;;10;;12;;;3;-16777217;;-1;;;-33554433;;12;;10;;12;;;3;-16777217;;-1;";
+	static const char SERIAL_TEST_STR[] = CURRENT_VER ";63;15;2;2;-1;1;0.999;10;10;5;10;10;10;1;-1;-1;-1;;;-16777217;0;10;;11;7^-16777217;;;-16777217;0;10;;11;7^-16777217;;;-16777217;0;10;;11;7^-16777217;;;-33554433;;12;;10;;12;;;3;-16777217;;-1;;;-33554433;;12;;10;;12;;;3;-16777217;;-1;;;-33554433;;12;;10;;12;;;3;-16777217;;-1;";
 
 	CrosshairInfo xhairInfo = {};
 	ResetCrosshairToDefault(&xhairInfo);
-	xhairInfo.wepFlags = CROSSHAIR_WEP_FLAG_SECONDARY | CROSSHAIR_WEP_FLAG_SHOTGUN | CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE | CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE | CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE;
-	xhairInfo.hipfireFlags = CROSSHAIR_HIPFIRECUSTOM_FLAG_DEFAULT | CROSSHAIR_HIPFIRECUSTOM_FLAG_SECONDARY | CROSSHAIR_HIPFIRECUSTOM_FLAG_SHOTGUN;
+	xhairInfo.wepFlags = CROSSHAIR_WEP_FLAG_SECONDARY | CROSSHAIR_WEP_FLAG_SHOTGUN | CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE | CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE | CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE | CROSSHAIR_WEP_FLAG_THROWABLE_HIPFIRE;
+	xhairInfo.hipfireFlags = CROSSHAIR_HIPFIRECUSTOM_FLAG_DEFAULT | CROSSHAIR_HIPFIRECUSTOM_FLAG_SECONDARY | CROSSHAIR_HIPFIRECUSTOM_FLAG_SHOTGUN | CROSSHAIR_HIPFIRECUSTOM_FLAG_THROWABLE;
 
 	{
 		CrosshairWepInfo *chr = &xhairInfo.wep[CROSSHAIR_WEP_DEFAULT];
@@ -1141,6 +1154,253 @@ void TestFeature_RunLengthEncode_Partial()
 	}
 }
 
+struct TestFeature_WepFlags_Hipfire_data_s
+{
+	CrosshairInfo xhairInfo;
+	char szSerial[NEO_XHAIR_SEQMAX];
+};
+
+enum TestFeature_WepFlags_Hipfire_data_e
+{
+	WEPFLAG_HIPFIRE_DATA_NOWEP = 0,
+	WEPFLAG_HIPFIRE_DATA__TOTAL = 64 * 2,
+};
+
+void TestFeature_WepFlags_Hipfire_data(
+		TestFeature_WepFlags_Hipfire_data_s (&datas)[WEPFLAG_HIPFIRE_DATA__TOTAL],
+		char (&szNames)[WEPFLAG_HIPFIRE_DATA__TOTAL][DATA_XTRA_NAME_SIZE])
+{
+	for (int iFlags = 0; iFlags < 64; ++iFlags)
+	{
+		TestFeature_WepFlags_Hipfire_data_s *data = &datas[iFlags];
+		ResetCrosshairToDefault(&data->xhairInfo);
+		data->xhairInfo.wepFlags = iFlags;
+		data->xhairInfo.hipfireFlags = 0;
+
+		V_strcpy_safe(szNames[iFlags], "flags_empty");
+		if (iFlags & CROSSHAIR_WEP_FLAG_SECONDARY)
+		{
+			V_strcat_safe(szNames[iFlags], "_se");
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_SHOTGUN)
+		{
+			V_strcat_safe(szNames[iFlags], "_sh");
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE)
+		{
+			V_strcat_safe(szNames[iFlags], "_hfdef");
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE)
+		{
+			V_strcat_safe(szNames[iFlags], "_hfse");
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE)
+		{
+			V_strcat_safe(szNames[iFlags], "_hfsh");
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_THROWABLE_HIPFIRE)
+		{
+			V_strcat_safe(szNames[iFlags], "_hfth");
+		}
+	}
+
+	for (int iFlags = 0; iFlags < 64; ++iFlags)
+	{
+		TestFeature_WepFlags_Hipfire_data_s *data = &datas[iFlags + 64];
+		ResetCrosshairToDefault(&data->xhairInfo);
+		data->xhairInfo.wepFlags = iFlags;
+		data->xhairInfo.hipfireFlags = 0;
+
+		V_strcpy_safe(szNames[iFlags + 64], "flags_partial");
+		if (iFlags & CROSSHAIR_WEP_FLAG_SECONDARY)
+		{
+			V_strcat_safe(szNames[iFlags + 64], "_se");
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_SHOTGUN)
+		{
+			V_strcat_safe(szNames[iFlags + 64], "_sh");
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_DEFAULT_HIPFIRE)
+		{
+			V_strcat_safe(szNames[iFlags + 64], "_hfdef");
+			data->xhairInfo.hipfireFlags |= CROSSHAIR_HIPFIRECUSTOM_FLAG_DEFAULT;
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_SECONDARY_HIPFIRE)
+		{
+			V_strcat_safe(szNames[iFlags + 64], "_hfse");
+			data->xhairInfo.hipfireFlags |= CROSSHAIR_HIPFIRECUSTOM_FLAG_SECONDARY;
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_SHOTGUN_HIPFIRE)
+		{
+			V_strcat_safe(szNames[iFlags + 64], "_hfsh");
+			data->xhairInfo.hipfireFlags |= CROSSHAIR_HIPFIRECUSTOM_FLAG_SHOTGUN;
+		}
+		if (iFlags & CROSSHAIR_WEP_FLAG_THROWABLE_HIPFIRE)
+		{
+			V_strcat_safe(szNames[iFlags + 64], "_hfth");
+			data->xhairInfo.hipfireFlags |= CROSSHAIR_HIPFIRECUSTOM_FLAG_THROWABLE;
+		}
+		for (int i = 1; i < CROSSHAIR_WEP__TOTAL; ++i)
+		{
+			if (iFlags & (1 << (i - 1)))
+			{
+				data->xhairInfo.wep[i].iStyle = CROSSHAIR_STYLE_CUSTOM;
+				data->xhairInfo.wep[i].iSize = 1;
+			}
+		}
+	}
+
+	V_strcpy_safe(datas[0].szSerial, CURRENT_VER ";0;0;0;0;-1;");
+	V_strcpy_safe(datas[1].szSerial, CURRENT_VER ";1;0;0;0;-1;3^");
+	V_strcpy_safe(datas[2].szSerial, CURRENT_VER ";2;0;0;0;-1;3^");
+	V_strcpy_safe(datas[3].szSerial, CURRENT_VER ";3;0;0;0;-1;6^");
+	V_strcpy_safe(datas[4].szSerial, CURRENT_VER ";4;0;0;0;-1;");
+	V_strcpy_safe(datas[5].szSerial, CURRENT_VER ";5;0;0;0;-1;3^");
+	V_strcpy_safe(datas[6].szSerial, CURRENT_VER ";6;0;0;0;-1;3^");
+	V_strcpy_safe(datas[7].szSerial, CURRENT_VER ";7;0;0;0;-1;6^");
+	V_strcpy_safe(datas[8].szSerial, CURRENT_VER ";8;0;0;0;-1;");
+	V_strcpy_safe(datas[9].szSerial, CURRENT_VER ";9;0;0;0;-1;3^");
+	V_strcpy_safe(datas[10].szSerial, CURRENT_VER ";10;0;0;0;-1;3^");
+	V_strcpy_safe(datas[11].szSerial, CURRENT_VER ";11;0;0;0;-1;6^");
+	V_strcpy_safe(datas[12].szSerial, CURRENT_VER ";12;0;0;0;-1;");
+	V_strcpy_safe(datas[13].szSerial, CURRENT_VER ";13;0;0;0;-1;3^");
+	V_strcpy_safe(datas[14].szSerial, CURRENT_VER ";14;0;0;0;-1;3^");
+	V_strcpy_safe(datas[15].szSerial, CURRENT_VER ";15;0;0;0;-1;6^");
+	V_strcpy_safe(datas[16].szSerial, CURRENT_VER ";16;0;0;0;-1;");
+	V_strcpy_safe(datas[17].szSerial, CURRENT_VER ";17;0;0;0;-1;3^");
+	V_strcpy_safe(datas[18].szSerial, CURRENT_VER ";18;0;0;0;-1;3^");
+	V_strcpy_safe(datas[19].szSerial, CURRENT_VER ";19;0;0;0;-1;6^");
+	V_strcpy_safe(datas[20].szSerial, CURRENT_VER ";20;0;0;0;-1;");
+	V_strcpy_safe(datas[21].szSerial, CURRENT_VER ";21;0;0;0;-1;3^");
+	V_strcpy_safe(datas[22].szSerial, CURRENT_VER ";22;0;0;0;-1;3^");
+	V_strcpy_safe(datas[23].szSerial, CURRENT_VER ";23;0;0;0;-1;6^");
+	V_strcpy_safe(datas[24].szSerial, CURRENT_VER ";24;0;0;0;-1;");
+	V_strcpy_safe(datas[25].szSerial, CURRENT_VER ";25;0;0;0;-1;3^");
+	V_strcpy_safe(datas[26].szSerial, CURRENT_VER ";26;0;0;0;-1;3^");
+	V_strcpy_safe(datas[27].szSerial, CURRENT_VER ";27;0;0;0;-1;6^");
+	V_strcpy_safe(datas[28].szSerial, CURRENT_VER ";28;0;0;0;-1;");
+	V_strcpy_safe(datas[29].szSerial, CURRENT_VER ";29;0;0;0;-1;3^");
+	V_strcpy_safe(datas[30].szSerial, CURRENT_VER ";30;0;0;0;-1;3^");
+	V_strcpy_safe(datas[31].szSerial, CURRENT_VER ";31;0;0;0;-1;6^");
+	V_strcpy_safe(datas[32].szSerial, CURRENT_VER ";32;0;0;0;-1;");
+	V_strcpy_safe(datas[33].szSerial, CURRENT_VER ";33;0;0;0;-1;3^");
+	V_strcpy_safe(datas[34].szSerial, CURRENT_VER ";34;0;0;0;-1;3^");
+	V_strcpy_safe(datas[35].szSerial, CURRENT_VER ";35;0;0;0;-1;6^");
+	V_strcpy_safe(datas[36].szSerial, CURRENT_VER ";36;0;0;0;-1;");
+	V_strcpy_safe(datas[37].szSerial, CURRENT_VER ";37;0;0;0;-1;3^");
+	V_strcpy_safe(datas[38].szSerial, CURRENT_VER ";38;0;0;0;-1;3^");
+	V_strcpy_safe(datas[39].szSerial, CURRENT_VER ";39;0;0;0;-1;6^");
+	V_strcpy_safe(datas[40].szSerial, CURRENT_VER ";40;0;0;0;-1;");
+	V_strcpy_safe(datas[41].szSerial, CURRENT_VER ";41;0;0;0;-1;3^");
+	V_strcpy_safe(datas[42].szSerial, CURRENT_VER ";42;0;0;0;-1;3^");
+	V_strcpy_safe(datas[43].szSerial, CURRENT_VER ";43;0;0;0;-1;6^");
+	V_strcpy_safe(datas[44].szSerial, CURRENT_VER ";44;0;0;0;-1;");
+	V_strcpy_safe(datas[45].szSerial, CURRENT_VER ";45;0;0;0;-1;3^");
+	V_strcpy_safe(datas[46].szSerial, CURRENT_VER ";46;0;0;0;-1;3^");
+	V_strcpy_safe(datas[47].szSerial, CURRENT_VER ";47;0;0;0;-1;6^");
+	V_strcpy_safe(datas[48].szSerial, CURRENT_VER ";48;0;0;0;-1;");
+	V_strcpy_safe(datas[49].szSerial, CURRENT_VER ";49;0;0;0;-1;3^");
+	V_strcpy_safe(datas[50].szSerial, CURRENT_VER ";50;0;0;0;-1;3^");
+	V_strcpy_safe(datas[51].szSerial, CURRENT_VER ";51;0;0;0;-1;6^");
+	V_strcpy_safe(datas[52].szSerial, CURRENT_VER ";52;0;0;0;-1;");
+	V_strcpy_safe(datas[53].szSerial, CURRENT_VER ";53;0;0;0;-1;3^");
+	V_strcpy_safe(datas[54].szSerial, CURRENT_VER ";54;0;0;0;-1;3^");
+	V_strcpy_safe(datas[55].szSerial, CURRENT_VER ";55;0;0;0;-1;6^");
+	V_strcpy_safe(datas[56].szSerial, CURRENT_VER ";56;0;0;0;-1;");
+	V_strcpy_safe(datas[57].szSerial, CURRENT_VER ";57;0;0;0;-1;3^");
+	V_strcpy_safe(datas[58].szSerial, CURRENT_VER ";58;0;0;0;-1;3^");
+	V_strcpy_safe(datas[59].szSerial, CURRENT_VER ";59;0;0;0;-1;6^");
+	V_strcpy_safe(datas[60].szSerial, CURRENT_VER ";60;0;0;0;-1;");
+	V_strcpy_safe(datas[61].szSerial, CURRENT_VER ";61;0;0;0;-1;3^");
+	V_strcpy_safe(datas[62].szSerial, CURRENT_VER ";62;0;0;0;-1;3^");
+	V_strcpy_safe(datas[63].szSerial, CURRENT_VER ";63;0;0;0;-1;6^");
+	V_strcpy_safe(datas[64].szSerial, CURRENT_VER ";0;0;0;0;-1;");
+	V_strcpy_safe(datas[65].szSerial, CURRENT_VER ";1;0;0;0;-1;;2;;;1;6^");
+	V_strcpy_safe(datas[66].szSerial, CURRENT_VER ";2;0;0;0;-1;;2;;;1;6^");
+	V_strcpy_safe(datas[67].szSerial, CURRENT_VER ";3;0;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[68].szSerial, CURRENT_VER ";4;1;0;0;-1;;2;;;1;6^");
+	V_strcpy_safe(datas[69].szSerial, CURRENT_VER ";5;1;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[70].szSerial, CURRENT_VER ";6;1;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[71].szSerial, CURRENT_VER ";7;1;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[72].szSerial, CURRENT_VER ";8;2;0;0;-1;;2;;;1;6^");
+	V_strcpy_safe(datas[73].szSerial, CURRENT_VER ";9;2;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[74].szSerial, CURRENT_VER ";10;2;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[75].szSerial, CURRENT_VER ";11;2;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[76].szSerial, CURRENT_VER ";12;3;0;0;-1;;2;;;1;17^");
+	V_strcpy_safe(datas[77].szSerial, CURRENT_VER ";13;3;0;0;-1;;2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[78].szSerial, CURRENT_VER ";14;3;0;0;-1;;2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[79].szSerial, CURRENT_VER ";15;3;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[80].szSerial, CURRENT_VER ";16;4;0;0;-1;;2;;;1;6^");
+	V_strcpy_safe(datas[81].szSerial, CURRENT_VER ";17;4;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[82].szSerial, CURRENT_VER ";18;4;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[83].szSerial, CURRENT_VER ";19;4;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[84].szSerial, CURRENT_VER ";20;5;0;0;-1;;2;;;1;17^");
+	V_strcpy_safe(datas[85].szSerial, CURRENT_VER ";21;5;0;0;-1;;2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[86].szSerial, CURRENT_VER ";22;5;0;0;-1;;2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[87].szSerial, CURRENT_VER ";23;5;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[88].szSerial, CURRENT_VER ";24;6;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[89].szSerial, CURRENT_VER ";25;6;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[90].szSerial, CURRENT_VER ";26;6;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[91].szSerial, CURRENT_VER ";27;6;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[92].szSerial, CURRENT_VER ";28;7;0;0;-1;;2;;;1;28^");
+	V_strcpy_safe(datas[93].szSerial, CURRENT_VER ";29;7;0;0;-1;;2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[94].szSerial, CURRENT_VER ";30;7;0;0;-1;;2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[95].szSerial, CURRENT_VER ";31;7;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[96].szSerial, CURRENT_VER ";32;8;0;0;-1;;2;;;1;6^");
+	V_strcpy_safe(datas[97].szSerial, CURRENT_VER ";33;8;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[98].szSerial, CURRENT_VER ";34;8;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[99].szSerial, CURRENT_VER ";35;8;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[100].szSerial, CURRENT_VER ";36;9;0;0;-1;;2;;;1;17^");
+	V_strcpy_safe(datas[101].szSerial, CURRENT_VER ";37;9;0;0;-1;;2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[102].szSerial, CURRENT_VER ";38;9;0;0;-1;;2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[103].szSerial, CURRENT_VER ";39;9;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;17^");
+	V_strcpy_safe(datas[104].szSerial, CURRENT_VER ";40;10;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[105].szSerial, CURRENT_VER ";41;10;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[106].szSerial, CURRENT_VER ";42;10;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[107].szSerial, CURRENT_VER ";43;10;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[108].szSerial, CURRENT_VER ";44;11;0;0;-1;;2;;;1;28^");
+	V_strcpy_safe(datas[109].szSerial, CURRENT_VER ";45;11;0;0;-1;;2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[110].szSerial, CURRENT_VER ";46;11;0;0;-1;;2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[111].szSerial, CURRENT_VER ";47;11;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[112].szSerial, CURRENT_VER ";48;12;0;0;-1;;2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[113].szSerial, CURRENT_VER ";49;12;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[114].szSerial, CURRENT_VER ";50;12;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[115].szSerial, CURRENT_VER ";51;12;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[116].szSerial, CURRENT_VER ";52;13;0;0;-1;;2;;;1;28^");
+	V_strcpy_safe(datas[117].szSerial, CURRENT_VER ";53;13;0;0;-1;;2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[118].szSerial, CURRENT_VER ";54;13;0;0;-1;;2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[119].szSerial, CURRENT_VER ";55;13;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;28^");
+	V_strcpy_safe(datas[120].szSerial, CURRENT_VER ";56;14;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[121].szSerial, CURRENT_VER ";57;14;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[122].szSerial, CURRENT_VER ";58;14;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[123].szSerial, CURRENT_VER ";59;14;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;7^2;;;1;7^2;;;1;6^");
+	V_strcpy_safe(datas[124].szSerial, CURRENT_VER ";60;15;0;0;-1;;2;;;1;39^");
+	V_strcpy_safe(datas[125].szSerial, CURRENT_VER ";61;15;0;0;-1;;2;;;1;7^2;;;1;39^");
+	V_strcpy_safe(datas[126].szSerial, CURRENT_VER ";62;15;0;0;-1;;2;;;1;7^2;;;1;39^");
+	V_strcpy_safe(datas[127].szSerial, CURRENT_VER ";63;15;0;0;-1;;2;;;1;7^2;;;1;7^2;;;1;39^");
+}
+
+void TestFeature_WepFlags_Hipfire(TestFeature_WepFlags_Hipfire_data_s *data, [[maybe_unused]] const int idx)
+{
+	{
+		// Make sure what's expected the same as the string to check
+		char szExportSeq[NEO_XHAIR_SEQMAX];
+		ExportCrosshair(&data->xhairInfo, szExportSeq);
+		TEST_COMPARE_STR(szExportSeq, data->szSerial);
+	}
+	{
+		CrosshairInfo xhairInfo = {};
+		ImportCrosshair(&xhairInfo, data->szSerial);
+
+		// Make sure import from serial exactly matches what's expected
+		TEST_COMPARE_INT(0, V_memcmp(&xhairInfo, &data->xhairInfo, sizeof(CrosshairInfo)));
+
+		char szExportSeq[NEO_XHAIR_SEQMAX];
+		ExportCrosshair(&xhairInfo, szExportSeq);
+		TEST_COMPARE_STR(szExportSeq, data->szSerial);
+	}
+}
+
 TEST_INIT()
 	TEST_RUN(TestDeserial_V1_PREALPHA_V8_2);
 	TEST_RUN(TestDeserial_V2_ALPHA_V17);
@@ -1173,5 +1433,6 @@ TEST_INIT()
 	TEST_RUN(TestFeature_Flags_Topline_Off_SepDotColor);
 	TEST_RUN(TestFeature_RunLengthEncode_Full);
 	TEST_RUN(TestFeature_RunLengthEncode_Partial);
+	TEST_RUN_MULTI(TestFeature_WepFlags_Hipfire, WEPFLAG_HIPFIRE_DATA__TOTAL);
 TEST_END()
 

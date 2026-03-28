@@ -4,8 +4,12 @@
 #include "mathlib/mathlib.h"
 #include <cstdio>
 
+#define DATA_XTRA_NAME_SIZE 64
+
 const char *g_testFnName;
 const char *g_szName;
+char g_szDataExtraName[DATA_XTRA_NAME_SIZE];
+int g_iDataExtraIdx;
 int g_verbose;
 
 static int g_testFailuresIdv;
@@ -24,8 +28,16 @@ static bool _TestVerify(const bool bPass, const char *pszCondStr,
 		g_retVal = 1;
 		++g_testFailuresIdv;
 		g_testFnPass = false;
-		fprintf(stderr, "%s: FAIL! %s (%d): %s\n",
-				g_szName, pszFile, iLine, g_testFnName);
+		if (g_szDataExtraName[0])
+		{
+			fprintf(stderr, "%s: FAIL! %s (%d): %s[%d](%s)\n",
+					g_szName, pszFile, iLine, g_testFnName, g_iDataExtraIdx, g_szDataExtraName);
+		}
+		else
+		{
+			fprintf(stderr, "%s: FAIL! %s (%d): %s\n",
+					g_szName, pszFile, iLine, g_testFnName);
+		}
 		if (pszCondStr)
 		{
 			fprintf(stderr, "%s: FAIL! \tcond: %s\n", g_szName, pszCondStr);
@@ -79,6 +91,8 @@ static void _TestCompareStr(const char *lhs, const char *pszLhs,
 		++g_testTotalFn; \
 		g_testFnPass = true; \
 		g_testFnName = #test_name; \
+		g_szDataExtraName[0] = '\0'; \
+		g_iDataExtraIdx = 0; \
 		test_name(); \
 		if (g_testFnPass) \
 		{ \
@@ -90,6 +104,35 @@ static void _TestCompareStr(const char *lhs, const char *pszLhs,
 			++g_testFailuresFn; \
 		} \
 	}
+
+#define TEST_RUN_MULTI_EX(test_name, test_data, test_data_struct, data_total) \
+	if (argc < 2 || V_strstr(#test_name, argv[1])) \
+	{ \
+		g_testFnName = #test_name; \
+		char szDataExtraNames[data_total][DATA_XTRA_NAME_SIZE] = {}; \
+		test_data_struct datas[data_total] = {}; \
+		test_data(datas, szDataExtraNames); \
+		for (int tIdx = 0; tIdx < data_total; ++tIdx) \
+		{ \
+			g_testFnPass = true; \
+			++g_testTotalFn; \
+			V_strcpy_safe(g_szDataExtraName, szDataExtraNames[tIdx]); \
+			g_iDataExtraIdx = tIdx; \
+			test_name(&datas[tIdx], tIdx); \
+			if (g_testFnPass) \
+			{ \
+				printf("%s: %s[%d](%s) PASSED\n", g_szName, #test_name, g_iDataExtraIdx, g_szDataExtraName); \
+			} \
+			else \
+			{ \
+				printf("%s: %s[%d](%s) FAILED\n", g_szName, #test_name, g_iDataExtraIdx, g_szDataExtraName); \
+				++g_testFailuresFn; \
+			} \
+		} \
+	}
+
+// Postfix the data's struct with "_data_s" and initialization function with "_data"
+#define TEST_RUN_MULTI(test_name, data_total) TEST_RUN_MULTI_EX(test_name, test_name##_data, test_name##_data_s, data_total)
 
 #ifdef WIN32
 
