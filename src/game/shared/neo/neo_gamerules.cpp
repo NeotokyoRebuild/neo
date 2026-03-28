@@ -3956,7 +3956,9 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 	}
 
 	// Check for assistance (> 50 dmg, not final attacker)
-	const int attackerIdx = attacker->entindex();
+	CNEO_Player* pImpersonated = attacker->GetSpectatorTakeoverPlayerTarget();
+	const int attackerIdx = pImpersonated ? pImpersonated->entindex() : attacker->entindex();
+
 	for (int assistIdx = 1; assistIdx <= gpGlobals->maxClients; ++assistIdx)
 	{
 		if (assistIdx == attackerIdx)
@@ -4133,13 +4135,18 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		{
 			if (sv_neo_teamdamage_assists.GetBool())
 			{
-				assister->AddPoints(-1, true);
+				// If a bot is being taken over, penalize the impersonator.
+				CNEO_Player* pImpersonator = assister->GetSpectatorTakeoverPlayerImpersonatingMe();
+				CNEO_Player* pPenalized = pImpersonator ? pImpersonator : assister;
+				// bIgnorePlayerTakeover = true to penalize the impersonator
+				pPenalized->AddPoints(-1, true, true);
 			}
 		}
 		// Enemy kill assist
 		else
 		{
-			assister->AddPoints(1, false);
+			// bIgnorePlayerTakeover = true: FetchAssists handled spec-takeover
+			assister->AddPoints(1, false, true);
 		}
 	}
 }

@@ -3219,7 +3219,8 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		// Checking because attacker might be prop or world
 		if (auto *attacker = ToNEOPlayer(info.GetAttacker()))
 		{
-			const int attackerIdx = attacker->entindex();
+			CNEO_Player* pImpersonated = attacker->GetSpectatorTakeoverPlayerTarget();
+			const int attackerIdx = pImpersonated ? pImpersonated->entindex() : attacker->entindex();
 			NEORules()->SetLastAttacker(entindex()); // NEO TODO (Adam) Once we can spectate non-players, let last attacker be non-neoplayer (Jeff)
 
 			// Separate the fractional amount of damage from the whole

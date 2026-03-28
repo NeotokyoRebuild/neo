@@ -182,6 +182,9 @@ public:
 	bool m_bCopyOverTakeoverPlayerDetails{ false };
 	CNetworkHandle(C_NEO_Player, m_hSpectatorTakeoverPlayerTarget);
 	CNetworkHandle(C_NEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
+	C_NEO_Player* GetSpectatorTakeoverPlayerTarget() const { return m_hSpectatorTakeoverPlayerTarget.Get(); }
+	C_NEO_Player* GetSpectatorTakeoverPlayerImpersonatingMe() const { return m_hSpectatorTakeoverPlayerImpersonatingMe.Get(); }
+
 	void CSpectatorTakeoverPlayerUpdateOnDataChanged();
 	void CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget);
 	const char* GetPlayerNameWithTakeoverContext(int player_index);
