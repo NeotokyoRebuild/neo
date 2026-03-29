@@ -121,6 +121,7 @@ void PlayerBody::Reset( void )
 ConVar bot_mimic( "bot_mimic", "0", 0, "Bot uses usercmd of player by index." );
 #ifdef NEO
 ConVar bot_mimic_yaw_offset("bot_mimic_yaw_offset", "0", 0, "Offsets the bot yaw.");
+ConVar bot_mimic_mirror("bot_mimic_mirror", "0", 0, "Mirrors the mimic axes.");
 #endif // NEO
 
 //-----------------------------------------------------------------------------------------------
