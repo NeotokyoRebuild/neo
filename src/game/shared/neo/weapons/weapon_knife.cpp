@@ -1,11 +1,15 @@
 #include "cbase.h"
 #include "weapon_knife.h"
 
-#ifndef CLIENT_DLL
+#ifdef GAME_DLL
 #include "ilagcompensationmanager.h"
 #include "effect_dispatch_data.h"
 #include "te_effect_dispatch.h"
+#else
+#include "prediction.h"
 #endif
+
+#include "takedamageinfo.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -257,15 +261,24 @@ Activity CWeaponKnife::ChooseIntersectionPointAndActivity(trace_t& hitTrace, con
 
 inline void CWeaponKnife::ApplyDamageToHitTarget(trace_t& traceHit)
 {
+#ifdef CLIENT_DLL
+	if (prediction->InPrediction() && !prediction->IsFirstTimePredicted())
+		return;
+#endif
+
 	if (!traceHit.m_pEnt)
 		return;
 
 	auto *pPlayer = assert_cast<CNEO_Player*>(GetOwner());
 	AssertMsg(pPlayer != traceHit.m_pEnt, "Shouldn't be able to hit self");
-
-#ifdef GAME_DLL
+	// NEO NOTE (Rain): client-side abs ang queries don't seem to work well,
+	// so I've changed the Vector forward to use the eye angles forward for
+	// prediction purposes. It probably feels more fair to the player as well,
+	// since as long as they keep their eyes on the attacker, i.e. the attacker
+	// is physically in front of them, they cannot be backstabbed (assuming the
+	// server agrees on those angles).
 	Vector forward;
-	AngleVectors(traceHit.m_pEnt->GetAbsAngles(), &forward);
+	AngleVectors(traceHit.m_pEnt->EyeAngles(), &forward);
 	Vector2D& forward2D = forward.AsVector2D();
 	forward2D.NormalizeInPlace();
 
@@ -273,9 +286,11 @@ inline void CWeaponKnife::ApplyDamageToHitTarget(trace_t& traceHit)
 	Vector2D& attackerToTarget2D = attackerToTarget.AsVector2D();
 	attackerToTarget2D.NormalizeInPlace();
 
-	const float currentAngle = acos(forward2D.Dot(attackerToTarget2D));
+	// NEO NOTE (Rain): since this is 2D, a TF2 spy style stair stab is possible.
+	// If we want to make this harder, then could use the 3D vecs to account for pitch.
+	const float currentAngle = acos(DotProduct2D(forward2D, attackerToTarget2D));
 	static constexpr float maxBackStabAngle = 0.6435011; // ~ asin(0.6);
-	
+
 	CTakeDamageInfo info(pPlayer, pPlayer, KNIFE_DAMAGE, DMG_SLASH);
 	Vector hitDirection;
 	pPlayer->EyeVectors(&hitDirection);
@@ -293,6 +308,7 @@ inline void CWeaponKnife::ApplyDamageToHitTarget(trace_t& traceHit)
 	traceHit.m_pEnt->DispatchTraceAttack(info, hitDirection, &traceHit);
 	ApplyMultiDamage();
 
+#ifdef GAME_DLL
 	// Now hit all triggers along that ray...
 	TraceAttackToTriggers(info, traceHit.startpos, traceHit.endpos, hitDirection);
 #endif
