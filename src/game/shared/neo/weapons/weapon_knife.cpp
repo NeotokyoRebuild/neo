@@ -14,6 +14,14 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+static ConVar sv_neo_backstab_ignorez("sv_neo_backstab_ignorez", "1", FCVAR_REPLICATED | FCVAR_NOTIFY,
+	"Whether knife backstabs angle calculations should ignore the pitch component.", true, false, true, true);
+
+// NEO NOTE (Rain): Changed to degrees to make it more intuitive for players.
+// Was previously: 0.6435011 radians; // ~ asin(0.6);
+static ConVar sv_neo_backstab_angle("sv_neo_backstab_angle", "37", FCVAR_REPLICATED | FCVAR_NOTIFY,
+	"Maximum angle away from perfectly behind the back that still counts as a backstab.", true, 0, true, 180);
+
 #define KNIFE_VM_ATTACK_ACT ACT_VM_PRIMARYATTACK
 
 #define KNIFE_HULL_DIM 16.0f
@@ -279,17 +287,25 @@ inline void CWeaponKnife::ApplyDamageToHitTarget(trace_t& traceHit)
 	// server agrees on those angles).
 	Vector forward;
 	AngleVectors(traceHit.m_pEnt->EyeAngles(), &forward);
-	Vector2D& forward2D = forward.AsVector2D();
-	forward2D.NormalizeInPlace();
 
 	Vector attackerToTarget = traceHit.m_pEnt->GetAbsOrigin() - pPlayer->GetAbsOrigin();
-	Vector2D& attackerToTarget2D = attackerToTarget.AsVector2D();
-	attackerToTarget2D.NormalizeInPlace();
 
-	// NEO NOTE (Rain): since this is 2D, a TF2 spy style stair stab is possible.
-	// If we want to make this harder, then could use the 3D vecs to account for pitch.
-	const float currentAngle = acos(DotProduct2D(forward2D, attackerToTarget2D));
-	static constexpr float maxBackStabAngle = 0.6435011; // ~ asin(0.6);
+	if (sv_neo_backstab_ignorez.GetBool())
+	{
+		forward.AsVector2D().NormalizeInPlace();
+		forward.z = 0;
+
+		attackerToTarget.AsVector2D().NormalizeInPlace();
+		attackerToTarget.z = 0;
+	}
+	else
+	{
+		attackerToTarget.NormalizeInPlace();
+	}
+	AssertFloatEquals(forward.Length(), 1.f, 0.01f);
+	AssertFloatEquals(attackerToTarget.Length(), 1.f, 0.01f);
+
+	const float currentAngle = RAD2DEG(acos(forward.Dot(attackerToTarget)));
 
 	CTakeDamageInfo info(pPlayer, pPlayer, KNIFE_DAMAGE, DMG_SLASH);
 	Vector hitDirection;
@@ -297,12 +313,16 @@ inline void CWeaponKnife::ApplyDamageToHitTarget(trace_t& traceHit)
 	AssertFloatEquals(hitDirection.Length(), 1.f, 0.01f);
 	CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.05f);
 
-	if (currentAngle <= maxBackStabAngle)
+	const bool isBackstab = (currentAngle <= sv_neo_backstab_angle.GetFloat());
+	// increase damage if backstabbing only after melee damage force has been calculated,
+	// so objects cannot be "backstabbed" to launch them further
+	if (isBackstab)
 	{
-		static constexpr int damageToOneShotSupport = MAX_HEALTH_FOR_CLASS[NEO_CLASS_SUPPORT] + 1;
-		// increase damage if backstabbing only after melee damage force has been calculated,
-		// so objects cannot be "backstabbed" to launch them further
-		info.SetDamage(damageToOneShotSupport);
+		//DevMsg("[%s] Backstab\n", IsServer() ? "SRV" : "CLI");
+		static constexpr float oneShotDamage = MAX_HEALTH_FOR_CLASS[NEO_CLASS_SUPPORT] + 1;
+		Assert(traceHit.m_pEnt->GetMaxHealth() < oneShotDamage);
+		info.SetMaxDamage(Max(info.GetMaxDamage(), oneShotDamage));
+		info.SetDamage(oneShotDamage);
 	}
 
 	traceHit.m_pEnt->DispatchTraceAttack(info, hitDirection, &traceHit);
