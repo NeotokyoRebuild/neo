@@ -318,11 +318,26 @@ inline void CWeaponKnife::ApplyDamageToHitTarget(trace_t& traceHit)
 	// so objects cannot be "backstabbed" to launch them further
 	if (isBackstab)
 	{
-		//DevMsg("[%s] Backstab\n", IsServer() ? "SRV" : "CLI");
+		// If this doesn't do any damage, step ApplyMultiDamage or the below:
+		// traceHit.m_pEnt->GetReceivedDamageScale(pPlayer);
+#if 0
+		const char* help = "";
+#ifdef GAME_DLL
+		if (!traceHit.m_pEnt->GetReceivedDamageScale(pPlayer))
+			help = " (dmg scale 0, maybe in spawn protection?)";
+#endif
+
+		DevMsg("[%s] \"%s\" backstabbed \"%s\"%s\n",
+			(IsServer() ? "SRV auth" : "CLI pred"),
+			pPlayer->GetNeoPlayerName(),
+			assert_cast<CNEO_Player*>(traceHit.m_pEnt)->GetNeoPlayerName(),
+			help
+		);
+#endif
 		static constexpr float oneShotDamage = MAX_HEALTH_FOR_CLASS[NEO_CLASS_SUPPORT] + 1;
-		Assert(traceHit.m_pEnt->GetMaxHealth() < oneShotDamage);
-		info.SetMaxDamage(Max(info.GetMaxDamage(), oneShotDamage));
-		info.SetDamage(oneShotDamage);
+		info.SetMaxDamage(info.GetMaxDamage() + oneShotDamage);
+		info.AddDamage(oneShotDamage);
+		Assert(traceHit.m_pEnt->GetMaxHealth() < info.GetDamage() + info.GetDamageBonus());
 	}
 
 	traceHit.m_pEnt->DispatchTraceAttack(info, hitDirection, &traceHit);
