@@ -954,6 +954,8 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 	if (bOnTarget)
 	{
+		me->PressSpecialFireButton(); // place a player ping to alert friends
+
 		if (bThreatIsGhoster)
 		{
 			me->GetBodyInterface()->AimHeadTowards(vShootablePos, IBody::CRITICAL, 1.0f, nullptr,
