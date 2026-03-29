@@ -4092,7 +4092,8 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 			{
 				if (attacker->GetClass() == NEO_CLASS_JUGGERNAUT)
 				{
-					attacker->GetTeam()->AddScore(2);
+					auto jgrTeam = attacker->GetTeam();
+					jgrTeam->SetScore(Min(jgrTeam->GetScore() + 2, sv_neo_jgr_max_points.GetInt()));
 				}
 				else if (m_pJuggernautPlayer)
 				{
