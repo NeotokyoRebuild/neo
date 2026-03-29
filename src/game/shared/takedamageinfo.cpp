@@ -250,7 +250,11 @@ void AddMultiDamage( const CTakeDamageInfo &info, CBaseEntity *pEntity )
 	g_MultiDamage.SetDamageForce( g_MultiDamage.GetDamageForce() + info.GetDamageForce() );
 	g_MultiDamage.SetDamagePosition( info.GetDamagePosition() );
 	g_MultiDamage.SetReportedPosition( info.GetReportedPosition() );
+#ifdef NEO
+	g_MultiDamage.SetMaxDamage( Max( g_MultiDamage.GetMaxDamage(), info.GetMaxDamage() ) );
+#else
 	g_MultiDamage.SetMaxDamage( MAX( g_MultiDamage.GetMaxDamage(), info.GetDamage() ) );
+#endif
 	g_MultiDamage.SetAmmoType( info.GetAmmoType() );
 	g_MultiDamage.SetCritType( info.GetCritType() );
 
