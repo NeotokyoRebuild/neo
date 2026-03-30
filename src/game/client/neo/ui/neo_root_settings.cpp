@@ -1029,6 +1029,9 @@ FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
 		{
 			std::wmemmove(&input[i], &input[i + 1], zeroIdx-i);
 			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = i+hasDoubleBlankInPos;
+			// memmove has shifted contents one position to the left, so compensate by decrementing
+			zeroIdx = Max(0, zeroIdx - 1);
+			i -= 1;
 		}
 	}
 	// Block leading spaces
