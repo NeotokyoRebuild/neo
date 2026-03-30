@@ -1779,9 +1779,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	CShotManipulator Manipulator( info.m_vecDirShooting );
 #endif
 
+#ifndef NEO
 	bool bDoImpacts = false;
 	bool bDoTracers = false;
-	
+#endif
+
 	float flCumulativeDamage = 0.0f;
 
 	for (int iShot = 0; iShot < info.m_iShots; iShot++)
@@ -2050,10 +2052,12 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 					{
 						DoImpactEffect( tr, nDamageType );
 					}
+#ifndef NEO
 					else
 					{
 						bDoImpacts = true;
 					}
+#endif
 				}
 				else
 				{
@@ -2107,6 +2111,19 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		}
 #endif // NEO
 
+#ifdef NEO
+		// The below penetration value check relies an all possible surfaces
+		// incurring a non-zero cost to m_flPenetration.
+		for (int i = 0; i < ARRAYSIZE(PENETRATION_RESISTANCE); ++i)
+		{
+			Assert(PENETRATION_RESISTANCE[i] > 0);
+		}
+		// Only draw tracers if we haven't yet penetrated, because the penetration logic is reentrant
+		// and would otherwise draw multiple tracers per shot.
+		Assert(neoWeapon);
+		if (neoWeapon->GetPenetration() == info.m_flPenetration)
+		{
+#endif
 		if ( ( info.m_iTracerFreq != 0 ) && ( tracerCount++ % info.m_iTracerFreq ) == 0 && ( bHitGlass == false ) )
 		{
 			if ( bDoServerEffects == true )
@@ -2150,11 +2167,16 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 				}
 #endif //#ifdef PORTAL
 			}
+#ifndef NEO
 			else
 			{
 				bDoTracers = true;
 			}
+#endif
 		}
+#ifdef NEO
+		}
+#endif
 
 		//NOTENOTE: We could expand this to a more general solution for various material penetration types (wood, thin metal, etc)
 
