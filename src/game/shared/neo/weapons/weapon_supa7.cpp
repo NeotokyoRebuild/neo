@@ -317,7 +317,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 		return;
 	}
 
-	int numBullets = 7;
+	int numBullets = GetNEOWpnData().m_iBullets;
 	Vector bulletSpread = GetBulletSpread();
 	int ammoType = m_iPrimaryAmmoType;
 	Vector vecSrc = pPlayer->Weapon_ShootPosition();

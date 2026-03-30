@@ -229,9 +229,37 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 	m_bTriggerReset = true;
 }
 
+const CNEOWeaponInfo &CNEOBaseCombatWeapon::GetNEOWpnData() const
+{
+	const FileWeaponInfo_t *pWeaponInfo = &GetWpnData();
+	const CNEOWeaponInfo *pNEOInfo;
+
+#ifdef _DEBUG
+	pNEOInfo = dynamic_cast< const CNEOWeaponInfo* >( pWeaponInfo );
+	Assert( pNEOInfo );
+#else
+	pNEOInfo = static_cast< const CNEOWeaponInfo* >( pWeaponInfo );
+#endif
+
+	return *pNEOInfo;
+}
+
 void CNEOBaseCombatWeapon::Precache()
 {
 	BaseClass::Precache();
+}
+
+const char *CNEOBaseCombatWeapon::GetViewModel( int ) const
+{
+	auto owner = GetOwner();
+
+	if (!owner)
+	{
+		return GetWpnData().szViewModel;
+	}
+
+	return owner->GetTeamNumber() == TEAM_JINRAI ?
+			   GetWpnData().szViewModel : GetNEOWpnData().szViewModel2;
 }
 
 void CNEOBaseCombatWeapon::Spawn()
@@ -490,7 +518,7 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 				}
 				else
 				{
-					pOwner->SetFOV(pOwner, GetWpnData().iAimFOV, 0.1);
+					pOwner->SetFOV(pOwner, GetNEOWpnData().iAimFOV, 0.1);
 				}
 			}
 			else
@@ -505,12 +533,12 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 
 float CNEOBaseCombatWeapon::GetFireRate()
 {
-	return GetHL2MPWpnData().m_flCycleTime;
+	return GetNEOWpnData().m_flCycleTime;
 }
 
 float CNEOBaseCombatWeapon::GetPenetration() const
 {
-	return GetWpnData().m_flPenetration;
+	return GetNEOWpnData().m_flPenetration;
 }
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)

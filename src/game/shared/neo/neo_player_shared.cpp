@@ -222,7 +222,7 @@ void KillerLineStr(char* killByLine, const int killByLineMax,
 {
 	static constexpr float FOV_AIM_OFFSET_FALLBACK = 30.0f;
 	auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(wep);
-	return (neoWep) ? neoWep->GetWpnData().iAimFOV : fovDef - FOV_AIM_OFFSET_FALLBACK;
+	return (neoWep) ? neoWep->GetNEOWpnData().iAimFOV : fovDef - FOV_AIM_OFFSET_FALLBACK;
 }
 
 #ifdef CLIENT_DLL
