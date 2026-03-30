@@ -1028,7 +1028,6 @@ FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
 		if (hasBadCharInPos || hasDoubleBlankInPos)
 		{
 			std::wmemmove(&input[i], &input[i + 1], zeroIdx-i);
-			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = i+hasDoubleBlankInPos;
 			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = i+hasDoubleBlankInPos;
 		}
 	}
