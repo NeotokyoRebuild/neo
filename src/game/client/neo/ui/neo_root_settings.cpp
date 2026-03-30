@@ -387,6 +387,12 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		NeoSettings::General *pGeneral = &ns->general;
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_clantag.GetString(), pGeneral->wszNeoClantag, sizeof(pGeneral->wszNeoClantag));
+
+		if (V_wcscmp(pGeneral->wszNeoName, L"#empty") == 0)
+			pGeneral->wszNeoName[0] = L'\0';
+		if (V_wcscmp(pGeneral->wszNeoClantag, L"#empty") == 0)
+			pGeneral->wszNeoClantag[0] = L'\0';
+
 		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
 		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
