@@ -3509,7 +3509,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	const bool clientAllowsNeoName = (0 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_onlysteamnick")));
 
-	char szSteamName[MAX_PLACE_NAME_LENGTH] = "";
+	char szSteamName[MAX_PLAYER_NAME_LENGTH] = "";
 	const char* pszSteamName = &szSteamName[0];
 	V_strcpy_safe(szSteamName, engine->GetClientConVarValue(pPlayer->entindex(), "name"));
 	V_StripTrailingWhitespace(&szSteamName[0]);
