@@ -143,10 +143,7 @@ inline void NeoConVarFixPrintable(IConVar *cvar, const char *, float)
 	ConVarRef cvarRef(cvar);
 	V_strcpy_safe(mutStr, cvarRef.GetString());
 
-	if (V_strlen(cvarRef.GetString()) >= STR_LIMIT_SIZE)
-	{
-		Q_UnicodeRepair(mutStr);
-	}
+	Q_UnicodeRepair(mutStr);
 
 	V_StripTrailingWhitespace(mutStr);
 	V_StripLeadingWhitespace(mutStr);
