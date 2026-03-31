@@ -16,15 +16,18 @@ FileWeaponInfo_t* CreateWeaponInfo()
 
 CNEOWeaponInfo::CNEOWeaponInfo()
 {
-	m_vecVMPosOffset = m_vecVMAimPosOffset = vec3_origin;
-	m_angVMAngOffset = m_angVMAimAngOffset = vec3_angle;
-
-	vecVmOffset = vec3_origin;
+	m_iBullets = 0;
+	m_flCycleTime = 0.f;
+	szViewModel2[0] = 0;
 	szBulletCharacter[0] = 0;
 	szDeathIcon[0] = 0;
-	iAimFOV = 0;
 	m_flPenetration = 0.f;
 	m_bDropOnDeath = true;
+	iAimFOV = 0;
+
+	m_flVMFov = m_flVMAimFov = 0.f;
+	m_vecVMPosOffset = m_vecVMAimPosOffset = vec3_origin;
+	m_angVMAngOffset = m_angVMAimAngOffset = vec3_angle;
 }
 
 
@@ -32,19 +35,24 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 {
 	BaseClass::Parse( pKeyValuesData, szWeaponName );
 
-	m_iPlayerDamage		= pKeyValuesData->GetInt( "Damage", 42 ); // Douglas Adams 1952 - 2001
-	m_iBullets		= pKeyValuesData->GetInt( "Bullets", 1 );
-	m_flCycleTime	= pKeyValuesData->GetFloat( "CycleTime", 0.15 );
-#ifdef _DEBUG
-	const char *printName = pKeyValuesData->GetString("printname");
-	if (!V_strstr(printName, "#HL2") && !V_strstr(printName, "Grenade"))
-	{
-		Assert(m_flCycleTime != 0.0f);
-	}
-#endif
+	m_iPlayerDamage = pKeyValuesData->GetInt( "Damage", 42 ); // Douglas Adams 1952 - 2001
+	m_iBullets = pKeyValuesData->GetInt( "Bullets", 1 );
+	m_flCycleTime = pKeyValuesData->GetFloat( "CycleTime", 0.15 );
 
-	const char *pAnimEx = pKeyValuesData->GetString( "PlayerAnimationExtension", "mp5" );
-	Q_strncpy( m_szAnimExtension, pAnimEx, sizeof( m_szAnimExtension ) );
+	const char *notFoundStr = "notfound";
+	Q_strncpy(szViewModel2, pKeyValuesData->GetString("team2viewmodel", notFoundStr), MAX_WEAPON_STRING);
+	// If there was no NSF viewmodel specified, fall back to Source's default "viewmodel" to ensure we have something sensible available.
+	// This might happen when attempting to equip a non-NT weapon.
+	if (Q_strcmp(szViewModel2, notFoundStr) == 0)
+	{
+		Q_strncpy(szViewModel2, pKeyValuesData->GetString("viewmodel"), MAX_WEAPON_STRING);
+	}
+
+	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
+	Q_strncpy( szDeathIcon, pKeyValuesData->GetString("iDeathIcon", ""), MAX_BULLET_CHARACTER);
+	m_flPenetration = pKeyValuesData->GetFloat("Penetration", 0);
+	m_bDropOnDeath = pKeyValuesData->GetBool("DropOnDeath", true);
+	iAimFOV = pKeyValuesData->GetInt("AimFov", 45);
 
 	KeyValues *pViewModel = pKeyValuesData->FindKey("ViewModelOffset");
 	if (pViewModel)
@@ -82,25 +90,6 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 		m_angVMAimAngOffset[YAW] = pAimOffset->GetFloat("yaw", 0);
 		m_angVMAimAngOffset[ROLL] = pAimOffset->GetFloat("roll", 0);
 	}
-
-	const char *notFoundStr = "notfound";
-	Q_strncpy(szViewModel2, pKeyValuesData->GetString("team2viewmodel", notFoundStr), MAX_WEAPON_STRING);
-	// If there was no NSF viewmodel specified, fall back to Source's default "viewmodel" to ensure we have something sensible available.
-	// This might happen when attempting to equip a non-NT weapon.
-	if (Q_strcmp(szViewModel2, notFoundStr) == 0)
-	{
-		Q_strncpy(szViewModel2, pKeyValuesData->GetString("viewmodel"), MAX_WEAPON_STRING);
-	}
-
-	const float VMOffsetForward = pKeyValuesData->GetFloat("VMOffsetForward");
-	const float VMOffsetRight = pKeyValuesData->GetFloat("VMOffsetRight");
-	const float VMOffsetUp = pKeyValuesData->GetFloat("VMOffsetUp");
-	vecVmOffset = Vector(VMOffsetForward, VMOffsetRight, VMOffsetUp);
-	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
-	Q_strncpy( szDeathIcon, pKeyValuesData->GetString("iDeathIcon", ""), MAX_BULLET_CHARACTER);
-	iAimFOV = pKeyValuesData->GetInt("AimFov", 45);
-	m_flPenetration = pKeyValuesData->GetFloat("Penetration", 0);
-	m_bDropOnDeath = pKeyValuesData->GetBool("DropOnDeath", true);
 }
 
 

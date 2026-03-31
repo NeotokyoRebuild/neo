@@ -22,30 +22,22 @@ public:
 
 	virtual void Parse( ::KeyValues *pKeyValuesData, const char *szWeaponName );
 
-	// TODO: NT;RE hasn't been using this, idk if they're hardcoded somewhere else
-	char m_szAnimExtension[16];		// string used to generate player animations with this weapon
-
-	// int		m_iDamage;
 	int		m_iBullets;
-	float	m_flCycleTime = 0.0f;
-
+	float	m_flCycleTime;
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
-
 	char	szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
-	float	m_flVMFov = 0.0f;
+	char	szDeathIcon[MAX_BULLET_CHARACTER];
+	float	m_flPenetration;
+	bool	m_bDropOnDeath;
+	int		iAimFOV;
+
+	float	m_flVMFov;
 	Vector	m_vecVMPosOffset;
 	QAngle	m_angVMAngOffset;
 
-	float	m_flVMAimFov = 0.0f;
+	float	m_flVMAimFov;
 	Vector	m_vecVMAimPosOffset;
 	QAngle	m_angVMAimAngOffset;
-
-	Vector	vecVmOffset;
-
-	char	szDeathIcon[MAX_BULLET_CHARACTER];
-	int		iAimFOV;
-	float	m_flPenetration;
-	bool	m_bDropOnDeath;
 };
 
 
