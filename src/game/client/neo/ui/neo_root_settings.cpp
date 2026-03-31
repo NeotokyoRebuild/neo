@@ -1027,7 +1027,7 @@ FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
 
 		if (hasBadCharInPos || hasDoubleBlankInPos)
 		{
-			std::wmemmove(&input[i], &input[i + 1], zeroIdx-i);
+			V_memmove(&input[i], &input[i + 1], (zeroIdx - i) * sizeof(input[0]));
 			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = i+hasDoubleBlankInPos;
 			// memmove has shifted contents one position to the left, so compensate by decrementing
 			zeroIdx = Max(0, zeroIdx - 1);
@@ -1037,7 +1037,7 @@ FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
 	// Block leading spaces
 	if (std::iswblank(input[0]))
 	{
-		std::wmemmove(input, &input[1], maxlen - 1);
+		V_memmove(input, &input[1], (maxlen - 1) * sizeof(input[0]));
 		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = 0;
 		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = 0;
 	}
