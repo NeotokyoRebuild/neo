@@ -3556,7 +3556,9 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	const char *pszOldNeoClantag = pNEOPlayer->GetNeoClantag();
 	if (V_strcmp(pszOldNeoClantag, pszNeoClantag) != 0)
 	{
-		V_strncpy(pNEOPlayer->m_szNeoClantag.GetForModify(), pszNeoClantag, NEO_MAX_CLANTAG_LENGTH);
+		V_strncpy(pNEOPlayer->m_szNeoClantag.GetForModify(),
+			(FStrEq(pszNeoClantag, "#empty") ? "" : pszNeoClantag),
+			NEO_MAX_CLANTAG_LENGTH);
 		m_bThinkCheckClantags = true;
 	}
 
