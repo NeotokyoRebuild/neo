@@ -63,7 +63,7 @@ void CNEOSpawnPoint::Spawn()
 {
 	BaseClass::Spawn();
 
-	AssertMsg(m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF,
+	AssertMsg(m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF || m_iOwningTeam == TEAM_ANY,
 		"CNEOSpawnPoint shouldn't be instantiated directly; use info_player_attacker/defender instead!\n");
 
 #if(0)
