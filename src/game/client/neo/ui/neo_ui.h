@@ -90,7 +90,7 @@ enum TextStyle
 };
 
 static constexpr int FOCUSOFF_NUM = -1000;
-static constexpr int MAX_SECTIONS = 6;
+static constexpr int MAX_SECTIONS = 7;
 static constexpr int SIZEOF_SECTIONS = sizeof(int) * MAX_SECTIONS;
 static constexpr int MAX_TEXTINPUT_U8BYTES_LIMIT = 256;
 
@@ -366,6 +366,7 @@ struct Context
 	int iLayoutX;
 	int iLayoutY;
 	int iVertLayoutY;
+	// NEO TODO (nullsystem): Popups should get its own XY offsets
 	int iYOffset[MAX_SECTIONS] = {};
 	int iXOffset[MAX_SECTIONS] = {};
 	EXYMouseDragOffset aeXYMouseDragOffset[MAX_SECTIONS] = {};
