@@ -705,6 +705,11 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 
 void CNEOHud_RoundState::DrawPlayerList()
 {
+	if (!NEORules()->IsTeamplay())
+	{
+		return;
+	}
+
 	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
 	Assert(cl_neo_bot_cmdr_enable_ref.IsValid());
 	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
