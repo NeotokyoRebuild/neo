@@ -4440,6 +4440,11 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 	if (CanRespawnAnyTime())
 	{
+		if (GetRoundStatus() == PostRound)
+		{
+			return false;
+		}
+
 		return true;
 	}
 
