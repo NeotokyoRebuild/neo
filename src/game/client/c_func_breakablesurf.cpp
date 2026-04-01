@@ -357,6 +357,10 @@ C_BreakableSurface::C_BreakableSurface()
 {
 	m_vNormal.Init();
 	m_vCorner.Init();
+#ifdef NEO
+	m_vWidthDir.Init();
+	m_vHeightDir.Init();
+#endif
 	m_bIsBroken = false;
 
 	m_pCurrentDetailTexture = NULL;

@@ -731,8 +731,11 @@ void CBreakableSurface::Die( CBaseEntity *pBreaker, const Vector &vAttackDir )
 	// the geometric height edge.  Unlike the non-NEO path we do NOT scale by
 	// flDir here: in NEO we never shift the vertices, so flDir has no bearing
 	// on the edge vectors themselves.
-	float flWDist = DotProduct( vWidthDir, vWidth );
-	bool bSwapped = ( fabs(flWDist) < 0.5f );
+	
+	Vector vWidthNorm = vWidth;
+	VectorNormalize( vWidthNorm );
+	float flWDist = DotProduct( vWidthDir, vWidthNorm );
+	bool bSwapped = ( fabs(flWDist) < 0.5f );  // < 0.5 ≡ angle > 60° from canonical width
 	if ( bSwapped )
 	{
 		Vector vSaveHeight	= vHeight;
