@@ -4101,6 +4101,12 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 		return;
 	}
 
+	if (NEORules()->GetRoundStatus() == PostRound)
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The mission is over.");
+		return;
+	}
+
 	if (m_iXP < sv_neo_spec_replace_player_min_exp.GetInt())
 	{
 		if (m_iXP < 0)
@@ -4128,7 +4134,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 		return;
 	}
 
-	if (!InSameTeam(pNeoPlayerToReplace))
+	if (!InSameTeam(pNeoPlayerToReplace) || !NEORules()->IsTeamplay())
 	{
 		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Target is not friendly.");
 		return;
