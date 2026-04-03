@@ -1331,7 +1331,8 @@ void Label(const wchar_t *wszText, const bool bNotWidget)
 		const int iLDiff = Max(c->dPanel.x - c->rWidgetArea.x0, 0);
 		const int iRDiff = Max(c->rWidgetArea.x1 - (c->dPanel.x + c->dPanel.wide), 0);
 		Dim viewportDim = {};
-		if (bNotWidget)
+		const bool bViewportPanel = (bNotWidget || (c->iSectionFlags & SECTIONFLAG_LABELPANELVIEWPORT));
+		if (bViewportPanel)
 		{
 			viewportDim.x = c->dPanel.x;
 			viewportDim.y = c->dPanel.y;
@@ -1360,7 +1361,7 @@ void Label(const wchar_t *wszText, const bool bNotWidget)
 			const auto *pFontI = &c->fonts[c->eFont];
 			int x = XPosFromText(wszText, pFontI, c->eLabelTextStyle);
 			int y = pFontI->iYFontOffset;
-			if (bNotWidget)
+			if (bViewportPanel)
 			{
 				vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 - c->dPanel.x + x, c->rWidgetArea.y0 - c->dPanel.y + y);
 			}

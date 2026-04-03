@@ -301,7 +301,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 	m_uiCtx.colors.normalFg = COLOR_WHITE;
 	DrawNeoHudRoundedBox(m_uiCtx.dPanel.x, m_uiCtx.dPanel.y, m_uiCtx.dPanel.x + m_uiCtx.dPanel.wide, m_uiCtx.dPanel.y + m_uiCtx.dPanel.tall, m_boxColor);
 	NeoUI::BeginContext(&m_uiCtx, NeoUI::MODE_PAINT, nullptr, "NeoHudKillerDmgInfo");
-	NeoUI::BeginSection();
+	NeoUI::BeginSection(NeoUI::SECTIONFLAG_LABELPANELVIEWPORT);
 	{
 		NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 		m_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;

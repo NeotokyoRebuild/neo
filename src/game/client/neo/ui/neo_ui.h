@@ -188,6 +188,8 @@ enum ESectionFlag
 	SECTIONFLAG_PLAYBUTTONSOUNDS = 1 << 3,
 	// Internal use only: Mark this section as a popup
 	SECTIONFLAG_POPUP = 1 << 4,
+	// Don't restrict viewport to only label's area
+	SECTIONFLAG_LABELPANELVIEWPORT = 1 << 5,
 };
 typedef int ISectionFlags;
 
