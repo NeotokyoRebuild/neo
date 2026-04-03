@@ -295,6 +295,9 @@ struct Layout
 	int iRowTall;
 	int iDefRowTall;
 
+	// If > 0, use c->layout.iOverridePanelWide instead of c->dPanel.wide as bound
+	int iOverridePanelWide;
+
 	// Vertical partitioning
 	int iVertPartsTotal;
 	const int *iVertParts;
@@ -525,7 +528,7 @@ enum ESuitableWide
 	SUITABLEWIDE_POPUP = 0,
 	SUITABLEWIDE_TABLE,
 };
-int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType);
+int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType, const int iForceIdx = -1);
 
 [[nodiscard]] CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const CurrentWidgetState &wdgState);
@@ -533,6 +536,9 @@ void EndWidget(const CurrentWidgetState &wdgState);
 void SetPerRowLayout(const int iColTotal, const int *iColProportions = nullptr, const int iRowHeight = -1);
 // Layout a vertical within the (horizontal) column, iRowTotal = 0 to disable
 void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions = nullptr);
+
+void BeginOverridePanelWide(const int iOverridePanelWide);
+void EndOverridePanelWide();
 
 void SwapFont(const EFont eFont, const bool bForce = false);
 void BeginMultiWidgetHighlighter(const int iTotalWidgets);
