@@ -19,7 +19,7 @@
 #include "c_team.h"
 #include "c_playerresource.h"
 #include "vgui_avatarimage.h"
-#include "neo_scoreboard.h"
+#include "neoui_scoreboard.h"
 
 #include "hltvcamera.h"
 
@@ -34,7 +34,7 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
 ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0,
 	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldValue, [[maybe_unused]] float flOldValue) {
-		g_pNeoScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
+		// TODO REMOVE? g_pNeoUIScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
 	});
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling", 
@@ -283,7 +283,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	{
 		m_pWszStatusUnicode = L"Match point";
 	}
-	else if (NEORules()->GetRoundStatus() != NeoRoundStatus::Pause && (NEORules()->IsRoundPreRoundFreeze() || g_pNeoScoreBoard->IsVisible()))
+	else if (NEORules()->GetRoundStatus() != NeoRoundStatus::Pause && (NEORules()->IsRoundPreRoundFreeze() || g_pNeoUIScoreBoard->IsVisible()))
 	{
 		// Update Objective
 		switch (NEORules()->GetGameType()) {
@@ -734,7 +734,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 			offset *= cl_neo_squad_hud_star_scale.GetFloat() * res.h / 1080.0f;
 		}
 
-		const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
+		const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoUIScoreBoard->IsVisible();
 
 		// Draw squad mates
 		if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != STAR_NONE && !hideDueToScoreboard)
@@ -836,7 +836,7 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 		offset *= cl_neo_squad_hud_star_scale.GetFloat() * res.h / 1080.0f;
 	}
 
-	const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
+	const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoUIScoreBoard->IsVisible();
 
 	// Draw squad mates
 	m_commandedList.RemoveAll();
@@ -1249,7 +1249,7 @@ void CNEOHud_RoundState::CheckActiveStar()
 
 void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
 {
-	if (!g_pNeoScoreBoard)
+	if (!g_pNeoUIScoreBoard)
 	{
 		return;
 	}
@@ -1267,11 +1267,11 @@ void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
 		return;
 
 	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-	const int mapIndex = g_pNeoScoreBoard->m_mapAvatarsToImageList.Find(steamIDForPlayer);
-	if ((mapIndex == g_pNeoScoreBoard->m_mapAvatarsToImageList.InvalidIndex()))
+	const int mapIndex = g_pNeoUIScoreBoard->m_mapAvatarsToImageList.Find(steamIDForPlayer);
+	if ((mapIndex == g_pNeoUIScoreBoard->m_mapAvatarsToImageList.InvalidIndex()))
 		return;
 
-	CAvatarImage* pAvIm = (CAvatarImage*)g_pNeoScoreBoard->m_pImageList->GetImage(g_pNeoScoreBoard->m_mapAvatarsToImageList[mapIndex]);
+	CAvatarImage* pAvIm = (CAvatarImage*)g_pNeoUIScoreBoard->m_pImageList->GetImage(g_pNeoUIScoreBoard->m_mapAvatarsToImageList[mapIndex].i32Idx);
 	surface()->DrawSetTexture(pAvIm->getTextureID());
 	surface()->DrawSetColor(COLOR_WHITE);
 }

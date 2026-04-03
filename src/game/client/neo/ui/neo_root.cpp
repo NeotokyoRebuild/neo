@@ -342,7 +342,6 @@ constexpr const char *BTNS_LOCALIZE[MMBTN__TOTAL] = {
 	"#GameUI_GameMenu_FindServers",
 	"#GameUI_GameMenu_CreateServer",
 	"#GameUI_GameMenu_Disconnect",
-	"#GameUI_GameMenu_PlayerList",
 	"#GameUI_GameMenu_Tutorial",
 	"#GameUI_GameMenu_FiringRange",
 	"#GameUI_GameMenu_Options",
@@ -753,7 +752,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 			&CNeoRoot::MainLoopMapList,			// STATE_MAPLIST
 			&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
-			&CNeoRoot::MainLoopPlayerList,		// STATE_PLAYERLIST
 			&CNeoRoot::MainLoopSprayPicker,		// STATE_SPRAYPICKER
 			&CNeoRoot::MainLoopSprayPicker,		// STATE_SPRAYDELETER
 
@@ -926,10 +924,6 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			{
 				m_state = STATE_ROOT;
 				GetGameUI()->SendMainMenuCommand("Disconnect");
-			}
-			if (NeoUI::Button(m_wszCachedTexts[MMBTN_PLAYERLIST]).bPressed)
-			{
-				m_state = STATE_PLAYERLIST;
 			}
 			NeoUI::Pad();
 		}
@@ -1671,7 +1665,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 									NeoUI::OpenPopup(NEOPOPUP_ACTIONBLACKLIST, NeoUI::Dim{
 												.x = g_uiCtx.iMouseAbsX,
 												.y = g_uiCtx.iMouseAbsY,
-												.wide = NeoUI::PopupWideByStr("Remove from blacklist"),
+												.wide = NeoUI::SuitableWideByWStr(L"Remove from blacklist", NeoUI::SUITABLEWIDE_POPUP),
 												.tall = g_uiCtx.layout.iDefRowTall,
 											});
 								}
@@ -1867,7 +1861,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 									NeoUI::OpenPopup(NEOPOPUP_ACTIONSERVER, NeoUI::Dim{
 												.x = g_uiCtx.iMouseAbsX,
 												.y = g_uiCtx.iMouseAbsY,
-												.wide = NeoUI::PopupWideByStr("Add to blacklist"),
+												.wide = NeoUI::SuitableWideByWStr(L"Add to blacklist", NeoUI::SUITABLEWIDE_POPUP),
 												.tall = g_uiCtx.layout.iDefRowTall * 2,
 											});
 
@@ -2592,68 +2586,6 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		}
 		NeoUI::EndSection();
-	}
-}
-
-void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
-{
-	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
-	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
-	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
-	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
-	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Player list", "CtxPlayerList");
-	if (IsInGame())
-	{
-		g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
-		{
-			NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
-			{
-				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
-				for (int i = 1; i <= gpGlobals->maxClients; i++)
-				{
-					if (!g_PR->IsConnected(i) || g_PR->IsHLTV(i) || g_PR->IsFakePlayer(i))
-					{
-						continue;
-					}
-
-					const bool bOwnLocalPlayer = g_PR->IsLocalPlayer(i);
-					const bool bPlayerMuted = GetClientVoiceMgr()->IsPlayerBlocked(i);
-					const char *szPlayerName = g_PR->GetPlayerName(i);
-					wchar_t wszPlayerName[MAX_PLAYER_NAME_LENGTH + 1];
-					g_pVGuiLocalize->ConvertANSIToUnicode(szPlayerName, wszPlayerName, sizeof(wszPlayerName));
-
-					wchar_t wszInfo[256];
-					V_swprintf_safe(wszInfo, L"%ls%ls", bOwnLocalPlayer ? L"[LOCAL] " : bPlayerMuted ? L"[MUTED] " : L"[VOICE] ", wszPlayerName);
-					if (NeoUI::Button(wszInfo).bPressed)
-					{
-						if (!bOwnLocalPlayer) GetClientVoiceMgr()->SetPlayerBlockedState(i, !bPlayerMuted);
-					}
-				}
-				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-			}
-			NeoUI::EndSection();
-			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
-			NeoUI::BeginSection(NeoUI::SECTIONFLAG_ROWWIDGETS | NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
-			{
-				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-				NeoUI::SetPerRowLayout(5);
-				{
-					if (NeoUI::Button(NeoUI::HintAlt(L"Back (ESC)", L"Back (B)")).bPressed || NeoUI::BindKeyBack())
-					{
-						m_state = STATE_ROOT;
-					}
-				}
-				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-			}
-			NeoUI::EndSection();
-		}
-	}
-	else
-	{
-		m_state = STATE_ROOT;
 	}
 }
 

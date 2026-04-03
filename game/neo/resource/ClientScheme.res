@@ -2095,6 +2095,78 @@ Scheme
 				//"additive"	"1"
 			}
 		}
+		NeoUIScoreboard
+		{
+			"1"
+			{
+				"name"		"Montserrat Bold"
+				"tall"		"14"
+				"weight"	"550"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+				//"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Montserrat Bold"
+				"tall"		"16"
+				"weight"	"550"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+				//"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Montserrat Bold"
+				"tall"		"18"
+				"weight"	"550"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"768 1023"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Montserrat Bold"
+				"tall"		"20"
+				"weight"	"550"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Montserrat Bold"
+				"tall"		"22"
+				"weight"	"550"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Montserrat Bold"
+				"tall"		"26"
+				"weight"	"550"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Montserrat Bold"
+				"tall"		"28"
+				"weight"	"550"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+		}
+
 		NeoUISmall
 		{
 			"1"
@@ -3206,6 +3278,7 @@ Scheme
 		"13"		"resource/neotokyo_press_n.ttf"
 		"14"		"resource/killfeedicons.ttf"
 		"15"		"resource/montserrat-regular.ttf"
+		"16"		"resource/montserrat-bold.ttf"
 	}
 
 }

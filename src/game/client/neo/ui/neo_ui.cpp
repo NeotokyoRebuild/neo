@@ -294,6 +294,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 	c->eLabelTextStyle = TEXTSTYLE_LEFT;
 	c->ibfSectionCanActive = 0;
 	c->ibfSectionCanController = 0;
+	c->popupFlags &= ~(POPUPFLAG__CTXDONEPOPUP);
 	// Different pointer, change context
 	c->bFirstCtxUse = (c->pSzCurCtxName != pSzCtxName);
 	if (c->bFirstCtxUse)
@@ -498,17 +499,20 @@ void EndContext()
 
 void BeginSection(const ISectionFlags iSectionFlags)
 {
-	// Previous frame(s) known this section does scroll
-	if (c->ibfSectionHasYScroll & (1ULL << c->iSection))
+	if (!(iSectionFlags & SECTIONFLAG_DISABLEOFFSETS))
 	{
-		// NEO TODO (nullsystem): Change how dPanel works to enforce setting per BeginSection
-		// so don't need to shift around wide on scrollbars and keep usage dPanel "immutable"
-		// without extra variable
-		c->dPanel.wide -= NEOUI_SCROLL_THICKNESS();
-	}
-	if (c->ibfSectionHasXScroll & (1ULL << c->iSection))
-	{
-		c->dPanel.tall -= NEOUI_SCROLL_THICKNESS();
+		// Previous frame(s) known this section does scroll
+		if (c->ibfSectionHasYScroll & (1ULL << c->iSection))
+		{
+			// NEO TODO (nullsystem): Change how dPanel works to enforce setting per BeginSection
+			// so don't need to shift around wide on scrollbars and keep usage dPanel "immutable"
+			// without extra variable
+			c->dPanel.wide -= NEOUI_SCROLL_THICKNESS();
+		}
+		if (c->ibfSectionHasXScroll & (1ULL << c->iSection))
+		{
+			c->dPanel.tall -= NEOUI_SCROLL_THICKNESS();
+		}
 	}
 
 	c->iLayoutX = -c->iXOffset[c->iSection];
@@ -583,6 +587,13 @@ void EndSection()
 		c->iActive = FOCUSOFF_NUM;
 		c->iActiveSection = -1;
 	}
+	const bool bOffsetDisabled = (c->iSectionFlags & SECTIONFLAG_DISABLEOFFSETS);
+	if (bOffsetDisabled)
+	{
+		c->iXOffset[c->iSection] = 0;
+		c->iYOffset[c->iSection] = 0;
+	}
+
 	const int iAbsLayoutX = c->irWidgetMaxX + c->iXOffset[c->iSection];
 	const int iAbsLayoutY = c->irWidgetLayoutY + c->irWidgetTall + c->iYOffset[c->iSection];
 	c->wdgInfos[c->iWidget].iXOffsets = iAbsLayoutX;
@@ -590,8 +601,8 @@ void EndSection()
 
 	// Scroll handling
 	const int iMWheelJump = c->layout.iDefRowTall;
-	const bool bHasXScroll = (iAbsLayoutX > c->dPanel.wide);
-	const bool bHasYScroll = (iAbsLayoutY > c->dPanel.tall);
+	const bool bHasXScroll = (false == bOffsetDisabled) && (iAbsLayoutX > c->dPanel.wide);
+	const bool bHasYScroll = (false == bOffsetDisabled) && (iAbsLayoutY > c->dPanel.tall);
 	const int iScrollThick = NEOUI_SCROLL_THICKNESS();
 	const bool bResetXScrollPanelWide = (c->ibfSectionHasXScroll & (1ULL << c->iSection));
 	const bool bResetYScrollPanelTall = (c->ibfSectionHasYScroll & (1ULL << c->iSection));
@@ -836,16 +847,19 @@ void EndSection()
 		}
 	}
 	
-	// NEO TODO (nullsystem): Change how dPanel works to enforce setting per BeginSection
-	// so don't need to shift around wide on scrollbars and keep usage dPanel "immutable"
-	// without extra variable
-	if (bResetXScrollPanelWide)
+	if (false == bOffsetDisabled)
 	{
-		c->dPanel.tall += iScrollThick;
-	}
-	if (bResetYScrollPanelTall)
-	{
-		c->dPanel.wide += iScrollThick;
+		// NEO TODO (nullsystem): Change how dPanel works to enforce setting per BeginSection
+		// so don't need to shift around wide on scrollbars and keep usage dPanel "immutable"
+		// without extra variable
+		if (bResetXScrollPanelWide)
+		{
+			c->dPanel.tall += iScrollThick;
+		}
+		if (bResetYScrollPanelTall)
+		{
+			c->dPanel.wide += iScrollThick;
+		}
 	}
 
 	++c->iSection;
@@ -885,7 +899,7 @@ void ClosePopup()
 
 bool BeginPopup(const int iPopupId, const PopupFlags flags)
 {
-	if (iPopupId != c->iCurPopupId)
+	if (iPopupId != c->iCurPopupId || (c->popupFlags & POPUPFLAG__CTXDONEPOPUP))
 	{
 		return false;
 	}
@@ -902,7 +916,7 @@ bool BeginPopup(const int iPopupId, const PopupFlags flags)
 	}
 
 	c->popupFlags &= ~(POPUPFLAG__EXTERNAL);
-	c->popupFlags |= (flags & POPUPFLAG__EXTERNAL);
+	c->popupFlags |= (flags & POPUPFLAG__EXTERNAL) | POPUPFLAG__CTXDONEPOPUP;
 
 	V_memcpy(&c->dPanel, &dim, sizeof(Dim));
 	BeginSection(SECTIONFLAG_POPUP);
@@ -920,21 +934,28 @@ int CurrentPopup()
 	return c->iCurPopupId;
 }
 
-static int BasePopupWideByStr(const int iSzSize)
+int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType)
 {
 	const auto *pFontI = &c->fonts[c->eFont];
-	const int iChWidth = vgui::surface()->GetCharacterWidth(pFontI->hdl, 'A');
-	return (c->iMarginX * 2) + (iSzSize * iChWidth);
-}
-
-int PopupWideByStr(const char *pszStr)
-{
-	return BasePopupWideByStr(V_strlen(pszStr));
-}
-
-int PopupWideByStr(const wchar_t *pwszStr)
-{
-	return BasePopupWideByStr(V_wcslen(pwszStr));
+	switch (eWideType)
+	{
+	case SUITABLEWIDE_POPUP:
+	{
+		// Rough-estimate, suitable for popup menus
+		const int iWszSize = V_wcslen(pwszStr);
+		const int iChWidth = vgui::surface()->GetCharacterWidth(pFontI->hdl, 'A');
+		return (c->iMarginX * 2) + (iWszSize * iChWidth);
+	} break;
+	case SUITABLEWIDE_TABLE:
+	{
+		// More precise wide, suitable for fixed-tables
+		[[maybe_unused]] int iWide = 0, iTall = 0;
+		vgui::surface()->GetTextSize(pFontI->hdl, pwszStr, iWide, iTall);
+		return (c->iMarginX * 2) + iWide;
+	} break;
+	}
+	Assert(false); // Should not be able to get here
+	return 0;
 }
 
 void SetPerRowLayout(const int iColTotal, const int *iColProportions, const int iRowTall)
@@ -1445,7 +1466,9 @@ void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 	Label(wszText);
 }
 
-NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType, const bool bVal, const ButtonFlags flags, const float flScrollStart)
+NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath,
+		const char *szTextureGroup, const EBaseButtonType eType, const bool bVal,
+		const ButtonFlags flags, const float flScrollStart)
 {
 	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 
@@ -1532,8 +1555,28 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 			{
 				vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, c->rWidgetArea.y0,
 												c->rWidgetArea.x1, c->rWidgetArea.y1);
-				Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
-						c->irWidgetWide, c->irWidgetTall);
+				if (wszText && wszText[0])
+				{
+					// NEO TODO (nullsystem): Currently only top-center texture,
+					// bottom-center label style but if wanted can tweak texture-label styling
+					const int iTexYTall = c->irWidgetTall * 0.75f;
+					Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
+							c->irWidgetWide, iTexYTall,
+							szTextureGroup);
+
+					const auto *pFontI = &c->fonts[c->eFont];
+					const int x = XPosFromText(wszText, pFontI, TEXTSTYLE_CENTER);
+					vgui::surface()->DrawSetTextPos(
+							c->rWidgetArea.x0 + x,
+							c->rWidgetArea.y0 + iTexYTall - pFontI->iYFontOffset);
+					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				}
+				else
+				{
+					Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
+							c->irWidgetWide, c->irWidgetTall,
+							szTextureGroup);
+				}
 			} break;
 			case BASEBUTTONTYPE_CHECKBOX:
 			{
@@ -1609,7 +1652,7 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 
 NeoUI::RetButton Button(const wchar_t *wszText)
 {
-	return BaseButton(wszText, "", BASEBUTTONTYPE_TEXT);
+	return BaseButton(wszText, "", "", BASEBUTTONTYPE_TEXT);
 }
 
 NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
@@ -1651,7 +1694,22 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 		{
 			// General images decoded via stb_image
 			int width, height, channels;
-			uint8 *data = stbi_load(szTexturePath, &width, &height, &channels, 0);
+			char szFullTexturePath[MAX_PATH] = {};
+#ifdef _WIN32
+			if (V_isalpha(szTexturePath[0])
+					&& szTexturePath[1] == ':'
+					&& (szTexturePath[2] == '\\' || szTexturePath[2] == '/'))
+#else
+			if (szTexturePath[0] == '/')
+#endif
+			{
+				V_strcpy_safe(szFullTexturePath, szTexturePath);
+			}
+			else
+			{
+				filesystem->RelativePathToFullPath_safe(szTexturePath, szTextureGroup, szFullTexturePath);
+			}
+			uint8 *data = stbi_load(szFullTexturePath, &width, &height, &channels, 0);
 			if (data)
 			{
 				if (channels == 3)
@@ -1775,19 +1833,20 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 	return false;
 }
 
-NeoUI::RetButton ButtonTexture(const char *szTexturePath)
+NeoUI::RetButton ButtonTexture(const char *szTexturePath, const char *szTextureGroup,
+		const wchar_t *wszText)
 {
-	return BaseButton(L"", szTexturePath, BASEBUTTONTYPE_IMAGE);
+	return BaseButton(wszText, szTexturePath, szTextureGroup, BASEBUTTONTYPE_IMAGE);
 }
 
 NeoUI::RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal)
 {
-	return BaseButton(wszText, "", BASEBUTTONTYPE_CHECKBOX, bVal);
+	return BaseButton(wszText, "", "", BASEBUTTONTYPE_CHECKBOX, bVal);
 }
 
 NeoUI::RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, const ButtonFlags flags, const float flScrollStart)
 {
-	return BaseButton(wszText, "", BASEBUTTONTYPE_TOGGLE, bVal, flags, flScrollStart);
+	return BaseButton(wszText, "", "", BASEBUTTONTYPE_TOGGLE, bVal, flags, flScrollStart);
 }
 
 void ResetTextures()
@@ -2814,7 +2873,7 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags f
 					OpenPopup(INTERNALPOPUP_COPYMENU, Dim{
 								.x = c->iMouseAbsX,
 								.y = c->iMouseAbsY,
-								.wide = PopupWideByStr("Paste"),
+								.wide = SuitableWideByWStr(L"Paste", SUITABLEWIDE_POPUP),
 								.tall = c->layout.iDefRowTall * 3,
 							});
 					c->eRightClickCopyMenuRet = COPYMENU_NIL;
@@ -3268,8 +3327,8 @@ TableHeaderModFlags TableHeader(const wchar_t **wszColNamesList, const int iCols
 						OpenPopup(INTERNALPOPUP_TABLEHEADER, Dim{
 									.x = c->iMouseAbsX,
 									.y = c->iMouseAbsY,
-									.wide = NeoUI::PopupWideByStr("__") // Offset by checkmark
-											+ NeoUI::PopupWideByStr(wszColNamesList[iWidestIdx]),
+									.wide = NeoUI::SuitableWideByWStr(L"__", NeoUI::SUITABLEWIDE_POPUP) // Offset by checkmark
+											+ NeoUI::SuitableWideByWStr(wszColNamesList[iWidestIdx], NeoUI::SUITABLEWIDE_POPUP),
 									.tall = c->layout.iDefRowTall * iColsTotal,
 								});
 					}
@@ -3327,6 +3386,27 @@ TableHeaderModFlags TableHeader(const wchar_t **wszColNamesList, const int iCols
 	return modFlags;
 }
 
+// NEO NOTE (nullsystem): It's done like this so that the highlighter
+// border goes over rather than under the content of the row
+static void TableHighlightPrevRow()
+{
+	if (c->curRowFlags & NEXTTABLEROWFLAG__HOT && MODE_PAINT == c->eMode)
+	{
+		vgui::IntRect rRowArea = {
+			.x0 = c->dPanel.x + c->iLayoutX + c->iXOffset[c->iSection],
+			.y0 = c->dPanel.y + c->iLayoutY - c->layout.iRowTall,
+			.x1 = c->dPanel.x + c->iLayoutX + c->iXOffset[c->iSection] + c->dPanel.wide,
+			.y1 = c->dPanel.y + c->iLayoutY,
+		};
+		const bool bFullyVisible = (rRowArea.y0 >= c->dPanel.y)
+				&& (rRowArea.y1 <= (c->dPanel.y + c->dPanel.tall));
+		if (bFullyVisible)
+		{
+			DrawBorder(rRowArea);
+		}
+	}
+}
+
 void BeginTable(const int *piColsWide, const int iLabelsSize)
 {
 	// Bump y-axis with previous row layout before applying table layout
@@ -3353,6 +3433,14 @@ void BeginTable(const int *piColsWide, const int iLabelsSize)
 
 NeoUI::RetButton EndTable()
 {
+	if (c->iWidget > 0 && c->iIdxRowParts > 0 && c->iIdxRowParts < c->layout.iRowPartsTotal)
+	{
+		c->iLayoutX = -c->iXOffset[c->iSection];
+		c->iLayoutY += c->layout.iRowTall;
+		c->irWidgetLayoutY = c->iLayoutY;
+	}
+	TableHighlightPrevRow();
+
 	RetButton ret = {};
 
 	if (c->iWidget > 0 && c->iIdxRowParts > 0 && c->iIdxRowParts < c->layout.iRowPartsTotal)
@@ -3393,6 +3481,7 @@ NeoUI::RetButton NextTableRow(const NextTableRowFlags flags)
 		c->iLayoutY += c->layout.iRowTall;
 		c->irWidgetLayoutY = c->iLayoutY;
 	}
+	TableHighlightPrevRow();
 
 	RetButton ret = {};
 	c->curRowFlags = ((flags & NEXTTABLEROWFLAG__EXTERNAL) | (c->curRowFlags & NEXTTABLEROWFLAG__PERSISTS));
@@ -3419,6 +3508,13 @@ NeoUI::RetButton NextTableRow(const NextTableRowFlags flags)
 		{
 			bMouseIn = IN_BETWEEN_EQ(rRowArea.x0, c->iMouseAbsX, rRowArea.x1 - 1)
 					&& IN_BETWEEN_EQ(rRowArea.y0, c->iMouseAbsY, rRowArea.y1 - 1);
+			if (bMouseIn && (c->dimPopup.wide > 0 && c->dimPopup.tall > 0) &&
+					!(c->popupFlags & POPUPFLAG__INPOPUPSECTION))
+			{
+				const Dim &dim = c->dimPopup;
+				bMouseIn = !(IN_BETWEEN_EQ(dim.x, c->iMouseAbsX, dim.x + dim.wide) &&
+						 IN_BETWEEN_EQ(dim.y, c->iMouseAbsY, dim.y + dim.tall));
+			}
 			if (bMouseIn)
 			{
 				c->curRowFlags |= NEXTTABLEROWFLAG__HOT;
@@ -3446,11 +3542,6 @@ NeoUI::RetButton NextTableRow(const NextTableRowFlags flags)
 				{
 					vgui::surface()->DrawSetColor(color);
 					vgui::surface()->DrawFilledRectArray(&rRowArea, 1);
-				}
-
-				if (c->curRowFlags & NEXTTABLEROWFLAG__HOT)
-				{
-					DrawBorder(rRowArea);
 				}
 			}
 		}
