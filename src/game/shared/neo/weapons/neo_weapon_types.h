@@ -2,7 +2,7 @@
 
 // NEO NOTE (nullsystem): If this is altered and may need to alter
 // for crosshair, check MAP_WEAPON_TYPE_TO_XHAIR in neo_crosshair.h
-enum ENeoWeaponType
+enum ENeoWeaponType : int
 {
 	WEP_TYPE_NIL = 0,
 	WEP_TYPE_THROWABLE,

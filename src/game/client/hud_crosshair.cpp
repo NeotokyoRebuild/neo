@@ -628,19 +628,22 @@ void CHudCrosshair::Paint( void )
 		vgui::surface()->DrawSetColor(COLOR_RED);
 		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
 	}
-	else if (iTexXHId > 0)
-	{
-		vgui::surface()->DrawSetTexture(iTexXHId);
-		int iTexWide, iTexTall;
-		vgui::surface()->DrawGetTextureSize(iTexXHId, iTexWide, iTexTall);
-		iTexWide >>= 1;
-		iTexTall >>= 1;
-		vgui::surface()->DrawSetColor(crh->color);
-		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
-	}
 	else if (!bHideCrosshair)
 	{
-		PaintCrosshair(crh, HalfInaccuracyConeInScreenPixels(pWeapon, m_iHalfScreenWidth), iX, iY);
+		if (iTexXHId > 0)
+		{
+			vgui::surface()->DrawSetTexture(iTexXHId);
+			int iTexWide, iTexTall;
+			vgui::surface()->DrawGetTextureSize(iTexXHId, iTexWide, iTexTall);
+			iTexWide >>= 1;
+			iTexTall >>= 1;
+			vgui::surface()->DrawSetColor(crh->color);
+			vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
+		}
+		else
+		{
+			PaintCrosshair(crh, HalfInaccuracyConeInScreenPixels(pWeapon, m_iHalfScreenWidth), iX, iY);
+		}
 	}
 
 	if (bIsScopedWep && pPlayer->m_bInAim)

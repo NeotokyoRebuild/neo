@@ -5,6 +5,7 @@
 #    $ ctest --test-dir build/[PRESET]/tests/ --output-on-failure -R [REGEX]
 # To directly run the test executables:
 #    Windows:
+#        Make sure tier0.dll is in PATH, then do:
 #        $ build\windows-[debug/release]\tests\test_....
 #    Linux:
 #        $ LD_LIBRARY_PATH=lib/public/linux64/ ./build/linux-[debug/release]/tests/test_....

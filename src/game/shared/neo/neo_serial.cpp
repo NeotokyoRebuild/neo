@@ -21,14 +21,16 @@ enum ESerialVariantType
 	SERIALVARIANTTYPE_BOOL,
 };
 
-static void StrCatCh(char (&szMutStr)[NEO_XHAIR_SEQMAX], const char ch)
+[[nodiscard]] static bool StrCatCh(char (&szMutStr)[NEO_XHAIR_SEQMAX], const char ch)
 {
 	const int iSize = V_strlen(szMutStr);
 	if ((iSize + 1) < NEO_XHAIR_SEQMAX)
 	{
 		szMutStr[iSize] = ch;
 		szMutStr[iSize + 1] = '\0';
+		return true;
 	}
+	return false;
 }
 
 static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
@@ -67,6 +69,7 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 						{
 							ctx->bOutOfBound = (iInitVal > varMax.iVal || iInitVal < varMin.iVal);
 						}
+						Assert(varMin.iVal <= varMax.iVal);
 						var.iVal = (varMin.iVal < varMax.iVal) ? clamp(iInitVal, varMin.iVal, varMax.iVal) : iInitVal;
 					} break;
 					case SERIALVARIANTTYPE_BOOL:
@@ -80,6 +83,7 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 						{
 							ctx->bOutOfBound = (flInitVal > varMax.flVal || flInitVal < varMin.flVal);
 						}
+						Assert(varMin.flVal <= varMax.flVal);
 						var.flVal = (varMin.flVal < varMax.flVal) ? clamp(flInitVal, varMin.flVal, varMax.flVal) : flInitVal;
 					} break;
 					}
@@ -109,10 +113,12 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 	{
 		if (eCompMode == COMPMODE_EQUALS && iVal == iCompVal)
 		{
-			StrCatCh(szMutStr, CH_XH_SEGEND);
+			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, CH_XH_SEGEND);
+			Assert(bPass);
 		}
 		else
 		{
+			Assert(iMin <= iMax);
 			char szTmp[NEO_XHAIR_SEQMAX];
 			V_sprintf_safe(szTmp, "%d%c", (iMin < iMax) ? clamp(iVal, iMin, iMax) : iVal, CH_XH_SEGEND);
 			V_strcat_safe(szMutStr, szTmp);
@@ -134,7 +140,8 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 	{
 		if (eCompMode == COMPMODE_EQUALS && bVal == bCompVal)
 		{
-			StrCatCh(szMutStr, CH_XH_SEGEND);
+			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, CH_XH_SEGEND);
+			Assert(bPass);
 		}
 		else
 		{
@@ -160,10 +167,12 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 	{
 		if (eCompMode == COMPMODE_EQUALS && flVal == flCompVal)
 		{
-			StrCatCh(szMutStr, CH_XH_SEGEND);
+			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, CH_XH_SEGEND);
+			Assert(bPass);
 		}
 		else
 		{
+			Assert(flMin <= flMax);
 			char szTmp[NEO_XHAIR_SEQMAX];
 			V_sprintf_safe(szTmp, "%.3f%c", (flMin < flMax) ? clamp(flVal, flMin, flMax) : flVal, CH_XH_SEGEND);
 			V_strcat_safe(szMutStr, szTmp);
@@ -202,7 +211,8 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 		// so start counting from the character after that (in index 4)
 		// It's also the minimal to take use of RLE as ";;;;" -> ";3^" saving 1 byte,
 		// greater saving the greater the repeats.
-		int iLen = 3;
+		int iLen = sizeof(SZ_XH_MINSEGCOMPRESS) - 2;
+		static_assert((sizeof(SZ_XH_MINSEGCOMPRESS) - 2) == 3);
 		while (((iOffset + iLen + 1) < iSzMutSeqSize) && (pszToRLE[iLen + 1] == CH_XH_SEGEND))
 		{
 			++iLen;

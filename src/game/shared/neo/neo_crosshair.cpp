@@ -435,7 +435,7 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 bool ValidateCrosshairSerial(const char *pszSequence)
 {
 	const int iSeqSize = V_strlen(pszSequence);
-	if (iSeqSize <= 0 || iSeqSize > NEO_XHAIR_SEQMAX)
+	if (iSeqSize <= 0 || iSeqSize >= NEO_XHAIR_SEQMAX)
 	{
 		return false;
 	}
@@ -453,7 +453,7 @@ bool ImportCrosshair(CrosshairInfo *xhairInfo, const char *pszSequence,
 		EHipfireOpt (*paeHipfireOpts)[CROSSHAIR_WEP__TOTAL])
 {
 	const int iSeqSize = V_strlen(pszSequence);
-	if (iSeqSize <= 0 || iSeqSize > NEO_XHAIR_SEQMAX)
+	if (iSeqSize <= 0 || iSeqSize >= NEO_XHAIR_SEQMAX)
 	{
 		return false;
 	}
@@ -475,7 +475,7 @@ bool ImportCrosshair(CrosshairInfo *xhairInfo, const char *pszSequence,
 			const NeoCrosshairWepFlags wepMask = (1 << (i - 1));
 			const NeoCrosshairHipfireCustomFlags wepHipfireMask = (1 << (i - CROSSHAIR_WEP_DEFAULT_HIPFIRE));
 			// NeoCrosshairHipfireCustomFlags flag equiv. only sets when NeoCrosshairWepFlags flag equiv. is set
-			Assert(false == ((false == (xhairInfo->wepFlags & wepMask)) && (xhairInfo->hipfireFlags & wepHipfireMask)));
+			Assert((xhairInfo->wepFlags & wepMask) || (false == (xhairInfo->hipfireFlags & wepHipfireMask)));
 			(*paeHipfireOpts)[i] = static_cast<EHipfireOpt>(static_cast<bool>(xhairInfo->wepFlags & wepMask) + static_cast<bool>(xhairInfo->hipfireFlags & wepHipfireMask));
 		}
 	}

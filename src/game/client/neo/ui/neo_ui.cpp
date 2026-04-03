@@ -1611,6 +1611,8 @@ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 		const TabsFlags flags, int *piTabWide)
 {
+	Assert(iLabelsSize > 0);
+
 	// This is basically a ringbox but different UI
 	const auto wdgState = BeginWidget(WIDGETFLAG_SKIPACTIVE | WIDGETFLAG_MOUSE | WIDGETFLAG_NOHOTBORDER);
 

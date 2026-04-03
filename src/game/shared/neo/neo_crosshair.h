@@ -54,7 +54,7 @@ enum NeoHudCrosshairDynamicType
 	CROSSHAIR_DYNAMICTYPE__TOTAL,
 };
 
-enum ENeoCrosshairWep
+enum ENeoCrosshairWep : int
 {
 	CROSSHAIR_WEP_NONE = -1,
 	CROSSHAIR_WEP_DEFAULT = 0,

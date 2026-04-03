@@ -1,6 +1,6 @@
 #pragma once
 
-// Requires neo_crosshair.h included before this for NEO_XHAIR_SEQMAX
+#include "neo_crosshair.h"
 
 enum ESerialMode
 {
