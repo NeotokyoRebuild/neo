@@ -39,6 +39,7 @@
 #include "neo_player_shared.h"
 #include "bot/neo_bot.h"
 #include "nav_mesh.h"
+#include "neo_spawn_manager.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -2917,35 +2918,7 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 		}
 	}
 
-	pSpot = pLastSpawnPoint;
-	// Randomize the start spot
-	for (int i = random->RandomInt(1, 5); i > 0; i--)
-		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
-	if (!pSpot)  // skip over the null point
-		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
-
-	CBaseEntity *pFirstSpot = pSpot;
-
-	do
-	{
-		if (pSpot)
-		{
-			// check if pSpot is valid
-			if (g_pGameRules->IsSpawnPointValid(pSpot, this))
-			{
-				if (pSpot->GetLocalOrigin() == vec3_origin)
-				{
-					pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
-					continue;
-				}
-
-				// if so, go to pSpot
-				goto ReturnSpot;
-			}
-		}
-		// increment pSpot
-		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
-	} while (pSpot != pFirstSpot); // loop if we're not back to the start
+	pSpot = NeoSpawnManager::RequestSpawn(GetTeamNumber(), this);
 
 	// we haven't found a place to spawn yet, so kill any guy at the first spawn point and spawn there
 	if (pSpot)

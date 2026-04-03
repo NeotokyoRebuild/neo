@@ -4,6 +4,7 @@
 #pragma once
 #endif
 
+#include "cbase.h"
 #include "baseentity_shared.h"
 #include "baseplayer_shared.h"
 
@@ -26,7 +27,8 @@ public:
 	CNEOSpawnPoint();
 	~CNEOSpawnPoint();
 
-	virtual void Spawn();
+	virtual void Spawn() override;
+	int GetOwningTeam() const { return m_iOwningTeam; }
 
 #ifdef GAME_DLL
 	bool m_bDisabled;

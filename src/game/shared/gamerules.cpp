@@ -236,7 +236,7 @@ bool CGameRules::IsSpawnPointValid( CBaseEntity *pSpot, CBasePlayer *pPlayer  )
 	CBaseEntity *ent = NULL;
 
 #if defined NEO && defined GAME_DLL
-	if ( auto* pNEOSpot = dynamic_cast<CNEOSpawnPoint*>( pSpot ) )
+	if ( auto* pNEOSpot = assert_cast<CNEOSpawnPoint*>( pSpot ) )
 	{
 		if ( pNEOSpot->m_bDisabled )
 		{
