@@ -1620,8 +1620,7 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 	}
 	else if (myWeapon->Clip1() > 0)
 	{
-		auto* pPlayer = ToNEOPlayer(this);
-		if ( pPlayer->GetTimeSinceWeaponFired() < 3.0f)
+		if (GetTimeSinceWeaponFired() < 3.0f)
 		{
 			return; // still in the middle of a fight
 		}

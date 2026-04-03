@@ -36,10 +36,10 @@ ConVar neo_bot_fire_weapon_allowed( "neo_bot_fire_weapon_allowed", "1", FCVAR_CH
 
 ConVar neo_bot_allow_retreat( "neo_bot_allow_retreat", "1", FCVAR_CHEAT, "If zero, bots will not attempt to retreat if they are are in a bad situation." );
 
-ConVar neo_bot_recon_superjump_min_dist( "neo_bot_recon_superjump_min_dist", "1000", FCVAR_NONE,
+ConVar neo_bot_recon_superjump_min_dist( "neo_bot_recon_superjump_min_dist", "4096", FCVAR_NONE,
 	"Minimum straight-line path distance required for a Recon bot to super jump while moving", true, 0, false, 0 );
 
-ConVar neo_bot_recon_superjump_min_accuracy( "neo_bot_recon_superjump_min_accuracy", "0.95", FCVAR_NONE,
+ConVar neo_bot_recon_superjump_min_accuracy( "neo_bot_recon_superjump_min_accuracy", "0.96", FCVAR_NONE,
 	"Minimum directional alignment with path required for a Recon bot to super jump while moving", true, 0.1f, false, 1.0f );
 
 //---------------------------------------------------------------------------------------------
@@ -370,8 +370,7 @@ Vector CNEOBotMainAction::SelectTargetPoint( const INextBot *meBot, const CBaseC
 //-----------------------------------------------------------------------------------------
 void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 {
-	CNEO_Player *pNeoMe = ToNEOPlayer(me);
-	if ( !pNeoMe || pNeoMe->GetClass() != NEO_CLASS_RECON )
+	if ( me->GetClass() != NEO_CLASS_RECON )
 	{
 		return;
 	}
@@ -379,21 +378,22 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 	// Check that bot isn't only moving sideways which wastes aux power
 	// Also determines a direction to jump towards
 	// NEO Jank: We don't check sprint here because bots don't anticipate using sprint in a smart manner
-	if ( ( pNeoMe->m_nButtons & ( IN_FORWARD | IN_BACK ) ) == 0 )
+	const int nForwardBack = me->m_nButtons & ( IN_FORWARD | IN_BACK );
+	if ( nForwardBack == 0 || nForwardBack == ( IN_FORWARD | IN_BACK ) )
 	{
 		// Remove this check if we add sideways super jump in the future
 		return;
 	}
 
-	if (!pNeoMe->IsAllowedToSuperJump())
+	if (!me->IsAllowedToSuperJump())
 	{
 		return;
 	}
 
-	bool bImmediateDanger = gpGlobals->curtime - pNeoMe->GetLastDamageTime() <= 2.0f;
+	bool bImmediateDanger = gpGlobals->curtime - me->GetLastDamageTime() <= 2.0f;
 
 	if (!bImmediateDanger
-		&& (pNeoMe->m_nButtons & IN_FORWARD)
+		&& (me->m_nButtons & IN_FORWARD)
 		&& (neo_bot_recon_superjump_min_dist.GetFloat() > 1))
 	{
 		if (!m_reconSuperJumpPathCheckTimer.IsElapsed())
@@ -421,7 +421,7 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 
 		// Get the bot's facing direction
 		Vector vecFacing;
-		pNeoMe->EyeVectors( &vecFacing );
+		me->EyeVectors( &vecFacing );
 		vecFacing.z = 0.0f;
 		vecFacing.NormalizeInPlace();
 
@@ -455,7 +455,7 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 			}
 
 			// Sanity check that each waypoint is relatively aligned with our jump direction
-			Vector vecToWaypoint = seg->pos - pNeoMe->GetAbsOrigin();
+			Vector vecToWaypoint = seg->pos - me->GetAbsOrigin();
 			vecToWaypoint.z = 0.0f;
 			
 			float flDist = vecToWaypoint.NormalizeInPlace();
@@ -470,7 +470,7 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 				bCanJump = true;
 				break;
 			}
-			else if (flDist < 0)
+			else if ( !IsFinite( flDist ) || flDist < 0 )
 			{
 				return; // Just in case of a bad value
 			}
