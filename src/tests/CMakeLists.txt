@@ -5,7 +5,7 @@
 #    $ ctest --test-dir build/[PRESET]/tests/ --output-on-failure -R [REGEX]
 # To directly run the test executables:
 #    Windows:
-#        Make sure tier0.dll is in PATH, then do:
+#        Make sure tier0.dll is in PATH ([SOURCE]\devtools\bin\), then do:
 #        $ build\windows-[debug/release]\tests\test_....
 #    Linux:
 #        $ LD_LIBRARY_PATH=lib/public/linux64/ ./build/linux-[debug/release]/tests/test_....
@@ -41,6 +41,12 @@ foreach (TEST_EXE ${TEST_EXE_LIST})
         set_property(TEST ${TEST_EXE}
             PROPERTY
                 ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_SOURCE_DIR}/lib/public/linux64/"
+        )
+    elseif (OS_WINDOWS)
+        set_property(TEST ${TEST_EXE}
+            APPEND
+            PROPERTY
+                ENVIRONMENT "PATH=${CMAKE_SOURCE_DIR}\\devtools\\bin\\"
         )
     endif ()
 
