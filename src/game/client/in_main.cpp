@@ -700,6 +700,18 @@ void IN_LeanRightToggle(const CCommand& args)
 	}
 }
 
+void IN_SpeedToggle(const CCommand& args)
+{
+	if (::input->KeyState(&in_speed))
+	{
+		KeyUp(&in_speed, args[1]);
+	}
+	else
+	{
+		KeyDown(&in_speed, args[1]);
+	}
+}
+
 void IN_WalkToggle(const CCommand& args)
 {
 	if (::input->KeyState(&in_walk))
@@ -1872,6 +1884,9 @@ static ConCommand endattack3("-attack3", IN_Attack3Up);
 #ifdef TF_CLIENT_DLL
 static ConCommand toggle_duck( "toggle_duck", IN_DuckToggle );
 #endif
+#ifdef NEO
+static ConCommand toggle_duck( "toggle_duck", IN_DuckToggle );
+#endif
 
 // Xbox 360 stub commands
 static ConCommand xboxmove("xmove", IN_XboxStub);
@@ -1901,6 +1916,8 @@ static ConCommand endvision("-vision", IN_VisionUp);
 
 static ConCommand toggle_leanleft("toggle_leanl", IN_LeanLeftToggle);
 static ConCommand toggle_leanright("toggle_leanr", IN_LeanRightToggle);
+
+static ConCommand toggle_sprint("toggle_sprint", IN_SpeedToggle);
 
 static ConCommand toggle_walk("toggle_walk", IN_WalkToggle);
 
