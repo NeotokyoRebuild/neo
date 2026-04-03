@@ -11,7 +11,6 @@
 #include <ivoicetweak.h>
 #include <vgui_controls/Controls.h>
 #include <vgui/ISurface.h>
-#include <steam/steam_api.h>
 #include "vgui/ISystem.h"
 #include "neo_hud_killer_damage_info.h"
 #include "voice_status.h"
@@ -20,6 +19,8 @@
 #include "neo_root.h"
 #include "neo/ui/neo_utils.h"
 #include "neo_theme.h"
+
+#include <cwctype>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -386,6 +387,12 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		NeoSettings::General *pGeneral = &ns->general;
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_clantag.GetString(), pGeneral->wszNeoClantag, sizeof(pGeneral->wszNeoClantag));
+
+		if (V_wcscmp(pGeneral->wszNeoName, L"#empty") == 0)
+			pGeneral->wszNeoName[0] = L'\0';
+		if (V_wcscmp(pGeneral->wszNeoClantag, L"#empty") == 0)
+			pGeneral->wszNeoClantag[0] = L'\0';
+
 		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
 		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
@@ -1012,6 +1019,42 @@ static const wchar_t *EQUIP_UTILITY_PRIORITY_LABELS[NeoSettings::EquipUtilityPri
 	L"Class Specific First" // EQUIP_UTILITY_PRIORITY_CLASS_SPECIFIC
 };
 
+// Trims empty whitespaces from the left-hand side of a text variable.
+// Allows one contiguous whitespace on the right side for space-separated input, but no more.
+template <int maxlen>
+	requires (maxlen > 1)
+FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
+{
+	auto zeroIdx = Clamp(V_wcslen(input), 0, maxlen - 1);
+	for (int i = 0; i < zeroIdx; ++i)
+	{
+		const bool hasBadCharInPos = (
+			V_IsDeprecatedW(input[i]) ||
+			V_IsMeanSpaceW(input[i]));
+
+		const bool hasDoubleBlankInPos = (
+			(i + 1 < zeroIdx) &&
+			std::iswblank(input[i]) &&
+			std::iswblank(input[i + 1]));
+
+		if (hasBadCharInPos || hasDoubleBlankInPos)
+		{
+			V_memmove(&input[i], &input[i + 1], (zeroIdx - i) * sizeof(input[0]));
+			NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = i+hasDoubleBlankInPos;
+			// memmove has shifted contents one position to the left, so compensate by decrementing
+			zeroIdx = Max(0, zeroIdx - 1);
+			i -= 1;
+		}
+	}
+	// Block leading spaces
+	if (std::iswblank(input[0]))
+	{
+		V_memmove(input, &input[1], (maxlen - 1) * sizeof(input[0]));
+		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelCur = 0;
+		NeoUI::CurrentContext()->iTextSelCur = NeoUI::CurrentContext()->iTextSelStart = 0;
+	}
+}
+
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
@@ -1028,8 +1071,10 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
 
 	NeoUI::Divider(L"MULTIPLAYER");
-	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, MAX_PLAYER_NAME_LENGTH - 1);
-	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, NEO_MAX_CLANTAG_LENGTH - 1);
+	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, ARRAYSIZE(pGeneral->wszNeoName) - 1);
+	VarTrimmer(pGeneral->wszNeoName);
+	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, ARRAYSIZE(pGeneral->wszNeoClantag) - 1);
+	VarTrimmer(pGeneral->wszNeoClantag);
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
 	NeoUI::RingBoxBool(L"Only show clantags when spectator", &pGeneral->bMarkerSpecOnlyClantag);
 
