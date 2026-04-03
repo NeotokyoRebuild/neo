@@ -453,6 +453,15 @@ public:
 	void SetLastAttacker(const int index) { m_iLastAttacker = m_iLastEvent = index; }
 	void SetLastKiller(const int index) { m_iLastKiller = m_iLastEvent = index; }
 	void SetLastGhoster(const int index) { m_iLastGhoster = m_iLastEvent = index; }
+
+	enum ReadyToggleFlag_
+	{
+		READYTOGGLEFLAG_NIL = 0,
+		READYTOGGLEFLAG_UNREADY = 1 << 0,
+		READYTOGGLEFLAG_PRINTCHANGE = 1 << 1,
+	};
+	typedef int ReadyToggleFlags;
+	void ReadyToggle(CNEO_Player *pNeoPlayer, const ReadyToggleFlags flags);
 #endif // GAME_DLL
 public:
 	const int GetLastHurt() const { return m_iLastHurt; }

@@ -1668,6 +1668,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_worldpos_marker_generic.cpp
     neo/ui/neo_scoreboard.cpp
     neo/ui/neo_hud_context_hint.cpp
+    neo/ui/neo_hud_context_hint.cpp
 )
 
 set_source_files_properties(
