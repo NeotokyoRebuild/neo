@@ -165,8 +165,12 @@ BEGIN_DATADESC( CBreakableSurface )
 	DEFINE_FIELD( m_nNumHigh,			FIELD_INTEGER),	
 	DEFINE_FIELD( m_flPanelWidth,		FIELD_FLOAT),	
 	DEFINE_FIELD( m_flPanelHeight,	FIELD_FLOAT),	
-	DEFINE_FIELD( m_vNormal,			FIELD_VECTOR),	
-	DEFINE_FIELD( m_vCorner,			FIELD_POSITION_VECTOR),	
+	DEFINE_FIELD( m_vNormal,			FIELD_VECTOR),
+	DEFINE_FIELD( m_vCorner,			FIELD_POSITION_VECTOR),
+#ifdef NEO
+	DEFINE_FIELD( m_vWidthDir,		FIELD_VECTOR),
+	DEFINE_FIELD( m_vHeightDir,		FIELD_VECTOR),
+#endif
 	DEFINE_FIELD( m_bIsBroken,		FIELD_BOOLEAN),	
 	DEFINE_FIELD( m_nNumBrokenPanes,	FIELD_INTEGER),	
 	
@@ -193,6 +197,10 @@ IMPLEMENT_SERVERCLASS_ST(CBreakableSurface, DT_BreakableSurface)
 	SendPropFloat(SENDINFO(m_flPanelHeight), 0, SPROP_NOSCALE),
 	SendPropVector(SENDINFO(m_vNormal), -1, SPROP_COORD),
 	SendPropVector(SENDINFO(m_vCorner), -1, SPROP_COORD),
+#ifdef NEO
+	SendPropVector(SENDINFO(m_vWidthDir), -1, SPROP_NOSCALE),
+	SendPropVector(SENDINFO(m_vHeightDir), -1, SPROP_NOSCALE),
+#endif
 	SendPropInt(SENDINFO(m_bIsBroken), 1, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nSurfaceType), 2, SPROP_UNSIGNED),
 	SendPropArray3(SENDINFO_ARRAY3(m_RawPanelBitVec), SendPropInt( SENDINFO_ARRAY( m_RawPanelBitVec ), 1, SPROP_UNSIGNED ) ),
@@ -550,8 +558,12 @@ void CBreakableSurface::TraceAttack( const CTakeDamageInfo &info, const Vector &
 			{
 				QAngle vAngles;
 				VectorAngles(-1*m_vNormal,vAngles);
+#ifdef NEO
+				Vector vHeightDir = m_vHeightDir;
+#else
 				Vector vWidthDir,vHeightDir;
 				AngleVectors(vAngles,NULL,&vWidthDir,&vHeightDir);
+#endif
 
 				for (int width=0;width<m_nNumWide;width++)
 				{
@@ -567,8 +579,12 @@ void CBreakableSurface::TraceAttack( const CTakeDamageInfo &info, const Vector &
 						// Shatter the strip and start counting again
 						else if (nHCount > 0)
 						{
-							Vector vBreakPos = m_vCorner + 
-													(width*vWidthDir*m_flPanelWidth) + 
+							Vector vBreakPos = m_vCorner +
+#ifdef NEO
+													(width*m_vWidthDir*m_flPanelWidth) +
+#else
+													(width*vWidthDir*m_flPanelWidth) +
+#endif
 													((height-nHCount)*vHeightDir*m_flPanelHeight);
 
 							CreateShards(vBreakPos, vAngles,
@@ -581,8 +597,12 @@ void CBreakableSurface::TraceAttack( const CTakeDamageInfo &info, const Vector &
 					}
 					if (nHCount)
 					{
-						Vector vBreakPos = m_vCorner + 
-												(width*vWidthDir*m_flPanelWidth) + 
+						Vector vBreakPos = m_vCorner +
+#ifdef NEO
+												(width*m_vWidthDir*m_flPanelWidth) +
+#else
+												(width*vWidthDir*m_flPanelWidth) +
+#endif
 												((height-nHCount)*vHeightDir*m_flPanelHeight);
 
 						CreateShards(vBreakPos, vAngles,
@@ -627,6 +647,20 @@ void CBreakableSurface::Die( CBaseEntity *pBreaker, const Vector &vAttackDir )
 		m_OnBreak.FireOutput( this, this );
 	}
 
+#ifdef NEO
+	// -------------------------------------------------------
+	// The surface has two sides, when we are killed pick
+	// the side that the damage came from.
+	// Compute the normal first so the dot product check works.
+	// -------------------------------------------------------
+	Vector vWidth		= m_vLLVertex - m_vLRVertex;
+	Vector vHeight		= m_vLLVertex - m_vULVertex;
+
+	// Compute normal before the flip check so the dot product is valid.
+	CrossProduct( vWidth, vHeight, m_vNormal.GetForModify() );
+	VectorNormalize(m_vNormal.GetForModify());
+#endif
+
 	float flDir = -1;
 
 	if ( vAttackDir.LengthSqr() > 0.001 )
@@ -634,21 +668,18 @@ void CBreakableSurface::Die( CBaseEntity *pBreaker, const Vector &vAttackDir )
 		float flDot = DotProduct( m_vNormal, vAttackDir );
 		if (flDot < 0)
 		{
+#ifndef NEO
 			m_vLLVertex += m_vNormal;
 			m_vLRVertex += m_vNormal;
 			m_vULVertex += m_vNormal;
 			m_vURVertex += m_vNormal;
+#endif
 			m_vNormal	*= -1;
 			flDir		=   1;
 		}
 	}
 
-	// -------------------------------------------------------
-	// The surface has two sides, when we are killed pick 
-	// the side that the damage came from 
-	// -------------------------------------------------------
-	Vector vWidth		= m_vLLVertex - m_vLRVertex;
-	Vector vHeight		= m_vLLVertex - m_vULVertex;
+#ifndef NEO
 	CrossProduct( vWidth, vHeight, m_vNormal.GetForModify() );
 	VectorNormalize(m_vNormal.GetForModify());
 
@@ -677,10 +708,77 @@ void CBreakableSurface::Die( CBaseEntity *pBreaker, const Vector &vAttackDir )
 	{
 		m_vCorner = bLower ? m_vLLVertex : m_vULVertex;
 	}
-	else 
+	else
 	{
 		m_vCorner = bLower ? m_vLRVertex : m_vURVertex;
 	}
+#else
+	// ---------------------------------------------------
+	//  Use the original canonical axis directions for robust corner
+	//  selection (handles any vertex label order from the BSP compiler),
+	//  then compute precise m_vWidthDir/m_vHeightDir from vertex positions.
+	//
+	//  m_vNormal * flDir == -N0 in all cases (N0 = unflipped normal), so
+	//  VectorAngles sees the same argument as the #ifndef NEO path which
+	//  always calls VectorAngles(-1*m_vNormal) with m_vNormal = N0.
+	// ---------------------------------------------------
+	QAngle vAngles;
+	VectorAngles( m_vNormal * flDir, vAngles );
+	Vector vWidthDir,vHeightDir;
+	AngleVectors( vAngles, NULL, &vWidthDir, &vHeightDir );
+
+	// Swap vWidth/vHeight if the canonical width axis is more aligned with
+	// the geometric height edge.  Unlike the non-NEO path we do NOT scale by
+	// flDir here: in NEO we never shift the vertices, so flDir has no bearing
+	// on the edge vectors themselves.
+	
+	Vector vWidthNorm = vWidth;
+	VectorNormalize( vWidthNorm );
+	float flWDist = DotProduct( vWidthDir, vWidthNorm );
+	bool bSwapped = ( fabs(flWDist) < 0.5f );  // < 0.5 ≡ angle > 60° from canonical width
+	if ( bSwapped )
+	{
+		Vector vSaveHeight	= vHeight;
+		vHeight				= vWidth;
+		vWidth				= vSaveHeight;
+	}
+
+	// -------------------------------------------------
+	// Find which corner to use.
+	// When swapped, vWidth spans the old BSP-height axis (LLV↔ULV) and
+	// vHeight spans the old BSP-width axis (LLV↔LRV), so the vertex-label
+	// mapping must be transposed relative to the no-swap case.
+	// -------------------------------------------------
+	bool bLeft  = (DotProduct(vWidthDir,vWidth)   < 0);
+	bool bLower = (DotProduct(vHeightDir,vHeight) < 0);
+	if (!bSwapped)
+	{
+		if (bLeft)
+			m_vCorner = bLower ? m_vLLVertex : m_vULVertex;
+		else
+			m_vCorner = bLower ? m_vLRVertex : m_vURVertex;
+	}
+	else
+	{
+		// After the swap "left" selects on the old-height axis → {LLV,LRV},
+		// and "lower" selects on the old-width axis → {LLV,ULV}.
+		if (bLeft)
+			m_vCorner = bLower ? m_vLLVertex : m_vLRVertex;
+		else
+			m_vCorner = bLower ? m_vULVertex : m_vURVertex;
+	}
+
+	// Compute precise direction vectors from vertex positions.
+	// These point FROM the corner TOWARD the adjacent corner in each
+	// dimension, so panel (w,h) rendering always starts at the correct vertex.
+	Vector vWN = vWidth;
+	VectorNormalize( vWN );
+	m_vWidthDir = vWN * ( bLeft ? -1.0f : 1.0f );
+
+	Vector vHN = vHeight;
+	VectorNormalize( vHN );
+	m_vHeightDir = vHN * ( bLower ? -1.0f : 1.0f );
+#endif
 
 	// -------------------------------------------------
 	//  Calculate the number of panels
@@ -750,10 +848,14 @@ void CBreakableSurface::InputShatter( inputdata_t &inputdata )
 	if (nMaxY > m_nNumHigh)
 		nMaxY = m_nNumHigh;
 
+#ifdef NEO
+	Vector vHeightDir = m_vHeightDir;
+#else
 	QAngle vAngles;
 	VectorAngles(-1*m_vNormal,vAngles);
 	Vector vWidthDir,vHeightDir;
 	AngleVectors(vAngles,NULL,&vWidthDir,&vHeightDir);
+#endif
 
 	// Blow out a roughly circular of tile with some randomness
 	Vector2D vecActualCenter( flCenterX * m_flPanelWidth, flCenterY * m_flPanelHeight ); 
@@ -764,8 +866,12 @@ void CBreakableSurface::InputShatter( inputdata_t &inputdata )
 			Vector2D pt( (width + 0.5f) * m_flPanelWidth, (height + 0.5f) * m_flPanelWidth );
 			if ( pt.DistToSqr(vecActualCenter) <= vecShatterInfo.z * vecShatterInfo.z )
 			{
-				Vector vBreakPos	= m_vCorner + 
-									(width*vWidthDir*m_flPanelWidth) + 
+				Vector vBreakPos	= m_vCorner +
+#ifdef NEO
+									(width*m_vWidthDir*m_flPanelWidth) +
+#else
+									(width*vWidthDir*m_flPanelWidth) +
+#endif
 									(height*vHeightDir*m_flPanelHeight);
 
 				ShatterPane( width, height, m_vNormal * 500, vBreakPos );
@@ -1020,12 +1126,18 @@ void CBreakableSurface::BreakThink(void)
 void CBreakableSurface::PanePos(const Vector &vPos, float *flWidth, float *flHeight)
 {
 	Vector vAttackVec = vPos - m_vCorner;
+#ifdef NEO
+	Vector vHeightDir = m_vHeightDir;
+	float flWDist = DotProduct(m_vWidthDir,vAttackVec);
+	float flHDist = DotProduct(vHeightDir,vAttackVec);
+#else
 	QAngle vAngles;
 	VectorAngles(-1*m_vNormal,vAngles);
 	Vector vWidthDir,vHeightDir;
 	AngleVectors(vAngles,NULL,&vWidthDir,&vHeightDir);
 	float flWDist = DotProduct(vWidthDir,vAttackVec);
 	float flHDist = DotProduct(vHeightDir,vAttackVec);
+#endif
 
 	// Figure out which quadrent I'm in
 	*flWidth  = flWDist/m_flPanelWidth;
@@ -1089,12 +1201,19 @@ void CBreakableSurface::DropPane(int nWidth, int nHeight)
 
 		QAngle vAngles;
 		VectorAngles(-1*m_vNormal,vAngles);
+#ifdef NEO
+		Vector vHeightDir = m_vHeightDir;
+		Vector vBreakPos	= m_vCorner +
+								(nWidth*m_vWidthDir*m_flPanelWidth) +
+								(nHeight*vHeightDir*m_flPanelHeight);
+#else
 		
 		Vector vWidthDir,vHeightDir;
 		AngleVectors(vAngles,NULL,&vWidthDir,&vHeightDir);
 		Vector vBreakPos	= m_vCorner + 
 								(nWidth*vWidthDir*m_flPanelWidth) + 
 								(nHeight*vHeightDir*m_flPanelHeight);
+#endif
 
 		CreateShards(vBreakPos, vAngles, vec3_origin, vec3_origin,
 						WINDOW_PANEL_SIZE,	WINDOW_PANEL_SIZE,
@@ -1172,11 +1291,18 @@ bool CBreakableSurface::ShatterPane(int nWidth, int nHeight, const Vector &vForc
 
 	QAngle vAngles;
 	VectorAngles(-1*m_vNormal,vAngles);
+#ifdef NEO
+	Vector vHeightDir = m_vHeightDir;
+	Vector vBreakPos	= m_vCorner +
+						(nWidth*m_vWidthDir*m_flPanelWidth) +
+						(nHeight*vHeightDir*m_flPanelHeight);
+#else
 	Vector vWidthDir,vHeightDir;
 	AngleVectors(vAngles,NULL,&vWidthDir,&vHeightDir);
 	Vector vBreakPos	= m_vCorner + 
 						(nWidth*vWidthDir*m_flPanelWidth) + 
 						(nHeight*vHeightDir*m_flPanelHeight);
+#endif
 
 	CreateShards(vBreakPos, vAngles,vForce,	vForcePos, m_flPanelWidth, m_flPanelHeight, WINDOW_SMALL_SHARD_SIZE);
 
