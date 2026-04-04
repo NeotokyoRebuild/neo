@@ -2905,8 +2905,11 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 	if (!bIsTeamplay)
 	{
-		pSpawnpointName = "info_player_deathmatch";
-		pLastSpawnPoint = g_pLastSpawn;
+		if (GetTeamNumber() > LAST_SHARED_TEAM)
+		{
+			pSpawnpointName = "info_player_deathmatch";
+			pLastSpawnPoint = g_pLastSpawn;
+		}
 	}
 	else
 	{
