@@ -339,7 +339,7 @@ void CNeoServerList::ServerResponded(HServerListRequest hRequest, int iServer)
 
 	ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
 	gameserveritem_t *pServerDetails = steamMM->GetServerDetails(hRequest, iServer);
-	if (pServerDetails && m_servers.size() < 1024)
+	if (pServerDetails)
 	{
 		wchar_t wszServerName[k_cbMaxGameServerName] = {};
 		g_pVGuiLocalize->ConvertANSIToUnicode(

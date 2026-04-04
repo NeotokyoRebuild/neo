@@ -26,6 +26,7 @@ static Context *c = &g_emptyCtx;
 const int ROWLAYOUT_TWOSPLIT[] = { 40, -1 };
 static constexpr int WDGINFO_ALLOC_STEPS = 64;
 static constexpr float FL_BORDER_RATIO = 0.2f;
+static constexpr float FL_HEADER_DRAG_RATIO = 0.4f;
 
 // NEO JANK (nullsystem): DrawUnicodeChar is buggy, so use DrawPrintText instead, hence
 // single character but a (wide-)string instead of (wide-)char
@@ -1346,7 +1347,9 @@ void Label(const wchar_t *wszText, const bool bNotWidget)
 			viewportDim.wide = c->irWidgetWide - iLDiff - iRDiff;
 			viewportDim.tall = c->irWidgetTall;
 		}
-		// NEO NOTE (nullsystem): Sanity check the viewport makes sense
+		// NEO NOTE (nullsystem): Only paint text if the viewport is in a valid region
+		// Viewport can be invalidated if X-axis offset turns the label to be off the
+		// section's panel's area, so can be expected to not pass this check.
 		if (IN_BETWEEN_EQ(c->dPanel.x, viewportDim.x, c->dPanel.x + c->dPanel.wide)
 				&& IN_BETWEEN_EQ(c->dPanel.y, viewportDim.y, c->dPanel.y + c->dPanel.tall)
 				&& IN_BETWEEN_EQ(c->dPanel.y, viewportDim.y + viewportDim.tall, c->dPanel.y + c->dPanel.tall)
@@ -2943,7 +2946,7 @@ TableHeaderModFlags TableHeader(const wchar_t **wszColNamesList, const int iCols
 	TableHeaderModFlags modFlags = 0;
 
 	const auto wdgState = BeginWidget(WIDGETFLAG_SKIPACTIVE | WIDGETFLAG_MOUSE | WIDGETFLAG_NOHOTBORDER);
-	const int iDragWide = 5; // TODO size by resolution
+	const int iDragWide = Max(static_cast<int>(FL_HEADER_DRAG_RATIO * c->iMarginY), 2);
 
 	// Sanity check if iLabelsSize dynamically changes
 	*piSortIndex = clamp(*piSortIndex, 0, iColsTotal - 1);

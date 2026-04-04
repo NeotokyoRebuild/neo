@@ -27,6 +27,7 @@
 #include "mp3player.h"
 #include "neo_theme.h"
 #include "neo_player_shared.h"
+#include "steamnetworkingtypes.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -1244,7 +1245,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 	// NEO TODO (nullsystem): Save and restore it cross sessions
 	if (NeoUI::MODE_PAINT == g_uiCtx.eMode && g_uiCtx.dPanel.wide > 0)
 	{
-		if (0 == m_iColsWideServerBrowser[0])
+		if (false == m_bColsWideServerBrowserInit)
 		{
 			int iAccX = 0;
 			for (int i = 0; i < (GSIW__TOTAL - 1); ++i)
@@ -1253,9 +1254,10 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 				iAccX += m_iColsWideServerBrowser[i];
 			}
 			m_iColsWideServerBrowser[GSIW__TOTAL - 1] = iTotalHeadersWide - iAccX;
+			m_bColsWideServerBrowserInit = true;
 		}
 
-		if (0 == m_iColsWideServerBlacklist[0])
+		if (false == m_bColsWideServerBlacklistInit)
 		{
 			int iAccX = 0;
 			for (int i = 0; i < (SBLIST_COL__TOTAL - 1); ++i)
@@ -1264,6 +1266,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 				iAccX += m_iColsWideServerBlacklist[i];
 			}
 			m_iColsWideServerBlacklist[SBLIST_COL__TOTAL - 1] = g_uiCtx.dPanel.wide - iAccX;
+			m_bColsWideServerBlacklistInit = true;
 		}
 	}
 
@@ -1509,7 +1512,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							wchar_t wszServerName[k_cbMaxGameServerName] = {};
 							wchar_t wszPlayers[15] = {};
 							wchar_t wszPing[10] = {};
-							wchar_t wszIPAddress[64] = {};
+							wchar_t wszIPAddress[SteamNetworkingIPAddr::k_cchMaxString] = {};
 
 							g_pVGuiLocalize->ConvertANSIToUnicode(
 									server.GetName(), wszServerName, sizeof(wszServerName));
@@ -2125,7 +2128,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 
 	// NEO TODO (nullsystem): Save and restore it cross sessions
 	if (NeoUI::MODE_PAINT == g_uiCtx.eMode && g_uiCtx.dPanel.wide > 0 &&
-			0 == m_iColsWideDetailedPlayerList[0])
+			false == m_bColsWideDetailedPlayerListInit)
 	{
 		int iAccX = 0;
 		for (int i = 0; i < (GSPS__TOTAL - 1); ++i)
@@ -2134,6 +2137,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			iAccX += m_iColsWideDetailedPlayerList[i];
 		}
 		m_iColsWideDetailedPlayerList[GSPS__TOTAL - 1] = g_uiCtx.dPanel.wide - iAccX;
+		m_bColsWideDetailedPlayerListInit = true;
 	}
 
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Server details", "CtxServerDetail");

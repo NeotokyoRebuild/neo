@@ -232,6 +232,10 @@ public:
 	bool m_bFavCacheIsFav = false;
 	bool m_bAutoRefreshFav = false;
 
+	bool m_bColsWideServerBrowserInit = false;
+	bool m_bColsWideServerBlacklistInit = false;
+	bool m_bColsWideDetailedPlayerListInit = false;
+
 	int m_iColsWideServerBrowser[GSIW__TOTAL] = {};
 	int m_iColsWideServerBlacklist[SBLIST_COL__TOTAL] = {};
 	int m_iColsWideDetailedPlayerList[GSPS__TOTAL] = {};
