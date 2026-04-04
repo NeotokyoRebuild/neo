@@ -4478,7 +4478,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 			return true;
 		}
 
-		if (pNeoPlayer->m_bSpawnedThisRound)
+		if (pNeoPlayer->m_bSpawnedThisRound && !IsRoundPreRoundFreeze())
 		{
 			return false;
 		}
