@@ -130,9 +130,9 @@ if(NEO_RAD_TELEMETRY_DISABLED)
 endif()
 
 if (OS_LINUX)
-    set(PLATSUBDIR "/linux64")
+    set(PLATSUBDIR "linux64")
 elseif (OS_WINDOWS)
-    set(PLATSUBDIR "/x64")
+    set(PLATSUBDIR "x64")
 endif ()
 
 set(STEAM_RUNTIME_PATH /usr)
@@ -165,8 +165,9 @@ add_compile_definitions(
 )
 
 if(OS_WINDOWS)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public${PLATSUBDIR}")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common${PLATSUBDIR}")
+    set(LIBPUBLIC_RELATIVE_PATH "lib/public/${PLATSUBDIR}")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/${LIBPUBLIC_RELATIVE}")
+    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
 
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "EditAndContinue")
 
@@ -385,8 +386,8 @@ if(OS_LINUX OR OS_MACOS)
 endif()
 
 if(OS_LINUX)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public${PLATSUBDIR}")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common${PLATSUBDIR}")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public/${PLATSUBDIR}")
+    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
 
     add_compile_definitions(
         LINUX
@@ -504,8 +505,8 @@ if(NEO_INSTALL_LIBRARIES)
         else()
             install(
                 TARGETS server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
             )
         endif()
     else()
@@ -554,8 +555,8 @@ if(NEO_INSTALL_LIBRARIES)
         else()
             install(
                 TARGETS client game_shader_dx9 server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
             )
         endif()
     endif()
