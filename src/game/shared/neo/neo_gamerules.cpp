@@ -146,7 +146,6 @@ ConVar sv_neo_pausematch_enabled("sv_neo_pausematch_enabled", "0", FCVAR_REPLICA
 ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
-ConVar sv_neo_juggernaut_spawn_bias("sv_neo_juggernaut_spawn_bias", "0", FCVAR_REPLICATED, "Spawn juggernaut in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
 ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
@@ -172,7 +171,6 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_spraydisable.SetValue(bCurrentValue);
 	sv_neo_pausematch_enabled.SetValue(bCurrentValue);
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
-	sv_neo_juggernaut_spawn_bias.SetValue(bCurrentValue);
 	sv_neo_client_autorecord.SetValue(bCurrentValue);
 #ifdef GAME_DLL
 	sv_neo_reject_opengl_mesa_check.SetValue(bCurrentValue); // NEO NOTE (nullsystem): See comment above variable declaration for reason
@@ -654,6 +652,7 @@ CNEORules::CNEORules()
 #ifdef GAME_DLL
 	m_bNextClientIsFakeClient = false;
 	m_ghostSpawns.EnsureCapacity(10);
+	m_jgrSpawns.EnsureCapacity(10);
 
 	Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
 		TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
@@ -2002,6 +2001,9 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 	}
 	else
 	{
+		// NEO TODO DG: Create a way of dealing with removed / disabled spawns during the match
+		// I'm not touching this right now cuz I don't want to risk breaking the parity behaviour
+
 		Assert(!m_ghostSpawns.IsEmpty());
 		int desiredSpawn; // zero-indexed
 
@@ -2028,7 +2030,7 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		Assert(desiredSpawn >= 0);
 		Assert(desiredSpawn < m_ghostSpawns.Count());
 
-		const auto* ghostSpawn = m_ghostSpawns[desiredSpawn].Get();
+		auto *ghostSpawn = m_ghostSpawns[desiredSpawn].Get();
 		if (ghostSpawn)
 		{
 			if (m_pGhost->GetOwner())
@@ -2048,6 +2050,7 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 			{
 				m_pGhost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
 				m_pGhost->Drop(vec3_origin);
+				ghostSpawn->m_OnSpawnedHere.FireOutput(m_pGhost, m_pGhost);
 			}
 		}
 		else
@@ -2067,44 +2070,22 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 // Very similar to above.
 void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 {
-	CBaseEntity* pEnt;
-
-	// Get the amount of juggernaut spawns available to us
-	int numJgrSpawns = 0;
-
-	pEnt = gEntList.FirstEnt();
-	while (pEnt)
-	{
-		if (dynamic_cast<CNEOJuggernautSpawnPoint*>(pEnt))
-		{
-			numJgrSpawns++;
-		}
-		else if (auto* jgr = dynamic_cast<CNEO_Juggernaut*>(pEnt))
-		{
-			if (!jgr->IsMarkedForDeletion())
-			{
-				m_pJuggernautItem = jgr;
-			}
-		}
-
-		pEnt = gEntList.NextEnt(pEnt);
-	}
-
-	// No juggernaut spawns
-	if (numJgrSpawns == 0)
+	// No Juggernaut spawns and this map isn't named "_jgr". Probably not a JGR map.
+	if (m_jgrSpawns.IsEmpty() && (V_stristr(GameRules()->MapName(), "_jgr") == 0))
 	{
 		m_pJuggernautItem = nullptr;
 		return;
 	}
 
-	bool spawnedJuggernautNow = false;
+	AssertMsg(!m_pJuggernautItem, "m_pJuggernautItem already exists before attempting spawn. Shouldn't happen!");
+
 	if (!m_pJuggernautItem)
 	{
-		m_pJuggernautItem = dynamic_cast<CNEO_Juggernaut*>(CreateEntityByName("neo_juggernaut", -1));
+		m_pJuggernautItem = dynamic_cast<CNEO_Juggernaut*>(CreateEntityByName("neo_juggernaut"));
 		if (!m_pJuggernautItem)
 		{
 			Assert(false);
-			Warning("Failed to spawn a juggernaut\n");
+			Warning("Failed to spawn a new Juggernaut\n");
 			return;
 		}
 
@@ -2115,71 +2096,76 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 			return;
 		}
 
-		spawnedJuggernautNow = true;
+		m_pJuggernautItem->NetworkStateChanged();
 	}
+	m_hJuggernaut = m_pJuggernautItem;
 	m_bJuggernautItemExists = true;
+	m_pJuggernautItem->m_bLocked = true;
 
 	Assert(UTIL_IsValidEntity(m_pJuggernautItem));
-
-	m_hJuggernaut = m_pJuggernautItem;
-	m_pJuggernautItem->m_bLocked = true;
 
 	if (origin)
 	{
 		m_pJuggernautItem->SetAbsOrigin(*origin);
 	}
-	// We didn't have any spawns, spawn jgr at origin
-	else if (numJgrSpawns == 0)
+	else if (m_jgrSpawns.IsEmpty())
 	{
-		Warning("No juggernaut spawns found! Spawning juggernaut at map origin, instead.\n");
+		Warning("No Juggernaut spawns found! Spawning Juggernaut at map origin, instead.\n");
 		m_pJuggernautItem->SetAbsOrigin(vec3_origin);
-	}
-	else if (sv_neo_juggernaut_spawn_bias.GetBool() == true && roundNumberIsEven())
-	{
-		m_pJuggernautItem->SetAbsOrigin(m_vecPreviousJuggernautSpawn);
 	}
 	else
 	{
-		// Randomly decide on a juggernaut spawn point we want this time
-		const int desiredSpawn = RandomInt(1, numJgrSpawns);
-		int jgrSpawnIteration = 1;
+		// NEO TODO DG: Create a way of dealing with removed / disabled spawns during the match
 
-		pEnt = gEntList.FirstEnt();
-		// Second iteration, we pick the ghost spawn we want
-		while (pEnt)
+		Assert(!m_jgrSpawns.IsEmpty());
+		int desiredSpawn; // zero-indexed
+
+		if (roundNumber() == 0)
 		{
-			auto jgrSpawn = dynamic_cast<CNEOJuggernautSpawnPoint*>(pEnt);
-
-			if (jgrSpawn)
+			desiredSpawn = RandomInt(0, m_jgrSpawns.Count()-1);
+		}
+		else
+		{
+			// Round numbers are one-indexed
+			Assert(roundNumber() > 0);
+			bool isFirstRound = (roundNumber() == 1);
+			if (isFirstRound)
 			{
-				if (jgrSpawnIteration++ == desiredSpawn)
-				{
-					if (!jgrSpawn->GetAbsOrigin().IsValid())
-					{
-						m_pJuggernautItem->SetAbsOrigin(vec3_origin);
-						Warning("Failed to get ghost spawn coords; spawning juggernaut at map origin instead!\n");
-						Assert(false);
-					}
-					else
-					{
-						m_pJuggernautItem->SetAbsOrigin(jgrSpawn->GetAbsOrigin());
-						m_pJuggernautItem->SetAbsAngles(QAngle(0, jgrSpawn->GetAbsAngles().y, 0));
-					}
-
-					break;
-				}
+				m_jgrSpawns.Shuffle();
 			}
 
-			pEnt = gEntList.NextEnt(pEnt);
+			desiredSpawn = roundNumber() % m_jgrSpawns.Count();
+		}
+		Assert(desiredSpawn >= 0);
+		Assert(desiredSpawn < m_jgrSpawns.Count());
+
+		auto *jgrSpawn = m_jgrSpawns[desiredSpawn].Get();
+		if (jgrSpawn)
+		{
+			if (!jgrSpawn->GetAbsOrigin().IsValid())
+			{
+				m_pJuggernautItem->SetAbsOrigin(vec3_origin);
+				Warning("Failed to get Juggernaut spawn coords; spawning Juggernaut at map origin instead!\n");
+				Assert(false);
+			}
+			else
+			{
+				m_pJuggernautItem->SetAbsOrigin(jgrSpawn->GetAbsOrigin());
+				m_pJuggernautItem->SetAbsAngles(QAngle(0, jgrSpawn->GetAbsAngles().y, 0));
+				jgrSpawn->m_OnSpawnedHere.FireOutput(m_pJuggernautItem, m_pJuggernautItem);
+			}
+		}
+		else
+		{
+			Assert(false);
 		}
 	}
 
 	m_vecPreviousJuggernautSpawn = m_pJuggernautItem->GetAbsOrigin();
-	DevMsg("%s juggernaut at coords:\n\t%.1f %.1f %.1f\n",
-		spawnedJuggernautNow ? "Spawned" : "Moved",
-		m_vecPreviousJuggernautSpawn.x,
-		m_vecPreviousJuggernautSpawn.y,
-		m_vecPreviousJuggernautSpawn.z);
+	DevMsg("Spawned Juggernaut at coords:\n\t%.1f %.1f %.1f\n",
+			m_vecPreviousJuggernautSpawn.x,
+			m_vecPreviousJuggernautSpawn.y,
+			m_vecPreviousJuggernautSpawn.z);
 }
 
 void CNEORules::SelectTheVIP()
