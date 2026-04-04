@@ -2279,10 +2279,18 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 		// Draw an overlay to make it even harder to see inside smoke particle systems.
 		DrawSmokeFogOverlay();
 
+#ifdef NEO
+		if ( !building_cubemaps.GetBool() )
+		{
+#endif
 		// Overlay screen fade on entire screen
 		IMaterial* pMaterial = blend ? m_ModulateSingleColor : m_TranslucentSingleColor;
 		render->ViewDrawFade( color, pMaterial );
 		PerformScreenOverlay( viewRender.x, viewRender.y, viewRender.width, viewRender.height );
+#ifdef NEO
+		}
+#endif
+
 
 		// Prevent sound stutter if going slow
 		engine->Sound_ExtraUpdate();	
