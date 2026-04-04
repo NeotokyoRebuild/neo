@@ -152,7 +152,6 @@ public:
 			WaitForCall(250, &nCall);
 			if (nCall == EXIT)
 			{
-				Reply(1);
 				break;
 			}
 
@@ -263,6 +262,7 @@ public:
 
 		if (bInitSound) ma_sound_uninit(&maSound);
 		ma_engine_uninit(&maEngine);
+		Reply(1);
 		return 0;
 	}
 };
