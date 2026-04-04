@@ -127,6 +127,7 @@ public:
 			return 2;
 		}
 
+		ConVarRef cvr_volume("volume");
 		ConVarRef cvr_snd_musicvolume("snd_musicvolume");
 		ConVarRef cvr_snd_mute_losefocus("snd_mute_losefocus");
 
@@ -155,12 +156,13 @@ public:
 				break;
 			}
 
-			const float flVol =
+			float flVol =
 					(cvr_snd_mute_losefocus.GetBool() && false == engine->IsActiveApp())
 						? 0.0f
 						: (cl_neo_radio_volume_separate_ingame.GetBool() && IsInGame())
 							? cl_neo_radio_volume_ingame.GetFloat()
 							: cvr_snd_musicvolume.GetFloat();
+			flVol *= cvr_volume.GetFloat();
 
 			if (flVol != ma_engine_get_volume(&maEngine))
 			{
