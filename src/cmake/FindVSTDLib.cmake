@@ -1,4 +1,5 @@
 if(OS_WINDOWS)
+    set(VSTDLIB_LIBRARY_FIND_PATH "${LIBPUBLIC}")
     set(VSTDLIB_LIBRARY_NAME vstdlib.lib)
 elseif(OS_LINUX)
     if (NEO_DEDICATED)

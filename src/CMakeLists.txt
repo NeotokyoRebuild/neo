@@ -165,8 +165,7 @@ add_compile_definitions(
 )
 
 if(OS_WINDOWS)
-    set(LIBPUBLIC_RELATIVE_PATH "lib/public/${PLATSUBDIR}")
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/${LIBPUBLIC_RELATIVE}")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public/${PLATSUBDIR}")
     set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
 
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "EditAndContinue")
@@ -386,7 +385,8 @@ if(OS_LINUX OR OS_MACOS)
 endif()
 
 if(OS_LINUX)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public/${PLATSUBDIR}")
+    set(LIBPUBLIC_RELATIVE_PATH "lib/public/${PLATSUBDIR}")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/${LIBPUBLIC_RELATIVE_PATH}")
     set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
 
     add_compile_definitions(

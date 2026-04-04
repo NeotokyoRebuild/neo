@@ -1,4 +1,5 @@
 if(OS_WINDOWS)
+    set(TIER0_LIBRARY_FIND_PATH "${LIBPUBLIC}")
     set(TIER0_LIBRARY_NAME tier0.lib)
 elseif(OS_LINUX)   
     if (NEO_DEDICATED)
