@@ -11,9 +11,6 @@
 
 class CAvatarImage;
 
-// Checks if it's in a playable game (and not a background main menu)
-bool IsInGame();
-
 struct NeoNewGame
 {
 	wchar_t wszMap[64] = L"ntre_oilstain_ctg";
@@ -246,6 +243,9 @@ public:
 	NeoUI::TabsState m_tabsStateSettings = {};
 	NeoUI::TabsState m_tabsStateServerBrowser = {};
 	NeoUI::TabsState m_tabsStateIFF = {};
+
+	bool m_bMP3Popup = false;
+	ConVarRef cvr_cl_neo_radio_shuffle{"cl_neo_radio_shuffle"};
 };
 
 extern CNeoRoot *g_pNeoRoot;

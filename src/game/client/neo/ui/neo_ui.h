@@ -139,6 +139,7 @@ enum EBaseButtonType
 	BASEBUTTONTYPE_TEXT = 0,
 	BASEBUTTONTYPE_IMAGE,
 	BASEBUTTONTYPE_CHECKBOX,
+	BASEBUTTONTYPE_TOGGLE,
 };
 
 struct SliderInfo
@@ -274,6 +275,7 @@ struct Colors
 	Color tableHeaderSortIndicatorBg;
 	Color headerDragNormalBg;
 	Color headerDragActiveBg;
+	Color progressBarBg;
 };
 
 // NEO NOTE (nullsystem):
@@ -498,6 +500,7 @@ void OpenPopup(const int iPopupId, const Dim &dimPopupInit);
 void ClosePopup();
 [[nodiscard]] bool BeginPopup(const int iPopupId, const PopupFlags flags = POPUPFLAG_NIL);
 void EndPopup();
+[[nodiscard]] int CurrentPopup();
 
 // Get a suitable wide size for a popup by the longest text in the popup
 int PopupWideByStr(const char *pszStr);
@@ -550,6 +553,7 @@ struct TabsState
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 /*1W*/ RetButton ButtonTexture(const char *szTexturePath);
 /*1W*/ RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal);
+/*1W*/ RetButton ButtonToggle(const wchar_t *wszText, const bool bVal);
 /*1W*/ void RingBoxFlag(const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList = nullptr);
 /*2W*/ void RingBoxFlag(const wchar_t *wszLeftLabel, const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList = nullptr);
 /*1W*/ void RingBoxBool(bool *bChecked, const wchar_t **wszLabelsCustomList = nullptr);
@@ -557,6 +561,7 @@ struct TabsState
 /*1W*/ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 /*2W*/ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 /*1W*/ void Progress(const float flValue, const float flMin, const float flMax);
+/*1W*/ void ProgressDrag(float *flValue, const float flMin, const float flMax);
 // Sliders relies on wszLeftLabel to cache value string, so only two-widgets variants
 /*2W*/ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 				   const int iDp = 2, const float flStep = 1.0f, const wchar_t *wszSpecialText = nullptr);

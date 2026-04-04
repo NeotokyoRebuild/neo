@@ -19,6 +19,7 @@
 #include "neo_root.h"
 #include "neo/ui/neo_utils.h"
 #include "neo_theme.h"
+#include "neo_mp3player.h"
 
 #include <cwctype>
 
@@ -132,6 +133,12 @@ static const wchar_t *CROSSHAIR_HIPFIRE_LABELS[HIPFIREOPT__TOTAL] = {
 	L"Disabled",
 	L"Use hipfire default",
 	L"Enabled",
+};
+
+static const wchar_t *STARTUP_TYPE_LABELS[NeoMP3::STARTUP_TYPE__TOTAL] = {
+	L"Default",
+	L"Always random",
+	L"First song or random shuffle",
 };
 
 static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
@@ -535,6 +542,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		// Output
 		pAudio->flVolMain = cvr->volume.GetFloat();
 		pAudio->flVolMusic = cvr->snd_musicvolume.GetFloat();
+		pAudio->bVolMusicSepInGame = cvr->cl_neo_radio_volume_separate_ingame.GetBool();
+		pAudio->flVolMusicInGame = cvr->cl_neo_radio_volume_ingame.GetFloat();
 		pAudio->flVolVictory = cvr->snd_victory_volume.GetFloat();
 		pAudio->flVolPing = cvr->snd_ping_volume.GetFloat();
 		pAudio->iSoundSetup = 0;
@@ -550,6 +559,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		break; default: break;
 		}
 		pAudio->bMuteAudioUnFocus = cvr->snd_mute_losefocus.GetBool();
+		pAudio->bPauseMusicInGame = cvr->cl_neo_radio_pause_ingame.GetBool();
+		pAudio->iMusicStartupType = cvr->cl_neo_radio_startup.GetInt();
 
 		// Sound quality:  snd_pitchquality   dsp_slow_cpu
 		// High                   1                0
@@ -854,12 +865,18 @@ void NeoSettingsSave(const NeoSettings *ns)
 		// Output
 		cvr->volume.SetValue(pAudio->flVolMain);
 		cvr->snd_musicvolume.SetValue(pAudio->flVolMusic);
+		cvr->cl_neo_radio_volume_separate_ingame.SetValue(pAudio->bVolMusicSepInGame);
+		cvr->cl_neo_radio_volume_ingame.SetValue(pAudio->flVolMusicInGame);
 		cvr->snd_victory_volume.SetValue(pAudio->flVolVictory);
 		cvr->snd_ping_volume.SetValue(pAudio->flVolPing);
 		cvr->snd_surround_speakers.SetValue(SURROUND_RE_MAP[pAudio->iSoundSetup]);
 		cvr->snd_mute_losefocus.SetValue(pAudio->bMuteAudioUnFocus);
+		cvr->cl_neo_radio_pause_ingame.SetValue(pAudio->bPauseMusicInGame);
+		cvr->cl_neo_radio_startup.SetValue(pAudio->iMusicStartupType);
 		cvr->snd_pitchquality.SetValue(pAudio->iSoundQuality == QUALITY_HIGH);
 		cvr->dsp_slow_cpu.SetValue(pAudio->iSoundQuality == QUALITY_LOW);
+
+		NeoMP3::Update();
 
 		// Input
 		cvr->voice_modenable.SetValue(pAudio->bVoiceEnabled);
@@ -1235,13 +1252,23 @@ void NeoSettings_Audio(NeoSettings *ns)
 	NeoSettings::Audio *pAudio = &ns->audio;
 	NeoUI::Divider(L"VOLUME");
 	NeoUI::Slider(L"Main Volume", &pAudio->flVolMain, 0.0f, 1.0f, 2, 0.1f);
-	NeoUI::Slider(L"Music Volume", &pAudio->flVolMusic, 0.0f, 1.0f, 2, 0.1f);
+	NeoUI::Slider(pAudio->bVolMusicSepInGame
+			? L"Music Volume (Main Menu)"
+			: L"Music Volume"
+				, &pAudio->flVolMusic, 0.0f, 1.0f, 2, 0.1f);
+	NeoUI::RingBoxBool(L"Separate in-game Music Volume", &pAudio->bVolMusicSepInGame);
+	if (pAudio->bVolMusicSepInGame)
+	{
+		NeoUI::Slider(L"Music Volume (In Game)", &pAudio->flVolMusicInGame, 0.0f, 1.0f, 2, 0.1f);
+	}
 	NeoUI::Slider(L"Victory Volume", &pAudio->flVolVictory, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Slider(L"Ping Volume", &pAudio->flVolPing, 0.0f, 1.0f, 2, 0.1f);
 	NeoUI::Divider(L"SOUND");
 	NeoUI::RingBox(L"Sound Setup", SPEAKER_CFG_LABELS, ARRAYSIZE(SPEAKER_CFG_LABELS), &pAudio->iSoundSetup);
 	NeoUI::RingBox(L"Sound Quality", QUALITY_LABELS, 3, &pAudio->iSoundQuality);
 	NeoUI::RingBoxBool(L"Mute Audio on un-focus", &pAudio->bMuteAudioUnFocus);
+	NeoUI::RingBoxBool(L"Pause Music on entering in game", &pAudio->bPauseMusicInGame);
+	NeoUI::RingBox(L"First song on startup", STARTUP_TYPE_LABELS, NeoMP3::STARTUP_TYPE__TOTAL, &pAudio->iMusicStartupType);
 	NeoUI::Divider(L"VOICE");
 	NeoUI::RingBoxBool(L"Voice Enabled", &pAudio->bVoiceEnabled);
 	NeoUI::Slider(L"Voice Receive", &pAudio->flVolVoiceRecv, 0.0f, 1.0f, 2, 0.1f);

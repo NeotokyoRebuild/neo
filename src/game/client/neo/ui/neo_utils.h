@@ -18,3 +18,7 @@ void SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *rgba8888Data)
 }  // namespace NeoUtils
 
 void bpr(int level, CUtlBuffer& buf, char const* fmt, ...);
+
+// Checks if it's in a playable game (and not a background main menu)
+bool IsInGame();
+
