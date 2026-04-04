@@ -27,6 +27,7 @@ const int ROWLAYOUT_TWOSPLIT[] = { 40, -1 };
 static constexpr int WDGINFO_ALLOC_STEPS = 64;
 static constexpr float FL_BORDER_RATIO = 0.2f;
 static constexpr float FL_HEADER_DRAG_RATIO = 0.4f;
+static constexpr int I_MIN_COL_WIDE_RATIO = 8;
 
 // NEO JANK (nullsystem): DrawUnicodeChar is buggy, so use DrawPrintText instead, hence
 // single character but a (wide-)string instead of (wide-)char
@@ -380,6 +381,31 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 
 void EndContext()
 {
+	if (BeginPopup(INTERNALPOPUP_TABLEHEADER, POPUPFLAG_COLORHOTASACTIVE))
+	{
+		for (int i = 0; i < c->iTableVisColsTotal; ++i)
+		{
+			if (ButtonCheckbox(c->wszTableVisColNamesList[i], (c->piTableVisColsWide[i] > 0)).bPressed)
+			{
+				// The bounds checking and explicit initialization of headers sizes should
+				// mean this shouldn't be zero in the first place.
+				Assert(c->piTableVisColsWide[i] != 0);
+				if (c->piTableVisColsWide[i] == 0)
+				{
+					const int iMinColWide = Max(I_MIN_COL_WIDE_RATIO * c->iMarginX, 10);
+					c->piTableVisColsWide[i] = iMinColWide;
+				}
+				else
+				{
+					c->piTableVisColsWide[i] = -c->piTableVisColsWide[i];
+				}
+				ClosePopup();
+				break;
+			}
+		}
+		EndPopup();
+	}
+
 	if (BeginPopup(INTERNALPOPUP_COLOREDIT, POPUPFLAG_FOCUSONOPEN))
 	{
 		static const int ROWLAYOUT_COLORSPLIT[] = { 30, -1 };
@@ -894,11 +920,21 @@ int CurrentPopup()
 	return c->iCurPopupId;
 }
 
-int PopupWideByStr(const char *pszStr)
+static int BasePopupWideByStr(const int iSzSize)
 {
 	const auto *pFontI = &c->fonts[c->eFont];
 	const int iChWidth = vgui::surface()->GetCharacterWidth(pFontI->hdl, 'A');
-	return (c->iMarginX * 2) + (V_strlen(pszStr) * iChWidth);
+	return (c->iMarginX * 2) + (iSzSize * iChWidth);
+}
+
+int PopupWideByStr(const char *pszStr)
+{
+	return BasePopupWideByStr(V_strlen(pszStr));
+}
+
+int PopupWideByStr(const wchar_t *pwszStr)
+{
+	return BasePopupWideByStr(V_wcslen(pwszStr));
 }
 
 void SetPerRowLayout(const int iColTotal, const int *iColProportions, const int iRowTall)
@@ -3113,45 +3149,77 @@ TableHeaderModFlags TableHeader(const wchar_t **wszColNamesList, const int iCols
 		case MODE_MOUSEPRESSED:
 		case MODE_MOUSEDOUBLEPRESSED:
 		{
-			if (wdgState.bHot && c->eCode == MOUSE_LEFT)
+			if (wdgState.bHot) 
 			{
-				int cellX0 = 0;
-				int cellX1 = c->rWidgetArea.x0 - c->iXOffset[c->iSection + iRelSyncSectionXOffset];
-				for (int i = 0; i < iColsTotal; ++i)
+				if (c->eCode == MOUSE_LEFT)
 				{
-					if (piColsWide[i] <= 0)
+					int cellX0 = 0;
+					int cellX1 = c->rWidgetArea.x0 - c->iXOffset[c->iSection + iRelSyncSectionXOffset];
+					for (int i = 0; i < iColsTotal; ++i)
 					{
-						continue;
-					}
-
-					// y-axis already covered by wdgState.bHot, just check x-axis
-					cellX0 = cellX1;
-					cellX1 = cellX0 + piColsWide[i];
-
-					const bool bMouseInCell = IN_BETWEEN_EQ(cellX0, c->iMouseAbsX, cellX1);
-					if (bMouseInCell)
-					{
-						const bool bMouseInDrag = IN_BETWEEN_EQ(cellX1 - iDragWide, c->iMouseAbsX, cellX1);
-						if (bMouseInDrag)
+						if (piColsWide[i] <= 0)
 						{
-							c->iInDrag = i + 1;
+							continue;
 						}
-						else
+
+						// y-axis already covered by wdgState.bHot, just check x-axis
+						cellX0 = cellX1;
+						cellX1 = cellX0 + piColsWide[i];
+
+						const bool bMouseInCell = IN_BETWEEN_EQ(cellX0, c->iMouseAbsX, cellX1);
+						if (bMouseInCell)
 						{
-							const bool bSortCell = (i == *piSortIndex);
-							if (bSortCell)
+							const bool bMouseInDrag = IN_BETWEEN_EQ(cellX1 - iDragWide, c->iMouseAbsX, cellX1);
+							if (bMouseInDrag)
 							{
-								*pbSortDescending = !*pbSortDescending;
-								modFlags |= TABLEHEADERMODFLAG_DESCENDINGCHANGED;
+								c->iInDrag = i + 1;
 							}
 							else
 							{
-								*piSortIndex = i;
-								modFlags |= TABLEHEADERMODFLAG_INDEXCHANGED;
+								const bool bSortCell = (i == *piSortIndex);
+								if (bSortCell)
+								{
+									*pbSortDescending = !*pbSortDescending;
+									modFlags |= TABLEHEADERMODFLAG_DESCENDINGCHANGED;
+								}
+								else
+								{
+									*piSortIndex = i;
+									modFlags |= TABLEHEADERMODFLAG_INDEXCHANGED;
+								}
+								c->bValueEdited = true;
 							}
-							c->bValueEdited = true;
+							break;
 						}
-						break;
+					}
+				}
+				else if (c->eCode == MOUSE_RIGHT)
+				{
+					int iWidestIdx = -1;
+					int iWidestWide = 0;
+					for (int i = 0; i < iColsTotal; ++i)
+					{
+						const int iCurWide = V_wcslen(wszColNamesList[i]);
+						if (iCurWide > iWidestWide)
+						{
+							iWidestIdx = i;
+							iWidestWide = iCurWide;
+						}
+					}
+
+					Assert(iWidestIdx >= 0);
+					if (iWidestIdx >= 0)
+					{
+						c->wszTableVisColNamesList = wszColNamesList;
+						c->iTableVisColsTotal = iColsTotal;
+						c->piTableVisColsWide = piColsWide;
+						OpenPopup(INTERNALPOPUP_TABLEHEADER, Dim{
+									.x = c->iMouseAbsX,
+									.y = c->iMouseAbsY,
+									.wide = NeoUI::PopupWideByStr("__") // Offset by checkmark
+											+ NeoUI::PopupWideByStr(wszColNamesList[iWidestIdx]),
+									.tall = c->layout.iDefRowTall * iColsTotal,
+								});
 					}
 				}
 			}
@@ -3178,11 +3246,12 @@ TableHeaderModFlags TableHeader(const wchar_t **wszColNamesList, const int iCols
 					iAccWide += piColsWide[i];
 					if (iDragIdx == i)
 					{
+						const int iMinColWide = Max(I_MIN_COL_WIDE_RATIO * c->iMarginX, 10);
 						// Alter by the difference in drag
 						const int iAbsColX1 = c->rWidgetArea.x0 + iAccWide -
 								c->iXOffset[c->iSection + iRelSyncSectionXOffset];
 						const int iDiff = c->iMouseAbsX - iAbsColX1;
-						piColsWide[i] = Max(piColsWide[i] + iDiff, 0);
+						piColsWide[i] = Max(piColsWide[i] + iDiff, iMinColWide);
 						iAccWide += iDiff;
 
 						// If dragging the end, expand/retract offset

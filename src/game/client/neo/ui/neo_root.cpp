@@ -69,7 +69,7 @@ const wchar_t *TABLE_HEADERS_SERVERBROWSER[GSIW__TOTAL] = {
 	L"Lock", L"VAC", L"Name", L"IP Address", L"Map", L"Players", L"Ping", L"Tags",
 };
 const int TABLE_DEFPROP_SERVERBROWSER[GSIW__TOTAL] = {
-	8, 8, 30, -18, 18, 12, 12, 12,	// Last item need to set for hide/unhide
+	8, 8, 30, -18, 18, 12, 12, -1
 };
 const float TABLE_SCALEWIDE_SERVERBROWSER = 1.2f;
 
@@ -95,7 +95,6 @@ enum ENeoPopup
 {
 	NEOPOPUP_ACTIONSERVER = NeoUI::INTERNALPOPUP_NIL + 1,
 	NEOPOPUP_ACTIONBLACKLIST,
-	NEOPOPUP_ACTIONSBHEADER,
 	NEOPOPUP_MP3,
 };
 
@@ -1436,19 +1435,6 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 
 			m_headerModFlagsServerBrowser |= NeoUI::TableHeader(pwszNames, iColTotal,
 					pirLayout, &m_sortCtx.col, &m_sortCtx.bDescending, 1);
-			if (m_iServerBrowserTab != GS_BLACKLIST
-					&& g_uiCtx.eMode == NeoUI::MODE_MOUSEPRESSED
-					&& g_uiCtx.eCode == MOUSE_RIGHT
-					&& g_uiCtx.iHotSection == g_uiCtx.iSection)
-			{
-				NeoUI::OpenPopup(NEOPOPUP_ACTIONSBHEADER, NeoUI::Dim{
-							.x = g_uiCtx.iMouseAbsX,
-							.y = g_uiCtx.iMouseAbsY,
-							.wide = NeoUI::PopupWideByStr("__IP Address"),
-							.tall = g_uiCtx.layout.iDefRowTall * GSIW__TOTAL,
-						});
-			}
-
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		}
 		NeoUI::EndSection();
@@ -1954,29 +1940,6 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 
 		NeoUI::EndPopup();
 	}
-
-	if (NeoUI::BeginPopup(NEOPOPUP_ACTIONSBHEADER, NeoUI::POPUPFLAG_COLORHOTASACTIVE))
-	{
-		for (int i = 0; i < GSIW__TOTAL; ++i)
-		{
-			if (NeoUI::ButtonCheckbox(TABLE_HEADERS_SERVERBROWSER[i], (m_iColsWideServerBrowser[i] > 0)).bPressed)
-			{
-				if (m_iColsWideServerBrowser[i] == 0)
-				{
-					m_iColsWideServerBrowser[i] = abs(TABLE_DEFPROP_SERVERBROWSER[i] / 100.0f) * iTotalHeadersWide;
-				}
-				else
-				{
-					m_iColsWideServerBrowser[i] = -m_iColsWideServerBrowser[i];
-				}
-				NeoUI::ClosePopup();
-				break;
-			}
-		}
-
-		NeoUI::EndPopup();
-	}
-
 	NeoUI::EndContext();
 }
 
