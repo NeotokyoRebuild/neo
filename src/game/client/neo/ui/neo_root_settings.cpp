@@ -1652,7 +1652,8 @@ void NeoSettings_HUD(NeoSettings *ns)
 
 	NeoUI::SetPerRowLayout(1);
 	NeoUI::Tabs(IFF_LABELS, iIFFLabelsSize, &optionChosen,
-			NeoUI::TABFLAG_NOSIDEKEYS | NeoUI::TABFLAG_NOSTATERESETS);
+			NeoUI::TABFLAG_NOSIDEKEYS | NeoUI::TABFLAG_NOSTATERESETS,
+			&g_pNeoRoot->m_tabsStateIFF);
 	NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 
 	// NEO TODO (Adam) Show what the marker looks like somewhere here

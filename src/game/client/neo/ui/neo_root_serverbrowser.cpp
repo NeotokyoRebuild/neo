@@ -205,13 +205,14 @@ void CNeoServerList::UpdateFilteredList()
 	}
 
 	gameserveritem_t curGsi;
-	if (IN_BETWEEN_AR(0, g_pNeoRoot->m_iSelectedServer, m_filteredServers.Count()))
+	if (IN_BETWEEN_AR(0, g_pNeoRoot->m_iSelectedServer, m_filteredServers.size()))
 	{
 		V_memcpy(&curGsi, &m_filteredServers[g_pNeoRoot->m_iSelectedServer], sizeof(gameserveritem_t));
 	}
 
 	m_filteredServers = m_servers;
-	if (m_filteredServers.IsEmpty())
+
+	if (m_filteredServers.empty())
 	{
 		g_pNeoRoot->m_iSelectedServer = -1;
 		return;
@@ -258,6 +259,10 @@ void CNeoServerList::UpdateFilteredList()
 			iLeft = gsiLeft.m_nPing;
 			iRight = gsiRight.m_nPing;
 			break;
+		case GSIW_IP_ADDRESS:
+			iLeft = gsiLeft.m_NetAdr.GetIP();
+			iRight = gsiRight.m_NetAdr.GetIP();
+			break;
 		case GSIW_NAME:
 		default:
 			// no-op, already assigned (default)
@@ -272,6 +277,7 @@ void CNeoServerList::UpdateFilteredList()
 			break;
 		case GSIW_PLAYERS:
 		case GSIW_PING:
+		case GSIW_IP_ADDRESS:
 			if (iLeft != iRight) return (m_pSortCtx->bDescending) ? iLeft < iRight : iLeft > iRight;
 			break;
 		default:
@@ -280,10 +286,10 @@ void CNeoServerList::UpdateFilteredList()
 		return (m_pSortCtx->bDescending) ? (V_strcmp(szRight, szLeft) > 0) : (V_strcmp(szLeft, szRight) > 0);
 	});
 
-	if (IN_BETWEEN_AR(0, g_pNeoRoot->m_iSelectedServer, m_filteredServers.Count()))
+	if (IN_BETWEEN_AR(0, g_pNeoRoot->m_iSelectedServer, m_filteredServers.size()))
 	{
 		g_pNeoRoot->m_iSelectedServer = -1;
-		for (int i = 0; i < m_filteredServers.Count(); ++i)
+		for (int i = 0; i < m_filteredServers.size(); ++i)
 		{
 			if (V_memcmp(&curGsi, &m_filteredServers[i], sizeof(gameserveritem_t)) == 0)
 			{
@@ -300,6 +306,8 @@ void CNeoServerList::RequestList()
 	{
 		return;
 	}
+
+	m_servers.clear();
 
 	static MatchMakingKeyValuePair_t mmFilters[] = {
 		{"gamedir", "neo"},
@@ -333,7 +341,24 @@ void CNeoServerList::ServerResponded(HServerListRequest hRequest, int iServer)
 	gameserveritem_t *pServerDetails = steamMM->GetServerDetails(hRequest, iServer);
 	if (pServerDetails)
 	{
-		m_servers.AddToTail(*pServerDetails);
+		wchar_t wszServerName[k_cbMaxGameServerName] = {};
+		g_pVGuiLocalize->ConvertANSIToUnicode(
+				pServerDetails->GetName(), wszServerName, sizeof(wszServerName));
+		const int iWszLen = V_wcslen(wszServerName);
+		// NEO TODO (nullsystem): Need to implement fallback fonts in NeoUI or otherwise
+		// without fallback unicode fonts can corrupt the memory on drawing the text somehow
+		for (int i = 0; i < iWszLen; ++i)
+		{
+			if (wszServerName[i] >= 256)
+			{
+				wszServerName[i] = L'?';
+			}
+		}
+		char szServerName[k_cbMaxGameServerName] = {};
+		g_pVGuiLocalize->ConvertUnicodeToANSI(wszServerName, szServerName, sizeof(szServerName));
+		Q_UnicodeRepair(szServerName);
+		pServerDetails->SetName(szServerName);
+		m_servers.push_back(*pServerDetails);
 		m_bModified = true;
 	}
 }
@@ -350,7 +375,7 @@ void CNeoServerList::RefreshComplete(HServerListRequest hRequest, EMatchMakingSe
 	if (m_iType == GS_BLACKLIST || hRequest != m_hdlRequest) return;
 
 	m_bSearching = false;
-	if (response == eNoServersListedOnMasterServer && m_servers.IsEmpty())
+	if (response == eNoServersListedOnMasterServer && m_servers.empty())
 	{
 		m_bModified = true;
 	}
