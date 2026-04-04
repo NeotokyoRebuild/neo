@@ -28,7 +28,7 @@ public:
 	~CNEOSpawnPoint();
 
 	virtual void Spawn() override;
-	int GetOwningTeam() const { return m_iOwningTeam; }
+	int GetOwningTeam() const;
 
 #ifdef GAME_DLL
 	bool m_bDisabled;
