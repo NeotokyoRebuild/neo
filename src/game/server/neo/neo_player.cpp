@@ -3852,7 +3852,7 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 #ifdef GLOWS_ENABLE
 		otherNeoPlayer->IsDead() ||
 #endif
-		GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
+		(GetTeamNumber() == otherNeoPlayer->GetTeamNumber() && NEORules()->IsTeamplay()))
 	{
 		return FL_EDICT_ALWAYS;
 	}

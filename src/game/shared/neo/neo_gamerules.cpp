@@ -4442,6 +4442,11 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 	if (CanRespawnAnyTime())
 	{
+		if (GetRoundStatus() == PostRound)
+		{
+			return false;
+		}
+
 		return true;
 	}
 
@@ -4713,7 +4718,16 @@ const char *CNEORules::GetTeamClantag(const int iTeamNum) const
 #ifdef GAME_DLL
 void CNEORules::OnNavMeshLoad(void)
 {
-	TheNavMesh->SetPlayerSpawnName("info_player_defender");
+	// We need to access the game config directly because the game type might not be set at this stage
+	auto cfg = GetActiveGameConfig();
+	if (!cfg || cfg->m_GameType != NEO_GAME_TYPE_DM)
+	{
+		TheNavMesh->SetPlayerSpawnName("info_player_defender");
+	}
+	else
+	{
+		TheNavMesh->SetPlayerSpawnName("info_player_deathmatch");
+	}
 }
 
 bool CNEORules::IsOfficialMap(void)
