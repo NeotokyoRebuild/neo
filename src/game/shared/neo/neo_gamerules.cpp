@@ -4741,6 +4741,7 @@ bool CNEORules::IsOfficialMap(void)
 		"ntre_rogue_ctg",
 		"ntre_saitama_ctg",
 		"ntre_sentinel_ctg",
+		"ntre_sentinel_jgr",
 		"ntre_shooting_tut",
 		"ntre_shrine_ctg",
 		"ntre_skyline_ctg",
@@ -4750,6 +4751,7 @@ bool CNEORules::IsOfficialMap(void)
 		"ntre_threadplate_ctg",
 		"ntre_transit_ctg",
 		"ntre_vtol_ctg",
+		"ntre_yard_jgr",
 	};
 
 	char szCurrentMap[MAX_MAP_NAME];
