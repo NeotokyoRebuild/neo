@@ -169,11 +169,13 @@ struct NeoSettings
 
 	struct Crosshair
 	{
+		ENeoCrosshairWep eXHairWep;
+		EHipfireOpt aeHipfireOpts[CROSSHAIR_WEP__TOTAL];
+
 		CrosshairInfo info;
 		XHairExportNotify eClipboardInfo;
 		bool bNetworkCrosshair;
 		bool bInaccuracyInScope;
-		bool bHipFireCrosshair;
 		bool bFriendlyFireWarning;
 		bool bPreviewDynamicAccuracy;
 
@@ -324,7 +326,6 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_crosshair);
 		CONVARREF_DEF(cl_neo_crosshair_network);
 		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
-		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
 		CONVARREF_DEF(cl_neo_crosshair_friendly_fire_warning);
 
 		// Friendly Markers
