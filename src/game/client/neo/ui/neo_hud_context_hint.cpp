@@ -92,11 +92,11 @@ bool CNEOHud_ContextHint::ShouldDraw()
 	}
 
 	bool bShouldDisplayBotTakeoverHint = false;
-	if (bIsSpectating && pObserverTargetPlayer)
+	if (bIsSpectating && pObserverTargetPlayer && NEORules()->GetRoundStatus() != PostRound)
 	{
 		if (GameResources()->IsFakePlayer(pObserverTargetPlayer->entindex()))
 		{
-			if (pLocalPlayer->InSameTeam(pObserverTargetPlayer))
+			if (pLocalPlayer->InSameTeam(pObserverTargetPlayer) && NEORules()->IsTeamplay())
 			{
 				ConVar* pBotEnableCvar = g_pCVar->FindVar("sv_neo_spec_replace_player_bot_enable");
 				bool bBotEnable = pBotEnableCvar ? pBotEnableCvar->GetBool() : false;

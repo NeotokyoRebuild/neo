@@ -107,7 +107,7 @@ struct Dim
 struct FontInfo
 {
 	vgui::HFont hdl;
-	int iYOffset;
+	int iYFontOffset;
 	int iStartBtnXPos;
 	int iStartBtnYPos;
 };
@@ -138,6 +138,8 @@ enum EBaseButtonType
 {
 	BASEBUTTONTYPE_TEXT = 0,
 	BASEBUTTONTYPE_IMAGE,
+	BASEBUTTONTYPE_CHECKBOX,
+	BASEBUTTONTYPE_TOGGLE,
 };
 
 struct SliderInfo
@@ -150,6 +152,7 @@ struct SliderInfo
 
 struct DynWidgetInfos
 {
+	int iXOffsets;
 	int iYOffsets;
 	int iYTall;
 	bool bCannotActive;
@@ -157,6 +160,7 @@ struct DynWidgetInfos
 
 enum EInternalPopup
 {
+	INTERNALPOPUP_TABLEHEADER = -3,
 	INTERNALPOPUP_COLOREDIT = -2,
 	INTERNALPOPUP_COPYMENU = -1,
 	INTERNALPOPUP_NIL = 0,
@@ -186,6 +190,8 @@ enum ESectionFlag
 	SECTIONFLAG_PLAYBUTTONSOUNDS = 1 << 3,
 	// Internal use only: Mark this section as a popup
 	SECTIONFLAG_POPUP = 1 << 4,
+	// Don't restrict viewport to only label's area
+	SECTIONFLAG_LABELPANELVIEWPORT = 1 << 5,
 };
 typedef int ISectionFlags;
 
@@ -218,6 +224,32 @@ enum PopupFlag_
 };
 typedef int PopupFlags;
 
+enum NextTableRowFlag_
+{
+	// Public flags, used as NextTableRow options
+	NEXTTABLEROWFLAG_NONE = 0,
+	NEXTTABLEROWFLAG_SELECTABLE = 1 << 0,			// Mark this row as selectable
+	NEXTTABLEROWFLAG_SELECTED = 1 << 1,				// Mark as selected (only if selectable)
+
+	// Internal only flags
+	NEXTTABLEROWFLAG__EXTERNAL = ((1 << 8) - 1), 	// Mask of all external/options flags below start of internal
+	NEXTTABLEROWFLAG__HOT = 1 << 8,					// Mouse hovering the row
+	NEXTTABLEROWFLAG__UPDOWNPROCESSED = 1 << 9,		// Up/down button already been processed
+	NEXTTABLEROWFLAG__HASROWSELECTED = 1 << 10,		// There's a row selection in this table
+	NEXTTABLEROWFLAG__HASROWSELECTABLES = 1 << 11,	// Any row in this table can be selected
+
+	// Flags that'll persists when going to the next row
+	NEXTTABLEROWFLAG__PERSISTS = NEXTTABLEROWFLAG__UPDOWNPROCESSED | NEXTTABLEROWFLAG__HASROWSELECTED | NEXTTABLEROWFLAG__HASROWSELECTABLES,
+};
+typedef int NextTableRowFlags;
+
+enum EXYMouseDragOffset
+{
+	XYMOUSEDRAGOFFSET_NIL = 0,
+	XYMOUSEDRAGOFFSET_YAXIS,
+	XYMOUSEDRAGOFFSET_XAXIS,
+};
+
 struct Colors
 {
 	Color normalFg;
@@ -241,8 +273,39 @@ struct Colors
 	Color sliderHotBg;
 	Color sliderActiveBg;
 	Color tabHintsFg;
+	Color tableHeaderSortIndicatorBg;
+	Color headerDragNormalBg;
+	Color headerDragActiveBg;
+	Color progressBarBg;
 };
 
+// NEO NOTE (nullsystem):
+// If iRowParts = nullptr, iRowPartsTotal will be used of an equal proportions split
+struct Layout
+{
+	// iRowParts: int percentage of partitioning
+	// EX: { 60, 20, -1 } -> 60%, 20%, 20% | 3 widgets per row
+
+	// Main layout
+	int iRowPartsTotal;
+	const int *iRowParts; 
+	int iRowTall;
+	int iDefRowTall;
+
+	// Vertical partitioning
+	int iVertPartsTotal;
+	const int *iVertParts;
+
+	// Table-only layout
+	int iTableLabelsSize;
+	const int *piTableColsWide; // This is in pixels unlike iRowParts
+};
+
+// NEO TODO (nullsystem): Re-arrange variables by levels of variable
+// lifecycles from "permanent" -> multi-pass context -> single context pass -> section pass
+// And should make it easier to just zero them in one go for each level
+// where appropriate. Also turn more variables to zero-initialization
+// by default.
 struct Context
 {
 	Mode eMode;
@@ -262,18 +325,16 @@ struct Context
 	bool bMouseInPanel;
 	int iHasMouseInPanel;
 
-	// NEO NOTE (nullsystem):
-	// If iRowParts = nullptr, iRowPartsTotal will be used of an equal proportions split
-	struct Layout
-	{
-		int iRowPartsTotal;
-		const int *iRowParts;
-		int iRowTall;
-		int iDefRowTall;
+	// If a widget captures mouse wheel, don't let
+	// section deal with it afterward
+	bool bBlockSectionMWheel;
 
-		int iVertPartsTotal;
-		const int *iVertParts;
-	};
+	// This run is a context reset
+	bool bFirstCtxUse;
+
+	// Ignore X offset when putting in widget
+	bool bIgnoreXOffset;
+
 	Layout layout;
 
 	// Themes
@@ -289,7 +350,9 @@ struct Context
 	vgui::IntRect rWidgetArea;
 	int irWidgetWide;
 	int irWidgetTall;
+	int irWidgetLayoutX;
 	int irWidgetLayoutY;
+	int irWidgetMaxX;
 
 	// Layout management
 	// "Static" sizing
@@ -305,7 +368,7 @@ struct Context
 	int iVertLayoutY;
 	int iYOffset[MAX_SECTIONS] = {};
 	int iXOffset[MAX_SECTIONS] = {};
-	bool abYMouseDragOffset[MAX_SECTIONS] = {};
+	EXYMouseDragOffset aeXYMouseDragOffset[MAX_SECTIONS] = {};
 	int iStartMouseDragOffset[MAX_SECTIONS] = {};
 
 	// Saved infos for EndSection managing scrolling
@@ -323,7 +386,8 @@ struct Context
 
 	// Caches/read-ahead this section has scroll is
 	// known in previous frame(s)
-	uint64_t ibfSectionHasScroll = 0;
+	uint64_t ibfSectionHasXScroll = 0;
+	uint64_t ibfSectionHasYScroll = 0;
 
 	int iHot;
 	int iHotSection;
@@ -376,16 +440,31 @@ struct Context
 	// Sound paths
 	const char *pszSoundBtnPressed = "ui/buttonclickrelease.wav";
 	const char *pszSoundBtnRollover = "ui/buttonrollover.wav";
+
+	// Table
+	int iInDrag = 0;
+	NextTableRowFlags curRowFlags;
+	int iLastTableRowWidget = 0;
+
+	// Table header visibility popup
+	const wchar_t **wszTableVisColNamesList = nullptr;
+	int iTableVisColsTotal = 0;
+	int *piTableVisColsWide = nullptr;
 };
 
 struct RetButton
 {
+	// Button + table row
 	bool bPressed;
-	bool bKeyPressed;
+	bool bKeyEnterPressed;
 	bool bMousePressed;
 	bool bMouseHover;
 	bool bMouseDoublePressed;
 	bool bMouseRightPressed;
+
+	// Table row only
+	bool bKeyUpPressed;		// bPressed not set if this set
+	bool bKeyDownPressed;	// bPressed not set if this set
 };
 
 struct LabelExOpt
@@ -427,9 +506,11 @@ void OpenPopup(const int iPopupId, const Dim &dimPopupInit);
 void ClosePopup();
 [[nodiscard]] bool BeginPopup(const int iPopupId, const PopupFlags flags = POPUPFLAG_NIL);
 void EndPopup();
+[[nodiscard]] int CurrentPopup();
 
 // Get a suitable wide size for a popup by the longest text in the popup
 int PopupWideByStr(const char *pszStr);
+int PopupWideByStr(const wchar_t *pwszStr);
 
 [[nodiscard]] CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const CurrentWidgetState &wdgState);
@@ -454,7 +535,8 @@ void EndOverrideFgColor();
 /*1W*/ void Label(const wchar_t *wszText, const LabelExOpt &opt);
 /*2W*/ void Label(const wchar_t *wszLabel, const wchar_t *wszText);
 
-// If piTabWide == nullptr, fills the whole layout width, otherwise only length of the tabs.
+// If pState == nullptr, fills the whole layout width, otherwise,
+// will automatically choose either whole layout width or only length of the tabs.
 // Initialize the variable to -1 and NeoUI::Tabs will auto-figure it out.
 enum TabsFlag_
 {
@@ -463,17 +545,30 @@ enum TabsFlag_
 	TABFLAG_NOSTATERESETS = 1 << 1, // Don't reset scroll/hot/active states
 };
 typedef int TabsFlags;
+struct TabsState
+{
+	int iWide;
+	int iOffset;
+	bool bInYScroll;
+};
 /*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
-		const TabsFlags flags = TABFLAG_DEFAULT, int *piTabWide = nullptr);
-/*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType);
+		const TabsFlags flags = TABFLAG_DEFAULT,
+		TabsState *pState = nullptr);
+/*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath,
+		const EBaseButtonType eType, const bool bVal = false);
 /*1W*/ RetButton Button(const wchar_t *wszText);
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 /*1W*/ RetButton ButtonTexture(const char *szTexturePath);
-/*1W*/ void RingBoxBool(bool *bChecked);
-/*2W*/ void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
+/*1W*/ RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal);
+/*1W*/ RetButton ButtonToggle(const wchar_t *wszText, const bool bVal);
+/*1W*/ void RingBoxFlag(const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList = nullptr);
+/*2W*/ void RingBoxFlag(const wchar_t *wszLeftLabel, const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList = nullptr);
+/*1W*/ void RingBoxBool(bool *bChecked, const wchar_t **wszLabelsCustomList = nullptr);
+/*2W*/ void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked, const wchar_t **wszLabelsCustomList = nullptr);
 /*1W*/ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 /*2W*/ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 /*1W*/ void Progress(const float flValue, const float flMin, const float flMax);
+/*1W*/ void ProgressDrag(float *flValue, const float flMin, const float flMax);
 // Sliders relies on wszLeftLabel to cache value string, so only two-widgets variants
 /*2W*/ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 				   const int iDp = 2, const float flStep = 1.0f, const wchar_t *wszSpecialText = nullptr);
@@ -494,6 +589,42 @@ typedef int TextEditFlags;
 /*1W*/ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
 /*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
 /*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "");
+
+// Table widgets + functionalities
+// NEO TODO (nullsystem): iColProportions non-const, resizable within TableHeader
+enum TableHeaderModFlag_
+{
+	TABLEHEADERMODFLAG_NONE = 0,
+	TABLEHEADERMODFLAG_INDEXCHANGED = 1 << 0,
+	TABLEHEADERMODFLAG_DESCENDINGCHANGED = 1 << 1,
+};
+typedef int TableHeaderModFlags;
+// Use like: modFlags |= NeoUI::TableHeader(...) to detect sort modifications and deal with it
+// at a later tick point.
+//
+// iRelSyncSectionXOffset = relative position to this header, sync to the
+// X-offset of the next/prev section
+/*SW*/ [[nodiscard]] TableHeaderModFlags TableHeader(const wchar_t **wszColNamesList, const int iColsTotal,
+		int *piColsWide, int *piSortIndex, bool *pbSortDescending,
+		const int iRelSyncSectionXOffset = 0);
+// NEO TODO (nullsystem): A mode for the table where it'll show y-axis scrollbar but only requires
+// and returns filter view of loop only necessary that's in-view
+// NEO TODO (nullsystem): Instead of iRelSyncSectionXOffset, have it as part of an option for each
+// section to sync their scrollbar with each other?
+
+// piColsWide - X px size wide of each columns, if negative it's a hidden column
+void BeginTable(const int *piColsWide, const int iLabelsSize);
+// EndTable's RetButton mainly to catch Up/Down on a selectable table without anything selected
+// From the given up/down action can initialize the row index there
+RetButton EndTable();
+RetButton NextTableRow(const NextTableRowFlags flags = NEXTTABLEROWFLAG_NONE);
+// If not going to really show a table and instead some message on why it's empty
+// but still want the X-scroll to appear and usable
+void PadTableXScroll(const int *piColsWide, const int iLabelsSize);
+
+// Ignore X-offset when putting in widget
+void BeginIgnoreXOffset();
+void EndIgnoreXOffset();
 
 // NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
 enum TextureOptFlags

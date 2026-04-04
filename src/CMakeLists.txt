@@ -602,3 +602,6 @@ if(NEO_EXTRA_ASSETS)
             "${neo_assets_SOURCE_DIR}/neo"
             "${CMAKE_SOURCE_DIR}/../game/neo")
 endif()
+
+add_subdirectory(tests)
+

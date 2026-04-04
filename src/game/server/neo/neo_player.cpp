@@ -39,6 +39,7 @@
 #include "neo_player_shared.h"
 #include "bot/neo_bot.h"
 #include "nav_mesh.h"
+#include "neo_spawn_manager.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -535,7 +536,7 @@ CNEO_Player::CNEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
-	m_szNeoNameHasSet = false;
+	m_bNeoNameHasSet = false;
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
@@ -1819,17 +1820,27 @@ const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
 
 const char *CNEO_Player::GetNeoPlayerNameDirect() const
 {
-	return m_szNeoNameHasSet ? m_szNeoName.Get() : NULL;
+	return m_bNeoNameHasSet ? m_szNeoName.Get() : NULL;
 }
 
-void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
+bool CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 {
 	// NEO NOTE (nullsystem): Generally it's never NULL but just incase
 	if (newNeoName)
 	{
-		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName)-1);
-		m_szNeoNameHasSet = true;
+		if (FStrEq(newNeoName, "#empty"))
+		{
+			m_szNeoName.GetForModify()[0] = '\0';
+			m_bNeoNameHasSet = false;
+		}
+		else
+		{
+			V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName)-1);
+			m_bNeoNameHasSet = (m_szNeoName.Get()[0] != 0);
+		}
+		return m_bNeoNameHasSet;
 	}
+	return false;
 }
 
 void CNEO_Player::SetClientWantNeoName(const bool b)
@@ -2894,8 +2905,11 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 	if (!bIsTeamplay)
 	{
-		pSpawnpointName = "info_player_deathmatch";
-		pLastSpawnPoint = g_pLastSpawn;
+		if (GetTeamNumber() > LAST_SHARED_TEAM)
+		{
+			pSpawnpointName = "info_player_deathmatch";
+			pLastSpawnPoint = g_pLastSpawn;
+		}
 	}
 	else
 	{
@@ -2917,35 +2931,7 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 		}
 	}
 
-	pSpot = pLastSpawnPoint;
-	// Randomize the start spot
-	for (int i = random->RandomInt(1, 5); i > 0; i--)
-		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
-	if (!pSpot)  // skip over the null point
-		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
-
-	CBaseEntity *pFirstSpot = pSpot;
-
-	do
-	{
-		if (pSpot)
-		{
-			// check if pSpot is valid
-			if (g_pGameRules->IsSpawnPointValid(pSpot, this))
-			{
-				if (pSpot->GetLocalOrigin() == vec3_origin)
-				{
-					pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
-					continue;
-				}
-
-				// if so, go to pSpot
-				goto ReturnSpot;
-			}
-		}
-		// increment pSpot
-		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
-	} while (pSpot != pFirstSpot); // loop if we're not back to the start
+	pSpot = NeoSpawnManager::RequestSpawn(GetTeamNumber(), this);
 
 	// we haven't found a place to spawn yet, so kill any guy at the first spawn point and spawn there
 	if (pSpot)
@@ -3290,8 +3276,15 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 					attacker->m_iTeamDamageInflicted += iDamage;
 				}
 
-				if (info.GetDamageType() & (DMG_BULLET | DMG_SLASH | DMG_BUCKSHOT)) {
+				constexpr const int botDamageTypes = DMG_SLASH | DMG_BULLET | DMG_BUCKSHOT;
+				if (info.GetDamageType() & botDamageTypes)
+				{
 					++m_iBotDetectableBleedingInjuryEvents;
+				}
+
+				if (bIsTeamDmg && NEORules()->IsTeamplay() && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
+				{
+					attacker->m_botPauseFiringTimer.Start(1.0f);
 				}
 			}
 		}
@@ -3859,7 +3852,7 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 #ifdef GLOWS_ENABLE
 		otherNeoPlayer->IsDead() ||
 #endif
-		GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
+		(GetTeamNumber() == otherNeoPlayer->GetTeamNumber() && NEORules()->IsTeamplay()))
 	{
 		return FL_EDICT_ALWAYS;
 	}
@@ -4101,6 +4094,12 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 		return;
 	}
 
+	if (NEORules()->GetRoundStatus() == PostRound)
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The mission is over.");
+		return;
+	}
+
 	if (m_iXP < sv_neo_spec_replace_player_min_exp.GetInt())
 	{
 		if (m_iXP < 0)
@@ -4128,7 +4127,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 		return;
 	}
 
-	if (!InSameTeam(pNeoPlayerToReplace))
+	if (!InSameTeam(pNeoPlayerToReplace) || !NEORules()->IsTeamplay())
 	{
 		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Target is not friendly.");
 		return;

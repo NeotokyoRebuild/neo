@@ -1376,6 +1376,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.h
     neo/neo_bloom_controller.cpp
     neo/neo_client.cpp
     neo/neo_detpack.cpp
@@ -1400,6 +1402,8 @@ target_sources_grouped(
     neo/neo_player.h
     neo/neo_smokelineofsightblocker.cpp
     neo/neo_smokelineofsightblocker.h
+    neo/neo_spawn_manager.cpp
+    neo/neo_spawn_manager.h
     neo/neo_smokegrenade.cpp
     neo/neo_smokegrenade.h
     neo/neo_te_tocflash.cpp
@@ -1521,6 +1525,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
@@ -1580,6 +1585,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_types.h
 )
 
 if(NEO_BUILD_WEAPON_PBK56S)

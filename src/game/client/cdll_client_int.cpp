@@ -153,6 +153,7 @@
 #ifdef NEO
 #include <vgui_controls/Button.h>
 #include <vgui_controls/MenuButton.h>
+#include "neo_mp3player.h"
 #endif
 
 extern vgui::IInputInternal *g_InputInternal;
@@ -1250,27 +1251,6 @@ bool CHLClient::ReplayPostInit()
 
 #ifdef NEO
 extern void NeoToggleConsoleEnforce();
-
-template <int STR_LIMIT_SIZE>
-static void NeoConVarStrLimitChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
-{
-	static bool bStaticCallbackChangedCVar = false;
-	if (bStaticCallbackChangedCVar)
-	{
-		return;
-	}
-
-	ConVarRef cvarRef(cvar);
-	if (V_strlen(cvarRef.GetString()) >= STR_LIMIT_SIZE)
-	{
-		bStaticCallbackChangedCVar = true;
-		char mutStr[STR_LIMIT_SIZE];
-		V_strcpy_safe(mutStr, cvarRef.GetString());
-		Q_UnicodeRepair(mutStr);
-		cvarRef.SetValue(mutStr);
-		bStaticCallbackChangedCVar = false;
-	}
-}
 #endif
 
 #ifdef NEO
@@ -1416,13 +1396,25 @@ void CHLClient::PostInit()
 	}
 #endif
 
+	NeoMP3::Init();
+
 	if (g_pCVar)
 	{
-		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<MAX_PLAYER_NAME_LENGTH>);
-		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_MAX_CLANTAG_LENGTH>);
-		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_XHAIR_SEQMAX>);
+		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarFixPrintable<MAX_PLAYER_NAME_LENGTH>);
+		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarFixPrintable<NEO_MAX_CLANTAG_LENGTH>);
+		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarCrosshairChangeCallback);
+		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(NeoMP3::MusicVolCallback);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 		RestrictNeoClientCheats();
+
+		// Fixup invalid crosshair to default
+		ConVarRef cl_neo_crosshair("cl_neo_crosshair");
+		if (false == ValidateCrosshairSerial(cl_neo_crosshair.GetString()))
+		{
+			char szSequence[NEO_XHAIR_SEQMAX] = {};
+			DefaultCrosshairSerial(szSequence);
+			cl_neo_crosshair.SetValue(szSequence);
+		}
 
 		ConVar *sv_maxupdaterate = g_pCVar->FindVar( "sv_maxupdaterate" ); Assert(sv_maxupdaterate);
 		ConVar *cl_updaterate = g_pCVar->FindVar( "cl_updaterate" ); Assert(cl_updaterate);
@@ -1527,6 +1519,18 @@ void CHLClient::PostInit()
 				}
 			}
 
+			if (iCfgVerMajor < 29)
+			{
+				// Upgrade pre NEOXHAIR_SERIAL_ALPHA_V29 crosshairs to NEOXHAIR_SERIAL_ALPHA_V29+
+				CrosshairInfo xhairInfo = {};
+				if (ImportCrosshair(&xhairInfo, cl_neo_crosshair.GetString()))
+				{
+					char szExportSeq[NEO_XHAIR_SEQMAX];
+					ExportCrosshair(&xhairInfo, szExportSeq);
+					cl_neo_crosshair.SetValue(szExportSeq);
+				}
+			}
+
 			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
 			cvr_cl_neo_cfg_version_minor.SetValue(NEO_VERSION_MINOR);
 		}
@@ -1623,6 +1627,7 @@ void CHLClient::PostInit()
 void CHLClient::Shutdown( void )
 {
 #ifdef NEO
+	NeoMP3::Deinit();
 	NeoDeleteDownloadedSprays();
 	ServerBlacklistWrite(SERVER_BLACKLIST_DEFFILE);
 #endif

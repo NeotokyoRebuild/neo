@@ -252,7 +252,7 @@ void NeoUtils::SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *dat
 
 void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 {
-	char txt[ 4096 ];
+	char txt[ 4096 ] = {};
 	va_list argptr;
 	va_start( argptr, fmt );
 	_vsnprintf( txt, sizeof( txt ) - 1, fmt, argptr );
@@ -265,3 +265,9 @@ void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 	}
 	buf.Printf( "%s", txt );
 }
+
+bool IsInGame()
+{
+	return (engine->IsInGame() && !engine->IsLevelMainMenuBackground());
+}
+

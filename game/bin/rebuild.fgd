@@ -9,23 +9,7 @@
 	]
 ]
 
-@PointClass base(Targetname, PlayerClass, Angles) studio("models/editor/attacker_start.mdl") = info_player_attacker :
-	"This entity marks the start point for attackers."
-[
-	StartDisabled(choices) : "Start Disabled" : 0 =
-	[
-		0 : "No"
-		1 : "Yes"
-	]
-
-	input Enable(void) : "Turn spawnpoint on." 
-	input Disable(void) : "Turn spawnpoint off."
-	
-	output OnPlayerSpawn(void) : "Fires when a player spawns from this spawn point."
-]
-
-@PointClass base(Targetname, PlayerClass, Angles) studio("models/editor/defender_start.mdl") = info_player_defender :
-	"This entity marks the start point for defenders."
+@BaseClass base(Targetname, PlayerClass, Angles, EnableDisable) = NeoSpawnpointClass
 [
 	StartDisabled(choices) : "Start Disabled" : 0 =
 	[
@@ -33,11 +17,12 @@
 		1 : "Yes"
 	]
 	
-	input Enable(void) : "Turn spawnpoint on." 
-	input Disable(void) : "Turn spawnpoint off."
-	
 	output OnPlayerSpawn(void) : "Fires when a player spawns from this spawn point."
 ]
+
+@PointClass base(NeoSpawnpointClass) studio("models/editor/playerstart.mdl") = info_player_deathmatch : "Deathmatch Spawn" []
+@PointClass base(NeoSpawnpointClass) studio("models/editor/attacker_start.mdl") = info_player_attacker : "This entity marks the start point for attackers." []
+@PointClass base(NeoSpawnpointClass) studio("models/editor/defender_start.mdl") = info_player_defender : "This entity marks the start point for defenders." []
 
 @PointClass base(Targetname) iconsprite("vgui/hud/star.vmt") = neo_bloom_controller : "An entity that lets you tweak bloom for your map."
 [
@@ -129,10 +114,16 @@
 	output OnCap(void) : "Fires when capped here"
 ]
 
-@PointClass base(Angles) studio("models/gameplay/w_ghost.mdl") = neo_ghostspawnpoint :
+@PointClass base(Targetname, Angles, EnableDisable) studio("models/gameplay/w_ghost.mdl") = neo_ghostspawnpoint :
 	"This entity marks the start point ghosts for CTG gametypes."
 [
-
+	StartDisabled(choices) : "Start Disabled" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	
+	output OnSpawnedHere(void) : "Fires when a ghost spawns here"
 ]
 
 @FilterClass base(BaseFilter) iconsprite("editor/filter_class.vmt") = filter_activator_neoclass : "A filter that filters by the class (Recon, Assault, Support, etc) of the player who activated it."
@@ -346,8 +337,15 @@
 	output OnPlayerActivate(void) : "Juggernaut activated"
 ]
 
-@PointClass base(Angles) studio("models/player/jgr.mdl") = neo_juggernautspawnpoint : "Juggernaut spawn point"
+@PointClass base(Targetname, Angles, EnableDisable) studio("models/player/jgr.mdl") = neo_juggernautspawnpoint : "Juggernaut spawn point"
 [
+	StartDisabled(choices) : "Start Disabled" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+	
+	output OnSpawnedHere(void) : "Fires when a juggernaut spawns here"
 ]
 
 @PointClass base(Targetname) size(-8 -8 -8, 8 8 8) = point_broadcastclientcommand : 

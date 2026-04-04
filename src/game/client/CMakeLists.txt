@@ -811,6 +811,8 @@ target_sources_grouped(
     FILES
     mp3player.cpp
     mp3player.h
+    neo/neo_mp3player.cpp
+    neo/neo_mp3player.h
 )
 
 target_sources_grouped(
@@ -1529,6 +1531,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/vendor/stb_image.h
     ${CMAKE_SOURCE_DIR}/vendor/stb_image_resize2.h
     ${CMAKE_SOURCE_DIR}/vendor/stb_dxt.h
+    ${CMAKE_SOURCE_DIR}/vendor/miniaudio.h
 )
 
 target_sources_grouped(
@@ -1656,6 +1659,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.h
 )
 
 target_sources_grouped(
@@ -1668,6 +1673,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
@@ -1727,6 +1733,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_types.h
 )
 
 if(NEO_BUILD_WEAPON_PBK56S)

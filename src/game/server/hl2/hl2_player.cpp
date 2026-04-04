@@ -301,7 +301,9 @@ void CC_ToggleDuck( void )
 	pPlayer->ToggleDuck();
 }
 
+#ifndef NEO
 static ConCommand toggle_duck("toggle_duck", CC_ToggleDuck, "Toggles duck" );
+#endif
 
 #ifndef HL2MP
 #ifndef PORTAL

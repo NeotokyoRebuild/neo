@@ -137,59 +137,73 @@ void CWeaponBALC::PrimaryAttack(void)
 		}
 
 		auto pPlayer = ToNEOPlayer(GetOwner());
-		if (!pPlayer)
-		{
-			Assert(false);
-			return;
-		}
+		ShootGrenade(pPlayer);
+	}
+}
 
-		if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-		{
-			m_nNumShotsFired = 0;
-		}
-		else
-		{
-			++m_nNumShotsFired;
-		}
-		m_flLastAttackTime = gpGlobals->curtime;
+void CWeaponBALC::ShootGrenade(CNEO_Player *pPlayer)
+{
+	if (!pPlayer)
+	{
+		Assert(false);
+		return;
+	}
 
-		SendWeaponAnim(GetPrimaryAttackActivity());
-		SetWeaponIdleTime(gpGlobals->curtime + 2.0);
-		pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
+	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
+	{
+		m_nNumShotsFired = 0;
+	}
+	else
+	{
+		++m_nNumShotsFired;
+	}
+	m_flLastAttackTime = gpGlobals->curtime;
 
-		WeaponSound(BURST);
+	SendWeaponAnim(GetPrimaryAttackActivity());
+	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
+
+	WeaponSound(BURST);
 
 #ifdef GAME_DLL
-		const Vector vecSrc = pPlayer->Weapon_ShootPosition();
-		Vector vecThrow;
+	const Vector vecSrc = pPlayer->Weapon_ShootPosition();
+	Vector vecThrow;
 
-		AngleVectors(pPlayer->EyeAngles() + pPlayer->GetPunchAngle(), &vecThrow);
-		VectorScale(vecThrow, 2000.0f, vecThrow);
+	AngleVectors(pPlayer->EyeAngles() + pPlayer->GetPunchAngle(), &vecThrow);
+	VectorScale(vecThrow, 2000.0f, vecThrow);
 
-		QAngle angles;
-		VectorAngles(vecThrow, angles);
-		CGrenadeAR2 *pGrenade = assert_cast<CGrenadeAR2*>(Create("grenade_ar2", vecSrc, angles, pPlayer));
-		pGrenade->SetAbsVelocity(vecThrow);
+	QAngle angles;
+	VectorAngles(vecThrow, angles);
+	CGrenadeAR2 *pGrenade = assert_cast<CGrenadeAR2 *>(Create("grenade_ar2", vecSrc, angles, pPlayer));
+	pGrenade->SetAbsVelocity(vecThrow);
 
-		pGrenade->SetLocalAngularVelocity(RandomAngle(-400, 400));
-		pGrenade->SetMoveType(MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE);
-		pGrenade->SetThrower(GetOwner());
-		pGrenade->SetDamage(BALC_CHARGE_SHOT_DAMAGE);
+	pGrenade->SetLocalAngularVelocity(RandomAngle(-400, 400));
+	pGrenade->SetMoveType(MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE);
+	pGrenade->SetThrower(GetOwner());
+	pGrenade->SetDamage(BALC_CHARGE_SHOT_DAMAGE);
 
-		CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), 1000, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+	CSoundEnt::InsertSound(SOUND_COMBAT, GetAbsOrigin(), 1000, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON);
+	pPlayer->OnMyWeaponFired(this); // to update GetTimeSinceWeaponFired
 #endif
-		const int iAmmoCost = int((GetDefaultClip1() + 10) / BALC_CHARGE_SHOT_MAX);
-		m_iPrimaryAmmoCount = Max(0, m_iPrimaryAmmoCount - iAmmoCost);
+	const int iAmmoCost = int((GetDefaultClip1() + 10) / BALC_CHARGE_SHOT_MAX);
+	m_iPrimaryAmmoCount = Max(0, m_iPrimaryAmmoCount - iAmmoCost);
 
-		m_flNextPrimaryAttack = m_flNextPrimaryAttack + BALC_CHARGE_SHOT_RATE;
+	m_flNextPrimaryAttack = gpGlobals->curtime + BALC_CHARGE_SHOT_RATE;
 
-		m_bCharging = false;
-		m_bCharged = false;
+	m_bCharging = false;
+	m_bCharged = false;
 
-		//View kick
+	// View kick
+	if (!pPlayer->IsBot())
+	{
 		pPlayer->ViewPunchReset();
 		AddViewKick();
 	}
+}
+
+float CWeaponBALC::GetChargeDuration() const
+{
+	return BALC_CHARGE_DURATION;
 }
 
 void CWeaponBALC::SecondaryAttack(void)

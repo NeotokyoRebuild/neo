@@ -331,7 +331,7 @@ inline bool CClient_Precipitation::SimulateRain( CPrecipitationParticle* pPartic
 	}
 #ifdef NEO
 	trace_t trace;
-	UTIL_TraceLine( vOldPos, pParticle->m_Pos, MASK_SOLID_BRUSHONLY, this, COLLISION_GROUP_NONE, &trace );
+	UTIL_TraceLine( vOldPos, pParticle->m_Pos, MASK_SOLID_BRUSHONLY & (~CONTENTS_GRATE), this, COLLISION_GROUP_NONE, &trace );
 
 	if ( trace.fraction < 1 || trace.DidHit() )
 	{
@@ -1102,7 +1102,11 @@ void CClient_Precipitation::EmitParticles( float fTimeDelta )
 		vPlayerHeight.z = vPlayerCenter.z;
 
 		trace_t trace;
+#ifdef NEO
+		UTIL_TraceLine( vPlayerHeight, vParticlePos, MASK_SOLID_BRUSHONLY & (~CONTENTS_GRATE), NULL, COLLISION_GROUP_NONE, &trace );
+#else
 		UTIL_TraceLine( vPlayerHeight, vParticlePos, MASK_SOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &trace );
+#endif
 		if ( trace.fraction < 1 )
 		{
 			// If we hit a brush, then don't spawn the particle.

@@ -469,7 +469,7 @@ void CNEOBot::PressFireButton(float duration)
 {
 	// can't fire if stunned
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if ( GetBotPauseFiring() || HasAttribute(CNEOBot::SUPPRESS_FIRE) )
 	{
 		ReleaseFireButton();
 		return;
@@ -1592,22 +1592,24 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 		return;
 	}
 
-	if (!(myWeapon->GetNeoWepBits() & NEO_WEP_FIREARM))
+	const auto wepBits = myWeapon->GetNeoWepBits();
+
+	if (!(wepBits & NEO_WEP_FIREARM))
 	{
 		return;
 	}
 
-	if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
+	if (wepBits & NEO_WEP_BALC)
 	{
 		return;
 	}
 
-	if (myWeapon->GetNeoWepBits() & NEO_WEP_SMAC)
+	if (wepBits & NEO_WEP_SMAC)
 	{
 		return;
 	}
 
-	if (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
+	if (wepBits & NEO_WEP_SUPA7)
 	{
 		// Consider loading slug
 		if ( (myWeapon->m_iSecondaryAmmoCount > 0) && (myWeapon->Clip1() == myWeapon->GetMaxClip1() - 1))
@@ -1620,8 +1622,7 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 	}
 	else if (myWeapon->Clip1() > 0)
 	{
-		auto* pPlayer = ToNEOPlayer(this);
-		if ( pPlayer->GetTimeSinceWeaponFired() < 3.0f)
+		if (GetTimeSinceWeaponFired() < 3.0f)
 		{
 			return; // still in the middle of a fight
 		}
@@ -2586,6 +2587,21 @@ bool CNEOBot::IsEnemy(const CBaseEntity* them) const
 		return true;
 	}
 }
+
+
+bool CNEOBot::IsBotOnLadder() const
+{
+	ILocomotion* mover = GetLocomotionInterface();
+	if ( !mover )
+	{
+		return false;
+	}
+	
+	return ( GetMoveType() == MOVETYPE_LADDER ) ||
+		mover->IsUsingLadder() ||
+		mover->IsAscendingOrDescendingLadder();
+}
+
 
 CNEOBaseCombatWeapon* CNEOBot::GetBludgeonWeapon(void)
 {

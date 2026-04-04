@@ -3,6 +3,10 @@
 
 #include "neo_gamerules.h"
 
+#ifdef GAME_DLL
+#include "neo_spawn_manager.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -56,14 +60,16 @@ CNEOSpawnPoint::CNEOSpawnPoint()
 
 CNEOSpawnPoint::~CNEOSpawnPoint()
 {
-	
+#ifdef GAME_DLL
+	NeoSpawnManager::Unregister(this);
+#endif
 }
 
 void CNEOSpawnPoint::Spawn()
 {
 	BaseClass::Spawn();
 
-	AssertMsg(m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF,
+	AssertMsg(m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF || m_iOwningTeam == TEAM_ANY,
 		"CNEOSpawnPoint shouldn't be instantiated directly; use info_player_attacker/defender instead!\n");
 
 #if(0)
@@ -71,6 +77,21 @@ void CNEOSpawnPoint::Spawn()
 		(m_iOwningTeam == TEAM_JINRAI ? "Jinrai" : "NSF"),
 		GetAbsOrigin().x, GetAbsOrigin().y, GetAbsOrigin().z);
 #endif
+
+#ifdef GAME_DLL
+	NeoSpawnManager::Register(this);
+#endif
+}
+
+int CNEOSpawnPoint::GetOwningTeam() const
+{
+	const bool alternate = NEORules()->roundNumberIsEven();
+	int owningTeam = m_iOwningTeam;
+	if (!alternate && owningTeam != TEAM_ANY)
+	{
+		owningTeam = (owningTeam == TEAM_JINRAI) ? TEAM_NSF : (owningTeam == TEAM_NSF) ? TEAM_JINRAI : owningTeam;
+	}
+	return owningTeam;
 }
 
 #ifdef GAME_DLL

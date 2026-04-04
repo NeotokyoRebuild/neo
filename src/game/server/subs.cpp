@@ -13,6 +13,7 @@
 
 #ifdef NEO
 #include "weapon_neobasecombatweapon.h"
+#include "neo_player_spawnpoint.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -42,10 +43,23 @@ void CNullEntity::Spawn( void )
 }
 LINK_ENTITY_TO_CLASS(info_null,CNullEntity);
 
+#ifdef NEO
+class CBaseDMStart : public CNEOSpawnPoint
+#else
 class CBaseDMStart : public CPointEntity
+#endif
 {
 public:
+#ifdef NEO
+	DECLARE_CLASS( CBaseDMStart, CNEOSpawnPoint );
+
+	CBaseDMStart() : CNEOSpawnPoint()
+	{
+		m_iOwningTeam = TEAM_ANY;
+	}
+#else
 	DECLARE_CLASS( CBaseDMStart, CPointEntity );
+#endif
 
 	bool IsTriggered( CBaseEntity *pEntity );
 

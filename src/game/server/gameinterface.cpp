@@ -112,6 +112,10 @@ extern ConVar tf_mm_servermode;
 #include "NextBotManager.h"
 #endif
 
+#ifdef NEO
+#include "neo_spawn_manager.h"
+#endif
+
 #ifdef USES_ECON_ITEMS
 #include "econ_item_system.h"
 #endif // USES_ECON_ITEMS
@@ -1180,6 +1184,10 @@ void CServerGameDLL::ServerActivate( edict_t *pEdictList, int edictCount, int cl
 #ifdef NEXT_BOT
 	TheNextBots().OnMapLoaded();
 #endif
+
+#ifdef NEO
+	NeoSpawnManager::Init();
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -1447,6 +1455,10 @@ void CServerGameDLL::LevelShutdown( void )
 		TheNavMesh->Reset();
 	}
 #endif
+#endif
+
+#ifdef NEO
+	NeoSpawnManager::Deinit();
 #endif
 }
 

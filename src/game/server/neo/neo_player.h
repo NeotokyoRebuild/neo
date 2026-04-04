@@ -150,7 +150,7 @@ public:
 	const char *GetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
 	// "neo_name" even if it's nothing
 	const char *GetNeoPlayerNameDirect() const;
-	void SetNeoPlayerName(const char *newNeoName);
+	[[nodiscard]] bool SetNeoPlayerName(const char *newNeoName);
 	void SetClientWantNeoName(const bool b);
 	const char *GetNeoClantag() const;
 
@@ -180,6 +180,7 @@ public:
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotCloakStateDisrupted() const { return !m_botThermOpticCamoDisruptedTimer.IsElapsed(); }
+	bool GetBotPauseFiring() const { return !m_botPauseFiringTimer.IsElapsed(); }
 	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
@@ -245,6 +246,8 @@ private:
 
 	// tracks time since last cloak disruption event for bots who can't actually see
 	CountdownTimer m_botThermOpticCamoDisruptedTimer;
+	// cooldown after inflicting accidental team damage
+	CountdownTimer m_botPauseFiringTimer;
 
 private:
 	float GetActiveWeaponSpeedScale() const;
@@ -326,7 +329,7 @@ private:
 	bool m_bFirstDeathTick;
 	bool m_bCorpseSet;
 	bool m_bPreviouslyReloading;
-	bool m_szNeoNameHasSet;
+	bool m_bNeoNameHasSet;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;

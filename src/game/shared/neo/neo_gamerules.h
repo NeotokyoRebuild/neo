@@ -489,8 +489,10 @@ private:
 	bool m_bServerIsCurrentlyAutoRecording = false;
 	friend class CNEO_GhostBoundary;
 	friend class CNEOGhostSpawnPoint;
+	friend class CNEOJuggernautSpawnPoint;
 	friend class CMultiplayRules;
 	CUtlVector<CHandle<CNEOGhostSpawnPoint>> m_ghostSpawns;
+	CUtlVector<CHandle<CNEOJuggernautSpawnPoint>> m_jgrSpawns;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
