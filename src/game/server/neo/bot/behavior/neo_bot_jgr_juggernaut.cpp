@@ -4,6 +4,8 @@
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_path_compute.h"
 #include "bot/behavior/neo_bot_jgr_juggernaut.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
+#include "weapon_balc.h"
 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotJgrJuggernaut::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
@@ -25,6 +27,20 @@ ActionResult< CNEOBot > CNEOBotJgrJuggernaut::OnStart( CNEOBot *me, Action< CNEO
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotJgrJuggernaut::Update( CNEOBot *me, float interval )
 {
+	CBaseCombatWeapon *pWeapon = me->GetActiveWeapon();
+	if ( pWeapon )
+	{
+		CNEOBaseCombatWeapon *pNeoWep = dynamic_cast< CNEOBaseCombatWeapon * >( pWeapon );
+		if ( pNeoWep && ( pNeoWep->GetNeoWepBits() & NEO_WEP_BALC ) )
+		{
+			CWeaponBALC *pBalc = static_cast< CWeaponBALC * >( pNeoWep );
+			if ( pBalc->m_bOverheated )
+			{
+				return SuspendFor( new CNEOBotRetreatToCover(), "BALC overheated - retreating to cover!" );
+			}
+		}
+	}
+
 	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
 	if ( result.IsRequestingChange() || result.IsDone() )
 		return result;

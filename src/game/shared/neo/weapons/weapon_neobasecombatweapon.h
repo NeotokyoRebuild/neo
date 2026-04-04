@@ -140,6 +140,7 @@ public:
 
 	virtual bool CanBeSelected(void) override;
 
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const { Assert(false); return NEO_WIDX_INVALID; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { Assert(false); return NEO_WEP_INVALID; } // Should never call this base class; implement in children.
 	virtual int GetNeoWepXPCost(const int neoClass) const { Assert(false); return 0; } // Should never call this base class; implement in children.
 
