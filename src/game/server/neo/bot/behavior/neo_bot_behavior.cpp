@@ -15,6 +15,7 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 #include "bot/behavior/neo_bot_tactical_monitor.h"
+#include "weapons/weapon_balc.h"
 
 ConVar neo_bot_path_lookahead_range( "neo_bot_path_lookahead_range", "300" );
 ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT );
@@ -963,10 +964,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
 			{
-				// Minimum viable firing BALC
-				// TODO: Proper heat management for higher difficulty bots
-				me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
-				me->PressFireButton(GetFireDurationByDifficulty(me));
+				FireBalcAtEnemy( me, myWeapon, threat, threatRange );
 				return;
 			}
 			else if (myWeapon->m_iClip1 <= 0)
@@ -1035,6 +1033,33 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			}
 		}
 	}
+}
+
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotMainAction::FireBalcAtEnemy( CNEOBot *me, CNEOBaseCombatWeapon *myWeapon, const CKnownEntity *threat, float threatRange )
+{
+	Assert( myWeapon->GetNeoWepBits() & NEO_WEP_BALC );
+	auto *pBalc = static_cast<CWeaponBALC *>( myWeapon );
+	me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
+
+	// NEO JANK: To simplify alt fire input management
+	// we allow the bot to bypass button-hold charge firing requirement
+	// with approximation of charge fire delay
+	if ( threatRange > 300.0f && ( me->GetTimeSinceWeaponFired() > pBalc->GetChargeDuration() * 1.2f ) )
+	{
+		// Check if threat is clearly exposed for a shot
+		const CNavArea *meArea = me->GetLastKnownArea();
+		const CNavArea *targetArea = TheNavMesh->GetNearestNavArea( threat->GetEntity()->GetAbsOrigin() );
+		if ( meArea && targetArea && meArea->IsCompletelyVisible( targetArea ) )
+		{
+			pBalc->ShootGrenade( me );
+			return;
+		}
+	}
+
+	// Fallback to using the primary fire mode
+	me->PressFireButton( GetFireDurationByDifficulty( me ) );
 }
 
 

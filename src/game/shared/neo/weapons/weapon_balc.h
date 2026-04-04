@@ -42,6 +42,8 @@ public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_BALC | NEO_WEP_FIREARM; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 20; }
 	virtual void ItemPostFrame() override;
+	void ShootGrenade(CNEO_Player *pPlayer);
+	float GetChargeDuration() const;
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 1.0f; }
 
