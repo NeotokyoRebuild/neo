@@ -160,6 +160,7 @@ struct DynWidgetInfos
 
 enum EInternalPopup
 {
+	INTERNALPOPUP_TABLEHEADER = -3,
 	INTERNALPOPUP_COLOREDIT = -2,
 	INTERNALPOPUP_COPYMENU = -1,
 	INTERNALPOPUP_NIL = 0,
@@ -444,6 +445,11 @@ struct Context
 	int iInDrag = 0;
 	NextTableRowFlags curRowFlags;
 	int iLastTableRowWidget = 0;
+
+	// Table header visibility popup
+	const wchar_t **wszTableVisColNamesList = nullptr;
+	int iTableVisColsTotal = 0;
+	int *piTableVisColsWide = nullptr;
 };
 
 struct RetButton
@@ -504,6 +510,7 @@ void EndPopup();
 
 // Get a suitable wide size for a popup by the longest text in the popup
 int PopupWideByStr(const char *pszStr);
+int PopupWideByStr(const wchar_t *pwszStr);
 
 [[nodiscard]] CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const CurrentWidgetState &wdgState);
