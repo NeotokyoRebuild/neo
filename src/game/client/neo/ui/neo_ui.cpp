@@ -1851,6 +1851,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 
 	if (wdgState.bInView)
 	{
+		const int iTabWideEqual = (c->dPanel.wide / iLabelsSize);
 		int iTabWide = 0;
 		int iTabOffset = 0;
 		if (pState)
@@ -1860,7 +1861,6 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 					|| pState->iWide <= 0
 					|| pState->bInYScroll != bThisYScroll)
 			{
-				const int iTabWideEqual = (c->dPanel.wide / iLabelsSize);
 				for (int i = 0; i < iLabelsSize; ++i)
 				{
 					int iCurTabWide, iTabTall;
@@ -1880,7 +1880,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 		}
 		else
 		{
-			iTabWide = (c->dPanel.wide / iLabelsSize);
+			iTabWide = iTabWideEqual;
 		}
 
 		const int iOverflowBtnX = (iTabWide > (c->dPanel.wide / iLabelsSize))
@@ -1924,6 +1924,12 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 					.x1 = iTabOffset + iXPosTab + iTabWide,
 					.y1 = c->irWidgetTall,
 				};
+				// If in equal sizing wide, last tab, and no offset, make sure it expands
+				// fully to the right edge
+				if (i == (iLabelsSize - 1) && iTabWideEqual == iTabWide && 0 == iTabOffset)
+				{
+					tabRect.x1 = iXViewportWide;
+				}
 				const bool bHotTab = IN_BETWEEN_EQ(iXViewportStart, c->iMouseAbsX, iXViewportEnd)
 						&& IN_BETWEEN_EQ(tabRect.x0 + iXViewportStart, c->iMouseAbsX, tabRect.x1 + iXViewportStart)
 						&& IN_BETWEEN_EQ(tabRect.y0 + c->rWidgetArea.y0, c->iMouseAbsY, tabRect.y1 + c->rWidgetArea.y0);
