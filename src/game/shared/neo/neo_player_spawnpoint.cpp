@@ -83,6 +83,17 @@ void CNEOSpawnPoint::Spawn()
 #endif
 }
 
+int CNEOSpawnPoint::GetOwningTeam() const
+{
+	const bool alternate = NEORules()->roundNumberIsEven();
+	int owningTeam = m_iOwningTeam;
+	if (!alternate && owningTeam != TEAM_ANY)
+	{
+		owningTeam = (owningTeam == TEAM_JINRAI) ? TEAM_NSF : (owningTeam == TEAM_NSF) ? TEAM_JINRAI : owningTeam;
+	}
+	return owningTeam;
+}
+
 #ifdef GAME_DLL
 void CNEOSpawnPoint::InputEnable(inputdata_t& inputData)
 {
