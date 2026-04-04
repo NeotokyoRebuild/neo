@@ -372,7 +372,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 	}
 
 	// Force SwapFont on main to prevent crash on startup
-	SwapFont(FONT_NTLARGE, true);
+	SwapFont(FONT_NTNORMAL, true);
 	c->eButtonTextStyle = TEXTSTYLE_LEFT;
 	vgui::surface()->DrawSetTextColor(c->colors.normalFg);
 }

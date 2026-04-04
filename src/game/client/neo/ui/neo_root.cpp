@@ -751,6 +751,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 									g_uiCtx.dPanel.x + g_uiCtx.dPanel.wide, param.tall);
 
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
+	NeoUI::SwapFont(NeoUI::FONT_NTLARGE, true);
 	NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS | NeoUI::SECTIONFLAG_PLAYBUTTONSOUNDS);
 	{
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
