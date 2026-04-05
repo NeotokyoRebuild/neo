@@ -695,7 +695,15 @@ void CNeoRoot::OnEnterServer(const gameserveritem_t gameServer, const char *pszS
 			m_state = STATE_ROOT;
 		}
 	}
-	else if (pszServerPassword)
+	else if (nullptr == pszServerPassword && gameServer.m_bPassword)
+	{
+		// First time entering a password protected server and needing auto-join,
+		// prompt for password first then kick back to server browser on next
+		// OnEnterServer call
+		m_state = STATE_SERVERPASSWORD;
+		V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
+	}
+	else if (pszServerPassword && STATE_SERVERPASSWORD == m_state)
 	{
 		// If this is from the password screen, kick back to server browser
 		m_state = STATE_SERVERBROWSER;
@@ -776,6 +784,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			if (NeoUI::Button(L"Cancel").bPressed)
 			{
 				m_serverPingAutoJoin.m_serverInfo = {}; // Zero-init
+				V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
 			}
 			NeoUI::Label(L"Auto-joining:");
 
@@ -785,7 +794,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			V_swprintf_safe(wszText, L"Players: %d/%d", iPlayersCount, server.m_nMaxPlayers);
 			NeoUI::Label(wszText);
 
-			V_swprintf_safe(wszText, L"Refresh: %ds", static_cast<int>((m_flAutoJoinLastAttempt + FL_AUTO_JOIN_WAIT) - gpGlobals->realtime));
+			V_swprintf_safe(wszText, L"Refresh: %ds", Max(0, static_cast<int>((m_flAutoJoinLastAttempt + FL_AUTO_JOIN_WAIT) - gpGlobals->realtime)));
 			NeoUI::Label(wszText);
 
 			if ((m_flAutoJoinLastAttempt + FL_AUTO_JOIN_WAIT) <= gpGlobals->realtime)
@@ -802,7 +811,16 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 #endif
 						&& (CNeoServerPing::PINGSTATE_SUCCESS == m_serverPingAutoJoin.m_ePingState))
 				{
-					OnEnterServer(m_serverPingAutoJoin.m_serverInfo, nullptr);
+					if (m_serverPingAutoJoin.m_serverInfo.m_bPassword)
+					{
+						char szServerPassword[ARRAYSIZE(m_wszServerPassword)];
+						g_pVGuiLocalize->ConvertUnicodeToANSI(m_wszServerPassword, szServerPassword, sizeof(szServerPassword));
+						OnEnterServer(m_serverPingAutoJoin.m_serverInfo, szServerPassword);
+					}
+					else
+					{
+						OnEnterServer(m_serverPingAutoJoin.m_serverInfo, nullptr);
+					}
 				}
 				m_serverPingAutoJoin.m_ePingState = CNeoServerPing::PINGSTATE_NIL;
 			}
@@ -1980,15 +1998,13 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 					if (m_iSelectedServer >= 0
 							|| m_serverPingEnter.m_serverInfo.m_NetAdr.GetIP() != 0)
 					{
-						const auto &gameServerSelected = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
-
 						// NEO NOTE (nullsystem): When entering a server, must ping the
 						// server to check the player count just before properly entering.
 						// To catch out if it's been updated since the list refresh and
 						// go into auto-join state if server's full.
-						if (ENTERSERVER_PING == eEnterServer)
+						if (ENTERSERVER_PING == eEnterServer && m_iSelectedServer >= 0)
 						{
-							m_serverPingEnter.m_serverInfo = gameServerSelected;
+							m_serverPingEnter.m_serverInfo = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
 							m_serverPingEnter.RequestPing();
 							eEnterServer = ENTERSERVER_NIL;
 						}
@@ -1999,9 +2015,13 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							m_serverPingEnter.m_ePingState = CNeoServerPing::PINGSTATE_NIL;
 							// Check if nothing else changed since selected game-server submitted for ping-reply
 							// otherwise don't try
-							if (gameServerSelected.m_NetAdr.GetIP() == m_serverPingEnter.m_serverInfo.m_NetAdr.GetIP())
+							if (m_iSelectedServer >= 0)
 							{
-								OnEnterServer(m_serverPingEnter.m_serverInfo, nullptr);
+								const auto &gameServerSelected = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+								if (gameServerSelected.m_NetAdr.GetIP() == m_serverPingEnter.m_serverInfo.m_NetAdr.GetIP())
+								{
+									OnEnterServer(m_serverPingEnter.m_serverInfo, nullptr);
+								}
 							}
 							m_serverPingEnter.m_serverInfo = {}; // Zero-init
 						}
