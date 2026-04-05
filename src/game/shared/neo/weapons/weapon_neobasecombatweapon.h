@@ -22,6 +22,7 @@
 #endif
 
 #include "weapon_bits.h"
+#include "neo_weapon_parse.h"
 
 // These are the .res file id numbers for
 // NEO weapon loadout choices used by the
@@ -139,6 +140,10 @@ public:
 	virtual void FinishReload(void) override;
 
 	virtual bool CanBeSelected(void) override;
+
+	CNEOWeaponInfo const &GetNEOWpnData() const;
+
+	virtual const char *GetViewModel( int viewmodelindex = 0 ) const override;
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const { Assert(false); return NEO_WIDX_INVALID; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { Assert(false); return NEO_WEP_INVALID; } // Should never call this base class; implement in children.

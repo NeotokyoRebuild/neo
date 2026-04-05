@@ -4326,7 +4326,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		}
 		else if (neoWep)
 		{
-			event->SetString("deathIcon", neoWep->GetWpnData().szDeathIcon);
+			event->SetString("deathIcon", neoWep->GetNEOWpnData().szDeathIcon);
 		}
 		else
 		{

@@ -1519,6 +1519,8 @@ target_sources_grouped(
     TARGET server
     NAME "NEO\\Weapons"
     FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp

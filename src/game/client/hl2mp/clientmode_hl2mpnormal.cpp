@@ -261,7 +261,7 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 			m_bViewAim = true;
 		}
 
-		const CHL2MPSWeaponInfo* pWepInfo = &pWeapon->GetHL2MPWpnData();
+		const CNEOWeaponInfo* pWepInfo = &pWeapon->GetNEOWpnData();
 		Assert(pWepInfo);
 
 		const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
