@@ -343,6 +343,11 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 //---------------------------------------------------------------------------------------------
 void CNEOBotGrenadeThrow::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
 {
+	if (!NEORules()) // This can get called on de-init
+	{
+		return;
+	}
+
 	// Restore looking and weapon handling behaviors
 	me->PopRequiredWeapon();
 	me->StartLookingAroundForEnemies();
