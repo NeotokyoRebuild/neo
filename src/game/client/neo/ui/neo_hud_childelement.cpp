@@ -67,10 +67,10 @@ CNEOHud_ChildElement::XYHudPos CNEOHud_ChildElement::DrawNeoHudRoundedCommon(
 	};
 
 	if (p.y1h < p.y0h)
-		p.y1h = p.y0h = y0 + (0.5 * (y1 - y0));
+		p.y1h = p.y0h = y0 + ((y1 - y0) / 2);
 
 	if (p.x1w < p.x0w)
-		p.x1w = p.x0w = x0 + (0.5 * (x1 - x0));
+		p.x1w = p.x0w = x0 + ((x1 - x0) / 2);
 
 	surface()->DrawSetColor(color);
 
