@@ -324,6 +324,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		case NEO_GAME_TYPE_JGR:
 			m_pWszStatusUnicode = L"Control the Juggernaut\n";
 			break;
+		case NEO_GAME_TYPE_KOTH:
+			m_pWszStatusUnicode = L"Capture the objective!\n";
+			break;
 		default:
 			m_pWszStatusUnicode = L"Await further orders\n";
 			break;
@@ -432,6 +435,13 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		else {
 			V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(TEAM_JINRAI)->Get_Score(), GetGlobalTeam(TEAM_NSF)->Get_Score());
 		}
+	}
+	// neo TODO: add KOTH gameType (smart way) or detect KOTH maps (dumb way)
+	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_KOTH)
+	{
+		V_sprintf_safe(szPlayersAliveANSI, "J:%d  N:%d",
+					   NEORules()->m_iKothTimeJinrai.Get(),
+					   NEORules()->m_iKothTimeNSF.Get());
 	}
 	else
 	{

@@ -105,6 +105,7 @@ enum NeoGameType {
 	NEO_GAME_TYPE_EMT,
 	NEO_GAME_TYPE_TUT,
 	NEO_GAME_TYPE_JGR,
+	NEO_GAME_TYPE_KOTH,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -276,6 +277,7 @@ public:
 	void ResetGhost();
 	void ResetVIP();
 	void ResetJGR();
+	void ResetKOTH();
 
 	void CheckRestartGame();
 
