@@ -359,7 +359,9 @@ public:
 	bool JuggernautItemExists() const;
 	const Vector& GetJuggernautMarkerPos() const;
 	bool IsJuggernautLocked() const;
-
+#ifdef GAME_DLL
+	void SetKothLeaderMapVisual(const int team) const;
+#endif
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -505,6 +507,23 @@ private:
 	// koth
 	float m_flKothAccumulatorNSF = 0.0f;
 	float m_flKothAccumulatorJinrai = 0.0f;
+	CBaseEntity* pSpriteNSF = gEntList.FindEntityByName(nullptr, "koth_sprite_nsf");
+	CBaseEntity* pSpriteJinrai = gEntList.FindEntityByName(nullptr, "koth_sprite_jin");
+	CBaseEntity* pSpriteInactive = gEntList.FindEntityByName(nullptr, "koth_sprite_inactive");
+	CBaseEntity* pSpriteNone = gEntList.FindEntityByName(nullptr, "koth_sprite_none");
+
+	CBaseEntity* pBrushNSF = gEntList.FindEntityByName(nullptr, "koth_brush_nsf");
+	CBaseEntity* pBrushJinrai = gEntList.FindEntityByName(nullptr, "koth_brush_jin");
+	CBaseEntity* pBrushInactive = gEntList.FindEntityByName(nullptr, "koth_brush_inactive");
+	CBaseEntity* pBrushNone = gEntList.FindEntityByName(nullptr, "koth_brush_none");
+
+	enum KothControllingTeams
+	{
+		KOTH_NONE = 0,
+		KOTH_INACTIVE,
+		KOTH_NSF,
+		KOTH_JINRAI,
+	};
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);

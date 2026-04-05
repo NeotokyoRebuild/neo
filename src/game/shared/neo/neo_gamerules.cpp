@@ -1118,6 +1118,42 @@ bool CNEORules::CheckShouldNotThink()
 	return false;
 }
 
+#ifdef GAME_DLL
+// neo hack: shitcoded input but who cares, ill fix it later TODO
+void CNEORules::SetKothLeaderMapVisual(const int team) const
+{
+	pSpriteNSF->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	pSpriteJinrai->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	pSpriteInactive->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	pSpriteNone->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+
+	pBrushNSF->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	pBrushJinrai->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	pBrushInactive->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	pBrushNone->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+
+	if (team==KOTH_INACTIVE) {
+		pSpriteInactive->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+		pBrushInactive->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+		return;
+	}
+	if (team==KOTH_NONE) {
+		pSpriteNone->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+		pBrushNone->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+		return;
+	}
+	if (team==KOTH_NSF) {
+		pSpriteNSF->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+		pBrushNSF->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+		return;
+	}
+	if (team==KOTH_JINRAI) {
+		pSpriteJinrai->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+		pBrushJinrai->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+	}
+}
+#endif
+
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
@@ -1609,19 +1645,27 @@ void CNEORules::Think(void)
 			}
 		}
 
+		int prevControllers = m_iKothControllingTeam;
 		if (jinrai_capturing && nsf_capturing || !(jinrai_capturing || nsf_capturing)) {
 			// both loses anyway
 			// neo TODO: should i really nullify these values each time? check it pls
 			m_flKothAccumulatorNSF = 0.0f;
 			m_flKothAccumulatorJinrai = 0.0f;
+			m_iKothControllingTeam = KOTH_NONE;
 		} else if (jinrai_capturing) {
 			// give jin some points
 			m_flKothAccumulatorNSF = 0.0f;
 			m_flKothAccumulatorJinrai += gpGlobals->frametime;
+			m_iKothControllingTeam = KOTH_JINRAI;
 		} else if (nsf_capturing) {
 			// give nsf some points
 			m_flKothAccumulatorNSF += gpGlobals->frametime;
 			m_flKothAccumulatorJinrai = 0.0f;
+			m_iKothControllingTeam = KOTH_NSF;
+		}
+		if (prevControllers != m_iKothControllingTeam)
+		{
+			SetKothLeaderMapVisual(m_iKothControllingTeam);
 		}
 
 		// DevMsg("JIN: %f, NSF: %f, ft delta: %f\n", m_flKothAccumulatorJinrai, m_flKothAccumulatorNSF, gpGlobals->frametime);
@@ -3437,11 +3481,22 @@ void CNEORules::ResetKOTH() {
 	m_iKothTimeJinrai = 0;
 	m_iKothTimeNSF = 0;
 	// neo TODO: i dont think that i should send controllingTeam var through net
-	m_iKothControllingTeam = TEAM_UNASSIGNED;
+	m_iKothControllingTeam = KOTH_INACTIVE;
 	m_flKothAccumulatorNSF = 0.0f;
 	m_flKothAccumulatorJinrai = 0.0f;
 	// TODO: give xp for holding the point?
 	pKothTrigger = dynamic_cast<CBaseTrigger*>(gEntList.FindEntityByName(nullptr, "koth_point"));
+
+	// sprite/brush things
+	pSpriteNSF->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	pSpriteJinrai->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	pSpriteInactive->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+	pSpriteNone->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+
+	pBrushNSF->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	pBrushJinrai->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	pBrushInactive->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+	pBrushNone->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
 }
 
 void CNEORules::RestartGame()
