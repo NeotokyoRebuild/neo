@@ -90,6 +90,11 @@ void CNEOBotVision::UpdatePotentiallyVisibleNPCVector( void )
  */
 bool CNEOBotVision::IsIgnored( CBaseEntity* subject ) const
 {
+	if (!NEORules()) // This can get called on de-init
+	{
+		return true;
+	}
+
 	CNEOBot* me = ( CNEOBot* )GetBot()->GetEntity();
 
 	if ( me->IsAttentionFocused() )
