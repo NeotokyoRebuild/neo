@@ -1449,6 +1449,7 @@ void CNEORules::Think(void)
 		}
 	}
 
+	pKothTrigger = dynamic_cast<CBaseTrigger*>( gEntList.FindEntityByName(nullptr, "koth_point") );
 	if (m_pGhost)
 	{
 		// Update ghosting team info
@@ -1541,7 +1542,62 @@ void CNEORules::Think(void)
 			m_pJuggernautItem->m_bLocked = false;
 		}
 	}
+	else if (pKothTrigger)
+	{
+		// neo TODO: prettify code to satisfy code-style requirements!!!
+		// neo TODO: add single check that allows us to know that there is players inside!!! (not a loop)
+		// neo TODO: add sending via net some HUD vars (score and controlling team)
+		// neo TODO: annul ALL variables on round restart (currntly im resetting only some of them)
 
+		bool jinrai_capturing = false,
+				nsf_capturing = false;
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			CNEO_Player* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			// neo TODO: do i rlly need this check?
+			if (!pPlayer || !pPlayer->IsAlive())
+				continue;
+
+			// neo TODO: maybe instead of IsTouching use something like IsInside (if there is any similar events lol)??
+			// neo TODO: for-loop is probably VERY inefficient (check previous todo)
+			if (pKothTrigger->IsTouching(pPlayer))
+			{
+				int team = pPlayer->GetTeamNumber();
+				if (team==TEAM_JINRAI) {
+					jinrai_capturing = true;
+				} else if (team==TEAM_NSF) {
+					nsf_capturing = true;
+				}
+			}
+		}
+
+		if (jinrai_capturing && nsf_capturing || !(jinrai_capturing || nsf_capturing)) {
+			// both loses anyway
+			// neo TODO: should i really nullify these values each time? check it pls
+			m_flKothAccumulatorNSF = 0.0f;
+			m_flKothAccumulatorJinrai = 0.0f;
+		} else if (jinrai_capturing) {
+			// give jinja some points
+			m_flKothAccumulatorNSF = 0.0f;
+			m_flKothAccumulatorJinrai += gpGlobals->frametime;
+		} else if (nsf_capturing) {
+			// give nsf some points
+			m_flKothAccumulatorNSF += gpGlobals->frametime;
+			m_flKothAccumulatorJinrai = 0.0f;
+		}
+		DevMsg("JIN: %f, NSF: %f, ft delta: %f\n", m_flKothAccumulatorJinrai, m_flKothAccumulatorNSF, gpGlobals->frametime);
+		DevMsg("JIN: %d, NSF: %d\n", jinrai_capturing, nsf_capturing);
+		// move it accumulation into the score if possible
+		if (m_flKothAccumulatorNSF > 1.0) {
+			m_iKothTimeNSF += int(m_flKothAccumulatorNSF);
+			m_flKothAccumulatorNSF -= int(m_flKothAccumulatorNSF);
+		}
+		if (m_flKothAccumulatorJinrai > 1.0) {
+			m_iKothTimeJinrai += int(m_flKothAccumulatorJinrai);
+			m_flKothAccumulatorJinrai -= int(m_flKothAccumulatorJinrai);
+		}
+	}
+	DevMsg("JIN: %d, NSF: %d\n", m_iKothTimeJinrai, m_iKothTimeNSF);
 	if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
 	{
 		if (GetGlobalTeam(TEAM_JINRAI)->GetScore() >= sv_neo_jgr_max_points.GetInt())
@@ -3209,6 +3265,11 @@ void CNEORules::SetGameRelatedVars()
 	ResetGhost();
 	if (GetGameType() == NEO_GAME_TYPE_CTG)
 	{
+		m_iKothTimeJinrai = 0;
+		m_iKothTimeNSF = 0;
+		m_iKothControllingTeam = TEAM_UNASSIGNED;
+		m_flKothAccumulatorNSF = 0.0f;
+		m_flKothAccumulatorJinrai = 0.0f;
 		SpawnTheGhost();
 	}
 

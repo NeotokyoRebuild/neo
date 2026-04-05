@@ -80,6 +80,7 @@ public:
 };
 
 #ifdef GAME_DLL
+#include "triggers.h"  // для CBaseTrigger и IsTouching()
 class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
@@ -463,6 +464,7 @@ public:
 	const int GetLastGhoster() const { return m_iLastGhoster; }
 #ifdef GAME_DLL
 private:
+	CBaseTrigger *pKothTrigger = nullptr;
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
 	float m_flJuggernautDeathTime = 0.0f;
@@ -497,6 +499,10 @@ private:
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
 	int m_iMatchWinner = TEAM_UNASSIGNED;
+
+	// koth
+	float m_flKothAccumulatorNSF = 0.0f;
+	float m_flKothAccumulatorJinrai = 0.0f;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
@@ -520,6 +526,11 @@ private:
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(float, m_flGhostLastHeld);
 	CNetworkHandle( CWeaponGhost, m_hGhost );
+
+	// KOTH networked variables
+	CNetworkVar(int, m_iKothTimeJinrai);
+	CNetworkVar(int, m_iKothTimeNSF);
+	CNetworkVar(int, m_iKothControllingTeam);
 
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);
