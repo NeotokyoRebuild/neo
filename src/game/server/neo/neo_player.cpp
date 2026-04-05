@@ -2425,7 +2425,7 @@ void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
 
 void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector damageForce)
 {
-	if (!pNeoWeapon->GetWpnData().m_bDropOnDeath)
+	if (!pNeoWeapon->GetNEOWpnData().m_bDropOnDeath)
 	{ // Can't drop this weapon on death, remove it
 		UTIL_Remove(pNeoWeapon);
 		return;
