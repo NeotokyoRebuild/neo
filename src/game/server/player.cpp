@@ -565,23 +565,6 @@ CBasePlayer *CBasePlayer::CreatePlayer( const char *className, edict_t *ed )
 	return player;
 }
 
-#ifdef NEO
-template <class ConVarType=ConVar, typename T=float, auto& ConvertFunc=V_atof>
-T GetConVarDefault(const char* name)
-{
-	const auto* cvar = g_pCVar->FindVar(name);
-	if (!cvar)
-	{
-		Assert(false);
-		Warning( "%s failed to find var \"%s\"\n", __FUNCTION__, name);
-		return T{};
-	}
-	const auto* castCvar = assert_cast<const ConVarType*>(cvar);
-	const char* res = castCvar->GetDefault();
-	return ConvertFunc(res);
-}
-#endif
-
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : 
@@ -636,13 +619,43 @@ CBasePlayer::CBasePlayer( )
 
 	m_bPendingClientSettings = false;
 #ifdef NEO
-	m_nUpdateRate = GetConVarDefault<ConVar_ServerBounded>("cl_updaterate");
-	Assert(m_nUpdateRate != 0);
-	m_fLerpTime = GetConVarDefault<ConVar_ServerBounded>("cl_interp_ratio") / m_nUpdateRate;
+	m_nUpdateRate = 0;
+	if (auto sv_maxupdaterate = g_pCVar->FindVar("sv_maxupdaterate"))
+	{
+		m_nUpdateRate = V_atoi(sv_maxupdaterate->GetDefault());
+	}
+	if (m_nUpdateRate == 0)
+	{
+		m_nUpdateRate = 66; // as changed in #1657
+		Assert(false);
+	}
+	m_fLerpTime = NEO_CL_INTERP_RATIO_DEFAULT / m_nUpdateRate;
+
+#ifdef DBGFLAG_ASSERT
+	if (auto sv_client_min_interp_ratio = g_pCVar->FindVar("sv_client_min_interp_ratio"))
+	{
+		const float defaultMin = V_atof(sv_client_min_interp_ratio->GetDefault());
+		Assert(NEO_CL_INTERP_RATIO_DEFAULT >= defaultMin);
+	}
+	else
+	{
+		Assert(false);
+	}
+
+	if (auto sv_client_max_interp_ratio = g_pCVar->FindVar("sv_client_max_interp_ratio"))
+	{
+		const float defaultMax = V_atof(sv_client_max_interp_ratio->GetDefault());
+		Assert(NEO_CL_INTERP_RATIO_DEFAULT <= defaultMax);
+	}
+	else
+	{
+		Assert(false);
+	}
+#endif // DBGFLAG_ASSERT
 #else
 	m_nUpdateRate = 20;  // cl_updaterate defualt
 	m_fLerpTime = 0.1f; // cl_interp default
-#endif
+#endif // NEO
 	m_bPredictWeapons = true;
 	m_bRequestPredict = true;
 	m_bLagCompensation = false;
