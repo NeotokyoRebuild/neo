@@ -129,8 +129,8 @@ ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1
 										 "a rank up.",
 										 true, 0.0f, true, 1.0f);
 // koth
-ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "1.5", FCVAR_REPLICATED, "Seconds to get 1 score point");
-ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "15", FCVAR_REPLICATED, "The points needed to win this round");
+ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "1.75", FCVAR_REPLICATED, "Seconds to get 1 point");
+ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "100", FCVAR_REPLICATED, "The points needed to win this round");
 
 #define DEF_TEAMPLAYERTHRES 5
 static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
@@ -494,7 +494,7 @@ ConVar neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATE
 ConVar neo_jgr_round_timelimit("neo_jgr_round_timelimit", "4.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
-ConVar neo_koth_round_timelimit("neo_jgr_round_timelimit", "5", FCVAR_REPLICATED, "KOTH round timelimit, in minutes.",
+ConVar neo_koth_round_timelimit("neo_koth_round_timelimit", "5", FCVAR_REPLICATED, "KOTH round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
