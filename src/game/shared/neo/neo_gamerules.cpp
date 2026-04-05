@@ -129,8 +129,8 @@ ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1
 										 "a rank up.",
 										 true, 0.0f, true, 1.0f);
 // koth
-ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "0.0", FCVAR_REPLICATED, "Seconds to get 1 score point");
-ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "150", FCVAR_REPLICATED, "The points needed to win this round");
+ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "1.5", FCVAR_REPLICATED, "Seconds to get 1 score point");
+ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "15", FCVAR_REPLICATED, "The points needed to win this round");
 
 #define DEF_TEAMPLAYERTHRES 5
 static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
@@ -379,6 +379,7 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 /*NEO_GAME_TYPE_EMT*/	{"EMT",			true,		false,			true,							false,	false},
 /*NEO_GAME_TYPE_TUT*/	{"TUT",			true,		false,			false,							false,	false},
 /*NEO_GAME_TYPE_JGR*/	{"JGR",			true,		true,			false,							true,	false},
+/*NEO_GAME_TYPE_KOTH*/	{"KOTH",		true,		true,			false,							false,	false},
 };
 
 #ifdef CLIENT_DLL
@@ -1073,6 +1074,16 @@ void CNEORules::CheckGameType()
 		m_nGameTypeSelected = (pEntGameCfg) ? pEntGameCfg->m_GameType : NEO_GAME_TYPE_EMT;
 	} break;
 	}
+
+	// neo HACK: backward compability fix to import all _koth maps without editing them
+	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG)
+	{
+		if (gEntList.FindEntityByName(nullptr, "koth_point"))
+		{
+			m_nGameTypeSelected = NEO_GAME_TYPE_KOTH;
+		}
+	}
+
 	m_bGamemodeTypeBeenInitialized = true;
 	iStaticInitOnCmd = iGamemodeEnforce;
 	iStaticInitOnRandAllow = iGamemodeRandAllow;
@@ -1400,6 +1411,23 @@ void CNEORules::Think(void)
 				return;
 			}
 		}
+		if (GetGameType() == NEO_GAME_TYPE_KOTH)
+		{
+			if (m_iKothTimeJinrai > m_iKothTimeNSF)
+			{
+				SetWinningTeam(TEAM_JINRAI, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
+
+			if (m_iKothTimeNSF > m_iKothTimeJinrai)
+			{
+				SetWinningTeam(TEAM_NSF, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
+
+			SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, true, true, false);
+			return;
+		}
 		else if (GetGameType() == NEO_GAME_TYPE_DM)
 		{
 			// Winning player
@@ -1553,6 +1581,7 @@ void CNEORules::Think(void)
 	}
 	else if (pKothTrigger)
 	{
+		// neo TODO: rm pKothTrigger check and just check that curr gm is NEO_GAME_TYPE_KOTH
 		// neo TODO: prettify code to satisfy code-style requirements!!!
 		// neo TODO: add single check that allows us to know that there is players inside!!! (not a loop)
 		// neo TODO: add sending via net some HUD vars (score and controlling team)
@@ -1594,19 +1623,20 @@ void CNEORules::Think(void)
 			m_flKothAccumulatorNSF += gpGlobals->frametime;
 			m_flKothAccumulatorJinrai = 0.0f;
 		}
-		DevMsg("JIN: %f, NSF: %f, ft delta: %f\n", m_flKothAccumulatorJinrai, m_flKothAccumulatorNSF, gpGlobals->frametime);
-		DevMsg("JIN: %d, NSF: %d\n", jinrai_capturing, nsf_capturing);
+
+		// DevMsg("JIN: %f, NSF: %f, ft delta: %f\n", m_flKothAccumulatorJinrai, m_flKothAccumulatorNSF, gpGlobals->frametime);
+		// DevMsg("JIN: %d, NSF: %d\n", jinrai_capturing, nsf_capturing);
 		// move it accumulation into the score if possible
-		if (m_flKothAccumulatorNSF > 1.0) {
-			m_iKothTimeNSF += int(m_flKothAccumulatorNSF);
+		if (m_flKothAccumulatorNSF > sv_neo_koth_seconds_per_point.GetFloat()) {
+			m_iKothTimeNSF += int(m_flKothAccumulatorNSF / sv_neo_koth_seconds_per_point.GetFloat());
 			m_flKothAccumulatorNSF -= int(m_flKothAccumulatorNSF);
 		}
-		if (m_flKothAccumulatorJinrai > 1.0) {
-			m_iKothTimeJinrai += int(m_flKothAccumulatorJinrai);
+		if (m_flKothAccumulatorJinrai > sv_neo_koth_seconds_per_point.GetFloat()) {
+			m_iKothTimeJinrai += int(m_flKothAccumulatorJinrai / sv_neo_koth_seconds_per_point.GetFloat());
 			m_flKothAccumulatorJinrai -= int(m_flKothAccumulatorJinrai);
 		}
 	}
-	DevMsg("JIN: %d, NSF: %d\n", m_iKothTimeJinrai, m_iKothTimeNSF);
+
 	if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
 	{
 		if (GetGlobalTeam(TEAM_JINRAI)->GetScore() >= sv_neo_jgr_max_points.GetInt())
@@ -1721,7 +1751,8 @@ void CNEORules::Think(void)
 	else if (IsRoundLive())
 	{
 		COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
-		if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM && GetGameType() != NEO_GAME_TYPE_JGR)
+		if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM &&
+			GetGameType() != NEO_GAME_TYPE_JGR && GetGameType() != NEO_GAME_TYPE_KOTH)
 		{
 			auto jinraiAlive = GetGlobalTeam(TEAM_JINRAI)->GetAliveMembers();
 			auto nsfAlive = GetGlobalTeam(TEAM_NSF)->GetAliveMembers();
@@ -1744,6 +1775,29 @@ void CNEORules::Think(void)
 			if (iWinningXP >= sv_neo_dm_win_xp.GetInt() && iWinningTotal == 1)
 			{
 				SetWinningDMPlayer(pHighestPlayers[0]);
+			}
+		}
+		if (GetGameType() == NEO_GAME_TYPE_KOTH)
+		{
+			if (m_iKothTimeJinrai >= sv_neo_koth_max_score.GetInt() && m_iKothTimeNSF >= sv_neo_koth_max_score.GetInt())
+			{
+				// impossible but we should do something here...
+				SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, true, true, false);
+				return;
+			}
+
+			if (m_iKothTimeNSF >= sv_neo_koth_max_score.GetInt())
+			{
+				m_iKothTimeNSF = sv_neo_koth_max_score.GetInt();
+				SetWinningTeam(TEAM_NSF, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
+
+			if (m_iKothTimeJinrai >= sv_neo_koth_max_score.GetInt())
+			{
+				m_iKothTimeJinrai = sv_neo_koth_max_score.GetInt();
+				SetWinningTeam(TEAM_JINRAI, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
 			}
 		}
 	}
