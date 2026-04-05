@@ -129,6 +129,9 @@ ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1
 										 "while the other team is holding the ghost, reward the ghost holder team "
 										 "a rank up.",
 										 true, 0.0f, true, 1.0f);
+// koth
+ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "0.0", FCVAR_REPLICATED, "Seconds to get 1 score point");
+ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "150", FCVAR_REPLICATED, "The points needed to win this round");
 
 #define DEF_TEAMPLAYERTHRES 5
 static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
@@ -292,6 +295,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iLastAttacker)),
 	RecvPropInt(RECVINFO(m_iLastKiller)),
 	RecvPropInt(RECVINFO(m_iLastGhoster)),
+	RecvPropInt(RECVINFO(m_iKothTimeJinrai)),
+	RecvPropInt(RECVINFO(m_iKothTimeNSF)),
 #else
 	SendPropTime(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropTime(SENDINFO(m_flNeoRoundStartTime)),
@@ -326,6 +331,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iLastAttacker), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iLastKiller), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iLastGhoster), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iKothTimeJinrai)),
+	SendPropInt(SENDINFO(m_iKothTimeNSF)),
 #endif
 END_NETWORK_TABLE()
 
@@ -485,6 +492,9 @@ ConVar neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATE
 	true, 0.0f, false, 600.0f);
 
 ConVar neo_jgr_round_timelimit("neo_jgr_round_timelimit", "4.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
+
+ConVar neo_koth_round_timelimit("neo_jgr_round_timelimit", "5", FCVAR_REPLICATED, "KOTH round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
@@ -1422,7 +1432,6 @@ void CNEORules::Think(void)
 		}
 	}
 
-	pKothTrigger = dynamic_cast<CBaseTrigger*>( gEntList.FindEntityByName(nullptr, "koth_point") );
 	if (m_pGhost)
 	{
 		// Update ghosting team info
@@ -1550,7 +1559,7 @@ void CNEORules::Think(void)
 			m_flKothAccumulatorNSF = 0.0f;
 			m_flKothAccumulatorJinrai = 0.0f;
 		} else if (jinrai_capturing) {
-			// give jinja some points
+			// give jin some points
 			m_flKothAccumulatorNSF = 0.0f;
 			m_flKothAccumulatorJinrai += gpGlobals->frametime;
 		} else if (nsf_capturing) {
@@ -1864,6 +1873,9 @@ float CNEORules::GetRoundRemainingTime() const
 				break;
 			case NEO_GAME_TYPE_JGR:
 				roundTimeLimit = neo_jgr_round_timelimit.GetFloat() * 60.f;
+				break;
+			case NEO_GAME_TYPE_KOTH:
+				roundTimeLimit = neo_koth_round_timelimit.GetFloat() * 60.f;
 				break;
 			default:
 				break;
@@ -3269,11 +3281,6 @@ void CNEORules::SetGameRelatedVars()
 	ResetGhost();
 	if (GetGameType() == NEO_GAME_TYPE_CTG)
 	{
-		m_iKothTimeJinrai = 0;
-		m_iKothTimeNSF = 0;
-		m_iKothControllingTeam = TEAM_UNASSIGNED;
-		m_flKothAccumulatorNSF = 0.0f;
-		m_flKothAccumulatorJinrai = 0.0f;
 		SpawnTheGhost();
 	}
 
@@ -3320,6 +3327,11 @@ void CNEORules::SetGameRelatedVars()
 	{
 		ResetJGR();
 		SpawnTheJuggernaut();
+	}
+
+	if (GetGameType() == NEO_GAME_TYPE_KOTH)
+	{
+		ResetKOTH();
 	}
 }
 
@@ -3369,6 +3381,17 @@ void CNEORules::ResetJGR()
 			pPlayer->m_iXP.GetForModify() = 10;
 		}
 	}
+}
+
+void CNEORules::ResetKOTH() {
+	m_iKothTimeJinrai = 0;
+	m_iKothTimeNSF = 0;
+	// neo TODO: i dont think that i should send controllingTeam var through net
+	m_iKothControllingTeam = TEAM_UNASSIGNED;
+	m_flKothAccumulatorNSF = 0.0f;
+	m_flKothAccumulatorJinrai = 0.0f;
+	// TODO: give xp for holding the point?
+	pKothTrigger = dynamic_cast<CBaseTrigger*>(gEntList.FindEntityByName(nullptr, "koth_point"));
 }
 
 void CNEORules::RestartGame()
