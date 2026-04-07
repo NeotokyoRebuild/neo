@@ -336,7 +336,7 @@ void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float
 
 #ifdef NEO
 	m_aCamAngle	= pPlayer->EyeAngles();
-	if (cl_neo_lean_viewmodel_only.GetBool() && !pPlayer->IsRagdoll())
+	if (cl_neo_lean_viewmodel_only.GetBool() && !pPlayer->IsRagdoll()) // we get kicked out of first person view when dying right now but still worth a check in case that changes
 	{
 		m_aCamAngle.z = 0.f;
 	}
