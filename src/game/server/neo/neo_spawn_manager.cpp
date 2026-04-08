@@ -83,8 +83,16 @@ namespace NeoSpawnManager
 					return false;
 				}
 
-				if (team != spawn.handle.Get()->GetOwningTeam())
+				const int spawnTeam = spawn.handle.Get()->GetOwningTeam();
+				if (spawnTeam == TEAM_ANY)
+				{
+					if (team <= LAST_SHARED_TEAM)
+						return false;
+				}
+				else if (team != spawnTeam)
+				{
 					return false;
+				}
 
 				// We know this spawn is valid and belongs to our team.
 				// Save it as backup, just in case we can't find a good fresh spawn.
