@@ -4976,6 +4976,30 @@ void CNEORules::InitDefaultAIRelationships( void )
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY,		D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
 }
+
+void CNEORules::GetTaggedConVarList(KeyValues *pCvarTagList)
+{
+	BaseClass::GetTaggedConVarList(pCvarTagList);
+
+	// sv_neo_comp
+	KeyValues *pNeoComp = new KeyValues("sv_neo_comp");
+	pNeoComp->SetString("convar", "sv_neo_comp");
+	pNeoComp->SetString("tag", "comp");
+	pCvarTagList->AddSubKey(pNeoComp);
+
+	// neo_bot_quota_mode
+	ConVarRef cvr_neo_bot_quota_mode("neo_bot_quota_mode");
+	const bool bBotQuotaNormal = (0 == V_strcmp(cvr_neo_bot_quota_mode.GetString(), "normal"));
+	const bool bBotQuotaMatch = (0 == V_strcmp(cvr_neo_bot_quota_mode.GetString(), "match"));
+	if (bBotQuotaNormal || bBotQuotaMatch)
+	{
+		KeyValues *pBotAutoVacate = new KeyValues("neo_bot_quota_mode");
+		pBotAutoVacate->SetString("convar", "neo_bot_quota_mode");
+		pBotAutoVacate->SetString("tag", bBotQuotaNormal ? "alwaysbots" : "matchbots");
+		pCvarTagList->AddSubKey(pBotAutoVacate);
+	}
+}
+
 #endif
 
 #ifdef CLIENT_DLL

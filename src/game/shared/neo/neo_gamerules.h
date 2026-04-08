@@ -205,6 +205,8 @@ public:
 	virtual void MarkAchievement ( IRecipientFilter& filter, char const *pchAchievementName ) override;
 
 	virtual void InitDefaultAIRelationships(void);
+
+	void GetTaggedConVarList(KeyValues *pCvarTagList) override;
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
