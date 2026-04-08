@@ -684,6 +684,7 @@ FodyWeavers.xsd
 
 !/game/bin/
 !/game/bin/x64/
+!/game/bin/x64/CmdSeq.wc
 !/game/bin/rebuild.fgd
 !/game/bin/**/[Gg]ame[Cc]onfig.txt
 
