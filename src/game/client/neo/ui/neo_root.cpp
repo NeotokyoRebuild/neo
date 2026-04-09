@@ -154,10 +154,19 @@ static bool NetAdrIsSDR(const servernetadr_t &netAdr)
 #endif
 }
 
-// SDR servers doesn't actually includes bots in their players count
-static int PlayersCount(const gameserveritem_t *pServer)
+enum EPlayerCountMode
 {
-	return pServer->m_nPlayers - (NetAdrIsSDR(pServer->m_NetAdr) ? 0 : pServer->m_nBotPlayers);
+	PLAYERCOUNT_ONLYPLAYER = 0,
+	PLAYERCOUNT_INCLUDEBOTS,
+};
+
+// SDR servers doesn't actually includes bots in their players count
+static int PlayersCount(const gameserveritem_t *pServer, const EPlayerCountMode eCountMode)
+{
+	const int iPlayersCount = pServer->m_nPlayers - (NetAdrIsSDR(pServer->m_NetAdr) ? 0 : pServer->m_nBotPlayers);
+	return (eCountMode == PLAYERCOUNT_INCLUDEBOTS)
+			? iPlayersCount + pServer->m_nBotPlayers
+			: iPlayersCount;
 }
 
 // Only use it rarely/cached
@@ -651,7 +660,7 @@ void CNeoRoot::OnRelayedKeyTyped(wchar_t unichar)
 // copy not ref/pointer gameserveritem_t
 void CNeoRoot::OnEnterServer(const gameserveritem_t gameServer, const char *pszServerPassword)
 {
-	const int iPlayersCount = PlayersCount(&gameServer);
+	const int iPlayersCount = PlayersCount(&gameServer, PLAYERCOUNT_INCLUDEBOTS);
 	m_serverPingAutoJoin.m_serverInfo =
 #ifdef DEBUG
 			(iPlayersCount < (gameServer.m_nMaxPlayers - cl_neo_autojoin_offset.GetInt()))
@@ -776,7 +785,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			static constexpr float FL_AUTO_JOIN_WAIT = 15.0f;
 
 			const auto &server = m_serverPingAutoJoin.m_serverInfo;
-			const int iPlayersCount = PlayersCount(&server);
 			wchar wszText[k_cbMaxGameServerName] = {};
 
 			static constexpr const int ROWLAYOUT_REFRESH[] = { 10, 15, 35, 20, -1 };
@@ -791,7 +799,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszText, sizeof(wszText));
 			NeoUI::Label(wszText);
 
-			V_swprintf_safe(wszText, L"Players: %d/%d", iPlayersCount, server.m_nMaxPlayers);
+			const int iPlayersOnlyCount = PlayersCount(&server, PLAYERCOUNT_ONLYPLAYER);
+			V_swprintf_safe(wszText, L"Players: %d/%d", iPlayersOnlyCount, server.m_nMaxPlayers);
 			NeoUI::Label(wszText);
 
 			V_swprintf_safe(wszText, L"Refresh: %ds", Max(0, static_cast<int>((m_flAutoJoinLastAttempt + FL_AUTO_JOIN_WAIT) - gpGlobals->realtime)));
@@ -804,6 +813,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			}
 			else if (CNeoServerPing::PINGSTATE_NIL != m_serverPingAutoJoin.m_ePingState)
 			{
+				const int iPlayersCount = PlayersCount(&server, PLAYERCOUNT_INCLUDEBOTS);
 #ifdef DEBUG
 				if ((iPlayersCount < (server.m_nMaxPlayers - cl_neo_autojoin_offset.GetInt()))
 #else
@@ -1694,7 +1704,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							// done via the CNeoServerList::RequestList server request through the
 							// MatchMakingKeyValuePair_t mmFilters list
 							const auto &server = sbTab->m_filteredServers[i];
-							const int iPlayersCount = PlayersCount(&server);
+							const int iPlayersCount = PlayersCount(&server, PLAYERCOUNT_ONLYPLAYER);
 							bool bSkipServer = false;
 							if (m_sbFilters.bServerNotFull && server.m_nPlayers == server.m_nMaxPlayers) bSkipServer = true;
 							else if (m_sbFilters.bHasUsersPlaying && iPlayersCount == 0) bSkipServer = true;
@@ -2404,7 +2414,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 				if (gameServer->m_nBotPlayers)
 				{
 					V_swprintf_safe(wszText, L"%d/%d (%d)",
-							PlayersCount(gameServer),
+							PlayersCount(gameServer, PLAYERCOUNT_ONLYPLAYER),
 							gameServer->m_nMaxPlayers,
 							gameServer->m_nBotPlayers);
 				}
