@@ -203,6 +203,15 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		{
 			me->ReleaseCrouchButton();
 		}
+
+		if (pPlayerToMirror->IsWalking())
+		{
+			me->PressSneakButton(0.5f);
+		}
+		else
+		{
+			me->ReleaseSneakButton();
+		}
 	}
 
 	// Calibrate dynamic follow distance
@@ -226,6 +235,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		// Use sv_neo_bot_cmdr_stop_distance_sq for consistent bot collection range
 		// follow_stop_distance_sq would be confusing if player doesn't know about distance tuning
 		me->m_hLeadingPlayer = pCommander;
+		m_bSneakWhenFollowingPing = false; // watch commander's stance
 		m_vGoalPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 		pCommander->m_vLastPingByStar.GetForModify(me->GetStar()) = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 	}
@@ -236,6 +246,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != me->m_vLastPingByStar.Get(me->GetStar()))
 		{
 			me->m_hLeadingPlayer = nullptr; // Stop following and start travelling to ping
+			m_bSneakWhenFollowingPing = pCommander->IsWalking();
 			m_vGoalPos = pCommander->m_vLastPingByStar.Get(me->GetStar());
 			me->m_vLastPingByStar.GetForModify(me->GetStar()) = pCommander->m_vLastPingByStar.Get(me->GetStar());
 
@@ -248,8 +259,14 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 			else
 			{
 				me->m_hLeadingPlayer = pCommander; // fallback to following commander
+				m_bSneakWhenFollowingPing = false; // watch commander's stance
 				// continue with leader following logic below
 			}
+		}
+
+		if (m_bSneakWhenFollowingPing)
+		{
+			me->PressSneakButton(0.3f);
 		}
 
 		if (FanOutAndCover(me, m_vGoalPos))
@@ -266,6 +283,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		else
 		{
 			me->m_hLeadingPlayer = pCommander; // fallback to following commander
+			m_bSneakWhenFollowingPing = false; // react to enemies at full speed
 			// continue with leader following logic below
 		}
 	}
