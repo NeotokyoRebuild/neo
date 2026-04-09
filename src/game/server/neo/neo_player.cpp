@@ -41,6 +41,9 @@
 #include "nav_mesh.h"
 #include "neo_spawn_manager.h"
 
+#include "effect_dispatch_data.h"
+#include "te_effect_dispatch.h" 
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -4053,6 +4056,35 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 	}
 
 	return BaseClass::GetOverrideStepSound(pBaseStepSound);
+}
+
+void CNEO_Player::Splash()
+{
+	CEffectData data;
+	data.m_fFlags = 0;
+	data.m_vOrigin = GetAbsOrigin();
+	data.m_vNormal = Vector(0,0,1);
+	data.m_vAngles = QAngle( 0, 0, 0 );
+	
+	if ( GetWaterType() & CONTENTS_SLIME )
+	{
+		data.m_fFlags |= FX_WATER_IN_SLIME;
+	}
+	
+	CPASFilter filter( data.m_vOrigin );
+	filter.SetIgnorePredictionCull(true); // NEO TODO (Adam) predict this effect for the local player client side instead
+
+	float flSpeed = GetAbsVelocity().Length();
+	if ( flSpeed < 300 )
+	{
+		data.m_flScale = random->RandomFloat( 10, 12 );
+		DispatchEffect( "waterripple", data, filter );
+	}
+	else
+	{
+		data.m_flScale = random->RandomFloat( 6, 8 );
+		DispatchEffect( "playersplash", data, filter );
+	}
 }
 
 // Start spectator takeover of player related code:
