@@ -2251,9 +2251,13 @@ void CGameMovement::FullWalkMove( )
 		  ( m_nOldWaterLevel != WL_NotInWater && player->GetWaterLevel() == WL_NotInWater ) )
 	{
 		PlaySwimSound();
+#ifdef NEO
+		player->Splash();
+#else
 #if !defined( CLIENT_DLL )
 		player->Splash();
 #endif
+#endif // NEO
 	}
 }
 

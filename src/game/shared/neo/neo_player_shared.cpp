@@ -29,6 +29,13 @@
 
 #include "weapon_neobasecombatweapon.h"
 
+#include "effect_dispatch_data.h"
+#ifdef GAME_DLL
+#include "te_effect_dispatch.h"
+#else
+#include "c_te_effect_dispatch.h"
+#endif // GAME_DLL
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -391,5 +398,37 @@ void CNEO_Player::CheckAimButtons()
 	else
 	{
 	    Weapon_SetZoom(false);
+	}
+}
+
+void CNEO_Player::Splash()
+{
+	CEffectData data;
+	data.m_fFlags = 0;
+	data.m_vOrigin = GetAbsOrigin();
+	data.m_vNormal = Vector(0,0,1);
+	data.m_vAngles = QAngle( 0, 0, 0 );
+	
+	if ( GetWaterType() & CONTENTS_SLIME )
+	{
+		data.m_fFlags |= FX_WATER_IN_SLIME;
+	}
+	
+#ifdef GAME_DLL
+	CPASFilter filter( data.m_vOrigin );
+#else
+	CLocalPlayerFilter filter;
+#endif // GAME_DLL
+
+	float flSpeed = GetAbsVelocity().Length();
+	if ( flSpeed < 300 )
+	{
+		data.m_flScale = random->RandomFloat( 10, 12 );
+		DispatchEffect( "waterripple", data, filter );
+	}
+	else
+	{
+		data.m_flScale = random->RandomFloat( 6, 8 );
+		DispatchEffect( "playersplash", data, filter );
 	}
 }
