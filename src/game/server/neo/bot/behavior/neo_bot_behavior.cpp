@@ -370,6 +370,11 @@ Vector CNEOBotMainAction::SelectTargetPoint( const INextBot *meBot, const CBaseC
 //-----------------------------------------------------------------------------------------
 void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 {
+	if (me->IsSneakButtonDown())
+	{
+		return;
+	}
+
 	if ( me->GetClass() != NEO_CLASS_RECON )
 	{
 		return;
@@ -704,7 +709,17 @@ QueryResultType CNEOBotMainAction::ShouldWalk(const CNEOBot *me, const QueryResu
 
 	// Walk if reloading or firing
 	CNEOBaseCombatWeapon *myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
-	return (myWeapon && (myWeapon->m_bInReload || me->m_bOnTarget || me->IsFiring())) ? ANSWER_YES : ANSWER_NO;
+	if (myWeapon && (myWeapon->m_bInReload || me->m_bOnTarget || me->IsFiring()))
+	{
+		return ANSWER_YES;
+	}
+
+	if (me->IsSneakButtonDown())
+	{
+		return ANSWER_YES;
+	}
+
+	return ANSWER_NO;
 }
 
 QueryResultType CNEOBotMainAction::ShouldAim(const CNEOBot *me, const bool bWepHasClip) const
