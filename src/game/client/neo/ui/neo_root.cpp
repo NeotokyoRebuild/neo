@@ -990,7 +990,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		const float flMP3Wide = 0.28f * m_flWideAs43;
 		const int iNumRows = 4;
 		g_uiCtx.dPanel.x = param.wide - flMP3Wide - (3 * g_uiCtx.iMarginX);
-		g_uiCtx.dPanel.y = param.tall - (iNumRows * g_uiCtx.layout.iRowTall) - (3 * g_uiCtx.iMarginY); // - m_serverPingAutoJoin.m_serverInfo.m_NetAdr.GetIP() != 0 ? g_uiCtx.layout.iDefRowTall : 0;
+		g_uiCtx.dPanel.y = param.tall - (iNumRows * g_uiCtx.layout.iRowTall) - (3 * g_uiCtx.iMarginY) - (m_serverPingAutoJoin.m_serverInfo.m_NetAdr.GetIP() != 0 ? g_uiCtx.layout.iDefRowTall : 0);
 		g_uiCtx.dPanel.wide = flMP3Wide;
 		g_uiCtx.dPanel.tall = param.tall;
 
