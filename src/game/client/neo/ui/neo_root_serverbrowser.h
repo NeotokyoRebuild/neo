@@ -1,7 +1,22 @@
 #pragma once
 
 #include <tier1/netadr.h>
+
+// GCC shipped on SteamRT3 giving false positive
+#ifdef ACTUALLY_COMPILER_GCC
+#pragma GCC diagnostic push
+#if ((__GNUC__ >= 10) && (__GNUC__ <= 13))
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+#endif
+
 #include <steam/isteammatchmaking.h>
+
+#ifdef ACTUALLY_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif
+
 #include <utlvector.h>
 #include <vector>
 
@@ -160,6 +175,24 @@ public:
 	HServerQuery m_hdlQuery = HSERVERQUERY_INVALID;
 	bool m_bFetching = false;
 	GameServerPlayerSortContext m_sortCtx;
+};
+
+class CNeoServerPing : public ISteamMatchmakingPingResponse
+{
+public:
+	void RequestPing();
+	void ServerResponded(gameserveritem_t &server) final;
+	void ServerFailedToRespond() final;
+	HServerQuery m_hdlPing = HSERVERQUERY_INVALID;
+	gameserveritem_t m_serverInfo = {};
+
+	enum EPingState
+	{
+		PINGSTATE_NIL = 0,	// Either pinging or inactive
+		PINGSTATE_SUCCESS,
+		PINGSTATE_FAILED,
+	};
+	EPingState m_ePingState = PINGSTATE_NIL;
 };
 
 struct ServerBrowserFilters

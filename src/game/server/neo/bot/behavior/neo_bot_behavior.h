@@ -72,7 +72,4 @@ private:
 	void ReconConsiderSuperJump(CNEOBot *me);
 
 	IntervalTimer m_undergroundTimer;
-
-	CountdownTimer m_reevaluateClassTimer;
-	bool m_bPrevBreakBreakableInPath = false;
 };

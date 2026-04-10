@@ -456,3 +456,28 @@ void CNeoServerPlayers::PlayersRefreshComplete()
 {
 	m_hdlQuery = HSERVERQUERY_INVALID;
 }
+
+void CNeoServerPing::RequestPing()
+{
+	auto *steamMM = steamapicontext->SteamMatchmakingServers();
+	if (m_hdlPing != HSERVERQUERY_INVALID)
+	{
+		steamMM->CancelServerQuery(m_hdlPing);
+	}
+	const uint32 unIP = m_serverInfo.m_NetAdr.GetIP();
+	const uint16 usPort = m_serverInfo.m_NetAdr.GetQueryPort();
+	m_hdlPing = steamMM->PingServer(unIP, usPort, this);
+	m_ePingState = PINGSTATE_NIL;
+}
+
+void CNeoServerPing::ServerResponded(gameserveritem_t &server)
+{
+	m_serverInfo = server;
+	m_ePingState = PINGSTATE_SUCCESS;
+}
+
+void CNeoServerPing::ServerFailedToRespond()
+{
+	m_ePingState = PINGSTATE_FAILED;
+}
+
