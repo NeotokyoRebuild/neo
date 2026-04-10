@@ -988,8 +988,9 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	{
 		// Close equivalence to ~400px in 1080p (as 4:3 so 1440x1080)
 		const float flMP3Wide = 0.28f * m_flWideAs43;
-		g_uiCtx.dPanel.x = param.wide - flMP3Wide;
-		g_uiCtx.dPanel.y = param.tall - (flMP3Wide / 2) - g_uiCtx.layout.iRowTall;
+		const int iNumRows = 4;
+		g_uiCtx.dPanel.x = param.wide - flMP3Wide - (3 * g_uiCtx.iMarginX);
+		g_uiCtx.dPanel.y = param.tall - (iNumRows * g_uiCtx.layout.iRowTall) - (3 * g_uiCtx.iMarginY); // - m_serverPingAutoJoin.m_serverInfo.m_NetAdr.GetIP() != 0 ? g_uiCtx.layout.iDefRowTall : 0;
 		g_uiCtx.dPanel.wide = flMP3Wide;
 		g_uiCtx.dPanel.tall = param.tall;
 
@@ -1000,6 +1001,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 		wchar_t wszText[128] = {};
 
+		// Track Selection
 		NeoUI::SetPerRowLayout(1);
 		if (mps->songs[mps->iCurIdx].wszArtist[0])
 		{
@@ -1012,7 +1014,23 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			// wszTitle could also be fallback base filename
 			V_wcscpy_safe(wszText, mps->songs[mps->iCurIdx].wszTitle);
 		}
-		NeoUI::Label(wszText);
+		if (NeoUI::ButtonToggle(wszText, NeoUI::CurrentPopup() == NEOPOPUP_MP3).bPressed)
+		{
+			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
+			{
+				NeoUI::ClosePopup();
+			}
+			else
+			{
+				const int iPopupTall = g_uiCtx.layout.iRowTall * 8;
+				NeoUI::OpenPopup(NEOPOPUP_MP3, NeoUI::Dim{
+							.x = g_uiCtx.dPanel.x,
+							.y = g_uiCtx.dPanel.y - iPopupTall,
+							.wide = g_uiCtx.dPanel.wide,
+							.tall = iPopupTall,
+						});
+			}
+		}
 
 		const float flNowSecsCursor = mps->flSecsCursor;
 		NeoUI::ProgressDrag(&mps->flSecsCursor, 0.0f, mps->flSecsLength);
@@ -1043,10 +1061,10 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			const int iSec = mps->flSecsLength - (iMin * FL_SECSINMIN);
 			V_swprintf_safe(wszText, L"%02d:%02d", iMin, iSec);
 		}
-		NeoUI::Label(wszText);
+		NeoUI::Label(wszText, NeoUI::TEXTSTYLE_RIGHT);
 
-		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {18, 18, 28, 18, -1};
-		NeoUI::SetPerRowLayout(5, ROWLAYOUT_MP3_CONTROLS);
+		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {22, 22, 34, 22};
+		NeoUI::SetPerRowLayout(4, ROWLAYOUT_MP3_CONTROLS);
 
 		// Shuffle button
 		if (NeoUI::ButtonToggle(L"\u21B9", cvr_cl_neo_radio_shuffle.GetBool()).bPressed)
@@ -1075,7 +1093,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 
 		// Play/Pause button
-		if (NeoUI::Button(mps->bPlaying ? L"\u25B6" : L"II").bPressed)
+		if (NeoUI::Button(mps->bPlaying ? L"||" : L"\u25B6").bPressed)
 		{
 			mps->flagsPlayStateNext = (mps->bPlaying)
 					? NeoMP3::PLAYSTATE_FLAG_PAUSED : NeoMP3::PLAYSTATE_FLAG_PLAY;
@@ -1087,25 +1105,6 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		{
 			mps->flagsPlayStateNext = NeoMP3::PLAYSTATE_FLAG_SONGNEXT;
 			NeoMP3::Update();
-		}
-
-		// Popup button
-		if (NeoUI::ButtonToggle(L"\u2261", NeoUI::CurrentPopup() == NEOPOPUP_MP3).bPressed)
-		{
-			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
-			{
-				NeoUI::ClosePopup();
-			}
-			else
-			{
-				const int iPopupTall = g_uiCtx.layout.iRowTall * 8;
-				NeoUI::OpenPopup(NEOPOPUP_MP3, NeoUI::Dim{
-							.x = g_uiCtx.dPanel.x,
-							.y = g_uiCtx.dPanel.y - iPopupTall,
-							.wide = g_uiCtx.dPanel.wide,
-							.tall = iPopupTall,
-						});
-			}
 		}
 
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;

@@ -1439,6 +1439,15 @@ void Label(const wchar_t *wszText, const LabelExOpt &opt)
 	SwapFont(bkup.eFont);
 }
 
+void Label(const wchar_t *wszText, const TextStyle textAlignment)
+{
+	const TextStyle bkup = c->eLabelTextStyle;
+
+	c->eLabelTextStyle = textAlignment;
+	Label(wszText);
+	c->eLabelTextStyle = bkup;
+}
+
 void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 {
 	Label(wszLabel);

@@ -533,6 +533,7 @@ void EndOverrideFgColor();
 /*SW*/ void HeadingLabel(const wchar_t *wszText);
 /*1W*/ void Label(const wchar_t *wszText, const bool bNotWidget = false);
 /*1W*/ void Label(const wchar_t *wszText, const LabelExOpt &opt);
+/*1W*/ void Label(const wchar_t *wszText, const TextStyle textAlignment);
 /*2W*/ void Label(const wchar_t *wszLabel, const wchar_t *wszText);
 
 // If pState == nullptr, fills the whole layout width, otherwise,
