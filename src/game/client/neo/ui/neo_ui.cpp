@@ -1454,7 +1454,7 @@ void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 	Label(wszText);
 }
 
-NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType, const bool bVal)
+NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType, const bool bVal, const ButtonFlag_ flags)
 {
 	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 
@@ -1482,16 +1482,33 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 				const auto *pFontI = &c->fonts[c->eFont];
 				int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
 				const int y = pFontI->iYFontOffset;
+
+				auto normalDraw = [](const int x, const int y, const wchar_t* wszText) {
+					vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
+					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				};
+
+				if (!(flags & BUTTONFLAG_SCROLLTEXT))
+				{
+					normalDraw(x, y, wszText);
+					break;
+				}
+
 				int textWidth = 0, textHeight = 0;
 				vgui::surface()->GetTextSize(pFontI->hdl, wszText, textWidth, textHeight);
 				const int textWidthOver = textWidth - c->dPanel.wide;
-				if (textWidthOver > 0)
+				if (textWidthOver <= 0)
 				{
+					normalDraw(x, y, wszText);
+					break;
+				}
+
+				{ // Draw with scrolling text
 					vgui::surface()->SetFullscreenViewport(c->dPanel.x, c->dPanel.y, c->dPanel.wide, c->dPanel.tall);
 					vgui::surface()->PushFullscreenViewport();
 
 					textWidth += textHeight;
-					// 1 pixel per second scroll speed if using just time, scale by size of font so text scrolls relatively fast even on large displays
+					// 1 pixel per second scroll speed if using just time, scale by size of font so text scrolls relatively fast even on large displays. NEO TODO (Adam) pass time when menu opened or song changed so can reset scroll
 					x -= fmod(gpGlobals->realtime * textHeight, textWidth);
 					const int x2 = x + textWidth;
 
@@ -1504,11 +1521,6 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 					
 					vgui::surface()->PopFullscreenViewport();
 					vgui::surface()->SetFullscreenViewport(0, 0, 0, 0);
-				}
-				else
-				{
-					vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
-					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
 				}
 			} break;
 			case BASEBUTTONTYPE_IMAGE:
@@ -1768,9 +1780,9 @@ NeoUI::RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal)
 	return BaseButton(wszText, "", BASEBUTTONTYPE_CHECKBOX, bVal);
 }
 
-NeoUI::RetButton ButtonToggle(const wchar_t *wszText, const bool bVal)
+NeoUI::RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, ButtonFlag_ flags)
 {
-	return BaseButton(wszText, "", BASEBUTTONTYPE_TOGGLE, bVal);
+	return BaseButton(wszText, "", BASEBUTTONTYPE_TOGGLE, bVal, flags);
 }
 
 void ResetTextures()

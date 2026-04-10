@@ -453,6 +453,12 @@ struct Context
 	int *piTableVisColsWide = nullptr;
 };
 
+enum ButtonFlag_
+{
+	BUTTONFLAG_NONE = 1,
+	BUTTONFLAG_SCROLLTEXT = 1 << 0, // If the button text is too long, scroll to show the whole text over time
+};
+
 struct RetButton
 {
 	// Button + table row
@@ -557,12 +563,12 @@ struct TabsState
 		const TabsFlags flags = TABFLAG_DEFAULT,
 		TabsState *pState = nullptr);
 /*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath,
-		const EBaseButtonType eType, const bool bVal = false);
+		const EBaseButtonType eType, const bool bVal = false, const ButtonFlag_ flags = BUTTONFLAG_NONE);
 /*1W*/ RetButton Button(const wchar_t *wszText);
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 /*1W*/ RetButton ButtonTexture(const char *szTexturePath);
 /*1W*/ RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal);
-/*1W*/ RetButton ButtonToggle(const wchar_t *wszText, const bool bVal);
+/*1W*/ RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, const ButtonFlag_ flags = BUTTONFLAG_NONE);
 /*1W*/ void RingBoxFlag(const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList = nullptr);
 /*2W*/ void RingBoxFlag(const wchar_t *wszLeftLabel, const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList = nullptr);
 /*1W*/ void RingBoxBool(bool *bChecked, const wchar_t **wszLabelsCustomList = nullptr);
