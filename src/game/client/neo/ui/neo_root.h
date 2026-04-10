@@ -3,7 +3,21 @@
 #include <vgui_controls/EditablePanel.h>
 #include "GameUI/IGameUI.h"
 #include <steam/isteamhttp.h>
+
+// GCC shipped on SteamRT3 giving false positive
+#ifdef ACTUALLY_COMPILER_GCC
+#pragma GCC diagnostic push
+#if ((__GNUC__ >= 10) && (__GNUC__ <= 13))
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+#endif
+
 #include <steam/steam_api.h>
+
+#ifdef ACTUALLY_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif
 
 #include "neo_ui.h"
 #include "neo_root_serverbrowser.h"
@@ -136,6 +150,7 @@ public:
 	void OnTick() final;
 	void FireGameEvent(IGameEvent *event) final;
 
+	void OnEnterServer(const gameserveritem_t gameServer, const char *pszServerPassword);
 	void OnMainLoop(const NeoUI::Mode eMode);
 
 	struct MainLoopParam
@@ -246,6 +261,10 @@ public:
 
 	bool m_bMP3Popup = false;
 	ConVarRef cvr_cl_neo_radio_shuffle{"cl_neo_radio_shuffle"};
+
+	float m_flAutoJoinLastAttempt = 0.0f;
+	CNeoServerPing m_serverPingAutoJoin = {};
+	CNeoServerPing m_serverPingEnter = {};
 };
 
 extern CNeoRoot *g_pNeoRoot;
