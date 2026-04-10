@@ -1480,10 +1480,36 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 				vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
 
 				const auto *pFontI = &c->fonts[c->eFont];
-				const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
+				int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
 				const int y = pFontI->iYFontOffset;
-				vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
-				vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				int textWidth = 0, textHeight = 0;
+				vgui::surface()->GetTextSize(pFontI->hdl, wszText, textWidth, textHeight);
+				const int textWidthOver = textWidth - c->dPanel.wide;
+				if (textWidthOver > 0)
+				{
+					vgui::surface()->SetFullscreenViewport(c->dPanel.x, c->dPanel.y, c->dPanel.wide, c->dPanel.tall);
+					vgui::surface()->PushFullscreenViewport();
+
+					textWidth += textHeight;
+					// 1 pixel per second scroll speed if using just time, scale by size of font so text scrolls relatively fast even on large displays
+					x -= fmod(gpGlobals->realtime * textHeight, textWidth);
+					const int x2 = x + textWidth;
+
+					const int wszTextLen = V_wcslen(wszText);
+					vgui::surface()->DrawSetTextPos(x2, y);
+					vgui::surface()->DrawPrintText(wszText, wszTextLen);
+					
+					vgui::surface()->DrawSetTextPos(x, y);
+					vgui::surface()->DrawPrintText(wszText, wszTextLen);
+					
+					vgui::surface()->PopFullscreenViewport();
+					vgui::surface()->SetFullscreenViewport(0, 0, 0, 0);
+				}
+				else
+				{
+					vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
+					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				}
 			} break;
 			case BASEBUTTONTYPE_IMAGE:
 			{
