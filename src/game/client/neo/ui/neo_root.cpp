@@ -28,6 +28,7 @@
 #include "neo_player_shared.h"
 #include "steamnetworkingtypes.h"
 #include "neo_mp3player.h"
+//#include "neo_ui.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -1228,7 +1229,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 		NeoUI::Label(wszText, NeoUI::TEXTSTYLE_RIGHT);
 
-		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {22, 22, 34, 22};
+		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {22, 22, 34, -1};
 		NeoUI::SetPerRowLayout(4, ROWLAYOUT_MP3_CONTROLS);
 
 		// Shuffle button
@@ -1275,6 +1276,8 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 		NeoUI::EndSection();
 
+		NeoUI::Dim previousDPanel = g_uiCtx.dPanel;
+
 		if (NeoUI::BeginPopup(NEOPOPUP_MP3))
 		{
 			for (int i = 0; i < mps->iSongsSize; ++i)
@@ -1294,6 +1297,8 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 			NeoUI::EndPopup();
 		}
+
+		g_uiCtx.dPanel = previousDPanel;
 	}
 	NeoUI::EndSection();
 }

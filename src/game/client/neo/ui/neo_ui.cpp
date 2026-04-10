@@ -1482,15 +1482,16 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 				const auto *pFontI = &c->fonts[c->eFont];
 				int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
 				const int y = pFontI->iYFontOffset;
-
-				auto normalDraw = [](const int x, const int y, const wchar_t* wszText) {
+				const int wszTextLen = V_wcslen(wszText);
+				
+				auto normalDraw = [](const int x, const int y, const wchar_t* wszText, const int wszTextLen) {
 					vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
-					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+					vgui::surface()->DrawPrintText(wszText, wszTextLen);
 				};
 
 				if (!(flags & BUTTONFLAG_SCROLLTEXT))
 				{
-					normalDraw(x, y, wszText);
+					normalDraw(x, y, wszText, wszTextLen);
 					break;
 				}
 
@@ -1499,7 +1500,7 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 				const int textWidthOver = textWidth - c->dPanel.wide;
 				if (textWidthOver <= 0)
 				{
-					normalDraw(x, y, wszText);
+					normalDraw(x, y, wszText, wszTextLen);
 					break;
 				}
 
@@ -1508,11 +1509,10 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 					vgui::surface()->PushFullscreenViewport();
 
 					textWidth += textHeight;
-					// 1 pixel per second scroll speed if using just time, scale by size of font so text scrolls relatively fast even on large displays. NEO TODO (Adam) pass time when menu opened or song changed so can reset scroll
+					// 1 pixel per second scroll speed if using just time, scale by size of font so text scrolls relatively fast even on large displays.
 					x -= fmod(gpGlobals->realtime * textHeight, textWidth);
 					const int x2 = x + textWidth;
 
-					const int wszTextLen = V_wcslen(wszText);
 					vgui::surface()->DrawSetTextPos(x2, y);
 					vgui::surface()->DrawPrintText(wszText, wszTextLen);
 					
