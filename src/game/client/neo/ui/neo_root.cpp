@@ -1276,7 +1276,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 		NeoUI::EndSection();
 
-		NeoUI::Dim previousDPanel = g_uiCtx.dPanel;
+		NeoUI::Dim previousDPanel = g_uiCtx.dPanel; // NEO TODO (Adam) mzync needs to fix this properly
 
 		if (NeoUI::BeginPopup(NEOPOPUP_MP3))
 		{
