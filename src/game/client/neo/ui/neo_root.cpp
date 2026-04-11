@@ -28,7 +28,6 @@
 #include "neo_player_shared.h"
 #include "steamnetworkingtypes.h"
 #include "neo_mp3player.h"
-//#include "neo_ui.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
