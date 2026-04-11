@@ -1482,13 +1482,15 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 					vgui::surface()->GetTextSize(pFontI->hdl, wszText, textWidth, textHeight);
 					const int textWidthOver = textWidth - c->dPanel.wide;
 					if (textWidthOver > 0)
-					{ // Draw with scrolling text // NEO TODO (Adam) could be useful for plain labels too
+					{ 
+						// Draw with scrolling text // NEO TODO (Adam) could be useful for plain labels too
 						vgui::surface()->SetFullscreenViewport(c->dPanel.x, c->dPanel.y, c->dPanel.wide, c->dPanel.tall);
 						vgui::surface()->PushFullscreenViewport();
 
-						{ // Scrolling text
+						// Scrolling text
+						{
 							textWidth += textHeight; // Separation between two draws of wszText
-							const float PAUSE_BETWEEN_SCROLLS_SECONDS = 2.0f;
+							const float PAUSE_BETWEEN_SCROLLS_SECONDS = 2.5f;
 							const float PAUSE_BETWEEN_SCROLLS_PIXELS = PAUSE_BETWEEN_SCROLLS_SECONDS * textHeight;
 							const float SCROLL_SPEED_TEXT_HEIGHT_PER_SECOND = 1.0f;
 							const float SCROLL_SPEED_PIXELS = SCROLL_SPEED_TEXT_HEIGHT_PER_SECOND * textHeight;
@@ -1783,7 +1785,7 @@ NeoUI::RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal)
 	return BaseButton(wszText, "", BASEBUTTONTYPE_CHECKBOX, bVal);
 }
 
-NeoUI::RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, ButtonFlags flags, const float flScrollStart)
+NeoUI::RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, const ButtonFlags flags, const float flScrollStart)
 {
 	return BaseButton(wszText, "", BASEBUTTONTYPE_TOGGLE, bVal, flags, flScrollStart);
 }
