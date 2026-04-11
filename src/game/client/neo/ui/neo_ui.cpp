@@ -1439,22 +1439,13 @@ void Label(const wchar_t *wszText, const LabelExOpt &opt)
 	SwapFont(bkup.eFont);
 }
 
-void Label(const wchar_t *wszText, const TextStyle textAlignment)
-{
-	const TextStyle bkup = c->eLabelTextStyle;
-
-	c->eLabelTextStyle = textAlignment;
-	Label(wszText);
-	c->eLabelTextStyle = bkup;
-}
-
 void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 {
 	Label(wszLabel);
 	Label(wszText);
 }
 
-NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType, const bool bVal, const ButtonFlag_ flags, const float scrollStart)
+NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const EBaseButtonType eType, const bool bVal, const ButtonFlags flags, const float flScrollStart)
 {
 	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 
@@ -1483,52 +1474,62 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 				int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
 				const int y = pFontI->iYFontOffset;
 				const int wszTextLen = V_wcslen(wszText);
-				
-				auto normalDraw = [](const int x, const int y, const wchar_t* wszText, const int wszTextLen) {
+
+				bool drawn = false;
+				if (flags & BUTTONFLAG_SCROLLTEXT)
+				{
+					int textWidth = 0, textHeight = 0;
+					vgui::surface()->GetTextSize(pFontI->hdl, wszText, textWidth, textHeight);
+					const int textWidthOver = textWidth - c->dPanel.wide;
+					if (textWidthOver > 0)
+					{ // Draw with scrolling text // NEO TODO (Adam) could be useful for plain labels too
+						vgui::surface()->SetFullscreenViewport(c->dPanel.x, c->dPanel.y, c->dPanel.wide, c->dPanel.tall);
+						vgui::surface()->PushFullscreenViewport();
+
+						if (gpGlobals->realtime < flScrollStart)
+						{ // Haven't started scrolling yet, but still need to only draw within the bounds of the button
+							vgui::surface()->DrawSetTextPos(x, y);
+							vgui::surface()->DrawPrintText(wszText, wszTextLen);
+						}
+						else
+						{ // Scrolling text
+							textWidth += textHeight; // Separation between two draws of wszText
+							const float PAUSE_BETWEEN_SCROLLS_SECONDS = 2.0f;
+							const float PAUSE_BETWEEN_SCROLLS_PIXELS = PAUSE_BETWEEN_SCROLLS_SECONDS * textHeight;
+							const float SCROLL_SPEED_TEXT_HEIGHT_PER_SECOND = 1.0f;
+							const float SCROLL_SPEED_PIXELS = SCROLL_SPEED_TEXT_HEIGHT_PER_SECOND * textHeight;
+							const int timeForScrollInPixels = textWidth + PAUSE_BETWEEN_SCROLLS_PIXELS;
+							// 1 pixel per second scroll speed if using just time, scale by size of font so text scrolls relatively fast even on large displays.
+							float timeSpentOnCurrentScrollInPixels = fmod((gpGlobals->realtime - flScrollStart) * SCROLL_SPEED_PIXELS, timeForScrollInPixels);
+							if (timeSpentOnCurrentScrollInPixels < PAUSE_BETWEEN_SCROLLS_PIXELS)
+							{
+								vgui::surface()->DrawSetTextPos(x, y);
+								vgui::surface()->DrawPrintText(wszText, wszTextLen);
+							}
+							else
+							{
+								timeSpentOnCurrentScrollInPixels -= PAUSE_BETWEEN_SCROLLS_PIXELS;
+								x -= timeSpentOnCurrentScrollInPixels;
+								vgui::surface()->DrawSetTextPos(x, y);
+								vgui::surface()->DrawPrintText(wszText, wszTextLen);
+
+								const int x2 = x + textWidth;
+								vgui::surface()->DrawSetTextPos(x2, y);
+								vgui::surface()->DrawPrintText(wszText, wszTextLen);
+							}
+						}
+					
+						vgui::surface()->PopFullscreenViewport();
+						vgui::surface()->SetFullscreenViewport(0, 0, 0, 0);
+
+						drawn = true;
+					}
+				}
+
+				if (!drawn)
+				{
 					vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
 					vgui::surface()->DrawPrintText(wszText, wszTextLen);
-				};
-
-				if (!(flags & BUTTONFLAG_SCROLLTEXT))
-				{
-					normalDraw(x, y, wszText, wszTextLen);
-					break;
-				}
-
-				int textWidth = 0, textHeight = 0;
-				vgui::surface()->GetTextSize(pFontI->hdl, wszText, textWidth, textHeight);
-				const int textWidthOver = textWidth - c->dPanel.wide;
-				if (textWidthOver <= 0)
-				{
-					normalDraw(x, y, wszText, wszTextLen);
-					break;
-				}
-
-				{ // Draw with scrolling text
-					vgui::surface()->SetFullscreenViewport(c->dPanel.x, c->dPanel.y, c->dPanel.wide, c->dPanel.tall);
-					vgui::surface()->PushFullscreenViewport();
-
-					if (gpGlobals->curtime < scrollStart)
-					{ // Haven't started scrolling yet, but still need to only draw within the bounds of the button
-						vgui::surface()->DrawSetTextPos(x, y);
-						vgui::surface()->DrawPrintText(wszText, wszTextLen);
-					}
-					else
-					{ // Scrolling text
-						textWidth += textHeight;
-						// 1 pixel per second scroll speed if using just time, scale by size of font so text scrolls relatively fast even on large displays.
-						x -= fmod((gpGlobals->curtime - scrollStart) * textHeight, textWidth);
-						const int x2 = x + textWidth;
-
-						vgui::surface()->DrawSetTextPos(x2, y);
-						vgui::surface()->DrawPrintText(wszText, wszTextLen);
-					
-						vgui::surface()->DrawSetTextPos(x, y);
-						vgui::surface()->DrawPrintText(wszText, wszTextLen);
-					}
-					
-					vgui::surface()->PopFullscreenViewport();
-					vgui::surface()->SetFullscreenViewport(0, 0, 0, 0);
 				}
 			} break;
 			case BASEBUTTONTYPE_IMAGE:
@@ -1788,9 +1789,9 @@ NeoUI::RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal)
 	return BaseButton(wszText, "", BASEBUTTONTYPE_CHECKBOX, bVal);
 }
 
-NeoUI::RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, ButtonFlag_ flags, const float scrollStart)
+NeoUI::RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, ButtonFlags flags, const float flScrollStart)
 {
-	return BaseButton(wszText, "", BASEBUTTONTYPE_TOGGLE, bVal, flags, scrollStart);
+	return BaseButton(wszText, "", BASEBUTTONTYPE_TOGGLE, bVal, flags, flScrollStart);
 }
 
 void ResetTextures()
