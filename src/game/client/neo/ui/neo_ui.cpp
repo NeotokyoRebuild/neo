@@ -1471,7 +1471,7 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 				vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
 
 				const auto *pFontI = &c->fonts[c->eFont];
-				int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
+				const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
 				const int y = pFontI->iYFontOffset;
 				const int wszTextLen = V_wcslen(wszText);
 
@@ -1509,8 +1509,8 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 							else
 							{
 								timeSpentOnCurrentScrollInPixels -= PAUSE_BETWEEN_SCROLLS_PIXELS;
-								x -= timeSpentOnCurrentScrollInPixels;
-								vgui::surface()->DrawSetTextPos(x, y);
+								const int x1 = x - timeSpentOnCurrentScrollInPixels;
+								vgui::surface()->DrawSetTextPos(x1, y);
 								vgui::surface()->DrawPrintText(wszText, wszTextLen);
 
 								const int x2 = x + textWidth;
