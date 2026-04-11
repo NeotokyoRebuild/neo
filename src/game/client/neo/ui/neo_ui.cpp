@@ -1486,12 +1486,6 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 						vgui::surface()->SetFullscreenViewport(c->dPanel.x, c->dPanel.y, c->dPanel.wide, c->dPanel.tall);
 						vgui::surface()->PushFullscreenViewport();
 
-						if (gpGlobals->realtime < flScrollStart)
-						{ // Haven't started scrolling yet, but still need to only draw within the bounds of the button
-							vgui::surface()->DrawSetTextPos(x, y);
-							vgui::surface()->DrawPrintText(wszText, wszTextLen);
-						}
-						else
 						{ // Scrolling text
 							textWidth += textHeight; // Separation between two draws of wszText
 							const float PAUSE_BETWEEN_SCROLLS_SECONDS = 2.0f;
