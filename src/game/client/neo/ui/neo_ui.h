@@ -455,7 +455,7 @@ struct Context
 
 enum ButtonFlag_
 {
-	BUTTONFLAG_NONE = 1,
+	BUTTONFLAG_NONE = 0,
 	BUTTONFLAG_SCROLLTEXT = 1 << 0, // If the button text is too long, scroll to show the whole text over time
 };
 

@@ -1152,15 +1152,15 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	{
 		// Close equivalence to ~400px in 1080p (as 4:3 so 1440x1080)
 		const float flMP3Wide = 0.28f * m_flWideAs43;
-		const int iNumRows = 4;
-		g_uiCtx.dPanel.x = param.wide - flMP3Wide - (3 * g_uiCtx.iMarginX);
-		g_uiCtx.dPanel.y = param.tall - (iNumRows * g_uiCtx.layout.iRowTall) - (3 * g_uiCtx.iMarginY);
+		const int NUM_ROWS = 4;
+		g_uiCtx.dPanel.x = param.wide - flMP3Wide - g_uiCtx.iMarginX;
+		g_uiCtx.dPanel.y = param.tall - (NUM_ROWS * g_uiCtx.layout.iRowTall) - g_uiCtx.iMarginY;
 		if (m_serverPingAutoJoin.m_serverInfo.m_NetAdr.GetIP() != 0)
 			g_uiCtx.dPanel.y -= g_uiCtx.layout.iDefRowTall;
 		g_uiCtx.dPanel.wide = flMP3Wide;
 		g_uiCtx.dPanel.tall = param.tall;
 
-		NeoUI::BeginSection(NeoUI::SECTIONFLAG_PLAYBUTTONSOUNDS);
+		NeoUI::BeginSection();
 
 		NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
@@ -1180,7 +1180,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			// wszTitle could also be fallback base filename
 			V_wcscpy_safe(wszText, mps->songs[mps->iCurIdx].wszTitle);
 		}
-		if (NeoUI::ButtonToggle(wszText, NeoUI::CurrentPopup() == NEOPOPUP_MP3).bPressed)
+		if (NeoUI::ButtonToggle(wszText, NeoUI::CurrentPopup() == NEOPOPUP_MP3, NeoUI::BUTTONFLAG_SCROLLTEXT).bPressed)
 		{
 			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
 			{
@@ -1276,7 +1276,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 		NeoUI::EndSection();
 
-		NeoUI::Dim previousDPanel = g_uiCtx.dPanel; // NEO TODO (Adam) mzync needs to fix this properly
+		NeoUI::Dim previousDPanel = g_uiCtx.dPanel; // NEO TODO (Adam) mzync please fix this properly, I don't know how. Stops a second y scrollbar from popping up next to the below popup
 
 		if (NeoUI::BeginPopup(NEOPOPUP_MP3))
 		{

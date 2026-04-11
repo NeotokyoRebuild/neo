@@ -2238,8 +2238,7 @@ void ProgressDrag(float *flValue, const float flMin, const float flMax)
 		} [[fallthrough]];
 		case MODE_MOUSEMOVED:
 		{
-			if (wdgState.bActive
-					&& vgui::input()->IsMouseDown(MOUSE_LEFT)
+			if (vgui::input()->IsMouseDown(MOUSE_LEFT)
 					&& c->eMousePressedStart == MOUSESTART_SLIDER)
 			{
 				const int iMouseRelXWidget = c->iMouseAbsX - c->rWidgetArea.x0;
