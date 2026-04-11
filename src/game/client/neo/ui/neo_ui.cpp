@@ -1513,7 +1513,7 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, c
 								vgui::surface()->DrawSetTextPos(x1, y);
 								vgui::surface()->DrawPrintText(wszText, wszTextLen);
 
-								const int x2 = x + textWidth;
+								const int x2 = x1 + textWidth;
 								vgui::surface()->DrawSetTextPos(x2, y);
 								vgui::surface()->DrawPrintText(wszText, wszTextLen);
 							}
