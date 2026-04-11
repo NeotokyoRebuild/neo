@@ -1172,7 +1172,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		NeoUI::SetPerRowLayout(1);
 		if (mps->songs[mps->iCurIdx].wszArtist[0])
 		{
-			V_swprintf_safe(wszText, L"%ls - %ls aaaaaaaaaaaaaaaaaaaaaaaa",
+			V_swprintf_safe(wszText, L"%ls - %ls",
 					mps->songs[mps->iCurIdx].wszTitle,
 					mps->songs[mps->iCurIdx].wszArtist);
 		}
