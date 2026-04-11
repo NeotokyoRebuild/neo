@@ -1179,7 +1179,17 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			// wszTitle could also be fallback base filename
 			V_wcscpy_safe(wszText, mps->songs[mps->iCurIdx].wszTitle);
 		}
-		if (NeoUI::ButtonToggle(wszText, NeoUI::CurrentPopup() == NEOPOPUP_MP3, NeoUI::BUTTONFLAG_SCROLLTEXT).bPressed)
+
+		static wchar_t previousWszText[128] = {};
+		static float scrollStart = gpGlobals->curtime;
+		if (Q_wcscmp(previousWszText, wszText) != 0)
+		{
+			const float SCROLL_DELAY = 2.f;
+			scrollStart = gpGlobals->curtime + SCROLL_DELAY;
+			V_swprintf_safe(previousWszText, wszText);
+		}
+
+		if (NeoUI::ButtonToggle(wszText, NeoUI::CurrentPopup() == NEOPOPUP_MP3, NeoUI::BUTTONFLAG_SCROLLTEXT, scrollStart).bPressed)
 		{
 			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
 			{
