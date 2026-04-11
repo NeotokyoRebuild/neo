@@ -140,6 +140,7 @@ public:
 	virtual void FinishReload(void) override;
 
 	virtual bool CanBeSelected(void) override;
+	virtual int	ObjectCaps(void) { return CBaseCombatWeapon::ObjectCaps();};
 
 	CNEOWeaponInfo const &GetNEOWpnData() const;
 
