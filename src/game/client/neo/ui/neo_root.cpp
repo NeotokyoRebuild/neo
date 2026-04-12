@@ -1151,18 +1151,24 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	{
 		// Close equivalence to ~400px in 1080p (as 4:3 so 1440x1080)
 		const float flMP3Wide = 0.28f * m_flWideAs43;
-		g_uiCtx.dPanel.x = param.wide - flMP3Wide;
-		g_uiCtx.dPanel.y = param.tall - (flMP3Wide / 2) - g_uiCtx.layout.iRowTall;
+		const int NUM_ROWS = 4;
+		g_uiCtx.dPanel.x = param.wide - flMP3Wide - g_uiCtx.iMarginX;
+		g_uiCtx.dPanel.y = param.tall - (NUM_ROWS * g_uiCtx.layout.iRowTall) - g_uiCtx.iMarginY;
+		if (m_serverPingAutoJoin.m_serverInfo.m_NetAdr.GetIP() != 0)
+		{
+			g_uiCtx.dPanel.y -= g_uiCtx.layout.iDefRowTall;
+		}
 		g_uiCtx.dPanel.wide = flMP3Wide;
 		g_uiCtx.dPanel.tall = param.tall;
 
-		NeoUI::BeginSection(NeoUI::SECTIONFLAG_PLAYBUTTONSOUNDS);
+		NeoUI::BeginSection();
 
 		NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 
 		wchar_t wszText[128] = {};
 
+		// Track Selection
 		NeoUI::SetPerRowLayout(1);
 		if (mps->songs[mps->iCurIdx].wszArtist[0])
 		{
@@ -1175,7 +1181,32 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			// wszTitle could also be fallback base filename
 			V_wcscpy_safe(wszText, mps->songs[mps->iCurIdx].wszTitle);
 		}
-		NeoUI::Label(wszText);
+
+		static int previousSongIndex = 0;
+		static float scrollStart = gpGlobals->realtime;
+		if (previousSongIndex != mps->iCurIdx)
+		{
+			scrollStart = gpGlobals->realtime;
+			previousSongIndex = mps->iCurIdx;
+		}
+
+		if (NeoUI::ButtonToggle(wszText, NeoUI::CurrentPopup() == NEOPOPUP_MP3, NeoUI::BUTTONFLAG_SCROLLTEXT, scrollStart).bPressed)
+		{
+			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
+			{
+				NeoUI::ClosePopup();
+			}
+			else
+			{
+				const int iPopupTall = g_uiCtx.layout.iRowTall * 8;
+				NeoUI::OpenPopup(NEOPOPUP_MP3, NeoUI::Dim{
+							.x = g_uiCtx.dPanel.x,
+							.y = g_uiCtx.dPanel.y - iPopupTall,
+							.wide = g_uiCtx.dPanel.wide,
+							.tall = iPopupTall,
+						});
+			}
+		}
 
 		const float flNowSecsCursor = mps->flSecsCursor;
 		NeoUI::ProgressDrag(&mps->flSecsCursor, 0.0f, mps->flSecsLength);
@@ -1206,10 +1237,11 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			const int iSec = mps->flSecsLength - (iMin * FL_SECSINMIN);
 			V_swprintf_safe(wszText, L"%02d:%02d", iMin, iSec);
 		}
-		NeoUI::Label(wszText);
+		NeoUI::LabelExOpt labelOptions = { NeoUI::TEXTSTYLE_RIGHT, g_uiCtx.eFont };
+		NeoUI::Label(wszText, labelOptions);
 
-		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {18, 18, 28, 18, -1};
-		NeoUI::SetPerRowLayout(5, ROWLAYOUT_MP3_CONTROLS);
+		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {22, 22, 34, -1};
+		NeoUI::SetPerRowLayout(4, ROWLAYOUT_MP3_CONTROLS);
 
 		// Shuffle button
 		if (NeoUI::ButtonToggle(L"\u21B9", cvr_cl_neo_radio_shuffle.GetBool()).bPressed)
@@ -1238,7 +1270,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 
 		// Play/Pause button
-		if (NeoUI::Button(mps->bPlaying ? L"\u25B6" : L"II").bPressed)
+		if (NeoUI::Button(mps->bPlaying ? L"II" : L"\u25B6").bPressed)
 		{
 			mps->flagsPlayStateNext = (mps->bPlaying)
 					? NeoMP3::PLAYSTATE_FLAG_PAUSED : NeoMP3::PLAYSTATE_FLAG_PLAY;
@@ -1252,27 +1284,10 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			NeoMP3::Update();
 		}
 
-		// Popup button
-		if (NeoUI::ButtonToggle(L"\u2261", NeoUI::CurrentPopup() == NEOPOPUP_MP3).bPressed)
-		{
-			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
-			{
-				NeoUI::ClosePopup();
-			}
-			else
-			{
-				const int iPopupTall = g_uiCtx.layout.iRowTall * 8;
-				NeoUI::OpenPopup(NEOPOPUP_MP3, NeoUI::Dim{
-							.x = g_uiCtx.dPanel.x,
-							.y = g_uiCtx.dPanel.y - iPopupTall,
-							.wide = g_uiCtx.dPanel.wide,
-							.tall = iPopupTall,
-						});
-			}
-		}
-
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 		NeoUI::EndSection();
+
+		NeoUI::Dim previousDPanel = g_uiCtx.dPanel; // See neo_ui.h "// NEO TODO (nullsystem): Popups should get its own XY offsets"
 
 		if (NeoUI::BeginPopup(NEOPOPUP_MP3))
 		{
@@ -1293,6 +1308,8 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 			NeoUI::EndPopup();
 		}
+
+		g_uiCtx.dPanel = previousDPanel;
 	}
 	NeoUI::EndSection();
 }
