@@ -420,8 +420,9 @@ void CNEO_Player::Splash()
 	CLocalPlayerFilter filter;
 #endif // GAME_DLL
 
-	float flSpeed = GetAbsVelocity().Length();
-	if ( flSpeed < 300 )
+	float flSpeedSqr = GetAbsVelocity().LengthSqr();
+	constexpr int SPLASH_SPEED_THRESHOLD = 300;
+	if ( flSpeedSqr < SPLASH_SPEED_THRESHOLD * SPLASH_SPEED_THRESHOLD )
 	{
 		data.m_flScale = random->RandomFloat( 10, 12 );
 		DispatchEffect( "waterripple", data, filter );
