@@ -3,9 +3,10 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_jgr_escort.h"
-#include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
+
+extern ConVar sv_neo_grenade_blast_radius;
 
 //---------------------------------------------------------------------------------------------
 CNEOBotJgrEscort::CNEOBotJgrEscort( void )
@@ -63,17 +64,18 @@ ActionResult< CNEOBot >	CNEOBotJgrEscort::Update( CNEOBot *me, float interval )
 
 	// Check for own threats
 	const CKnownEntity *myThreat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	if ( myThreat )
+	if ( myThreat && myThreat->GetEntity() && myThreat->GetEntity()->IsAlive() )
 	{
-		return SuspendFor( new CNEOBotRetreatToCover, "Retreating to let Juggernaut get the kill" );
+		return SuspendFor( new CNEOBotAttack, "Breaking away from Juggernaut to engage threat" );
 	}
 
 	// Just follow the Juggernaut
 	// If too close, stop moving to avoid crowding
-	constexpr float flMinFollowDistSq = 200.0f * 200.0f;
 	float flDistSq = me->GetAbsOrigin().DistToSqr( pJuggernaut->GetAbsOrigin() );
+	float flSafeRadius = sv_neo_grenade_blast_radius.GetFloat();
+	float flSafeRadiusSq = flSafeRadius * flSafeRadius;
 
-	if ( flDistSq < flMinFollowDistSq )
+	if ( flDistSq < flSafeRadiusSq )
 	{
 		// Too close, stop moving
 		if ( m_chasePath.IsValid() )
