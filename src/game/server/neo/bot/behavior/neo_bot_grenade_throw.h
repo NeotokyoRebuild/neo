@@ -24,6 +24,7 @@ public:
 	virtual QueryResultType			ShouldRetreat( const INextBot *me ) const override;
 
 protected:
+	CNavArea *m_vantageArea;
 	Vector m_vecTarget; // caches target to aim at during throw action in implementation classes
 	Vector m_vecThreatLastKnownPos;
 	CHandle< CNEOBaseCombatWeapon > m_hGrenadeWeapon;
@@ -34,6 +35,7 @@ protected:
 	PathFollower m_PathFollower;
 
 	bool m_bPinPulled;
+	bool m_bVantagePointBlocked;
 
 	enum ThrowTargetResult
 	{

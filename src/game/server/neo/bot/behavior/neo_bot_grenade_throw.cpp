@@ -10,16 +10,24 @@
 #include "nav_pathfind.h"
 #include "bot/neo_bot_path_compute.h"
 
+extern ConVar sv_neo_bot_grenade_frag_safety_range_multiplier;
+extern ConVar sv_neo_grenade_blast_radius;
+
 ConVar sv_neo_bot_grenade_debug_behavior("sv_neo_bot_grenade_debug_behavior", "0", FCVAR_CHEAT,
 	"Draw debug overlays for bot grenade behavior", true, 0, true, 1);
 
 ConVar sv_neo_bot_grenade_give_up_time("sv_neo_bot_grenade_give_up_time", "5.0", FCVAR_NONE,
 	"Time in seconds before bot gives up on grenade throw", true, 1, false, 0);
 
+ConVar sv_neo_bot_grenade_search_range("sv_neo_bot_grenade_search_range", "1000", FCVAR_CHEAT,
+	"Travel distance range for bot to search for a grenade throw vantage point", true, 0, false, 0);
+
 //---------------------------------------------------------------------------------------------
 CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat )
 {
 	m_hGrenadeWeapon = pWeapon;
+	m_bVantagePointBlocked = false;
+	m_vantageArea = nullptr;
 	m_vecTarget = vec3_invalid;
 
 	if ( threat )
@@ -95,6 +103,100 @@ const Vector& CNEOBotGrenadeThrow::FindEmergencePointAlongPath( const CNEOBot *m
 	return vec3_invalid;
 }
 
+
+//---------------------------------------------------------------------------------------------
+class CFindVantagePointTargetPos : public ISearchSurroundingAreasFunctor
+{
+public:
+	CFindVantagePointTargetPos( CNEOBot *me, const Vector &targetPos, CBaseEntity *pThreat )
+	{
+		m_me = me;
+		m_targetPos = targetPos;
+		m_vantageArea = nullptr;
+		m_threatArea = nullptr;
+		m_targetArea = TheNavMesh->GetNavArea( m_targetPos );
+
+		if ( pThreat )
+		{
+			m_threatArea = TheNavMesh->GetNavArea( pThreat->GetAbsOrigin() );
+		}
+
+		if ( !m_threatArea )
+		{
+			const CKnownEntity *primaryThreat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+			if ( primaryThreat )
+			{
+				m_threatArea = primaryThreat->GetLastKnownArea();
+			}
+		}
+
+		float flRadius = sv_neo_grenade_blast_radius.GetFloat() * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat();
+		m_flSafetyRadiusSq = flRadius * flRadius;
+	}
+
+	virtual bool operator() ( CNavArea* baseArea, CNavArea* priorArea, float travelDistanceSoFar )
+	{
+		CNavArea* area = (CNavArea*)baseArea;
+
+		if (!m_targetArea)
+		{
+			return false; // can't search
+		}
+
+		if ( area->IsPotentiallyVisible( m_targetArea ) )
+		{
+			// nearby area from which we can see the last known position
+			m_vantageArea = area;
+			return false; // stop searching
+		}
+
+		return true; // continue searching
+	}
+
+	// return true if 'adjArea' should be included in the ongoing search
+	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) 
+	{
+		if ( travelDistanceSoFar > sv_neo_bot_grenade_search_range.GetFloat() )
+		{
+			return false;
+		}
+
+		// For considering areas off to the side of current area
+		constexpr float distanceThresholdRatio = 0.8f;
+
+		if ( m_threatArea )
+		{
+			// The adjacent area to search should not be farther from the threat
+			float adjThreatDistance = ( m_threatArea->GetCenter() - adjArea->GetCenter() ).LengthSqr();
+			float curThreatDistance = ( m_threatArea->GetCenter() - currentArea->GetCenter() ).LengthSqr();
+			if ( adjThreatDistance * distanceThresholdRatio > curThreatDistance )
+			{
+				return false; // Candidate adjacent area veers farther from threat
+			}
+
+			// The adjacent area to search should not be closer than the safety range
+			if ( adjThreatDistance < m_flSafetyRadiusSq )
+			{
+				// NEO JANK: While this range is based on frag grenades,
+				// it's still likely a bad idea to throw smoke grenades this close to the threat
+				// Though logic at time of comment just throws smoke safely from behind cover
+				return false; // Candidate adjacent area is too close to threat
+			}
+		}
+
+		// allow falling off ledges, but don't jump up - too slow
+		return ( currentArea->ComputeAdjacentConnectionHeightChange( adjArea ) < m_me->GetLocomotionInterface()->GetStepHeight() );
+	}
+
+	CNEOBot *m_me;
+	Vector m_targetPos;
+	CNavArea *m_targetArea;
+	CNavArea *m_vantageArea;
+	const CNavArea *m_threatArea;
+	float m_flSafetyRadiusSq;
+};
+
+
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
@@ -134,6 +236,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOB
 
 	return Continue();
 }
+
 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval )
@@ -292,10 +395,53 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 	{
 		m_PathFollower.Update( me );
 
+		// Watch for threats emerging from known position
+		if ( m_vecThreatLastKnownPos != vec3_invalid )
+		{
+			me->GetBodyInterface()->AimHeadTowards(
+				m_vecThreatLastKnownPos, IBody::IMPORTANT, 0.1f, nullptr,
+				"Looking towards last known threat position while moving to vantage point");
+		}
+
+		if ( m_vantageArea && me->GetLastKnownArea() == m_vantageArea )
+		{
+			// Arrived at vantage point but still blocked - fallback to chase
+			m_bVantagePointBlocked = true;
+			m_vantageArea = nullptr;
+		}
+
 		if ( m_repathTimer.IsElapsed() )
 		{
 			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
-			CNEOBotPathCompute( me, m_PathFollower, m_vecTarget != vec3_invalid ? m_vecTarget : m_vecThreatLastKnownPos, FASTEST_ROUTE );
+
+			if ( !m_vantageArea && !m_bVantagePointBlocked )
+			{
+				CFindVantagePointTargetPos find( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget.Get() );
+				SearchSurroundingAreas( me->GetLastKnownArea(), find, sv_neo_bot_grenade_search_range.GetFloat() );
+				m_vantageArea = find.m_vantageArea;
+
+				if ( !m_vantageArea )
+				{
+					return Done( "Failed to find a vantage area to throw grenade from" );
+				}
+			}
+
+			bool bGoingToVantagePoint = false;
+			if ( m_vantageArea )
+			{
+				bGoingToVantagePoint = CNEOBotPathCompute( me, m_PathFollower, m_vantageArea->GetCenter(), FASTEST_ROUTE );
+			}
+
+			if ( !bGoingToVantagePoint )
+			{
+				// Fallback to direct chase behavior if vantage point is blocked
+				if ( m_vantageArea )
+				{
+					m_vantageArea = nullptr;
+					m_bVantagePointBlocked = true;
+				}
+				CNEOBotPathCompute( me, m_PathFollower, m_vecTarget != vec3_invalid ? m_vecTarget : m_vecThreatLastKnownPos, FASTEST_ROUTE );
+			}
 		}
 	}
 	
@@ -308,6 +454,12 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		{
 			NDebugOverlay::HorzArrow( vecStart, m_vecTarget, 2.0f, 255, 128, 0, 255, true, 2.0f );
 			NDebugOverlay::Box( m_vecTarget, Vector(-16,-16,-16), Vector(16,16,16), 255, 128, 0, 30, 2.0f );
+		}
+
+		if ( m_vantageArea )
+		{
+			NDebugOverlay::Box( m_vantageArea->GetCenter(), Vector(-16,-16,0), Vector(16,16,16), 0, 255, 0, 30, 0.1f );
+			NDebugOverlay::Line( me->EyePosition(), m_vantageArea->GetCenter(), 0, 255, 0, true, 0.1f );
 		}
 	}
 
