@@ -30,6 +30,7 @@ private:
 	CNEOBotGhostEquipmentHandler m_ghostEquipmentHandler;
 
 	IntervalTimer m_commanderLookingAtMeTimer;
+	bool m_bSneakWhenFollowingPing = false;
 	bool m_bWasCommanderLookingAtMe = false;
 
 	EHANDLE m_hTargetEntity;
