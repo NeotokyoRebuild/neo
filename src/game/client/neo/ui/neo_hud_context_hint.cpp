@@ -130,7 +130,6 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 	}
 	else
 	{
-		m_flDisplayEndTime = gpGlobals->curtime;
 		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
 			pUseEntity)
 		{
@@ -151,6 +150,12 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pickup %hs", szUppercaseKeyBinding, pNeoWeapon->GetPrintName());
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 				}
+				else if (pLocalNeoPlayer->m_nButtons & IN_USE)
+				{
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Weapon too heavy"); // NEO TODO (Adam) Replace with a more generic message if we have weapons that can't be picked up for other reasons ("weapon too unwieldly", or simply "cannot pick up")
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+				}
+				// else don't touch m_flDisplayEndTime to keep weapon too heavy message around for a bit
 			}
 			// Juggernaut hint
 			else if (Q_strcmp(pUseEntity->GetClassname(), "neo_juggernaut") == 0)
@@ -158,7 +163,6 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				if (CNEO_Juggernaut* pJuggernaut = static_cast<CNEO_Juggernaut*>(pUseEntity);
 					pJuggernaut)
 				{
-					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 					if (pJuggernaut->m_bLocked)
 					{
 						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Juggernaut is locked");
@@ -167,6 +171,11 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					{
 						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] take the Juggernaut", szUppercaseKeyBinding);
 					}
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+				}
+				else
+				{
+					m_flDisplayEndTime = gpGlobals->curtime;
 				}
 			}
 			// Some other useable entity
@@ -178,6 +187,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 		}
 		else
 		{
+			m_flDisplayEndTime = gpGlobals->curtime;
 			// Bot command hint
 			{
 				if (C_NEO_Player* pTargetPlayer = pLocalNeoPlayer->PlayerUseTraceLine();

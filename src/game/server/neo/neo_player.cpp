@@ -2722,14 +2722,14 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 		}
 	}
 
-	// We need to run this for its side-effects, even in the IsDead case below... should be refactored.
-	const bool okRet = BaseClass::BumpWeapon(pWeapon);
-
 	// We had some cases of dead players chilling around with visible guns.
 	// While that will be addressed in ShouldDraw, here's a preventive measure
 	// to avoid that situation from occurring altogether.
 	if (IsDead())
 		return false;
+
+	// We need to run this for its side-effects, even in the IsDead case below... should be refactored.
+	const bool okRet = BaseClass::BumpWeapon(pWeapon);
 
 	return okRet;
 }

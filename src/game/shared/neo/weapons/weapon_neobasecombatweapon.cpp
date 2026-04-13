@@ -1375,25 +1375,27 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 #ifdef GAME_DLL
 void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	bool bPickedUp = false;
+	m_OnPlayerUse.FireOutput( pActivator, pCaller );
+
 	if (m_pfnTouch)
 	{
 		if (CNEO_Player* pNeoPlayer = ToNEOPlayer(pActivator);
-			pNeoPlayer)
+			pNeoPlayer && CanBePickedUpByClass(pNeoPlayer->GetClass()))
 		{
-			pNeoPlayer->Weapon_DropSlot(GetSlot());
+			CBaseCombatWeapon* pActiveWeapon = pNeoPlayer->GetActiveWeapon();
+			const int activeSlot = pActiveWeapon ? pActiveWeapon->GetSlot() : -1;
+			pNeoPlayer->Weapon_DropSlot(GetSlot()); // NEO NOTE (Adam) no guarantee we will actually pick up the weapon. CanBePickedUpByClass should catch most problems
+													// Also we shouldn't do this for throwables since you can have multiple in the same slot, but throwables can't be dropped so not a problem right now
 
 			(this->*m_pfnTouch)(pActivator);
-			m_OnPlayerUse.FireOutput( pActivator, pCaller );
-			bPickedUp = true;
 
-			RemoveEffects(EF_BONEMERGE);
+			if (GetOwner() == pNeoPlayer && activeSlot == GetSlot())
+			{
+				pNeoPlayer->Weapon_Switch(this);
+			}
 		}
 	}
 
-	if (!bPickedUp)
-	{
-		BaseClass::Use(pActivator, pCaller, useType, value);
-	}
+	// Calling BaseClass::Use will pick the weapon up without waiting for the touch cooldown, don't see anything important there that we need to do that we aren't doing here
 }
 #endif
