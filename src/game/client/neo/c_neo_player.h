@@ -166,8 +166,6 @@ public:
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
-	
-	virtual bool IsBot(void) const override { return GetFlags() & FL_FAKECLIENT; }
 
 	int GetAttackersScores(const int attackerIdx) const;
 	int GetAttackerHits(const int attackerIdx) const;
@@ -192,7 +190,8 @@ public:
 #endif // GLOWS_ENABLE
 	C_NEO_Player* PlayerUseTraceLine();
 	virtual void PlayerUse() override;
-
+	
+	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
@@ -204,6 +203,10 @@ private:
 	void SetCloakState(bool state);
 
 	bool IsAllowedToSuperJump(void);
+
+	// Spectator takeover player related functionality
+	bool IsAFK() const;
+	bool IsFakePlayer() const;
 
 public:
 	CNetworkVar(bool, m_bShowTestMessage);

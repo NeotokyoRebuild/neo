@@ -763,6 +763,16 @@ void CNEO_Player::Spawn(void)
 	m_iBotDetectableBleedingInjuryEvents = 0;
 }
 
+void CNEO_Player::PlayerRunCommand(CUserCmd* ucmd, IMoveHelper* moveHelper)
+{
+	if (ucmd->forwardmove || ucmd->sidemove || ucmd->upmove	|| ucmd->buttons)
+	{
+		m_flLastInput = gpGlobals->curtime;
+	}
+
+	BaseClass::PlayerRunCommand(ucmd, moveHelper);
+}
+
 extern ConVar neo_lean_angle;
 
 ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5",
@@ -4045,106 +4055,14 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 
 // Start spectator takeover of player related code:
 ConVar sv_neo_spec_replace_player_loadout_enable("sv_neo_spec_replace_player_loadout_enable", "0", FCVAR_NONE, "Allow loadout change after spectator takeover.", true, 0, true, 1);
-ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "0", FCVAR_NONE, "Allow spectators to take over AFK players.", true, 0, true, 1);
-ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
-	"180", FCVAR_NONE,
-	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
-	true, -1, true, 999);
 
-int CNEO_Player::GetSecondsUntilAFK() const
-{
-	// NEO JANK GetTimeSinceLastUserCommand seems to return 0 as long as the player is connected, so use an alternative timer
-	// GetTimeSinceWeaponFired was the simplest timer that worked, but should choose more robust criteria later
-	// TODO: Identify when player has triggered significant inputs and reset an AFK timer
-	// > 0 means more time needs to elapse before considered AFK
-	// <= 0 means player is considered AFK
-	return sv_neo_spec_replace_player_afk_time_sec.GetInt() - GetTimeSinceWeaponFired();
-}
-
-bool CNEO_Player::IsAFK() const
-{
-	return GetSecondsUntilAFK() <= 0;
-}
 
 void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 {
-	CSingleUserRecipientFilter filter(this);
-
-	if (!IsObserver() && IsAlive())
+	if (!pNeoPlayerToReplace->ValidTakeoverTargetFor(this))
 	{
-		DevWarning("A client initiating player takeover without being in observer mode might indicate server command bugs or tampering.\n");
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Not in observer mode.");
-		return;
-	}
-
-	if (NEORules()->GetRoundStatus() == PostRound)
-	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The mission is over.");
-		return;
-	}
-
-	if (m_iXP < sv_neo_spec_replace_player_min_exp.GetInt())
-	{
-		if (m_iXP < 0)
-		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Rankless Dogs are not authorized.");
-		}
-		else
-		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE,
-				"Shell takeover failed: Requires at least %s1 XP for authorization.",
-				sv_neo_spec_replace_player_min_exp.GetString());
-		}
-		return;
-	}
-
-	if (!pNeoPlayerToReplace)
-	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The target is not a valid candidate.");
-		return;
-	}
-
-	if (!pNeoPlayerToReplace->IsAlive())
-	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The target is dead.");
-		return;
-	}
-
-	if (!InSameTeam(pNeoPlayerToReplace) || !NEORules()->IsTeamplay())
-	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Target is not friendly.");
-		return;
-	}
-
-	const bool bIsTargetBot = pNeoPlayerToReplace->IsBot();
-	const bool bIsTargetAFK = pNeoPlayerToReplace->IsAFK();
-	const bool bAllowBotTakeover = sv_neo_spec_replace_player_bot_enable.GetBool();
-	const bool bAllowAfkTakeover = sv_neo_spec_replace_player_afk_enable.GetBool();
-
-	// If no valid condition is met, determine the specific reason and inform the user.
-	if (bIsTargetBot)
-	{
-		if (!bAllowBotTakeover)
-		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over bots is disabled.");
-			return;
-		}
-	}
-	else if (bIsTargetAFK)
-	{
-		if (!bAllowAfkTakeover)
-		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over inactive shells is disabled.");
-			return;
-		}
-	}
-	else
-	{
-		int secondsLeft = pNeoPlayerToReplace->GetSecondsUntilAFK();
-		UTIL_ClientPrintFilter(
-			filter,
-			HUD_PRINTCONSOLE,
-			UTIL_VarArgs("Shell takeover failed: Shell is not considered inactive until %d seconds.", secondsLeft) );
+		CSingleUserRecipientFilter filter(this);
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed");
 		return;
 	}
 

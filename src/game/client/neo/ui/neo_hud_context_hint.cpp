@@ -104,31 +104,27 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 			if (auto eObserverMode = pLocalNeoPlayer->GetObserverMode();
 				(eObserverMode == OBS_MODE_CHASE || eObserverMode == OBS_MODE_IN_EYE))
 			{
-				if (C_BaseEntity* pObserverTargetEntity = pLocalNeoPlayer->GetObserverTarget();
-					pObserverTargetEntity && pObserverTargetEntity->IsPlayer())
+				if (C_NEO_Player* pObserverTargetPlayer = ToNEOPlayer(pLocalNeoPlayer->GetObserverTarget());
+					pObserverTargetPlayer && pObserverTargetPlayer->ValidTakeoverTargetFor(pLocalNeoPlayer))
 				{
-					if (NEORules()->GetRoundStatus() != PostRound
-						&& GameResources()->IsFakePlayer(pObserverTargetEntity->entindex())
-						&& pLocalNeoPlayer->InSameTeam(pObserverTargetEntity) && NEORules()->IsTeamplay()
-						&& sv_neo_spec_replace_player_bot_enable.GetBool()
-						&& pLocalNeoPlayer->m_iXP > sv_neo_spec_replace_player_min_exp.GetInt())
+					// update hint duration
+					if (pObserverTargetPlayer != m_hLastSpecTarget.Get())
 					{
-						// update hint duration
-						if (pObserverTargetEntity != m_hLastSpecTarget.Get())
-						{
-							m_flDisplayEndTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
-							m_hLastSpecTarget = pObserverTargetEntity;
-						}
-						
+						m_flDisplayEndTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
+						m_hLastSpecTarget = pObserverTargetPlayer;
+
+						// NEO NOTE (Adam) currently this is the only hint we can show when observing. If the hint text ever changes while observer target remains the same, will need to update this more often
 						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
-						showTakeOverHint = true;
 					}
+					
+					showTakeOverHint = true;
 				}
 			}
 
 			if (!showTakeOverHint)
 			{
 				m_flDisplayEndTime = gpGlobals->curtime;
+				m_hLastSpecTarget = INVALID_EHANDLE;
 			}
 		}
 	}
@@ -155,10 +151,6 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pickup %hs", szUppercaseKeyBinding, pNeoWeapon->GetPrintName());
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 				}
-				else
-				// Clear hint
-				{
-				}
 			}
 			// Juggernaut hint
 			else if (Q_strcmp(pUseEntity->GetClassname(), "neo_juggernaut") == 0)
@@ -177,6 +169,12 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					}
 				}
 			}
+			// Some other useable entity
+			else
+			{
+				V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] use", szUppercaseKeyBinding);
+				m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+			}
 		}
 		else
 		{
@@ -184,7 +182,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 			{
 				if (C_NEO_Player* pTargetPlayer = pLocalNeoPlayer->PlayerUseTraceLine();
 					pTargetPlayer
-					&& pTargetPlayer->IsBot()
+					&& GameResources()->IsFakePlayer(pTargetPlayer->entindex())
 					&& NEORules()->IsTeamplay()	&& pTargetPlayer->GetTeamNumber() == pLocalNeoPlayer->GetTeamNumber())
 				{
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;

@@ -63,6 +63,7 @@ public:
 
 	virtual void Precache(void) OVERRIDE;
 	virtual void Spawn(void) OVERRIDE;
+	virtual void PlayerRunCommand(CUserCmd* ucmd, IMoveHelper* moveHelper) override;
 	virtual void PostThink(void) OVERRIDE;
 	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
@@ -240,6 +241,8 @@ public:
 	void BecomeJuggernaut();
 	void SpawnJuggernautPostDeath();
 
+	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
+
 private:
 	bool m_bAllowGibbing;
 
@@ -323,6 +326,7 @@ public:
 	void ResetBotCommandState();
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
 	static const Vector VECTOR_INVALID_WAYPOINT;
+	float m_flLastInput = gpGlobals->curtime;
 
 private:
 	bool m_bFirstDeathTick;
@@ -348,8 +352,8 @@ private:
 	CNEO_Player(const CNEO_Player&);
 
 	// Spectator takeover player related functionality
-	int GetSecondsUntilAFK() const;
 	bool IsAFK() const;
+	bool IsFakePlayer() const;
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);

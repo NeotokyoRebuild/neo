@@ -1375,16 +1375,25 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 #ifdef GAME_DLL
 void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	auto* neoPlayer = ToNEOPlayer(pActivator);
-
-	if (neoPlayer && neoPlayer->Weapon_CanSwitchTo(this) && CanBePickedUpByClass(neoPlayer->GetClass()))
+	bool bPickedUp = false;
+	if (m_pfnTouch)
 	{
-		neoPlayer->Weapon_DropSlot(GetSlot());
-		neoPlayer->Weapon_Equip(this);
+		if (CNEO_Player* pNeoPlayer = ToNEOPlayer(pActivator);
+			pNeoPlayer)
+		{
+			pNeoPlayer->Weapon_DropSlot(GetSlot());
 
-		RemoveEffects(EF_BONEMERGE);
+			(this->*m_pfnTouch)(pActivator);
+			m_OnPlayerUse.FireOutput( pActivator, pCaller );
+			bPickedUp = true;
+
+			RemoveEffects(EF_BONEMERGE);
+		}
 	}
 
-	BaseClass::Use(pActivator, pCaller, useType, value);
+	if (!bPickedUp)
+	{
+		BaseClass::Use(pActivator, pCaller, useType, value);
+	}
 }
 #endif

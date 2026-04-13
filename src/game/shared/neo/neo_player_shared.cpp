@@ -26,8 +26,8 @@
 
 #include "convar.h"
 #include "neo_weapon_loadout.h"
-
 #include "weapon_neobasecombatweapon.h"
+#include "igameresources.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -52,10 +52,15 @@ ConVar sv_neo_serverside_beacons("sv_neo_serverside_beacons", "1", FCVAR_NOTIFY 
 	"Whether ghost beacons should be processed server-side.", true, false, true, true);
 
 ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_REPLICATED, "Allow spectators to take over bots.", true, 0, true, 1);
+ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "0", FCVAR_REPLICATED, "Allow spectators to take over AFK players.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
 	"0", FCVAR_REPLICATED,
 	"Minimum experience allowed to takeover players ",
 	true, -999, true, 999);
+ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
+	"180", FCVAR_NONE,
+	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
+	true, -1, true, 999);
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
@@ -398,4 +403,33 @@ void CNEO_Player::CheckAimButtons()
 	{
 	    Weapon_SetZoom(false);
 	}
+}
+
+bool CNEO_Player::IsAFK() const
+{
+#ifdef GAME_DLL
+	return gpGlobals->curtime - m_flLastInput > sv_neo_spec_replace_player_afk_time_sec.GetInt();
+#else
+	return GameResources()->IsAfk(entindex());
+#endif // GAME_DLL
+}
+
+bool CNEO_Player::IsFakePlayer() const
+{
+#ifdef GAME_DLL
+	return IsBot();
+#else
+	return GameResources()->IsFakePlayer(entindex());
+#endif // GAME_DLL
+}
+
+bool CNEO_Player::ValidTakeoverTargetFor(CNEO_Player *pPlayerTakingOver)
+{
+	return pPlayerTakingOver && pPlayerTakingOver->IsObserver() && !pPlayerTakingOver->IsAlive()
+		&& NEORules()->GetRoundStatus() != PostRound
+		&& pPlayerTakingOver->m_iXP >= sv_neo_spec_replace_player_min_exp.GetInt()
+		&& IsAlive()
+		&& InSameTeam(pPlayerTakingOver) && NEORules()->IsTeamplay()
+		&& (sv_neo_spec_replace_player_bot_enable.GetBool() && IsFakePlayer() ||
+			sv_neo_spec_replace_player_afk_enable.GetBool() && IsAFK());
 }
