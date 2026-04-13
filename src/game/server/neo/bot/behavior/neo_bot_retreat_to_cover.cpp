@@ -5,6 +5,7 @@
 #include "neo_smokelineofsightblocker.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_grenade_dispatch.h"
+#include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
 
@@ -203,6 +204,18 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::OnStart( CNEOBot *me, Action< CNE
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interval )
 {
+	if ( m_grenadeCheckTimer.IsElapsed() )
+	{
+		m_grenadeCheckTimer.Start( 0.2f );
+
+		CBaseEntity *dangerousGrenade = CNEOBotRetreatFromGrenade::FindDangerousGrenade( me );
+		if ( dangerousGrenade )
+		{
+			// ChangeTo: Avoid behavior pingpong if grenade avoidance can't find cover
+			return ChangeTo( new CNEOBotRetreatFromGrenade( dangerousGrenade ), "Encountered grenade while retreating to cover!" );
+		}
+	}
+
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 
 	if (!threat)
