@@ -231,6 +231,8 @@ void CNEOHud_ContextHint::DrawNeoHudElement()
 	vgui::surface()->DrawSetTextColor(m_TextColor);
 	vgui::surface()->DrawSetTextPos(iBoxX + m_iPaddingX, iBoxY + m_iPaddingY);
 	vgui::surface()->DrawPrintText(m_wszHintText, static_cast<int>(wcslen(m_wszHintText)));
+
+	// NEO TODO (Adam) different text colour for keybind, instruction and target name?
 }
 
 void CNEOHud_ContextHint::Paint()
