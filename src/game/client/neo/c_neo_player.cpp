@@ -2104,3 +2104,41 @@ const char* C_NEO_Player::GetPlayerNameWithTakeoverContext(int player_index)
     return base_name;
 }
 
+C_NEO_Player* C_NEO_Player::PlayerUseTraceLine()
+{
+	// Select player under cursor
+	Vector eyePos = EyePosition();
+	Vector forward;
+	EyeVectors( &forward );
+	Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
+
+	// MASK_SHOT_HULL to match friendly fire warning trace
+	trace_t tr;
+	UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr );
+	
+	if (tr.DidHit() && tr.m_pEnt)
+	{
+		return ToNEOPlayer(tr.m_pEnt);
+	}
+	return nullptr;
+}
+
+void C_NEO_Player::PlayerUse()
+{
+	BaseClass::PlayerUse();
+	
+	// Was use pressed or released?
+	if ( ! ((m_nButtons | m_afButtonPressed | m_afButtonReleased) & IN_USE) )
+		return;
+
+	if ( (m_afButtonPressed & IN_USE) && prediction->IsFirstTimePredicted() && !GetUseEntity())
+	{
+		if (C_NEO_Player* pTargetPlayer = PlayerUseTraceLine();
+			pTargetPlayer )
+		{
+			m_Local.m_nOldButtons |= IN_USE;
+			m_afButtonPressed &= ~IN_USE;
+			engine->ExecuteClientCmd(VarArgs("useplayer %i", pTargetPlayer->entindex()));
+		}
+	}
+}

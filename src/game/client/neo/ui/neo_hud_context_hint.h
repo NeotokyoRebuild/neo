@@ -34,11 +34,10 @@ protected:
 	virtual void Paint() override;
 
 private:
-	wchar_t m_wszHintText[32];
+	wchar_t m_wszHintText[64];
 
-	float m_flDisplayTime;
-	bool m_bHintShownForCurrentSpecTarget;
-	CHandle<C_BasePlayer> m_hLastSpecTarget;
+	float m_flDisplayEndTime;
+	CHandle<C_BaseEntity> m_hLastSpecTarget;
 
 	CPanelAnimationVar(vgui::HFont, m_hHintFont, "font", "NeoUINormal");
 	CPanelAnimationVarAliasType(int, m_iPaddingX, "padding_x", "4", "proportional_xpos");

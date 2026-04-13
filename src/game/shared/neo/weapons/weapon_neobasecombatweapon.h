@@ -140,7 +140,20 @@ public:
 	virtual void FinishReload(void) override;
 
 	virtual bool CanBeSelected(void) override;
-	virtual int	ObjectCaps(void) { return CBaseCombatWeapon::ObjectCaps();};
+	virtual int	ObjectCaps(void) override
+	{
+		int caps = BaseClass::ObjectCaps();
+		if (!IsFollowingEntity()
+#ifdef GAME_DLL
+			&& !HasSpawnFlags(SF_WEAPON_NO_PLAYER_PICKUP)
+#endif // GAME_DLL
+			)
+		{
+			caps |= FCAP_IMPULSE_USE;
+		}
+
+		return caps;
+	};
 
 	CNEOWeaponInfo const &GetNEOWpnData() const;
 

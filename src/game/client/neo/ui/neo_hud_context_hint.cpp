@@ -3,6 +3,7 @@
 
 #include "iclientmode.h"
 #include "c_neo_player.h"
+#include "neo_player_shared.h"
 #include "vgui/ISurface.h"
 #include "igameresources.h"
 #include "ienginevgui.h"
@@ -22,7 +23,7 @@ ConVar cl_neo_spec_takeover_player_hint_time_sec("cl_neo_spec_takeover_player_hi
 
 DECLARE_HUDELEMENT(CNEOHud_ContextHint);
 
-NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(ContextHint, 0.00695);
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(ContextHint, 0.1);
 
 CNEOHud_ContextHint::CNEOHud_ContextHint(const char* pElementName)
 	: CNEOHud_ChildElement(), CHudElement(pElementName), vgui::EditablePanel(NULL, "neo_context_hint")
@@ -30,8 +31,7 @@ CNEOHud_ContextHint::CNEOHud_ContextHint(const char* pElementName)
 	SetParent(g_pClientMode->GetViewport());
 	SetVisible(false);
 
-	m_flDisplayTime = 0.0f;
-	m_bHintShownForCurrentSpecTarget = false;
+	m_flDisplayEndTime = 0.0f;
 	m_hLastSpecTarget = nullptr;
 }
 
@@ -49,8 +49,7 @@ void CNEOHud_ContextHint::VidInit()
 
 void CNEOHud_ContextHint::Reset()
 {
-	m_flDisplayTime = 0.0f;
-	m_bHintShownForCurrentSpecTarget = false;
+	m_flDisplayEndTime = 0.0f;
 	m_hLastSpecTarget = nullptr;
 	SetVisible(false);
 }
@@ -69,89 +68,150 @@ void CNEOHud_ContextHint::ApplySchemeSettings(vgui::IScheme* pScheme)
 bool CNEOHud_ContextHint::ShouldDraw()
 {
 	if (!cl_neo_hud_context_hint_enabled.GetBool())
-	{
 		return false;
-	}
 
-	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
-	if (!pLocalPlayer)
-	{
-		return false;
-	}
-
-	C_BaseEntity* pObserverTargetEntity = pLocalPlayer->GetObserverTarget();
-	C_BasePlayer* pObserverTargetPlayer = (pObserverTargetEntity && pObserverTargetEntity->IsPlayer()) ? ToBasePlayer(pObserverTargetEntity) : nullptr;
-
-	auto eObserverMode = pLocalPlayer->GetObserverMode();
-	bool bIsSpectating = (eObserverMode == OBS_MODE_CHASE || eObserverMode == OBS_MODE_IN_EYE);
-
-	if (pObserverTargetPlayer != m_hLastSpecTarget.Get())
-	{
-		m_bHintShownForCurrentSpecTarget = false;
-		m_hLastSpecTarget = pObserverTargetPlayer;
-	}
-
-	bool bShouldDisplayBotTakeoverHint = false;
-	if (bIsSpectating && pObserverTargetPlayer && NEORules()->GetRoundStatus() != PostRound)
-	{
-		if (GameResources()->IsFakePlayer(pObserverTargetPlayer->entindex()))
-		{
-			if (pLocalPlayer->InSameTeam(pObserverTargetPlayer) && NEORules()->IsTeamplay())
-			{
-				ConVar* pBotEnableCvar = g_pCVar->FindVar("sv_neo_spec_replace_player_bot_enable");
-				bool bBotEnable = pBotEnableCvar ? pBotEnableCvar->GetBool() : false;
-
-				if (bBotEnable)
-				{
-					// Check that spectator's XP is not at concerning griefing levels
-					int localPlayerXP = GameResources()->GetXP(pLocalPlayer->entindex());
-					ConVar* pMinExpCvar = g_pCVar->FindVar("sv_neo_spec_replace_player_min_exp");
-					int minExp = pMinExpCvar ? pMinExpCvar->GetInt() : 0;
-
-					bShouldDisplayBotTakeoverHint = (localPlayerXP >= minExp);
-				}
-			}
-		}
-	}
-
-	if (bShouldDisplayBotTakeoverHint)
-	{
-		// If the hint has not been shown for the current target yet, start the timer.
-		if (!m_bHintShownForCurrentSpecTarget)
-		{
-			m_flDisplayTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
-			m_bHintShownForCurrentSpecTarget = true;
-		}
-
-		// If the hint is displaying and the timer hasn't expired, keep displaying it.
-		if (gpGlobals->curtime < m_flDisplayTime)
-		{
-			return true;
-		}
-	}
-
-	// If conditions are not met, or timer has expired, hide the hint.
-	return false;
+	return true;
 }
 
+extern ConVar sv_neo_spec_replace_player_bot_enable;
+extern ConVar sv_neo_spec_replace_player_min_exp;
+extern ConVar sv_neo_bot_cmdr_enable;
 void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 {
+	C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pLocalNeoPlayer)
+		return;
+
+	char szUppercaseKeyBinding[16]; // Assuming keybinds won't exceed 15 characters + null terminator
 	const char* useKeyBinding = engine->Key_LookupBinding("+use");
 	if (useKeyBinding && useKeyBinding[0] != '\0')
 	{
-		char szUppercaseKeyBinding[16]; // Assuming keybinds won't exceed 15 characters + null terminator
 		V_strncpy(szUppercaseKeyBinding, useKeyBinding, sizeof(szUppercaseKeyBinding));
 		V_strupr(szUppercaseKeyBinding);
-		V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
 	}
 	else
 	{
-		V_wcsncpy(m_wszHintText, L"Press Use To Control Bot", sizeof(m_wszHintText));
+		const char notBoundText[] = "+use unbound\0";
+		COMPILE_TIME_ASSERT(sizeof(notBoundText) <= sizeof(szUppercaseKeyBinding));
+		V_strncpy(szUppercaseKeyBinding, notBoundText, sizeof(szUppercaseKeyBinding));
+	}
+
+	if (pLocalNeoPlayer->IsObserver())
+	{
+		// Takeover hint
+		{
+			bool showTakeOverHint = false;
+			if (auto eObserverMode = pLocalNeoPlayer->GetObserverMode();
+				(eObserverMode == OBS_MODE_CHASE || eObserverMode == OBS_MODE_IN_EYE))
+			{
+				if (C_BaseEntity* pObserverTargetEntity = pLocalNeoPlayer->GetObserverTarget();
+					pObserverTargetEntity && pObserverTargetEntity->IsPlayer())
+				{
+					if (NEORules()->GetRoundStatus() != PostRound
+						&& GameResources()->IsFakePlayer(pObserverTargetEntity->entindex())
+						&& pLocalNeoPlayer->InSameTeam(pObserverTargetEntity) && NEORules()->IsTeamplay()
+						&& sv_neo_spec_replace_player_bot_enable.GetBool()
+						&& pLocalNeoPlayer->m_iXP > sv_neo_spec_replace_player_min_exp.GetInt())
+					{
+						// update hint duration
+						if (pObserverTargetEntity != m_hLastSpecTarget.Get())
+						{
+							m_flDisplayEndTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
+							m_hLastSpecTarget = pObserverTargetEntity;
+						}
+						
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
+						showTakeOverHint = true;
+					}
+				}
+			}
+
+			if (!showTakeOverHint)
+			{
+				m_flDisplayEndTime = gpGlobals->curtime;
+			}
+		}
+	}
+	else
+	{
+		m_flDisplayEndTime = gpGlobals->curtime;
+		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
+			pUseEntity)
+		{
+			// Weapon pickup hint
+			if (pUseEntity->IsBaseCombatWeapon())
+			{
+				C_NEOBaseCombatWeapon* pNeoWeapon = static_cast<C_NEOBaseCombatWeapon*>(pUseEntity);
+				
+				// Ghost pickup hint
+				if (pNeoWeapon->GetNeoWepBits() & NEO_WEP_GHOST)
+				{
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pickup the Ghost", szUppercaseKeyBinding);
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+				}
+				// Weapon pickup hint
+				else if (pNeoWeapon->CanBePickedUpByClass(pLocalNeoPlayer->GetClass()))
+				{
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pickup %hs", szUppercaseKeyBinding, pNeoWeapon->GetPrintName());
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+				}
+				else
+				// Clear hint
+				{
+				}
+			}
+			// Juggernaut hint
+			else if (Q_strcmp(pUseEntity->GetClassname(), "neo_juggernaut") == 0)
+			{
+				if (CNEO_Juggernaut* pJuggernaut = static_cast<CNEO_Juggernaut*>(pUseEntity);
+					pJuggernaut)
+				{
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					if (pJuggernaut->m_bLocked)
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Juggernaut is locked");
+					}
+					else // NEO TODO (Adam) network and check m_hHoldingPlayer, time left until juggernaut taken?
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] take the Juggernaut", szUppercaseKeyBinding);
+					}
+				}
+			}
+		}
+		else
+		{
+			// Bot command hint
+			{
+				if (C_NEO_Player* pTargetPlayer = pLocalNeoPlayer->PlayerUseTraceLine();
+					pTargetPlayer
+					&& pTargetPlayer->IsBot()
+					&& NEORules()->IsTeamplay()	&& pTargetPlayer->GetTeamNumber() == pLocalNeoPlayer->GetTeamNumber())
+				{
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					if (sv_neo_bot_cmdr_enable.GetBool())
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] command %hs", szUppercaseKeyBinding, pTargetPlayer->GetNeoPlayerName());
+					}
+					else
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] request primary weapon", szUppercaseKeyBinding); // NEO TODO (Adam) network primary weapon so can print its name here?
+					}
+					// else if NEO TODO (Adam) check if bots are frozen because of no navigation mesh or nb_player_stop, show appropriate message here?
+				}
+			}
+		}
+
 	}
 }
 
 void CNEOHud_ContextHint::DrawNeoHudElement()
 {
+	if (m_wszHintText[0] == L'\0')
+		return;
+
+	if (m_flDisplayEndTime <= gpGlobals->curtime)
+		return;
+
 	int iScrWide, iScrTall;
 	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 

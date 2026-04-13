@@ -166,6 +166,8 @@ public:
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
+	
+	virtual bool IsBot(void) const override { return GetFlags() & FL_FAKECLIENT; }
 
 	int GetAttackersScores(const int attackerIdx) const;
 	int GetAttackerHits(const int attackerIdx) const;
@@ -188,6 +190,8 @@ public:
 #ifdef GLOWS_ENABLE
 	void UpdateGlowEffects(int iNewTeam);
 #endif // GLOWS_ENABLE
+	C_NEO_Player* PlayerUseTraceLine();
+	virtual void PlayerUse() override;
 
 
 private:

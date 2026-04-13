@@ -51,6 +51,12 @@ ConVar sv_neo_ghost_delay_secs("sv_neo_ghost_delay_secs", "3.3", FCVAR_NOTIFY | 
 ConVar sv_neo_serverside_beacons("sv_neo_serverside_beacons", "1", FCVAR_NOTIFY | FCVAR_REPLICATED,
 	"Whether ghost beacons should be processed server-side.", true, false, true, true);
 
+ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_REPLICATED, "Allow spectators to take over bots.", true, 0, true, 1);
+ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
+	"0", FCVAR_REPLICATED,
+	"Minimum experience allowed to takeover players ",
+	true, -999, true, 999);
+
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
 	if (!pWep || pWep->m_bInReload || !pWep->CanAim())

@@ -162,7 +162,11 @@ public:
 	bool IsHLTV() const;
 	bool IsReplay() const;
 	void ResetObserverMode();
+#ifdef NEO
+	virtual bool IsBot( void ) const { return false; }
+#else
 	bool IsBot( void ) const { return false; }
+#endif // NEO
 
 	// Eye position..
 	virtual Vector		 EyePosition();

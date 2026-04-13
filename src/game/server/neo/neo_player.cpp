@@ -507,6 +507,32 @@ CON_COMMAND_F(joinstar, "Join star", FCVAR_USERINFO)
 	}
 }
 
+CON_COMMAND_F(useplayer, "+use on a player", FCVAR_USERINFO)
+{
+	if (args.ArgC() < 2)
+		return;
+
+	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+	if (!player)
+		return;
+	
+	CNEO_Player* pTargetPlayer = ToNEOPlayer(UTIL_PlayerByIndex(atoi(args[1])));
+	if ( pTargetPlayer && pTargetPlayer->IsBot())
+	{
+		if (sv_neo_bot_cmdr_enable.GetBool())
+		{
+			pTargetPlayer->ToggleBotFollowCommander( player );
+			// TODO: Do we want to allow using players for some kind of communication?
+		}
+		else if (NEORules()->IsTeamplay() && pTargetPlayer->GetTeamNumber() == player->GetTeamNumber())
+		{
+			// Alt: Triggers throwing primary weapon to user
+			// see neo_bot_scenario_monitor for behavior transition
+			pTargetPlayer->m_hCommandingPlayer = player;
+		}
+	}
+}
+
 static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
 	if (!asker)
@@ -3586,44 +3612,6 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 	}
 }
 
-void CNEO_Player::PlayerUse( void )
-{
-	BaseClass::PlayerUse();
-
-	if ( (m_afButtonPressed & IN_USE) && !FindUseEntity() )
-	{
-		// Select bot under cursor to follow/unfollow.
-		Vector eyePos = EyePosition();
-		Vector forward;
-		EyeVectors( &forward );
-		Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
-
-		trace_t tr;
-		// MASK_SHOT_HULL to match friendly fire warning trace
-		UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr );
-
-		if ( tr.DidHit() && tr.m_pEnt )
-		{
-			CNEO_Player* pTargetPlayer = ToNEOPlayer(tr.m_pEnt);
-			if ( pTargetPlayer && pTargetPlayer->IsBot())
-			{
-				if (sv_neo_bot_cmdr_enable.GetBool())
-				{
-					// The hit entity is a bot! Now, toggle its follow state.
-					pTargetPlayer->ToggleBotFollowCommander( this );
-					// TODO: Do we want to allow using players for some kind of communication?
-				}
-				else if (NEORules()->IsTeamplay() && pTargetPlayer->GetTeamNumber() == GetTeamNumber())
-				{
-					// Alt: Triggers throwing primary weapon to user
-					// see neo_bot_scenario_monitor for behavior transition
-					pTargetPlayer->m_hCommandingPlayer = this;
-				}
-			}
-		}
-	}
-}
-
 void CNEO_Player::StartAutoSprint(void)
 {
 	BaseClass::StartAutoSprint();
@@ -4057,16 +4045,11 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 
 // Start spectator takeover of player related code:
 ConVar sv_neo_spec_replace_player_loadout_enable("sv_neo_spec_replace_player_loadout_enable", "0", FCVAR_NONE, "Allow loadout change after spectator takeover.", true, 0, true, 1);
-ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "0", FCVAR_NONE, "Allow spectators to take over AFK players.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
 	"180", FCVAR_NONE,
 	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
 	true, -1, true, 999);
-ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
-	"0", FCVAR_NONE,
-	"Minimum experience allowed to takeover players ",
-	true, -999, true, 999);
 
 int CNEO_Player::GetSecondsUntilAFK() const
 {

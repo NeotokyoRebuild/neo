@@ -20,6 +20,9 @@ extern ConVar sv_neo_ghost_delay_secs;
 extern ConVar sv_neo_ghost_view_distance;
 extern ConVar sv_neo_serverside_beacons;
 
+extern ConVar sv_neo_spec_replace_player_bot_enable;
+extern ConVar sv_neo_spec_replace_player_min_exp;
+
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS
 
