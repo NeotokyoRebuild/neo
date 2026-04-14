@@ -30,7 +30,6 @@ public:
 	void	Precache(void);
 	void	Spawn(void);
     void	Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
-	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
 	virtual int UpdateTransmitState() override;
 
 	CNEO_Player* GetActivatingPlayer() const { return m_hHoldingPlayer.Get(); }
@@ -39,10 +38,7 @@ public:
 
 	bool	m_bPostDeath = false;
 #endif
-
-#ifdef CLIENT_DLL
-	virtual int ObjectCaps() override { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE; }
-#endif // CLIENT_DLL
+	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
 
 	virtual unsigned int PhysicsSolidMaskForEntity() const final override { return MASK_PLAYERSOLID; }
 	virtual void UpdateOnRemove() override;

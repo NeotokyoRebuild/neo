@@ -16,6 +16,11 @@ class CBaseButton : public CBaseToggle
 public:
 
 	DECLARE_CLASS( CBaseButton, CBaseToggle );
+#ifdef NEO
+	DECLARE_SERVERCLASS();
+
+	int updateTransmitState() { return SetTransmitState(FL_EDICT_PVSCHECK); }
+#endif // NEO
 
 	void Spawn( void );
 	virtual void Precache( void );

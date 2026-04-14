@@ -78,6 +78,11 @@ END_DATADESC()
 
 LINK_ENTITY_TO_CLASS( func_button, CBaseButton );
 
+#ifdef NEO
+IMPLEMENT_SERVERCLASS_ST( CBaseButton, DT_BaseButton )
+	SendPropInt( SENDINFO(m_spawnflags), 13, SPROP_UNSIGNED )
+END_SEND_TABLE()
+#endif // NEO
 
 
 void CBaseButton::Precache( void )
