@@ -1158,7 +1158,11 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 	// UNDONE: Might be faster to just fold this range into the sphere query
 	CBaseEntity *pObject = NULL;
 
+#ifdef NEO
+	float nearestDist = -1;
+#else
 	float nearestDist = FLT_MAX;
+#endif // NEO
 	// try the hit entity if there is one, or the ground entity if there isn't.
 	CBaseEntity *pNearest = NULL;
 
@@ -1221,7 +1225,11 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 				pNearest = pObject;
 				
 				// if this is directly under the cursor just return it now
+#ifdef NEO
+				if ( i == 0 && pObject && !(pObject->ObjectCaps() & FCAP_USE_IN_RADIUS) && !pObject->IsBaseCombatWeapon() ) // NEO NOTE (Adam) weapon AABBs are usually far removed from where they actually are visually, just use distance to worldspace center for them
+#else
 				if ( i == 0 )
+#endif // NEO
 					return pObject;
 			}
 		}
@@ -1237,9 +1245,13 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 	if ( pNearest )
 	{
 		// estimate nearest object by distance from the view vector
+#ifdef NEO
+		nearestDist = DotProduct((pNearest->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
+#else
 		Vector point;
 		pNearest->CollisionProp()->CalcNearestPoint( searchCenter, &point );
 		nearestDist = CalcDistanceToLine( point, searchCenter, forward );
+#endif // NEO
 		if ( sv_debug_player_use.GetBool() )
 		{
 			Msg("Trace found %s, dist %.2f\n", pNearest->GetClassname(), nearestDist );
@@ -1258,22 +1270,42 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 		Vector point;
 		pObject->CollisionProp()->CalcNearestPoint( searchCenter, &point );
 
+#ifdef NEO
+		float dot = -1;
+		dot = DotProduct((pObject->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
+		
+		if (sv_debug_player_use.GetBool())
+		{
+			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(4, 0, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(4, 0, 0), 16, 255, 0, false, 0.2);
+			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 4, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 4, 0), 16, 255, 0, false, 0.2);
+			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 0, 4), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 0, 4), 16, 255, 0, false, 0.2);
+		}
+#else
 		Vector dir = point - searchCenter;
 		VectorNormalize(dir);
 		float dot = DotProduct( dir, forward );
+#endif // NEO
 
 		// Need to be looking at the object more or less
 		if ( dot < 0.8 )
 			continue;
 
+#ifdef NEO
+		float dist = dot;
+#else
 		float dist = CalcDistanceToLine( point, searchCenter, forward );
+#endif // NEO
 
 		if ( sv_debug_player_use.GetBool() )
 		{
 			Msg("Radius found %s, dist %.2f\n", pObject->GetClassname(), dist );
 		}
 
+#ifdef NEO
+		if ( dist > nearestDist )
+#else
 		if ( dist < nearestDist )
+#endif // NEO
 		{
 			// Since this has purely been a radius search to this point, we now
 			// make sure the object isn't behind glass or a grate.
@@ -1285,6 +1317,16 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 				pNearest = pObject;
 				nearestDist = dist;
 			}
+#if defined NEO
+			// NEO NOTE (Adam) usable entities can obstruct other usable entities. As mentioned above, weapon AABBs can be far from where they are visually and annoyingly block pickups anyway. 
+			// Could add each weapon found to a list and redo the trace until we find a non-weapon blocking object or the object we want to pick up
+			else if (sv_debug_player_use.GetBool())
+			{
+				DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(3, 3, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(3, 3, 0), 255, 16, 0, false, 0.2);
+				DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 3, 3), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 3, 3), 255, 16, 0, false, 0.2);
+				DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(3, 0, 3), pObject->CollisionProp()->WorldSpaceCenter() + Vector(3, 0, 3), 255, 16, 0, false, 0.2);
+			}
+#endif // NEO && DEBUG
 		}
 	}
 

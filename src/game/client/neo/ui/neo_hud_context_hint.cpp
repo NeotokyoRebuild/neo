@@ -11,6 +11,8 @@
 #include "vgui/IPanel.h"
 #include "vgui_controls/AnimationController.h"
 #include "neo_root_settings.h"
+#include "glow_outline_effect.h"
+#include "smoke_fog_overlay.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -68,7 +70,10 @@ void CNEOHud_ContextHint::ApplySchemeSettings(vgui::IScheme* pScheme)
 bool CNEOHud_ContextHint::ShouldDraw()
 {
 	if (!cl_neo_hud_context_hint_enabled.GetBool())
+	{
+		g_GlowObjectManager.ClearUseItemGlowObject();
 		return false;
+	}
 
 	return true;
 }
@@ -76,8 +81,13 @@ bool CNEOHud_ContextHint::ShouldDraw()
 extern ConVar sv_neo_spec_replace_player_bot_enable;
 extern ConVar sv_neo_spec_replace_player_min_exp;
 extern ConVar sv_neo_bot_cmdr_enable;
+ConVar cl_neo_hud_context_hint_show_player_takeover_hint("cl_neo_hud_context_hint_show_player_takeover_hint", "1", FCVAR_ARCHIVE, "Show player takeover hint", true, 0.f, true, 1.f);
+ConVar cl_neo_hud_context_hint_show_object_interact_hint("cl_neo_hud_context_hint_show_object_interact_hint", "1", FCVAR_ARCHIVE, "Show object inteact hint", true, 0.f, true, 1.f);
+ConVar cl_neo_hud_context_hint_show_bot_interact_hint("cl_neo_hud_context_hint_show_bot_interact_hint", "1", FCVAR_ARCHIVE, "Show bot command and weapon request hint", true, 0.f, true, 1.f);
 void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 {
+	g_GlowObjectManager.ClearUseItemGlowObject();
+
 	C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalNeoPlayer)
 		return;
@@ -98,6 +108,9 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 
 	if (pLocalNeoPlayer->IsObserver())
 	{
+		if (!cl_neo_hud_context_hint_show_player_takeover_hint.GetBool())
+			return;
+
 		// Takeover hint
 		{
 			bool showTakeOverHint = false;
@@ -130,9 +143,15 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 	}
 	else
 	{
+		constexpr float ITEM_DISCOVERY_SMOKE_THRESHOLD = 0.8f;
 		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
-			pUseEntity)
+			pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
 		{
+			if (!cl_neo_hud_context_hint_show_object_interact_hint.GetBool())
+				return;
+
+			g_GlowObjectManager.SetUseItemGlowObject(pUseEntity, Vector( 1.0f, 1.0f, 1.0f ), g_SmokeFogOverlayThermalOverride ? 1.0f : Max( 0.0f, 1.0f - g_SmokeFogOverlayAlpha), false, true);
+			
 			// Weapon pickup hint
 			if (pUseEntity->IsBaseCombatWeapon())
 			{
@@ -152,42 +171,53 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				}
 				else if (pLocalNeoPlayer->m_nButtons & IN_USE)
 				{
-					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Weapon too heavy"); // NEO TODO (Adam) Replace with a more generic message if we have weapons that can't be picked up for other reasons ("weapon too unwieldly", or simply "cannot pick up")
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Cannot pickup weapon");
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
-				}
-				// else don't touch m_flDisplayEndTime to keep weapon too heavy message around for a bit
-			}
-			// Juggernaut hint
-			else if (Q_strcmp(pUseEntity->GetClassname(), "neo_juggernaut") == 0)
-			{
-				if (CNEO_Juggernaut* pJuggernaut = static_cast<CNEO_Juggernaut*>(pUseEntity);
-					pJuggernaut)
-				{
-					if (pJuggernaut->m_bLocked)
-					{
-						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Juggernaut is locked");
-					}
-					else // NEO TODO (Adam) network and check m_hHoldingPlayer, time left until juggernaut taken?
-					{
-						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] take the Juggernaut", szUppercaseKeyBinding);
-					}
-					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					// g_GlowObjectManager.ClearUseItemGlowObject(); // NEO TODO (Adam) Clear highlight? or show which weapon cannot be picked up? Change highlight colour to red?
 				}
 				else
 				{
-					m_flDisplayEndTime = gpGlobals->curtime;
+					g_GlowObjectManager.ClearUseItemGlowObject();
 				}
 			}
-			// Some other useable entity
 			else
 			{
-				V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] use", szUppercaseKeyBinding);
-				m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+				// Juggernaut hint
+				if (Q_strcmp(pUseEntity->GetClassname(), "class C_NEO_Juggernaut") == 0)
+				{
+					if (CNEO_Juggernaut* pJuggernaut = static_cast<CNEO_Juggernaut*>(pUseEntity);
+						pJuggernaut)
+					{
+						if (pJuggernaut->m_bLocked)
+						{
+							V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Juggernaut is locked");
+						}
+						else // NEO TODO (Adam) network and check m_hHoldingPlayer, time left until juggernaut taken?
+						{
+							V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] take the Juggernaut", szUppercaseKeyBinding);
+						}
+						m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					}
+					else
+					{
+						m_flDisplayEndTime = gpGlobals->curtime;
+					}
+				}
+				// Some other useable entity
+				else
+				{
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] use", szUppercaseKeyBinding);
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+				}
 			}
 		}
 		else
 		{
 			m_flDisplayEndTime = gpGlobals->curtime;
+
+			if (!cl_neo_hud_context_hint_show_bot_interact_hint.GetBool())
+				return;
+
 			// Bot command hint
 			{
 				if (C_NEO_Player* pTargetPlayer = pLocalNeoPlayer->PlayerUseTraceLine();

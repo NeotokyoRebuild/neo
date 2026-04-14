@@ -121,6 +121,22 @@ public:
 		Assert( !m_GlowObjectDefinitions[nGlowObjectHandle].IsUnused() );
 		m_GlowObjectDefinitions[nGlowObjectHandle].m_bUseTexturedHighlight = useTexturedHighlight;
 	}
+
+	void SetUseItemGlowObject( C_BaseEntity *pEntity, const Vector &vGlowColor = Vector( 1.0f, 1.0f, 1.0f ), float flGlowAlpha = 1.0f, bool bRenderWhenOccluded = false, bool bRenderWhenUnoccluded = false, int nSplitScreenSlot = GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS )
+	{		
+		useItemGlow.m_hEntity = pEntity;
+		useItemGlow.m_vGlowColor = vGlowColor;
+		useItemGlow.m_flGlowAlpha = flGlowAlpha;
+		useItemGlow.m_bRenderWhenOccluded = bRenderWhenOccluded;
+		useItemGlow.m_bRenderWhenUnoccluded = bRenderWhenUnoccluded;
+		useItemGlow.m_nSplitScreenSlot = nSplitScreenSlot;
+		useItemGlow.m_nNextFreeSlot = GlowObjectDefinition_t::ENTRY_IN_USE;
+	}
+
+	void ClearUseItemGlowObject()
+	{
+		useItemGlow.m_hEntity = INVALID_EHANDLE;
+	}
 #endif // NEO
 private:
 
@@ -162,6 +178,10 @@ private:
 
 	CUtlVector< GlowObjectDefinition_t > m_GlowObjectDefinitions;
 	int m_nFirstFreeSlot;
+
+#ifdef NEO
+	GlowObjectDefinition_t useItemGlow;
+#endif // NEO
 };
 
 extern CGlowObjectManager g_GlowObjectManager;

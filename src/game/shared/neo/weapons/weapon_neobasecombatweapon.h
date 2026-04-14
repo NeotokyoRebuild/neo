@@ -140,16 +140,19 @@ public:
 	virtual void FinishReload(void) override;
 
 	virtual bool CanBeSelected(void) override;
+	virtual bool IsFollowingEntity() override {
+		return (GetMoveType() == MOVETYPE_NONE) && GetMoveParent();
+	};
 	virtual int	ObjectCaps(void) override
 	{
 		int caps = BaseClass::ObjectCaps();
 		if (!IsFollowingEntity()
 #ifdef GAME_DLL
-			&& !HasSpawnFlags(SF_WEAPON_NO_PLAYER_PICKUP)
+			&& !HasSpawnFlags(SF_WEAPON_NO_PLAYER_PICKUP) // NEO TODO (Adam) workout how to check this client side
 #endif // GAME_DLL
 			)
-		{
-			caps |= FCAP_IMPULSE_USE;
+		{ // NEO NOTE (Adam) debris can be usable too, and debris such as ragdolls and gibs prevents us from picking up weapons with use via direct traceline, allow usage in radius too.
+			caps |= FCAP_IMPULSE_USE|FCAP_USE_IN_RADIUS; 
 		}
 
 		return caps;

@@ -207,6 +207,9 @@ struct NeoSettings
 		bool bEnableRangeFinder;
 		int iExtendedKillfeed;
 		bool bShowHudContextHints;
+		bool bShowHudContextHintPlayerTakeover;
+		bool bShowHudContextHintObjectInteract;
+		bool bShowHudContextHintBotInteract;
 		int iKdinfoToggletype;
 
 		// IFF Markers
@@ -272,6 +275,9 @@ struct NeoSettings
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
+		CONVARREF_DEF(cl_neo_hud_context_hint_show_player_takeover_hint);
+		CONVARREF_DEF(cl_neo_hud_context_hint_show_object_interact_hint);
+		CONVARREF_DEF(cl_neo_hud_context_hint_show_bot_interact_hint);
 		CONVARREF_DEF(cl_neo_equip_utility_priority);
 		CONVARREF_DEF(cl_neo_taking_damage_sounds);
 

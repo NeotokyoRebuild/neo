@@ -3484,8 +3484,15 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 			{
 				RemoveAllItems(false);
 				GiveDefaultItems();
-				pEnt->Touch(this);
-				Weapon_Switch(Weapon_OwnsThisType(szWep));
+				if (!BumpWeapon(pNeoWeapon))
+				{
+					UTIL_Remove( pNeoWeapon );
+				}
+				else
+				{
+					pEnt->Touch( this );
+					Weapon_Switch(Weapon_OwnsThisType(szWep));
+				}
 			}
 		}
 		else

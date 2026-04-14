@@ -201,6 +201,9 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 
 	int iNumGlowObjects = 0;
 
+#ifdef NEO
+	const int useElementIndex = m_GlowObjectDefinitions.AddToTail(useItemGlow);
+#endif // NEO
 	for ( int i = 0; i < m_GlowObjectDefinitions.Count(); ++ i )
 	{
 		if ( m_GlowObjectDefinitions[i].IsUnused() || !m_GlowObjectDefinitions[i].ShouldDraw( nSplitScreenSlot ) )
@@ -316,7 +319,14 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	// this fixes a bug where if there are glow objects in the list, but none of them are glowing,
 	// the whole screen blooms.
 	if ( iNumGlowObjects <= 0 )
+#ifdef NEO
+	{
+		m_GlowObjectDefinitions.Remove(useElementIndex);
 		return;
+	}
+#else
+		return;
+#endif // NEO
 
 	//=============================================
 	// Render the glow colors to _rt_FullFrameFB 
@@ -325,6 +335,9 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		PIXEvent pixEvent( pRenderContext, "RenderGlowModels" );
 		RenderGlowModels( pSetup, nSplitScreenSlot, pRenderContext );
 	}
+#ifdef NEO
+	m_GlowObjectDefinitions.Remove(useElementIndex);
+#endif // NEO
 	
 	// Get viewport
 #ifndef NEO

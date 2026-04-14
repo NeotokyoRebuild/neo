@@ -685,6 +685,9 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pHUD->iExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetInt();
 		pHUD->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
 		pHUD->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
+		pHUD->bShowHudContextHintPlayerTakeover = cvr->cl_neo_hud_context_hint_show_player_takeover_hint.GetBool();
+		pHUD->bShowHudContextHintObjectInteract = cvr->cl_neo_hud_context_hint_show_object_interact_hint.GetBool();
+		pHUD->bShowHudContextHintBotInteract = cvr->cl_neo_hud_context_hint_show_bot_interact_hint.GetBool();
 
 		bool bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], cvr->cl_neo_squad_marker.GetString());
 		if (!bImported)
@@ -945,6 +948,9 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pHUD->iExtendedKillfeed);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pHUD->iKdinfoToggletype);
 		cvr->cl_neo_hud_context_hint_enabled.SetValue(pHUD->bShowHudContextHints);
+		cvr->cl_neo_hud_context_hint_show_player_takeover_hint.SetValue(pHUD->bShowHudContextHintPlayerTakeover);
+		cvr->cl_neo_hud_context_hint_show_object_interact_hint.SetValue(pHUD->bShowHudContextHintObjectInteract);
+		cvr->cl_neo_hud_context_hint_show_bot_interact_hint.SetValue(pHUD->bShowHudContextHintBotInteract);
 
 		char szSequence[NEO_IFFMARKER_SEQMAX];
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], szSequence);
@@ -1642,12 +1648,20 @@ void NeoSettings_HUD(NeoSettings *ns)
 	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, pHud->iHealthMode >= 2 ? ARRAYSIZE(HEALTHMODE_LABELS) : 2, &pHud->iHealthMode);
 	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pHud->iObjVerbosity);
 	NeoUI::RingBoxBool(L"Show hints", &pHud->bShowHints);
-	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pHud->bShowHudContextHints);
 	NeoUI::RingBoxBool(L"Show position", &pHud->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pHud->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pHud->bEnableRangeFinder);
 	NeoUI::RingBox(L"Extended killfeed", EXT_KILLFEED_LABELS, ARRAYSIZE(EXT_KILLFEED_LABELS), &pHud->iExtendedKillfeed);
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
+
+	NeoUI::Divider(L"Contextual hints");
+	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pHud->bShowHudContextHints);
+	if (pHud->bShowHudContextHints)
+	{
+		NeoUI::RingBoxBool(L"Show player takeover contextual hint", &pHud->bShowHudContextHintPlayerTakeover);
+		NeoUI::RingBoxBool(L"Show object interact contextual hint", &pHud->bShowHudContextHintObjectInteract);
+		NeoUI::RingBoxBool(L"Show bot interact contextual hint", &pHud->bShowHudContextHintBotInteract);
+	}
 
 #ifdef GLOWS_ENABLE
 	NeoUI::Divider(L"XRAY");
