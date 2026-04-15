@@ -230,7 +230,6 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					&& GameResources()->IsFakePlayer(pTargetPlayer->entindex())
 					&& NEORules()->IsTeamplay()	&& pTargetPlayer->GetTeamNumber() == pLocalNeoPlayer->GetTeamNumber())
 				{
-					// NEO TODO (Adam) if xray is enabled, we're drawing this player's glow effect twice unnecessarily, fix
 					Vector teamGlowColor { 1.f, 1.f, 1.f };
 					NEORules()->GetTeamGlowColor(pTargetPlayer->GetTeamNumber(), teamGlowColor[0], teamGlowColor[1], teamGlowColor[2]);
 					g_GlowObjectManager.SetUseItemGlowObject(pTargetPlayer, teamGlowColor, g_SmokeFogOverlayThermalOverride ? 1.0f : Max(0.0f, 1.0f - g_SmokeFogOverlayAlpha), false, true);
