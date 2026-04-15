@@ -1461,11 +1461,6 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 #ifdef GLOWS_ENABLE
 void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 {
-	if (!glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
-	{
-		return;
-	}
-
 	auto updateGlowColour = [](C_BasePlayer* pPlayer, int iTeam = 0) {
 		float r, g, b;
 		NEORules()->GetTeamGlowColor(iTeam ? iTeam : pPlayer->GetTeamNumber(), r, g, b);
@@ -1479,7 +1474,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 				continue;
 			}
 
-			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED)
+			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED || !glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 			{
 				pPlayer->SetClientSideGlowEnabled(false);
 				continue;
@@ -1495,7 +1490,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 		}
 	}
 	else {
-		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED)
+		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED || !glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 		{
 			SetClientSideGlowEnabled(false);
 			return;

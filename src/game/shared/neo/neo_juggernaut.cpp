@@ -29,6 +29,8 @@ float CNEO_Juggernaut::GetUseDistanceSquared()
 #ifdef GAME_DLL
 IMPLEMENT_SERVERCLASS_ST(CNEO_Juggernaut, DT_NEO_Juggernaut)
 	SendPropBool(SENDINFO(m_bLocked)),
+	SendPropBool(SENDINFO(m_bIsHolding)),
+	SendPropEHandle(SENDINFO(m_hHoldingPlayer)),
 END_SEND_TABLE()
 #else
 #ifdef CNEO_Juggernaut
@@ -36,6 +38,8 @@ END_SEND_TABLE()
 #endif
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Juggernaut, DT_NEO_Juggernaut, CNEO_Juggernaut)
 	RecvPropBool(RECVINFO(m_bLocked)),
+	RecvPropBool(RECVINFO(m_bIsHolding)),
+	RecvPropEHandle(RECVINFO(m_hHoldingPlayer)),
 END_RECV_TABLE()
 #define CNEO_Juggernaut C_NEO_Juggernaut
 #endif
@@ -181,12 +185,12 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 	if (pNEOPlayer->m_afButtonPressed & IN_USE)
 	{
 		m_bIsHolding = true;
-		m_hHoldingPlayer = pNEOPlayer;
+		m_hHoldingPlayer.Set(pNEOPlayer);
 		m_flHoldStartTime = gpGlobals->curtime;
 		SetNextThink(gpGlobals->curtime + 0.1f);
 		SetPlaybackRate(m_flWarpedPlaybackRate);
-		m_hHoldingPlayer->AddFlag(FL_FROZEN);
-		UTIL_HudMessage(m_hHoldingPlayer, m_textParms, "BOOTING JGR56"); // TODO localise this text
+		pNEOPlayer->AddFlag(FL_FROZEN);
+		UTIL_HudMessage(pNEOPlayer, m_textParms, "BOOTING JGR56"); // TODO localise this text
 		EmitSound("HUD.CPCharge");
 	}
 	else
@@ -197,13 +201,14 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 
 void CNEO_Juggernaut::Think(void)
 {
-	if (!m_bIsHolding || !m_hHoldingPlayer || !m_hHoldingPlayer->IsAlive() || !(m_hHoldingPlayer->m_nButtons & IN_USE))
+	CNEO_Player* pNeoPlayer = m_hHoldingPlayer.Get();
+	if (!m_bIsHolding || !pNeoPlayer || !pNeoPlayer->IsAlive() || !(pNeoPlayer->m_nButtons & IN_USE))
 	{
 		HoldCancel();
 		return;
 	}
 
-	if (((m_hHoldingPlayer->GetAbsOrigin() - GetAbsOrigin()).LengthSqr()) > USE_DISTANCE_SQUARED)
+	if (((pNeoPlayer->GetAbsOrigin() - GetAbsOrigin()).LengthSqr()) > USE_DISTANCE_SQUARED)
 	{
 		HoldCancel();
 		return;
@@ -216,16 +221,16 @@ void CNEO_Juggernaut::Think(void)
 		SetNextThink(TICK_NEVER_THINK);
 		StopSound("HUD.CPCharge");
 		EmitSound("HUD.CPCaptured");
-		UTIL_HudMessage(m_hHoldingPlayer, m_textParms, ""); // Find a better way of hiding the text. This doesn't remove the old message from the user messages list and thus makes a weird overlapping visual bug
+		UTIL_HudMessage(pNeoPlayer, m_textParms, ""); // Find a better way of hiding the text. This doesn't remove the old message from the user messages list and thus makes a weird overlapping visual bug
 
-		m_hHoldingPlayer->RemoveFlag(FL_FROZEN);
-		m_hHoldingPlayer->CreateRagdollEntity();
-		m_hHoldingPlayer->Weapon_DropAllOnDeath(CTakeDamageInfo(this, this, 0, DMG_GENERIC));
-		m_hHoldingPlayer->Teleport(&GetAbsOrigin(), &GetAbsAngles(), &vec3_origin);
+		pNeoPlayer->RemoveFlag(FL_FROZEN);
+		pNeoPlayer->CreateRagdollEntity();
+		pNeoPlayer->Weapon_DropAllOnDeath(CTakeDamageInfo(this, this, 0, DMG_GENERIC));
+		pNeoPlayer->Teleport(&GetAbsOrigin(), &GetAbsAngles(), &vec3_origin);
 
-		m_hHoldingPlayer->BecomeJuggernaut();
+		pNeoPlayer->BecomeJuggernaut();
 
-		m_OnPlayerActivate.FireOutput(m_hHoldingPlayer, this);
+		m_OnPlayerActivate.FireOutput(pNeoPlayer, this);
 
 		m_bActivationRemoval = true;
 		UTIL_Remove(this);
@@ -293,10 +298,11 @@ void CNEO_Juggernaut::DisableSoftCollisionsThink()
 
 void CNEO_Juggernaut::HoldCancel(void)
 {
-	if (m_hHoldingPlayer)
+	CNEO_Player* pNeoPlayer = m_hHoldingPlayer.Get();
+	if (pNeoPlayer)
 	{
-		m_hHoldingPlayer->RemoveFlag(FL_FROZEN);
-		UTIL_HudMessage(m_hHoldingPlayer, m_textParms, "");
+		pNeoPlayer->RemoveFlag(FL_FROZEN);
+		UTIL_HudMessage(pNeoPlayer, m_textParms, "");
 	}
 	SetNextThink(TICK_NEVER_THINK);
 	SetPlaybackRate(-m_flWarpedPlaybackRate);
@@ -333,10 +339,11 @@ void CNEO_Juggernaut::SetSoftCollision(bool soft)
 
 const bool CNEO_Juggernaut::IsBeingActivatedByLosingTeam()
 {
-	if (m_bIsHolding && m_hHoldingPlayer)
+	CNEO_Player* pNeoPlayer = m_hHoldingPlayer.Get();
+	if (m_bIsHolding && pNeoPlayer)
 	{
-		const int playerTeam = m_hHoldingPlayer->GetTeamNumber();
-		const int oppositeTeam = (m_hHoldingPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+		const int playerTeam = pNeoPlayer->GetTeamNumber();
+		const int oppositeTeam = (pNeoPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
 		if (GetGlobalTeam(playerTeam)->GetScore() < GetGlobalTeam(oppositeTeam)->GetScore())
 		{
 			return true;

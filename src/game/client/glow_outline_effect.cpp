@@ -35,6 +35,12 @@ ConVar glow_outline_effect_width( "glow_outline_effect_width", "1.f", FCVAR_ARCH
 ConVar glow_outline_effect_alpha( "glow_outline_effect_alpha", "0.5f", FCVAR_ARCHIVE, "Alpha of glow outline effect.", true, 0.f, true, 1.f);
 ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.1f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when obstructed", true, 0.f, true, 1.f);
 ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_center_alpha", "0.2f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when cloaked", true, 0.f, true, 1.f);
+ConVar cl_neo_hud_context_hint_highlight_object("cl_neo_hud_context_hint_highlight_object", "1", FCVAR_ARCHIVE, "Highlight interactible object", true, 0.f, true, 1.f,
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (!cl_neo_hud_context_hint_highlight_object.GetBool())
+			g_GlowObjectManager.ClearUseItemGlowObject();
+		return;
+	});
 #else
 ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "0", 0, "Enable entity outline glow effects.");
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );
@@ -81,7 +87,7 @@ void CGlowObjectManager::RenderGlowEffects( const CViewSetup *pSetup, int nSplit
 {
 	if ( g_pMaterialSystemHardwareConfig->SupportsPixelShaders_2_0() )
 	{
-		if ( glow_outline_effect_enable.GetBool() )
+		if ( glow_outline_effect_enable.GetBool() || cl_neo_hud_context_hint_highlight_object.GetBool() )
 		{
 			CMatRenderContextPtr pRenderContext( materials );
 
@@ -156,6 +162,9 @@ void CGlowObjectManager::RenderGlowModels( const CViewSetup *pSetup, int nSplitS
 			continue;
 
 #ifdef NEO
+		if ( i != m_GlowObjectDefinitions.Count() - 1 && useItemGlow.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity && useItemGlow.m_hEntity.IsValid() && cl_neo_hud_context_hint_highlight_object.GetBool())
+			continue;
+
 		// DrawModel can call ForcedMaterialOverride also
 		g_pStudioRender->ForcedMaterialOverride(pMatGlowColor);
 #endif
@@ -202,12 +211,21 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	int iNumGlowObjects = 0;
 
 #ifdef NEO
-	const int useElementIndex = m_GlowObjectDefinitions.AddToTail(useItemGlow);
+	int useElementIndex = -1;
+	if (useItemGlow.m_hEntity.IsValid() && cl_neo_hud_context_hint_highlight_object.GetBool())
+	{
+		useElementIndex = m_GlowObjectDefinitions.AddToTail(useItemGlow);
+	}
 #endif // NEO
 	for ( int i = 0; i < m_GlowObjectDefinitions.Count(); ++ i )
 	{
 		if ( m_GlowObjectDefinitions[i].IsUnused() || !m_GlowObjectDefinitions[i].ShouldDraw( nSplitScreenSlot ) )
 			continue;
+
+#ifdef NEO
+		if (useElementIndex != -1 && i != useElementIndex && useItemGlow.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
+			continue;
+#endif // NEO
 
 		if ( m_GlowObjectDefinitions[i].m_bRenderWhenOccluded || m_GlowObjectDefinitions[i].m_bRenderWhenUnoccluded )
 		{
@@ -283,6 +301,11 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	{
 		if ( m_GlowObjectDefinitions[i].IsUnused() || !m_GlowObjectDefinitions[i].ShouldDraw( nSplitScreenSlot ) )
 			continue;
+		
+#ifdef NEO
+		if (useElementIndex != -1 && i != useElementIndex && useItemGlow.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
+			continue;
+#endif // NEO
 
 		if ( m_GlowObjectDefinitions[i].m_bRenderWhenOccluded && !m_GlowObjectDefinitions[i].m_bRenderWhenUnoccluded )
 		{
@@ -321,7 +344,10 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	if ( iNumGlowObjects <= 0 )
 #ifdef NEO
 	{
-		m_GlowObjectDefinitions.Remove(useElementIndex);
+		if (useElementIndex != -1)
+		{
+			m_GlowObjectDefinitions.Remove(useElementIndex);
+		}
 		return;
 	}
 #else
@@ -336,7 +362,10 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		RenderGlowModels( pSetup, nSplitScreenSlot, pRenderContext );
 	}
 #ifdef NEO
-	m_GlowObjectDefinitions.Remove(useElementIndex);
+	if (useElementIndex != -1)
+	{
+		m_GlowObjectDefinitions.Remove(useElementIndex);
+	}
 #endif // NEO
 	
 	// Get viewport

@@ -147,10 +147,10 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
 			pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
 		{
+			g_GlowObjectManager.SetUseItemGlowObject(pUseEntity, Vector( 1.0f, 1.0f, 1.0f ), g_SmokeFogOverlayThermalOverride ? 1.0f : Max( 0.0f, 1.0f - g_SmokeFogOverlayAlpha), true, false);
+			
 			if (!cl_neo_hud_context_hint_show_object_interact_hint.GetBool())
 				return;
-
-			g_GlowObjectManager.SetUseItemGlowObject(pUseEntity, Vector( 1.0f, 1.0f, 1.0f ), g_SmokeFogOverlayThermalOverride ? 1.0f : Max( 0.0f, 1.0f - g_SmokeFogOverlayAlpha), false, true);
 			
 			// Weapon pickup hint
 			if (pUseEntity->IsBaseCombatWeapon())
@@ -188,15 +188,21 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					if (CNEO_Juggernaut* pJuggernaut = static_cast<CNEO_Juggernaut*>(pUseEntity);
 						pJuggernaut)
 					{
+						m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 						if (pJuggernaut->m_bLocked)
 						{
 							V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Juggernaut is locked");
 						}
-						else // NEO TODO (Adam) network and check m_hHoldingPlayer, time left until juggernaut taken?
+						else if (C_NEO_Player* pNeoJuggernautPlayer = pJuggernaut->m_hHoldingPlayer.Get();
+							pNeoJuggernautPlayer && pJuggernaut->m_bIsHolding)
+						{
+							g_GlowObjectManager.ClearUseItemGlowObject();
+							m_flDisplayEndTime = gpGlobals->curtime;
+						}
+						else
 						{
 							V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] take the Juggernaut", szUppercaseKeyBinding);
 						}
-						m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 					}
 					else
 					{
@@ -214,7 +220,6 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 		else
 		{
 			m_flDisplayEndTime = gpGlobals->curtime;
-
 			if (!cl_neo_hud_context_hint_show_bot_interact_hint.GetBool())
 				return;
 
@@ -225,10 +230,15 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					&& GameResources()->IsFakePlayer(pTargetPlayer->entindex())
 					&& NEORules()->IsTeamplay()	&& pTargetPlayer->GetTeamNumber() == pLocalNeoPlayer->GetTeamNumber())
 				{
+					// NEO TODO (Adam) if xray is enabled, we're drawing this player's glow effect twice unnecessarily, fix
+					Vector teamGlowColor { 1.f, 1.f, 1.f };
+					NEORules()->GetTeamGlowColor(pTargetPlayer->GetTeamNumber(), teamGlowColor[0], teamGlowColor[1], teamGlowColor[2]);
+					g_GlowObjectManager.SetUseItemGlowObject(pTargetPlayer, teamGlowColor, g_SmokeFogOverlayThermalOverride ? 1.0f : Max(0.0f, 1.0f - g_SmokeFogOverlayAlpha), false, true);
+			
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 					if (sv_neo_bot_cmdr_enable.GetBool())
 					{
-						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] command %hs", szUppercaseKeyBinding, pTargetPlayer->GetNeoPlayerName());
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] %hs %hs", szUppercaseKeyBinding, pTargetPlayer->m_hCommandingPlayer.Get() == pLocalNeoPlayer ? "release" : "command", pTargetPlayer->GetNeoPlayerName());
 					}
 					else
 					{
@@ -238,7 +248,6 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				}
 			}
 		}
-
 	}
 }
 

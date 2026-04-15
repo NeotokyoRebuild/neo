@@ -22,6 +22,10 @@ class CMatRenderContextPtr;
 
 static const int GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS = -1;
 
+#ifdef NEO
+extern ConVar cl_neo_hud_context_hint_highlight_object;
+#endif // NEO
+
 class CGlowObjectManager
 {
 public:
@@ -123,7 +127,10 @@ public:
 	}
 
 	void SetUseItemGlowObject( C_BaseEntity *pEntity, const Vector &vGlowColor = Vector( 1.0f, 1.0f, 1.0f ), float flGlowAlpha = 1.0f, bool bRenderWhenOccluded = false, bool bRenderWhenUnoccluded = false, int nSplitScreenSlot = GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS )
-	{		
+	{
+		if (!cl_neo_hud_context_hint_highlight_object.GetBool())
+			return;
+
 		useItemGlow.m_hEntity = pEntity;
 		useItemGlow.m_vGlowColor = vGlowColor;
 		useItemGlow.m_flGlowAlpha = flGlowAlpha;

@@ -18,6 +18,7 @@ public:
 	
 	static float GetUseDuration();
 	static float GetUseDistanceSquared();
+	CNEO_Juggernaut() { m_bIsHolding = false; }
 #ifdef GAME_DLL
 	virtual ~CNEO_Juggernaut();
 	DECLARE_SERVERCLASS();
@@ -44,6 +45,8 @@ public:
 	virtual void UpdateOnRemove() override;
 
 	CNetworkVar(bool, m_bLocked);
+	CNetworkVar(CHandle<CNEO_Player>, m_hHoldingPlayer);
+	CNetworkVar(bool, m_bIsHolding);
 
 private:
 #ifdef GAME_DLL
@@ -60,11 +63,9 @@ private:
 #endif
 
 #ifdef GAME_DLL
-	CHandle<CNEO_Player> m_hHoldingPlayer;
 	EHANDLE m_hPush;
 	float m_flWarpedPlaybackRate;
 	float m_flHoldStartTime = 0.0f;
-	bool m_bIsHolding = false;
 	bool m_bActivationRemoval = false;
 
 	hudtextparms_t	m_textParms;
