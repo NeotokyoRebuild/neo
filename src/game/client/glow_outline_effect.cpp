@@ -38,7 +38,13 @@ ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_c
 ConVar cl_neo_hud_context_hint_highlight_object("cl_neo_hud_context_hint_highlight_object", "1", FCVAR_ARCHIVE, "Highlight interactible object", true, 0.f, true, 1.f,
 	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
 		if (!cl_neo_hud_context_hint_highlight_object.GetBool())
-			g_GlowObjectManager.ClearUseItemGlowObject();
+			g_GlowObjectManager.ClearUseItemObject();
+		return;
+	});
+ConVar cl_neo_hud_context_hint_highlight_player("cl_neo_hud_context_hint_highlight_player", "1", FCVAR_ARCHIVE, "Highlight interactible players", true, 0.f, true, 1.f,
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (!cl_neo_hud_context_hint_highlight_player.GetBool())
+			g_GlowObjectManager.ClearUseItemPlayer();
 		return;
 	});
 #else
@@ -87,7 +93,7 @@ void CGlowObjectManager::RenderGlowEffects( const CViewSetup *pSetup, int nSplit
 {
 	if ( g_pMaterialSystemHardwareConfig->SupportsPixelShaders_2_0() )
 	{
-		if ( glow_outline_effect_enable.GetBool() || cl_neo_hud_context_hint_highlight_object.GetBool() )
+		if ( glow_outline_effect_enable.GetBool() || cl_neo_hud_context_hint_highlight_object.GetBool() || cl_neo_hud_context_hint_highlight_player.GetBool() )
 		{
 			CMatRenderContextPtr pRenderContext( materials );
 
@@ -162,7 +168,7 @@ void CGlowObjectManager::RenderGlowModels( const CViewSetup *pSetup, int nSplitS
 			continue;
 
 #ifdef NEO
-		if ( i != m_GlowObjectDefinitions.Count() - 1 && useItemGlow.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity && useItemGlow.m_hEntity.IsValid() && cl_neo_hud_context_hint_highlight_object.GetBool())
+		if ( i != m_GlowObjectDefinitions.Count() - 1 && useItemGlow.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity && useItemGlow.m_hEntity.IsValid())
 			continue;
 
 		// DrawModel can call ForcedMaterialOverride also
@@ -212,7 +218,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 
 #ifdef NEO
 	int useElementIndex = -1;
-	if (useItemGlow.m_hEntity.IsValid() && cl_neo_hud_context_hint_highlight_object.GetBool())
+	if (useItemGlow.m_hEntity.IsValid())
 	{
 		useElementIndex = m_GlowObjectDefinitions.AddToTail(useItemGlow);
 	}

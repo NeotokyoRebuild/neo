@@ -24,6 +24,7 @@ static const int GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS = -1;
 
 #ifdef NEO
 extern ConVar cl_neo_hud_context_hint_highlight_object;
+extern ConVar cl_neo_hud_context_hint_highlight_player;
 #endif // NEO
 
 class CGlowObjectManager
@@ -128,7 +129,9 @@ public:
 
 	void SetUseItemGlowObject( C_BaseEntity *pEntity, const Vector &vGlowColor = Vector( 1.0f, 1.0f, 1.0f ), float flGlowAlpha = 1.0f, bool bRenderWhenOccluded = false, bool bRenderWhenUnoccluded = false, int nSplitScreenSlot = GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS )
 	{
-		if (!cl_neo_hud_context_hint_highlight_object.GetBool())
+		if (pEntity->IsPlayer() && !cl_neo_hud_context_hint_highlight_player.GetBool())
+			return;
+		else if (!pEntity->IsPlayer() && !cl_neo_hud_context_hint_highlight_object.GetBool())
 			return;
 
 		useItemGlow.m_hEntity = pEntity;
@@ -140,9 +143,21 @@ public:
 		useItemGlow.m_nNextFreeSlot = GlowObjectDefinition_t::ENTRY_IN_USE;
 	}
 
-	void ClearUseItemGlowObject()
+	void ClearUseItem()
 	{
 		useItemGlow.m_hEntity = INVALID_EHANDLE;
+	}
+	void ClearUseItemObject()
+	{
+		C_BaseEntity* pEntity = useItemGlow.m_hEntity.Get();
+		if (pEntity && !pEntity->IsPlayer())
+			useItemGlow.m_hEntity = INVALID_EHANDLE;
+	}
+	void ClearUseItemPlayer()
+	{
+		C_BaseEntity* pEntity = useItemGlow.m_hEntity.Get();
+		if (pEntity && pEntity->IsPlayer())
+			useItemGlow.m_hEntity = INVALID_EHANDLE;
 	}
 #endif // NEO
 private:

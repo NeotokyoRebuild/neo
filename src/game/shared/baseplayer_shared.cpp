@@ -1247,15 +1247,21 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 		// estimate nearest object by distance from the view vector
 #ifdef NEO
 		nearestDist = DotProduct((pNearest->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
+		if ( sv_debug_player_use.GetBool() )
+		{
+			Vector point;
+			pNearest->CollisionProp()->CalcNearestPoint( searchCenter, &point );
+			Msg("Trace found %s, dist %.2f\n", pNearest->GetClassname(), CalcDistanceToLine( point, searchCenter, forward ) );
+		}
 #else
 		Vector point;
 		pNearest->CollisionProp()->CalcNearestPoint( searchCenter, &point );
 		nearestDist = CalcDistanceToLine( point, searchCenter, forward );
-#endif // NEO
 		if ( sv_debug_player_use.GetBool() )
 		{
 			Msg("Trace found %s, dist %.2f\n", pNearest->GetClassname(), nearestDist );
 		}
+#endif // NEO
 	}
 
 	for ( CEntitySphereQuery sphere( searchCenter, PLAYER_USE_RADIUS ); ( pObject = sphere.GetCurrentEntity() ) != NULL; sphere.NextEntity() )
@@ -1292,14 +1298,19 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 
 #ifdef NEO
 		float dist = dot;
+
+		if ( sv_debug_player_use.GetBool() )
+		{
+			Msg("Radius found %s, dist %.2f\n", pObject->GetClassname(), CalcDistanceToLine( point, searchCenter, forward ) );
+		}
 #else
 		float dist = CalcDistanceToLine( point, searchCenter, forward );
-#endif // NEO
 
 		if ( sv_debug_player_use.GetBool() )
 		{
 			Msg("Radius found %s, dist %.2f\n", pObject->GetClassname(), dist );
 		}
+#endif // NEO
 
 #ifdef NEO
 		if ( dist > nearestDist )

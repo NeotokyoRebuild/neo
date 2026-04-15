@@ -209,8 +209,9 @@ struct NeoSettings
 		bool bShowHudContextHints;
 		bool bShowHudContextHintPlayerTakeover;
 		bool bShowHudContextHintObjectInteract;
-		bool bShowHudContextHighlightObject;
 		bool bShowHudContextHintBotInteract;
+		bool bShowHudContextHighlightObject;
+		bool bShowHudContextHighlightBot;
 		int iKdinfoToggletype;
 
 		// IFF Markers
@@ -278,8 +279,9 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_player_takeover_hint);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_object_interact_hint);
-		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_object);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_bot_interact_hint);
+		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_object);
+		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_player);
 		CONVARREF_DEF(cl_neo_equip_utility_priority);
 		CONVARREF_DEF(cl_neo_taking_damage_sounds);
 

@@ -71,7 +71,7 @@ bool CNEOHud_ContextHint::ShouldDraw()
 {
 	if (!cl_neo_hud_context_hint_enabled.GetBool())
 	{
-		g_GlowObjectManager.ClearUseItemGlowObject();
+		g_GlowObjectManager.ClearUseItem();
 		return false;
 	}
 
@@ -86,7 +86,7 @@ ConVar cl_neo_hud_context_hint_show_object_interact_hint("cl_neo_hud_context_hin
 ConVar cl_neo_hud_context_hint_show_bot_interact_hint("cl_neo_hud_context_hint_show_bot_interact_hint", "1", FCVAR_ARCHIVE, "Show bot command and weapon request hint", true, 0.f, true, 1.f);
 void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 {
-	g_GlowObjectManager.ClearUseItemGlowObject();
+	g_GlowObjectManager.ClearUseItem();
 
 	C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalNeoPlayer)
@@ -177,7 +177,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				}
 				else
 				{
-					g_GlowObjectManager.ClearUseItemGlowObject();
+					g_GlowObjectManager.ClearUseItemObject();
 				}
 			}
 			else
@@ -196,7 +196,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 						else if (C_NEO_Player* pNeoJuggernautPlayer = pJuggernaut->m_hHoldingPlayer.Get();
 							pNeoJuggernautPlayer && pJuggernaut->m_bIsHolding)
 						{
-							g_GlowObjectManager.ClearUseItemGlowObject();
+							g_GlowObjectManager.ClearUseItemPlayer();
 							m_flDisplayEndTime = gpGlobals->curtime;
 						}
 						else
