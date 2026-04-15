@@ -1225,10 +1225,11 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 				pNearest = pObject;
 				
 				// if this is directly under the cursor just return it now
-#ifdef NEO
-				if ( i == 0 && pObject && !(pObject->ObjectCaps() & FCAP_USE_IN_RADIUS) && !pObject->IsBaseCombatWeapon() ) // NEO NOTE (Adam) weapon AABBs are usually far removed from where they actually are visually, just use distance to worldspace center for them
-#else
 				if ( i == 0 )
+#ifdef NEO // NEO NOTE (Adam) weapon axis aligned collision bounds are usually far removed from where the weapon is visually. If a weapon can be interacted with in a radius, use that instead
+					if (pObject && (pObject->ObjectCaps() & FCAP_USE_IN_RADIUS) && pObject->IsBaseCombatWeapon())
+						break;
+					else
 #endif // NEO
 					return pObject;
 			}
@@ -1281,10 +1282,11 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 		dot = DotProduct((pObject->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
 		
 		if (sv_debug_player_use.GetBool())
-		{
-			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(4, 0, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(4, 0, 0), 16, 255, 0, false, 0.2);
-			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 4, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 4, 0), 16, 255, 0, false, 0.2);
-			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 0, 4), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 0, 4), 16, 255, 0, false, 0.2);
+		{ // NEO TODO (Adam) Some games actually draw where the interaction point of an object is, in our case this world space center. A mode for STALKER GAMMA comes to mind that uses a small white dot.
+		  // Could make it easier to pick out a weapon if there are a whole bunch close together.
+			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(4, 0, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(4, 0, 0), 16, 255, 0, true, 0.2);
+			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 4, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 4, 0), 16, 255, 0, true, 0.2);
+			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 0, 4), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 0, 4), 16, 255, 0, true, 0.2);
 		}
 #else
 		Vector dir = point - searchCenter;
@@ -1300,7 +1302,7 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 		float dist = dot;
 
 		if ( sv_debug_player_use.GetBool() )
-		{
+		{ // NEO NOTE (Adam) looks like CEntitySphereQuery is using surrounding bounds instead of collision bounds. This distance could be significantly greater than PLAYER_USE_RADIUS
 			Msg("Radius found %s, dist %.2f\n", pObject->GetClassname(), CalcDistanceToLine( point, searchCenter, forward ) );
 		}
 #else
@@ -1321,23 +1323,17 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 			// Since this has purely been a radius search to this point, we now
 			// make sure the object isn't behind glass or a grate.
 			trace_t trCheckOccluded;
+#ifdef NEO // NEO NOTE (Adam) Weapons are debris, their axis aligned collision bounds can block other weapons from being picked up but are seldom aligned with the weapon itself, just stop debris from blocking player use
+			UTIL_TraceLine( searchCenter, point, useableContents & !CONTENTS_DEBRIS, this, COLLISION_GROUP_NONE, &trCheckOccluded );
+#else
 			UTIL_TraceLine( searchCenter, point, useableContents, this, COLLISION_GROUP_NONE, &trCheckOccluded );
+#endif // NEO
 
 			if ( trCheckOccluded.fraction == 1.0 || trCheckOccluded.m_pEnt == pObject )
 			{
 				pNearest = pObject;
 				nearestDist = dist;
 			}
-#if defined NEO
-			// NEO NOTE (Adam) usable entities can obstruct other usable entities. As mentioned above, weapon AABBs can be far from where they are visually and annoyingly block pickups anyway. 
-			// Could add each weapon found to a list and redo the trace until we find a non-weapon blocking object or the object we want to pick up
-			else if (sv_debug_player_use.GetBool())
-			{
-				DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(3, 3, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(3, 3, 0), 255, 16, 0, false, 0.2);
-				DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 3, 3), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 3, 3), 255, 16, 0, false, 0.2);
-				DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(3, 0, 3), pObject->CollisionProp()->WorldSpaceCenter() + Vector(3, 0, 3), 255, 16, 0, false, 0.2);
-			}
-#endif // NEO && DEBUG
 		}
 	}
 

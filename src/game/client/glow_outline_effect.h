@@ -127,37 +127,37 @@ public:
 		m_GlowObjectDefinitions[nGlowObjectHandle].m_bUseTexturedHighlight = useTexturedHighlight;
 	}
 
-	void SetUseItemGlowObject( C_BaseEntity *pEntity, const Vector &vGlowColor = Vector( 1.0f, 1.0f, 1.0f ), float flGlowAlpha = 1.0f, bool bRenderWhenOccluded = false, bool bRenderWhenUnoccluded = false, int nSplitScreenSlot = GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS )
+	void SetUseItem( C_BaseEntity *pEntity, const Vector &vGlowColor = Vector( 1.0f, 1.0f, 1.0f ), float flGlowAlpha = 1.0f, bool bRenderWhenOccluded = false, bool bRenderWhenUnoccluded = false, int nSplitScreenSlot = GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS )
 	{
 		if (pEntity->IsPlayer() && !cl_neo_hud_context_hint_highlight_player.GetBool())
 			return;
 		else if (!pEntity->IsPlayer() && !cl_neo_hud_context_hint_highlight_object.GetBool())
 			return;
 
-		useItemGlow.m_hEntity = pEntity;
-		useItemGlow.m_vGlowColor = vGlowColor;
-		useItemGlow.m_flGlowAlpha = flGlowAlpha;
-		useItemGlow.m_bRenderWhenOccluded = bRenderWhenOccluded;
-		useItemGlow.m_bRenderWhenUnoccluded = bRenderWhenUnoccluded;
-		useItemGlow.m_nSplitScreenSlot = nSplitScreenSlot;
-		useItemGlow.m_nNextFreeSlot = GlowObjectDefinition_t::ENTRY_IN_USE;
+		useItem.m_hEntity = pEntity;
+		useItem.m_vGlowColor = vGlowColor;
+		useItem.m_flGlowAlpha = flGlowAlpha;
+		useItem.m_bRenderWhenOccluded = bRenderWhenOccluded;
+		useItem.m_bRenderWhenUnoccluded = bRenderWhenUnoccluded;
+		useItem.m_nSplitScreenSlot = nSplitScreenSlot;
+		useItem.m_nNextFreeSlot = GlowObjectDefinition_t::ENTRY_IN_USE;
 	}
 
 	void ClearUseItem()
 	{
-		useItemGlow.m_hEntity = INVALID_EHANDLE;
+		useItem.m_hEntity = INVALID_EHANDLE;
 	}
 	void ClearUseItemObject()
 	{
-		C_BaseEntity* pEntity = useItemGlow.m_hEntity.Get();
+		C_BaseEntity* pEntity = useItem.m_hEntity.Get();
 		if (pEntity && !pEntity->IsPlayer())
-			useItemGlow.m_hEntity = INVALID_EHANDLE;
+			useItem.m_hEntity = INVALID_EHANDLE;
 	}
 	void ClearUseItemPlayer()
 	{
-		C_BaseEntity* pEntity = useItemGlow.m_hEntity.Get();
+		C_BaseEntity* pEntity = useItem.m_hEntity.Get();
 		if (pEntity && pEntity->IsPlayer())
-			useItemGlow.m_hEntity = INVALID_EHANDLE;
+			useItem.m_hEntity = INVALID_EHANDLE;
 	}
 #endif // NEO
 private:
@@ -202,7 +202,7 @@ private:
 	int m_nFirstFreeSlot;
 
 #ifdef NEO
-	GlowObjectDefinition_t useItemGlow;
+	GlowObjectDefinition_t useItem;
 #endif // NEO
 };
 

@@ -168,7 +168,7 @@ void CGlowObjectManager::RenderGlowModels( const CViewSetup *pSetup, int nSplitS
 			continue;
 
 #ifdef NEO
-		if ( i != m_GlowObjectDefinitions.Count() - 1 && useItemGlow.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity && useItemGlow.m_hEntity.IsValid())
+		if ( i != m_GlowObjectDefinitions.Count() - 1 && useItem.m_hEntity.IsValid() && useItem.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
 			continue;
 
 		// DrawModel can call ForcedMaterialOverride also
@@ -217,10 +217,11 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	int iNumGlowObjects = 0;
 
 #ifdef NEO
-	int useElementIndex = -1;
-	if (useItemGlow.m_hEntity.IsValid())
+	constexpr int INVALID_USEELEMENT_INDEX = -1;
+	int useElementIndex = INVALID_USEELEMENT_INDEX;
+	if (useItem.m_hEntity.IsValid())
 	{
-		useElementIndex = m_GlowObjectDefinitions.AddToTail(useItemGlow);
+		useElementIndex = m_GlowObjectDefinitions.AddToTail(useItem);
 	}
 #endif // NEO
 	for ( int i = 0; i < m_GlowObjectDefinitions.Count(); ++ i )
@@ -229,7 +230,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 			continue;
 
 #ifdef NEO
-		if (useElementIndex != -1 && i != useElementIndex && useItemGlow.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
+		if (i != useElementIndex && useItem.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
 			continue;
 #endif // NEO
 
@@ -309,7 +310,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 			continue;
 		
 #ifdef NEO
-		if (useElementIndex != -1 && i != useElementIndex && useItemGlow.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
+		if (i != useElementIndex && useItem.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
 			continue;
 #endif // NEO
 
@@ -350,7 +351,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	if ( iNumGlowObjects <= 0 )
 #ifdef NEO
 	{
-		if (useElementIndex != -1)
+		if (useElementIndex != INVALID_USEELEMENT_INDEX)
 		{
 			m_GlowObjectDefinitions.Remove(useElementIndex);
 		}
@@ -368,7 +369,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		RenderGlowModels( pSetup, nSplitScreenSlot, pRenderContext );
 	}
 #ifdef NEO
-	if (useElementIndex != -1)
+	if (useElementIndex != INVALID_USEELEMENT_INDEX)
 	{
 		m_GlowObjectDefinitions.Remove(useElementIndex);
 	}

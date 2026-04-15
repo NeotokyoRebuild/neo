@@ -147,7 +147,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
 			pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
 		{
-			g_GlowObjectManager.SetUseItemGlowObject(pUseEntity, Vector( 1.0f, 1.0f, 1.0f ), g_SmokeFogOverlayThermalOverride ? 1.0f : Max( 0.0f, 1.0f - g_SmokeFogOverlayAlpha), true, false);
+			g_GlowObjectManager.SetUseItem(pUseEntity, Vector( 1.0f, 1.0f, 1.0f ), g_SmokeFogOverlayThermalOverride ? 1.0f : Max( 0.0f, 1.0f - g_SmokeFogOverlayAlpha), true, false);
 			
 			if (!cl_neo_hud_context_hint_show_object_interact_hint.GetBool())
 				return;
@@ -173,7 +173,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				{
 					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Cannot pickup weapon");
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
-					// g_GlowObjectManager.ClearUseItemGlowObject(); // NEO TODO (Adam) Clear highlight? or show which weapon cannot be picked up? Change highlight colour to red?
+					// g_GlowObjectManager.ClearuseItemObject(); // NEO TODO (Adam) Clear highlight? or show which weapon cannot be picked up? Change highlight colour to red?
 				}
 				else
 				{
@@ -232,7 +232,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				{
 					Vector teamGlowColor { 1.f, 1.f, 1.f };
 					NEORules()->GetTeamGlowColor(pTargetPlayer->GetTeamNumber(), teamGlowColor[0], teamGlowColor[1], teamGlowColor[2]);
-					g_GlowObjectManager.SetUseItemGlowObject(pTargetPlayer, teamGlowColor, g_SmokeFogOverlayThermalOverride ? 1.0f : Max(0.0f, 1.0f - g_SmokeFogOverlayAlpha), false, true);
+					g_GlowObjectManager.SetUseItem(pTargetPlayer, teamGlowColor, g_SmokeFogOverlayThermalOverride ? 1.0f : Max(0.0f, 1.0f - g_SmokeFogOverlayAlpha), false, true);
 			
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 					if (sv_neo_bot_cmdr_enable.GetBool())
