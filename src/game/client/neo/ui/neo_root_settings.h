@@ -211,7 +211,7 @@ struct NeoSettings
 		bool bShowHudContextHintObjectInteract;
 		bool bShowHudContextHintBotInteract;
 		bool bShowHudContextHighlightObject;
-		bool bShowHudContextHighlightBot;
+		bool bShowHudContextHighlightPlayer;
 		int iKdinfoToggletype;
 
 		// IFF Markers

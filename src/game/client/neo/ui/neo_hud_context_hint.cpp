@@ -123,11 +123,9 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					// update hint duration
 					if (pObserverTargetPlayer != m_hLastSpecTarget.Get())
 					{
-						m_flDisplayEndTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
 						m_hLastSpecTarget = pObserverTargetPlayer;
-
-						// NEO NOTE (Adam) currently this is the only hint we can show when observing. If the hint text ever changes while observer target remains the same, will need to update this more often
 						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
+						m_flDisplayEndTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
 					}
 					
 					showTakeOverHint = true;
@@ -136,8 +134,8 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 
 			if (!showTakeOverHint)
 			{
-				m_flDisplayEndTime = gpGlobals->curtime;
 				m_hLastSpecTarget = INVALID_EHANDLE;
+				m_flDisplayEndTime = gpGlobals->curtime;
 			}
 		}
 	}
@@ -183,30 +181,23 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 			else
 			{
 				// Juggernaut hint
-				if (Q_strcmp(pUseEntity->GetClassname(), "class C_NEO_Juggernaut") == 0)
+				if (CNEO_Juggernaut* pJuggernaut = dynamic_cast<CNEO_Juggernaut*>(pUseEntity);
+					pJuggernaut)
 				{
-					if (CNEO_Juggernaut* pJuggernaut = static_cast<CNEO_Juggernaut*>(pUseEntity);
-						pJuggernaut)
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					if (pJuggernaut->m_bLocked)
 					{
-						m_flDisplayEndTime = gpGlobals->curtime + 1.f;
-						if (pJuggernaut->m_bLocked)
-						{
-							V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Juggernaut is locked");
-						}
-						else if (C_NEO_Player* pNeoJuggernautPlayer = pJuggernaut->m_hHoldingPlayer.Get();
-							pNeoJuggernautPlayer && pJuggernaut->m_bIsHolding)
-						{
-							g_GlowObjectManager.ClearUseItemPlayer();
-							m_flDisplayEndTime = gpGlobals->curtime;
-						}
-						else
-						{
-							V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] take the Juggernaut", szUppercaseKeyBinding);
-						}
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"JGR56 is locked");
+					}
+					else if (C_NEO_Player* pNeoJuggernautPlayer = pJuggernaut->m_hHoldingPlayer.Get();
+						pNeoJuggernautPlayer && pJuggernaut->m_bIsHolding)
+					{
+						g_GlowObjectManager.ClearUseItemPlayer();
+						m_flDisplayEndTime = gpGlobals->curtime;
 					}
 					else
 					{
-						m_flDisplayEndTime = gpGlobals->curtime;
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] boot into JGR56", szUppercaseKeyBinding);
 					}
 				}
 				// Some other useable entity

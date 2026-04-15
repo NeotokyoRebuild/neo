@@ -689,7 +689,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pHUD->bShowHudContextHintObjectInteract = cvr->cl_neo_hud_context_hint_show_object_interact_hint.GetBool();
 		pHUD->bShowHudContextHintBotInteract = cvr->cl_neo_hud_context_hint_show_bot_interact_hint.GetBool();
 		pHUD->bShowHudContextHighlightObject = cvr->cl_neo_hud_context_hint_highlight_object.GetBool();
-		pHUD->bShowHudContextHighlightBot = cvr->cl_neo_hud_context_hint_highlight_player.GetBool();
+		pHUD->bShowHudContextHighlightPlayer = cvr->cl_neo_hud_context_hint_highlight_player.GetBool();
 
 		bool bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], cvr->cl_neo_squad_marker.GetString());
 		if (!bImported)
@@ -954,7 +954,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_context_hint_show_object_interact_hint.SetValue(pHUD->bShowHudContextHintObjectInteract);
 		cvr->cl_neo_hud_context_hint_show_bot_interact_hint.SetValue(pHUD->bShowHudContextHintBotInteract);
 		cvr->cl_neo_hud_context_hint_highlight_object.SetValue(pHUD->bShowHudContextHighlightObject);
-		cvr->cl_neo_hud_context_hint_highlight_player.SetValue(pHUD->bShowHudContextHighlightBot);
+		cvr->cl_neo_hud_context_hint_highlight_player.SetValue(pHUD->bShowHudContextHighlightPlayer);
 
 		char szSequence[NEO_IFFMARKER_SEQMAX];
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], szSequence);
@@ -1665,9 +1665,9 @@ void NeoSettings_HUD(NeoSettings *ns)
 		NeoUI::RingBoxBool(L"Show player takeover contextual hint", &pHud->bShowHudContextHintPlayerTakeover);
 		NeoUI::RingBoxBool(L"Show object interact contextual hint", &pHud->bShowHudContextHintObjectInteract);
 		NeoUI::RingBoxBool(L"Show bot interact contextual hint", &pHud->bShowHudContextHintBotInteract);
-		NeoUI::RingBoxBool(L"Highlight interactable object", &pHud->bShowHudContextHighlightObject);
-		NeoUI::RingBoxBool(L"Highlight interactable bots", &pHud->bShowHudContextHighlightBot);
 	}
+	NeoUI::RingBoxBool(L"Highlight interactable objects", &pHud->bShowHudContextHighlightObject);
+	NeoUI::RingBoxBool(L"Highlight interactable players", &pHud->bShowHudContextHighlightPlayer);
 
 #ifdef GLOWS_ENABLE
 	NeoUI::Divider(L"XRAY");
