@@ -349,22 +349,41 @@ int GetRank(const int xp)
 	return iRank + 1;
 }
 
-const char *GetRankName(const int xp, const bool shortened)
-{
-	static constexpr const char *RANK_NAME_LONG[] = {
-		"Rankless Dog", "Private", "Corporal", "Sergeant", "Lieutenant"
-	};
-	static constexpr const char *RANK_NAME_SHORT[] = {
-		"Dog", "Pvt", "Cpl", "Sgt", "Lt"
-	};
-	static_assert(ARRAYSIZE(RANK_NAME_LONG) == ARRAYSIZE(RANK_NAME_SHORT));
+static constexpr const SZWSZTexts RANK_NAME_LONG[] = {
+	SZWSZ_INIT("Rankless Dog"),
+	SZWSZ_INIT("Private"),
+	SZWSZ_INIT("Corporal"),
+	SZWSZ_INIT("Sergeant"),
+	SZWSZ_INIT("Lieutenant"),
+};
+static constexpr const SZWSZTexts RANK_NAME_SHORT[] = {
+	SZWSZ_INIT("Dog"),
+	SZWSZ_INIT("Pvt"),
+	SZWSZ_INIT("Cpl"),
+	SZWSZ_INIT("Sgt"),
+	SZWSZ_INIT("Lt"),
+};
+static_assert(ARRAYSIZE(RANK_NAME_LONG) == ARRAYSIZE(RANK_NAME_SHORT));
 
+static const SZWSZTexts &GetRankNameBase(const int xp, const bool shortened)
+{
+	static const SZWSZTexts EMPTY{"", L""};
 	const int iRank = GetRank(xp);
 	if (IN_BETWEEN_AR(0, iRank, ARRAYSIZE(RANK_NAME_LONG)))
 	{
 		return (shortened ? RANK_NAME_SHORT : RANK_NAME_LONG)[iRank];
 	}
-	return "";
+	return EMPTY;
+}
+
+const char *GetRankName(const int xp, const bool shortened)
+{
+	return GetRankNameBase(xp, shortened).szStr;
+}
+
+const wchar_t *GetRankNameW(const int xp, const bool shortened)
+{
+	return GetRankNameBase(xp, shortened).wszStr;
 }
 
 void CNEO_Player::CheckAimButtons()

@@ -47,6 +47,10 @@ extern ConVar cam_idealyaw;
 // Need this for steam controller
 #include "clientsteamcontext.h"
 
+#ifdef NEO
+#include "ui/neoui_scoreboard.h"
+#endif // NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -764,6 +768,12 @@ void IN_ScoreDown( const CCommand &args )
 	KeyDown( &in_score, args[1] );
 	if ( gViewPortInterface )
 	{
+#ifdef NEO
+		if (g_pNeoUIScoreBoard)
+		{
+			g_pNeoUIScoreBoard->ToggleMouseCapture(false);
+		}
+#endif // NEO
 		gViewPortInterface->ShowPanel( PANEL_SCOREBOARD, true );
 	}
 }
@@ -773,6 +783,12 @@ void IN_ScoreUp( const CCommand &args )
 	KeyUp( &in_score, args[1] );
 	if ( gViewPortInterface )
 	{
+#ifdef NEO
+		if (g_pNeoUIScoreBoard)
+		{
+			g_pNeoUIScoreBoard->ToggleMouseCapture(false);
+		}
+#endif // NEO
 		gViewPortInterface->ShowPanel( PANEL_SCOREBOARD, false );
 		GetClientVoiceMgr()->StopSquelchMode();
 	}

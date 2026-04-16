@@ -72,6 +72,7 @@ extern ConVar replay_rendersetting_renderglow;
 #include <GameUI/IGameUI.h>
 #include "ui/neo_loading.h"
 #include "neo_gamerules.h"
+#include "ui/neoui_scoreboard.h"
 #endif
 
 #ifdef GLOWS_ENABLE
@@ -781,6 +782,17 @@ int	ClientModeShared::KeyInput( int down, ButtonCode_t keynum, const char *pszCu
 		}
 	}
 #endif
+
+#ifdef NEO
+	// Scoreboard right-click mouse capture, higher precedence than spectator
+	// mouse clicks
+	if (gViewPortInterface && g_pNeoUIScoreBoard && g_pNeoUIScoreBoard->IsVisible()
+			&& down && MOUSE_RIGHT == keynum && false == g_pNeoUIScoreBoard->IsMouseInputEnabled())
+	{
+		g_pNeoUIScoreBoard->ToggleMouseCapture(true);
+		return 0;
+	}
+#endif // NEO
 
 	C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
 
