@@ -32,24 +32,6 @@
 	"wave"	"player/vision_on.wav"
 }
 
-"NeoPlayer.RankUp"
-{
-	"channel"	"CHAN_ITEM"
-	"volume"     	"VOL_NORM"
-	"soundlevel"	"SNDLVL_75dB"
-	
-	"wave"	"player/vision_off.wav"
-}
-
-"NeoPlayer.RankDown"
-{
-	"channel"	"CHAN_ITEM"
-	"volume"     	"VOL_NORM"
-	"soundlevel"	"SNDLVL_75dB"
-	
-	"wave"	"player/vision_off.wav"
-}
-
 
 "HL2Player.SprintNoPower"
 {
