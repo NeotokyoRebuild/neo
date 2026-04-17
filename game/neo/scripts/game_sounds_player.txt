@@ -333,30 +333,3 @@
 		"wave"	"player/geiger3.wav"
 	}
 }
-
-"Victory.Draw"
-{
-	"channel"	"CHAN_STATIC"
-	"volume"     	"1.0"
-	"soundlevel"	"SNDLVL_180dB"
-
-	"wave"	"gameplay/draw.mp3"
-}
-
-"Victory.Jinrai"
-{
-	"channel"	"CHAN_STATIC"
-	"volume"     	"1.0"
-	"soundlevel"	"SNDLVL_180dB"
-
-	"wave"	"gameplay/jinrai.mp3"
-}
-
-"Victory.NSF"
-{
-	"channel"	"CHAN_STATIC"
-	"volume"     	"1.0"
-	"soundlevel"	"SNDLVL_180dB"
-
-	"wave"	"gameplay/nsf.mp3"
-}
