@@ -93,7 +93,11 @@ void CGlowObjectManager::RenderGlowEffects( const CViewSetup *pSetup, int nSplit
 {
 	if ( g_pMaterialSystemHardwareConfig->SupportsPixelShaders_2_0() )
 	{
+#ifdef NEO
 		if ( glow_outline_effect_enable.GetBool() || cl_neo_hud_context_hint_highlight_object.GetBool() || cl_neo_hud_context_hint_highlight_player.GetBool() )
+#else
+		if ( glow_outline_effect_enable.GetBool() )
+#endif // NEO
 		{
 			CMatRenderContextPtr pRenderContext( materials );
 

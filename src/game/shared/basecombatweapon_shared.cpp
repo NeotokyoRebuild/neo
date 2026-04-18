@@ -228,7 +228,11 @@ void CBaseCombatWeapon::Spawn( void )
 #endif
 
 	// Bloat the box for player pickup
+#ifdef NEO
+	CollisionProp()->UseTriggerBounds( true, 1, true );
+#else
 	CollisionProp()->UseTriggerBounds( true, 36 );
+#endif // NEO
 
 	// Use more efficient bbox culling on the client. Otherwise, it'll setup bones for most
 	// characters even when they're not in the frustum.

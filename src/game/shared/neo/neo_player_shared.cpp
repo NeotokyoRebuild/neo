@@ -15,6 +15,7 @@
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #include "c_playerresource.h"
+#include "ui/neo_hud_context_hint.h"
 #define CNEO_Player C_NEO_Player
 #else
 #include "neo_player.h"
@@ -28,6 +29,11 @@
 #include "neo_weapon_loadout.h"
 #include "weapon_neobasecombatweapon.h"
 #include "igameresources.h"
+#ifdef GAME_DLL
+#include "ai_basenpc.h"
+#else
+#include "c_ai_basenpc.h"
+#endif // GAME_DLL
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -408,7 +414,7 @@ void CNEO_Player::CheckAimButtons()
 bool CNEO_Player::IsAFK() const
 {
 #ifdef GAME_DLL
-	return gpGlobals->curtime - m_flLastInput > sv_neo_spec_replace_player_afk_time_sec.GetInt();
+	return gpGlobals->curtime - m_flLastInputTime > sv_neo_spec_replace_player_afk_time_sec.GetInt();
 #else
 	return GameResources()->IsAfk(entindex());
 #endif // GAME_DLL
@@ -432,4 +438,227 @@ bool CNEO_Player::ValidTakeoverTargetFor(CNEO_Player *pPlayerTakingOver)
 		&& InSameTeam(pPlayerTakingOver) && NEORules()->IsTeamplay()
 		&& (sv_neo_spec_replace_player_bot_enable.GetBool() && IsFakePlayer() ||
 			sv_neo_spec_replace_player_afk_enable.GetBool() && IsAFK());
+}
+
+#ifdef CLIENT_DLL
+ConVar cl_neo_hud_context_hint_show_adjacent_interactable_objects("cl_neo_hud_context_hint_show_adjacent_interactable_objects", "1", FCVAR_ARCHIVE, "Show adjacent interactable objects", true, 0.f, true, 1.f);
+static bool gAddUseItemsToUseItemsList = false;
+bool SetAddUseEntitysToUseEntityList(bool addUseItemsToUseItemsList)
+{
+	if (cl_neo_hud_context_hint_show_adjacent_interactable_objects.GetBool())
+		gAddUseItemsToUseItemsList = addUseItemsToUseItemsList;
+	return true;
+};
+#endif // CLIENT_DLL
+
+extern ConVar sv_debug_player_use;
+CBaseEntity *CNEO_Player::FindUseEntity()
+{
+	Vector forward;
+	EyeVectors( &forward, nullptr, nullptr );
+
+	trace_t tr;
+	// Search for objects in a sphere (tests for entities that are not solid, yet still useable)
+	Vector searchCenter = EyePosition();
+
+	// NOTE: Some debris objects are useable too, so hit those as well
+	// A button, etc. can be made out of clip brushes, make sure it's +useable via a traceline, too.
+	int useableContents = MASK_SOLID | CONTENTS_DEBRIS | CONTENTS_PLAYERCLIP;
+
+#ifndef CLIENT_DLL
+	CBaseEntity *pFoundByTrace = nullptr;
+#endif
+
+	// UNDONE: Might be faster to just fold this range into the sphere query
+	CBaseEntity *pObject = nullptr;
+
+	float nearestDot = -1;
+
+	// try the hit entity if there is one, or the ground entity if there isn't.
+	CBaseEntity *pNearest = nullptr;
+
+	{
+		UTIL_TraceLine( searchCenter, searchCenter + forward * 1024, useableContents, this, COLLISION_GROUP_NONE, &tr );
+		pObject = tr.m_pEnt;
+
+#ifndef CLIENT_DLL
+		pFoundByTrace = pObject;
+#endif
+		bool bUsable = IsUseableEntity(pObject, 0);
+		while ( pObject && !bUsable && pObject->GetMoveParent() )
+		{
+			pObject = pObject->GetMoveParent();
+			bUsable = IsUseableEntity(pObject, 0);
+		}
+
+		if ( bUsable )
+		{
+			Vector delta = tr.endpos - tr.startpos;
+			float centerZ = CollisionProp()->WorldSpaceCenter().z;
+			delta.z = IntervalDistance( tr.endpos.z, centerZ + CollisionProp()->OBBMins().z, centerZ + CollisionProp()->OBBMaxs().z );
+			float dist = delta.Length();
+			if ( dist < PLAYER_USE_RADIUS )
+			{
+#ifndef CLIENT_DLL
+				if ( sv_debug_player_use.GetBool() )
+				{
+					NDebugOverlay::Line( searchCenter, tr.endpos, 0, 255, 0, true, 30 );
+					NDebugOverlay::Cross3D( tr.endpos, 16, 0, 255, 0, true, 30 );
+				}
+
+				if ( pObject->MyNPCPointer() && pObject->MyNPCPointer()->IsPlayerAlly( this ) )
+				{
+					// If about to select an NPC, do a more thorough check to ensure
+					// that we're selecting the right one from a group.
+					pObject = DoubleCheckUseNPC( pObject, searchCenter, forward );
+				}
+#endif
+				if ( sv_debug_player_use.GetBool() )
+				{
+					Msg( "Trace using: %s\n", pObject ? pObject->GetDebugName() : "no usable entity found" );
+				}
+
+				pNearest = pObject;
+				
+				// if there is an entity directly under the cursor just return it now
+				// NEO NOTE (Adam) weapon axis aligned collision bounds are usually far removed from where the weapon is visually. If a weapon can be interacted with in a radius, use that instead
+				if (pObject && !((pObject->ObjectCaps() & FCAP_USE_IN_RADIUS) && pObject->IsBaseCombatWeapon()))
+					return pObject;
+			}
+		}
+	}
+
+	// check ground entity first
+	// if you've got a useable ground entity, then shrink the cone of this search to 45 degrees
+	// otherwise, search out in a 90 degree cone (hemisphere)
+	if ( GetGroundEntity() && IsUseableEntity(GetGroundEntity(), FCAP_USE_ONGROUND) )
+	{
+		pNearest = GetGroundEntity();
+	}
+	if ( pNearest )
+	{
+		// estimate nearest object by distance from the view vector
+		nearestDot = DotProduct((pNearest->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
+		if ( sv_debug_player_use.GetBool() )
+		{
+			Vector point;
+			pNearest->CollisionProp()->CalcNearestPoint( searchCenter, &point );
+			Msg("Trace found %s, dist %.2f\n", pNearest->GetClassname(), CalcDistanceToLine( point, searchCenter, forward ) );
+		}
+	}
+
+#ifdef CLIENT_DLL
+	int useEntityListIndex = 0;
+	ClearUseEntityListEntry();
+#endif // CLIENT_DLL
+	for ( CEntitySphereQuery sphere( searchCenter, PLAYER_USE_RADIUS ); ( pObject = sphere.GetCurrentEntity() ) != nullptr; sphere.NextEntity() )
+	{
+		if ( !pObject )
+			continue;
+
+#ifdef CLIENT_DLL
+		Vector point;
+		pObject->CollisionProp()->CalcNearestPoint( searchCenter, &point );
+		float dot = -1;
+		dot = DotProduct((pObject->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
+
+		if (gAddUseItemsToUseItemsList && IsUseableEntity(pObject, 0) && dot >= 0.8)
+		{
+			pObject->CollisionProp()->CalcNearestPoint( searchCenter, &point );
+			trace_t trCheckOccluded;
+			const int useableOccluder = MASK_SOLID | CONTENTS_PLAYERCLIP;
+			UTIL_TraceLine( searchCenter, point, useableOccluder, this, COLLISION_GROUP_PLAYER, &trCheckOccluded );
+
+			if (trCheckOccluded.fraction == 1.0 || trCheckOccluded.m_pEnt == pObject)
+			{
+				SetUseEntityListEntry(useEntityListIndex, pObject);
+				useEntityListIndex ++;
+			}
+		}
+#endif // CLIENT_DLL
+
+		if ( !IsUseableEntity( pObject, FCAP_USE_IN_RADIUS ) )
+			continue;
+
+#ifdef GAME_DLL
+		float dot = -1;
+		dot = DotProduct((pObject->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
+#endif // GAME_DLL
+
+		// Need to be looking at the object more or less
+		if ( dot < 0.8 )
+			continue;
+
+#ifdef GAME_DLL
+		Vector point;
+		pObject->CollisionProp()->CalcNearestPoint( searchCenter, &point );
+#endif // GAME_DLL
+		
+		if ( sv_debug_player_use.GetBool() )
+		{
+			// NEO NOTE (Adam) looks like CEntitySphereQuery is using surrounding bounds instead of collision bounds. This distance could be significantly greater than PLAYER_USE_RADIUS
+			Msg("Radius found %s, dist %.2f\n", pObject->GetClassname(), CalcDistanceToLine( point, searchCenter, forward ) );
+		}
+
+		if ( dot > nearestDot )
+		{
+			// Since this has purely been a radius search to this point, we now
+			// make sure the object isn't behind glass or a grate.
+			trace_t trCheckOccluded;
+			const int useableOccluder = MASK_SOLID | CONTENTS_PLAYERCLIP;
+			UTIL_TraceLine( searchCenter, point, useableOccluder, this, COLLISION_GROUP_PLAYER, &trCheckOccluded );
+
+			if ( trCheckOccluded.fraction == 1.0 || trCheckOccluded.m_pEnt == pObject )
+			{
+				pNearest = pObject;
+				nearestDot = dot;
+			}
+		}
+	}
+
+#ifndef CLIENT_DLL
+	if ( !pNearest )
+	{
+		// Haven't found anything near the player to use, nor any NPC's at distance.
+		// Check to see if the player is trying to select an NPC through a rail, fence, or other 'see-though' volume.
+		trace_t trAllies;
+		UTIL_TraceLine( searchCenter, searchCenter + forward * PLAYER_USE_RADIUS, MASK_OPAQUE_AND_NPCS, this, COLLISION_GROUP_NONE, &trAllies );
+
+		if ( trAllies.m_pEnt && IsUseableEntity( trAllies.m_pEnt, 0 ) && trAllies.m_pEnt->MyNPCPointer() && trAllies.m_pEnt->MyNPCPointer()->IsPlayerAlly( this ) )
+		{
+			// This is an NPC, take it!
+			pNearest = trAllies.m_pEnt;
+		}
+	}
+
+	if ( pNearest && pNearest->MyNPCPointer() && pNearest->MyNPCPointer()->IsPlayerAlly( this ) )
+	{
+		pNearest = DoubleCheckUseNPC( pNearest, searchCenter, forward );
+	}
+
+	if ( sv_debug_player_use.GetBool() )
+	{
+		if ( !pNearest )
+		{
+			NDebugOverlay::Line( searchCenter, tr.endpos, 255, 0, 0, true, 30 );
+			NDebugOverlay::Cross3D( tr.endpos, 16, 255, 0, 0, true, 30 );
+		}
+		else if ( pNearest == pFoundByTrace )
+		{
+			NDebugOverlay::Line( searchCenter, tr.endpos, 0, 255, 0, true, 30 );
+			NDebugOverlay::Cross3D( tr.endpos, 16, 0, 255, 0, true, 30 );
+		}
+		else
+		{
+			NDebugOverlay::Box( pNearest->WorldSpaceCenter(), Vector(-8, -8, -8), Vector(8, 8, 8), 0, 255, 0, true, 30 );
+		}
+	}
+#endif
+
+	if ( sv_debug_player_use.GetBool() )
+	{
+		Msg( "Radial using: %s\n", pNearest ? pNearest->GetDebugName() : "no usable entity found" );
+	}
+
+	return pNearest;
 }

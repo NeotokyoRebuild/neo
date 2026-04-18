@@ -38,6 +38,7 @@ private:
 
 	float m_flDisplayEndTime;
 	CHandle<C_BaseEntity> m_hLastSpecTarget;
+	CHandle<C_BaseEntity> m_hUseEntity;
 
 	CPanelAnimationVar(vgui::HFont, m_hHintFont, "font", "NeoUINormal");
 	CPanelAnimationVarAliasType(int, m_iPaddingX, "padding_x", "4", "proportional_xpos");
@@ -46,5 +47,8 @@ private:
 	CPanelAnimationVar(Color, m_BoxColor, "box_color", "20 20 20 220");
 	CPanelAnimationVar(Color, m_TextColor, "text_color", "255 255 255 255");
 };
+
+void SetUseEntityListEntry(int index, C_BaseEntity* entity);
+void ClearUseEntityListEntry();
 
 #endif // NEO_HUD_CONTEXT_HINT_H

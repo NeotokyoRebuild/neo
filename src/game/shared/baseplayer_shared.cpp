@@ -1158,11 +1158,7 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 	// UNDONE: Might be faster to just fold this range into the sphere query
 	CBaseEntity *pObject = NULL;
 
-#ifdef NEO
-	float nearestDist = -1;
-#else
 	float nearestDist = FLT_MAX;
-#endif // NEO
 	// try the hit entity if there is one, or the ground entity if there isn't.
 	CBaseEntity *pNearest = NULL;
 
@@ -1226,11 +1222,6 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 				
 				// if this is directly under the cursor just return it now
 				if ( i == 0 )
-#ifdef NEO // NEO NOTE (Adam) weapon axis aligned collision bounds are usually far removed from where the weapon is visually. If a weapon can be interacted with in a radius, use that instead
-					if (pObject && (pObject->ObjectCaps() & FCAP_USE_IN_RADIUS) && pObject->IsBaseCombatWeapon())
-						break;
-					else
-#endif // NEO
 					return pObject;
 			}
 		}
@@ -1246,15 +1237,6 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 	if ( pNearest )
 	{
 		// estimate nearest object by distance from the view vector
-#ifdef NEO
-		nearestDist = DotProduct((pNearest->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
-		if ( sv_debug_player_use.GetBool() )
-		{
-			Vector point;
-			pNearest->CollisionProp()->CalcNearestPoint( searchCenter, &point );
-			Msg("Trace found %s, dist %.2f\n", pNearest->GetClassname(), CalcDistanceToLine( point, searchCenter, forward ) );
-		}
-#else
 		Vector point;
 		pNearest->CollisionProp()->CalcNearestPoint( searchCenter, &point );
 		nearestDist = CalcDistanceToLine( point, searchCenter, forward );
@@ -1262,7 +1244,6 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 		{
 			Msg("Trace found %s, dist %.2f\n", pNearest->GetClassname(), nearestDist );
 		}
-#endif // NEO
 	}
 
 	for ( CEntitySphereQuery sphere( searchCenter, PLAYER_USE_RADIUS ); ( pObject = sphere.GetCurrentEntity() ) != NULL; sphere.NextEntity() )
@@ -1277,57 +1258,27 @@ CBaseEntity *CBasePlayer::FindUseEntity()
 		Vector point;
 		pObject->CollisionProp()->CalcNearestPoint( searchCenter, &point );
 
-#ifdef NEO
-		float dot = -1;
-		dot = DotProduct((pObject->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
-		
-		if (sv_debug_player_use.GetBool())
-		{ // NEO TODO (Adam) Some games actually draw where the interaction point of an object is, in our case this world space center. A mode for STALKER GAMMA comes to mind that uses a small white dot.
-		  // Could make it easier to pick out a weapon if there are a whole bunch close together.
-			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(4, 0, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(4, 0, 0), 16, 255, 0, true, 0.2);
-			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 4, 0), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 4, 0), 16, 255, 0, true, 0.2);
-			DebugDrawLine(pObject->CollisionProp()->WorldSpaceCenter() - Vector(0, 0, 4), pObject->CollisionProp()->WorldSpaceCenter() + Vector(0, 0, 4), 16, 255, 0, true, 0.2);
-		}
-#else
 		Vector dir = point - searchCenter;
 		VectorNormalize(dir);
 		float dot = DotProduct( dir, forward );
-#endif // NEO
 
 		// Need to be looking at the object more or less
 		if ( dot < 0.8 )
 			continue;
 
-#ifdef NEO
-		float dist = dot;
-
-		if ( sv_debug_player_use.GetBool() )
-		{ // NEO NOTE (Adam) looks like CEntitySphereQuery is using surrounding bounds instead of collision bounds. This distance could be significantly greater than PLAYER_USE_RADIUS
-			Msg("Radius found %s, dist %.2f\n", pObject->GetClassname(), CalcDistanceToLine( point, searchCenter, forward ) );
-		}
-#else
 		float dist = CalcDistanceToLine( point, searchCenter, forward );
 
 		if ( sv_debug_player_use.GetBool() )
 		{
 			Msg("Radius found %s, dist %.2f\n", pObject->GetClassname(), dist );
 		}
-#endif // NEO
 
-#ifdef NEO
-		if ( dist > nearestDist )
-#else
 		if ( dist < nearestDist )
-#endif // NEO
 		{
 			// Since this has purely been a radius search to this point, we now
 			// make sure the object isn't behind glass or a grate.
 			trace_t trCheckOccluded;
-#ifdef NEO // NEO NOTE (Adam) Weapons are debris, their axis aligned collision bounds can block other weapons from being picked up but are seldom aligned with the weapon itself, just stop debris from blocking player use
-			UTIL_TraceLine( searchCenter, point, useableContents & !CONTENTS_DEBRIS, this, COLLISION_GROUP_NONE, &trCheckOccluded );
-#else
 			UTIL_TraceLine( searchCenter, point, useableContents, this, COLLISION_GROUP_NONE, &trCheckOccluded );
-#endif // NEO
 
 			if ( trCheckOccluded.fraction == 1.0 || trCheckOccluded.m_pEnt == pObject )
 			{

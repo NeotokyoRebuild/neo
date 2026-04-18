@@ -40,6 +40,7 @@
 #include "bot/neo_bot.h"
 #include "nav_mesh.h"
 #include "neo_spawn_manager.h"
+#include "recipientfilter.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -761,16 +762,6 @@ void CNEO_Player::Spawn(void)
 
 	ResetBotCommandState();
 	m_iBotDetectableBleedingInjuryEvents = 0;
-}
-
-void CNEO_Player::PlayerRunCommand(CUserCmd* ucmd, IMoveHelper* moveHelper)
-{
-	if (ucmd->forwardmove || ucmd->sidemove || ucmd->upmove	|| ucmd->buttons)
-	{
-		m_flLastInput = gpGlobals->curtime;
-	}
-
-	BaseClass::PlayerRunCommand(ucmd, moveHelper);
 }
 
 extern ConVar neo_lean_angle;
@@ -2441,6 +2432,33 @@ void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
 			continue;
 		}
 
+		if (pNeoWeapon->GetSlot() == NEO_THROWABLES_WEAPON_SLOT)
+		{ // drop individual throwables with ammo counts of 1
+			int numThrowablesCreated = 0;
+			for (int i = 1; i < pNeoWeapon->m_iPrimaryAmmoCount; i++)
+			{
+				CBaseEntity* pEnt = CreateEntityByName(pNeoWeapon->GetClassname());
+				if (!pEnt)
+					break; // Assuming this will not work for all subsequent tries
+
+				CNEOBaseCombatWeapon* pNeoEnt = static_cast<CNEOBaseCombatWeapon*>(pEnt);
+				if (!pNeoEnt)
+				{
+					UTIL_Remove(pEnt);
+					break; // ditto
+				}
+
+				pNeoEnt->SetLocalOrigin( GetLocalOrigin() );
+				pNeoEnt->AddSpawnFlags(SF_NORESPAWN);
+				DispatchSpawn( pNeoEnt );
+				pNeoEnt->Equip(this);
+				pNeoEnt->m_iPrimaryAmmoCount = 1;
+				numThrowablesCreated++;
+				Weapon_DropOnDeath(pNeoEnt, damageForce);
+			}
+			pNeoWeapon->m_iPrimaryAmmoCount.Set(pNeoWeapon->m_iPrimaryAmmoCount - numThrowablesCreated);
+		}
+
 		// Nowhere in particular; just drop it.
 		Weapon_DropOnDeath(pNeoWeapon, damageForce);
 	}
@@ -2618,6 +2636,8 @@ bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,
 
 void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 {
+	m_flLastInputTime = gpGlobals->curtime;
+
 	BaseClass::FireBullets(info);
 
 	if (!((static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))->GetNeoWepBits() & NEO_WEP_SUPPRESSED))
@@ -2701,14 +2721,38 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
 	auto weaponSlot = pWeapon->GetSlot();
-	// Only pick up grenades if we don't have grenades of that type NEOTODO (Adam) What if we have less than the maximum of that type (i.e one smoke grenade)? Can I carry more of a grenade than I spawn with?
-	if (weaponSlot == 3 && Weapon_GetPosition(weaponSlot, pWeapon->GetPosition()))
+	if (weaponSlot == NEO_THROWABLES_WEAPON_SLOT)
 	{
-		return false;
+		if (CNEOBaseCombatWeapon* pNeoWeaponInSlot = Weapon_GetPosition(weaponSlot, pWeapon->GetPosition());
+			pNeoWeaponInSlot)
+		{
+			if (pNeoWeaponInSlot->GetPrimaryAmmoCount() < pNeoWeaponInSlot->GetDefaultClip1())
+			{
+				const int ammoToAdd = clamp(pNeoWeaponInSlot->GetDefaultClip1() - pNeoWeaponInSlot->GetPrimaryAmmoCount(), 0, pWeapon->GetPrimaryAmmoCount());
+				pNeoWeaponInSlot->m_iPrimaryAmmoCount += ammoToAdd;
+				pWeapon->m_iPrimaryAmmoCount -= ammoToAdd;
+				if (pWeapon->GetPrimaryAmmoCount() <= 0)
+				{
+					UTIL_Remove(pWeapon);
+				}
+				if (ammoToAdd > 0)
+				{
+					CRecipientFilter filter;
+					filter.AddRecipient(this);
+
+					EmitSound_t params;
+					params.m_pSoundName = "Player.PickupWeapon";
+					params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL; // NEO TODO (Adam) This is silencing weapon pickup noise when picking up with the use key
+
+					EmitSound(filter,entindex(), params);
+				}
+			}
+			return false;
+		}
 	}
 
 	// We already have a weapon in this slot
-	if (weaponSlot != 3 && Weapon_GetSlot(weaponSlot))
+	if (weaponSlot != NEO_THROWABLES_WEAPON_SLOT && Weapon_GetSlot(weaponSlot))
 	{
 		return false;
 	}
@@ -2734,7 +2778,7 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	return okRet;
 }
 
-bool CNEO_Player::Weapon_GetPosition(int slot, int position)
+CNEOBaseCombatWeapon* CNEO_Player::Weapon_GetPosition(int slot, int position)
 {
 	// Check for that slot being occupied already
 	for (int i = 0; i < MAX_WEAPONS; i++)
@@ -2743,7 +2787,7 @@ bool CNEO_Player::Weapon_GetPosition(int slot, int position)
 		{
 			// If the slots match, it's already occupied
 			if (m_hMyWeapons[i]->GetSlot() == slot && m_hMyWeapons[i]->GetPosition() == position)
-				return m_hMyWeapons[i];
+				return static_cast<CNEOBaseCombatWeapon*>(m_hMyWeapons[i].Get());
 		}
 	}
 
@@ -3705,8 +3749,12 @@ void CNEO_Player::CloakPower_Update(void)
 	}
 }
 
+ConVar cl_neo_infinite_cloak("cl_neo_infinite_cloak", "0", FCVAR_CHEAT);
 bool CNEO_Player::CloakPower_Drain(float flPower)
 {
+	if (cl_neo_infinite_cloak.GetBool())
+		return true;
+
 	m_HL2Local.m_cloakPower -= flPower;
 
 	if (m_HL2Local.m_cloakPower < 0.0)

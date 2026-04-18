@@ -41,12 +41,14 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
+	RecvPropInt(RECVINFO(m_spawnflags)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
+	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
 END_NETWORK_TABLE()
@@ -1384,8 +1386,7 @@ void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 		{
 			CBaseCombatWeapon* pActiveWeapon = pNeoPlayer->GetActiveWeapon();
 			const int activeSlot = pActiveWeapon ? pActiveWeapon->GetSlot() : -1;
-			pNeoPlayer->Weapon_DropSlot(GetSlot()); // NEO NOTE (Adam) no guarantee we will actually pick up the weapon. CanBePickedUpByClass should catch most problems
-													// Also we shouldn't do this for throwables since you can have multiple in the same slot, but throwables can't be dropped so not a problem right now
+			pNeoPlayer->Weapon_DropSlot(GetSlot());
 
 			(this->*m_pfnTouch)(pActivator);
 

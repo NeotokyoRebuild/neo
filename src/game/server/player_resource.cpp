@@ -179,7 +179,7 @@ void CPlayerResource::UpdatePlayerData( void )
 				m_szNeoClantag.Set(i, strt);
 			}
 			m_iNeoNameDupeIdx.Set(i, neoPlayer->NameDupePos());
-			m_bAfk.Set(i, gpGlobals->curtime - neoPlayer->m_flLastInput > sv_neo_spec_replace_player_afk_time_sec.GetInt());
+			m_bAfk.Set(i, gpGlobals->curtime - neoPlayer->m_flLastInputTime > sv_neo_spec_replace_player_afk_time_sec.GetInt());
 #endif
 			UpdateConnectedPlayer( i, pPlayer );
 		}

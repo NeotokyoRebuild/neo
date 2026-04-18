@@ -87,6 +87,7 @@ struct WeaponSeeds_t
 };
 
 #define	SOUNDENT_VOLUME_NEO_SUPPRESSED 900.0
+#define NEO_THROWABLES_WEAPON_SLOT 3
 
 #if(1)
 		// This does nothing; dummy value for network test. Remove when not needed anymore.
@@ -148,10 +149,12 @@ public:
 		int caps = BaseClass::ObjectCaps();
 		if (!IsFollowingEntity()
 #ifdef GAME_DLL
-			&& !HasSpawnFlags(SF_WEAPON_NO_PLAYER_PICKUP) // NEO TODO (Adam) workout how to check this client side
+			&& !HasSpawnFlags(SF_WEAPON_NO_PLAYER_PICKUP)
+#else
+			&& !(m_spawnflags & SF_WEAPON_NO_PLAYER_PICKUP)
 #endif // GAME_DLL
 			)
-		{ // NEO NOTE (Adam) debris can be usable too, and debris such as ragdolls and gibs prevents us from picking up weapons with use via direct traceline, allow usage in radius too.
+		{
 			caps |= FCAP_IMPULSE_USE|FCAP_USE_IN_RADIUS; 
 		}
 
@@ -177,6 +180,7 @@ public:
 #ifdef GAME_DLL
 	virtual void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value ) override;
 #endif
+
 	virtual void DryFire(void);
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
@@ -252,6 +256,7 @@ public:
 	float GetPenetration() const;
 #ifdef CLIENT_DLL
 	float m_flTemperature;
+	int m_spawnflags;
 #endif // CLIENT_DLL
 
 protected:

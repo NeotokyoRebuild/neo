@@ -87,6 +87,7 @@ ConVar cl_neo_hud_context_hint_show_bot_interact_hint("cl_neo_hud_context_hint_s
 void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 {
 	g_GlowObjectManager.ClearUseItem();
+	m_hUseEntity = nullptr;
 
 	C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalNeoPlayer)
@@ -124,7 +125,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					if (pObserverTargetPlayer != m_hLastSpecTarget.Get())
 					{
 						m_hLastSpecTarget = pObserverTargetPlayer;
-						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Takeover player", szUppercaseKeyBinding);
 						m_flDisplayEndTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
 					}
 					
@@ -142,10 +143,12 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 	else
 	{
 		constexpr float ITEM_DISCOVERY_SMOKE_THRESHOLD = 0.8f;
+		SetAddUseEntitysToUseEntityList(true);
 		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
-			pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
+			SetAddUseEntitysToUseEntityList(false) && pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
 		{
 			g_GlowObjectManager.SetUseItem(pUseEntity, Vector( 1.0f, 1.0f, 1.0f ), g_SmokeFogOverlayThermalOverride ? 1.0f : Max( 0.0f, 1.0f - g_SmokeFogOverlayAlpha), true, false);
+			m_hUseEntity = pUseEntity;
 			
 			if (!cl_neo_hud_context_hint_show_object_interact_hint.GetBool())
 				return;
@@ -171,11 +174,12 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				{
 					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Cannot pickup weapon");
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
-					// g_GlowObjectManager.ClearuseItemObject(); // NEO TODO (Adam) Clear highlight? or show which weapon cannot be picked up? Change highlight colour to red?
+					m_hUseEntity = INVALID_EHANDLE;
 				}
 				else
 				{
 					g_GlowObjectManager.ClearUseItemObject();
+					m_hUseEntity = INVALID_EHANDLE;
 				}
 			}
 			else
@@ -234,19 +238,37 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					{
 						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] request primary weapon", szUppercaseKeyBinding); // NEO TODO (Adam) network primary weapon so can print its name here?
 					}
-					// else if NEO TODO (Adam) check if bots are frozen because of no navigation mesh or nb_player_stop, show appropriate message here?
 				}
 			}
 		}
 	}
 }
 
+struct UseEntity
+{
+	CHandle<CBaseEntity> entity = INVALID_EHANDLE;
+};
+
+// NEO NOTE (Adam) MAX_SPHERE_QUERY client side is half the size compared to server side? Might cause problems in context hint in extreme cases where item closest to cursor doesn't get highlighted but gets used
+UseEntity useEntityList[MAX_SPHERE_QUERY] = {};
+int useEntityListLastIndex = -1;
+
+void SetUseEntityListEntry(int index, CBaseEntity* entity)
+{
+	if (index < 0 || index >= ARRAYSIZE(useEntityList))
+		return;
+	useEntityList[index].entity = entity;
+	useEntityListLastIndex = index;
+};
+
+void ClearUseEntityListEntry()
+{
+	useEntityListLastIndex = -1;
+};
+
 void CNEOHud_ContextHint::DrawNeoHudElement()
 {
 	if (m_wszHintText[0] == L'\0')
-		return;
-
-	if (m_flDisplayEndTime <= gpGlobals->curtime)
 		return;
 
 	int iScrWide, iScrTall;
@@ -260,16 +282,49 @@ void CNEOHud_ContextHint::DrawNeoHudElement()
 
 	int iBoxX = (iScrWide - iBoxWide) / 2;
 	int iBoxY = iScrTall * m_flBoxYFactor - iBoxTall / 2;
+	
+	int textX = iBoxX + m_iPaddingX;
+	int textY = iBoxY + m_iPaddingY;
+	int x = 0;
+	int y = 0;
+	const int size = iTextTall / 8;
+
+	vgui::surface()->DrawSetColor(m_TextColor);
+	for (int i = 0; i <= useEntityListLastIndex; i++)
+	{
+		if (useEntityList[i].entity.IsValid())
+		{
+			if (C_BaseEntity* entity = useEntityList[i].entity.Get())
+			{
+				GetVectorInScreenSpace(entity->CollisionProp()->WorldSpaceCenter(), x, y);
+				vgui::surface()->DrawOutlinedCircle(x, y, size, 12);
+			}
+		}
+	}
+	
+	if (m_flDisplayEndTime <= gpGlobals->curtime)
+		return;
+
+	if (m_hUseEntity.IsValid())
+	{
+		C_BaseEntity* useEntity = m_hUseEntity.Get();
+		if (useEntity)
+		{
+			GetVectorInScreenSpace(useEntity->CollisionProp()->WorldSpaceCenter(), textX, textY);
+
+			// text position
+			textX += iTextTall / 2;
+			textY -= iTextTall / 1.85f;
+		}
+	}
 
 	vgui::surface()->DrawSetColor(m_BoxColor);
 	vgui::surface()->DrawFilledRect(iBoxX, iBoxY, iBoxX + iBoxWide, iBoxY + iBoxTall);
 
 	vgui::surface()->DrawSetTextFont(m_hHintFont);
 	vgui::surface()->DrawSetTextColor(m_TextColor);
-	vgui::surface()->DrawSetTextPos(iBoxX + m_iPaddingX, iBoxY + m_iPaddingY);
+	vgui::surface()->DrawSetTextPos(textX, textY);
 	vgui::surface()->DrawPrintText(m_wszHintText, static_cast<int>(wcslen(m_wszHintText)));
-
-	// NEO TODO (Adam) different text colour for keybind, instruction and target name?
 }
 
 void CNEOHud_ContextHint::Paint()

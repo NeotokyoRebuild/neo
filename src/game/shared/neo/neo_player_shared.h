@@ -413,6 +413,10 @@ static constexpr const SZWSZTexts SZWSZ_NEO_TEAM_STRS[TEAM__TOTAL] = {
 	X_SZWSZ_INIT(TEAM_STR_NSF), // TEAM_NSF
 };
 
+#ifdef CLIENT_DLL
+bool SetAddUseEntitysToUseEntityList(bool addUseItemsToUseItemsList);
+#endif // CLIENT_DLL
+
 #define NEO_GAME_NAME "NEOTOKYO;REBUILD"
 
 #endif // NEO_PLAYER_SHARED_H

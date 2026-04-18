@@ -63,7 +63,6 @@ public:
 
 	virtual void Precache(void) OVERRIDE;
 	virtual void Spawn(void) OVERRIDE;
-	virtual void PlayerRunCommand(CUserCmd* ucmd, IMoveHelper* moveHelper) override;
 	virtual void PostThink(void) OVERRIDE;
 	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
@@ -81,7 +80,7 @@ public:
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
 	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
-	bool Weapon_GetPosition(int slot, int position);
+	CNEOBaseCombatWeapon* Weapon_GetPosition(int slot, int position);
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
@@ -97,6 +96,7 @@ public:
 	virtual void GiveDefaultItems(void) OVERRIDE;
 	virtual int	OnTakeDamage_Alive(const CTakeDamageInfo& info) OVERRIDE;
 	virtual CBaseEntity* GiveNamedItem(const char* szName, int iSubType = 0) override;
+	virtual CBaseEntity* FindUseEntity() override;
 
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
@@ -326,7 +326,7 @@ public:
 	void ResetBotCommandState();
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
 	static const Vector VECTOR_INVALID_WAYPOINT;
-	float m_flLastInput = gpGlobals->curtime;
+	float m_flLastInputTime = gpGlobals->curtime;
 
 private:
 	bool m_bFirstDeathTick;
