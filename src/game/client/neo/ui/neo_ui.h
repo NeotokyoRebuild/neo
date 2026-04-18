@@ -645,6 +645,7 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 void ResetTextures();
 
 // Non-widgets/convenience functions
+bool Bind(const char *pszBindName);
 bool Bind(const ButtonCode_t eCode);
 bool Bind(const ButtonCode_t *peCode, const int ieCodeSize);
 bool BindKeyEnter();

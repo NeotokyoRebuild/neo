@@ -1270,7 +1270,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 
 		// Play/Pause button
-		if (NeoUI::Button(mps->bPlaying ? L"II" : L"\u25B6").bPressed)
+		if (NeoUI::Button(mps->bPlaying ? L"II" : L"\u25B6").bPressed || NeoUI::Bind("neo_mp3"))
 		{
 			mps->flagsPlayStateNext = (mps->bPlaying)
 					? NeoMP3::PLAYSTATE_FLAG_PAUSED : NeoMP3::PLAYSTATE_FLAG_PLAY;
