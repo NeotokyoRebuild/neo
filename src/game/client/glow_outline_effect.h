@@ -22,6 +22,11 @@ class CMatRenderContextPtr;
 
 static const int GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS = -1;
 
+#ifdef NEO
+extern ConVar cl_neo_hud_context_hint_highlight_object;
+extern ConVar cl_neo_hud_context_hint_highlight_player;
+#endif // NEO
+
 class CGlowObjectManager
 {
 public:
@@ -121,6 +126,39 @@ public:
 		Assert( !m_GlowObjectDefinitions[nGlowObjectHandle].IsUnused() );
 		m_GlowObjectDefinitions[nGlowObjectHandle].m_bUseTexturedHighlight = useTexturedHighlight;
 	}
+
+	void SetUseItem( C_BaseEntity *pEntity, const Vector &vGlowColor = Vector( 1.0f, 1.0f, 1.0f ), float flGlowAlpha = 1.0f, bool bRenderWhenOccluded = false, bool bRenderWhenUnoccluded = false, int nSplitScreenSlot = GLOW_FOR_ALL_SPLIT_SCREEN_SLOTS )
+	{
+		if (pEntity->IsPlayer() && !cl_neo_hud_context_hint_highlight_player.GetBool())
+			return;
+		else if (!pEntity->IsPlayer() && !cl_neo_hud_context_hint_highlight_object.GetBool())
+			return;
+
+		useItem.m_hEntity = pEntity;
+		useItem.m_vGlowColor = vGlowColor;
+		useItem.m_flGlowAlpha = flGlowAlpha;
+		useItem.m_bRenderWhenOccluded = bRenderWhenOccluded;
+		useItem.m_bRenderWhenUnoccluded = bRenderWhenUnoccluded;
+		useItem.m_nSplitScreenSlot = nSplitScreenSlot;
+		useItem.m_nNextFreeSlot = GlowObjectDefinition_t::ENTRY_IN_USE;
+	}
+
+	void ClearUseItem()
+	{
+		useItem.m_hEntity = INVALID_EHANDLE;
+	}
+	void ClearUseItemObject()
+	{
+		C_BaseEntity* pEntity = useItem.m_hEntity.Get();
+		if (pEntity && !pEntity->IsPlayer())
+			useItem.m_hEntity = INVALID_EHANDLE;
+	}
+	void ClearUseItemPlayer()
+	{
+		C_BaseEntity* pEntity = useItem.m_hEntity.Get();
+		if (pEntity && pEntity->IsPlayer())
+			useItem.m_hEntity = INVALID_EHANDLE;
+	}
 #endif // NEO
 private:
 
@@ -162,6 +200,10 @@ private:
 
 	CUtlVector< GlowObjectDefinition_t > m_GlowObjectDefinitions;
 	int m_nFirstFreeSlot;
+
+#ifdef NEO
+	GlowObjectDefinition_t useItem;
+#endif // NEO
 };
 
 extern CGlowObjectManager g_GlowObjectManager;

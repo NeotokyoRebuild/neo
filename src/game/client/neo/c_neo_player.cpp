@@ -1461,11 +1461,6 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 #ifdef GLOWS_ENABLE
 void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 {
-	if (!glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
-	{
-		return;
-	}
-
 	auto updateGlowColour = [](C_BasePlayer* pPlayer, int iTeam = 0) {
 		float r, g, b;
 		NEORules()->GetTeamGlowColor(iTeam ? iTeam : pPlayer->GetTeamNumber(), r, g, b);
@@ -1479,7 +1474,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 				continue;
 			}
 
-			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED)
+			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED || !glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 			{
 				pPlayer->SetClientSideGlowEnabled(false);
 				continue;
@@ -1495,7 +1490,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 		}
 	}
 	else {
-		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED)
+		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED || !glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 		{
 			SetClientSideGlowEnabled(false);
 			return;
@@ -2104,3 +2099,41 @@ const char* C_NEO_Player::GetPlayerNameWithTakeoverContext(int player_index)
     return base_name;
 }
 
+C_NEO_Player* C_NEO_Player::PlayerUseTraceLine()
+{
+	// Select player under cursor
+	Vector eyePos = EyePosition();
+	Vector forward;
+	EyeVectors( &forward );
+	Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
+
+	// MASK_SHOT_HULL to match friendly fire warning trace
+	trace_t tr;
+	UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr );
+	
+	if (tr.DidHit() && tr.m_pEnt)
+	{
+		return ToNEOPlayer(tr.m_pEnt);
+	}
+	return nullptr;
+}
+
+void C_NEO_Player::PlayerUse()
+{
+	BaseClass::PlayerUse();
+	
+	// Was use pressed or released?
+	if ( ! ((m_nButtons | m_afButtonPressed | m_afButtonReleased) & IN_USE) )
+		return;
+
+	if ( (m_afButtonPressed & IN_USE) && prediction->IsFirstTimePredicted() && !GetUseEntity())
+	{
+		if (C_NEO_Player* pTargetPlayer = PlayerUseTraceLine();
+			pTargetPlayer )
+		{
+			m_Local.m_nOldButtons |= IN_USE;
+			m_afButtonPressed &= ~IN_USE;
+			engine->ExecuteClientCmd(VarArgs("useplayer %i", pTargetPlayer->entindex()));
+		}
+	}
+}

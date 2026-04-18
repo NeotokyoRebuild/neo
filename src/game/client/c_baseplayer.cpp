@@ -2660,6 +2660,19 @@ void C_BasePlayer::SetSwimSoundTime( float flSwimSoundTime )
 //-----------------------------------------------------------------------------
 bool C_BasePlayer::IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps )
 {
+#ifdef NEO
+	if ( pEntity )
+	{
+		int caps = pEntity->ObjectCaps();
+		if ( caps & (FCAP_IMPULSE_USE|FCAP_CONTINUOUS_USE|FCAP_ONOFF_USE|FCAP_DIRECTIONAL_USE) )
+		{
+			if ( (caps & requiredCaps) == requiredCaps )
+			{
+				return true;
+			}
+		}
+	}
+#endif // NEO
 	return false;
 }
 

@@ -87,6 +87,7 @@ struct WeaponSeeds_t
 };
 
 #define	SOUNDENT_VOLUME_NEO_SUPPRESSED 900.0
+#define NEO_THROWABLES_WEAPON_SLOT 3
 
 #if(1)
 		// This does nothing; dummy value for network test. Remove when not needed anymore.
@@ -140,6 +141,25 @@ public:
 	virtual void FinishReload(void) override;
 
 	virtual bool CanBeSelected(void) override;
+	virtual bool IsFollowingEntity() override {
+		return (GetMoveType() == MOVETYPE_NONE) && GetMoveParent();
+	};
+	virtual int	ObjectCaps(void) override
+	{
+		int caps = BaseClass::ObjectCaps();
+		if (!IsFollowingEntity()
+#ifdef GAME_DLL
+			&& !HasSpawnFlags(SF_WEAPON_NO_PLAYER_PICKUP)
+#else
+			&& !(m_spawnflags & SF_WEAPON_NO_PLAYER_PICKUP)
+#endif // GAME_DLL
+			)
+		{
+			caps |= FCAP_IMPULSE_USE|FCAP_USE_IN_RADIUS; 
+		}
+
+		return caps;
+	};
 
 	CNEOWeaponInfo const &GetNEOWpnData() const;
 
@@ -160,6 +180,7 @@ public:
 #ifdef GAME_DLL
 	virtual void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value ) override;
 #endif
+
 	virtual void DryFire(void);
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
@@ -235,6 +256,7 @@ public:
 	float GetPenetration() const;
 #ifdef CLIENT_DLL
 	float m_flTemperature;
+	int m_spawnflags;
 #endif // CLIENT_DLL
 
 protected:

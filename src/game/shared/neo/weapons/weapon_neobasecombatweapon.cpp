@@ -41,12 +41,14 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
+	RecvPropInt(RECVINFO(m_spawnflags)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
+	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
 END_NETWORK_TABLE()
@@ -1375,16 +1377,26 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 #ifdef GAME_DLL
 void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	auto* neoPlayer = ToNEOPlayer(pActivator);
+	m_OnPlayerUse.FireOutput( pActivator, pCaller );
 
-	if (neoPlayer && neoPlayer->Weapon_CanSwitchTo(this) && CanBePickedUpByClass(neoPlayer->GetClass()))
+	if (m_pfnTouch)
 	{
-		neoPlayer->Weapon_DropSlot(GetSlot());
-		neoPlayer->Weapon_Equip(this);
+		if (CNEO_Player* pNeoPlayer = ToNEOPlayer(pActivator);
+			pNeoPlayer && CanBePickedUpByClass(pNeoPlayer->GetClass()))
+		{
+			CBaseCombatWeapon* pActiveWeapon = pNeoPlayer->GetActiveWeapon();
+			const int activeSlot = pActiveWeapon ? pActiveWeapon->GetSlot() : -1;
+			pNeoPlayer->Weapon_DropSlot(GetSlot());
 
-		RemoveEffects(EF_BONEMERGE);
+			(this->*m_pfnTouch)(pActivator);
+
+			if (GetOwner() == pNeoPlayer && activeSlot == GetSlot())
+			{
+				pNeoPlayer->Weapon_Switch(this);
+			}
+		}
 	}
 
-	BaseClass::Use(pActivator, pCaller, useType, value);
+	// Calling BaseClass::Use will pick the weapon up without waiting for the touch cooldown, don't see anything important there that we need to do that we aren't doing here
 }
 #endif

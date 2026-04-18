@@ -11,6 +11,7 @@
 
 #ifdef NEO
 #include "neo_player.h"
+#include "neo_player_shared.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -31,6 +32,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 	SendPropArray3(SENDINFO_ARRAY3(m_iStar), SendPropInt(SENDINFO_ARRAY(m_iStar), 12)),
 	SendPropArray3(SENDINFO_ARRAY3(m_szNeoClantag), SendPropString(SENDINFO_ARRAY(m_szNeoClantag), 0, SendProxy_StringT_To_String)),
 	SendPropArray3(SENDINFO_ARRAY3(m_iMaxHealth), SendPropInt(SENDINFO_ARRAY(m_iMaxHealth), -1, SPROP_VARINT | SPROP_UNSIGNED)),
+	SendPropArray3(SENDINFO_ARRAY3(m_bAfk), SendPropInt(SENDINFO_ARRAY(m_bAfk), 1, SPROP_UNSIGNED)),
 #endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),
@@ -96,6 +98,7 @@ void CPlayerResource::Init( int iIndex )
 	m_iStar.Set(iIndex, 0);
 	m_szNeoClantag.Set(iIndex, m_szNeoNameNone);
 	m_iMaxHealth.Set(iIndex, 1);
+	m_bAfk.Set(iIndex, 0);
 #endif
 	m_iPing.Set( iIndex, 0 );
 	m_iScore.Set( iIndex, 0 );
@@ -176,6 +179,7 @@ void CPlayerResource::UpdatePlayerData( void )
 				m_szNeoClantag.Set(i, strt);
 			}
 			m_iNeoNameDupeIdx.Set(i, neoPlayer->NameDupePos());
+			m_bAfk.Set(i, gpGlobals->curtime - neoPlayer->m_flLastInputTime > sv_neo_spec_replace_player_afk_time_sec.GetInt());
 #endif
 			UpdateConnectedPlayer( i, pPlayer );
 		}

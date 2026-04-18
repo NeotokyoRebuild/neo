@@ -67,7 +67,6 @@ public:
 	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
-	virtual void PlayerUse(void) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
@@ -81,7 +80,7 @@ public:
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
 	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
-	bool Weapon_GetPosition(int slot, int position);
+	CNEOBaseCombatWeapon* Weapon_GetPosition(int slot, int position);
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
@@ -97,6 +96,7 @@ public:
 	virtual void GiveDefaultItems(void) OVERRIDE;
 	virtual int	OnTakeDamage_Alive(const CTakeDamageInfo& info) OVERRIDE;
 	virtual CBaseEntity* GiveNamedItem(const char* szName, int iSubType = 0) override;
+	virtual CBaseEntity* FindUseEntity() override;
 
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
@@ -241,6 +241,8 @@ public:
 	void BecomeJuggernaut();
 	void SpawnJuggernautPostDeath();
 
+	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
+
 private:
 	bool m_bAllowGibbing;
 
@@ -324,6 +326,7 @@ public:
 	void ResetBotCommandState();
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
 	static const Vector VECTOR_INVALID_WAYPOINT;
+	float m_flLastInputTime = gpGlobals->curtime;
 
 private:
 	bool m_bFirstDeathTick;
@@ -349,8 +352,8 @@ private:
 	CNEO_Player(const CNEO_Player&);
 
 	// Spectator takeover player related functionality
-	int GetSecondsUntilAFK() const;
 	bool IsAFK() const;
+	bool IsFakePlayer() const;
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
