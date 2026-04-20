@@ -1613,6 +1613,8 @@ target_sources_grouped(
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_startup_sequence.cpp
     neo/ui/neo_hud_startup_sequence.h
+    neo/ui/neo_hud_walking_indicator.cpp
+    neo/ui/neo_hud_walking_indicator.h
     neo/ui/neo_hud_worldpos_marker.cpp
     neo/ui/neo_hud_worldpos_marker.h
     neo/ui/neo_hud_worldpos_marker_generic.cpp

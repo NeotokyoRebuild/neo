@@ -166,6 +166,8 @@ ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If
 ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specified class number, or -1 to disable.", true, NEO_CLASS_RANDOM, true, NEO_CLASS_LOADOUTABLE_COUNT-1);
 static void BotChangeClassFn(const CCommand& args);
 ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots to switch to the specified class number.");
+static void BotChangeSkinFn(const CCommand& args);
+ConCommand bot_changeskin("bot_changeskin", BotChangeSkinFn, "Force all bots to switch to the specified skin number.");
 
 // Bot Cloak Detection Thresholds
 // Base detection chance ratio (0.0 - 1.0) for bots to notice a cloaked target based on difficulty
@@ -4375,5 +4377,35 @@ static void BotChangeClassFn(const CCommand& args)
 		auto* player = assert_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 		if (player && player->IsBot() && player->GetTeamNumber() >= FIRST_GAME_TEAM)
 			player->RequestSetClass(botClass);
+	}
+}
+
+static void BotChangeSkinFn(const CCommand& args)
+{
+	constexpr int minValue = NEO_SKIN_FIRST;
+	constexpr int maxValue = NEO_SKIN__ENUM_COUNT - 1;
+
+	const auto nag = [&args]() {
+		Msg("Format: %s <number between %d and %d>\n", args.Arg(0), minValue, maxValue);
+	};
+
+	if (args.ArgC() != 2)
+	{
+		nag();
+		return;
+	}
+
+	const int botSkin = V_atoi(args.Arg(1));
+	if (botSkin < minValue || botSkin > maxValue)
+	{
+		nag();
+		return;
+	}
+
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		auto* player = assert_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player && player->IsBot() && player->GetTeamNumber() >= FIRST_GAME_TEAM)
+			player->RequestSetSkin(botSkin);
 	}
 }

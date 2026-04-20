@@ -241,6 +241,9 @@ public:
 	void BecomeJuggernaut();
 	void SpawnJuggernautPostDeath();
 
+	bool ShouldPlayerMakeFootsteps(float speed = -1.f);
+	float SpeedFractionToSoundThreshold(float speed = -1.f);
+
 private:
 	bool m_bAllowGibbing;
 
