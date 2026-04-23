@@ -313,6 +313,9 @@ C_BaseEntity *C_HLTVCamera::GetCameraMan()
 	return ClientEntityList().GetEnt( m_iCameraMan );
 }
 
+#ifdef NEO
+extern ConVar cl_neo_lean_viewmodel_only;
+#endif // NEO
 void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov )
 {
 #ifdef NEO
@@ -331,26 +334,28 @@ void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float
 		return;
 	}
 
+#ifdef NEO
+	m_aCamAngle	= pPlayer->EyeAngles();
+	if (cl_neo_lean_viewmodel_only.GetBool() && !pPlayer->IsRagdoll()) // we get kicked out of first person view when dying right now but still worth a check in case that changes
+	{
+		m_aCamAngle.z = 0.f;
+	}
+	m_vCamOrigin = pPlayer->EyePosition();
+	m_flFOV = pPlayer->GetFOV();
+#else
 	m_aCamAngle	= pPlayer->EyeAngles();
 	m_vCamOrigin = pPlayer->GetAbsOrigin();
 	m_flFOV = pPlayer->GetFOV();
 
 	if ( pPlayer->GetFlags() & FL_DUCKING )
 	{
-#ifdef NEO
-		m_vCamOrigin += VEC_DUCK_VIEW_NEOSCALE(pPlayer);
-#else
 		m_vCamOrigin += VEC_DUCK_VIEW;
-#endif // NEO
 	}
 	else
 	{
-#ifdef NEO
-		m_vCamOrigin += VEC_VIEW_NEOSCALE(pPlayer);
-#else
 		m_vCamOrigin += VEC_VIEW;
-#endif // NEO
 	}
+#endif // NEO
 
 	eyeOrigin = m_vCamOrigin;
 	eyeAngles = m_aCamAngle;
