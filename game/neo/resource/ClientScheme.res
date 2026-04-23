@@ -1136,19 +1136,6 @@ Scheme
 				"additive"	"1"
 			}
 		}
-
-		"HL2MPTypeDeath"
-		{
-			"1"
-			{
-				"name"  "HL2MP" // csd.ttf
-				"tall"  "32"
-				"weight" "0"
-				"additive" "1"
-				"antialias" "1"
-				"custom" "1" [$OSX]
-			}
-		}
 		NHudText
 		{
 			"1"
@@ -3192,20 +3179,19 @@ Scheme
 	CustomFontFiles
 	{
 		"1"		"resource/HALFLIFE2.ttf"
-		"2"		"resource/HL2MP.ttf"
-		"3"		"resource/HL2crosshairs.ttf"
-		"4"		"resource/cs.ttf"
-		"5"		"resource/csd.ttf"
-		"6"		"resource/Cstrike.ttf"
-		"7"		"resource/x-scale_.ttf"
-		"8"		"resource/greenm03.ttf"
-		"9"		"resource/zrnic___.ttf"
-		"10"		"resource/AFL.ttf"
-		"11"		"resource/nocr.ttf"
-		"12"		"resource/neuropol2.ttf"
-		"13"		"resource/neotokyo_press_n.ttf"
-		"14"		"resource/killfeedicons.ttf"
-		"15"		"resource/montserrat-regular.ttf"
+		"2"		"resource/HL2crosshairs.ttf"
+		"3"		"resource/cs.ttf"
+		"4"		"resource/csd.ttf"
+		"5"		"resource/Cstrike.ttf"
+		"6"		"resource/x-scale_.ttf"
+		"7"		"resource/greenm03.ttf"
+		"8"		"resource/zrnic___.ttf"
+		"9"		"resource/AFL.ttf"
+		"10"		"resource/nocr.ttf"
+		"11"		"resource/neuropol2.ttf"
+		"12"		"resource/neotokyo_press_n.ttf"
+		"13"		"resource/killfeedicons.ttf"
+		"14"		"resource/montserrat-regular.ttf"
 	}
 
 }

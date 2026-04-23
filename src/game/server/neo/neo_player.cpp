@@ -4007,7 +4007,7 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 		{
 			EmitSound_t soundParams;
 			soundParams.m_pSoundName = "HUD.GhostPickUp";
-			soundParams.m_nChannel = CHAN_USER_BASE;
+			soundParams.m_nChannel = CHAN_GHOST_PICKUP;
 			soundParams.m_bWarnOnDirectWaveReference = false;
 			soundParams.m_bEmitCloseCaption = false;
 			soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
