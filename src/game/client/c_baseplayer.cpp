@@ -271,7 +271,9 @@ END_RECV_TABLE()
 
 		RecvPropFloat		( RECVINFO( m_flDeathTime )),
 
+#ifndef NEO
 		RecvPropInt			( RECVINFO( m_nWaterLevel ) ),
+#endif // NEO
 		RecvPropFloat		( RECVINFO( m_flLaggedMovementValue )),
 
 	END_RECV_TABLE()
@@ -321,6 +323,10 @@ END_RECV_TABLE()
 		
 
 		RecvPropString( RECVINFO(m_szLastPlaceName) ),
+
+#ifdef NEO
+		RecvPropInt			( RECVINFO( m_nWaterLevel ) ),
+#endif // NEO
 
 #if defined USES_ECON_ITEMS
 		RecvPropUtlVector( RECVINFO_UTLVECTOR( m_hMyWearables ), MAX_WEARABLES_SENT_FROM_SERVER,	RecvPropEHandle(NULL, 0, 0) ),

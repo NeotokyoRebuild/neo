@@ -71,6 +71,7 @@ public:
 	virtual void PostDataUpdate( DataUpdateType_t updateType );
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
 	const char* GetOverrideStepSound(const char* pBaseStepSound) override;
+	virtual void Splash() override;
 	virtual void DoImpactEffect( trace_t &tr, int nDamageType );
 	IRagdoll* GetRepresentativeRagdoll() const;
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
