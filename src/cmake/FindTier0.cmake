@@ -1,14 +1,24 @@
 if(OS_WINDOWS)
+    set(TIER0_LIBRARY_FIND_PATH "${LIBPUBLIC}")
     set(TIER0_LIBRARY_NAME tier0.lib)
-elseif(OS_LINUX)
-    set(TIER0_LIBRARY_NAME libtier0.so)
+elseif(OS_LINUX)   
+    if (NEO_DEDICATED)
+        set(TIER0_LIBRARY_FIND_PATH "${CMAKE_BINARY_DIR}/${LIBPUBLIC_RELATIVE_PATH}")
+        set(TIER0_LIBRARY_NAME libtier0_srv.so)
+        
+        file(MAKE_DIRECTORY "${TIER0_LIBRARY_FIND_PATH}")
+        file(COPY_FILE "${LIBPUBLIC}/libtier0.so" "${TIER0_LIBRARY_FIND_PATH}/${TIER0_LIBRARY_NAME}")
+    else()
+        set(TIER0_LIBRARY_FIND_PATH "${LIBPUBLIC}")
+        set(TIER0_LIBRARY_NAME libtier0.so)
+    endif()
 elseif(OS_MACOS)
     set(TIER0_LIBRARY_NAME libtier0.dylib)
 endif()
 
 find_file(TIER0_LIBRARY
     NAMES ${TIER0_LIBRARY_NAME}
-    PATHS "${LIBPUBLIC}"
+    PATHS "${TIER0_LIBRARY_FIND_PATH}"
     NO_CACHE
     NO_DEFAULT_PATH
     REQUIRED

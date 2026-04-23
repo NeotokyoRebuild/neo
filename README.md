@@ -204,29 +204,15 @@ These instructions have been written for and tested on Debian 12 and Arch for Li
     Once they're fetched, place them in the `<YOUR_LOCATION>/ntrebuild` directory.
 
 #### Linux-only additional instructions
-1. **Linux only:** Make a symlink so that Src2013 dedicated server can see SteamCMD's binaries:
+Make a symlink so that Src2013 dedicated server can see SteamCMD's binaries:
 
-    (NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk64` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
-    ```
-    ln -s ~/.steam/steam/steamcmd/linux64 ~/.steam/sdk64
-    ```
-2. **Linux only:** Change directory into `<YOUR_LOCATION>/ntrebuild/bin/linux64` then run these commands to make symlinks for needed files:
-    ```
-    ln -s datacache_srv.so datacache.so;
-    ln -s dedicated_srv.so dedicated.so;
-    ln -s engine_srv.so engine.so;
-    ln -s libtier0_srv.so libtier0.so;
-    ln -s libvstdlib_srv.so libvstdlib.so;
-    ln -s materialsystem_srv.so materialsystem.so;
-    ln -s replay_srv.so replay.so;
-    ln -s scenefilecache_srv.so scenefilecache.so;
-    ln -s shaderapiempty_srv.so shaderapiempty.so;
-    ln -s soundemittersystem_srv.so soundemittersystem.so;
-    ln -s studiorender_srv.so studiorender.so;
-    ln -s vphysics_srv.so vphysics.so;
-    ln -s vscript_srv.so vscript.so;
-    ```
-3. `cd` up directories twice, so that you are in `<YOUR_LOCATION>/ntrebuild`.
+(NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk64` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
+```
+ln -s ~/.steam/steam/steamcmd/linux64 ~/.steam/sdk64
+```
+
+**Note:** Making `_srv` symlinks (`ln -s libtier0_srv.so libtier0.so` for example) is not necessary.
+
 
 #### Extracting NT;RE and editing gameinfo.txt
 1. Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
