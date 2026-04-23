@@ -158,6 +158,8 @@ public:
 	void EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary = false);	// equip the best weapon we have to attack the given threat
 	void ReloadIfLowClip(bool bForceReload = false);
 
+	void DropPrimaryWeapon(void);
+
 	void PushRequiredWeapon(CNEOBaseCombatWeapon* weapon);				// force us to equip and use this weapon until popped off the required stack
 	void PopRequiredWeapon(void);									// pop top required weapon off of stack and discard
 
