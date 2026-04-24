@@ -839,6 +839,13 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 		NeoUI::EndContext();
 
+		if (STATE_SETTINGS == m_state
+				&& !m_ns.bModified
+				&& g_uiCtx.bValueEdited)
+		{
+			m_ns.bModified = true;
+		}
+
 		// When the state changes, save some variables
 		if (m_state != ePrevState)
 		{
@@ -1161,7 +1168,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		g_uiCtx.dPanel.wide = flMP3Wide;
 		g_uiCtx.dPanel.tall = param.tall;
 
-		NeoUI::BeginSection();
+		NeoUI::BeginSection(NeoUI::SECTIONFLAG_DISABLEOFFSETS);
 
 		NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
@@ -1411,11 +1418,6 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		}
 		NeoUI::EndSection();
-	}
-
-	if (!m_ns.bModified && g_uiCtx.bValueEdited)
-	{
-		m_ns.bModified = true;
 	}
 
 	if (m_ns.bBack)
@@ -1671,7 +1673,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 									NeoUI::OpenPopup(NEOPOPUP_ACTIONBLACKLIST, NeoUI::Dim{
 												.x = g_uiCtx.iMouseAbsX,
 												.y = g_uiCtx.iMouseAbsY,
-												.wide = NeoUI::PopupWideByStr("Remove from blacklist"),
+												.wide = NeoUI::SuitableWideByWStr(L"Remove from blacklist", NeoUI::SUITABLEWIDE_POPUP),
 												.tall = g_uiCtx.layout.iDefRowTall,
 											});
 								}
@@ -1867,7 +1869,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 									NeoUI::OpenPopup(NEOPOPUP_ACTIONSERVER, NeoUI::Dim{
 												.x = g_uiCtx.iMouseAbsX,
 												.y = g_uiCtx.iMouseAbsY,
-												.wide = NeoUI::PopupWideByStr("Add to blacklist"),
+												.wide = NeoUI::SuitableWideByWStr(L"Add to blacklist", NeoUI::SUITABLEWIDE_POPUP),
 												.tall = g_uiCtx.layout.iDefRowTall * 2,
 											});
 
