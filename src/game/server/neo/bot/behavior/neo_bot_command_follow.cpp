@@ -36,7 +36,7 @@ CNEOBotCommandFollow::CNEOBotCommandFollow() : m_vGoalPos( CNEO_Player::VECTOR_I
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCommandFollow::OnStart(CNEOBot *me, Action< CNEOBot > *priorAction)
 {
-	SendUpdateToCommander( me, "Joining your squad." );
+	me->SendMessageToCommander( "Joining your squad" );
 	m_path.SetMinLookAheadDistance(me->GetDesiredPathLookAheadRange());
 	m_commanderLookingAtMeTimer.Invalidate();
 	m_bWasCommanderLookingAtMe = false;
@@ -60,7 +60,7 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::Update(CNEOBot *me, float interval
 	ActionResult<CNEOBot> weaponRequestResult = CheckCommanderWeaponRequest(me);
 	if (weaponRequestResult.IsRequestingChange())
 	{
-		SendUpdateToCommander( me, "Here, take this." );
+		me->SendMessageToCommander( "Here, take this" );
 		return weaponRequestResult;
 	}
 
@@ -227,7 +227,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 	{
 		if ( !me->m_hLeadingPlayer.Get() )
 		{
-			SendUpdateToCommander( me, "Following you." );
+			me->SendMessageToCommander( "Following you" );
 		}
 
 		// Use sv_neo_bot_cmdr_stop_distance_sq for consistent bot collection range
@@ -242,7 +242,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		// Check if there's been an update for this star's ping waypoint
 		if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != me->m_vLastPingByStar.Get(me->GetStar()))
 		{
-			SendUpdateToCommander( me, "On my way." );
+			me->SendMessageToCommander( "On my way" );
 			me->m_hLeadingPlayer = nullptr; // Stop following and start travelling to ping
 			m_vGoalPos = pCommander->m_vLastPingByStar.Get(me->GetStar());
 			me->m_vLastPingByStar.GetForModify(me->GetStar()) = pCommander->m_vLastPingByStar.Get(me->GetStar());
@@ -468,17 +468,3 @@ bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, b
 	return false;
 }
 
-//---------------------------------------------------------------------------------------------
-void CNEOBotCommandFollow::SendUpdateToCommander( CNEOBot *me, const char *message )
-{
-	CNEO_Player *pCommander = me->m_hCommandingPlayer.Get();
-	if ( pCommander && pCommander->IsNetClient() )
-	{
-		CSingleUserRecipientFilter user( pCommander );
-		user.MakeReliable();
-
-		char szText[256];
-		V_snprintf( szText, sizeof( szText ), "%s: %s\n", me->GetNeoPlayerName(), message );
-		UTIL_SayTextFilter( user, szText, me, true );
-	}
-}

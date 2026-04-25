@@ -3521,6 +3521,38 @@ void CNEO_Player::ResetBotCommandState()
 	}
 }
 
+void CNEO_Player::SendMessageToCommander( const char *message )
+{
+	SendMessageToPlayer( m_hCommandingPlayer.Get(), message );
+}
+
+void CNEO_Player::SendMessageToPlayer( CNEO_Player *pPlayer, const char *message )
+{
+	if ( pPlayer && pPlayer->IsNetClient() )
+	{
+		CSingleUserRecipientFilter user( pPlayer );
+		user.MakeReliable();
+
+		char szText[256];
+		V_snprintf( szText, sizeof( szText ), "%s: %s\n", GetNeoPlayerName(), message );
+		UTIL_SayTextFilter( user, szText, this, true );
+	}
+}
+
+const char *CNEO_Player::GetStarName( int iStar ) const
+{
+	switch ( iStar )
+	{
+	case STAR_ALPHA:	return "alpha";
+	case STAR_BRAVO:	return "bravo";
+	case STAR_CHARLIE:	return "charlie";
+	case STAR_DELTA:	return "delta";
+	case STAR_ECHO:		return "echo";
+	case STAR_FOXTROT:	return "foxtrot";
+	default:			return "unknown";
+	}
+}
+
 void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 {
 	if (!sv_neo_bot_cmdr_enable.GetBool())
@@ -3553,6 +3585,7 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 		{
 			// Commander is a player and stars are different, just update bot's star
 			RequestSetStar(pCommander->GetStar());
+			SendMessageToCommander( UTIL_VarArgs( "Joining %s squad", GetStarName( GetStar() ) ) );
 
 			// Behavior without resetting pings/commander/leader:
 			// If this is a new squad star with no waypoint this round, bots will leave waypoint to come follow.
@@ -3564,6 +3597,7 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 		{
 			// Bot is already following this player in same star, so toggle off.
 			// Bot will return to following general uncommanded bot behavior.
+			SendMessageToCommander( "Leaving your squad" );
 			m_hLeadingPlayer = nullptr;
 			m_hCommandingPlayer = nullptr;
 		}
@@ -3572,6 +3606,11 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 	else
 	{
 		// Bot starts following this player.
+		if ( m_hCommandingPlayer.Get() && m_hCommandingPlayer.Get() != pCommander )
+		{
+			SendMessageToCommander( UTIL_VarArgs( "Joining %s's squad", pCommander->GetNeoPlayerName() ) );
+		}
+
 		m_hLeadingPlayer = pCommander;
 		if (!pCommander->IsBot())
 		{
