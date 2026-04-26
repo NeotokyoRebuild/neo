@@ -265,6 +265,18 @@ public:
 	float m_flAutoJoinLastAttempt = 0.0f;
 	CNeoServerPing m_serverPingAutoJoin = {};
 	CNeoServerPing m_serverPingEnter = {};
+
+	enum ERootButtonAction
+	{
+		ROOTBUTTONACTION_NIL = 0,
+		ROOTBUTTONACTION_TOGGLECONSOLE,
+		ROOTBUTTONACTION_MP3,
+
+		ROOTBUTTONACTION__TOTAL,
+	};
+
+	float m_flHtBtnCodeUpdate = 0.0f;
+	CUtlHashtable<int, ERootButtonAction> m_htButtonCodeToAction;
 };
 
 extern CNeoRoot *g_pNeoRoot;

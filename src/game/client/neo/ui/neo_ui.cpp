@@ -3530,11 +3530,6 @@ void EndIgnoreXOffset()
 	c->bIgnoreXOffset = false;
 }
 
-bool Bind(const char *pszBindName)
-{
-	return c->eMode == MODE_KEYPRESSED && c->eCode == gameuifuncs->GetButtonCodeForBind(pszBindName);
-}
-
 bool Bind(const ButtonCode_t eCode)
 {
 	return c->eMode == MODE_KEYPRESSED && c->eCode == eCode;

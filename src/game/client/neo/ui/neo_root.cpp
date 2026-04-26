@@ -349,6 +349,12 @@ constexpr const char *BTNS_LOCALIZE[MMBTN__TOTAL] = {
 	"#GameUI_GameMenu_Quit",
 };
 
+static const char *BINDNAME_TO_ROOTBUTTONACTION_MAP[CNeoRoot::ROOTBUTTONACTION__TOTAL] = {
+	"",						// ROOTBUTTONACTION_NIL (skip over in loop)
+	"neo_toggleconsole",	// ROOTBUTTONACTION_TOGGLECONSOLE
+	"neo_mp3",				// ROOTBUTTONACTION_MP3
+};
+
 CNeoRoot::CNeoRoot(VPANEL parent)
 	: EditablePanel(nullptr, "NeoRootPanel")
 	, m_panelCaptureInput(new CNeoRootInput(this))
@@ -632,12 +638,34 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		return;
 	}
 
-	// Refresh every time, because else if the user unbinds or rebinds the key, it will still incorrectly be mapped there.
-	// NEO FIXME (Rain): We do not currently support binding multiple buttons for the same command;
-	// if the user does: bind a foo; bind b foo; then only the latest bind will work.
-	m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	// NEO NOTE (nullsystem): There doesn't seem to be callbacks to check on updated
+	// keybinds and neither would ClientModeShared::KeyInput pick up neo_mp3,
+	// so timed and only on typed so it doesn't go checking on all buttons everytime
+	if (m_flHtBtnCodeUpdate <= gpGlobals->realtime)
+	{
+		m_htButtonCodeToAction.RemoveAll();
+		for (int iBc = KEY_FIRST; iBc <= BUTTON_CODE_LAST; ++iBc)
+		{
+			const ButtonCode_t bc = static_cast<ButtonCode_t>(iBc);
+			const char *pszBinding = gameuifuncs->GetBindingForButtonCode(bc);
+			// Only needed it for binds used for neo_root
+			if (pszBinding)
+			{
+				for (int i = (ROOTBUTTONACTION_NIL + 1); i < ROOTBUTTONACTION__TOTAL; ++i)
+				{
+					if (0 == V_strcmp(pszBinding, BINDNAME_TO_ROOTBUTTONACTION_MAP[i]))
+					{
+						m_htButtonCodeToAction.Insert(bc, static_cast<ERootButtonAction>(i));
+						break;
+					}
+				}
+			}
+		}
+		m_flHtBtnCodeUpdate = gpGlobals->realtime + 1.0f;
+	}
 
-	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
+	if (KEY_BACKQUOTE != code
+			&& ROOTBUTTONACTION_TOGGLECONSOLE == m_htButtonCodeToAction.Get(code, ROOTBUTTONACTION_NIL))
 	{
 		// NEO JANK (nullsystem): Prevent toggle being handled twice causing it to not really open.
 		// This can happen if using the default ` due to the engine enacting this all the time, however calling
@@ -1270,7 +1298,9 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 
 		// Play/Pause button
-		if (NeoUI::Button(mps->bPlaying ? L"II" : L"\u25B6").bPressed || NeoUI::Bind("neo_mp3"))
+		if (NeoUI::Button(mps->bPlaying ? L"II" : L"\u25B6").bPressed
+				|| (NeoUI::MODE_KEYPRESSED == g_uiCtx.eMode
+					&& ROOTBUTTONACTION_MP3 == m_htButtonCodeToAction.Get(g_uiCtx.eCode, ROOTBUTTONACTION_NIL)))
 		{
 			mps->flagsPlayStateNext = (mps->bPlaying)
 					? NeoMP3::PLAYSTATE_FLAG_PAUSED : NeoMP3::PLAYSTATE_FLAG_PLAY;
