@@ -53,6 +53,12 @@ public:
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 
+#ifdef GAME_DLL
+	CNEODeployedDetpack* GetDetpackEntity() const { return m_pDetpack; }
+#endif
+
+	static float GetArmingTime() { return 2.66f; } // see Rain's comment in DecrementAmmo
+
 	bool	CanDrop(void) OVERRIDE;
 	virtual bool CanAim() final { return false; }
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }

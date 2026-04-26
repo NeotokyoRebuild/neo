@@ -1,7 +1,9 @@
 #include "cbase.h"
 #include "bot/behavior/neo_bot_ctg_capture.h"
+#include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/neo_bot_path_compute.h"
+#include "neo_detpack.h"
 #include "weapon_ghost.h"
 
 
@@ -65,6 +67,31 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 	{
 		// If this timer expires, give up
 		m_captureAttemptTimer.Start( 3.0f );
+	}
+
+	// Check if there is a detpack that risks exploding if I pick up the ghost
+	// NEO Jank: It may be more proper to check for line of sight,
+	// but triggering an entity search at the last moment may involve fewer overall calculations
+	// with the lampshade explanation as the bot being able to notice the detpack along the path
+	// even if we didn't check constantly along the same path
+	CBaseEntity *pEnts[256];
+	int numEnts = UTIL_EntitiesInSphere( pEnts, 256, me->GetAbsOrigin(), NEO_DETPACK_DAMAGE_RADIUS, 0 );
+	bool bDetpackNear = false;
+	for ( int i = 0; i < numEnts; ++i )
+	{
+		if ( pEnts[i] && FClassnameIs( pEnts[i], "neo_deployed_detpack" ) )
+		{
+			bDetpackNear = true;
+			break;
+		}
+	}
+
+	if ( bDetpackNear )
+	{
+		// NEO JANK: Putting the bot into seek mode will have it search the map for enemies for the rest of the round
+		// but for now this could be fine as it may indicate an entrenched enemy
+		// or a friendly that is setting up an ambush, where either scenario indicates ghost capture is too dangerous
+		return ChangeTo( new CNEOBotCtgLoneWolfSeek(), "Found detpack: skipping ghost capture to search for enemies" );
 	}
 
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );

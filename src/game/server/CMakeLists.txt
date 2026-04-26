@@ -1457,10 +1457,18 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_ctg_escort.h
     neo/bot/behavior/neo_bot_ctg_lone_wolf.cpp
     neo/bot/behavior/neo_bot_ctg_lone_wolf.h
+    neo/bot/behavior/neo_bot_ctg_lone_wolf_ambush.cpp
+    neo/bot/behavior/neo_bot_ctg_lone_wolf_ambush.h
+    neo/bot/behavior/neo_bot_ctg_lone_wolf_seek.cpp
+    neo/bot/behavior/neo_bot_ctg_lone_wolf_seek.h
     neo/bot/behavior/neo_bot_ctg_seek.cpp
     neo/bot/behavior/neo_bot_ctg_seek.h
     neo/bot/behavior/neo_bot_dead.cpp
     neo/bot/behavior/neo_bot_dead.h
+    neo/bot/behavior/neo_bot_detpack_deploy.cpp
+    neo/bot/behavior/neo_bot_detpack_deploy.h
+    neo/bot/behavior/neo_bot_detpack_trigger.cpp
+    neo/bot/behavior/neo_bot_detpack_trigger.h
     neo/bot/behavior/neo_bot_grenade_dispatch.cpp
     neo/bot/behavior/neo_bot_grenade_dispatch.h
     neo/bot/behavior/neo_bot_grenade_throw.cpp

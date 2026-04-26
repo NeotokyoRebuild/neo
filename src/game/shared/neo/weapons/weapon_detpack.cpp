@@ -19,6 +19,7 @@
 #include "te_effect_dispatch.h"
 #include "grenade_frag.h"
 #include "eventqueue.h"
+#include "soundent.h"
 #endif
 
 #include "effect_dispatch_data.h"
@@ -251,7 +252,7 @@ void CWeaponDetpack::ItemPostFrame(void)
 					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 					// NEO NOTE (Rain): Why 0.9? Because we want the explosion to occur after 2.666... seconds of detpack arming,
-					// plus 1.333... seconds of the trigger, for a total of 4 seconds delay. And we just happen to need 0.9 seconds
+					// plus ~1.333... seconds of the trigger, for a total of 4 seconds delay. And we just happen to need 0.9 seconds
 					// here to reach that. There's probably some nicer way to arrive at these values, but that's the explanation
 					// for this magic value.
 					m_flNextPrimaryAttack = gpGlobals->curtime + 0.9;
@@ -304,6 +305,10 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 	{
 		Assert(false);
 	}
+
+	// Notify bots after pressing keypad since reacting immediately to press fire is unforgiving
+	// especially since the sound clip has some silence at the beginning
+	CSoundEnt::InsertSound( SOUND_COMBAT, pPlayer->GetAbsOrigin(), 256, 0.2, pPlayer, SOUNDENT_CHANNEL_WEAPON );
 #endif
 	if (GetOwner()->IsPlayer()) // NEO NOTE (Adam) if else taken from CBaseCombatWeapon::Equip, this must be what was fixing the viewmodel previously after dropping and picking up the detremote
 	{
