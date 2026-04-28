@@ -14,6 +14,7 @@ class INEOPlayerAnimState;
 #include "hl2mp_player.h"
 #include "in_buttons.h"
 #include "neo_crosshair.h"
+#include "neo_gamerules_restore.h"
 
 #include "neo_player_shared.h"
 
@@ -268,6 +269,14 @@ public:
 	CNetworkVar(int, m_iClassBeforeTakeover);
 
 	CNetworkVar(int, m_iXP);
+
+	struct NeoRestore
+	{
+		NextRoundPlayerRestoreFlags flags;
+		int iXP;
+		int iDeaths;
+	};
+	NeoRestore m_iNextRestore = {};
 
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);

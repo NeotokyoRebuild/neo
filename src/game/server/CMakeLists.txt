@@ -1412,6 +1412,8 @@ target_sources_grouped(
     neo/neo_typeconverter.cpp
     neo/neo_dm_spawn.cpp
     neo/neo_dm_spawn.h
+    neo/neo_gamerules_restore.cpp
+    neo/neo_gamerules_restore.h
 )
 
 target_sources_grouped(
