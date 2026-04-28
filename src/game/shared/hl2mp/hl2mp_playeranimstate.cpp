@@ -825,6 +825,8 @@ void CHL2MPPlayerAnimState::ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr )
 	// Turn off a force aim yaw - either we have already updated or we don't need to.
 	m_bForceAimYaw = false;
 #ifdef NEO
+	// NEO JANK (Adam) this fixes the stuttering animation when players turn their camera while their feet are planted in one spot. Probably not the right way to do it
+	// NEO TODO (Adam) I'm sure this is done server side only for a reason, also this doesn't work great if the local player is in third person, find correct fix for this?
 	QAngle angle = GetBasePlayer()->GetAbsAngles();
 	angle[YAW] = m_flCurrentFeetYaw;
 
