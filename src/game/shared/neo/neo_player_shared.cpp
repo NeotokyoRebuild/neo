@@ -523,7 +523,15 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 				// if there is an entity directly under the cursor just return it now
 				// NEO NOTE (Adam) weapon axis aligned collision bounds are usually far removed from where the weapon is visually. If a weapon can be interacted with in a radius, use that instead
 				if (pObject && !((pObject->ObjectCaps() & FCAP_USE_IN_RADIUS) && pObject->IsBaseCombatWeapon()))
+				{
+#ifdef CLIENT_DLL
+					// Client side do the sphere query anyway to show adjacent items
+					if (gAddUseItemsToUseItemsList)
+						nearestDot = 0.f;
+					else
+#endif // CLIENT_DLL
 					return pObject;
+				}
 			}
 		}
 	}
