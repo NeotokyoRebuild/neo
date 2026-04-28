@@ -119,6 +119,9 @@ public:
 
 	// Get bone controller values.
 	virtual void	GetBoneControllers(float controllers[MAXSTUDIOBONECTRLS]);
+#ifdef NEO
+	float			GetBoneController(int iController) const;
+#endif // NEO
 	virtual float	SetBoneController ( int iController, float flValue );
 
 	LocalFlexController_t GetNumFlexControllers( void );

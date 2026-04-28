@@ -1421,6 +1421,15 @@ void C_BaseAnimating::GetBoneControllers(float controllers[MAXSTUDIOBONECTRLS])
 	}
 }
 
+#ifdef NEO
+float C_BaseAnimating::GetBoneController(int iController) const
+{
+	if (IN_BETWEEN_AR(0, iController, MAXSTUDIOBONECTRLS))
+		return m_flEncodedController[ iController ];
+	return 0.f;
+}
+#endif // NEO
+
 float C_BaseAnimating::GetPoseParameter( int iPoseParameter )
 {
 	CStudioHdr *pStudioHdr = GetModelPtr();

@@ -752,8 +752,13 @@ void CHL2MPPlayerAnimState::ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr )
 	// Check to see if we are moving.
 	bool bMoving = ( vecVelocity.Length() > 1.0f ) ? true : false;
 
+#ifdef NEO
+	// If we are moving or leaning or are prone and undeployed.
+	if ( bMoving || m_bForceAimYaw || IsLeaning(pStudioHdr) )
+#else
 	// If we are moving or are prone and undeployed.
 	if ( bMoving || m_bForceAimYaw )
+#endif // NEO
 	{
 		// The feet match the eye direction when moving - the move yaw takes care of the rest.
 		m_flGoalFeetYaw = m_flEyeYaw;
@@ -819,13 +824,21 @@ void CHL2MPPlayerAnimState::ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr )
 
 	// Turn off a force aim yaw - either we have already updated or we don't need to.
 	m_bForceAimYaw = false;
+#ifdef NEO
+	// NEO JANK (Adam) this fixes the stuttering animation when players turn their camera while their feet are planted in one spot. Probably not the right way to do it
+	// NEO TODO (Adam) I'm sure this is done server side only for a reason, also this doesn't work great if the local player is in third person, find correct fix for this?
+	QAngle angle = GetBasePlayer()->GetAbsAngles();
+	angle[YAW] = m_flCurrentFeetYaw;
 
+	GetBasePlayer()->SetAbsAngles( angle );
+#else
 #ifndef CLIENT_DLL
 	QAngle angle = GetBasePlayer()->GetAbsAngles();
 	angle[YAW] = m_flCurrentFeetYaw;
 
 	GetBasePlayer()->SetAbsAngles( angle );
 #endif
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
@@ -869,6 +882,24 @@ float CHL2MPPlayerAnimState::GetCurrentMaxGroundSpeed()
 
 	return speed;
 }
+
+#ifdef NEO
+bool CHL2MPPlayerAnimState::IsLeaning(CStudioHdr *pStudioHdr)
+{
+	if (CBaseAnimating* pBaseAnimating = GetBasePlayer()->GetBaseAnimating();
+		pBaseAnimating)
+	{
+		constexpr int LEAN_BONE_CONTROLLER = 0;
+#ifdef CLIENT_DLL
+		constexpr float BONE_CONTROLLER_VALUE_NOT_LEANING = 0.5f;
+#else
+		constexpr int BONE_CONTROLLER_VALUE_NOT_LEANING = 0;
+#endif // CLIENT_DLL
+		return pBaseAnimating->GetBoneController(LEAN_BONE_CONTROLLER) != BONE_CONTROLLER_VALUE_NOT_LEANING;
+	}
+	return false;
+}
+#endif // NEO
 
 // -----------------------------------------------------------------------------
 void CHL2MPPlayerAnimState::AnimStateLog(const char* pMsg, ...)
