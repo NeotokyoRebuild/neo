@@ -824,13 +824,19 @@ void CHL2MPPlayerAnimState::ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr )
 
 	// Turn off a force aim yaw - either we have already updated or we don't need to.
 	m_bForceAimYaw = false;
+#ifdef NEO
+	QAngle angle = GetBasePlayer()->GetAbsAngles();
+	angle[YAW] = m_flCurrentFeetYaw;
 
+	GetBasePlayer()->SetAbsAngles( angle );
+#else
 #ifndef CLIENT_DLL
 	QAngle angle = GetBasePlayer()->GetAbsAngles();
 	angle[YAW] = m_flCurrentFeetYaw;
 
 	GetBasePlayer()->SetAbsAngles( angle );
 #endif
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
@@ -878,17 +884,16 @@ float CHL2MPPlayerAnimState::GetCurrentMaxGroundSpeed()
 #ifdef NEO
 bool CHL2MPPlayerAnimState::IsLeaning(CStudioHdr *pStudioHdr)
 {
-	constexpr int LEAN_BONE_CONTROLLER = 0;
-#ifdef CLIENT_DLL
-	constexpr float BONE_CONTROLLER_VALUE_NOT_LEANING = 0.5f;
-#else
-	constexpr int BONE_CONTROLLER_VALUE_NOT_LEANING = 0;
-#endif // CLIENT_DLL
 	if (CBaseAnimating* pBaseAnimating = GetBasePlayer()->GetBaseAnimating();
 		pBaseAnimating)
 	{
-		float boneControllerValue = GetBasePlayer()->GetBaseAnimating()->GetBoneController(LEAN_BONE_CONTROLLER);
-		return boneControllerValue != BONE_CONTROLLER_VALUE_NOT_LEANING;
+		constexpr int LEAN_BONE_CONTROLLER = 0;
+#ifdef CLIENT_DLL
+		constexpr float BONE_CONTROLLER_VALUE_NOT_LEANING = 0.5f;
+#else
+		constexpr int BONE_CONTROLLER_VALUE_NOT_LEANING = 0;
+#endif // CLIENT_DLL
+		return pBaseAnimating->GetBoneController(LEAN_BONE_CONTROLLER) != BONE_CONTROLLER_VALUE_NOT_LEANING;
 	}
 	return false;
 }
