@@ -886,8 +886,7 @@ float CHL2MPPlayerAnimState::GetCurrentMaxGroundSpeed()
 #ifdef NEO
 bool CHL2MPPlayerAnimState::IsLeaning(CStudioHdr *pStudioHdr)
 {
-	if (CBaseAnimating* pBaseAnimating = GetBasePlayer()->GetBaseAnimating();
-		pBaseAnimating)
+	if (CBaseAnimating* pBaseAnimating = GetBasePlayer()->GetBaseAnimating())
 	{
 		constexpr int LEAN_BONE_CONTROLLER = 0;
 #ifdef CLIENT_DLL
