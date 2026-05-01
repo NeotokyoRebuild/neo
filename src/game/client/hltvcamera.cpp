@@ -26,6 +26,9 @@
 #include "neo_gamerules.h"
 #include "c_neo_player.h"
 #include "shareddefs.h"
+#include "vgui/IInput.h"
+#include "ienginevgui.h"
+#include "IGameUIFuncs.h"
 #endif // NEO
 
 ConVar spec_autodirector( "spec_autodirector", "1", FCVAR_CLIENTDLL | FCVAR_CLIENTCMD_CAN_EXECUTE, "Auto-director chooses best view modes while spectating" );
@@ -105,6 +108,10 @@ void C_HLTVCamera::Reset()
 	m_flTheta = 0;
 	m_flOffset = 0;
 	m_bEntityPacketReceived = false;
+
+#ifdef NEO
+	m_flLastRealTime = 0;
+#endif // NEO
 
 	m_vCamOrigin.Init();
 	m_aCamAngle.Init();
@@ -372,7 +379,11 @@ void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float
 	}
 }
 
+#ifdef NEO
+void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel, float flDeltaTime )
+#else
 void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel )
+#endif // NEO
 {
 	float addspeed, accelspeed, currentspeed;
 
@@ -387,7 +398,11 @@ void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel )
 		return;
 
 	// Determine amount of acceleration.
+#ifdef NEO
+	accelspeed = accel * flDeltaTime * wishspeed;
+#else
 	accelspeed = accel * gpGlobals->frametime * wishspeed;
+#endif // NEO
 
 	// Cap at addspeed
 	if (accelspeed > addspeed)
@@ -403,14 +418,41 @@ void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel )
 
 #ifdef NEO
 extern ConVar neo_fov;
+extern IGameUIFuncs *gameuifuncs;
 #endif // NEO
 // movement code is a copy of CGameMovement::FullNoClipMove()
 void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
 {
+#ifdef NEO
+	// NEO HACK (sm90x): set movement bindings memory on first call
+	if ( !m_bcForward )
+	{
+		m_bcForward = gameuifuncs->GetButtonCodeForBind( "+forward" );
+		m_bcBackward = gameuifuncs->GetButtonCodeForBind( "+back" );
+		m_bcMoveLeft = gameuifuncs->GetButtonCodeForBind( "+moveleft" );
+		m_bcMoveRight = gameuifuncs->GetButtonCodeForBind( "+moveright" );
+	}
+
+	if ( m_flLastRealTime == 0 )
+	{
+		m_flLastRealTime = gpGlobals->realtime;
+	}
+
+	const float flDeltaTime = gpGlobals->realtime - m_flLastRealTime;
+	m_flLastRealTime = gpGlobals->realtime;
+
+	const bool bUsePausedMovement = engine->IsPlayingDemo() && engine->IsPaused() && !enginevgui->IsGameUIVisible();
+
+	// clears last command to prevent movement with an ui open if demo is paused while key down
+	if ( enginevgui->IsGameUIVisible() )
+	{
+		m_LastCmd.Reset();
+	}
+#endif // NEO
+
 	// only if PVS isn't locked by auto-director
 	if ( !IsPVSLocked() )
 	{
-
 		Vector wishvel;
 		Vector forward, right, up;
 		Vector wishdir;
@@ -418,7 +460,11 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		float factor = sv_specspeed.GetFloat();
 		float maxspeed = sv_maxspeed.GetFloat() * factor;
 
+#ifdef NEO
+		AngleVectors ( m_aCamAngle, &forward, &right, &up );  // Determine movement angles
+#else
 		AngleVectors ( m_LastCmd.viewangles, &forward, &right, &up);  // Determine movement angles
+#endif // NEO
 
 		if ( m_LastCmd.buttons & IN_SPEED )
 		{
@@ -428,8 +474,33 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		// Copy movement amounts
 		float fmove = m_LastCmd.forwardmove * factor;
 		float smove = m_LastCmd.sidemove * factor;
-		
+
 #ifdef NEO
+		// If demo is paused and not using UI, use VGUI to detect movement keys presses
+		if ( bUsePausedMovement )
+		{
+			fmove = 0.0f;
+			smove = 0.0f;
+
+			if ( vgui::input()->IsKeyDown( m_bcForward ) )
+			{
+				fmove = factor * maxspeed;
+			}
+			else if ( vgui::input()->IsKeyDown( m_bcBackward ) )
+			{
+				fmove = -factor * maxspeed;
+			}
+
+			if ( vgui::input()->IsKeyDown( m_bcMoveLeft ) )
+			{
+				smove = -factor * maxspeed;
+			}
+			else if ( vgui::input()->IsKeyDown( m_bcMoveRight ) )
+			{
+				smove = factor * maxspeed;
+			}
+		}
+
 		const bool bDroneMove = m_LastCmd.buttons & IN_WALK;
 		if (bDroneMove)
 		{
@@ -466,7 +537,11 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		if ( sv_specaccelerate.GetFloat() > 0.0 )
 		{
 			// Set move velocity
+#ifdef NEO
+			Accelerate ( wishdir, wishspeed, sv_specaccelerate.GetFloat(), flDeltaTime );
+#else
 			Accelerate ( wishdir, wishspeed, sv_specaccelerate.GetFloat() );
+#endif // NEO
 
 			float spd = VectorLength( m_vecVelocity );
 			if (spd < 1.0f)
@@ -482,7 +557,11 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 				float friction = sv_friction.GetFloat();
 
 				// Add the amount to the drop amount.
+#ifdef NEO
+				float drop = control * friction * flDeltaTime;
+#else
 				float drop = control * friction * gpGlobals->frametime;
+#endif // NEO
 
 				// scale the velocity
 				float newspeed = spd - drop;
@@ -500,8 +579,12 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		}
 
 		// Just move ( don't clip or anything )
+#ifdef NEO
+		VectorMA( m_vCamOrigin, flDeltaTime, m_vecVelocity, m_vCamOrigin );
+#else
 		VectorMA( m_vCamOrigin, gpGlobals->frametime, m_vecVelocity, m_vCamOrigin );
-		
+#endif // NEO
+
 		// get camera angle directly from engine
 		 engine->GetViewAngles( m_aCamAngle );
 
