@@ -85,11 +85,7 @@ protected:
 	CUserCmd	m_LastCmd;
 	Vector		m_vecVelocity;
 #ifdef NEO
-	float			m_flLastRealTime; // use realtime instead of frametime to process movement even while paused
-	ButtonCode_t	m_bcForward;
-	ButtonCode_t	m_bcBackward;
-	ButtonCode_t	m_bcMoveLeft;
-	ButtonCode_t	m_bcMoveRight;
+	float		m_flLastRealTime = 0; // use realtime instead of frametime to process movement even while paused
 #endif
 };
 

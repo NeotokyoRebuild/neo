@@ -16,6 +16,7 @@
 #include "ienginevgui.h"
 #include "prediction.h"
 #include "weapon_ghost.h"
+#include "view.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "neo_hud_worldpos_marker.h"
@@ -99,7 +100,7 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 	{
 		if (!NEORules()->GetGhosterPlayer())
 		{
-			const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
+			const float flDistMeters = METERS_PER_INCH * MainViewOrigin().DistTo(NEORules()->GetGhostPos());
 			if (cl_neo_hud_worldpos_verbose.GetBool())
 			{
 				V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"GHOST DISTANCE: %.0fm", flDistMeters);
@@ -114,7 +115,7 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 	{
 		if (!NEORules()->GetJuggernautPlayer())
 		{
-			const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetJuggernautMarkerPos());
+			const float flDistMeters = METERS_PER_INCH * MainViewOrigin().DistTo(NEORules()->GetJuggernautMarkerPos());
 			if (cl_neo_hud_worldpos_verbose.GetBool())
 			{
 				V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"JUGGERNAUT DISTANCE: %.0fm", flDistMeters);

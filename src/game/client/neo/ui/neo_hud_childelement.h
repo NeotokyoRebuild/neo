@@ -75,14 +75,14 @@ protected:
 		}
 		else if (frequency > 0)
 		{
-			const float deltaTime = gpGlobals->curtime - m_flLastUpdateTime;
+			const float deltaTime = gpGlobals->realtime - m_flLastUpdateTime;
 			if ((m_flLastUpdateTime > 0.0f) && (deltaTime < frequency))
 			{
 				return false;
 			}
 			else
 			{
-				m_flLastUpdateTime = gpGlobals->curtime;
+				m_flLastUpdateTime = gpGlobals->realtime;
 				return true;
 			}
 		}
