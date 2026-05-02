@@ -418,6 +418,10 @@ void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel )
 
 #ifdef NEO
 extern ConVar neo_fov;
+extern ConVar cl_forwardspeed;
+extern ConVar cl_backspeed;
+extern ConVar cl_sidespeed;
+extern ConVar cl_upspeed;
 extern IGameUIFuncs *gameuifuncs;
 #endif // NEO
 // movement code is a copy of CGameMovement::FullNoClipMove()
@@ -431,6 +435,10 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		m_bcBackward = gameuifuncs->GetButtonCodeForBind( "+back" );
 		m_bcMoveLeft = gameuifuncs->GetButtonCodeForBind( "+moveleft" );
 		m_bcMoveRight = gameuifuncs->GetButtonCodeForBind( "+moveright" );
+		m_bcMoveUp = gameuifuncs->GetButtonCodeForBind( "+moveup" );
+		m_bcMoveDown = gameuifuncs->GetButtonCodeForBind( "+movedown" );
+		m_bcWalk = gameuifuncs->GetButtonCodeForBind( "+walk" );
+		m_bcSprint = gameuifuncs->GetButtonCodeForBind( "+sprint" );
 	}
 
 	if ( m_flLastRealTime == 0 )
@@ -466,7 +474,11 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		AngleVectors ( m_LastCmd.viewangles, &forward, &right, &up);  // Determine movement angles
 #endif // NEO
 
+#ifdef NEO
+		if ( m_LastCmd.buttons & IN_SPEED && !bUsePausedMovement)
+#else
 		if ( m_LastCmd.buttons & IN_SPEED )
+#endif // NEO
 		{
 			factor /= 2.0f;
 		}
@@ -474,6 +486,9 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		// Copy movement amounts
 		float fmove = m_LastCmd.forwardmove * factor;
 		float smove = m_LastCmd.sidemove * factor;
+#ifdef NEO
+		float umove = m_LastCmd.upmove * factor;
+#endif
 
 #ifdef NEO
 		// If demo is paused and not using UI, use VGUI to detect movement keys presses
@@ -481,27 +496,42 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		{
 			fmove = 0.0f;
 			smove = 0.0f;
+			umove = 0.0f;
+
+			if ( vgui::input()->IsKeyDown( m_bcSprint ) )
+			{
+				factor /= 2.0f;
+			}
 
 			if ( vgui::input()->IsKeyDown( m_bcForward ) )
 			{
-				fmove = factor * maxspeed;
+				fmove = factor * cl_forwardspeed.GetFloat();
 			}
 			else if ( vgui::input()->IsKeyDown( m_bcBackward ) )
 			{
-				fmove = -factor * maxspeed;
+				fmove = -factor * cl_backspeed.GetFloat();
 			}
 
 			if ( vgui::input()->IsKeyDown( m_bcMoveLeft ) )
 			{
-				smove = -factor * maxspeed;
+				smove = -factor * cl_sidespeed.GetFloat();
 			}
 			else if ( vgui::input()->IsKeyDown( m_bcMoveRight ) )
 			{
-				smove = factor * maxspeed;
+				smove = factor * cl_sidespeed.GetFloat();
+			}
+
+			if ( vgui::input()->IsKeyDown( m_bcMoveUp ) )
+			{
+				umove = factor * cl_upspeed.GetFloat();
+			}
+			else if ( vgui::input()->IsKeyDown( m_bcMoveDown ) )
+			{
+				umove = -factor * cl_upspeed.GetFloat();
 			}
 		}
 
-		const bool bDroneMove = m_LastCmd.buttons & IN_WALK;
+		const bool bDroneMove = ( m_LastCmd.buttons & IN_WALK ) || ( bUsePausedMovement && vgui::input()->IsKeyDown( m_bcWalk ) );
 		if (bDroneMove)
 		{
 			forward.z = 0;
@@ -520,7 +550,11 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 
 		for (int i=0 ; i<3 ; i++)       // Determine x and y parts of velocity
 			wishvel[i] = forward[i]*fmove + right[i]*smove;
+#ifdef NEO
+		wishvel[2] += umove;
+#else
 		wishvel[2] += m_LastCmd.upmove * factor;
+#endif // NEO
 
 		VectorCopy (wishvel, wishdir);   // Determine magnitude of speed of move
 		wishspeed = VectorNormalize(wishdir);

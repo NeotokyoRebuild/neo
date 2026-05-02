@@ -90,6 +90,10 @@ protected:
 	ButtonCode_t	m_bcBackward;
 	ButtonCode_t	m_bcMoveLeft;
 	ButtonCode_t	m_bcMoveRight;
+	ButtonCode_t	m_bcMoveUp;
+	ButtonCode_t	m_bcMoveDown;
+	ButtonCode_t	m_bcWalk;
+	ButtonCode_t	m_bcSprint;
 #endif
 };
 
