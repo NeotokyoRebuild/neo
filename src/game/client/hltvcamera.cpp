@@ -441,11 +441,7 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 
 		AngleVectors ( m_LastCmd.viewangles, &forward, &right, &up);  // Determine movement angles
 
-#ifdef NEO
-		if ( m_LastCmd.buttons & IN_SPEED && !bUsePausedMovement)
-#else
 		if ( m_LastCmd.buttons & IN_SPEED )
-#endif // NEO
 		{
 			factor /= 2.0f;
 		}
@@ -453,9 +449,6 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		// Copy movement amounts
 		float fmove = m_LastCmd.forwardmove * factor;
 		float smove = m_LastCmd.sidemove * factor;
-#ifdef NEO
-		float umove = m_LastCmd.upmove * factor;
-#endif
 
 		const bool bDroneMove = m_LastCmd.buttons & IN_WALK;
 		if (bDroneMove)
@@ -475,11 +468,7 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 
 		for (int i=0 ; i<3 ; i++)       // Determine x and y parts of velocity
 			wishvel[i] = forward[i]*fmove + right[i]*smove;
-#ifdef NEO
-		wishvel[2] += umove;
-#else
 		wishvel[2] += m_LastCmd.upmove * factor;
-#endif // NEO
 
 		VectorCopy (wishvel, wishdir);   // Determine magnitude of speed of move
 		wishspeed = VectorNormalize(wishdir);
