@@ -476,8 +476,8 @@ bool CNEO_Player::ValidTakeoverTargetFor(CNEO_Player *pPlayerTakingOver)
 		&& pPlayerTakingOver->m_iXP >= sv_neo_spec_replace_player_min_exp.GetInt()
 		&& IsAlive()
 		&& InSameTeam(pPlayerTakingOver) && NEORules()->IsTeamplay()
-		&& (sv_neo_spec_replace_player_bot_enable.GetBool() && IsFakePlayer() ||
-			sv_neo_spec_replace_player_afk_enable.GetBool() && IsAFK());
+		&& ((sv_neo_spec_replace_player_bot_enable.GetBool() && IsFakePlayer()) ||
+			(sv_neo_spec_replace_player_afk_enable.GetBool() && IsAFK()));
 }
 
 #ifdef CLIENT_DLL

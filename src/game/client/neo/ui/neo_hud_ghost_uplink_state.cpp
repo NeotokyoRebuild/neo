@@ -83,17 +83,18 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
 		return;
-	
-	if (NEORules()->IsRoundOver())
-		return;
 
 	C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer)
 		return;
 
-	const auto wep = static_cast<C_NEOBaseCombatWeapon*>(localPlayer->GetActiveWeapon());
-	if ((wep && wep->IsGhost()) || (sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && (NEORules()->GetGhosterPlayer() == localPlayer->entindex() || localPlayer->IsCarryingGhost())))
+	C_NEOBaseCombatWeapon* pActiveWeapon = static_cast<C_NEOBaseCombatWeapon*>(localPlayer->GetActiveWeapon());
+	if ((pActiveWeapon && pActiveWeapon->IsGhost()) || 
+		(sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && (NEORules()->GetGhosterPlayer() == localPlayer->entindex() || localPlayer->IsCarryingGhost())))
 	{
+		if (NEORules()->IsRoundOver())
+			return;
+		
 		if (m_flTimeGhostEquip == 0.f)
 		{
 			m_flTimeGhostEquip = gpGlobals->curtime;
