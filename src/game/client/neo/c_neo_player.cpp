@@ -1673,12 +1673,7 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	m_bIneligibleForLoadoutPick = true;
 
-	if (pWeapon->IsGhost())
-	{
-		pWeapon->Holster(NULL);
-		assert_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
-	}
-	else if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
+	if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
 	{
 		assert_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
 	}

@@ -88,6 +88,7 @@ ConVar cl_neo_hud_context_hint_show_bot_interact_hint("cl_neo_hud_context_hint_s
 void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 {
 	g_GlowObjectManager.ClearUseItem();
+	m_hUseEntity = INVALID_EHANDLE;
 	ClearUseEntityListEntry();
 
 	C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
