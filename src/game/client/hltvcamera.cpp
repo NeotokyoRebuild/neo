@@ -26,9 +26,7 @@
 #include "neo_gamerules.h"
 #include "c_neo_player.h"
 #include "shareddefs.h"
-#include "vgui/IInput.h"
-#include "ienginevgui.h"
-#include "IGameUIFuncs.h"
+#include "input.h"
 #endif // NEO
 
 ConVar spec_autodirector( "spec_autodirector", "1", FCVAR_CLIENTDLL | FCVAR_CLIENTCMD_CAN_EXECUTE, "Auto-director chooses best view modes while spectating" );
@@ -418,43 +416,16 @@ void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel )
 
 #ifdef NEO
 extern ConVar neo_fov;
-extern ConVar cl_forwardspeed;
-extern ConVar cl_backspeed;
-extern ConVar cl_sidespeed;
-extern ConVar cl_upspeed;
-extern IGameUIFuncs *gameuifuncs;
 #endif // NEO
 // movement code is a copy of CGameMovement::FullNoClipMove()
 void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
 {
 #ifdef NEO
-	// NEO HACK (sm90x): set movement bindings memory on first call
-	if ( !m_bcForward )
-	{
-		m_bcForward = gameuifuncs->GetButtonCodeForBind( "+forward" );
-		m_bcBackward = gameuifuncs->GetButtonCodeForBind( "+back" );
-		m_bcMoveLeft = gameuifuncs->GetButtonCodeForBind( "+moveleft" );
-		m_bcMoveRight = gameuifuncs->GetButtonCodeForBind( "+moveright" );
-		m_bcMoveUp = gameuifuncs->GetButtonCodeForBind( "+moveup" );
-		m_bcMoveDown = gameuifuncs->GetButtonCodeForBind( "+movedown" );
-		m_bcWalk = gameuifuncs->GetButtonCodeForBind( "+walk" );
-		m_bcSprint = gameuifuncs->GetButtonCodeForBind( "+sprint" );
-	}
-
-	if ( m_flLastRealTime == 0 )
-	{
-		m_flLastRealTime = gpGlobals->realtime;
-	}
-
 	const float flDeltaTime = gpGlobals->realtime - m_flLastRealTime;
-	m_flLastRealTime = gpGlobals->realtime;
 
-	const bool bUsePausedMovement = engine->IsPlayingDemo() && engine->IsPaused() && !enginevgui->IsGameUIVisible();
-
-	// clears last command to prevent movement with an ui open if demo is paused while key down
-	if ( enginevgui->IsGameUIVisible() )
+	// if (engine->IsPaused()) // When running a demo back at very slow speeds, movement is delayed, just do this always
 	{
-		m_LastCmd.Reset();
+		input->CreateMove(m_LastCmd.command_number, flDeltaTime, true); // or false and use sv_noclipduringpause, default it to true?
 	}
 #endif // NEO
 
@@ -468,17 +439,9 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		float factor = sv_specspeed.GetFloat();
 		float maxspeed = sv_maxspeed.GetFloat() * factor;
 
-#ifdef NEO
-		AngleVectors ( m_aCamAngle, &forward, &right, &up );  // Determine movement angles
-#else
 		AngleVectors ( m_LastCmd.viewangles, &forward, &right, &up);  // Determine movement angles
-#endif // NEO
 
-#ifdef NEO
-		if ( m_LastCmd.buttons & IN_SPEED && !bUsePausedMovement)
-#else
 		if ( m_LastCmd.buttons & IN_SPEED )
-#endif // NEO
 		{
 			factor /= 2.0f;
 		}
@@ -486,52 +449,8 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		// Copy movement amounts
 		float fmove = m_LastCmd.forwardmove * factor;
 		float smove = m_LastCmd.sidemove * factor;
-#ifdef NEO
-		float umove = m_LastCmd.upmove * factor;
-#endif
 
-#ifdef NEO
-		// If demo is paused and not using UI, use VGUI to detect movement keys presses
-		if ( bUsePausedMovement )
-		{
-			fmove = 0.0f;
-			smove = 0.0f;
-			umove = 0.0f;
-
-			if ( vgui::input()->IsKeyDown( m_bcSprint ) )
-			{
-				factor /= 2.0f;
-			}
-
-			if ( vgui::input()->IsKeyDown( m_bcForward ) )
-			{
-				fmove = factor * cl_forwardspeed.GetFloat();
-			}
-			else if ( vgui::input()->IsKeyDown( m_bcBackward ) )
-			{
-				fmove = -factor * cl_backspeed.GetFloat();
-			}
-
-			if ( vgui::input()->IsKeyDown( m_bcMoveLeft ) )
-			{
-				smove = -factor * cl_sidespeed.GetFloat();
-			}
-			else if ( vgui::input()->IsKeyDown( m_bcMoveRight ) )
-			{
-				smove = factor * cl_sidespeed.GetFloat();
-			}
-
-			if ( vgui::input()->IsKeyDown( m_bcMoveUp ) )
-			{
-				umove = factor * cl_upspeed.GetFloat();
-			}
-			else if ( vgui::input()->IsKeyDown( m_bcMoveDown ) )
-			{
-				umove = -factor * cl_upspeed.GetFloat();
-			}
-		}
-
-		const bool bDroneMove = ( m_LastCmd.buttons & IN_WALK ) || ( bUsePausedMovement && vgui::input()->IsKeyDown( m_bcWalk ) );
+		const bool bDroneMove = m_LastCmd.buttons & IN_WALK;
 		if (bDroneMove)
 		{
 			forward.z = 0;
@@ -544,17 +463,12 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 				smove *= absSMove / moveMagnitude;
 			}
 		}
-#endif // NEO
 		VectorNormalize (forward);  // Normalize remainder of vectors
 		VectorNormalize (right);    // 
 
 		for (int i=0 ; i<3 ; i++)       // Determine x and y parts of velocity
 			wishvel[i] = forward[i]*fmove + right[i]*smove;
-#ifdef NEO
-		wishvel[2] += umove;
-#else
 		wishvel[2] += m_LastCmd.upmove * factor;
-#endif // NEO
 
 		VectorCopy (wishvel, wishdir);   // Determine magnitude of speed of move
 		wishspeed = VectorNormalize(wishdir);
@@ -714,6 +628,9 @@ void C_HLTVCamera::CalcView(Vector& origin, QAngle& angles, float& fov)
 		case OBS_MODE_CHASE		:	CalcChaseCamView( origin, angles, fov  );
 									break;
 	}
+#ifdef NEO
+	m_flLastRealTime = gpGlobals->realtime;
+#endif // NEO
 }
 
 #ifdef NEO
@@ -731,6 +648,17 @@ void C_HLTVCamera::SetMode(int iMode)
 	m_nCameraMode = iMode;
 
 #ifdef NEO
+	// If we pause demo playback while in eye view, the observer target will be invisible when switching observer mode because we also pause simulation etc, update visibility here
+	if (iOldMode == OBS_MODE_IN_EYE && engine->IsPaused())
+	{
+		C_BaseEntity* target = ClientEntityList().GetEnt( m_iTraget1 );
+		if ( target && target->IsPlayer())
+		{
+			target->UpdateVisibility();
+			target->CreateShadow(); // Iterate through all children to update their shadows too?
+		}
+	}
+
 	if (cl_neo_hltvcamera_spectate_next_target_on_set_mode.GetBool() && (iMode == OBS_MODE_IN_EYE || iMode == OBS_MODE_CHASE) && !GetPrimaryTarget())
 	{
 		bAllowChangingModeWhenSettingPrimaryTarget = false;
