@@ -450,6 +450,7 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		float fmove = m_LastCmd.forwardmove * factor;
 		float smove = m_LastCmd.sidemove * factor;
 
+#ifdef NEO
 		const bool bDroneMove = m_LastCmd.buttons & IN_WALK;
 		if (bDroneMove)
 		{
@@ -463,6 +464,7 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 				smove *= absSMove / moveMagnitude;
 			}
 		}
+#endif // NEO
 		VectorNormalize (forward);  // Normalize remainder of vectors
 		VectorNormalize (right);    // 
 
@@ -651,8 +653,7 @@ void C_HLTVCamera::SetMode(int iMode)
 	// If we pause demo playback while in eye view, the observer target will be invisible when switching observer mode because we also pause simulation etc, update visibility here
 	if (iOldMode == OBS_MODE_IN_EYE && engine->IsPaused())
 	{
-		C_BaseEntity* target = ClientEntityList().GetEnt( m_iTraget1 );
-		if ( target && target->IsPlayer())
+		if ( C_BaseEntity* target = ClientEntityList().GetEnt( m_iTraget1 ) )
 		{
 			target->UpdateVisibility();
 			target->CreateShadow(); // Iterate through all children to update their shadows too?
