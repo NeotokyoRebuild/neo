@@ -209,6 +209,7 @@ struct NeoSettings
 		bool bShowHudContextHints;
 		bool bShowHudContextHintPlayerTakeover;
 		bool bShowHudContextHintObjectInteract;
+		bool bShowHudContextAdjacentObjects;
 		bool bShowHudContextHintBotInteract;
 		bool bShowHudContextHighlightObject;
 		bool bShowHudContextHighlightPlayer;
@@ -279,6 +280,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_player_takeover_hint);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_object_interact_hint);
+		CONVARREF_DEF(cl_neo_hud_context_hint_show_adjacent_interactable_objects);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_bot_interact_hint);
 		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_object);
 		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_player);

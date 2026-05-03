@@ -442,15 +442,7 @@ bool CNEO_Player::ValidTakeoverTargetFor(CNEO_Player *pPlayerTakingOver)
 
 #ifdef CLIENT_DLL
 ConVar cl_neo_hud_context_hint_show_adjacent_interactable_objects("cl_neo_hud_context_hint_show_adjacent_interactable_objects", "1", FCVAR_ARCHIVE, "Show adjacent interactable objects", true, 0.f, true, 1.f);
-static bool gAddUseItemsToUseItemsList = false;
-bool SetAddUseEntitysToUseEntityList(bool addUseItemsToUseItemsList)
-{
-	if (cl_neo_hud_context_hint_show_adjacent_interactable_objects.GetBool())
-		gAddUseItemsToUseItemsList = addUseItemsToUseItemsList;
-	return true;
-};
 #endif // CLIENT_DLL
-
 extern ConVar sv_debug_player_use;
 CBaseEntity *CNEO_Player::FindUseEntity()
 {
@@ -477,6 +469,9 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	// try the hit entity if there is one, or the ground entity if there isn't.
 	CBaseEntity *pNearest = nullptr;
 
+#ifdef CLIENT_DLL
+	bool addUseItemsToUseItemsList = cl_neo_hud_context_hint_show_adjacent_interactable_objects.GetBool();
+#endif // CLIENT_DLL
 	{
 		UTIL_TraceLine( searchCenter, searchCenter + forward * 1024, useableContents, this, COLLISION_GROUP_NONE, &tr );
 		pObject = tr.m_pEnt;
@@ -526,7 +521,7 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 				{
 #ifdef CLIENT_DLL
 					// Client side do the sphere query anyway to show adjacent items
-					if (gAddUseItemsToUseItemsList)
+					if (addUseItemsToUseItemsList)
 						nearestDot = 0.f;
 					else
 #endif // CLIENT_DLL
@@ -570,7 +565,7 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 		float dot = -1;
 		dot = DotProduct((pObject->CollisionProp()->WorldSpaceCenter() - searchCenter).Normalized(), forward);
 
-		if (gAddUseItemsToUseItemsList && IsUseableEntity(pObject, 0) && dot >= 0.8)
+		if (addUseItemsToUseItemsList && IsUseableEntity(pObject, 0) && dot >= 0.8)
 		{
 			pObject->CollisionProp()->CalcNearestPoint( searchCenter, &point );
 			trace_t trCheckOccluded;

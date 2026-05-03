@@ -72,6 +72,7 @@ bool CNEOHud_ContextHint::ShouldDraw()
 	if (!cl_neo_hud_context_hint_enabled.GetBool())
 	{
 		g_GlowObjectManager.ClearUseItem();
+		ClearUseEntityListEntry();
 		return false;
 	}
 
@@ -82,12 +83,12 @@ extern ConVar sv_neo_spec_replace_player_bot_enable;
 extern ConVar sv_neo_spec_replace_player_min_exp;
 extern ConVar sv_neo_bot_cmdr_enable;
 ConVar cl_neo_hud_context_hint_show_player_takeover_hint("cl_neo_hud_context_hint_show_player_takeover_hint", "1", FCVAR_ARCHIVE, "Show player takeover hint", true, 0.f, true, 1.f);
-ConVar cl_neo_hud_context_hint_show_object_interact_hint("cl_neo_hud_context_hint_show_object_interact_hint", "1", FCVAR_ARCHIVE, "Show object inteact hint", true, 0.f, true, 1.f);
+ConVar cl_neo_hud_context_hint_show_object_interact_hint("cl_neo_hud_context_hint_show_object_interact_hint", "1", FCVAR_ARCHIVE, "Show object interact hint", true, 0.f, true, 1.f);
 ConVar cl_neo_hud_context_hint_show_bot_interact_hint("cl_neo_hud_context_hint_show_bot_interact_hint", "1", FCVAR_ARCHIVE, "Show bot command and weapon request hint", true, 0.f, true, 1.f);
 void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 {
 	g_GlowObjectManager.ClearUseItem();
-	m_hUseEntity = nullptr;
+	ClearUseEntityListEntry();
 
 	C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalNeoPlayer)
@@ -110,7 +111,10 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 	if (pLocalNeoPlayer->IsObserver())
 	{
 		if (!cl_neo_hud_context_hint_show_player_takeover_hint.GetBool())
+		{
+			m_flDisplayEndTime = gpGlobals->curtime;
 			return;
+		}
 
 		// Takeover hint
 		{
@@ -143,9 +147,8 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 	else
 	{
 		constexpr float ITEM_DISCOVERY_SMOKE_THRESHOLD = 0.8f;
-		SetAddUseEntitysToUseEntityList(true);
 		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
-			SetAddUseEntitysToUseEntityList(false) && pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
+			pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
 		{
 			g_GlowObjectManager.SetUseItem(pUseEntity, Vector( 1.0f, 1.0f, 1.0f ), g_SmokeFogOverlayThermalOverride ? 1.0f : Max( 0.0f, 1.0f - g_SmokeFogOverlayAlpha), true, false);
 			m_hUseEntity = pUseEntity;
@@ -266,6 +269,7 @@ void ClearUseEntityListEntry()
 	useEntityListLastIndex = -1;
 };
 
+ConVar cl_neo_hud_context_hint_show_object_interact_hint_in_world("cl_neo_hud_context_hint_show_object_interact_hint_in_world", "1", FCVAR_ARCHIVE, "Draw the object interact hint next to the interactable object", true, 0.f, true, 1.f);
 void CNEOHud_ContextHint::DrawNeoHudElement()
 {
 	if (m_wszHintText[0] == L'\0')
@@ -305,10 +309,9 @@ void CNEOHud_ContextHint::DrawNeoHudElement()
 	if (m_flDisplayEndTime <= gpGlobals->curtime)
 		return;
 
-	if (m_hUseEntity.IsValid())
+	if (cl_neo_hud_context_hint_show_object_interact_hint_in_world.GetBool() && m_hUseEntity.IsValid())
 	{
-		C_BaseEntity* useEntity = m_hUseEntity.Get();
-		if (useEntity)
+		if (C_BaseEntity* useEntity = m_hUseEntity.Get())
 		{
 			GetVectorInScreenSpace(useEntity->CollisionProp()->WorldSpaceCenter(), textX, textY);
 
