@@ -3,6 +3,7 @@
 #include "strtools.h"
 #include "mathlib/mathlib.h"
 #include <cstdio>
+#include <cstdlib>
 
 #define DATA_XTRA_NAME_SIZE 64
 
@@ -18,6 +19,7 @@ static int g_testFailuresFn;
 static int g_testTotalFn;
 static int g_retVal;
 static bool g_testFnPass;
+static bool g_testHidePass;
 
 static bool _TestVerify(const bool bPass, const char *pszCondStr,
 		const char *pszFile, const int iLine)
@@ -96,7 +98,7 @@ static void _TestCompareStr(const char *lhs, const char *pszLhs,
 		test_name(); \
 		if (g_testFnPass) \
 		{ \
-			printf("%s: %s PASSED\n", g_szName, #test_name); \
+			if (false == g_testHidePass) printf("%s: %s PASSED\n", g_szName, #test_name); \
 		} \
 		else \
 		{ \
@@ -121,7 +123,7 @@ static void _TestCompareStr(const char *lhs, const char *pszLhs,
 			test_name(&datas[tIdx], tIdx); \
 			if (g_testFnPass) \
 			{ \
-				printf("%s: %s[%d](%s) PASSED\n", g_szName, #test_name, g_iDataExtraIdx, g_szDataExtraName); \
+				if (false == g_testHidePass) printf("%s: %s[%d](%s) PASSED\n", g_szName, #test_name, g_iDataExtraIdx, g_szDataExtraName); \
 			} \
 			else \
 			{ \
@@ -139,6 +141,10 @@ static void _TestCompareStr(const char *lhs, const char *pszLhs,
 #define TEST_INIT() \
 	int main(int argc, char **argv) \
 	{ \
+		if (const char *pszEnv = getenv("NEO_TEST_HIDE_PASS")) \
+		{ \
+			g_testHidePass = (0 == V_strcmp(pszEnv, "1")); \
+		} \
 		const char *szBasename1 = V_strrchr(argv[0], '\\'); \
 		g_szName = (szBasename1) ? szBasename1 + 1 : nullptr; \
 		if (!g_szName) \
@@ -152,6 +158,10 @@ static void _TestCompareStr(const char *lhs, const char *pszLhs,
 #define TEST_INIT() \
 	int main(int argc, char **argv) \
 	{ \
+		if (const char *pszEnv = getenv("NEO_TEST_HIDE_PASS")) \
+		{ \
+			g_testHidePass = (0 == V_strcmp(pszEnv, "1")); \
+		} \
 		const char *szBasename = V_strrchr(argv[0], '/'); \
 		g_szName = (szBasename) ? szBasename + 1 : argv[0];
 

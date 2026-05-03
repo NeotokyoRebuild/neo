@@ -23,6 +23,7 @@ private:
 	bool FollowCommandChain( CNEOBot *me );
 	bool FanOutAndCover( CNEOBot *me, Vector &movementTarget, bool bMoveToSeparate = true, float flArrivalZoneSizeSq = -1.0f );
 	ActionResult< CNEOBot > CheckCommanderWeaponRequest( CNEOBot *me );
+	void SendUpdateToCommander( CNEOBot *me, const char *message );
 
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;

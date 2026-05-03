@@ -83,6 +83,14 @@ jobs:
     - name: Install libraries
       run: cmake --install ${{ env.build_dir }}
 
+    # Run unit tests
+
+    - name: CTest
+      working-directory: ${{ env.source_dir }}
+      env:
+        NEO_TEST_HIDE_PASS: "1"
+      run: ctest --test-dir build/${{ env.preset_name }}/tests/ --output-on-failure
+
     # Dedicated library
 
     - name: CMake reconfigure dedicated library build
@@ -216,6 +224,14 @@ jobs:
 
     - name: Install libraries
       run: cmake --install ${{ env.build_dir }}
+
+    # Run unit tests
+
+    - name: CTest
+      working-directory: ${{ env.source_dir }}
+      env:
+        NEO_TEST_HIDE_PASS: "1"
+      run: ctest --test-dir build/${{ env.preset_name }}/tests/ --output-on-failure
 
     # Dedicated library
 

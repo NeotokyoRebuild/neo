@@ -555,6 +555,10 @@ public:
 	MoveCollide_t					GetMoveCollide( void ) const;
 	virtual SolidType_t				GetSolid( void ) const;
 
+#ifdef NEO
+	virtual void					Splash() {}
+#endif // NEO
+
 	virtual int			 			GetSolidFlags( void ) const;
 	bool							IsSolidFlagSet( int flagMask ) const;
 	void							SetSolidFlags( int nFlags );
