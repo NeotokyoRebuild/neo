@@ -526,13 +526,13 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 			bUsable = IsUseableEntity(pObject, 0);
 		}
 
-		if ( bUsable )
+		if ( bUsable && !pObject->IsBaseCombatWeapon() )
 		{
 			Vector delta = tr.endpos - tr.startpos;
 			float centerZ = CollisionProp()->WorldSpaceCenter().z;
 			delta.z = IntervalDistance( tr.endpos.z, centerZ + CollisionProp()->OBBMins().z, centerZ + CollisionProp()->OBBMaxs().z );
-			float dist = delta.Length();
-			if ( dist < PLAYER_USE_RADIUS )
+			float dist = delta.LengthSqr();
+			if ( dist < (PLAYER_USE_RADIUS * PLAYER_USE_RADIUS) )
 			{
 #ifndef CLIENT_DLL
 				if ( sv_debug_player_use.GetBool() )
@@ -556,8 +556,7 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 				pNearest = pObject;
 				
 				// if there is an entity directly under the cursor just return it now
-				// NEO NOTE (Adam) weapon axis aligned collision bounds are usually far removed from where the weapon is visually. If a weapon can be interacted with in a radius, use that instead
-				if (pObject && !((pObject->ObjectCaps() & FCAP_USE_IN_RADIUS) && pObject->IsBaseCombatWeapon()))
+				if (pObject)
 				{
 #ifdef CLIENT_DLL
 					// Client side do the sphere query anyway to show adjacent items
@@ -597,6 +596,10 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	for ( CEntitySphereQuery sphere( searchCenter, PLAYER_USE_RADIUS ); ( pObject = sphere.GetCurrentEntity() ) != nullptr; sphere.NextEntity() )
 	{
 		if ( !pObject )
+			continue;
+
+		// Weapons have very inflated trigger bounds which, if any part of is in the search sphere, get added to the query. This prevents weapons from being picked up from very far away
+		if (pObject->IsBaseCombatWeapon() && pObject->CollisionProp()->CalcDistanceFromPoint(searchCenter) > PLAYER_USE_RADIUS)
 			continue;
 
 #ifdef CLIENT_DLL
@@ -639,7 +642,6 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 		
 		if ( sv_debug_player_use.GetBool() )
 		{
-			// NEO NOTE (Adam) looks like CEntitySphereQuery is using surrounding bounds instead of collision bounds. This distance could be significantly greater than PLAYER_USE_RADIUS
 			Msg("Radius found %s, dist %.2f\n", pObject->GetClassname(), CalcDistanceToLine( point, searchCenter, forward ) );
 		}
 
