@@ -95,28 +95,33 @@ void CWeaponGhost::OnDataChanged(DataUpdateType_t updateType)
 {
 	if (updateType == DATA_UPDATE_DATATABLE_CHANGED && m_iOldState != m_iState)
 	{
-		if (!IsCarriedByLocalPlayer())
+		// Ghost startup sound
 		{
-			StopGhostSound();
-		}
-		else
-		{
-			if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+			// Could be more than one ghost on the map, check whether localplayer is carrying the ghost too
+			C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+			if (!IsCarriedByLocalPlayer() && !pLocalPlayer->IsCarryingGhost())
 			{
-				if (m_iState == WEAPON_NOT_CARRIED)
-					StopGhostSound();
-				else if (m_iOldState == WEAPON_NOT_CARRIED)
-					PlayGhostSound();
+				StopGhostSound();
 			}
 			else
 			{
-				if (m_iState == WEAPON_IS_ACTIVE)
-					PlayGhostSound();
+				if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+				{
+					if (m_iState == WEAPON_NOT_CARRIED)
+						StopGhostSound();
+					else if (m_iOldState == WEAPON_NOT_CARRIED)
+						PlayGhostSound();
+				}
 				else
-					StopGhostSound();
+				{
+					if (m_iState == WEAPON_IS_ACTIVE)
+						PlayGhostSound();
+					else
+						StopGhostSound();
+				}
 			}
+			// NEO TODO (Adam) if round is over, stop the ghost sound too?
 		}
-		// NEO TODO (Adam) if round is over, stop the ghost sound too?
 	}
 
 	BaseClass::OnDataChanged(updateType);
@@ -124,11 +129,9 @@ void CWeaponGhost::OnDataChanged(DataUpdateType_t updateType)
 
 void CWeaponGhost::PlayGhostSound()
 {
-	C_BasePlayer* owner = static_cast<C_BasePlayer*>(GetOwner());
-	if (!owner)
-	{
+	C_BasePlayer* pOwner = static_cast<C_BasePlayer*>(GetOwner());
+	if (!pOwner)
 		return;
-	}
 
 	CLocalPlayerFilter filter;
 	EmitSound_t soundParams;

@@ -147,6 +147,7 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 	}
 	else
 	{
+		// Usable entity
 		constexpr float ITEM_DISCOVERY_SMOKE_THRESHOLD = 0.8f;
 		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
 			pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
@@ -186,34 +187,30 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					m_hUseEntity = INVALID_EHANDLE;
 				}
 			}
-			else
+			// Juggernaut hint
+			else if (CNEO_Juggernaut* pJuggernaut = dynamic_cast<CNEO_Juggernaut*>(pUseEntity))
 			{
-				// Juggernaut hint
-				if (CNEO_Juggernaut* pJuggernaut = dynamic_cast<CNEO_Juggernaut*>(pUseEntity);
-					pJuggernaut)
+				m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+				if (pJuggernaut->m_bLocked)
 				{
-					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
-					if (pJuggernaut->m_bLocked)
-					{
-						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"JGR56 is locked");
-					}
-					else if (C_NEO_Player* pNeoJuggernautPlayer = pJuggernaut->m_hHoldingPlayer.Get();
-						pNeoJuggernautPlayer && pJuggernaut->m_bIsHolding)
-					{
-						g_GlowObjectManager.ClearUseItemPlayer();
-						m_flDisplayEndTime = gpGlobals->curtime;
-					}
-					else
-					{
-						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] boot into JGR56", szUppercaseKeyBinding);
-					}
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"JGR56 is locked");
 				}
-				// Some other useable entity
+				else if (C_NEO_Player* pNeoJuggernautPlayer = pJuggernaut->m_hHoldingPlayer.Get();
+					pNeoJuggernautPlayer && pJuggernaut->m_bIsHolding)
+				{
+					g_GlowObjectManager.ClearUseItemPlayer();
+					m_flDisplayEndTime = gpGlobals->curtime;
+				}
 				else
 				{
-					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] use", szUppercaseKeyBinding);
-					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] boot into JGR56", szUppercaseKeyBinding);
 				}
+			}
+			// Some other useable entity
+			else
+			{
+				V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] use", szUppercaseKeyBinding);
+				m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 			}
 		}
 		else
@@ -261,6 +258,7 @@ void SetUseEntityListEntry(int index, CBaseEntity* entity)
 {
 	if (index < 0 || index >= ARRAYSIZE(useEntityList))
 		return;
+
 	useEntityList[index].entity = entity;
 	useEntityListLastIndex = index;
 };
@@ -297,20 +295,17 @@ void CNEOHud_ContextHint::DrawNeoHudElement()
 	vgui::surface()->DrawSetColor(m_TextColor);
 	for (int i = 0; i <= useEntityListLastIndex; i++)
 	{
-		if (useEntityList[i].entity.IsValid())
+		if (C_BaseEntity* entity = useEntityList[i].entity.Get())
 		{
-			if (C_BaseEntity* entity = useEntityList[i].entity.Get())
-			{
-				GetVectorInScreenSpace(entity->CollisionProp()->WorldSpaceCenter(), x, y);
-				vgui::surface()->DrawOutlinedCircle(x, y, size, 12);
-			}
+			GetVectorInScreenSpace(entity->CollisionProp()->WorldSpaceCenter(), x, y);
+			vgui::surface()->DrawOutlinedCircle(x, y, size, 12);
 		}
 	}
 	
 	if (m_flDisplayEndTime <= gpGlobals->curtime)
 		return;
 
-	if (cl_neo_hud_context_hint_show_object_interact_hint_in_world.GetBool() && m_hUseEntity.IsValid())
+	if (cl_neo_hud_context_hint_show_object_interact_hint_in_world.GetBool())
 	{
 		if (C_BaseEntity* useEntity = m_hUseEntity.Get())
 		{

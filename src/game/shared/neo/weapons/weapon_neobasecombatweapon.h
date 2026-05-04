@@ -142,6 +142,7 @@ public:
 
 	virtual bool CanBeSelected(void) override;
 	virtual bool IsFollowingEntity() override {
+		// NEO NOTE (Adam) stops non-active weapons attached to players from showing a pickup hint, also should fix position of attached weapons where they were previously interpolated separate to the owner instead of always being attached to the owner
 		return (GetMoveType() == MOVETYPE_NONE) && GetMoveParent();
 	};
 	virtual int	ObjectCaps(void) override

@@ -513,23 +513,23 @@ CON_COMMAND_F(useplayer, "+use on a player", FCVAR_USERINFO)
 	if (args.ArgC() < 2)
 		return;
 
-	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
-	if (!player)
+	auto pPlayer = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+	if (!pPlayer)
 		return;
 	
-	CNEO_Player* pTargetPlayer = ToNEOPlayer(UTIL_PlayerByIndex(atoi(args[1])));
-	if ( pTargetPlayer && pTargetPlayer->IsBot())
+	if (CNEO_Player* pTargetPlayer = ToNEOPlayer(UTIL_PlayerByIndex(atoi(args[1])));
+		pTargetPlayer && pTargetPlayer->IsBot())
 	{
 		if (sv_neo_bot_cmdr_enable.GetBool())
 		{
-			pTargetPlayer->ToggleBotFollowCommander( player );
+			pTargetPlayer->ToggleBotFollowCommander( pPlayer );
 			// TODO: Do we want to allow using players for some kind of communication?
 		}
-		else if (NEORules()->IsTeamplay() && pTargetPlayer->GetTeamNumber() == player->GetTeamNumber())
+		else if (NEORules()->IsTeamplay() && pTargetPlayer->GetTeamNumber() == pPlayer->GetTeamNumber())
 		{
 			// Alt: Triggers throwing primary weapon to user
 			// see neo_bot_scenario_monitor for behavior transition
-			pTargetPlayer->m_hCommandingPlayer = player;
+			pTargetPlayer->m_hCommandingPlayer = pPlayer;
 		}
 	}
 }

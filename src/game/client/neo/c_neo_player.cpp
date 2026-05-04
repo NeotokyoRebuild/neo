@@ -2113,6 +2113,28 @@ C_NEO_Player* C_NEO_Player::PlayerUseTraceLine()
 	return nullptr;
 }
 
+
+//-----------------------------------------------------------------------------
+// Purpose: Return true if this object can be +used by the player
+//-----------------------------------------------------------------------------
+bool C_NEO_Player::IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps )
+{
+#ifdef NEO
+	if (!pEntity)
+		return false;
+
+	if (int caps = pEntity->ObjectCaps();
+		caps & (FCAP_IMPULSE_USE|FCAP_CONTINUOUS_USE|FCAP_ONOFF_USE|FCAP_DIRECTIONAL_USE) &&
+		(caps & requiredCaps) == requiredCaps)
+	{
+		return true;
+	}
+
+	return false;
+#endif // NEO
+}
+
+
 void C_NEO_Player::PlayerUse()
 {
 	BaseClass::PlayerUse();
@@ -2123,8 +2145,7 @@ void C_NEO_Player::PlayerUse()
 
 	if ( (m_afButtonPressed & IN_USE) && prediction->IsFirstTimePredicted() && !GetUseEntity())
 	{
-		if (C_NEO_Player* pTargetPlayer = PlayerUseTraceLine();
-			pTargetPlayer )
+		if (C_NEO_Player* pTargetPlayer = PlayerUseTraceLine())
 		{
 			m_Local.m_nOldButtons |= IN_USE;
 			m_afButtonPressed &= ~IN_USE;

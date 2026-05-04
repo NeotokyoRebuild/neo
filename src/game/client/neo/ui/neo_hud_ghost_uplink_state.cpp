@@ -84,13 +84,13 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 	if (!ShouldDraw())
 		return;
 
-	C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!localPlayer)
+	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pLocalPlayer)
 		return;
 
-	C_NEOBaseCombatWeapon* pActiveWeapon = static_cast<C_NEOBaseCombatWeapon*>(localPlayer->GetActiveWeapon());
+	C_NEOBaseCombatWeapon* pActiveWeapon = static_cast<C_NEOBaseCombatWeapon*>(pLocalPlayer->GetActiveWeapon());
 	if ((pActiveWeapon && pActiveWeapon->IsGhost()) || 
-		(sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && (NEORules()->GetGhosterPlayer() == localPlayer->entindex() || localPlayer->IsCarryingGhost())))
+		(sv_neo_ctg_ghost_beacons_when_inactive.GetBool() && (NEORules()->GetGhosterPlayer() == pLocalPlayer->entindex() || pLocalPlayer->IsCarryingGhost())))
 	{
 		if (NEORules()->IsRoundOver())
 			return;
@@ -105,7 +105,7 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 		surface()->DrawSetTexture(m_pUplinkTextures[textureOrder[m_iCurrentTextureIndex]]);
 		surface()->DrawTexturedRect(0, 0, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 	}
-	else if (localPlayer->IsAlive() && localPlayer->GetClass() == NEO_CLASS_JUGGERNAUT)
+	else if (pLocalPlayer->IsAlive() && pLocalPlayer->GetClass() == NEO_CLASS_JUGGERNAUT)
 	{
 		surface()->DrawSetColor(COLOR_RED);
 		surface()->DrawSetTexture(m_iJGRTexture);
