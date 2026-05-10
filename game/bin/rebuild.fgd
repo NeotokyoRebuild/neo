@@ -461,3 +461,12 @@
 [
 	radius(float) : "Radius" : 12 : ""
 ]
+
+@SolidClass base(Trigger) = neo_trigger_koth_zone: "Trigger for zone capture detection. Can be grouped with other triggers into a single zone."
+[
+]
+
+    @PointClass = neo_info_koth_zone : "Creates a zone to capture. To work it needs some koth_zone triggers that should reffer to this entity."
+[
+    zone_name(target_destination) : "Zone name" : "idk" : "name that (probably, rn idk) will be used"
+]

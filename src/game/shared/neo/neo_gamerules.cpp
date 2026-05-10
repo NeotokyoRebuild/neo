@@ -1092,38 +1092,85 @@ bool CNEORules::CheckShouldNotThink()
 }
 
 #ifdef GAME_DLL
+void CNEORules::UpdateKothScore(const int team) {
+	// neo TODO: prettify code to satisfy code-style requirements!!!
+	// neo TODO: add sending via net some HUD vars (score and controlling team)
+	// neo TODO: annul ALL variables on round restart (currntly im resetting only some of them)
+
+	int prevControllers = m_iKothControllingTeam;
+	switch (team)
+	{
+		case KOTH_BOTH:
+			// neo TODO: should i really nullify these values each time? check it
+			m_flKothAccumulatorNSF = 0.0f;
+			m_flKothAccumulatorJinrai = 0.0f;
+			m_iKothControllingTeam = KOTH_BOTH;
+		case KOTH_NONE:
+			m_flKothAccumulatorNSF = 0.0f;
+			m_flKothAccumulatorJinrai = 0.0f;
+			m_iKothControllingTeam = KOTH_NONE;
+		case KOTH_JINRAI:
+			m_flKothAccumulatorNSF = 0.0f;
+			m_flKothAccumulatorJinrai += gpGlobals->frametime;
+			m_iKothControllingTeam = KOTH_JINRAI;
+		case KOTH_NSF:
+			m_flKothAccumulatorNSF += gpGlobals->frametime;
+			m_flKothAccumulatorJinrai = 0.0f;
+			m_iKothControllingTeam = KOTH_NSF;
+		default:
+			Warning("Got unexpected KOTH team in score count: %d\n", team);
+	}
+
+	// we ALWAYS should have only ONE active checkpoint, so we can set leading team here
+	if (prevControllers != m_iKothControllingTeam)
+	{
+		// neo fixme: rn it causes crashes
+		//SetKothLeaderMapVisual(m_iKothControllingTeam);
+	}
+
+	// add accumulation to the score if possible
+	if (m_flKothAccumulatorNSF > sv_neo_koth_seconds_per_point.GetFloat()) {
+		m_iKothTimeNSF += int(m_flKothAccumulatorNSF / sv_neo_koth_seconds_per_point.GetFloat());
+		m_flKothAccumulatorNSF -= int(m_flKothAccumulatorNSF);
+	}
+	if (m_flKothAccumulatorJinrai > sv_neo_koth_seconds_per_point.GetFloat()) {
+		m_iKothTimeJinrai += int(m_flKothAccumulatorJinrai / sv_neo_koth_seconds_per_point.GetFloat());
+		m_flKothAccumulatorJinrai -= int(m_flKothAccumulatorJinrai);
+	}
+}
+
 // neo hack: shitcoded input but who cares, ill fix it later TODO
 void CNEORules::SetKothLeaderMapVisual(const int team) const
 {
-	pSpriteNSF->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	pSpriteJinrai->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	pSpriteInactive->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	pSpriteNone->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-
-	pBrushNSF->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	pBrushJinrai->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	pBrushInactive->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	pBrushNone->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-
-	if (team==KOTH_INACTIVE) {
-		pSpriteInactive->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-		pBrushInactive->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-		return;
-	}
-	if (team==KOTH_NONE) {
-		pSpriteNone->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-		pBrushNone->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-		return;
-	}
-	if (team==KOTH_NSF) {
-		pSpriteNSF->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-		pBrushNSF->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-		return;
-	}
-	if (team==KOTH_JINRAI) {
-		pSpriteJinrai->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-		pBrushJinrai->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-	}
+	// pSpriteNSF->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	// pSpriteJinrai->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	// pSpriteInactive->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	// pSpriteNone->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	//
+	// pBrushNSF->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	// pBrushJinrai->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	// pBrushInactive->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	// pBrushNone->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	//
+	// if (team==KOTH_INACTIVE) {
+	// 	pSpriteInactive->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+	// 	pBrushInactive->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+	// 	return;
+	// }
+	// if (team==KOTH_NONE) {
+	// 	pSpriteNone->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+	// 	pBrushNone->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+	// 	return;
+	// }
+	// if (team==KOTH_NSF) {
+	// 	pSpriteNSF->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+	// 	pBrushNSF->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+	// 	return;
+	// }
+	// if (team==KOTH_JINRAI) {
+	// 	pSpriteJinrai->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+	// 	pBrushJinrai->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+	// }
 }
 #endif
 
@@ -1591,67 +1638,29 @@ void CNEORules::Think(void)
 	else if (pKothTrigger)
 	{
 		// neo TODO: rm pKothTrigger check and just check that curr gm is NEO_GAME_TYPE_KOTH
-		// neo TODO: prettify code to satisfy code-style requirements!!!
-		// neo TODO: add single check that allows us to know that there is players inside!!! (not a loop)
-		// neo TODO: add sending via net some HUD vars (score and controlling team)
-		// neo TODO: annul ALL variables on round restart (currntly im resetting only some of them)
 
-		bool jinrai_capturing = false,
-				nsf_capturing = false;
-		for (int i = 1; i <= gpGlobals->maxClients; i++)
-		{
-			CNEO_Player* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-			// neo TODO: do i rlly need this check?
-			if (!pPlayer || !pPlayer->IsAlive())
-				continue;
 
-			// neo TODO: maybe instead of IsTouching use something like IsInside (if there is any similar events lol)??
-			// neo TODO: for-loop is probably VERY inefficient (check previous todo)
-			if (pKothTrigger->IsTouching(pPlayer))
-			{
-				int team = pPlayer->GetTeamNumber();
-				if (team==TEAM_JINRAI) {
-					jinrai_capturing = true;
-				} else if (team==TEAM_NSF) {
-					nsf_capturing = true;
-				}
-			}
-		}
-
-		int prevControllers = m_iKothControllingTeam;
-		if (jinrai_capturing && nsf_capturing || !(jinrai_capturing || nsf_capturing)) {
-			// both loses anyway
-			// neo TODO: should i really nullify these values each time? check it pls
-			m_flKothAccumulatorNSF = 0.0f;
-			m_flKothAccumulatorJinrai = 0.0f;
-			m_iKothControllingTeam = KOTH_NONE;
-		} else if (jinrai_capturing) {
-			// give jin some points
-			m_flKothAccumulatorNSF = 0.0f;
-			m_flKothAccumulatorJinrai += gpGlobals->frametime;
-			m_iKothControllingTeam = KOTH_JINRAI;
-		} else if (nsf_capturing) {
-			// give nsf some points
-			m_flKothAccumulatorNSF += gpGlobals->frametime;
-			m_flKothAccumulatorJinrai = 0.0f;
-			m_iKothControllingTeam = KOTH_NSF;
-		}
-		if (prevControllers != m_iKothControllingTeam)
-		{
-			SetKothLeaderMapVisual(m_iKothControllingTeam);
-		}
-
-		// DevMsg("JIN: %f, NSF: %f, ft delta: %f\n", m_flKothAccumulatorJinrai, m_flKothAccumulatorNSF, gpGlobals->frametime);
-		// DevMsg("JIN: %d, NSF: %d\n", jinrai_capturing, nsf_capturing);
-		// move it accumulation into the score if possible
-		if (m_flKothAccumulatorNSF > sv_neo_koth_seconds_per_point.GetFloat()) {
-			m_iKothTimeNSF += int(m_flKothAccumulatorNSF / sv_neo_koth_seconds_per_point.GetFloat());
-			m_flKothAccumulatorNSF -= int(m_flKothAccumulatorNSF);
-		}
-		if (m_flKothAccumulatorJinrai > sv_neo_koth_seconds_per_point.GetFloat()) {
-			m_iKothTimeJinrai += int(m_flKothAccumulatorJinrai / sv_neo_koth_seconds_per_point.GetFloat());
-			m_flKothAccumulatorJinrai -= int(m_flKothAccumulatorJinrai);
-		}
+		// bool jinrai_capturing = false,
+		// 		nsf_capturing = false;
+		// for (int i = 1; i <= gpGlobals->maxClients; i++)
+		// {
+		// 	CNEO_Player* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		// 	// neo TODO: do i rlly need this check?
+		// 	if (!pPlayer || !pPlayer->IsAlive())
+		// 		continue;
+		//
+		// 	// neo TODO: maybe instead of IsTouching use something like IsInside (if there is any similar events lol)??
+		// 	// neo TODO: for-loop is probably VERY inefficient (check previous todo)
+		// 	if (pKothTrigger->IsTouching(pPlayer))
+		// 	{
+		// 		int team = pPlayer->GetTeamNumber();
+		// 		if (team==TEAM_JINRAI) {
+		// 			jinrai_capturing = true;
+		// 		} else if (team==TEAM_NSF) {
+		// 			nsf_capturing = true;
+		// 		}
+		// 	}
+		// }
 	}
 
 	if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
@@ -3485,7 +3494,7 @@ void CNEORules::ResetKOTH() {
 	m_iKothTimeJinrai = 0;
 	m_iKothTimeNSF = 0;
 	// neo TODO: i dont think that i should send controllingTeam var through net
-	m_iKothControllingTeam = KOTH_INACTIVE;
+	m_iKothControllingTeam = KOTH_BOTH;
 	m_flKothAccumulatorNSF = 0.0f;
 	m_flKothAccumulatorJinrai = 0.0f;
 	// TODO: give xp for holding the point?

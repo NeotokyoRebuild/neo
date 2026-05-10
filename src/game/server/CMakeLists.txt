@@ -1498,6 +1498,12 @@ target_sources_grouped(
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
     neo/neo_dm_spawn.h
+    neo/neo_trigger_koth_zone.h
+    neo/neo_info_koth_zone.h
+    neo/neo_koth_master.h
+    neo/neo_trigger_koth_zone.cpp
+    neo/neo_info_koth_zone.cpp
+    neo/neo_koth_master.cpp
     neo/neo_gamerules_restore.h
     ${UNITY_SOURCE_NEO_SRC_SERVER}
 )
