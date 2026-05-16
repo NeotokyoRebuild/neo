@@ -25,7 +25,7 @@ struct VS_OUTPUT
 #if !defined( _X360 )
 	float  vFog						: FOG;
 #endif
-	float2 vBumpTexCoord			: TEXCOORD0;
+	float4 vBumpTexCoordlightmapTexCoord3	: TEXCOORD0;
 	float3 vTangentEyeVect			: TEXCOORD1;
 	float4 vReflectXY_vRefractYX	: TEXCOORD2;
 	float4 vWorldPos_projPosW		: TEXCOORD3;
@@ -34,10 +34,7 @@ struct VS_OUTPUT
 #if MULTITEXTURE
 	float4 vExtraBumpTexCoord       : TEXCOORD6;
 #endif
-#if BASETEXTURE
-	HALF4 lightmapTexCoord1And2		: TEXCOORD6;
-	HALF4 lightmapTexCoord3			: TEXCOORD7;
-#endif
+	HALF4 lightmapTexCoord1And2		: TEXCOORD7;
 	float4 fogFactorW				: COLOR1;
 };
 
@@ -88,8 +85,8 @@ VS_OUTPUT main( const VS_INPUT v )
 	o.vTangentEyeVect.z = dot( vWorldEyeVect, vObjNormal );
 
 	// Tranform bump coordinates
-	o.vBumpTexCoord.x = dot( v.vBaseTexCoord, cBumpTexCoordTransform[0] );
-	o.vBumpTexCoord.y = dot( v.vBaseTexCoord, cBumpTexCoordTransform[1] );
+	o.vBumpTexCoordlightmapTexCoord3.x = dot( v.vBaseTexCoord, cBumpTexCoordTransform[0] );
+	o.vBumpTexCoordlightmapTexCoord3.y = dot( v.vBaseTexCoord, cBumpTexCoordTransform[1] );
 	float f45x=v.vBaseTexCoord.x+v.vBaseTexCoord.y;
 	float f45y=v.vBaseTexCoord.y-v.vBaseTexCoord.x;
 #if MULTITEXTURE
@@ -99,7 +96,6 @@ VS_OUTPUT main( const VS_INPUT v )
 	o.vExtraBumpTexCoord.w=v.vBaseTexCoord.x*0.45+TexOffsets.w;
 #endif
 
-#if BASETEXTURE
 	o.lightmapTexCoord1And2.xy = v.vLightmapTexCoord + v.vLightmapTexCoordOffset;
 
 	float2 lightmapTexCoord2 = o.lightmapTexCoord1And2.xy + v.vLightmapTexCoordOffset;
@@ -109,8 +105,7 @@ VS_OUTPUT main( const VS_INPUT v )
 	o.lightmapTexCoord1And2.w = lightmapTexCoord2.x;
 	o.lightmapTexCoord1And2.z = lightmapTexCoord2.y;
 
-	o.lightmapTexCoord3.xy = lightmapTexCoord3;
-#endif
+	o.vBumpTexCoordlightmapTexCoord3.zw = lightmapTexCoord3;
 
 	return o;
 }

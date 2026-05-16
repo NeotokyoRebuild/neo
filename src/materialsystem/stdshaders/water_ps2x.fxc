@@ -30,9 +30,7 @@ sampler RefractSampler			: register( s0 );
 sampler BaseTextureSampler		: register( s1 );
 #endif
 sampler ReflectSampler			: register( s2 );
-#if BASETEXTURE
 sampler LightmapSampler			: register( s3 );
-#endif
 sampler NormalSampler			: register( s4 );
 
 const HALF4 vRefractTint			: register( c1 );
@@ -51,7 +49,9 @@ const float3 g_EyePos				: register( c9 );
 
 struct PS_INPUT
 {
-	float2 vBumpTexCoord			: TEXCOORD0;
+	float4 vBumpTexCoordlightmapTexCoord3	: TEXCOORD0;
+// CENTROID: TEXCOORD0.zw
+//	HALF2 lightmapTexCoord3			: TEXCOORD0.zw;
 	half3 vTangentEyeVect			: TEXCOORD1;
 	float4 vReflectXY_vRefractYX	: TEXCOORD2;
 	float4 vWorldPos_projPosW		: TEXCOORD3;
@@ -60,12 +60,8 @@ struct PS_INPUT
 #if MULTITEXTURE
 	float4 vExtraBumpTexCoord		: TEXCOORD6;
 #endif
-#if BASETEXTURE
 // CENTROID: TEXCOORD6
-	HALF4 lightmapTexCoord1And2		: TEXCOORD6;
-// CENTROID: TEXCOORD7
-	HALF4 lightmapTexCoord3			: TEXCOORD7;
-#endif
+	HALF4 lightmapTexCoord1And2		: TEXCOORD7;
 
 	float4 fogFactorW				: COLOR1;
 };
@@ -74,7 +70,7 @@ float4 main( PS_INPUT i ) : COLOR
 {
 	DrawWater_params_t params;
 
-	params.vBumpTexCoord = i.vBumpTexCoord;
+	params.vBumpTexCoord = i.vBumpTexCoordlightmapTexCoord3.xy;
 #if MULTITEXTURE
 	params.vExtraBumpTexCoord = i.vExtraBumpTexCoord;
 #endif
@@ -86,10 +82,8 @@ float4 main( PS_INPUT i ) : COLOR
 	params.vRefractTint = vRefractTint;
 	params.vTangentEyeVect = i.vTangentEyeVect;
 	params.waterFogColor = g_WaterFogColor;
-#if BASETEXTURE
 	params.lightmapTexCoord1And2 = i.lightmapTexCoord1And2;
-	params.lightmapTexCoord3 = i.lightmapTexCoord3;
-#endif
+	params.lightmapTexCoord3 = i.vBumpTexCoordlightmapTexCoord3.zw;
 	params.vProjPos = i.vProjPos;
 	params.pixelFogParams = g_PixelFogParams;
 	params.fWaterFogStart = g_WaterFogStart;
@@ -102,9 +96,9 @@ float4 main( PS_INPUT i ) : COLOR
 	DrawWater( params, 
 			   // yay. . can't put sampler in a struct.
 #if BASETEXTURE
-			   BaseTextureSampler, 
-			   LightmapSampler, 
+			   BaseTextureSampler,
 #endif
+			   LightmapSampler,
 			   NormalSampler, RefractSampler, ReflectSampler,
 			   result, fogFactor );
 

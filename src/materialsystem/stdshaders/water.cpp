@@ -200,11 +200,19 @@ BEGIN_VS_SHADER( Water_DX90,
 					// BASETEXTURE
 					pShaderShadow->EnableTexture( SHADER_SAMPLER1, true );
 					pShaderShadow->EnableSRGBRead( SHADER_SAMPLER1, true );
+#ifndef NEO
 					// LIGHTMAP
 					pShaderShadow->EnableTexture( SHADER_SAMPLER3, true );
 					pShaderShadow->EnableSRGBRead( SHADER_SAMPLER3, true );
+#endif // NEO
 				}
 			}
+#ifdef NEO
+			// LIGHTMAP
+			pShaderShadow->EnableTexture( SHADER_SAMPLER3, true );
+			pShaderShadow->EnableSRGBRead( SHADER_SAMPLER3, true );
+#endif // NEO
+
 			// normal map
 			pShaderShadow->EnableTexture( SHADER_SAMPLER4, true );
 			// Normalizing cube map
@@ -216,7 +224,9 @@ BEGIN_VS_SHADER( Water_DX90,
 			// texcoord1 : lightmap texcoord
 			// texcoord2 : lightmap texcoord offset
 			int numTexCoords = 1;
+#ifndef NEO // NEO TODO (Adam) check fogparam instead also
 			if( params[BASETEXTURE]->IsTexture() )
+#endif // NEO
 			{
 				numTexCoords = 3;
 			}
@@ -282,6 +292,12 @@ BEGIN_VS_SHADER( Water_DX90,
 				BindTexture( SHADER_SAMPLER1, BASETEXTURE, FRAME );
 				pShaderAPI->BindStandardTexture( SHADER_SAMPLER3, TEXTURE_LIGHTMAP );
 			}
+#ifdef NEO
+			else
+			{
+				pShaderAPI->BindStandardTexture( SHADER_SAMPLER3, TEXTURE_LIGHTMAP );
+			}
+#endif // NEO
 
 			pShaderAPI->BindStandardTexture( SHADER_SAMPLER5, TEXTURE_NORMALIZATION_CUBEMAP_SIGNED );
 			
