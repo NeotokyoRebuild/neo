@@ -763,7 +763,7 @@ bool C_NEO_Player::IsCloaked() const
 
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
-	if (IsCloaked())
+	if (m_bInThermOpticCamo)
 	{
 		return SHADOWS_NONE;
 	}
