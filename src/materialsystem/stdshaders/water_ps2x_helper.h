@@ -211,7 +211,7 @@ void DrawWater( in DrawWater_params_t i,
 
 	// blend between refraction and fog color.
 #if LIGHTMAPWATERFOG
-	// strictly increase fog brightness due to diffuselighting
+	// shift lightmap value by fog alpha
 	float4 waterFogColor = i.waterFogColor * float4(lerp(diffuseLighting, (255.f, 255.f, 255.f), i.waterFogColor.a), 1.f);
 #else
 	float4 waterFogColor = i.waterFogColor;
