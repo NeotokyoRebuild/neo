@@ -162,7 +162,7 @@ public:
 
 	C_NEOPredictedViewModel *GetNEOViewModel() { return static_cast<C_NEOPredictedViewModel*>(GetViewModel()); }
 
-	bool IsCloaked() const { return m_bInThermOpticCamo; }
+	bool IsCloaked() const;
 	float GetCloakFactor() const { return m_flTocFactor; }
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }

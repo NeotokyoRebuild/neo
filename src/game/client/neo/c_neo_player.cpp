@@ -688,12 +688,12 @@ int C_NEO_Player::DrawModel(int flags)
 	bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 
 	int ret = 0;
-	if (!IsCloaked() || inThermalVision)
+	if (!m_bInThermOpticCamo || inThermalVision)
 	{
 		ret |= BaseClass::DrawModel(flags);
 	}
 
-	if (IsCloaked() && !inThermalVision)
+	if (m_bInThermOpticCamo && !inThermalVision)
 	{
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
@@ -701,7 +701,7 @@ int C_NEO_Player::DrawModel(int flags)
 		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
-	else if (inThermalVision && !IsCloaked())
+	else if (inThermalVision && !m_bInThermOpticCamo)
 	{
 		IMaterial* pass = materials->FindMaterial(NEO_THERMAL_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
@@ -747,6 +747,18 @@ void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePl
 
 	m_iXP += score;
 	//pl.frags = m_iFrags; NEO TODO (Adam) Is this actually used anywhere? should we include a xp field in CPlayerState?
+}
+
+bool C_NEO_Player::IsCloaked() const
+{
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+	if (!pTargetPlayer)
+	{
+		return m_bInThermOpticCamo;
+	}
+	
+	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	return m_bInThermOpticCamo && !inThermalVision;
 }
 
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
