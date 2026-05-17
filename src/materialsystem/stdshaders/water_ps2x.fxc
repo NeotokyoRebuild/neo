@@ -70,10 +70,10 @@ struct PS_INPUT
 	HALF4 lightmapTexCoord1And2		: TEXCOORD7;
 #else
 #if BASETEXTURE
+// CENTROID: TEXCOORD6
 	HALF4 lightmapTexCoord1And2		: TEXCOORD6;
 // CENTROID: TEXCOORD7
 	HALF4 lightmapTexCoord3			: TEXCOORD7;
-// CENTROID: TEXCOORD6
 #endif
 #endif
 

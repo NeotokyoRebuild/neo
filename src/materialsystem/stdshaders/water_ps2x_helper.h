@@ -15,8 +15,10 @@ struct DrawWater_params_t
 	float4 vRefractTint;
 	half3 vTangentEyeVect;
 	float4 waterFogColor;
+#if BASETEXTURE || LIGHTMAPWATERFOG
 	HALF4 lightmapTexCoord1And2;
 	HALF2 lightmapTexCoord3;
+#endif
 	float4 vProjPos;
 	float4 pixelFogParams;
 	float fWaterFogStart;
@@ -25,7 +27,7 @@ struct DrawWater_params_t
 	float3 vWorldPos;
 };
 
-void DrawWater( in DrawWater_params_t i,
+void DrawWater( in DrawWater_params_t i, 
 #if BASETEXTURE
 				in sampler BaseTextureSampler,
 #endif
@@ -209,6 +211,7 @@ void DrawWater( in DrawWater_params_t i,
 
 	// blend between refraction and fog color.
 #if LIGHTMAPWATERFOG
+	// strictly increase fog brightness due to diffuselighting
 	float4 waterFogColor = i.waterFogColor * float4(lerp(diffuseLighting, (255.f, 255.f, 255.f), i.waterFogColor.a), 1.f);
 #else
 	float4 waterFogColor = i.waterFogColor;
@@ -239,7 +242,7 @@ void DrawWater( in DrawWater_params_t i,
 	else
 	{
 		result = float4( 0.0f, 0.0f, 0.0f, 0.0f );
-	}	
+	}
 
 	fogFactor = CalcPixelFogFactor( PIXELFOGTYPE, i.pixelFogParams, i.vEyePos.xyz, i.vWorldPos.xyz, i.vProjPos.z );
 
