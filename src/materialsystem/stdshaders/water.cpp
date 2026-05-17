@@ -56,6 +56,9 @@ BEGIN_VS_SHADER( Water_DX90,
 		SHADER_PARAM( SCROLL1, SHADER_PARAM_TYPE_COLOR, "", "" )
 		SHADER_PARAM( SCROLL2, SHADER_PARAM_TYPE_COLOR, "", "" )
 		SHADER_PARAM( BLURREFRACT, SHADER_PARAM_TYPE_BOOL, "0", "Cause the refraction to be blurry on ps2b hardware" )
+#ifdef NEO
+		SHADER_PARAM( LIGHTMAPWATERFOG, SHADER_PARAM_TYPE_BOOL, "0", "Cast shadows onto the fog component of the water surface" )
+#endif // NEO
 	END_SHADER_PARAMS
 
 	SHADER_INIT_PARAMS()
@@ -200,17 +203,20 @@ BEGIN_VS_SHADER( Water_DX90,
 					// BASETEXTURE
 					pShaderShadow->EnableTexture( SHADER_SAMPLER1, true );
 					pShaderShadow->EnableSRGBRead( SHADER_SAMPLER1, true );
-#ifndef NEO
+
 					// LIGHTMAP
 					pShaderShadow->EnableTexture( SHADER_SAMPLER3, true );
 					pShaderShadow->EnableSRGBRead( SHADER_SAMPLER3, true );
-#endif // NEO
 				}
 			}
 #ifdef NEO
-			// LIGHTMAP
-			pShaderShadow->EnableTexture( SHADER_SAMPLER3, true );
-			pShaderShadow->EnableSRGBRead( SHADER_SAMPLER3, true );
+			bool blightMapWaterFog = params[LIGHTMAPWATERFOG]->GetIntValue();
+			if (blightMapWaterFog)
+			{
+				// LIGHTMAP
+				pShaderShadow->EnableTexture( SHADER_SAMPLER3, true );
+				pShaderShadow->EnableSRGBRead( SHADER_SAMPLER3, true );
+			}
 #endif // NEO
 
 			// normal map
@@ -224,7 +230,9 @@ BEGIN_VS_SHADER( Water_DX90,
 			// texcoord1 : lightmap texcoord
 			// texcoord2 : lightmap texcoord offset
 			int numTexCoords = 1;
-#ifndef NEO // NEO TODO (Adam) check fogparam instead also
+#ifdef NEO
+			if( params[BASETEXTURE]->IsTexture() || blightMapWaterFog )
+#else
 			if( params[BASETEXTURE]->IsTexture() )
 #endif // NEO
 			{
@@ -238,6 +246,11 @@ BEGIN_VS_SHADER( Water_DX90,
 			DECLARE_STATIC_VERTEX_SHADER( water_vs20 );
 			SET_STATIC_VERTEX_SHADER_COMBO( MULTITEXTURE,fabs(Scroll1.x) > 0.0);
 			SET_STATIC_VERTEX_SHADER_COMBO( BASETEXTURE, params[BASETEXTURE]->IsTexture() );
+#ifdef NEO
+			SET_STATIC_VERTEX_SHADER_COMBO(LIGHTMAPWATERFOG, blightMapWaterFog);
+#else // Still custom NEO code
+			SET_STATIC_VERTEX_SHADER_COMBO(LIGHTMAPWATERFOG, 0);
+#endif // NEO
 			SET_STATIC_VERTEX_SHADER( water_vs20 );
 
 			// "REFLECT" "0..1"
@@ -253,6 +266,11 @@ BEGIN_VS_SHADER( Water_DX90,
 				SET_STATIC_PIXEL_SHADER_COMBO( BASETEXTURE, params[BASETEXTURE]->IsTexture() );
 				SET_STATIC_PIXEL_SHADER_COMBO( BLURRY_REFRACT, params[BLURREFRACT]->GetIntValue() );
 				SET_STATIC_PIXEL_SHADER_COMBO( NORMAL_DECODE_MODE, (int) NORMAL_DECODE_NONE );
+#ifdef NEO
+				SET_STATIC_PIXEL_SHADER_COMBO(LIGHTMAPWATERFOG, blightMapWaterFog);
+#else // Still custom NEO code
+				SET_STATIC_PIXEL_SHADER_COMBO(LIGHTMAPWATERFOG, 0);
+#endif // NEO
 				SET_STATIC_PIXEL_SHADER( water_ps20b );
 			}
 			else

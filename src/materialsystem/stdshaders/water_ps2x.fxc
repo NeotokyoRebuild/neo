@@ -11,6 +11,8 @@
 // STATIC: "NORMAL_DECODE_MODE"				"0..0"	[XBOX]
 // STATIC: "NORMAL_DECODE_MODE"				"0..0"	[PC]
 
+// STATIC: "LIGHTMAPWATERFOG"				"0..1"
+
 // DYNAMIC: "PIXELFOGTYPE"					"0..2"
 // DYNAMIC: "WRITE_DEPTH_TO_DESTALPHA"		"0..1"	[ps20b] [PC]
 // DYNAMIC: "WRITE_DEPTH_TO_DESTALPHA"		"0..0"	[ps20b] [XBOX]
@@ -30,7 +32,9 @@ sampler RefractSampler			: register( s0 );
 sampler BaseTextureSampler		: register( s1 );
 #endif
 sampler ReflectSampler			: register( s2 );
+#if BASETEXTURE || LIGHTMAPWATERFOG
 sampler LightmapSampler			: register( s3 );
+#endif
 sampler NormalSampler			: register( s4 );
 
 const HALF4 vRefractTint			: register( c1 );
@@ -49,9 +53,11 @@ const float3 g_EyePos				: register( c9 );
 
 struct PS_INPUT
 {
+#if LIGHTMAPWATERFOG
 	float4 vBumpTexCoordlightmapTexCoord3	: TEXCOORD0;
-// CENTROID: TEXCOORD0.zw
-//	HALF2 lightmapTexCoord3			: TEXCOORD0.zw;
+#else
+	float2 vBumpTexCoord			: TEXCOORD0;
+#endif
 	half3 vTangentEyeVect			: TEXCOORD1;
 	float4 vReflectXY_vRefractYX	: TEXCOORD2;
 	float4 vWorldPos_projPosW		: TEXCOORD3;
@@ -60,8 +66,16 @@ struct PS_INPUT
 #if MULTITEXTURE
 	float4 vExtraBumpTexCoord		: TEXCOORD6;
 #endif
-// CENTROID: TEXCOORD6
+#if LIGHTMAPWATERFOG
 	HALF4 lightmapTexCoord1And2		: TEXCOORD7;
+#else
+#if BASETEXTURE
+	HALF4 lightmapTexCoord1And2		: TEXCOORD6;
+// CENTROID: TEXCOORD7
+	HALF4 lightmapTexCoord3			: TEXCOORD7;
+// CENTROID: TEXCOORD6
+#endif
+#endif
 
 	float4 fogFactorW				: COLOR1;
 };
@@ -70,7 +84,11 @@ float4 main( PS_INPUT i ) : COLOR
 {
 	DrawWater_params_t params;
 
+#if LIGHTMAPWATERFOG
 	params.vBumpTexCoord = i.vBumpTexCoordlightmapTexCoord3.xy;
+#else
+	params.vBumpTexCoord = i.vBumpTexCoord;
+#endif
 #if MULTITEXTURE
 	params.vExtraBumpTexCoord = i.vExtraBumpTexCoord;
 #endif
@@ -82,8 +100,14 @@ float4 main( PS_INPUT i ) : COLOR
 	params.vRefractTint = vRefractTint;
 	params.vTangentEyeVect = i.vTangentEyeVect;
 	params.waterFogColor = g_WaterFogColor;
+#if BASETEXTURE || LIGHTMAPWATERFOG
 	params.lightmapTexCoord1And2 = i.lightmapTexCoord1And2;
+#if LIGHTMAPWATERFOG
 	params.lightmapTexCoord3 = i.vBumpTexCoordlightmapTexCoord3.zw;
+#else
+	params.lightmapTexCoord3 = i.lightmapTexCoord3;
+#endif
+#endif
 	params.vProjPos = i.vProjPos;
 	params.pixelFogParams = g_PixelFogParams;
 	params.fWaterFogStart = g_WaterFogStart;
@@ -98,7 +122,9 @@ float4 main( PS_INPUT i ) : COLOR
 #if BASETEXTURE
 			   BaseTextureSampler,
 #endif
+#if BASETEXTURE || LIGHTMAPWATERFOG
 			   LightmapSampler,
+#endif
 			   NormalSampler, RefractSampler, ReflectSampler,
 			   result, fogFactor );
 
