@@ -182,6 +182,7 @@ BEGIN_VS_SHADER( Water_DX90,
 	inline void DrawReflectionRefraction( IMaterialVar **params, IShaderShadow* pShaderShadow,
 		IShaderDynamicAPI* pShaderAPI, bool bReflection, bool bRefraction ) 
 	{
+		bool blightMapWaterFog = params[LIGHTMAPWATERFOG]->GetIntValue();
 		SHADOW_STATE
 		{
 			SetInitialShadowState( );
@@ -203,14 +204,12 @@ BEGIN_VS_SHADER( Water_DX90,
 					// BASETEXTURE
 					pShaderShadow->EnableTexture( SHADER_SAMPLER1, true );
 					pShaderShadow->EnableSRGBRead( SHADER_SAMPLER1, true );
-
 					// LIGHTMAP
 					pShaderShadow->EnableTexture( SHADER_SAMPLER3, true );
 					pShaderShadow->EnableSRGBRead( SHADER_SAMPLER3, true );
 				}
 			}
 #ifdef NEO
-			bool blightMapWaterFog = params[LIGHTMAPWATERFOG]->GetIntValue();
 			if (blightMapWaterFog)
 			{
 				// LIGHTMAP
@@ -311,7 +310,7 @@ BEGIN_VS_SHADER( Water_DX90,
 				pShaderAPI->BindStandardTexture( SHADER_SAMPLER3, TEXTURE_LIGHTMAP );
 			}
 #ifdef NEO
-			else
+			else if (blightMapWaterFog)
 			{
 				pShaderAPI->BindStandardTexture( SHADER_SAMPLER3, TEXTURE_LIGHTMAP );
 			}
