@@ -407,7 +407,28 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 	for (int i = 0; i < iPszSequenceLength && iSegmentIdx < NEOIFFMARKER_SEGMENT__TOTAL; ++i)
 	{
 		const char ch = szMutSequence[i];
-		if (ch == ';')
+
+		// NEO NOTE (Rain): I am changing the delimiter away from ';' because the Source cmd tokenizer
+		// does not have a sensible character escape syntax, and ';' is already used as command end token,
+		// which causes issues when trying to chain commands with an inner semicolon.
+		// NEO TODO (Rain): we should probably also update the xhair syntax and any other such serializations
+		// to ideally use the same, non-semicolon token, and declare that in a global header somewhere.
+		constexpr char deprecated_delimiter = ';';
+		if (ch == deprecated_delimiter)
+		{
+			char point_to[NEO_IFFMARKER_SEQMAX];
+			V_memset(point_to, ' ', i);
+			point_to[i] = '^';
+			point_to[i+1] = '\0';
+			Warning("Please replace the \"%c\" characters with \"%c\" in your marker syntax.\n"
+				"Failed for input at pos %d:\n\t%s\n\t%s\n",
+				deprecated_delimiter, NEO_MARKER_DELIMITER,
+				i, pszSequence,
+				point_to);
+			return false;
+		}
+
+		if (ch == NEO_MARKER_DELIMITER)
 		{
 			szMutSequence[i] = '\0';
 			const char *pszCurSegment = szMutSequence + iPrevSegment;
@@ -454,15 +475,15 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 void ExportMarker(const FriendlyMarkerInfo *crh, char (&szSequence)[NEO_IFFMARKER_SEQMAX])
 {
 	V_sprintf_safe(szSequence,
-			"%d;%d;%d;%d;%.2f;%d;%d;%d;%d;%d;",
-			crh->iInitialOffset,
-			static_cast<int>(crh->bShowDistance),
-			static_cast<int>(crh->bVerboseDistance),
-			static_cast<int>(crh->bShowSquadMarker),
-			crh->flSquadMarkerScale,
-			static_cast<int>(crh->bShowHealthBar),
-			static_cast<int>(crh->bShowHealth),
-			static_cast<int>(crh->bShowName),
-			static_cast<int>(crh->bPrependClantagToName),
-			crh->iMaxNameLength);
+			"%d%c%d%c%d%c%d%c%.2f%c%d%c%d%c%d%c%d%c%d%c",
+			crh->iInitialOffset, NEO_MARKER_DELIMITER,
+			static_cast<int>(crh->bShowDistance), NEO_MARKER_DELIMITER,
+			static_cast<int>(crh->bVerboseDistance), NEO_MARKER_DELIMITER,
+			static_cast<int>(crh->bShowSquadMarker), NEO_MARKER_DELIMITER,
+			crh->flSquadMarkerScale, NEO_MARKER_DELIMITER,
+			static_cast<int>(crh->bShowHealthBar), NEO_MARKER_DELIMITER,
+			static_cast<int>(crh->bShowHealth), NEO_MARKER_DELIMITER,
+			static_cast<int>(crh->bShowName), NEO_MARKER_DELIMITER,
+			static_cast<int>(crh->bPrependClantagToName), NEO_MARKER_DELIMITER,
+			crh->iMaxNameLength, NEO_MARKER_DELIMITER);
 }
