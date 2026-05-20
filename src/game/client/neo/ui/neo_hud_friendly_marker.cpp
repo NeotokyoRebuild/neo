@@ -415,6 +415,7 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 		// NEO TODO (Rain): we should probably also update the xhair syntax and any other such serializations
 		// to ideally use the same, non-semicolon token, and declare that in a global header somewhere.
 		constexpr char deprecated_delimiter = ';';
+		static_assert(deprecated_delimiter != NEO_MARKER_DELIMITER);
 		if (ch == deprecated_delimiter)
 		{
 			char point_to[NEO_IFFMARKER_SEQMAX];
