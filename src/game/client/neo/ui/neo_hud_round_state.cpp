@@ -378,9 +378,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		roundTimeLeft = NEORules()->GetRemainingPreRoundFreezeTime(true);
 
 	int secsTotal = 0.0f;
-	if (roundStatus == NeoRoundStatus::Overtime && NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	if (roundStatus == NeoRoundStatus::Overtime && (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG || NEORules()->GetGameType() == NEO_GAME_TYPE_ATK))
 	{
-		secsTotal = RoundFloatToInt(NEORules()->GetCTGOverTime());
+		secsTotal = RoundFloatToInt(NEORules()->GetOverTime((NeoGameType)NEORules()->GetGameType()));
 	}
 	else
 	{
