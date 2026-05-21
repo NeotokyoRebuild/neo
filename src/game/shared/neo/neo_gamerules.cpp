@@ -1823,24 +1823,25 @@ float CNEORules::GetOverTime(NeoGameType eGameType) const
 	float overtimeGrace;
 	bool graceDecay;
 
-	if (eGameType == NeoGameType::NEO_GAME_TYPE_CTG)
+	switch (eGameType)
 	{
+	case NeoGameType::NEO_GAME_TYPE_CTG:
 		roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
 		overtimeBaseAmount = sv_neo_ctg_ghost_overtime.GetFloat();
 		overtimeGrace = sv_neo_ctg_ghost_overtime_grace.GetFloat();
 		graceDecay = sv_neo_ctg_ghost_overtime_grace_decay.GetBool();
-	}
-	else if (eGameType == NeoGameType::NEO_GAME_TYPE_ATK)
-	{
+		break;
+	case NeoGameType::NEO_GAME_TYPE_ATK:
 		roundTimeLimit = neo_atk_round_timelimit.GetFloat() * 60.f;
 		overtimeBaseAmount = sv_neo_atk_ghost_overtime.GetFloat();
 		overtimeGrace = sv_neo_atk_ghost_overtime_grace.GetFloat();
 		graceDecay = sv_neo_atk_ghost_overtime_grace_decay.GetBool();
-	}
-	else
-	{
+		break;
+	default:
 		Assert(false && "Tried to calculate overtime for a gamemode with no overtime implementation");
+		return;
 	}
+
 	float overtime = (m_flNeoRoundStartTime + roundTimeLimit + overtimeBaseAmount) - gpGlobals->curtime;
 
 	if (graceDecay)
