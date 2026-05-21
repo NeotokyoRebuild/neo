@@ -2120,8 +2120,8 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		}
 		// Only draw tracers if we haven't yet penetrated, because the penetration logic is reentrant
 		// and would otherwise draw multiple tracers per shot.
-		Assert(neoWeapon);
-		if (neoWeapon->GetPenetration() == info.m_flPenetration)
+		// NEO TODO DG: Find a solution to this problem for everything, not just neoweapons
+		if ((neoWeapon && neoWeapon->GetPenetration() == info.m_flPenetration) || !neoWeapon)
 		{
 #endif
 		if ( ( info.m_iTracerFreq != 0 ) && ( tracerCount++ % info.m_iTracerFreq ) == 0 && ( bHitGlass == false ) )
