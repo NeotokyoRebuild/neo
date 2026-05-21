@@ -3903,6 +3903,9 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		case NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS:
 			V_sprintf_safe(victoryMsg, "Team %s wins by numbers!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 			break;
+		case NEO_VICTORY_ATK_TIMEOUT:
+			V_sprintf_safe(victoryMsg, "Team %s wins by defending the ghost!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			break;
 		case NEO_VICTORY_POINTS:
 			V_sprintf_safe(victoryMsg, "Team %s wins by highest score!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 			break;
