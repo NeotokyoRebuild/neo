@@ -1839,7 +1839,7 @@ float CNEORules::GetOverTime(NeoGameType eGameType) const
 		break;
 	default:
 		Assert(false && "Tried to calculate overtime for a gamemode with no overtime implementation");
-		return (m_flNeoRoundStartTime + roundTimeLimit) - gpGlobals->curtime;
+		return 0;
 	}
 
 	float overtime = (m_flNeoRoundStartTime + roundTimeLimit + overtimeBaseAmount) - gpGlobals->curtime;
