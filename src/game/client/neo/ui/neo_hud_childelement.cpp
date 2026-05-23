@@ -13,7 +13,7 @@ using vgui::surface;
 #define NEO_HUDBOX_CORNER_SCALE 1.0
 
 // NEO TODO (Rain): this should be expanded into two margin_width/height cvars, so players can tweak their HUD position if they wish to.
-ConVar cl_neo_hud_margin("cl_neo_hud_margin", "2", FCVAR_USERINFO, "Neo HUD margin, in pixels.", true, 0.0, false, 0.0);
+ConVar cl_neo_hud_margin("cl_neo_hud_margin", "2", FCVAR_ARCHIVE, "Neo HUD margin, in pixels.", true, 0.0, false, 0.0);
 
 CNEOHud_ChildElement::CNEOHud_ChildElement()
 {
