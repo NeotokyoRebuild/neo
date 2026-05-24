@@ -183,6 +183,7 @@ void NeoSettingsInit(NeoSettings *ns)
 		auto *conbind = &keys->vBinds[keys->iBindsSize++];
 		V_strcpy_safe(conbind->szBindingCmd, "neo_toggleconsole");
 		V_wcscpy_safe(conbind->wszDisplayText, L"Developer console bind");
+		conbind->bSkipSecondary = true;
 
 		while (bufAct.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
 		{
@@ -222,6 +223,7 @@ void NeoSettingsInit(NeoSettings *ns)
 				V_strcpy_safe(bind->szBindingCmd, szBindingCmd);
 				V_wcscpy_safe(bind->wszDisplayText, wszDispText);
 				bind->bcDefault = BUTTON_CODE_NONE;
+				bind->bSkipSecondary = false;
 			}
 		}
 		AssertMsg(keys->iBindsSize < ARRAYSIZE(keys->vBinds), "Bump the size of the vBinds array");
@@ -490,15 +492,18 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 					auto hdl = htAllBinds.Find(bind->szBindingCmd);
 					if (hdl != htAllBinds.InvalidHandle())
 					{
-						const auto &bcVal = htAllBinds.Element(hdl);
-						const int iMaxIdxBc = Min(bcVal.iSize, MAX_BCVAL);
-						for (int idxBc = 0; idxBc < iMaxIdxBc; ++idxBc)
+						if (false == bind->bSkipSecondary)
 						{
-							const ButtonCode_t bc = bcVal.list[idxBc];
-							if (bc != bind->bcCurrent)
+							const auto &bcVal = htAllBinds.Element(hdl);
+							const int iMaxIdxBc = Min(bcVal.iSize, MAX_BCVAL);
+							for (int idxBc = 0; idxBc < iMaxIdxBc; ++idxBc)
 							{
-								bind->bcSecondaryNext = bind->bcSecondaryCurrent = bc;
-								break;
+								const ButtonCode_t bc = bcVal.list[idxBc];
+								if (bc != bind->bcCurrent)
+								{
+									bind->bcSecondaryNext = bind->bcSecondaryCurrent = bc;
+									break;
+								}
 							}
 						}
 					}
@@ -727,6 +732,9 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	}
 }
 
+// NEO TODO (nullsystem): For now the settings UI only exposes consoles as a
+// single keybind and this also deals with a single bind. Trying to enforce
+// multiple neo_toggleconsole binds doesn't seem to work here?
 void NeoToggleConsoleEnforce()
 {
 	// NEO JANK (nullsystem): Try to unbind toggleconsole when possible
@@ -826,8 +834,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 			bind->bcCurrent = bind->bcNext;
 			bind->bcSecondaryCurrent = bind->bcSecondaryNext;
 		}
-		// Reset the cache to none so it'll refresh on next KeyCodeTyped
-		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
@@ -1198,7 +1204,11 @@ void NeoSettings_Keys(NeoSettings *ns)
 		}
 		else
 		{
-			NeoUI::BeginMultiWidgetHighlighter(3);
+			if (bind.bSkipSecondary)
+			{
+				NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
+			}
+			NeoUI::BeginMultiWidgetHighlighter(bind.bSkipSecondary ? 2 : 3);
 			NeoUI::Label(bind.wszDisplayText);
 			wchar_t wszBindBtnName[64];
 			const char *szBindBtnName = g_pInputSystem->ButtonCodeToString(bind.bcNext);
@@ -1208,14 +1218,21 @@ void NeoSettings_Keys(NeoSettings *ns)
 				ns->iNextBinding = i;
 				ns->bNextBindingSecondary = false;
 			}
-			const char *szBindSecondaryBtnName = g_pInputSystem->ButtonCodeToString(bind.bcSecondaryNext);
-			g_pVGuiLocalize->ConvertANSIToUnicode(szBindSecondaryBtnName, wszBindBtnName, sizeof(wszBindBtnName));
-			if (NeoUI::Button(wszBindBtnName).bPressed)
+			if (false == bind.bSkipSecondary)
 			{
-				ns->iNextBinding = i;
-				ns->bNextBindingSecondary = true;
+				const char *szBindSecondaryBtnName = g_pInputSystem->ButtonCodeToString(bind.bcSecondaryNext);
+				g_pVGuiLocalize->ConvertANSIToUnicode(szBindSecondaryBtnName, wszBindBtnName, sizeof(wszBindBtnName));
+				if (NeoUI::Button(wszBindBtnName).bPressed)
+				{
+					ns->iNextBinding = i;
+					ns->bNextBindingSecondary = true;
+				}
 			}
 			NeoUI::EndMultiWidgetHighlighter();
+			if (bind.bSkipSecondary)
+			{
+				NeoUI::SetPerRowLayout(ARRAYSIZE(KEYS_LAYOUT), KEYS_LAYOUT);
+			}
 		}
 	}
 }
