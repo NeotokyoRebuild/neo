@@ -2658,6 +2658,29 @@ void OnRenderStart()
 	MDLCACHE_CRITICAL_SECTION();
 	MDLCACHE_COARSE_LOCK();
 
+#ifdef NEO
+	if (engine->IsPaused())
+	{
+		Rope_ResetCounters();
+
+		{
+			PREDICTION_TRACKVALUECHANGESCOPE( "interpolation" );
+			C_BaseEntity::InterpolateServerEntities();
+		}
+
+		{
+			C_BaseAnimating::PushAllowBoneAccess( true, false, "OnRenderStart->CViewRender::SetUpView" ); // pops in CViewRender::SetUpView
+		}
+
+		input->CAM_Think();
+		view->OnRenderStart();
+		
+		RopeManager()->OnRenderStart();
+		
+		return;
+	}
+#endif // NEO
+
 #ifdef PORTAL
 	g_pPortalRender->UpdatePortalPixelVisibility(); //updating this one or two lines before querying again just isn't cutting it. Update as soon as it's cheap to do so.
 #endif
