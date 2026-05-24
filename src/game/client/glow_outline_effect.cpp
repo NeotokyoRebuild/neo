@@ -31,10 +31,10 @@ ConVar glow_outline_effect_enable("glow_outline_effect_enable", "1", FCVAR_ARCHI
 		}
 	}
 );
-ConVar glow_outline_effect_width( "glow_outline_effect_width", "1.f", FCVAR_ARCHIVE, "Width of glow outline effect.", true, 0.f, false, 0.f);
-ConVar glow_outline_effect_alpha( "glow_outline_effect_alpha", "0.5f", FCVAR_ARCHIVE, "Alpha of glow outline effect.", true, 0.f, true, 1.f);
-ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.1f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when obstructed", true, 0.f, true, 1.f);
-ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_center_alpha", "0.2f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when cloaked", true, 0.f, true, 1.f);
+ConVar glow_outline_effect_width( "glow_outline_effect_width", "1.0", FCVAR_ARCHIVE, "Width of glow outline effect.", true, 0.f, false, 0.f);
+ConVar glow_outline_effect_alpha( "glow_outline_effect_alpha", "0.5", FCVAR_ARCHIVE, "Alpha of glow outline effect.", true, 0.f, true, 1.f);
+ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.1", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when obstructed", true, 0.f, true, 1.f);
+ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_center_alpha", "0.2", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when cloaked", true, 0.f, true, 1.f);
 #else
 ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "0", 0, "Enable entity outline glow effects.");
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );

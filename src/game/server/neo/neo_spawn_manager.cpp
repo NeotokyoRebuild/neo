@@ -73,6 +73,12 @@ namespace NeoSpawnManager
 			return nullptr;
 		}
 
+		if (!rules->IsTeamplay())
+		{
+			// Random selection every time for non-teamplay
+			manager.m_spawns.Shuffle();
+		}
+
 		CNEOSpawnPoint* backup = nullptr;
 		auto idx = manager.m_spawns.FindPredicate(
 			[rules, team, player, &backup](const auto& spawn)->bool
@@ -116,7 +122,11 @@ namespace NeoSpawnManager
 			return backup;
 		}
 
-		manager.m_spawns[idx].isUsed = true;
+		if (!rules->CanRespawnAnyTime())
+		{
+			// We only care if it's been used before or not if there are no respawns
+			manager.m_spawns[idx].isUsed = true;
+		}
 		return manager.m_spawns[idx].handle;
 	}
 
