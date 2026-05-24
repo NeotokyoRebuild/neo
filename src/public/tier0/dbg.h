@@ -390,6 +390,23 @@ DBG_INTERFACE struct SDL_Window * GetAssertDialogParent();
 
 #endif // DBGFLAG_ASSERT
 
+#ifdef NEO
+template <typename T, size_t N>
+constexpr void AssertFitsArray(const auto i, const T (&arr)[N])
+{
+	Assert(i >= 0);
+	Assert(i < _ARRAYSIZE(arr));
+}
+
+template <typename T, size_t N, size_t M>
+constexpr void AssertFitsArray(const auto i, const auto j, const T (&arr)[N][M])
+{
+	Assert(i >= 0);
+	Assert(i < _ARRAYSIZE(arr[0]));
+	AssertFitsArray(j, arr[i]);
+}
+#endif
+
 // The Always version of the assert macros are defined even when DBGFLAG_ASSERT is not, 
 // so they will be available even in release.
 #define  AssertAlways( _exp )           							_AssertMsg( _exp, _T("Assertion Failed: ") _T(#_exp), ((void)0), false )
