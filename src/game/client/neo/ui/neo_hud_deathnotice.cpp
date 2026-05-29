@@ -23,7 +23,7 @@
 #include "spectatorgui.h"
 #include "takedamageinfo.h"
 #include "c_neo_killer_damage_infos.h"
-#include "neo_scoreboard.h"
+#include "neoui_scoreboard.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -227,7 +227,7 @@ void CNEOHud_DeathNotice::VidInit( void )
 //-----------------------------------------------------------------------------
 bool CNEOHud_DeathNotice::ShouldDraw( void )
 {
-	return ( CHudElement::ShouldDraw() && ( m_DeathNotices.Count() ) && ( !cl_neo_hud_scoreboard_hide_others.GetBool() || !g_pNeoScoreBoard->IsVisible() ) );
+	return ( CHudElement::ShouldDraw() && ( m_DeathNotices.Count() ) && ( !cl_neo_hud_scoreboard_hide_others.GetBool() || !g_pNeoUIScoreBoard->IsVisible() ) );
 }
 
 //-----------------------------------------------------------------------------

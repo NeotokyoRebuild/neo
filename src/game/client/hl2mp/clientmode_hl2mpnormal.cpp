@@ -18,7 +18,7 @@
 
 #ifdef NEO
 	#include "prediction.h"
-	#include "neo/ui/neo_scoreboard.h"
+	#include "neo/ui/neoui_scoreboard.h"
 	extern ConVar v_viewmodel_fov;
 #else
 	#include "hl2mpclientscoreboard.h"
@@ -94,7 +94,7 @@ IViewPortPanel* CHudViewport::CreatePanelByName(const char *szPanelName)
 	if (Q_strcmp(PANEL_SCOREBOARD, szPanelName) == 0)
 	{
 #ifdef NEO
-		newpanel = new CNEOScoreBoard(this);
+		newpanel = new CNEOUIScoreBoard(this);
 #else
 		newpanel = new CHL2MPClientScoreBoardDialog( this );
 #endif

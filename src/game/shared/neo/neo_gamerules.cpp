@@ -72,9 +72,27 @@ ConVar neo_vip_eligible("cl_neo_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
 ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "20", FCVAR_GAMEDLL, "Maximum points required for a team to win in JGR", true, 1, false, 0);
-#endif
 
-#ifdef GAME_DLL
+void ReadyToggleCB(const CCommand &command)
+{
+	if (auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_GetCommandClient()))
+	{
+		if (2 != command.ArgC())
+		{
+			Msg("Usage: readytoggle [ready|unready]\n");
+			return;
+		}
+		CNEORules::ReadyToggleFlags flags = CNEORules::READYTOGGLEFLAG_PRINTCHANGE;
+		if (0 == V_strcmp(command[1], "unready"))
+		{
+			flags |= CNEORules::READYTOGGLEFLAG_UNREADY;
+		}
+		NEORules()->ReadyToggle(pNeoPlayer, flags);
+	}
+}
+
+ConCommand readytoggle("readytoggle", ReadyToggleCB, "Toggle ready state", FCVAR_USERINFO);
+
 // NEO TODO (nullsystem): Change how voting done from convar to menu selection
 enum eGamemodeEnforcement
 {
@@ -2359,31 +2377,15 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 		if (steamID.IsValid())
 		{
 			const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
-			if (V_strcmp(pSzChat, "ready") == 0)
+			const bool bIsSetUnReady = (0 == V_strcmp(pSzChat, "unready"));
+			if (bIsSetUnReady || 0 == V_strcmp(pSzChat, "ready"))
 			{
-				m_readyAccIDs.Insert(steamID.GetAccountID());
-				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as ready.");
-				const auto readyPlayers = FetchReadyPlayers();
-				if (readyPlayers.array[TEAM_JINRAI] == iThres && readyPlayers.array[TEAM_NSF] == iThres)
+				ReadyToggleFlags flags = READYTOGGLEFLAG_NIL;
+				if (bIsSetUnReady)
 				{
-					UTIL_ClientPrintAll(HUD_PRINTTALK, "All players are ready! Starting soon...");
+					flags |= READYTOGGLEFLAG_UNREADY;
 				}
-				else
-				{
-					char szReadyText[32];
-					V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
-					UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
-				}
-			}
-			else if (V_strcmp(pSzChat, "unready") == 0)
-			{
-				m_readyAccIDs.Remove(steamID.GetAccountID());
-				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as unready.");
-
-				char szReadyText[32];
-				const auto readyPlayers = FetchReadyPlayers();
-				V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
-				UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
+				ReadyToggle(pNeoCmdPlayer, flags);
 			}
 			else if (V_strcmp(pSzChat, "start") == 0)
 			{
@@ -4976,6 +4978,58 @@ void CNEORules::InitDefaultAIRelationships( void )
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY,		D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
 }
+
+void CNEORules::ReadyToggle(CNEO_Player *pNeoPlayer, const ReadyToggleFlags flags)
+{
+	const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
+	const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+
+	if (flags & READYTOGGLEFLAG_PRINTCHANGE)
+	{
+		// Have to go one by one due to streamer-mode
+		char szReadyPrint[MAX_PLAYER_NAME_LENGTH + 32 + 1];
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			auto *pNeoOtherPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (!pNeoOtherPlayer)
+			{
+				continue;
+			}
+
+			V_sprintf_safe(szReadyPrint, "Player %s now %s"
+					, pNeoPlayer->GetNeoPlayerName(pNeoOtherPlayer)
+					, (flags & READYTOGGLEFLAG_UNREADY) ? "unready" : "ready");
+			ClientPrint(pNeoOtherPlayer, HUD_PRINTTALK, szReadyPrint);
+		}
+	}
+
+	if (flags & READYTOGGLEFLAG_UNREADY)
+	{
+		m_readyAccIDs.Remove(steamID.GetAccountID());
+		ClientPrint(pNeoPlayer, HUD_PRINTTALK, "You are now marked as unready.");
+		char szReadyText[32];
+		const auto readyPlayers = FetchReadyPlayers();
+		V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
+		UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
+	}
+	else
+	{
+		m_readyAccIDs.Insert(steamID.GetAccountID());
+		ClientPrint(pNeoPlayer, HUD_PRINTTALK, "You are now marked as ready.");
+		const auto readyPlayers = FetchReadyPlayers();
+		if (readyPlayers.array[TEAM_JINRAI] == iThres && readyPlayers.array[TEAM_NSF] == iThres)
+		{
+			UTIL_ClientPrintAll(HUD_PRINTTALK, "All players are ready! Starting soon...");
+		}
+		else
+		{
+			char szReadyText[32];
+			V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
+			UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
+		}
+	}
+}
+
 #endif
 
 #ifdef CLIENT_DLL
