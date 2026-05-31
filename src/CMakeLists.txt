@@ -120,9 +120,9 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWith
 endif()
 
 add_compile_definitions(
-	# Whether to validate narrowing conversions done with narrow_cast<T>(...)
-	# If not, will simply alias narrow_cast to static_cast
-	$<$<CONFIG:Debug>:PARANOID_NARROWING>
+    # Whether to validate narrowing conversions done with narrow_cast<T>(...)
+    # If not, will simply alias narrow_cast to static_cast
+    $<$<CONFIG:Debug>:PARANOID_NARROWING>
 )
 
 if(NEO_RAD_TELEMETRY_DISABLED)
@@ -299,9 +299,11 @@ if(OS_LINUX OR OS_MACOS)
     add_compile_options(
         # See: https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
 
-        # core2 - Intel Core 2 CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3, CX16, SAHF and FXSR instruction set support. 
-        -march=core2
-        #-march=x86-64
+        # Baseline any x86_64 CPU (MMX, SSE, SSE2, and FXSR instruction set support)
+        -march=x86-64
+
+        # Optimize for the most common AMD64 processors, doesn't cut out support unlike -march
+        -mtune=generic
 
         # This option enables GCC to generate CMPXCHG16B instructions in 64-bit code to implement compare-and-exchange
         # operations on 16-byte aligned 128-bit objects. This is useful for atomic updates of data structures exceeding
