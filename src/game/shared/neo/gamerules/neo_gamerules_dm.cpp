@@ -1,0 +1,260 @@
+#include "cbase.h"
+#include "neo_gamerules_dm.h"
+#ifdef GAME_DLL
+#include "neo_game_config.h"
+#else
+#include "c_playerresource.h"
+#endif // GAME_DLL
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
+REGISTER_GAMERULES_CLASS( CNEORulesDM );
+
+BEGIN_NETWORK_TABLE_NOBASE( CNEORulesDM, DT_NEORulesDM )
+END_NETWORK_TABLE()
+
+LINK_ENTITY_TO_CLASS( neo_gamerules_dm, CNEOGameRulesDMProxy );
+IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesDMProxy, DT_NEOGameRulesDMProxy );
+
+#ifdef CLIENT_DLL
+	void RecvProxy_NEORulesDM( const RecvProp *pProp, void **pOut,
+		void *pData, int objectID )
+	{
+		CNEORulesDM *pRules = NEORulesDM();
+		Assert( pRules );
+		*pOut = pRules;
+	}
+
+	BEGIN_RECV_TABLE( CNEOGameRulesDMProxy, DT_NEOGameRulesDMProxy )
+		RecvPropDataTable( "neo_gamerules_dm_data", 0, 0,	
+			&REFERENCE_RECV_TABLE( DT_NEORulesDM ), 
+			RecvProxy_NEORulesDM )
+	END_RECV_TABLE()
+#else
+	void *SendProxy_NEORulesDM( const SendProp *pProp,
+		const void *pStructBase, const void *pData,
+		CSendProxyRecipients *pRecipients, int objectID )
+	{
+		CNEORulesDM *pRules = NEORulesDM();
+		Assert( pRules );
+		return pRules;
+	}
+
+	BEGIN_SEND_TABLE(CNEOGameRulesDMProxy, DT_NEOGameRulesDMProxy)
+		SendPropDataTable("neo_gamerules_dm_data", 0,
+			&REFERENCE_SEND_TABLE(DT_NEORulesDM),
+			SendProxy_NEORulesDM)
+		END_SEND_TABLE()
+#endif
+
+ConVar sv_neo_dm_win_xp("sv_neo_dm_win_xp", "50", FCVAR_REPLICATED, "The XP limit to win the match.", true, 0.0f, true, 1000.0f);
+
+extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
+
+CNEORulesDM::CNEORulesDM()
+{
+
+}
+
+CNEORulesDM::~CNEORulesDM()
+{
+}
+
+void CNEORulesDM::FireGameEvent(IGameEvent* event)
+{
+	BaseClass::FireGameEvent(event);
+}
+
+#ifdef GAME_DLL
+void CNEORulesDM::PlayerRespawnThink()
+{
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto player = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+		if (player && player->IsDead() && (IsRoundPaused() || player->DeathCount() > 0))
+		{
+			const int playerTeam = player->GetTeamNumber();
+			if ((playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF) && RespawnWithRet(player, false))
+			{
+				player->m_bInAim = false;
+				player->m_bCarryingGhost = false;
+				player->m_bInThermOpticCamo = false;
+				player->m_bInVision = false;
+				player->m_bIneligibleForLoadoutPick = false;
+				player->SetTestMessageVisible(false);
+
+				engine->ClientCommand(player->edict(), "loadoutmenu");
+			}
+		}
+	}
+}
+#endif // GAME_DLL
+
+void CNEORulesDM::Think()
+{
+#ifdef GAME_DLL
+	if (RoundIdlePausedStartThink())
+		return;
+
+	PlayerRespawnThink();
+
+	CheckClantagsThink();
+
+	if (IsRoundPaused())
+		return;
+
+	GameOverThink();
+	
+	CheckOvertime();
+
+	CHL2MPRules::Think();
+
+	TeamDamageThink();
+
+	if (RoundOverThink())
+		return;
+	
+	RoundStatusThink();
+
+	// Win by XP
+	if (IsRoundLive() && sv_neo_dm_win_xp.GetInt() > 0)
+	{
+		// End game early if there's already a player past the winning XP
+		CNEO_Player *pHighestPlayers[MAX_PLAYERS + 1] = {};
+		int iWinningTotal = 0;
+		int iWinningXP = 0;
+		GetDMHighestScorers(&pHighestPlayers, &iWinningTotal, &iWinningXP);
+		if (iWinningXP >= sv_neo_dm_win_xp.GetInt() && iWinningTotal == 1)
+		{
+			SetWinningDMPlayer(pHighestPlayers[0]);
+		}
+	}
+#endif // GAME_DLL
+}
+
+
+void CNEORulesDM::GetDMHighestScorers(
+#ifdef GAME_DLL
+		CNEO_Player *(*pHighestPlayers)[MAX_PLAYERS + 1],
+#endif
+		int *iHighestPlayersTotal,
+		int *iHighestXP) const
+{
+	*iHighestPlayersTotal = 0;
+	*iHighestXP = 0;
+#ifdef GAME_DLL
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+#else
+	if (!g_PR)
+	{
+		return;
+	}
+
+	for (int i = 0; i < (MAX_PLAYERS + 1); ++i)
+#endif
+	{
+		int iXP = 0;
+
+#ifdef GAME_DLL
+		auto pCmpPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+		if (!pCmpPlayer)
+		{
+			continue;
+		}
+		iXP = pCmpPlayer->m_iXP;
+#else
+		if (!g_PR->IsConnected(i))
+		{
+			continue;
+		}
+		iXP = g_PR->GetXP(i);
+#endif
+
+		if (iXP == *iHighestXP)
+		{
+#ifdef GAME_DLL
+			(*pHighestPlayers)[(*iHighestPlayersTotal)++] = pCmpPlayer;
+#else
+			(*iHighestPlayersTotal)++;
+#endif
+		}
+		else if (iXP > *iHighestXP)
+		{
+			*iHighestPlayersTotal = 0;
+			*iHighestXP = iXP;
+#ifdef GAME_DLL
+			(*pHighestPlayers)[(*iHighestPlayersTotal)++] = pCmpPlayer;
+#else
+			(*iHighestPlayersTotal)++;
+#endif
+		}
+	}
+}
+
+#ifdef GAME_DLL
+void CNEORulesDM::SetWinningDMPlayer(CNEO_Player *pWinner)
+{
+	if (IsRoundOver())
+	{
+		return;
+	}
+
+	if (auto pEntGameCfg = NEOGameConfig())
+	{
+		pEntGameCfg->m_OnDMRoundEnd.FireOutput(pWinner, pEntGameCfg);
+	}
+
+	SetRoundStatus(NeoRoundStatus::PostRound);
+	char victoryMsg[128];
+	// TODO: Per client since client has neo_name settings
+	V_sprintf_safe(victoryMsg, "%s is the winner of the deathmatch!\n", pWinner->GetNeoPlayerName());
+
+	CRecipientFilter filter;
+	filter.AddAllPlayers();
+	UserMessageBegin(filter, "RoundResult");
+	WRITE_STRING("tie");
+	WRITE_FLOAT(gpGlobals->curtime);
+	WRITE_STRING(victoryMsg);
+	MessageEnd();
+
+	EmitSound_t soundParams;
+	soundParams.m_nChannel = CHAN_AUTO;
+	soundParams.m_SoundLevel = SNDLVL_NONE;
+	soundParams.m_flVolume = 0.33f;
+	// Differing between Jinrai/NSF only as a sound cosmetic (no affect on DM)
+	const int team = pWinner->GetTeamNumber();
+	soundParams.m_pSoundName = (team == TEAM_JINRAI) ? "gameplay/jinrai.mp3" : (team == TEAM_NSF) ? "gameplay/nsf.mp3" : "gameplay/draw.mp3";
+	soundParams.m_bWarnOnDirectWaveReference = false;
+	soundParams.m_bEmitCloseCaption = false;
+
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		CBasePlayer* basePlayer = UTIL_PlayerByIndex(i);
+		auto player = static_cast<CNEO_Player*>(basePlayer);
+		if (player)
+		{
+			if (!player->IsBot() || player->IsHLTV())
+			{
+				const char* volStr = engine->GetClientConVarValue(i, "snd_victory_volume");
+				const float jingleVolume = volStr ? atof(volStr) : 0.33f;
+				soundParams.m_flVolume = jingleVolume;
+
+				CRecipientFilter soundFilter;
+				soundFilter.AddRecipient(basePlayer);
+				soundFilter.MakeReliable();
+				player->EmitSound(soundFilter, i, soundParams);
+			}
+		}
+	}
+
+	GoToIntermission();
+
+	IGameEvent *event = gameeventmanager->CreateEvent("game_end");
+	if (event)
+	{
+		event->SetInt("winner", pWinner->GetUserID());
+		gameeventmanager->FireEvent(event);
+	}
+}
+#endif // GAME_DLL

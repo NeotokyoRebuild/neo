@@ -1,4 +1,5 @@
 #include "neo_game_config.h"
+#include "neo_gamerules.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -26,6 +27,19 @@ END_DATADESC()
 
 extern ConVar sv_neo_comp;
 
+CNEOGameConfig *g_pNEOGameConfig = nullptr;
+
+CNEOGameConfig::CNEOGameConfig()
+{
+	Assert( !g_pNEOGameConfig );
+	g_pNEOGameConfig = this;
+}
+
+CNEOGameConfig::~CNEOGameConfig()
+{
+	g_pNEOGameConfig = nullptr;
+}
+
 void CNEOGameConfig::Spawn()
 {
 	if (sv_neo_comp.GetBool())
@@ -44,7 +58,7 @@ void CNEOGameConfig::InputFireTeamWin(inputdata_t& inputData)
 
 void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
 {
-	CBasePlayer* pPlayer = NULL;
+	CBasePlayer* pPlayer = nullptr;
 
 	if (inputData.pActivator && inputData.pActivator->IsPlayer())
 	{

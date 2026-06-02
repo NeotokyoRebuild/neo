@@ -21,6 +21,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp
     ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer
     ${CMAKE_SOURCE_DIR}/game/shared/neo
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
@@ -1629,8 +1630,6 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
@@ -1661,6 +1660,28 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\Shared\\Gamerules"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_atk.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_atk.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_ctg.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_ctg.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_dm.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_dm.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_jgr.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_jgr.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tdm.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tdm.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tut.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tut.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_vip.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_vip.h
 )
 
 target_sources_grouped(
