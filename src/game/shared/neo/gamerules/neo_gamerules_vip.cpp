@@ -47,27 +47,63 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesVIPProxy, DT_NEOGameRulesVIPProxy );
 			SendProxy_NEORulesVIP)
 		END_SEND_TABLE()
 #endif
+		
+ConVar sv_neo_vip_round_limit("sv_neo_vip_round_limit", "0", FCVAR_REPLICATED, "VIP max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_vip_round_timelimit("sv_neo_vip_round_timelimit", "3.25", FCVAR_REPLICATED, "VIP round timelimit, in minutes.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_vip_score_limit("sv_neo_vip_score_limit", "7", FCVAR_REPLICATED, "VIP score limit", true, 0.0f, true, 99.0f);
 
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
 
-CNEORulesVIP::CNEORulesVIP()
-{
-
-}
-
-CNEORulesVIP::~CNEORulesVIP()
-{
-}
+//CNEORulesVIP::CNEORulesVIP()
+//{
+//}
+//
+//CNEORulesVIP::~CNEORulesVIP()
+//{
+//}
 
 void CNEORulesVIP::FireGameEvent(IGameEvent* event)
 {
 	BaseClass::FireGameEvent(event);
 }
 
+float CNEORulesVIP::GetRoundRemainingTime() const
+{
+	return BaseClass::GetRoundRemainingTime(sv_neo_vip_round_timelimit.GetFloat());
+}
+
+#ifdef GAME_DLL
+void CNEORulesVIP::SetGameRelatedVars()
+{
+	ResetVIP();
+	
+	if (!m_iEscortingTeam)
+	{
+		m_iEscortingTeam.Set(RandomInt(TEAM_JINRAI, TEAM_NSF));
+	}
+	else
+	{
+		m_iEscortingTeam.Set(m_iEscortingTeam.Get() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+	}
+
+	SelectTheVIP();
+}
+
+const int CNEORulesVIP::GetScoreLimit() const
+{
+	return sv_neo_vip_score_limit.GetInt();
+}
+
+const int CNEORulesVIP::GetRoundLimit() const
+{
+	return sv_neo_vip_round_limit.GetInt();
+}
+#endif // GAME_DLL
+
 void CNEORulesVIP::Think()
 {
 #ifdef GAME_DLL
-	if (RoundIdlePausedStartThink())
+	if (RoundStartFromIdleOrPausedThink())
 		return;
 
 	PlayerRespawnThink();
@@ -106,7 +142,7 @@ void CNEORulesVIP::Think()
 				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_FORFEIT, false, true, false, false);
 			}
 
-			if (IGameEvent* event = gameeventmanager->CreateEvent("vip_death");)
+			if (IGameEvent* event = gameeventmanager->CreateEvent("vip_death"))
 			{
 				gameeventmanager->FireEvent(event);
 			}
@@ -124,7 +160,7 @@ void CNEORulesVIP::Think()
 				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_VIP_ELIMINATION, false, true, false, false);
 			}
 			
-			if (IGameEvent* event = gameeventmanager->CreateEvent("vip_death");)
+			if (IGameEvent* event = gameeventmanager->CreateEvent("vip_death"))
 			{
 				event->SetInt("userid", m_pVIP->GetUserID());
 				gameeventmanager->FireEvent(event);
@@ -160,7 +196,7 @@ void CNEORulesVIP::Think()
 				// And then announce team victory
 				SetWinningTeam(captorTeam, NEO_VICTORY_VIP_ESCORT, false, true, false, false);
 
-				if (IGameEvent* event = gameeventmanager->CreateEvent("vip_extract");)
+				if (IGameEvent* event = gameeventmanager->CreateEvent("vip_extract"))
 				{
 					CBasePlayer* pCaptorClient = UTIL_PlayerByIndex(captorClient);
 					event->SetInt("userid", pCaptorClient ? pCaptorClient->GetUserID() : INVALID_USER_ID);

@@ -20,6 +20,7 @@
 #include "c_playerresource.h"
 #include "vgui_avatarimage.h"
 #include "neo_scoreboard.h"
+#include "neo_gamerules_dm.h"
 
 #include "hltvcamera.h"
 
@@ -380,7 +381,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	int secsTotal = 0.0f;
 	if (roundStatus == NeoRoundStatus::Overtime && (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG || NEORules()->GetGameType() == NEO_GAME_TYPE_ATK))
 	{
-		secsTotal = RoundFloatToInt(NEORules()->GetOverTime((NeoGameType)NEORules()->GetGameType()));
+		secsTotal = RoundFloatToInt(NEORules()->GetRoundRemainingTime());
 	}
 	else
 	{
@@ -408,7 +409,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	else
 	{
 		[[maybe_unused]] int iDMHighestTotal;
-		NEORules()->GetDMHighestScorers(&iDMHighestTotal, &iDMHighestXP);
+		NEORulesDM()->GetDMHighestScorers(&iDMHighestTotal, &iDMHighestXP);
 	}
 
 	char szPlayersAliveANSI[ARRAYSIZE(m_wszPlayersAliveUnicode)] = {};

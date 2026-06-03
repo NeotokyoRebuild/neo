@@ -7,10 +7,6 @@
 	#define CNEORulesTDM C_NEORulesTDM
 	#define CNEOGameRulesTDMProxy C_NEOGameRulesTDMProxy
 #endif
-//
-//ConVar sv_neo_tdm_score_limit("sv_neo_tdm_score_limit", "1", FCVAR_REPLICATED, "TDM score limit", true, 0.0f, true, 99.0f);
-//ConVar sv_neo_tdm_round_limit("sv_neo_tdm_round_limit", "0", FCVAR_REPLICATED, "TDM max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
-//ConVar sv_neo_tdm_round_timelimit("neo_tdm_round_timelimit", "10.25", FCVAR_REPLICATED, "TDM round timelimit, in minutes.",	true, 0.0f, false, 600.0f);
 
 class CNEOGameRulesTDMProxy : public CNEOGameRulesProxy
 {
@@ -25,13 +21,24 @@ public:
 	DECLARE_CLASS(CNEORulesTDM, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
 	
-
-	CNEORulesTDM();
-	virtual ~CNEORulesTDM();
+	//CNEORulesTDM();
+	//virtual ~CNEORulesTDM();
 	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
+	
+	const char* GetGameDescription() override { return "Team Deathmatch"; }
+	virtual bool GetTeamPlayEnabled() const override { return true; };
 
+	virtual float GetRoundRemainingTime() const override final;
+#ifdef GAME_DLL
+	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) override final;
+
+	virtual void SetGameRelatedVars() override final;
+	virtual const int GetScoreLimit() const override final;
+	virtual const int GetRoundLimit() const override final;
+	virtual void RoundTimeout() override final;
+#endif // GAME_DLL
 	virtual void Think() override final;
 #ifdef GAME_DLL
 	virtual void PlayerRespawnThink() override final;

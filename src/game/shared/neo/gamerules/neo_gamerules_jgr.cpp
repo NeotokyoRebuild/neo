@@ -42,7 +42,10 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesJGRProxy, DT_NEOGameRulesJGRProxy );
 			SendProxy_NEORulesJGR)
 		END_SEND_TABLE()
 #endif
-
+		
+ConVar sv_neo_jgr_round_limit("sv_neo_jgr_round_limit", "5", FCVAR_REPLICATED, "JGR max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_jgr_round_timelimit("sv_neo_jgr_round_timelimit", "4.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_jgr_score_limit("sv_neo_jgr_score_limit", "0", FCVAR_REPLICATED, "JGR score limit", true, 0.0f, true, 99.0f);
 ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "20", FCVAR_GAMEDLL, "Maximum points required for a team to win in JGR", true, 1, false, 0);
 
 extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
@@ -86,12 +89,122 @@ void CNEORulesJGR::PlayerRespawnThink()
 }
 #endif // GAME_DLL
 
-extern ConVar sv_neo_preround_freeze_time;
+float CNEORulesJGR::GetRoundRemainingTime() const
+{
+	return BaseClass::GetRoundRemainingTime(sv_neo_jgr_round_timelimit.GetFloat());
+}
 
+#ifdef GAME_DLL
+bool CNEORulesJGR::FPlayerCanRespawn(CBasePlayer* pPlayer)
+{
+	CNEO_Player* pNeoPlayer = ToNEOPlayer(pPlayer);
+	if (!pNeoPlayer)
+	{
+		Assert(false);
+		return false;
+	}
+	
+	// Special case for spectator player takeover
+	if (pNeoPlayer->GetSpectatorTakeoverPlayerPending())
+		return true;
+
+	if (pPlayer->GetTeamNumber() == m_iLastJuggernautTeam &&
+		(m_pJuggernautPlayer || (gpGlobals->curtime - m_flJuggernautDeathTime) <= 8.0f))
+	{
+		return false;
+	}
+	
+	if (NeoRoundStatus::PostRound == m_nRoundStatus)
+		return false;
+
+	return true;
+}
+
+void CNEORulesJGR::EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacker, const CTakeDamageInfo& info)
+{
+	if (!IsRoundLive())
+		return;
+
+	if (pAttacker->GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		auto jgrTeam = pAttacker->GetTeam();
+		jgrTeam->SetScore(jgrTeam->GetScore());
+	}
+	else if (m_pJuggernautPlayer)
+	{
+		const int attackerTeam = pAttacker->GetTeamNumber();
+		const int jgrTeam = m_pJuggernautPlayer->GetTeamNumber();
+
+		if (attackerTeam == jgrTeam)
+		{
+			pAttacker->GetTeam()->AddScore(1);
+		}
+	}
+}
+
+void CNEORulesJGR::SetGameRelatedVars()
+{
+	ResetJGR();
+	SpawnTheJuggernaut();
+}
+
+const int CNEORulesJGR::GetScoreLimit() const
+{
+	return sv_neo_jgr_score_limit.GetInt();
+}
+
+const int CNEORulesJGR::GetRoundLimit() const
+{
+	return sv_neo_jgr_round_limit.GetInt();
+}
+
+void CNEORulesJGR::RoundTimeout()
+{
+	if ((!m_pJuggernautPlayer && m_pJuggernautItem && !m_pJuggernautItem->IsBeingActivatedByLosingTeam()) ||
+		(!m_pJuggernautPlayer && !m_pJuggernautItem)) // Juggernaut is absent entirely
+	{
+		if (GetGlobalTeam(TEAM_JINRAI)->GetScore() > GetGlobalTeam(TEAM_NSF)->GetScore())
+		{
+			SetWinningTeam(TEAM_JINRAI, NEO_VICTORY_POINTS, false, true, false, false);
+			return;
+		}
+
+		if (GetGlobalTeam(TEAM_NSF)->GetScore() > GetGlobalTeam(TEAM_JINRAI)->GetScore())
+		{
+			SetWinningTeam(TEAM_NSF, NEO_VICTORY_POINTS, false, true, false, false);
+			return;
+		}
+	}
+	else
+	{
+		if (m_nRoundStatus == NeoRoundStatus::RoundLive)
+		{
+			m_nRoundStatus = NeoRoundStatus::Overtime;
+		}
+
+		if (m_pJuggernautPlayer)
+		{
+			const int jgrTeam = m_pJuggernautPlayer->GetTeamNumber();
+			const int oppositeTeam = (m_pJuggernautPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+			if (GetGlobalTeam(jgrTeam)->GetScore() > GetGlobalTeam(oppositeTeam)->GetScore())
+			{
+				SetWinningTeam(jgrTeam, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
+		}
+
+		return;
+	}
+
+	SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
+}
+#endif // GAME_DLL
+
+extern ConVar sv_neo_preround_freeze_time;
 void CNEORulesJGR::Think()
 {
 #ifdef GAME_DLL
-	if (RoundIdlePausedStartThink())
+	if (RoundStartFromIdleOrPausedThink())
 		return;
 
 	PlayerRespawnThink();

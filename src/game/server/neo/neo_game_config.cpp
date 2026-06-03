@@ -1,5 +1,6 @@
 #include "neo_game_config.h"
 #include "neo_gamerules.h"
+#include "neo_gamerules_dm.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -67,7 +68,7 @@ void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
 
 	if (pPlayer)
     {
-        NEORules()->SetWinningDMPlayer(static_cast<CNEO_Player*>(pPlayer));
+        NEORulesDM()->SetWinningDMPlayer(static_cast<CNEO_Player*>(pPlayer));
     }
 }
 

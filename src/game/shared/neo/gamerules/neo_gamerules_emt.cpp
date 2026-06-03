@@ -43,19 +43,50 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesEMTProxy, DT_NEOGameRulesEMTProxy );
 		END_SEND_TABLE()
 #endif
 
-CNEORulesEMT::CNEORulesEMT()
-{
-
-}
-
-CNEORulesEMT::~CNEORulesEMT()
-{
-}
+//CNEORulesEMT::CNEORulesEMT()
+//{
+//}
+//
+//CNEORulesEMT::~CNEORulesEMT()
+//{
+//}
 
 void CNEORulesEMT::FireGameEvent(IGameEvent* event)
 {
 	BaseClass::FireGameEvent(event);
 }
+
+float CNEORulesEMT::GetRoundRemainingTime() const
+{
+#ifdef GAME_DLL
+	Assert(false); // Shouldn't be calling this server side
+#endif // GAME_DLL
+	return 0.f;
+}
+
+#ifdef GAME_DLL
+bool CNEORulesEMT::FPlayerCanRespawn(CBasePlayer* pPlayer)
+{
+	return true;
+}
+
+const int CNEORulesEMT::GetScoreLimit() const
+{
+	Assert(false);
+	return 1;
+}
+
+const int CNEORulesEMT::GetRoundLimit() const
+{
+	Assert(false);
+	return 1;
+}
+
+void CNEORulesEMT::RoundTimeout()
+{
+	Assert(false);
+}
+#endif // GAME_DLL
 
 void CNEORulesEMT::Think()
 {

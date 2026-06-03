@@ -212,7 +212,7 @@ public:
 	virtual const unsigned char* GetEncryptionKey(void) OVERRIDE { return (unsigned char*)"tBA%-ygc"; }
 
 #ifdef GAME_DLL
-	bool RoundIdlePausedStartThink();
+	bool RoundStartFromIdleOrPausedThink();
 	virtual void PlayerRespawnThink();
 	void CheckClantagsThink();
 	bool GameOverThink();
@@ -232,8 +232,7 @@ public:
 	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return ""; } // handled by GetChatFormat
 	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return NULL; } // unimplemented
 
-	CBaseEntity *GetPlayerSpawnSpot(CBasePlayer *pPlayer) override;
-	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) OVERRIDE;
+	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) override;
 	virtual float FlPlayerFallDamage(CBasePlayer* pPlayer) OVERRIDE;
 
 
@@ -245,11 +244,7 @@ public:
 	// NEOGameConfig is a logic entity, which is a server only entity. To access config values client side, we need to copy values to a networked entity
 	void UpdateFromGameConfig();
 	void StartNextRound();
-	void RoundTimeout();
-	bool RoundTimeoutTDM(); // NEO TODO (Adam) move to related gamerules
-	bool RoundTimeoutDM(); // NEO TODO (Adam) move to related gamerules
-	bool RoundTimeoutJGR(); // NEO TODO (Adam) move to related gamerules
-	bool RoundTimeoutATK(); // NEO TODO (Adam) move to related gamerules
+	virtual void RoundTimeout() {};
 
 
 	struct ReadyPlayers
@@ -283,15 +278,16 @@ public:
 	virtual void ClientSettingsChanged(CBasePlayer *pPlayer) OVERRIDE;
 	virtual void ClientSpawned(edict_t* pPlayer) OVERRIDE;
 	
-	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info) OVERRIDE;
+	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info) override;
+	virtual void EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacker, const CTakeDamageInfo& info) {};
 	virtual void DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info) OVERRIDE;
 
 
 	virtual const char* GetGameName() { return NEO_GAME_NAME; }
 	virtual const char* GetGameTypeName(void) override;
 	virtual int GetGameType(void) override;
-	virtual const char *GetGameDescription( void ) override;
-	bool GetTeamPlayEnabled() const override;
+	virtual const char* GetGameDescription(void) override { return NEO_GAME_NAME; };
+	virtual bool GetTeamPlayEnabled() const override;
 	int GetHiddenHudElements();
 	int GetForcedTeam();
 	int GetForcedClass();
@@ -312,8 +308,9 @@ public:
 	int GetDefendingTeam() const;
 	float GetRemainingPreRoundFreezeTime(const bool clampToZero) const;
 	float GetMapRemainingTime();
-	float GetRoundRemainingTime() const;
-	float GetOverTime(NeoGameType eGameType) const;
+	virtual float GetRoundRemainingTime() const;
+	float GetRoundRemainingTime(float flGameTypeRoundTimeLimit) const;
+	float GetOverTime(float flRoundTimeLimit, float flOvertimeBaseAmount, float flOvertimeGrace, float flGraceDecay) const;
 	virtual void CheckOvertime();
 	virtual bool CheckGameOver(void) OVERRIDE; // NEO TODO (Adam) this changes map as a side effect, better name? Also is this called client side anywhere?
 	float GetRoundAccumulatedTime() const;
@@ -377,8 +374,10 @@ public:
 	void PurgeGhostCapPoints(); // NEO TODO (Adam) move to ctg / vip gamerules
 	void ResetGhostCapPoints(); // NEO TODO (Adam) move to ctg / vip gamerules
 
-	void SetGameRelatedVars(); // NEO TODO (Adam) move to related gamerules
-	void ResetTDM(); // NEO TODO (Adam) move to related gamerules
+#ifdef GAME_DLL
+	virtual void SetGameRelatedVars() {};
+	void ResetTeamScores();
+#endif // GAME_DLL
 	void ResetGhost(); // NEO TODO (Adam) move to related gamerules
 	void ResetVIP(); // NEO TODO (Adam) move to related gamerules
 	void ResetJGR(); // NEO TODO (Adam) move to related gamerules
@@ -434,8 +433,8 @@ private:
 	void ResetMapSessionCommon(); // NEO TODO (Adam) Is this needed client side
 
 #ifdef GAME_DLL
-	const int GetScoreLimit() const;
-	const int GetRoundLimit() const;
+	virtual const int GetScoreLimit() const { Assert(false); return 0; };
+	virtual const int GetRoundLimit() const { Assert(false); return 0; };
 
 	void SpawnTheGhost(const Vector *origin = nullptr);
 	void SpawnTheJuggernaut(const Vector *origin = nullptr);

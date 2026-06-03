@@ -43,14 +43,15 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesATKProxy, DT_NEOGameRulesATKProxy );
 		END_SEND_TABLE()
 #endif
 
-ConVar sv_neo_atk_round_timelimit("neo_atk_round_timelimit", "3.25", FCVAR_REPLICATED, "ATK round timelimit, in minutes.", true, 0.0f, false, 600.0f);
+ConVar sv_neo_atk_round_limit("sv_neo_atk_round_limit", "0", FCVAR_REPLICATED, "ATK max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_atk_round_timelimit("sv_neo_atk_round_timelimit", "3.25", FCVAR_REPLICATED, "ATK round timelimit, in minutes.", true, 0.0f, false, 600.0f);
+ConVar sv_neo_atk_score_limit("sv_neo_atk_score_limit", "7", FCVAR_REPLICATED, "ATK score limit", true, 0.0f, true, 99.0f);
 
 ConVar sv_neo_atk_ghost_overtime_enabled("sv_neo_atk_ghost_overtime_enabled", "0", FCVAR_REPLICATED, "Enable ghost overtime in the ATK mode.", true, 0, true, 1);
 ConVar sv_neo_atk_ghost_overtime("sv_neo_atk_ghost_overtime", "45", FCVAR_REPLICATED, "Adds up to this many seconds to the round while the ghost is held.", true, 0, true, 120);
 ConVar sv_neo_atk_ghost_overtime_grace("sv_neo_atk_ghost_overtime_grace", "10", FCVAR_REPLICATED, "Number of seconds left in the round when the ghost is dropped in overtime.", true, 0, true, 30);
 ConVar sv_neo_atk_ghost_overtime_grace_decay("sv_neo_atk_ghost_overtime_grace_decay", "0", FCVAR_REPLICATED, "Slowly reduce the grace time as overtime goes on.", true, 0, true, 1);
 
-//
 //CNEORulesATK::CNEORulesATK()
 //{
 //}
@@ -78,16 +79,51 @@ void CNEORulesATK::CheckOvertime()
 		m_nRoundStatus = NeoRoundStatus::Overtime;
 	}
 
-	if (m_nRoundStatus == NeoRoundStatus::Overtime && m_iGhosterPlayer)
+	if (NeoRoundStatus::Overtime == m_nRoundStatus && m_iGhosterPlayer)
 	{
 		m_flGhostLastHeld = gpGlobals->curtime;
 	}
 }
 
+float CNEORulesATK::GetRoundRemainingTime() const
+{
+	if (NeoRoundStatus::Overtime == m_nRoundStatus)
+	{
+		return GetOverTime(sv_neo_atk_round_timelimit.GetFloat() * 60.f, 
+						sv_neo_atk_ghost_overtime.GetFloat(), 
+						sv_neo_atk_ghost_overtime_grace.GetFloat(), 
+						sv_neo_atk_ghost_overtime_grace_decay.GetBool());
+	}
+	return BaseClass::GetRoundRemainingTime(sv_neo_atk_round_timelimit.GetFloat());
+}
+
+#ifdef GAME_DLL
+void CNEORulesATK::SetGameRelatedVars()
+{
+	ResetGhost();
+	SpawnTheGhost();
+}
+
+const int CNEORulesATK::GetScoreLimit() const
+{
+	return sv_neo_atk_score_limit.GetInt();
+}
+
+const int CNEORulesATK::GetRoundLimit() const
+{
+	return sv_neo_atk_round_limit.GetInt();
+}
+
+void CNEORulesATK::RoundTimeout()
+{
+	SetWinningTeam(GetDefendingTeam(), NEO_VICTORY_ATK_TIMEOUT, false, true, false, false);
+}
+#endif // GAME_DLL
+
 void CNEORulesATK::Think()
 {
 #ifdef GAME_DLL
-	if (RoundIdlePausedStartThink())
+	if (RoundStartFromIdleOrPausedThink())
 		return;
 
 	PlayerRespawnThink();

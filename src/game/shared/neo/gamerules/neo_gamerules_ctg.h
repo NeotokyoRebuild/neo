@@ -25,14 +25,23 @@ public:
 	DECLARE_CLASS(CNEORulesCTG, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
 	
-
-	CNEORulesCTG();
-	virtual ~CNEORulesCTG();
+	//CNEORulesCTG();
+	//virtual ~CNEORulesCTG();
 	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
+	
+	const char* GetGameDescription() override { return "Capture the Ghost"; }
+	virtual bool GetTeamPlayEnabled() const override { return true; };
 
 	virtual void CheckOvertime();
+	virtual float GetRoundRemainingTime() const override final;
+#ifdef GAME_DLL
+	virtual void SetGameRelatedVars() override final;
+	virtual const int GetScoreLimit() const override final;
+	virtual const int GetRoundLimit() const override final;
+	virtual void RoundTimeout() override final;
+#endif // GAME_DLL
 	virtual void Think() override final;
 };
 

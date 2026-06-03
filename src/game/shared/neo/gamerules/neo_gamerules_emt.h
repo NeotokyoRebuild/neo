@@ -25,13 +25,25 @@ public:
 	DECLARE_CLASS(CNEORulesEMT, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
 	
-
-	CNEORulesEMT();
-	virtual ~CNEORulesEMT();
+	//CNEORulesEMT();
+	//virtual ~CNEORulesEMT();
 	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
 
+
+	
+	virtual float GetRoundRemainingTime() const override final;
+	virtual bool GetTeamPlayEnabled() const override { return true; };
+
+#ifdef GAME_DLL
+	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) override final;
+
+	virtual void SetGameRelatedVars() override final {};
+	virtual const int GetScoreLimit() const override final;
+	virtual const int GetRoundLimit() const override final;
+	virtual void RoundTimeout() override final;
+#endif // GAME_DLL
 	virtual void Think() override final;
 };
 

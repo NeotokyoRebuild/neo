@@ -24,14 +24,25 @@ class CNEORulesTUT : public CNEORules, public CGameEventListener
 public:
 	DECLARE_CLASS(CNEORulesTUT, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
-	
 
-	CNEORulesTUT();
-	virtual ~CNEORulesTUT();
+	//CNEORulesTUT();
+	//virtual ~CNEORulesTUT();
 	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
+	
+	const char* GetGameDescription() override { return "Training"; };
+	virtual bool GetTeamPlayEnabled() const override { return true; };
 
+	virtual float GetRoundRemainingTime() const override final;
+#ifdef GAME_DLL
+	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) override final;
+
+	virtual void SetGameRelatedVars() override final {};
+	virtual const int GetScoreLimit() const override final;
+	virtual const int GetRoundLimit() const override final;
+	virtual void RoundTimeout() override final;
+#endif // GAME_DLL
 	virtual void Think() override final;
 };
 

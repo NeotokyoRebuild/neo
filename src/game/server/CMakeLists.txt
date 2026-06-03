@@ -1409,8 +1409,6 @@ target_sources_grouped(
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
     neo/neo_typeconverter.cpp
-    neo/neo_dm_spawn.cpp
-    neo/neo_dm_spawn.h
 )
 
 target_sources_grouped(
@@ -1528,6 +1526,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_ctg.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_dm.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_dm.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_emt.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_emt.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_jgr.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_jgr.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tdm.cpp

@@ -25,18 +25,27 @@ public:
 	DECLARE_CLASS(CNEORulesATK, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
 	
-
 	//CNEORulesATK();
 	//virtual ~CNEORulesATK();
 	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
+
+	const char* GetGameDescription() override { return "Attack/Defend"; }
+	virtual bool GetTeamPlayEnabled() const override { return true; };
 	
 	virtual void CheckOvertime();
+	virtual float GetRoundRemainingTime() const override final;
+#ifdef GAME_DLL
+	virtual void SetGameRelatedVars() override final;
+	virtual const int GetScoreLimit() const override final;
+	virtual const int GetRoundLimit() const override final;
+	virtual void RoundTimeout() override final;
+#endif // GAME_DLL
 	virtual void Think() override final;
 };
 
-inline CNEORulesATK *CNEORulesATK()
+inline CNEORulesATK *NEORulesATK()
 {
 	return static_cast<CNEORulesATK*>(g_pGameRules);
 }

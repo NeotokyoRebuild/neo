@@ -48,22 +48,23 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesCTGProxy, DT_NEOGameRulesCTGProxy );
 			SendProxy_NEORulesCTG)
 		END_SEND_TABLE()
 #endif
-
-ConVar sv_neo_ctg_round_timelimit("neo_ctg_round_timelimit", "3.25", FCVAR_REPLICATED, "CTG round timelimit, in minutes.",	true, 0.0f, false, 600.0f);
+		
+ConVar sv_neo_ctg_round_limit("sv_neo_ctg_round_limit", "0", FCVAR_REPLICATED, "CTG max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_ctg_round_timelimit("sv_neo_ctg_round_timelimit", "3.25", FCVAR_REPLICATED, "CTG round timelimit, in minutes.",	true, 0.0f, false, 0.0f);
+ConVar sv_neo_ctg_score_limit("sv_neo_ctg_score_limit", "7", FCVAR_REPLICATED, "CTG score limit", true, 0.0f, true, 99.0f);
 
 ConVar sv_neo_ctg_ghost_overtime_enabled("sv_neo_ctg_ghost_overtime_enabled", "0", FCVAR_REPLICATED, "Enable ghost overtime.", true, 0, true, 1);
 ConVar sv_neo_ctg_ghost_overtime("sv_neo_ctg_ghost_overtime", "45", FCVAR_REPLICATED, "Adds up to this many seconds to the round while the ghost is held.", true, 0, true, 120);
 ConVar sv_neo_ctg_ghost_overtime_grace("sv_neo_ctg_ghost_overtime_grace", "10", FCVAR_REPLICATED, "Number of seconds left in the round when the ghost is dropped in overtime.", true, 0, true, 30);
 ConVar sv_neo_ctg_ghost_overtime_grace_decay("sv_neo_ctg_ghost_overtime_grace_decay", "0", FCVAR_REPLICATED, "Slowly reduce the grace time as overtime goes on.", true, 0, true, 1);
 
-CNEORulesCTG::CNEORulesCTG()
-{
-
-}
-
-CNEORulesCTG::~CNEORulesCTG()
-{
-}
+//CNEORulesCTG::CNEORulesCTG()
+//{
+//}
+//
+//CNEORulesCTG::~CNEORulesCTG()
+//{
+//}
 
 void CNEORulesCTG::FireGameEvent(IGameEvent* event)
 {
@@ -90,10 +91,45 @@ void CNEORulesCTG::CheckOvertime()
 	}
 }
 
+float CNEORulesCTG::GetRoundRemainingTime() const
+{
+	if (NeoRoundStatus::Overtime == m_nRoundStatus)
+	{
+		return GetOverTime(sv_neo_ctg_round_timelimit.GetFloat() * 60.f, 
+						sv_neo_ctg_ghost_overtime.GetFloat(), 
+						sv_neo_ctg_ghost_overtime_grace.GetFloat(), 
+						sv_neo_ctg_ghost_overtime_grace_decay.GetBool());
+	}
+	return BaseClass::GetRoundRemainingTime(sv_neo_ctg_round_timelimit.GetFloat());
+}
+
+#ifdef GAME_DLL
+void CNEORulesCTG::SetGameRelatedVars()
+{
+	ResetGhost();
+	SpawnTheGhost();
+}
+
+const int CNEORulesCTG::GetScoreLimit() const
+{
+	return sv_neo_ctg_score_limit.GetInt();
+}
+
+const int CNEORulesCTG::GetRoundLimit() const
+{
+	return sv_neo_ctg_round_limit.GetInt();
+}
+
+void CNEORulesCTG::RoundTimeout()
+{
+	SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
+}
+#endif // GAME_DLL
+
 void CNEORulesCTG::Think()
 {
 #ifdef GAME_DLL
-	if (RoundIdlePausedStartThink())
+	if (RoundStartFromIdleOrPausedThink())
 		return;
 
 	PlayerRespawnThink();

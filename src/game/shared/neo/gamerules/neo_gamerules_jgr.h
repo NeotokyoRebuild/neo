@@ -24,14 +24,27 @@ class CNEORulesJGR : public CNEORules, public CGameEventListener
 public:
 	DECLARE_CLASS(CNEORulesJGR, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
-	/*
-
-	CNEORulesJGR();
-	virtual ~CNEORulesJGR();
-	*/
+	
+	//CNEORulesJGR();
+	//virtual ~CNEORulesJGR();
+	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
+	
+	const char* GetGameDescription() override { return "Juggernaut"; }
+	virtual bool GetTeamPlayEnabled() const override { return true; };
 
+	virtual float GetRoundRemainingTime() const override final;
+#ifdef GAME_DLL
+	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) override final;
+	
+	virtual void EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacker, const CTakeDamageInfo& info) override final;
+
+	virtual void SetGameRelatedVars() override final;
+	virtual const int GetScoreLimit() const override final;
+	virtual const int GetRoundLimit() const override final;
+	virtual void RoundTimeout() override final;
+#endif // GAME_DLL
 	virtual void Think() override final;
 #ifdef GAME_DLL
 	virtual void PlayerRespawnThink() override final;

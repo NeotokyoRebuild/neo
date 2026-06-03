@@ -47,19 +47,22 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesDMProxy, DT_NEOGameRulesDMProxy );
 			SendProxy_NEORulesDM)
 		END_SEND_TABLE()
 #endif
+		
+ConVar sv_neo_dm_round_limit("sv_neo_dm_round_limit", "0", FCVAR_REPLICATED, "DM max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_dm_round_timelimit("sv_neo_dm_round_timelimit", "10.25", FCVAR_REPLICATED, "DM round timelimit, in minutes.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_dm_score_limit("sv_neo_dm_score_limit", "7", FCVAR_REPLICATED, "DM score limit", true, 0.0f, true, 99.0f);
 
 ConVar sv_neo_dm_win_xp("sv_neo_dm_win_xp", "50", FCVAR_REPLICATED, "The XP limit to win the match.", true, 0.0f, true, 1000.0f);
 
 extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
 
-CNEORulesDM::CNEORulesDM()
-{
-
-}
-
-CNEORulesDM::~CNEORulesDM()
-{
-}
+//CNEORulesDM::CNEORulesDM()
+//{
+//}
+//
+//CNEORulesDM::~CNEORulesDM()
+//{
+//}
 
 void CNEORulesDM::FireGameEvent(IGameEvent* event)
 {
@@ -91,10 +94,61 @@ void CNEORulesDM::PlayerRespawnThink()
 }
 #endif // GAME_DLL
 
+float CNEORulesDM::GetRoundRemainingTime() const
+{
+	return BaseClass::GetRoundRemainingTime(sv_neo_dm_round_timelimit.GetFloat());
+}
+
+#ifdef GAME_DLL
+bool CNEORulesDM::FPlayerCanRespawn(CBasePlayer* pPlayer)
+{
+	if (NeoRoundStatus::PostRound == m_nRoundStatus)
+		return false;
+
+	return true;
+}
+
+void CNEORulesDM::SetGameRelatedVars()
+{
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		if (auto pPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i)))
+		{
+			pPlayer->m_iXP.GetForModify() = 0;
+		}
+	}
+}
+
+const int CNEORulesDM::GetScoreLimit() const
+{
+	return sv_neo_dm_score_limit.GetInt();
+}
+
+const int CNEORulesDM::GetRoundLimit() const
+{
+	return sv_neo_dm_round_limit.GetInt();
+}
+
+void CNEORulesDM::RoundTimeout()
+{
+	// Winning player
+	CNEO_Player* pWinners[MAX_PLAYERS + 1] = {};
+	int iWinnersTotal = 0;
+	int iWinnerXP = 0;
+	GetDMHighestScorers(&pWinners, &iWinnersTotal, &iWinnerXP);
+	if (iWinnersTotal == 1)
+	{
+		SetWinningDMPlayer(pWinners[0]);
+	}
+
+	// Otherwise go into overtime
+}
+#endif // GAME_DLL
+
 void CNEORulesDM::Think()
 {
 #ifdef GAME_DLL
-	if (RoundIdlePausedStartThink())
+	if (RoundStartFromIdleOrPausedThink())
 		return;
 
 	PlayerRespawnThink();

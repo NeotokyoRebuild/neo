@@ -43,19 +43,53 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesTUTProxy, DT_NEOGameRulesTUTProxy );
 		END_SEND_TABLE()
 #endif
 
-CNEORulesTUT::CNEORulesTUT()
-{
-
-}
-
-CNEORulesTUT::~CNEORulesTUT()
-{
-}
+//CNEORulesTUT::CNEORulesTUT()
+//{
+//}
+//
+//CNEORulesTUT::~CNEORulesTUT()
+//{
+//}
 
 void CNEORulesTUT::FireGameEvent(IGameEvent* event)
 {
 	BaseClass::FireGameEvent(event);
 }
+
+float CNEORulesTUT::GetRoundRemainingTime() const
+{
+#ifdef GAME_DLL
+	Assert(false); // Shouldn't be calling this server side
+#endif // GAME_DLL
+	return 0.f;
+}
+
+#ifdef GAME_DLL
+bool CNEORulesTUT::FPlayerCanRespawn(CBasePlayer* pPlayer)
+{
+	if (pPlayer->IsAlive())
+		return false;
+
+	return true;
+}
+
+const int CNEORulesTUT::GetScoreLimit() const
+{
+	Assert(false);
+	return 1;
+}
+
+const int CNEORulesTUT::GetRoundLimit() const
+{
+	Assert(false);
+	return 1;
+}
+
+void CNEORulesTUT::RoundTimeout()
+{
+	Assert(false);
+}
+#endif // GAME_DLL
 
 void CNEORulesTUT::Think()
 {

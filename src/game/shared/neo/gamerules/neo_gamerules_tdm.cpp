@@ -43,16 +43,20 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesTDMProxy, DT_NEOGameRulesTDMProxy );
 		END_SEND_TABLE()
 #endif
 		
+
+ConVar sv_neo_tdm_score_limit("sv_neo_tdm_score_limit", "1", FCVAR_REPLICATED, "TDM score limit", true, 0.0f, true, 99.0f);
+ConVar sv_neo_tdm_round_limit("sv_neo_tdm_round_limit", "0", FCVAR_REPLICATED, "TDM max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_tdm_round_timelimit("sv_neo_tdm_round_timelimit", "10.25", FCVAR_REPLICATED, "TDM round timelimit, in minutes.",	true, 0.0f, false, 0.0f);
+		
 extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
 
-CNEORulesTDM::CNEORulesTDM()
-{
-
-}
-
-CNEORulesTDM::~CNEORulesTDM()
-{
-}
+//CNEORulesTDM::CNEORulesTDM()
+//{
+//}
+//
+//CNEORulesTDM::~CNEORulesTDM()
+//{
+//}
 
 void CNEORulesTDM::FireGameEvent(IGameEvent* event)
 {
@@ -84,10 +88,56 @@ void CNEORulesTDM::PlayerRespawnThink()
 }
 #endif // GAME_DLL
 
+float CNEORulesTDM::GetRoundRemainingTime() const
+{
+	return BaseClass::GetRoundRemainingTime(sv_neo_tdm_round_timelimit.GetFloat());
+}
+
+#ifdef GAME_DLL
+bool CNEORulesTDM::FPlayerCanRespawn(CBasePlayer* pPlayer)
+{
+	if (NeoRoundStatus::PostRound == m_nRoundStatus)
+		return false;
+
+	return true;
+}
+
+void CNEORulesTDM::SetGameRelatedVars()
+{
+	ResetTeamScores();
+}
+
+const int CNEORulesTDM::GetScoreLimit() const
+{
+	return sv_neo_tdm_score_limit.GetInt();
+}
+
+const int CNEORulesTDM::GetRoundLimit() const
+{
+	return sv_neo_tdm_round_limit.GetInt();
+}
+
+void CNEORulesTDM::RoundTimeout()
+{
+	if (GetGlobalTeam(TEAM_JINRAI)->GetScore() > GetGlobalTeam(TEAM_NSF)->GetScore())
+	{
+		SetWinningTeam(TEAM_JINRAI, NEO_VICTORY_POINTS, false, true, false, false);
+		return;
+	}
+	if (GetGlobalTeam(TEAM_NSF)->GetScore() > GetGlobalTeam(TEAM_JINRAI)->GetScore())
+	{
+		SetWinningTeam(TEAM_NSF, NEO_VICTORY_POINTS, false, true, false, false);
+		return;
+	}
+
+	SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
+}
+#endif // GAME_DLL
+
 void CNEORulesTDM::Think()
 {
 #ifdef GAME_DLL
-	if (RoundIdlePausedStartThink())
+	if (RoundStartFromIdleOrPausedThink())
 		return;
 
 	PlayerRespawnThink();

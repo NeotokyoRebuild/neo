@@ -25,13 +25,21 @@ public:
 	DECLARE_CLASS(CNEORulesVIP, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
 	
-
-	CNEORulesVIP();
-	virtual ~CNEORulesVIP();
+	//CNEORulesVIP();
+	//virtual ~CNEORulesVIP();
 	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
+	
+	virtual float GetRoundRemainingTime() const override final;
+	virtual bool GetTeamPlayEnabled() const override { return true; };
 
+#ifdef GAME_DLL
+	virtual void SetGameRelatedVars() override final;
+	virtual const int GetScoreLimit() const override final;
+	virtual const int GetRoundLimit() const override final;
+	virtual void RoundTimeout() override final;
+#endif // GAME_DLL
 	virtual void Think() override final;
 };
 
