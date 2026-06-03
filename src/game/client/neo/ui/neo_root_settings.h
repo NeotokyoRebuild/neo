@@ -88,12 +88,10 @@ struct NeoSettings
 			ButtonCode_t bcDefault;
 			ButtonCode_t bcSecondaryNext;
 			ButtonCode_t bcSecondaryCurrent;
+			bool bSkipSecondary = false;
 		};
 		Bind vBinds[NEO_BINDS_TOTAL];
 		int iBindsSize = 0;
-
-		// Will be checked often so cached
-		ButtonCode_t bcConsole;
 
 		enum Flags
 		{

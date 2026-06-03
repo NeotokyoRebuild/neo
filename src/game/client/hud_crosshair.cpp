@@ -618,19 +618,19 @@ void CHudCrosshair::Paint( void )
 			}
 		}
 	}
-	else if (showFriendlyFireCrosshair)
-	{
-		vgui::surface()->DrawSetTexture(m_iTexIFFId);
-		int iTexWide, iTexTall;
-		vgui::surface()->DrawGetTextureSize(m_iTexIFFId, iTexWide, iTexTall);
-		iTexWide >>= 2;
-		iTexTall >>= 2;
-		vgui::surface()->DrawSetColor(COLOR_RED);
-		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
-	}
 	else if (!bHideCrosshair)
 	{
-		if (iTexXHId > 0)
+		if (showFriendlyFireCrosshair)
+		{
+			vgui::surface()->DrawSetTexture(m_iTexIFFId);
+			int iTexWide, iTexTall;
+			vgui::surface()->DrawGetTextureSize(m_iTexIFFId, iTexWide, iTexTall);
+			iTexWide >>= 2;
+			iTexTall >>= 2;
+			vgui::surface()->DrawSetColor(COLOR_RED);
+			vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
+		}
+		else if (iTexXHId > 0)
 		{
 			vgui::surface()->DrawSetTexture(iTexXHId);
 			int iTexWide, iTexTall;

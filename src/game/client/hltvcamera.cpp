@@ -26,6 +26,7 @@
 #include "neo_gamerules.h"
 #include "c_neo_player.h"
 #include "shareddefs.h"
+#include "input.h"
 #endif // NEO
 
 ConVar spec_autodirector( "spec_autodirector", "1", FCVAR_CLIENTDLL | FCVAR_CLIENTCMD_CAN_EXECUTE, "Auto-director chooses best view modes while spectating" );
@@ -105,6 +106,10 @@ void C_HLTVCamera::Reset()
 	m_flTheta = 0;
 	m_flOffset = 0;
 	m_bEntityPacketReceived = false;
+
+#ifdef NEO
+	m_flLastRealTime = 0;
+#endif // NEO
 
 	m_vCamOrigin.Init();
 	m_aCamAngle.Init();
@@ -372,7 +377,11 @@ void C_HLTVCamera::CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float
 	}
 }
 
+#ifdef NEO
+void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel, float flDeltaTime )
+#else
 void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel )
+#endif // NEO
 {
 	float addspeed, accelspeed, currentspeed;
 
@@ -387,7 +396,11 @@ void C_HLTVCamera::Accelerate( Vector& wishdir, float wishspeed, float accel )
 		return;
 
 	// Determine amount of acceleration.
+#ifdef NEO
+	accelspeed = accel * flDeltaTime * wishspeed;
+#else
 	accelspeed = accel * gpGlobals->frametime * wishspeed;
+#endif // NEO
 
 	// Cap at addspeed
 	if (accelspeed > addspeed)
@@ -407,10 +420,18 @@ extern ConVar neo_fov;
 // movement code is a copy of CGameMovement::FullNoClipMove()
 void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
 {
+#ifdef NEO
+	const float flDeltaTime = gpGlobals->realtime - m_flLastRealTime;
+
+	// if (engine->IsPaused()) // When running a demo back at very slow speeds, movement is delayed, just do this always
+	{
+		input->CreateMove(m_LastCmd.command_number, flDeltaTime, true); // or false and use sv_noclipduringpause, default it to true?
+	}
+#endif // NEO
+
 	// only if PVS isn't locked by auto-director
 	if ( !IsPVSLocked() )
 	{
-
 		Vector wishvel;
 		Vector forward, right, up;
 		Vector wishdir;
@@ -428,7 +449,7 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		// Copy movement amounts
 		float fmove = m_LastCmd.forwardmove * factor;
 		float smove = m_LastCmd.sidemove * factor;
-		
+
 #ifdef NEO
 		const bool bDroneMove = m_LastCmd.buttons & IN_WALK;
 		if (bDroneMove)
@@ -466,7 +487,11 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		if ( sv_specaccelerate.GetFloat() > 0.0 )
 		{
 			// Set move velocity
+#ifdef NEO
+			Accelerate ( wishdir, wishspeed, sv_specaccelerate.GetFloat(), flDeltaTime );
+#else
 			Accelerate ( wishdir, wishspeed, sv_specaccelerate.GetFloat() );
+#endif // NEO
 
 			float spd = VectorLength( m_vecVelocity );
 			if (spd < 1.0f)
@@ -482,7 +507,11 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 				float friction = sv_friction.GetFloat();
 
 				// Add the amount to the drop amount.
+#ifdef NEO
+				float drop = control * friction * flDeltaTime;
+#else
 				float drop = control * friction * gpGlobals->frametime;
+#endif // NEO
 
 				// scale the velocity
 				float newspeed = spd - drop;
@@ -500,8 +529,12 @@ void C_HLTVCamera::CalcRoamingView(Vector& eyeOrigin, QAngle& eyeAngles, float& 
 		}
 
 		// Just move ( don't clip or anything )
+#ifdef NEO
+		VectorMA( m_vCamOrigin, flDeltaTime, m_vecVelocity, m_vCamOrigin );
+#else
 		VectorMA( m_vCamOrigin, gpGlobals->frametime, m_vecVelocity, m_vCamOrigin );
-		
+#endif // NEO
+
 		// get camera angle directly from engine
 		 engine->GetViewAngles( m_aCamAngle );
 
@@ -597,6 +630,9 @@ void C_HLTVCamera::CalcView(Vector& origin, QAngle& angles, float& fov)
 		case OBS_MODE_CHASE		:	CalcChaseCamView( origin, angles, fov  );
 									break;
 	}
+#ifdef NEO
+	m_flLastRealTime = gpGlobals->realtime;
+#endif // NEO
 }
 
 #ifdef NEO
@@ -614,6 +650,16 @@ void C_HLTVCamera::SetMode(int iMode)
 	m_nCameraMode = iMode;
 
 #ifdef NEO
+	// If we pause demo playback while in eye view, the observer target will be invisible when switching observer mode because we also pause simulation etc, update visibility here
+	if (iOldMode == OBS_MODE_IN_EYE && engine->IsPaused())
+	{
+		if ( C_BaseEntity* target = ClientEntityList().GetEnt( m_iTraget1 ) )
+		{
+			target->UpdateVisibility();
+			target->CreateShadow(); // Iterate through all children to update their shadows too?
+		}
+	}
+
 	if (cl_neo_hltvcamera_spectate_next_target_on_set_mode.GetBool() && (iMode == OBS_MODE_IN_EYE || iMode == OBS_MODE_CHASE) && !GetPrimaryTarget())
 	{
 		bAllowChangingModeWhenSettingPrimaryTarget = false;

@@ -26,17 +26,8 @@
 
 using vgui::surface;
 
-ConVar cl_neo_hud_ammo_enabled("cl_neo_hud_ammo_enabled", "1", FCVAR_USERINFO,
+ConVar cl_neo_hud_ammo_enabled("cl_neo_hud_ammo_enabled", "1", FCVAR_ARCHIVE,
 	"Whether the HUD ammo is enabled or not.", true, 0, true, 1);
-
-ConVar cl_neo_hud_debug_ammo_color_r("cl_neo_hud_debug_ammo_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
-	"Red color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar cl_neo_hud_debug_ammo_color_g("cl_neo_hud_debug_ammo_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
-	"Green color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar cl_neo_hud_debug_ammo_color_b("cl_neo_hud_debug_ammo_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
-	"Blue value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar cl_neo_hud_debug_ammo_color_a("cl_neo_hud_debug_ammo_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
-	"Alpha color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_Ammo, NHudWeapon);
 
