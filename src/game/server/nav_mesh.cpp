@@ -3525,7 +3525,7 @@ bool CNavMesh::BuildBrushLaddersFromBsp()
 	Assert(!!gpGlobals->mapname && *gpGlobals->mapname.ToCStr());
 	Assert(V_strlen(gpGlobals->mapname.ToCStr()) < MAX_MAP_NAME);
 	V_sprintf_safe(mapPath, "maps/%s.bsp", gpGlobals->mapname.ToCStr());
-	if (!(mapPath || *mapPath))
+	if (!*mapPath)
 	{
 		Warning("%s: failed to get map name\n", __FUNCTION__);
 		goto fail;
