@@ -16,6 +16,9 @@ class CBaseButton : public CBaseToggle
 public:
 
 	DECLARE_CLASS( CBaseButton, CBaseToggle );
+#ifdef NEO
+	DECLARE_SERVERCLASS();
+#endif // NEO
 
 	void Spawn( void );
 	virtual void Precache( void );

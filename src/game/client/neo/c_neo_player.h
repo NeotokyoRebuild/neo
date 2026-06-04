@@ -76,6 +76,9 @@ public:
 	IRagdoll* GetRepresentativeRagdoll() const;
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
 	virtual const QAngle& EyeAngles( void );
+	
+	virtual bool IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps ) override final;
+	virtual CBaseEntity* FindUseEntity() override final;
 
 	virtual void ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo) OVERRIDE;
 
@@ -189,7 +192,10 @@ public:
 #ifdef GLOWS_ENABLE
 	void UpdateGlowEffects(int iNewTeam);
 #endif // GLOWS_ENABLE
-
+	C_NEO_Player* PlayerUseTraceLine();
+	virtual void PlayerUse() override;
+	
+	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
@@ -201,6 +207,10 @@ private:
 	void SetCloakState(bool state);
 
 	bool IsAllowedToSuperJump(void);
+
+	// Spectator takeover player related functionality
+	bool IsAFK() const;
+	bool IsFakePlayer() const;
 
 public:
 	CNetworkVar(bool, m_bShowTestMessage);

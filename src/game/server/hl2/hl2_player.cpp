@@ -3224,6 +3224,9 @@ void CHL2_Player::PlayerUse ( void )
 			// Robin: Don't play sounds for NPCs, because NPCs will allow respond with speech.
 			if ( !pUseEntity->MyNPCPointer() )
 			{
+#ifdef NEO
+				if (!pUseEntity->IsBaseCombatWeapon()) // Don't play sounds when picking up weapons, so the use sound doesn't overwrite the weapon pickup sound
+#endif // NEO
 				EmitSound( "HL2Player.Use" );
 			}
 		}

@@ -473,6 +473,7 @@ target_sources_grouped(
     c_baseflex.cpp
     c_baseplayer.cpp
     c_baseviewmodel.cpp
+    c_buttons.cpp
     c_breakableprop.cpp
     c_colorcorrection.cpp
     c_colorcorrectionvolume.cpp
@@ -856,6 +857,7 @@ target_sources_grouped(
     c_baseplayer.h
     c_basetempentity.h
     c_baseviewmodel.h
+    c_buttons.h
     c_breakableprop.h
     c_effects.h
     c_entitydissolve.h
