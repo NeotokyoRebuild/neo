@@ -7,6 +7,7 @@
 #include <filesystem.h>
 #include <stb_image.h>
 #include <materialsystem/imaterial.h>
+#include <IGameUIFuncs.h>
 
 #include "neo_misc.h"
 
@@ -2217,7 +2218,7 @@ void Progress(const float flValue, const float flMin, const float flMax)
 
 void ProgressDrag(float *flValue, const float flMin, const float flMax)
 {
-	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
+	auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 	if (wdgState.bInView)
 	{
 		switch (c->eMode)
@@ -2239,6 +2240,7 @@ void ProgressDrag(float *flValue, const float flMin, const float flMax)
 				c->iActive = c->iWidget;
 				c->iActiveSection = c->iSection;
 				c->eMousePressedStart = MOUSESTART_SLIDER;
+				wdgState.bActive = true;
 			}
 		} [[fallthrough]];
 		case MODE_MOUSEMOVED:

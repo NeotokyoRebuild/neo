@@ -31,10 +31,11 @@ ConVar glow_outline_effect_enable("glow_outline_effect_enable", "1", FCVAR_ARCHI
 		}
 	}
 );
-ConVar glow_outline_effect_width( "glow_outline_effect_width", "1.f", FCVAR_ARCHIVE, "Width of glow outline effect.", true, 0.f, false, 0.f);
-ConVar glow_outline_effect_alpha( "glow_outline_effect_alpha", "0.5f", FCVAR_ARCHIVE, "Alpha of glow outline effect.", true, 0.f, true, 1.f);
-ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.1f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when obstructed", true, 0.f, true, 1.f);
-ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_center_alpha", "0.2f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when cloaked", true, 0.f, true, 1.f);
+
+ConVar glow_outline_effect_width( "glow_outline_effect_width", "1.0", FCVAR_ARCHIVE, "Width of glow outline effect.", true, 0.f, false, 0.f);
+ConVar glow_outline_effect_alpha( "glow_outline_effect_alpha", "0.5", FCVAR_ARCHIVE, "Alpha of glow outline effect.", true, 0.f, true, 1.f);
+ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.1", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when obstructed", true, 0.f, true, 1.f);
+ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_center_alpha", "0.2", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when cloaked", true, 0.f, true, 1.f);
 ConVar cl_neo_hud_context_hint_highlight_object("cl_neo_hud_context_hint_highlight_object", "1", FCVAR_ARCHIVE, "Highlight interactible object", true, 0.f, true, 1.f,
 	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
 		if (!cl_neo_hud_context_hint_highlight_object.GetBool())

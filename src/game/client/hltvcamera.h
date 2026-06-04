@@ -59,7 +59,11 @@ protected:
 
 	void SmoothCameraAngle( QAngle& targetAngle );
 	void SetCameraAngle( QAngle& targetAngle );
+#ifdef NEO
+	void Accelerate( Vector& wishdir, float wishspeed, float accel, float flDeltaTime );
+#else
 	void Accelerate( Vector& wishdir, float wishspeed, float accel );
+#endif
 
 	int			m_nCameraMode; // current camera mode
 	int			m_iCameraMan; // camera man entindex or 0
@@ -80,6 +84,9 @@ protected:
 	char		m_szTitleText[64];
 	CUserCmd	m_LastCmd;
 	Vector		m_vecVelocity;
+#ifdef NEO
+	float		m_flLastRealTime = 0; // use realtime instead of frametime to process movement even while paused
+#endif
 };
 
 

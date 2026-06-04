@@ -130,20 +130,26 @@ if(NEO_RAD_TELEMETRY_DISABLED)
 endif()
 
 if (OS_LINUX)
-    set(PLATSUBDIR "/linux64")
+    set(PLATSUBDIR "linux64")
 elseif (OS_WINDOWS)
-    set(PLATSUBDIR "/x64")
+    set(PLATSUBDIR "x64")
 endif ()
 
 set(STEAM_RUNTIME_PATH /usr)
 set(CRYPTOPPDIR steamrt_sniper64)
 
+if (NEO_DEDICATED AND OS_LINUX)
+    set(SRV_SUFFIX "_srv")
+else()
+    set(SRV_SUFFIX "")
+endif()
+
 add_compile_definitions(
     # SDK2013CE # Cut out since 2025-02-18 TF2 SDK Update
     NEO
     GLOWS_ENABLE
-    _DLL_EXT=${CMAKE_SHARED_LIBRARY_SUFFIX}
-    _EXTERNAL_DLL_EXT=${CMAKE_SHARED_LIBRARY_SUFFIX}
+    _DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}
+    _EXTERNAL_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}
     _GLIBCXX_USE_CXX11_ABI=0
     FRAME_POINTER_OMISSION_DISABLED
     SOURCE1=1
@@ -159,8 +165,8 @@ add_compile_definitions(
 )
 
 if(OS_WINDOWS)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public${PLATSUBDIR}")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common${PLATSUBDIR}")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public/${PLATSUBDIR}")
+    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
 
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "EditAndContinue")
 
@@ -379,8 +385,9 @@ if(OS_LINUX OR OS_MACOS)
 endif()
 
 if(OS_LINUX)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public${PLATSUBDIR}")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common${PLATSUBDIR}")
+    set(LIBPUBLIC_RELATIVE_PATH "lib/public/${PLATSUBDIR}")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/${LIBPUBLIC_RELATIVE_PATH}")
+    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
 
     add_compile_definitions(
         LINUX
@@ -498,8 +505,8 @@ if(NEO_INSTALL_LIBRARIES)
         else()
             install(
                 TARGETS server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
             )
         endif()
     else()
@@ -548,8 +555,8 @@ if(NEO_INSTALL_LIBRARIES)
         else()
             install(
                 TARGETS client game_shader_dx9 server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
             )
         endif()
     endif()
