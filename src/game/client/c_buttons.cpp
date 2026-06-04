@@ -12,4 +12,4 @@ END_RECV_TABLE()
 
 int C_BaseButton::ObjectCaps(void) {
 	return BaseClass::ObjectCaps() | ((m_spawnflags & SF_BUTTON_USE_ACTIVATES) ? (FCAP_IMPULSE_USE | FCAP_USE_IN_RADIUS) : 0);
-};
+}

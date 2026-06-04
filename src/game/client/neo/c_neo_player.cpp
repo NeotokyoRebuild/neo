@@ -2119,7 +2119,6 @@ C_NEO_Player* C_NEO_Player::PlayerUseTraceLine()
 //-----------------------------------------------------------------------------
 bool C_NEO_Player::IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps )
 {
-#ifdef NEO
 	if (!pEntity)
 		return false;
 
@@ -2131,7 +2130,6 @@ bool C_NEO_Player::IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredC
 	}
 
 	return false;
-#endif // NEO
 }
 
 

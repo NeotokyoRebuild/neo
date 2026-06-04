@@ -242,6 +242,7 @@ public:
 	void BecomeJuggernaut();
 	void SpawnJuggernautPostDeath();
 
+	bool IsAFK() const;
 	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
 private:
@@ -353,7 +354,6 @@ private:
 	CNEO_Player(const CNEO_Player&);
 
 	// Spectator takeover player related functionality
-	bool IsAFK() const;
 	bool IsFakePlayer() const;
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();

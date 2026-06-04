@@ -454,7 +454,8 @@ void CNEO_Player::Splash()
 bool CNEO_Player::IsAFK() const
 {
 #ifdef GAME_DLL
-	return gpGlobals->curtime - m_flLastInputTime > sv_neo_spec_replace_player_afk_time_sec.GetInt();
+	const int iAfkTime = sv_neo_spec_replace_player_afk_time_sec.GetInt();
+	return iAfkTime >= 0 && gpGlobals->curtime - m_flLastInputTime > iAfkTime;
 #else
 	return GameResources()->IsAfk(entindex());
 #endif // GAME_DLL
@@ -526,7 +527,7 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 			bUsable = IsUseableEntity(pObject, 0);
 		}
 
-		if ( bUsable && !pObject->IsBaseCombatWeapon() )
+		if ( bUsable && pObject && !pObject->IsBaseCombatWeapon() )
 		{
 			Vector delta = tr.endpos - tr.startpos;
 			float centerZ = CollisionProp()->WorldSpaceCenter().z;

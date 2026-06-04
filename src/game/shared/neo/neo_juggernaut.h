@@ -39,7 +39,7 @@ public:
 
 	bool	m_bPostDeath = false;
 #endif
-	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
+	virtual int	ObjectCaps(void) override { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
 
 	virtual unsigned int PhysicsSolidMaskForEntity() const final override { return MASK_PLAYERSOLID; }
 	virtual void UpdateOnRemove() override;

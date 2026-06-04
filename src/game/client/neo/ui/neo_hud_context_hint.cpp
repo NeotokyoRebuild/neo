@@ -104,10 +104,12 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 	}
 	else
 	{
-		const char notBoundText[] = "+use unbound\0";
+		const char notBoundText[] = "+use unbound";
 		COMPILE_TIME_ASSERT(sizeof(notBoundText) <= sizeof(szUppercaseKeyBinding));
 		V_strncpy(szUppercaseKeyBinding, notBoundText, sizeof(szUppercaseKeyBinding));
 	}
+
+	Assert(strlen(szUppercaseKeyBinding) < sizeof(szUppercaseKeyBinding));
 
 	if (pLocalNeoPlayer->IsObserver())
 	{
@@ -159,31 +161,43 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				return;
 			
 			// Weapon pickup hint
+			static bool bPreviouslyCouldPickupWeapon = false;
 			if (pUseEntity->IsBaseCombatWeapon())
 			{
 				C_NEOBaseCombatWeapon* pNeoWeapon = static_cast<C_NEOBaseCombatWeapon*>(pUseEntity);
-				
+
 				// Ghost pickup hint
 				if (pNeoWeapon->GetNeoWepBits() & NEO_WEP_GHOST)
 				{
-					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pickup the Ghost", szUppercaseKeyBinding);
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pick up the Ghost", szUppercaseKeyBinding);
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					bPreviouslyCouldPickupWeapon = true;
 				}
 				// Weapon pickup hint
 				else if (pNeoWeapon->CanBePickedUpByClass(pLocalNeoPlayer->GetClass()))
 				{
-					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pickup %hs", szUppercaseKeyBinding, pNeoWeapon->GetPrintName());
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pick up %hs", szUppercaseKeyBinding, pNeoWeapon->GetPrintName());
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					bPreviouslyCouldPickupWeapon = true;
 				}
 				else if (pLocalNeoPlayer->m_nButtons & IN_USE)
 				{
-					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Cannot pickup weapon");
+					V_wcscpy_safe(m_wszHintText, L"Cannot pick up weapon");
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 					m_hUseEntity = INVALID_EHANDLE;
+					bPreviouslyCouldPickupWeapon = false;
 				}
 				else
 				{
 					g_GlowObjectManager.ClearUseItemObject();
+					// When moving our cursor away from a weapon we can pickup, the message is cleared immediately down below when theres no usable entity.
+					// If there is a non-pickup-able usable entity instead, we need to clear the message here instead.
+					// We also want to keep the message around for a second if a non-pickup-able weapon was interacted with, hence the bPreviouslyCouldPickupWeapon check.
+					// NEO TODO (Adam) The "no usable entity" branch will also clear the "Cannot pick up weapon" message too soon, maybe refactor this a bit?
+					if (bPreviouslyCouldPickupWeapon)
+					{
+						m_flDisplayEndTime = gpGlobals->curtime;
+					}
 					m_hUseEntity = INVALID_EHANDLE;
 				}
 			}
@@ -288,8 +302,6 @@ void CNEOHud_ContextHint::DrawNeoHudElement()
 	
 	int textX = iBoxX + m_iPaddingX;
 	int textY = iBoxY + m_iPaddingY;
-	int x = 0;
-	int y = 0;
 	const int size = iTextTall / 8;
 
 	vgui::surface()->DrawSetColor(m_TextColor);
@@ -297,7 +309,14 @@ void CNEOHud_ContextHint::DrawNeoHudElement()
 	{
 		if (C_BaseEntity* entity = useEntityList[i].entity.Get())
 		{
-			GetVectorInScreenSpace(entity->CollisionProp()->WorldSpaceCenter(), x, y);
+			int x = 0;
+			int y = 0;
+
+			if (!GetVectorInScreenSpace(entity->CollisionProp()->WorldSpaceCenter(), x, y))
+			{
+				continue;
+			}
+
 			vgui::surface()->DrawOutlinedCircle(x, y, size, 12);
 		}
 	}

@@ -2439,14 +2439,12 @@ void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
 			{
 				CBaseEntity* pEnt = CreateEntityByName(pNeoWeapon->GetClassname());
 				if (!pEnt)
-					break; // Assuming this will not work for all subsequent tries
-
-				CNEOBaseCombatWeapon* pNeoEnt = static_cast<CNEOBaseCombatWeapon*>(pEnt);
-				if (!pNeoEnt)
 				{
-					UTIL_Remove(pEnt);
-					break; // ditto
+					Assert(false);
+					break; // Assuming this will not work for all subsequent tries
 				}
+
+				auto pNeoEnt = assert_cast<CNEOBaseCombatWeapon*>(pEnt);
 
 				pNeoEnt->SetLocalOrigin( GetLocalOrigin() );
 				pNeoEnt->AddSpawnFlags(SF_NORESPAWN);
@@ -2772,10 +2770,7 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	if (IsDead())
 		return false;
 
-	// We need to run this for its side-effects, even in the IsDead case below... should be refactored.
-	const bool okRet = BaseClass::BumpWeapon(pWeapon);
-
-	return okRet;
+	return BaseClass::BumpWeapon(pWeapon);
 }
 
 CNEOBaseCombatWeapon* CNEO_Player::Weapon_GetPosition(int slot, int position)
