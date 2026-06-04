@@ -626,10 +626,9 @@ void CNEOPredictedViewModel::ProcessMuzzleFlashEvent()
 
 RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
 {
-	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	if (pPlayer)
+	if (auto pPlayer = static_cast<C_NEO_Player*>(GetOwner()))
 	{
-		return pPlayer->IsCloaked() ? RENDER_GROUP_VIEW_MODEL_TRANSLUCENT : RENDER_GROUP_VIEW_MODEL_OPAQUE;
+		return pPlayer->IsDrawnTransparent() ? RENDER_GROUP_VIEW_MODEL_TRANSLUCENT : RENDER_GROUP_VIEW_MODEL_OPAQUE;
 	}
 
 	return BaseClass::GetRenderGroup();
@@ -637,10 +636,9 @@ RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
 
 bool CNEOPredictedViewModel::UsesPowerOfTwoFrameBufferTexture()
 {
-	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	if (pPlayer)
+	if (auto pPlayer = static_cast<C_NEO_Player*>(GetOwner()))
 	{
-		return pPlayer->IsCloaked() ? true : false;
+		return pPlayer->IsDrawnTransparent() ? true : false;
 	}
 
 	return BaseClass::UsesPowerOfTwoFrameBufferTexture();

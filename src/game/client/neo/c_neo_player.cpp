@@ -688,12 +688,12 @@ int C_NEO_Player::DrawModel(int flags)
 	bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 
 	int ret = 0;
-	if (!m_bInThermOpticCamo || inThermalVision)
+	if (!IsCloaked() || inThermalVision)
 	{
 		ret |= BaseClass::DrawModel(flags);
 	}
 
-	if (m_bInThermOpticCamo && !inThermalVision)
+	if (IsCloaked() && !inThermalVision)
 	{
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
@@ -701,7 +701,7 @@ int C_NEO_Player::DrawModel(int flags)
 		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
-	else if (inThermalVision && !m_bInThermOpticCamo)
+	else if (inThermalVision && !IsCloaked())
 	{
 		IMaterial* pass = materials->FindMaterial(NEO_THERMAL_MODEL_MATERIAL, TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
@@ -749,21 +749,24 @@ void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePl
 	//pl.frags = m_iFrags; NEO TODO (Adam) Is this actually used anywhere? should we include a xp field in CPlayerState?
 }
 
-bool C_NEO_Player::IsCloaked() const
+bool C_NEO_Player::IsDrawnTransparent() const
 {
 	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 	if (!pTargetPlayer)
 	{
-		return m_bInThermOpticCamo;
+		return IsCloaked();
 	}
 	
 	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
-	return m_bInThermOpticCamo && !inThermalVision;
+	return IsCloaked() && !inThermalVision;
 }
 
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
-	if (m_bInThermOpticCamo)
+	// NEO TODO (Adam) should cloaked players cast shadows in thermals? If they are drawn opaque, it follows that cloaked players block light on a 
+	// spectrum that thermals can see, so light in that same spectrum would be absent where the shadow would be, hence the shadow should be drawn
+	// if so, replace IsCloaked() with IsDrawnTransparent()
+	if (IsCloaked())
 	{
 		return SHADOWS_NONE;
 	}
@@ -782,12 +785,12 @@ const QAngle& C_NEO_Player::GetRenderAngles()
 
 RenderGroup_t C_NEO_Player::GetRenderGroup()
 {
-	return IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+	return IsDrawnTransparent() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
 }
 
 bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()
 {
-	return IsCloaked();
+	return IsDrawnTransparent();
 }
 
 bool C_NEO_Player::ShouldDraw( void )
