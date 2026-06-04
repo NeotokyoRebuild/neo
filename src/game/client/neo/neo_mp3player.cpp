@@ -157,8 +157,7 @@ public:
 			}
 
 			float flVol =
-					(cvr_snd_mute_losefocus.GetBool() && 
-						false == engine->IsActiveApp())
+					(cvr_snd_mute_losefocus.GetBool() && false == engine->IsActiveApp())
 						? 0.0f
 						: (cl_neo_radio_volume_separate_ingame.GetBool() && IsInGame())
 							? cl_neo_radio_volume_ingame.GetFloat()
