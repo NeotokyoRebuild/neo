@@ -749,8 +749,23 @@ void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePl
 	//pl.frags = m_iFrags; NEO TODO (Adam) Is this actually used anywhere? should we include a xp field in CPlayerState?
 }
 
+bool C_NEO_Player::IsDrawnTransparent() const
+{
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+	if (!pTargetPlayer)
+	{
+		return IsCloaked();
+	}
+	
+	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	return IsCloaked() && !inThermalVision;
+}
+
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
+	// NEO TODO (Adam) should cloaked players cast shadows in thermals? If they are drawn opaque, it follows that cloaked players block light on a 
+	// spectrum that thermals can see, so light in that same spectrum would be absent where the shadow would be, hence the shadow should be drawn
+	// if so, replace IsCloaked() with IsDrawnTransparent()
 	if (IsCloaked())
 	{
 		return SHADOWS_NONE;
@@ -770,12 +785,12 @@ const QAngle& C_NEO_Player::GetRenderAngles()
 
 RenderGroup_t C_NEO_Player::GetRenderGroup()
 {
-	return IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+	return IsDrawnTransparent() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
 }
 
 bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()
 {
-	return IsCloaked();
+	return IsDrawnTransparent();
 }
 
 bool C_NEO_Player::ShouldDraw( void )

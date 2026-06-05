@@ -1318,10 +1318,9 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 
 RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()
 {
-	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	if (pPlayer)
+	if (auto pPlayer = static_cast<C_NEO_Player*>(GetOwner()))
 	{
-		return pPlayer->IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+		return pPlayer->IsDrawnTransparent() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
 	}
 
 	return BaseClass::GetRenderGroup();
@@ -1329,10 +1328,9 @@ RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()
 
 bool CNEOBaseCombatWeapon::UsesPowerOfTwoFrameBufferTexture()
 {
-	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	if (pPlayer)
+	if (auto pPlayer = static_cast<C_NEO_Player*>(GetOwner()))
 	{
-		return pPlayer->IsCloaked();
+		return pPlayer->IsDrawnTransparent();
 	}
 
 	return BaseClass::UsesPowerOfTwoFrameBufferTexture();

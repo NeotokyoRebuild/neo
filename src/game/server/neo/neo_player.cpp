@@ -231,6 +231,9 @@ ConVar sv_neo_bot_cloak_detection_bonus_lighting("sv_neo_bot_cloak_detection_bon
 	"Bot cloak detection bonus for target being in a well lit area (scaled by light intensity ratio 0.0-1.0)", true, 0, true, 100);
 
 
+ConVar sv_neo_infinite_cloak("sv_neo_infinite_cloak", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Don't drain cloak", true, 0, true, 1);
+
+
 void CNEO_Player::RequestSetClass(int newClass)
 {
 	if (newClass < 0 || newClass >= NEO_CLASS_ENUM_COUNT)
@@ -3702,6 +3705,12 @@ void CNEO_Player::CloakPower_Update(void)
 
 bool CNEO_Player::CloakPower_Drain(float flPower)
 {
+	// NEO TODO (Adam) predict client side
+	if (sv_neo_infinite_cloak.GetBool())
+	{
+		return true;
+	}
+
 	m_HL2Local.m_cloakPower -= flPower;
 
 	if (m_HL2Local.m_cloakPower < 0.0)
