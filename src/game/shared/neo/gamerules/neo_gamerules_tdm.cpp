@@ -138,6 +138,8 @@ void CNEORulesTDM::Think()
 {
 #ifdef GAME_DLL
 	CGameRules::Think();
+	
+	UpdateFromGameConfig();
 
 	if (RoundStartFromIdleOrPausedThink())
 		return;

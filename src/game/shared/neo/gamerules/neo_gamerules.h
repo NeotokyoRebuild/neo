@@ -282,26 +282,26 @@ public:
 	virtual void ClientSpawned(edict_t* pPlayer) OVERRIDE;
 	
 	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info) override;
-	virtual void EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacker, const CTakeDamageInfo& info) {};
+	virtual void EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacker, const CTakeDamageInfo& info) {}
 	virtual void DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info) OVERRIDE;
 
 
 	virtual const char* GetGameName() { return NEO_GAME_NAME; }
-	virtual const char* GetGameTypeName(void) override;
+	virtual const char* GetGameTypeName(void) override = 0;
 	virtual int GetGameType(void) override;
-	virtual const char* GetGameDescription(void) override { return NEO_GAME_NAME; };
-	virtual bool GetTeamPlayEnabled() const override;
+	virtual const char* GetGameDescription(void) override { return NEO_GAME_NAME; }
+	virtual bool GetTeamPlayEnabled() const override { return true; }
+	virtual bool GetCompEnabled() const { return false; }
+	virtual bool GetCapPreventEnabled() const { return false; }
+	virtual bool CanChangeTeamClassLoadoutWhenAlive() const { return false; }
+	virtual bool CanRespawnAnyTime() const { return false; }
 	int GetHiddenHudElements();
 	int GetForcedTeam();
 	int GetForcedClass();
 	int GetForcedSkin();
 	int GetForcedWeapon();
 	bool IsCyberspace();
-	bool CanChangeTeamClassLoadoutWhenAlive(); // NEO TODO (Adam) Replace with gamemode specific check wherever used
-	bool CanRespawnAnyTime(); // NEO TODO (Adam) Replace with gamemode specific check wherever used
 	virtual int DefaultFOV(void) override;
-	
-	bool CheckShouldNotThink(); // NEO TODO (Adam) Remove
 	
 	const char *GetTeamClantag(const int iTeamNum) const;
     inline int roundNumber() const { return m_iRoundNumber; }
@@ -314,7 +314,7 @@ public:
 	virtual float GetRoundRemainingTime() const;
 	float GetRoundRemainingTime(float flGameTypeRoundTimeLimit) const;
 	float GetOverTime(float flRoundTimeLimit, float flOvertimeBaseAmount, float flOvertimeGrace, float flGraceDecay) const;
-	virtual void CheckOvertime() {};
+	virtual void CheckOvertime() {}
 	virtual bool CheckGameOver(void) OVERRIDE; // NEO TODO (Adam) this changes map as a side effect, better name? Also is this called client side anywhere?
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
@@ -504,7 +504,6 @@ private:
 	CNetworkVar(int, m_iForcedSkin);
 	CNetworkVar(int, m_iForcedWeapon);
 	CNetworkVar(bool, m_bCyberspaceLevel);
-	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 	CNetworkVar(bool, m_bIsMatchPoint);
 	CNetworkVar(bool, m_bIsDoOrDie);

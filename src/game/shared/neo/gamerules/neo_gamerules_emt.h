@@ -31,10 +31,14 @@ public:
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
 
-
-	
+	virtual int GetGameType() override final { return NEO_GAME_TYPE_EMT; }
+	virtual const char* GetGameTypeName() override { return "EMT"; }
 	virtual float GetRoundRemainingTime() const override final;
-	virtual bool GetTeamPlayEnabled() const override { return true; };
+	virtual bool GetTeamPlayEnabled() const override { return true; }
+	virtual bool GetCompEnabled() const override final { return false; }
+	virtual bool GetCapPreventEnabled() const override final { return false; }
+	virtual bool CanChangeTeamClassLoadoutWhenAlive() const override final { return true; }
+	virtual bool CanRespawnAnyTime() const override final { return true; }
 
 #ifdef GAME_DLL
 	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) override final;

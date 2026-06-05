@@ -124,6 +124,8 @@ void CNEORulesATK::Think()
 {
 #ifdef GAME_DLL
 	CGameRules::Think();
+	
+	UpdateFromGameConfig();
 
 	if (RoundStartFromIdleOrPausedThink())
 		return;

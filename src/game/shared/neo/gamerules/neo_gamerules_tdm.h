@@ -27,8 +27,14 @@ public:
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
 	
+	virtual int GetGameType() override final { return NEO_GAME_TYPE_TDM; }
+	virtual const char* GetGameTypeName() override { return "TDM"; }
 	const char* GetGameDescription() override { return "Team Deathmatch"; }
-	virtual bool GetTeamPlayEnabled() const override { return true; };
+	virtual bool GetTeamPlayEnabled() const override { return true; }
+	virtual bool GetCompEnabled() const override final { return false; }
+	virtual bool GetCapPreventEnabled() const override final { return false; }
+	virtual bool CanChangeTeamClassLoadoutWhenAlive() const override final { return false; }
+	virtual bool CanRespawnAnyTime() const override final { return true; }
 
 	virtual float GetRoundRemainingTime() const override final;
 #ifdef GAME_DLL

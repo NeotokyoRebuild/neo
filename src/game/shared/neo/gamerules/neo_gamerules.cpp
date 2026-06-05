@@ -224,8 +224,6 @@ void CNEOGameRulesProxy::OnDataChanged(DataUpdateType_t updateType)
 }
 #endif // CLIENT_DLL
 
-REGISTER_GAMERULES_CLASS( CNEORules );
-
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 // NEO TODO (Rain): NEO specific game modes var (CTG/TDM/...)
 #ifdef CLIENT_DLL
@@ -233,7 +231,6 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropTime(RECVINFO(m_flNeoRoundStartTime)),
 	RecvPropTime(RECVINFO(m_flPauseEnd)),
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
-	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
 	RecvPropBool(RECVINFO(m_bIsMatchPoint)),
 	RecvPropBool(RECVINFO(m_bIsDoOrDie)),
@@ -267,7 +264,6 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropTime(SENDINFO(m_flNeoRoundStartTime)),
 	SendPropTime(SENDINFO(m_flPauseEnd)),
 	SendPropInt(SENDINFO(m_nRoundStatus), NumBitsForCount(RoundStatusTotal), SPROP_UNSIGNED),
-	SendPropInt(SENDINFO(m_nGameTypeSelected), NumBitsForCount(NEO_GAME_TYPE__TOTAL), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropBool(SENDINFO(m_bIsMatchPoint)),
 	SendPropBool(SENDINFO(m_bIsDoOrDie)),
@@ -325,27 +321,6 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector(16, 16, 60)	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
 
-struct NeoGameTypeSettings {
-	const char* gameTypeName;
-	bool respawns;
-	bool neoRulesThink;
-	bool changeTeamClassLoadoutWhenAlive;
-	bool comp;
-	bool capPrevent;
-};
-
-const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
-//						gametypeName	respawns	neoRulesThink	changeTeamClassLoadoutWhenAlive	comp	capPrevent
-/*NEO_GAME_TYPE_TDM*/	{"TDM",			true,		true,			false,							false,	false},
-/*NEO_GAME_TYPE_CTG*/	{"CTG",			false,		true,			false,							true,	true},
-/*NEO_GAME_TYPE_VIP*/	{"VIP",			false,		true,			false,							true,	true},
-/*NEO_GAME_TYPE_DM*/	{"DM",			true,		true,			false,							false,	false},
-/*NEO_GAME_TYPE_EMT*/	{"EMT",			true,		false,			true,							false,	false},
-/*NEO_GAME_TYPE_TUT*/	{"TUT",			true,		false,			false,							false,	false},
-/*NEO_GAME_TYPE_JGR*/	{"JGR",			true,		true,			false,							true,	false},
-/*NEO_GAME_TYPE_ATK*/	{"ATK",			false,		true,			false,							true,	false},
-};
-
 const char* NEO_GAME_TYPE_CLASS_NAMES[NEO_GAME_TYPE__TOTAL] =
 {
 	"CNEORulesTDM",
@@ -401,40 +376,9 @@ const char* NEO_GAME_TYPE_CLASS_NAMES[NEO_GAME_TYPE__TOTAL] =
 		// convert a velocity in ft/sec and a mass in grains to an impulse in kg in/s
 #define BULLET_IMPULSE(grains, ftpersec)	((ftpersec)*12*BULLET_MASS_GRAINS_TO_KG(grains)*BULLET_IMPULSE_EXAGGERATION)
 
-extern ConVar neo_score_limit;
-extern ConVar neo_round_limit;
-extern ConVar sv_neo_ctg_score_limit;
-extern ConVar sv_neo_ctg_round_limit;
+ConVar sv_neo_round_sudden_death("sv_neo_round_sudden_death", "1", FCVAR_REPLICATED, "If the game is past the round limit, go into sudden death where the match won't end until a team wins.", true, 0.0f, true, 1.0f);
 
-static void neoScoreLimitLegacyCallback(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	Warning("Using legacy neo_score_limit cvar. Use sv_neo_[gamemode]_score_limit instead!\n");
-	sv_neo_ctg_score_limit.SetValue(neo_score_limit.GetInt());
-}
-
-static void neoRoundLimitLegacyCallback(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	Warning("Using legacy neo_round_limit cvar. Use sv_neo_[gamemode]_round_limit instead!\n");
-	sv_neo_ctg_round_limit.SetValue(neo_round_limit.GetInt());
-}
-
-ConVar neo_score_limit("neo_score_limit", "7", FCVAR_REPLICATED | FCVAR_HIDDEN, "(Legacy) Neo score limit.", true, 0.0f, true, 99.0f
-#ifdef GAME_DLL
-	, neoScoreLimitLegacyCallback
-#endif
-);
-ConVar neo_round_limit("neo_round_limit", "0", FCVAR_REPLICATED | FCVAR_HIDDEN, "(Legacy) Max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f
-#ifdef GAME_DLL
-	, neoRoundLimitLegacyCallback
-#endif
-);
-
-ConVar neo_round_sudden_death("neo_round_sudden_death", "1", FCVAR_REPLICATED, "If neo_round_limit is not 0 and round is past "
-	"neo_round_limit, go into sudden death where match won't end until a team won.", true, 0.0f, true, 1.0f);
-
-
-ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
-	true, 0.0f, true, 1.0f);
+ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Allow equipping any loadout regardless of player XP.", true, 0.0f, true, 1.0f);
 
 #ifdef CLIENT_DLL
 extern ConVar neo_fov;
@@ -604,7 +548,6 @@ CNEORules::CNEORules()
 		}
 	}
 
-	m_nGameTypeSelected = NEO_GAME_TYPE_CTG;
 #endif
 	m_iHiddenHudElements = 0;
 	m_iForcedTeam = -1;
@@ -866,24 +809,7 @@ void CNEORules::UpdateFromGameConfig()
 		m_bCyberspaceLevel = pEntGameCfg->m_Cyberspace;
 	}
 }
-#endif
 
-
-// Add a gamemode for background maps
-bool CNEORules::CheckShouldNotThink()
-{
-#ifdef GAME_DLL
-	if (gpGlobals->eLoadType == MapLoad_Background || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].neoRulesThink)
-#else // CLIENT_DLL
-	if (engine->IsLevelMainMenuBackground() || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].neoRulesThink)
-#endif // GAME_DLL || CLIENT_DLL
-	{
-		return true;
-	}
-	return false;
-}
-
-#ifdef GAME_DLL
 bool CNEORules::RoundStartFromIdleOrPausedThink()
 {
 	UpdateFromGameConfig();
@@ -1208,6 +1134,8 @@ void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
 	CGameRules::Think();
+
+	UpdateFromGameConfig();
 
 	if (RoundStartFromIdleOrPausedThink())
 		return;
@@ -1759,7 +1687,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 		return;
 	}
 
-	const bool bNonCmdGameType = !NEO_GAME_TYPE_SETTINGS[GetGameType()].comp;
+	const bool bNonCmdGameType = !GetCompEnabled();
 
 	if (sv_neo_readyup_lobby.GetBool() && (bNonCmdGameType || m_nRoundStatus != NeoRoundStatus::Idle))
 	{
@@ -3073,7 +3001,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				if (teamJinrai->GetRoundsWon() == teamNSF->GetRoundsWon())
 				{
 					// Sudden death - Don't end the match until we get a winning team
-					if (neo_round_sudden_death.GetBool())
+					if (sv_neo_round_sudden_death.GetBool())
 					{
 						V_sprintf_safe(victoryMsg, "Next round: Sudden death!\n");
 						isSuddenDeath = true;
@@ -3276,7 +3204,7 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 #ifdef GAME_DLL
 void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 {
-	if (!NEO_GAME_TYPE_SETTINGS[GetGameType()].capPrevent)
+	if (!GetCapPreventEnabled())
 	{
 		return;
 	}
@@ -3701,14 +3629,7 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 
 	BaseClass::ClientDisconnected(pClient);
 }
-#endif
 
-bool CNEORules::GetTeamPlayEnabled() const
-{
-	return true;
-}
-
-#ifdef GAME_DLL
 bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
 	CNEO_Player* pNeoPlayer = ToNEOPlayer(pPlayer);
@@ -3793,7 +3714,8 @@ NeoRoundStatus CNEORules::GetRoundStatus() const
 
 int CNEORules::GetGameType(void)
 {
-	return m_nGameTypeSelected;
+	Assert(false);
+	return 0;
 }
 
 int CNEORules::GetHiddenHudElements(void)
@@ -3824,21 +3746,6 @@ int CNEORules::GetForcedWeapon(void)
 bool CNEORules::IsCyberspace()
 {
 	return m_bCyberspaceLevel;
-}
-
-inline const char* CNEORules::GetGameTypeName(void)
-{
-	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
-}
-
-bool CNEORules::CanChangeTeamClassLoadoutWhenAlive()
-{
-	return NEO_GAME_TYPE_SETTINGS[GetGameType()].changeTeamClassLoadoutWhenAlive;
-}
-
-bool CNEORules::CanRespawnAnyTime()
-{
-	return NEO_GAME_TYPE_SETTINGS[GetGameType()].respawns;
 }
 
 float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
