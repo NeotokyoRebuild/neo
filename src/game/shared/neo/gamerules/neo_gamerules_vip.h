@@ -38,7 +38,7 @@ public:
 	virtual void SetGameRelatedVars() override final;
 	virtual const int GetScoreLimit() const override final;
 	virtual const int GetRoundLimit() const override final;
-	virtual void RoundTimeout() override final;
+	//virtual void RoundTimeout() override final;
 #endif // GAME_DLL
 	virtual void Think() override final;
 };

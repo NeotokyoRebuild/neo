@@ -91,6 +91,8 @@ void CNEORulesEMT::RoundTimeout()
 void CNEORulesEMT::Think()
 {
 #ifdef GAME_DLL
+	CGameRules::Think();
+
 	UpdateFromGameConfig();
 #endif // GAME_DLL
 }

@@ -103,6 +103,8 @@ const int CNEORulesVIP::GetRoundLimit() const
 void CNEORulesVIP::Think()
 {
 #ifdef GAME_DLL
+	CGameRules::Think();
+
 	if (RoundStartFromIdleOrPausedThink())
 		return;
 
@@ -116,8 +118,9 @@ void CNEORulesVIP::Think()
 	GameOverThink();
 	
 	CheckOvertime();
-
-	CHL2MPRules::Think();
+	
+	if (CHL2MPRulesThink())
+		return;
 
 	TeamDamageThink();
 

@@ -346,6 +346,18 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 /*NEO_GAME_TYPE_ATK*/	{"ATK",			false,		true,			false,							true,	false},
 };
 
+const char* NEO_GAME_TYPE_CLASS_NAMES[NEO_GAME_TYPE__TOTAL] =
+{
+	"CNEORulesTDM",
+	"CNEORulesCTG",
+	"CNEORulesVIP",
+	"CNEORulesDM",
+	"CNEORulesEMT",
+	"CNEORulesTUT",
+	"CNEORulesJGR",
+	"CNEORulesATK"
+};
+
 #ifdef CLIENT_DLL
 	void RecvProxy_NEORules( const RecvProp *pProp, void **pOut,
 		void *pData, int objectID )
@@ -1155,9 +1167,48 @@ void CNEORules::CheckWinByElimination()
 #endif // GAME_DLL
 
 COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
+bool CNEORules::CHL2MPRulesThink()
+{
+#ifdef GAME_DLL
+	if ( g_fGameOver )   // someone else quit the game already
+	{
+		// check to see if we should change levels now
+		if ( m_flIntermissionEndTime < gpGlobals->curtime )
+		{
+			if ( !m_bChangelevelDone )
+			{
+				ChangeLevel(); // intermission is over
+				m_bChangelevelDone = true;
+			}
+		}
+
+		return true;
+	}
+
+	if ( GetMapRemainingTime() < 0 )
+	{
+		GoToIntermission();
+		return true;
+	}
+	
+	if ( gpGlobals->curtime > m_tmNextPeriodicThink )
+	{		
+		CheckAllPlayersReady();
+		CheckRestartGame();
+		m_tmNextPeriodicThink = gpGlobals->curtime + 1.0;
+	}
+	
+	ManageObjectRelocation();
+#endif // GAME_DLL
+
+	return false;
+}
+
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
+	CGameRules::Think();
+
 	if (RoundStartFromIdleOrPausedThink())
 		return;
 
@@ -1172,7 +1223,8 @@ void CNEORules::Think(void)
 	
 	CheckOvertime();
 
-	BaseClass::Think();
+	if (CHL2MPRulesThink())
+		return;
 
 	TeamDamageThink();
 
@@ -2284,12 +2336,10 @@ bool CNEORules::IsRoundOn() const
 {
 	switch (m_nRoundStatus)
 	{
-	case NeoRoundStatus::Idle:
-	case NeoRoundStatus::Warmup:
 	case NeoRoundStatus::PreRoundFreeze:
+	case NeoRoundStatus::RoundLive:
 	case NeoRoundStatus::Overtime:
 	case NeoRoundStatus::PostRound:
-	case NeoRoundStatus::Countdown:
 		return true;
 	}
 	return false;
@@ -3655,7 +3705,7 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 
 bool CNEORules::GetTeamPlayEnabled() const
 {
-	return m_nGameTypeSelected != NEO_GAME_TYPE_DM;
+	return true;
 }
 
 #ifdef GAME_DLL

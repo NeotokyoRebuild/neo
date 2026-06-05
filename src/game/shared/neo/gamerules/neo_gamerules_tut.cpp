@@ -94,6 +94,8 @@ void CNEORulesTUT::RoundTimeout()
 void CNEORulesTUT::Think()
 {
 #ifdef GAME_DLL
+	CGameRules::Think();
+
 	UpdateFromGameConfig();
 
 	{

@@ -4,7 +4,7 @@
 #pragma once
 #endif
 
-#include "neo_gamerules.h"
+#include "gamerules/neo_gamerules.h"
 
 class C_NEO_Player;
 

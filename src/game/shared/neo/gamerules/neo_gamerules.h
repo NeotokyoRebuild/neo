@@ -107,6 +107,8 @@ enum NeoGameType {
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
 
+extern const char* NEO_GAME_TYPE_CLASS_NAMES[NEO_GAME_TYPE__TOTAL];
+
 struct NeoGameTypeSettings;
 
 extern const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL];
@@ -205,6 +207,7 @@ public:
 	virtual void FireGameEvent(IGameEvent *event) OVERRIDE;
 	
 	virtual void Think() OVERRIDE;
+	bool CHL2MPRulesThink();
 
 	// This is the supposed encrypt key on NT, although it has its issues.
 	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
@@ -311,7 +314,7 @@ public:
 	virtual float GetRoundRemainingTime() const;
 	float GetRoundRemainingTime(float flGameTypeRoundTimeLimit) const;
 	float GetOverTime(float flRoundTimeLimit, float flOvertimeBaseAmount, float flOvertimeGrace, float flGraceDecay) const;
-	virtual void CheckOvertime();
+	virtual void CheckOvertime() {};
 	virtual bool CheckGameOver(void) OVERRIDE; // NEO TODO (Adam) this changes map as a side effect, better name? Also is this called client side anywhere?
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL

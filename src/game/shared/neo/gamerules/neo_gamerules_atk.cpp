@@ -123,6 +123,8 @@ void CNEORulesATK::RoundTimeout()
 void CNEORulesATK::Think()
 {
 #ifdef GAME_DLL
+	CGameRules::Think();
+
 	if (RoundStartFromIdleOrPausedThink())
 		return;
 
@@ -136,8 +138,9 @@ void CNEORulesATK::Think()
 	GameOverThink();
 	
 	CheckOvertime();
-
-	CHL2MPRules::Think();
+	
+	if (CHL2MPRulesThink())
+		return;
 
 	TeamDamageThink();
 

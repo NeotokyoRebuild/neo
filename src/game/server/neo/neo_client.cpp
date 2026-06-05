@@ -394,27 +394,5 @@ void GameStartFrame( void )
 //=========================================================
 void InstallGameRules()
 {
-	if (const CNEOGameConfig* pEntGameCfg = NEOGameConfig())
-	{
-		switch (pEntGameCfg->m_GameType)
-		{
-			case NEO_GAME_TYPE_TDM:
-				CreateGameRulesObject( "CNEORulesTDM" );
-				return;
-			case NEO_GAME_TYPE_CTG:
-			case NEO_GAME_TYPE_VIP:
-			case NEO_GAME_TYPE_DM:
-				break;
-			case NEO_GAME_TYPE_EMT:
-				CreateGameRulesObject( "CNEORules" );
-				return;
-			case NEO_GAME_TYPE_TUT:
-			case NEO_GAME_TYPE_JGR:
-			case NEO_GAME_TYPE_ATK:
-			default:
-				break;
-		}
-	}
-
-	CreateGameRulesObject( "CNEORules" );
+	CreateGameRulesObject( "CNEORulesEMT" );
 }

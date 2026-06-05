@@ -129,6 +129,8 @@ void CNEORulesCTG::RoundTimeout()
 void CNEORulesCTG::Think()
 {
 #ifdef GAME_DLL
+	CGameRules::Think();
+
 	if (RoundStartFromIdleOrPausedThink())
 		return;
 
@@ -142,8 +144,9 @@ void CNEORulesCTG::Think()
 	GameOverThink();
 	
 	CheckOvertime();
-
-	CHL2MPRules::Think();
+	
+	if (CHL2MPRulesThink())
+		return;
 
 	TeamDamageThink();
 

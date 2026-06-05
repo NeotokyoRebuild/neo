@@ -47,6 +47,16 @@ void CNEOGameConfig::Spawn()
 	{
 		m_OnCompetitive.FireOutput(nullptr, this);
 	}
+
+	// Create new gamerules object
+	{
+		for (int i = g_Teams.Count() - 1; i >= 0; i--)
+		{
+			UTIL_RemoveImmediate(g_Teams[i]);
+		}
+
+		CreateGameRulesObject(NEO_GAME_TYPE_CLASS_NAMES[m_GameType]);
+	}
 }
 
 // Inputs
