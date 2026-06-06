@@ -91,6 +91,22 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
 	if ( pFocus && pFocus->IsAlive() )
 	{
+		if ( bUpdateCallout )
+		{
+			IGameEvent *event = gameeventmanager->CreateEvent( "ghost_enemy_callout" );
+			if ( event )
+			{
+				event->SetInt( "userid", me->GetUserID() );
+				event->SetInt( "team", me->GetTeamNumber() );
+				event->SetInt( "targetid", pFocus->entindex() );
+				Vector pos = pFocus->GetAbsOrigin();
+				event->SetInt( "targetx", pos.x );
+				event->SetInt( "targety", pos.y );
+				event->SetInt( "targetz", pos.z );
+				gameeventmanager->FireEvent( event );
+			}
+		}
+
 		// Notify teammates to look at the enemy
 		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 		{
