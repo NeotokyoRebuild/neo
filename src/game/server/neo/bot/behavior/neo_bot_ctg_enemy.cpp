@@ -49,7 +49,8 @@ ActionResult< CNEOBot >	CNEOBotCtgEnemy::Update( CNEOBot *me, float interval )
 	// Investigate the ghost carrier's position
 	if ( m_repathTimer.IsElapsed() )
 	{
-		CNEOBotPathCompute( me, m_path, pGhostCarrier->GetAbsOrigin(), DEFAULT_ROUTE );
+		// FASTEST_ROUTE: don't waste chase time looking for cover
+		CNEOBotPathCompute( me, m_path, pGhostCarrier->GetAbsOrigin(), FASTEST_ROUTE );
 		m_repathTimer.Start( RandomFloat( 0.2f, 1.0f ) );
 	}
 	m_path.Update( me );
