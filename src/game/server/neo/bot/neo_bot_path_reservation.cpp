@@ -12,13 +12,13 @@ ConVar neo_bot_path_reservation_enable("neo_bot_path_reservation_enable", "1", F
     "Enable the bot path reservation system.", true, 0, true, 1);
 
 ConVar neo_bot_path_reservation_duration("neo_bot_path_reservation_duration", "30.0", FCVAR_NONE,
-    "How long a path reservation lasts, in seconds.", true, 1, true, 1000000);
+    "How long a path reservation lasts, in seconds.", true, 1, false, 0);
 
-ConVar neo_bot_path_reservation_distance("neo_bot_path_reservation_distance", "10000", FCVAR_NONE,
-    "How far along the path to reserve, in Hammer units.", true, 0, true, 1000000);
+ConVar neo_bot_path_reservation_distance("neo_bot_path_reservation_distance", "100000", FCVAR_NONE,
+    "How far along the path to reserve, in Hammer units.", true, 0, false, 0);
 
-ConVar neo_bot_path_reservation_penalty("neo_bot_path_reservation_penalty", "100", FCVAR_NONE,
-    "Pathing cost penalty for a reserved area.", true, 0, true, 1000000);
+ConVar neo_bot_path_reservation_penalty("neo_bot_path_reservation_penalty", "10000", FCVAR_NONE,
+    "Pathing cost penalty for a reserved area.", true, 0, false, 0);
 
 ConVar neo_bot_path_reservation_friendly_penalty_enable("neo_bot_path_reservation_friendly_penalty_enable", "1", FCVAR_NONE,
     "Whether to update or retrieve the area friendly reservation penalty.", true, 0, true, 1);
