@@ -99,7 +99,7 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 				event->SetInt( "userid", me->GetUserID() );
 				event->SetInt( "team", me->GetTeamNumber() );
 				event->SetInt( "targetid", pFocus->entindex() );
-				Vector pos = pFocus->GetAbsOrigin();
+				const Vector& pos = pFocus->GetAbsOrigin();
 				event->SetInt( "targetx", pos.x );
 				event->SetInt( "targety", pos.y );
 				event->SetInt( "targetz", pos.z );
