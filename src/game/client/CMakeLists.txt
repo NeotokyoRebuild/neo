@@ -679,6 +679,10 @@ target_sources_grouped(
     weapons_resource.cpp
 )
 
+set_source_files_properties(cdll_client_int.cpp PROPERTIES
+    COMPILE_OPTIONS "-D_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX};-D_EXTERNAL_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}"
+)
+
 if(OS_LINUX)
     target_sources_grouped(
         TARGET client

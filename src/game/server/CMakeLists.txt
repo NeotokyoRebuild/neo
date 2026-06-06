@@ -761,6 +761,10 @@ target_sources_grouped(
     world.h
 )
 
+set_source_files_properties(gameinterface.cpp PROPERTIES
+    COMPILE_OPTIONS "-D_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX};-D_EXTERNAL_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}"
+)
+
 if(OS_LINUX)
     target_sources_grouped(
         TARGET server
