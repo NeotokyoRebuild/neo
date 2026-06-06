@@ -143,46 +143,51 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 			cost += CNEOBotPathReservations()->GetAreaAvoidPenalty(area->GetID());
 
 			// Weapon range penalties
-			CNEOBaseCombatWeapon* myWeapon = ToNEOWeapon(m_me->GetActiveWeapon());
-			const int nWeaponBits = myWeapon->GetNeoWepBits();
-			if (myWeapon && (nWeaponBits & NEO_WEP_FIREARM))
+			auto* myWeapon = assert_cast<CNEOBaseCombatWeapon*>(m_me->GetActiveWeapon());
+			if (myWeapon)
 			{
-				constexpr int nShotgunBits = NEO_WEP_AA13 | NEO_WEP_SUPA7;
-				constexpr int nBattleRifleBits = NEO_WEP_M41 | NEO_WEP_M41_S;
-				constexpr int nPistolCaliberBits = NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA
-					| NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_JITTE | NEO_WEP_JITTE_S | NEO_WEP_SRM | NEO_WEP_SRM_S;
+				const int nWeaponBits = myWeapon->GetNeoWepBits();
+				if (nWeaponBits & NEO_WEP_FIREARM)
+				{
+					const int visibleAreaCount = area->GetPotentiallyVisibleAreaCount();
+					if (visibleAreaCount > 0)
+					{
+						constexpr int nShotgunBits = NEO_WEP_AA13 | NEO_WEP_SUPA7;
+						constexpr int nBattleRifleBits = NEO_WEP_M41 | NEO_WEP_M41_S;
+						constexpr int nPistolCaliberBits = NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA
+							| NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_JITTE | NEO_WEP_JITTE_S | NEO_WEP_SRM | NEO_WEP_SRM_S;
 
-				const int visibleAreaCount = area->GetPotentiallyVisibleAreaCount();
-
-				if (nWeaponBits & nPistolCaliberBits)
-				{
-					// Weapons that don't have max first shot accuracy
-					const float exposurePenalty = neo_bot_path_penalty_exposure_pistol.GetFloat();
-					dist += visibleAreaCount * exposurePenalty;
-				}
-				else if (nWeaponBits & nShotgunBits)
-				{
-					// Weapons that have spread that can't hit long range targets
-					const float exposurePenalty = neo_bot_path_penalty_exposure_shotgun.GetFloat();
-					dist += visibleAreaCount * exposurePenalty;
-				}
-				else if (nWeaponBits & nBattleRifleBits)
-				{
-					// Weapons that benefit from medium sightlines that can see many NavAreas
-					const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_battle_rifle.GetFloat();
-					dist += baseline_penalty / visibleAreaCount;
-				}
-				else if (nWeaponBits & NEO_WEP_SCOPEDWEAPON)
-				{
-					// Weapons that benefit from long sightlines that can see many NavAreas
-					const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_scoped.GetFloat();
-					dist += baseline_penalty / visibleAreaCount;
-				}
-				else
-				{
-					// Generally avoiding exposed areas when traversing a wide open area
-					const float exposurePenalty = neo_bot_path_penalty_exposure_base.GetFloat();
-					dist += visibleAreaCount * exposurePenalty;
+						if (nWeaponBits & nPistolCaliberBits)
+						{
+							// Weapons that don't have max first shot accuracy
+							const float exposurePenalty = neo_bot_path_penalty_exposure_pistol.GetFloat();
+							cost += visibleAreaCount * exposurePenalty;
+						}
+						else if (nWeaponBits & nShotgunBits)
+						{
+							// Weapons that have spread that can't hit long range targets
+							const float exposurePenalty = neo_bot_path_penalty_exposure_shotgun.GetFloat();
+							cost += visibleAreaCount * exposurePenalty;
+						}
+						else if (nWeaponBits & nBattleRifleBits)
+						{
+							// Weapons that benefit from medium sightlines that can see many NavAreas
+							const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_battle_rifle.GetFloat();
+							cost += baseline_penalty / visibleAreaCount;
+						}
+						else if (nWeaponBits & NEO_WEP_SCOPEDWEAPON)
+						{
+							// Weapons that benefit from long sightlines that can see many NavAreas
+							const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_scoped.GetFloat();
+							cost += baseline_penalty / visibleAreaCount;
+						}
+						else
+						{
+							// Generally avoiding exposed areas when traversing a wide open area
+							const float exposurePenalty = neo_bot_path_penalty_exposure_base.GetFloat();
+							cost += visibleAreaCount * exposurePenalty;
+						}
+					}
 				}
 			}
 
