@@ -8,6 +8,8 @@
 #include "neo_ghost_cap_point.h"
 #include "weapons/weapon_ghost.h"
 
+extern ConVar sv_neo_grenade_blast_radius;
+
 //---------------------------------------------------------------------------------------------
 CNEOBotCtgEscort::CNEOBotCtgEscort( void ) : 
 	m_role( ROLE_SCREEN ),
@@ -86,6 +88,12 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 	{
 		m_lostSightOfCarrierTimer.Invalidate();
 
+		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
+		if ( threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
+		{
+			return SuspendFor( new CNEOBotAttack, "Breaking away from ghoster to engage threat" );
+		}
+
 		if ( !m_bHasGoal )
 		{
 			// Asymmetric defense: No goal cap zone, so defend the carrier.
@@ -131,10 +139,13 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 	}
 	else
 	{
+		const float flSafeRadius = sv_neo_grenade_blast_radius.GetFloat();
+		const float flSafeRadiusSq = flSafeRadius * flSafeRadius;
+
 		if ( m_role == ROLE_BODYGUARD )
 		{
 			// Dont crowd the carrier
-			if ( me->GetAbsOrigin().DistToSqr( pGhostCarrier->GetAbsOrigin() ) < ( 100.0f * 100.0f ) )
+			if ( me->GetAbsOrigin().DistToSqr( pGhostCarrier->GetAbsOrigin() ) < flSafeRadiusSq )
 			{
 				m_path.Invalidate();
 				m_chasePath.Invalidate();
@@ -160,8 +171,7 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 
 			// No active threats to carrier
 			float flDistToCarrierSq = me->GetAbsOrigin().DistToSqr( pGhostCarrier->GetAbsOrigin() );
-			constexpr float regroupDistanceSq = 300.0f * 300.0f;
-			if ( flDistToCarrierSq > regroupDistanceSq )
+			if ( flDistToCarrierSq > flSafeRadiusSq )
 			{
 				// Regroup
 				CNEOBotPathUpdateChase( me, m_chasePath, pGhostCarrier, SAFEST_ROUTE );
