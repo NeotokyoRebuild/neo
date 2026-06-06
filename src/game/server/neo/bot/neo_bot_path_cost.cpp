@@ -5,7 +5,6 @@
 #include "neo_bot_locomotion.h"
 #include "nav_mesh.h"
 #include "neo_bot_path_reservation.h"
-#include "weapon_neobasecombatweapon.h"
 
 extern ConVar neo_bot_path_reservation_enable;
 
