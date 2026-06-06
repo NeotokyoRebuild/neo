@@ -2,7 +2,6 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/neo_bot_path_compute.h"
-#include "weapon_neobasecombatweapon.h"
 #include "neo_player_shared.h"
 #include "nav_mesh.h"
 
@@ -22,12 +21,7 @@ bool IsUndroppablePrimary( CBaseCombatWeapon *pPrimary )
 		return false;
 	}
 
-	CNEOBaseCombatWeapon *pNeoWep = ToNEOWeapon( pPrimary );
-	if ( !pNeoWep )
-	{
-		return false;
-	}
-
+	auto *pNeoWep = assert_cast<CNEOBaseCombatWeapon *>( pPrimary );
 	const NEO_WEP_BITS_UNDERLYING_TYPE wepBits = pNeoWep->GetNeoWepBits();
 	return ( wepBits & NEO_WEP_BALC ) != 0;
 }
@@ -104,8 +98,8 @@ CBaseEntity *FindNearestPrimaryWeapon( CNEOBot *me, bool bAllowDropGhost, CNEOIg
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
 	if ( pPrimary )
 	{
-		CNEOBaseCombatWeapon *pNeoPrimary = ToNEOWeapon( pPrimary );
-		if ( pNeoPrimary && ( pNeoPrimary->GetNeoWepBits() & NEO_WEP_BALC ) )
+		auto *pNeoPrimary = assert_cast<CNEOBaseCombatWeapon *>( pPrimary );
+		if ( pNeoPrimary->GetNeoWepBits() & NEO_WEP_BALC )
 		{
 			// can't switch these weapons
 			return nullptr;
@@ -133,11 +127,8 @@ CBaseEntity *FindNearestPrimaryWeapon( CNEOBot *me, bool bAllowDropGhost, CNEOIg
 	{
 		myPrefRank = BOT_WEP_PREF_RANK_UNPREFERRED;
 		bHasReserveAmmo = pPrimary->GetPrimaryAmmoCount() > 0;
-		CNEOBaseCombatWeapon *pMyNeoWep = ToNEOWeapon( pPrimary );
-		if ( pMyNeoWep )
-		{
-			myPrefRank = GetBotWeaponPreferenceRank( me, pMyNeoWep->GetNeoWepBits() );
-		}
+		auto *pMyNeoWep = assert_cast<CNEOBaseCombatWeapon *>( pPrimary );
+		myPrefRank = GetBotWeaponPreferenceRank( me, pMyNeoWep->GetNeoWepBits() );
 	}
 
 	// For checking if weapon candidate is in PVS of me
@@ -159,8 +150,8 @@ CBaseEntity *FindNearestPrimaryWeapon( CNEOBot *me, bool bAllowDropGhost, CNEOIg
 		CBaseCombatWeapon *pWeapon = pEntity->MyCombatWeaponPointer();
 		if ( pWeapon && !pWeapon->GetOwner() && pWeapon->HasAnyAmmo() && pWeapon->GetSlot() == 0 )
 		{
-			CNEOBaseCombatWeapon *pNeoWeapon = ToNEOWeapon( pWeapon );
-			if ( !pNeoWeapon || ( pNeoWeapon->GetNeoWepBits() & NEO_WEP_GHOST ) )
+			auto *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon *>( pWeapon );
+			if ( pNeoWeapon->GetNeoWepBits() & NEO_WEP_GHOST )
 			{
 				continue;
 			}
@@ -263,7 +254,7 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::OnStart( CNEOBot *me, Action< CNEOBot
 		return Done("No valid replacement primary found");
 	}
 
-	CNEOBaseCombatWeapon *pNeoPrimary = ToNEOWeapon( pPrimary );
+	auto *pNeoPrimary = pPrimary ? assert_cast<CNEOBaseCombatWeapon *>( pPrimary ) : nullptr;
 	if ( pNeoPrimary && ( pNeoPrimary->GetNeoWepBits() & NEO_WEP_GHOST ) )
 	{
 		// Try to drop once, but sometimes the environment causes a bounce back
@@ -318,17 +309,15 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::Update( CNEOBot *me, float interval )
 	if ( pPrimary )
 	{
 		int myPrefRank = BOT_WEP_PREF_RANK_UNPREFERRED;
-		CNEOBaseCombatWeapon *pMyNeoWep = ToNEOWeapon( pPrimary );
-		if ( pMyNeoWep )
-		{
-			myPrefRank = GetBotWeaponPreferenceRank( me, pMyNeoWep->GetNeoWepBits() );
-		}
+		auto *pMyNeoWep = assert_cast<CNEOBaseCombatWeapon *>( pPrimary );
+		myPrefRank = GetBotWeaponPreferenceRank( me, pMyNeoWep->GetNeoWepBits() );
 
-		CNEOBaseCombatWeapon *pTargetNeoWep = ToNEOWeapon( m_hTargetWeapon.Get() );
-		if ( !pTargetNeoWep )
+		auto *pTargetWeapon = m_hTargetWeapon ? m_hTargetWeapon->MyCombatWeaponPointer() : nullptr;
+		if ( !pTargetWeapon )
 		{
 			return Done( "Target weapon is invalid or not a NEO weapon" );
 		}
+		auto *pTargetNeoWep = assert_cast<CNEOBaseCombatWeapon *>( pTargetWeapon );
 
 		const bool bIsUpgrade = IsWeaponPreferenceUpgrade( me, pTargetNeoWep, myPrefRank, pPrimary->GetPrimaryAmmoCount() > 0 );
 
