@@ -1,6 +1,10 @@
 add_library(client SHARED)
 
-set_target_properties(client PROPERTIES PREFIX "")
+set_target_properties(client PROPERTIES
+    PREFIX ""
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
 
 if(NEO_USE_SEPARATE_BUILD_INFO)
     split_debug_information(TARGET client)
@@ -299,15 +303,13 @@ if(NEO_BUILD_REPLAY)
     endif()
 endif()
 
-set(SOURCE_FILES_WITHOUT_PCH
+set(UNITY_SOURCE_FILES_WITHOUT_PCH
     ${CMAKE_SOURCE_DIR}/common/compiledcaptionswap.cpp
     ${CMAKE_SOURCE_DIR}/common/language.cpp
     ${CMAKE_SOURCE_DIR}/common/randoverride.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/interval.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/sheetsimulator.cpp
-    ${CMAKE_SOURCE_DIR}/public/tier0/memoverride.cpp
     ${CMAKE_SOURCE_DIR}/public/ScratchPadUtils.cpp
-    ${CMAKE_SOURCE_DIR}/public/bone_setup.cpp
     ${CMAKE_SOURCE_DIR}/public/client_class.cpp
     ${CMAKE_SOURCE_DIR}/public/collisionutils.cpp
     ${CMAKE_SOURCE_DIR}/public/crtmemdebug.cpp
@@ -321,7 +323,6 @@ set(SOURCE_FILES_WITHOUT_PCH
     ${CMAKE_SOURCE_DIR}/public/posedebugger.cpp
     ${CMAKE_SOURCE_DIR}/public/renamed_recvtable_compat.cpp
     ${CMAKE_SOURCE_DIR}/public/rope_physics.cpp
-    ${CMAKE_SOURCE_DIR}/public/scratchpad3d.cpp
     ${CMAKE_SOURCE_DIR}/public/sentence.cpp
     ${CMAKE_SOURCE_DIR}/public/simple_physics.cpp
     ${CMAKE_SOURCE_DIR}/public/stringregistry.cpp
@@ -329,53 +330,49 @@ set(SOURCE_FILES_WITHOUT_PCH
     ${CMAKE_SOURCE_DIR}/public/vallocator.cpp
     ${CMAKE_SOURCE_DIR}/public/vgui_controls/vgui_controls.cpp
     hud_lcd.cpp
-    in_mouse.cpp
     mumble.cpp
     rendertexture.cpp
 )
 
-target_sources_grouped(
-    TARGET client
-    NAME "Source Files"
-    FILES
+set_source_files_properties(
+    ${UNITY_SOURCE_FILES_WITHOUT_PCH}
+    PROPERTIES
+        UNITY_GROUP without_pch_client
+)
+
+set(SOURCE_FILES_WITHOUT_PCH
+    ${UNITY_SOURCE_FILES_WITHOUT_PCH}
+    in_mouse.cpp
+    ${CMAKE_SOURCE_DIR}/public/bone_setup.cpp
+    ${CMAKE_SOURCE_DIR}/public/tier0/memoverride.cpp
+    ${CMAKE_SOURCE_DIR}/public/scratchpad3d.cpp
+)
+
+set(UNITY_SOURCE_SHARED
     #${CMAKE_SOURCE_DIR}/game/shared/weapon_parse_default.cpp
-    ${CMAKE_SOURCE_DIR}/game/client/c_vote_controller.cpp
-    ${CMAKE_SOURCE_DIR}/game/client/c_vote_controller.h
-    ${CMAKE_SOURCE_DIR}/game/client/steamshare.cpp
-    ${CMAKE_SOURCE_DIR}/game/client/steamshare.h
-    ${CMAKE_SOURCE_DIR}/game/client/in_steamcontroller.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/EntityParticleTrail_Shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/GameStats.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/SoundEmitterSystem.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/Sprite.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/SpriteTrail.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/achievement_saverestore.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/achievement_saverestore.h
     ${CMAKE_SOURCE_DIR}/game/shared/achievementmgr.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/achievementmgr.h
-    ${CMAKE_SOURCE_DIR}/game/shared/achievements_and_stats_interface.h
     ${CMAKE_SOURCE_DIR}/game/shared/achievements_hlx.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/activitylist.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/ammodef.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/animation.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/base_playeranimstate.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseachievement.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/baseachievement.h
     ${CMAKE_SOURCE_DIR}/game/shared/basecombatcharacter_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/basecombatweapon_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseentity_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.h
     ${CMAKE_SOURCE_DIR}/game/shared/baseparticleentity.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseplayer_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.h
     ${CMAKE_SOURCE_DIR}/game/shared/baseviewmodel_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/beam_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/cam_thirdperson.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/cam_thirdperson.h
     ${CMAKE_SOURCE_DIR}/game/shared/collisionproperty.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/death_pose.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/debugoverlay_shared.cpp
@@ -401,15 +398,12 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/multiplay_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/obstacle_pushaway.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/particle_parse.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/particle_parse.h
     ${CMAKE_SOURCE_DIR}/game/shared/particle_property.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/particle_property.h
     ${CMAKE_SOURCE_DIR}/game/shared/particlesystemquery.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/physics_main_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/physics_saverestore.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/physics_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/point_bonusmaps_accessor.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/point_bonusmaps_accessor.h
     ${CMAKE_SOURCE_DIR}/game/shared/point_posecontroller.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/precache_register.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/predictableid.cpp
@@ -436,11 +430,14 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/voice_status.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/secure_command_line.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/secure_command_line.h
-    ${CMAKE_SOURCE_DIR}/public/SoundParametersInternal.cpp
-    ${CMAKE_SOURCE_DIR}/public/bone_accessor.cpp
-    ${CMAKE_SOURCE_DIR}/public/haptics/haptic_msgs.cpp
-    ${SOURCE_FILES_WITHOUT_PCH}
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_SHARED}
+    PROPERTIES UNITY_GROUP shared_client
+)
+
+set(UNITY_SOURCE_SRC_CLIENT
     AnimateSpecificTextureProxy.cpp
     C_MaterialModifyControl.cpp
     C_WaterLODControl.cpp
@@ -452,7 +449,6 @@ target_sources_grouped(
     WaterLODMaterialProxy.cpp
     WorldDimsProxy.cpp
     achievement_notification_panel.cpp
-    achievement_notification_panel.h
     alphamaterialproxy.cpp
     animatedentitytextureproxy.cpp
     animatedoffsettextureproxy.cpp
@@ -464,14 +460,11 @@ target_sources_grouped(
     bone_merge_cache.cpp
     c_ai_basehumanoid.cpp
     c_ai_basenpc.cpp
-    c_baseanimating.cpp
     c_baseanimatingoverlay.cpp
     c_basecombatcharacter.cpp
     c_basecombatweapon.cpp
     c_basedoor.cpp
-    c_baseentity.cpp
     c_baseflex.cpp
-    c_baseplayer.cpp
     c_baseviewmodel.cpp
     c_breakableprop.cpp
     c_colorcorrection.cpp
@@ -510,16 +503,11 @@ target_sources_grouped(
     c_point_camera.cpp
     c_point_commentary_node.cpp
     c_point_worldtext.cpp
-    c_point_worldtext.h
     c_props.cpp
-    c_props.h
     c_ragdoll_manager.cpp
-    c_rope.cpp
     c_rumble.cpp
-    c_sceneentity.cpp
     c_shadowcontrol.cpp
     c_slideshow_display.cpp
-    c_slideshow_display.h
     c_soundscape.cpp
     c_spotlight_end.cpp
     c_sprite.cpp
@@ -529,37 +517,27 @@ target_sources_grouped(
     c_tesla.cpp
     c_test_proxytoggle.cpp
     c_user_message_register.cpp
-    c_vehicle_choreo_generic.cpp
-    c_vehicle_jeep.cpp
     c_vguiscreen.cpp
     c_world.cpp
     camomaterialproxy.cpp
     cdll_bounded_cvars.cpp
-    cdll_bounded_cvars.h
-    cdll_client_int.cpp
     cdll_util.cpp
     cl_mat_stub.cpp
     classmap.cpp
     client_factorylist.cpp
     client_thinklist.cpp
     client_virtualreality.cpp
-    client_virtualreality.h
     clienteffectprecachesystem.cpp
     cliententitylist.cpp
     clientleafsystem.cpp
     clientmode_shared.cpp
-    clientshadowmgr.cpp
     clientsideeffects.cpp
     clientsideeffects_test.cpp
     clientsteamcontext.cpp
-    clientsteamcontext.h
     colorcorrectionmgr.cpp
-    commentary_modelviewer.cpp
-    commentary_modelviewer.h
     detailobjectsystem.cpp
     dummyproxy.cpp
     entityoriginmaterialproxy.cpp
-    flashlighteffect.cpp
     functionproxy.cpp
     fx_blood.cpp
     fx_cube.cpp
@@ -583,8 +561,6 @@ target_sources_grouped(
     hl2/hud_autoaim.cpp
     hl2/hud_filmdemo.cpp
     hl2/hud_hdrdemo.cpp
-    hltvcamera.cpp
-    hud.cpp
     hud_animationinfo.cpp
     hud_basechat.cpp
     hud_basetimer.cpp
@@ -597,11 +573,7 @@ target_sources_grouped(
     hud_numericdisplay.cpp
     hud_pdump.cpp
     hud_redraw.cpp
-    hud_vehicle.cpp
     hud_weapon.cpp
-    in_camera.cpp
-    in_joystick.cpp
-    in_main.cpp
     initializer.cpp
     interpolatedvar.cpp
     lampbeamproxy.cpp
@@ -620,7 +592,6 @@ target_sources_grouped(
     particles_attractor.cpp
     particles_ez.cpp
     particles_localspace.cpp
-    particles_new.cpp
     particles_simple.cpp
     perfvisualbenchmark.cpp
     physics.cpp
@@ -628,9 +599,7 @@ target_sources_grouped(
     physpropclientside.cpp
     playerandobjectenumerator.cpp
     playerspawncache.cpp
-    prediction.cpp
     proxyentity.cpp
-    proxyplayer.cpp
     proxypupil.cpp
     ragdoll.cpp
     recvproxy.cpp
@@ -638,14 +607,12 @@ target_sources_grouped(
     splinepatch.cpp
     spritemodel.cpp
     studio_stats.cpp
-    studio_stats.h
     text_message.cpp
     texturescrollmaterialproxy.cpp
     timematerialproxy.cpp
     toggletextureproxy.cpp
     train.cpp
     vgui_avatarimage.cpp
-    vgui_avatarimage.h
     vgui_basepanel.cpp
     vgui_bitmapbutton.cpp
     vgui_bitmapimage.cpp
@@ -656,27 +623,106 @@ target_sources_grouped(
     vgui_fpspanel.cpp
     vgui_game_viewport.cpp
     vgui_grid.cpp
-    vgui_int.cpp
     vgui_loadingdiscpanel.cpp
     vgui_messagechars.cpp
-    vgui_netgraphpanel.cpp
     vgui_schemevisualizer.cpp
     vgui_slideshow_display_screen.cpp
     vgui_video.cpp
     vgui_video_player.cpp
-    view.cpp
     view_beams.cpp
     view_effects.cpp
     view_scene.cpp
     viewangleanim.cpp
     viewdebug.cpp
-    viewdebug.h
     viewpostprocess.cpp
-    viewpostprocess.h
-    viewrender.cpp
     warp_overlay.cpp
-    weapon_selection.cpp
     weapons_resource.cpp
+
+    ${CMAKE_SOURCE_DIR}/common/steamid.cpp
+    # ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse_default.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.cpp
+    c_team_objectiveresource.cpp
+    c_team_train_watcher.cpp
+    hud_voicestatus.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_SRC_CLIENT}
+    PROPERTIES UNITY_GROUP src_client
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/client/c_vote_controller.cpp
+    ${CMAKE_SOURCE_DIR}/game/client/c_vote_controller.h
+    ${CMAKE_SOURCE_DIR}/game/client/steamshare.cpp
+    ${CMAKE_SOURCE_DIR}/game/client/steamshare.h
+    ${CMAKE_SOURCE_DIR}/game/client/in_steamcontroller.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/achievement_saverestore.h
+    ${CMAKE_SOURCE_DIR}/game/shared/achievementmgr.h
+    ${CMAKE_SOURCE_DIR}/game/shared/achievements_and_stats_interface.h
+    ${CMAKE_SOURCE_DIR}/game/shared/baseachievement.h
+    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.h
+    ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.h
+    ${CMAKE_SOURCE_DIR}/game/shared/cam_thirdperson.h
+    ${CMAKE_SOURCE_DIR}/game/shared/particle_parse.h
+    ${CMAKE_SOURCE_DIR}/game/shared/particle_property.h
+    ${CMAKE_SOURCE_DIR}/game/shared/point_bonusmaps_accessor.h
+    ${CMAKE_SOURCE_DIR}/game/shared/secure_command_line.h
+    ${UNITY_SOURCE_SHARED}
+    ${CMAKE_SOURCE_DIR}/game/shared/cam_thirdperson.cpp
+    ${CMAKE_SOURCE_DIR}/public/SoundParametersInternal.cpp
+    ${CMAKE_SOURCE_DIR}/public/bone_accessor.cpp
+    ${CMAKE_SOURCE_DIR}/public/haptics/haptic_msgs.cpp
+    ${SOURCE_FILES_WITHOUT_PCH}
+    achievement_notification_panel.h
+    c_point_worldtext.h
+    c_props.h
+    c_slideshow_display.h
+    cdll_bounded_cvars.h
+    client_virtualreality.h
+    clientsteamcontext.h
+    commentary_modelviewer.h
+    studio_stats.h
+    vgui_avatarimage.h
+    viewdebug.h
+    viewpostprocess.h
+
+    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.h
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.h
+    c_team_objectiveresource.h
+    c_team_train_watcher.h
+
+    ${UNITY_SOURCE_SRC_CLIENT}
+    c_baseanimating.cpp
+    c_baseentity.cpp
+    c_baseplayer.cpp
+    c_rope.cpp
+    c_sceneentity.cpp
+    c_vehicle_choreo_generic.cpp
+    c_vehicle_jeep.cpp
+    cdll_client_int.cpp
+    clientshadowmgr.cpp
+    commentary_modelviewer.cpp
+    flashlighteffect.cpp
+    hltvcamera.cpp
+    hud.cpp
+    hud_vehicle.cpp
+    in_camera.cpp
+    in_joystick.cpp
+    in_main.cpp
+    particles_new.cpp
+    prediction.cpp
+    proxyplayer.cpp
+    vgui_int.cpp
+    vgui_netgraphpanel.cpp
+    view.cpp
+    viewrender.cpp
+    weapon_selection.cpp
 )
 
 set_source_files_properties(cdll_client_int.cpp PROPERTIES
@@ -720,10 +766,7 @@ target_sources_grouped(
     sixense/in_sixense_gesture_bindings.h
 )
 
-target_sources_grouped(
-    TARGET client
-    NAME "Temporary Entities"
-    FILES
+set(UNITY_SOURCE_TEMPORARY_ENTITIES
     c_basetempentity.cpp
     c_effects.cpp
     c_impact_effects.cpp
@@ -789,24 +832,45 @@ target_sources_grouped(
     smoke_fog_overlay.cpp
 )
 
+set_source_files_properties(
+    ${UNITY_SOURCE_TEMPORARY_ENTITIES}
+    PROPERTIES UNITY_GROUP temporary_entities_client
+)
+
 target_sources_grouped(
     TARGET client
-    NAME "Game Controls"
+    NAME "Temporary Entities"
     FILES
+    ${UNITY_SOURCE_TEMPORARY_ENTITIES}
+)
+
+set(UNITY_SOURCE_GAMECONTROLS
     game_controls/ClientScoreBoardDialog.cpp
     game_controls/IconPanel.cpp
     game_controls/MapOverview.cpp
     game_controls/NavProgress.cpp
-    game_controls/SpectatorGUI.cpp
     game_controls/basemodel_panel.cpp
-    game_controls/basemodel_panel.h
     game_controls/basemodelpanel.cpp
-    game_controls/basemodelpanel.h
     game_controls/baseviewport.cpp
     game_controls/commandmenu.cpp
     game_controls/intromenu.cpp
     game_controls/teammenu.cpp
     game_controls/vguitextwindow.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_GAMECONTROLS}
+    PROPERTIES UNITY_GROUP gamecontrols_client
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Game Controls"
+    FILES
+    game_controls/basemodel_panel.h
+    game_controls/basemodelpanel.h
+    ${UNITY_SOURCE_GAMECONTROLS}
+    game_controls/SpectatorGUI.cpp
 )
 
 target_sources_grouped(
@@ -1410,68 +1474,32 @@ target_sources_grouped(
     game_controls/vguitextwindow.h
 )
 
-target_sources_grouped(
-    TARGET client
-    NAME "Source Files"
-    FILES
-    ${CMAKE_SOURCE_DIR}/common/steamid.cpp
-    # ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse_default.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.h
-    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.h
-    c_team_objectiveresource.cpp
-    c_team_objectiveresource.h
-    c_team_train_watcher.cpp
-    c_team_train_watcher.h
-    hud_voicestatus.cpp
-)
-
-target_sources_grouped(
-    TARGET client
-    NAME "Source Files\\HL2 DLL"
-    FILES
+set(UNITY_SOURCE_HL2DLL
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/basehlcombatweapon_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/citadel_effects_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_headcrabcanister_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_headcrabcanister_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_gamerules.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_shareddefs.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_usermessages.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.h
     ${CMAKE_SOURCE_DIR}/game/shared/script_intro_shared.cpp
     episodic/c_vort_charge_token.cpp
     episodic/episodic_screenspaceeffects.cpp
-    episodic/episodic_screenspaceeffects.h
     hl2/c_antlion_dust.cpp
     hl2/c_ar2_explosion.cpp
     hl2/c_barnacle.cpp
     hl2/c_barney.cpp
     hl2/c_basehelicopter.cpp
-    hl2/c_basehelicopter.h
     hl2/c_basehlcombatweapon.cpp
-    hl2/c_basehlcombatweapon.h
-    hl2/c_basehlplayer.cpp
-    hl2/c_basehlplayer.h
     hl2/c_citadel_effects.cpp
     hl2/c_corpse.cpp
-    hl2/c_corpse.h
     hl2/c_env_alyxtemp.cpp
     hl2/c_env_headcrabcanister.cpp
     hl2/c_env_starfield.cpp
     hl2/c_func_tankmortar.cpp
-    hl2/c_hl2_playerlocaldata.cpp
-    hl2/c_hl2_playerlocaldata.h
     hl2/c_info_teleporter_countdown.cpp
     hl2/c_npc_antlionguard.cpp
-    hl2/c_npc_combinegunship.cpp
     hl2/c_npc_manhack.cpp
     hl2/c_npc_rollermine.cpp
     hl2/c_plasma_beam_node.cpp
     hl2/c_prop_combine_ball.cpp
-    hl2/c_prop_combine_ball.h
     hl2/c_rotorwash.cpp
     hl2/c_script_intro.cpp
     hl2/c_strider.cpp
@@ -1481,7 +1509,6 @@ target_sources_grouped(
     hl2/c_vehicle_airboat.cpp
     hl2/c_vehicle_cannon.cpp
     hl2/c_vehicle_crane.cpp
-    hl2/c_vehicle_crane.h
     hl2/c_vehicle_prisoner_pod.cpp
     hl2/c_weapon__stubs_hl2.cpp
     hl2/c_weapon_crossbow.cpp
@@ -1490,7 +1517,6 @@ target_sources_grouped(
     hl2/fx_hl2_impacts.cpp
     hl2/fx_hl2_tracers.cpp
     hl2/hl2_clientmode.cpp
-    hl2/hl_in_main.cpp
     hl2/hl_prediction.cpp
     hl2/hud_ammo.cpp
     hl2/hud_battery.cpp
@@ -1501,30 +1527,69 @@ target_sources_grouped(
     hl2/hud_poisondamageindicator.cpp
     hl2/hud_quickinfo.cpp
     hl2/hud_suitpower.cpp
-    hl2/hud_suitpower.h
-    hl2/hud_weaponselection.cpp
     hl2/hud_zoom.cpp
     hl2/shieldproxy.cpp
     hl2/vgui_rootpanel_hl2.cpp
     hud_squadstatus.cpp
 )
 
+set_source_files_properties(
+    ${UNITY_SOURCE_HL2DLL}
+    PROPERTIES UNITY_GROUP hl2dll_client
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\HL2 DLL"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/citadel_effects_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_headcrabcanister_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_shareddefs.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.h
+    episodic/episodic_screenspaceeffects.h
+    hl2/c_basehelicopter.h
+    hl2/c_basehlcombatweapon.h
+    hl2/c_basehlplayer.h
+    hl2/c_corpse.h
+    hl2/c_hl2_playerlocaldata.h
+    hl2/c_prop_combine_ball.h
+    hl2/c_vehicle_crane.h
+    hl2/hud_suitpower.h
+    hl2/c_hl2_playerlocaldata.cpp
+    hl2/c_basehlplayer.cpp
+    ${UNITY_SOURCE_HL2DLL}
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.cpp
+    hl2/c_npc_combinegunship.cpp
+    hl2/hl_in_main.cpp
+    hl2/hud_weaponselection.cpp
+)
+
+set(UNITY_SOURCE_NEO_SRC_CLIENT
+    neo/c_neo_message.cpp
+    neo/c_neo_npc_dummy.cpp
+    neo/c_neo_player.cpp
+    neo/c_neo_te_tocflash.cpp
+    neo/neo_fixup_glshaders.cpp
+    neo/c_neo_bloom_controller.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_SRC_CLIENT}
+    PROPERTIES UNITY_GROUP neo_src_client
+)
+
 target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO"
     FILES
-    neo/c_neo_message.cpp
     neo/c_neo_message.h
-    neo/c_neo_npc_dummy.cpp
     neo/c_neo_npc_dummy.h
-    neo/c_neo_player.cpp
     neo/c_neo_player.h
-    neo/c_neo_te_tocflash.cpp
     neo/c_neo_te_tocflash.h
-    neo/neo_fixup_glshaders.cpp
     neo/neo_fixup_glshaders.h
-    neo/c_neo_bloom_controller.cpp
     neo/c_neo_killer_damage_infos.h
+    ${UNITY_SOURCE_NEO_SRC_CLIENT}
 )
 
 target_sources_grouped(
@@ -1538,20 +1603,29 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/vendor/miniaudio.h
 )
 
+set(UNITY_SOURCE_NEO_GAMECONTROLS
+    neo/game_controls/neo_button.cpp
+    neo/game_controls/neo_classmenu.cpp
+    neo/game_controls/neo_image_button.cpp
+    neo/game_controls/neo_loadoutmenu.cpp
+    neo/game_controls/neo_teammenu.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_GAMECONTROLS}
+    PROPERTIES UNITY_GROUP neo_gamecontrols_client
+)
+
 target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO\\Game_Controls"
     FILES
-    neo/game_controls/neo_button.cpp
     neo/game_controls/neo_button.h
-    neo/game_controls/neo_classmenu.cpp
     neo/game_controls/neo_classmenu.h
-    neo/game_controls/neo_image_button.cpp
     neo/game_controls/neo_image_button.h
-    neo/game_controls/neo_loadoutmenu.cpp
     neo/game_controls/neo_loadoutmenu.h
-    neo/game_controls/neo_teammenu.cpp
     neo/game_controls/neo_teammenu.h
+    ${UNITY_SOURCE_NEO_GAMECONTROLS}
 )
 
 target_sources_grouped(
@@ -1563,181 +1637,208 @@ target_sources_grouped(
     neo/material_proxies/neo_matproxy_teamnum.cpp
 )
 
+set(UNITY_SOURCE_NEO_UI
+    neo/ui/neo_root.cpp
+    neo/ui/neo_root_serverbrowser.cpp
+    neo/ui/neo_root_settings.cpp
+    neo/ui/neo_loading.cpp
+    neo/ui/neo_ui.cpp
+    neo/ui/neo_theme.cpp
+    neo/ui/neo_utils.cpp
+    neo/ui/OverrideInterface.cpp
+    neo/ui/neo_hud_ammo.cpp
+    neo/ui/neo_hud_childelement.cpp
+    neo/ui/neo_hud_compass.cpp
+    neo/ui/neo_hud_damage_indicator.cpp
+    neo/ui/neo_hud_deathnotice.cpp
+    neo/ui/neo_hud_friendly_marker.cpp
+    neo/ui/neo_hud_game_event.cpp
+    neo/ui/neo_hud_ghost_beacons.cpp
+    neo/ui/neo_hud_ghost_cap_point.cpp
+    neo/ui/neo_hud_ghost_marker.cpp
+    neo/ui/neo_hud_killer_damage_info.cpp
+    neo/ui/neo_hud_ghost_uplink_state.cpp
+    neo/ui/neo_hud_health_thermoptic_aux.cpp
+    neo/ui/neo_hud_hint.cpp
+    neo/ui/neo_hud_message.cpp
+    neo/ui/neo_hud_player_ping.cpp
+    neo/ui/neo_hud_round_state.cpp
+    neo/ui/neo_hud_startup_sequence.cpp
+    neo/ui/neo_hud_worldpos_marker.cpp
+    neo/ui/neo_hud_worldpos_marker_generic.cpp
+    neo/ui/neo_scoreboard.cpp
+    neo/ui/neo_hud_context_hint.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_UI}
+    PROPERTIES UNITY_GROUP neo_ui_client
+)
+
 target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO\\UI"
     FILES
-    neo/ui/neo_root.cpp
     neo/ui/neo_root.h
-    neo/ui/neo_root_serverbrowser.cpp
     neo/ui/neo_root_serverbrowser.h
-    neo/ui/neo_root_settings.cpp
     neo/ui/neo_root_settings.h
-    neo/ui/neo_loading.cpp
     neo/ui/neo_loading.h
-    neo/ui/neo_ui.cpp
     neo/ui/neo_ui.h
-    neo/ui/neo_theme.cpp
     neo/ui/neo_theme.h
-    neo/ui/neo_utils.cpp
     neo/ui/neo_utils.h
     neo/ui/IOverrideInterface.h
-    neo/ui/OverrideInterface.cpp
-    neo/ui/neo_hud_ammo.cpp
     neo/ui/neo_hud_ammo.h
-    neo/ui/neo_hud_childelement.cpp
     neo/ui/neo_hud_childelement.h
-    neo/ui/neo_hud_compass.cpp
     neo/ui/neo_hud_compass.h
-    neo/ui/neo_hud_damage_indicator.cpp
-    neo/ui/neo_hud_deathnotice.cpp
-    neo/ui/neo_hud_friendly_marker.cpp
     neo/ui/neo_hud_friendly_marker.h
-    neo/ui/neo_hud_game_event.cpp
     neo/ui/neo_hud_game_event.h
-    neo/ui/neo_hud_ghost_beacons.cpp
     neo/ui/neo_hud_ghost_beacons.h
-    neo/ui/neo_hud_ghost_cap_point.cpp
     neo/ui/neo_hud_ghost_cap_point.h
-    neo/ui/neo_hud_ghost_marker.cpp
     neo/ui/neo_hud_ghost_marker.h
-    neo/ui/neo_hud_killer_damage_info.cpp
     neo/ui/neo_hud_killer_damage_info.h
-    neo/ui/neo_hud_ghost_uplink_state.cpp
     neo/ui/neo_hud_ghost_uplink_state.h
-    neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_health_thermoptic_aux.h
-    neo/ui/neo_hud_hint.cpp
     neo/ui/neo_hud_hint.h
-    neo/ui/neo_hud_message.cpp
     neo/ui/neo_hud_message.h
-    neo/ui/neo_hud_player_ping.cpp
     neo/ui/neo_hud_player_ping.h
-    neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_round_state.h
-    neo/ui/neo_hud_startup_sequence.cpp
     neo/ui/neo_hud_startup_sequence.h
-    neo/ui/neo_hud_worldpos_marker.cpp
     neo/ui/neo_hud_worldpos_marker.h
-    neo/ui/neo_hud_worldpos_marker_generic.cpp
     neo/ui/neo_hud_worldpos_marker_generic.h
-    neo/ui/neo_scoreboard.cpp
     neo/ui/neo_scoreboard.h
-    neo/ui/neo_hud_context_hint.cpp
     neo/ui/neo_hud_context_hint.h
+    ${UNITY_SOURCE_NEO_UI}
+)
+
+set(UNITY_SOURCE_NEO_SHARED
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_SHARED}
+    PROPERTIES UNITY_GROUP neo_shared_client
 )
 
 target_sources_grouped(
     TARGET client
     NAME "Source Files\\Shared"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.h
+    ${UNITY_SOURCE_NEO_SHARED}
+)
+
+set(UNITY_SOURCE_NEO_WEAPONS
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_knife.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_kyla.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41l.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41s.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_milso.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpn.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smokegrenade.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srm.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srms.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srs.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_supa7.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_tachi.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68c.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_WEAPONS}
+    PROPERTIES UNITY_GROUP neo_weapons_client
 )
 
 target_sources_grouped(
     TARGET client
     NAME "Source Files\\Shared\\Weapons"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_knife.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_knife.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_kyla.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_kyla.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41l.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41l.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41s.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41s.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_milso.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_milso.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpn.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpn.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smokegrenade.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smokegrenade.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srm.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srm.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srms.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srms.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srs.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srs.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_supa7.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_supa7.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_tachi.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_tachi.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68c.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68c.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_types.h
+    ${UNITY_SOURCE_NEO_WEAPONS}
 )
 
 if(NEO_BUILD_WEAPON_PBK56S)
@@ -1758,68 +1859,95 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.h
 )
 
+set(UNITY_SOURCE_HL2MP
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
+    hl2mp/c_hl2mp_player.cpp
+    hl2mp/c_te_hl2mp_shotgun_shot.cpp
+    hl2mp/clientmode_hl2mpnormal.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_HL2MP}
+    PROPERTIES UNITY_GROUP hl2mp_client
+)
+
 target_sources_grouped(
     TARGET client
     NAME "HL2MP"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
-    hl2mp/c_hl2mp_player.cpp
     hl2mp/c_hl2mp_player.h
-    hl2mp/c_te_hl2mp_shotgun_shot.cpp
-    hl2mp/clientmode_hl2mpnormal.cpp
     hl2mp/clientmode_hl2mpnormal.h
+    ${UNITY_SOURCE_HL2MP}
+)
+
+set(UNITY_SOURCE_HL2MP_WEAPONS
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_357.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crossbow.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crowbar.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasebasebludgeon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasehlmpcombatweapon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_physcannon.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_pistol.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_rpg.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_shotgun.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_slam.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_smg1.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_stunstick.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_HL2MP_WEAPONS}
+    PROPERTIES UNITY_GROUP hl2mp_weapons_client
 )
 
 target_sources_grouped(
     TARGET client
     NAME "HL2MP\\Weapons"
     FILES
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_357.cpp
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.h
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crossbow.cpp
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crowbar.cpp
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasebasebludgeon.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasehlmpcombatweapon.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasehlmpcombatweapon.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_physcannon.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_physcannon.h
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_pistol.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_rpg.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_rpg.h
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_shotgun.cpp
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_slam.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_slam.h
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_smg1.cpp
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_stunstick.cpp
+    ${UNITY_SOURCE_HL2MP_WEAPONS}
+)
+
+set(UNITY_SOURCE_HL2MP_UI
+    hl2mp/hl2mp_hud_chat.cpp
+    #hl2mp/hl2mp_hud_target_id.cpp
+    hl2mp/hl2mp_hud_team.cpp
+    hl2mp/ui/backgroundpanel.cpp
+    hl2mp/ui/hl2mpclientscoreboard.cpp
+    hl2mp/ui/hl2mptextwindow.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_HL2MP_UI}
+    PROPERTIES UNITY_GROUP hl2mp_ui_client
 )
 
 target_sources_grouped(
     TARGET client
     NAME "HL2MP\\UI"
     FILES
-    hl2mp/hl2mp_hud_chat.cpp
     hl2mp/hl2mp_hud_chat.h
-    #hl2mp/hl2mp_hud_target_id.cpp
-    hl2mp/hl2mp_hud_team.cpp
-    hl2mp/ui/backgroundpanel.cpp
     hl2mp/ui/backgroundpanel.h
-    hl2mp/ui/hl2mpclientscoreboard.cpp
     hl2mp/ui/hl2mpclientscoreboard.h
-    hl2mp/ui/hl2mptextwindow.cpp
     hl2mp/ui/hl2mptextwindow.h
+    ${UNITY_SOURCE_HL2MP_UI}
 )
 
 target_sources_grouped(

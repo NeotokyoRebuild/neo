@@ -4692,7 +4692,11 @@ void CTriggerVPhysicsMotion::StartTouch( CBaseEntity *pOther )
 		pPlayer->m_Local.m_bSlowMovement = true;
 	}
 
+#ifdef NEO // Unity build
+	triggerevent_t event = {};
+#else
 	triggerevent_t event;
+#endif
 	PhysGetTriggerEvent( &event, this );
 	if ( event.pObject )
 	{
@@ -4730,7 +4734,11 @@ void CTriggerVPhysicsMotion::EndTouch( CBaseEntity *pOther )
 		pPlayer->SetPhysicsFlag( PFLAG_VPHYSICS_MOTIONCONTROLLER, false );
 		pPlayer->m_Local.m_bSlowMovement = false;
 	}
+#ifdef NEO // Unity build
+	triggerevent_t event = {};
+#else
 	triggerevent_t event;
+#endif
 	PhysGetTriggerEvent( &event, this );
 	if ( event.pObject && m_pController )
 	{

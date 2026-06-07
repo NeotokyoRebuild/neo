@@ -15,6 +15,10 @@
 #include <vgui/VGUI.h>
 #include <vgui_controls/Frame.h>
 
+#ifdef NEO // Unity build
+#include <vgui_controls/PropertySheet.h>
+#endif
+
 namespace vgui
 {
 
