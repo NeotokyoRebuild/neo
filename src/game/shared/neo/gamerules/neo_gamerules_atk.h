@@ -40,12 +40,12 @@ public:
 	virtual bool CanChangeTeamClassLoadoutWhenAlive() const override final { return false; }
 	virtual bool CanRespawnAnyTime() const override final { return false; }
 	
-	virtual void CheckOvertime();
 	virtual float GetRoundRemainingTime() const override final;
 #ifdef GAME_DLL
 	virtual void SetGameRelatedVars() override final;
 	virtual const int GetScoreLimit() const override final;
 	virtual const int GetRoundLimit() const override final;
+	virtual void CheckOvertime();
 	virtual void RoundTimeout() override final;
 #endif // GAME_DLL
 	virtual void Think() override final;

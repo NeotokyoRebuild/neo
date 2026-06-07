@@ -102,6 +102,15 @@ bool CNEORulesTDM::FPlayerCanRespawn(CBasePlayer* pPlayer)
 	return true;
 }
 
+extern ConVar sv_neo_dm_max_class_dur;
+bool CNEORulesTDM::PlayerCanChangeLoadout(CNEO_Player* pPlayer)
+{
+	if (!pPlayer->m_bIneligibleForLoadoutPick && pPlayer->GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat())
+		return true;
+
+	return BaseClass::PlayerCanChangeLoadout(pPlayer);
+}
+
 void CNEORulesTDM::SetGameRelatedVars()
 {
 	ResetTeamScores();

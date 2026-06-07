@@ -108,6 +108,15 @@ bool CNEORulesDM::FPlayerCanRespawn(CBasePlayer* pPlayer)
 	return true;
 }
 
+extern ConVar sv_neo_dm_max_class_dur;
+bool CNEORulesDM::PlayerCanChangeLoadout(CNEO_Player* pPlayer)
+{
+	if (!pPlayer->m_bIneligibleForLoadoutPick && pPlayer->GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat())
+		return true;
+
+	return BaseClass::PlayerCanChangeLoadout(pPlayer);
+}
+
 void CNEORulesDM::SetGameRelatedVars()
 {
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)

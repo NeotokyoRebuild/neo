@@ -120,6 +120,15 @@ bool CNEORulesJGR::FPlayerCanRespawn(CBasePlayer* pPlayer)
 	return true;
 }
 
+extern ConVar sv_neo_dm_max_class_dur;
+bool CNEORulesJGR::PlayerCanChangeLoadout(CNEO_Player* pPlayer)
+{
+	if (!pPlayer->m_bIneligibleForLoadoutPick && pPlayer->GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat())
+		return true;
+
+	return BaseClass::PlayerCanChangeLoadout(pPlayer);
+}
+
 void CNEORulesJGR::EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacker, const CTakeDamageInfo& info)
 {
 	if (!IsRoundLive())
@@ -128,7 +137,7 @@ void CNEORulesJGR::EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacke
 	if (pAttacker->GetClass() == NEO_CLASS_JUGGERNAUT)
 	{
 		auto jgrTeam = pAttacker->GetTeam();
-		jgrTeam->SetScore(jgrTeam->GetScore());
+		jgrTeam->SetScore(Min(jgrTeam->GetScore() + 2, sv_neo_jgr_max_points.GetInt()));
 	}
 	else if (m_pJuggernautPlayer)
 	{
@@ -144,6 +153,7 @@ void CNEORulesJGR::EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacke
 
 void CNEORulesJGR::SetGameRelatedVars()
 {
+	ResetTeamScores();
 	ResetJGR();
 	SpawnTheJuggernaut();
 }
@@ -219,8 +229,6 @@ void CNEORulesJGR::Think()
 		return;
 
 	GameOverThink();
-	
-	CheckOvertime();
 	
 	if (CHL2MPRulesThink())
 		return;

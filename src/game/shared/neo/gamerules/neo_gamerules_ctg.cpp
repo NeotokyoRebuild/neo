@@ -71,26 +71,6 @@ void CNEORulesCTG::FireGameEvent(IGameEvent* event)
 	BaseClass::FireGameEvent(event);
 }
 
-void CNEORulesCTG::CheckOvertime()
-{
-	if (!sv_neo_ctg_ghost_overtime_enabled.GetBool())
-		return;
-
-	float overtimeGrace = sv_neo_ctg_round_timelimit.GetFloat() * 60;
-	float roundTimeLimit = sv_neo_ctg_ghost_overtime_grace.GetFloat();
-
-	if (NeoRoundStatus::RoundLive == m_nRoundStatus && m_iGhosterPlayer &&
-		(m_flNeoRoundStartTime + roundTimeLimit - overtimeGrace) < gpGlobals->curtime)
-	{
-		m_nRoundStatus = NeoRoundStatus::Overtime;
-	}
-
-	if (m_nRoundStatus == NeoRoundStatus::Overtime && m_iGhosterPlayer)
-	{
-		m_flGhostLastHeld = gpGlobals->curtime;
-	}
-}
-
 float CNEORulesCTG::GetRoundRemainingTime() const
 {
 	if (NeoRoundStatus::Overtime == m_nRoundStatus)
@@ -118,6 +98,26 @@ const int CNEORulesCTG::GetScoreLimit() const
 const int CNEORulesCTG::GetRoundLimit() const
 {
 	return sv_neo_ctg_round_limit.GetInt();
+}
+
+void CNEORulesCTG::CheckOvertime()
+{
+	if (!sv_neo_ctg_ghost_overtime_enabled.GetBool())
+		return;
+
+	float overtimeGrace = sv_neo_ctg_round_timelimit.GetFloat() * 60;
+	float roundTimeLimit = sv_neo_ctg_ghost_overtime_grace.GetFloat();
+
+	if (NeoRoundStatus::RoundLive == m_nRoundStatus && m_iGhosterPlayer &&
+		(m_flNeoRoundStartTime + roundTimeLimit - overtimeGrace) < gpGlobals->curtime)
+	{
+		m_nRoundStatus = NeoRoundStatus::Overtime;
+	}
+
+	if (m_nRoundStatus == NeoRoundStatus::Overtime && m_iGhosterPlayer)
+	{
+		m_flGhostLastHeld = gpGlobals->curtime;
+	}
 }
 
 void CNEORulesCTG::RoundTimeout()

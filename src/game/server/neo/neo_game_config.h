@@ -13,7 +13,7 @@ public:
 	~CNEOGameConfig();
 	virtual void Spawn() override;
 
-	int m_GameType = NEO_GAME_TYPE_TDM;
+	int m_GameType = NEO_GAME_TYPE_EMT;
 	int m_HiddenHudElements = 0;
 	int m_ForcedTeam = -1;
 	int m_ForcedClass = -1;

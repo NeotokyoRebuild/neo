@@ -47,6 +47,8 @@ ConVar sv_neo_preround_freeze_time("sv_neo_preround_freeze_time", "15", FCVAR_RE
 ConVar sv_neo_latespawn_max_time("sv_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "1.485", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
+ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
+	true, 0.0f, true, 1.0f);
 ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
 ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
@@ -528,7 +530,6 @@ static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float f
 CNEORules::CNEORules()
 {
 #ifdef GAME_DLL
-	m_bNextClientIsFakeClient = false;
 	m_ghostSpawns.EnsureCapacity(10);
 	m_jgrSpawns.EnsureCapacity(10);
 
@@ -548,6 +549,7 @@ CNEORules::CNEORules()
 		}
 	}
 
+	ResetMapSessionCommon();
 #endif
 	m_iHiddenHudElements = 0;
 	m_iForcedTeam = -1;
@@ -556,7 +558,6 @@ CNEORules::CNEORules()
 	m_iForcedWeapon = -1;
 	m_bCyberspaceLevel = false;
 
-	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("game_end");
 
@@ -788,10 +789,12 @@ bool CNEORules::CheckGameOver(void)
 	// Note that this changes the level as side effect
 	const bool gameOver = BaseClass::CheckGameOver();
 
+#ifdef GAME_DLL
 	if (gameOver)
 	{
 		ResetMapSessionCommon();
 	}
+#endif // GAME_DLL
 
 	return gameOver;
 }
@@ -901,12 +904,13 @@ void CNEORules::PlayerRespawnThink()
 	}
 }
 
+static bool bCheckClantags = false;
 void CNEORules::CheckClantagsThink()
 {
-	if (!m_bThinkCheckClantags)
+	if (!bCheckClantags)
 		return;
 	
-	m_bThinkCheckClantags = false;
+	bCheckClantags = false;
 	int iHasClantags[TEAM__TOTAL] = {};
 	bool bClantagSet[TEAM__TOTAL] = {};
 	char szTeamClantags[TEAM__TOTAL][NEO_MAX_CLANTAG_LENGTH] = {};
@@ -1992,7 +1996,8 @@ void CNEORules::StartNextRound()
 	{
 		if (sv_neo_readyup_lobby.GetBool())
 		{
-			bool bPrintHelpInfo = (m_iPrintHelpCounter == 0);
+			static int iPrintHelpCounter = 0;
+			bool bPrintHelpInfo = (0 == iPrintHelpCounter);
 			if (!m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres))
 			{
 				char szPrint[128];
@@ -2021,7 +2026,7 @@ void CNEORules::StartNextRound()
 				UTIL_ClientPrintAll(HUD_PRINTTALK, szPrint);
 			}
 			static constexpr int HELP_COUNT_NEXT_PRINT = 3;
-			m_iPrintHelpCounter = LoopAroundInArray(m_iPrintHelpCounter + 1, HELP_COUNT_NEXT_PRINT);
+			iPrintHelpCounter = LoopAroundInArray(iPrintHelpCounter + 1, HELP_COUNT_NEXT_PRINT);
 		}
 		else
 		{
@@ -2200,8 +2205,8 @@ void CNEORules::StartNextRound()
 
 	FireLegacyEvent_NeoRoundEnd();
 
-	char RoundMsg[27];
-	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
+	char RoundMsg[26];
+	static_assert(sizeof(RoundMsg) == sizeof("- KOTH ROUND 99 STARTED -"), "RoundMsg requires to fit round numbers up to 2 digits");
 	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, m_iRoundNumber.Get()));
 	UTIL_CenterPrintAll(RoundMsg);
 
@@ -2255,6 +2260,18 @@ bool CNEORules::IsRoundLive() const
 	{
 	case NeoRoundStatus::RoundLive:
 	case NeoRoundStatus::Overtime:
+		return true;
+	}
+	return false;
+}
+
+bool CNEORules::IsRoundActive() const
+{
+	switch (m_nRoundStatus)
+	{
+	case NeoRoundStatus::RoundLive:
+	case NeoRoundStatus::Overtime:
+	case NeoRoundStatus::PostRound:
 		return true;
 	}
 	return false;
@@ -2458,11 +2475,6 @@ void CNEORules::CleanUpMap()
 	{
 		pEntGameCfg->m_OnCompetitive.FireOutput(nullptr, pEntGameCfg);
 	}
-}
-
-void CNEORules::PurgeGhostCapPoints()
-{
-	m_pGhostCaps.Purge();
 }
 
 void CNEORules::ResetGhostCapPoints()
@@ -2783,7 +2795,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		V_strncpy(pNEOPlayer->m_szNeoClantag.GetForModify(),
 			(FStrEq(pszNeoClantag, "#empty") ? "" : pszNeoClantag),
 			NEO_MAX_CLANTAG_LENGTH);
-		m_bThinkCheckClantags = true;
+		bCheckClantags = true;
 	}
 
 	const char *pszClNeoCrosshair = engine->GetClientConVarValue(pNEOPlayer->entindex(), "cl_neo_crosshair");
@@ -3364,6 +3376,24 @@ float CNEORules::FlPlayerFallDamage(CBasePlayer* pPlayer)
 	return pPlayer->m_Local.m_flFallVelocity * DAMAGE_FOR_FALL_SPEED * sv_neo_falldmg_scale.GetFloat();
 }
 
+bool CNEORules::PlayerCanChangeLoadout(CNEO_Player* pPlayer)
+{
+	if (sv_neo_can_change_classes_anytime.GetBool() ||
+		pPlayer->IsDead() ||
+		IsRoundIdle() ||
+		!pPlayer->m_bIneligibleForLoadoutPick && GetRemainingPreRoundFreezeTime(false) > 0)
+	{
+		return true;
+	}
+	return false;
+}
+
+bool CNEORules::PlayerCanChangeSkin(CNEO_Player* pPlayer)
+{
+	return (!IsRoundActive() || !pPlayer->IsAlive());
+}
+
+
 const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
 {
 	if (!pPlayer)  // dedicated server output
@@ -3710,42 +3740,6 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 NeoRoundStatus CNEORules::GetRoundStatus() const
 {
 	return static_cast<NeoRoundStatus>(m_nRoundStatus.Get());
-}
-
-int CNEORules::GetGameType(void)
-{
-	Assert(false);
-	return 0;
-}
-
-int CNEORules::GetHiddenHudElements(void)
-{
-	return m_iHiddenHudElements;
-}
-
-int CNEORules::GetForcedTeam(void)
-{
-	return m_iForcedTeam.Get();
-}
-
-int CNEORules::GetForcedClass(void)
-{
-	return m_iForcedClass;
-}
-
-int CNEORules::GetForcedSkin(void)
-{
-	return m_iForcedSkin;
-}
-
-int CNEORules::GetForcedWeapon(void)
-{
-	return m_iForcedWeapon;
-}
-
-bool CNEORules::IsCyberspace()
-{
-	return m_bCyberspaceLevel;
 }
 
 float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const

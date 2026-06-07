@@ -156,8 +156,6 @@ extern ConVar sv_stickysprint;
 extern ConVar sv_neo_dev_loadout;
 extern ConVar neo_bot_difficulty;
 
-ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
-	true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
 ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
@@ -243,12 +241,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
-	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
-	const NeoRoundStatus status = NEORules()->GetRoundStatus();
-	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
-		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
-		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat()) ||
-		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup || status == NeoRoundStatus::Countdown))
+	if (NEORules()->PlayerCanChangeLoadout(this))
 	{
 		m_iNeoClass = newClass;
 		m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
@@ -279,13 +272,9 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 void CNEO_Player::RequestSetSkin(int newSkin)
 {
-	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
-	bool canChangeImmediately = ((roundStatus != NeoRoundStatus::RoundLive) && (roundStatus != NeoRoundStatus::Overtime) && (roundStatus != NeoRoundStatus::PostRound)) || !IsAlive();
-
-	if (canChangeImmediately)
+	if (NEORules()->PlayerCanChangeSkin(this))
 	{
 		m_iNeoSkin = newSkin;
-
 		SetPlayerTeamModel();
 	}
 	//else NEOTODO Set for next spawn

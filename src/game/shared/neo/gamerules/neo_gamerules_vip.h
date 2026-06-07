@@ -33,6 +33,7 @@ public:
 	
 	virtual int GetGameType() override final { return NEO_GAME_TYPE_VIP; }
 	virtual const char* GetGameTypeName() override { return "VIP"; }
+	const char* GetGameDescription() override { return "Protect or Eliminate the VIP"; }
 	virtual float GetRoundRemainingTime() const override final;
 	virtual bool GetTeamPlayEnabled() const override { return true; }
 	virtual bool GetCompEnabled() const override final { return true; }

@@ -299,7 +299,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 			m_pWszStatusUnicode = L"Capture the Ghost\n";
 			break;
 		case NEO_GAME_TYPE_VIP:
-			if (GetLocalPlayerTeam() == NEORules()->m_iEscortingTeam.Get())
+			if (GetLocalPlayerTeam() == NEORules()->GetEscortingTeam())
 			{
 				if (NEORules()->GhostExists())
 				{

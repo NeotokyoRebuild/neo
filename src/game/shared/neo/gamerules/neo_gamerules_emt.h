@@ -33,6 +33,7 @@ public:
 
 	virtual int GetGameType() override final { return NEO_GAME_TYPE_EMT; }
 	virtual const char* GetGameTypeName() override { return "EMT"; }
+	const char* GetGameDescription() override { return "Empty Gamemode"; }
 	virtual float GetRoundRemainingTime() const override final;
 	virtual bool GetTeamPlayEnabled() const override { return true; }
 	virtual bool GetCompEnabled() const override final { return false; }

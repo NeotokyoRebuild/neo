@@ -43,6 +43,7 @@ public:
 	virtual float GetRoundRemainingTime() const override final;
 #ifdef GAME_DLL
 	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) override final;
+	virtual bool PlayerCanChangeLoadout(CNEO_Player* pPlayer) override final;
 	
 	virtual void EnemyPlayerKilled(CNEO_Player* pVictim, CNEO_Player* pAttacker, const CTakeDamageInfo& info) override final;
 
