@@ -404,6 +404,7 @@ public:
 #ifdef GAME_DLL
 private:
 	friend class CNEOBotSeekAndDestroy;
+	friend class CMultiplayRules;
 
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
@@ -411,9 +412,6 @@ private:
 	int m_arrayiEntPrevCap[MAX_PLAYERS + 1]; // This is to check for cap-prevention workaround attempts
 	int m_iEntPrevCapSize = 0;
 	bool m_bServerIsCurrentlyAutoRecording = false;
-	friend class CMultiplayRules;
-	CUtlVector<CHandle<CNEOJuggernautSpawnPoint>> m_jgrSpawns;
-	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
 	int m_iMatchWinner = TEAM_UNASSIGNED;
 #endif
@@ -473,6 +471,7 @@ private:
 	void SpawnTheGhost(const Vector *origin = nullptr);
 	void ResetGhostCapPoints();
 	void CheckIfCapPrevent(CNEO_Player *capPreventerPlayer);
+	bool GhostTeamUpdateWinCondition();
 #endif // GAME_DLL
 public:
 	void ResetGhost();
@@ -494,6 +493,8 @@ private:
 	CNetworkHandle( CBaseEntity, m_hJuggernaut );
 
 #ifdef GAME_DLL
+	CUtlVector<CHandle<CNEOJuggernautSpawnPoint>> m_jgrSpawns;
+	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
 	float m_flJuggernautDeathTime = 0.0f;

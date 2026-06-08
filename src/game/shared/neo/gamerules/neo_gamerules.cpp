@@ -533,6 +533,26 @@ CNEORules::CNEORules()
 	m_ghostSpawns.EnsureCapacity(10);
 	m_jgrSpawns.EnsureCapacity(10);
 
+	CBaseEntity* ghostSpawn = nullptr;
+	do
+	{
+		ghostSpawn = gEntList.FindEntityByClassname(ghostSpawn, "neo_ghostspawnpoint");
+		if (ghostSpawn)
+		{
+			m_ghostSpawns.AddToTail(static_cast<CNEOGhostSpawnPoint*>(ghostSpawn));
+		}
+	} while (ghostSpawn);
+
+	CBaseEntity* jgrSpawn = nullptr;
+	do
+	{
+		jgrSpawn = gEntList.FindEntityByClassname(jgrSpawn, "neo_juggernautspawnpoint");
+		if (jgrSpawn)
+		{
+			m_jgrSpawns.AddToTail(static_cast<CNEOJuggernautSpawnPoint*>(jgrSpawn));
+		}
+	} while (jgrSpawn);
+
 	Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
 		TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
 
@@ -3271,6 +3291,82 @@ void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 	const int iOppositeTeam = (iPreventerTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
 	m_bTeamBeenAwardedDueToCapPrevent = (bOtherTeamPlayingGhost &&
 										 iTallyAlive[iPreventerTeam] == 0 && iTallyAlive[iOppositeTeam] > 0);
+}
+
+bool CNEORules::GhostTeamUpdateWinCondition()
+{
+	if (!m_pGhost)
+		return false;
+
+	// Update ghosting team info
+	int nextGhosterTeam = TEAM_UNASSIGNED;
+	int nextGhosterPlayerIdx = 0;
+	CNEO_Player *pGhosterPlayer = static_cast<CNEO_Player *>(m_pGhost->GetOwner());
+	if (pGhosterPlayer)
+	{
+		nextGhosterTeam = pGhosterPlayer->GetTeamNumber();
+		nextGhosterPlayerIdx = pGhosterPlayer->entindex();
+		Assert(nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF);
+		m_pGhost->UpdateNearestGhostBeaconDist();
+	}
+	m_iGhosterTeam = nextGhosterTeam;
+	m_iGhosterPlayer = nextGhosterPlayerIdx;
+
+	Assert(UTIL_IsValidEntity(m_pGhost));
+
+	if (m_pGhost->GetAbsOrigin().IsValid())
+	{
+		// Someone's carrying it
+		m_vecGhostMarkerPos = (nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF) ? GetGhostMarkerPos()
+																							: m_pGhost->GetAbsOrigin();
+	}
+	else
+	{
+		Assert(false);
+	}
+
+	// Check if the ghost was capped during this Think
+	int captorTeam, captorClient;
+	for (int i = 0; i < m_pGhostCaps.Count(); i++)
+	{
+		auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+		if (!pGhostCap)
+		{
+			Assert(false);
+			continue;
+		}
+
+		// If a ghost was captured
+		if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
+		{
+			// Turn off all capzones
+			for (int i = 0; i < m_pGhostCaps.Count(); i++)
+			{
+				auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+				if (!pGhostCap)
+				{
+					Assert(false);
+					continue;
+				}	
+				pGhostCap->SetActive(false);
+			}
+
+			IGameEvent* event = gameeventmanager->CreateEvent("ghost_capture");
+			if (event)
+			{
+				CBasePlayer* pCaptorClient = UTIL_PlayerByIndex(captorClient);
+				event->SetInt("userid", pCaptorClient ? pCaptorClient->GetUserID() : INVALID_USER_ID);
+				gameeventmanager->FireEvent(event);
+			}
+
+			// And then announce team victory
+			SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
+
+			return true;
+		}
+	}
+
+	return false;
 }
 #endif
 

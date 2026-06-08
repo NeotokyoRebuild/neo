@@ -259,6 +259,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const bool inDoOrDie = NEORules()->RoundIsDoOrDie();
 	const bool inMatchPoint = !inDoOrDie && NEORules()->RoundIsMatchPoint(); // we don't care about matchpoint if in do or die
 
+	// NEO TODO (Adam) move this to neogamerules?
 	m_pWszStatusUnicode = L"";
 	if (roundStatus == NeoRoundStatus::Idle)
 	{
@@ -310,7 +311,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 					m_pWszStatusUnicode = L"Escort the VIP\n";
 				}
 			}
-			else
+			else // NEO TODO (Adam) check if opposite team to escorting team, else different message for spectators
 			{
 				if (NEORules()->GhostExists())
 				{
@@ -324,6 +325,20 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 			break;
 		case NEO_GAME_TYPE_JGR:
 			m_pWszStatusUnicode = L"Control the Juggernaut\n";
+			break;
+		case NEO_GAME_TYPE_ATK:
+			if (GetLocalPlayerTeam() == NEORules()->GetAttackingTeam())
+			{
+				m_pWszStatusUnicode = L"Capture the Ghost\n";
+			}
+			else if (GetLocalPlayerTeam() == NEORules()->GetDefendingTeam())
+			{
+				m_pWszStatusUnicode = L"Protect the Ghost\n";
+			}
+			else
+			{
+				m_pWszStatusUnicode = L"Capture/Protect the Ghost\n";
+			}
 			break;
 		default:
 			m_pWszStatusUnicode = L"Await further orders\n";

@@ -150,6 +150,9 @@ void CNEORulesATK::Think()
 		return;
 	
 	RoundStatusThink();
+	
+	if (GhostTeamUpdateWinCondition())
+		return;
 
 	CheckWinByElimination();
 #endif // GAME_DLL
