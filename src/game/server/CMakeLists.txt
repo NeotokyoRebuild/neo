@@ -1613,7 +1613,6 @@ target_sources_grouped(
 )
 
 set(UNITY_SOURCE_NEO_WEAPONS
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.cpp
@@ -1632,8 +1631,6 @@ set(UNITY_SOURCE_NEO_WEAPONS
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.cpp
@@ -1692,6 +1689,9 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_types.h
     ${UNITY_SOURCE_NEO_WEAPONS}
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.cpp
 )
 
 if(NEO_BUILD_WEAPON_PBK56S)
