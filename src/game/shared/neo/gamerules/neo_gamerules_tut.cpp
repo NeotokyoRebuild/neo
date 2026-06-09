@@ -43,14 +43,6 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesTUTProxy, DT_NEOGameRulesTUTProxy );
 		END_SEND_TABLE()
 #endif
 
-//CNEORulesTUT::CNEORulesTUT()
-//{
-//}
-//
-//CNEORulesTUT::~CNEORulesTUT()
-//{
-//}
-
 void CNEORulesTUT::FireGameEvent(IGameEvent* event)
 {
 	BaseClass::FireGameEvent(event);

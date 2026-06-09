@@ -54,14 +54,6 @@ ConVar sv_neo_vip_score_limit("sv_neo_vip_score_limit", "7", FCVAR_REPLICATED, "
 
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
 
-//CNEORulesVIP::CNEORulesVIP()
-//{
-//}
-//
-//CNEORulesVIP::~CNEORulesVIP()
-//{
-//}
-
 void CNEORulesVIP::FireGameEvent(IGameEvent* event)
 {
 	BaseClass::FireGameEvent(event);

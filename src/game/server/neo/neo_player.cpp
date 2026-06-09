@@ -2535,7 +2535,7 @@ void CNEO_Player::SpawnSpecificGibs(float vMinVelocity, float vMaxVelocity, cons
 {
 	CGib* pGib = CREATE_ENTITY(CGib, "gib");
 
-	if (NEORules()->CanRespawnAnyTime())
+	if (NEORules()->RespawnsEnabled())
 	{
 		constexpr float GIB_LIFETIME = 30.f;
 		pGib->Spawn(cModelName, GIB_LIFETIME);
@@ -3088,10 +3088,10 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		changedTeams = true;
 		
 		// Spawn the player immediately if its a single life game mode
-		spawnImmediately = !NEORules()->CanRespawnAnyTime() && NEORules()->FPlayerCanRespawn(this);
+		spawnImmediately = !NEORules()->RespawnsEnabled() && NEORules()->FPlayerCanRespawn(this);
 		if (!spawnImmediately)
 		{
-			if (NEORules()->CanRespawnAnyTime() || IsFakeClient())
+			if (NEORules()->RespawnsEnabled() || IsFakeClient())
 			{ // Stop observer mode so we spawn in anyway after a short delay, bots crash when transitioning to observer mode
 				StopObserverMode();
 			}

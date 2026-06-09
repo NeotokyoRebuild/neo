@@ -21,9 +21,6 @@ public:
 	DECLARE_CLASS(CNEORulesTDM, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
 	
-	//CNEORulesTDM();
-	//virtual ~CNEORulesTDM();
-	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
 	
@@ -34,7 +31,7 @@ public:
 	virtual bool GetCompEnabled() const override final { return false; }
 	virtual bool GetCapPreventEnabled() const override final { return false; }
 	virtual bool CanChangeTeamClassLoadoutWhenAlive() const override final { return false; }
-	virtual bool CanRespawnAnyTime() const override final { return true; }
+	virtual bool RespawnsEnabled() const override final { return true; }
 
 	virtual float GetRoundRemainingTime() const override final;
 #ifdef GAME_DLL

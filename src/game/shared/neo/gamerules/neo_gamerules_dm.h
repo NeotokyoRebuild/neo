@@ -7,10 +7,6 @@
 	#define CNEORulesDM C_NEORulesDM
 	#define CNEOGameRulesDMProxy C_NEOGameRulesDMProxy
 #endif
-//
-//ConVar sv_neo_dm_score_limit("sv_neo_dm_score_limit", "1", FCVAR_REPLICATED, "DM score limit", true, 0.0f, true, 99.0f);
-//ConVar sv_neo_dm_round_limit("sv_neo_dm_round_limit", "0", FCVAR_REPLICATED, "DM max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
-//ConVar sv_neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATED, "DM round timelimit, in minutes.",	true, 0.0f, false, 600.0f);
 
 class CNEOGameRulesDMProxy : public CNEOGameRulesProxy
 {
@@ -25,9 +21,6 @@ public:
 	DECLARE_CLASS(CNEORulesDM, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
 	
-	//CNEORulesDM();
-	//virtual ~CNEORulesDM();
-
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
 	
@@ -38,7 +31,7 @@ public:
 	virtual bool GetCompEnabled() const override final { return false; }
 	virtual bool GetCapPreventEnabled() const override final { return false; }
 	virtual bool CanChangeTeamClassLoadoutWhenAlive() const override final { return false; }
-	virtual bool CanRespawnAnyTime() const override final { return true; }
+	virtual bool RespawnsEnabled() const override final { return true; }
 
 	virtual float GetRoundRemainingTime() const override final;
 #ifdef GAME_DLL

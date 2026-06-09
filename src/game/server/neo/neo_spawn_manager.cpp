@@ -122,7 +122,7 @@ namespace NeoSpawnManager
 			return backup;
 		}
 
-		if (!rules->CanRespawnAnyTime())
+		if (!rules->RespawnsEnabled())
 		{
 			// We only care if it's been used before or not if there are no respawns
 			manager.m_spawns[idx].isUsed = true;

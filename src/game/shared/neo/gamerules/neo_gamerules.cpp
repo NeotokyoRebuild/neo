@@ -3293,7 +3293,7 @@ void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 										 iTallyAlive[iPreventerTeam] == 0 && iTallyAlive[iOppositeTeam] > 0);
 }
 
-bool CNEORules::GhostTeamUpdateWinCondition()
+bool CNEORules::GhostTeamUpdateCheckWinCondition()
 {
 	if (!m_pGhost)
 		return false;

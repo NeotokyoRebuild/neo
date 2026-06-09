@@ -52,14 +52,6 @@ ConVar sv_neo_atk_ghost_overtime("sv_neo_atk_ghost_overtime", "45", FCVAR_REPLIC
 ConVar sv_neo_atk_ghost_overtime_grace("sv_neo_atk_ghost_overtime_grace", "10", FCVAR_REPLICATED, "Number of seconds left in the round when the ghost is dropped in overtime.", true, 0, true, 30);
 ConVar sv_neo_atk_ghost_overtime_grace_decay("sv_neo_atk_ghost_overtime_grace_decay", "0", FCVAR_REPLICATED, "Slowly reduce the grace time as overtime goes on.", true, 0, true, 1);
 
-//CNEORulesATK::CNEORulesATK()
-//{
-//}
-//
-//CNEORulesATK::~CNEORulesATK()
-//{
-//}
-
 void CNEORulesATK::FireGameEvent(IGameEvent* event)
 {
 	BaseClass::FireGameEvent(event);
@@ -151,7 +143,7 @@ void CNEORulesATK::Think()
 	
 	RoundStatusThink();
 	
-	if (GhostTeamUpdateWinCondition())
+	if (GhostTeamUpdateCheckWinCondition())
 		return;
 
 	CheckWinByElimination();

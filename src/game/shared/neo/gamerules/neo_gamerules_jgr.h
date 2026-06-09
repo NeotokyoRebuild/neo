@@ -7,10 +7,6 @@
 	#define CNEORulesJGR C_NEORulesJGR
 	#define CNEOGameRulesJGRProxy C_NEOGameRulesJGRProxy
 #endif
-//
-//ConVar sv_neo_jgr_score_limit("sv_neo_jgr_score_limit", "1", FCVAR_REPLICATED, "JGR score limit", true, 0.0f, true, 99.0f);
-//ConVar sv_neo_jgr_round_limit("sv_neo_jgr_round_limit", "0", FCVAR_REPLICATED, "JGR max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
-//ConVar sv_neo_jgr_round_timelimit("neo_jgr_round_timelimit", "10.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.",	true, 0.0f, false, 600.0f);
 
 class CNEOGameRulesJGRProxy : public CNEOGameRulesProxy
 {
@@ -25,9 +21,6 @@ public:
 	DECLARE_CLASS(CNEORulesJGR, CNEORules);
 	DECLARE_NETWORKCLASS_NOBASE();
 	
-	//CNEORulesJGR();
-	//virtual ~CNEORulesJGR();
-	
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event) override;
 	
@@ -38,7 +31,7 @@ public:
 	virtual bool GetCompEnabled() const override final { return true; }
 	virtual bool GetCapPreventEnabled() const override final { return false; }
 	virtual bool CanChangeTeamClassLoadoutWhenAlive() const override final { return false; }
-	virtual bool CanRespawnAnyTime() const override final { return true; }
+	virtual bool RespawnsEnabled() const override final { return true; }
 
 	virtual float GetRoundRemainingTime() const override final;
 #ifdef GAME_DLL
@@ -55,6 +48,7 @@ public:
 	virtual void Think() override final;
 #ifdef GAME_DLL
 	virtual void PlayerRespawnThink() override final;
+	bool JuggernautUnlockCheckWinCondition();
 #endif // GAME_DLL
 };
 

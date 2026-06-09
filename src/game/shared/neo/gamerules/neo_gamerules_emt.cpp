@@ -43,14 +43,6 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesEMTProxy, DT_NEOGameRulesEMTProxy );
 		END_SEND_TABLE()
 #endif
 
-//CNEORulesEMT::CNEORulesEMT()
-//{
-//}
-//
-//CNEORulesEMT::~CNEORulesEMT()
-//{
-//}
-
 void CNEORulesEMT::FireGameEvent(IGameEvent* event)
 {
 	BaseClass::FireGameEvent(event);

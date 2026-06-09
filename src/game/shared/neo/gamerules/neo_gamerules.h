@@ -273,7 +273,7 @@ public:
 	virtual bool GetCompEnabled() const { return false; }
 	virtual bool GetCapPreventEnabled() const { return false; }
 	virtual bool CanChangeTeamClassLoadoutWhenAlive() const { return false; }
-	virtual bool CanRespawnAnyTime() const { return false; }
+	virtual bool RespawnsEnabled() const { return false; }
 	inline int GetHiddenHudElements() const { return m_iHiddenHudElements; }
 	inline int GetForcedTeam() const { return m_iForcedTeam; }
 	inline int GetForcedClass() const { return m_iForcedClass; }
@@ -471,7 +471,7 @@ private:
 	void SpawnTheGhost(const Vector *origin = nullptr);
 	void ResetGhostCapPoints();
 	void CheckIfCapPrevent(CNEO_Player *capPreventerPlayer);
-	bool GhostTeamUpdateWinCondition();
+	bool GhostTeamUpdateCheckWinCondition();
 #endif // GAME_DLL
 public:
 	void ResetGhost();
@@ -528,6 +528,13 @@ private:
 #endif // GAME_DLL
 public:
 	inline int GetEscortingTeam() const { return m_iEscortingTeam; }
+
+	/////////////////////
+	// KOTH game logic //
+	/////////////////////
+
+private:
+	
 };
 
 inline CNEORules *NEORules()

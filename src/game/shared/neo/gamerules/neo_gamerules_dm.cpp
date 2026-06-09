@@ -56,14 +56,6 @@ ConVar sv_neo_dm_win_xp("sv_neo_dm_win_xp", "50", FCVAR_REPLICATED, "The XP limi
 
 extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
 
-//CNEORulesDM::CNEORulesDM()
-//{
-//}
-//
-//CNEORulesDM::~CNEORulesDM()
-//{
-//}
-
 void CNEORulesDM::FireGameEvent(IGameEvent* event)
 {
 	BaseClass::FireGameEvent(event);
