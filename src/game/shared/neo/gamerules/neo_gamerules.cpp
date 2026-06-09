@@ -794,7 +794,7 @@ void CNEORules::ChangeLevel(void)
 	ResetMapSessionCommon();
 	if (!m_bRotatingMapRightNow && sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
 	{
-		m_bChangelevelDone = false; // NEO TODO (Adam) Is this really necessary? Why is the gamerules object thinking when the map begins to change
+		m_bChangelevelDone = false;
 	}
 	else
 	{
@@ -809,12 +809,10 @@ bool CNEORules::CheckGameOver(void)
 	// Note that this changes the level as side effect
 	const bool gameOver = BaseClass::CheckGameOver();
 
-#ifdef GAME_DLL
 	if (gameOver)
 	{
 		ResetMapSessionCommon();
 	}
-#endif // GAME_DLL
 
 	return gameOver;
 }
@@ -2591,11 +2589,6 @@ void CNEORules::ResetJGR()
 
 void CNEORules::RestartGame()
 {
-	// bounds check
-	if (mp_timelimit.GetInt() < 0) // NEO NOTE (Adam) Just give mp_timelimit cvar a lower bound of 0?
-	{
-		mp_timelimit.SetValue(0);
-	}
 	m_flGameStartTime = gpGlobals->curtime;
 	if (!IsFinite(m_flGameStartTime.Get()))
 	{

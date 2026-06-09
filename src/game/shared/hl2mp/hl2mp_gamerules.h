@@ -181,7 +181,7 @@ public:
 	bool	IsTeamplay( void )
 	{
 #ifdef NEO
-		return GetTeamPlayEnabled(); // NEO TODO (Adam) Just make this virtual instead
+		return GetTeamPlayEnabled();
 #else
 		return m_bTeamPlayEnabled;
 #endif
@@ -193,7 +193,7 @@ public:
 
 #ifdef NEO
 protected:
-	CNetworkVar(float, m_flGameStartTime); // NEO TODO (Adam) Make a protected getter instead?
+	CNetworkVar(float, m_flGameStartTime);
 #else
 private:
 	CNetworkVar(float, m_flGameStartTime);

@@ -25,9 +25,9 @@ public:
 	virtual void FireGameEvent(IGameEvent *event) override;
 	
 	virtual int GetGameType() override final { return NEO_GAME_TYPE_CTG; }
-	virtual const char* GetGameTypeName() override { return "CTG"; }
-	const char* GetGameDescription() override { return "Capture the Ghost"; }
-	virtual bool GetTeamPlayEnabled() const override { return true; }
+	virtual const char* GetGameTypeName() override final { return "CTG"; }
+	const char* GetGameDescription() override final { return "Capture the Ghost"; }
+	virtual bool GetTeamPlayEnabled() const override final { return true; }
 	virtual bool GetCompEnabled() const override final { return true; }
 	virtual bool GetCapPreventEnabled() const override final { return true; }
 	virtual bool CanChangeTeamClassLoadoutWhenAlive() const override final { return false; }
@@ -38,7 +38,7 @@ public:
 	virtual void SetGameRelatedVars() override final;
 	virtual const int GetScoreLimit() const override final;
 	virtual const int GetRoundLimit() const override final;
-	virtual void CheckOvertime();
+	virtual void CheckOvertime() override final;
 	virtual void RoundTimeout() override final;
 #endif // GAME_DLL
 	virtual void Think() override final;

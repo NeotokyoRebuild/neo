@@ -25,7 +25,7 @@ public:
 	virtual void FireGameEvent(IGameEvent *event) override;
 
 	virtual int GetGameType() override final { return NEO_GAME_TYPE_ATK; }
-	virtual const char* GetGameTypeName() override { return "ATK"; }
+	virtual const char* GetGameTypeName() override final { return "ATK"; }
 	const char* GetGameDescription() override final { return "Attack / Defend the ghost"; }
 	virtual bool GetTeamPlayEnabled() const override final { return true; }
 	virtual bool GetCompEnabled() const override final { return true; }
@@ -38,7 +38,7 @@ public:
 	virtual void SetGameRelatedVars() override final;
 	virtual const int GetScoreLimit() const override final;
 	virtual const int GetRoundLimit() const override final;
-	virtual void CheckOvertime();
+	virtual void CheckOvertime() override final;
 	virtual void RoundTimeout() override final;
 #endif // GAME_DLL
 	virtual void Think() override final;

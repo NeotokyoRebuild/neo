@@ -92,6 +92,9 @@ void MPTimeLimitCallback( IConVar *var, const char *pOldString, float flOldValue
 #endif 
 
 ConVar mp_timelimit( "mp_timelimit", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "game time per map in minutes"
+#ifdef NEO
+	, true, 0.0f, false, 0.0f
+#endif // NEO
 #ifdef GAME_DLL
 					, MPTimeLimitCallback 
 #endif
