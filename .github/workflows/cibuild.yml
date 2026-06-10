@@ -169,7 +169,7 @@ jobs:
 
       matrix:
         platform:
-        - { display_name: 'Windows Native Libraries', os: windows-2025, preset_os: windows }
+        - { display_name: 'Windows Native Libraries', os: windows-2022, preset_os: windows }
 
         preset_build_type:
         - { display_name: 'Debug', name: debug }
@@ -292,7 +292,7 @@ jobs:
   pack-resources:
     name: Windows Native Resources
 
-    runs-on: windows-2025
+    runs-on: windows-2022
 
     defaults:
       run:
