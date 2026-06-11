@@ -15,7 +15,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-inline NeoUI::Context g_uiCtx;
+extern NeoUI::Context g_uiCtx;
 
 CNeoLoading::CNeoLoading()
 	: vgui::EditablePanel(nullptr, "NeoLoadingPanel")

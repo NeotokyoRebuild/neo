@@ -7,7 +7,8 @@ set(CMAKE_VERBOSE_MAKEFILE TRUE)
 message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
 
 string(TIMESTAMP BUILD_DATETIME UTC)
-message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
+# NEO TODO (nullsystem): This screwed up nvim's :make
+# message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -179,6 +180,7 @@ if(OS_WINDOWS)
         /errorReport:prompt # ErrorReporting - Prompt Immediately
         /W4
         /Gw # Optimize Global Data
+		/bigobj # Required for unity build
 
         /wd4456
         /wd4457

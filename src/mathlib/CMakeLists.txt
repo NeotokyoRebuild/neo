@@ -2,7 +2,11 @@ add_library(mathlib STATIC)
 
 add_library(mathlib::mathlib ALIAS mathlib)
 
-set_target_properties(mathlib PROPERTIES PREFIX "")
+set_target_properties(mathlib PROPERTIES
+    PREFIX ""
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
 
 target_include_directories(mathlib
     PRIVATE
@@ -28,31 +32,40 @@ if (OS_LINUX)
     )
 endif ()
 
+set(UNITY_SOURCE_MATHLIB
+    color_conversion.cpp
+    halton.cpp
+    lightdesc.cpp
+    mathlib_base.cpp
+    powsse.cpp
+    sparse_convolution_noise.cpp
+    sseconst.cpp
+    sse.cpp
+    ssenoise.cpp				
+    anorms.cpp
+    bumpvects.cpp
+    IceKey.cpp
+    polyhedron.cpp
+    randsse.cpp
+    spherical.cpp
+    simdvectormatrix.cpp
+    vmatrix.cpp
+    almostequal.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_MATHLIB}
+    PROPERTIES UNITY_GROUP mathlib
+)
+
 target_sources_grouped(
     TARGET mathlib
     NAME "Source Files"
     FILES
-	color_conversion.cpp
-	halton.cpp
-	lightdesc.cpp
-	mathlib_base.cpp
-	powsse.cpp
-	sparse_convolution_noise.cpp
-	sseconst.cpp
-	sse.cpp
-	ssenoise.cpp				
-	anorms.cpp
-	bumpvects.cpp
-	IceKey.cpp
-	imagequant.cpp
-	polyhedron.cpp
-	quantize.cpp
-	randsse.cpp
-	spherical.cpp
-	simdvectormatrix.cpp
-	vector.cpp
-	vmatrix.cpp
-	almostequal.cpp
+    ${UNITY_SOURCE_MATHLIB}
+    imagequant.cpp
+    quantize.cpp
+	#vector.cpp # Unused
 )
 
 if(OS_LINUX OR OS_MACOS)

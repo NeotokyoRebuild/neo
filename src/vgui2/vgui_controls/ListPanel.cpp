@@ -31,16 +31,20 @@
 #include <vgui_controls/TextImage.h>
 #include <vgui_controls/Menu.h>
 #include <vgui_controls/Tooltip.h>
+#ifdef NEO // Unity build
+#include "Common.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file
 #include "tier0/memdbgon.h"
 
 using namespace vgui;
-
+#ifndef NEO // Unity build
 enum 
 {
 	WINDOW_BORDER_WIDTH=2 // the width of the window's border
 };
+#endif
 
 
 #ifndef NEO // Please use Max/Min/Clamp from basetypes.h instead

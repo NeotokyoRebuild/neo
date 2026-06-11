@@ -693,7 +693,11 @@ void CAI_TrackPather::CurrentPathDirection( Vector *pVecPathDir )
 //-----------------------------------------------------------------------------
 void CAI_TrackPather::ComputePointAlongCurrentPath( float flDistance, float flPerpDist, Vector *pTarget )
 {
+#ifdef NEO // Unity build
+	Vector vecPathDir(0, 0, 0);
+#else
 	Vector vecPathDir;
+#endif
 	Vector vecStartPoint;
 	ClosestPointToCurrentPath( &vecStartPoint );
 	*pTarget = vecStartPoint;

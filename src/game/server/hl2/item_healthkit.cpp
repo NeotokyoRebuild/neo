@@ -405,6 +405,14 @@ BEGIN_DATADESC( CNewWallHealth )
 
 END_DATADESC()
 
+#ifdef NEO // Unity build
+#ifdef HEALTH_CHARGER_MODEL_NAME
+#undef HEALTH_CHARGER_MODEL_NAME
+#endif // HEALTH_CHARGER_MODEL_NAME
+#ifdef CHARGES_PER_SECOND
+#undef CHARGES_PER_SECOND
+#endif // CHARGES_PER_SECOND
+#endif // NEO
 #define HEALTH_CHARGER_MODEL_NAME "models/props_combine/health_charger001.mdl"
 #define CHARGE_RATE 0.25f
 #define CHARGES_PER_SECOND 1.0f / CHARGE_RATE

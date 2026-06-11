@@ -15,6 +15,9 @@
 #include "KeyValues.h"
 #include "vgui/Cursor.h"
 #include "tier1/utldict.h"
+#ifdef NEO // Unity build
+#include "Common.h"
+#endif
 
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
@@ -22,6 +25,7 @@
 
 using namespace vgui;
 
+#ifndef NEO // Unity build
 static char *CopyString( const char *in )
 {
 	if ( !in )
@@ -32,6 +36,7 @@ static char *CopyString( const char *in )
 	V_strncpy( n, in, len  + 1 );
 	return n;
 }
+#endif
 
 CKeyBoardEditorPage::SaveMapping_t::SaveMapping_t() : map( 0 )
 {
@@ -549,6 +554,7 @@ void CKeyBoardEditorPage::GetMappingList( Panel *panel, CUtlVector< PanelKeyBind
 	}
 }
 
+#ifndef NEO // Unity build
 static bool BindingLessFunc( KeyValues * const & lhs, KeyValues * const &rhs )
 {
 	KeyValues *p1, *p2;
@@ -557,6 +563,7 @@ static bool BindingLessFunc( KeyValues * const & lhs, KeyValues * const &rhs )
 	p2 = const_cast< KeyValues * >( rhs );
 	return ( Q_stricmp( p1->GetString( "Action" ), p2->GetString( "Action" ) ) < 0 ) ? true : false;
 }
+#endif
 
 void CKeyBoardEditorPage::AnsiText( char const *token, char *out, int nBuflen )
 {

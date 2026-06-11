@@ -356,6 +356,11 @@ int CPhysConstraint::DrawDebugTextOverlays()
 		
 		if ( (params.bodyMassScale[0] != 1.0f && params.bodyMassScale[0] != 0.0f) || (params.bodyMassScale[1] != 1.0f && params.bodyMassScale[1] != 0.0f) )
 		{
+#ifdef NEO // Unity build
+#ifdef str
+#undef str
+#endif
+#endif
 			CFmtStr str("mass ratio %.4f:%.4f\n", params.bodyMassScale[0], params.bodyMassScale[1] );
 			NDebugOverlay::EntityTextAtPosition( GetAbsOrigin(), pos, str.Access(), 0, 255, 255, 0, 255 );
 		}

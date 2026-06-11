@@ -4,6 +4,15 @@ add_library(tier1::tier1 ALIAS tier1)
 
 target_compile_definitions(tier1 PRIVATE TIER1_STATIC_LIB)
 
+set(unity_before [[
+#include "tier0/memdbgoff.h"
+]])
+
+set_target_properties(tier1 PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+    UNITY_BUILD_CODE_BEFORE_INCLUDE "${unity_before}"
+)
 if (OS_LINUX)
     set_target_properties(tier1 PROPERTIES
         POSITION_INDEPENDENT_CODE ON
@@ -39,10 +48,7 @@ target_link_directories(tier1
     ${LIBPUBLIC}
 )
 
-target_sources_grouped(
-    TARGET tier1
-    NAME "Source Files"
-    FILES
+set(UNITY_SOURCE_TIER1
     bitbuf.cpp
     newbitbuf.cpp
     byteswap.cpp
@@ -56,7 +62,6 @@ target_sources_grouped(
     diff.cpp
     generichash.cpp
     ilocalize.cpp
-    interface.cpp
     KeyValues.cpp
     kvpacker.cpp
     lzmaDecoder.cpp
@@ -67,8 +72,6 @@ target_sources_grouped(
     rangecheckedvar.cpp
     reliabletimer.cpp
     stringpool.cpp
-    strtools.cpp
-    strtools_unicode.cpp
     tier1.cpp
     tokenreader.cpp
     sparsematrix.cpp
@@ -76,11 +79,26 @@ target_sources_grouped(
     utlbuffer.cpp
     utlbufferutil.cpp
     utlstring.cpp
-    utlsymbol.cpp
     utlbinaryblock.cpp
     snappy.cpp
     snappy-sinksource.cpp
     snappy-stubs-internal.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_TIER1}
+    PROPERTIES UNITY_GROUP tier1
+)
+
+target_sources_grouped(
+    TARGET tier1
+    NAME "Source Files"
+    FILES
+    ${UNITY_SOURCE_TIER1}
+    utlsymbol.cpp
+    interface.cpp
+    strtools.cpp
+    strtools_unicode.cpp
 )
 
 set_source_files_properties(interface.cpp PROPERTIES

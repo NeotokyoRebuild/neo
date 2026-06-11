@@ -17,6 +17,11 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef NEO // Unity build
+#ifdef NUM_CHILD_FLAMES
+#undef NUM_CHILD_FLAMES
+#endif
+#endif
 #define	NUM_CHILD_FLAMES	6
 #define	CHILD_SPREAD		40
 
@@ -239,6 +244,17 @@ void C_Plasma::AddEntity( void )
 	m_entGlow.SetLocalOriginDim( Z_INDEX, m_entGlow.GetLocalOriginDim( Z_INDEX ) + ( dScale * 32.0f ) );
 }
 
+#ifdef NEO // Unity build
+#ifdef FLAME_ALPHA_START
+#undef FLAME_ALPHA_START
+#endif
+#ifdef FLAME_ALPHA_END
+#undef FLAME_ALPHA_END
+#endif
+#ifdef FLAME_TRANS_START
+#undef FLAME_TRANS_START
+#endif
+#endif // NEO
 #define	FLAME_ALPHA_START	0.8f
 #define FLAME_ALPHA_END		1.0f
 
