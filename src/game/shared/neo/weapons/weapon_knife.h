@@ -18,7 +18,7 @@
 #define CWeaponKnife C_WeaponKnife
 #endif
 
-#define NEO_WEP_KNIFE_RANGE 51.f;
+#define NEO_WEP_KNIFE_RANGE 51.f
 
 class CWeaponKnife : public CNEOBaseCombatWeapon
 {
@@ -33,6 +33,7 @@ public:
 #endif
 
 	CWeaponKnife();
+	CWeaponKnife(const CWeaponKnife& other) = delete;
 
 	virtual void PrimaryAttack() final;
 	virtual void Drop(const Vector &vecVelocity) final { /* knives shouldn't drop */ }
@@ -64,7 +65,7 @@ protected:
 	bool		ImpactWater(const Vector &start, const Vector &end);
 	void		Hit(trace_t& traceHit, Activity nHitActivity);
 private:
-	CWeaponKnife(const CWeaponKnife &other);
+	inline void ApplyDamageToHitTarget(trace_t& traceHit);
 };
 
 #endif // NEO_WEAPON_KNIFE_H

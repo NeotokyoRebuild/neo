@@ -1,14 +1,26 @@
 #include "cbase.h"
 #include "weapon_knife.h"
 
-#ifndef CLIENT_DLL
+#ifdef GAME_DLL
 #include "ilagcompensationmanager.h"
 #include "effect_dispatch_data.h"
 #include "te_effect_dispatch.h"
+#else
+#include "prediction.h"
 #endif
+
+#include "takedamageinfo.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+static ConVar sv_neo_backstab_ignorez("sv_neo_backstab_ignorez", "1", FCVAR_REPLICATED | FCVAR_NOTIFY,
+	"Whether knife backstabs angle calculations should ignore the pitch component.", true, false, true, true);
+
+// NEO NOTE (Rain): Changed to degrees to make it more intuitive for players.
+// Was previously: 0.6435011 radians; // ~ asin(0.6);
+static ConVar sv_neo_backstab_angle("sv_neo_backstab_angle", "37", FCVAR_REPLICATED | FCVAR_NOTIFY,
+	"Maximum angle away from perfectly behind the back that still counts as a backstab.", true, 0, true, 180);
 
 #define KNIFE_VM_ATTACK_ACT ACT_VM_PRIMARYATTACK
 
@@ -255,64 +267,93 @@ Activity CWeaponKnife::ChooseIntersectionPointAndActivity(trace_t& hitTrace, con
 	return KNIFE_VM_ATTACK_ACT;
 }
 
+inline void CWeaponKnife::ApplyDamageToHitTarget(trace_t& traceHit)
+{
+#ifdef CLIENT_DLL
+	if (prediction->InPrediction() && !prediction->IsFirstTimePredicted())
+		return;
+#endif
+
+	if (!traceHit.m_pEnt)
+		return;
+
+	auto *pPlayer = assert_cast<CNEO_Player*>(GetOwner());
+	AssertMsg(pPlayer != traceHit.m_pEnt, "Shouldn't be able to hit self");
+	// NEO NOTE (Rain): client-side abs ang queries don't seem to work well,
+	// so I've changed the Vector forward to use the eye angles forward for
+	// prediction purposes. It probably feels more fair to the player as well,
+	// since as long as they keep their eyes on the attacker, i.e. the attacker
+	// is physically in front of them, they cannot be backstabbed (assuming the
+	// server agrees on those angles).
+	Vector forward;
+	AngleVectors(traceHit.m_pEnt->EyeAngles(), &forward);
+
+	Vector attackerToTarget = traceHit.m_pEnt->GetAbsOrigin() - pPlayer->GetAbsOrigin();
+
+	if (sv_neo_backstab_ignorez.GetBool())
+	{
+		forward.AsVector2D().NormalizeInPlace();
+		forward.z = 0;
+
+		attackerToTarget.AsVector2D().NormalizeInPlace();
+		attackerToTarget.z = 0;
+	}
+	else
+	{
+		attackerToTarget.NormalizeInPlace();
+	}
+	AssertFloatEquals(forward.Length(), 1.f, 0.01f);
+	AssertFloatEquals(attackerToTarget.Length(), 1.f, 0.01f);
+
+	const float currentAngle = RAD2DEG(acos(forward.Dot(attackerToTarget)));
+
+	CTakeDamageInfo info(pPlayer, pPlayer, KNIFE_DAMAGE, DMG_SLASH);
+	Vector hitDirection;
+	pPlayer->EyeVectors(&hitDirection);
+	AssertFloatEquals(hitDirection.Length(), 1.f, 0.01f);
+	CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.05f);
+
+	const bool isBackstab = (currentAngle <= sv_neo_backstab_angle.GetFloat());
+	// increase damage if backstabbing only after melee damage force has been calculated,
+	// so objects cannot be "backstabbed" to launch them further
+	if (isBackstab)
+	{
+		// If this doesn't do any damage, step ApplyMultiDamage or the below:
+		// traceHit.m_pEnt->GetReceivedDamageScale(pPlayer);
+#if 0
+		const char* help = "";
+#ifdef GAME_DLL
+		if (!traceHit.m_pEnt->GetReceivedDamageScale(pPlayer))
+			help = " (dmg scale 0, maybe in spawn protection?)";
+#endif
+
+		DevMsg("[%s] \"%s\" backstabbed \"%s\"%s\n",
+			(IsServer() ? "SRV auth" : "CLI pred"),
+			pPlayer->GetNeoPlayerName(),
+			assert_cast<CNEO_Player*>(traceHit.m_pEnt)->GetNeoPlayerName(),
+			help
+		);
+#endif
+		static constexpr float oneShotDamage = MAX_HEALTH_FOR_CLASS[NEO_CLASS_SUPPORT] + 1;
+		info.SetMaxDamage(info.GetMaxDamage() + oneShotDamage);
+		info.AddDamage(oneShotDamage);
+		Assert(traceHit.m_pEnt->GetMaxHealth() < info.GetDamage() + info.GetDamageBonus());
+	}
+
+	traceHit.m_pEnt->DispatchTraceAttack(info, hitDirection, &traceHit);
+	ApplyMultiDamage();
+
+#ifdef GAME_DLL
+	// Now hit all triggers along that ray...
+	TraceAttackToTriggers(info, traceHit.startpos, traceHit.endpos, hitDirection);
+#endif
+}
+
 void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity)
 {
 	Assert(nHitActivity == KNIFE_VM_ATTACK_ACT);
-
-	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
-
-	// Do view kick
-	//AddViewKick();
-
-	CBaseEntity *pHitEntity = traceHit.m_pEnt;
-
-	//Apply damage to a hit target
-	if (pHitEntity != NULL)
-	{
-		// Shouldn't be able to hit self
-		Assert(pPlayer != pHitEntity);
-
-		Vector hitDirection;
-		pPlayer->EyeVectors(&hitDirection, NULL, NULL);
-		VectorNormalize(hitDirection);
-
-#ifndef CLIENT_DLL
-
-		Vector forward;
-		AngleVectors(pHitEntity->GetAbsAngles(), &forward);
-
-		Vector2D forward2D = Vector2D(forward.x, forward.y);
-		forward2D.NormalizeInPlace();
-
-		Vector attackerToTarget = pHitEntity->GetAbsOrigin() - pPlayer->GetAbsOrigin();
-		Vector2D attackerToTarget2D = Vector2D(attackerToTarget.x, attackerToTarget.y);
-		attackerToTarget2D.NormalizeInPlace();
-
-		const float currentAngle = acos(DotProduct2D(forward2D, attackerToTarget2D));
-
-		static constexpr float maxBackStabAngle = 0.6435011; // ~ asin(0.6);
-
-		static constexpr int damageToOneShotSupport = MAX_HEALTH_FOR_CLASS[NEO_CLASS_SUPPORT] + 1;
-
-		CTakeDamageInfo info(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
-
-		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.05f);
-
-		if (currentAngle <= maxBackStabAngle)
-		{	// increase damage if backstabbing only after melee damage force has been calculated, so objects cannot be "backstabbed" to launch them further
-			info.SetDamage(damageToOneShotSupport);
-		}
-
-		pHitEntity->DispatchTraceAttack(info, hitDirection, &traceHit);
-		ApplyMultiDamage();
-
-		// Now hit all triggers along the ray that...
-		TraceAttackToTriggers(info, traceHit.startpos, traceHit.endpos, hitDirection);
-#endif
-		WeaponSound(MELEE_HIT);
-	}
-
-	// Apply an impact effect
+	ApplyDamageToHitTarget(traceHit);
+	WeaponSound(MELEE_HIT);
 	ImpactEffect(traceHit);
 }
 
