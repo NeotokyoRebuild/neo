@@ -31,6 +31,11 @@ See [README.md](README.md) in this repo for setting up your build environment (c
 To be safe and avoid problems with VAC, it's recommended to add a [-insecure](https://developer.valvesoftware.com/wiki/Command_Line_Options) launch flag before attaching your debugger.
 
 #### VS2022 + CMake (Windows)
+
+> [!NOTE]
+> We do *not* officially support Visual Studio 2026 at this time! If you run into issues, please consider downgrading to VS 2022 for now.
+> 
+
 In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should generate the `src/.vs/launch.vs.json` config file.
 
 Modify the config to fix the directory paths; an example is provided below:
