@@ -66,7 +66,13 @@ Modify the config to fix the directory paths; an example is provided below:
 ```
 
 #### Qt Creator (Linux)
-On the sidebar, click "Projects" then under your current kit, click "Run". Set the following:
+On the sidebar, click "Projects" then under your current kit, click "Run".
+
+By default, you may have one of the test configurations chosen as the currently active run configuration (`test_neo_crosshair`, etc).
+To create a new configuration, press "Add" and choose "Custom executable" (tested on Qt Creator 13.0.0, but the exact menus and wording
+may depend on your Qt Creator version).
+
+Once you have a fresh *Run configuration* created, set the following properties for it:
 
 | Property | Example value |
 | :---------------------------------- | :------------ |
