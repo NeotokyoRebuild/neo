@@ -63,6 +63,18 @@ jobs:
 
     # Libraries
 
+    - name: Sparse fetch neoAssets
+      uses: actions/checkout@v6
+      with:
+        repository: NeotokyoRebuild/neoAssets
+        path: neoAssets
+        sparse-checkout:
+          neo/detail.vbsp
+          neo/lights.rad
+          neo/resource/
+          neo/shaders/fxc/
+          neo/rebuild.fgd
+
     - name: CMake configure libraries build
       working-directory: ${{ env.source_dir }}
       run: >
@@ -75,6 +87,7 @@ jobs:
         -DNEO_USE_SEPARATE_BUILD_INFO=ON
         -DNEO_INSTALL_LIBRARIES=ON
         -DNEO_INSTALL_RESOURCES=OFF
+        -DNEO_EXTRA_ASSETS_ALT_PATH=${{ github.workspace }}/neoAssets
 
     - name: CMake libraries build
       working-directory: ${{ env.source_dir }}
@@ -205,6 +218,18 @@ jobs:
 
     # Libraries
 
+    - name: Sparse fetch neoAssets
+      uses: actions/checkout@v6
+      with:
+        repository: NeotokyoRebuild/neoAssets
+        path: neoAssets
+        sparse-checkout:
+          neo/detail.vbsp
+          neo/lights.rad
+          neo/resource/
+          neo/shaders/fxc/
+          neo/rebuild.fgd
+
     - name: CMake configure libraries build
       working-directory: ${{ env.source_dir }}
       run: >
@@ -217,6 +242,7 @@ jobs:
         -DNEO_USE_SEPARATE_BUILD_INFO=ON
         -DNEO_INSTALL_LIBRARIES=ON
         -DNEO_INSTALL_RESOURCES=OFF
+        -DNEO_EXTRA_ASSETS_ALT_PATH=${{ github.workspace }}/neoAssets
 
     - name: CMake libraries build
       working-directory: ${{ env.source_dir }}
