@@ -1020,7 +1020,12 @@ void CClientLeafSystem::AddShadowToLeaf( int leaf, ClientLeafShadowHandle_t shad
 			info.m_EnumCount = m_ShadowEnum;
 		}
 
+#ifdef NEO
+		// don't nuke dev build perf by spamming the assert every frame
+		AssertOnce(m_ShadowsInLeaf.NumAllocated() < 2000);
+#else
 		Assert(m_ShadowsInLeaf.NumAllocated() < 2000);
+#endif
 
 		i = m_RenderablesInLeaf.NextElement(i);
 	}
