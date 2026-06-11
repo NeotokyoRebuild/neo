@@ -14,14 +14,14 @@ private:
 };
 
 // Returns the bot's preference rank for a weapon (-1 = not preferred, -2 = empty)
-int GetBotWeaponPreferenceRank( CNEOBot *me, NEO_WEP_BITS_UNDERLYING_TYPE wepBit );
+int GetBotWeaponPreferenceRank( const CNEOBot *me, NEO_WEP_BITS_UNDERLYING_TYPE wepBit );
 
-bool IsWeaponPreferenceUpgrade( CNEOBot *me, CNEOBaseCombatWeapon *pTargetWep, int myPrefRank, bool bHasReserveAmmo );
+bool IsWeaponPreferenceUpgrade( const CNEOBot *me, CNEOBaseCombatWeapon *pTargetWep, int myPrefRank, bool bHasReserveAmmo );
 
 bool IsUndroppablePrimary( CBaseCombatWeapon *pPrimary );
 
 // General utility that can be used to see if it makes sense to transition into this behavior
-CBaseEntity *FindNearestPrimaryWeapon( CNEOBot *me, bool bAllowDropGhost = false, CNEOIgnoredWeaponsCache *pIgnoredWeapons = nullptr );
+CBaseEntity *FindNearestPrimaryWeapon( const CNEOBot *me, bool bAllowDropGhost = false, const CNEOIgnoredWeaponsCache *pIgnoredWeapons = nullptr );
 
 //--------------------------------------------------------------------------------------------------------
 class CNEOBotSeekWeapon : public Action< CNEOBot >

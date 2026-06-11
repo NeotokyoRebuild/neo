@@ -51,6 +51,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBo
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
+	CBaseCombatWeapon *pGhostWep = me->Weapon_GetSlot( 0 );
 
 	CBaseCombatWeapon *pWeapon = me->GetActiveWeapon();
 	if ( !threat && pWeapon )
@@ -63,7 +64,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	if ( m_bPursuingDropThreat )
 	{
 		// First, ensure we have a weapon.
-		if ( !me->Weapon_GetSlot( 0 ) )
+		if ( !pGhostWep )
 		{
 			return SuspendFor( new CNEOBotSeekWeapon(nullptr, m_pIgnoredWeapons.get()), "Scavenging for weapon to hunt threat" );
 		}
@@ -218,16 +219,11 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 				CBaseEntity *pNearbyWeapon = FindNearestPrimaryWeapon( me, true, m_pIgnoredWeapons.get() );
 				if ( pNearbyWeapon )
 				{
-					CBaseCombatWeapon *pGhostWep = me->Weapon_GetSlot( 0 );
-					if ( pGhostWep )
-					{
-						return SuspendFor( new CNEOBotSeekWeapon( pNearbyWeapon, m_pIgnoredWeapons.get() ), "Dropping ghost to scavenge nearby weapon" );
-					}
+					return SuspendFor( new CNEOBotSeekWeapon( pNearbyWeapon, m_pIgnoredWeapons.get() ), "Dropping ghost to scavenge nearby weapon" );
 				}
 			}
 
 			CBaseCombatWeapon *pActiveWeapon = me->GetActiveWeapon();
-			CBaseCombatWeapon *pGhostWep = me->Weapon_GetSlot( 0 );
 			
 			// If we know where the threat is, drop and hunt.
 			if ( threat && threat->GetLastKnownPosition() != CNEO_Player::VECTOR_INVALID_WAYPOINT )
@@ -236,17 +232,14 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 				m_bPursuingDropThreat = true;
 				m_hPursueTarget = threat->GetEntity();
 
-				if ( pGhostWep )
+				if ( pActiveWeapon != pGhostWep )
 				{
-					if ( pActiveWeapon != pGhostWep )
-					{
-						me->Weapon_Switch( pGhostWep );
-					}
-					else
-					{
-						me->EnableCloak( 3.0f );
-						me->PressDropButton( 0.1f );
-					}
+					me->Weapon_Switch( pGhostWep );
+				}
+				else
+				{
+					me->EnableCloak( 3.0f );
+					me->PressDropButton( 0.1f );
 				}
 				return Continue();
 			}

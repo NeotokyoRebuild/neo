@@ -342,8 +342,7 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::ScavengeForPrimaryWeapon( CNEOBo
 	}
 
 	// Avoid swapping weapon in the middle of a fight
-	CNEO_Player* pBotPlayer = ToNEOPlayer( me->GetEntity() );
-	if ( pBotPlayer && pBotPlayer->GetTimeSinceWeaponFired() < 3.0f )
+	if ( me->GetTimeSinceWeaponFired() < 3.0f )
 	{
 		return Continue();
 	}
