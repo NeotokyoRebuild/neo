@@ -192,7 +192,7 @@ jobs:
         echo "install_dir=$install_dir" >> "$GITHUB_ENV"
         echo "preset_name=$preset_name" >> "$GITHUB_ENV"
 
-    - uses: TheMrMilchmann/setup-msvc-dev@v4
+    - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
       with:
         arch: x64
 
@@ -316,7 +316,7 @@ jobs:
     - name: Git fetch tags
       run: git fetch origin --tags --force
 
-    - uses: TheMrMilchmann/setup-msvc-dev@v4
+    - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
       with:
         arch: x64
 
