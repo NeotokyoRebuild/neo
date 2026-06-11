@@ -35,6 +35,7 @@
 #include "nav_mesh.h"
 #include "neo_npc_dummy.h"
 #include "materialsystem/imaterialsystem.h"
+#include "neo_gamerules_restore.h"
 
 #include <utility>
 
@@ -599,34 +600,6 @@ static inline void FireLegacyEvent_NeoRoundEnd()
 }
 
 #ifdef GAME_DLL
-CON_COMMAND( sv_neo_score_set_jinrai, "Set point count for team Jinrai" )
-{
-	if ( 2 != args.ArgC() )
-	{
-		Msg( "Usage: %s <score>\n", __FUNCTION__ );
-		return;
-	}
-	
-	CTeam *jinrai = GetGlobalTeam( TEAM_JINRAI );
-	Assert( jinrai );
-	jinrai->SetScore( atoi( args[1] ) );
-	jinrai->SetRoundsWon( atoi( args[1] ) );
-}
-
-CON_COMMAND( sv_neo_score_set_nsf, "Set point count for team NSF" )
-{
-	if ( 2 != args.ArgC() )
-	{
-		Msg( "Usage: %s <score>\n", __FUNCTION__ );
-		return;
-	}
-	
-	CTeam *nsf = GetGlobalTeam( TEAM_NSF );
-	Assert( nsf );
-	nsf->SetScore( atoi( args[1] ) );
-	nsf->SetRoundsWon( atoi( args[1] ) );
-}
-
 static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float flOldVal)
 {
 	auto wep = gEntList.NextEntByClass((CNEOBaseCombatWeapon*)NULL);
@@ -2830,6 +2803,38 @@ void CNEORules::StartNextRound()
 	++m_iRoundNumber;
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
+	if (bFromStarting)
+	{
+		m_pRestoredInfos.Purge();
+		// If game was in warmup then also decide on game mode here
+
+		CTeam *pJinrai = GetGlobalTeam(TEAM_JINRAI);
+		CTeam *pNSF = GetGlobalTeam(TEAM_NSF);
+		Assert(pJinrai && pNSF);
+		pJinrai->SetScore(0);
+		pJinrai->SetRoundsWon(0);
+		pNSF->SetScore(0);
+		pNSF->SetRoundsWon(0);
+	}
+
+	if (m_iNextRestore.flags & NEXT_ROUND_GAMERULE_RESTORE_FLAG_SCORES)
+	{
+		GetGlobalTeam(TEAM_JINRAI)->SetScore(m_iNextRestore.iScoreJinrai);
+		GetGlobalTeam(TEAM_NSF)->SetScore(m_iNextRestore.iScoreNSF);
+	}
+	if (m_iNextRestore.flags & NEXT_ROUND_GAMERULE_RESTORE_FLAG_ROUND_NUMBER)
+	{
+		// Have to be before going through players or they spawn the wrong side
+		// when this gets set!
+		m_iRoundNumber = m_iNextRestore.iRoundNumber;
+	}
+	if (m_iNextRestore.flags & NEXT_ROUND_GAMERULE_RESTORE_FLAG_ROUNDSWONS)
+	{
+		GetGlobalTeam(TEAM_JINRAI)->SetRoundsWon(m_iNextRestore.iRoundsWonJinrai);
+		GetGlobalTeam(TEAM_NSF)->SetRoundsWon(m_iNextRestore.iRoundsWonNSF);
+	}
+	m_iNextRestore = {}; // Zero-out
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		CNEO_Player *pPlayer = (CNEO_Player*)UTIL_PlayerByIndex(i);
@@ -2879,6 +2884,17 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bIsPendingTKKick = false;
 
 		pPlayer->SetTestMessageVisible(false);
+
+		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_XP)
+		{
+			pPlayer->m_iXP.Set(pPlayer->m_iNextRestore.iXP);
+		}
+		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_DEATH)
+		{
+			pPlayer->ResetDeathCount();
+			pPlayer->IncrementDeathCount(pPlayer->m_iNextRestore.iDeaths);
+		}
+		pPlayer->m_iNextRestore = {}; // Zero-out
 	}
 
 	m_flPrevThinkKick = 0.0f;
@@ -2889,20 +2905,8 @@ void CNEORules::StartNextRound()
 	m_bTeamBeenAwardedDueToCapPrevent = false;
 	V_memset(m_arrayiEntPrevCap, 0, sizeof(m_arrayiEntPrevCap));
 	m_iEntPrevCapSize = 0;
-	if (bFromStarting)
-	{
-		m_pRestoredInfos.Purge();
-		// If game was in warmup then also decide on game mode here
 
-		CTeam *pJinrai = GetGlobalTeam(TEAM_JINRAI);
-		CTeam *pNSF = GetGlobalTeam(TEAM_NSF);
-		Assert(pJinrai && pNSF);
-		pJinrai->SetScore(0);
-		pJinrai->SetRoundsWon(0);
-		pNSF->SetScore(0);
-		pNSF->SetRoundsWon(0);
-	}
-
+	MatchSessionBackup();
 	FireLegacyEvent_NeoRoundEnd();
 
 	char RoundMsg[27];
