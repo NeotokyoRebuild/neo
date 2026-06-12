@@ -21,6 +21,8 @@
 #include "neo_weapon_loadout.h"
 #include "behavior/neo_bot_behavior.h"
 #include "neo_crosshair.h"
+#include "recipientfilter.h"
+#include "soundent.h"
 
 ConVar neo_bot_notice_gunfire_range("neo_bot_notice_gunfire_range", "3000", FCVAR_GAMEDLL);
 ConVar neo_bot_notice_quiet_gunfire_range("neo_bot_notice_quiet_gunfire_range", "500", FCVAR_GAMEDLL);
@@ -1571,6 +1573,40 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 
 
 //-----------------------------------------------------------------------------------------------------
+bool CNEOBot::DropGhost()
+{
+	if ( !IsCarryingGhost() )
+	{
+		return false;
+	}
+
+	CBaseCombatWeapon *pGhost = Weapon_GetSlot( 0 );
+	if ( pGhost )
+	{
+		if ( GetActiveWeapon() != pGhost )
+		{
+			Weapon_Switch( pGhost );
+		}
+		else
+		{
+			// Look behind where we are moving
+			Vector moveDir = GetLocomotionInterface()->GetMotionVector();
+			Vector lookDir = -moveDir;
+			GetBodyInterface()->AimHeadTowards( EyePosition() + lookDir * 100.0f, IBody::IMPORTANT, 0.2f, nullptr, "Preparing to drop ghost away from path" );
+
+			// Drop the ghost if we are looking anywhere but the front
+			Vector viewDir = GetBodyInterface()->GetViewVector();
+			if ( moveDir.Dot( viewDir ) < 0.4f )
+			{
+				PressDropButton();
+			}
+		}
+	}
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------------------------------
 // Reload the active weapon if it makes sense for the situation 
 void CNEOBot::ReloadIfLowClip(bool bForceReload)
 {
@@ -2823,6 +2859,81 @@ QueryResultType CNEOBotBehavior::ShouldAim(const CNEOBot *me, const bool bWepHas
 	}
 
 	return result;
+}
+
+//---------------------------------------------------------------------------------------------
+Vector CNEOBot::GetAudibleEnemySoundPos(const Vector& vecReferencePos, float flMaxRangeSq) const
+{
+	CSound *pSound = nullptr;
+	for ( int iSound = CSoundEnt::ActiveList(); iSound != SOUNDLIST_EMPTY; iSound = pSound->NextSound() )
+	{
+		pSound = CSoundEnt::SoundPointerForIndex( iSound );
+		if ( !pSound )
+		{
+			break;
+		}
+
+		// If a reference position and range are provided, check distance first
+		if ( vecReferencePos != CNEO_Player::VECTOR_INVALID_WAYPOINT && flMaxRangeSq > 0.0f )
+		{
+			if ( pSound->GetSoundOrigin().DistToSqr( vecReferencePos ) > flMaxRangeSq )
+			{
+				continue;
+			}
+		}
+
+		if ( ( pSound->SoundType() & ( SOUND_COMBAT | SOUND_PLAYER ) ) == 0 )
+		{
+			continue;
+		}
+
+		CBaseEntity *pOwner = pSound->m_hOwner.Get();
+
+		// Ignore non-player sounds and sounds I was responsible for
+		if ( !pOwner || !pOwner->IsPlayer() || pOwner == GetEntity() )
+		{
+			continue;
+		}
+
+		// Only care about sounds from the enemy
+		if ( InSameTeam( pOwner ) )
+		{
+			continue;
+		}
+
+		// Check if I can hear the sound
+		bool bCanHearEnemy = false;
+		CPASFilter soundFilter( pSound->GetSoundOrigin() );
+		for ( int i = 0; i < soundFilter.GetRecipientCount(); ++i )
+		{
+			if ( soundFilter.GetRecipientIndex( i ) == entindex() )
+			{
+				bCanHearEnemy = true;
+				break;
+			}
+		}
+
+		if ( !bCanHearEnemy )
+		{
+			// Check if I can hear the shooter
+			CPASFilter shooterFilter( pOwner->GetAbsOrigin() );
+			for ( int i = 0; i < shooterFilter.GetRecipientCount(); ++i )
+			{
+				if ( shooterFilter.GetRecipientIndex( i ) == entindex() )
+				{
+					bCanHearEnemy = true;
+					break;
+				}
+			}
+		}
+
+		if ( bCanHearEnemy )
+		{
+			return pSound->GetSoundOrigin();
+		}
+	}
+
+	return CNEO_Player::VECTOR_INVALID_WAYPOINT;
 }
 
 
