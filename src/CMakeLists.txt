@@ -39,7 +39,7 @@ option(NEO_BUILD_MATHLIB "Build mathlib library" ON)
 option(NEO_BUILD_VGUI_CONTROLS "Build vgui_controls library" ON)
 option(NEO_COPY_LIBRARIES "Copy libraries to bin directory by default" ON)
 option(NEO_EXTRA_ASSETS "Copy extra assets into game/neo" ON)
-option(NEO_EXTRA_ASSETS_ALT_PATH "Alternate location to fetch the extra assets" "")
+set(NEO_EXTRA_ASSETS_ALT_PATH "" CACHE PATH "Alternate location to fetch the extra assets")
 if (OS_LINUX)
     set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin/linux64" CACHE PATH "Directory for output libraries (linux64)")
 else ()
@@ -601,12 +601,12 @@ if(NEO_EXTRA_ASSETS)
                 "${NEO_EXTRA_ASSETS_ALT_PATH}/neo"
                 "${CMAKE_SOURCE_DIR}/../game/neo")
     else()
-        include(FetchContent) # once in the project to include the module
+        include(FetchContent)
 
         FetchContent_Declare(
             neo_assets
             GIT_REPOSITORY https://github.com/NeotokyoRebuild/neoAssets.git
-            GIT_TAG master # Replace with a commit hash or other tag to select a specific version of the assets, remove GIT_SHALLOW if using commit hash
+            GIT_TAG master
             GIT_SHALLOW 1
             GIT_PROGRESS TRUE
             USES_TERMINAL_DOWNLOAD TRUE
