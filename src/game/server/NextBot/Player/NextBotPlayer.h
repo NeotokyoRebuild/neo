@@ -145,6 +145,11 @@ public:
 	// This is just an "alias" to PressWalkButton
 	virtual void PressRunButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseRunButton( void ) = 0;
+
+	// This is an alias for +walk because PressWalkButton is already taken
+	void PressSneakButton( float duration = -1.0f );
+	void ReleaseSneakButton( void );
+	bool IsSneakButtonDown( void ) const;
 #endif // NEO
 
 	virtual void SetButtonScale( float forward, float right ) = 0;
@@ -256,6 +261,10 @@ public:
 	virtual void PressRunButton( float duration = -1.0f );
 	virtual void ReleaseRunButton( void );
 
+	void PressSneakButton( float duration = -1.0f );
+	void ReleaseSneakButton( void );
+	bool IsSneakButtonDown( void ) const;
+
 	void PressLeanLeftButton( float duration = -1.0f );
 	void ReleaseLeanLeftButton( void );
 
@@ -307,6 +316,7 @@ protected:
 	CountdownTimer m_moveUpButtonTimer;
 	CountdownTimer m_moveDownButtonTimer;
 	CountdownTimer m_dropButtonTimer;
+	CountdownTimer m_sneakButtonTimer;
 	CountdownTimer m_thermopticButtonTimer;
 	CountdownTimer m_leanLeftButtonTimer;
 	CountdownTimer m_leanRightButtonTimer;
@@ -566,6 +576,26 @@ inline void NextBotPlayer< PlayerType >::ReleaseRunButton( void )
 }
 
 template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressSneakButton( float duration )
+{
+	m_inputButtons |= IN_WALK;
+	m_sneakButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseSneakButton( void )
+{
+	m_inputButtons &= ~IN_WALK;
+	m_sneakButtonTimer.Invalidate();
+}
+
+template < typename PlayerType >
+inline bool NextBotPlayer< PlayerType >::IsSneakButtonDown( void ) const
+{
+	return !m_sneakButtonTimer.IsElapsed();
+}
+
+template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressLeanLeftButton( float duration )
 {
 	m_inputButtons |= IN_LEAN_LEFT;
@@ -704,6 +734,7 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_moveUpButtonTimer.Invalidate();
 	m_moveDownButtonTimer.Invalidate();
 	m_dropButtonTimer.Invalidate();
+	m_sneakButtonTimer.Invalidate();
 	m_thermopticButtonTimer.Invalidate();
 	m_leanLeftButtonTimer.Invalidate();
 	m_leanRightButtonTimer.Invalidate();
@@ -842,6 +873,9 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 			m_inputButtons |= IN_SPEED;
 
 #ifdef NEO
+		if ( !m_sneakButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_WALK;
+
 		if ( !m_dropButtonTimer.IsElapsed() )
 			m_inputButtons |= IN_DROP;
 
