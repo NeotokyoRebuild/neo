@@ -116,6 +116,17 @@ void C_FireSmoke::Simulate( void )
 {
 }
 
+#ifdef NEO // Unity build
+#ifdef FLAME_ALPHA_START
+#undef FLAME_ALPHA_START
+#endif
+#ifdef FLAME_ALPHA_END
+#undef FLAME_ALPHA_END
+#endif
+#ifdef FLAME_TRANS_START
+#undef FLAME_TRANS_START
+#endif
+#endif // NEO
 #define	FLAME_ALPHA_START	0.9f
 #define FLAME_ALPHA_END		1.0f
 

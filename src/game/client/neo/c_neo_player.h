@@ -165,7 +165,8 @@ public:
 
 	C_NEOPredictedViewModel *GetNEOViewModel() { return static_cast<C_NEOPredictedViewModel*>(GetViewModel()); }
 
-	bool IsCloaked() const { return m_bInThermOpticCamo; }
+	inline bool IsCloaked() const { return m_bInThermOpticCamo; }
+	bool IsDrawnTransparent() const;
 	float GetCloakFactor() const { return m_flTocFactor; }
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
@@ -186,6 +187,9 @@ public:
 	bool m_bCopyOverTakeoverPlayerDetails{ false };
 	CNetworkHandle(C_NEO_Player, m_hSpectatorTakeoverPlayerTarget);
 	CNetworkHandle(C_NEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
+	C_NEO_Player* GetSpectatorTakeoverPlayerTarget() const { return m_hSpectatorTakeoverPlayerTarget.Get(); }
+	C_NEO_Player* GetSpectatorTakeoverPlayerImpersonatingMe() const { return m_hSpectatorTakeoverPlayerImpersonatingMe.Get(); }
+
 	void CSpectatorTakeoverPlayerUpdateOnDataChanged();
 	void CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget);
 	const char* GetPlayerNameWithTakeoverContext(int player_index);

@@ -23,6 +23,12 @@ namespace vgui
 class PageTab;
 class ImagePanel;
 
+#ifdef NEO // Unity build
+#ifdef PropertySheet
+#undef PropertySheet
+#endif
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Tabbed property sheet.  Holds and displays a set of Panel's
 //-----------------------------------------------------------------------------

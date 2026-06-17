@@ -7,7 +7,8 @@ set(CMAKE_VERBOSE_MAKEFILE TRUE)
 message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
 
 string(TIMESTAMP BUILD_DATETIME UTC)
-message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
+# NEO TODO (nullsystem): This screwed up nvim's :make
+# message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -120,9 +121,9 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWith
 endif()
 
 add_compile_definitions(
-	# Whether to validate narrowing conversions done with narrow_cast<T>(...)
-	# If not, will simply alias narrow_cast to static_cast
-	$<$<CONFIG:Debug>:PARANOID_NARROWING>
+    # Whether to validate narrowing conversions done with narrow_cast<T>(...)
+    # If not, will simply alias narrow_cast to static_cast
+    $<$<CONFIG:Debug>:PARANOID_NARROWING>
 )
 
 if(NEO_RAD_TELEMETRY_DISABLED)
@@ -148,8 +149,6 @@ add_compile_definitions(
     # SDK2013CE # Cut out since 2025-02-18 TF2 SDK Update
     NEO
     GLOWS_ENABLE
-    _DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}
-    _EXTERNAL_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}
     _GLIBCXX_USE_CXX11_ABI=0
     FRAME_POINTER_OMISSION_DISABLED
     SOURCE1=1
@@ -181,6 +180,7 @@ if(OS_WINDOWS)
         /errorReport:prompt # ErrorReporting - Prompt Immediately
         /W4
         /Gw # Optimize Global Data
+		/bigobj # Required for unity build
 
         /wd4456
         /wd4457
@@ -299,9 +299,11 @@ if(OS_LINUX OR OS_MACOS)
     add_compile_options(
         # See: https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
 
-        # core2 - Intel Core 2 CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3, CX16, SAHF and FXSR instruction set support. 
-        -march=core2
-        #-march=x86-64
+        # Baseline any x86_64 CPU (MMX, SSE, SSE2, and FXSR instruction set support)
+        -march=x86-64
+
+        # Optimize for the most common AMD64 processors, doesn't cut out support unlike -march
+        -mtune=generic
 
         # This option enables GCC to generate CMPXCHG16B instructions in 64-bit code to implement compare-and-exchange
         # operations on 16-byte aligned 128-bit objects. This is useful for atomic updates of data structures exceeding

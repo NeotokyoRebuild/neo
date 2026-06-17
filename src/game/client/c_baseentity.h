@@ -1650,9 +1650,15 @@ private:
 
 #if !defined( NO_ENTITY_PREDICTION )
 	// For storing prediction results and pristine network state
+#ifdef NEO
+	byte							*m_pIntermediateData[ MULTIPLAYER_BACKUP ] = {};
+	byte							*m_pOriginalData = nullptr;
+	int								m_nIntermediateDataCount = 0;
+#else
 	byte							*m_pIntermediateData[ MULTIPLAYER_BACKUP ];
 	byte							*m_pOriginalData;
 	int								m_nIntermediateDataCount;
+#endif
 
 	bool							m_bIsPlayerSimulated;
 #endif
