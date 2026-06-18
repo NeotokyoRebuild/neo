@@ -54,7 +54,7 @@ extern ConVar sv_neo_recoil_viewfollow_scale;
 
 inline const Vector &CNEOShotManipulator::ApplySpread(const Vector& vecSpread, float bias)
 {
-	if (m_pWeapon && (m_pWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+	if (m_pWeapon && (m_pWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN))
 		return CShotManipulator::ApplySpread(vecSpread, bias);
 	m_vecShotDirection = ApplyRecoil(vecSpread, bias);
 	return CShotManipulator::ApplySpread(vecSpread, bias);
