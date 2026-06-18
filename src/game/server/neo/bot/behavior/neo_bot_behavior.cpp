@@ -827,7 +827,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	if (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA | NEO_WEP_KNIFE | NEO_WEP_THROWABLE)))
 	{
 		auto *primaryWeapon = static_cast<CNEOBaseCombatWeapon *>(me->Weapon_GetSlot(0));
-		if (primaryWeapon && (primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+		if (primaryWeapon && (primaryWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN))
 		{
 			const bool bClearForShotgun = me->IsLineOfFireClear(vShootablePos, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN);
 			if (bClearForShotgun)
@@ -839,7 +839,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			bShotgunSituationHandled = true;
 		}
 	}
-	else if (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+	else if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN))
 	{
 		const bool bClearForShotgun = me->IsLineOfFireClear(vShootablePos, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN);
 		if (!bClearForShotgun)
@@ -849,7 +849,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			me->EquipBestWeaponForThreat(threat, bNotPrimary);
 			myWeapon = static_cast<CNEOBaseCombatWeapon *>(me->GetActiveWeapon());
 			// If it's still Supa7, then it should try to dodge the threat instead
-			if (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+			if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN))
 			{
 				return;
 			}
