@@ -32,7 +32,7 @@ int GetBotWeaponPreferenceRank( const CNEOBot *me, NEO_WEP_BITS_UNDERLYING_TYPE 
 
 	for ( int idxRank = NEO_RANK__TOTAL - 1; idxRank >= 0; --idxRank )
 	{
-		if ( me->m_profile.flagsWepPrefs[playerClass][idxRank] & wepBit )
+		if ( me->m_profile.flagsLootWepPrefs[playerClass][idxRank] & wepBit )
 		{
 			return idxRank;
 		}
