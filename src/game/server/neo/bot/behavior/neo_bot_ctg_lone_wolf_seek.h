@@ -3,15 +3,18 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "utlmap.h"
+#include <memory>
 
 class CWeaponDetpack;
+class CNEOIgnoredWeaponsCache;
 
 //--------------------------------------------------------------------------------------------------------
 class CNEOBotCtgLoneWolfSeek : public CNEOBotCtgLoneWolf
 {
 public:
 	typedef CNEOBotCtgLoneWolf BaseClass;
-	CNEOBotCtgLoneWolfSeek( void ) = default;
+	CNEOBotCtgLoneWolfSeek( void );
+	virtual ~CNEOBotCtgLoneWolfSeek();
 
 	virtual ActionResult< CNEOBot > OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot > Update( CNEOBot *me, float interval ) override;
@@ -34,6 +37,9 @@ private:
 	CUtlMap<int, bool> m_exploredAreaIds;
 	int m_iExplorationTargetId{-1};
 	Vector m_vecSearchWaypoint{CNEO_Player::VECTOR_INVALID_WAYPOINT};
+
+	std::unique_ptr<CNEOIgnoredWeaponsCache> m_pIgnoredWeapons;
+	CountdownTimer m_scavengeTimer;
 
 	void MarkVisibleAreasAsExplored( CNEOBot *me, CNavArea *currentArea, CNavArea *ghostArea = nullptr );
 };

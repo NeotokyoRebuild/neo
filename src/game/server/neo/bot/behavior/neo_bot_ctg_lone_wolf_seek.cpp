@@ -2,6 +2,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
+#include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 #include "neo_player.h"
@@ -76,6 +77,15 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------
+CNEOBotCtgLoneWolfSeek::CNEOBotCtgLoneWolfSeek( void )
+{
+	m_pIgnoredWeapons = std::make_unique<CNEOIgnoredWeaponsCache>();
+}
+
+//---------------------------------------------------------------------------------------------
+CNEOBotCtgLoneWolfSeek::~CNEOBotCtgLoneWolfSeek() = default;
+
+//---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	BaseClass::OnStart( me, priorAction );
@@ -86,6 +96,9 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::OnStart( CNEOBot *me, Action< CN
 
 	m_vecLastGhostPos = NEORules()->GetGhostPos();
 	m_pCachedGhostArea = TheNavMesh->GetNearestNavArea( m_vecLastGhostPos );
+
+	m_scavengeTimer.Invalidate();
+	m_pIgnoredWeapons->Reset();
 
 	return Continue();
 }
@@ -131,6 +144,18 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 	{
 		// Aggressively reload due to lack of backup
 		me->ReloadIfLowClip(true); // force reload true
+	}
+
+	// Periodically look for better weapons
+	if ( ( !m_scavengeTimer.HasStarted() || m_scavengeTimer.IsElapsed() ) )
+	{
+		m_scavengeTimer.Start( RandomFloat( 3.0f, 6.0f ) );
+
+		CBaseEntity *pNearbyWeapon = FindNearestPrimaryWeapon( me, true, m_pIgnoredWeapons.get() );
+		if ( pNearbyWeapon )
+		{
+			return SuspendFor( new CNEOBotSeekWeapon( pNearbyWeapon, m_pIgnoredWeapons.get() ), "Scavenging for nearby weapon" );
+		}
 	}
 
 	Vector vecSoundPos = me->GetAudibleEnemySoundPos();

@@ -1,9 +1,6 @@
 #pragma once
 
 #include "bot/neo_bot.h"
-#include <memory>
-
-class CNEOIgnoredWeaponsCache;
 
 //--------------------------------------------------------------------------------------------------------
 class CNEOBotCtgLoneWolf : public Action< CNEOBot >
