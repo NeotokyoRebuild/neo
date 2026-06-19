@@ -64,33 +64,6 @@ inline const CNEOBotProfile FIXED_DEFAULT_PROFILE = {
 			NEO_WEP_ZR68_C | NEO_WEP_SUPA7, 		// Lieutenant
 		},
 	},
-	.flagsLootWepPrefs = {
-		{
-			// Recon
-			NEO_WEP_SRM_S | NEO_WEP_JITTE_S, 							// Private
-			NEO_WEP_MX, 												// Corporal
-			NEO_WEP_MX_S, 												// Sergeant
-			NEO_WEP_ZR68_S | NEO_WEP_AA13 | NEO_WEP_SRS | NEO_WEP_M41_S | NEO_WEP_M41_L, // Lieutenant
-		},
-		{
-			// Assault
-			NEO_WEP_SRM_S | NEO_WEP_JITTE_S, 							// Private
-			NEO_WEP_PZ, 												// Corporal
-			0, 															// Sergeant
-			0, 															// Lieutenant
-		},
-		{
-			// Support
-			NEO_WEP_SRM_S | NEO_WEP_JITTE_S, 							// Private
-			NEO_WEP_ZR68_S, 											// Corporal
-			NEO_WEP_SRS, 												// Sergeant
-			NEO_WEP_AA13, 												// Lieutenant
-		},
-		{
-			// VIP
-			0, 0, 0, 0
-		},
-	},
 };
 
 template <typename FLAG>
@@ -200,10 +173,6 @@ static void SetProfileTempBotCommon(CNEOBotProfile *pProfile, KeyValues *kv)
 				(1 << 0));
 		static_assert(BOT_TEMPLATE_APPLIED_WEP_PREF_VIP_LIEUTENANT ==
 				(1 << ((NEO_CLASS_LOADOUTABLE_COUNT * NEO_RANK_TOTAL) - 1)));
-		static_assert(BOT_TEMPLATE_APPLIED_LOOT_WEP_PREF_RECON_PRIVATE ==
-				(1 << 19));
-		static_assert(BOT_TEMPLATE_APPLIED_LOOT_WEP_PREF_SUPPORT_LIEUTENANT ==
-				(1 << (19 + (NEO_CLASS_VIP * NEO_RANK_TOTAL) - 1)));
 
 		int iBitWise = 0;
 
@@ -255,34 +224,35 @@ static void SetProfileTempBotCommon(CNEOBotProfile *pProfile, KeyValues *kv)
 			}
 		}
 
-		int iLootBitWise = 19; // see BotTemplateApplied_
-		for (int idxClass = 0; idxClass < NEO_CLASS_VIP; ++idxClass) // skip VIP
-		{
-			char szLootKey[64];
-			V_snprintf(szLootKey, sizeof(szLootKey), "%s_loot", SZ_CLASSES[idxClass]);
-			KeyValues *wepClassLootPrefKv = wepKv->FindKey(szLootKey);
-			if (!wepClassLootPrefKv)
-			{
-				iLootBitWise += NEO_RANK__TOTAL;
-				continue;
-			}
-
-			for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
-			{
-				const auto flagsWepPrefCur = FlagsFromStr(pProfile->flagsLootWepPrefs[idxClass][idxRank],
-						WEP_BIT_FLAG_CMP, wepClassLootPrefKv->GetString(SZ_RANKS[idxRank]),
-						&pProfile->flagTemplateApplied, static_cast<BotTemplateApplied_>(1 << iLootBitWise));
-				pProfile->flagsLootWepPrefs[idxClass][idxRank] = flagsWepPrefCur;
-				++iLootBitWise;
-			}
-		}
-
+		// Initialize loot prefs first with class compatible weapon selection prefs
 		for (int idxClass = 0; idxClass < NEO_CLASS__LOADOUTABLE_COUNT; ++idxClass)
 		{
 			for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
 			{
-				pProfile->flagsLootWepPrefs[idxClass][idxRank] |= pProfile->flagsWepPrefs[idxClass][idxRank];
+				pProfile->flagsLootWepPrefs[idxClass][idxRank] = pProfile->flagsWepPrefs[idxClass][idxRank];
 			}
+		}
+
+		// Apply additional looting preferences for class-excluded weapons
+		for (int idxClass = 0; idxClass < NEO_CLASS_VIP; ++idxClass)
+		{
+			KeyValues *wepClassKv = wepKv->FindKey(SZ_CLASSES[idxClass]);
+			if (!wepClassKv)
+			{
+				continue;
+			}
+
+			const auto lootFlags = FlagsFromStr(
+				(NEO_WEP_BITS_UNDERLYING_TYPE)0,
+				WEP_BIT_FLAG_CMP,
+				wepClassKv->GetString("loot"),
+				&pProfile->flagTemplateApplied,
+				static_cast<BotTemplateApplied_>(
+					BOT_TEMPLATE_APPLIED_WEP_PREF_RECON_LOOT << idxClass));
+
+			// Append loot preference to lieutenant level
+			const int idxLieutenant = NEO_RANK__TOTAL - 1;
+			pProfile->flagsLootWepPrefs[idxClass][idxLieutenant] |= lootFlags;
 		}
 	}
 
@@ -399,6 +369,15 @@ void NEOBotProfileLoad()
 	CNEOBotProfile defaultProfile;
 	V_memcpy(&defaultProfile, &FIXED_DEFAULT_PROFILE, sizeof(CNEOBotProfile));
 
+	// Initialize bot weapon looting preferences from weapon selection preferences
+	for (int idxClass = 0; idxClass < NEO_CLASS__LOADOUTABLE_COUNT; ++idxClass)
+	{
+		for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
+		{
+			defaultProfile.flagsLootWepPrefs[idxClass][idxRank] = defaultProfile.flagsWepPrefs[idxClass][idxRank];
+		}
+	}
+
 	KeyValues *kv = new KeyValues("ntre_bot_profiles");
 	if (!kv->LoadFromFile(g_pFullFileSystem, "scripts/" MAIN_PROFILE_FNAME))
 	{
@@ -486,20 +465,22 @@ void NEOBotProfileLoad()
 									++iBitWise;
 								}
 							}
-							int iLootBitWise = 19; // see BotTemplateApplied_
-							for (int idxClass = 0; idxClass < NEO_CLASS_VIP; ++idxClass) // skip VIP
+							for (int idxClass = 0; idxClass < NEO_CLASS_VIP; ++idxClass)
 							{
-								for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
+								const auto lootFlag =
+									static_cast<BotTemplateApplied>(
+										BOT_TEMPLATE_APPLIED_WEP_PREF_RECON_LOOT << idxClass);
+
+								if (templateProfile->flagTemplateApplied & lootFlag)
 								{
-									if (templateProfile->flagTemplateApplied & (1 << iLootBitWise))
+									for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
 									{
 #if LOG_DBG_LEVEL >= 2
 										Msg("  BOTS: Template (%s): Applied loot wep pref %d,%d = %d\n", szKey, idxClass, idxRank, templateProfile->flagsLootWepPrefs[idxClass][idxRank]);
 #endif
-										newBotProfile.flagsLootWepPrefs[idxClass][idxRank] = templateProfile->flagsLootWepPrefs[idxClass][idxRank];
-										newBotProfile.flagTemplateApplied |= (1 << iLootBitWise);
+										newBotProfile.flagsLootWepPrefs[idxClass][idxRank] =
+											templateProfile->flagsLootWepPrefs[idxClass][idxRank];
 									}
-									++iLootBitWise;
 								}
 							}
 							if (templateProfile->flagTemplateApplied & BOT_TEMPLATE_APPLIED_DIFFICULTY)

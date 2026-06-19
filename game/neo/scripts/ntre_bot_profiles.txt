@@ -22,10 +22,7 @@ ntre_bot_profiles
 				corporal "jittescoped"
 				sergeant "zr68c"
 				lieutenant "supa7"
-			}
-			recon_loot
-			{
-				lieutenant "zr68s mx mx_silenced aa13"
+				loot "zr68s mx mx_silenced aa13"
 			}
 			assault
 			{
@@ -33,10 +30,7 @@ ntre_bot_profiles
 				corporal "zr68s m41"
 				sergeant "mx"
 				lieutenant "aa13 srs"
-			}
-			assault_loot
-			{
-				lieutenant "pz"
+				loot "pz"
 			}
 			support
 			{
@@ -44,10 +38,7 @@ ntre_bot_profiles
 				corporal "mx"
 				sergeant "mx mx_silenced"
 				lieutenant "mx mx_silenced pz"
-			}
-			support_loot
-			{
-				lieutenant "aa13"
+				loot "aa13"
 			}
 		}
 	}
@@ -62,28 +53,18 @@ ntre_bot_profiles
 				recon
 				{
 					lieutenant "zr68c"
-				}
-				recon_loot
-				{
-					lieutenant "zr68s"
+					loot "zr68s"
 				}
 				assault
 				{
 					corporal "zr68s"
 					lieutenant "mx"
-				}
-				assault_loot
-				{
-					lieutenant "pz"
+					loot "pz"
 				}
 				support
 				{
 					private "zr68c"
 					lieutenant "mx_silenced"
-				}
-				support_loot
-				{
-					private "zr68s"
 				}
 			}
 		}
@@ -98,26 +79,14 @@ ntre_bot_profiles
 					corporal "zr68l"
 					sergeant "zr68l"
 					lieutenant "m41s"
-				}
-				recon_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					lieutenant "srs"
+					loot "m41 srs"
 				}
 				assault
 				{
 					corporal "m41"
 					sergeant "m41s mx"
 					lieutenant "srs"
-				}
-				assault_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant ""
+					loot "zr68l"
 				}
 				support
 				{
@@ -125,13 +94,7 @@ ntre_bot_profiles
 					corporal "mx"
 					sergeant "mx m41s"
 					lieutenant "mx m41s"
-				}
-				support_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant "srs"
+					loot "zr68l srs"
 				}
 			}
 		}
@@ -149,26 +112,13 @@ ntre_bot_profiles
 					sergeant "supa7 mx"
 					lieutenant "aa13"
 				}
-				assault_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant ""
-				}
 				support
 				{
 					private "supa7"
 					corporal "supa7 mx"
 					sergeant "supa7 mx"
 					lieutenant "supa7 mx"
-				}
-				support_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant "aa13"
+					loot "aa13"
 				}
 			}
 		}
@@ -187,26 +137,12 @@ ntre_bot_profiles
 					sergeant "mx"
 					lieutenant "mx"
 				}
-				assault_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant ""
-				}
 				support
 				{
 					private "zr68c"
 					corporal "mx"
 					sergeant "mx"
 					lieutenant "mx"
-				}
-				support_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant ""
 				}
 			}
 		}
@@ -222,13 +158,7 @@ ntre_bot_profiles
 					corporal "jittescoped"
 					sergeant "jittescoped"
 					lieutenant "m41s"
-				}
-				recon_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant "zr68s"
+					loot "zr68s"
 				}
 				assault
 				{
@@ -237,26 +167,13 @@ ntre_bot_profiles
 					sergeant "zr68s m41s"
 					lieutenant "zr68s m41s"
 				}
-				assault_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant ""
-				}
 				support
 				{
 					private "mpn"
 					corporal "mpn"
 					sergeant "mx_silenced"
 					lieutenant "mx_silenced"
-				}
-				support_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant "zr68s"
+					loot "zr68s"
 				}
 			}
 		}
@@ -272,13 +189,7 @@ ntre_bot_profiles
 					corporal "srm jitte"
 					sergeant "zr68c"
 					lieutenant "supa7"
-				}
-				recon_loot
-				{
-					// private "zr68c"
-					// corporal ""
-					// sergeant ""
-					// lieutenant "aa13"
+					loot "aa13"
 				}
 				assault
 				{
@@ -286,13 +197,7 @@ ntre_bot_profiles
 					corporal "zr68c m41 supa7"
 					sergeant "mx"
 					lieutenant "mx aa13 srs"
-				}
-				assault_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant "pz"
-					// lieutenant ""
+					loot "pz"
 				}
 				support
 				{
@@ -300,13 +205,7 @@ ntre_bot_profiles
 					corporal "mx supa7"
 					sergeant "mx"
 					lieutenant "mx pz"
-				}
-				support_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant "aa13"
+					loot "aa13"
 				}
 			}
 		}
@@ -330,13 +229,7 @@ ntre_bot_profiles
 					corporal "m41"
 					sergeant "m41 m41s mx"
 					lieutenant "m41 m41s mx aa13"
-				}
-				assault_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant ""
+					loot "pz"
 				}
 				support
 				{
@@ -344,13 +237,7 @@ ntre_bot_profiles
 					corporal "m41 m41s mx"
 					sergeant "m41 m41s mx"
 					lieutenant "m41 m41s mx"
-				}
-				support_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant ""
+					loot "aa13"
 				}
 			}
 		}
@@ -410,13 +297,7 @@ ntre_bot_profiles
 					corporal "srm"
 					sergeant "zr68c"
 					lieutenant "zr68c supa7"
-				}
-				recon_loot
-				{
-					// private ""
-					// corporal ""
-					// sergeant ""
-					// lieutenant "zr68s"
+					loot "zr68s mx mx_silenced aa13"
 				}
 			}
 		}
