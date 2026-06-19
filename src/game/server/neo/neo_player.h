@@ -377,4 +377,13 @@ inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 	return assert_cast<CNEO_Player*>(pEntity);
 }
 
+inline const CNEO_Player *ToNEOPlayer(const CBaseEntity *pEntity)
+{
+	if (!pEntity || !pEntity->IsPlayer())
+	{
+		return nullptr;
+	}
+	return assert_cast<const CNEO_Player*>(pEntity);
+}
+
 #endif // NEO_PLAYER_H
