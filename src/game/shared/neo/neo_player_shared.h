@@ -288,6 +288,7 @@ inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
 
 int GetRank(const int xp);
 const char *GetRankName(const int xp, const bool shortened = false);
+const wchar_t *GetRankNameW(const int xp, const bool shortened = false);
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
 

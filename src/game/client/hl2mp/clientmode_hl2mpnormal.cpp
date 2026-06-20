@@ -94,7 +94,7 @@ IViewPortPanel* CHudViewport::CreatePanelByName(const char *szPanelName)
 	if (Q_strcmp(PANEL_SCOREBOARD, szPanelName) == 0)
 	{
 #ifdef NEO
-		newpanel = new CNEOScoreBoard(this);
+		newpanel = new CNEOUIScoreBoard(this);
 #else
 		newpanel = new CHL2MPClientScoreBoardDialog( this );
 #endif

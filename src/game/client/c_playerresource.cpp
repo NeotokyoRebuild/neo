@@ -33,6 +33,8 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerReso
 	RecvPropArray3(RECVINFO_ARRAY(m_iStar), RecvPropInt(RECVINFO(m_iStar[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_szNeoClantag), RecvPropString(RECVINFO(m_szNeoClantag[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_iMaxHealth), RecvPropInt(RECVINFO(m_iMaxHealth[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_szNeoCrosshair), RecvPropString(RECVINFO(m_szNeoCrosshair[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_bReady), RecvPropInt(RECVINFO(m_bReady[0]))),
 #endif
 	RecvPropArray3( RECVINFO_ARRAY(m_iScore), RecvPropInt( RECVINFO(m_iScore[0]))),
 	RecvPropArray3( RECVINFO_ARRAY(m_iDeaths), RecvPropInt( RECVINFO(m_iDeaths[0]))),
@@ -57,6 +59,8 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 	DEFINE_PRED_ARRAY(m_iStar, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_szNeoClantag, FIELD_STRING, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_iMaxHealth, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_szNeoCrosshair, FIELD_STRING, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_bReady, FIELD_BOOLEAN, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE),
 #endif
 	DEFINE_PRED_ARRAY( m_iScore, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_iDeaths, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_PRIVATE ),
@@ -94,6 +98,8 @@ C_PlayerResource::C_PlayerResource()
 	memset(m_iStar, 0, sizeof(m_iStar));
 	memset(m_szNeoClantag, 0, sizeof(m_szNeoClantag));
 	memset(m_iMaxHealth, 1, sizeof(m_iMaxHealth));
+	memset(m_szNeoCrosshair, 0, sizeof(m_szNeoCrosshair));
+	memset(m_bReady, 0, sizeof(m_bReady));
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -249,6 +255,16 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 const char *C_PlayerResource::GetClanTag(int iIndex)
 {
 	return m_szNeoClantag[iIndex];
+}
+
+const char *C_PlayerResource::GetNeoCrosshair(int iIndex)
+{
+	return m_szNeoCrosshair[iIndex];
+}
+
+bool C_PlayerResource::IsReady(int iIndex)
+{
+	return m_bReady[iIndex];
 }
 #endif
 
