@@ -21,29 +21,18 @@ static ConVar sv_neo_restore_session_allow_name_match("sv_neo_restore_session_al
 		"Permit restoring session with matching players name",
 		true, 0.0f, true, 1.0f);
 
-extern ConVar sv_neo_readyup_lobby;
 extern ConVar sv_neo_comp;
-
-static inline bool InReadyUpState()
-{
-	return (sv_neo_readyup_lobby.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::Idle);
-}
-
-static inline bool InLiveState()
-{
-	return (NEORules()->GetRoundStatus() == RoundLive || NEORules()->GetRoundStatus() == PostRound);
-}
 
 static void RestoreSetRoundNumber(const int iRoundNumber, const char *pszFuncName)
 {
 	if (iRoundNumber < 0)
 	{
-		Msg("%s: error: Cannot have negative round number\n", pszFuncName);
+		Warning("%s: error: Cannot have negative round number\n", pszFuncName);
 		return;
 	}
 
 	NEORules()->SetRoundNumber(iRoundNumber);
-	if (InReadyUpState() || InLiveState())
+	if (NEORules()->InReadyUpState() || NEORules()->InRoundState())
 	{
 		NEORules()->m_iNextRestore.iRoundNumber = iRoundNumber;
 		NEORules()->m_iNextRestore.flags |= NEXT_ROUND_GAMERULE_RESTORE_FLAG_ROUND_NUMBER;
@@ -60,13 +49,13 @@ static void RestoreSetRoundsWon(const int iRoundsWonJinrai, const int iRoundsWon
 {
 	if (iRoundsWonJinrai < 0 || iRoundsWonNSF < 0)
 	{
-		Msg("%s: error: Cannot have negative rounds won\n", pszFuncName);
+		Warning("%s: error: Cannot have negative rounds won\n", pszFuncName);
 		return;
 	}
 
 	GetGlobalTeam(TEAM_JINRAI)->SetRoundsWon(iRoundsWonJinrai);
 	GetGlobalTeam(TEAM_NSF)->SetRoundsWon(iRoundsWonNSF);
-	if (InReadyUpState() || InLiveState())
+	if (NEORules()->InReadyUpState() || NEORules()->InRoundState())
 	{
 		NEORules()->m_iNextRestore.iRoundsWonJinrai = iRoundsWonJinrai;
 		NEORules()->m_iNextRestore.iRoundsWonNSF = iRoundsWonNSF;
@@ -87,7 +76,7 @@ static void RestoreSetScore(const int iScoreJinrai, const int iScoreNSF, const c
 {
 	GetGlobalTeam(TEAM_JINRAI)->SetScore(iScoreJinrai);
 	GetGlobalTeam(TEAM_NSF)->SetScore(iScoreNSF);
-	if (InReadyUpState() || InLiveState())
+	if (NEORules()->InReadyUpState() || NEORules()->InRoundState())
 	{
 		NEORules()->m_iNextRestore.iScoreJinrai = iScoreJinrai;
 		NEORules()->m_iNextRestore.iScoreNSF = iScoreNSF;
@@ -107,7 +96,7 @@ static void RestoreSetScore(const int iScoreJinrai, const int iScoreNSF, const c
 static void RestoreSetXPDeath(CNEO_Player *pNeoPlayer, const int iXP, const int iDeaths,
 		const char *pszFuncName)
 {
-	if (false == InLiveState())
+	if (false == NEORules()->InRoundState())
 	{
 		pNeoPlayer->m_iXP.Set(iXP);
 		if (iDeaths >= 0)
@@ -117,7 +106,7 @@ static void RestoreSetXPDeath(CNEO_Player *pNeoPlayer, const int iXP, const int 
 		}
 	}
 
-	if (InReadyUpState() || InLiveState())
+	if (NEORules()->InReadyUpState() || NEORules()->InRoundState())
 	{
 		pNeoPlayer->m_iNextRestore.iXP = iXP;
 		pNeoPlayer->m_iNextRestore.flags |= NEXT_ROUND_PLAYER_RESTORE_FLAG_XP;
@@ -140,27 +129,27 @@ static void RestoreSetXPDeath(CNEO_Player *pNeoPlayer, const int iXP, const int 
 	if (iDeaths >= 0)
 	{
 		Msg("%s: Given %d XP and %d deaths to %s%s\n", pszFuncName, iXP, iDeaths,
-				pNeoPlayer->GetNeoPlayerName(), InLiveState() ? " next round" : "");
+				pNeoPlayer->GetNeoPlayerName(), NEORules()->InRoundState() ? " next round" : "");
 	}
 	else
 	{
 		Msg("%s: Given %d XP to %s%s\n", pszFuncName, iXP,
-				pNeoPlayer->GetNeoPlayerName(), InLiveState() ? " next round" : "");
+				pNeoPlayer->GetNeoPlayerName(), NEORules()->InRoundState() ? " next round" : "");
 	}
 }
 
 CON_COMMAND(sv_neo_restore_session, "Restore the previous session")
 {
-	if (false == sv_neo_restore_xp_death_any_round.GetBool() && false == InReadyUpState())
+	if (false == sv_neo_restore_xp_death_any_round.GetBool() && false == NEORules()->InReadyUpState())
 	{
-		Msg("%s: error: Cannot set XPs if not idle and in a ready up lobby\n", __func__);
+		Warning("%s: error: Cannot set XPs if not idle and in a ready up lobby\n", __func__);
 		return;
 	}
 
 	KeyValues *kv = new KeyValues(GIVEXP_SESSION_RESTORE_KV_ROOT);
 	if (false == kv->LoadFromFile(g_pFullFileSystem, "scripts/" GIVEXP_SESSION_RESTORE_FNAME))
 	{
-		Msg("%s: error: No restore session file found\n", __func__);
+		Warning("%s: error: No restore session file found\n", __func__);
 		kv->deleteThis();
 		return;
 	}
@@ -171,7 +160,7 @@ CON_COMMAND(sv_neo_restore_session, "Restore the previous session")
 		const char *pszCurMap = gpGlobals->mapname.ToCStr();
 		if (0 != V_strcmp(pszInfileMap, pszCurMap))
 		{
-			Msg("%s: Will not restore since map session differs: in file %s vs current %s\n",
+			Warning("%s: Will not restore since map session differs: in file %s vs current %s\n",
 					__func__, pszInfileMap, pszCurMap);
 			kv->deleteThis();
 			return;
@@ -246,7 +235,7 @@ CON_COMMAND(sv_neo_restore_session, "Restore the previous session")
 			}
 			else
 			{
-				Msg("%s: Player steamID: %s, name: %s skipped: not found\n",
+				Warning("%s: Player steamID: %s, name: %s skipped: not found\n",
 						__func__, pszSteamID3, pszName);
 			}
 		}
@@ -333,7 +322,7 @@ void MatchSessionBackup()
 	}
 	else
 	{
-		Msg("Session backup failed to save at %s!\n", szDateTime);
+		Warning("Session backup failed to save at %s!\n", szDateTime);
 	}
 
 	kv->deleteThis();
@@ -343,7 +332,7 @@ CON_COMMAND(sv_neo_restore_round_number, "Set the next round number")
 {
 	if (2 != args.ArgC())
 	{
-		Msg("Usage: %s <round number>\n", __func__);
+		Warning("Usage: %s <round number>\n", __func__);
 		return;
 	}
 
@@ -355,7 +344,7 @@ CON_COMMAND(sv_neo_restore_rounds_won, "Set the rounds won")
 {
 	if (3 != args.ArgC())
 	{
-		Msg("Usage: %s <jinrai won> <nsf won>\n", __func__);
+		Warning("Usage: %s <jinrai won> <nsf won>\n", __func__);
 		return;
 	}
 
@@ -368,7 +357,7 @@ CON_COMMAND(sv_neo_restore_team_scores, "Set the scores for each team (not used 
 {
 	if (3 != args.ArgC())
 	{
-		Msg("Usage: %s <jinrai score> <nsf score>\n", __func__);
+		Warning("Usage: %s <jinrai score> <nsf score>\n", __func__);
 		return;
 	}
 
@@ -383,32 +372,23 @@ CON_COMMAND(sv_neo_restore_xp, "Give a player XP (and death) count")
 
 	if (!IN_BETWEEN_EQ(3, args.ArgC(), 4))
 	{
-		Msg(SZ_COMMON_USAGE_PF, __func__);
+		Warning(SZ_COMMON_USAGE_PF, __func__);
 		return;
 	}
 
 	const char *pszNameFind = args[1];
 	const int iXP = V_atoi(args[2]);
-	if (false == IN_BETWEEN_EQ(-99, iXP, 1000))
-	{
-		Msg("%s: error: Unreasonable XP\n", __func__);
-		return;
-	}
-
 	const int iDeaths = (args.ArgC() == 4) ? V_atoi(args[3]) : -1;
-	if (4 == args.ArgC() && false == IN_BETWEEN_EQ(0, iDeaths, 1000))
+	if (4 == args.ArgC() && (iDeaths < 0))
 	{
-		Msg((iDeaths < 0)
-				? "%s: error: Death count must be positive\n"
-				: "%s: error: Unresonable death count\n"
-				, __func__);
-		Msg(SZ_COMMON_USAGE_PF, __func__);
+		Warning("%s: error: Death count must be positive\n", __func__);
+		Warning(SZ_COMMON_USAGE_PF, __func__);
 		return;
 	}
 
-	if (false == sv_neo_restore_xp_death_any_round.GetBool() && false == InReadyUpState())
+	if (false == sv_neo_restore_xp_death_any_round.GetBool() && false == NEORules()->InReadyUpState())
 	{
-		Msg("%s: error: Cannot set XPs if not idle and in a ready up lobby\n", __func__);
+		Warning("%s: error: Cannot set XPs if not idle and in a ready up lobby\n", __func__);
 		return;
 	}
 
@@ -426,6 +406,6 @@ CON_COMMAND(sv_neo_restore_xp, "Give a player XP (and death) count")
 		}
 	}
 
-	Msg("%s: error: Cannot find player \"%s\"\n", __func__, pszNameFind);
+	Warning("%s: error: Cannot find player \"%s\"\n", __func__, pszNameFind);
 }
 

@@ -358,6 +358,8 @@ public:
 	const Vector& GetJuggernautMarkerPos() const;
 	bool IsJuggernautLocked() const;
 
+	bool InReadyUpState() const;
+	bool InRoundState() const;
 
 	int GetOpposingTeam(const int team) const
 	{

@@ -2649,7 +2649,7 @@ const int CNEORules::GetRoundLimit() const
 void CNEORules::StartNextRound()
 {
 	// Only check ready-up on idle state
-	const bool bLobby = sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle;
+	const bool bLobby = InReadyUpState();
 	const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
 	const bool bEqualThres = (iThres == GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers()) && (iThres == GetGlobalTeam(TEAM_NSF)->GetNumPlayers());
 	const auto readyPlayers = FetchReadyPlayers();
@@ -4714,6 +4714,16 @@ bool CNEORules::IsJuggernautLocked() const
 	}
 
 	return false;
+}
+
+bool CNEORules::InReadyUpState() const
+{
+	return (sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle);
+}
+
+bool CNEORules::InRoundState() const
+{
+	return (IsRoundLive() || m_nRoundStatus == NeoRoundStatus::PostRound);
 }
 
 const char *CNEORules::GetTeamClantag(const int iTeamNum) const
