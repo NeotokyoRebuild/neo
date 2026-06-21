@@ -267,6 +267,15 @@ void* SDLMgrFactoryRedirector( const char *pName, int *pReturnCode )
 		return &g_FakeLauncherMgr;
 	}
 
+	// materialsystem.so's Connect() resolves its own interface from the factory
+	// we pass to Init(). Our fileSystemFactory doesn't know about it, so hand
+	// back the material system pointer we already obtained above; otherwise
+	// materialsystem caches a NULL self-pointer and crashes dereferencing it.
+	if (strcmp(MATERIAL_SYSTEM_INTERFACE_VERSION, pName) == 0)
+	{
+		return g_pMaterialSystem;
+	}
+
 	return g_fileSystemFactory(pName, pReturnCode);
 
 }

@@ -53,6 +53,7 @@ endif()
 
 target_link_libraries(tier1
     PUBLIC
+    vstdlib::vstdlib
     tier0::tier0
 )
 
