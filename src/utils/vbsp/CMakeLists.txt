@@ -39,7 +39,7 @@ elseif(OS_LINUX)
     target_compile_definitions(vbsp
         PRIVATE
         #GL_GLEXT_PROTOTYPES
-        #DX_TO_GL_ABSTRACTION
+        DX_TO_GL_ABSTRACTION
         USE_SDL
         ALLOW_NOSHADERAPI
     )
@@ -138,6 +138,10 @@ target_sources_grouped(
     ../common/threads.cpp
     ../common/tools_minidump.cpp
     ../common/tools_minidump.h
+)
+
+set_source_files_properties(${CMAKE_SOURCE_DIR}/public/filesystem_init.cpp PROPERTIES
+    COMPILE_OPTIONS "-D_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX};-D_EXTERNAL_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}"
 )
 
 target_sources_grouped(
