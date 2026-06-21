@@ -34,7 +34,7 @@ enum FSInitType_t
 };
 
 //
-// Initializes qdir,  and gamedir. Also initializes the VMPI filesystem if MPI is defined.
+// Initializes qdir,  and gamedir.
 //
 // pFilename can be NULL if you want to rely on vproject and qproject. If it's specified, FileSystem_Init
 // will go up directories from pFilename looking for gameinfo.txt (if vproject isn't specified).

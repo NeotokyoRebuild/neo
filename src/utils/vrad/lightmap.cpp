@@ -11,7 +11,6 @@
 #include "radial.h"
 #include "mathlib/bumpvects.h"
 #include "tier1/utlvector.h"
-#include "vmpi.h"
 #include "mathlib/anorms.h"
 #include "map_utils.h"
 #include "mathlib/halton.h"
@@ -3172,15 +3171,7 @@ void BuildFacelights (int iThread, int facenum)
 		}
 	}
 
-#ifdef MPI
-	if (!g_bUseMPI) 
-#endif
-	{
-		//
-		// This is done on the master node when MPI is used
-		//
-		BuildPatchLights( facenum );
-	}
+	BuildPatchLights( facenum );
 
 	if( g_bDumpPatches )
 	{
