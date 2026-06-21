@@ -21,7 +21,6 @@ target_include_directories(vgui_controls
 
 target_link_libraries(vgui_controls
     PRIVATE
-    tier0::tier0
     tier1::tier1
 )
 
