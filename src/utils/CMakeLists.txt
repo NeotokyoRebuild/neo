@@ -1,2 +1,4 @@
 add_subdirectory(lzma)
 add_subdirectory(vbsp)
+add_subdirectory(vvis)
+add_subdirectory(vvis_launcher)

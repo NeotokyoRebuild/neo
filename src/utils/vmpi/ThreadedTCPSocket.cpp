@@ -809,7 +809,7 @@ public:
 			listen( pRet->m_Socket, nQueueLength == -1 ? SOMAXCONN : nQueueLength ) != 0 )
 		{
 			pRet->Release();
-			return false;
+            return nullptr;
 		}
 
 		pRet->m_pHandler = pHandlerCreator;
