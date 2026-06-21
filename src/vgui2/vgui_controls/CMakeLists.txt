@@ -8,15 +8,14 @@ set_target_properties(vgui_controls PROPERTIES
     UNITY_BUILD_MODE GROUP
 )
 
-target_include_directories(vgui_controls
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/public
-)
+# target_include_directories(vgui_controls
+#     PRIVATE
+#     ${CMAKE_SOURCE_DIR}/common
+#     ${CMAKE_SOURCE_DIR}/public
+# )
 
 target_link_libraries(vgui_controls
     PRIVATE
-    tier0::tier0
     tier1::tier1
 )
 
