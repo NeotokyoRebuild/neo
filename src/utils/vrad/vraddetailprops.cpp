@@ -959,49 +959,6 @@ void UnserializeDetailPropLighting( int lumpID, int lumpVersion, CUtlVector<Deta
 }
 
 DetailObjectLump_t *g_pMPIDetailProps = NULL;
-
-#ifdef MPI
-void VMPI_ProcessDetailPropWU( int iThread, int iWorkUnit, MessageBuffer *pBuf )
-{
-	CUtlVector<DetailPropLightstylesLump_t> *pDetailPropLump = s_pDetailPropLightStyleLump;
-
-	DetailObjectLump_t& prop = g_pMPIDetailProps[iWorkUnit];
-	ComputeLighting( prop, iThread );
-
-	// Send the results back...	
-	pBuf->write( &prop.m_Lighting, sizeof( prop.m_Lighting ) );
-	pBuf->write( &prop.m_LightStyleCount, sizeof( prop.m_LightStyleCount ) );
-	pBuf->write( &prop.m_LightStyles, sizeof( prop.m_LightStyles ) );
-	
-	for ( int i=0; i < prop.m_LightStyleCount; i++ )
-	{
-		DetailPropLightstylesLump_t *l = &pDetailPropLump->Element( i + prop.m_LightStyles );
-		pBuf->write( &l->m_Lighting, sizeof( l->m_Lighting ) );
-		pBuf->write( &l->m_Style, sizeof( l->m_Style ) );
-	}
-}
-
-
-void VMPI_ReceiveDetailPropWU( int iWorkUnit, MessageBuffer *pBuf, int iWorker )
-{
-	CUtlVector<DetailPropLightstylesLump_t> *pDetailPropLump = s_pDetailPropLightStyleLump;
-
-	DetailObjectLump_t& prop = g_pMPIDetailProps[iWorkUnit];
-
-	pBuf->read( &prop.m_Lighting, sizeof( prop.m_Lighting ) );
-	pBuf->read( &prop.m_LightStyleCount, sizeof( prop.m_LightStyleCount ) );
-	pBuf->read( &prop.m_LightStyles, sizeof( prop.m_LightStyles ) );
-	
-	pDetailPropLump->EnsureCount( prop.m_LightStyles + prop.m_LightStyleCount );
-	
-	for ( int i=0; i < prop.m_LightStyleCount; i++ )
-	{
-		DetailPropLightstylesLump_t *l = &pDetailPropLump->Element( i + prop.m_LightStyles );
-		pBuf->read( &l->m_Lighting, sizeof( l->m_Lighting ) );
-		pBuf->read( &l->m_Style, sizeof( l->m_Style ) );
-	}
-}
-#endif
 	
 //-----------------------------------------------------------------------------
 // Computes lighting for the detail props

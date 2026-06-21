@@ -7,13 +7,16 @@ target_include_directories(vbsp
     PRIVATE
     ${CMAKE_SOURCE_DIR}/utils
     ${CMAKE_SOURCE_DIR}/utils/common
-    ${CMAKE_SOURCE_DIR}/utils/vmpi
 )
 
 target_compile_definitions(vbsp
     PRIVATE
     MACRO_MATHLIB
     PROTECTED_THINGS_DISABLE
+    
+    DX_TO_GL_ABSTRACTION
+    USE_SDL
+    ALLOW_NOSHADERAPI
 )
 
 if(OS_WINDOWS)
@@ -184,7 +187,6 @@ target_sources_grouped(
     ../common/pacifier.h
     ../common/polylib.h
     ../common/utilmatlib.h
-    ../vmpi/vmpi.h
     disp_ivp.h
     ivp.h
 )

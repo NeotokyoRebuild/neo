@@ -4,7 +4,6 @@ target_include_directories(vvis_library
     PRIVATE
     ${CMAKE_SOURCE_DIR}/utils
     ${CMAKE_SOURCE_DIR}/utils/common
-    ${CMAKE_SOURCE_DIR}/utils/vmpi
 )
 
 target_compile_definitions(vvis_library
@@ -12,36 +11,29 @@ target_compile_definitions(vvis_library
     PROTECTED_THINGS_DISABLE
 )
 
-target_compile_options(vvis_library
-    PRIVATE
-    /wd4091
-    /wd4316
-    /wd4355
-    /wd4577
-    /wd5033
-    /wd5054
-    /wd5055
-)
-
 if(OS_WINDOWS)
+    target_compile_options(vvis_library
+        PRIVATE
+        /wd4091
+        /wd4316
+        /wd4355
+        /wd4577
+        /wd5033
+        /wd5054
+        /wd5055
+    )
+
     target_link_libraries(vvis_library
         PRIVATE
         odbc32.lib
         odbccp32.lib
         ws2_32.lib
-        vstdlib::vstdlib
     )
-
-    if(NEO_VMPI)
-        target_link_libraries(vvis_library
-            PRIVATE
-            vmpi::vmpi
-        )
-    endif()
 endif()
 
 target_link_libraries(vvis_library
     PRIVATE
+    vstdlib::vstdlib
     mathlib::mathlib
     tier2::tier2
     lzma::lzma
@@ -73,17 +65,6 @@ target_sources_grouped(
     flow.cpp
     vvis.cpp
 )
-
-if(OS_WINDOWS AND NEO_VMPI)
-    target_sources_grouped(
-        TARGET vvis_library
-        NAME "Source Files"
-        FILES
-        ../common/mpi_stats.cpp
-        ../common/vmpi_tools_shared.cpp
-        mpivis.cpp
-    )
-endif()
 
 target_sources_grouped(
     TARGET vvis_library
@@ -123,14 +104,3 @@ target_sources_grouped(
     ../common/threads.h
     vis.h
 )
-
-if(OS_WINDOWS)
-    target_sources_grouped(
-        TARGET vvis_library
-        NAME "Header Files"
-        FILES
-        ../common/vmpi_tools_shared.h
-        ../vmpi/vmpi_distribute_work.h
-        mpivis.h
-    )
-endif()

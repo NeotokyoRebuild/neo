@@ -4,7 +4,6 @@ target_include_directories(vrad_library
     PRIVATE
     ${CMAKE_SOURCE_DIR}/utils
     ${CMAKE_SOURCE_DIR}/utils/common
-    ${CMAKE_SOURCE_DIR}/utils/vmpi
 )
 
 target_compile_definitions(vrad_library
@@ -29,13 +28,6 @@ if(OS_WINDOWS)
         PRIVATE
         ws2_32.lib
     )
-
-    if(NEO_VMPI)
-        target_link_libraries(vrad_library
-            PRIVATE
-            vmpi::vmpi
-        )
-    endif()
 endif()
 
 target_sources_grouped(
@@ -69,22 +61,6 @@ target_sources_grouped(
     vrad.cpp
     vraddll.cpp
 )
-
-if(OS_WINDOWS)
-    target_sources_grouped(
-        TARGET vrad_library
-        NAME "Source Files"
-        FILES
-        ../common/mpi_stats.cpp
-        ../common/vmpi_tools_shared.cpp
-        ../common/vmpi_tools_shared.h
-        mpivrad.cpp
-
-        # These files were [!$WIN32] in vpc
-        ${CMAKE_SOURCE_DIR}/public/filesystem_init.cpp
-        ../common/filesystem_tools.cpp
-    )
-endif()
 
 target_sources_grouped(
     TARGET vrad_library
@@ -160,24 +136,6 @@ target_sources_grouped(
     ../common/threads.h
     ../common/utilmatlib.h
 )
-
-if(OS_WINDOWS)
-    target_sources_grouped(
-        TARGET vrad_library
-        NAME "Common Header Files"
-        FILES
-        ../common/mpi_stats.h
-        ../vmpi/ichannel.h
-        ../vmpi/imysqlwrapper.h
-        ../vmpi/iphelpers.h
-        ../vmpi/messbuf.h
-        ../vmpi/threadhelpers.h
-        ../vmpi/vmpi_defs.h
-        ../vmpi/vmpi_dispatch.h
-        ../vmpi/vmpi_distribute_work.h
-        ../vmpi/vmpi_filesystem.h
-    )
-endif()
 
 target_sources_grouped(
     TARGET vrad_library

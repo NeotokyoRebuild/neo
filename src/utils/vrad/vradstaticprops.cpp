@@ -29,15 +29,12 @@
 #include "materialsystem/hardwareverts.h"
 #include "materialsystem/hardwaretexels.h"
 #include "byteswap.h"
-#include "mpivrad.h"
 #include "vtf/vtf.h"
 #include "tier1/utldict.h"
 #include "tier1/utlsymbol.h"
 #include "bitmap/tgawriter.h"
 
 #include "messbuf.h"
-#include "vmpi.h"
-#include "vmpi_distribute_work.h"
 
 
 #define ALIGN_TO_POW2(x,y) (((x)+(y-1))&~(y-1))
@@ -258,15 +255,7 @@ public:
 	// iterate all the instanced static props and compute their vertex lighting
 	void ComputeLighting( int iThread );
 
-private:
-	// VMPI stuff.
-#ifdef MPI
-	static void VMPI_ProcessStaticProp_Static( int iThread, uint64 iStaticProp, MessageBuffer *pBuf );
-	static void VMPI_ReceiveStaticPropResults_Static( uint64 iStaticProp, MessageBuffer *pBuf, int iWorker );
-	void VMPI_ProcessStaticProp( int iThread, int iStaticProp, MessageBuffer *pBuf );
-	void VMPI_ReceiveStaticPropResults( int iStaticProp, MessageBuffer *pBuf, int iWorker );
-#endif
-	
+private:	
 	// local thread version
 	static void ThreadComputeStaticPropLighting( int iThread, void *pUserData );
 	void ComputeLightingForProp( int iThread, int iStaticProp );
@@ -1331,10 +1320,6 @@ void CVradStaticPropMgr::ComputeLighting( CStaticProp &prop, int iThread, int pr
 	const int skip_prop = (g_bDisablePropSelfShadowing || (prop.m_Flags & STATIC_PROP_NO_SELF_SHADOWING)) ? prop_index : -1;
 	const int nFlags = ( prop.m_Flags & STATIC_PROP_IGNORE_NORMALS ) ? GATHERLFLAGS_IGNORE_NORMALS : 0;
 
-#ifdef MPI
-	VMPI_SetCurrentStage( "ComputeLighting" );
-#endif
-
 	matrix3x4_t	matPos, matNormal;
 	AngleMatrix(prop.m_Angles, prop.m_Origin, matPos);
 	AngleMatrix(prop.m_Angles, matNormal);
@@ -1659,95 +1644,6 @@ void CVradStaticPropMgr::SerializeLighting()
 	}
 }
 
-#ifdef MPI
-void CVradStaticPropMgr::VMPI_ProcessStaticProp_Static( int iThread, uint64 iStaticProp, MessageBuffer *pBuf )
-{
-	g_StaticPropMgr.VMPI_ProcessStaticProp( iThread, iStaticProp, pBuf );
-}
-
-void CVradStaticPropMgr::VMPI_ReceiveStaticPropResults_Static( uint64 iStaticProp, MessageBuffer *pBuf, int iWorker )
-{
-	g_StaticPropMgr.VMPI_ReceiveStaticPropResults( iStaticProp, pBuf, iWorker );
-}
-	
-//-----------------------------------------------------------------------------
-// Called on workers to do the computation for a static prop and send
-// it to the master.
-//-----------------------------------------------------------------------------
-void CVradStaticPropMgr::VMPI_ProcessStaticProp( int iThread, int iStaticProp, MessageBuffer *pBuf )
-{
-	// Compute the lighting.
-	CComputeStaticPropLightingResults results;
-	ComputeLighting( m_StaticProps[iStaticProp], iThread, iStaticProp, &results );
-
-#ifdef MPI
-	VMPI_SetCurrentStage( "EncodeLightingResults" );
-#endif
-	
-	// Encode the results.
-	int nLists = results.m_ColorVertsArrays.Count();
-	pBuf->write( &nLists, sizeof( nLists ) );
-	
-	for ( int i=0; i < nLists; i++ )
-	{
-		CUtlVector<colorVertex_t> &curList = *results.m_ColorVertsArrays[i];
-		int count = curList.Count();
-		pBuf->write( &count, sizeof( count ) );
-		pBuf->write( curList.Base(), curList.Count() * sizeof( colorVertex_t ) );
-	}
-
-	nLists = results.m_ColorTexelsArrays.Count();
-	pBuf->write(&nLists, sizeof(nLists));
-
-	for (int i = 0; i < nLists; i++)
-	{
-		CUtlVector<colorTexel_t> &curList = *results.m_ColorTexelsArrays[i];
-		int count = curList.Count();
-		pBuf->write(&count, sizeof(count));
-		pBuf->write(curList.Base(), curList.Count() * sizeof(colorTexel_t));
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Called on the master when a worker finishes processing a static prop.
-//-----------------------------------------------------------------------------
-void CVradStaticPropMgr::VMPI_ReceiveStaticPropResults( int iStaticProp, MessageBuffer *pBuf, int iWorker )
-{
-	// Read in the results.
-	CComputeStaticPropLightingResults results;
-	
-	int nLists;
-	pBuf->read( &nLists, sizeof( nLists ) );
-	
-	for ( int i=0; i < nLists; i++ )
-	{
-		CUtlVector<colorVertex_t> *pList = new CUtlVector<colorVertex_t>;
-		results.m_ColorVertsArrays.AddToTail( pList );
-		
-		int count;
-		pBuf->read( &count, sizeof( count ) );
-		pList->SetSize( count );
-		pBuf->read( pList->Base(), count * sizeof( colorVertex_t ) );
-	}
-
-	pBuf->read(&nLists, sizeof(nLists));
-
-	for (int i = 0; i < nLists; i++)
-	{
-		CUtlVector<colorTexel_t> *pList = new CUtlVector<colorTexel_t>;
-		results.m_ColorTexelsArrays.AddToTail(pList);
-
-		int count;
-		pBuf->read(&count, sizeof(count));
-		pList->SetSize(count);
-		pBuf->read(pList->Base(), count * sizeof(colorTexel_t));
-	}
-	
-	// Apply the results.
-	ApplyLightingToStaticProp( iStaticProp, m_StaticProps[iStaticProp], &results );
-}
-#endif
-
 void CVradStaticPropMgr::ComputeLightingForProp( int iThread, int iStaticProp )
 {
 	// Compute the lighting.
@@ -1787,19 +1683,6 @@ void CVradStaticPropMgr::ComputeLighting( int iThread )
 	// ensure any traces against us are ignored because we have no inherit lighting contribution
 	m_bIgnoreStaticPropTrace = true;
 
-#ifdef MPI
-	if ( g_bUseMPI )
-	{
-		// Distribute the work among the workers.
-		VMPI_SetCurrentStage( "CVradStaticPropMgr::ComputeLighting" );
-		
-		DistributeWork( 
-			count, 
-			&CVradStaticPropMgr::VMPI_ProcessStaticProp_Static, 
-			&CVradStaticPropMgr::VMPI_ReceiveStaticPropResults_Static );
-	}
-	else
-#endif
 	{
 		RunThreadsOn(count, true, ThreadComputeStaticPropLighting);
 	}
