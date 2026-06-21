@@ -302,8 +302,6 @@ extern bool IsModelTextureShadowsForced( const char *pModelName );
 #define TRACE_ID_STATICPROP    0x04000000  // static prop - lower bits are prop ID
 extern RayTracingEnvironment g_RtEnv;
 
-#include "mpivrad.h"
-
 void MakeShadowSplits (void);
 
 //==============================================
@@ -332,9 +330,6 @@ extern	directlight_t	*freelights;
 // because of hdr having two face lumps (light styles can cause them to be different, among other
 // things), we need to always access (r/w) face data though this pointer
 extern dface_t *g_pFaces;
-
-
-extern bool g_bMPIProps;
 
 extern	byte	nodehit[MAX_MAP_NODES];
 extern  float	gamma;
