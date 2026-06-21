@@ -34,6 +34,32 @@ elseif(OS_LINUX)
     )
 endif()
 
+set(UNITY_SOURCE_MATHLIB
+    color_conversion.cpp
+    halton.cpp
+    lightdesc.cpp
+    mathlib_base.cpp
+    powsse.cpp
+    sparse_convolution_noise.cpp
+    sseconst.cpp
+    sse.cpp
+    ssenoise.cpp				
+    anorms.cpp
+    bumpvects.cpp
+    IceKey.cpp
+    polyhedron.cpp
+    randsse.cpp
+    spherical.cpp
+    simdvectormatrix.cpp
+    vmatrix.cpp
+    almostequal.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_MATHLIB}
+    PROPERTIES UNITY_GROUP mathlib
+)
+
 target_sources_grouped(
     TARGET mathlib
     NAME "Source Files"
