@@ -2,8 +2,6 @@ add_executable(vbsp)
 
 target_include_directories(vbsp
     PRIVATE
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/utils
     ${CMAKE_SOURCE_DIR}/utils/common
     ${CMAKE_SOURCE_DIR}/utils/vmpi
@@ -41,8 +39,6 @@ target_link_libraries(vbsp
     bitmap::bitmap
     fgdlib::fgdlib
     mathlib::mathlib
-    tier0::tier0
-    tier1::tier1
     tier2::tier2
     vtf::vtf
     lzma::lzma
