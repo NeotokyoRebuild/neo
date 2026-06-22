@@ -7,7 +7,6 @@
 //=============================================================================//
 // vis.c
 
-#include <windows.h>
 #include "vis.h"
 #include "threads.h"
 #include "stdlib.h"
@@ -81,7 +80,7 @@ winding_t *NewWinding (int points)
 	if (points > MAX_POINTS_ON_WINDING)
 		Error ("NewWinding: %i points, max %d", points, MAX_POINTS_ON_WINDING);
 	
-	size = (int)(&((winding_t *)0)->points[points]);
+	size = offsetof(winding_t, points) + sizeof(Vector) * points;
 	w = (winding_t*)malloc (size);
 	memset (w, 0, size);
 	
@@ -1017,7 +1016,7 @@ int RunVVis( int argc, char **argv )
 	{
 		// Setup the logfile.
 		char logFile[512];
-		_snprintf( logFile, sizeof(logFile), "%s.log", source );
+		Q_snprintf( logFile, sizeof(logFile), "%s.log", source );
 		SetSpewFunctionLogFile( logFile );
 	}
 

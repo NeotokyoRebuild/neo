@@ -13,11 +13,6 @@ set_target_properties(tier1 PROPERTIES
     UNITY_BUILD_MODE GROUP
     UNITY_BUILD_CODE_BEFORE_INCLUDE "${unity_before}"
 )
-if (OS_LINUX)
-    set_target_properties(tier1 PROPERTIES
-        POSITION_INDEPENDENT_CODE ON
-    )
-endif ()
 
 target_include_directories(tier1
     PUBLIC
