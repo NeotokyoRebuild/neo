@@ -51,7 +51,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/public/scratchpad3d.cpp
     #${CMAKE_SOURCE_DIR}/public/tier0/memoverride.cpp"
     ${CMAKE_SOURCE_DIR}/public/zip_utils.cpp
-    ../common/MySqlDatabase.cpp
+    #../common/MySqlDatabase.cpp
     ../common/bsplib.cpp
     ../common/cmdlib.cpp
     ../common/filesystem_tools.cpp
@@ -70,9 +70,9 @@ target_sources_grouped(
     TARGET vvis_library
     NAME "Header Files"
     FILES
-    ${CMAKE_SOURCE_DIR}/public/BSPFILE.H
-    ${CMAKE_SOURCE_DIR}/public/BSPTreeData.h
-    ${CMAKE_SOURCE_DIR}/public/GameBSPFile.h
+    ${CMAKE_SOURCE_DIR}/public/bspfile.h
+    ${CMAKE_SOURCE_DIR}/public/bsptreedata.h
+    ${CMAKE_SOURCE_DIR}/public/gamebspfile.h
     ${CMAKE_SOURCE_DIR}/public/bspflags.h
     ${CMAKE_SOURCE_DIR}/public/cmodel.h
     ${CMAKE_SOURCE_DIR}/public/mathlib/amd3dx.h
@@ -96,7 +96,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/public/vstdlib/vstdlib.h
     ${CMAKE_SOURCE_DIR}/public/wadtypes.h
     ../common/ISQLDBReplyTarget.h
-    ../common/MySqlDatabase.h
+    #../common/MySqlDatabase.h
     ../common/bsplib.h
     ../common/cmdlib.h
     ../common/pacifier.h
