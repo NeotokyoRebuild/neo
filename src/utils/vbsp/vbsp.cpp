@@ -906,7 +906,7 @@ int RunVBSP( int argc, char **argv )
 
 	LoadCmdLineFromFile( argc, argv, mapbase, "vbsp" );
 
-	Msg( "Valve Software - vbsp.exe (%s)\n", __DATE__ );
+	Msg( "Valve Software - vbsp (%s)\n", __DATE__ );
 
 	for (i=1 ; i<argc ; i++)
 	{
@@ -1177,7 +1177,7 @@ int RunVBSP( int argc, char **argv )
 			"                file. -onlyents won't reimport brush models.\n"
 			"  -onlyprops  : Only update the static props and detail props.\n"
 			"  -glview     : Writes .gl files in the current directory that can be viewed\n"
-			"                with glview.exe. If you use -tmpout, it will write the files\n"
+			"                with glview. If you use -tmpout, it will write the files\n"
 			"                into the \\tmp folder.\n"
 			"  -nodetail   : Get rid of all detail geometry. The geometry left over is\n"
 			"                what affects visibility.\n"
