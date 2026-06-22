@@ -103,7 +103,7 @@ public:
 		const CNavArea *grenadeArea = TheNavMesh->GetNavArea( m_grenade->GetAbsOrigin() );
 		if ( grenadeArea )
 		{
-			if ( area->IsPotentiallyVisible( grenadeArea ) )
+			if ( grenadeArea->IsPotentiallyVisible( area ) )
 			{
 				// area is exposed to grenade line of sight
 				return true;
@@ -212,14 +212,14 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 	bool bIsExposed = false;
 	if ( grenadeArea && me->GetLastKnownArea() )
 	{
-		if ( me->GetLastKnownArea()->IsPotentiallyVisible( grenadeArea ) )
+		if ( grenadeArea->IsPotentiallyVisible( me->GetLastKnownArea() ) )
 		{
 			bIsExposed = true;
 		}
 	}
 
 	// track projectile and relation to escape destination every update
-	if ( !m_coverArea || ( grenadeArea && m_coverArea->IsPotentiallyVisible( grenadeArea ) ) )
+	if ( !m_coverArea || ( grenadeArea && grenadeArea->IsPotentiallyVisible( m_coverArea ) ) )
 	{
 		m_coverArea = FindCoverArea( me );
 	}

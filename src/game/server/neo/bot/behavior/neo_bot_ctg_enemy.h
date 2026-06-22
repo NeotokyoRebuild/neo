@@ -20,8 +20,7 @@ public:
 	virtual const char *GetName( void ) const override { return "ctgEnemy"; }
 
 private:
-	PathFollower m_path;
-	CountdownTimer m_repathTimer;
+	ChasePath m_chasePath;
 };
 
 #endif // NEO_BOT_CTG_ENEMY_H

@@ -55,6 +55,11 @@ ActionResult< CNEOBot > CNEOBotJgrSeek::Update( CNEOBot *me, float interval )
 	// Juggernaut objective capture logic
 	if (m_bGoingToTargetEntity && m_hTargetEntity)
 	{
+		if ( me->GetVisionInterface()->GetPrimaryKnownThreat(true) )
+		{
+			return SuspendFor( new CNEOBotAttack( m_hTargetEntity->GetAbsOrigin() ), "Engaging enemies en route to juggernaut" );
+		}
+
 		const float useRangeSq = CNEO_Juggernaut::GetUseDistanceSquared() * 0.8f;
 		if ( me->GetAbsOrigin().DistToSqr( m_hTargetEntity->GetAbsOrigin() ) < useRangeSq ) 
 		{
@@ -75,10 +80,6 @@ ActionResult< CNEOBot > CNEOBotJgrSeek::Update( CNEOBot *me, float interval )
 							{
 								CNEOBotJgrCapture::LookAwayFrom( me, pJgr );
 								m_path.Invalidate(); // wait at juggernaut
-								if ( me->GetVisionInterface()->GetPrimaryKnownThreat() )
-								{
-									return SuspendFor( new CNEOBotAttack, "Intercepting enemies near juggernaut" );
-								}
 								return Continue();
 							}
 						}
