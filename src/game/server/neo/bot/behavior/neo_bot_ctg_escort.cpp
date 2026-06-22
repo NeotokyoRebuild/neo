@@ -58,13 +58,14 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 	CNEOBot *pBotGhostCarrier = ToNEOBot( pGhostCarrier );
 	if ( pBotGhostCarrier )
 	{
-		const CKnownEntity *carrierThreat = pBotGhostCarrier->GetVisionInterface()->GetPrimaryKnownThreat();
+		const CKnownEntity *carrierThreat = pBotGhostCarrier->GetVisionInterface()->GetPrimaryKnownThreat(true);
 		if ( carrierThreat )
 		{
+			const Vector& carrierThreatPos = carrierThreat->GetLastKnownPosition();
 			// Check if the threat has a clear shot at our friend
-			if ( me->IsLineOfFireClear( carrierThreat->GetLastKnownPosition(), pGhostCarrier, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+			if ( me->IsLineOfFireClear( carrierThreatPos, pGhostCarrier, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 			{
-				return SuspendFor( new CNEOBotAttack, "Assisting Ghost Carrier with their threat" );
+				return SuspendFor( new CNEOBotAttack( carrierThreatPos ), "Assisting Ghost Carrier with their threat" );
 			}
 		}
 	}
@@ -83,16 +84,24 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		}
 	}
 
+	if ( const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true) )
+	{
+		const Vector& ghosterPos = pGhostCarrier->GetAbsOrigin();
+		const Vector& threatPos = threat->GetLastKnownPosition();
+		if ( me->GetAbsOrigin().DistToSqr( threatPos ) > ghosterPos.DistToSqr( threatPos ) )
+		{
+			return SuspendFor( new CNEOBotAttack( ghosterPos ), "Engaging threats while regrouping with ghoster" );
+		}
+		else
+		{
+			return SuspendFor( new CNEOBotAttack(), "Intercepting threat while protecting ghoster" );
+		}
+	}
+	
 	bool bCanSeeCarrier = me->GetVisionInterface()->IsLineOfSightClear( pGhostCarrier->WorldSpaceCenter() );
 	if ( bCanSeeCarrier )
 	{
 		m_lostSightOfCarrierTimer.Invalidate();
-
-		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
-		if ( threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
-		{
-			return SuspendFor( new CNEOBotAttack, "Breaking away from ghoster to engage threat" );
-		}
 
 		if ( !m_bHasGoal )
 		{

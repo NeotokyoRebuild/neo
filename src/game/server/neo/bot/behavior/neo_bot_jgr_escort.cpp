@@ -47,26 +47,11 @@ ActionResult< CNEOBot >	CNEOBotJgrEscort::Update( CNEOBot *me, float interval )
 		return Done( "Juggernaut is not friendly" );
 	}
 
-	// Check if we can assist the Juggernaut (if they are a bot)
-	CNEOBot *pBotJuggernaut = ToNEOBot( pJuggernaut );
-	if ( pBotJuggernaut )
-	{
-		const CKnownEntity *juggernautThreat = pBotJuggernaut->GetVisionInterface()->GetPrimaryKnownThreat();
-		if ( juggernautThreat )
-		{
-			// Check if the threat has a clear shot at our friend
-			if ( me->IsLineOfFireClear( juggernautThreat->GetLastKnownPosition(), pJuggernaut, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
-			{
-				return SuspendFor( new CNEOBotAttack, "Assisting Juggernaut with their threat" );
-			}
-		}
-	}
-
 	// Check for own threats
-	const CKnownEntity *myThreat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	const CKnownEntity *myThreat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
 	if ( myThreat && myThreat->GetEntity() && myThreat->GetEntity()->IsAlive() )
 	{
-		return SuspendFor( new CNEOBotAttack, "Breaking away from Juggernaut to engage threat" );
+		return SuspendFor( new CNEOBotAttack( pJuggernaut->GetAbsOrigin() ), "Engaging enemy to lure them to Juggernaut" );
 	}
 
 	// Just follow the Juggernaut

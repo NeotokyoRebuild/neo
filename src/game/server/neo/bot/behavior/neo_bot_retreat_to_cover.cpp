@@ -60,7 +60,7 @@ public:
 			return true; // Can't test area if we don't know last area of threat
 		}
 
-		if ( !m_area->IsPotentiallyVisible( threatArea ) )
+		if ( !threatArea->IsPotentiallyVisible( m_area ) )
 		{
 			return true; // Candidate area is not visible by threat
 		}
