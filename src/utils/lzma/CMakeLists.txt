@@ -23,6 +23,12 @@ target_link_libraries(lzma
     mathlib::mathlib
 )
 
+if(OS_LINUX)
+    set_target_properties(lzma PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+endif()
+
 target_sources_grouped(
     TARGET lzma
     NAME "Source Files"
