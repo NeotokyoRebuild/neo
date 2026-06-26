@@ -31,10 +31,23 @@ ConVar glow_outline_effect_enable("glow_outline_effect_enable", "1", FCVAR_ARCHI
 		}
 	}
 );
+
 ConVar glow_outline_effect_width( "glow_outline_effect_width", "1.0", FCVAR_ARCHIVE, "Width of glow outline effect.", true, 0.f, false, 0.f);
 ConVar glow_outline_effect_alpha( "glow_outline_effect_alpha", "0.5", FCVAR_ARCHIVE, "Alpha of glow outline effect.", true, 0.f, true, 1.f);
 ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.1", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when obstructed", true, 0.f, true, 1.f);
 ConVar glow_outline_effect_textured_center_alpha("glow_outline_effect_textured_center_alpha", "0.2", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model when cloaked", true, 0.f, true, 1.f);
+ConVar cl_neo_hud_context_hint_highlight_object("cl_neo_hud_context_hint_highlight_object", "1", FCVAR_ARCHIVE, "Highlight interactible object", true, 0.f, true, 1.f,
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (!cl_neo_hud_context_hint_highlight_object.GetBool())
+			g_GlowObjectManager.ClearUseItemObject();
+		return;
+	});
+ConVar cl_neo_hud_context_hint_highlight_player("cl_neo_hud_context_hint_highlight_player", "1", FCVAR_ARCHIVE, "Highlight interactible players", true, 0.f, true, 1.f,
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (!cl_neo_hud_context_hint_highlight_player.GetBool())
+			g_GlowObjectManager.ClearUseItemPlayer();
+		return;
+	});
 #else
 ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "0", 0, "Enable entity outline glow effects.");
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );
@@ -81,7 +94,11 @@ void CGlowObjectManager::RenderGlowEffects( const CViewSetup *pSetup, int nSplit
 {
 	if ( g_pMaterialSystemHardwareConfig->SupportsPixelShaders_2_0() )
 	{
+#ifdef NEO
+		if ( glow_outline_effect_enable.GetBool() || cl_neo_hud_context_hint_highlight_object.GetBool() || cl_neo_hud_context_hint_highlight_player.GetBool() )
+#else
 		if ( glow_outline_effect_enable.GetBool() )
+#endif // NEO
 		{
 			CMatRenderContextPtr pRenderContext( materials );
 
@@ -156,6 +173,9 @@ void CGlowObjectManager::RenderGlowModels( const CViewSetup *pSetup, int nSplitS
 			continue;
 
 #ifdef NEO
+		if ( i != m_GlowObjectDefinitions.Count() - 1 && useItem.m_hEntity.IsValid() && useItem.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
+			continue;
+
 		// DrawModel can call ForcedMaterialOverride also
 		g_pStudioRender->ForcedMaterialOverride(pMatGlowColor);
 #endif
@@ -201,10 +221,23 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 
 	int iNumGlowObjects = 0;
 
+#ifdef NEO
+	constexpr int INVALID_USEELEMENT_INDEX = -1;
+	int useElementIndex = INVALID_USEELEMENT_INDEX;
+	if (useItem.m_hEntity.IsValid())
+	{
+		useElementIndex = m_GlowObjectDefinitions.AddToTail(useItem);
+	}
+#endif // NEO
 	for ( int i = 0; i < m_GlowObjectDefinitions.Count(); ++ i )
 	{
 		if ( m_GlowObjectDefinitions[i].IsUnused() || !m_GlowObjectDefinitions[i].ShouldDraw( nSplitScreenSlot ) )
 			continue;
+
+#ifdef NEO
+		if (i != useElementIndex && useItem.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
+			continue;
+#endif // NEO
 
 		if ( m_GlowObjectDefinitions[i].m_bRenderWhenOccluded || m_GlowObjectDefinitions[i].m_bRenderWhenUnoccluded )
 		{
@@ -280,6 +313,11 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	{
 		if ( m_GlowObjectDefinitions[i].IsUnused() || !m_GlowObjectDefinitions[i].ShouldDraw( nSplitScreenSlot ) )
 			continue;
+		
+#ifdef NEO
+		if (i != useElementIndex && useItem.m_hEntity == m_GlowObjectDefinitions[i].m_hEntity)
+			continue;
+#endif // NEO
 
 		if ( m_GlowObjectDefinitions[i].m_bRenderWhenOccluded && !m_GlowObjectDefinitions[i].m_bRenderWhenUnoccluded )
 		{
@@ -316,7 +354,17 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	// this fixes a bug where if there are glow objects in the list, but none of them are glowing,
 	// the whole screen blooms.
 	if ( iNumGlowObjects <= 0 )
+#ifdef NEO
+	{
+		if (useElementIndex != INVALID_USEELEMENT_INDEX)
+		{
+			m_GlowObjectDefinitions.Remove(useElementIndex);
+		}
 		return;
+	}
+#else
+		return;
+#endif // NEO
 
 	//=============================================
 	// Render the glow colors to _rt_FullFrameFB 
@@ -325,6 +373,12 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		PIXEvent pixEvent( pRenderContext, "RenderGlowModels" );
 		RenderGlowModels( pSetup, nSplitScreenSlot, pRenderContext );
 	}
+#ifdef NEO
+	if (useElementIndex != INVALID_USEELEMENT_INDEX)
+	{
+		m_GlowObjectDefinitions.Remove(useElementIndex);
+	}
+#endif // NEO
 	
 	// Get viewport
 #ifndef NEO
