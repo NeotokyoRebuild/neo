@@ -138,6 +138,7 @@ ConVar sv_neo_cap_reward("sv_neo_cap_reward", "0", FCVAR_REPLICATED, "How much X
 ConVar sv_neo_cap_reward_dead("sv_neo_cap_reward_dead", "0", FCVAR_REPLICATED, "Whether dead players should receive the ghost capture or escape reward.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_survivor_bonus("sv_neo_survivor_bonus", "1", FCVAR_REPLICATED, "Whether surviving players on the winning team in CTG and VIP should receive extra XP.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_ghost_carrier_bonus("sv_neo_ghost_carrier_bonus", "1", FCVAR_REPLICATED, "Whether the ghost carrier on the winning team should receive extra XP.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
 #endif // GAME_DLL
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
@@ -148,7 +149,6 @@ ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATE
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
-ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
 #ifdef CLIENT_DLL
 ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
 #endif
