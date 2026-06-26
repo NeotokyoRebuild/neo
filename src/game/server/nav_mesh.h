@@ -36,6 +36,9 @@ extern ConVar nav_edit;
 extern ConVar nav_quicksave;
 extern ConVar nav_show_approach_points;
 extern ConVar nav_show_danger;
+#ifdef NEO
+extern ConVar nav_generate_debug_brushladders;
+#endif
 
 //--------------------------------------------------------------------------------------------------------
 class NavAreaCollector
@@ -1194,6 +1197,12 @@ private:
 	NavLadderVector m_ladders;									// list of ladder navigation representations
 	void BuildLadders( void );
 	void DestroyLadders( void );
+#ifdef NEO
+	// Build ladders from the BSP brush lump ladders (rather than func_ladder)
+	[[nodiscard]] bool BuildBrushLaddersFromBsp();
+private:
+	[[nodiscard]] bool LadderFromPolyhedron(const CPolyhedron* polyhedron);
+#endif
 
 	bool SampleStep( void );									// sample the walkable areas of the map
 	void CreateNavAreasFromNodes( void );						// cover all of the sampled nodes with nav areas
