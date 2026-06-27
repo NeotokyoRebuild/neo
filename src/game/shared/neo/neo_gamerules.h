@@ -104,6 +104,7 @@ enum NeoGameType {
 	NEO_GAME_TYPE_EMT,
 	NEO_GAME_TYPE_TUT,
 	NEO_GAME_TYPE_JGR,
+	NEO_GAME_TYPE_ATK,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -131,6 +132,7 @@ enum NeoWinReason {
 	NEO_VICTORY_VIP_ELIMINATION,
 	NEO_VICTORY_TEAM_ELIMINATION,
 	NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
+	NEO_VICTORY_ATK_TIMEOUT,
 	NEO_VICTORY_POINTS,
 	NEO_VICTORY_FORFEIT,
 	NEO_VICTORY_STALEMATE, // Not actually a victory
@@ -287,8 +289,10 @@ public:
 
 	virtual bool CheckGameOver(void) OVERRIDE;
 
+	void CheckOvertime();
+
 	float GetRoundRemainingTime() const;
-	float GetCTGOverTime() const;
+	float GetOverTime(NeoGameType eGameType) const;
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
 	float MirrorDamageMultiplier() const;
@@ -331,6 +335,11 @@ public:
 	void CheckGameType();
 	void CheckGameConfig();
 	void StartNextRound();
+	void RoundTimeout();
+	bool RoundTimeoutTDM();
+	bool RoundTimeoutDM();
+	bool RoundTimeoutJGR();
+	bool RoundTimeoutATK();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
 	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return ""; } // handled by GetChatFormat
@@ -379,6 +388,8 @@ public:
 
     inline int roundNumber() const { return m_iRoundNumber; }
     inline bool roundNumberIsEven() const { return (roundNumber() % 2 == 0); }
+	int GetAttackingTeam() const;
+	int GetDefendingTeam() const;
 
 #ifdef GLOWS_ENABLE
 	void GetTeamGlowColor(int teamNumber, float &r, float &g, float &b)
