@@ -22,6 +22,7 @@ ntre_bot_profiles
 				corporal "jittescoped"
 				sergeant "zr68c"
 				lieutenant "supa7"
+				loot "zr68s mx mx_silenced aa13"
 			}
 			assault
 			{
@@ -29,6 +30,7 @@ ntre_bot_profiles
 				corporal "zr68s m41"
 				sergeant "mx"
 				lieutenant "aa13 srs"
+				loot "pz"
 			}
 			support
 			{
@@ -36,6 +38,7 @@ ntre_bot_profiles
 				corporal "mx"
 				sergeant "mx mx_silenced"
 				lieutenant "mx mx_silenced pz"
+				loot "aa13"
 			}
 		}
 	}
@@ -50,11 +53,13 @@ ntre_bot_profiles
 				recon
 				{
 					lieutenant "zr68c"
+					loot "zr68s"
 				}
 				assault
 				{
 					corporal "zr68s"
 					lieutenant "mx"
+					loot "pz"
 				}
 				support
 				{
@@ -74,12 +79,14 @@ ntre_bot_profiles
 					corporal "zr68l"
 					sergeant "zr68l"
 					lieutenant "m41s"
+					loot "m41 srs"
 				}
 				assault
 				{
 					corporal "m41"
 					sergeant "m41s mx"
 					lieutenant "srs"
+					loot "zr68l"
 				}
 				support
 				{
@@ -87,6 +94,7 @@ ntre_bot_profiles
 					corporal "mx"
 					sergeant "mx m41s"
 					lieutenant "mx m41s"
+					loot "zr68l srs"
 				}
 			}
 		}
@@ -110,6 +118,7 @@ ntre_bot_profiles
 					corporal "supa7 mx"
 					sergeant "supa7 mx"
 					lieutenant "supa7 mx"
+					loot "aa13"
 				}
 			}
 		}
@@ -149,6 +158,7 @@ ntre_bot_profiles
 					corporal "jittescoped"
 					sergeant "jittescoped"
 					lieutenant "m41s"
+					loot "zr68s"
 				}
 				assault
 				{
@@ -163,6 +173,7 @@ ntre_bot_profiles
 					corporal "mpn"
 					sergeant "mx_silenced"
 					lieutenant "mx_silenced"
+					loot "zr68s"
 				}
 			}
 		}
@@ -178,6 +189,7 @@ ntre_bot_profiles
 					corporal "srm jitte"
 					sergeant "zr68c"
 					lieutenant "supa7"
+					loot "aa13"
 				}
 				assault
 				{
@@ -185,6 +197,7 @@ ntre_bot_profiles
 					corporal "zr68c m41 supa7"
 					sergeant "mx"
 					lieutenant "mx aa13 srs"
+					loot "pz"
 				}
 				support
 				{
@@ -192,6 +205,7 @@ ntre_bot_profiles
 					corporal "mx supa7"
 					sergeant "mx"
 					lieutenant "mx pz"
+					loot "aa13"
 				}
 			}
 		}
@@ -215,6 +229,7 @@ ntre_bot_profiles
 					corporal "m41"
 					sergeant "m41 m41s mx"
 					lieutenant "m41 m41s mx aa13"
+					loot "pz"
 				}
 				support
 				{
@@ -222,6 +237,7 @@ ntre_bot_profiles
 					corporal "m41 m41s mx"
 					sergeant "m41 m41s mx"
 					lieutenant "m41 m41s mx"
+					loot "aa13"
 				}
 			}
 		}
@@ -281,6 +297,7 @@ ntre_bot_profiles
 					corporal "srm"
 					sergeant "zr68c"
 					lieutenant "zr68c supa7"
+					loot "zr68s mx mx_silenced aa13"
 				}
 			}
 		}
