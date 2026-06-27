@@ -5,7 +5,6 @@
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_ambush.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
-#include "bot/behavior/neo_bot_detpack_deploy.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 #include "neo_ghost_cap_point.h"
@@ -58,10 +57,6 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	CNavArea *const myArea = me->GetLastKnownArea();
 	if ( ghostArea && myArea && ghostArea->IsPotentiallyVisible( myArea ) )
 	{
-		if ( pDetpackWeapon && !pDetpackWeapon->m_bThisDetpackHasBeenThrown && NEORules()->m_pGhost )
-		{
-			return ChangeTo( new CNEOBotDetpackDeploy( NEORules()->GetGhostPos(), new CNEOBotCtgLoneWolfAmbush() ), "Moving to plant detpack" );
-		}
 		return ChangeTo( new CNEOBotCtgLoneWolfAmbush(), "Waiting in ambush near ghost" );
 	}
 
