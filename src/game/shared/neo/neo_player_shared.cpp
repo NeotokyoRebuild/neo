@@ -755,28 +755,31 @@ bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, tra
 		tr.surface.flags = SURF_HITBOX;
 		tr.surface.surfaceProps = physprops->GetSurfaceIndex( pBone->pszSurfaceProp() );
 		
-		switch (tr.hitgroup)
+		if (fContentsMask & CONTENTS_HITBOX)
 		{
-			case HITGROUP_LEFTARM:
-			case HITGROUP_RIGHTARM:
-			case HITGROUP_LEFTLEG:
-			case HITGROUP_RIGHTLEG:
-			case HITGROUP_GEAR:
-				trace_t secondTrace;
-				unsigned int fHitboxGroupMask = UINT_MAX;
-				fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_LEFTARM);
-				fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_RIGHTARM);
-				fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_LEFTLEG);
-				fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_RIGHTLEG);
-				fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_GEAR);
-#ifdef GAME_DLL
-				if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetAbsOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
-#else
-				if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetRenderOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
-#endif // GAME_DLL
-				{
-					tr.hitgroup = secondTrace.hitgroup;
-				}
+			switch (tr.hitgroup)
+			{
+				case HITGROUP_LEFTARM:
+				case HITGROUP_RIGHTARM:
+				case HITGROUP_LEFTLEG:
+				case HITGROUP_RIGHTLEG:
+				case HITGROUP_GEAR:
+					trace_t secondTrace;
+					unsigned int fHitboxGroupMask = UINT_MAX;
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_LEFTARM);
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_RIGHTARM);
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_LEFTLEG);
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_RIGHTLEG);
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_GEAR);
+	#ifdef GAME_DLL
+					if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetAbsOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
+	#else
+					if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetRenderOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
+	#endif // GAME_DLL
+					{
+						tr.hitgroup = secondTrace.hitgroup;
+					}
+			}
 		}
 
 #ifdef CLIENT_DLL
