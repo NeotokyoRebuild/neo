@@ -89,16 +89,16 @@ SteamEnv=1
 
 Next is finding the 64-bits steam-runtime under the Steam installation. This can be found
 using the following command, replacing `$HOME` if Steam is installed at another directory:
-```
-$ find "$HOME" -type d -name 'steam-runtime' 2> /dev/null
+```bash
+find "$HOME" -type d -name 'steam-runtime' 2> /dev/null
 ```
 
 Assuming default directory, it might be in either: `~/.steam/steam/steamapps/common/SteamLinuxRuntime/var/steam-runtime` or if using a Debian based distribution: `[TODO]`.
 
 Then change to that directory and replace `[INSERT_OUTPUT_HERE]` to the output of:
-```
-$ cd <STEAM-RUNTIME-DIR>
-$ ./run.sh printenv LD_LIBRARY_PATH
+```bash
+cd <STEAM-RUNTIME-DIR>
+./run.sh printenv LD_LIBRARY_PATH
 ```
 
 After this, you should be able to run and debug NT;RE, just make sure to have Steam open in the background.
