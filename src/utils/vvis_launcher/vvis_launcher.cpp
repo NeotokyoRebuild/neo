@@ -8,14 +8,19 @@
 // vvis_launcher.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
+#include "interface.h"
+#include "StdAfx.h"
+
+#ifdef WIN32
 #include <direct.h>
+#endif
+
 #include "tier1/strtools.h"
 #include "tier0/icommandline.h"
 #include "ilaunchabledll.h"
 
 
-
+#ifdef WIN32
 char* GetLastErrorString()
 {
 	static char err[2048];
@@ -40,17 +45,26 @@ char* GetLastErrorString()
 
 	return err;
 }
-
+#endif
 
 int main(int argc, char* argv[])
 {
 	CommandLine()->CreateCmdLine( argc, argv );
+	
+#ifdef WIN32
     const char *pDLLName = "vvis_library.dll";
-
+#else
+	const char *pDLLName = "libvvis.so";
+#endif
+	
 	CSysModule *pModule = Sys_LoadModule( pDLLName );
 	if ( !pModule )
 	{
+#ifdef WIN32
 		printf( "vvis launcher error: can't load %s\n%s", pDLLName, GetLastErrorString() );
+#else
+		printf( "vvis launcher error: can't load %s\n%s", pDLLName, dlerror() );
+#endif
 		return 1;
 	}
 

@@ -984,7 +984,13 @@ int RunVVis( int argc, char **argv )
 
     verbose = false;
 
-	LoadCmdLineFromFile( argc, argv, source, "vvis" );
+	CmdLib_InitFileSystem( argv[ argc - 1 ] );
+
+	char mapbase[64];
+	V_FileBase( argv[ argc - 1 ], mapbase, sizeof( mapbase ) );
+	strlwr( mapbase );
+	LoadCmdLineFromFile( argc, argv, mapbase, "vvis" );
+
 	int i = ParseCommandLine( argc, argv );
 
     if (i != argc - 1)
@@ -993,8 +999,6 @@ int RunVVis( int argc, char **argv )
         DeleteCmdLine( argc, argv );
         CmdLib_Exit( EXIT_FAILURE );
     }
-
-    CmdLib_InitFileSystem( argv[ argc - 1 ] );
 
 	// The ExpandPath is just for VMPI. VMPI's file system needs the basedir in front of all filenames,
 	// so we prepend qdir here.
