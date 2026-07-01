@@ -93,7 +93,8 @@ using the following command, replacing `$HOME` if Steam is installed at another 
 find "$HOME" -type d -name 'steam-runtime' 2> /dev/null
 ```
 
-Assuming default directory, it might be in either: `~/.steam/steam/steamapps/common/SteamLinuxRuntime/var/steam-runtime` or if using a Debian based distribution: `[TODO]`.
+Assuming default directory, it might be in either: `~/.steam/steam/steamapps/common/SteamLinuxRuntime/var/steam-runtime`
+or if using a Debian based distribution: `~/.steam/debian-installation/ubuntu12_32/steam-runtime`.
 
 Then change to that directory and replace `[INSERT_OUTPUT_HERE]` to the output of:
 ```bash
