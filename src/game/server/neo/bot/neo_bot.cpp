@@ -2677,12 +2677,31 @@ NeoClass CNEOBot::ChooseRandomClass() const
 	for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
 	{
 		bValidClasses[i] = (m_profile.flagClass & (1 << i));
+		// Check class limits
+		if (bValidClasses[i] && NEORules()->IsClassFull(GetTeamNumber(), i))
+		{
+			bValidClasses[i] = false;
+		}
 		if (bValidClasses[i])
 		{
 			++iClassCounts;
 		}
 	}
 
+	if (iClassCounts == 0)
+	{
+		// If all profile classes are full/banned, allow any class that isn't full
+		for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
+		{
+			if (!NEORules()->IsClassFull(GetTeamNumber(), i))
+			{
+				bValidClasses[i] = true;
+				++iClassCounts;
+			}
+		}
+	}
+
+	// NEO JANK: If still no valid classes (all full), allow any class as fallback
 	if (iClassCounts == 0)
 	{
 		for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
