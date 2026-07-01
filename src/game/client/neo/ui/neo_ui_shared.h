@@ -15,7 +15,8 @@ enum ENeoFlashTaskbarOption : int
 	// Any new options must go ABOVE this line.
 	// Please don't reorder existing choices for config compatibility.
 	EnumCount,
-	MaxValue = EnumCount-1
+	MaxValue = EnumCount-1,
+	MinValue = Never
 };
 
 } // namespace NeoUI

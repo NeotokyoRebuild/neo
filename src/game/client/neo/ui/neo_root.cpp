@@ -107,13 +107,13 @@ enum ENeoPopup
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
 
 ConVar neo_flash_taskbar("neo_flash_taskbar", "0", FCVAR_ARCHIVE,
-	"Flash inactive game window in the operating system taskbar. "
-	"0: Never"
+	"Flash inactive game window in the operating system taskbar."
+	" 0: Never"
 	" 1: When comp match starts"
 	" 2: When comp round starts"
 	" 3: When any match starts"
 	" 4: When any round starts",
-	true, 0, true, NeoUI::ENeoFlashTaskbarOption::MaxValue);
+	true, NeoUI::ENeoFlashTaskbarOption::MinValue, true, NeoUI::ENeoFlashTaskbarOption::MaxValue);
 
 ConVar neo_flash_taskbar_no_spec("neo_flash_taskbar_no_spec", "1", FCVAR_ARCHIVE,
 	"Whether to only apply neo_flash_taskbar when you are in a player (not spectator) team.",
