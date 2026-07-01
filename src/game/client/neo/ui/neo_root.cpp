@@ -649,10 +649,11 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 	}
 #ifdef _WIN32
 	else if (!neo_flash_taskbar_no_spec.GetBool() ||
+		C_NEO_Player::GetLocalPlayer() &&
 		C_NEO_Player::GetLocalPlayer()->GetObserverMode() == OBS_MODE_NONE)
 	{
 		Assert(engine);
-		if (true /*!engine->IsActiveApp()*/)
+		if (!engine->IsActiveApp())
 		{
 			bool shouldFlashWindow;
 			switch (neo_flash_taskbar.GetInt())
@@ -672,7 +673,7 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 				break;
 			default:
 				AssertMsg(neo_flash_taskbar.GetInt() == NeoUI::ENeoFlashTaskbarOption::Never,
-					"Fell through switch with cvar val %d", neo_flash_taskbar.GetInt());
+					"switch fallthrough of %s = %d", neo_flash_taskbar.GetName(), neo_flash_taskbar.GetInt());
 				shouldFlashWindow = false;
 				break;
 			}
