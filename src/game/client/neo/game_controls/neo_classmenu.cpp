@@ -248,18 +248,30 @@ void CNeoClassMenu::OnKeyCodeReleased(vgui::KeyCode code)
 		return;
 	}
 
+	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
+	int teamNumber = player ? player->GetTeamNumber() : TEAM_UNASSIGNED;
+
 	switch (code) {
 	case KEY_1:
-		UpdateSkinImages(0);
-		engine->ClientCmd("setclass 1");
+		if (!NEORules() || !NEORules()->IsClassFull(teamNumber, NEO_CLASS_RECON))
+		{
+			UpdateSkinImages(0);
+			engine->ClientCmd("setclass 1");
+		}
 		break;
 	case KEY_2:
-		UpdateSkinImages(1);
-		engine->ClientCmd("setclass 2");
+		if (!NEORules() || !NEORules()->IsClassFull(teamNumber, NEO_CLASS_ASSAULT))
+		{
+			UpdateSkinImages(1);
+			engine->ClientCmd("setclass 2");
+		}
 		break;
 	case KEY_3:
-		UpdateSkinImages(2);
-		engine->ClientCmd("setclass 3");
+		if (!NEORules() || !NEORules()->IsClassFull(teamNumber, NEO_CLASS_SUPPORT))
+		{
+			UpdateSkinImages(2);
+			engine->ClientCmd("setclass 3");
+		}
 		break;
 	case KEY_SPACE: // Continue with currently selected class and skin
 		ChangeMenu("loadoutmenu");
@@ -405,4 +417,47 @@ void CNeoClassMenu::ShowPanel( bool bShow )
 void CNeoClassMenu::OnThink()
 {
 	BaseClass::OnThink();
+	UpdateClassButtons();
+}
+
+void CNeoClassMenu::UpdateClassButtons()
+{
+	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
+	if (!player || !NEORules())
+	{
+		return;
+	}
+
+	int teamNumber = player->GetTeamNumber();
+	if (teamNumber != TEAM_JINRAI && teamNumber != TEAM_NSF)
+	{
+		// Not on a playing team, enable all buttons
+		if (m_pRecon_Button)
+		{
+			m_pRecon_Button->SetEnabled(true);
+		}
+		if (m_pAssault_Button)
+		{
+			m_pAssault_Button->SetEnabled(true);
+		}
+		if (m_pSupport_Button)
+		{
+			m_pSupport_Button->SetEnabled(true);
+		}
+		return;
+	}
+
+	// Check class limits and disable buttons accordingly
+	if (m_pRecon_Button)
+	{
+		m_pRecon_Button->SetEnabled(!NEORules()->IsClassFull(teamNumber, NEO_CLASS_RECON));
+	}
+	if (m_pAssault_Button)
+	{
+		m_pAssault_Button->SetEnabled(!NEORules()->IsClassFull(teamNumber, NEO_CLASS_ASSAULT));
+	}
+	if (m_pSupport_Button)
+	{
+		m_pSupport_Button->SetEnabled(!NEORules()->IsClassFull(teamNumber, NEO_CLASS_SUPPORT));
+	}
 }

@@ -251,6 +251,17 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
+	// Enforce class limits for Recon/Assault/Support
+	if (newClass >= NEO_CLASS_RECON && newClass <= NEO_CLASS_SUPPORT)
+	{
+		if (NEORules()->IsClassFull(GetTeamNumber(), newClass))
+		{
+			newClass = NEORules()->GetFallbackClass(GetTeamNumber(), newClass);
+			// If fallback returns the same class (all full), we'll proceed anyway
+			// This allows the player to spawn even if all classes are full
+		}
+	}
+
 	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
@@ -438,8 +449,15 @@ void SetClass(const CCommand &command)
 		{
 			return;
 		}
-		
+
 		nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+
+		// Enforce class limits
+		if (NEORules()->IsClassFull(player->GetTeamNumber(), nextClass))
+		{
+			nextClass = NEORules()->GetFallbackClass(player->GetTeamNumber(), nextClass);
+		}
+
 		player->RequestSetClass(nextClass);
 	}
 }
@@ -692,7 +710,18 @@ void CNEO_Player::Spawn(void)
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != NEO_CLASS_RANDOM) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
-		m_iNeoClass = m_iNextSpawnClassChoice;
+		int desiredClass = m_iNextSpawnClassChoice;
+
+		// Enforce class limits for Recon/Assault/Support
+		if (desiredClass >= NEO_CLASS_RECON && desiredClass <= NEO_CLASS_SUPPORT)
+		{
+			if (NEORules()->IsClassFull(GetTeamNumber(), desiredClass))
+			{
+				desiredClass = NEORules()->GetFallbackClass(GetTeamNumber(), desiredClass);
+			}
+		}
+
+		m_iNeoClass = desiredClass;
 	}
 
 	BaseClass::Spawn();

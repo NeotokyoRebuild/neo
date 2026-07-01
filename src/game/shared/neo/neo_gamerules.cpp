@@ -53,6 +53,10 @@ ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If
 
 ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
 
+ConVar sv_neo_class_limit_recon("sv_neo_class_limit_recon", "-1", FCVAR_REPLICATED, "Maximum number of Recon class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+ConVar sv_neo_class_limit_assault("sv_neo_class_limit_assault", "-1", FCVAR_REPLICATED, "Maximum number of Assault class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+ConVar sv_neo_class_limit_support("sv_neo_class_limit_support", "-1", FCVAR_REPLICATED, "Maximum number of Support class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+
 #ifdef CLIENT_DLL
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_PRINTABLEONLY, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
@@ -292,6 +296,15 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iLastAttacker)),
 	RecvPropInt(RECVINFO(m_iLastKiller)),
 	RecvPropInt(RECVINFO(m_iLastGhoster)),
+	RecvPropInt(RECVINFO(m_iClassLimitRecon)),
+	RecvPropInt(RECVINFO(m_iClassLimitAssault)),
+	RecvPropInt(RECVINFO(m_iClassLimitSupport)),
+	RecvPropInt(RECVINFO(m_iJinraiReconCount)),
+	RecvPropInt(RECVINFO(m_iJinraiAssaultCount)),
+	RecvPropInt(RECVINFO(m_iJinraiSupportCount)),
+	RecvPropInt(RECVINFO(m_iNsfReconCount)),
+	RecvPropInt(RECVINFO(m_iNsfAssaultCount)),
+	RecvPropInt(RECVINFO(m_iNsfSupportCount)),
 #else
 	SendPropTime(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropTime(SENDINFO(m_flNeoRoundStartTime)),
@@ -326,6 +339,15 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iLastAttacker), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iLastKiller), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iLastGhoster), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iClassLimitRecon)),
+	SendPropInt(SENDINFO(m_iClassLimitAssault)),
+	SendPropInt(SENDINFO(m_iClassLimitSupport)),
+	SendPropInt(SENDINFO(m_iJinraiReconCount)),
+	SendPropInt(SENDINFO(m_iJinraiAssaultCount)),
+	SendPropInt(SENDINFO(m_iJinraiSupportCount)),
+	SendPropInt(SENDINFO(m_iNsfReconCount)),
+	SendPropInt(SENDINFO(m_iNsfAssaultCount)),
+	SendPropInt(SENDINFO(m_iNsfSupportCount)),
 #endif
 END_NETWORK_TABLE()
 
@@ -652,6 +674,17 @@ CNEORules::CNEORules()
 	m_iForcedWeapon = -1;
 	m_bCyberspaceLevel = false;
 
+	m_iClassLimitRecon = -1;
+	m_iClassLimitAssault = -1;
+	m_iClassLimitSupport = -1;
+
+	m_iJinraiReconCount = 0;
+	m_iJinraiAssaultCount = 0;
+	m_iJinraiSupportCount = 0;
+	m_iNsfReconCount = 0;
+	m_iNsfAssaultCount = 0;
+	m_iNsfSupportCount = 0;
+
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("game_end");
@@ -673,7 +706,124 @@ void CNEORules::Precache()
 {
 	BaseClass::Precache();
 }
+
+int CNEORules::GetClassCount(int team, int classId) const
+{
+	if (team != TEAM_JINRAI && team != TEAM_NSF)
+	{
+		return 0;
+	}
+
+	if (classId < NEO_CLASS_RECON || classId > NEO_CLASS_SUPPORT)
+	{
+		return 0;
+	}
+
+	int count = 0;
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CNEO_Player *player = ToNEOPlayer(UTIL_PlayerByIndex(i));
+		if (player && player->GetTeamNumber() == team && player->GetClass() == classId)
+		{
+			count++;
+		}
+	}
+	return count;
+}
+
+void CNEORules::UpdateClassLimitsFromConVars()
+{
+	m_iClassLimitRecon = sv_neo_class_limit_recon.GetInt();
+	m_iClassLimitAssault = sv_neo_class_limit_assault.GetInt();
+	m_iClassLimitSupport = sv_neo_class_limit_support.GetInt();
+}
+
+void CNEORules::UpdateClassCounts()
+{
+	m_iJinraiReconCount = GetClassCount(TEAM_JINRAI, NEO_CLASS_RECON);
+	m_iJinraiAssaultCount = GetClassCount(TEAM_JINRAI, NEO_CLASS_ASSAULT);
+	m_iJinraiSupportCount = GetClassCount(TEAM_JINRAI, NEO_CLASS_SUPPORT);
+	m_iNsfReconCount = GetClassCount(TEAM_NSF, NEO_CLASS_RECON);
+	m_iNsfAssaultCount = GetClassCount(TEAM_NSF, NEO_CLASS_ASSAULT);
+	m_iNsfSupportCount = GetClassCount(TEAM_NSF, NEO_CLASS_SUPPORT);
+}
 #endif
+
+bool CNEORules::IsClassFull(int team, int classId) const
+{
+	if (classId < NEO_CLASS_RECON || classId > NEO_CLASS_SUPPORT)
+	{
+		return false;
+	}
+
+	int limit = -1;
+	switch (classId)
+	{
+	case NEO_CLASS_RECON:
+		limit = m_iClassLimitRecon;
+		break;
+	case NEO_CLASS_ASSAULT:
+		limit = m_iClassLimitAssault;
+		break;
+	case NEO_CLASS_SUPPORT:
+		limit = m_iClassLimitSupport;
+		break;
+	}
+
+	if (limit < 0)
+		return false;
+
+	if (limit == 0)
+		return true;
+
+	// Use networked class counts for client, server counts for server
+	int count = 0;
+#ifdef GAME_DLL
+	count = GetClassCount(team, classId);
+#else
+	switch (team)
+	{
+	case TEAM_JINRAI:
+		switch (classId)
+		{
+		case NEO_CLASS_RECON: count = m_iJinraiReconCount; break;
+		case NEO_CLASS_ASSAULT: count = m_iJinraiAssaultCount; break;
+		case NEO_CLASS_SUPPORT: count = m_iJinraiSupportCount; break;
+		}
+		break;
+	case TEAM_NSF:
+		switch (classId)
+		{
+		case NEO_CLASS_RECON: count = m_iNsfReconCount; break;
+		case NEO_CLASS_ASSAULT: count = m_iNsfAssaultCount; break;
+		case NEO_CLASS_SUPPORT: count = m_iNsfSupportCount; break;
+		}
+		break;
+	}
+#endif
+	return count >= limit;
+}
+
+int CNEORules::GetFallbackClass(int team, int preferredClass) const
+{
+	// Only consider Recon/Assault/Support for fallback
+	for (int c = NEO_CLASS_RECON; c <= NEO_CLASS_SUPPORT; c++)
+	{
+		if (c == preferredClass)
+		{
+			continue; // Skip the class that was full/banned
+		}
+
+		if (!IsClassFull(team, c))
+		{
+			return c;
+		}
+	}
+
+	// All classes are full/banned, return the preferred class anyway
+	// The caller will need to handle this case
+	return preferredClass;
+}
 
 ConVar	sk_max_neo_ammo("sk_max_neo_ammo", "10000", FCVAR_REPLICATED);
 ConVar	sk_plr_dmg_neo("sk_plr_dmg_neo", "0", FCVAR_REPLICATED);
@@ -1074,6 +1224,8 @@ void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
 	CheckGameConfig();
+	UpdateClassLimitsFromConVars();
+	UpdateClassCounts();
 	if (CheckShouldNotThink())
 	{
 		// This is kind of wonky, but we only need it for the tutorial, in order to play the dummy beacon sounds...
