@@ -21,6 +21,8 @@
 #include "tier1/interface.h"
 #include <ctime>
 #include "ui/neo_loading.h"
+#include "ui/neo_ui.h"
+#include "ui/neo_ui_shared.h"
 #include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
@@ -103,6 +105,19 @@ enum ENeoPopup
 };
 
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
+
+ConVar neo_flash_taskbar("neo_flash_taskbar", "0", FCVAR_ARCHIVE,
+	"Flash inactive game window in the operating system taskbar."
+	" 0: Never"
+	" 1: When comp match starts"
+	" 2: When comp round starts"
+	" 3: When any match starts"
+	" 4: When any round starts",
+	true, NeoUI::ENeoFlashTaskbarOption::MinValue, true, NeoUI::ENeoFlashTaskbarOption::MaxValue);
+
+ConVar neo_flash_taskbar_no_spec("neo_flash_taskbar_no_spec", "1", FCVAR_ARCHIVE,
+	"Whether to only apply neo_flash_taskbar when you are in a player (not spectator) team.",
+	true, false, true, true);
 
 struct YMD
 {
@@ -448,8 +463,14 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	SetMouseInputEnabled(true);
 	UpdateControls();
 	ivgui()->AddTickSignal(GetVPanel(), 200);
-	ListenForGameEvent("server_spawn");
+	ListenForGameEvent("comp_match_start");
+	ListenForGameEvent("comp_round_start");
 	ListenForGameEvent("game_newmap");
+	ListenForGameEvent("game_start");
+	ListenForGameEvent("lobby_all_players_ready");
+	ListenForGameEvent("match_start");
+	ListenForGameEvent("round_start");
+	ListenForGameEvent("server_spawn");
 
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 	ApplySchemeSettings(pScheme);
@@ -626,6 +647,45 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 	{
 		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("mapname"), m_wszMap, sizeof(m_wszMap));
 	}
+#ifdef _WIN32
+	else if (!neo_flash_taskbar_no_spec.GetBool() ||
+		C_NEO_Player::GetLocalPlayer() &&
+		C_NEO_Player::GetLocalPlayer()->GetObserverMode() == OBS_MODE_NONE)
+	{
+		Assert(engine);
+		if (!engine->IsActiveApp())
+		{
+			bool shouldFlashWindow;
+			switch (neo_flash_taskbar.GetInt())
+			{
+			case NeoUI::ENeoFlashTaskbarOption::AnyMatchStart:
+				shouldFlashWindow = FStrEq(type, "match_start");
+				break;
+			case NeoUI::ENeoFlashTaskbarOption::AnyRoundStart:
+				shouldFlashWindow = FStrEq(type, "round_start");
+				break;
+			case NeoUI::ENeoFlashTaskbarOption::CompMatchStart:
+				shouldFlashWindow = FStrEq(type, "comp_match_start") ||
+					FStrEq(type, "lobby_all_players_ready");
+				break;
+			case NeoUI::ENeoFlashTaskbarOption::CompRoundStart:
+				shouldFlashWindow = FStrEq(type, "comp_round_start");
+				break;
+			default:
+				AssertMsg(neo_flash_taskbar.GetInt() == NeoUI::ENeoFlashTaskbarOption::Never,
+					"switch fallthrough of %s = %d", neo_flash_taskbar.GetName(), neo_flash_taskbar.GetInt());
+				shouldFlashWindow = false;
+				break;
+			}
+
+			if (shouldFlashWindow)
+			{
+				DevMsg("Flash window for event: %s\n", type);
+				engine->FlashWindow();
+			}
+		}
+	}
+#endif
 }
 
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
