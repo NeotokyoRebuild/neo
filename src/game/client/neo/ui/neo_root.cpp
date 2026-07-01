@@ -648,6 +648,7 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 	{
 		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("mapname"), m_wszMap, sizeof(m_wszMap));
 	}
+#ifdef _WIN32
 	else if (!neo_flash_taskbar_no_spec.GetBool() ||
 		C_NEO_Player::GetLocalPlayer()->GetObserverMode() == OBS_MODE_NONE)
 	{
@@ -684,6 +685,7 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 			}
 		}
 	}
+#endif
 }
 
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
