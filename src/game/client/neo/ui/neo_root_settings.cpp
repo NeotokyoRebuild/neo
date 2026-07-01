@@ -1157,10 +1157,12 @@ void NeoSettings_General(NeoSettings *ns)
 		NeoUI::EndOverrideFgColor();
 	}
 
+#ifdef _WIN32
 	NeoUI::RingBox(L"Flash inactive game window in OS taskbar", FLASH_TASKBAR_LABELS, ARRAYSIZE(FLASH_TASKBAR_LABELS), &pGeneral->iFlashTaskbarOption);
 	// Hide this option if it's irrelevant for the user, to make the UI less cluttered.
 	if (pGeneral->iFlashTaskbarOption != NeoUI::ENeoFlashTaskbarOption::Never)
 		NeoUI::RingBoxBool(L"Don't flash the taskbar if spectating", &pGeneral->bDontFlashTaskbarIfObserver);
+#endif
 
 	NeoUI::Pad();
 	NeoUI::Pad();
