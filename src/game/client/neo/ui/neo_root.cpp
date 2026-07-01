@@ -651,37 +651,35 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 		C_NEO_Player::GetLocalPlayer()->GetObserverMode() == OBS_MODE_NONE)
 	{
 		Assert(engine);
-		if (neo_flash_taskbar.GetBool())// && !engine->IsActiveApp())
+		if (true /*!engine->IsActiveApp()*/)
 		{
-			CUtlVector<CUtlString> targetEvents(0, 2);
+			bool shouldFlashWindow;
 			switch (neo_flash_taskbar.GetInt())
 			{
 			case NeoUI::ENeoFlashTaskbarOption::AnyMatchStart:
-				targetEvents.AddToTail("match_start");
+				shouldFlashWindow = FStrEq(type, "match_start");
 				break;
 			case NeoUI::ENeoFlashTaskbarOption::AnyRoundStart:
-				targetEvents.AddToTail("round_start");
+				shouldFlashWindow = FStrEq(type, "round_start");
 				break;
 			case NeoUI::ENeoFlashTaskbarOption::CompMatchStart:
-				targetEvents.AddToTail("lobby_all_players_ready");
-				targetEvents.AddToTail("comp_match_start");
+				shouldFlashWindow = FStrEq(type, "comp_match_start") ||
+					FStrEq(type, "lobby_all_players_ready");
 				break;
 			case NeoUI::ENeoFlashTaskbarOption::CompRoundStart:
-				targetEvents.AddToTail("comp_round_start");
+				shouldFlashWindow = FStrEq(type, "comp_round_start");
 				break;
 			default:
-				Assert(false);
-				return;
+				AssertMsg(neo_flash_taskbar.GetInt() == NeoUI::ENeoFlashTaskbarOption::Never,
+					"Fell through switch with cvar val %d", neo_flash_taskbar.GetInt());
+				shouldFlashWindow = false;
+				break;
 			}
 
-			for (const auto& targetEvent: targetEvents)
+			if (shouldFlashWindow)
 			{
-				if (FStrEq(targetEvent, type))
-				{
-					DevMsg("Flash window for event: %s\n", type);
-					engine->FlashWindow();
-					break;
-				}
+				DevMsg("Flash window for event: %s\n", type);
+				engine->FlashWindow();
 			}
 		}
 	}
