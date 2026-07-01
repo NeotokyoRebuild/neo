@@ -51,7 +51,7 @@
 #define GAMEINFO_FILENAME_ALTERNATE	"gameinfo.txt"
 
 static char g_FileSystemError[256];
-static bool s_bUseVProjectBinDir = false;
+static bool s_bUseVProjectBinDir = true;
 static FSErrorMode_t g_FileSystemErrorMode = FS_ERRORMODE_VCONFIG;
 
 // Call this to use a bin directory relative to VPROJECT
@@ -348,11 +348,8 @@ bool FileSystem_GetExecutableDir( char *exedir, int exeDirLen )
 		{
 
 			// Only used by external code, i.e. maya but needed so app system loads the correct game DLLs
-			#ifdef WIN64
-			Q_snprintf( exedir, exeDirLen, "%s%c..%cbin%cx64", pProject, CORRECT_PATH_SEPARATOR, CORRECT_PATH_SEPARATOR, CORRECT_PATH_SEPARATOR );
-			#else
-			Q_snprintf( exedir, exeDirLen, "%s%c..%cbin", pProject, CORRECT_PATH_SEPARATOR, CORRECT_PATH_SEPARATOR );
-			#endif //
+			auto s = CORRECT_PATH_SEPARATOR;
+			Q_snprintf( exedir, exeDirLen, "%s%c..%cbin%clinux64", pProject, s, s, s );
 			return true;
 		}
 		return false;

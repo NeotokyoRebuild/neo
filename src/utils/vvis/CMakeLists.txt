@@ -29,7 +29,15 @@ if(OS_WINDOWS)
         odbccp32.lib
         ws2_32.lib
     )
+elseif(OS_LINUX)
+    set_target_properties(vvis_library PROPERTIES
+        OUTPUT_NAME "vvis"
+    )
 endif()
+
+set_source_files_properties(${CMAKE_SOURCE_DIR}/public/filesystem_init.cpp PROPERTIES
+    COMPILE_OPTIONS "-D_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX};-D_EXTERNAL_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}"
+)
 
 target_link_libraries(vvis_library
     PRIVATE
