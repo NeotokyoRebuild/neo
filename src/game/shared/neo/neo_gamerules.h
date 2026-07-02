@@ -84,6 +84,9 @@ public:
 class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
+class CNEOBotCtgLoneWolf;
+class CNEOBotCtgLoneWolfAmbush;
+class CNEOBotCtgLoneWolfSeek;
 class CNEOBotSeekAndDestroy;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
@@ -476,6 +479,10 @@ private:
 	friend class CNEOBotCtgCarrier;
 	friend class CNEOBotCtgEscort;
 	friend class CNEOBotCtgLoneWolf;
+	friend class CNEOBotCtgLoneWolfAmbush;
+	friend class CNEOBotCtgLoneWolfDetpack;
+	friend class CNEOBotCtgLoneWolfSeek;
+	friend class CNEOBotTacticalMonitor;
 
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
