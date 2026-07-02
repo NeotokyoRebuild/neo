@@ -70,10 +70,12 @@ ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
 	"0", FCVAR_REPLICATED,
 	"Minimum experience allowed to takeover players ",
 	true, -999, true, 999);
+#ifdef GAME_DLL
 ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
 	"180", FCVAR_NONE,
 	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
 	true, -1, true, 999);
+#endif // GAME_DLL
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
