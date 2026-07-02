@@ -36,6 +36,10 @@
 	X(SCOPEDWEAPON,	scopedwep, 		"", 								WEP_TYPE_NIL) \
 	X(THROWABLE, 	throwable, 		"", 								WEP_TYPE_NIL) \
 	X(SUPPRESSED, 	suppressed, 	"", 								WEP_TYPE_NIL) \
+	X(PISTOL, 		pistol, 		"", 								WEP_TYPE_NIL) \
+	X(SMG, 			smg, 			"", 								WEP_TYPE_NIL) \
+	X(SHOTGUN, 		shotgun, 		"", 								WEP_TYPE_NIL) \
+	X(BATTLERIFLE, 	battlerifle, 	"", 								WEP_TYPE_NIL) \
 	X(FIREARM, 		firearm, 		"", 								WEP_TYPE_NIL) \
 	X(EXPLOSIVE, 	explosive, 		"", 								WEP_TYPE_NIL)
 
@@ -43,6 +47,11 @@
 // THROWABLE - Generic for grenades 
 // SUPPRESSED - Suppressed weapons
 // EXPLOSIVE - Generic for weapons that count as explosive kills on killfeed.
+// SHOTGUN - Weapons with shotgun spread
+// BATTLERIFLE - Semi-auto rifles
+// PISTOL - Sidearms without first shot accuracy
+// SMG - Primary without first shot accuracy
+// FIREARM - Generic for all guns
 
 #define NEO_WEP_BITS_UNDERLYING_TYPE long long int
 
