@@ -53,22 +53,6 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 	{
 		return Done( "Ghost carrier is not a teammate anymore" );
 	}
-
-	// Check if we can assist the Ghost Carrier (if they are a bot)
-	CNEOBot *pBotGhostCarrier = ToNEOBot( pGhostCarrier );
-	if ( pBotGhostCarrier )
-	{
-		const CKnownEntity *carrierThreat = pBotGhostCarrier->GetVisionInterface()->GetPrimaryKnownThreat(true);
-		if ( carrierThreat )
-		{
-			const Vector& carrierThreatPos = carrierThreat->GetLastKnownPosition();
-			// Check if the threat has a clear shot at our friend
-			if ( me->IsLineOfFireClear( carrierThreatPos, pGhostCarrier, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
-			{
-				return SuspendFor( new CNEOBotAttack( carrierThreatPos ), "Assisting Ghost Carrier with their threat" );
-			}
-		}
-	}
 	
 	if ( m_repathTimer.IsElapsed() )
 	{
@@ -167,17 +151,6 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 
 		if ( !m_bHasGoal )
 		{
-			// Asymmetric defense: No goal cap zone, so defend the carrier.
-			if ( pBotGhostCarrier )
-			{
-				const CKnownEntity *carrierThreat = pBotGhostCarrier->GetVisionInterface()->GetPrimaryKnownThreat();
-				if ( carrierThreat && carrierThreat->GetEntity() && carrierThreat->GetEntity()->IsAlive() )
-				{
-					me->GetVisionInterface()->AddKnownEntity( carrierThreat->GetEntity() );
-					return SuspendFor( new CNEOBotAttack, "Attacking enemy during asymmetric defense" );
-				}
-			}
-
 			// No active threats to carrier
 			float flDistToCarrierSq = me->GetAbsOrigin().DistToSqr( pGhostCarrier->GetAbsOrigin() );
 			if ( flDistToCarrierSq > flSafeRadiusSq )
@@ -199,6 +172,7 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		Vector& vecMoveTarget = m_vecGoalPos;
 
 
+		CNEOBot *pBotGhostCarrier = ToNEOBot( pGhostCarrier );
 		if ( m_role == ROLE_SCREEN && pBotGhostCarrier )
 		{
 			CWeaponGhost *pGhost = dynamic_cast<CWeaponGhost*>( pBotGhostCarrier->Weapon_GetSlot( 0 ) );
