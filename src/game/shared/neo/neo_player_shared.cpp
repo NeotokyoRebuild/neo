@@ -16,6 +16,7 @@
 #include "c_neo_player.h"
 #include "c_playerresource.h"
 #include "ui/neo_hud_context_hint.h"
+#include "vprof.h"
 #define CNEO_Player C_NEO_Player
 #else
 #include "neo_player.h"
@@ -41,6 +42,8 @@
 #else
 #include "c_te_effect_dispatch.h"
 #endif // GAME_DLL
+
+#include "bone_setup.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -707,4 +710,90 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	}
 
 	return pNearest;
+}
+
+bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr)
+{
+#ifdef CLIENT_DLL
+	VPROF( "C_BaseAnimating::TestHitboxes" );
+
+	MDLCACHE_CRITICAL_SECTION();
+#endif // CLIENT_DLL
+
+	CStudioHdr *pStudioHdr = GetModelPtr();
+	if (!pStudioHdr)
+		return false;
+
+	mstudiohitboxset_t *set = pStudioHdr->pHitboxSet( m_nHitboxSet );
+	if ( !set || !set->numhitboxes )
+		return false;
+
+	// Use vcollide for box traces.
+	if ( !ray.m_IsRay )
+		return false;
+
+	// This *has* to be true for the existing code to function correctly.
+	Assert( ray.m_StartOffset == vec3_origin );
+
+#ifdef GAME_DLL
+	CBoneCache *pCache = GetBoneCache( );
+#else
+	CBoneCache *pCache = GetBoneCache( pStudioHdr );
+#endif // GAME_DLL
+	matrix3x4_t *hitboxbones[MAXSTUDIOBONES];
+	pCache->ReadCachedBonePointers( hitboxbones, pStudioHdr->numbones() );
+
+#ifdef GAME_DLL
+	if ( TraceToStudio( physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetAbsOrigin(), GetModelScale(), tr ) )
+#else
+	if ( TraceToStudio( physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetRenderOrigin(), GetModelScale(), tr ) )
+#endif // GAME_DLL
+	{
+		mstudiobbox_t *pbox = set->pHitbox( tr.hitbox );
+		mstudiobone_t *pBone = pStudioHdr->pBone(pbox->bone);
+		tr.surface.name = "**studio**";
+		tr.surface.flags = SURF_HITBOX;
+		tr.surface.surfaceProps = physprops->GetSurfaceIndex( pBone->pszSurfaceProp() );
+		
+		if (fContentsMask & CONTENTS_HITBOX)
+		{
+			switch (tr.hitgroup)
+			{
+				case HITGROUP_LEFTARM:
+				case HITGROUP_RIGHTARM:
+				case HITGROUP_LEFTLEG:
+				case HITGROUP_RIGHTLEG:
+				case HITGROUP_GEAR:
+					trace_t secondTrace;
+					unsigned int fHitboxGroupMask = UINT_MAX;
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_LEFTARM);
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_RIGHTARM);
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_LEFTLEG);
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_RIGHTLEG);
+					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_GEAR);
+	#ifdef GAME_DLL
+					if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetAbsOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
+	#else
+					if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetRenderOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
+	#endif // GAME_DLL
+					{
+						tr.hitgroup = secondTrace.hitgroup;
+					}
+			}
+		}
+
+#ifdef CLIENT_DLL
+		if ( IsRagdoll() )
+		{
+			IPhysicsObject *pReplace = m_pRagdoll->GetElement( tr.physicsbone );
+			if ( pReplace )
+			{
+				VPhysicsSetObject( NULL );
+				VPhysicsSetObject( pReplace );
+			}
+		}
+#endif // CLIENT_DLL
+	}
+
+	return true;
 }
