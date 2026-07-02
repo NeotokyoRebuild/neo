@@ -185,6 +185,34 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		return false;
 	}
 
+	// Sneak if commander is currently quiet
+	bool commanderIsQuiet = false;
+	if (pCommander->IsWalking())
+	{
+		commanderIsQuiet = true;
+	}
+	else if ( !(pCommander->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_SPEED | IN_RUN )) )
+	{
+		// Even while standing still, press IN_SPEED / IN_RUN to urge bots to move faster
+		commanderIsQuiet = true;
+	}
+
+	if (pCommander->IsDucking())
+	{
+		commanderIsQuiet = true;
+		me->PressCrouchButton(0.5f);
+	}
+
+	if (commanderIsQuiet)
+	{
+		m_bSneakWhenFollowingPing = true;
+		me->PressSneakButton(0.5f);
+	}
+	else
+	{
+		m_bSneakWhenFollowingPing = false;
+	}
+
 	// Mirror behavior of leader if we have one
 	if ( CNEO_Player *pPlayerToMirror = me->m_hLeadingPlayer.Get() )
 	{
@@ -195,24 +223,6 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		else
 		{
 			me->DisableCloak();
-		}
-
-		if (pPlayerToMirror->IsDucking())
-		{
-			me->PressCrouchButton(0.5f);
-		}
-		else
-		{
-			me->ReleaseCrouchButton();
-		}
-
-		if (pPlayerToMirror->IsWalking())
-		{
-			me->PressSneakButton(0.5f);
-		}
-		else
-		{
-			me->ReleaseSneakButton();
 		}
 	}
 
@@ -242,7 +252,6 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		// Use sv_neo_bot_cmdr_stop_distance_sq for consistent bot collection range
 		// follow_stop_distance_sq would be confusing if player doesn't know about distance tuning
 		me->m_hLeadingPlayer = pCommander;
-		m_bSneakWhenFollowingPing = false; // watch commander's stance
 		m_vGoalPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 		pCommander->m_vLastPingByStar.GetForModify(me->GetStar()) = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 	}
@@ -254,7 +263,6 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		{
 			SendUpdateToCommander( me, "On my way." );
 			me->m_hLeadingPlayer = nullptr; // Stop following and start travelling to ping
-			m_bSneakWhenFollowingPing = pCommander->IsWalking();
 			m_vGoalPos = pCommander->m_vLastPingByStar.Get(me->GetStar());
 			me->m_vLastPingByStar.GetForModify(me->GetStar()) = pCommander->m_vLastPingByStar.Get(me->GetStar());
 
@@ -267,7 +275,6 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 			else
 			{
 				me->m_hLeadingPlayer = pCommander; // fallback to following commander
-				m_bSneakWhenFollowingPing = false; // watch commander's stance
 				// continue with leader following logic below
 			}
 		}
@@ -291,7 +298,6 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		else
 		{
 			me->m_hLeadingPlayer = pCommander; // fallback to following commander
-			m_bSneakWhenFollowingPing = false; // react to enemies at full speed
 			// continue with leader following logic below
 		}
 	}
