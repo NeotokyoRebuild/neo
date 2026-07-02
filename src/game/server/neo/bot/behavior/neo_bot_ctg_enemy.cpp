@@ -15,8 +15,7 @@ CNEOBotCtgEnemy::CNEOBotCtgEnemy( void )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgEnemy::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
-	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
-	m_repathTimer.Invalidate();
+	m_chasePath.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
 	return Continue();
 }
@@ -40,20 +39,14 @@ ActionResult< CNEOBot >	CNEOBotCtgEnemy::Update( CNEOBot *me, float interval )
 		return Done( "Ghost carrier is friendly" );
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
 	if ( threat && !threat->IsObsolete() && me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
-		return SuspendFor( new CNEOBotAttack, "Attacking ghoster team" );
+		return SuspendFor( new CNEOBotAttack(pGhostCarrier->GetAbsOrigin()), "Attacking ghoster team" );
 	}
 
 	// Investigate the ghost carrier's position
-	if ( m_repathTimer.IsElapsed() )
-	{
-		// FASTEST_ROUTE: don't waste chase time looking for cover
-		CNEOBotPathCompute( me, m_path, pGhostCarrier->GetAbsOrigin(), FASTEST_ROUTE );
-		m_repathTimer.Start( RandomFloat( 0.2f, 1.0f ) );
-	}
-	m_path.Update( me );
+	CNEOBotPathUpdateChase( me, m_chasePath, pGhostCarrier, DEFAULT_ROUTE );
 	
 	return Continue();
 }

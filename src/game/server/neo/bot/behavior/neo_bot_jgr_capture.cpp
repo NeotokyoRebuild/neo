@@ -109,27 +109,20 @@ ActionResult<CNEOBot> CNEOBotJgrCapture::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	CBasePlayer *pActivatingPlayer = m_hObjective->GetActivatingPlayer();
-	if ( pActivatingPlayer )
+	if ( me->GetVisionInterface()->GetPrimaryKnownThreat() )
 	{
-		if ( !me->InSameTeam( pActivatingPlayer ) )
-		{
-			return SuspendFor( new CNEOBotAttack, "Attacking enemy capturing the juggernaut" );
-		}
-		else if ( pActivatingPlayer != me )
-		{
-			if ( me->GetVisionInterface()->GetPrimaryKnownThreat() )
-			{
-				return SuspendFor( new CNEOBotAttack, "Defending teammate capturing the juggernaut" );
-			}
+		return SuspendFor( new CNEOBotAttack, "Engaging enemy near juggernaut capture zone" );
+	}
 
-			// Look away from the juggernaut to watch for threats
-			CNEOBotJgrCapture::LookAwayFrom( me, m_hObjective );
+	CBasePlayer *pActivatingPlayer = m_hObjective->GetActivatingPlayer();
+	if ( pActivatingPlayer && me->InSameTeam( pActivatingPlayer ) && ( pActivatingPlayer != me ) )
+	{
+		// Look away from the juggernaut to watch for threats
+		CNEOBotJgrCapture::LookAwayFrom( me, m_hObjective );
 
-			me->ReleaseUseButton();
-			m_useAttemptTimer.Invalidate();
-			return Continue();
-		}
+		me->ReleaseUseButton();
+		m_useAttemptTimer.Invalidate();
+		return Continue();
 	}
 
 	if ( me->GetAbsOrigin().DistToSqr( m_hObjective->GetAbsOrigin() ) < CNEO_Juggernaut::GetUseDistanceSquared() )
