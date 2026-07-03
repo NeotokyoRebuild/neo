@@ -9,11 +9,15 @@
 //
 
 #include "stdafx.h"
+
+#ifdef WIN32
 #include <direct.h>
+#endif
+
 #include "tier1/strtools.h"
 #include "tier0/icommandline.h"
 
-
+#ifdef WIN32
 char* GetLastErrorString()
 {
 	static char err[2048];
@@ -38,7 +42,7 @@ char* GetLastErrorString()
 
 	return err;
 }
-
+#endif
 
 void MakeFullPath( const char *pIn, char *pOut, int outLen )
 {
@@ -103,24 +107,33 @@ int main(int argc, char* argv[])
 		if (mode && (! both_arg))
 			continue;
 		
+#ifdef WIN32
+		const char *pDLLName = "vrad_library.dll";
+#else
+		const char *pDLLName = "libvrad.so";
+#endif
 
 		// If it didn't load the module above, then use the 
 		if ( !pModule )
 		{
-            strcpy( dllName, "vrad_library.dll" );
+            strcpy( dllName, pDLLName );
 			pModule = Sys_LoadModule( dllName );
 		}
 		
 		if( !pModule )
 		{
+#ifdef WIN32
 			printf( "vrad_launcher error: can't load %s\n%s", dllName, GetLastErrorString() );
+#else
+			printf( "vrad_launcher error: can't load %s\n%s", dllName, dlerror() );
+#endif
 			return 1;
 		}
 		
 		CreateInterfaceFn fn = Sys_GetFactory( pModule );
 		if( !fn )
 		{
-            printf( "vrad_launcher error: can't get factory from vrad_library.dll\n" );
+            printf( "vrad_launcher error: can't get factory from %s\n", pDLLName );
 			Sys_UnloadModule( pModule );
 			return 2;
 		}
@@ -129,7 +142,7 @@ int main(int argc, char* argv[])
 		IVRadDLL *pDLL = (IVRadDLL*)fn( VRAD_INTERFACE_VERSION, &retCode );
 		if( !pDLL )
 		{
-            printf( "vrad_launcher error: can't get IVRadDLL interface from vrad_library.dll\n" );
+            printf( "vrad_launcher error: can't get IVRadDLL interface from %s\n", pDLLName );
 			Sys_UnloadModule( pModule );
 			return 3;
 		}

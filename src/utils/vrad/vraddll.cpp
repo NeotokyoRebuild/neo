@@ -12,6 +12,9 @@
 #include "map_shared.h"
 #include "lightmap.h"
 #include "threads.h"
+#ifndef WIN32
+#include <unistd.h>
+#endif
 
 
 static CUtlVector<unsigned char> g_LastGoodLightData;
@@ -169,9 +172,20 @@ void CVRadDLL::GetBSPInfo( CBSPInfo *pInfo )
 
 bool CVRadDLL::DoIncrementalLight( char const *pVMFFile )
 {
-	char tempPath[MAX_PATH], tempFilename[MAX_PATH];
+	char tempFilename[MAX_PATH];
+#ifdef WIN32
+	char tempPath[MAX_PATH];
 	GetTempPath( sizeof( tempPath ), tempPath );
 	GetTempFileName( tempPath, "vmf_entities_", 0, tempFilename );
+#else
+	const char *pTmpDir = getenv( "TMPDIR" );
+	if ( !pTmpDir )
+		pTmpDir = "/tmp";
+	V_snprintf( tempFilename, sizeof( tempFilename ), "%s/vmf_entities_XXXXXX", pTmpDir );
+	int fd = mkstemp( tempFilename );
+	if ( fd != -1 )
+		close( fd );
+#endif
 
 	FileHandle_t fp = g_pFileSystem->Open( tempFilename, "wb" );
 	if( !fp )

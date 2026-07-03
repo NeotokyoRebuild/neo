@@ -10,7 +10,7 @@ target_sources_grouped(
     NAME "Source Files"
     FILES
     vrad_launcher.cpp
-    StdAfx.cpp
+    stdafx.cpp
 )
 
 target_sources_grouped(
@@ -19,7 +19,7 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/public/tier1/interface.h
     ${CMAKE_SOURCE_DIR}/public/ivraddll.h
-    StdAfx.h
+    stdafx.h
 )
 
-target_precompile_headers(vvis PUBLIC StdAfx.h)
+target_precompile_headers(vrad PUBLIC stdafx.h)

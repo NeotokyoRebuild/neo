@@ -17,6 +17,9 @@
 #include "tools_minidump.h"
 #include "loadcmdline.h"
 #include "byteswap.h"
+#ifndef WIN32
+#include <unistd.h>
+#endif
 
 #define ALLOWDEBUGOPTIONS (0 || _DEBUG)
 
@@ -92,7 +95,7 @@ bool g_bOnlyStaticProps = false;
 bool g_bShowStaticPropNormals = false;
 
 
-float		gamma = 0.5;
+float		g_flGamma = 0.5;
 float		indirect_sun = 1.0;
 float		reflectivityScale = 1.0;
 qboolean	do_extra = true;
@@ -2085,7 +2088,7 @@ FileHandle_t pFileSamples[4][4];
 
 void LoadPhysicsDLL( void )
 {
-	PhysicsDLLPath( "VPHYSICS.DLL" );
+	PhysicsDLLPath( "vphysics.dll" );
 }
 
 
@@ -2145,7 +2148,14 @@ void VRAD_LoadBSP( char const *pFilename )
 		// Otherwise, try looking in the BIN directory from which we were run from
 		Msg( "Could not find lights.rad in %s.\nTrying VRAD BIN directory instead...\n", 
 			    global_lights );
+#ifdef WIN32
 		GetModuleFileName( NULL, global_lights, sizeof( global_lights ) );
+#else
+		{
+			ssize_t nLen = readlink( "/proc/self/exe", global_lights, sizeof( global_lights ) - 1 );
+			global_lights[ nLen > 0 ? nLen : 0 ] = '\0';
+		}
+#endif
 		Q_ExtractFilePath( global_lights, global_lights, sizeof( global_lights ) );
 		strcat( global_lights, "lights.rad" );
 	}
@@ -2829,6 +2839,15 @@ int RunVRAD( int argc, char **argv )
 
 	verbose = true;  // Originally FALSE
 
+	// Initialize the filesystem first (using the map = last arg) so LoadCmdLineFromFile
+	// can read cfg/commandline.cfg (it needs g_pFileSystem) and the loaded args are seen
+	// by ParseCommandLine.
+	Q_StripExtension( argv[ argc - 1 ], source, sizeof( source ) );
+	CmdLib_InitFileSystem( argv[ argc - 1 ] );
+	Q_FileBase( source, source, sizeof( source ) );
+
+	LoadCmdLineFromFile( argc, argv, source, "vrad" );
+
 	bool onlydetail;
 	int i = ParseCommandLine( argc, argv, &onlydetail );
 	if (i == -1)
@@ -2837,11 +2856,6 @@ int RunVRAD( int argc, char **argv )
 		DeleteCmdLine( argc, argv );
 		CmdLib_Exit( EXIT_FAILURE );
 	}
-
-	// Initialize the filesystem, so additional commandline options can be loaded
-	Q_StripExtension( argv[ i ], source, sizeof( source ) );
-	CmdLib_InitFileSystem( argv[ i ] );
-	Q_FileBase( source, source, sizeof( source ) );
 
 	VRAD_LoadBSP( argv[i] );
 
@@ -2866,7 +2880,6 @@ int VRAD_Main(int argc, char **argv)
 
 	VRAD_Init();
 
-	LoadCmdLineFromFile( argc, argv, source, "vrad" );
 	SetupDefaultToolsMinidumpHandler();
 	
 	return RunVRAD( argc, argv );

@@ -28,27 +28,34 @@ if(OS_WINDOWS)
         PRIVATE
         ws2_32.lib
     )
+elseif(OS_LINUX)
+    set_target_properties(vrad_library PROPERTIES
+        OUTPUT_NAME "vrad"
+    )
 endif()
+
+set_source_files_properties(${CMAKE_SOURCE_DIR}/public/filesystem_init.cpp PROPERTIES
+    COMPILE_OPTIONS "-D_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX};-D_EXTERNAL_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}"
+)
 
 target_sources_grouped(
     TARGET vrad_library
     NAME "Source Files"
     FILES
-    ${CMAKE_SOURCE_DIR}/public/BSPTreeData.cpp
+    ${CMAKE_SOURCE_DIR}/public/bsptreedata.cpp
     ${CMAKE_SOURCE_DIR}/public/disp_common.cpp
     ${CMAKE_SOURCE_DIR}/public/disp_powerinfo.cpp
     ${CMAKE_SOURCE_DIR}/public/loadcmdline.cpp
     ${CMAKE_SOURCE_DIR}/public/lumpfiles.cpp
     ${CMAKE_SOURCE_DIR}/public/zip_utils.cpp
-    ../common/MySqlDatabase.cpp
     ../common/pacifier.cpp
     ../common/physdll.cpp
     ../common/utilmatlib.cpp
-    SampleHash.cpp
-    VRAD_DispColl.cpp
-    VRadDisps.cpp
-    VRadStaticProps.cpp
-    VradDetailProps.cpp
+    samplehash.cpp
+    vrad_dispcoll.cpp
+    vraddisps.cpp
+    vradstaticprops.cpp
+    vraddetailprops.cpp
     disp_vrad.cpp
     imagepacker.cpp
     incremental.cpp
@@ -66,11 +73,13 @@ target_sources_grouped(
     TARGET vrad_library
     NAME "Common Files"
     FILES
-    ${CMAKE_SOURCE_DIR}/public/ChunkFile.cpp
-    ${CMAKE_SOURCE_DIR}/public/DispColl_Common.cpp
+    ${CMAKE_SOURCE_DIR}/public/chunkfile.cpp
+    ${CMAKE_SOURCE_DIR}/public/dispcoll_common.cpp
     ${CMAKE_SOURCE_DIR}/public/builddisp.cpp
+    ${CMAKE_SOURCE_DIR}/public/filesystem_init.cpp
     ../common/bsplib.cpp
     ../common/cmdlib.cpp
+    ../common/filesystem_tools.cpp
     ../common/map_shared.cpp
     ../common/polylib.cpp
     ../common/scriplib.cpp
@@ -84,8 +93,8 @@ target_sources_grouped(
     TARGET vrad_library
     NAME "Public Files"
     FILES
-    ${CMAKE_SOURCE_DIR}/public/CollisionUtils.cpp
-    ${CMAKE_SOURCE_DIR}/public/ScratchPad3D.cpp
+    ${CMAKE_SOURCE_DIR}/public/collisionutils.cpp
+    ${CMAKE_SOURCE_DIR}/public/scratchpad3d.cpp
     ${CMAKE_SOURCE_DIR}/public/ScratchPadUtils.cpp
     ${CMAKE_SOURCE_DIR}/public/filesystem_helpers.cpp
 )
@@ -96,7 +105,7 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/public/bitmap/tgawriter.h
     ${CMAKE_SOURCE_DIR}/public/map_utils.h
-    VRAD_DispColl.h
+    vrad_dispcoll.h
     disp_vrad.h
     iincremental.h
     imagepacker.h
@@ -141,13 +150,13 @@ target_sources_grouped(
     TARGET vrad_library
     NAME "Public Header Files"
     FILES
-    ${CMAKE_SOURCE_DIR}/public/BSPFILE.H
-    ${CMAKE_SOURCE_DIR}/public/BSPTreeData.h
-    ${CMAKE_SOURCE_DIR}/public/ChunkFile.h
-    ${CMAKE_SOURCE_DIR}/public/CollisionUtils.h
-    ${CMAKE_SOURCE_DIR}/public/DispColl_Common.h
-    ${CMAKE_SOURCE_DIR}/public/GameBSPFile.h
-    ${CMAKE_SOURCE_DIR}/public/ScratchPad3D.h
+    ${CMAKE_SOURCE_DIR}/public/bspfile.h
+    ${CMAKE_SOURCE_DIR}/public/bsptreedata.h
+    ${CMAKE_SOURCE_DIR}/public/chunkfile.h
+    ${CMAKE_SOURCE_DIR}/public/collisionutils.h
+    ${CMAKE_SOURCE_DIR}/public/dispcoll_common.h
+    ${CMAKE_SOURCE_DIR}/public/gamebspfile.h
+    ${CMAKE_SOURCE_DIR}/public/scratchpad3d.h
     ${CMAKE_SOURCE_DIR}/public/ScratchPadUtils.h
     ${CMAKE_SOURCE_DIR}/public/appframework/IAppSystem.h
     ${CMAKE_SOURCE_DIR}/public/basehandle.h
@@ -171,7 +180,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/public/materialsystem/imaterialsystem.h
     ${CMAKE_SOURCE_DIR}/public/materialsystem/imaterialvar.h
     ${CMAKE_SOURCE_DIR}/public/materialsystem/materialsystem_config.h
-    ${CMAKE_SOURCE_DIR}/public/mathlib/ANORMS.H
+    ${CMAKE_SOURCE_DIR}/public/mathlib/anorms.h
     ${CMAKE_SOURCE_DIR}/public/mathlib/amd3dx.h
     ${CMAKE_SOURCE_DIR}/public/mathlib/bumpvects.h
     ${CMAKE_SOURCE_DIR}/public/mathlib/compressed_vector.h
