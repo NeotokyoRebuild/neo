@@ -134,7 +134,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	if ( threat && threat->GetEntity() )
+	if ( threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
 	{
 		me->ReleaseCrouchButton(); // move faster
 		return ChangeTo( new CNEOBotAttack(), "Engaging enemy from seek" );
@@ -158,7 +158,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 		}
 	}
 
-	const Vector currentGhostPos = NEORules()->GetGhostPos();
+	const Vector& currentGhostPos = NEORules()->GetGhostPos();
 	if ( !m_pCachedGhostArea || currentGhostPos.DistToSqr( m_vecLastGhostPos ) > Square( 64.0f ) )
 	{
 		CNavArea *pLastGhostArea = m_pCachedGhostArea;
@@ -217,7 +217,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 				if ( search.m_candidateAreas.IsEmpty() )
 				{
 					// Track already explored areas around the ghost
-					auto searchFromVisible = [&]( CNavArea *visibleArea ) -> bool
+					auto searchFromVisible = [&search]( CNavArea *visibleArea ) -> bool
 					{
 						if ( search.m_candidateAreas.Count() >= CSearchForUnexplored::CANDIDATE_LIMIT || search.m_iAreaCount >= search.m_iAreaLimit )
 						{
