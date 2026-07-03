@@ -17,6 +17,7 @@
 #include "utllinkedlist.h"
 #include "utlvector.h"
 #include "utlbuffer.h"
+#include "tier0/threadtools.h"
 #include "vrad.h"
 
 
@@ -59,7 +60,7 @@ public:
 
 public:
 
-	CRITICAL_SECTION	m_CS;
+	CThreadFastMutex	m_CS;
 
 	// This is the light for which m_LightFaces was built.
 	dworldlight_t	m_Light;
