@@ -22,17 +22,17 @@ public:
 
 private:
 	void UpdateState();
-	// safety net: drops occupants that died/disconnected without a matching EndTouch
-	void PruneStaleOccupants();
+	// safety net: drops captors that died/disconnected without a matching EndTouch
+	void PruneStaleCaptors();
 
-	struct ZoneOccupant
+	struct ZoneCaptor
 	{
 		EHANDLE hPlayer;
 		int team;        // team recorded at the moment they entered (survives team switch/death before leaving)
 		int touchCount;  // how many of this zone's triggers currently touch them
 	};
 
-	CUtlVector<ZoneOccupant> m_Occupants;
+	CUtlVector<ZoneCaptor> m_Captors;
 	int m_iJinraiCount = 0;
 	int m_iNSFCount = 0;
 	KothControllingTeams m_State = KOTH_NONE;

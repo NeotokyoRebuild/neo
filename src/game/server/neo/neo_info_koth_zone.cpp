@@ -18,7 +18,7 @@ void CNEO_InfoKOTHZone::Spawn()
 
 void CNEO_InfoKOTHZone::Think()
 {
-	PruneStaleOccupants();
+	PruneStaleCaptors();
 	SetNextThink(gpGlobals->curtime + KOTHZONE_PRUNE_INTERVAL);
 }
 
@@ -28,26 +28,26 @@ void CNEO_InfoKOTHZone::OnPlayerEnter(CNEO_Player *pPlayer)
 		return;
 
 	EHANDLE hPlayer = pPlayer;
-	for (int i = 0; i < m_Occupants.Count(); ++i)
+	for (int i = 0; i < m_Captors.Count(); ++i)
 	{
-		if (m_Occupants[i].hPlayer == hPlayer)
+		if (m_Captors[i].hPlayer == hPlayer)
 		{
 			// already standing in another trigger of this same zone
-			m_Occupants[i].touchCount++;
+			m_Captors[i].touchCount++;
 			return;
 		}
 	}
 
-	ZoneOccupant occupant;
-	occupant.hPlayer = hPlayer;
+	ZoneCaptor captor;
+	captor.hPlayer = hPlayer;
 	// if they're somehow dead on entry, don't credit either team
-	occupant.team = pPlayer->IsAlive() ? pPlayer->GetTeamNumber() : TEAM_UNASSIGNED;
-	occupant.touchCount = 1;
-	m_Occupants.AddToTail(occupant);
+	captor.team = pPlayer->IsAlive() ? pPlayer->GetTeamNumber() : TEAM_UNASSIGNED;
+	captor.touchCount = 1;
+	m_Captors.AddToTail(captor);
 
-	if (occupant.team == TEAM_JINRAI)
+	if (captor.team == TEAM_JINRAI)
 		m_iJinraiCount++;
-	else if (occupant.team == TEAM_NSF)
+	else if (captor.team == TEAM_NSF)
 		m_iNSFCount++;
 
 	UpdateState();
@@ -59,44 +59,44 @@ void CNEO_InfoKOTHZone::OnPlayerLeave(CNEO_Player *pPlayer)
 		return;
 
 	EHANDLE hPlayer = pPlayer;
-	for (int i = 0; i < m_Occupants.Count(); ++i)
+	for (int i = 0; i < m_Captors.Count(); ++i)
 	{
-		if (m_Occupants[i].hPlayer != hPlayer)
+		if (m_Captors[i].hPlayer != hPlayer)
 			continue;
 
 		// still touching another trigger belonging to this zone
-		if (--m_Occupants[i].touchCount > 0)
+		if (--m_Captors[i].touchCount > 0)
 			return;
 
-		if (m_Occupants[i].team == TEAM_JINRAI)
+		if (m_Captors[i].team == TEAM_JINRAI)
 			m_iJinraiCount--;
-		else if (m_Occupants[i].team == TEAM_NSF)
+		else if (m_Captors[i].team == TEAM_NSF)
 			m_iNSFCount--;
 
-		m_Occupants.Remove(i);
+		m_Captors.Remove(i);
 		UpdateState();
 		return;
 	}
 }
 
-void CNEO_InfoKOTHZone::PruneStaleOccupants()
+void CNEO_InfoKOTHZone::PruneStaleCaptors()
 {
 	bool bChanged = false;
 
 	// EndTouch won't reliably fire for players who disconnected or died without
 	// physically leaving the trigger volume (e.g. respawning elsewhere) - catch those here
-	for (int i = m_Occupants.Count() - 1; i >= 0; --i)
+	for (int i = m_Captors.Count() - 1; i >= 0; --i)
 	{
-		CNEO_Player *pPlayer = static_cast<CNEO_Player *>(m_Occupants[i].hPlayer.Get());
+		CNEO_Player *pPlayer = static_cast<CNEO_Player *>(m_Captors[i].hPlayer.Get());
 		if (pPlayer && pPlayer->IsAlive())
 			continue;
 
-		if (m_Occupants[i].team == TEAM_JINRAI)
+		if (m_Captors[i].team == TEAM_JINRAI)
 			m_iJinraiCount--;
-		else if (m_Occupants[i].team == TEAM_NSF)
+		else if (m_Captors[i].team == TEAM_NSF)
 			m_iNSFCount--;
 
-		m_Occupants.Remove(i);
+		m_Captors.Remove(i);
 		bChanged = true;
 	}
 
