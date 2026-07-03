@@ -19,7 +19,14 @@ void CNEO_TriggerKOTHZone::Spawn()
 {
 	BaseClass::Spawn();
 	InitTrigger();
+}
 
+void CNEO_TriggerKOTHZone::Activate()
+{
+	BaseClass::Activate();
+
+	// resolved here (not in Spawn) since the target neo_info_koth_zone
+	// is not guaranteed to have spawned yet while we're still spawning
 	pZone = dynamic_cast<CNEO_InfoKOTHZone *>(
 		gEntList.FindEntityByName(
 			nullptr, STRING(m_iszZoneName)

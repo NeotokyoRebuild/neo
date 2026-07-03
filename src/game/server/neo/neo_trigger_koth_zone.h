@@ -10,6 +10,7 @@ public:
 	DECLARE_DATADESC();
 
 	virtual void Spawn() override;
+	virtual void Activate() override;
 	virtual void StartTouch(CBaseEntity *pOther) override;
 	virtual void EndTouch(CBaseEntity *pOther) override;
 	virtual void Think() override;
