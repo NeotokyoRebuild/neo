@@ -1,4 +1,5 @@
 #include "neo_info_koth_zone.h"
+#include "neo_trigger_koth_zone.h"
 #include "neo_player.h"
 #include "neo_player_shared.h"
 
@@ -76,6 +77,34 @@ void CNEO_InfoKOTHZone::OnPlayerLeave(CNEO_Player *pPlayer)
 		m_Captors.Remove(i);
 		UpdateState();
 		return;
+	}
+}
+
+void CNEO_InfoKOTHZone::AddChildTrigger(CNEO_TriggerKOTHZone *pTrigger)
+{
+	if (!pTrigger)
+		return;
+
+	m_ChildTriggers.AddToTail(pTrigger);
+}
+
+void CNEO_InfoKOTHZone::SetActivity(bool bActive)
+{
+	if (bActive == m_bActive)
+		return;
+
+	m_bActive = bActive;
+
+	for (int i = 0; i < m_ChildTriggers.Count(); ++i)
+	{
+		CNEO_TriggerKOTHZone *pTrigger = m_ChildTriggers[i].Get();
+		if (!pTrigger)
+			continue;
+
+		if (bActive)
+			pTrigger->Enable();
+		else
+			pTrigger->Disable();
 	}
 }
 

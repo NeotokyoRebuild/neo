@@ -36,9 +36,10 @@ void CNEO_TriggerKOTHZone::Activate()
 	}
 	else
 	{
+		pZone->AddChildTrigger(this);
 		// it will be inactive until neo_koth_master enables it
-		Disable();
 	}
+	Disable();
 }
 
 void CNEO_TriggerKOTHZone::StartTouch(CBaseEntity *pOther)
