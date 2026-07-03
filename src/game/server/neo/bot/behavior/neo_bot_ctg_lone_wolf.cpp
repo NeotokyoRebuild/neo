@@ -168,14 +168,15 @@ EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolf::OnStuck( CNEOBot *me )
 Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
 {
 	if ( !me )
+	{
 		return CNEO_Player::VECTOR_INVALID_WAYPOINT;
+	}
 
 	const int iEnemyTeam = NEORules()->GetOpposingTeam( me->GetTeamNumber() );
 
 	if ( NEORules()->m_pGhostCaps.Count() > 0 )
 	{
-		Vector bestPosStorage = CNEO_Player::VECTOR_INVALID_WAYPOINT;
-		const Vector* bestPos = &bestPosStorage;
+		const Vector* pBestPos = nullptr;
 		float flNearestSq = FLT_MAX;
 		for ( int i = 0; i < NEORules()->m_pGhostCaps.Count(); ++i )
 		{
@@ -192,11 +193,11 @@ Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
 				if ( distSq < flNearestSq )
 				{
 					flNearestSq = distSq;
-					bestPos = &pCapPoint->GetAbsOrigin();
+					pBestPos = &pCapPoint->GetAbsOrigin();
 				}
 			}
 		}
-		return *bestPos;
+		return pBestPos ? *pBestPos : CNEO_Player::VECTOR_INVALID_WAYPOINT;
 	}
 
 	return CNEO_Player::VECTOR_INVALID_WAYPOINT;
