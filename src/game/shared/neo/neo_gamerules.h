@@ -87,6 +87,16 @@ class CNEO_Player;
 class CWeaponGhost;
 class CNEOBotSeekAndDestroy;
 
+// this is not good, but it is used ONLY to indicate who controls the checkpoint.
+// when its possible I prefer default TEAM_NSF/JINRAI vars
+enum KothControllingTeams
+{
+	KOTH_NONE = 0,
+	KOTH_BOTH,
+	KOTH_NSF,
+	KOTH_JINRAI,
+};
+
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
 extern ConVar sv_neo_mirror_teamdamage_immunity;
@@ -525,16 +535,6 @@ private:
 	// CBaseEntity* pBrushJinrai = gEntList.FindEntityByName(nullptr, "koth_brush_jin");
 	// CBaseEntity* pBrushInactive = gEntList.FindEntityByName(nullptr, "koth_brush_inactive");
 	// CBaseEntity* pBrushNone = gEntList.FindEntityByName(nullptr, "koth_brush_none");
-
-	// this is bad, but it is used ONLY to indicate who controls the checkpoint.
-	// if possible I prefer default TEAM_NSF/JINRAI
-	enum KothControllingTeams
-	{
-		KOTH_NONE = 0,
-		KOTH_BOTH,
-		KOTH_NSF,
-		KOTH_JINRAI,
-	};
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);

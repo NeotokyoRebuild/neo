@@ -13,7 +13,6 @@ public:
 	virtual void Activate() override;
 	virtual void StartTouch(CBaseEntity *pOther) override;
 	virtual void EndTouch(CBaseEntity *pOther) override;
-	virtual void Think() override;
 
 	string_t m_iszZoneName;
 private:
