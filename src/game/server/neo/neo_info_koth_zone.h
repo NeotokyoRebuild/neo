@@ -14,6 +14,7 @@ public:
 
 	virtual void Spawn() override;
 	virtual void Think() override;
+	void ScoreThink();
 
 	// called by every neo_trigger_koth_zone referring to this zone
 	void OnPlayerEnter(CNEO_Player *pPlayer);
@@ -47,6 +48,11 @@ private:
 
 	CUtlVector<CHandle<CNEO_TriggerKOTHZone>> m_ChildTriggers;
 	bool m_bActive = false;
+
+	// score accumulation - runs on its own think context (see ScoreThink), independent
+	// of PruneStaleCaptors' slower one, since seconds-held needs to be tracked continuously
+	float m_flAccumulatorNSF = 0.0f;
+	float m_flAccumulatorJinrai = 0.0f;
 };
 
 LINK_ENTITY_TO_CLASS(neo_info_koth_zone, CNEO_InfoKOTHZone);

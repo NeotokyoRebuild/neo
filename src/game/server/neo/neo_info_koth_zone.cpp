@@ -4,9 +4,12 @@
 #include "neo_player_shared.h"
 
 #define KOTHZONE_PRUNE_INTERVAL 0.5f
+#define KOTHZONE_SCORE_CONTEXT "KothZoneScoreThink"
+#define KOTHZONE_SCORE_INTERVAL 0.05f
 
 BEGIN_DATADESC(CNEO_InfoKOTHZone)
 	DEFINE_THINKFUNC(Think),
+	DEFINE_THINKFUNC(ScoreThink),
 END_DATADESC()
 
 void CNEO_InfoKOTHZone::Spawn()
@@ -15,12 +18,50 @@ void CNEO_InfoKOTHZone::Spawn()
 
 	SetThink(&CNEO_InfoKOTHZone::Think);
 	SetNextThink(gpGlobals->curtime + KOTHZONE_PRUNE_INTERVAL);
+
+	SetContextThink(&CNEO_InfoKOTHZone::ScoreThink, gpGlobals->curtime + KOTHZONE_SCORE_INTERVAL, KOTHZONE_SCORE_CONTEXT);
 }
 
 void CNEO_InfoKOTHZone::Think()
 {
 	PruneStaleCaptors();
 	SetNextThink(gpGlobals->curtime + KOTHZONE_PRUNE_INTERVAL);
+}
+
+void CNEO_InfoKOTHZone::ScoreThink()
+{
+	switch (m_State)
+	{
+	case KOTH_JINRAI:
+		m_flAccumulatorJinrai += KOTHZONE_SCORE_INTERVAL;
+		m_flAccumulatorNSF = 0.0f;
+		break;
+	case KOTH_NSF:
+		m_flAccumulatorNSF += KOTHZONE_SCORE_INTERVAL;
+		m_flAccumulatorJinrai = 0.0f;
+		break;
+	default:
+		// KOTH_NONE (empty) or KOTH_BOTH (contested) - nobody accumulates
+		m_flAccumulatorNSF = 0.0f;
+		m_flAccumulatorJinrai = 0.0f;
+		break;
+	}
+
+	const float flSecondsPerPoint = sv_neo_koth_seconds_per_point.GetFloat();
+	if (m_flAccumulatorJinrai >= flSecondsPerPoint)
+	{
+		const int points = int(m_flAccumulatorJinrai / flSecondsPerPoint);
+		m_flAccumulatorJinrai -= flSecondsPerPoint * points;
+		NEORules()->AddKothScore(TEAM_JINRAI, points);
+	}
+	if (m_flAccumulatorNSF >= flSecondsPerPoint)
+	{
+		const int points = int(m_flAccumulatorNSF / flSecondsPerPoint);
+		m_flAccumulatorNSF -= flSecondsPerPoint * points;
+		NEORules()->AddKothScore(TEAM_NSF, points);
+	}
+
+	SetNextThink(gpGlobals->curtime + KOTHZONE_SCORE_INTERVAL, KOTHZONE_SCORE_CONTEXT);
 }
 
 void CNEO_InfoKOTHZone::OnPlayerEnter(CNEO_Player *pPlayer)

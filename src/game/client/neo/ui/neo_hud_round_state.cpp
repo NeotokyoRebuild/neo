@@ -440,8 +440,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_KOTH)
 	{
 		V_sprintf_safe(szPlayersAliveANSI, "J:%d  N:%d",
-					   NEORules()->m_iKothTimeJinrai.Get(),
-					   NEORules()->m_iKothTimeNSF.Get());
+					   NEORules()->GetKothTimeJinrai(),
+					   NEORules()->GetKothTimeNSF());
 	}
 	else
 	{

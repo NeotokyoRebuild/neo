@@ -1048,15 +1048,6 @@ void CNEORules::CheckGameType()
 	} break;
 	}
 
-	// neo HACK: backward compability fix to import all _koth maps without editing them
-	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG)
-	{
-		if (gEntList.FindEntityByName(nullptr, "koth_point"))
-		{
-			m_nGameTypeSelected = NEO_GAME_TYPE_KOTH;
-		}
-	}
-
 	m_bGamemodeTypeBeenInitialized = true;
 	iStaticInitOnCmd = iGamemodeEnforce;
 	iStaticInitOnRandAllow = iGamemodeRandAllow;
@@ -1092,89 +1083,17 @@ bool CNEORules::CheckShouldNotThink()
 }
 
 #ifdef GAME_DLL
-void CNEORules::UpdateKothScore(const int team) {
-	// neo TODO: prettify code to satisfy code-style requirements!!!
-	// neo TODO: add sending via net some HUD vars (score and controlling team)
-	// neo TODO: annul ALL variables on round restart (currntly im resetting only some of them)
-
-	int prevControllers = m_iKothControllingTeam;
-	switch (team)
-	{
-		case KOTH_BOTH:
-			// neo TODO: should i really nullify these values each time? check it
-			m_flKothAccumulatorNSF = 0.0f;
-			m_flKothAccumulatorJinrai = 0.0f;
-			m_iKothControllingTeam = KOTH_BOTH;
-			break;
-		case KOTH_NONE:
-			m_flKothAccumulatorNSF = 0.0f;
-			m_flKothAccumulatorJinrai = 0.0f;
-			m_iKothControllingTeam = KOTH_NONE;
-			break;
-		case KOTH_JINRAI:
-			m_flKothAccumulatorNSF = 0.0f;
-			m_flKothAccumulatorJinrai += gpGlobals->frametime;
-			m_iKothControllingTeam = KOTH_JINRAI;
-			break;
-		case KOTH_NSF:
-			m_flKothAccumulatorNSF += gpGlobals->frametime;
-			m_flKothAccumulatorJinrai = 0.0f;
-			m_iKothControllingTeam = KOTH_NSF;
-			break;
-		default:
-			Warning("Got unexpected KOTH team in score count: %d\n", team);
-	}
-
-	// we ALWAYS should have only ONE active checkpoint, so we can set leading team here
-	if (prevControllers != m_iKothControllingTeam)
-	{
-		// neo fixme: rn it causes crashes
-		//SetKothLeaderMapVisual(m_iKothControllingTeam);
-	}
-
-	// add accumulation to the score if possible
-	if (m_flKothAccumulatorNSF > sv_neo_koth_seconds_per_point.GetFloat()) {
-		m_iKothTimeNSF += int(m_flKothAccumulatorNSF / sv_neo_koth_seconds_per_point.GetFloat());
-		m_flKothAccumulatorNSF -= int(m_flKothAccumulatorNSF);
-	}
-	if (m_flKothAccumulatorJinrai > sv_neo_koth_seconds_per_point.GetFloat()) {
-		m_iKothTimeJinrai += int(m_flKothAccumulatorJinrai / sv_neo_koth_seconds_per_point.GetFloat());
-		m_flKothAccumulatorJinrai -= int(m_flKothAccumulatorJinrai);
-	}
-}
-
-// neo hack: shitcoded input but who cares, ill fix it later TODO
-void CNEORules::SetKothLeaderMapVisual(const int team) const
+void CNEORules::AddKothScore(const int team, const int points)
 {
-	// pSpriteNSF->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	// pSpriteJinrai->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	// pSpriteInactive->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	// pSpriteNone->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	//
-	// pBrushNSF->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	// pBrushJinrai->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	// pBrushInactive->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	// pBrushNone->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	//
-	// if (team==KOTH_INACTIVE) {
-	// 	pSpriteInactive->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-	// 	pBrushInactive->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-	// 	return;
-	// }
-	// if (team==KOTH_NONE) {
-	// 	pSpriteNone->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-	// 	pBrushNone->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-	// 	return;
-	// }
-	// if (team==KOTH_NSF) {
-	// 	pSpriteNSF->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-	// 	pBrushNSF->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-	// 	return;
-	// }
-	// if (team==KOTH_JINRAI) {
-	// 	pSpriteJinrai->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-	// 	pBrushJinrai->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-	// }
+	if (points <= 0)
+		return;
+
+	if (team == TEAM_JINRAI)
+		m_iKothTimeJinrai += points;
+	else if (team == TEAM_NSF)
+		m_iKothTimeNSF += points;
+	else
+		Warning("Got unexpected KOTH team in score count: %d\n", team);
 }
 #endif
 
@@ -1639,34 +1558,6 @@ void CNEORules::Think(void)
 			m_pJuggernautItem->m_bLocked = false;
 		}
 	}
-	else if (pKothTrigger)
-	{
-		// neo TODO: rm pKothTrigger check and just check that curr gm is NEO_GAME_TYPE_KOTH
-
-
-		// bool jinrai_capturing = false,
-		// 		nsf_capturing = false;
-		// for (int i = 1; i <= gpGlobals->maxClients; i++)
-		// {
-		// 	CNEO_Player* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-		// 	// neo TODO: do i rlly need this check?
-		// 	if (!pPlayer || !pPlayer->IsAlive())
-		// 		continue;
-		//
-		// 	// neo TODO: maybe instead of IsTouching use something like IsInside (if there is any similar events lol)??
-		// 	// neo TODO: for-loop is probably VERY inefficient (check previous todo)
-		// 	if (pKothTrigger->IsTouching(pPlayer))
-		// 	{
-		// 		int team = pPlayer->GetTeamNumber();
-		// 		if (team==TEAM_JINRAI) {
-		// 			jinrai_capturing = true;
-		// 		} else if (team==TEAM_NSF) {
-		// 			nsf_capturing = true;
-		// 		}
-		// 	}
-		// }
-	}
-
 	if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
 	{
 		if (GetGlobalTeam(TEAM_JINRAI)->GetScore() >= sv_neo_jgr_max_points.GetInt())
@@ -3497,24 +3388,8 @@ void CNEORules::ResetJGR()
 void CNEORules::ResetKOTH() {
 	m_iKothTimeJinrai = 0;
 	m_iKothTimeNSF = 0;
-	// neo TODO: i dont think that i should send controllingTeam var through net
-	m_iKothControllingTeam = KOTH_BOTH;
-	m_flKothAccumulatorNSF = 0.0f;
-	m_flKothAccumulatorJinrai = 0.0f;
-	// TODO: give xp for holding the point?
-	pKothTrigger = dynamic_cast<CBaseTrigger*>(gEntList.FindEntityByName(nullptr, "koth_point"));
-
-	// sprite/brush things
-	// removed legacy _koth maps support
-	// pSpriteNSF->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	// pSpriteJinrai->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	// pSpriteInactive->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-	// pSpriteNone->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	//
-	// pBrushNSF->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	// pBrushJinrai->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	// pBrushInactive->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-	// pBrushNone->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	// neo TODO: give xp for holding the point?
+	// neo_koth_master picks/activates the first zone once it exists
 }
 
 void CNEORules::RestartGame()

@@ -81,7 +81,6 @@ public:
 };
 
 #ifdef GAME_DLL
-#include "triggers.h"  // для CBaseTrigger и IsTouching()
 class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
@@ -96,6 +95,9 @@ enum KothControllingTeams
 	KOTH_NSF,
 	KOTH_JINRAI,
 };
+
+extern ConVar sv_neo_koth_seconds_per_point;
+extern ConVar sv_neo_koth_max_score;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
@@ -374,11 +376,11 @@ public:
 	bool InReadyUpState() const;
 	bool InRoundState() const;
 #ifdef GAME_DLL
-	void UpdateKothScore(const int team);
-
-	// neo fixme: func below is totally broken!
-	void SetKothLeaderMapVisual(const int team) const;
+	// called by the currently active neo_info_koth_zone once it has accumulated whole points
+	void AddKothScore(const int team, const int points);
 #endif
+	int GetKothTimeJinrai() const { return m_iKothTimeJinrai; }
+	int GetKothTimeNSF() const { return m_iKothTimeNSF; }
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -486,7 +488,6 @@ public:
 	const int GetLastGhoster() const { return m_iLastGhoster; }
 #ifdef GAME_DLL
 private:
-	CBaseTrigger *pKothTrigger = nullptr;
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
 	float m_flJuggernautDeathTime = 0.0f;
@@ -521,20 +522,6 @@ private:
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
 	int m_iMatchWinner = TEAM_UNASSIGNED;
-
-	// koth
-	float m_flKothAccumulatorNSF = 0.0f;
-	float m_flKothAccumulatorJinrai = 0.0f;
-	// it was an attempt to use legacy koth maps without fixing them.
-	// CBaseEntity* pSpriteNSF = gEntList.FindEntityByName(nullptr, "koth_sprite_nsf");
-	// CBaseEntity* pSpriteJinrai = gEntList.FindEntityByName(nullptr, "koth_sprite_jin");
-	// CBaseEntity* pSpriteInactive = gEntList.FindEntityByName(nullptr, "koth_sprite_inactive");
-	// CBaseEntity* pSpriteNone = gEntList.FindEntityByName(nullptr, "koth_sprite_none");
-	//
-	// CBaseEntity* pBrushNSF = gEntList.FindEntityByName(nullptr, "koth_brush_nsf");
-	// CBaseEntity* pBrushJinrai = gEntList.FindEntityByName(nullptr, "koth_brush_jin");
-	// CBaseEntity* pBrushInactive = gEntList.FindEntityByName(nullptr, "koth_brush_inactive");
-	// CBaseEntity* pBrushNone = gEntList.FindEntityByName(nullptr, "koth_brush_none");
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
@@ -562,7 +549,6 @@ private:
 	// KOTH networked variables
 	CNetworkVar(int, m_iKothTimeJinrai);
 	CNetworkVar(int, m_iKothTimeNSF);
-	CNetworkVar(int, m_iKothControllingTeam);
 
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);
