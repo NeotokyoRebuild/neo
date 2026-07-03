@@ -15,8 +15,6 @@ BEGIN_DATADESC(CNEO_TriggerKOTHZone)
 	DEFINE_KEYFIELD(m_iszZoneName, FIELD_STRING, "zone_name"),
 END_DATADESC()
 
-LINK_ENTITY_TO_CLASS(trigger_my, CNEO_TriggerKOTHZone);
-
 void CNEO_TriggerKOTHZone::Spawn()
 {
 	BaseClass::Spawn();

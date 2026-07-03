@@ -1105,18 +1105,22 @@ void CNEORules::UpdateKothScore(const int team) {
 			m_flKothAccumulatorNSF = 0.0f;
 			m_flKothAccumulatorJinrai = 0.0f;
 			m_iKothControllingTeam = KOTH_BOTH;
+			break;
 		case KOTH_NONE:
 			m_flKothAccumulatorNSF = 0.0f;
 			m_flKothAccumulatorJinrai = 0.0f;
 			m_iKothControllingTeam = KOTH_NONE;
+			break;
 		case KOTH_JINRAI:
 			m_flKothAccumulatorNSF = 0.0f;
 			m_flKothAccumulatorJinrai += gpGlobals->frametime;
 			m_iKothControllingTeam = KOTH_JINRAI;
+			break;
 		case KOTH_NSF:
 			m_flKothAccumulatorNSF += gpGlobals->frametime;
 			m_flKothAccumulatorJinrai = 0.0f;
 			m_iKothControllingTeam = KOTH_NSF;
+			break;
 		default:
 			Warning("Got unexpected KOTH team in score count: %d\n", team);
 	}
@@ -3501,15 +3505,16 @@ void CNEORules::ResetKOTH() {
 	pKothTrigger = dynamic_cast<CBaseTrigger*>(gEntList.FindEntityByName(nullptr, "koth_point"));
 
 	// sprite/brush things
-	pSpriteNSF->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	pSpriteJinrai->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-	pSpriteInactive->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
-	pSpriteNone->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
-
-	pBrushNSF->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	pBrushJinrai->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
-	pBrushInactive->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
-	pBrushNone->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	// removed legacy _koth maps support
+	// pSpriteNSF->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	// pSpriteJinrai->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	// pSpriteInactive->AcceptInput("ShowSprite", nullptr, nullptr, variant_t(), 0);
+	// pSpriteNone->AcceptInput("HideSprite", nullptr, nullptr, variant_t(), 0);
+	//
+	// pBrushNSF->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	// pBrushJinrai->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
+	// pBrushInactive->AcceptInput("Enable", nullptr, nullptr, variant_t(), 0);
+	// pBrushNone->AcceptInput("Disable", nullptr, nullptr, variant_t(), 0);
 }
 
 void CNEORules::RestartGame()

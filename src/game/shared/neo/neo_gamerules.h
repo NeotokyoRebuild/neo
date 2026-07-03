@@ -515,15 +515,16 @@ private:
 	// koth
 	float m_flKothAccumulatorNSF = 0.0f;
 	float m_flKothAccumulatorJinrai = 0.0f;
-	CBaseEntity* pSpriteNSF = gEntList.FindEntityByName(nullptr, "koth_sprite_nsf");
-	CBaseEntity* pSpriteJinrai = gEntList.FindEntityByName(nullptr, "koth_sprite_jin");
-	CBaseEntity* pSpriteInactive = gEntList.FindEntityByName(nullptr, "koth_sprite_inactive");
-	CBaseEntity* pSpriteNone = gEntList.FindEntityByName(nullptr, "koth_sprite_none");
-
-	CBaseEntity* pBrushNSF = gEntList.FindEntityByName(nullptr, "koth_brush_nsf");
-	CBaseEntity* pBrushJinrai = gEntList.FindEntityByName(nullptr, "koth_brush_jin");
-	CBaseEntity* pBrushInactive = gEntList.FindEntityByName(nullptr, "koth_brush_inactive");
-	CBaseEntity* pBrushNone = gEntList.FindEntityByName(nullptr, "koth_brush_none");
+	// it was an attempt to use legacy koth maps without fixing them.
+	// CBaseEntity* pSpriteNSF = gEntList.FindEntityByName(nullptr, "koth_sprite_nsf");
+	// CBaseEntity* pSpriteJinrai = gEntList.FindEntityByName(nullptr, "koth_sprite_jin");
+	// CBaseEntity* pSpriteInactive = gEntList.FindEntityByName(nullptr, "koth_sprite_inactive");
+	// CBaseEntity* pSpriteNone = gEntList.FindEntityByName(nullptr, "koth_sprite_none");
+	//
+	// CBaseEntity* pBrushNSF = gEntList.FindEntityByName(nullptr, "koth_brush_nsf");
+	// CBaseEntity* pBrushJinrai = gEntList.FindEntityByName(nullptr, "koth_brush_jin");
+	// CBaseEntity* pBrushInactive = gEntList.FindEntityByName(nullptr, "koth_brush_inactive");
+	// CBaseEntity* pBrushNone = gEntList.FindEntityByName(nullptr, "koth_brush_none");
 
 	// this is bad, but it is used ONLY to indicate who controls the checkpoint.
 	// if possible I prefer default TEAM_NSF/JINRAI
