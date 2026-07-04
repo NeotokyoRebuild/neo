@@ -417,10 +417,6 @@ public:
 	int GetClassCount(int team, int classId) const;
 	bool IsClassFull(int team, int classId) const;
 	int GetFallbackClass(int team, int preferredClass) const;
-	void UpdateClassLimitsFromConVars();
-#ifdef GAME_DLL
-	void UpdateClassCounts();
-#endif
 
 public:
 #ifdef GAME_DLL

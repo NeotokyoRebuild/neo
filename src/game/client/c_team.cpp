@@ -6,6 +6,9 @@
 //=============================================================================//
 #include "cbase.h"
 #include "c_team.h"
+#ifdef NEO
+#include "c_playerresource.h"
+#endif // NEO
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -33,6 +36,11 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_Team, DT_Team, CTeam)
 	RecvPropInt( RECVINFO(m_iTeamNum)),
 	RecvPropInt( RECVINFO(m_iScore)),
 	RecvPropInt( RECVINFO(m_iRoundsWon) ),
+#ifdef NEO
+	RecvPropInt( RECVINFO(m_iReconCount) ),
+	RecvPropInt( RECVINFO(m_iAssaultCount) ),
+	RecvPropInt( RECVINFO(m_iSupportCount) ),
+#endif // NEO
 	RecvPropString( RECVINFO(m_szTeamname)),
 	
 	RecvPropArray2( 
@@ -257,3 +265,53 @@ int GetNumberOfTeams( void )
 {
 	return g_Teams.Size();
 }
+
+#ifdef NEO
+int C_Team::GetClassCount(int neoClass)
+{
+	switch (neoClass)
+	{
+	case NEO_CLASS_RECON:
+		return m_iReconCount;
+	case NEO_CLASS_ASSAULT:
+		return m_iAssaultCount;
+	case NEO_CLASS_SUPPORT:
+		return m_iSupportCount;
+	}
+
+	// C_Team is always networked, but individual players not necessarily, grab from g_PR instead
+	if (!g_PR)
+		return 0;
+
+	int iNumClass = 0;
+
+	const int iNumPlayers = GetNumPlayers();
+	for (int i = 0; i < iNumPlayers; i++)
+	{
+		if (neoClass == g_PR->GetClass(m_aPlayers[i]))
+		{
+			iNumClass++;
+		}
+	}
+
+	return iNumClass;
+}
+
+extern ConVar sv_neo_class_limit_recon;
+extern ConVar sv_neo_class_limit_assault;
+extern ConVar sv_neo_class_limit_support;
+bool C_Team::IsClassFull(int neoClass) const
+{
+	switch (neoClass)
+	{
+	case NEO_CLASS_RECON:
+		return sv_neo_class_limit_recon.GetInt() == -1 ? false : m_iReconCount >= sv_neo_class_limit_recon.GetInt();
+	case NEO_CLASS_ASSAULT:
+		return sv_neo_class_limit_assault.GetInt() == -1 ? false : m_iAssaultCount >= sv_neo_class_limit_assault.GetInt();
+	case NEO_CLASS_SUPPORT:
+		return sv_neo_class_limit_support.GetInt() == -1 ? false : m_iSupportCount >= sv_neo_class_limit_support.GetInt();
+	}
+
+	return false;
+}
+#endif // NEO

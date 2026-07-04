@@ -172,6 +172,7 @@ public:
 
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
+	void SetClass(int neoClass);
 	int GetStar() const { return m_iNeoStar; }
 	bool IsInAim() const { return m_bInAim; }
 	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
