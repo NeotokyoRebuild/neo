@@ -209,7 +209,7 @@ public:
 
 #endif
 
-#ifdef USE_SDL
+#if defined(POSIX) && defined(USE_SDL)
 void* SDLMgrFactoryRedirector( const char *pName, int *pReturnCode )
 {
 	if (strcmp(SDLMGR_INTERFACE_VERSION, pName) == 0)

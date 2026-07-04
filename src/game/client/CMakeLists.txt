@@ -156,7 +156,7 @@ if(OS_LINUX)
         vgui_controls::vgui_controls
         dl
         m
-        pthread
+        Threads::Threads
         rt
         z
         GL

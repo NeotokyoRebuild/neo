@@ -1,5 +1,20 @@
 add_executable(vice)
 
+set_target_properties(vice PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
+
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET vice)
+endif()
+
+add_library_copy_target(TARGET vice)
+
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(vice_copy_lib vice_split_debug_information)
+endif()
+
 target_include_directories(vice
     PRIVATE
     ${CMAKE_SOURCE_DIR}/utils

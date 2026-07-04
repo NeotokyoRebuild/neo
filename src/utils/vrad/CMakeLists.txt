@@ -1,5 +1,26 @@
 add_library(vrad_library SHARED)
 
+set_target_properties(vrad_library PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
+
+if(OS_LINUX)
+    set_target_properties(vrad_library PROPERTIES
+        OUTPUT_NAME "vrad"
+    )
+endif()
+
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET vrad_library)
+endif()
+
+add_library_copy_target(TARGET vrad_library)
+
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(vrad_library_copy_lib vrad_library_split_debug_information)
+endif()
+
 target_include_directories(vrad_library
     PRIVATE
     ${CMAKE_SOURCE_DIR}/utils
@@ -21,6 +42,7 @@ target_link_libraries(vrad_library
     raytrace::raytrace
     vtf::vtf
     vstdlib::vstdlib
+    Threads::Threads
 )
 
 if(OS_WINDOWS)
@@ -119,15 +141,6 @@ target_sources_grouped(
     vraddetailprops.h
     vraddll.h
 )
-
-if(OS_WINDOWS)
-    target_sources_grouped(
-        TARGET vrad_library
-        NAME "Header Files"
-        FILES
-        mpivrad.h
-    )
-endif()
 
 target_sources_grouped(
     TARGET vrad_library

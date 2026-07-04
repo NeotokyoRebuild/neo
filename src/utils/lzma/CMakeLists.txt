@@ -2,7 +2,10 @@ add_library(lzma STATIC)
 
 add_library(lzma::lzma ALIAS lzma)
 
-set_target_properties(lzma PROPERTIES PREFIX "")
+set_target_properties(lzma PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
 
 target_include_directories(lzma
     PRIVATE
