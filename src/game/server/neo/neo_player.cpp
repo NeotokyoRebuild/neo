@@ -4177,7 +4177,6 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			SetArmorValue(pPlayerTakeoverTarget->ArmorValue());
 			m_HL2Local.m_cloakPower = pPlayerTakeoverTarget->m_HL2Local.m_cloakPower;
 			m_HL2Local.m_flSuitPower = pPlayerTakeoverTarget->m_HL2Local.m_flSuitPower;
-			m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
 
 			m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
 			m_bHasBeenAirborneForTooLongToSuperJump = pPlayerTakeoverTarget->m_bHasBeenAirborneForTooLongToSuperJump;
@@ -4185,8 +4184,6 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			Weapon_SetZoom(pPlayerTakeoverTarget->m_bInAim);
 			m_bCarryingGhost = pPlayerTakeoverTarget->m_bCarryingGhost;
 			m_bInLean = pPlayerTakeoverTarget->m_bInLean;
-			m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
-			m_iNextSpawnClassChoice = pPlayerTakeoverTarget->m_iNextSpawnClassChoice;
 			m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
 			m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
 			m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
