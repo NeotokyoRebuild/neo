@@ -131,7 +131,8 @@ isstaticprop_ret IsStaticProp( studiohdr_t* pHdr )
 static int AddStaticPropDictLump( char const* pModelName )
 {
 	StaticPropDictLump_t dictLump;
-	strncpy( dictLump.m_Name, pModelName, DETAIL_NAME_LENGTH );
+	memset( &dictLump, 0, sizeof( dictLump ) );
+	V_strncpy( dictLump.m_Name, pModelName, sizeof( dictLump.m_Name ) );
 
 	for (int i = s_StaticPropDictLump.Size(); --i >= 0; )
 	{

@@ -134,8 +134,8 @@ public:
 private:
 
 	// Read/write the header from the file.
-	bool				ReadIncrementalHeader( long fp, CIncrementalHeader *pHeader );
-	bool				WriteIncrementalHeader( long fp );
+	bool				ReadIncrementalHeader( FileHandle_t fp, CIncrementalHeader *pHeader );
+	bool				WriteIncrementalHeader( FileHandle_t fp );
 
 	// Returns true if the incremental file is valid and we can use InitUpdate.
 	bool				IsIncrementalFileValid();

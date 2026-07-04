@@ -439,7 +439,6 @@ void DumpPortalTrace( pstack_t *pStack )
 
 void WritePortalTrace( const char *source )
 {
-	Vector	mid;
 	FILE	*linefile;
 	char	filename[1024];
 

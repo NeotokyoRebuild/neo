@@ -1,5 +1,20 @@
 add_executable(vvis)
 
+set_target_properties(vvis PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
+
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET vvis)
+endif()
+
+add_library_copy_target(TARGET vvis)
+
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(vvis_copy_lib vvis_split_debug_information)
+endif()
+
 target_link_libraries(vvis
     PRIVATE
     tier1::tier1

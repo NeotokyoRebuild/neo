@@ -215,10 +215,14 @@ std::mutex g_SpewCS;
 bool g_bSuppressPrintfOutput = false;
 
 // TODO move to platform.h?
+#ifndef WIN32
+// On Windows, OutputDebugString is a macro (-> OutputDebugStringA) provided by
+// the Win32 API; only supply a stub on platforms that lack it.
 void OutputDebugString(char const *pMsg)
 {
 	//printf("OutputDebugString: %s", pMsg);
 }
+#endif
 
 SpewRetval_t CmdLib_SpewOutputFunc( SpewType_t type, char const *pMsg )
 {
@@ -334,7 +338,7 @@ void InstallAllocationFunctions()
 void SetSpewFunctionLogFile( char const *pFilename )
 {
 	Assert( (!g_pLogFile) );
-	g_pLogFile = g_pFileSystem->Open( pFilename, "w" );
+	g_pLogFile = g_pFileSystem->Open( pFilename, "a" );
 
 	Assert( g_pLogFile );
 	if (!g_pLogFile)
@@ -373,8 +377,8 @@ void CmdLib_Cleanup()
 
 void CmdLib_Exit( int exitCode )
 {
-	std::exit(exitCode);
-}	
+	_Exit(exitCode);
+}
 
 
 

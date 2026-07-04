@@ -940,7 +940,6 @@ int				numdlights;
 entity_t *FindTargetEntity (const char *target)
 {
 	int		i;
-    const char *n;
 
 	for (i=0 ; i<num_entities ; i++)
 	{
@@ -1542,7 +1541,6 @@ void CreateDirectLights (void)
 	directlight_t	*dl = NULL;
 	entity_t	    *e = NULL;
     const char      *name;
-	Vector	        dest;
 
 	numdlights = 0;
 
@@ -2433,9 +2431,6 @@ static int FindOrAllocateLightstyleSamples( dface_t* f, facelight_t	*fl, int lig
 //-----------------------------------------------------------------------------
 static void ComputeIlluminationPointAndNormalsSSE( lightinfo_t const& l, FourVectors const &pos, FourVectors const &norm, SSE_SampleInfo_t* pInfo, int numSamples )
 {
-
-	Vector v[4];
-
 	pInfo->m_Points = pos;
 	bool computeNormals = ( pInfo->m_NormalCount > 1 && ( pInfo->m_IsDispFace || !l.isflat ) );
 
@@ -2814,18 +2809,18 @@ static void ComputeLightmapGradients( SSE_SampleInfo_t& info, bool const* pHasPr
 
 			if (sample.t > 0)
 			{
-				if (sample.s > 0)   gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j-1-w] ) );
-				gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j-w] ) );
-				if (sample.s < w-1) gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j+1-w] ) );
+				if (sample.s > 0)   gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j-1-w] ) );
+				gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j-w] ) );
+				if (sample.s < w-1) gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j+1-w] ) );
 			}
 			if (sample.t < h-1)
 			{
-				if (sample.s > 0)   gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j-1+w] ) );
-				gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j+w] ) );
-				if (sample.s < w-1) gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j+1+w] ) );
+				if (sample.s > 0)   gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j-1+w] ) );
+				gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j+w] ) );
+				if (sample.s < w-1) gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j+1+w] ) );
 			}
-			if (sample.s > 0)   gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j-1] ) );
-			if (sample.s < w-1) gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j+1] ) );
+			if (sample.s > 0)   gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j-1] ) );
+			if (sample.s < w-1) gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j+1] ) );
 		}
 	}
 }
@@ -3062,7 +3057,6 @@ void BuildFacelights (int iThread, int facenum)
 	facelight_t	*fl;
 	SSE_SampleInfo_t sampleInfo;
 	directlight_t *dl;
-	Vector spot;
 	Vector v[4], n[4];
 
 	if( g_bInterrupt )
@@ -3517,7 +3511,7 @@ static void LinearToBumpedLightmap(
 	VectorMultiply( linearBump2, correctionScale, correctedBumpColor2 );
 	VectorMultiply( linearBump3, correctionScale, correctedBumpColor3 );
 
-	Vector check = ( correctedBumpColor1 + correctedBumpColor2 + correctedBumpColor3 ) / 3.0f;
+	//Vector check = ( correctedBumpColor1 + correctedBumpColor2 + correctedBumpColor3 ) / 3.0f;
 
 	ColorClampBumped( correctedBumpColor1, correctedBumpColor2, correctedBumpColor3 );
 

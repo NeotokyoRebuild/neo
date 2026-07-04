@@ -191,7 +191,7 @@ bool CVRadDLL::DoIncrementalLight( char const *pVMFFile )
 	if( !fp )
 		return false;
 
-	g_pFileSystem->Write( pVMFFile, strlen(pVMFFile)+1, fp );
+	g_pFileSystem->Write( pVMFFile, (int)strlen(pVMFFile)+1, fp );
 	g_pFileSystem->Close( fp );
 
 	// Parse the new entities.

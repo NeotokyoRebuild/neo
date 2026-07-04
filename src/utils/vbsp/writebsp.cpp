@@ -951,7 +951,7 @@ void SetModelNumbers (void)
 {
 	int		i;
 	int		models;
-	char	value[10];
+	char	value[16];
 
 	models = 1;
 	for (i=1 ; i<num_entities ; i++)
@@ -961,7 +961,7 @@ void SetModelNumbers (void)
 
 		if ( !IsFuncOccluder(i) )
 		{
-			sprintf (value, "*%i", models);
+			V_snprintf (value, sizeof( value ), "*%i", models);
 			models++;
 		}
 		else

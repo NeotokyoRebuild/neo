@@ -2484,7 +2484,7 @@ void CMapFile::MergeEntities( entity_t *pInstanceEntity, CMapFile *Instance, Vec
 		if ( pos )
 		{	// null terminate the first field
 			*pos = NULL;
-			extraLen = strlen( pos + 1) + 1;	// for the comma we just null'd
+			extraLen = (int)strlen( pos + 1) + 1;	// for the comma we just null'd
 		}
 
 		if ( GD.RemapNameField( origValue, temp, FixupStyle ) )
