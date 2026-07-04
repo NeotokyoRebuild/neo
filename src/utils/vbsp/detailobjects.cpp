@@ -382,7 +382,8 @@ static int SelectDetail( DetailObjectGroup_t const& group )
 static int AddDetailDictLump( const char* pModelName )
 {
 	DetailObjectDictLump_t dictLump;
-	strncpy( dictLump.m_Name, pModelName, DETAIL_NAME_LENGTH );
+	memset( &dictLump, 0, sizeof( dictLump ) );
+	V_strncpy( dictLump.m_Name, pModelName, sizeof( dictLump.m_Name ) );
 
 	for (int i = s_DetailObjectDictLump.Count(); --i >= 0; )
 	{

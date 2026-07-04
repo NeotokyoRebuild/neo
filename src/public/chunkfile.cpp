@@ -954,8 +954,8 @@ ChunkFileResult_t CChunkFile::WriteLine(const char *pszLine)
 		//
 		if (m_nCurrentDepth > 0)
 		{
-			int nWritten = fwrite(m_szIndent, 1, m_nCurrentDepth, m_hFile);
-			if (nWritten != m_nCurrentDepth)
+			size_t nWritten = fwrite(m_szIndent, 1, m_nCurrentDepth, m_hFile);
+			if (nWritten != (size_t)m_nCurrentDepth)
 			{
 				return(ChunkFile_Fail);
 			}
@@ -964,8 +964,8 @@ ChunkFileResult_t CChunkFile::WriteLine(const char *pszLine)
 		//
 		// Write the string.
 		//
-		int nLen = strlen(pszLine);
-		int nWritten = fwrite(pszLine, 1, nLen, m_hFile);
+		size_t nLen = strlen(pszLine);
+		size_t nWritten = fwrite(pszLine, 1, nLen, m_hFile);
 		if (nWritten != nLen)
 		{
 			return(ChunkFile_Fail);

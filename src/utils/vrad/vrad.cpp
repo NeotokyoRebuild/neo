@@ -1115,7 +1115,6 @@ float FormFactorDiffToDiff ( CPatch *pDiff1, CPatch* pDiff2 )
 void MakeTransfer( int ndxPatch1, int ndxPatch2, transfer_t *all_transfers )
 //void MakeTransfer (CPatch *patch, CPatch *patch2, transfer_t *all_transfers )
 {
-	Vector	delta;
 	vec_t	scale;
 	float	trans;
 	transfer_t *transfer;
@@ -2135,7 +2134,7 @@ void VRAD_LoadBSP( char const *pFilename )
 	{
 		// Setup the logfile.
 		char logFile[512];
-		_snprintf( logFile, sizeof(logFile), "%s.log", source );
+		Q_snprintf( logFile, sizeof(logFile), "%s.log", source );
 		SetSpewFunctionLogFile( logFile );
 	}
 

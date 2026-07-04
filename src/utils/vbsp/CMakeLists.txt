@@ -1,5 +1,20 @@
 add_executable(vbsp)
 
+set_target_properties(vbsp PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
+
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET vbsp)
+endif()
+
+add_library_copy_target(TARGET vbsp)
+
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(vbsp_copy_lib vbsp_split_debug_information)
+endif()
+
 target_include_directories(vbsp
     PRIVATE
     ${CMAKE_SOURCE_DIR}/utils
@@ -46,6 +61,7 @@ target_link_libraries(vbsp
     bitmap::bitmap
     lzma::lzma
     vstdlib::vstdlib
+    Threads::Threads
 )
 
 target_sources_grouped(

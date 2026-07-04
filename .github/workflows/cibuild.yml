@@ -131,6 +131,8 @@ jobs:
         echo "libraries_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-libraries-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "dedicated=$(find . -regex '\.\/neo-\w*-\w*-dedicated-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "dedicated_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-dedicated-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "utils=$(find . -regex '\.\/neo-\w*-\w*-utils-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "utils_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-utils-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher=$(find . -regex '\.\/neo-\w*-\w*-launcher-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-launcher-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
@@ -161,6 +163,20 @@ jobs:
       with:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
+        if-no-files-found: error
+
+    - name: Upload utils
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.utils }}
+        path: ${{ env.install_dir }}/${{ env.utils }}
+        if-no-files-found: error
+
+    - name: Upload utils debug information
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.utils_debuginfo }}
+        path: ${{ env.install_dir }}/${{ env.utils_debuginfo }}
         if-no-files-found: error
 
     - name: Upload SourceMod gamedata
@@ -306,6 +322,8 @@ jobs:
         echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher=$(find . -regex '\.\/neo-\w*-\w*-launcher-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-launcher-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "utils=$(find . -regex '\.\/neo-\w*-\w*-utils-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "utils_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-utils-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
 
     - name: Upload libraries
       uses: actions/upload-artifact@v7
@@ -347,6 +365,19 @@ jobs:
       with:
         name: ${{ env.launcher_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.launcher_debuginfo }}
+
+    - name: Upload utils
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.utils }}
+        path: ${{ env.install_dir }}/${{ env.utils }}
+        if-no-files-found: error
+
+    - name: Upload utils debug information
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.utils_debuginfo }}
+        path: ${{ env.install_dir }}/${{ env.utils_debuginfo }}
         if-no-files-found: error
 
   pack-resources:

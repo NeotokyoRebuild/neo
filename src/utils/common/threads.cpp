@@ -113,6 +113,8 @@ void ThreadSetDefault (void)
 	if (numthreads == -1) // not set manually
 	{
 		numthreads = std::thread::hardware_concurrency();
+		if (numthreads < 1)
+			numthreads = 1;
 	}
 
 	Msg ("%i threads\n", numthreads);
@@ -195,6 +197,7 @@ void RunThreads_End()
 			thread.join();
 		}
 	}
+	g_ThreadHandles.clear();
 
 	threaded = false;
 }

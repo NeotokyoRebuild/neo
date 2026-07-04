@@ -348,8 +348,8 @@ bool FileSystem_GetExecutableDir( char *exedir, int exeDirLen )
 		{
 
 			// Only used by external code, i.e. maya but needed so app system loads the correct game DLLs
-			auto s = CORRECT_PATH_SEPARATOR;
-			Q_snprintf( exedir, exeDirLen, "%s%c..%cbin%clinux64", pProject, s, s, s );
+			constexpr auto s = CORRECT_PATH_SEPARATOR;
+			Q_snprintf( exedir, exeDirLen, "%s%c..%c%s", pProject, s, s, PLATFORM_BIN_DIR );
 			return true;
 		}
 		return false;

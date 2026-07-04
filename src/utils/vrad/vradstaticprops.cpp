@@ -171,10 +171,10 @@ void Rasterizer::Build()
 	// If we wanted to support better texturing (almost definitely unnecessary), we'd change this to a larger size.
 	const int kFilterSampleRadius = 1;
 
-	int iMinX = GetCol(fMinX) - kFilterSampleRadius;
-	int iMinY = GetRow(fMinY) - kFilterSampleRadius;
-	int iMaxX = GetCol(fMaxX) + 1 + kFilterSampleRadius;
-	int iMaxY = GetRow(fMaxY) + 1 + kFilterSampleRadius;
+	int iMinX = (int)GetCol(fMinX) - kFilterSampleRadius;
+	int iMinY = (int)GetRow(fMinY) - kFilterSampleRadius;
+	int iMaxX = (int)GetCol(fMaxX) + 1 + kFilterSampleRadius;
+	int iMaxY = (int)GetRow(fMaxY) + 1 + kFilterSampleRadius;
 
 	// Clamp to valid texture (integer) locations
 	iMinX = max(0, iMinX);
@@ -2247,7 +2247,7 @@ static void GenerateLightmapSamplesForMesh( const matrix3x4_t& _matPos, const ma
 
 					for (auto it = rasterizer.begin(); it != rasterizer.end(); ++it)
 					{
-						size_t linearPos = rasterizer.GetLinearPos(it);
+						int linearPos = (int)rasterizer.GetLinearPos(it);
 						Assert(linearPos < cTotalPixelCount);
 
 						if ( colorTexels[linearPos].m_bValid )

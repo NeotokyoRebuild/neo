@@ -109,7 +109,7 @@ endif()
 if(OS_LINUX)
     target_link_libraries(server
         PRIVATE
-        pthread
+        Threads::Threads
         dl
     )
 endif()

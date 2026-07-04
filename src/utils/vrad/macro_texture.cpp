@@ -153,7 +153,6 @@ inline Vector SampleMacroTexture( const CMacroTextureData *t, const Vector &vWor
 void ApplyMacroTextures( int iFace, const Vector &vWorldPos, Vector &outLuxel )
 {
 	// Add the global macro texture.
-	Vector vGlobal;
 	if ( g_pGlobalMacroTextureData )
 		outLuxel *= SampleMacroTexture( g_pGlobalMacroTextureData, vWorldPos );
 
