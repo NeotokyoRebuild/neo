@@ -57,7 +57,7 @@ CTextBuffer::~CTextBuffer( void )
 
 void CTextBuffer::WriteText( const char *pText )
 {
-	int len = strlen( pText );
+	int len = (int)strlen( pText );
 	CopyData( pText, len );
 }
 
@@ -72,7 +72,7 @@ void CTextBuffer::WriteIntKey( const char *pKeyName, int outputData )
 		return;
 	}
 	sprintf( tmp, "\"%s\" \"%d\"\n", pKeyName, outputData );
-	CopyData( tmp, strlen(tmp) );
+	CopyData( tmp, (int)strlen(tmp) );
 }
 
 void CTextBuffer::WriteStringKey( const char *pKeyName, const char *outputData )
@@ -94,7 +94,7 @@ void CTextBuffer::WriteFloatKey( const char *pKeyName, float outputData )
 		return;
 	}
 	sprintf( tmp, "\"%s\" \"%f\"\n", pKeyName, outputData );
-	CopyData( tmp, strlen(tmp) );
+	CopyData( tmp, (int)strlen(tmp) );
 }
 
 void CTextBuffer::WriteFloatArrayKey( const char *pKeyName, const float *outputData, int count )
@@ -117,13 +117,13 @@ void CTextBuffer::WriteFloatArrayKey( const char *pKeyName, const float *outputD
 	}
 	strcat( tmp, "\"\n" );
 
-	CopyData( tmp, strlen(tmp) );
+	CopyData( tmp, (int)strlen(tmp) );
 }
 
 void CTextBuffer::CopyStringQuotes( const char *pString )
 {
 	CopyData( "\"", 1 );
-	CopyData( pString, strlen(pString) );
+	CopyData( pString, (int)strlen(pString) );
 	CopyData( "\"", 1 );
 }
 

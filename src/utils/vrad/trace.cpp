@@ -405,7 +405,7 @@ void TestLine_DoesHitSky( FourVectors const& start, FourVectors const& stop,
 					int cam;
 					for (cam = 0; cam < num_sky_cameras; ++cam)
 					{
-						FourVectors skystart, skytrans, skystop;
+						FourVectors skystart, skystop;
 						skystart.DuplicateVector( sky_cameras[cam].origin );
 						skystop = start;
 						skystop *= sky_cameras[cam].world_to_sky;

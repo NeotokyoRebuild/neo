@@ -1281,7 +1281,7 @@ int RunVBSP( int argc, char **argv )
 
 	// Setup the logfile.
 	char logFile[sizeof(source) + 4];
-	_snprintf( logFile, sizeof(logFile), "%s.log", source );
+	Q_snprintf( logFile, sizeof(logFile), "%s.log", source );
 	SetSpewFunctionLogFile( logFile );
 
 	LoadPhysicsDLL();
@@ -1333,7 +1333,7 @@ int RunVBSP( int argc, char **argv )
 
 		// Mark as stale since the lighting could be screwed with new ents.
         auto data = "stale";
-        AddBufferToPak( GetPakFile(), "stale.txt", (void *)(data), strlen(data) + 1, false );
+        AddBufferToPak( GetPakFile(), "stale.txt", (void *)(data), (int)strlen(data) + 1, false );
 
 		LoadMapFile (name);
 		SetModelNumbers ();
@@ -1391,7 +1391,7 @@ int RunVBSP( int argc, char **argv )
 			LoadBSPFile_FileSystemOnly (mapFile);
 			// Mark as stale since the lighting could be screwed with new ents.
             auto data = "stale";
-            AddBufferToPak( GetPakFile(), "stale.txt", (void *)(data), strlen(data) + 1, false );
+            AddBufferToPak( GetPakFile(), "stale.txt", (void *)(data), (int)strlen(data) + 1, false );
 		}
 
 		LoadMapFile (name);

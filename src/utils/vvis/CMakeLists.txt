@@ -1,5 +1,26 @@
 add_library(vvis_library SHARED)
 
+set_target_properties(vvis_library PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
+
+if(OS_LINUX)
+    set_target_properties(vvis_library PROPERTIES
+        OUTPUT_NAME "vvis"
+    )
+endif()
+
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET vvis_library)
+endif()
+
+add_library_copy_target(TARGET vvis_library)
+
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(vvis_library_copy_lib vvis_library_split_debug_information)
+endif()
+
 target_include_directories(vvis_library
     PRIVATE
     ${CMAKE_SOURCE_DIR}/utils
@@ -29,10 +50,6 @@ if(OS_WINDOWS)
         odbccp32.lib
         ws2_32.lib
     )
-elseif(OS_LINUX)
-    set_target_properties(vvis_library PROPERTIES
-        OUTPUT_NAME "vvis"
-    )
 endif()
 
 set_source_files_properties(${CMAKE_SOURCE_DIR}/public/filesystem_init.cpp PROPERTIES
@@ -45,6 +62,7 @@ target_link_libraries(vvis_library
     mathlib::mathlib
     tier2::tier2
     lzma::lzma
+    Threads::Threads
 )
 
 target_sources_grouped(
