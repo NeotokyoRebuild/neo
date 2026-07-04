@@ -465,11 +465,11 @@
 
 @SolidClass base(Trigger) = neo_trigger_koth_zone: "Trigger for zone capture detection. Can be grouped with other triggers into a single zone."
 [
+	zone_name(target_destination) : "Zone name" : "" : "Name of the neo_info_koth_zone this trigger belongs to."
 ]
 
-    @PointClass = neo_info_koth_zone : "Creates a zone to capture. To work it needs some koth_zone triggers that should reffer to this entity."
+@PointClass base(Targetname) = neo_info_koth_zone : "Creates a zone to capture. Give it a name, then point one or more neo_trigger_koth_zone's zone_name at that name."
 [
-    zone_name(target_destination) : "Zone name" : "idk" : "name that (probably, rn idk) will be used"
 ]
 
 @PointClass = neo_koth_master : "Manages all neo_info_koth_zone entities on the map: picks which one is active and rotates between them. Place exactly one per map."
