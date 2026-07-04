@@ -23,6 +23,7 @@
 #include "neo_model_manager.h"
 #include "neo_ghost_spawn_point.h"
 #include "neo_ghost_cap_point.h"
+#include "neo_koth_master.h"
 #include "neo/weapons/weapon_ghost.h"
 #include "neo/weapons/weapon_neobasecombatweapon.h"
 #include "eventqueue.h"
@@ -132,6 +133,8 @@ ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1
 // koth
 ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "1.75", FCVAR_REPLICATED, "Seconds to get 1 point");
 ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "100", FCVAR_REPLICATED, "The points needed to win this round");
+ConVar sv_neo_koth_zone_switch_time("sv_neo_koth_zone_switch_time", "45", FCVAR_REPLICATED,
+	"How often (in seconds) neo_koth_master rotates the active KOTH zone.", true, 5.0f, false, 0.0f);
 
 #define DEF_TEAMPLAYERTHRES 5
 static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
@@ -3061,6 +3064,9 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Deathmatch"),
 	SZWSZ_INIT("Free Roam"),
 	SZWSZ_INIT("Training"),
+	// neo todo: I added this line and then commented it out because I thought it might have been missed on purpose
+	// SZWSZ_INIT("Juggernaut"),
+	SZWSZ_INIT("King of the Hill"),
 };
 
 const char *CNEORules::GetGameDescription(void)
@@ -3389,7 +3395,11 @@ void CNEORules::ResetKOTH() {
 	m_iKothTimeJinrai = 0;
 	m_iKothTimeNSF = 0;
 	// neo TODO: give xp for holding the point?
-	// neo_koth_master picks/activates the first zone once it exists
+
+	if (!m_pKothMaster)
+		m_pKothMaster = dynamic_cast<CNEO_KOTHMaster*>(gEntList.FindEntityByClassname(nullptr, "neo_koth_master"));
+
+	m_pKothMaster->ResetAllZones();
 }
 
 void CNEORules::RestartGame()

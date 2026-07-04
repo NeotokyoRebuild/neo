@@ -436,7 +436,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 			V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(TEAM_JINRAI)->Get_Score(), GetGlobalTeam(TEAM_NSF)->Get_Score());
 		}
 	}
-	// neo TODO: add KOTH gameType (smart way) or detect KOTH maps (dumb way)
+	// neo TODO: add KOTH gameType (wip) or detect KOTH maps (removed this feature)
 	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_KOTH)
 	{
 		V_sprintf_safe(szPlayersAliveANSI, "J:%d  N:%d",

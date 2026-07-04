@@ -13,6 +13,7 @@ public:
 	DECLARE_DATADESC();
 
 	virtual void Spawn() override;
+	virtual void Activate() override;
 	virtual void Think() override;
 	void ScoreThink();
 
@@ -26,6 +27,8 @@ public:
 	// called by neo_koth_master
 	void SetActivity(bool bActive);
 	bool IsActive() const { return m_bActive; }
+	// clears captors/score state (round restart) without touching m_bActive
+	void ResetCapture();
 
 	KothControllingTeams GetState() const { return m_State; }
 
@@ -37,8 +40,8 @@ private:
 	struct ZoneCaptor
 	{
 		EHANDLE hPlayer;
-		int team;        // team recorded at the moment they entered (survives team switch/death before leaving)
-		int touchCount;  // how many of this zone's triggers currently touch them
+		int team{};        // team recorded at the moment they entered (survives team switch/death before leaving)
+		int touchCount{};  // how many of this zone's triggers currently touch them
 	};
 
 	CUtlVector<ZoneCaptor> m_Captors;

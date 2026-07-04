@@ -1,5 +1,6 @@
 #include "neo_info_koth_zone.h"
 #include "neo_trigger_koth_zone.h"
+#include "neo_koth_master.h"
 #include "neo_player.h"
 #include "neo_player_shared.h"
 
@@ -20,6 +21,21 @@ void CNEO_InfoKOTHZone::Spawn()
 	SetNextThink(gpGlobals->curtime + KOTHZONE_PRUNE_INTERVAL);
 
 	SetContextThink(&CNEO_InfoKOTHZone::ScoreThink, gpGlobals->curtime + KOTHZONE_SCORE_INTERVAL, KOTHZONE_SCORE_CONTEXT);
+}
+
+void CNEO_InfoKOTHZone::Activate()
+{
+	BaseClass::Activate();
+
+	CNEO_KOTHMaster *pMaster = static_cast<CNEO_KOTHMaster *>( // NOLINT
+		gEntList.FindEntityByClassname(nullptr, "neo_koth_master")
+	);
+
+	// neo TODO: do something when we see that there are several masters
+	if (pMaster == nullptr)
+		Warning("neo_info_koth_zone found with no neo_koth_master on the map!\n");
+	else
+		pMaster->RegisterZone(this);
 }
 
 void CNEO_InfoKOTHZone::Think()
@@ -147,6 +163,17 @@ void CNEO_InfoKOTHZone::SetActivity(bool bActive)
 		else
 			pTrigger->Disable();
 	}
+}
+
+void CNEO_InfoKOTHZone::ResetCapture()
+{
+	m_Captors.Purge();
+	m_iJinraiCount = 0;
+	m_iNSFCount = 0;
+	// neo TODO: it could lead to an incorrect result if players somehow spawn right inside the trigger, but who cares?
+	m_State = KOTH_NONE;
+	m_flAccumulatorNSF = 0.0f;
+	m_flAccumulatorJinrai = 0.0f;
 }
 
 void CNEO_InfoKOTHZone::PruneStaleCaptors()

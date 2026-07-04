@@ -42,7 +42,8 @@
 		6 : "JGR"
 		4 : "Empty"
 		5 : "Tutorial"
-	]	
+		7 : "KOTH"
+	]
 
 	ForcedTeam(choices) : "Forced Team" : -1 : "Skip team menu and spawn as this team" =
 	[
@@ -469,4 +470,8 @@
     @PointClass = neo_info_koth_zone : "Creates a zone to capture. To work it needs some koth_zone triggers that should reffer to this entity."
 [
     zone_name(target_destination) : "Zone name" : "idk" : "name that (probably, rn idk) will be used"
+]
+
+@PointClass = neo_koth_master : "Manages all neo_info_koth_zone entities on the map: picks which one is active and rotates between them. Place exactly one per map."
+[
 ]

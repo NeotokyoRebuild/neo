@@ -85,6 +85,7 @@ class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
 class CNEOBotSeekAndDestroy;
+class CNEO_KOTHMaster;
 
 // this is not good, but it is used ONLY to indicate who controls the checkpoint.
 // when its possible I prefer default TEAM_NSF/JINRAI vars
@@ -98,6 +99,7 @@ enum KothControllingTeams
 
 extern ConVar sv_neo_koth_seconds_per_point;
 extern ConVar sv_neo_koth_max_score;
+extern ConVar sv_neo_koth_zone_switch_time;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
@@ -488,6 +490,7 @@ public:
 	const int GetLastGhoster() const { return m_iLastGhoster; }
 #ifdef GAME_DLL
 private:
+	CNEO_KOTHMaster *m_pKothMaster = nullptr;
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
 	float m_flJuggernautDeathTime = 0.0f;
