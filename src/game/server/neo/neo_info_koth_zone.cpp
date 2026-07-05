@@ -217,6 +217,4 @@ void CNEO_InfoKOTHZone::UpdateState()
 		return;
 
 	m_State = newState;
-
-	// neo TODO: notify neo_koth_master / CNEORules once that layer exists
 }

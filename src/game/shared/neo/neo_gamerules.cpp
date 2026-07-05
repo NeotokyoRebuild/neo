@@ -133,6 +133,7 @@ ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1
 // koth
 ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "1.75", FCVAR_REPLICATED, "Seconds to get 1 point");
 ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "100", FCVAR_REPLICATED, "The points needed to win this round");
+// neo todo: add a timer for the first zone to appear (currently, this is done by the switch timer, which is incorrect)
 ConVar sv_neo_koth_zone_switch_time("sv_neo_koth_zone_switch_time", "45", FCVAR_REPLICATED,
 	"How often (in seconds) neo_koth_master rotates the active KOTH zone.", true, 5.0f, false, 0.0f);
 
