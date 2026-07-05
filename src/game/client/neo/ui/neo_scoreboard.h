@@ -97,31 +97,6 @@ public:
 		int iTall;
 	};
 	Texture m_arTextures[CROSSHAIR_STYLE__TOTAL] = {};
-
-	enum EColsPlayers
-	{
-		COLSPLAYERS_PING = 0,
-		COLSPLAYERS_AVATAR,
-		COLSPLAYERS_NAME,
-		COLSPLAYERS_READYUP,
-		COLSPLAYERS_CLASS,
-		COLSPLAYERS_RANK,
-		COLSPLAYERS_XP,
-		COLSPLAYERS_DEATH,
-
-		COLSPLAYERS__TOTAL,
-	};
-	int m_iColsWidePlayersList[COLSPLAYERS__TOTAL] = {};
-
-	enum EColsNonPlayers
-	{
-		COLSNONPLAYERS_PING = 0,
-		COLSNONPLAYERS_AVATAR,
-		COLSNONPLAYERS_NAME,
-
-		COLSNONPLAYERS__TOTAL,
-	};
-	int m_iColsWideNonPlayersList[COLSNONPLAYERS__TOTAL] = {};
 };
 
 extern CNEOScoreBoard *g_pNeoScoreBoard;

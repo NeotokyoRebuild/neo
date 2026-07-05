@@ -30,6 +30,29 @@ enum ENeoScoreBoardPopup
 	NEOSCOREBOARDPOPUP_COPYCROSSHAIR,
 };
 
+enum EColsPlayers
+{
+	COLSPLAYERS_PING = 0,
+	COLSPLAYERS_AVATAR,
+	COLSPLAYERS_NAME,
+	COLSPLAYERS_READYUP,
+	COLSPLAYERS_CLASS,
+	COLSPLAYERS_RANK,
+	COLSPLAYERS_XP,
+	COLSPLAYERS_DEATH,
+
+	COLSPLAYERS__TOTAL,
+};
+
+enum EColsNonPlayers
+{
+	COLSNONPLAYERS_PING = 0,
+	COLSNONPLAYERS_AVATAR,
+	COLSNONPLAYERS_NAME,
+
+	COLSNONPLAYERS__TOTAL,
+};
+
 CNEOScoreBoard *g_pNeoScoreBoard = nullptr;
 
 CNEOScoreBoard::CNEOScoreBoard(IViewPort *pViewPort)
@@ -190,9 +213,6 @@ void CNEOScoreBoard::ApplySchemeSettings(vgui::IScheme *pScheme)
 	}
 	m_pImageList = new vgui::ImageList(false);
 	m_mapAvatarsToImageList.RemoveAll();
-
-	V_memset(m_iColsWidePlayersList, 0, sizeof(m_iColsWidePlayersList));
-	V_memset(m_iColsWideNonPlayersList, 0, sizeof(m_iColsWideNonPlayersList));
 
 	m_flNextUpdateTime = gpGlobals->curtime + 0.1f;
 
@@ -514,25 +534,6 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		}
 	}
 
-	// Reset ranked column size depending if there's
-	// rankless dog or not
-	//
-	// Reset column sizes if wide/tall differs
-	static bool bPrevHasRanklessDog = false, bPrevShowReadyUp = false;
-	static int prevWide = 0, prevTall = 0;
-	if (bPrevHasRanklessDog != bHasRanklessDog
-			|| bPrevShowReadyUp != bShowReadyUp
-			|| wide != prevWide
-			|| tall != prevTall)
-	{
-		V_memset(m_iColsWidePlayersList, 0, sizeof(m_iColsWidePlayersList));
-		V_memset(m_iColsWideNonPlayersList, 0, sizeof(m_iColsWideNonPlayersList));
-	}
-	bPrevHasRanklessDog = bHasRanklessDog;
-	bPrevShowReadyUp = bShowReadyUp;
-	prevWide = wide;
-	prevTall = tall;
-
 	const int iGap = m_uiCtx.iMarginX;
 	const bool bNotTeamplay = !NEORules()->IsTeamplay();
 	const int iMaxSidePlayers = (bNotTeamplay)
@@ -608,6 +609,31 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 		m_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
 
+		int iColsWidePlayersList[COLSPLAYERS__TOTAL] = {};
+		iColsWidePlayersList[COLSPLAYERS_PING] = NeoUI::SuitableWideByWStr(L"BOT", NeoUI::SUITABLEWIDE_TABLE);
+		iColsWidePlayersList[COLSPLAYERS_AVATAR] = m_uiCtx.layout.iRowTall;
+		iColsWidePlayersList[COLSPLAYERS_NAME] = 0;
+		iColsWidePlayersList[COLSPLAYERS_READYUP] = bShowReadyUp ? NeoUI::SuitableWideByWStr(L"NOT READY", NeoUI::SUITABLEWIDE_TABLE) : 0;
+		iColsWidePlayersList[COLSPLAYERS_CLASS] = NeoUI::SuitableWideByWStr(L"Support", NeoUI::SUITABLEWIDE_TABLE);
+		iColsWidePlayersList[COLSPLAYERS_RANK] = NeoUI::SuitableWideByWStr(bHasRanklessDog ? L"Rankless Dog" : L"Lieutenant", NeoUI::SUITABLEWIDE_TABLE);
+		iColsWidePlayersList[COLSPLAYERS_XP] = NeoUI::SuitableWideByWStr(L"-99", NeoUI::SUITABLEWIDE_TABLE);
+		iColsWidePlayersList[COLSPLAYERS_DEATH] = NeoUI::SuitableWideByWStr(L"Deaths", NeoUI::SUITABLEWIDE_TABLE);
+		int iColsWidePlayersTotalNonName = 0;
+		for (int i = 0; i < COLSPLAYERS__TOTAL; ++i)
+		{
+			iColsWidePlayersTotalNonName += iColsWidePlayersList[i];
+		}
+
+		int iColsWideNonPlayersList[COLSNONPLAYERS__TOTAL] = {};
+		iColsWideNonPlayersList[COLSNONPLAYERS_PING] = NeoUI::SuitableWideByWStr(L"BOT", NeoUI::SUITABLEWIDE_TABLE);
+		iColsWideNonPlayersList[COLSNONPLAYERS_AVATAR] = m_uiCtx.layout.iRowTall;
+		iColsWideNonPlayersList[COLSNONPLAYERS_NAME] = 0;
+		int iColsWideNonPlayersTotalNonName = 0;
+		for (int i = 0; i < COLSNONPLAYERS__TOTAL; ++i)
+		{
+			iColsWideNonPlayersTotalNonName += iColsWideNonPlayersList[i];
+		}
+
 		// Output all the players in the server
 		for (int iCurTeam = TEAM_UNASSIGNED; iCurTeam < TEAM__TOTAL; ++iCurTeam)
 		{
@@ -644,47 +670,18 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 			// One for the heading
 			m_uiCtx.dPanel.tall = m_uiCtx.layout.iRowTall * (1 + ((iCurTeam >= FIRST_GAME_TEAM) ? iMaxSidePlayers : iaTeamTally[iCurTeam]));
 
+			iColsWidePlayersList[COLSPLAYERS_NAME] = m_uiCtx.dPanel.wide - iColsWidePlayersTotalNonName;
+			iColsWideNonPlayersList[COLSNONPLAYERS_NAME] = m_uiCtx.dPanel.wide - iColsWideNonPlayersTotalNonName;
+
 			NeoUI::BeginSection(NeoUI::SECTIONFLAG_DISABLEOFFSETS);
 			{
-				if (0 == m_iColsWidePlayersList[0])
-				{
-					m_iColsWidePlayersList[COLSPLAYERS_PING] = NeoUI::SuitableWideByWStr(L"BOT", NeoUI::SUITABLEWIDE_TABLE);
-					m_iColsWidePlayersList[COLSPLAYERS_AVATAR] = m_uiCtx.layout.iRowTall;
-					m_iColsWidePlayersList[COLSPLAYERS_NAME] = 0;
-					m_iColsWidePlayersList[COLSPLAYERS_READYUP] = bShowReadyUp ? NeoUI::SuitableWideByWStr(L"NOT READY", NeoUI::SUITABLEWIDE_TABLE) : 0;
-					m_iColsWidePlayersList[COLSPLAYERS_CLASS] = NeoUI::SuitableWideByWStr(L"Support", NeoUI::SUITABLEWIDE_TABLE);
-					m_iColsWidePlayersList[COLSPLAYERS_RANK] = NeoUI::SuitableWideByWStr(bHasRanklessDog ? L"Rankless Dog" : L"Lieutenant", NeoUI::SUITABLEWIDE_TABLE);
-					m_iColsWidePlayersList[COLSPLAYERS_XP] = NeoUI::SuitableWideByWStr(L"-99", NeoUI::SUITABLEWIDE_TABLE);
-					m_iColsWidePlayersList[COLSPLAYERS_DEATH] = NeoUI::SuitableWideByWStr(L"Deaths", NeoUI::SUITABLEWIDE_TABLE);
-
-					int iTotalColsUsed = 0;
-					for (int i = 0; i < COLSPLAYERS__TOTAL; ++i)
-					{
-						iTotalColsUsed += m_iColsWidePlayersList[i];
-					}
-					m_iColsWidePlayersList[COLSPLAYERS_NAME] = m_uiCtx.dPanel.wide - iTotalColsUsed;
-				}
-				if (0 == m_iColsWideNonPlayersList[0])
-				{
-					m_iColsWideNonPlayersList[COLSNONPLAYERS_PING] = NeoUI::SuitableWideByWStr(L"BOT", NeoUI::SUITABLEWIDE_TABLE);
-					m_iColsWideNonPlayersList[COLSNONPLAYERS_AVATAR] = m_uiCtx.layout.iRowTall;
-					m_iColsWideNonPlayersList[COLSNONPLAYERS_NAME] = 0;
-
-					int iTotalColsUsed = 0;
-					for (int i = 0; i < COLSNONPLAYERS__TOTAL; ++i)
-					{
-						iTotalColsUsed += m_iColsWideNonPlayersList[i];
-					}
-					m_iColsWideNonPlayersList[COLSNONPLAYERS_NAME] = m_uiCtx.dPanel.wide - iTotalColsUsed;
-				}
-
 				NeoUI::BeginTable(
 						(iCurTeam >= FIRST_GAME_TEAM)
-								? m_iColsWidePlayersList
-								: m_iColsWideNonPlayersList,
+								? iColsWidePlayersList
+								: iColsWideNonPlayersList,
 						(iCurTeam >= FIRST_GAME_TEAM)
-								? ARRAYSIZE(m_iColsWidePlayersList)
-								: ARRAYSIZE(m_iColsWideNonPlayersList));
+								? ARRAYSIZE(iColsWidePlayersList)
+								: ARRAYSIZE(iColsWideNonPlayersList));
 
 				m_uiCtx.colors.normalFg = (bNotTeamplay && iCurTeam >= FIRST_GAME_TEAM)
 						? COLOR_NEO_ORANGE
