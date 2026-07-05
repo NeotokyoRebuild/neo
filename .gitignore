@@ -694,3 +694,7 @@ FodyWeavers.xsd
 
 # Selected Background
 /game/neo/scripts/[Cc]hapter[Bb]ackgrounds.txt
+
+# clion stuff
+/src/cmake-build-debug/
+/.idea/
