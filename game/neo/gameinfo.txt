@@ -34,7 +34,7 @@
 			//
 			// The path is assuming a SRCDS where NEOTOKYO directory is next
 			// to the NT;RE directory, alter if needed.
-			//Game                             "C:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\NeotokyoSource"
+			//Game                             |gameinfo_path|../../NEOTOKYO/NeotokyoSource
 
 			game_lv                          hl2/hl2_lv.vpk
 			Game+Mod                         hl2mp/hl2mp_english.vpk
