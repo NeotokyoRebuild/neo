@@ -14,8 +14,10 @@
 #include "decals.h"
 #include "coordsize.h"
 #include "rumble_shared.h"
+#ifndef NEO
 #ifdef CLIENT_DLL
 #include "prediction.h"
+#endif
 #endif
 
 #if defined(HL2_DLL) || defined(HL2_CLIENT_DLL)
