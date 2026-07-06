@@ -7,7 +7,8 @@ set(CMAKE_VERBOSE_MAKEFILE TRUE)
 message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
 
 string(TIMESTAMP BUILD_DATETIME UTC)
-message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
+# NEO TODO (nullsystem): This screwed up nvim's :make
+# message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -38,6 +39,7 @@ option(NEO_BUILD_MATHLIB "Build mathlib library" ON)
 option(NEO_BUILD_VGUI_CONTROLS "Build vgui_controls library" ON)
 option(NEO_COPY_LIBRARIES "Copy libraries to bin directory by default" ON)
 option(NEO_EXTRA_ASSETS "Copy extra assets into game/neo" ON)
+set(NEO_EXTRA_ASSETS_ALT_PATH "" CACHE PATH "Alternate location to fetch the extra assets")
 if (OS_LINUX)
     set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin/linux64" CACHE PATH "Directory for output libraries (linux64)")
 else ()
@@ -66,6 +68,7 @@ message(STATUS "Build mathlib library: ${NEO_BUILD_MATHLIB}")
 message(STATUS "Build vgui_controls library: ${NEO_BUILD_VGUI_CONTROLS}")
 message(STATUS "Copy libraries to bin directory by default: ${NEO_COPY_LIBRARIES}")
 message(STATUS "Copy extra assets into game/neo: ${NEO_EXTRA_ASSETS}")
+message(STATUS "Alternate location to fetch the extra assets: ${NEO_EXTRA_ASSETS_ALT_PATH}")
 message(STATUS "Directory for output libraries: ${NEO_OUTPUT_LIBRARY_PATH}")
 message(STATUS "Install game libraries: ${NEO_INSTALL_LIBRARIES}")
 message(STATUS "Install game resources: ${NEO_INSTALL_RESOURCES}")
@@ -120,9 +123,9 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWith
 endif()
 
 add_compile_definitions(
-	# Whether to validate narrowing conversions done with narrow_cast<T>(...)
-	# If not, will simply alias narrow_cast to static_cast
-	$<$<CONFIG:Debug>:PARANOID_NARROWING>
+    # Whether to validate narrowing conversions done with narrow_cast<T>(...)
+    # If not, will simply alias narrow_cast to static_cast
+    $<$<CONFIG:Debug>:PARANOID_NARROWING>
 )
 
 if(NEO_RAD_TELEMETRY_DISABLED)
@@ -130,20 +133,24 @@ if(NEO_RAD_TELEMETRY_DISABLED)
 endif()
 
 if (OS_LINUX)
-    set(PLATSUBDIR "/linux64")
+    set(PLATSUBDIR "linux64")
 elseif (OS_WINDOWS)
-    set(PLATSUBDIR "/x64")
+    set(PLATSUBDIR "x64")
 endif ()
 
 set(STEAM_RUNTIME_PATH /usr)
 set(CRYPTOPPDIR steamrt_sniper64)
 
+if (NEO_DEDICATED AND OS_LINUX)
+    set(SRV_SUFFIX "_srv")
+else()
+    set(SRV_SUFFIX "")
+endif()
+
 add_compile_definitions(
     # SDK2013CE # Cut out since 2025-02-18 TF2 SDK Update
     NEO
     GLOWS_ENABLE
-    _DLL_EXT=${CMAKE_SHARED_LIBRARY_SUFFIX}
-    _EXTERNAL_DLL_EXT=${CMAKE_SHARED_LIBRARY_SUFFIX}
     _GLIBCXX_USE_CXX11_ABI=0
     FRAME_POINTER_OMISSION_DISABLED
     SOURCE1=1
@@ -159,8 +166,8 @@ add_compile_definitions(
 )
 
 if(OS_WINDOWS)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public${PLATSUBDIR}")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common${PLATSUBDIR}")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public/${PLATSUBDIR}")
+    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
 
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "EditAndContinue")
 
@@ -175,6 +182,7 @@ if(OS_WINDOWS)
         /errorReport:prompt # ErrorReporting - Prompt Immediately
         /W4
         /Gw # Optimize Global Data
+		/bigobj # Required for unity build
 
         /wd4456
         /wd4457
@@ -293,9 +301,11 @@ if(OS_LINUX OR OS_MACOS)
     add_compile_options(
         # See: https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
 
-        # core2 - Intel Core 2 CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3, CX16, SAHF and FXSR instruction set support. 
-        -march=core2
-        #-march=x86-64
+        # Baseline any x86_64 CPU (MMX, SSE, SSE2, and FXSR instruction set support)
+        -march=x86-64
+
+        # Optimize for the most common AMD64 processors, doesn't cut out support unlike -march
+        -mtune=generic
 
         # This option enables GCC to generate CMPXCHG16B instructions in 64-bit code to implement compare-and-exchange
         # operations on 16-byte aligned 128-bit objects. This is useful for atomic updates of data structures exceeding
@@ -379,8 +389,9 @@ if(OS_LINUX OR OS_MACOS)
 endif()
 
 if(OS_LINUX)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public${PLATSUBDIR}")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common${PLATSUBDIR}")
+    set(LIBPUBLIC_RELATIVE_PATH "lib/public/${PLATSUBDIR}")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/${LIBPUBLIC_RELATIVE_PATH}")
+    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
 
     add_compile_definitions(
         LINUX
@@ -498,8 +509,8 @@ if(NEO_INSTALL_LIBRARIES)
         else()
             install(
                 TARGETS server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
             )
         endif()
     else()
@@ -548,8 +559,8 @@ if(NEO_INSTALL_LIBRARIES)
         else()
             install(
                 TARGETS client game_shader_dx9 server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
             )
         endif()
     endif()
@@ -584,23 +595,30 @@ if(NEO_INSTALL_RESOURCES)
 endif()
 
 if(NEO_EXTRA_ASSETS)
-    include(FetchContent) # once in the project to include the module
+    if(NEO_EXTRA_ASSETS_ALT_PATH)
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${NEO_EXTRA_ASSETS_ALT_PATH}/neo"
+                "${CMAKE_SOURCE_DIR}/../game/neo")
+    else()
+        include(FetchContent)
 
-    FetchContent_Declare(
-        neo_assets
-        GIT_REPOSITORY https://github.com/NeotokyoRebuild/neoAssets.git
-        GIT_TAG master # Replace with a commit hash or other tag to select a specific version of the assets, remove GIT_SHALLOW if using commit hash
-        GIT_SHALLOW 1
-        GIT_PROGRESS TRUE
-        USES_TERMINAL_DOWNLOAD TRUE
-    )
+        FetchContent_Declare(
+            neo_assets
+            GIT_REPOSITORY https://github.com/NeotokyoRebuild/neoAssets.git
+            GIT_TAG master
+            GIT_SHALLOW 1
+            GIT_PROGRESS TRUE
+            USES_TERMINAL_DOWNLOAD TRUE
+        )
 
-    FetchContent_MakeAvailable(neo_assets)
+        FetchContent_MakeAvailable(neo_assets)
 
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${neo_assets_SOURCE_DIR}/neo"
-            "${CMAKE_SOURCE_DIR}/../game/neo")
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${neo_assets_SOURCE_DIR}/neo"
+                "${CMAKE_SOURCE_DIR}/../game/neo")
+    endif()
 endif()
 
 add_subdirectory(tests)

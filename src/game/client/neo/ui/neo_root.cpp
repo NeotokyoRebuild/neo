@@ -349,6 +349,12 @@ constexpr const char *BTNS_LOCALIZE[MMBTN__TOTAL] = {
 	"#GameUI_GameMenu_Quit",
 };
 
+static const char *BINDNAME_TO_ROOTBUTTONACTION_MAP[CNeoRoot::ROOTBUTTONACTION__TOTAL] = {
+	"",						// ROOTBUTTONACTION_NIL (skip over in loop)
+	"neo_toggleconsole",	// ROOTBUTTONACTION_TOGGLECONSOLE
+	"neo_mp3",				// ROOTBUTTONACTION_MP3
+};
+
 CNeoRoot::CNeoRoot(VPANEL parent)
 	: EditablePanel(nullptr, "NeoRootPanel")
 	, m_panelCaptureInput(new CNeoRootInput(this))
@@ -632,12 +638,34 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		return;
 	}
 
-	// Refresh every time, because else if the user unbinds or rebinds the key, it will still incorrectly be mapped there.
-	// NEO FIXME (Rain): We do not currently support binding multiple buttons for the same command;
-	// if the user does: bind a foo; bind b foo; then only the latest bind will work.
-	m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	// NEO NOTE (nullsystem): There doesn't seem to be callbacks to check on updated
+	// keybinds and neither would ClientModeShared::KeyInput pick up neo_mp3,
+	// so timed and only on typed so it doesn't go checking on all buttons everytime
+	if (m_flHtBtnCodeUpdate <= gpGlobals->realtime)
+	{
+		m_htButtonCodeToAction.RemoveAll();
+		for (int iBc = KEY_FIRST; iBc <= BUTTON_CODE_LAST; ++iBc)
+		{
+			const ButtonCode_t bc = static_cast<ButtonCode_t>(iBc);
+			const char *pszBinding = gameuifuncs->GetBindingForButtonCode(bc);
+			// Only needed it for binds used for neo_root
+			if (pszBinding)
+			{
+				for (int i = (ROOTBUTTONACTION_NIL + 1); i < ROOTBUTTONACTION__TOTAL; ++i)
+				{
+					if (0 == V_strcmp(pszBinding, BINDNAME_TO_ROOTBUTTONACTION_MAP[i]))
+					{
+						m_htButtonCodeToAction.Insert(bc, static_cast<ERootButtonAction>(i));
+						break;
+					}
+				}
+			}
+		}
+		m_flHtBtnCodeUpdate = gpGlobals->realtime + 1.0f;
+	}
 
-	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
+	if (KEY_BACKQUOTE != code
+			&& ROOTBUTTONACTION_TOGGLECONSOLE == m_htButtonCodeToAction.Get(code, ROOTBUTTONACTION_NIL))
 	{
 		// NEO JANK (nullsystem): Prevent toggle being handled twice causing it to not really open.
 		// This can happen if using the default ` due to the engine enacting this all the time, however calling
@@ -838,6 +866,13 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		}
 
 		NeoUI::EndContext();
+
+		if (STATE_SETTINGS == m_state
+				&& !m_ns.bModified
+				&& g_uiCtx.bValueEdited)
+		{
+			m_ns.bModified = true;
+		}
 
 		// When the state changes, save some variables
 		if (m_state != ePrevState)
@@ -1151,18 +1186,24 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	{
 		// Close equivalence to ~400px in 1080p (as 4:3 so 1440x1080)
 		const float flMP3Wide = 0.28f * m_flWideAs43;
-		g_uiCtx.dPanel.x = param.wide - flMP3Wide;
-		g_uiCtx.dPanel.y = param.tall - (flMP3Wide / 2) - g_uiCtx.layout.iRowTall;
+		const int NUM_ROWS = 4;
+		g_uiCtx.dPanel.x = param.wide - flMP3Wide - g_uiCtx.iMarginX;
+		g_uiCtx.dPanel.y = param.tall - (NUM_ROWS * g_uiCtx.layout.iRowTall) - g_uiCtx.iMarginY;
+		if (m_serverPingAutoJoin.m_serverInfo.m_NetAdr.GetIP() != 0)
+		{
+			g_uiCtx.dPanel.y -= g_uiCtx.layout.iDefRowTall;
+		}
 		g_uiCtx.dPanel.wide = flMP3Wide;
 		g_uiCtx.dPanel.tall = param.tall;
 
-		NeoUI::BeginSection(NeoUI::SECTIONFLAG_PLAYBUTTONSOUNDS);
+		NeoUI::BeginSection(NeoUI::SECTIONFLAG_DISABLEOFFSETS);
 
 		NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 
 		wchar_t wszText[128] = {};
 
+		// Track Selection
 		NeoUI::SetPerRowLayout(1);
 		if (mps->songs[mps->iCurIdx].wszArtist[0])
 		{
@@ -1175,7 +1216,32 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			// wszTitle could also be fallback base filename
 			V_wcscpy_safe(wszText, mps->songs[mps->iCurIdx].wszTitle);
 		}
-		NeoUI::Label(wszText);
+
+		static int previousSongIndex = 0;
+		static float scrollStart = gpGlobals->realtime;
+		if (previousSongIndex != mps->iCurIdx)
+		{
+			scrollStart = gpGlobals->realtime;
+			previousSongIndex = mps->iCurIdx;
+		}
+
+		if (NeoUI::ButtonToggle(wszText, NeoUI::CurrentPopup() == NEOPOPUP_MP3, NeoUI::BUTTONFLAG_SCROLLTEXT, scrollStart).bPressed)
+		{
+			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
+			{
+				NeoUI::ClosePopup();
+			}
+			else
+			{
+				const int iPopupTall = g_uiCtx.layout.iRowTall * 8;
+				NeoUI::OpenPopup(NEOPOPUP_MP3, NeoUI::Dim{
+							.x = g_uiCtx.dPanel.x,
+							.y = g_uiCtx.dPanel.y - iPopupTall,
+							.wide = g_uiCtx.dPanel.wide,
+							.tall = iPopupTall,
+						});
+			}
+		}
 
 		const float flNowSecsCursor = mps->flSecsCursor;
 		NeoUI::ProgressDrag(&mps->flSecsCursor, 0.0f, mps->flSecsLength);
@@ -1206,10 +1272,11 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			const int iSec = mps->flSecsLength - (iMin * FL_SECSINMIN);
 			V_swprintf_safe(wszText, L"%02d:%02d", iMin, iSec);
 		}
-		NeoUI::Label(wszText);
+		NeoUI::LabelExOpt labelOptions = { NeoUI::TEXTSTYLE_RIGHT, g_uiCtx.eFont };
+		NeoUI::Label(wszText, labelOptions);
 
-		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {18, 18, 28, 18, -1};
-		NeoUI::SetPerRowLayout(5, ROWLAYOUT_MP3_CONTROLS);
+		static constexpr int ROWLAYOUT_MP3_CONTROLS[] = {22, 22, 34, -1};
+		NeoUI::SetPerRowLayout(4, ROWLAYOUT_MP3_CONTROLS);
 
 		// Shuffle button
 		if (NeoUI::ButtonToggle(L"\u21B9", cvr_cl_neo_radio_shuffle.GetBool()).bPressed)
@@ -1238,7 +1305,9 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 
 		// Play/Pause button
-		if (NeoUI::Button(mps->bPlaying ? L"\u25B6" : L"II").bPressed)
+		if (NeoUI::Button(mps->bPlaying ? L"II" : L"\u25B6").bPressed
+				|| (NeoUI::MODE_KEYPRESSED == g_uiCtx.eMode
+					&& ROOTBUTTONACTION_MP3 == m_htButtonCodeToAction.Get(g_uiCtx.eCode, ROOTBUTTONACTION_NIL)))
 		{
 			mps->flagsPlayStateNext = (mps->bPlaying)
 					? NeoMP3::PLAYSTATE_FLAG_PAUSED : NeoMP3::PLAYSTATE_FLAG_PLAY;
@@ -1252,27 +1321,10 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			NeoMP3::Update();
 		}
 
-		// Popup button
-		if (NeoUI::ButtonToggle(L"\u2261", NeoUI::CurrentPopup() == NEOPOPUP_MP3).bPressed)
-		{
-			if (NeoUI::CurrentPopup() == NEOPOPUP_MP3)
-			{
-				NeoUI::ClosePopup();
-			}
-			else
-			{
-				const int iPopupTall = g_uiCtx.layout.iRowTall * 8;
-				NeoUI::OpenPopup(NEOPOPUP_MP3, NeoUI::Dim{
-							.x = g_uiCtx.dPanel.x,
-							.y = g_uiCtx.dPanel.y - iPopupTall,
-							.wide = g_uiCtx.dPanel.wide,
-							.tall = iPopupTall,
-						});
-			}
-		}
-
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 		NeoUI::EndSection();
+
+		NeoUI::Dim previousDPanel = g_uiCtx.dPanel; // See neo_ui.h "// NEO TODO (nullsystem): Popups should get its own XY offsets"
 
 		if (NeoUI::BeginPopup(NEOPOPUP_MP3))
 		{
@@ -1293,6 +1345,8 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 			NeoUI::EndPopup();
 		}
+
+		g_uiCtx.dPanel = previousDPanel;
 	}
 	NeoUI::EndSection();
 }
@@ -1394,11 +1448,6 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		}
 		NeoUI::EndSection();
-	}
-
-	if (!m_ns.bModified && g_uiCtx.bValueEdited)
-	{
-		m_ns.bModified = true;
 	}
 
 	if (m_ns.bBack)
@@ -1654,7 +1703,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 									NeoUI::OpenPopup(NEOPOPUP_ACTIONBLACKLIST, NeoUI::Dim{
 												.x = g_uiCtx.iMouseAbsX,
 												.y = g_uiCtx.iMouseAbsY,
-												.wide = NeoUI::PopupWideByStr("Remove from blacklist"),
+												.wide = NeoUI::SuitableWideByWStr(L"Remove from blacklist", NeoUI::SUITABLEWIDE_POPUP),
 												.tall = g_uiCtx.layout.iDefRowTall,
 											});
 								}
@@ -1850,7 +1899,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 									NeoUI::OpenPopup(NEOPOPUP_ACTIONSERVER, NeoUI::Dim{
 												.x = g_uiCtx.iMouseAbsX,
 												.y = g_uiCtx.iMouseAbsY,
-												.wide = NeoUI::PopupWideByStr("Add to blacklist"),
+												.wide = NeoUI::SuitableWideByWStr(L"Add to blacklist", NeoUI::SUITABLEWIDE_POPUP),
 												.tall = g_uiCtx.layout.iDefRowTall * 2,
 											});
 

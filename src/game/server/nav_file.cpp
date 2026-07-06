@@ -1647,6 +1647,14 @@ NavErrorType CNavMesh::PostLoad( unsigned int version )
 		area->PostLoad();
 	}
 
+#ifdef NEO
+	FOR_EACH_VEC( TheNavAreas, vit )
+	{
+		CNavArea *area = TheNavAreas[ vit ];
+		area->ComputePotentiallyVisibleAreaCount();
+	}
+#endif
+
 	// allow hiding spots to compute information
 	FOR_EACH_VEC( TheHidingSpots, hit )
 	{

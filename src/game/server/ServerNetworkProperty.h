@@ -16,6 +16,12 @@
 #include "edict.h"
 #include "timedeventmgr.h"
 
+#ifdef NEO // Unity build
+#ifdef GetClassName
+#undef GetClassName
+#endif
+#endif
+
 //
 // Lightweight base class for networkable data on the server.
 //

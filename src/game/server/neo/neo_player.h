@@ -14,6 +14,7 @@ class INEOPlayerAnimState;
 #include "hl2mp_player.h"
 #include "in_buttons.h"
 #include "neo_crosshair.h"
+#include "neo_gamerules_restore.h"
 
 #include "neo_player_shared.h"
 
@@ -67,7 +68,6 @@ public:
 	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
-	virtual void PlayerUse(void) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
@@ -81,11 +81,12 @@ public:
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
 	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
-	bool Weapon_GetPosition(int slot, int position);
+	CNEOBaseCombatWeapon* Weapon_GetPosition(int slot, int position);
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
 	const char* GetOverrideStepSound(const char* pBaseStepSound) override;
+	virtual void Splash() override;
 	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
 	void Weapon_DropOnDeath(CNEOBaseCombatWeapon *pWeapon, Vector damageForce);
 	void Weapon_DropAllOnDeath(const CTakeDamageInfo &info);
@@ -97,6 +98,7 @@ public:
 	virtual void GiveDefaultItems(void) OVERRIDE;
 	virtual int	OnTakeDamage_Alive(const CTakeDamageInfo& info) OVERRIDE;
 	virtual CBaseEntity* GiveNamedItem(const char* szName, int iSubType = 0) override;
+	virtual CBaseEntity* FindUseEntity() override;
 
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
@@ -183,6 +185,9 @@ public:
 	bool GetBotPauseFiring() const { return !m_botPauseFiringTimer.IsElapsed(); }
 	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
 
+	CNEO_Player* GetSpectatorTakeoverPlayerTarget() const { return m_hSpectatorTakeoverPlayerTarget.Get(); }
+	CNEO_Player* GetSpectatorTakeoverPlayerImpersonatingMe() const { return m_hSpectatorTakeoverPlayerImpersonatingMe.Get(); }
+
 	virtual void StartAutoSprint(void) OVERRIDE;
 	virtual void StartSprinting(void) OVERRIDE;
 	virtual void StopSprinting(void) OVERRIDE;
@@ -241,6 +246,9 @@ public:
 	void BecomeJuggernaut();
 	void SpawnJuggernautPostDeath();
 
+	bool IsAFK() const;
+	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
+
 private:
 	bool m_bAllowGibbing;
 
@@ -267,6 +275,14 @@ public:
 	CNetworkVar(int, m_iClassBeforeTakeover);
 
 	CNetworkVar(int, m_iXP);
+
+	struct NeoRestore
+	{
+		NextRoundPlayerRestoreFlags flags;
+		int iXP;
+		int iDeaths;
+	};
+	NeoRestore m_iNextRestore = {};
 
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
@@ -324,6 +340,7 @@ public:
 	void ResetBotCommandState();
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
 	static const Vector VECTOR_INVALID_WAYPOINT;
+	float m_flLastInputTime = gpGlobals->curtime;
 
 private:
 	bool m_bFirstDeathTick;
@@ -349,8 +366,7 @@ private:
 	CNEO_Player(const CNEO_Player&);
 
 	// Spectator takeover player related functionality
-	int GetSecondsUntilAFK() const;
-	bool IsAFK() const;
+	bool IsFakePlayer() const;
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
@@ -368,6 +384,15 @@ inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 		return nullptr;
 	}
 	return assert_cast<CNEO_Player*>(pEntity);
+}
+
+inline const CNEO_Player *ToNEOPlayer(const CBaseEntity *pEntity)
+{
+	if (!pEntity || !pEntity->IsPlayer())
+	{
+		return nullptr;
+	}
+	return assert_cast<const CNEO_Player*>(pEntity);
 }
 
 #endif // NEO_PLAYER_H

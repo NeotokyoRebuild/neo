@@ -194,6 +194,8 @@ uintp ThreadedLoadLibraryFunc( void *pParam )
 
 HMODULE Sys_LoadLibrary( const char *pLibraryName, Sys_Flags flags )
 {
+	#define DLL_EXT_STRING DLLExtTokenPaste2( _DLL_EXT )
+	
 	char str[ 1024 ];
 	// Note: DLL_EXT_STRING can be "_srv.so" or "_360.dll". So be careful
 	//	when using the V_*Extension* routines...

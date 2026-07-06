@@ -183,6 +183,7 @@ void NeoSettingsInit(NeoSettings *ns)
 		auto *conbind = &keys->vBinds[keys->iBindsSize++];
 		V_strcpy_safe(conbind->szBindingCmd, "neo_toggleconsole");
 		V_wcscpy_safe(conbind->wszDisplayText, L"Developer console bind");
+		conbind->bSkipSecondary = true;
 
 		while (bufAct.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
 		{
@@ -222,6 +223,7 @@ void NeoSettingsInit(NeoSettings *ns)
 				V_strcpy_safe(bind->szBindingCmd, szBindingCmd);
 				V_wcscpy_safe(bind->wszDisplayText, wszDispText);
 				bind->bcDefault = BUTTON_CODE_NONE;
+				bind->bSkipSecondary = false;
 			}
 		}
 		AssertMsg(keys->iBindsSize < ARRAYSIZE(keys->vBinds), "Bump the size of the vBinds array");
@@ -490,15 +492,18 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 					auto hdl = htAllBinds.Find(bind->szBindingCmd);
 					if (hdl != htAllBinds.InvalidHandle())
 					{
-						const auto &bcVal = htAllBinds.Element(hdl);
-						const int iMaxIdxBc = Min(bcVal.iSize, MAX_BCVAL);
-						for (int idxBc = 0; idxBc < iMaxIdxBc; ++idxBc)
+						if (false == bind->bSkipSecondary)
 						{
-							const ButtonCode_t bc = bcVal.list[idxBc];
-							if (bc != bind->bcCurrent)
+							const auto &bcVal = htAllBinds.Element(hdl);
+							const int iMaxIdxBc = Min(bcVal.iSize, MAX_BCVAL);
+							for (int idxBc = 0; idxBc < iMaxIdxBc; ++idxBc)
 							{
-								bind->bcSecondaryNext = bind->bcSecondaryCurrent = bc;
-								break;
+								const ButtonCode_t bc = bcVal.list[idxBc];
+								if (bc != bind->bcCurrent)
+								{
+									bind->bcSecondaryNext = bind->bcSecondaryCurrent = bc;
+									break;
+								}
 							}
 						}
 					}
@@ -685,6 +690,12 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pHUD->iExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetInt();
 		pHUD->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
 		pHUD->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
+		pHUD->bShowHudContextHintPlayerTakeover = cvr->cl_neo_hud_context_hint_show_player_takeover_hint.GetBool();
+		pHUD->bShowHudContextHintObjectInteract = cvr->cl_neo_hud_context_hint_show_object_interact_hint.GetBool();
+		pHUD->bShowHudContextAdjacentObjects = cvr->cl_neo_hud_context_hint_show_adjacent_interactable_objects.GetBool();
+		pHUD->bShowHudContextHintBotInteract = cvr->cl_neo_hud_context_hint_show_bot_interact_hint.GetBool();
+		pHUD->bShowHudContextHighlightObject = cvr->cl_neo_hud_context_hint_highlight_object.GetBool();
+		pHUD->bShowHudContextHighlightPlayer = cvr->cl_neo_hud_context_hint_highlight_player.GetBool();
 
 		bool bImported = ImportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], cvr->cl_neo_squad_marker.GetString());
 		if (!bImported)
@@ -727,6 +738,9 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	}
 }
 
+// NEO TODO (nullsystem): For now the settings UI only exposes consoles as a
+// single keybind and this also deals with a single bind. Trying to enforce
+// multiple neo_toggleconsole binds doesn't seem to work here?
 void NeoToggleConsoleEnforce()
 {
 	// NEO JANK (nullsystem): Try to unbind toggleconsole when possible
@@ -826,8 +840,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 			bind->bcCurrent = bind->bcNext;
 			bind->bcSecondaryCurrent = bind->bcSecondaryNext;
 		}
-		// Reset the cache to none so it'll refresh on next KeyCodeTyped
-		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
@@ -945,6 +957,12 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pHUD->iExtendedKillfeed);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pHUD->iKdinfoToggletype);
 		cvr->cl_neo_hud_context_hint_enabled.SetValue(pHUD->bShowHudContextHints);
+		cvr->cl_neo_hud_context_hint_show_player_takeover_hint.SetValue(pHUD->bShowHudContextHintPlayerTakeover);
+		cvr->cl_neo_hud_context_hint_show_object_interact_hint.SetValue(pHUD->bShowHudContextHintObjectInteract);
+		cvr->cl_neo_hud_context_hint_show_adjacent_interactable_objects.SetValue(pHUD->bShowHudContextAdjacentObjects && pHUD->bShowHudContextHintObjectInteract);
+		cvr->cl_neo_hud_context_hint_show_bot_interact_hint.SetValue(pHUD->bShowHudContextHintBotInteract);
+		cvr->cl_neo_hud_context_hint_highlight_object.SetValue(pHUD->bShowHudContextHighlightObject);
+		cvr->cl_neo_hud_context_hint_highlight_player.SetValue(pHUD->bShowHudContextHighlightPlayer);
 
 		char szSequence[NEO_IFFMARKER_SEQMAX];
 		ExportMarker(&pHUD->options[NEOIFFMARKER_OPTION_SQUAD], szSequence);
@@ -1198,7 +1216,11 @@ void NeoSettings_Keys(NeoSettings *ns)
 		}
 		else
 		{
-			NeoUI::BeginMultiWidgetHighlighter(3);
+			if (bind.bSkipSecondary)
+			{
+				NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
+			}
+			NeoUI::BeginMultiWidgetHighlighter(bind.bSkipSecondary ? 2 : 3);
 			NeoUI::Label(bind.wszDisplayText);
 			wchar_t wszBindBtnName[64];
 			const char *szBindBtnName = g_pInputSystem->ButtonCodeToString(bind.bcNext);
@@ -1208,14 +1230,21 @@ void NeoSettings_Keys(NeoSettings *ns)
 				ns->iNextBinding = i;
 				ns->bNextBindingSecondary = false;
 			}
-			const char *szBindSecondaryBtnName = g_pInputSystem->ButtonCodeToString(bind.bcSecondaryNext);
-			g_pVGuiLocalize->ConvertANSIToUnicode(szBindSecondaryBtnName, wszBindBtnName, sizeof(wszBindBtnName));
-			if (NeoUI::Button(wszBindBtnName).bPressed)
+			if (false == bind.bSkipSecondary)
 			{
-				ns->iNextBinding = i;
-				ns->bNextBindingSecondary = true;
+				const char *szBindSecondaryBtnName = g_pInputSystem->ButtonCodeToString(bind.bcSecondaryNext);
+				g_pVGuiLocalize->ConvertANSIToUnicode(szBindSecondaryBtnName, wszBindBtnName, sizeof(wszBindBtnName));
+				if (NeoUI::Button(wszBindBtnName).bPressed)
+				{
+					ns->iNextBinding = i;
+					ns->bNextBindingSecondary = true;
+				}
 			}
 			NeoUI::EndMultiWidgetHighlighter();
+			if (bind.bSkipSecondary)
+			{
+				NeoUI::SetPerRowLayout(ARRAYSIZE(KEYS_LAYOUT), KEYS_LAYOUT);
+			}
 		}
 	}
 }
@@ -1642,12 +1671,26 @@ void NeoSettings_HUD(NeoSettings *ns)
 	NeoUI::RingBox(L"Health display mode", HEALTHMODE_LABELS, pHud->iHealthMode >= 2 ? ARRAYSIZE(HEALTHMODE_LABELS) : 2, &pHud->iHealthMode);
 	NeoUI::RingBox(L"Objective verbosity", OBJVERBOSITY_LABELS, ARRAYSIZE(OBJVERBOSITY_LABELS), &pHud->iObjVerbosity);
 	NeoUI::RingBoxBool(L"Show hints", &pHud->bShowHints);
-	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pHud->bShowHudContextHints);
 	NeoUI::RingBoxBool(L"Show position", &pHud->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pHud->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pHud->bEnableRangeFinder);
 	NeoUI::RingBox(L"Extended killfeed", EXT_KILLFEED_LABELS, ARRAYSIZE(EXT_KILLFEED_LABELS), &pHud->iExtendedKillfeed);
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
+
+	NeoUI::Divider(L"Contextual hints");
+	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pHud->bShowHudContextHints);
+	if (pHud->bShowHudContextHints)
+	{
+		NeoUI::RingBoxBool(L"Show player takeover contextual hint", &pHud->bShowHudContextHintPlayerTakeover);
+		NeoUI::RingBoxBool(L"Show object interact contextual hint", &pHud->bShowHudContextHintObjectInteract);
+		if (pHud->bShowHudContextHintObjectInteract)
+		{
+			NeoUI::RingBoxBool(L"Show adjacent interactable objects", &pHud->bShowHudContextAdjacentObjects);
+		}
+		NeoUI::RingBoxBool(L"Show bot interact contextual hint", &pHud->bShowHudContextHintBotInteract);
+		NeoUI::RingBoxBool(L"Highlight interactable objects", &pHud->bShowHudContextHighlightObject);
+		NeoUI::RingBoxBool(L"Highlight interactable players", &pHud->bShowHudContextHighlightPlayer);
+	}
 
 #ifdef GLOWS_ENABLE
 	NeoUI::Divider(L"XRAY");

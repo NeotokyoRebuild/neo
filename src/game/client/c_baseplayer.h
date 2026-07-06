@@ -134,7 +134,11 @@ public:
 	virtual void	AvoidPhysicsProps( CUserCmd *pCmd );
 	
 	virtual void	PlayerUse( void );
+#ifdef NEO
+	virtual CBaseEntity		*FindUseEntity( void );
+#else
 	CBaseEntity		*FindUseEntity( void );
+#endif // NEO
 	virtual bool	IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps );
 
 	// Data handlers

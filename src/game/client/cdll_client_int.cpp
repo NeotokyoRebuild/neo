@@ -490,6 +490,8 @@ class CClientDLLSharedAppSystems : public IClientDLLSharedAppSystems
 public:
 	CClientDLLSharedAppSystems()
 	{
+		#define DLL_EXT_STRING DLLExtTokenPaste2( _DLL_EXT )
+		
 		AddAppSystem( "soundemittersystem" DLL_EXT_STRING, SOUNDEMITTERSYSTEM_INTERFACE_VERSION );
 		AddAppSystem( "scenefilecache" DLL_EXT_STRING, SCENE_FILE_CACHE_INTERFACE_VERSION );
 	}
@@ -2657,6 +2659,29 @@ void OnRenderStart()
 	VPROF( "OnRenderStart" );
 	MDLCACHE_CRITICAL_SECTION();
 	MDLCACHE_COARSE_LOCK();
+
+#ifdef NEO
+	if (engine->IsPaused())
+	{
+		Rope_ResetCounters();
+
+		{
+			PREDICTION_TRACKVALUECHANGESCOPE( "interpolation" );
+			C_BaseEntity::InterpolateServerEntities();
+		}
+
+		{
+			C_BaseAnimating::PushAllowBoneAccess( true, false, "OnRenderStart->CViewRender::SetUpView" ); // pops in CViewRender::SetUpView
+		}
+
+		input->CAM_Think();
+		view->OnRenderStart();
+		
+		RopeManager()->OnRenderStart();
+		
+		return;
+	}
+#endif // NEO
 
 #ifdef PORTAL
 	g_pPortalRender->UpdatePortalPixelVisibility(); //updating this one or two lines before querying again just isn't cutting it. Update as soon as it's cheap to do so.

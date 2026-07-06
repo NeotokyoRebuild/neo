@@ -17,6 +17,9 @@
 
 DECLARE_BUILD_FACTORY( CAvatarImagePanel );
 
+#if defined(NEO) && defined(_WIN32) // Unity build
+#pragma warning(disable : 4355) // warning C4355: 'this': used in base member initializer list
+#endif
 
 CUtlMap< AvatarImagePair_t, int> CAvatarImage::s_AvatarImageCache; // cache of steam id's to textureids to use for images
 bool CAvatarImage::m_sbInitializedAvatarCache = false;

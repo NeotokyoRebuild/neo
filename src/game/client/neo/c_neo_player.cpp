@@ -749,8 +749,23 @@ void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePl
 	//pl.frags = m_iFrags; NEO TODO (Adam) Is this actually used anywhere? should we include a xp field in CPlayerState?
 }
 
+bool C_NEO_Player::IsDrawnTransparent() const
+{
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+	if (!pTargetPlayer)
+	{
+		return IsCloaked();
+	}
+	
+	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	return IsCloaked() && !inThermalVision;
+}
+
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
+	// NEO TODO (Adam) should cloaked players cast shadows in thermals? If they are drawn opaque, it follows that cloaked players block light on a 
+	// spectrum that thermals can see, so light in that same spectrum would be absent where the shadow would be, hence the shadow should be drawn
+	// if so, replace IsCloaked() with IsDrawnTransparent()
 	if (IsCloaked())
 	{
 		return SHADOWS_NONE;
@@ -770,12 +785,12 @@ const QAngle& C_NEO_Player::GetRenderAngles()
 
 RenderGroup_t C_NEO_Player::GetRenderGroup()
 {
-	return IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+	return IsDrawnTransparent() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
 }
 
 bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()
 {
-	return IsCloaked();
+	return IsDrawnTransparent();
 }
 
 bool C_NEO_Player::ShouldDraw( void )
@@ -1461,11 +1476,6 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 #ifdef GLOWS_ENABLE
 void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 {
-	if (!glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
-	{
-		return;
-	}
-
 	auto updateGlowColour = [](C_BasePlayer* pPlayer, int iTeam = 0) {
 		float r, g, b;
 		NEORules()->GetTeamGlowColor(iTeam ? iTeam : pPlayer->GetTeamNumber(), r, g, b);
@@ -1479,7 +1489,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 				continue;
 			}
 
-			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED)
+			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED || !glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 			{
 				pPlayer->SetClientSideGlowEnabled(false);
 				continue;
@@ -1495,7 +1505,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 		}
 	}
 	else {
-		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED)
+		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED || !glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 		{
 			SetClientSideGlowEnabled(false);
 			return;
@@ -1678,12 +1688,7 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	m_bIneligibleForLoadoutPick = true;
 
-	if (pWeapon->IsGhost())
-	{
-		pWeapon->Holster(NULL);
-		assert_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
-	}
-	else if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
+	if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
 	{
 		assert_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
 	}
@@ -2104,3 +2109,60 @@ const char* C_NEO_Player::GetPlayerNameWithTakeoverContext(int player_index)
     return base_name;
 }
 
+C_NEO_Player* C_NEO_Player::PlayerUseTraceLine()
+{
+	// Select player under cursor
+	Vector eyePos = EyePosition();
+	Vector forward;
+	EyeVectors( &forward );
+	Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
+
+	// MASK_SHOT_HULL to match friendly fire warning trace
+	trace_t tr;
+	UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr );
+	
+	if (tr.DidHit() && tr.m_pEnt)
+	{
+		return ToNEOPlayer(tr.m_pEnt);
+	}
+	return nullptr;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Return true if this object can be +used by the player
+//-----------------------------------------------------------------------------
+bool C_NEO_Player::IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps )
+{
+	if (!pEntity)
+		return false;
+
+	if (int caps = pEntity->ObjectCaps();
+		caps & (FCAP_IMPULSE_USE|FCAP_CONTINUOUS_USE|FCAP_ONOFF_USE|FCAP_DIRECTIONAL_USE) &&
+		(caps & requiredCaps) == requiredCaps)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+
+void C_NEO_Player::PlayerUse()
+{
+	BaseClass::PlayerUse();
+	
+	// Was use pressed or released?
+	if ( ! ((m_nButtons | m_afButtonPressed | m_afButtonReleased) & IN_USE) )
+		return;
+
+	if ( (m_afButtonPressed & IN_USE) && prediction->IsFirstTimePredicted() && !GetUseEntity())
+	{
+		if (C_NEO_Player* pTargetPlayer = PlayerUseTraceLine())
+		{
+			m_Local.m_nOldButtons |= IN_USE;
+			m_afButtonPressed &= ~IN_USE;
+			engine->ExecuteClientCmd(VarArgs("useplayer %i", pTargetPlayer->entindex()));
+		}
+	}
+}

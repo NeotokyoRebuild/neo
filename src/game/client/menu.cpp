@@ -21,6 +21,9 @@
 #include <vgui/ILocalize.h>
 #include <KeyValues.h>
 #include <vgui_controls/AnimationController.h>
+#ifdef NEO // Unity build
+#include "hud_basechat.h"
+#endif
 
 #define MAX_MENU_STRING	512
 wchar_t g_szMenuString[MAX_MENU_STRING];
@@ -42,6 +45,7 @@ DECLARE_HUD_MESSAGE( CHudMenu, ShowMenu );
 //-----------------------------------------------------
 //
 
+#ifndef NEO // Unity build | Defined in hud_basechat.h/cpp
 static char* ConvertCRtoNL( char *str )
 {
 	for ( char *ch = str; *ch != 0; ch++ )
@@ -49,6 +53,7 @@ static char* ConvertCRtoNL( char *str )
 			*ch = '\n';
 	return str;
 }
+#endif
 
 
 //-----------------------------------------------------------------------------
