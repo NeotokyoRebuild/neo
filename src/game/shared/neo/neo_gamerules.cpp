@@ -132,7 +132,6 @@ ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1
 										 true, 0.0f, true, 1.0f);
 // koth
 ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "1.75", FCVAR_REPLICATED, "Seconds to get 1 point");
-ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "100", FCVAR_REPLICATED, "The points needed to win this round");
 // neo todo: add a timer for the first zone to appear (currently, this is done by the switch timer, which is incorrect)
 ConVar sv_neo_koth_zone_switch_time("sv_neo_koth_zone_switch_time", "45", FCVAR_REPLICATED,
 	"How often (in seconds) neo_koth_master rotates the active KOTH zone.", true, 5.0f, false, 0.0f);
@@ -150,6 +149,7 @@ ConVar sv_neo_ghost_carrier_bonus("sv_neo_ghost_carrier_bonus", "1", FCVAR_REPLI
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
 ConVar sv_neo_readyup_lobby("sv_neo_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "100", FCVAR_REPLICATED, "The points needed to win this round");
 ConVar sv_neo_pausematch_enabled("sv_neo_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
@@ -1093,9 +1093,9 @@ void CNEORules::AddKothScore(const int team, const int points)
 		return;
 
 	if (team == TEAM_JINRAI)
-		m_iKothTimeJinrai += points;
+		m_iKothTimeJinrai = Min(m_iKothTimeJinrai + points, sv_neo_koth_max_score.GetInt());
 	else if (team == TEAM_NSF)
-		m_iKothTimeNSF += points;
+		m_iKothTimeNSF = Min(m_iKothTimeNSF + points, sv_neo_koth_max_score.GetInt());
 	else
 		Warning("Got unexpected KOTH team in score count: %d\n", team);
 }

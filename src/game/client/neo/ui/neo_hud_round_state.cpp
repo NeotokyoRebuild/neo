@@ -371,6 +371,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		{
 			m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"DEATHMATCH");
 		}
+		else if (NEORules()->GetGameType() == NEO_GAME_TYPE_KOTH)
+		{
+			m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"FIRST TO %i WINS", sv_neo_koth_max_score.GetInt());
+		}
 		else
 		{
 			m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"ROUND %i", NEORules()->roundNumber());
@@ -399,13 +403,21 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const int localPlayerTeam = GetLocalPlayerTeam();
 	if (NEORules()->IsTeamplay())
 	{
-		if (cl_neo_hud_team_swap_sides.GetBool() && (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF)) {
-			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
-			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());
+		const bool bSwapToLocal = cl_neo_hud_team_swap_sides.GetBool() && (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
+		const int leftScoreTeam = bSwapToLocal ? localPlayerTeam : TEAM_JINRAI;
+		const int rightScoreTeam = bSwapToLocal ? NEORules()->GetOpposingTeam(localPlayerTeam) : TEAM_NSF;
+
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_KOTH)
+		{
+			const int leftScore = (leftScoreTeam == TEAM_JINRAI) ? NEORules()->GetKothTimeJinrai() : NEORules()->GetKothTimeNSF();
+			const int rightScore = (rightScoreTeam == TEAM_JINRAI) ? NEORules()->GetKothTimeJinrai() : NEORules()->GetKothTimeNSF();
+			V_snwprintf(m_wszLeftTeamScore, ARRAYSIZE(m_wszLeftTeamScore), L"%i", leftScore);
+			V_snwprintf(m_wszRightTeamScore, ARRAYSIZE(m_wszRightTeamScore), L"%i", rightScore);
 		}
-		else {
-			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
-			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
+		else
+		{
+			V_snwprintf(m_wszLeftTeamScore, ARRAYSIZE(m_wszLeftTeamScore), L"%i", GetGlobalTeam(leftScoreTeam)->GetRoundsWon());
+			V_snwprintf(m_wszRightTeamScore, ARRAYSIZE(m_wszRightTeamScore), L"%i", GetGlobalTeam(rightScoreTeam)->GetRoundsWon());
 		}
 	}
 	else
@@ -437,12 +449,12 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		}
 	}
 	// neo TODO: add KOTH gameType (wip) or detect KOTH maps (removed this feature)
-	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_KOTH)
-	{
-		V_sprintf_safe(szPlayersAliveANSI, "J:%d  N:%d",
-					   NEORules()->GetKothTimeJinrai(),
-					   NEORules()->GetKothTimeNSF());
-	}
+//	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_KOTH)
+//	{
+//		V_sprintf_safe(szPlayersAliveANSI, "J:%d  N:%d",
+//					   NEORules()->GetKothTimeJinrai(),
+//					   NEORules()->GetKothTimeNSF());
+//	}
 	else
 	{
 		V_sprintf_safe(szPlayersAliveANSI, "%i vs %i", m_iLeftPlayersAlive, m_iRightPlayersAlive);
@@ -560,12 +572,13 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		surface()->DrawSetTextFont(m_hOCRLargeFont);
 		surface()->DrawSetTextPos(m_posLeftTeamScore.x - (fontWidth / 2), m_posLeftTeamScore.y);
 		surface()->DrawSetTextColor(leftTeamInfo.color);
-		surface()->DrawPrintText(m_wszLeftTeamScore, 2);
+		surface()->DrawPrintText(m_wszLeftTeamScore, V_wcslen(m_wszLeftTeamScore));
 
 		surface()->GetTextSize(m_hOCRLargeFont, m_wszRightTeamScore, fontWidth, fontHeight);
+		surface()->DrawSetTextFont(m_hOCRLargeFont);
 		surface()->DrawSetTextPos(m_posRightTeamScore.x - (fontWidth / 2), m_posRightTeamScore.y);
 		surface()->DrawSetTextColor(rightTeamInfo.color);
-		surface()->DrawPrintText(m_wszRightTeamScore, 2);
+		surface()->DrawPrintText(m_wszRightTeamScore, V_wcslen(m_wszRightTeamScore));
 	}
 
 	m_iLeftPlayersAlive = m_iLeftPlayersTotal = m_iRightPlayersAlive = m_iRightPlayersTotal = 0;

@@ -98,7 +98,6 @@ enum KothControllingTeams
 };
 
 extern ConVar sv_neo_koth_seconds_per_point;
-extern ConVar sv_neo_koth_max_score;
 extern ConVar sv_neo_koth_zone_switch_time;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
@@ -109,6 +108,8 @@ extern ConVar sv_neo_teamdamage_kick;
 #else
 class C_NEO_Player;
 #endif
+
+extern ConVar sv_neo_koth_max_score;
 
 extern ConVar sv_neo_player_restore;
 

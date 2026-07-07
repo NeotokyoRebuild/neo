@@ -79,11 +79,11 @@ private:
 	int m_iSmallFontHeight = 0;
 
 	// Center Box info
-	wchar_t m_wszRoundUnicode[12] = {};
+	wchar_t m_wszRoundUnicode[32] = {};
 	int m_iWszRoundUCSize = 0;
 	wchar_t m_wszTime[6] = {};
-	wchar_t m_wszLeftTeamScore[3] = {};
-	wchar_t m_wszRightTeamScore[3] = {};
+	wchar_t m_wszLeftTeamScore[12] = {};
+	wchar_t m_wszRightTeamScore[12] = {};
 	wchar_t m_wszPlayersAliveUnicode[16] = {};
 	const wchar_t *m_pWszStatusUnicode = nullptr;
 	int m_iStatusUnicodeSize = 0;

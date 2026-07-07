@@ -46,6 +46,12 @@ void CNEO_InfoKOTHZone::Think()
 
 void CNEO_InfoKOTHZone::ScoreThink()
 {
+	if (!NEORules()->IsRoundLive())
+	{
+		SetNextThink(gpGlobals->curtime + KOTHZONE_SCORE_INTERVAL, KOTHZONE_SCORE_CONTEXT);
+		return;
+	}
+
 	switch (m_State)
 	{
 	case KOTH_JINRAI:
