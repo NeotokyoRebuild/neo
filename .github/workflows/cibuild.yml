@@ -22,7 +22,7 @@ jobs:
 
       matrix:
         platform:
-        - { display_name: 'Linux Native Libraries', os: ubuntu-24.04, preset_os: linux }
+        - { display_name: 'Linux Libraries', os: ubuntu-24.04, preset_os: linux }
 
         preset_build_type:
         - { display_name: 'Debug', name: debug }
@@ -215,7 +215,7 @@ jobs:
 
       matrix:
         platform:
-        - { display_name: 'Windows Native Libraries', os: windows-2022, preset_os: windows }
+        - { display_name: 'Windows Libraries', os: windows-2022, preset_os: windows }
 
         preset_build_type:
         - { display_name: 'Debug', name: debug }
@@ -381,7 +381,7 @@ jobs:
         if-no-files-found: error
 
   pack-resources:
-    name: Windows Native Resources
+    name: Windows Resources
 
     runs-on: windows-2022
 
