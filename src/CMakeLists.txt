@@ -503,158 +503,83 @@ endif()
 set(INSTALL_PATH_PREFIX "neo-${BUILD_DATE_SHORT}-${GIT_HASH}")
 set(INSTALL_PATH_SUFFIX "${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/neo/bin")
 
+function(neo_install_targets)
+    cmake_parse_arguments(ARG "" "INSTALL_PATH;DEBUG_INFO_INSTALL_PATH" "TARGETS" ${ARGN})
+
+    if(NOT NEO_USE_SEPARATE_BUILD_INFO)
+        install(
+            TARGETS ${ARG_TARGETS}
+            LIBRARY DESTINATION "${ARG_INSTALL_PATH}/${PLATSUBDIR}"
+            RUNTIME DESTINATION "${ARG_INSTALL_PATH}/${PLATSUBDIR}"
+        )
+        return()
+    endif()
+
+    if(OS_WINDOWS)
+        install(
+            TARGETS ${ARG_TARGETS}
+            LIBRARY DESTINATION "${ARG_INSTALL_PATH}/x64"
+            RUNTIME DESTINATION "${ARG_INSTALL_PATH}/x64"
+        )
+
+        set(PDB_FILES "")
+        foreach(TARGET ${ARG_TARGETS})
+            list(APPEND PDB_FILES "$<TARGET_PDB_FILE:${TARGET}>")
+        endforeach()
+
+        install(
+            FILES ${PDB_FILES}
+            DESTINATION "${ARG_DEBUG_INFO_INSTALL_PATH}/x64"
+        )
+    else()
+        set(STRIPPED_FILES "")
+        set(SPLIT_DEBUG_INFO_FILES "")
+        foreach(TARGET ${ARG_TARGETS})
+            get_target_property(STRIPPED_FILE ${TARGET} STRIPPED_FILE)
+            get_target_property(SPLIT_DEBUG_INFO_FILE ${TARGET} SPLIT_DEBUG_INFO_FILE)
+            list(APPEND STRIPPED_FILES ${STRIPPED_FILE})
+            list(APPEND SPLIT_DEBUG_INFO_FILES ${SPLIT_DEBUG_INFO_FILE})
+        endforeach()
+
+        install(
+            FILES ${STRIPPED_FILES}
+            DESTINATION "${ARG_INSTALL_PATH}/linux64"
+        )
+
+        install(
+            FILES ${SPLIT_DEBUG_INFO_FILES}
+            DESTINATION "${ARG_DEBUG_INFO_INSTALL_PATH}/linux64"
+        )
+    endif()
+endfunction()
+
 if(NEO_INSTALL_LIBRARIES)
     if(NEO_DEDICATED)
         set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-${INSTALL_PATH_SUFFIX}")
+        set(SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-debuginfo-${INSTALL_PATH_SUFFIX}")
 
-        if(NEO_USE_SEPARATE_BUILD_INFO)
-            set(SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-debuginfo-${INSTALL_PATH_SUFFIX}")
-
-            if(OS_WINDOWS)
-                install(
-                    TARGETS server
-                    LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/x64"
-                    RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/x64"
-                )
-
-                install(
-                    FILES "$<TARGET_PDB_FILE:server>"
-                    DESTINATION "${SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH}/x64"
-                )
-            else()
-                get_target_property(SERVER_STRIPPED_FILE server STRIPPED_FILE)
-                install(
-                    FILES ${SERVER_STRIPPED_FILE}
-                    DESTINATION "${LIBRARY_INSTALL_PATH}/linux64"
-                )
-
-                get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
-                install(
-                    FILES ${SERVER_SPLIT_DEBUG_INFO_FILE}
-                    DESTINATION "${SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH}/linux64"
-                )
-            endif()
-        else()
-            install(
-                TARGETS server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
-            )
-        endif()
+        neo_install_targets(
+            TARGETS server
+            INSTALL_PATH "${LIBRARY_INSTALL_PATH}"
+            DEBUG_INFO_INSTALL_PATH "${SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH}"
+        )
     else()
         set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-${INSTALL_PATH_SUFFIX}")
         set(UTILS_INSTALL_PATH "${INSTALL_PATH_PREFIX}-utils-${INSTALL_PATH_SUFFIX}")
+        set(SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-debuginfo-${INSTALL_PATH_SUFFIX}")
+        set(SPLIT_DEBUG_INFO_UTILS_INSTALL_PATH "${INSTALL_PATH_PREFIX}-utils-debuginfo-${INSTALL_PATH_SUFFIX}")
 
-        if(NEO_USE_SEPARATE_BUILD_INFO)
-            set(SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-debuginfo-${INSTALL_PATH_SUFFIX}")
-            set(SPLIT_DEBUG_INFO_UTILS_INSTALL_PATH "${INSTALL_PATH_PREFIX}-utils-debuginfo-${INSTALL_PATH_SUFFIX}")
+        neo_install_targets(
+            TARGETS client game_shader_dx9 server
+            INSTALL_PATH "${LIBRARY_INSTALL_PATH}"
+            DEBUG_INFO_INSTALL_PATH "${SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH}"
+        )
 
-            if(OS_WINDOWS)
-                install(
-                    TARGETS client game_shader_dx9 server
-                    LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/x64"
-                    RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/x64"
-                )
-
-                install(
-                    FILES
-                        $<TARGET_PDB_FILE:client>
-                        $<TARGET_PDB_FILE:game_shader_dx9>
-                        $<TARGET_PDB_FILE:server>
-                    DESTINATION "${SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH}/x64"
-                )
-            
-                if(NEO_BUILD_UTILS)
-                    install(
-                        TARGETS vbsp vvis_library vvis vrad_library vrad vice
-                        LIBRARY DESTINATION "${UTILS_INSTALL_PATH}/x64"
-                        RUNTIME DESTINATION "${UTILS_INSTALL_PATH}/x64"
-                    )
-    
-                    install(
-                        FILES
-                            $<TARGET_PDB_FILE:vbsp>
-                            $<TARGET_PDB_FILE:vvis_library>
-                            $<TARGET_PDB_FILE:vvis>
-                            $<TARGET_PDB_FILE:vrad_library>
-                            $<TARGET_PDB_FILE:vrad>
-                            $<TARGET_PDB_FILE:vice>
-                        DESTINATION "${SPLIT_DEBUG_INFO_UTILS_INSTALL_PATH}/x64"
-                    )
-                endif()
-            else()
-                get_target_property(CLIENT_STRIPPED_FILE client STRIPPED_FILE)
-                get_target_property(SHADER_STRIPPED_FILE game_shader_dx9 STRIPPED_FILE)
-                get_target_property(SERVER_STRIPPED_FILE server STRIPPED_FILE)
-                install(
-                    FILES
-                        ${CLIENT_STRIPPED_FILE}
-                        ${SHADER_STRIPPED_FILE}
-                        ${SERVER_STRIPPED_FILE}
-                    DESTINATION "${LIBRARY_INSTALL_PATH}/linux64"
-                )
-            
-                get_target_property(CLIENT_SPLIT_DEBUG_INFO_FILE client SPLIT_DEBUG_INFO_FILE)
-                get_target_property(SHADER_SPLIT_DEBUG_INFO_FILE game_shader_dx9 SPLIT_DEBUG_INFO_FILE)
-                get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
-                
-                install(
-                    FILES
-                        ${CLIENT_SPLIT_DEBUG_INFO_FILE}
-                        ${SHADER_SPLIT_DEBUG_INFO_FILE}
-                        ${SERVER_SPLIT_DEBUG_INFO_FILE}
-                    DESTINATION "${SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH}/linux64"
-                )
-            
-                if(NEO_BUILD_UTILS)
-                    get_target_property(VBSP_STRIPPED_FILE vbsp STRIPPED_FILE)
-                    get_target_property(VVIS_LIBRARY_STRIPPED_FILE vvis_library STRIPPED_FILE)
-                    get_target_property(VVIS_STRIPPED_FILE vvis STRIPPED_FILE)
-                    get_target_property(VRAD_LIBRARY_STRIPPED_FILE vrad_library STRIPPED_FILE)
-                    get_target_property(VRAD_STRIPPED_FILE vrad STRIPPED_FILE)
-                    get_target_property(VICE_STRIPPED_FILE vice STRIPPED_FILE)
-                    
-                    install(
-                        FILES
-                            ${VBSP_STRIPPED_FILE}
-                            ${VVIS_LIBRARY_STRIPPED_FILE}
-                            ${VVIS_STRIPPED_FILE}
-                            ${VRAD_LIBRARY_STRIPPED_FILE}
-                            ${VRAD_STRIPPED_FILE}
-                            ${VICE_STRIPPED_FILE}
-                        DESTINATION "${UTILS_INSTALL_PATH}/linux64"
-                    )
-                
-                    get_target_property(VBSP_SPLIT_DEBUG_INFO_FILE vbsp SPLIT_DEBUG_INFO_FILE)
-                    get_target_property(VVIS_LIBRARY_SPLIT_DEBUG_INFO_FILE vvis_library SPLIT_DEBUG_INFO_FILE)
-                    get_target_property(VVIS_SPLIT_DEBUG_INFO_FILE vvis SPLIT_DEBUG_INFO_FILE)
-                    get_target_property(VRAD_LIBRARY_SPLIT_DEBUG_INFO_FILE vrad_library SPLIT_DEBUG_INFO_FILE)
-                    get_target_property(VRAD_SPLIT_DEBUG_INFO_FILE vrad SPLIT_DEBUG_INFO_FILE)
-                    get_target_property(VICE_SPLIT_DEBUG_INFO_FILE vice SPLIT_DEBUG_INFO_FILE)
-                    
-                    install(
-                        FILES
-                            ${VBSP_SPLIT_DEBUG_INFO_FILE}
-                            ${VVIS_LIBRARY_SPLIT_DEBUG_INFO_FILE}
-                            ${VVIS_SPLIT_DEBUG_INFO_FILE}
-                            ${VRAD_LIBRARY_SPLIT_DEBUG_INFO_FILE}
-                            ${VRAD_SPLIT_DEBUG_INFO_FILE}
-                            ${VICE_SPLIT_DEBUG_INFO_FILE}
-                        DESTINATION "${SPLIT_DEBUG_INFO_UTILS_INSTALL_PATH}/linux64"
-                    )
-                endif()                
-            endif()
-        else()
-            install(
-                TARGETS client game_shader_dx9 server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/${PLATSUBDIR}"
-            )
-        
-            install(
+        if(NEO_BUILD_UTILS)
+            neo_install_targets(
                 TARGETS vbsp vvis_library vvis vrad_library vrad vice
-                LIBRARY DESTINATION "${UTILS_INSTALL_PATH}/${PLATSUBDIR}"
-                RUNTIME DESTINATION "${UTILS_INSTALL_PATH}/${PLATSUBDIR}"
+                INSTALL_PATH "${UTILS_INSTALL_PATH}"
+                DEBUG_INFO_INSTALL_PATH "${SPLIT_DEBUG_INFO_UTILS_INSTALL_PATH}"
             )
         endif()
     endif()
