@@ -17,8 +17,9 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar cl_neo_hud_scoreboard_hide_others("cl_neo_hud_scoreboard_hide_others", "1", FCVAR_ARCHIVE, "Hide some other HUD elements when the scoreboard is displayed to prevent overlap", true, 0.0, true, 1.0);
-ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
+ConVar cl_neo_hud_scoreboard_hide_others("cl_neo_hud_scoreboard_hide_others", "1", FCVAR_ARCHIVE, "Hide some other HUD elements when the scoreboard is displayed to prevent overlap", true, 0.0f, true, 1.0f);
+ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_hud_scoreboard_padding("cl_neo_hud_scoreboard_padding", "0", FCVAR_ARCHIVE, "Adjust scoreboard space padding. 0 = default, 1 = compact, 2 = spacious", true, 0.0f, true, 2.0f);
 extern ConVar cl_neo_streamermode;
 extern ConVar cl_neo_squad_hud_original;
 extern ConVar sv_neo_readyup_lobby;
@@ -509,14 +510,21 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	vgui::surface()->GetScreenSize(wide, tall);
 
 	// other resolution scales up/down from it
-	m_uiCtx.layout.iRowTall = m_uiCtx.layout.iDefRowTall = tall / 35;
+	const auto ePadType = static_cast<ENeoScoreBoardPadding>(cl_neo_hud_scoreboard_padding.GetInt());
+	const int iDivBy = (ePadType == NEOSCOREBOARDPADDING_DEFAULT)
+			? 30
+			: (ePadType == NEOSCOREBOARDPADDING_COMPACT)
+				? 35
+				: 25;
+	m_uiCtx.layout.iRowTall = m_uiCtx.layout.iDefRowTall = tall / iDivBy;
 	m_uiCtx.iMarginX = wide / 192 / 2;
 	m_uiCtx.iMarginY = tall / 108 / 2;
 	int iWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
 	if (iWideAs43 > wide) iWideAs43 = wide;
 	const int iRootSubPanelWide = static_cast<int>(iWideAs43 * 0.975f);
-	const int iPopupCardPerRowTallAvatarName = m_uiCtx.layout.iDefRowTall * 3;
-	const int iPopupCardPerRowTallButtons = m_uiCtx.layout.iDefRowTall * 2.25f;
+	const int iPopupCardRowTallBase = tall / 35;
+	const int iPopupCardPerRowTallAvatarName = iPopupCardRowTallBase * 3;
+	const int iPopupCardPerRowTallButtons = iPopupCardRowTallBase * 2.25f;
 	const int iAvatarOffset = m_uiCtx.iMarginX;
 	const int iAvatarWT = iPopupCardPerRowTallAvatarName - (iAvatarOffset * 2);
 	const bool bShowReadyUp = sv_neo_readyup_lobby.GetBool()

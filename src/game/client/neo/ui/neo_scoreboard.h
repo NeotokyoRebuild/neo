@@ -9,6 +9,15 @@
 #include "ui/neo_ui.h"
 #include "neo_crosshair.h"
 
+enum ENeoScoreBoardPadding
+{
+	NEOSCOREBOARDPADDING_DEFAULT = 0,
+	NEOSCOREBOARDPADDING_COMPACT,
+	NEOSCOREBOARDPADDING_SPACIOUS,
+
+	NEOSCOREBOARDPADDING__TOTAL,
+};
+
 struct MapAvatarValue
 {
 	int i32Idx;
