@@ -684,7 +684,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 								: ARRAYSIZE(iColsWideNonPlayersList));
 
 				m_uiCtx.colors.normalFg = (bNotTeamplay && iCurTeam >= FIRST_GAME_TEAM)
-						? COLOR_NEO_ORANGE
+						? COLOR_NEO_WHITE
 						: g_PR->GetTeamColor(iCurTeam);
 
 				wchar_t wszText[NEO_MAX_DISPLAYNAME];
