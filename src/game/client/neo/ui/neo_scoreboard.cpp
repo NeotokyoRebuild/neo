@@ -89,6 +89,14 @@ CNEOScoreBoard::CNEOScoreBoard(IViewPort *pViewPort)
 
 CNEOScoreBoard::~CNEOScoreBoard()
 {
+	if (g_pNeoScoreBoard == this)
+	{
+		g_pNeoScoreBoard = nullptr;
+	}
+	if (m_pImageList)
+	{
+		delete m_pImageList;
+	}
 }
 
 const char *CNEOScoreBoard::GetName()
