@@ -777,11 +777,6 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 							m_uiCtx.dPanel.y + m_uiCtx.layout.iRowTall);
 				}
 
-				if (iCurTeam < FIRST_GAME_TEAM)
-				{
-					m_uiCtx.colors.normalFg = COLOR_NEO_WHITE;
-				}
-
 				Color colorAliveFg = m_uiCtx.colors.normalFg;
 				Color colorDeadFg = colorAliveFg;
 				colorDeadFg[0] *= 0.75f;
