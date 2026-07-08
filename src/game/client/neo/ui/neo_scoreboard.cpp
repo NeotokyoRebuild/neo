@@ -313,9 +313,14 @@ void CNEOScoreBoard::Update()
 	}
 
 	C_NEO_Player *pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pLocalPlayer)
+	{
+		return;
+	}
+
 	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
 	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
-	const bool bNotTeamplay = !NEORules()->IsTeamplay();
+	const bool bIsTeamplay = NEORules()->IsTeamplay();
 
 	m_iTotalPlayers = 0;
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
@@ -366,8 +371,8 @@ void CNEOScoreBoard::Update()
 		// pPlayerInfo->iClass
 		const bool bShowClass = 
 				   (false == bLocalPlaying) // Spectating
-				|| (bNotTeamplay && g_PR->IsLocalPlayer(i)) // DM - Only see own class
-				|| (false == bNotTeamplay && iLocalPlayerTeam == pPlayerInfo->iTeam); // Team - See own team's classes
+				|| (false == bIsTeamplay && g_PR->IsLocalPlayer(i)) // DM - Only see own class
+				|| (bIsTeamplay && iLocalPlayerTeam == pPlayerInfo->iTeam); // Team - See own team's classes
 		if (bShowClass)
 		{
 			pPlayerInfo->iClass = (bIsImpersonating)
@@ -421,7 +426,7 @@ void CNEOScoreBoard::Update()
 		}
 
 		// pPlayerInfo->avatar
-		if (UpdateAvatars() && pPlayerInfo->steamID.IsValid())
+		if (ShowAvatars() && pPlayerInfo->steamID.IsValid())
 		{
 			// See if we already have that avatar in our list
 			int iMapIndex = m_mapAvatarsToImageList.Find(pPlayerInfo->steamID);
@@ -493,11 +498,6 @@ bool CNEOScoreBoard::ShowAvatars()
 	return neo_show_scoreboard_avatars.GetBool() && !cl_neo_streamermode.GetBool();
 }
 
-bool CNEOScoreBoard::UpdateAvatars()
-{
-	return !cl_neo_streamermode.GetBool() && (neo_show_scoreboard_avatars.GetBool() || !cl_neo_squad_hud_original.GetBool());
-}
-
 void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 {
 	if (!NEORules())
@@ -543,16 +543,16 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	}
 
 	const int iGap = m_uiCtx.iMarginX;
-	const bool bNotTeamplay = !NEORules()->IsTeamplay();
-	const int iMaxSidePlayers = (bNotTeamplay)
-			? Ceil2Int((iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF]) / 2.0f)
-			: Max(iaTeamTally[TEAM_JINRAI], iaTeamTally[TEAM_NSF]);
+	const bool bIsTeamplay = NEORules()->IsTeamplay();
+	const int iMaxSidePlayers = (bIsTeamplay)
+			? Max(iaTeamTally[TEAM_JINRAI], iaTeamTally[TEAM_NSF])
+			: Ceil2Int((iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF]) / 2.0f);
 	C_NEO_Player *pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	const int iLocalUserID = pLocalPlayer->GetUserID();
 	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
 
 	int iTies = 0;
-	if (false == bNotTeamplay)
+	if (bIsTeamplay)
 	{
 		auto pTeamJinrai = GetGlobalTeam(TEAM_JINRAI);
 		auto pTeamNSF = GetGlobalTeam(TEAM_NSF);
@@ -691,7 +691,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 								? ARRAYSIZE(iColsWidePlayersList)
 								: ARRAYSIZE(iColsWideNonPlayersList));
 
-				m_uiCtx.colors.normalFg = (bNotTeamplay && iCurTeam >= FIRST_GAME_TEAM)
+				m_uiCtx.colors.normalFg = (false == bIsTeamplay && iCurTeam >= FIRST_GAME_TEAM)
 						? COLOR_NEO_WHITE
 						: g_PR->GetTeamColor(iCurTeam);
 
@@ -701,20 +701,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				NeoUI::Pad(); // Ping/BOT column - Show team rounds won
 				if (iCurTeam >= FIRST_GAME_TEAM)
 				{
-					if (bNotTeamplay)
-					{
-						// DM - Print players total on the left side only
-						if (iCurTeam == TEAM_JINRAI)
-						{
-							V_swprintf_safe(wszText, L"Players: %d",
-									iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF]);
-						}
-						else
-						{
-							wszText[0] = L'\0';
-						}
-					}
-					else
+					if (bIsTeamplay)
 					{
 						C_Team *pTeam = GetGlobalTeam(iCurTeam);
 						Assert(pTeam);
@@ -741,6 +728,19 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 								V_swprintf_safe(wszText, L"%ls: %d (%d players)",
 										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam]);
 							}
+						}
+					}
+					else
+					{
+						// DM - Print players total on the left side only
+						if (iCurTeam == TEAM_JINRAI)
+						{
+							V_swprintf_safe(wszText, L"Players: %d",
+									iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF]);
+						}
+						else
+						{
+							wszText[0] = L'\0';
 						}
 					}
 				}
@@ -794,7 +794,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 					const CNEOScoreBoardPlayer *pPlayerInfo = &m_playersInfo[i];
 					const bool bIsPlaying = (TEAM_JINRAI == pPlayerInfo->iTeam
 							|| TEAM_NSF == pPlayerInfo->iTeam);
-					const bool bIsDMPlaying = bNotTeamplay && bIsPlaying;
+					const bool bIsDMPlaying = false == bIsTeamplay && bIsPlaying;
 					iInPlaying += (bIsPlaying);
 
 					const bool bDMNotThisSide = bIsDMPlaying &&

@@ -1244,35 +1244,6 @@ void CNEOHud_RoundState::CheckActiveStar()
 	target->SetDrawColor(currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
 }
 
-void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
-{
-	if (!g_pNeoScoreBoard)
-	{
-		return;
-	}
-
-	if (cl_neo_streamermode.GetBool())
-	{
-		return;
-	}
-
-	player_info_t pi;
-	if (!engine->GetPlayerInfo(playerIndex, &pi))
-		return;
-
-	if (!pi.friendsID)
-		return;
-
-	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-	const int mapIndex = g_pNeoScoreBoard->m_mapAvatarsToImageList.Find(steamIDForPlayer);
-	if ((mapIndex == g_pNeoScoreBoard->m_mapAvatarsToImageList.InvalidIndex()))
-		return;
-
-	CAvatarImage* pAvIm = (CAvatarImage*)g_pNeoScoreBoard->m_pImageList->GetImage(g_pNeoScoreBoard->m_mapAvatarsToImageList[mapIndex].i32Idx);
-	surface()->DrawSetTexture(pAvIm->getTextureID());
-	surface()->DrawSetColor(COLOR_WHITE);
-}
-
 void CNEOHud_RoundState::Paint()
 {
 	BaseClass::Paint();

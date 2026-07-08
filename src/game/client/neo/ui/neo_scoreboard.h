@@ -68,7 +68,6 @@ public:
 	void FireGameEvent(IGameEvent *event) final;
 
 	bool ShowAvatars();
-	bool UpdateAvatars();
 
 	void OnMainLoop(const NeoUI::Mode eMode);
 
