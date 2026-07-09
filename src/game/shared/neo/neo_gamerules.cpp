@@ -385,8 +385,8 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 	}
 
 	BEGIN_RECV_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
-		RecvPropDataTable( "neo_gamerules_data", 0, 0,	
-			&REFERENCE_RECV_TABLE( DT_NEORules ), 
+		RecvPropDataTable( "neo_gamerules_data", 0, 0,
+			&REFERENCE_RECV_TABLE( DT_NEORules ),
 			RecvProxy_NEORules )
 	END_RECV_TABLE()
 #else
@@ -1379,7 +1379,7 @@ void CNEORules::Think(void)
 		}
 		else if (GetGameType() == NEO_GAME_TYPE_JGR)
 		{
-			if ((!m_pJuggernautPlayer && m_pJuggernautItem && !m_pJuggernautItem->IsBeingActivatedByLosingTeam()) || 
+			if ((!m_pJuggernautPlayer && m_pJuggernautItem && !m_pJuggernautItem->IsBeingActivatedByLosingTeam()) ||
 				(!m_pJuggernautPlayer && !m_pJuggernautItem)) // Juggernaut is absent entirely
 			{
 				if (GetGlobalTeam(TEAM_JINRAI)->GetScore() > GetGlobalTeam(TEAM_NSF)->GetScore())
@@ -1474,7 +1474,7 @@ void CNEORules::Think(void)
 					{
 						Assert(false);
 						continue;
-					}	
+					}
 					pGhostCap->SetActive(false);
 				}
 
@@ -3940,10 +3940,13 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 {
 	// Non-CNEO_Player, return NULL
-	if (!attacker || !victim)
+	if (!victim)
 	{
 		return NULL;
 	}
+
+	// If it's a suicide, use the victim as the attacker
+	attacker = attacker ? attacker : victim;
 
 	// Check for assistance (> 50 dmg, not final attacker)
 	CNEO_Player* pImpersonated = attacker->GetSpectatorTakeoverPlayerTarget();
