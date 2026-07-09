@@ -15,7 +15,7 @@ public:
 	DECLARE_NETWORKCLASS();
 };
 
-class CNEORulesATK : public CNEORules, public CGameEventListener
+class CNEORulesATK : public CNEORules
 {
 public:
 	DECLARE_CLASS(CNEORulesATK, CNEORules);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "neo_gamerules.h"
-#include "GameEventListener.h"
 
 #ifdef CLIENT_DLL
 	#define CNEORulesDM C_NEORulesDM
@@ -15,7 +14,7 @@ public:
 	DECLARE_NETWORKCLASS();
 };
 
-class CNEORulesDM : public CNEORules, public CGameEventListener
+class CNEORulesDM : public CNEORules
 {
 public:
 	DECLARE_CLASS(CNEORulesDM, CNEORules);

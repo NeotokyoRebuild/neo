@@ -15,7 +15,7 @@ public:
 	DECLARE_NETWORKCLASS();
 };
 
-class CNEORulesTUT : public CNEORules, public CGameEventListener
+class CNEORulesTUT : public CNEORules
 {
 public:
 	DECLARE_CLASS(CNEORulesTUT, CNEORules);

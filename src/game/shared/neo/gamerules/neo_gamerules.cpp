@@ -3484,7 +3484,7 @@ bool CNEORules::PlayerCanChangeLoadout(CNEO_Player* pPlayer)
 	if (sv_neo_can_change_classes_anytime.GetBool() ||
 		pPlayer->IsDead() ||
 		IsRoundIdle() ||
-		!pPlayer->m_bIneligibleForLoadoutPick && GetRemainingPreRoundFreezeTime(false) > 0)
+		(!pPlayer->m_bIneligibleForLoadoutPick && GetRemainingPreRoundFreezeTime(false) > 0))
 	{
 		return true;
 	}
