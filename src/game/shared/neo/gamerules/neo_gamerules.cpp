@@ -34,6 +34,7 @@
 #include "nav_mesh.h"
 #include "neo_npc_dummy.h"
 #include "materialsystem/imaterialsystem.h"
+#include "neo_gamerules_restore.h"
 
 #include <utility>
 
@@ -111,6 +112,7 @@ ConVar sv_neo_cap_reward("sv_neo_cap_reward", "0", FCVAR_REPLICATED, "How much X
 ConVar sv_neo_cap_reward_dead("sv_neo_cap_reward_dead", "0", FCVAR_REPLICATED, "Whether dead players should receive the ghost capture or escape reward.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_survivor_bonus("sv_neo_survivor_bonus", "1", FCVAR_REPLICATED, "Whether surviving players on the winning team in CTG and VIP should receive extra XP.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_ghost_carrier_bonus("sv_neo_ghost_carrier_bonus", "1", FCVAR_REPLICATED, "Whether the ghost carrier on the winning team should receive extra XP.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
 #endif // GAME_DLL
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
@@ -121,7 +123,6 @@ ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATE
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
-ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
 #ifdef CLIENT_DLL
 ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
 #endif
@@ -345,8 +346,8 @@ const char* NEO_GAME_TYPE_CLASS_NAMES[NEO_GAME_TYPE__TOTAL] =
 	}
 
 	BEGIN_RECV_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
-		RecvPropDataTable( "neo_gamerules_data", 0, 0,	
-			&REFERENCE_RECV_TABLE( DT_NEORules ), 
+		RecvPropDataTable( "neo_gamerules_data", 0, 0,
+			&REFERENCE_RECV_TABLE( DT_NEORules ),
 			RecvProxy_NEORules )
 	END_RECV_TABLE()
 #else
@@ -484,34 +485,6 @@ static inline void FireLegacyEvent_NeoRoundEnd()
 }
 
 #ifdef GAME_DLL
-CON_COMMAND( sv_neo_score_set_jinrai, "Set point count for team Jinrai" )
-{
-	if ( 2 != args.ArgC() )
-	{
-		Msg( "Usage: %s <score>\n", __FUNCTION__ );
-		return;
-	}
-	
-	CTeam *jinrai = GetGlobalTeam( TEAM_JINRAI );
-	Assert( jinrai );
-	jinrai->SetScore( atoi( args[1] ) );
-	jinrai->SetRoundsWon( atoi( args[1] ) );
-}
-
-CON_COMMAND( sv_neo_score_set_nsf, "Set point count for team NSF" )
-{
-	if ( 2 != args.ArgC() )
-	{
-		Msg( "Usage: %s <score>\n", __FUNCTION__ );
-		return;
-	}
-	
-	CTeam *nsf = GetGlobalTeam( TEAM_NSF );
-	Assert( nsf );
-	nsf->SetScore( atoi( args[1] ) );
-	nsf->SetRoundsWon( atoi( args[1] ) );
-}
-
 static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float flOldVal)
 {
 	auto wep = gEntList.NextEntByClass((CNEOBaseCombatWeapon*)NULL);
@@ -1998,7 +1971,7 @@ CNEORules::ReadyPlayers CNEORules::FetchReadyPlayers() const
 void CNEORules::StartNextRound()
 {
 	// Only check ready-up on idle state
-	const bool bLobby = sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle;
+	const bool bLobby = InReadyUpState();
 	const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
 	const bool bEqualThres = (iThres == GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers()) && (iThres == GetGlobalTeam(TEAM_NSF)->GetNumPlayers());
 	const auto readyPlayers = FetchReadyPlayers();
@@ -2148,6 +2121,38 @@ void CNEORules::StartNextRound()
 	++m_iRoundNumber;
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
+	if (bFromStarting)
+	{
+		m_pRestoredInfos.Purge();
+		// If game was in warmup then also decide on game mode here
+
+		CTeam *pJinrai = GetGlobalTeam(TEAM_JINRAI);
+		CTeam *pNSF = GetGlobalTeam(TEAM_NSF);
+		Assert(pJinrai && pNSF);
+		pJinrai->SetScore(0);
+		pJinrai->SetRoundsWon(0);
+		pNSF->SetScore(0);
+		pNSF->SetRoundsWon(0);
+	}
+
+	if (m_iNextRestore.flags & NEXT_ROUND_GAMERULE_RESTORE_FLAG_SCORES)
+	{
+		GetGlobalTeam(TEAM_JINRAI)->SetScore(m_iNextRestore.iScoreJinrai);
+		GetGlobalTeam(TEAM_NSF)->SetScore(m_iNextRestore.iScoreNSF);
+	}
+	if (m_iNextRestore.flags & NEXT_ROUND_GAMERULE_RESTORE_FLAG_ROUND_NUMBER)
+	{
+		// Have to be before going through players or they spawn the wrong side
+		// when this gets set!
+		m_iRoundNumber = m_iNextRestore.iRoundNumber;
+	}
+	if (m_iNextRestore.flags & NEXT_ROUND_GAMERULE_RESTORE_FLAG_ROUNDSWONS)
+	{
+		GetGlobalTeam(TEAM_JINRAI)->SetRoundsWon(m_iNextRestore.iRoundsWonJinrai);
+		GetGlobalTeam(TEAM_NSF)->SetRoundsWon(m_iNextRestore.iRoundsWonNSF);
+	}
+	m_iNextRestore = {}; // Zero-out
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		CNEO_Player *pPlayer = (CNEO_Player*)UTIL_PlayerByIndex(i);
@@ -2197,6 +2202,17 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bIsPendingTKKick = false;
 
 		pPlayer->SetTestMessageVisible(false);
+
+		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_XP)
+		{
+			pPlayer->m_iXP.Set(pPlayer->m_iNextRestore.iXP);
+		}
+		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_DEATH)
+		{
+			pPlayer->ResetDeathCount();
+			pPlayer->IncrementDeathCount(pPlayer->m_iNextRestore.iDeaths);
+		}
+		pPlayer->m_iNextRestore = {}; // Zero-out
 	}
 
 	m_flPrevThinkKick = 0.0f;
@@ -2207,20 +2223,8 @@ void CNEORules::StartNextRound()
 	m_bTeamBeenAwardedDueToCapPrevent = false;
 	V_memset(m_arrayiEntPrevCap, 0, sizeof(m_arrayiEntPrevCap));
 	m_iEntPrevCapSize = 0;
-	if (bFromStarting)
-	{
-		m_pRestoredInfos.Purge();
-		// If game was in warmup then also decide on game mode here
 
-		CTeam *pJinrai = GetGlobalTeam(TEAM_JINRAI);
-		CTeam *pNSF = GetGlobalTeam(TEAM_NSF);
-		Assert(pJinrai && pNSF);
-		pJinrai->SetScore(0);
-		pJinrai->SetRoundsWon(0);
-		pNSF->SetScore(0);
-		pNSF->SetRoundsWon(0);
-	}
-
+	MatchSessionBackup();
 	FireLegacyEvent_NeoRoundEnd();
 
 	char RoundMsg[26];
@@ -3202,13 +3206,18 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 {
 	// Non-CNEO_Player, return NULL
-	if (!attacker || !victim)
+	if (!victim)
 	{
 		return NULL;
 	}
 
+	// If it's a suicide, use the victim as the attacker
+	attacker = attacker ? attacker : victim;
+
 	// Check for assistance (> 50 dmg, not final attacker)
-	const int attackerIdx = attacker->entindex();
+	CNEO_Player* pImpersonated = attacker->GetSpectatorTakeoverPlayerTarget();
+	const int attackerIdx = pImpersonated ? pImpersonated->entindex() : attacker->entindex();
+
 	for (int assistIdx = 1; assistIdx <= gpGlobals->maxClients; ++assistIdx)
 	{
 		if (assistIdx == attackerIdx)
@@ -3436,13 +3445,18 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		{
 			if (sv_neo_teamdamage_assists.GetBool())
 			{
-				assister->AddPoints(-1, true);
+				// If a bot is being taken over, penalize the impersonator.
+				CNEO_Player* pImpersonator = assister->GetSpectatorTakeoverPlayerImpersonatingMe();
+				CNEO_Player* pPenalized = pImpersonator ? pImpersonator : assister;
+				// bIgnorePlayerTakeover = true to penalize the impersonator
+				pPenalized->AddPoints(-1, true, true);
 			}
 		}
 		// Enemy kill assist
 		else
 		{
-			assister->AddPoints(1, false);
+			// bIgnorePlayerTakeover = true: FetchAssists handled spec-takeover
+			assister->AddPoints(1, false, true);
 		}
 	}
 #endif // GAME_DLL
@@ -3916,6 +3930,16 @@ bool CNEORules::IsJuggernautLocked() const
 	}
 
 	return false;
+}
+
+bool CNEORules::InReadyUpState() const
+{
+	return (sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle);
+}
+
+bool CNEORules::InRoundState() const
+{
+	return (IsRoundLive() || m_nRoundStatus == NeoRoundStatus::PostRound);
 }
 
 int CNEORules::GetAttackingTeam() const

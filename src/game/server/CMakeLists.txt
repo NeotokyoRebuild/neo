@@ -1,6 +1,10 @@
 add_library(server SHARED)
 
-set_target_properties(server PROPERTIES PREFIX "")
+set_target_properties(server PROPERTIES
+    PREFIX ""
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
 
 if(NEO_DEDICATED AND OS_LINUX)
     set_target_properties(server PROPERTIES OUTPUT_NAME server_srv)
@@ -129,14 +133,12 @@ if(NEO_BUILD_REPLAY)
     )
 endif()
 
-set(SOURCE_FILES_WITHOUT_PCH
+set(UNITY_SOURCE_FILES_WITHOUT_PCH
     ${CMAKE_SOURCE_DIR}/common/language.cpp
     ${CMAKE_SOURCE_DIR}/common/randoverride.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/interval.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/sheetsimulator.cpp
-    ${CMAKE_SOURCE_DIR}/public/tier0/memoverride.cpp
     ${CMAKE_SOURCE_DIR}/public/ScratchPadUtils.cpp
-    ${CMAKE_SOURCE_DIR}/public/bone_setup.cpp
     ${CMAKE_SOURCE_DIR}/public/collisionutils.cpp
     ${CMAKE_SOURCE_DIR}/public/dt_send.cpp
     ${CMAKE_SOURCE_DIR}/public/dt_utlvector_common.cpp
@@ -149,7 +151,6 @@ set(SOURCE_FILES_WITHOUT_PCH
     ${CMAKE_SOURCE_DIR}/public/networkvar.cpp
     ${CMAKE_SOURCE_DIR}/public/registry.cpp
     ${CMAKE_SOURCE_DIR}/public/rope_physics.cpp
-    ${CMAKE_SOURCE_DIR}/public/scratchpad3d.cpp
     ${CMAKE_SOURCE_DIR}/public/server_class.cpp
     ${CMAKE_SOURCE_DIR}/public/simple_physics.cpp
     ${CMAKE_SOURCE_DIR}/public/stringregistry.cpp
@@ -158,6 +159,377 @@ set(SOURCE_FILES_WITHOUT_PCH
     gamehandle.cpp
     h_export.cpp
     init_factory.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_FILES_WITHOUT_PCH}
+    PROPERTIES
+        UNITY_GROUP without_pch_server
+)
+
+set(SOURCE_FILES_WITHOUT_PCH
+    ${UNITY_SOURCE_FILES_WITHOUT_PCH}
+    ${CMAKE_SOURCE_DIR}/public/bone_setup.cpp
+    ${CMAKE_SOURCE_DIR}/public/tier0/memoverride.cpp
+    ${CMAKE_SOURCE_DIR}/public/scratchpad3d.cpp
+)
+
+set(UNITY_SOURCE_SHARED
+    ${CMAKE_SOURCE_DIR}/game/shared/EntityParticleTrail_Shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/GameStats.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/ModelSoundsCache.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/SceneCache.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/SoundEmitterSystem.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/Sprite.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/achievement_saverestore.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/achievementmgr.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/achievements_hlx.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/activitylist.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/ammodef.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/animation.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/base_playeranimstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseachievement.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/basecombatcharacter_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/basecombatweapon_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseentity_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseparticleentity.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseplayer_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseviewmodel_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/beam_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/collisionproperty.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/death_pose.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/debugoverlay_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/decals.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/effect_dispatch_data.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/ehandle.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/entitylist_base.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/env_detail_controller.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/env_wind_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/eventlist.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/func_ladder.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamemovement.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamerules_register.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamestringpool.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamevars_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hintmessage.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hintsystem.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/mapentities_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/movevars_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/mp_shareddefs.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/multiplay_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/obstacle_pushaway.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/particle_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/particlesystemquery.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/physics_main_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/physics_saverestore.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/physics_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/point_bonusmaps_accessor.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/point_posecontroller.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/precache_register.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/predictableid.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/props_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/querycache.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/ragdoll_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/rope_helpers.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/saverestore.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sceneentity_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sequence_Transitioner.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/simtimer.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/singleplay_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/soundenvelope.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/studio_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/takedamageinfo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/test_ehandle.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/usercmd.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/util_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/vehicle_viewblend_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/voice_gamemgr.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/weapon_proficiency.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_SHARED}
+    PROPERTIES UNITY_GROUP shared_server
+)
+
+set(UNITY_SOURCE_SRC_SERVER
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/survival_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplayroundbased_gamerules.cpp
+    ai_relationship.cpp
+    basegrenade_concussion.cpp
+    basegrenade_contact.cpp
+    basegrenade_timed.cpp
+    grenadethrown.cpp
+    h_cycler.cpp
+    hl2/Func_Monitor.cpp
+    monstermaker.cpp
+    team_control_point.cpp
+    team_control_point_master.cpp
+    team_control_point_round.cpp
+    team_objectiveresource.cpp
+    team_spawnpoint.cpp
+    team_train_watcher.cpp
+    trigger_area_capture.cpp
+
+    AI_Criteria.cpp
+    AI_Interest_Target.cpp
+    AI_ResponseSystem.cpp
+    BaseAnimatingOverlay.cpp
+    CRagdollMagnet.cpp
+    CommentarySystem.cpp
+    EffectsServer.cpp
+    EntityDissolve.cpp
+    EntityFlame.cpp
+    EntityParticleTrail.cpp
+    EnvBeam.cpp
+    EnvFade.cpp
+    EnvHudHint.cpp
+    EnvLaser.cpp
+    EnvMessage.cpp
+    EnvShake.cpp
+    EnvSpark.cpp
+    EventLog.cpp
+    MaterialModifyControl.cpp
+    PointAngularVelocitySensor.cpp
+    RagdollBoogie.cpp
+    ServerNetworkProperty.cpp
+    SkyCamera.cpp
+    TemplateEntities.cpp
+    WaterLODControl.cpp
+    ai_activity.cpp
+    ai_baseactor.cpp
+    ai_basehumanoid.cpp
+    ai_basenpc.cpp
+    ai_basenpc_flyer.cpp
+    ai_basenpc_flyer_new.cpp
+    ai_basenpc_movement.cpp
+    ai_basenpc_physicsflyer.cpp
+    ai_basenpc_schedule.cpp
+    ai_basenpc_squad.cpp
+    ai_behavior.cpp
+    ai_behavior_assault.cpp
+    ai_behavior_fear.cpp
+    ai_behavior_follow.cpp
+    ai_behavior_lead.cpp
+    ai_behavior_rappel.cpp
+    ai_behavior_standoff.cpp
+    ai_blended_movement.cpp
+    ai_concommands.cpp
+    ai_condition.cpp
+    ai_default.cpp
+    ai_dynamiclink.cpp
+    ai_event.cpp
+    ai_goalentity.cpp
+    ai_hint.cpp
+    ai_hull.cpp
+    ai_initutils.cpp
+    ai_link.cpp
+    ai_localnavigator.cpp
+    ai_looktarget.cpp
+    ai_memory.cpp
+    ai_motor.cpp
+    ai_moveprobe.cpp
+    ai_moveshoot.cpp
+    ai_movesolver.cpp
+    ai_namespaces.cpp
+    ai_navigator.cpp
+    ai_network.cpp
+    ai_networkmanager.cpp
+    ai_node.cpp
+    ai_pathfinder.cpp
+    ai_planesolver.cpp
+    ai_playerally.cpp
+    ai_route.cpp
+    ai_saverestore.cpp
+    ai_schedule.cpp
+    ai_scriptconditions.cpp
+    ai_senses.cpp
+    ai_sentence.cpp
+    ai_speech.cpp
+    ai_speechfilter.cpp
+    ai_squad.cpp
+    ai_squadslot.cpp
+    ai_tacticalservices.cpp
+    ai_task.cpp
+    ai_trackpather.cpp
+    ai_utils.cpp
+    ai_waypoint.cpp
+    base_transmit_proxy.cpp
+    baseanimating.cpp
+    basecombatcharacter.cpp
+    basecombatweapon.cpp
+    baseflex.cpp
+    basemultiplayerplayer.cpp
+    baseviewmodel.cpp
+    bitstring.cpp
+    bmodels.cpp
+    buttons.cpp
+    cbase.cpp
+    client.cpp
+    colorcorrection.cpp
+    colorcorrectionvolume.cpp
+    controlentities.cpp
+    cplane.cpp
+    damagemodifier.cpp
+    doors.cpp
+    dynamiclight.cpp
+    effects.cpp
+    entityblocker.cpp
+    entitylist.cpp
+    env_debughistory.cpp
+    env_effectsscript.cpp
+    env_entity_maker.cpp
+    env_particlescript.cpp
+    env_player_surface_trigger.cpp
+    env_projectedtexture.cpp
+    env_screenoverlay.cpp
+    env_texturetoggle.cpp
+    env_tonemap_controller.cpp
+    env_zoom.cpp
+    envmicrophone.cpp
+    explode.cpp
+    filters.cpp
+    fire.cpp
+    fire_smoke.cpp
+    fish.cpp
+    fogcontroller.cpp
+    fourwheelvehiclephysics.cpp
+    func_areaportal.cpp
+    func_areaportalbase.cpp
+    func_areaportalwindow.cpp
+    func_break.cpp
+    func_breakablesurf.cpp
+    func_dust.cpp
+    func_ladder_endpoint.cpp
+    func_lod.cpp
+    func_movelinear.cpp
+    func_occluder.cpp
+    func_reflective_glass.cpp
+    func_smokevolume.cpp
+    game.cpp
+    game_ui.cpp
+    gameinterface.cpp
+    gametrace_dll.cpp
+    gameweaponmanager.cpp
+    genericactor.cpp
+    genericmonster.cpp
+    gib.cpp
+    globals.cpp
+    globalstate.cpp
+    guntarget.cpp
+    h_ai.cpp
+    hierarchy.cpp
+    hltvdirector.cpp
+    info_camera_link.cpp
+    info_overlay_accessor.cpp
+    intermission.cpp
+    item_world.cpp
+    lightglow.cpp
+    lights.cpp
+    logic_achievement.cpp
+    logic_eventlistener.cpp
+    logic_measure_movement.cpp
+    logic_navigation.cpp
+    logicauto.cpp
+    logicentities.cpp
+    logicrelay.cpp
+    mapentities.cpp
+    maprules.cpp
+    message_entity.cpp
+    modelentities.cpp
+    movehelper_server.cpp
+    movement.cpp
+    ndebugoverlay.cpp
+    npc_vehicledriver.cpp
+    particle_light.cpp
+    particle_system.cpp
+    pathcorner.cpp
+    pathtrack.cpp
+    phys_controller.cpp
+    physconstraint.cpp
+    physics.cpp
+    physics_bone_follower.cpp
+    physics_cannister.cpp
+    physics_fx.cpp
+    physics_impact_damage.cpp
+    physics_main.cpp
+    physics_npc_solver.cpp
+    physics_prop_ragdoll.cpp
+    physobj.cpp
+    player.cpp
+    player_command.cpp
+    player_lagcompensation.cpp
+    player_pickup.cpp
+    player_resource.cpp
+    playerinfomanager.cpp
+    playerlocaldata.cpp
+    plugin_check.cpp
+    point_camera.cpp
+    point_devshot_camera.cpp
+    point_playermoveconstraint.cpp
+    point_spotlight.cpp
+    point_template.cpp
+    point_worldtext.cpp
+    pointanglesensor.cpp
+    pointhurt.cpp
+    pointteleport.cpp
+    props.cpp
+    ragdoll_manager.cpp
+    recipientfilter.cpp
+    rope.cpp
+    saverestore_gamedll.cpp
+    sceneentity.cpp
+    scratchpad_gamedll_helpers.cpp
+    scripted.cpp
+    scriptedtarget.cpp
+    sendproxy.cpp
+    shadowcontrol.cpp
+    skyboxswapper.cpp
+    slideshow_display.cpp
+    sound.cpp
+    soundent.cpp
+    soundscape.cpp
+    soundscape_system.cpp
+    spotlightend.cpp
+    sprite_perfmonitor.cpp
+    subs.cpp
+    sun.cpp
+    tactical_mission.cpp
+    tanktrain.cpp
+    team.cpp
+    tempmonster.cpp
+    tesla.cpp
+    test_proxytoggle.cpp
+    test_stressentities.cpp
+    testfunctions.cpp
+    testtraceline.cpp
+    textstatsmgr.cpp
+    timedeventmgr.cpp
+    trains.cpp
+    triggers.cpp
+    util.cpp
+    variant_t.cpp
+    vehicle_base.cpp
+    vehicle_baseserver.cpp
+    vguiscreen.cpp
+    waterbullet.cpp
+    wcedit.cpp
+    weight_button.cpp
+    world.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_SRC_SERVER}
+    PROPERTIES UNITY_GROUP src_server
 )
 
 target_sources_grouped(
@@ -172,149 +544,74 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/server/vote_controller.h
     ${CMAKE_SOURCE_DIR}/game/server/player_voice_listener.cpp
     ${CMAKE_SOURCE_DIR}/game/server/player_voice_listener.h
-    ${CMAKE_SOURCE_DIR}/game/shared/EntityParticleTrail_Shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/GameStats.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/ModelSoundsCache.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/SceneCache.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/SharedFunctorUtils.h
-    ${CMAKE_SOURCE_DIR}/game/shared/SoundEmitterSystem.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/Sprite.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/Sprite.h
     ${CMAKE_SOURCE_DIR}/game/shared/SpriteTrail.h
-    ${CMAKE_SOURCE_DIR}/game/shared/achievement_saverestore.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/achievement_saverestore.h
-    ${CMAKE_SOURCE_DIR}/game/shared/achievementmgr.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/achievementmgr.h
-    ${CMAKE_SOURCE_DIR}/game/shared/achievements_hlx.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/activitylist.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/activitylist.h
     ${CMAKE_SOURCE_DIR}/game/shared/ai_activity.h
     ${CMAKE_SOURCE_DIR}/game/shared/ai_debug_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/ammodef.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/animation.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/animation.h
     ${CMAKE_SOURCE_DIR}/game/shared/apparent_velocity_helper.h
-    ${CMAKE_SOURCE_DIR}/game/shared/base_playeranimstate.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/baseachievement.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseachievement.h
-    ${CMAKE_SOURCE_DIR}/game/shared/basecombatcharacter_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/basecombatweapon_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/basecombatweapon_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/baseentity_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseentity_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.h
-    ${CMAKE_SOURCE_DIR}/game/shared/baseparticleentity.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseparticleentity.h
-    ${CMAKE_SOURCE_DIR}/game/shared/baseplayer_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseplayer_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.h
-    ${CMAKE_SOURCE_DIR}/game/shared/baseviewmodel_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseviewmodel_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/beam_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/beam_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/choreoactor.h
     ${CMAKE_SOURCE_DIR}/game/shared/choreochannel.h
     ${CMAKE_SOURCE_DIR}/game/shared/choreoevent.h
     ${CMAKE_SOURCE_DIR}/game/shared/choreoscene.h
-    ${CMAKE_SOURCE_DIR}/game/shared/collisionproperty.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/collisionproperty.h
-    ${CMAKE_SOURCE_DIR}/game/shared/death_pose.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/debugoverlay_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/debugoverlay_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/decals.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/effect_color_tables.h
-    ${CMAKE_SOURCE_DIR}/game/shared/effect_dispatch_data.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/ehandle.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/entitylist_base.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/entityparticletrail_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/env_detail_controller.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/env_wind_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/env_wind_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/eventlist.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/eventlist.h
     ${CMAKE_SOURCE_DIR}/game/shared/func_dust_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/func_ladder.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/gamemovement.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/gamemovement.h
-    ${CMAKE_SOURCE_DIR}/game/shared/gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/gamerules_register.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/gamestats.h
-    ${CMAKE_SOURCE_DIR}/game/shared/gamestringpool.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/gamestringpool.h
-    ${CMAKE_SOURCE_DIR}/game/shared/gamevars_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/gamevars_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hintmessage.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hintmessage.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hintsystem.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hintsystem.h
     ${CMAKE_SOURCE_DIR}/game/shared/ichoreoeventcallback.h
-    ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.h
     ${CMAKE_SOURCE_DIR}/game/shared/interval.h
     ${CMAKE_SOURCE_DIR}/game/shared/iscenetokenprocessor.h
-    ${CMAKE_SOURCE_DIR}/game/shared/mapentities_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/movevars_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/mp_shareddefs.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/multiplay_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/multiplay_gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/obstacle_pushaway.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/obstacle_pushaway.h
-    ${CMAKE_SOURCE_DIR}/game/shared/particle_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/particle_parse.h
-    ${CMAKE_SOURCE_DIR}/game/shared/particlesystemquery.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/physics_main_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/physics_saverestore.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/physics_saverestore.h
-    ${CMAKE_SOURCE_DIR}/game/shared/physics_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/physics_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/point_bonusmaps_accessor.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/point_bonusmaps_accessor.h
-    ${CMAKE_SOURCE_DIR}/game/shared/point_posecontroller.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/point_posecontroller.h
     ${CMAKE_SOURCE_DIR}/game/shared/positionwatcher.h
-    ${CMAKE_SOURCE_DIR}/game/shared/precache_register.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/precache_register.h
-    ${CMAKE_SOURCE_DIR}/game/shared/predictableid.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/predictableid.h
-    ${CMAKE_SOURCE_DIR}/game/shared/props_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/querycache.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/ragdoll_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/rope_helpers.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/saverestore.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/saverestore.h
     ${CMAKE_SOURCE_DIR}/game/shared/saverestore_bitstring.h
     ${CMAKE_SOURCE_DIR}/game/shared/saverestore_utlsymbol.h
     ${CMAKE_SOURCE_DIR}/game/shared/saverestore_utlvector.h
-    ${CMAKE_SOURCE_DIR}/game/shared/sceneentity_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/scriptevent.h
-    ${CMAKE_SOURCE_DIR}/game/shared/sequence_Transitioner.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/sheetsimulator.h
-    ${CMAKE_SOURCE_DIR}/game/shared/simtimer.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/simtimer.h
-    ${CMAKE_SOURCE_DIR}/game/shared/singleplay_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/singleplay_gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/soundenvelope.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/studio_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/takedamageinfo.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/teamplay_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/tempentity.h
-    ${CMAKE_SOURCE_DIR}/game/shared/test_ehandle.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/usercmd.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/util_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/vehicle_viewblend_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/voice_common.h
-    ${CMAKE_SOURCE_DIR}/game/shared/voice_gamemgr.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/voice_gamemgr.h
-    ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse.h
-    ${CMAKE_SOURCE_DIR}/game/shared/weapon_proficiency.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/weapon_proficiency.h
+    ${UNITY_SOURCE_SHARED}
+    baseentity.cpp # Due to gamedata-gen sdkhook
     ${CMAKE_SOURCE_DIR}/public/SoundParametersInternal.cpp
     ${CMAKE_SOURCE_DIR}/public/bone_setup.h
     ${CMAKE_SOURCE_DIR}/public/collisionutils.h
@@ -343,423 +640,182 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/public/vphysics/performance.h
     ${CMAKE_SOURCE_DIR}/public/vphysics/stats.h
     ${SOURCE_FILES_WITHOUT_PCH}
-    AI_Criteria.cpp
+    ${UNITY_SOURCE_SRC_SERVER}
     AI_Criteria.h
-    AI_Interest_Target.cpp
     AI_Interest_Target.h
-    AI_ResponseSystem.cpp
     AI_ResponseSystem.h
-    BaseAnimatingOverlay.cpp
     BaseAnimatingOverlay.h
     BasePropDoor.h
-    CRagdollMagnet.cpp
     CRagdollMagnet.h
-    CommentarySystem.cpp
-    EffectsServer.cpp
-    EntityDissolve.cpp
     EntityDissolve.h
-    EntityFlame.cpp
-    EntityParticleTrail.cpp
     EntityParticleTrail.h
-    EnvBeam.cpp
-    EnvFade.cpp
-    EnvHudHint.cpp
-    EnvLaser.cpp
     EnvLaser.h
-    EnvMessage.cpp
     EnvMessage.h
-    EnvShake.cpp
-    EnvSpark.cpp
-    EventLog.cpp
-    MaterialModifyControl.cpp
-    PointAngularVelocitySensor.cpp
-    RagdollBoogie.cpp
     RagdollBoogie.h
-    ServerNetworkProperty.cpp
-    ServerNetworkProperty.h
-    SkyCamera.cpp
-    TemplateEntities.cpp
-    TemplateEntities.h
-    WaterLODControl.cpp
-    ai_activity.cpp
-    ai_baseactor.cpp
-    ai_baseactor.h
-    ai_basehumanoid.cpp
-    ai_basehumanoid.h
-    ai_basenpc.cpp
-    ai_basenpc.h
-    ai_basenpc_flyer.cpp
-    ai_basenpc_flyer.h
-    ai_basenpc_flyer_new.cpp
-    ai_basenpc_flyer_new.h
-    ai_basenpc_movement.cpp
-    ai_basenpc_physicsflyer.cpp
-    ai_basenpc_physicsflyer.h
-    ai_basenpc_schedule.cpp
-    ai_basenpc_squad.cpp
-    ai_behavior.cpp
-    ai_behavior.h
-    ai_behavior_assault.cpp
-    ai_behavior_assault.h
-    ai_behavior_fear.cpp
-    ai_behavior_fear.h
-    ai_behavior_follow.cpp
-    ai_behavior_follow.h
-    ai_behavior_lead.cpp
-    ai_behavior_lead.h
-    ai_behavior_rappel.cpp
     ai_behavior_rappel.h
-    ai_behavior_standoff.cpp
+    ServerNetworkProperty.h
+    TemplateEntities.h
+    ai_baseactor.h
+    ai_basehumanoid.h
+    ai_basenpc.h
+    ai_basenpc_flyer.h
+    ai_basenpc_flyer_new.h
+    ai_basenpc_physicsflyer.h
+    ai_behavior.h
+    items.h
+    ai_behavior_assault.h
+    ai_behavior_fear.h
+    ai_behavior_follow.h
+    ai_behavior_lead.h
     ai_behavior_standoff.h
-    ai_blended_movement.cpp
     ai_blended_movement.h
     ai_component.h
-    ai_concommands.cpp
-    ai_condition.cpp
     ai_condition.h
     ai_debug.h
-    ai_default.cpp
     ai_default.h
-    ai_dynamiclink.cpp
     ai_dynamiclink.h
-    ai_event.cpp
-    ai_goalentity.cpp
     ai_goalentity.h
-    ai_hint.cpp
     ai_hint.h
-    ai_hull.cpp
     ai_hull.h
-    ai_initutils.cpp
     ai_initutils.h
-    ai_link.cpp
     ai_link.h
-    ai_localnavigator.cpp
     ai_localnavigator.h
-    ai_looktarget.cpp
     ai_looktarget.h
-    ai_memory.cpp
     ai_memory.h
-    ai_motor.cpp
     ai_motor.h
-    ai_moveprobe.cpp
     ai_moveprobe.h
-    ai_moveshoot.cpp
     ai_moveshoot.h
-    ai_movesolver.cpp
     ai_movesolver.h
     ai_movetypes.h
-    ai_namespaces.cpp
     ai_namespaces.h
     ai_navgoaltype.h
-    ai_navigator.cpp
     ai_navigator.h
     ai_navtype.h
-    ai_network.cpp
     ai_network.h
-    ai_networkmanager.cpp
     ai_networkmanager.h
-    ai_node.cpp
     ai_node.h
     ai_npcstate.h
     ai_obstacle_type.h
-    ai_pathfinder.cpp
     ai_pathfinder.h
-    ai_planesolver.cpp
     ai_planesolver.h
-    ai_playerally.cpp
     ai_playerally.h
-    ai_route.cpp
     ai_route.h
     ai_routedist.h
-    ai_saverestore.cpp
     ai_saverestore.h
-    ai_schedule.cpp
     ai_schedule.h
-    ai_scriptconditions.cpp
     ai_scriptconditions.h
-    ai_senses.cpp
     ai_senses.h
-    ai_sentence.cpp
     ai_sentence.h
-    ai_speech.cpp
     ai_speech.h
-    ai_speechfilter.cpp
     ai_speechfilter.h
-    ai_squad.cpp
     ai_squad.h
-    ai_squadslot.cpp
     ai_squadslot.h
-    ai_tacticalservices.cpp
     ai_tacticalservices.h
-    ai_task.cpp
     ai_task.h
-    ai_trackpather.cpp
     ai_trackpather.h
-    ai_utils.cpp
     ai_utils.h
-    ai_waypoint.cpp
     ai_waypoint.h
-    base_transmit_proxy.cpp
-    baseanimating.cpp
     baseanimating.h
-    basecombatcharacter.cpp
     basecombatcharacter.h
-    basecombatweapon.cpp
     basecombatweapon.h
-    baseentity.cpp
     baseentity.h
-    baseflex.cpp
     baseflex.h
-    basemultiplayerplayer.cpp
     basemultiplayerplayer.h
     basetoggle.h
-    baseviewmodel.cpp
     baseviewmodel.h
-    bitstring.cpp
     bitstring.h
-    bmodels.cpp
-    buttons.cpp
     buttons.h
-    cbase.cpp
     cbase.h
-    client.cpp
     client.h
-    colorcorrection.cpp
-    colorcorrectionvolume.cpp
-    controlentities.cpp
-    cplane.cpp
-    damagemodifier.cpp
-    doors.cpp
     doors.h
-    dynamiclight.cpp
-    effects.cpp
     effects.h
     enginecallback.h
     entityapi.h
-    entityblocker.cpp
     entityblocker.h
     entityinput.h
-    entitylist.cpp
     entitylist.h
     entityoutput.h
-    env_debughistory.cpp
     env_debughistory.h
-    env_effectsscript.cpp
-    env_entity_maker.cpp
-    env_particlescript.cpp
-    env_player_surface_trigger.cpp
     env_player_surface_trigger.h
-    env_projectedtexture.cpp
-    env_screenoverlay.cpp
-    env_texturetoggle.cpp
-    env_tonemap_controller.cpp
-    env_zoom.cpp
     env_zoom.h
-    envmicrophone.cpp
     envmicrophone.h
     envspark.h
     event_tempentity_tester.h
     eventqueue.h
-    explode.cpp
     explode.h
-    filters.cpp
     filters.h
-    fire.cpp
     fire.h
-    fire_smoke.cpp
     fire_smoke.h
-    fish.cpp
     fish.h
-    fogcontroller.cpp
-    fourwheelvehiclephysics.cpp
     fourwheelvehiclephysics.h
-    func_areaportal.cpp
-    func_areaportalbase.cpp
     func_areaportalbase.h
-    func_areaportalwindow.cpp
     func_areaportalwindow.h
-    func_break.cpp
     func_break.h
-    func_breakablesurf.cpp
     func_breakablesurf.h
-    func_dust.cpp
-    func_ladder_endpoint.cpp
-    func_lod.cpp
-    func_movelinear.cpp
     func_movelinear.h
-    func_occluder.cpp
-    func_reflective_glass.cpp
-    func_smokevolume.cpp
-    game.cpp
     game.h
-    game_ui.cpp
-    gameinterface.cpp
     gameinterface.h
-    gametrace_dll.cpp
-    gameweaponmanager.cpp
     gameweaponmanager.h
-    genericactor.cpp
-    genericmonster.cpp
-    gib.cpp
     gib.h
-    globals.cpp
-    globalstate.cpp
     globalstate.h
     globalstate_private.h
-    guntarget.cpp
-    h_ai.cpp
-    hierarchy.cpp
     hierarchy.h
-    hltvdirector.cpp
     hltvdirector.h
-    info_camera_link.cpp
     info_camera_link.h
-    info_overlay_accessor.cpp
     init_factory.h
-    intermission.cpp
     iservervehicle.h
-    item_world.cpp
-    items.h
-    lightglow.cpp
-    lights.cpp
     lights.h
     locksounds.h
-    logic_achievement.cpp
-    logic_eventlistener.cpp
     logic_eventlistener.h
-    logic_measure_movement.cpp
-    logic_navigation.cpp
-    logicauto.cpp
-    logicentities.cpp
-    logicrelay.cpp
-    mapentities.cpp
-    maprules.cpp
     maprules.h
-    message_entity.cpp
-    modelentities.cpp
-    movehelper_server.cpp
     movehelper_server.h
-    movement.cpp
     movie_explosion.h
-    ndebugoverlay.cpp
     ndebugoverlay.h
     networkstringtable_gamedll.h
-    npc_vehicledriver.cpp
     particle_fire.h
-    particle_light.cpp
     particle_light.h
     particle_smokegrenade.h
-    particle_system.cpp
-    pathcorner.cpp
-    pathtrack.cpp
     pathtrack.h
-    phys_controller.cpp
     phys_controller.h
-    physconstraint.cpp
     physconstraint.h
-    physics.cpp
     physics.h
-    physics_bone_follower.cpp
-    physics_cannister.cpp
     physics_collisionevent.h
-    physics_fx.cpp
-    physics_impact_damage.cpp
-    physics_main.cpp
-    physics_npc_solver.cpp
     physics_npc_solver.h
-    physics_prop_ragdoll.cpp
     physics_prop_ragdoll.h
-    physobj.cpp
     physobj.h
-    player.cpp
     player.h
-    player_command.cpp
     player_command.h
-    player_lagcompensation.cpp
-    player_pickup.cpp
     player_pickup.h
-    player_resource.cpp
     player_resource.h
-    playerinfomanager.cpp
-    playerlocaldata.cpp
     playerlocaldata.h
-    plugin_check.cpp
-    point_camera.cpp
     point_camera.h
-    point_devshot_camera.cpp
-    point_playermoveconstraint.cpp
-    point_spotlight.cpp
-    point_template.cpp
     point_template.h
-    point_worldtext.cpp
     point_worldtext.h
-    pointanglesensor.cpp
-    pointhurt.cpp
-    pointteleport.cpp
-    props.cpp
     props.h
     pushentity.h
-    ragdoll_manager.cpp
-    recipientfilter.cpp
     recipientfilter.h
-    rope.cpp
     rope.h
-    saverestore_gamedll.cpp
-    sceneentity.cpp
     sceneentity.h
-    scratchpad_gamedll_helpers.cpp
-    scripted.cpp
     scripted.h
-    scriptedtarget.cpp
     scriptedtarget.h
-    sendproxy.cpp
-    shadowcontrol.cpp
-    skyboxswapper.cpp
-    slideshow_display.cpp
-    sound.cpp
-    soundent.cpp
     soundent.h
-    soundscape.cpp
     soundscape.h
-    soundscape_system.cpp
     spark.h
-    spotlightend.cpp
     spotlightend.h
-    sprite_perfmonitor.cpp
-    subs.cpp
-    sun.cpp
-    tactical_mission.cpp
     tactical_mission.h
-    tanktrain.cpp
-    team.cpp
     team.h
-    tempmonster.cpp
-    tesla.cpp
-    test_proxytoggle.cpp
-    test_stressentities.cpp
-    testfunctions.cpp
-    testtraceline.cpp
-    textstatsmgr.cpp
-    timedeventmgr.cpp
-    trains.cpp
     trains.h
-    triggers.cpp
     triggers.h
-    util.cpp
     util.h
-    variant_t.cpp
-    vehicle_base.cpp
-    vehicle_baseserver.cpp
     vehicle_sounds.h
-    vguiscreen.cpp
     vguiscreen.h
-    waterbullet.cpp
     waterbullet.h
-    wcedit.cpp
     wcedit.h
-    weight_button.cpp
-    world.cpp
     world.h
+)
+
+set_source_files_properties(gameinterface.cpp PROPERTIES
+    COMPILE_OPTIONS "-D_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX};-D_EXTERNAL_DLL_EXT=${SRV_SUFFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}"
 )
 
 if(OS_LINUX)
@@ -787,10 +843,7 @@ if(OS_WINDOWS)
     )
 endif()
 
-target_sources_grouped(
-    TARGET server
-    NAME "Temporary Entities"
-    FILES
+set(UNITY_SOURCE_TEMPORARY_ENTITIES
     ${CMAKE_SOURCE_DIR}/game/shared/SpriteTrail.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/usermessages.cpp
     basetempentity.cpp
@@ -800,18 +853,12 @@ target_sources_grouped(
     particle_fire.cpp
     particle_smokegrenade.cpp
     plasma.cpp
-    plasma.h
     smoke_trail.cpp
-    smoke_trail.h
     smokestack.cpp
-    smokestack.h
     steamjet.cpp
-    steamjet.h
     te.cpp
-    te.h
     te_armorricochet.cpp
     te_basebeam.cpp
-    te_basebeam.h
     te_beamentpoint.cpp
     te_beaments.cpp
     te_beamfollow.cpp
@@ -841,7 +888,6 @@ target_sources_grouped(
     te_largefunnel.cpp
     te_muzzleflash.cpp
     te_particlesystem.cpp
-    te_particlesystem.h
     te_physicsprop.cpp
     te_playerdecal.cpp
     te_projecteddecal.cpp
@@ -851,6 +897,25 @@ target_sources_grouped(
     te_sprite.cpp
     te_spritespray.cpp
     te_worlddecal.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_TEMPORARY_ENTITIES}
+    PROPERTIES UNITY_GROUP temporary_entities_server
+)
+
+target_sources_grouped(
+    TARGET server
+    NAME "Temporary Entities"
+    FILES
+    plasma.h
+    smoke_trail.h
+    smokestack.h
+    steamjet.h
+    te.h
+    te_basebeam.h
+    te_particlesystem.h
+    ${UNITY_SOURCE_TEMPORARY_ENTITIES}
 )
 
 target_sources_grouped(
@@ -1082,533 +1147,552 @@ target_sources_grouped(
     toolframework_server.h
 )
 
+set(UNITY_SOURCE_NAVIGATION_MESH
+    nav_area.cpp
+    nav_colors.cpp
+    nav_edit.cpp
+    nav_entities.cpp
+    nav_file.cpp
+    nav_generate.cpp
+    nav_ladder.cpp
+    nav_merge.cpp
+    nav_mesh.cpp
+    nav_mesh_factory.cpp
+    nav_node.cpp
+    nav_simplify.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NAVIGATION_MESH}
+    PROPERTIES UNITY_GROUP navigation_mesh_server
+)
+
 target_sources_grouped(
     TARGET server
     NAME "Source Files\\Navigation Mesh"
     FILES
     nav.h
-    nav_area.cpp
     nav_area.h
-    nav_colors.cpp
     nav_colors.h
-    nav_edit.cpp
-    nav_entities.cpp
     nav_entities.h
-    nav_file.cpp
-    nav_generate.cpp
-    nav_ladder.cpp
     nav_ladder.h
-    nav_merge.cpp
-    nav_mesh.cpp
     nav_mesh.h
-    nav_mesh_factory.cpp
-    nav_node.cpp
     nav_node.h
     nav_pathfind.h
-    nav_simplify.cpp
+    ${UNITY_SOURCE_NAVIGATION_MESH}
 )
 
-target_sources_grouped(
-    TARGET server
-    NAME "Source Files"
-    FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/survival_gamerules.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.h
-    ${CMAKE_SOURCE_DIR}/game/shared/ragdoll_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/solidsetdefaults.h
-    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.h
-    ${CMAKE_SOURCE_DIR}/game/shared/teamplayroundbased_gamerules.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/touchlink.h
-    EntityFlame.h
-    ai_relationship.cpp
-    basegrenade_concussion.cpp
-    basegrenade_contact.cpp
-    basegrenade_timed.cpp
-    grenadethrown.cpp
-    grenadethrown.h
-    h_cycler.cpp
-    h_cycler.h
-    hl2/Func_Monitor.cpp
-    monstermaker.cpp
-    monstermaker.h
-    physics_bone_follower.h
-    team_control_point.cpp
-    team_control_point.h
-    team_control_point_master.cpp
-    team_control_point_master.h
-    team_control_point_round.cpp
-    team_control_point_round.h
-    team_objectiveresource.cpp
-    team_objectiveresource.h
-    team_spawnpoint.cpp
-    team_spawnpoint.h
-    team_train_watcher.cpp
-    team_train_watcher.h
-    trigger_area_capture.cpp
-    trigger_area_capture.h
-)
-
-target_sources_grouped(
-    TARGET server
-    NAME "HL2 DLL"
-    FILES
+set(UNITY_SOURCE_HL2DLL
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/basehlcombatweapon_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/basehlcombatweapon_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/citadel_effects_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_alyxemp_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_headcrabcanister_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_headcrabcanister_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_gamerules.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_player_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_shareddefs.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_usermessages.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_movedata.h
     ${CMAKE_SOURCE_DIR}/game/shared/script_intro_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/vscript_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/vscript_shared.h
-    ${CMAKE_SOURCE_DIR}/game/server/vscript_server.cpp
-    ${CMAKE_SOURCE_DIR}/game/server/vscript_server.h
     ${CMAKE_SOURCE_DIR}/game/server/netpropmanager.cpp
-    ${CMAKE_SOURCE_DIR}/game/server/netpropmanager.h
     basebludgeonweapon.cpp
-    basebludgeonweapon.h
     hl2/ai_allymanager.cpp
     hl2/ai_behavior_actbusy.cpp
-    hl2/ai_behavior_actbusy.h
     hl2/ai_behavior_functank.cpp
-    hl2/ai_behavior_functank.h
     hl2/ai_behavior_holster.cpp
-    hl2/ai_behavior_holster.h
     hl2/ai_behavior_police.cpp
-    hl2/ai_behavior_police.h
     hl2/ai_goal_police.cpp
-    hl2/ai_goal_police.h
-    hl2/ai_interactions.h
     hl2/ai_spotlight.cpp
-    hl2/ai_spotlight.h
     hl2/antlion_dust.cpp
-    hl2/antlion_dust.h
     hl2/antlion_maker.cpp
-    hl2/antlion_maker.h
     hl2/ar2_explosion.cpp
-    hl2/ar2_explosion.h
     hl2/basehlcombatweapon.cpp
-    hl2/basehlcombatweapon.h
     hl2/cbasehelicopter.cpp
-    hl2/cbasehelicopter.h
     hl2/cbasespriteprojectile.cpp
-    hl2/cbasespriteprojectile.h
     hl2/citadel_effects.cpp
     hl2/combine_mine.cpp
-    hl2/combine_mine.h
-    hl2/energy_wave.h
     hl2/env_alyxemp.cpp
     hl2/env_headcrabcanister.cpp
     hl2/env_speaker.cpp
     hl2/env_starfield.cpp
     hl2/func_recharge.cpp
     hl2/func_tank.cpp
-    hl2/func_tank.h
     hl2/grenade_ar2.cpp
-    hl2/grenade_ar2.h
     hl2/grenade_bugbait.cpp
-    hl2/grenade_bugbait.h
     hl2/grenade_frag.cpp
-    hl2/grenade_frag.h
     hl2/hl2_ai_network.cpp
     hl2/hl2_eventlog.cpp
-    hl2/hl2_player.cpp
-    hl2/hl2_player.h
-    hl2/hl2_playerlocaldata.cpp
-    hl2/hl2_playerlocaldata.h
     hl2/hl2_triggers.cpp
     hl2/hl_playermove.cpp
     hl2/info_teleporter_countdown.cpp
     hl2/item_ammo.cpp
     hl2/item_battery.cpp
     hl2/item_dynamic_resupply.cpp
-    hl2/item_dynamic_resupply.h
     hl2/item_healthkit.cpp
     hl2/item_itemcrate.cpp
     hl2/item_suit.cpp
     hl2/look_door.cpp
     hl2/monster_dummy.cpp
     hl2/npc_BaseZombie.cpp
-    hl2/npc_BaseZombie.h
     hl2/npc_PoisonZombie.cpp
     hl2/npc_alyx.cpp
-    hl2/npc_alyx.h
     hl2/npc_antlion.cpp
-    hl2/npc_antlion.h
     hl2/npc_antlionguard.cpp
     hl2/npc_apcdriver.cpp
     hl2/npc_attackchopper.cpp
-    hl2/npc_attackchopper.h
     hl2/npc_barnacle.cpp
-    hl2/npc_barnacle.h
     hl2/npc_barney.cpp
     hl2/npc_basescanner.cpp
-    hl2/npc_basescanner.h
     hl2/npc_breen.cpp
     hl2/npc_bullseye.cpp
-    hl2/npc_bullseye.h
     #hl2/npc_citizen17.cpp
-    #hl2/npc_citizen17.h
     hl2/npc_combine.cpp
-    hl2/npc_combine.h
     hl2/npc_combinecamera.cpp
     hl2/npc_combinedropship.cpp
     hl2/npc_combinegunship.cpp
     hl2/npc_combines.cpp
-    hl2/npc_combines.h
     hl2/npc_cranedriver.cpp
     hl2/npc_crow.cpp
-    hl2/npc_crow.h
     hl2/npc_dog.cpp
     hl2/npc_eli.cpp
     hl2/npc_enemyfinder.cpp
     hl2/npc_fisherman.cpp
     hl2/npc_gman.cpp
     hl2/npc_headcrab.cpp
-    hl2/npc_headcrab.h
     hl2/npc_ichthyosaur.cpp
     hl2/npc_kleiner.cpp
     hl2/npc_launcher.cpp
     hl2/npc_manhack.cpp
-    hl2/npc_manhack.h
     hl2/npc_metropolice.cpp
-    hl2/npc_metropolice.h
     hl2/npc_monk.cpp
     hl2/npc_mossman.cpp
     hl2/npc_playercompanion.cpp
-    hl2/npc_playercompanion.h
     hl2/npc_rollermine.cpp
-    hl2/npc_rollermine.h
     hl2/npc_scanner.cpp
     hl2/npc_stalker.cpp
-    hl2/npc_stalker.h
     hl2/npc_strider.cpp
-    hl2/npc_strider.h
-    hl2/npc_turret_ceiling.cpp
     hl2/npc_turret_floor.cpp
     hl2/npc_turret_ground.cpp
     hl2/npc_vortigaunt_episodic.cpp
-    hl2/npc_vortigaunt_episodic.h
     hl2/npc_zombie.cpp
     hl2/point_apc_controller.cpp
     hl2/prop_combine_ball.cpp
-    hl2/prop_combine_ball.h
     hl2/prop_thumper.cpp
     hl2/proto_sniper.cpp
     hl2/rotorwash.cpp
-    hl2/rotorwash.h
     hl2/script_intro.cpp
-    hl2/script_intro.h
     hl2/vehicle_airboat.cpp
-    hl2/vehicle_apc.h
     hl2/vehicle_crane.cpp
-    hl2/vehicle_crane.h
     hl2/vehicle_prisoner_pod.cpp
     hl2/vehicle_viewcontroller.cpp
-    hl2/weapon_alyxgun.h
     #hl2/weapon_annabelle.cpp
     hl2/weapon_bugbait.cpp
-    #hl2/weapon_crowbar.h
     npc_talker.cpp
-    npc_talker.h
     weapon_cubemap.cpp
+
+    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.h
+    ${CMAKE_SOURCE_DIR}/game/shared/ragdoll_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/solidsetdefaults.h
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.h
+    ${CMAKE_SOURCE_DIR}/game/shared/touchlink.h
+    EntityFlame.h
+    grenadethrown.h
+    h_cycler.h
+    monstermaker.h
+    physics_bone_follower.h
+    team_control_point.h
+    team_control_point_master.h
+    team_control_point_round.h
+    team_objectiveresource.h
+    team_spawnpoint.h
+    team_train_watcher.h
+    trigger_area_capture.h
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_HL2DLL}
+    PROPERTIES UNITY_GROUP hl2dll_server
+)
+
+target_sources_grouped(
+    TARGET server
+    NAME "HL2 DLL"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/vscript_server.cpp
+    hl2/npc_turret_ceiling.cpp
+    hl2/hl2_player.cpp
+    hl2/hl2_playerlocaldata.cpp
+    ${UNITY_SOURCE_HL2DLL}
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/basehlcombatweapon_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/citadel_effects_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_alyxemp_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_headcrabcanister_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_player_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_shareddefs.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_movedata.h
+    ${CMAKE_SOURCE_DIR}/game/shared/vscript_shared.h
+    ${CMAKE_SOURCE_DIR}/game/server/vscript_server.h
+    ${CMAKE_SOURCE_DIR}/game/server/netpropmanager.h
+    basebludgeonweapon.h
+    hl2/ai_behavior_actbusy.h
+    hl2/ai_behavior_functank.h
+    hl2/ai_behavior_holster.h
+    hl2/ai_behavior_police.h
+    hl2/ai_goal_police.h
+    hl2/ai_interactions.h
+    hl2/ai_spotlight.h
+    hl2/antlion_dust.h
+    hl2/antlion_maker.h
+    hl2/ar2_explosion.h
+    hl2/basehlcombatweapon.h
+    hl2/cbasehelicopter.h
+    hl2/cbasespriteprojectile.h
+    hl2/combine_mine.h
+    hl2/energy_wave.h
+    hl2/func_tank.h
+    hl2/grenade_ar2.h
+    hl2/grenade_bugbait.h
+    hl2/grenade_frag.h
+    hl2/hl2_player.h
+    hl2/hl2_playerlocaldata.h
+    hl2/item_dynamic_resupply.h
+    hl2/npc_BaseZombie.h
+    hl2/npc_alyx.h
+    hl2/npc_antlion.h
+    hl2/npc_attackchopper.h
+    hl2/npc_barnacle.h
+    hl2/npc_basescanner.h
+    hl2/npc_bullseye.h
+    #hl2/npc_citizen17.h
+    hl2/npc_combine.h
+    hl2/npc_combines.h
+    hl2/npc_crow.h
+    hl2/npc_headcrab.h
+    hl2/npc_manhack.h
+    hl2/npc_metropolice.h
+    hl2/npc_playercompanion.h
+    hl2/npc_rollermine.h
+    hl2/npc_stalker.h
+    hl2/npc_strider.h
+    hl2/npc_vortigaunt_episodic.h
+    hl2/prop_combine_ball.h
+    hl2/rotorwash.h
+    hl2/script_intro.h
+    hl2/vehicle_apc.h
+    hl2/vehicle_crane.h
+    hl2/weapon_alyxgun.h
+    #hl2/weapon_crowbar.h
+    npc_talker.h
+)
+
+set(UNITY_SOURCE_UNUSED
+    hl2/grenade_beam.cpp
+    hl2/grenade_homer.cpp
+    hl2/grenade_pathfollower.cpp
+    hl2/npc_missiledefense.cpp
+    hl2/vehicle_apc.cpp
+    hl2/weapon_cguard.cpp
+    hl2/weapon_flaregun.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_UNUSED}
+    PROPERTIES UNITY_GROUP unused_server
 )
 
 target_sources_grouped(
     TARGET server
     NAME "Unused"
     FILES
-    hl2/grenade_beam.cpp
     hl2/grenade_beam.h
-    hl2/grenade_homer.cpp
     hl2/grenade_homer.h
-    hl2/grenade_pathfollower.cpp
     hl2/grenade_pathfollower.h
-    hl2/npc_missiledefense.cpp
-    hl2/vehicle_apc.cpp
-    hl2/weapon_cguard.cpp
-    hl2/weapon_flaregun.cpp
     hl2/weapon_flaregun.h
+    ${UNITY_SOURCE_UNUSED}
+)
+
+set(UNITY_SOURCE_NEO_SHARED
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.cpp
+)
+
+set(UNITY_SOURCE_NEO_SRC_SERVER
+    neo/neo_bloom_controller.cpp
+    neo/neo_client.cpp
+    neo/neo_detpack.cpp
+    neo/neo_game_config.cpp
+    neo/neo_ghost_boundary.cpp
+    neo/neo_ghost_spawn_point.cpp
+    neo/neo_grenade.cpp
+    neo/neo_message.cpp
+    neo/neo_model_manager.cpp
+    neo/neo_npc_dummy.cpp
+    neo/neo_npc_targetsystem.cpp
+    neo/neo_player.cpp
+    neo/neo_smokelineofsightblocker.cpp
+    neo/neo_spawn_manager.cpp
+    neo/neo_smokegrenade.cpp
+    neo/neo_te_tocflash.cpp
+    neo/neo_typeconverter.cpp
+    neo/neo_dm_spawn.cpp
+    neo/neo_gamerules_restore.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_SHARED}
+    PROPERTIES UNITY_GROUP neo_shared_server
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_SRC_SERVER}
+    PROPERTIES UNITY_GROUP neo_src_server
 )
 
 target_sources_grouped(
     TARGET server
     NAME "NEO"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_worldpos_marker.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_crosshair.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.h
-    neo/neo_bloom_controller.cpp
-    neo/neo_client.cpp
-    neo/neo_detpack.cpp
+    ${UNITY_SOURCE_NEO_SHARED}
     neo/neo_detpack.h
-    neo/neo_game_config.cpp
     neo/neo_game_config.h
-    neo/neo_ghost_boundary.cpp
     neo/neo_ghost_boundary.h
-    neo/neo_ghost_spawn_point.cpp
     neo/neo_ghost_spawn_point.h
-    neo/neo_grenade.cpp
     neo/neo_grenade.h
-    neo/neo_message.cpp
     neo/neo_message.h
-    neo/neo_model_manager.cpp
     neo/neo_model_manager.h
-    neo/neo_npc_dummy.cpp
     neo/neo_npc_dummy.h
-    neo/neo_npc_targetsystem.cpp
     neo/neo_npc_targetsystem.h
-    neo/neo_player.cpp
     neo/neo_player.h
-    neo/neo_smokelineofsightblocker.cpp
     neo/neo_smokelineofsightblocker.h
-    neo/neo_spawn_manager.cpp
     neo/neo_spawn_manager.h
-    neo/neo_smokegrenade.cpp
     neo/neo_smokegrenade.h
-    neo/neo_te_tocflash.cpp
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
-    neo/neo_typeconverter.cpp
+    neo/neo_dm_spawn.h
+    neo/neo_gamerules_restore.h
+    ${UNITY_SOURCE_NEO_SRC_SERVER}
+)
+
+set(UNITY_SOURCE_NEO_BOT
+    neo/bot/neo_bot.cpp
+    neo/bot/neo_bot_path_compute.cpp
+    neo/bot/neo_bot_path_cost.cpp
+    neo/bot/neo_bot_path_reservation.cpp
+    neo/bot/neo_bot_body.cpp
+    neo/bot/neo_bot_locomotion.cpp
+    neo/bot/neo_bot_manager.cpp
+    neo/bot/neo_bot_profile.cpp
+    neo/bot/neo_bot_squad.cpp
+    neo/bot/neo_bot_vision.cpp
+    neo/bot/behavior/neo_bot_approach_object.cpp
+    neo/bot/behavior/neo_bot_attack.cpp
+    neo/bot/behavior/neo_bot_behavior.cpp
+    neo/bot/behavior/neo_bot_command_follow.cpp
+    neo/bot/behavior/neo_bot_ctg_capture.cpp
+    neo/bot/behavior/neo_bot_ctg_carrier.cpp
+    neo/bot/behavior/neo_bot_ctg_enemy.cpp
+    neo/bot/behavior/neo_bot_ctg_escort.cpp
+    neo/bot/behavior/neo_bot_ctg_lone_wolf.cpp
+    neo/bot/behavior/neo_bot_ctg_seek.cpp
+    neo/bot/behavior/neo_bot_dead.cpp
+    neo/bot/behavior/neo_bot_grenade_dispatch.cpp
+    neo/bot/behavior/neo_bot_grenade_throw.cpp
+    neo/bot/behavior/neo_bot_grenade_throw_frag.cpp
+    neo/bot/behavior/neo_bot_grenade_throw_smoke.cpp
+    neo/bot/behavior/neo_bot_jgr_capture.cpp
+    neo/bot/behavior/neo_bot_jgr_enemy.cpp
+    neo/bot/behavior/neo_bot_jgr_escort.cpp
+    neo/bot/behavior/neo_bot_jgr_juggernaut.cpp
+    neo/bot/behavior/neo_bot_jgr_seek.cpp
+    neo/bot/behavior/neo_bot_ladder_approach.cpp
+    neo/bot/behavior/neo_bot_ladder_climb.cpp
+    neo/bot/behavior/neo_bot_melee_attack.cpp
+    neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
+    neo/bot/behavior/neo_bot_path_clear_breakable.cpp
+    neo/bot/behavior/neo_bot_pause.cpp
+    neo/bot/behavior/neo_bot_retreat_to_cover.cpp
+    neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
+    neo/bot/behavior/neo_bot_scenario_monitor.cpp
+    neo/bot/behavior/neo_bot_seek_and_destroy.cpp
+    neo/bot/behavior/neo_bot_seek_weapon.cpp
+    neo/bot/behavior/neo_bot_tactical_monitor.cpp
+    neo/bot/behavior/neo_bot_throw_weapon_at_player.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_move_to.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_wait.cpp
+    neo/bot/map_entities/neo_bot_generator.cpp
+    neo/bot/map_entities/neo_bot_proxy.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_BOT}
+    PROPERTIES UNITY_GROUP neo_bot_server
 )
 
 target_sources_grouped(
     TARGET server
     NAME "NEO\\Bot"
     FILES
-    neo/bot/neo_bot.cpp
     neo/bot/neo_bot.h
-    neo/bot/neo_bot_path_compute.cpp
     neo/bot/neo_bot_path_compute.h
-    neo/bot/neo_bot_path_cost.cpp
     neo/bot/neo_bot_path_cost.h
-    neo/bot/neo_bot_path_reservation.cpp
     neo/bot/neo_bot_path_reservation.h
-    neo/bot/neo_bot_body.cpp
     neo/bot/neo_bot_body.h
     neo/bot/neo_bot_contextual_query_interface.h
-    neo/bot/neo_bot_locomotion.cpp
     neo/bot/neo_bot_locomotion.h
-    neo/bot/neo_bot_manager.cpp
     neo/bot/neo_bot_manager.h
-    neo/bot/neo_bot_profile.cpp
     neo/bot/neo_bot_profile.h
-    neo/bot/neo_bot_squad.cpp
     neo/bot/neo_bot_squad.h
-    neo/bot/neo_bot_vision.cpp
     neo/bot/neo_bot_vision.h
-    neo/bot/behavior/neo_bot_approach_object.cpp
     neo/bot/behavior/neo_bot_approach_object.h
-    neo/bot/behavior/neo_bot_attack.cpp
     neo/bot/behavior/neo_bot_attack.h
-    neo/bot/behavior/neo_bot_behavior.cpp
     neo/bot/behavior/neo_bot_behavior.h
-    neo/bot/behavior/neo_bot_command_follow.cpp
     neo/bot/behavior/neo_bot_command_follow.h
-    neo/bot/behavior/neo_bot_ctg_capture.cpp
     neo/bot/behavior/neo_bot_ctg_capture.h
-    neo/bot/behavior/neo_bot_ctg_carrier.cpp
     neo/bot/behavior/neo_bot_ctg_carrier.h
-    neo/bot/behavior/neo_bot_ctg_enemy.cpp
     neo/bot/behavior/neo_bot_ctg_enemy.h
-    neo/bot/behavior/neo_bot_ctg_escort.cpp
     neo/bot/behavior/neo_bot_ctg_escort.h
-    neo/bot/behavior/neo_bot_ctg_lone_wolf.cpp
     neo/bot/behavior/neo_bot_ctg_lone_wolf.h
-    neo/bot/behavior/neo_bot_ctg_seek.cpp
     neo/bot/behavior/neo_bot_ctg_seek.h
-    neo/bot/behavior/neo_bot_dead.cpp
     neo/bot/behavior/neo_bot_dead.h
-    neo/bot/behavior/neo_bot_grenade_dispatch.cpp
     neo/bot/behavior/neo_bot_grenade_dispatch.h
-    neo/bot/behavior/neo_bot_grenade_throw.cpp
     neo/bot/behavior/neo_bot_grenade_throw.h
-    neo/bot/behavior/neo_bot_grenade_throw_frag.cpp
     neo/bot/behavior/neo_bot_grenade_throw_frag.h
-    neo/bot/behavior/neo_bot_grenade_throw_smoke.cpp
     neo/bot/behavior/neo_bot_grenade_throw_smoke.h
-    neo/bot/behavior/neo_bot_jgr_capture.cpp
     neo/bot/behavior/neo_bot_jgr_capture.h
-    neo/bot/behavior/neo_bot_jgr_enemy.cpp
     neo/bot/behavior/neo_bot_jgr_enemy.h
-    neo/bot/behavior/neo_bot_jgr_escort.cpp
     neo/bot/behavior/neo_bot_jgr_escort.h
-    neo/bot/behavior/neo_bot_jgr_juggernaut.cpp
     neo/bot/behavior/neo_bot_jgr_juggernaut.h
-    neo/bot/behavior/neo_bot_jgr_seek.cpp
     neo/bot/behavior/neo_bot_jgr_seek.h
-    neo/bot/behavior/neo_bot_ladder_approach.cpp
     neo/bot/behavior/neo_bot_ladder_approach.h
-    neo/bot/behavior/neo_bot_ladder_climb.cpp
     neo/bot/behavior/neo_bot_ladder_climb.h
-    neo/bot/behavior/neo_bot_melee_attack.cpp
     neo/bot/behavior/neo_bot_melee_attack.h
-    neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
     neo/bot/behavior/neo_bot_move_to_vantage_point.h
-    neo/bot/behavior/neo_bot_path_clear_breakable.cpp
     neo/bot/behavior/neo_bot_path_clear_breakable.h
-    neo/bot/behavior/neo_bot_pause.cpp
     neo/bot/behavior/neo_bot_pause.h
-    neo/bot/behavior/neo_bot_retreat_to_cover.cpp
     neo/bot/behavior/neo_bot_retreat_to_cover.h
-    neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
     neo/bot/behavior/neo_bot_retreat_from_grenade.h
-    neo/bot/behavior/neo_bot_scenario_monitor.cpp
     neo/bot/behavior/neo_bot_scenario_monitor.h
-    neo/bot/behavior/neo_bot_seek_and_destroy.cpp
     neo/bot/behavior/neo_bot_seek_and_destroy.h
-    neo/bot/behavior/neo_bot_seek_weapon.cpp
     neo/bot/behavior/neo_bot_seek_weapon.h
-    neo/bot/behavior/neo_bot_tactical_monitor.cpp
     neo/bot/behavior/neo_bot_tactical_monitor.h
-    neo/bot/behavior/neo_bot_throw_weapon_at_player.cpp
     neo/bot/behavior/neo_bot_throw_weapon_at_player.h
-    neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.cpp
     neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h
-    neo/bot/behavior/nav_entities/neo_bot_nav_ent_move_to.cpp
     neo/bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h
-    neo/bot/behavior/nav_entities/neo_bot_nav_ent_wait.cpp
     neo/bot/behavior/nav_entities/neo_bot_nav_ent_wait.h
-    neo/bot/map_entities/neo_bot_generator.cpp
     neo/bot/map_entities/neo_bot_generator.h
-    neo/bot/map_entities/neo_bot_proxy.cpp
     neo/bot/map_entities/neo_bot_proxy.h
+    ${UNITY_SOURCE_NEO_BOT}
 )
 
-target_sources_grouped(
-    TARGET server
-    NAME "NEO\\Gamerules"
-    FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_atk.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_atk.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_ctg.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_ctg.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_dm.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_dm.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_emt.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_emt.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_jgr.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_jgr.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tdm.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tdm.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tut.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tut.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_vip.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_vip.h
+set(UNITY_SOURCE_NEO_WEAPONS
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_knife.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_kyla.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41l.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41s.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_milso.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpn.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smokegrenade.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srm.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srms.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srs.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_supa7.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_tachi.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68c.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_WEAPONS}
+    PROPERTIES UNITY_GROUP neo_weapons_server
 )
 
 target_sources_grouped(
     TARGET server
     NAME "NEO\\Weapons"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_knife.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_knife.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_kyla.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_kyla.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41l.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41l.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41s.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41s.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_milso.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_milso.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpn.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpn.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smokegrenade.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smokegrenade.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srm.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srm.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srms.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srms.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srs.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srs.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_supa7.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_supa7.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_tachi.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_tachi.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68c.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68c.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_types.h
+    ${UNITY_SOURCE_NEO_WEAPONS}
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.cpp
 )
 
 if(NEO_BUILD_WEAPON_PBK56S)
@@ -1621,6 +1705,39 @@ if(NEO_BUILD_WEAPON_PBK56S)
     )
 endif()
 
+set(UNITY_SOURCE_NEO_GAMERULES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_atk.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_ctg.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_dm.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_emt.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_jgr.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tdm.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tut.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_vip.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEO_GAMERULES}
+    PROPERTIES UNITY_GROUP neo_gamerules_server
+)
+
+target_sources_grouped(
+    TARGET server
+    NAME "NEO\\Gamerules"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_atk.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_ctg.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_dm.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_emt.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_jgr.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tdm.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_tut.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/gamerules/neo_gamerules_vip.h
+    ${UNITY_SOURCE_NEO_GAMERULES}
+)
+
 target_sources_grouped(
     TARGET server
     NAME "Source Files\\Shared\\Multiplayer"
@@ -1629,107 +1746,136 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.h
 )
 
+set(UNITY_SOURCE_HL2MP
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
+    hl2mp/hl2mp_client.cpp
+    hl2mp/hl2mp_cvars.cpp
+    hl2mp/hl2mp_gameinterface.cpp
+    hl2mp/hl2mp_player.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_HL2MP}
+    PROPERTIES UNITY_GROUP hl2mp_server
+)
+
 target_sources_grouped(
     TARGET server
     NAME "HL2MP"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
-    hl2mp/hl2mp_client.cpp
-    hl2mp/hl2mp_cvars.cpp
-    hl2mp/hl2mp_gameinterface.cpp
     hl2mp/hl2mp_gameinterface.h
-    hl2mp/hl2mp_player.cpp
     hl2mp/hl2mp_player.h
+    ${UNITY_SOURCE_HL2MP}
 )
-target_sources_grouped(
-    TARGET server
-    NAME "HL2MP\\Weapons"
-    FILES
+
+set(UNITY_SOURCE_HL2MP_WEAPONS
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_357.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.cpp
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.h
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crossbow.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crowbar.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasebasebludgeon.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasehlmpcombatweapon.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasehlmpcombatweapon.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_physcannon.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_physcannon.h
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_pistol.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_rpg.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_rpg.h
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_shotgun.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_slam.cpp
-    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_slam.h
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_smg1.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_stunstick.cpp
     hl2mp/grenade_satchel.cpp
-    hl2mp/grenade_satchel.h
     hl2mp/grenade_tripmine.cpp
-    hl2mp/grenade_tripmine.h
     hl2mp/te_hl2mp_shotgun_shot.cpp
-    hl2mp/te_hl2mp_shotgun_shot.h
 )
+
+set_source_files_properties(
+    ${UNITY_SOURCE_HL2MP_WEAPONS}
+    PROPERTIES UNITY_GROUP hl2mp_weapons_server
+)
+
+target_sources_grouped(
+    TARGET server
+    NAME "HL2MP\\Weapons"
+    FILES
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasehlmpcombatweapon.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_physcannon.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_rpg.h
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_slam.h
+    hl2mp/grenade_satchel.h
+    hl2mp/grenade_tripmine.h
+    hl2mp/te_hl2mp_shotgun_shot.h
+    ${UNITY_SOURCE_HL2MP_WEAPONS}
+)
+
+set(UNITY_SOURCE_NEXTBOT
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBot.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotManager.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotGroundLocomotion.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/simple_bot.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotBodyInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotComponentInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotIntentionInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotLocomotionInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotVisionInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotChasePath.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPath.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPathFollow.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerBody.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerLocomotion.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayer.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NavMeshEntities/func_nav_prerequisite.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_NEXTBOT}
+    PROPERTIES UNITY_GROUP nextbot_server
+)
+
 target_sources_grouped(
     TARGET server
     NAME "NextBot"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBot.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBot.h
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotBehavior.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotManager.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotManager.h
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotUtil.h
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotKnownEntity.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotGroundLocomotion.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotGroundLocomotion.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/simple_bot.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/simple_bot.h
 
     # NextBotInterfaces
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotBodyInterface.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotBodyInterface.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotComponentInterface.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotComponentInterface.h
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotEventResponderInterface.h
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotHearingInterface.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotIntentionInterface.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotIntentionInterface.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotInterface.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotInterface.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotLocomotionInterface.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotLocomotionInterface.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotVisionInterface.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotVisionInterface.h
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotContextualQueryInterface.h
 
     # NextBotPath
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotChasePath.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotChasePath.h
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotRetreatPath.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPath.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPath.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPathFollow.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPathFollow.h
                     
     # NextBotPlayer
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerBody.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerBody.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerLocomotion.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerLocomotion.h
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayer.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayer.h
 
     # NextBotCommonBehaviors
@@ -1737,6 +1883,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/Behavior/BehaviorMoveTo.h
 
     # NextBotNavMeshEntities
-    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NavMeshEntities/func_nav_prerequisite.cpp
     ${CMAKE_SOURCE_DIR}/game/server/NextBot/NavMeshEntities/func_nav_prerequisite.h
+
+    ${UNITY_SOURCE_NEXTBOT}
 )

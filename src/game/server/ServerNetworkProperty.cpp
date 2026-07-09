@@ -13,6 +13,12 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef NEO // Unity build
+#ifdef GetClassName
+#undef GetClassName
+#endif
+#endif
+
 extern CTimedEventMgr g_NetworkPropertyEventMgr;
 
 

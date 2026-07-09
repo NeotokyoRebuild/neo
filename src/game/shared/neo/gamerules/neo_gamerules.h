@@ -18,6 +18,7 @@
 	#include "neo_player.h"
 	#include "neo_ghost_spawn_point.h"
 	#include "utlhashtable.h"
+	#include "neo_gamerules_restore.h"
 #endif
 
 #ifdef CLIENT_DLL
@@ -325,6 +326,11 @@ public:
 
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
+
+	inline void SetRoundNumber(const int iNewVal) { m_iRoundNumber.Set(iNewVal); }
+    inline int roundNumber() const { return m_iRoundNumber; }
+    inline bool roundNumberIsEven() const { return (roundNumber() % 2 == 0); }
+
 #ifdef GLOWS_ENABLE
 	void GetTeamGlowColor(int teamNumber, float &r, float &g, float &b)
 {
@@ -442,6 +448,20 @@ private:
 	CNetworkVar(int, m_iLastAttacker);
 	CNetworkVar(int, m_iLastKiller);
 	CNetworkVar(int, m_iLastGhoster);
+
+#ifdef GAME_DLL
+	// sv_neo_restore_...
+	struct NeoRestore
+	{
+		NextRoundGameruleRestoreFlags flags;
+		int iScoreJinrai;
+		int iScoreNSF;
+		int iRoundNumber;
+		int iRoundsWonJinrai;
+		int iRoundsWonNSF;
+	};
+	NeoRestore m_iNextRestore = {};
+#endif
 
 	//////////////////////
 	// Ghost game logic //

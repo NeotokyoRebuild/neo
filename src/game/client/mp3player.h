@@ -34,7 +34,9 @@ namespace vgui
 	class DirectorySelectDialog;
 };
 
+#ifndef NEO
 class CMP3FileSheet;
+#endif
 class CMP3TreeControl;
 class CMP3SongProgress;
 
@@ -341,7 +343,9 @@ private:
 // UI elements
 	vgui::MenuButton		*m_pOptions;
 	CMP3TreeControl			*m_pTree;
+#ifndef NEO
 	CMP3FileSheet			*m_pFileSheet;
+#endif
 	vgui::Label				*m_pCurrentSong;
 	vgui::Label				*m_pDuration;
 	CMP3SongProgress		*m_pSongProgress;

@@ -20,6 +20,7 @@ class water_ps20b_Static_Index
 	unsigned int m_nABOVEWATER : 2;
 	unsigned int m_nBLURRY_REFRACT : 2;
 	unsigned int m_nNORMAL_DECODE_MODE : 1;
+	unsigned int m_nLIGHTMAPWATERFOG : 2;
 #ifdef _DEBUG
 	bool m_bBASETEXTURE : 1;
 	bool m_bMULTITEXTURE : 1;
@@ -28,6 +29,7 @@ class water_ps20b_Static_Index
 	bool m_bABOVEWATER : 1;
 	bool m_bBLURRY_REFRACT : 1;
 	bool m_bNORMAL_DECODE_MODE : 1;
+	bool m_bLIGHTMAPWATERFOG : 1;
 #endif	// _DEBUG
 public:
 	void SetCONVERT_TO_SRGB( int i )
@@ -99,6 +101,15 @@ public:
 #endif	// _DEBUG
 	}
 
+	void SetLIGHTMAPWATERFOG( int i )
+	{
+		Assert( i >= 0 && i <= 1 );
+		m_nLIGHTMAPWATERFOG = i;
+#ifdef _DEBUG
+		m_bLIGHTMAPWATERFOG = true;
+#endif	// _DEBUG
+	}
+
 	water_ps20b_Static_Index(  )
 	{
 		m_nCONVERT_TO_SRGB = g_pHardwareConfig->NeedsShaderSRGBConversion();
@@ -109,6 +120,7 @@ public:
 		m_nABOVEWATER = 0;
 		m_nBLURRY_REFRACT = 0;
 		m_nNORMAL_DECODE_MODE = 0;
+		m_nLIGHTMAPWATERFOG = 0;
 #ifdef _DEBUG
 		m_bBASETEXTURE = false;
 		m_bMULTITEXTURE = false;
@@ -117,18 +129,19 @@ public:
 		m_bABOVEWATER = false;
 		m_bBLURRY_REFRACT = false;
 		m_bNORMAL_DECODE_MODE = false;
+		m_bLIGHTMAPWATERFOG = false;
 #endif	// _DEBUG
 	}
 
 	int GetIndex() const
 	{
-		Assert( m_bBASETEXTURE && m_bMULTITEXTURE && m_bREFLECT && m_bREFRACT && m_bABOVEWATER && m_bBLURRY_REFRACT && m_bNORMAL_DECODE_MODE );
+		Assert( m_bBASETEXTURE && m_bMULTITEXTURE && m_bREFLECT && m_bREFRACT && m_bABOVEWATER && m_bBLURRY_REFRACT && m_bNORMAL_DECODE_MODE && m_bLIGHTMAPWATERFOG );
 		AssertMsg( !( m_nMULTITEXTURE && m_nBASETEXTURE ), "Invalid combo combination ( MULTITEXTURE && BASETEXTURE )" );
-		return ( 6 * m_nCONVERT_TO_SRGB ) + ( 12 * m_nBASETEXTURE ) + ( 24 * m_nMULTITEXTURE ) + ( 48 * m_nREFLECT ) + ( 96 * m_nREFRACT ) + ( 192 * m_nABOVEWATER ) + ( 384 * m_nBLURRY_REFRACT ) + ( 768 * m_nNORMAL_DECODE_MODE ) + 0;
+		return ( 6 * m_nCONVERT_TO_SRGB ) + ( 12 * m_nBASETEXTURE ) + ( 24 * m_nMULTITEXTURE ) + ( 48 * m_nREFLECT ) + ( 96 * m_nREFRACT ) + ( 192 * m_nABOVEWATER ) + ( 384 * m_nBLURRY_REFRACT ) + ( 768 * m_nNORMAL_DECODE_MODE ) + ( 768 * m_nLIGHTMAPWATERFOG ) + 0;
 	}
 };
 
-#define shaderStaticTest_water_ps20b psh_forgot_to_set_static_BASETEXTURE + psh_forgot_to_set_static_MULTITEXTURE + psh_forgot_to_set_static_REFLECT + psh_forgot_to_set_static_REFRACT + psh_forgot_to_set_static_ABOVEWATER + psh_forgot_to_set_static_BLURRY_REFRACT + psh_forgot_to_set_static_NORMAL_DECODE_MODE
+#define shaderStaticTest_water_ps20b psh_forgot_to_set_static_BASETEXTURE + psh_forgot_to_set_static_MULTITEXTURE + psh_forgot_to_set_static_REFLECT + psh_forgot_to_set_static_REFRACT + psh_forgot_to_set_static_ABOVEWATER + psh_forgot_to_set_static_BLURRY_REFRACT + psh_forgot_to_set_static_NORMAL_DECODE_MODE + psh_forgot_to_set_static_LIGHTMAPWATERFOG
 
 
 class water_ps20b_Dynamic_Index

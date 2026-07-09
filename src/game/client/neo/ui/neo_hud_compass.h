@@ -6,7 +6,15 @@
 
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
+#include "shareddefs.h"
+#include "util_shared.h"
 #include <vgui_controls/EditablePanel.h>
+
+struct GhostCallout
+{
+	Vector worldPos;
+	CountdownTimer timer;
+};
 
 class CNEOHud_Compass : public CNEOHud_ChildElement, public CHudElement, public vgui::EditablePanel
 {
@@ -15,6 +23,8 @@ class CNEOHud_Compass : public CNEOHud_ChildElement, public CHudElement, public 
 public:
 	CNEOHud_Compass(const char *pElementName, vgui::Panel *parent = nullptr);
 
+	virtual void Init() override;
+	virtual void LevelShutdown() override;
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
 
@@ -22,17 +32,23 @@ protected:
 	virtual void UpdateStateForNeoHudElementDraw();
 	virtual void DrawNeoHudElement();
 	virtual ConVar* GetUpdateFrequencyConVar() const;
+	virtual void FireGameEvent(IGameEvent* event) override;
 
 private:
 	void DrawCompass() const;
+	void DrawCallouts() const;
+	void HideAllGhostCallouts();
 
 private:
 	vgui::HFont m_hFont;
+	vgui::HFont m_hFontSmall;
 
 	int m_resX, m_resY;
 	float m_objAngle;
 
 	wchar_t m_wszRangeFinder[11];
+
+	GhostCallout m_GhostCallouts[MAX_PLAYERS_ARRAY_SAFE];
 
 	CPanelAnimationVarAliasType(bool, m_showCompass, "visible", "1", "bool");
 	CPanelAnimationVarAliasType(int, m_xPos, "xpos", "c-50", "proportional_xpos");

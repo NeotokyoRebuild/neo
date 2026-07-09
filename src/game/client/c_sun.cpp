@@ -10,7 +10,11 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef NEO // Unity build
+static void RecvProxy_HDRColorScaleSun( const CRecvProxyData *pData, void *pStruct, void *pOut )
+#else
 static void RecvProxy_HDRColorScale( const CRecvProxyData *pData, void *pStruct, void *pOut )
+#endif
 {
 	C_Sun *pSun = ( C_Sun * )pStruct;
 
@@ -28,7 +32,11 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE( C_Sun, DT_Sun, CSun )
 	RecvPropInt( RECVINFO( m_nOverlaySize ) ),
 	RecvPropInt( RECVINFO( m_nMaterial ) ),
 	RecvPropInt( RECVINFO( m_nOverlayMaterial ) ),
+#ifdef NEO // Unity build
+	RecvPropFloat("HDRColorScale", 0, SIZEOF_IGNORE, 0, RecvProxy_HDRColorScaleSun),
+#else
 	RecvPropFloat("HDRColorScale", 0, SIZEOF_IGNORE, 0, RecvProxy_HDRColorScale),
+#endif
 	
 END_RECV_TABLE()
 
