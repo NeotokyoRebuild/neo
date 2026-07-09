@@ -34,9 +34,6 @@
 #include "tier1/utlsymbol.h"
 #include "bitmap/tgawriter.h"
 
-//#include "messbuf.h"
-
-
 #define ALIGN_TO_POW2(x,y) (((x)+(y-1))&~(y-1))
 
 // identifies a vertex embedded in solid

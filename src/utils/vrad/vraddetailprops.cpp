@@ -19,7 +19,6 @@
 #include "pacifier.h"
 #include "vraddetailprops.h"
 #include "mathlib/halton.h"
-//#include "messbuf.h"
 #include "byteswap.h"
 
 bool LoadStudioModel( char const* pModelName, CUtlBuffer& buf );

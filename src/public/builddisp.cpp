@@ -1299,68 +1299,68 @@ float CCoreDispInfo::GetMaxErrorFromChildren( int nodeIndex, int level )
 //-----------------------------------------------------------------------------
 void CCoreDispInfo::CalcErrorTermAtNode( int nodeIndex, int level )
 {
-	if( level == m_Power )
-		return;
+    if( level == m_Power )
+        return;
 
-	//
-	// get the vertex indices
-	//
-	int neighborVertIndices[9];
-	for( int i = 0; i < 8; i++ )
-	{
-		neighborVertIndices[i] = m_Nodes[nodeIndex].GetNeighborVertIndex( i );
-	}
-	neighborVertIndices[8] = m_Nodes[nodeIndex].GetCenterVertIndex();
+    //
+    // get the vertex indices
+    //
+    int neighborVertIndices[9];
+    for( int i = 0; i < 8; i++ )
+    {
+        neighborVertIndices[i] = m_Nodes[nodeIndex].GetNeighborVertIndex( i );
+    }
+    neighborVertIndices[8] = m_Nodes[nodeIndex].GetCenterVertIndex();
 
 
-	//
-	// calculate the error terms
-	//
+    //
+    // calculate the error terms
+    //
     Vector          segment;
     Vector          v;
 
-	VectorAdd( m_pVerts[neighborVertIndices[5]].m_Vert, m_pVerts[neighborVertIndices[4]].m_Vert, v );
-	VectorScale( v, 0.5f, v );
-	VectorSubtract( m_pVerts[neighborVertIndices[0]].m_Vert, v, segment );
-	float errorTerm = ( float )VectorLength( segment );
+    VectorAdd( m_pVerts[neighborVertIndices[5]].m_Vert, m_pVerts[neighborVertIndices[4]].m_Vert, v );
+    VectorScale( v, 0.5f, v );
+    VectorSubtract( m_pVerts[neighborVertIndices[0]].m_Vert, v, segment );
+    float errorTerm = ( float )VectorLength( segment );
 
-	VectorAdd( m_pVerts[neighborVertIndices[5]].m_Vert, m_pVerts[neighborVertIndices[6]].m_Vert, v );
-	VectorScale( v, 0.5f, v );
-	VectorSubtract( m_pVerts[neighborVertIndices[1]].m_Vert, v, segment );
-	if( errorTerm < ( float )VectorLength( segment ) )
-		errorTerm = ( float )VectorLength( segment );
+    VectorAdd( m_pVerts[neighborVertIndices[5]].m_Vert, m_pVerts[neighborVertIndices[6]].m_Vert, v );
+    VectorScale( v, 0.5f, v );
+    VectorSubtract( m_pVerts[neighborVertIndices[1]].m_Vert, v, segment );
+    if( errorTerm < ( float )VectorLength( segment ) )
+        errorTerm = ( float )VectorLength( segment );
 
-	VectorAdd( m_pVerts[neighborVertIndices[6]].m_Vert, m_pVerts[neighborVertIndices[7]].m_Vert, v );
-	VectorScale( v, 0.5f, v );
-	VectorSubtract( m_pVerts[neighborVertIndices[2]].m_Vert, v, segment );
-	if( errorTerm < ( float )VectorLength( segment ) )
-		errorTerm = ( float )VectorLength( segment );
+    VectorAdd( m_pVerts[neighborVertIndices[6]].m_Vert, m_pVerts[neighborVertIndices[7]].m_Vert, v );
+    VectorScale( v, 0.5f, v );
+    VectorSubtract( m_pVerts[neighborVertIndices[2]].m_Vert, v, segment );
+    if( errorTerm < ( float )VectorLength( segment ) )
+        errorTerm = ( float )VectorLength( segment );
 
-	VectorAdd( m_pVerts[neighborVertIndices[7]].m_Vert, m_pVerts[neighborVertIndices[4]].m_Vert, v );
-	VectorScale( v, 0.5f, v );
-	VectorSubtract( m_pVerts[neighborVertIndices[3]].m_Vert, v, segment );
-	if( errorTerm < ( float )VectorLength( segment ) )
-		errorTerm = ( float )VectorLength( segment );
+    VectorAdd( m_pVerts[neighborVertIndices[7]].m_Vert, m_pVerts[neighborVertIndices[4]].m_Vert, v );
+    VectorScale( v, 0.5f, v );
+    VectorSubtract( m_pVerts[neighborVertIndices[3]].m_Vert, v, segment );
+    if( errorTerm < ( float )VectorLength( segment ) )
+        errorTerm = ( float )VectorLength( segment );
 
-	VectorAdd( m_pVerts[neighborVertIndices[4]].m_Vert, m_pVerts[neighborVertIndices[6]].m_Vert, v );
-	VectorScale( v, 0.5f, v );
-	VectorSubtract( m_pVerts[neighborVertIndices[8]].m_Vert, v, segment );
-	if( errorTerm < ( float )VectorLength( segment ) )
-		errorTerm = ( float )VectorLength( segment );
+    VectorAdd( m_pVerts[neighborVertIndices[4]].m_Vert, m_pVerts[neighborVertIndices[6]].m_Vert, v );
+    VectorScale( v, 0.5f, v );
+    VectorSubtract( m_pVerts[neighborVertIndices[8]].m_Vert, v, segment );
+    if( errorTerm < ( float )VectorLength( segment ) )
+        errorTerm = ( float )VectorLength( segment );
 
-	VectorAdd( m_pVerts[neighborVertIndices[5]].m_Vert, m_pVerts[neighborVertIndices[7]].m_Vert, v );
-	VectorScale( v, 0.5f, v );
-	VectorSubtract( m_pVerts[neighborVertIndices[8]].m_Vert, v, segment );
-	if( errorTerm < ( float )VectorLength( segment ) )
-		errorTerm = ( float )VectorLength( segment );
+    VectorAdd( m_pVerts[neighborVertIndices[5]].m_Vert, m_pVerts[neighborVertIndices[7]].m_Vert, v );
+    VectorScale( v, 0.5f, v );
+    VectorSubtract( m_pVerts[neighborVertIndices[8]].m_Vert, v, segment );
+    if( errorTerm < ( float )VectorLength( segment ) )
+        errorTerm = ( float )VectorLength( segment );
 
-	//
-	// add the max child's error term
-	//
-	errorTerm += GetMaxErrorFromChildren( nodeIndex, level );
+    //
+    // add the max child's error term
+    //
+    errorTerm += GetMaxErrorFromChildren( nodeIndex, level );
 
-	// set the error term
-	m_Nodes[nodeIndex].SetErrorTerm( errorTerm );
+    // set the error term
+    m_Nodes[nodeIndex].SetErrorTerm( errorTerm );
 }
 
 

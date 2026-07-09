@@ -26,18 +26,10 @@
 #include <mutex>
 #include <vector>
 
-#define	MAX_THREADS	16
-
-
-class CRunThreadsData
-{
-public:
-	int m_iThread;
-	void *m_pUserData;
-	RunThreadsFn m_Fn;
-};
-
-CRunThreadsData g_RunThreadsData[MAX_THREADS];
+#ifndef WIN32
+#include <pthread.h>
+#include <sched.h>
+#endif
 
 int dispatch;
 int workcount;
@@ -141,13 +133,18 @@ void ThreadUnlock (void)
 	crit.unlock();
 }
 
-// This runs in the thread and dispatches a RunThreadsFn call.
-// DWORD WINAPI InternalRunThreadsFn( LPVOID pParameter )
-// {
-// 	CRunThreadsData *pData = (CRunThreadsData*)pParameter;
-// 	pData->m_Fn( pData->m_iThread, pData->m_pUserData );
-// 	return 0;
-// }
+static void SetThreadPriorityLow( std::thread &thread, bool idle )
+{
+#ifdef WIN32
+	SetThreadPriority( thread.native_handle(), idle ? THREAD_PRIORITY_IDLE : THREAD_PRIORITY_LOWEST );
+#else
+	// On Linux "lowest" and "idle" both map onto the SCHED_IDLE policy, which is
+	// the closest portable equivalent for background worker threads.
+	sched_param param = {};
+	pthread_setschedparam( thread.native_handle(), SCHED_IDLE, &param );
+	(void)idle;
+#endif
+}
 
 void RunThreads_Start( RunThreadsFn fn, void *pUserData, ERunThreadsPriority ePriority )
 {
@@ -159,30 +156,16 @@ void RunThreads_Start( RunThreadsFn fn, void *pUserData, ERunThreadsPriority ePr
 
 	for ( int i = 0; i < numthreads; i++ )
 	{
-		// g_RunThreadsData[i].m_iThread = i;
-		// g_RunThreadsData[i].m_pUserData = pUserData;
-		// g_RunThreadsData[i].m_Fn = fn;
+		std::thread &thread = g_ThreadHandles.emplace_back( fn, i, pUserData );
 
-		// DWORD dwDummy;
-		// g_ThreadHandles[i] = CreateThread(
-		//    NULL,	// LPSECURITY_ATTRIBUTES lpsa,
-		//    0,		// DWORD cbStack,
-		//    InternalRunThreadsFn,	// LPTHREAD_START_ROUTINE lpStartAddr,
-		//    &g_RunThreadsData[i],	// LPVOID lpvThreadParm,
-		//    0,			// DWORD fdwCreate,
-		//    &dwDummy );
-
-		// if ( ePriority == k_eRunThreadsPriority_UseGlobalState )
-		// {
-		// 	if( g_bLowPriorityThreads )
-		// 		SetThreadPriority( g_ThreadHandles[i], THREAD_PRIORITY_LOWEST );
-		// }
-		// else if ( ePriority == k_eRunThreadsPriority_Idle )
-		// {
-		// 	SetThreadPriority( g_ThreadHandles[i], THREAD_PRIORITY_IDLE );
-		// }
-
-		g_ThreadHandles.emplace_back(fn, i, pUserData);
+		if ( ePriority == k_eRunThreadsPriority_UseGlobalState && g_bLowPriorityThreads )
+		{
+			SetThreadPriorityLow( thread, false );
+		}
+		else if ( ePriority == k_eRunThreadsPriority_Idle )
+		{
+			SetThreadPriorityLow( thread, true );
+		}
 	}
 }
 

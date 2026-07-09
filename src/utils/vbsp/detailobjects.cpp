@@ -6,11 +6,6 @@
 // $NoKeywords: $
 //=============================================================================//
 
-#ifdef WIN32
-#include <windows.h>
-#include <io.h>
-#endif
-
 #include "vbsp.h"
 #include "bsplib.h"
 #include "KeyValues.h"

@@ -34,8 +34,6 @@
 #include "xbox/xbox_win32stubs.h"
 #endif
 
-#include <mutex>
-
 #include "tier0/memdbgon.h"
 
 // set these before calling CheckParm
@@ -211,7 +209,7 @@ void Error( char const *pMsg, ... )
 
 #else
 
-std::mutex g_SpewCS;
+CThreadMutex g_SpewCS;
 bool g_bSuppressPrintfOutput = false;
 
 // TODO move to platform.h?
@@ -229,7 +227,7 @@ SpewRetval_t CmdLib_SpewOutputFunc( SpewType_t type, char const *pMsg )
 	WORD old;
 	SpewRetval_t retVal;
 	
-	g_SpewCS.lock();
+	g_SpewCS.Lock();
 	{
 		if (( type == SPEW_MESSAGE ) || (type == SPEW_LOG ))
 		{
@@ -289,7 +287,7 @@ SpewRetval_t CmdLib_SpewOutputFunc( SpewType_t type, char const *pMsg )
 
 		RestoreConsoleTextColor( old );
 	}
-	g_SpewCS.unlock();
+	g_SpewCS.Unlock();
 
 	if ( type == SPEW_ERROR )
 	{
