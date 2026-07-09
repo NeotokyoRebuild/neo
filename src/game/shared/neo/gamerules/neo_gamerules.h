@@ -297,8 +297,8 @@ public:
 	bool IsRoundOver() const;
 	bool IsRoundIdle() const;
 	inline bool IsRoundPaused() const;
-    inline int roundNumber() const { return m_iRoundNumber; }
-    inline bool roundNumberIsEven() const { return (roundNumber() % 2 == 0); }
+	bool InReadyUpState() const;
+	bool InRoundState() const;
 	float GetRemainingPreRoundFreezeTime(const bool clampToZero) const;
 	float GetMapRemainingTime();
 	virtual float GetRoundRemainingTime() const;
@@ -387,6 +387,18 @@ public:
 	bool m_bPausingTeamRequestedUnpause = false;
 	bool m_bThinkCheckClantags = false;
 	bool m_bRotatingMapRightNow = false;
+	
+	// sv_neo_restore_...
+	struct NeoRestore
+	{
+		NextRoundGameruleRestoreFlags flags;
+		int iScoreJinrai;
+		int iScoreNSF;
+		int iRoundNumber;
+		int iRoundsWonJinrai;
+		int iRoundsWonNSF;
+	};
+	NeoRestore m_iNextRestore = {};
 #endif
 
 	virtual const int GetScoreLimit() const { return 0; };
@@ -448,20 +460,6 @@ private:
 	CNetworkVar(int, m_iLastAttacker);
 	CNetworkVar(int, m_iLastKiller);
 	CNetworkVar(int, m_iLastGhoster);
-
-#ifdef GAME_DLL
-	// sv_neo_restore_...
-	struct NeoRestore
-	{
-		NextRoundGameruleRestoreFlags flags;
-		int iScoreJinrai;
-		int iScoreNSF;
-		int iRoundNumber;
-		int iRoundsWonJinrai;
-		int iRoundsWonNSF;
-	};
-	NeoRestore m_iNextRestore = {};
-#endif
 
 	//////////////////////
 	// Ghost game logic //
