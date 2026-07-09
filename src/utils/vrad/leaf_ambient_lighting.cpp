@@ -13,7 +13,6 @@
 #include "coordsize.h"
 #include "vstdlib/random.h"
 #include "bsptreedata.h"
-//#include "messbuf.h"
 
 static TableVector g_BoxDirections[6] = 
 {

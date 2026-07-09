@@ -1228,13 +1228,12 @@ int CScriptLib::GetFileList( const char* pDirPath, const char* pPattern, CUtlVec
 		if (bFindDirs != g_pFullFileSystem->FindIsDirectory(findHdl))
 			continue;
 
-		if ( !stricmp( pszFilename, "." ) ) // TODO check if needed
+		if ( !stricmp( pszFilename, "." ) )
 			continue;
 
-		if ( !stricmp( pszFilename, ".." ) ) // TODO check if needed
+		if ( !stricmp( pszFilename, ".." ) )
 			continue;
 
-		// TODO check if pszFilename is just a filename or a full path
 		char fileName[MAX_PATH];
 		strcpy( fileName, sourcePath );
 		strcat( fileName, pszFilename );

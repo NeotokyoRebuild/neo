@@ -26,6 +26,7 @@ target_link_libraries(vice
     mathlib::mathlib
     tier2::tier2
     vstdlib::vstdlib
+    Threads::Threads
 )
 
 target_sources_grouped(
