@@ -50,6 +50,13 @@ typedef int ssize_t;
 
 #endif //_WIN32
 
+#ifdef NEO // Unity build
+#ifdef min
+#undef min
+#endif
+#define min(a,b)    (((a) < (b)) ? (a) : (b))
+#endif
+
 namespace snappy {
 
 // Any hash function will produce a valid compressed bitstream, but a good

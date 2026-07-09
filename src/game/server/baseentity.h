@@ -571,7 +571,11 @@ public:
 	// These methods encapsulate MOVETYPE_FOLLOW, which became obsolete
 	void FollowEntity( CBaseEntity *pBaseEntity, bool bBoneMerge = true );
 	void StopFollowingEntity( );	// will also change to MOVETYPE_NONE
+#ifdef NEO
+	virtual bool IsFollowingEntity();
+#else
 	bool IsFollowingEntity();
+#endif // NEO
 	CBaseEntity *GetFollowedEntity();
 
 	// initialization

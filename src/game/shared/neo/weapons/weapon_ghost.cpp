@@ -57,8 +57,6 @@ PRECACHE_WEAPON_REGISTER(weapon_ghost);
 CWeaponGhost::CWeaponGhost(void)
 {
 #ifdef CLIENT_DLL
-	m_bHavePlayedGhostEquipSound = false;
-	m_bHaveHolsteredTheGhost = false;
 	m_flLastGhostBeepTime = 0;
 #endif
 	m_flDeployTime = 0;
@@ -74,16 +72,6 @@ CWeaponGhost::~CWeaponGhost()
 		rules->ResetGhost();
 }
 #endif
-
-void CWeaponGhost::ItemPreFrame(void)
-{
-#ifdef CLIENT_DLL
-	if (!sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
-	{
-		HandleGhostEquip();
-	}
-#endif
-}
 
 #ifdef GAME_DLL
 int CWeaponGhost::UpdateTransmitState()
@@ -102,64 +90,64 @@ int CWeaponGhost::ShouldTransmit(const CCheckTransmitInfo *pInfo)
 }
 #endif
 
-// Consider calling HandleGhostEquip instead.
-void CWeaponGhost::PlayGhostSound(float volume)
-{
 #ifdef CLIENT_DLL
-	auto owner = static_cast<C_BasePlayer*>(GetOwner());
-#else
-	auto owner = static_cast<CBasePlayer*>(GetOwner());
-#endif // CLIENT_DLL
-	if (!owner)
+void CWeaponGhost::OnDataChanged(DataUpdateType_t updateType)
+{
+	if (updateType == DATA_UPDATE_DATATABLE_CHANGED && m_iOldState != m_iState)
 	{
+		// Ghost startup sound
+		{
+			// Could be more than one ghost on the map, check whether localplayer is carrying the ghost too
+			C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+			if (!IsCarriedByLocalPlayer() && !pLocalPlayer->IsCarryingGhost())
+			{
+				StopGhostSound();
+			}
+			else
+			{
+				if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
+				{
+					if (m_iState == WEAPON_NOT_CARRIED)
+						StopGhostSound();
+					else if (m_iOldState == WEAPON_NOT_CARRIED)
+						PlayGhostSound();
+				}
+				else
+				{
+					if (m_iState == WEAPON_IS_ACTIVE)
+						PlayGhostSound();
+					else
+						StopGhostSound();
+				}
+			}
+			// NEO TODO (Adam) if round is over, stop the ghost sound too?
+		}
+	}
+
+	BaseClass::OnDataChanged(updateType);
+}
+
+void CWeaponGhost::PlayGhostSound()
+{
+	C_BasePlayer* pOwner = static_cast<C_BasePlayer*>(GetOwner());
+	if (!pOwner)
 		return;
-	}
 
-#ifdef CLIENT_DLL
-	C_RecipientFilter filter;
-#else
-	CRecipientFilter filter;
-#endif // CLIENT_DLL
-	filter.AddRecipient(owner);
+	CLocalPlayerFilter filter;
+	EmitSound_t soundParams;
+	soundParams.m_flVolume = 1.f;
+	soundParams.m_pSoundName = "HUD.GhostEquip";
+	soundParams.m_nFlags |= SND_SHOULDPAUSE | SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
 
-	EmitSound_t emitSoundType;
-	emitSoundType.m_flVolume = volume;
-	emitSoundType.m_pSoundName = "HUD.GhostEquip";
-	emitSoundType.m_nFlags |= SND_SHOULDPAUSE | SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
-
-	EmitSound(filter, entindex(), emitSoundType);
+	EmitSound(filter, entindex(), soundParams);
 }
 
-#ifdef CLIENT_DLL
-void CWeaponGhost::HandleGhostEquip(void)
-{
-	if (!m_bHavePlayedGhostEquipSound)
-	{
-		PlayGhostSound();
-		m_bHavePlayedGhostEquipSound = true;
-		m_bHaveHolsteredTheGhost = false;
-	}
-}
-
-void CWeaponGhost::HandleGhostUnequip(void)
-{
-	if (!m_bHaveHolsteredTheGhost)
-	{
-		StopGhostSound();
-		m_bHaveHolsteredTheGhost = true;
-		m_bHavePlayedGhostEquipSound = false;
-	}
-}
-
-// Consider calling HandleGhostUnequip instead.
 void CWeaponGhost::StopGhostSound(void)
 {
 	StopSound(this->entindex(), "HUD.GhostEquip");
 }
-#endif
 
 // Emit a ghost ping at a refire interval based on distance.
-#ifdef CLIENT_DLL
 void CWeaponGhost::TryGhostPing()
 {
 	const auto* owner = GetOwner();
@@ -192,19 +180,7 @@ void CWeaponGhost::TryGhostPing()
 		m_flLastGhostBeepTime = gpGlobals->curtime;
 	}
 }
-#endif
-
-void CWeaponGhost::ItemHolsterFrame(void)
-{
-	BaseClass::ItemHolsterFrame();
-
-#ifdef CLIENT_DLL
-	if (!sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
-	{
-		HandleGhostUnequip(); // is there some callback, so we don't have to keep calling this?
-	}
-#endif
-}
+#endif // CLIENT_DLL
 
 enum {
 	NEO_GHOST_ONLY_ENEMIES = 0,
@@ -253,11 +229,6 @@ void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 	soundFilter.RemoveRecipientByPlayerIndex(ownerIndex);
 	soundFilter.MakeReliable();
 	EmitSound(soundFilter, ownerIndex, soundParams);
-
-	if (sv_neo_ctg_ghost_beacons_when_inactive.GetBool())
-	{
-		PlayGhostSound();
-	}
 #endif
 }
 

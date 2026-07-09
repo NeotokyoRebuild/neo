@@ -226,7 +226,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 
 	if (!m_coverArea)
 	{
-		return SuspendFor(new CNEOBotRetreatToCover, "Reacting to contact instead");
+		return Done("Reacting to contact instead");
 	}
 
 	if ( me->GetLastKnownArea() != m_coverArea || !bIsExposed )

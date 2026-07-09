@@ -723,13 +723,22 @@ bool IVision::IsLineOfSightClear( const Vector &pos ) const
 bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *visibleSpot ) const
 {
 #ifdef NEO
-	// Special case for Support-class bots to see through smoke
-	bool isSupport = false;
+	bool canSeeThroughSmoke = false;
 	if (auto player = ToNEOPlayer(GetBot()->GetEntity()))
 	{
-		isSupport = (player->GetClass() == NEO_CLASS_SUPPORT);
+		// Bot has thermal vision as a Support class
+		canSeeThroughSmoke = (player->GetClass() == NEO_CLASS_SUPPORT);
 	}
-	ScopedSmokeLOS smokeGuard(isSupport);
+	if (!canSeeThroughSmoke)
+	{
+		const auto *pSubjectPlayer = ToNEOPlayer(subject);
+		if (pSubjectPlayer && pSubjectPlayer->IsCarryingGhost())
+		{
+			// Ghoster is always visible through smoke
+			canSeeThroughSmoke = true;
+		}
+	}
+	ScopedSmokeLOS smokeGuard(canSeeThroughSmoke);
 #endif
 
 #ifdef TERROR

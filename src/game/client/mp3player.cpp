@@ -24,7 +24,9 @@
 #include "vgui/ILocalize.h"
 #include "vgui_controls/PHandle.h"
 
+#ifndef NEO
 #include "vgui_controls/PropertySheet.h"
+#endif // NEO
 #include "vgui_controls/PropertyPage.h"
 #include "vgui_controls/TreeView.h"
 #include "vgui_controls/FileOpenDialog.h"
@@ -522,6 +524,7 @@ void CMP3PlayListPage::OnCommand( char const *cmd )
 	}
 }
 
+#ifndef NEO
 class CMP3FileSheet : public PropertySheet
 {
 	DECLARE_CLASS_SIMPLE( CMP3FileSheet, PropertySheet );
@@ -579,13 +582,6 @@ public:
 		}
 	}
 
-#ifdef NEO
-	CMP3PlayListPage* GetPlayList()
-	{
-		return m_pPlayList;
-	}
-#endif // NEO
-
 protected:
 
 	CMP3Player			*m_pPlayer;
@@ -612,6 +608,7 @@ CMP3FileSheet::CMP3FileSheet( CMP3Player *player, char const *panelName ) :
 
 	SetActivePage( m_pPlayList );
 }	
+#endif // NEO
 
 class CMP3TreeControl : public TreeView
 {
@@ -825,8 +822,10 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	HFont treeFont = pscheme->GetFont( "DefaultVerySmall" );
 	m_pTree->SetFont( treeFont );
 
+#ifndef NEO
 	m_pFileSheet = new CMP3FileSheet( this, "FileSheet" );
 	m_pFileSheet->SetTabWidth(0);
+#endif
 
 	m_pPlay = new Button( this, "Play", "#Play", this, "play" );
 #ifdef NEO
@@ -900,11 +899,6 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 
 	PopulateTree();
 	m_bFirstTime = false;
-	int randomSong = m_pFileSheet->GetPlayList()->GetSong();
-	if (randomSong >= 0)
-	{
-		PlaySong(randomSong);
-	}
 #endif // NEO
 }
 
@@ -1702,16 +1696,6 @@ void CMP3Player::OnPlay()
 			AddToPlayList( songIndex, i == 0 );
 		}
 	}
-#ifdef NEO
-	if (c == 0)
-	{ // play a random song from the playlist, if any
-		int randomSong = m_pFileSheet->GetPlayList()->GetSong();
-		if (randomSong >= 0)
-		{
-			PlaySong(randomSong);
-		}
-	}
-#endif // NEO
 }
 
 #ifdef NEO
@@ -1968,7 +1952,9 @@ void CMP3Player::GoToNextSong( int skip )
 		}
 		nextSong = m_PlayList[ m_nCurrentPlaylistSong ];
 
+#ifndef NEO
 		m_pFileSheet->OnPlayListItemPlaying( m_nCurrentPlaylistSong );
+#endif
 	}
 	else
 	{
@@ -2116,7 +2102,9 @@ MP3File_t *CMP3Player::GetSongInfo( int songIndex )
 
 void CMP3Player::AddToPlayList( int songIndex, bool playNow )
 {
+#ifndef NEO
 	m_pFileSheet->AddSongToPlayList( songIndex );
+#endif
 	m_PlayList.AddToTail( songIndex );
 
 	if ( playNow )
@@ -2130,7 +2118,9 @@ void CMP3Player::AddToPlayList( int songIndex, bool playNow )
 
 void CMP3Player::RemoveFromPlayList( int songIndex )
 {
+#ifndef NEO
 	m_pFileSheet->RemoveSongFromPlayList( songIndex );
+#endif
 	m_PlayList.FindAndRemove( songIndex );
 
 	SetPlayListSong( m_nCurrentPlaylistSong );
@@ -2138,7 +2128,9 @@ void CMP3Player::RemoveFromPlayList( int songIndex )
 
 void CMP3Player::ClearPlayList()
 {
+#ifndef NEO
 	m_pFileSheet->ResetPlayList();
+#endif
 	m_PlayList.RemoveAll();
 	m_nCurrentPlaylistSong = 0;
 }
@@ -2476,7 +2468,6 @@ void CMP3Player::LoadPlayList( char const *filename )
 #ifdef NEO
 	// Clear existing playlist
 	m_PlayList.RemoveAll();
-	m_pFileSheet->ResetPlayList();
 
 	// Update most recent playlist
 	SetMostRecentPlayList(filename);
@@ -2543,9 +2534,6 @@ void CMP3Player::LoadPlayList( char const *filename )
 			if ( songIndex >= 0 )
 			{
 				m_PlayList.AddToTail( songIndex );
-#ifdef NEO
-				m_pFileSheet->AddSongToPlayList( songIndex );
-#endif // NEO
 			}
 		}
 	}

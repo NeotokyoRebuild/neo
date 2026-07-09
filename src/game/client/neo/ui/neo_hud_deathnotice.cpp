@@ -785,12 +785,34 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	C_NEO_Player* pVictim = ToNEOPlayer(UTIL_PlayerByIndex(victim));
 	C_NEO_Player* pAssist = ToNEOPlayer(UTIL_PlayerByIndex(assist));
 
-	if (pKiller)
-		killer_name = pKiller->GetPlayerNameWithTakeoverContext(killer);
+	// Special case: Spectator assisted their own bot-takeover kill
+	// Simplify to "Bot Name + Player Name"
+	if (pKiller && pAssist && killer == assist && killer > 0)
+	{
+		C_NEO_Player* pTakeoverTarget = pKiller->GetSpectatorTakeoverPlayerTarget();
+		if (pTakeoverTarget)
+		{
+			killer_name = pTakeoverTarget->GetNeoPlayerName();
+			assists_name = pAssist->GetNeoPlayerName();
+		}
+	}
+	else
+	{
+		if (pKiller)
+		{
+			killer_name = pKiller->GetPlayerNameWithTakeoverContext(killer);
+		}
+
+		if (pAssist)
+		{
+			assists_name = pAssist->GetPlayerNameWithTakeoverContext(assist);
+		}
+	}
+
 	if (pVictim)
+	{
 		victim_name = pVictim->GetPlayerNameWithTakeoverContext(victim);
-	if (pAssist)
-		assists_name = pAssist->GetPlayerNameWithTakeoverContext(assist);
+	}
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;

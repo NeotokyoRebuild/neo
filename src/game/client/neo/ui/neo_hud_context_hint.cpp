@@ -3,6 +3,7 @@
 
 #include "iclientmode.h"
 #include "c_neo_player.h"
+#include "neo_player_shared.h"
 #include "vgui/ISurface.h"
 #include "igameresources.h"
 #include "ienginevgui.h"
@@ -10,6 +11,8 @@
 #include "vgui/IPanel.h"
 #include "vgui_controls/AnimationController.h"
 #include "neo_root_settings.h"
+#include "glow_outline_effect.h"
+#include "smoke_fog_overlay.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -22,7 +25,7 @@ ConVar cl_neo_spec_takeover_player_hint_time_sec("cl_neo_spec_takeover_player_hi
 
 DECLARE_HUDELEMENT(CNEOHud_ContextHint);
 
-NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(ContextHint, 0.00695);
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(ContextHint, 0.1);
 
 CNEOHud_ContextHint::CNEOHud_ContextHint(const char* pElementName)
 	: CNEOHud_ChildElement(), CHudElement(pElementName), vgui::EditablePanel(NULL, "neo_context_hint")
@@ -30,8 +33,7 @@ CNEOHud_ContextHint::CNEOHud_ContextHint(const char* pElementName)
 	SetParent(g_pClientMode->GetViewport());
 	SetVisible(false);
 
-	m_flDisplayTime = 0.0f;
-	m_bHintShownForCurrentSpecTarget = false;
+	m_flDisplayEndTime = 0.0f;
 	m_hLastSpecTarget = nullptr;
 }
 
@@ -49,8 +51,7 @@ void CNEOHud_ContextHint::VidInit()
 
 void CNEOHud_ContextHint::Reset()
 {
-	m_flDisplayTime = 0.0f;
-	m_bHintShownForCurrentSpecTarget = false;
+	m_flDisplayEndTime = 0.0f;
 	m_hLastSpecTarget = nullptr;
 	SetVisible(false);
 }
@@ -70,88 +71,223 @@ bool CNEOHud_ContextHint::ShouldDraw()
 {
 	if (!cl_neo_hud_context_hint_enabled.GetBool())
 	{
+		g_GlowObjectManager.ClearUseItem();
+		ClearUseEntityListEntry();
 		return false;
 	}
 
-	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
-	if (!pLocalPlayer)
+	return true;
+}
+
+extern ConVar sv_neo_spec_replace_player_bot_enable;
+extern ConVar sv_neo_spec_replace_player_min_exp;
+extern ConVar sv_neo_bot_cmdr_enable;
+ConVar cl_neo_hud_context_hint_show_player_takeover_hint("cl_neo_hud_context_hint_show_player_takeover_hint", "1", FCVAR_ARCHIVE, "Show player takeover hint", true, 0.f, true, 1.f);
+ConVar cl_neo_hud_context_hint_show_object_interact_hint("cl_neo_hud_context_hint_show_object_interact_hint", "1", FCVAR_ARCHIVE, "Show object interact hint", true, 0.f, true, 1.f);
+ConVar cl_neo_hud_context_hint_show_bot_interact_hint("cl_neo_hud_context_hint_show_bot_interact_hint", "1", FCVAR_ARCHIVE, "Show bot command and weapon request hint", true, 0.f, true, 1.f);
+void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
+{
+	g_GlowObjectManager.ClearUseItem();
+	m_hUseEntity = INVALID_EHANDLE;
+	ClearUseEntityListEntry();
+
+	C_NEO_Player* pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pLocalNeoPlayer)
+		return;
+
+	char szUppercaseKeyBinding[16]; // Assuming keybinds won't exceed 15 characters + null terminator
+	const char* useKeyBinding = engine->Key_LookupBinding("+use");
+	if (useKeyBinding && useKeyBinding[0] != '\0')
 	{
-		return false;
+		V_strncpy(szUppercaseKeyBinding, useKeyBinding, sizeof(szUppercaseKeyBinding));
+		V_strupr(szUppercaseKeyBinding);
+	}
+	else
+	{
+		const char notBoundText[] = "+use unbound";
+		COMPILE_TIME_ASSERT(sizeof(notBoundText) <= sizeof(szUppercaseKeyBinding));
+		V_strncpy(szUppercaseKeyBinding, notBoundText, sizeof(szUppercaseKeyBinding));
 	}
 
-	C_BaseEntity* pObserverTargetEntity = pLocalPlayer->GetObserverTarget();
-	C_BasePlayer* pObserverTargetPlayer = (pObserverTargetEntity && pObserverTargetEntity->IsPlayer()) ? ToBasePlayer(pObserverTargetEntity) : nullptr;
+	Assert(strlen(szUppercaseKeyBinding) < sizeof(szUppercaseKeyBinding));
 
-	auto eObserverMode = pLocalPlayer->GetObserverMode();
-	bool bIsSpectating = (eObserverMode == OBS_MODE_CHASE || eObserverMode == OBS_MODE_IN_EYE);
-
-	if (pObserverTargetPlayer != m_hLastSpecTarget.Get())
+	if (pLocalNeoPlayer->IsObserver())
 	{
-		m_bHintShownForCurrentSpecTarget = false;
-		m_hLastSpecTarget = pObserverTargetPlayer;
-	}
-
-	bool bShouldDisplayBotTakeoverHint = false;
-	if (bIsSpectating && pObserverTargetPlayer && NEORules()->GetRoundStatus() != PostRound)
-	{
-		if (GameResources()->IsFakePlayer(pObserverTargetPlayer->entindex()))
+		if (!cl_neo_hud_context_hint_show_player_takeover_hint.GetBool())
 		{
-			if (pLocalPlayer->InSameTeam(pObserverTargetPlayer) && NEORules()->IsTeamplay())
+			m_flDisplayEndTime = gpGlobals->curtime;
+			return;
+		}
+
+		// Takeover hint
+		{
+			bool showTakeOverHint = false;
+			if (auto eObserverMode = pLocalNeoPlayer->GetObserverMode();
+				(eObserverMode == OBS_MODE_CHASE || eObserverMode == OBS_MODE_IN_EYE))
 			{
-				ConVar* pBotEnableCvar = g_pCVar->FindVar("sv_neo_spec_replace_player_bot_enable");
-				bool bBotEnable = pBotEnableCvar ? pBotEnableCvar->GetBool() : false;
-
-				if (bBotEnable)
+				if (C_NEO_Player* pObserverTargetPlayer = ToNEOPlayer(pLocalNeoPlayer->GetObserverTarget());
+					pObserverTargetPlayer && pObserverTargetPlayer->ValidTakeoverTargetFor(pLocalNeoPlayer))
 				{
-					// Check that spectator's XP is not at concerning griefing levels
-					int localPlayerXP = GameResources()->GetXP(pLocalPlayer->entindex());
-					ConVar* pMinExpCvar = g_pCVar->FindVar("sv_neo_spec_replace_player_min_exp");
-					int minExp = pMinExpCvar ? pMinExpCvar->GetInt() : 0;
+					// update hint duration
+					if (pObserverTargetPlayer != m_hLastSpecTarget.Get())
+					{
+						m_hLastSpecTarget = pObserverTargetPlayer;
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Takeover player", szUppercaseKeyBinding);
+						m_flDisplayEndTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
+					}
+					
+					showTakeOverHint = true;
+				}
+			}
 
-					bShouldDisplayBotTakeoverHint = (localPlayerXP >= minExp);
+			if (!showTakeOverHint)
+			{
+				m_hLastSpecTarget = INVALID_EHANDLE;
+				m_flDisplayEndTime = gpGlobals->curtime;
+			}
+		}
+	}
+	else
+	{
+		// Usable entity
+		constexpr float ITEM_DISCOVERY_SMOKE_THRESHOLD = 0.8f;
+		if (CBaseEntity *pUseEntity = pLocalNeoPlayer->FindUseEntity();
+			pUseEntity && (g_SmokeFogOverlayThermalOverride || g_SmokeFogOverlayAlpha < ITEM_DISCOVERY_SMOKE_THRESHOLD))
+		{
+			g_GlowObjectManager.SetUseItem(pUseEntity, Vector( 1.0f, 1.0f, 1.0f ), g_SmokeFogOverlayThermalOverride ? 1.0f : Max( 0.0f, 1.0f - g_SmokeFogOverlayAlpha), true, false);
+			m_hUseEntity = pUseEntity;
+			
+			if (!cl_neo_hud_context_hint_show_object_interact_hint.GetBool())
+				return;
+			
+			// Weapon pickup hint
+			static bool bPreviouslyCouldPickupWeapon = false;
+			if (pUseEntity->IsBaseCombatWeapon())
+			{
+				C_NEOBaseCombatWeapon* pNeoWeapon = static_cast<C_NEOBaseCombatWeapon*>(pUseEntity);
+
+				// Ghost pickup hint
+				if (pNeoWeapon->GetNeoWepBits() & NEO_WEP_GHOST)
+				{
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pick up the Ghost", szUppercaseKeyBinding);
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					bPreviouslyCouldPickupWeapon = true;
+				}
+				// Weapon pickup hint
+				else if (pNeoWeapon->CanBePickedUpByClass(pLocalNeoPlayer->GetClass()))
+				{
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pick up %hs", szUppercaseKeyBinding, pNeoWeapon->GetPrintName());
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					bPreviouslyCouldPickupWeapon = true;
+				}
+				else if (pLocalNeoPlayer->m_nButtons & IN_USE)
+				{
+					V_wcscpy_safe(m_wszHintText, L"Cannot pick up weapon");
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					m_hUseEntity = INVALID_EHANDLE;
+					bPreviouslyCouldPickupWeapon = false;
+				}
+				else
+				{
+					g_GlowObjectManager.ClearUseItemObject();
+					// When moving our cursor away from a weapon we can pickup, the message is cleared immediately down below when theres no usable entity.
+					// If there is a non-pickup-able usable entity instead, we need to clear the message here instead.
+					// We also want to keep the message around for a second if a non-pickup-able weapon was interacted with, hence the bPreviouslyCouldPickupWeapon check.
+					// NEO TODO (Adam) The "no usable entity" branch will also clear the "Cannot pick up weapon" message too soon, maybe refactor this a bit?
+					if (bPreviouslyCouldPickupWeapon)
+					{
+						m_flDisplayEndTime = gpGlobals->curtime;
+					}
+					m_hUseEntity = INVALID_EHANDLE;
+				}
+			}
+			// Juggernaut hint
+			else if (CNEO_Juggernaut* pJuggernaut = dynamic_cast<CNEO_Juggernaut*>(pUseEntity))
+			{
+				m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+				if (pJuggernaut->m_bLocked)
+				{
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"JGR56 is locked");
+				}
+				else if (C_NEO_Player* pNeoJuggernautPlayer = pJuggernaut->m_hHoldingPlayer.Get();
+					pNeoJuggernautPlayer && pJuggernaut->m_bIsHolding)
+				{
+					g_GlowObjectManager.ClearUseItemPlayer();
+					m_flDisplayEndTime = gpGlobals->curtime;
+				}
+				else
+				{
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] boot into JGR56", szUppercaseKeyBinding);
+				}
+			}
+			// Some other useable entity
+			else
+			{
+				V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] use", szUppercaseKeyBinding);
+				m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+			}
+		}
+		else
+		{
+			m_flDisplayEndTime = gpGlobals->curtime;
+			if (!cl_neo_hud_context_hint_show_bot_interact_hint.GetBool())
+				return;
+
+			// Bot command hint
+			{
+				if (C_NEO_Player* pTargetPlayer = pLocalNeoPlayer->PlayerUseTraceLine();
+					pTargetPlayer
+					&& GameResources()->IsFakePlayer(pTargetPlayer->entindex())
+					&& NEORules()->IsTeamplay()	&& pTargetPlayer->GetTeamNumber() == pLocalNeoPlayer->GetTeamNumber())
+				{
+					Vector teamGlowColor { 1.f, 1.f, 1.f };
+					NEORules()->GetTeamGlowColor(pTargetPlayer->GetTeamNumber(), teamGlowColor[0], teamGlowColor[1], teamGlowColor[2]);
+					g_GlowObjectManager.SetUseItem(pTargetPlayer, teamGlowColor, g_SmokeFogOverlayThermalOverride ? 1.0f : Max(0.0f, 1.0f - g_SmokeFogOverlayAlpha), false, true);
+			
+					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					if (sv_neo_bot_cmdr_enable.GetBool())
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] %hs %hs", szUppercaseKeyBinding, pTargetPlayer->m_hCommandingPlayer.Get() == pLocalNeoPlayer ? "release" : "command", pTargetPlayer->GetNeoPlayerName());
+					}
+					else
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] request primary weapon", szUppercaseKeyBinding); // NEO TODO (Adam) network primary weapon so can print its name here?
+					}
 				}
 			}
 		}
 	}
-
-	if (bShouldDisplayBotTakeoverHint)
-	{
-		// If the hint has not been shown for the current target yet, start the timer.
-		if (!m_bHintShownForCurrentSpecTarget)
-		{
-			m_flDisplayTime = gpGlobals->curtime + cl_neo_spec_takeover_player_hint_time_sec.GetFloat();
-			m_bHintShownForCurrentSpecTarget = true;
-		}
-
-		// If the hint is displaying and the timer hasn't expired, keep displaying it.
-		if (gpGlobals->curtime < m_flDisplayTime)
-		{
-			return true;
-		}
-	}
-
-	// If conditions are not met, or timer has expired, hide the hint.
-	return false;
 }
 
-void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
+struct UseEntity
 {
-	const char* useKeyBinding = engine->Key_LookupBinding("+use");
-	if (useKeyBinding && useKeyBinding[0] != '\0')
-	{
-		char szUppercaseKeyBinding[16]; // Assuming keybinds won't exceed 15 characters + null terminator
-		V_strncpy(szUppercaseKeyBinding, useKeyBinding, sizeof(szUppercaseKeyBinding));
-		V_strupr(szUppercaseKeyBinding);
-		V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Control Bot", szUppercaseKeyBinding);
-	}
-	else
-	{
-		V_wcsncpy(m_wszHintText, L"Press Use To Control Bot", sizeof(m_wszHintText));
-	}
-}
+	CHandle<CBaseEntity> entity = INVALID_EHANDLE;
+};
 
+// NEO NOTE (Adam) MAX_SPHERE_QUERY client side is half the size compared to server side? Might cause problems in context hint in extreme cases where item closest to cursor doesn't get highlighted but gets used
+UseEntity useEntityList[MAX_SPHERE_QUERY] = {};
+int useEntityListLastIndex = -1;
+
+void SetUseEntityListEntry(int index, CBaseEntity* entity)
+{
+	if (index < 0 || index >= ARRAYSIZE(useEntityList))
+		return;
+
+	useEntityList[index].entity = entity;
+	useEntityListLastIndex = index;
+};
+
+void ClearUseEntityListEntry()
+{
+	useEntityListLastIndex = -1;
+};
+
+ConVar cl_neo_hud_context_hint_show_object_interact_hint_in_world("cl_neo_hud_context_hint_show_object_interact_hint_in_world", "1", FCVAR_ARCHIVE, "Draw the object interact hint next to the interactable object", true, 0.f, true, 1.f);
 void CNEOHud_ContextHint::DrawNeoHudElement()
 {
+	if (m_wszHintText[0] == L'\0')
+		return;
+
 	int iScrWide, iScrTall;
 	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 
@@ -163,13 +299,49 @@ void CNEOHud_ContextHint::DrawNeoHudElement()
 
 	int iBoxX = (iScrWide - iBoxWide) / 2;
 	int iBoxY = iScrTall * m_flBoxYFactor - iBoxTall / 2;
+	
+	int textX = iBoxX + m_iPaddingX;
+	int textY = iBoxY + m_iPaddingY;
+	const int size = iTextTall / 8;
+
+	vgui::surface()->DrawSetColor(m_TextColor);
+	for (int i = 0; i <= useEntityListLastIndex; i++)
+	{
+		if (C_BaseEntity* entity = useEntityList[i].entity.Get())
+		{
+			int x = 0;
+			int y = 0;
+
+			if (!GetVectorInScreenSpace(entity->CollisionProp()->WorldSpaceCenter(), x, y))
+			{
+				continue;
+			}
+
+			vgui::surface()->DrawOutlinedCircle(x, y, size, 12);
+		}
+	}
+	
+	if (m_flDisplayEndTime <= gpGlobals->curtime)
+		return;
+
+	if (cl_neo_hud_context_hint_show_object_interact_hint_in_world.GetBool())
+	{
+		if (C_BaseEntity* useEntity = m_hUseEntity.Get())
+		{
+			GetVectorInScreenSpace(useEntity->CollisionProp()->WorldSpaceCenter(), textX, textY);
+
+			// text position
+			textX += iTextTall / 2;
+			textY -= iTextTall / 1.85f;
+		}
+	}
 
 	vgui::surface()->DrawSetColor(m_BoxColor);
 	vgui::surface()->DrawFilledRect(iBoxX, iBoxY, iBoxX + iBoxWide, iBoxY + iBoxTall);
 
 	vgui::surface()->DrawSetTextFont(m_hHintFont);
 	vgui::surface()->DrawSetTextColor(m_TextColor);
-	vgui::surface()->DrawSetTextPos(iBoxX + m_iPaddingX, iBoxY + m_iPaddingY);
+	vgui::surface()->DrawSetTextPos(textX, textY);
 	vgui::surface()->DrawPrintText(m_wszHintText, static_cast<int>(wcslen(m_wszHintText)));
 }
 

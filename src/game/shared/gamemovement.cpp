@@ -52,7 +52,9 @@ extern IFileSystem *filesystem;
 // gpGlobals->frametime are. We should probably set tickcount (to player->m_nTickBase),
 // but we're REALLY close to shipping, so we can change that later and people can use
 // player->CurrentCommandNumber() in the meantime.
+#ifndef NEO // Unity build | NEO NOTE (nullsystem): This tickcount never used in this cpp file
 #define tickcount USE_PLAYER_CURRENT_COMMAND_NUMBER__INSTEAD_OF_TICKCOUNT
+#endif
 
 #if defined( HL2_DLL )
 ConVar xc_uncrouch_on_jump( "xc_uncrouch_on_jump", "1", FCVAR_ARCHIVE, "Uncrouch when jump occurs" );

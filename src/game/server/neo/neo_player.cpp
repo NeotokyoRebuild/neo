@@ -40,6 +40,7 @@
 #include "bot/neo_bot.h"
 #include "nav_mesh.h"
 #include "neo_spawn_manager.h"
+#include "recipientfilter.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -170,10 +171,10 @@ ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots 
 // Bot Cloak Detection Thresholds
 // Base detection chance ratio (0.0 - 1.0) for bots to notice a cloaked target based on difficulty
 // e.g. 0 implies the bot is oblivious to anything, while 1.0 implies a bot that can roll very high on detection checks
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_easy("sv_neo_bot_cloak_detection_threshold_ratio_easy", "0.65", FCVAR_NONE, "Bot cloak detection threshold for easy difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detection_threshold_ratio_normal", "0.70", FCVAR_NONE, "Bot cloak detection threshold for normal difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.75", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.80", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_easy("sv_neo_bot_cloak_detection_threshold_ratio_easy", "0.35", FCVAR_NONE, "Bot cloak detection threshold for easy difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detection_threshold_ratio_normal", "0.40", FCVAR_NONE, "Bot cloak detection threshold for normal difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.45", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.50", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
 
 // Bot Cloak Detection Bonus Factors
 // Used in CNEO_Player::GetFogObscuredRatio to determine if the bot (me) can detect a cloaked target given circumstances
@@ -193,6 +194,10 @@ ConVar sv_neo_bot_cloak_detection_bonus_assault_motion_vision("sv_neo_bot_cloak_
 // Support has difficulty seeing cloak in thermal vision
 ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "1", FCVAR_NONE,
 	"Bot cloak detection bonus for non-support classes", true, 0, true, 100);
+
+// 0.7 dot product is about a 45 degree half hangle for a 90 degree cone
+ConVar sv_neo_bot_cloak_detection_aim_bonus_dot_threshold("sv_neo_bot_cloak_detection_aim_bonus_dot_threshold", "0.3", FCVAR_NONE,
+	"Bot cloak detection bonus minimum dot product threshold for aim bonus", true, 0.01, true, 0.7);
 
 ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "2", FCVAR_NONE,
 	"Bot cloak detection bonus for observer being stationary", true, 0, true, 100);
@@ -229,6 +234,9 @@ ConVar sv_neo_bot_cloak_detection_bonus_lighting_enabled("sv_neo_bot_cloak_detec
 // Depends on sv_neo_bot_cloak_detection_bonus_lighting_enabled
 ConVar sv_neo_bot_cloak_detection_bonus_lighting("sv_neo_bot_cloak_detection_bonus_lighting", "0", FCVAR_NONE,
 	"Bot cloak detection bonus for target being in a well lit area (scaled by light intensity ratio 0.0-1.0)", true, 0, true, 100);
+
+
+ConVar sv_neo_infinite_cloak("sv_neo_infinite_cloak", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Don't drain cloak", true, 0, true, 1);
 
 
 void CNEO_Player::RequestSetClass(int newClass)
@@ -504,6 +512,32 @@ CON_COMMAND_F(joinstar, "Join star", FCVAR_USERINFO)
 	{
 		const int star = atoi(args.ArgV()[1]);
 		player->RequestSetStar(star);
+	}
+}
+
+CON_COMMAND_F(useplayer, "+use on a player", FCVAR_USERINFO)
+{
+	if (args.ArgC() < 2)
+		return;
+
+	auto pPlayer = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+	if (!pPlayer)
+		return;
+	
+	if (CNEO_Player* pTargetPlayer = ToNEOPlayer(UTIL_PlayerByIndex(atoi(args[1])));
+		pTargetPlayer && pTargetPlayer->IsBot())
+	{
+		if (sv_neo_bot_cmdr_enable.GetBool())
+		{
+			pTargetPlayer->ToggleBotFollowCommander( pPlayer );
+			// TODO: Do we want to allow using players for some kind of communication?
+		}
+		else if (NEORules()->IsTeamplay() && pTargetPlayer->GetTeamNumber() == pPlayer->GetTeamNumber())
+		{
+			// Alt: Triggers throwing primary weapon to user
+			// see neo_bot_scenario_monitor for behavior transition
+			pTargetPlayer->m_hCommandingPlayer = pPlayer;
+		}
 	}
 }
 
@@ -1544,9 +1578,22 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		}
 	}
 
+	// The closer a target is to the bot's center aim, the more noticeable they are
+	Vector vEyeForward;
+	AngleVectors(pl.v_angle, &vEyeForward);
+	Vector vToTarget = target->WorldSpaceCenter() - (GetAbsOrigin() + GetViewOffset());
+	vToTarget.NormalizeInPlace();
+	float flDot = vEyeForward.Dot(vToTarget);
+	float flFovBonusRatio = RemapValClamped(flDot, sv_neo_bot_cloak_detection_aim_bonus_dot_threshold.GetFloat(), 1.0f, 0.0f, 1.0f);
+	// Make bonus more pronounced closer to the center and less so at edges
+	flFovBonusRatio *= flFovBonusRatio;
+
 	float obscuredDenominator = 100.0f; // scale from 0-100 percent likelyhood to detect every 200ms
-	
-	float obscuredRatio = Max(0.0f, obscuredDenominator - flDetectionBonus) / obscuredDenominator;
+
+	float obscuredNumerator = Max(0.0f, obscuredDenominator - flDetectionBonus);
+	obscuredNumerator *= (1.0f - flFovBonusRatio);
+
+	float obscuredRatio = obscuredNumerator / obscuredDenominator;
 	obscuredRatio = Clamp(obscuredRatio, 0.0f, 1.0f);
 	return obscuredRatio;
 }
@@ -2405,6 +2452,31 @@ void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
 			continue;
 		}
 
+		if (pNeoWeapon->GetSlot() == NEO_THROWABLES_WEAPON_SLOT)
+		{ // drop individual throwables with ammo counts of 1
+			int numThrowablesCreated = 0;
+			for (int i = 1; i < pNeoWeapon->m_iPrimaryAmmoCount; i++)
+			{
+				CBaseEntity* pEnt = CreateEntityByName(pNeoWeapon->GetClassname());
+				if (!pEnt)
+				{
+					Assert(false);
+					break; // Assuming this will not work for all subsequent tries
+				}
+
+				auto pNeoEnt = assert_cast<CNEOBaseCombatWeapon*>(pEnt);
+
+				pNeoEnt->SetLocalOrigin( GetLocalOrigin() );
+				pNeoEnt->AddSpawnFlags(SF_NORESPAWN);
+				DispatchSpawn( pNeoEnt );
+				pNeoEnt->Equip(this);
+				pNeoEnt->m_iPrimaryAmmoCount = 1;
+				numThrowablesCreated++;
+				Weapon_DropOnDeath(pNeoEnt, damageForce);
+			}
+			pNeoWeapon->m_iPrimaryAmmoCount.Set(pNeoWeapon->m_iPrimaryAmmoCount - numThrowablesCreated);
+		}
+
 		// Nowhere in particular; just drop it.
 		Weapon_DropOnDeath(pNeoWeapon, damageForce);
 	}
@@ -2582,6 +2654,8 @@ bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,
 
 void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 {
+	m_flLastInputTime = gpGlobals->curtime;
+
 	BaseClass::FireBullets(info);
 
 	if (!((static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))->GetNeoWepBits() & NEO_WEP_SUPPRESSED))
@@ -2665,14 +2739,38 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
 	auto weaponSlot = pWeapon->GetSlot();
-	// Only pick up grenades if we don't have grenades of that type NEOTODO (Adam) What if we have less than the maximum of that type (i.e one smoke grenade)? Can I carry more of a grenade than I spawn with?
-	if (weaponSlot == 3 && Weapon_GetPosition(weaponSlot, pWeapon->GetPosition()))
+	if (weaponSlot == NEO_THROWABLES_WEAPON_SLOT)
 	{
-		return false;
+		if (CNEOBaseCombatWeapon* pNeoWeaponInSlot = Weapon_GetPosition(weaponSlot, pWeapon->GetPosition());
+			pNeoWeaponInSlot)
+		{
+			if (pNeoWeaponInSlot->GetPrimaryAmmoCount() < pNeoWeaponInSlot->GetDefaultClip1())
+			{
+				const int ammoToAdd = clamp(pNeoWeaponInSlot->GetDefaultClip1() - pNeoWeaponInSlot->GetPrimaryAmmoCount(), 0, pWeapon->GetPrimaryAmmoCount());
+				pNeoWeaponInSlot->m_iPrimaryAmmoCount += ammoToAdd;
+				pWeapon->m_iPrimaryAmmoCount -= ammoToAdd;
+				if (pWeapon->GetPrimaryAmmoCount() <= 0)
+				{
+					UTIL_Remove(pWeapon);
+				}
+				if (ammoToAdd > 0)
+				{
+					CRecipientFilter filter;
+					filter.AddRecipient(this);
+
+					EmitSound_t params;
+					params.m_pSoundName = "Player.PickupWeapon";
+					params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL; // NEO TODO (Adam) This is silencing weapon pickup noise when picking up with the use key
+
+					EmitSound(filter,entindex(), params);
+				}
+			}
+			return false;
+		}
 	}
 
 	// We already have a weapon in this slot
-	if (weaponSlot != 3 && Weapon_GetSlot(weaponSlot))
+	if (weaponSlot != NEO_THROWABLES_WEAPON_SLOT && Weapon_GetSlot(weaponSlot))
 	{
 		return false;
 	}
@@ -2686,19 +2784,16 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 		}
 	}
 
-	// We need to run this for its side-effects, even in the IsDead case below... should be refactored.
-	const bool okRet = BaseClass::BumpWeapon(pWeapon);
-
 	// We had some cases of dead players chilling around with visible guns.
 	// While that will be addressed in ShouldDraw, here's a preventive measure
 	// to avoid that situation from occurring altogether.
 	if (IsDead())
 		return false;
 
-	return okRet;
+	return BaseClass::BumpWeapon(pWeapon);
 }
 
-bool CNEO_Player::Weapon_GetPosition(int slot, int position)
+CNEOBaseCombatWeapon* CNEO_Player::Weapon_GetPosition(int slot, int position)
 {
 	// Check for that slot being occupied already
 	for (int i = 0; i < MAX_WEAPONS; i++)
@@ -2707,7 +2802,7 @@ bool CNEO_Player::Weapon_GetPosition(int slot, int position)
 		{
 			// If the slots match, it's already occupied
 			if (m_hMyWeapons[i]->GetSlot() == slot && m_hMyWeapons[i]->GetPosition() == position)
-				return m_hMyWeapons[i];
+				return static_cast<CNEOBaseCombatWeapon*>(m_hMyWeapons[i].Get());
 		}
 	}
 
@@ -3222,7 +3317,8 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		// Checking because attacker might be prop or world
 		if (auto *attacker = ToNEOPlayer(info.GetAttacker()))
 		{
-			const int attackerIdx = attacker->entindex();
+			CNEO_Player* pImpersonated = attacker->GetSpectatorTakeoverPlayerTarget();
+			const int attackerIdx = pImpersonated ? pImpersonated->entindex() : attacker->entindex();
 			NEORules()->SetLastAttacker(entindex()); // NEO TODO (Adam) Once we can spectate non-players, let last attacker be non-neoplayer (Jeff)
 
 			// Separate the fractional amount of damage from the whole
@@ -3448,8 +3544,15 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 			{
 				RemoveAllItems(false);
 				GiveDefaultItems();
-				pEnt->Touch(this);
-				Weapon_Switch(Weapon_OwnsThisType(szWep));
+				if (!BumpWeapon(pNeoWeapon))
+				{
+					UTIL_Remove( pNeoWeapon );
+				}
+				else
+				{
+					pEnt->Touch( this );
+					Weapon_Switch(Weapon_OwnsThisType(szWep));
+				}
 			}
 		}
 		else
@@ -3586,44 +3689,6 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 	}
 }
 
-void CNEO_Player::PlayerUse( void )
-{
-	BaseClass::PlayerUse();
-
-	if ( (m_afButtonPressed & IN_USE) && !FindUseEntity() )
-	{
-		// Select bot under cursor to follow/unfollow.
-		Vector eyePos = EyePosition();
-		Vector forward;
-		EyeVectors( &forward );
-		Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
-
-		trace_t tr;
-		// MASK_SHOT_HULL to match friendly fire warning trace
-		UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr );
-
-		if ( tr.DidHit() && tr.m_pEnt )
-		{
-			CNEO_Player* pTargetPlayer = ToNEOPlayer(tr.m_pEnt);
-			if ( pTargetPlayer && pTargetPlayer->IsBot())
-			{
-				if (sv_neo_bot_cmdr_enable.GetBool())
-				{
-					// The hit entity is a bot! Now, toggle its follow state.
-					pTargetPlayer->ToggleBotFollowCommander( this );
-					// TODO: Do we want to allow using players for some kind of communication?
-				}
-				else if (NEORules()->IsTeamplay() && pTargetPlayer->GetTeamNumber() == GetTeamNumber())
-				{
-					// Alt: Triggers throwing primary weapon to user
-					// see neo_bot_scenario_monitor for behavior transition
-					pTargetPlayer->m_hCommandingPlayer = this;
-				}
-			}
-		}
-	}
-}
-
 void CNEO_Player::StartAutoSprint(void)
 {
 	BaseClass::StartAutoSprint();
@@ -3702,6 +3767,12 @@ void CNEO_Player::CloakPower_Update(void)
 
 bool CNEO_Player::CloakPower_Drain(float flPower)
 {
+	// NEO TODO (Adam) predict client side
+	if (sv_neo_infinite_cloak.GetBool())
+	{
+		return true;
+	}
+
 	m_HL2Local.m_cloakPower -= flPower;
 
 	if (m_HL2Local.m_cloakPower < 0.0)
@@ -4007,7 +4078,7 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 		{
 			EmitSound_t soundParams;
 			soundParams.m_pSoundName = "HUD.GhostPickUp";
-			soundParams.m_nChannel = CHAN_USER_BASE;
+			soundParams.m_nChannel = CHAN_GHOST_PICKUP;
 			soundParams.m_bWarnOnDirectWaveReference = false;
 			soundParams.m_bEmitCloseCaption = false;
 			soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
@@ -4057,111 +4128,14 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 
 // Start spectator takeover of player related code:
 ConVar sv_neo_spec_replace_player_loadout_enable("sv_neo_spec_replace_player_loadout_enable", "0", FCVAR_NONE, "Allow loadout change after spectator takeover.", true, 0, true, 1);
-ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.", true, 0, true, 1);
-ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "0", FCVAR_NONE, "Allow spectators to take over AFK players.", true, 0, true, 1);
-ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
-	"180", FCVAR_NONE,
-	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
-	true, -1, true, 999);
-ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
-	"0", FCVAR_NONE,
-	"Minimum experience allowed to takeover players ",
-	true, -999, true, 999);
 
-int CNEO_Player::GetSecondsUntilAFK() const
-{
-	// NEO JANK GetTimeSinceLastUserCommand seems to return 0 as long as the player is connected, so use an alternative timer
-	// GetTimeSinceWeaponFired was the simplest timer that worked, but should choose more robust criteria later
-	// TODO: Identify when player has triggered significant inputs and reset an AFK timer
-	// > 0 means more time needs to elapse before considered AFK
-	// <= 0 means player is considered AFK
-	return sv_neo_spec_replace_player_afk_time_sec.GetInt() - GetTimeSinceWeaponFired();
-}
-
-bool CNEO_Player::IsAFK() const
-{
-	return GetSecondsUntilAFK() <= 0;
-}
 
 void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 {
-	CSingleUserRecipientFilter filter(this);
-
-	if (!IsObserver() && IsAlive())
+	if (!pNeoPlayerToReplace->ValidTakeoverTargetFor(this))
 	{
-		DevWarning("A client initiating player takeover without being in observer mode might indicate server command bugs or tampering.\n");
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Not in observer mode.");
-		return;
-	}
-
-	if (NEORules()->GetRoundStatus() == PostRound)
-	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The mission is over.");
-		return;
-	}
-
-	if (m_iXP < sv_neo_spec_replace_player_min_exp.GetInt())
-	{
-		if (m_iXP < 0)
-		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Rankless Dogs are not authorized.");
-		}
-		else
-		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE,
-				"Shell takeover failed: Requires at least %s1 XP for authorization.",
-				sv_neo_spec_replace_player_min_exp.GetString());
-		}
-		return;
-	}
-
-	if (!pNeoPlayerToReplace)
-	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The target is not a valid candidate.");
-		return;
-	}
-
-	if (!pNeoPlayerToReplace->IsAlive())
-	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The target is dead.");
-		return;
-	}
-
-	if (!InSameTeam(pNeoPlayerToReplace) || !NEORules()->IsTeamplay())
-	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Target is not friendly.");
-		return;
-	}
-
-	const bool bIsTargetBot = pNeoPlayerToReplace->IsBot();
-	const bool bIsTargetAFK = pNeoPlayerToReplace->IsAFK();
-	const bool bAllowBotTakeover = sv_neo_spec_replace_player_bot_enable.GetBool();
-	const bool bAllowAfkTakeover = sv_neo_spec_replace_player_afk_enable.GetBool();
-
-	// If no valid condition is met, determine the specific reason and inform the user.
-	if (bIsTargetBot)
-	{
-		if (!bAllowBotTakeover)
-		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over bots is disabled.");
-			return;
-		}
-	}
-	else if (bIsTargetAFK)
-	{
-		if (!bAllowAfkTakeover)
-		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over inactive shells is disabled.");
-			return;
-		}
-	}
-	else
-	{
-		int secondsLeft = pNeoPlayerToReplace->GetSecondsUntilAFK();
-		UTIL_ClientPrintFilter(
-			filter,
-			HUD_PRINTCONSOLE,
-			UTIL_VarArgs("Shell takeover failed: Shell is not considered inactive until %d seconds.", secondsLeft) );
+		CSingleUserRecipientFilter filter(this);
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed");
 		return;
 	}
 

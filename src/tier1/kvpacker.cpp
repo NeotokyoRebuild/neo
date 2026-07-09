@@ -15,6 +15,11 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
+#ifdef NEO // Unity build
+#ifdef KEYVALUES_TOKEN_SIZE
+#undef KEYVALUES_TOKEN_SIZE
+#endif
+#endif
 #define KEYVALUES_TOKEN_SIZE	1024
 
 // writes KeyValue as binary data to buffer

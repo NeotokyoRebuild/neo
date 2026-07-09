@@ -37,7 +37,7 @@ jobs:
     - name: Set initial default branch name
       run: git config --global init.defaultBranch master
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -63,6 +63,18 @@ jobs:
 
     # Libraries
 
+    - name: Sparse fetch neoAssets
+      uses: actions/checkout@v6
+      with:
+        repository: NeotokyoRebuild/neoAssets
+        path: neoAssets
+        sparse-checkout:
+          neo/detail.vbsp
+          neo/lights.rad
+          neo/resource/
+          neo/shaders/fxc/
+          neo/rebuild.fgd
+
     - name: CMake configure libraries build
       working-directory: ${{ env.source_dir }}
       run: >
@@ -75,6 +87,7 @@ jobs:
         -DNEO_USE_SEPARATE_BUILD_INFO=ON
         -DNEO_INSTALL_LIBRARIES=ON
         -DNEO_INSTALL_RESOURCES=OFF
+        -DNEO_EXTRA_ASSETS_ALT_PATH=${{ github.workspace }}/neoAssets
 
     - name: CMake libraries build
       working-directory: ${{ env.source_dir }}
@@ -120,28 +133,28 @@ jobs:
         echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
 
     - name: Upload libraries
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.libraries }}
         path: ${{ env.install_dir }}/${{ env.libraries }}
         if-no-files-found: error
 
     - name: Upload libraries debug information
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.libraries_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.libraries_debuginfo }}
         if-no-files-found: error
 
     - name: Upload dedicated library
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.dedicated }}
         path: ${{ env.install_dir }}/${{ env.dedicated }}
         if-no-files-found: error
 
     - name: Upload dedicated library debug information
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
@@ -149,7 +162,7 @@ jobs:
 
     - name: Upload SourceMod gamedata
       if: ${{ matrix.preset_build_type.name == 'release' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.gamedata }}
         path: ${{ env.install_dir }}/${{ env.gamedata }}
@@ -169,14 +182,14 @@ jobs:
 
       matrix:
         platform:
-        - { display_name: 'Windows Native Libraries', os: windows-2025, preset_os: windows }
+        - { display_name: 'Windows Native Libraries', os: windows-2022, preset_os: windows }
 
         preset_build_type:
         - { display_name: 'Debug', name: debug }
         - { display_name: 'Release', name: release }
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -192,7 +205,7 @@ jobs:
         echo "install_dir=$install_dir" >> "$GITHUB_ENV"
         echo "preset_name=$preset_name" >> "$GITHUB_ENV"
 
-    - uses: ilammy/msvc-dev-cmd@v1
+    - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
       with:
         arch: x64
 
@@ -204,6 +217,18 @@ jobs:
       run: git fetch origin --tags --force
 
     # Libraries
+
+    - name: Sparse fetch neoAssets
+      uses: actions/checkout@v6
+      with:
+        repository: NeotokyoRebuild/neoAssets
+        path: neoAssets
+        sparse-checkout:
+          neo/detail.vbsp
+          neo/lights.rad
+          neo/resource/
+          neo/shaders/fxc/
+          neo/rebuild.fgd
 
     - name: CMake configure libraries build
       working-directory: ${{ env.source_dir }}
@@ -217,6 +242,7 @@ jobs:
         -DNEO_USE_SEPARATE_BUILD_INFO=ON
         -DNEO_INSTALL_LIBRARIES=ON
         -DNEO_INSTALL_RESOURCES=OFF
+        -DNEO_EXTRA_ASSETS_ALT_PATH=${{ github.workspace }}/neoAssets
 
     - name: CMake libraries build
       working-directory: ${{ env.source_dir }}
@@ -262,28 +288,28 @@ jobs:
         echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
 
     - name: Upload libraries
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.libraries }}
         path: ${{ env.install_dir }}/${{ env.libraries }}
         if-no-files-found: error
 
     - name: Upload libraries debug information
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.libraries_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.libraries_debuginfo }}
         if-no-files-found: error
 
     - name: Upload dedicated library
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.dedicated }}
         path: ${{ env.install_dir }}/${{ env.dedicated }}
         if-no-files-found: error
 
     - name: Upload dedicated library debug information
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
@@ -292,14 +318,14 @@ jobs:
   pack-resources:
     name: Windows Native Resources
 
-    runs-on: windows-2025
+    runs-on: windows-2022
 
     defaults:
       run:
         shell: bash
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -316,7 +342,7 @@ jobs:
     - name: Git fetch tags
       run: git fetch origin --tags --force
 
-    - uses: ilammy/msvc-dev-cmd@v1
+    - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c
       with:
         arch: x64
 
@@ -341,7 +367,7 @@ jobs:
       run: echo "resources=$(echo neo-*-*-resources)" >> "$GITHUB_ENV"
 
     - name: Upload resources
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.resources }}
         path: ${{ env.install_dir }}/${{ env.resources }}

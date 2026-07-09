@@ -20,6 +20,12 @@
 #undef SendMessage
 #endif
 
+#ifdef NEO // Unity build
+#ifdef GetClassName
+#undef GetClassName
+#endif
+#endif
+
 class KeyValues;
 
 namespace vgui

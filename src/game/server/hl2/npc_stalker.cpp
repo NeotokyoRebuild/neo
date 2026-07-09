@@ -100,7 +100,11 @@ enum
 // -----------------------------------------------
 //	> Squad slots
 // -----------------------------------------------
+#ifdef NEO // Unity build
+enum SquadSlotStalker_T
+#else
 enum SquadSlot_T
+#endif
 {
 	SQUAD_SLOT_CHASE_ENEMY_1	= LAST_SHARED_SQUADSLOT,
 	SQUAD_SLOT_CHASE_ENEMY_2,

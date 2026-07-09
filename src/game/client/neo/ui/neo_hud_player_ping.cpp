@@ -364,10 +364,14 @@ void CNEOHud_PlayerPing::NotifyPing(const int playerSlot)
 
 	if (cl_neo_player_pings_chat_message.GetBool())
 	{
-		CBaseHudChat* hudChat = (CBaseHudChat*)GET_HUDELEMENT(CHudChat);
-		if (hudChat)
+		// Skip text notification for bots
+		if (g_PR && !g_PR->IsFakePlayer(playerSlot + 1))
 		{
-			hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged a location\n", pPlayer->GetNeoPlayerName());
+			CBaseHudChat* hudChat = (CBaseHudChat*)GET_HUDELEMENT(CHudChat);
+			if (hudChat)
+			{
+				hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged a location\n", pPlayer->GetNeoPlayerName());
+			}
 		}
 	}
 	

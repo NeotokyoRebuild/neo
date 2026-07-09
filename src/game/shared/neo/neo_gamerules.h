@@ -22,6 +22,7 @@
 	#include "neo_player.h"
 	#include "neo_ghost_spawn_point.h"
 	#include "utlhashtable.h"
+	#include "neo_gamerules_restore.h"
 #endif
 
 #include "neo_player_shared.h"
@@ -366,6 +367,8 @@ public:
 	const Vector& GetJuggernautMarkerPos() const;
 	bool IsJuggernautLocked() const;
 
+	bool InReadyUpState() const;
+	bool InRoundState() const;
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -386,6 +389,7 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
+	inline void SetRoundNumber(const int iNewVal) { m_iRoundNumber.Set(iNewVal); }
     inline int roundNumber() const { return m_iRoundNumber; }
     inline bool roundNumberIsEven() const { return (roundNumber() % 2 == 0); }
 	int GetAttackingTeam() const;
@@ -551,6 +555,20 @@ private:
 public:
 	// VIP networked variables
 	CNetworkVar(int, m_iEscortingTeam);
+
+#ifdef GAME_DLL
+	// sv_neo_restore_...
+	struct NeoRestore
+	{
+		NextRoundGameruleRestoreFlags flags;
+		int iScoreJinrai;
+		int iScoreNSF;
+		int iRoundNumber;
+		int iRoundsWonJinrai;
+		int iRoundsWonNSF;
+	};
+	NeoRestore m_iNextRestore = {};
+#endif
 };
 
 inline CNEORules *NEORules()

@@ -293,7 +293,11 @@ void C_TEExplosion::SimulateParticles( CParticleSimulateIterator *pIterator )
 
 void TE_Explosion( IRecipientFilter& filter, float delay,
 	const Vector* pos, int modelindex, float scale, int framerate, int flags, int radius, int magnitude, 
+#ifdef NEO // Unity build
+	const Vector* normal, unsigned char materialType, bool bShouldAffectRagdolls )
+#else
 	const Vector* normal = NULL, unsigned char materialType = 'C', bool bShouldAffectRagdolls = true )
+#endif
 {
 	// Major hack to access singleton object for doing this event (simulate receiving network message)
 	__g_C_TEExplosion.m_nModelIndex = modelindex;

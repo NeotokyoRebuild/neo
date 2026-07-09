@@ -71,7 +71,11 @@ eventlist_t *EventList_AddEventEntry( const char *pName, int iEventIndex, bool i
 }
 
 // get the database entry from a string
+#ifdef NEO // Unity build
+static eventlist_t *EventListFromString( const char *pString )
+#else
 static eventlist_t *ListFromString( const char *pString )
+#endif
 {
 	// just use the string registry to do this search/map
 	int stringID = g_EventStrings.GetStringID( pString );
@@ -117,7 +121,11 @@ bool EventList_RegisterSharedEvent( const char *pszEventName, int iEventIndex, i
 
 	// first, check to make sure the slot we're asking for is free. It must be for 
 	// a shared event.
+#ifdef NEO // Unity build
+	eventlist_t *pList = EventListFromString( pszEventName );
+#else
 	eventlist_t *pList = ListFromString( pszEventName );
+#endif
 	if ( !pList )
 	{
 		pList = ListFromEvent( iEventIndex );
@@ -136,7 +144,11 @@ bool EventList_RegisterSharedEvent( const char *pszEventName, int iEventIndex, i
 
 Animevent EventList_RegisterPrivateEvent( const char *pszEventName )
 {
+#ifdef NEO // Unity build
+	eventlist_t *pList = EventListFromString( pszEventName );
+#else
 	eventlist_t *pList = ListFromString( pszEventName );
+#endif
 	if ( pList )
 	{
 		// this activity is already in the list. If the activity we collided with is also private, 
@@ -163,7 +175,11 @@ Animevent EventList_RegisterPrivateEvent( const char *pszEventName )
 int EventList_IndexForName( const char *pszEventName )
 {
 	// this is a fast O(lgn) search (actually does 2 O(lgn) searches)
+#ifdef NEO // Unity build	
+	eventlist_t *pList = EventListFromString( pszEventName );
+#else
 	eventlist_t *pList = ListFromString( pszEventName );
+#endif
 
 	if ( pList )
 	{

@@ -192,6 +192,8 @@ enum ESectionFlag
 	SECTIONFLAG_POPUP = 1 << 4,
 	// Don't restrict viewport to only label's area
 	SECTIONFLAG_LABELPANELVIEWPORT = 1 << 5,
+	// Disable X and Y axis offsets
+	SECTIONFLAG_DISABLEOFFSETS = 1 << 6,
 };
 typedef int ISectionFlags;
 
@@ -221,6 +223,7 @@ enum PopupFlag_
 	POPUPFLAG__EXTERNAL = ((1 << 8) - 1), // Mask of all external/options flags below start of internal
 	POPUPFLAG__INPOPUPSECTION = 1 << 8, // Inside a Begin/EndPopup section
 	POPUPFLAG__NEWOPENPOPUP = 1 << 9, // The popup just initialized
+	POPUPFLAG__CTXDONEPOPUP = 1 << 10, // Popup have been shown in this context, it's so OpenPopup to another one won't just immediately close
 };
 typedef int PopupFlags;
 
@@ -517,8 +520,12 @@ void EndPopup();
 [[nodiscard]] int CurrentPopup();
 
 // Get a suitable wide size for a popup by the longest text in the popup
-int PopupWideByStr(const char *pszStr);
-int PopupWideByStr(const wchar_t *pwszStr);
+enum ESuitableWide
+{
+	SUITABLEWIDE_POPUP = 0,
+	SUITABLEWIDE_TABLE,
+};
+int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType);
 
 [[nodiscard]] CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const CurrentWidgetState &wdgState);
@@ -562,11 +569,12 @@ struct TabsState
 /*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 		const TabsFlags flags = TABFLAG_DEFAULT,
 		TabsState *pState = nullptr);
-/*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath,
+/*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const char *szTextureGroup,
 		const EBaseButtonType eType, const bool bVal = false, const ButtonFlags flags = BUTTONFLAG_NONE, const float flScrollStart = 0.0f);
 /*1W*/ RetButton Button(const wchar_t *wszText);
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
-/*1W*/ RetButton ButtonTexture(const char *szTexturePath);
+/*1W*/ RetButton ButtonTexture(const char *szTexturePath, const char *szTextureGroup = "",
+		const wchar_t *wszText = L"");
 /*1W*/ RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal);
 /*1W*/ RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, const ButtonFlags flags = BUTTONFLAG_NONE, const float flScrollStart = 0.0f);
 /*1W*/ void RingBoxFlag(const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList = nullptr);
