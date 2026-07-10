@@ -127,6 +127,11 @@ public:
 //private:
 	void			CopyDamageToBaseDamage();
 
+#ifdef NEO
+	void			IncrementNumDamageEvents() { m_iNumDamageEvents++; }
+	int				GetNumDamageEvents() const { return m_iNumDamageEvents; }
+#endif // NEO
+
 protected:
 	void			Init( CBaseEntity *pInflictor, CBaseEntity *pAttacker, CBaseEntity *pWeapon, const Vector &damageForce, const Vector &damagePosition, const Vector &reportedPosition, float flDamage, int bitsDamageType, int iKillType );
 
@@ -139,6 +144,9 @@ protected:
 	float			m_flDamage;
 	float			m_flMaxDamage;
 	float			m_flBaseDamage;			// The damage amount before skill leve adjustments are made. Used to get uniform damage forces.
+#ifdef NEO
+	int				m_iNumDamageEvents;
+#endif // NEO
 	int				m_bitsDamageType;
 	int				m_iDamageCustom;
 	int				m_iDamageStats;

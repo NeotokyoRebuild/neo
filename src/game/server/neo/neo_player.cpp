@@ -3365,7 +3365,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			{
 				m_rfAttackersScores.GetForModify(attackerIdx) += Min(iDamage, GetHealth());
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
-				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
+				m_rfAttackersHits.GetForModify(attackerIdx) += info.GetNumDamageEvents();
 
 				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->IsRoundLive())
 				{
