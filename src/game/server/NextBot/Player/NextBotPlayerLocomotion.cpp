@@ -575,7 +575,12 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 	}
 
 #ifdef NEO
-	if ( IsRunning() )
+	CNEOBot* me = (CNEOBot*)GetBot()->GetEntity();
+	if ( me->m_nButtons & IN_WALK )
+	{
+		// If walk key was activated this tick, stop pressing run button.
+	}
+	else if ( IsRunning() )
 	{
 		playerButtons->PressRunButton();
 	}

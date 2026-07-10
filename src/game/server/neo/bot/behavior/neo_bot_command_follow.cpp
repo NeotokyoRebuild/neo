@@ -185,6 +185,38 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		return false;
 	}
 
+	// Sneak if commander is currently quiet
+	bool commanderIsQuiet = false;
+	if ( pCommander->m_nButtons & IN_WALK )
+	{
+		// Urge bots to sneak when walk button is held
+		commanderIsQuiet = true;
+	}
+	else if ( !(pCommander->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_SPEED | IN_RUN )) )
+	{
+		// Standing still (or at least not pressing movement buttons) also implies quiet
+		// Even while standing still, press IN_SPEED / IN_RUN to urge bots to move faster
+		commanderIsQuiet = true;
+	}
+
+	if (pCommander->IsDucking())
+	{
+		commanderIsQuiet = true;
+		me->PressCrouchButton(0.5f);
+	}
+
+	if (commanderIsQuiet)
+	{
+		m_bSneakWhenFollowingPing = true;
+		me->ReleaseRunButton();
+		me->PressSneakButton(0.5f);
+	}
+	else
+	{
+		m_bSneakWhenFollowingPing = false;
+		me->ReleaseSneakButton();
+	}
+
 	// Mirror behavior of leader if we have one
 	if ( CNEO_Player *pPlayerToMirror = me->m_hLeadingPlayer.Get() )
 	{
@@ -195,15 +227,6 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		else
 		{
 			me->DisableCloak();
-		}
-
-		if (pPlayerToMirror->IsDucking())
-		{
-			me->PressCrouchButton(0.5f);
-		}
-		else
-		{
-			me->ReleaseCrouchButton();
 		}
 	}
 
@@ -258,6 +281,12 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 				me->m_hLeadingPlayer = pCommander; // fallback to following commander
 				// continue with leader following logic below
 			}
+		}
+
+		if (m_bSneakWhenFollowingPing)
+		{
+			me->ReleaseRunButton();
+			me->PressSneakButton(0.3f);
 		}
 
 		if (FanOutAndCover(me, m_vGoalPos))
