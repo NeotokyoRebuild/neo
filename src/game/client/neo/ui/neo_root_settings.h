@@ -73,7 +73,6 @@ struct NeoSettings
 		bool bTachiFullAutoPreferred;
 		int iBackground;
 		bool bTakingDamageSounds;
-		int iScoreboardPadding;
 	};
 
 	struct Keys
@@ -213,6 +212,7 @@ struct NeoSettings
 		bool bShowHudContextHighlightObject;
 		bool bShowHudContextHighlightPlayer;
 		int iKdinfoToggletype;
+		int iScoreboardPadding;
 
 		// IFF Markers
 		int optionChosen;

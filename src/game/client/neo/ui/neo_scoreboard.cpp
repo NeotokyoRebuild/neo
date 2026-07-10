@@ -526,7 +526,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const int iPopupCardPerRowTallAvatarName = iPopupCardRowTallBase * 3;
 	const int iPopupCardPerRowTallButtons = iPopupCardRowTallBase * 2.25f;
 	const int iAvatarOffset = m_uiCtx.iMarginX;
-	const int iAvatarWT = iPopupCardPerRowTallAvatarName - (iAvatarOffset * 2);
+	const int iAvatarWT = ShowAvatars() ? (iPopupCardPerRowTallAvatarName - (iAvatarOffset * 2)) : 0;
 	const bool bShowReadyUp = sv_neo_readyup_lobby.GetBool()
 			&& NEORules()->m_nRoundStatus == NeoRoundStatus::Idle;
 	static CrosshairInfo staticXhairInfo = {};
@@ -820,7 +820,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						const bool bHaveFriendReq = (SteamFriends()
 								&& k_EFriendRelationshipRequestInitiator == SteamFriends()->GetFriendRelationship(m_playerPopup.steamID));
 
-						const int iWidePopupCover = iAvatarWT + (2 * iAvatarOffset)
+						const int iWidePopupCover = iAvatarWT + ((1 + ShowAvatars()) * iAvatarOffset)
 								+ NeoUI::SuitableWideByWStr(
 										m_playerPopup.wszName,
 										NeoUI::SUITABLEWIDE_TABLE,
@@ -989,7 +989,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		if (NeoUI::BeginPopup(NEOSCOREBOARDPOPUP_CARD))
 		{
 			CAvatarImage *pAvatarImg = nullptr;
-			if (m_playerPopup.avatar.i184Idx >= 0)
+			if (ShowAvatars() && m_playerPopup.avatar.i184Idx >= 0)
 			{
 				pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i184Idx));
 			}
@@ -1006,7 +1006,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 			NeoUI::Pad();
 
 			vgui::surface()->DrawSetTextPos(
-					m_uiCtx.dPanel.x + iAvatarOffset + iAvatarWT + iAvatarOffset,
+					m_uiCtx.dPanel.x + iAvatarOffset + (ShowAvatars() ? (iAvatarWT + iAvatarOffset) : 0),
 					m_uiCtx.dPanel.y + iAvatarOffset);
 			if (m_playerPopup.wszClantag[0])
 			{
@@ -1017,7 +1017,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				const auto *pFontI = &m_uiCtx.fonts[m_uiCtx.eFont];
 				const int iClantagTall = vgui::surface()->GetFontTall(pFontI->hdl);
 				vgui::surface()->DrawSetTextPos(
-						m_uiCtx.dPanel.x + iAvatarOffset + iAvatarWT + iAvatarOffset,
+						m_uiCtx.dPanel.x + iAvatarOffset + (ShowAvatars() ? (iAvatarWT + iAvatarOffset) : 0),
 						m_uiCtx.dPanel.y + iAvatarOffset + iClantagTall + iAvatarOffset);
 			}
 			NeoUI::SwapFont(NeoUI::FONT_NTLARGE);
