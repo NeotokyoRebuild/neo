@@ -529,6 +529,7 @@ void BeginSection(const ISectionFlags iSectionFlags)
 	c->uMultiHighlightFlags = MULTIHIGHLIGHTFLAG_NONE;
 	c->layout.iTableLabelsSize = 0;
 	c->layout.piTableColsWide = nullptr;
+	c->layout.iOverridePanelWide = 0;
 	c->curRowFlags = NEXTTABLEROWFLAG_NONE;
 	c->bBlockSectionMWheel = false;
 
@@ -935,9 +936,9 @@ int CurrentPopup()
 	return c->iCurPopupId;
 }
 
-int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType)
+int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType, const int iForceIdx)
 {
-	const auto *pFontI = &c->fonts[c->eFont];
+	const auto *pFontI = &c->fonts[(iForceIdx >= 0) ? iForceIdx : c->eFont];
 	switch (eWideType)
 	{
 	case SUITABLEWIDE_POPUP:
@@ -995,6 +996,16 @@ void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions)
 	c->layout.iVertParts = iRowProportions;
 	c->iIdxVertParts = -1;
 	c->iVertLayoutY = 0;
+}
+
+void BeginOverridePanelWide(const int iOverridePanelWide)
+{
+	c->layout.iOverridePanelWide = iOverridePanelWide;
+}
+
+void EndOverridePanelWide()
+{
+	c->layout.iOverridePanelWide = 0;
 }
 
 CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag)
@@ -1059,12 +1070,16 @@ CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag)
 			: Max(1, c->layout.iRowPartsTotal);
 	const bool bNextIsLast = (c->iIdxRowParts + 1) >= iRowPartsTotal;
 
+	const int iLayoutWide = (c->layout.iOverridePanelWide > 0)
+			? c->layout.iOverridePanelWide
+			: c->dPanel.wide;
+
 	// NEO NOTE (nullsystem): If very last partition of the row, use what's left
 	// instead so whatever pixels don't get left out
 	int xWide;
 	if (bNextIsLast && !bInTable)
 	{
-		xWide = c->dPanel.wide - c->iLayoutX;
+		xWide = iLayoutWide - c->iLayoutX;
 	}
 	else
 	{
@@ -1076,11 +1091,11 @@ CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag)
 		}
 		else if (c->layout.iRowParts)
 		{
-			xWide = (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide;
+			xWide = (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * iLayoutWide;
 		}
 		else
 		{
-			xWide = (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
+			xWide = (1.0f / static_cast<float>(iRowPartsTotal)) * iLayoutWide;
 		}
 	}
 
@@ -1569,7 +1584,7 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath,
 					const int x = XPosFromText(wszText, pFontI, TEXTSTYLE_CENTER);
 					vgui::surface()->DrawSetTextPos(
 							c->rWidgetArea.x0 + x,
-							c->rWidgetArea.y0 + iTexYTall - pFontI->iYFontOffset);
+							c->rWidgetArea.y0 + iTexYTall);
 					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
 				}
 				else

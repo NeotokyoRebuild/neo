@@ -20,6 +20,7 @@
 #include "neo/ui/neo_utils.h"
 #include "neo_theme.h"
 #include "neo_mp3player.h"
+#include "neo/ui/neo_scoreboard.h"
 
 #include <cwctype>
 
@@ -443,6 +444,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bTachiFullAutoPreferred = cvr->cl_neo_tachi_prefer_auto.GetBool();
 		pGeneral->bTakingDamageSounds = cvr->cl_neo_taking_damage_sounds.GetBool();
+		pGeneral->iScoreboardPadding = cvr->cl_neo_hud_scoreboard_padding.GetInt();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
@@ -801,6 +803,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_tachi_prefer_auto.SetValue(pGeneral->bTachiFullAutoPreferred);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_taking_damage_sounds.SetValue(pGeneral->bTakingDamageSounds);
+		cvr->cl_neo_hud_scoreboard_padding.SetValue(pGeneral->iScoreboardPadding);
 		NeoSettingsBackgroundWrite(ns);
 	}
 	{
@@ -1105,6 +1108,12 @@ FORCEINLINE void VarTrimmer(wchar_t (&input)[maxlen])
 	}
 }
 
+static const wchar_t *NEOSCOREBOARDPADDING_LABELS[NEOSCOREBOARDPADDING__TOTAL] = {
+	L"Default",		// NEOSCOREBOARDPADDING_DEFAULT
+	L"Compact",		// NEOSCOREBOARDPADDING_COMPACT
+	L"Spacious",	// NEOSCOREBOARDPADDING_SPACIOUS
+};
+
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
@@ -1116,6 +1125,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pGeneral->iEquipUtilityPriority);
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pGeneral->bWeaponFastSwitch);
 	NeoUI::RingBoxBool(L"Taking damage sounds", &pGeneral->bTakingDamageSounds);
+	NeoUI::RingBox(L"Scoreboard padding", NEOSCOREBOARDPADDING_LABELS, NEOSCOREBOARDPADDING__TOTAL, &pGeneral->iScoreboardPadding);
 
 	NeoUI::Divider(L"MAIN MENU");
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
