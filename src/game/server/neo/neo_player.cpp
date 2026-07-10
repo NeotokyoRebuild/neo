@@ -2297,7 +2297,7 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 	CSingleUserRecipientFilter filter(this);
 	filter.MakeReliable();
 
-	UserMessageBegin(filter, "DamageInfo");
+	UserMessageBegin(filter, "KillerDamageInfo");
 	{
 		short attackerIdx = 0;
 		auto *neoAttacker = info ? ToNEOPlayer(info->GetAttacker()) : nullptr;

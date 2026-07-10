@@ -48,7 +48,7 @@
 #include "rendertexture.h"
 #include "ivieweffects.h"
 #include "iachievementmgr.h"
-#include "c_neo_killer_damage_infos.h"
+#include "c_neo_killer_infos.h"
 #include <vgui/ILocalize.h>
 #include <tier3.h>
 
