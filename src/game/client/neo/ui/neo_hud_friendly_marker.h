@@ -3,7 +3,7 @@
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-#include "neo_gamerules.h"
+#include "gamerules/neo_gamerules.h"
 #include "neo_hud_worldpos_marker.h"
 
 enum NeoIFFMarkerSegment

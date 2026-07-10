@@ -1356,7 +1356,7 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 		return;
 	}
 
-	if (!weaponstay.GetBool() || NEORules()->CanRespawnAnyTime())
+	if (!weaponstay.GetBool() || NEORules()->RespawnsEnabled())
 	{ // regardless of the value of mp_weaponstay, disappear weapons in game modes with respawns enabled. Otherwise things can get too chaotic
 		BaseClass::SetPickupTouch();
 		return;

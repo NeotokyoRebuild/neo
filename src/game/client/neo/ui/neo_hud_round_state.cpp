@@ -20,6 +20,7 @@
 #include "c_playerresource.h"
 #include "vgui_avatarimage.h"
 #include "neo_scoreboard.h"
+#include "neo_gamerules_dm.h"
 
 #include "hltvcamera.h"
 
@@ -258,6 +259,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const bool inDoOrDie = NEORules()->RoundIsDoOrDie();
 	const bool inMatchPoint = !inDoOrDie && NEORules()->RoundIsMatchPoint(); // we don't care about matchpoint if in do or die
 
+	// NEO TODO (Adam) move this to neogamerules?
 	m_pWszStatusUnicode = L"";
 	if (roundStatus == NeoRoundStatus::Idle)
 	{
@@ -298,7 +300,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 			m_pWszStatusUnicode = L"Capture the Ghost\n";
 			break;
 		case NEO_GAME_TYPE_VIP:
-			if (GetLocalPlayerTeam() == NEORules()->m_iEscortingTeam.Get())
+			if (GetLocalPlayerTeam() == NEORules()->GetEscortingTeam())
 			{
 				if (NEORules()->GhostExists())
 				{
@@ -309,7 +311,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 					m_pWszStatusUnicode = L"Escort the VIP\n";
 				}
 			}
-			else
+			else // NEO TODO (Adam) check if opposite team to escorting team, else different message for spectators
 			{
 				if (NEORules()->GhostExists())
 				{
@@ -323,6 +325,20 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 			break;
 		case NEO_GAME_TYPE_JGR:
 			m_pWszStatusUnicode = L"Control the Juggernaut\n";
+			break;
+		case NEO_GAME_TYPE_ATK:
+			if (GetLocalPlayerTeam() == NEORules()->GetAttackingTeam())
+			{
+				m_pWszStatusUnicode = L"Capture the Ghost\n";
+			}
+			else if (GetLocalPlayerTeam() == NEORules()->GetDefendingTeam())
+			{
+				m_pWszStatusUnicode = L"Protect the Ghost\n";
+			}
+			else
+			{
+				m_pWszStatusUnicode = L"Capture/Protect the Ghost\n";
+			}
 			break;
 		default:
 			m_pWszStatusUnicode = L"Await further orders\n";
@@ -378,9 +394,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		roundTimeLeft = NEORules()->GetRemainingPreRoundFreezeTime(true);
 
 	int secsTotal = 0.0f;
-	if (roundStatus == NeoRoundStatus::Overtime && NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	if (roundStatus == NeoRoundStatus::Overtime && (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG || NEORules()->GetGameType() == NEO_GAME_TYPE_ATK))
 	{
-		secsTotal = RoundFloatToInt(NEORules()->GetCTGOverTime());
+		secsTotal = RoundFloatToInt(NEORules()->GetRoundRemainingTime());
 	}
 	else
 	{
@@ -408,7 +424,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	else
 	{
 		[[maybe_unused]] int iDMHighestTotal;
-		NEORules()->GetDMHighestScorers(&iDMHighestTotal, &iDMHighestXP);
+		NEORulesDM()->GetDMHighestScorers(&iDMHighestTotal, &iDMHighestXP);
 	}
 
 	char szPlayersAliveANSI[ARRAYSIZE(m_wszPlayersAliveUnicode)] = {};

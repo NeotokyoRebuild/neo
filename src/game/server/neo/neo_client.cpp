@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_player.h"
+#include "neo_game_config.h"
 #include "neo_gamerules.h"
 #include "gamerules.h"
 #include "teamplay_gamerules.h"
@@ -389,5 +390,5 @@ void GameStartFrame( void )
 //=========================================================
 void InstallGameRules()
 {
-	CreateGameRulesObject( "CNEORules" );
+	CreateGameRulesObject( "CNEORulesEMT" );
 }

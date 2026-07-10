@@ -1,18 +1,19 @@
 #pragma once
 
 #include "cbase.h"
-#include "baseentity.h"
 #include "neo_gamerules.h"
 
 class CNEOGameConfig : public CLogicalEntity
 {
-	DECLARE_CLASS(CNEOGameConfig, CBaseEntity);
+	DECLARE_CLASS(CNEOGameConfig, CLogicalEntity);
 	DECLARE_DATADESC();
 
 public:
+	CNEOGameConfig();
+	~CNEOGameConfig();
 	virtual void Spawn() override;
 
-	int m_GameType = NEO_GAME_TYPE_TDM;
+	int m_GameType = NEO_GAME_TYPE_EMT;
 	int m_HiddenHudElements = 0;
 	int m_ForcedTeam = -1;
 	int m_ForcedClass = -1;
@@ -30,3 +31,9 @@ public:
 	COutputEvent m_OnRoundStart;
 	COutputEvent m_OnCompetitive;
 };
+
+extern CNEOGameConfig *g_pNEOGameConfig;
+inline CNEOGameConfig *NEOGameConfig()
+{
+	return g_pNEOGameConfig;
+}

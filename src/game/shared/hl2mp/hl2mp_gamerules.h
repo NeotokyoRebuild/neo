@@ -86,6 +86,14 @@ public:
 
 #ifdef NEO
 	friend class CNEORules;
+	friend class CNEORulesATK;
+	friend class CNEORulesCTG;
+	friend class CNEORulesDM;
+	friend class CNEORulesEMT;
+	friend class CNEORulesJGR;
+	friend class CNEORulesTDM;
+	friend class CNEORulesTUT;
+	friend class CNEORulesVIP;
 #endif
 
 #ifdef CLIENT_DLL

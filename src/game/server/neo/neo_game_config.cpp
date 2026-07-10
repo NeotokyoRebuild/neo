@@ -1,4 +1,6 @@
 #include "neo_game_config.h"
+#include "neo_gamerules.h"
+#include "neo_gamerules_dm.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -26,11 +28,34 @@ END_DATADESC()
 
 extern ConVar sv_neo_comp;
 
+CNEOGameConfig *g_pNEOGameConfig = nullptr;
+
+CNEOGameConfig::CNEOGameConfig()
+{
+	Assert( !g_pNEOGameConfig );
+	g_pNEOGameConfig = this;
+}
+
+CNEOGameConfig::~CNEOGameConfig()
+{
+	g_pNEOGameConfig = nullptr;
+}
+
 void CNEOGameConfig::Spawn()
 {
 	if (sv_neo_comp.GetBool())
 	{
 		m_OnCompetitive.FireOutput(nullptr, this);
+	}
+
+	// Create new gamerules object
+	{
+		for (int i = g_Teams.Count() - 1; i >= 0; i--)
+		{
+			UTIL_RemoveImmediate(g_Teams[i]);
+		}
+
+		CreateGameRulesObject(NEO_GAME_TYPE_CLASS_NAMES[m_GameType]);
 	}
 }
 
@@ -44,7 +69,7 @@ void CNEOGameConfig::InputFireTeamWin(inputdata_t& inputData)
 
 void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
 {
-	CBasePlayer* pPlayer = NULL;
+	CBasePlayer* pPlayer = nullptr;
 
 	if (inputData.pActivator && inputData.pActivator->IsPlayer())
 	{
@@ -53,7 +78,7 @@ void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
 
 	if (pPlayer)
     {
-        NEORules()->SetWinningDMPlayer(static_cast<CNEO_Player*>(pPlayer));
+        NEORulesDM()->SetWinningDMPlayer(static_cast<CNEO_Player*>(pPlayer));
     }
 }
 
