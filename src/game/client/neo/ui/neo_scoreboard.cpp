@@ -1006,7 +1006,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 			NeoUI::Pad();
 
 			vgui::surface()->DrawSetTextPos(
-					m_uiCtx.dPanel.x + iAvatarOffset + (ShowAvatars() ? (iAvatarWT + iAvatarOffset) : 0),
+					m_uiCtx.dPanel.x + iAvatarOffset + (pAvatarImg ? (iAvatarWT + iAvatarOffset) : 0),
 					m_uiCtx.dPanel.y + iAvatarOffset);
 			if (m_playerPopup.wszClantag[0])
 			{
@@ -1017,7 +1017,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				const auto *pFontI = &m_uiCtx.fonts[m_uiCtx.eFont];
 				const int iClantagTall = vgui::surface()->GetFontTall(pFontI->hdl);
 				vgui::surface()->DrawSetTextPos(
-						m_uiCtx.dPanel.x + iAvatarOffset + (ShowAvatars() ? (iAvatarWT + iAvatarOffset) : 0),
+						m_uiCtx.dPanel.x + iAvatarOffset + (pAvatarImg ? (iAvatarWT + iAvatarOffset) : 0),
 						m_uiCtx.dPanel.y + iAvatarOffset + iClantagTall + iAvatarOffset);
 			}
 			NeoUI::SwapFont(NeoUI::FONT_NTLARGE);
