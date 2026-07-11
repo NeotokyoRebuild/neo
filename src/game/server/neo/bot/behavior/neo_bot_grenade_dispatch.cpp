@@ -9,6 +9,8 @@
 #include "weapon_grenade.h"
 #include "weapon_smokegrenade.h"
 
+ConVar sv_neo_bot_grenade_polite_frag("sv_neo_bot_grenade_polite_frag", "1", FCVAR_NONE, "Force bots to consider teammates when throwing frag grenades.", true, 0, true, 1);
+ConVar sv_neo_bot_grenade_polite_smoke("sv_neo_bot_grenade_polite_smoke", "1", FCVAR_NONE, "Force bots to consider teammates when throwing smoke grenades.", true, 0, true, 1);
 ConVar sv_neo_bot_grenade_use_frag("sv_neo_bot_grenade_use_frag", "1", FCVAR_NONE, "Allow bots to use frag grenades", true, 0, true, 1);
 ConVar sv_neo_bot_grenade_use_smoke("sv_neo_bot_grenade_use_smoke", "1", FCVAR_NONE, "Allow bots to use smoke grenades", true, 0, true, 1);
 ConVar sv_neo_bot_grenade_throw_cooldown("sv_neo_bot_grenade_throw_cooldown", "10", FCVAR_NONE, "Cooldown in seconds between grenade throws for bots");
@@ -78,29 +80,32 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 	// Should I toss a smoke grenade?
 	if ( pSmokeGrenade && (me->GetClass() == NEO_CLASS_SUPPORT) )
 	{
-		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+		if ( sv_neo_bot_grenade_polite_smoke.GetBool() )
 		{
-			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-			if ( !pPlayer || !pPlayer->IsAlive() || pPlayer == me )
+			for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 			{
-				continue;
-			}
-
-			if ( pPlayer->InSameTeam( me ) ) 
-			{
-				if ( !pPlayer->IsBot() && pPlayer->GetClass() != NEO_CLASS_SUPPORT )
+				CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+				if ( !pPlayer || !pPlayer->IsAlive() || pPlayer == me )
 				{
-					// Avoid blocking the vision of a friendly human
-					// (Bots benefit from concealment without the disorientation)
-					return nullptr;
+					continue;
 				}
-			}
-			else
-			{
-				if ( pPlayer->GetClass() == NEO_CLASS_SUPPORT )
+
+				if ( pPlayer->InSameTeam( me ) ) 
 				{
-					// Avoid giving an enemy with thermal vision a free smoke screen
-					return nullptr;
+					if ( !pPlayer->IsBot() && pPlayer->GetClass() != NEO_CLASS_SUPPORT )
+					{
+						// Avoid blocking the vision of a friendly human
+						// (Bots benefit from concealment without the disorientation)
+						return nullptr;
+					}
+				}
+				else
+				{
+					if ( pPlayer->GetClass() == NEO_CLASS_SUPPORT )
+					{
+						// Avoid giving an enemy with thermal vision a free smoke screen
+						return nullptr;
+					}
 				}
 			}
 		}
@@ -111,9 +116,12 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 	// Should I toss a frag grenade? 
 	if ( pFragGrenade )
 	{
-		if ( !CNEOBotGrenadeThrowFrag::IsFragSafe( me, threat->GetLastKnownPosition() ) )
+		if ( sv_neo_bot_grenade_polite_frag.GetBool() )
 		{
-			return nullptr;
+			if ( !CNEOBotGrenadeThrowFrag::IsFragSafe( me, threat->GetLastKnownPosition() ) )
+			{
+				return nullptr;
+			}
 		}
 
 		return new CNEOBotGrenadeThrowFrag( pFragGrenade, threat );

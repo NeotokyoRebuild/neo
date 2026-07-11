@@ -1,11 +1,13 @@
 #include "cbase.h"
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_reservation.h"
 #include "bot/behavior/neo_bot_grenade_throw_frag.h"
 #include "neo_gamerules.h"
 #include "neo_player.h"
 #include "weapon_neobasecombatweapon.h"
 
+#include "nav_mesh.h"
 #include "nav_pathfind.h"
 
 extern ConVar sv_neo_grenade_blast_radius;
@@ -104,6 +106,15 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	if ( !IsFragSafe( me, m_vecTarget ) )
 	{
 		return THROW_TARGET_CANCEL; // risk of friendly fire
+	}
+
+	// Register explosive hazard at the target position
+	// so the throwing bot's team can avoid the trajectory and landing areas
+	CNavArea *area = TheNavMesh->GetNearestNavArea(m_vecTarget);
+	if (area)
+	{
+		int team = me->GetTeamNumber();
+		CNEOBotPathReservations()->AddFragHazard(area->GetID(), gpGlobals->curtime + sv_neo_grenade_fuse_timer.GetFloat(), team);
 	}
 
 	return THROW_TARGET_READY;

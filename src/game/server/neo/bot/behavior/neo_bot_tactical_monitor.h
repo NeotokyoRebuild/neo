@@ -26,6 +26,7 @@ public:
 	virtual const char* GetName(void) const { return "TacticalMonitor"; }
 
 private:
+	CountdownTimer m_hazardCheckTimer;
 	CountdownTimer m_maintainTimer;
 
 	CountdownTimer m_acknowledgeAttentionTimer;

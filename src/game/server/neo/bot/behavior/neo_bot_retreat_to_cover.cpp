@@ -8,6 +8,7 @@
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_reservation.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 ConVar neo_bot_retreat_to_cover_range( "neo_bot_retreat_to_cover_range", "1000", FCVAR_CHEAT );
@@ -103,6 +104,7 @@ public:
 	CSearchForCover( CNEOBot *me )
 	{
 		m_me = me;
+		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
 		m_minExposureCount = 9999;
 
 		if ( neo_bot_debug_retreat_to_cover.GetBool() )
@@ -114,6 +116,20 @@ public:
 		VPROF_BUDGET( "CSearchForCover::operator()", "NextBot" );
 
 		CNavArea *area = (CNavArea *)baseArea;
+
+		// Skip areas that are hazardous or where bots get stuck
+		if ( neo_bot_path_reservation_enable.GetBool() )
+		{
+			int navAreaId = area->GetID();
+			if (CNEOBotPathReservations()->IsAreaHazardous(navAreaId, m_me))
+			{
+				return true;
+			}
+			if (CNEOBotPathReservations()->GetAreaAvoidPenalty(navAreaId) >= m_onStuckPenalty)
+			{
+				return true;
+			}
+		}
 
 		CTestAreaAgainstThreats test( m_me, area );
 		m_me->GetVisionInterface()->ForEachKnownEntity( test );
@@ -156,6 +172,7 @@ public:
 	CNEOBot *m_me;
 	CUtlVector< CNavArea * > m_coverAreaVector;
 	int m_minExposureCount;
+	float m_onStuckPenalty;
 };
 
 
@@ -311,7 +328,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 
 		if ( m_repathTimer.IsElapsed() )
 		{
-			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
+			m_repathTimer.Start( RandomFloat( 5.0f, 10.0f ) );
 
 			CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
 		}
@@ -326,6 +343,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnStuck( CNEOBot *me )
 {
+	m_coverArea = FindCoverArea( me );
+	CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
 	return TryContinue();
 }
 
@@ -340,6 +359,8 @@ EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnMoveToSuccess( CNEOBot *m
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
+	m_coverArea = FindCoverArea( me );
+	CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
 	return TryContinue();
 }
 

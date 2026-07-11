@@ -62,6 +62,7 @@ public:
 		m_threatArea = threat->GetLastKnownArea();
 		m_goalArea = goalArea ? goalArea : m_threatArea; // prioritize movement towards input goal area or threat
 		m_myDistToGoalSq = m_goalArea ? ( m_goalArea->GetCenter() - m_me->GetAbsOrigin() ).LengthSqr() : 0;
+		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
 	}
 
 	virtual bool operator() ( CNavArea *baseArea, CNavArea *priorArea, float travelDistanceSoFar )
@@ -79,10 +80,18 @@ public:
 			return true; // skip our starting area
 		}
 
-		if ( neo_bot_path_reservation_enable.GetBool() &&
-			( CNEOBotPathReservations()->GetAreaAvoidPenalty(area->GetID()) > 0 ) )
+		// Skip areas that are hazardous or where bots get stuck
+		if ( neo_bot_path_reservation_enable.GetBool() )
 		{
-			return true; // skip areas that have had navigation hiccups
+			int navAreaId = area->GetID();
+			if (CNEOBotPathReservations()->IsAreaHazardous(navAreaId, m_me))
+			{
+				return true;
+			}
+			if (CNEOBotPathReservations()->GetAreaAvoidPenalty(navAreaId) >= m_onStuckPenalty)
+			{
+				return true;
+			}
 		}
 
 		if ( m_attackCoverArea )
@@ -199,6 +208,7 @@ public:
 	const CNavArea *m_myArea;     // reference point of myself
 	const CNavArea *m_threatArea; // reference point of the threat
 	float m_myDistToGoalSq;       // the bot's current distance to the threat
+	float m_onStuckPenalty;       // cache onstuck penalty
 };
 
 
@@ -450,11 +460,6 @@ QueryResultType	CNEOBotAttack::ShouldRetreat( const INextBot *me ) const
 	if (!m_bSawEnemySinceLastPathCompute)
 	{
 		return ANSWER_UNDEFINED;
-	}
-
-	if ( m_goalArea && m_attackCoverArea )
-	{
-		return ANSWER_NO;
 	}
 
 	return ANSWER_UNDEFINED;

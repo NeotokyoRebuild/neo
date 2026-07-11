@@ -21,6 +21,8 @@
 #include "neo_player.h"
 #include "neo_smokelineofsightblocker.h"
 #include "bot/neo_bot.h"
+#include "bot/neo_bot_path_reservation.h"
+#include "nav_mesh.h"
 #endif
 
 #include "tier0/vprof.h"
@@ -794,6 +796,33 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), firstPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 	if ( result.DidHit() )
 	{
+		// Check if first center traceline hit any blocking smoke
+		if (neo_bot_path_reservation_enable.GetBool()
+			&& result.m_pEnt
+			&& FStrEq(result.m_pEnt->GetClassname(), SMOKELINEOFSIGHTBLOCKER_ENTITYNAME))
+		{
+			auto pSmoke = static_cast<CNEOSmokeLineOfSightBlocker*>(result.m_pEnt);
+			// Assume that threat could be hiding inside navarea where smoke blocked sight
+			if (neoBot)
+			{
+				int team = neoBot->GetTeamNumber();
+
+				CNavArea *smokeArea = TheNavMesh->GetNearestNavArea(result.endpos);
+				if (smokeArea)
+				{
+					// Register smoke sightlines for team to avoid as hazardous
+					CNEOBotPathReservations()->AddSmokeHazard(smokeArea->GetID(), pSmoke->GetNextThink(), team);
+				}
+
+				CNavArea *myArea = neoBot->GetLastKnownArea();
+				if (myArea)
+				{
+					// Also register the area I saw the smoke from as hazardous
+					CNEOBotPathReservations()->AddSmokeHazard(myArea->GetID(), pSmoke->GetNextThink(), team, false);
+				}
+			}
+		}
+
 		UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), secondPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 
 		if ( result.DidHit() )
