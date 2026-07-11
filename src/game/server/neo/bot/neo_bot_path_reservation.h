@@ -13,6 +13,12 @@ struct ReservationInfo
     float flExpirationTime;     // When the reservation expires (gpGlobals->curtime)
 };
 
+struct HazardInfo
+{
+	float smokeExpireTime;      // when the smoke hazard risk expires
+	float hazardExpireTime;     // when a general deadly hazard risk expires
+};
+
 struct BotReservedAreas_t
 {
     CUtlVector<CNavArea*> areas;
@@ -48,6 +54,7 @@ public:
         {
             m_Reservations[i].SetLessFunc(ReservationLessFunc);
             m_AreaPathCounts[i].SetLessFunc(ReservationLessFunc);
+            m_HazardAreas[i].SetLessFunc(ReservationLessFunc);
         }
     }
 
@@ -55,6 +62,7 @@ public:
     void ReleaseArea(CNavArea *area, CNEOBot *bot);
     bool IsAreaReservedByTeammate(CNavArea *area, CNEOBot *avoider) const;
     void Clear();
+    void ClearRound();
     void ReleaseAllAreas(CNEOBot *bot);
 
     void IncrementPredictedFriendlyPathCount( int areaID, int teamID );
@@ -64,6 +72,12 @@ public:
     void IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount);
     float GetAreaAvoidPenalty(unsigned int navAreaID) const;
 
+    void AddDeadlyHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS = false);
+    void AddFragHazard(int navAreaID, float expireTime, int teamID);
+    void AddSmokeHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS = true);
+    float GetAreaHazardousTime(int navAreaID, const CNEOBot *me) const;
+    bool IsAreaHazardous(int navAreaID, const CNEOBot *me) const;
+
     // Allow the global accessor to access private members if needed, though constructor handles init now.
     friend CNEOBotPathReservationSystem* CNEOBotPathReservations();
 
@@ -72,6 +86,7 @@ private:
     CUtlMap<EHANDLE, BotReservedAreas_t> m_BotReservedAreas;
     CUtlMap<int, int> m_AreaPathCounts[TEAM__TOTAL];
     CUtlMap<unsigned int, float> m_AreaAvoidPenalties;
+    CUtlMap<int, HazardInfo> m_HazardAreas[TEAM__TOTAL];
 };
 
 
