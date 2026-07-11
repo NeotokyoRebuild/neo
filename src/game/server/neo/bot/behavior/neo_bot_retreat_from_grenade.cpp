@@ -5,6 +5,8 @@
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_reservation.h"
+#include "nav_mesh.h"
 #include "sdk/sdk_basegrenade_projectile.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -72,6 +74,7 @@ public:
 	{
 		m_me = me;
 		m_grenade = grenade;
+		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
 		m_pGrenadeStats = dynamic_cast<CBaseGrenadeProjectile *>( grenade );
 		m_safeRadiusSqr = m_pGrenadeStats ? Square(m_pGrenadeStats->m_DmgRadius * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat()) : 0.0f;
 
@@ -89,6 +92,20 @@ public:
 		{
 			// edge case: we just want to bail to let Update exit this behavior
 			return false;  // can't search if there's no threat source
+		}
+
+		// Skip areas that are hazardous or where bots get stuck
+		if ( neo_bot_path_reservation_enable.GetBool() )
+		{
+			int navAreaId = area->GetID();
+			if (CNEOBotPathReservations()->IsAreaHazardous(navAreaId, m_me))
+			{
+				return true;
+			}
+			if (CNEOBotPathReservations()->GetAreaAvoidPenalty(navAreaId) >= m_onStuckPenalty)
+			{
+				return true;
+			}
 		}
 
 		if ( m_pGrenadeStats )
@@ -138,6 +155,7 @@ public:
 	CNEOBot *m_me;
 	CBaseEntity *m_grenade;
 	CBaseGrenadeProjectile *m_pGrenadeStats;
+	float m_onStuckPenalty;
 	float m_safeRadiusSqr;
 	CUtlVector< CNavArea * > m_coverAreaVector;
 };
@@ -179,6 +197,19 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::OnStart( CNEOBot *me, Action<
 	if ( !m_grenade )
 	{
 		m_grenade = FindDangerousGrenade( me );
+	}
+
+	if ( !m_grenade ) // not a duplicate, check FindDangerousGrenade result
+	{
+		return Done("No grenade found");
+	}
+
+	// Register explosive hazard for the bot's team at the grenade's initial position
+	CNavArea *grenadeArea = TheNavMesh->GetNearestNavArea( m_grenade->GetAbsOrigin() );
+	if (grenadeArea)
+	{
+		int team = me->GetTeamNumber();
+		CNEOBotPathReservations()->AddFragHazard(grenadeArea->GetID(), gpGlobals->curtime + sv_neo_grenade_fuse_timer.GetFloat(), team);
 	}
 
 	// Sometimes grenades can be in a bad limbo state, so force exit eventually
@@ -247,6 +278,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnStuck( CNEOBot *me )
 {
+	m_coverArea = FindCoverArea( me );
+	CNEOBotPathCompute(me, m_path, m_coverArea->GetCenter(), FASTEST_ROUTE);
 	return TryContinue();
 }
 
@@ -261,6 +294,8 @@ EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnMoveToSuccess( CNEOBo
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
+	m_coverArea = FindCoverArea( me );
+	CNEOBotPathCompute(me, m_path, m_coverArea->GetCenter(), FASTEST_ROUTE);
 	return TryContinue();
 }
 
