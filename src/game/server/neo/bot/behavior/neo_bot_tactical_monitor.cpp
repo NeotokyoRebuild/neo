@@ -7,6 +7,7 @@
 
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_manager.h"
+#include "bot/neo_bot_path_reservation.h"
 
 #include "bot/behavior/neo_bot_detpack_trigger.h"
 #include "bot/behavior/neo_bot_tactical_monitor.h"
@@ -16,6 +17,7 @@
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_retreat_from_hazard_area.h"
 #include "bot/behavior/neo_bot_ladder_approach.h"
 #include "bot/behavior/neo_bot_ladder_climb.h"
 #include "bot/behavior/neo_bot_path_clear_breakable.h"
@@ -85,6 +87,7 @@ Action< CNEOBot > *CNEOBotTacticalMonitor::InitialContainedAction( CNEOBot *me )
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_pIgnoredWeapons->Reset();
+	m_hazardCheckTimer.Start( 0.5f );
 	return Continue();
 }
 
@@ -345,6 +348,21 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	if ( CBaseEntity *breakable = CNEOBotPathClearBreakable::GetBreakableInPath( me ) )
 	{
 		return SuspendFor( new CNEOBotPathClearBreakable( breakable ), "Clearing breakable in path" );
+	}
+
+	// Don't want to interfere with human squad leader's control just to ignore hazards
+	// Might be annoying if bots ignored following or waypoints (e.g. smoke sightlines avoidance)
+	if ( !me->m_hCommandingPlayer.Get() && m_hazardCheckTimer.IsElapsed() )
+	{
+		m_hazardCheckTimer.Start( 0.5f );
+		CNavArea *myArea = me->GetLastKnownArea();
+		if ( myArea )
+		{
+			if ( CNEOBotPathReservations()->IsAreaHazardous( myArea->GetID(), me ) )
+			{
+				return SuspendFor( new CNEOBotRetreatFromHazardArea( ), "Avoiding hazard area" );
+			}
+		}
 	}
 
 	ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
