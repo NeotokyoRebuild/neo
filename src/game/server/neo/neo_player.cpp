@@ -251,6 +251,14 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
+	// Enforce class limits for Recon/Assault/Support
+	if (CTeam *team = GetTeam())
+	{
+		newClass = team->GetAppropriateClass(newClass);
+		if (newClass == -1)
+			return;
+	}
+
 	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
@@ -258,7 +266,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup || status == NeoRoundStatus::Countdown))
 	{
-		m_iNeoClass = newClass;
+		SetClass(newClass);
 		m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 
 		SetPlayerTeamModel();
@@ -438,9 +446,19 @@ void SetClass(const CCommand &command)
 		{
 			return;
 		}
-		
+
 		nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
-		player->RequestSetClass(nextClass);
+		
+		// Enforce class limits for Recon/Assault/Support
+		if (CTeam *team = player->GetTeam())
+		{
+			nextClass = team->GetAppropriateClass(nextClass);
+		}
+
+		if (nextClass != -1)
+		{
+			player->RequestSetClass(nextClass);
+		}
 	}
 }
 
@@ -565,7 +583,7 @@ static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 
 CNEO_Player::CNEO_Player()
 {
-	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	SetClass(NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT);
 	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
@@ -692,7 +710,18 @@ void CNEO_Player::Spawn(void)
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != NEO_CLASS_RANDOM) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
-		m_iNeoClass = m_iNextSpawnClassChoice;
+		int desiredClass = m_iNextSpawnClassChoice;
+
+		// Enforce class limits for Recon/Assault/Support
+		if (CTeam *team = GetTeam())
+		{
+			if (team->GetTeamNumber() == TEAM_JINRAI || team->GetTeamNumber() == TEAM_NSF)
+			{
+				desiredClass = team->GetAppropriateClass(desiredClass);
+			}
+		}
+
+		SetClass(desiredClass);
 	}
 
 	BaseClass::Spawn();
@@ -756,7 +785,7 @@ void CNEO_Player::Spawn(void)
 			engine->ClientCommand(this->edict(), "classmenu");
 			return;
 		}
-		m_iNeoClass = NEORules()->GetForcedClass();
+		SetClass(NEORules()->GetForcedClass());
 
 		if (NEORules()->GetForcedWeapon() < 0)
 		{
@@ -1893,6 +1922,18 @@ bool CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 void CNEO_Player::SetClientWantNeoName(const bool b)
 {
 	m_bClientWantNeoName = b;
+}
+
+void CNEO_Player::SetClass(int neoClass)
+{
+	if (neoClass <= NEO_CLASS_RANDOM || neoClass >= NEO_CLASS__ENUM_COUNT)
+		return;
+
+	m_iNeoClass.Set(neoClass);
+	if (CTeam* team = GetTeam())
+	{
+		team->UpdateClassCounts();
+	}
 }
 
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
@@ -3228,6 +3269,10 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
 		SetPlayerTeamModel();
+		if (CTeam *team = GetTeam())
+		{
+			SetClass(team->GetAppropriateClass(GetClass()));
+		}
 	}
 
 	if (!changedTeams)
@@ -4049,7 +4094,7 @@ void CNEO_Player::BecomeJuggernaut()
 	UTIL_ScreenFade(this, COLOR_JGR_FADE, 1.0f, 0.0f, FFADE_IN);
 
 	RemoveAllItems(false);
-	m_iNeoClass = NEO_CLASS_JUGGERNAUT;
+	SetClass(NEO_CLASS_JUGGERNAUT);
 	GiveDefaultItems();
 	// Set model after weapon change to avoid studio asserts
 	SetPlayerTeamModel();
@@ -4170,7 +4215,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 
 		if (pPlayerTakeoverTarget)
 		{
-			m_iNeoClass = pPlayerTakeoverTarget->m_iNeoClass;
+			SetClass(pPlayerTakeoverTarget->m_iNeoClass);
 			m_iNeoSkin = pPlayerTakeoverTarget->m_iNeoSkin;
 			SetMaxHealth(pPlayerTakeoverTarget->GetMaxHealth());
 			SetHealth(pPlayerTakeoverTarget->GetHealth());
@@ -4287,7 +4332,7 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 		case NEO_CLASS_RECON:
 		case NEO_CLASS_ASSAULT:
 		case NEO_CLASS_SUPPORT:
-			m_iNeoClass = m_iClassBeforeTakeover;
+			SetClass(m_iClassBeforeTakeover);
 			break;
 		default:
 			// Don't reset class if spectator was a special class (VIP, Juggernaut)

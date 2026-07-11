@@ -53,6 +53,10 @@ ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If
 
 ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
 
+ConVar sv_neo_class_limit_recon("sv_neo_class_limit_recon", "-1", FCVAR_REPLICATED, "Maximum number of Recon class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+ConVar sv_neo_class_limit_assault("sv_neo_class_limit_assault", "-1", FCVAR_REPLICATED, "Maximum number of Assault class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+ConVar sv_neo_class_limit_support("sv_neo_class_limit_support", "-1", FCVAR_REPLICATED, "Maximum number of Support class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+
 #ifdef CLIENT_DLL
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_PRINTABLEONLY, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
@@ -310,6 +314,15 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iLastAttacker)),
 	RecvPropInt(RECVINFO(m_iLastKiller)),
 	RecvPropInt(RECVINFO(m_iLastGhoster)),
+	RecvPropInt(RECVINFO(m_iClassLimitRecon)),
+	RecvPropInt(RECVINFO(m_iClassLimitAssault)),
+	RecvPropInt(RECVINFO(m_iClassLimitSupport)),
+	RecvPropInt(RECVINFO(m_iJinraiReconCount)),
+	RecvPropInt(RECVINFO(m_iJinraiAssaultCount)),
+	RecvPropInt(RECVINFO(m_iJinraiSupportCount)),
+	RecvPropInt(RECVINFO(m_iNsfReconCount)),
+	RecvPropInt(RECVINFO(m_iNsfAssaultCount)),
+	RecvPropInt(RECVINFO(m_iNsfSupportCount)),
 #else
 	SendPropTime(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropTime(SENDINFO(m_flNeoRoundStartTime)),
@@ -344,6 +357,15 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iLastAttacker), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iLastKiller), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iLastGhoster), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iClassLimitRecon)),
+	SendPropInt(SENDINFO(m_iClassLimitAssault)),
+	SendPropInt(SENDINFO(m_iClassLimitSupport)),
+	SendPropInt(SENDINFO(m_iJinraiReconCount)),
+	SendPropInt(SENDINFO(m_iJinraiAssaultCount)),
+	SendPropInt(SENDINFO(m_iJinraiSupportCount)),
+	SendPropInt(SENDINFO(m_iNsfReconCount)),
+	SendPropInt(SENDINFO(m_iNsfAssaultCount)),
+	SendPropInt(SENDINFO(m_iNsfSupportCount)),
 #endif
 END_NETWORK_TABLE()
 
@@ -670,6 +692,17 @@ CNEORules::CNEORules()
 	m_iForcedWeapon = -1;
 	m_bCyberspaceLevel = false;
 
+	m_iClassLimitRecon = -1;
+	m_iClassLimitAssault = -1;
+	m_iClassLimitSupport = -1;
+
+	m_iJinraiReconCount = 0;
+	m_iJinraiAssaultCount = 0;
+	m_iJinraiSupportCount = 0;
+	m_iNsfReconCount = 0;
+	m_iNsfAssaultCount = 0;
+	m_iNsfSupportCount = 0;
+
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("game_end");
@@ -691,7 +724,7 @@ void CNEORules::Precache()
 {
 	BaseClass::Precache();
 }
-#endif
+#endif // GAME_DLL
 
 ConVar	sk_max_neo_ammo("sk_max_neo_ammo", "10000", FCVAR_REPLICATED);
 ConVar	sk_plr_dmg_neo("sk_plr_dmg_neo", "0", FCVAR_REPLICATED);

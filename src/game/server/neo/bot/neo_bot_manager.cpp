@@ -35,31 +35,18 @@ static bool UTIL_KickBotFromTeam( int kickTeam )
 {
 	int i;
 
-	// try to kick a dead bot first
-	for ( i = 1; i <= gpGlobals->maxClients; ++i )
+	CTeam *team = GetGlobalTeam(kickTeam);
+	if (!team)
 	{
-		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-		CNEOBot* pBot = ToNEOBot(pPlayer);
-
-		if (pBot == NULL)
-			continue;
-
-		if ( pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) == false )
-			continue;
-
-		if ( ( pPlayer->GetFlags() & FL_FAKECLIENT ) == 0 )
-			continue;
-
-		if ( !pPlayer->IsAlive() && pPlayer->GetTeamNumber() == kickTeam )
-		{
-			// its a bot on the right team - kick it
-			engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pPlayer->GetUserID() ) );
-
-			return true;
-		}
+		Assert(false);
+		return false;
 	}
 
-	// no dead bots, kick any bot on the given team
+	CNEOBot* pBotOnTeam = nullptr;
+	CNEOBot* pDeadBotOnTeam = nullptr;
+	CNEOBot* pClassBotOnTeam = nullptr;
+
+	// try to kick a dead bot first
 	for ( i = 1; i <= gpGlobals->maxClients; ++i )
 	{
 		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
@@ -76,11 +63,47 @@ static bool UTIL_KickBotFromTeam( int kickTeam )
 
 		if (pPlayer->GetTeamNumber() == kickTeam)
 		{
-			// its a bot on the right team - kick it
-			engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pPlayer->GetUserID() ) );
+			pBotOnTeam = pBot;
 
-			return true;
+			if (team->IsClassOverThreshold(pBot->GetClass()))
+			{
+				pClassBotOnTeam = pBot;
+			}
+
+			if (!pPlayer->IsAlive())
+			{
+				pDeadBotOnTeam = pBot;
+			}
+
+			if (pClassBotOnTeam == pDeadBotOnTeam && pClassBotOnTeam == pBot)
+			{
+				// its a dead bot on the right team of the right class - kick it
+				engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pPlayer->GetUserID() ) );
+				return true;
+			}
 		}
+	}
+
+	// no dead bot on the right team of the right class, prioritize maintaining class limits
+	// NEO TODO (Adam) requestAppropriateClass could check class of all dead bots and return class of ideal bot to kick when switching teams
+	if (pClassBotOnTeam)
+	{
+		engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pClassBotOnTeam->GetUserID() ) );
+		return true;
+	}
+
+	// no dead bot on the right team of the right class, fallback to a dead bot
+	if (pDeadBotOnTeam)
+	{
+		engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pDeadBotOnTeam->GetUserID() ) );
+		return true;
+	}
+	
+	// no dead bot on the right team, fallback to any bot on team
+	if (pBotOnTeam)
+	{
+		engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pBotOnTeam->GetUserID() ) );
+		return true;
 	}
 
 	return false;

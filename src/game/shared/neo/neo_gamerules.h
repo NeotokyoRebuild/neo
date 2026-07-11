@@ -413,6 +413,11 @@ public:
 	void OnNavMeshLoad() override;
 #endif // GAME_DL:
 
+	// Class limit methods
+	int GetClassCount(int team, int classId) const;
+	bool IsClassFull(int team, int classId) const;
+	int GetFallbackClass(int team, int preferredClass) const;
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.
@@ -549,6 +554,19 @@ private:
 	CNetworkVar(int, m_iLastAttacker);
 	CNetworkVar(int, m_iLastKiller);
 	CNetworkVar(int, m_iLastGhoster);
+
+	// Class limit networked variables
+	CNetworkVar(int, m_iClassLimitRecon);
+	CNetworkVar(int, m_iClassLimitAssault);
+	CNetworkVar(int, m_iClassLimitSupport);
+
+	// Class count networked variables (for client UI)
+	CNetworkVar(int, m_iJinraiReconCount);
+	CNetworkVar(int, m_iJinraiAssaultCount);
+	CNetworkVar(int, m_iJinraiSupportCount);
+	CNetworkVar(int, m_iNsfReconCount);
+	CNetworkVar(int, m_iNsfAssaultCount);
+	CNetworkVar(int, m_iNsfSupportCount);
 
 public:
 	// VIP networked variables
