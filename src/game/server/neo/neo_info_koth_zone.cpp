@@ -13,6 +13,7 @@
 #define KOTH_SPRITE_JINRAI "vgui/hud/cp/cp_jinrai.vmt"
 #define KOTH_SPRITE_NSF    "vgui/hud/cp/cp_nsf.vmt"
 #define KOTH_SPRITE_BOTH   "vgui/hud/cp/cp_both.vmt"
+#define KOTH_SPRITE_LOCKED "vgui/hud/cp/cp_locked.vmt"
 
 static const char *KothZoneSpriteForState(KothControllingTeams team)
 {
@@ -56,6 +57,7 @@ void CNEO_InfoKOTHZone::Precache()
 	PrecacheModel(KOTH_SPRITE_NONE);
 	PrecacheModel(KOTH_SPRITE_JINRAI);
 	PrecacheModel(KOTH_SPRITE_NSF);
+	PrecacheModel(KOTH_SPRITE_LOCKED);
 	PrecacheModel(KOTH_SPRITE_BOTH);
 }
 
@@ -212,9 +214,14 @@ void CNEO_InfoKOTHZone::SetVisible(bool bVisible)
 	m_bVisible = bVisible;
 
 	if (bVisible)
+	{
+		SetModel(KOTH_SPRITE_LOCKED);
 		TurnOn();
+	}
 	else
+	{
 		TurnOff();
+	}
 
 	for (int i = 0; i < m_ChildBorders.Count(); ++i)
 	{
@@ -230,6 +237,9 @@ void CNEO_InfoKOTHZone::SetCapturable(bool bCapturable)
 		return;
 
 	m_bCapturable = bCapturable;
+
+	if (bCapturable)
+		SetModel(KothZoneSpriteForState(m_State));
 
 	for (int i = 0; i < m_ChildTriggers.Count(); ++i)
 	{
