@@ -99,7 +99,6 @@ enum KothControllingTeams
 
 extern ConVar sv_neo_koth_seconds_per_point;
 extern ConVar sv_neo_koth_zone_switch_time;
-extern ConVar sv_neo_koth_zone_prep_time;
 extern ConVar sv_neo_koth_zone_pause_time;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;

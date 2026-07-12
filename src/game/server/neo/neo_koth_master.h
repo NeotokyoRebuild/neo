@@ -11,10 +11,12 @@ public:
 	DECLARE_DATADESC();
 
 	virtual void Spawn() override;
-	// closes the current zonE
-	void SwitchThink();
-	// opens...
-	void OpenPendingZoneThink();
+	// picks the next zone and makes it visible, but still locked (not capturable); schedules UnlockZoneThink
+	void RevealNextZoneThink();
+	// makes the revealed zone capturable (this is now the active zone); schedules CloseZoneThink
+	void UnlockZoneThink();
+	// closes the active zone (hides it, no longer capturable), then immediately reveals the next one
+	void CloseZoneThink();
 
 	// called by every neo_info_koth_zone on the map once it has found us
 	void RegisterZone(CNEO_InfoKOTHZone *pZone);

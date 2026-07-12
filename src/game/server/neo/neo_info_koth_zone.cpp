@@ -204,17 +204,32 @@ void CNEO_InfoKOTHZone::AddChildBorder(CNEO_KOTHBorder *pBorder)
 	pBorder->SetZoneColor(m_State);
 }
 
-void CNEO_InfoKOTHZone::SetActivity(bool bActive)
+void CNEO_InfoKOTHZone::SetVisible(bool bVisible)
 {
-	if (bActive == m_bActive)
+	if (bVisible == m_bVisible)
 		return;
 
-	m_bActive = bActive;
+	m_bVisible = bVisible;
 
-	if (m_bActive)
+	if (bVisible)
 		TurnOn();
 	else
 		TurnOff();
+
+	for (int i = 0; i < m_ChildBorders.Count(); ++i)
+	{
+		CNEO_KOTHBorder *pBorder = m_ChildBorders[i].Get();
+		if (pBorder)
+			pBorder->SetBorderVisible(bVisible);
+	}
+}
+
+void CNEO_InfoKOTHZone::SetCapturable(bool bCapturable)
+{
+	if (bCapturable == m_bCapturable)
+		return;
+
+	m_bCapturable = bCapturable;
 
 	for (int i = 0; i < m_ChildTriggers.Count(); ++i)
 	{
@@ -222,17 +237,10 @@ void CNEO_InfoKOTHZone::SetActivity(bool bActive)
 		if (!pTrigger)
 			continue;
 
-		if (m_bActive)
+		if (bCapturable)
 			pTrigger->Enable();
 		else
 			pTrigger->Disable();
-	}
-
-	for (int i = 0; i < m_ChildBorders.Count(); ++i)
-	{
-		CNEO_KOTHBorder *pBorder = m_ChildBorders[i].Get();
-		if (pBorder)
-			pBorder->SetBorderVisible(bActive);
 	}
 }
 

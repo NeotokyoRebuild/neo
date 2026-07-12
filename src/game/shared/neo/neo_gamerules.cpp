@@ -134,8 +134,6 @@ ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1
 ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "1.75", FCVAR_REPLICATED, "Seconds to get 1 point");
 ConVar sv_neo_koth_zone_switch_time("sv_neo_koth_zone_switch_time", "45", FCVAR_REPLICATED,
 	"How often (in seconds) neo_koth_master rotates the active KOTH zone.", true, 5.0f, false, 0.0f);
-ConVar sv_neo_koth_zone_prep_time("sv_neo_koth_zone_prep_time", "10", FCVAR_REPLICATED,
-	"How long (in seconds) neo_koth_master waits before picking the first active KOTH zone, giving players some time to prepare.", true, 1.0f, false, 0.0f);
 ConVar sv_neo_koth_zone_pause_time("sv_neo_koth_zone_pause_time", "5", FCVAR_REPLICATED,
 	"How long (in seconds) neo_koth_master waits after closing a zone before opening the next one.", true, 0.0f, false, 0.0f);
 
