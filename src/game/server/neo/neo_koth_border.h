@@ -22,5 +22,3 @@ public:
 private:
 	CNEO_InfoKOTHZone *pZone = nullptr;
 };
-
-LINK_ENTITY_TO_CLASS(neo_func_koth_border, CNEO_KOTHBorder);

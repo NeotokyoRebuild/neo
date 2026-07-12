@@ -1,6 +1,8 @@
 #include "neo_koth_border.h"
 #include "neo_info_koth_zone.h"
 
+LINK_ENTITY_TO_CLASS(neo_func_koth_border, CNEO_KOTHBorder);
+
 BEGIN_DATADESC(CNEO_KOTHBorder)
 	DEFINE_KEYFIELD(m_iszZoneName, FIELD_STRING, "zone_name"),
 END_DATADESC()
@@ -40,7 +42,7 @@ void CNEO_KOTHBorder::SetZoneColor(KothControllingTeams team)
 		DevMsg("JINRAI\n");
 		break;
 	case KOTH_NSF:
-		SetRenderColor(COLOR_NEO_BLUE.r(), COLOR_NEO_BLUE.g(), COLOR_NEO_BLUE.b());
+		SetRenderColor(64, 64, 255);
 		DevMsg("NSF\n");
 		break;
 	case KOTH_BOTH:

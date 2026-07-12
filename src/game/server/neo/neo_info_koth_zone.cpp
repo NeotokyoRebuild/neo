@@ -15,6 +15,8 @@
 #define KOTH_SPRITE_BOTH   "vgui/hud/cp/cp_both.vmt"
 #define KOTH_SPRITE_LOCKED "vgui/hud/cp/cp_locked.vmt"
 
+LINK_ENTITY_TO_CLASS(neo_info_koth_zone, CNEO_InfoKOTHZone);
+
 static const char *KothZoneSpriteForState(KothControllingTeams team)
 {
 	switch (team)

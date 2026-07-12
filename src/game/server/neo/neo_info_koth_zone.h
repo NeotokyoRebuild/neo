@@ -68,5 +68,3 @@ private:
 	float m_flAccumulatorNSF = 0.0f;
 	float m_flAccumulatorJinrai = 0.0f;
 };
-
-LINK_ENTITY_TO_CLASS(neo_info_koth_zone, CNEO_InfoKOTHZone);

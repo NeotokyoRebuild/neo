@@ -30,5 +30,3 @@ private:
 	CHandle<CNEO_InfoKOTHZone> m_hActiveZone;
 	CHandle<CNEO_InfoKOTHZone> m_hPendingZone;
 };
-
-LINK_ENTITY_TO_CLASS(neo_koth_master, CNEO_KOTHMaster);

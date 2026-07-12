@@ -1,6 +1,8 @@
 #include "neo_koth_master.h"
 #include "neo_info_koth_zone.h"
 
+LINK_ENTITY_TO_CLASS(neo_koth_master, CNEO_KOTHMaster);
+
 BEGIN_DATADESC(CNEO_KOTHMaster)
 	DEFINE_THINKFUNC(RevealNextZoneThink),
 	DEFINE_THINKFUNC(UnlockZoneThink),
