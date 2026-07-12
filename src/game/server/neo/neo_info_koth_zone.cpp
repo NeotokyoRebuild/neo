@@ -9,6 +9,26 @@
 #define KOTHZONE_SCORE_CONTEXT "KothZoneScoreThink"
 #define KOTHZONE_SCORE_INTERVAL 0.05f
 
+#define KOTHZONE_SPRITE_NONE   "vgui/hud/cp/cp_none.vmt"
+#define KOTHZONE_SPRITE_JINRAI "vgui/hud/cp/cp_jinrai.vmt"
+#define KOTHZONE_SPRITE_NSF    "vgui/hud/cp/cp_nsf.vmt"
+// neo TODO: no dedicated "contested" sprite yet - falls back to cp_none
+
+static const char *KothZoneSpriteForState(KothControllingTeams team)
+{
+	switch (team)
+	{
+	case KOTH_JINRAI:
+		return KOTHZONE_SPRITE_JINRAI;
+	case KOTH_NSF:
+		return KOTHZONE_SPRITE_NSF;
+	case KOTH_NONE:
+	case KOTH_BOTH:
+	default:
+		return KOTHZONE_SPRITE_NONE;
+	}
+}
+
 BEGIN_DATADESC(CNEO_InfoKOTHZone)
 	DEFINE_THINKFUNC(Think),
 	DEFINE_THINKFUNC(ScoreThink),
@@ -16,12 +36,25 @@ END_DATADESC()
 
 void CNEO_InfoKOTHZone::Spawn()
 {
+	SetModelName(MAKE_STRING(KothZoneSpriteForState(m_State)));
+
 	BaseClass::Spawn();
+
+	SetSpriteScale(0.5f);
 
 	SetThink(&CNEO_InfoKOTHZone::Think);
 	SetNextThink(gpGlobals->curtime + KOTHZONE_PRUNE_INTERVAL);
 
 	SetContextThink(&CNEO_InfoKOTHZone::ScoreThink, gpGlobals->curtime + KOTHZONE_SCORE_INTERVAL, KOTHZONE_SCORE_CONTEXT);
+}
+
+void CNEO_InfoKOTHZone::Precache()
+{
+	BaseClass::Precache();
+
+	PrecacheModel(KOTHZONE_SPRITE_NONE);
+	PrecacheModel(KOTHZONE_SPRITE_JINRAI);
+	PrecacheModel(KOTHZONE_SPRITE_NSF);
 }
 
 void CNEO_InfoKOTHZone::Activate()
@@ -176,16 +209,28 @@ void CNEO_InfoKOTHZone::SetActivity(bool bActive)
 
 	m_bActive = bActive;
 
+	if (m_bActive)
+		TurnOn();
+	else
+		TurnOff();
+
 	for (int i = 0; i < m_ChildTriggers.Count(); ++i)
 	{
 		CNEO_TriggerKOTHZone *pTrigger = m_ChildTriggers[i].Get();
 		if (!pTrigger)
 			continue;
 
-		if (bActive)
+		if (m_bActive)
 			pTrigger->Enable();
 		else
 			pTrigger->Disable();
+	}
+
+	for (int i = 0; i < m_ChildBorders.Count(); ++i)
+	{
+		CNEO_KOTHBorder *pBorder = m_ChildBorders[i].Get();
+		if (pBorder)
+			pBorder->SetBorderVisible(bActive);
 	}
 }
 
@@ -240,13 +285,14 @@ void CNEO_InfoKOTHZone::UpdateState()
 	if (newState == m_State)
 		return;
 
-	if (m_State != newState) {
-		for (int i = 0; i < m_ChildBorders.Count(); ++i)
-		{
-			CNEO_KOTHBorder *pBorder = m_ChildBorders[i].Get();
-			if (pBorder)
-				pBorder->SetZoneColor(newState);
-		}
+	for (int i = 0; i < m_ChildBorders.Count(); ++i)
+	{
+		CNEO_KOTHBorder *pBorder = m_ChildBorders[i].Get();
+		if (pBorder)
+			pBorder->SetZoneColor(newState);
 	}
+
+	SetModel(KothZoneSpriteForState(newState));
+
 	m_State = newState;
 }

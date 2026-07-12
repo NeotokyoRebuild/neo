@@ -16,6 +16,7 @@ public:
 
 	// called by neo_info_koth_zone
 	void SetZoneColor(KothControllingTeams team);
+	void SetBorderVisible(bool bVisible);
 
 	string_t m_iszZoneName;
 private:

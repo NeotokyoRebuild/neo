@@ -13,7 +13,8 @@ void CNEO_KOTHBorder::Spawn()
 
 	BaseClass::Spawn();
 
-	AddEffects(EF_NOSHADOW);
+	// starts hidden - matches its zone's m_bActive starting false, SetBorderVisible() handles the rest
+	AddEffects(EF_NOSHADOW | EF_NODRAW);
 }
 
 void CNEO_KOTHBorder::Activate()
@@ -35,11 +36,11 @@ void CNEO_KOTHBorder::SetZoneColor(KothControllingTeams team)
 	switch (team)
 	{
 	case KOTH_JINRAI:
-		SetRenderColor(COLOR_NEO_BLUE.r(), COLOR_NEO_BLUE.g(), COLOR_NEO_BLUE.b());
+		SetRenderColor(COLOR_JINRAI.r(), COLOR_JINRAI.g(), COLOR_JINRAI.b());
 		DevMsg("JINRAI\n");
 		break;
 	case KOTH_NSF:
-		SetRenderColor(COLOR_BLUE.r(), COLOR_BLUE.g(), COLOR_BLUE.b());
+		SetRenderColor(COLOR_NEO_BLUE.r(), COLOR_NEO_BLUE.g(), COLOR_NEO_BLUE.b());
 		DevMsg("NSF\n");
 		break;
 	case KOTH_BOTH:
@@ -52,4 +53,12 @@ void CNEO_KOTHBorder::SetZoneColor(KothControllingTeams team)
 		DevMsg("EMPTY\n");
 		break;
 	}
+}
+
+void CNEO_KOTHBorder::SetBorderVisible(bool bVisible)
+{
+	if (bVisible)
+		RemoveEffects(EF_NODRAW);
+	else
+		AddEffects(EF_NODRAW);
 }

@@ -1,19 +1,21 @@
 #pragma once
 #include "cbase.h"
 #include "utlvector.h"
-#include "neo_gamerules.h"  // для enum KothControllingTeams (KOTH_NONE/BOTH/NSF/JINRAI)
+#include "Sprite.h"
+#include "neo_gamerules.h"
 
 class CNEO_Player;
 class CNEO_TriggerKOTHZone;
 class CNEO_KOTHBorder;
 
-class CNEO_InfoKOTHZone : public CPointEntity
+class CNEO_InfoKOTHZone : public CSprite
 {
 public:
-	DECLARE_CLASS(CNEO_InfoKOTHZone, CPointEntity);
+	DECLARE_CLASS(CNEO_InfoKOTHZone, CSprite);
 	DECLARE_DATADESC();
 
 	virtual void Spawn() override;
+	virtual void Precache() override;
 	virtual void Activate() override;
 	virtual void Think() override;
 	void ScoreThink();
