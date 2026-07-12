@@ -24,6 +24,10 @@ void CNEO_KOTHMaster::RegisterZone(CNEO_InfoKOTHZone *pZone)
 	if (!pZone)
 		return;
 
+	// avoid double activation
+	if (m_Zones.Find(pZone) != m_Zones.InvalidIndex())
+		return;
+
 	m_Zones.AddToTail(pZone);
 }
 

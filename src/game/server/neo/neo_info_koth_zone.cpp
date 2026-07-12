@@ -1,6 +1,7 @@
 #include "neo_info_koth_zone.h"
 #include "neo_trigger_koth_zone.h"
 #include "neo_koth_master.h"
+#include "neo_koth_border.h"
 #include "neo_player.h"
 #include "neo_player_shared.h"
 
@@ -148,7 +149,24 @@ void CNEO_InfoKOTHZone::AddChildTrigger(CNEO_TriggerKOTHZone *pTrigger)
 	if (!pTrigger)
 		return;
 
+	// avoid double activation
+	if (m_ChildTriggers.Find(pTrigger) != m_ChildTriggers.InvalidIndex())
+		return;
+
 	m_ChildTriggers.AddToTail(pTrigger);
+}
+
+void CNEO_InfoKOTHZone::AddChildBorder(CNEO_KOTHBorder *pBorder)
+{
+	if (!pBorder)
+		return;
+
+	// avoid double activation
+	if (m_ChildBorders.Find(pBorder) != m_ChildBorders.InvalidIndex())
+		return;
+
+	m_ChildBorders.AddToTail(pBorder);
+	pBorder->SetZoneColor(m_State);
 }
 
 void CNEO_InfoKOTHZone::SetActivity(bool bActive)
@@ -222,5 +240,13 @@ void CNEO_InfoKOTHZone::UpdateState()
 	if (newState == m_State)
 		return;
 
+	if (m_State != newState) {
+		for (int i = 0; i < m_ChildBorders.Count(); ++i)
+		{
+			CNEO_KOTHBorder *pBorder = m_ChildBorders[i].Get();
+			if (pBorder)
+				pBorder->SetZoneColor(newState);
+		}
+	}
 	m_State = newState;
 }

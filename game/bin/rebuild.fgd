@@ -475,3 +475,8 @@
 @PointClass = neo_koth_master : "Manages all neo_info_koth_zone entities on the map: picks which one is active and rotates between them. Place exactly one per map."
 [
 ]
+
+@SolidClass base(Targetname) = neo_func_koth_border : "Visual border brush for a KOTH zone. Solidity, +use, shadows and color are all forced by default - not editable here."
+[
+	zone_name(target_destination) : "Zone name" : "" : "Name of the neo_info_koth_zone this border belongs to."
+]

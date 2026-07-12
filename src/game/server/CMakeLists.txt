@@ -1501,9 +1501,11 @@ target_sources_grouped(
     neo/neo_trigger_koth_zone.h
     neo/neo_info_koth_zone.h
     neo/neo_koth_master.h
+    neo/neo_koth_border.h
     neo/neo_trigger_koth_zone.cpp
     neo/neo_info_koth_zone.cpp
     neo/neo_koth_master.cpp
+    neo/neo_koth_border.cpp
     neo/neo_gamerules_restore.h
     ${UNITY_SOURCE_NEO_SRC_SERVER}
 )

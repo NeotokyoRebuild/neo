@@ -5,6 +5,7 @@
 
 class CNEO_Player;
 class CNEO_TriggerKOTHZone;
+class CNEO_KOTHBorder;
 
 class CNEO_InfoKOTHZone : public CPointEntity
 {
@@ -23,6 +24,8 @@ public:
 
 	// called by a neo_trigger_koth_zone once it has resolved us as parent
 	void AddChildTrigger(CNEO_TriggerKOTHZone *pTrigger);
+	// called by a neo_func_koth_border once it has resolved us as parent
+	void AddChildBorder(CNEO_KOTHBorder *pBorder);
 
 	// called by neo_koth_master
 	void SetActivity(bool bActive);
@@ -50,6 +53,7 @@ private:
 	KothControllingTeams m_State = KOTH_NONE;
 
 	CUtlVector<CHandle<CNEO_TriggerKOTHZone>> m_ChildTriggers;
+	CUtlVector<CHandle<CNEO_KOTHBorder>> m_ChildBorders;
 	bool m_bActive = false;
 
 	// score accumulation - runs on its own think context (see ScoreThink), independent
