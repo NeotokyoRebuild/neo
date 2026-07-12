@@ -2,21 +2,51 @@
 #include "neo_info_koth_zone.h"
 
 BEGIN_DATADESC(CNEO_KOTHMaster)
-	DEFINE_THINKFUNC(Think),
+	DEFINE_THINKFUNC(SwitchThink),
+	DEFINE_THINKFUNC(OpenPendingZoneThink),
 END_DATADESC()
 
 void CNEO_KOTHMaster::Spawn()
 {
 	BaseClass::Spawn();
 
-	SetThink(&CNEO_KOTHMaster::Think);
+	SetThink(&CNEO_KOTHMaster::SwitchThink);
 	// preparation time including freeze time
 	SetNextThink(gpGlobals->curtime + NEORules()->GetRemainingPreRoundFreezeTime(true) + sv_neo_koth_zone_prep_time.GetFloat());
 }
 
-void CNEO_KOTHMaster::Think()
+void CNEO_KOTHMaster::SwitchThink()
 {
-	SwitchZone();
+	if (m_Zones.Size() <= 1) {
+		return;
+	}
+
+	CNEO_InfoKOTHZone *pOldZone = m_hActiveZone.Get();
+	if (pOldZone)
+	{
+		pOldZone->SetActivity(false);
+		UTIL_CenterPrintAll("CONTROL POINT IS INACTIVE. AWAIT FURTHER INSTRUCTIONS.");
+	}
+
+	m_hPendingZone = PickNextZone(pOldZone);
+	m_hActiveZone = nullptr;
+
+	SetThink(&CNEO_KOTHMaster::OpenPendingZoneThink);
+	SetNextThink(gpGlobals->curtime + sv_neo_koth_zone_pause_time.GetFloat());
+}
+
+void CNEO_KOTHMaster::OpenPendingZoneThink()
+{
+	CNEO_InfoKOTHZone *pNewZone = m_hPendingZone.Get();
+	if (pNewZone)
+	{
+		pNewZone->SetActivity(true);
+		UTIL_CenterPrintAll("CAPTURE NEW ZONE.");
+	}
+	m_hActiveZone = pNewZone;
+	m_hPendingZone = nullptr;
+
+	SetThink(&CNEO_KOTHMaster::SwitchThink);
 	SetNextThink(gpGlobals->curtime + sv_neo_koth_zone_switch_time.GetFloat());
 }
 
@@ -32,26 +62,16 @@ void CNEO_KOTHMaster::RegisterZone(CNEO_InfoKOTHZone *pZone)
 	m_Zones.AddToTail(pZone);
 }
 
-void CNEO_KOTHMaster::SwitchZone()
+CNEO_InfoKOTHZone *CNEO_KOTHMaster::PickNextZone(CNEO_InfoKOTHZone *pOldZone) const
 {
 	if (m_Zones.IsEmpty())
-		return;
-
-	CNEO_InfoKOTHZone *pOldZone = m_hActiveZone.Get();
+		return nullptr;
 
 	int idx = RandomInt(0, m_Zones.Count() - 1);
 	if (m_Zones.Count() > 1 && m_Zones[idx].Get() == pOldZone)
 		idx = (idx + 1) % m_Zones.Count();
 
-	CNEO_InfoKOTHZone *pNewZone = m_Zones[idx].Get();
-
-	if (pOldZone && pOldZone != pNewZone)
-		pOldZone->SetActivity(false);
-
-	if (pNewZone)
-		pNewZone->SetActivity(true);
-
-	m_hActiveZone = pNewZone;
+	return m_Zones[idx].Get();
 }
 
 void CNEO_KOTHMaster::ResetAllZones()

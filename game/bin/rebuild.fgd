@@ -468,11 +468,11 @@
 	zone_name(target_destination) : "Zone name" : "" : "Name of the neo_info_koth_zone this trigger belongs to."
 ]
 
-@PointClass base(Targetname) = neo_info_koth_zone : "Creates a zone to capture. Give it a name, then point one or more neo_trigger_koth_zone's zone_name at that name."
+@PointClass base(Targetname) iconsprite("vgui/hud/cp/hammer_koth_info.vmt") = neo_info_koth_zone : "Creates a zone to capture. Give it a name, then point one or more neo_trigger_koth_zone's zone_name at that name."
 [
 ]
 
-@PointClass = neo_koth_master : "Manages all neo_info_koth_zone entities on the map: picks which one is active and rotates between them. Place exactly one per map."
+@PointClass iconsprite("vgui/hud/cp/hammer_koth_master.vmt") = neo_koth_master : "Manages all neo_info_koth_zone entities on the map: picks which one is active and rotates between them. Place exactly one per map."
 [
 ]
 

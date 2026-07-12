@@ -11,19 +11,22 @@ public:
 	DECLARE_DATADESC();
 
 	virtual void Spawn() override;
-	void Think();
+	// closes the current zonE
+	void SwitchThink();
+	// opens...
+	void OpenPendingZoneThink();
 
 	// called by every neo_info_koth_zone on the map once it has found us
 	void RegisterZone(CNEO_InfoKOTHZone *pZone);
 
-	// switcch zone, always new if possible
-	void SwitchZone();
-	// runs on round restart
 	void ResetAllZones();
 
 private:
+	CNEO_InfoKOTHZone *PickNextZone(CNEO_InfoKOTHZone *pOldZone) const;
+
 	CUtlVector<CHandle<CNEO_InfoKOTHZone>> m_Zones;
 	CHandle<CNEO_InfoKOTHZone> m_hActiveZone;
+	CHandle<CNEO_InfoKOTHZone> m_hPendingZone;
 };
 
 LINK_ENTITY_TO_CLASS(neo_koth_master, CNEO_KOTHMaster);
