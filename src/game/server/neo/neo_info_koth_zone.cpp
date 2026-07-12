@@ -5,27 +5,28 @@
 #include "neo_player.h"
 #include "neo_player_shared.h"
 
-#define KOTHZONE_PRUNE_INTERVAL 0.5f
-#define KOTHZONE_SCORE_CONTEXT "KothZoneScoreThink"
-#define KOTHZONE_SCORE_INTERVAL 0.05f
+#define KOTH_PRUNE_INTERVAL 0.5f
+#define KOTH_SCORE_CONTEXT "KothZoneScoreThink"
+#define KOTH_SCORE_INTERVAL 0.05f
 
-#define KOTHZONE_SPRITE_NONE   "vgui/hud/cp/cp_none.vmt"
-#define KOTHZONE_SPRITE_JINRAI "vgui/hud/cp/cp_jinrai.vmt"
-#define KOTHZONE_SPRITE_NSF    "vgui/hud/cp/cp_nsf.vmt"
-// neo TODO: no dedicated "contested" sprite yet - falls back to cp_none
+#define KOTH_SPRITE_NONE   "vgui/hud/cp/cp_none.vmt"
+#define KOTH_SPRITE_JINRAI "vgui/hud/cp/cp_jinrai.vmt"
+#define KOTH_SPRITE_NSF    "vgui/hud/cp/cp_nsf.vmt"
+#define KOTH_SPRITE_BOTH   "vgui/hud/cp/cp_both.vmt"
 
 static const char *KothZoneSpriteForState(KothControllingTeams team)
 {
 	switch (team)
 	{
 	case KOTH_JINRAI:
-		return KOTHZONE_SPRITE_JINRAI;
+		return KOTH_SPRITE_JINRAI;
 	case KOTH_NSF:
-		return KOTHZONE_SPRITE_NSF;
-	case KOTH_NONE:
+		return KOTH_SPRITE_NSF;
 	case KOTH_BOTH:
+		return KOTH_SPRITE_BOTH;
+	case KOTH_NONE:
 	default:
-		return KOTHZONE_SPRITE_NONE;
+		return KOTH_SPRITE_NONE;
 	}
 }
 
@@ -43,18 +44,19 @@ void CNEO_InfoKOTHZone::Spawn()
 	SetSpriteScale(0.5f);
 
 	SetThink(&CNEO_InfoKOTHZone::Think);
-	SetNextThink(gpGlobals->curtime + KOTHZONE_PRUNE_INTERVAL);
+	SetNextThink(gpGlobals->curtime + KOTH_PRUNE_INTERVAL);
 
-	SetContextThink(&CNEO_InfoKOTHZone::ScoreThink, gpGlobals->curtime + KOTHZONE_SCORE_INTERVAL, KOTHZONE_SCORE_CONTEXT);
+	SetContextThink(&CNEO_InfoKOTHZone::ScoreThink, gpGlobals->curtime + KOTH_SCORE_INTERVAL, KOTH_SCORE_CONTEXT);
 }
 
 void CNEO_InfoKOTHZone::Precache()
 {
 	BaseClass::Precache();
 
-	PrecacheModel(KOTHZONE_SPRITE_NONE);
-	PrecacheModel(KOTHZONE_SPRITE_JINRAI);
-	PrecacheModel(KOTHZONE_SPRITE_NSF);
+	PrecacheModel(KOTH_SPRITE_NONE);
+	PrecacheModel(KOTH_SPRITE_JINRAI);
+	PrecacheModel(KOTH_SPRITE_NSF);
+	PrecacheModel(KOTH_SPRITE_BOTH);
 }
 
 void CNEO_InfoKOTHZone::Activate()
@@ -75,25 +77,25 @@ void CNEO_InfoKOTHZone::Activate()
 void CNEO_InfoKOTHZone::Think()
 {
 	PruneStaleCaptors();
-	SetNextThink(gpGlobals->curtime + KOTHZONE_PRUNE_INTERVAL);
+	SetNextThink(gpGlobals->curtime + KOTH_PRUNE_INTERVAL);
 }
 
 void CNEO_InfoKOTHZone::ScoreThink()
 {
 	if (!NEORules()->IsRoundLive())
 	{
-		SetNextThink(gpGlobals->curtime + KOTHZONE_SCORE_INTERVAL, KOTHZONE_SCORE_CONTEXT);
+		SetNextThink(gpGlobals->curtime + KOTH_SCORE_INTERVAL, KOTH_SCORE_CONTEXT);
 		return;
 	}
 
 	switch (m_State)
 	{
 	case KOTH_JINRAI:
-		m_flAccumulatorJinrai += KOTHZONE_SCORE_INTERVAL;
+		m_flAccumulatorJinrai += KOTH_SCORE_INTERVAL;
 		m_flAccumulatorNSF = 0.0f;
 		break;
 	case KOTH_NSF:
-		m_flAccumulatorNSF += KOTHZONE_SCORE_INTERVAL;
+		m_flAccumulatorNSF += KOTH_SCORE_INTERVAL;
 		m_flAccumulatorJinrai = 0.0f;
 		break;
 	default:
@@ -117,7 +119,7 @@ void CNEO_InfoKOTHZone::ScoreThink()
 		NEORules()->AddKothScore(TEAM_NSF, points);
 	}
 
-	SetNextThink(gpGlobals->curtime + KOTHZONE_SCORE_INTERVAL, KOTHZONE_SCORE_CONTEXT);
+	SetNextThink(gpGlobals->curtime + KOTH_SCORE_INTERVAL, KOTH_SCORE_CONTEXT);
 }
 
 void CNEO_InfoKOTHZone::OnPlayerEnter(CNEO_Player *pPlayer)
