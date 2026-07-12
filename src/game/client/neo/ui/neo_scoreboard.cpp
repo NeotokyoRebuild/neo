@@ -672,8 +672,8 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		iColsWidePlayersList[COLSPLAYERS_AVATAR] = m_uiCtx.layout.iRowTall;
 		iColsWidePlayersList[COLSPLAYERS_NAME] = 0;
 		iColsWidePlayersList[COLSPLAYERS_READYUP] = bShowReadyUp ? NeoUI::SuitableWideByWStr(L"NOT READY", NeoUI::SUITABLEWIDE_TABLE) : 0;
-		iColsWidePlayersList[COLSPLAYERS_DMG_DEALT] = bShowDamageInfo ? NeoUI::SuitableWideByWStr(L"200 in 99", NeoUI::SUITABLEWIDE_TABLE) : 0;
-		iColsWidePlayersList[COLSPLAYERS_DMG_TAKEN] = bShowDamageInfo ? NeoUI::SuitableWideByWStr(L"200 in 99", NeoUI::SUITABLEWIDE_TABLE) : 0;
+		iColsWidePlayersList[COLSPLAYERS_DMG_DEALT] = bShowDamageInfo ? NeoUI::SuitableWideByWStr(L"Dmg from", NeoUI::SUITABLEWIDE_TABLE) : 0;
+		iColsWidePlayersList[COLSPLAYERS_DMG_TAKEN] = bShowDamageInfo ? NeoUI::SuitableWideByWStr(L"Dmg from", NeoUI::SUITABLEWIDE_TABLE) : 0;
 		iColsWidePlayersList[COLSPLAYERS_CLASS] = iClassWide;
 		iColsWidePlayersList[COLSPLAYERS_RANK] = NeoUI::SuitableWideByWStr(bHasRanklessDog ? L"Rankless Dog" : L"Lieutenant", NeoUI::SUITABLEWIDE_TABLE);
 		iColsWidePlayersList[COLSPLAYERS_XP] = NeoUI::SuitableWideByWStr(L"-99", NeoUI::SUITABLEWIDE_TABLE);
@@ -816,13 +816,9 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				NeoUI::Pad(); // Name column
 				if (iCurTeam >= FIRST_GAME_TEAM)
 				{
-					const Color bkupNormalFg = m_uiCtx.colors.normalFg;
 					NeoUI::Label(L"Ready"); // Hidden when not used/not in ready-up
-					m_uiCtx.colors.normalFg = COLOR_GREEN;
-					NeoUI::Label(L"Dmg \u25B2"); // Dealt - Hidden when not showing damage info
-					m_uiCtx.colors.normalFg = COLOR_RED;
-					NeoUI::Label(L"Dmg \u25BC"); // Taken - Hidden when not showing damage info
-					m_uiCtx.colors.normalFg = bkupNormalFg;
+					NeoUI::Label(L"Dmg to"); // Dealt - Hidden when not showing damage info
+					NeoUI::Label(L"Dmg from"); // Taken - Hidden when not showing damage info
 					NeoUI::Label(L"Class");
 					NeoUI::Label(L"Rank");
 					NeoUI::Label(L"XP");
