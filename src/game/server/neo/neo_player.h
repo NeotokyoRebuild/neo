@@ -174,6 +174,7 @@ public:
 	int GetClass() const { return m_iNeoClass; }
 	void SetClass(int neoClass);
 	int GetStar() const { return m_iNeoStar; }
+	const char *GetStarName( int iStar ) const;
 	bool IsInAim() const { return m_bInAim; }
 	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
 
@@ -339,6 +340,8 @@ public:
 	CNetworkArray(Vector, m_vLastPingByStar, STAR__TOTAL); // The last ping location from this player for each squad star
 	// Bot Functions
 	void ResetBotCommandState();
+	void SendMessageToCommander( const char *message );
+	void SendMessageToPlayer( CNEO_Player *pPlayer, const char *message );
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
 	static const Vector VECTOR_INVALID_WAYPOINT;
 	float m_flLastInputTime = gpGlobals->curtime;
