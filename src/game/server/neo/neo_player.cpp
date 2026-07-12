@@ -192,38 +192,38 @@ ConVar sv_neo_bot_cloak_detection_bonus_assault_motion_vision("sv_neo_bot_cloak_
 	"Bot cloak detection bonus for assault class detecting movement with motion vision", true, 0, true, 100);
 
 // Support has difficulty seeing cloak in thermal vision
-ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for non-support classes", true, 0, true, 100);
 
 // 0.7 dot product is about a 45 degree half hangle for a 90 degree cone
 ConVar sv_neo_bot_cloak_detection_aim_bonus_dot_threshold("sv_neo_bot_cloak_detection_aim_bonus_dot_threshold", "0.3", FCVAR_NONE,
 	"Bot cloak detection bonus minimum dot product threshold for aim bonus", true, 0.01, true, 0.7);
 
-ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "2", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "10", FCVAR_NONE,
 	"Bot cloak detection bonus for observer being stationary", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_observer_walking("sv_neo_bot_cloak_detection_bonus_observer_walking", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_observer_walking("sv_neo_bot_cloak_detection_bonus_observer_walking", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for observer walking", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_running("sv_neo_bot_cloak_detection_bonus_target_running", "2", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_running("sv_neo_bot_cloak_detection_bonus_target_running", "10", FCVAR_NONE,
 	"Bot cloak detection bonus for target running", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_moving("sv_neo_bot_cloak_detection_bonus_target_moving", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_moving("sv_neo_bot_cloak_detection_bonus_target_moving", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for target moving", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_standing("sv_neo_bot_cloak_detection_bonus_target_standing", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_standing("sv_neo_bot_cloak_detection_bonus_target_standing", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for target standing", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_scope_range("sv_neo_bot_cloak_detection_bonus_scope_range", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_scope_range("sv_neo_bot_cloak_detection_bonus_scope_range", "10", FCVAR_NONE,
 	"Bot cloak detection bonus for being in scope range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_shotgun_range("sv_neo_bot_cloak_detection_bonus_shotgun_range", "5", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_shotgun_range("sv_neo_bot_cloak_detection_bonus_shotgun_range", "60", FCVAR_NONE,
 	"Bot cloak detection bonus for being in shotgun range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_melee_range("sv_neo_bot_cloak_detection_bonus_melee_range", "50", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_melee_range("sv_neo_bot_cloak_detection_bonus_melee_range", "80", FCVAR_NONE,
 	"Bot cloak detection bonus for being in melee range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_per_injury("sv_neo_bot_cloak_detection_bonus_per_injury", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_per_injury("sv_neo_bot_cloak_detection_bonus_per_injury", "5", FCVAR_NONE,
 	"Bot cloak detection bonus per injury event", true, 0, true, 100);
 
 // TODO: Lighting information is not yet baked into NavAreas, so we would need to implement that for bots to detect based on lighting

@@ -183,7 +183,7 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 		return Done( "Disabled." );
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
 
 	if ( threat )
 	{
@@ -193,11 +193,55 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 		const bool bDontSuspendForGhoster = (neoThreat && neoThreat->IsCarryingGhost());
 		if (!bDontSuspendForGhoster)
 		{
-			const float engageRange = 1000.0f;
-			if ( me->IsRangeLessThan( threat->GetLastKnownPosition(), engageRange ) )
+			const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
+			// fall back to nearest teammate for backup if I am the closest contact to enemy
+			if ( NEORules()->IsTeamplay() )
 			{
-				return SuspendFor( new CNEOBotAttack, "Going after an enemy" );
+				bool bAnyTeammatesCloserToEnemy = false;
+				CNEO_Player* pNearestTeammate = nullptr;
+				float distToNearestTeammateSqr = FLT_MAX;
+				const Vector& myPos = me->GetAbsOrigin();
+				const float distMeToThreatSqr = myPos.DistToSqr(threatLastKnownPos);
+
+				for (int i = 1; i <= gpGlobals->maxClients; i++)
+				{
+					CBasePlayer *pPlayer = UTIL_PlayerByIndex(i);
+					if (!pPlayer)
+					{
+						continue;
+					}
+					
+					CNEO_Player *pNeoCandidate = ToNEOPlayer(pPlayer);
+					if (!pNeoCandidate)
+					{
+						continue;
+					}
+
+					if (pNeoCandidate->InSameTeam(me) && (me != pNeoCandidate))
+					{
+						const Vector& candidatePos = pNeoCandidate->GetAbsOrigin();
+						if (threatLastKnownPos.DistToSqr(candidatePos) < distMeToThreatSqr)
+						{
+							bAnyTeammatesCloserToEnemy = true;
+							break;
+						}	
+
+						float distCandidateSqr = myPos.DistToSqr(candidatePos);
+						if (distCandidateSqr < distToNearestTeammateSqr)
+						{
+							distToNearestTeammateSqr = distCandidateSqr;
+							pNearestTeammate = pNeoCandidate;
+						}
+					}
+				}
+
+				if (!bAnyTeammatesCloserToEnemy && pNearestTeammate)
+				{
+					return SuspendFor( new CNEOBotAttack( pNearestTeammate->GetAbsOrigin() ), "Kiting enemy toward teammate for backup" );
+				}
 			}
+			
+			return SuspendFor( new CNEOBotAttack, "Going after an enemy" );
 		}
 	}
 	else

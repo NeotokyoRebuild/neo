@@ -57,6 +57,19 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::Update(CNEOBot *me, float interval
 		return Done("Lost commander or released");
 	}
 
+	if (const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true) )
+	{
+		if ( CNEO_Player *pCommander = me->m_hCommandingPlayer.Get() )
+		{
+			const Vector& vWaypointPingLocation = pCommander->m_vLastPingByStar.Get(me->GetStar());
+			return SuspendFor( new CNEOBotAttack(vWaypointPingLocation), "Engaging enemy en route to waypoint" );
+		}
+		else
+		{
+			return SuspendFor( new CNEOBotAttack, "Breaking formation to engage enemy" );
+		}
+	}
+
 	ActionResult<CNEOBot> weaponRequestResult = CheckCommanderWeaponRequest(me);
 	if (weaponRequestResult.IsRequestingChange())
 	{
