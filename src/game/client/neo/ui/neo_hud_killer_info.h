@@ -29,6 +29,5 @@ private:
 	vgui::HFont m_hFontNormal;
 	vgui::HFont m_hFontTitle;
 	CAvatarImage m_avatar;
-	bool m_preRoundFreezeCleared = false;
 	bool m_bPlayerShownHud = false;
 };

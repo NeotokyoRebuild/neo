@@ -392,7 +392,15 @@ void CNEOScoreBoard::Update()
 			pPlayerInfo->iTakenDmgs = pLocalPlayer->GetAttackersScores(pNeoPlayer->entindex());
 			pPlayerInfo->iTakenHits = pLocalPlayer->GetAttackerHits(pNeoPlayer->entindex());
 			pPlayerInfo->bKilledYou = (pNeoPlayer->entindex() == g_neoKillerInfos.iEntIndex);
-			pPlayerInfo->bYouKilled = pLocalPlayer->m_rfNeoPlayerIdxsKilledByLocal[pNeoPlayer->entindex()];
+			pPlayerInfo->bYouKilled = false;
+			for (int i = 0; i < g_neoUserIDsLocalKilledSize; ++i)
+			{
+				if (g_neoUserIDsLocalKilled[i] == pPlayerInfo->iUserID)
+				{
+					pPlayerInfo->bYouKilled = true;
+					break;
+				}
+			}
 		}
 		else
 		{

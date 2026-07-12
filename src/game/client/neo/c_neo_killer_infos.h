@@ -1,5 +1,7 @@
 #pragma once
 
+#include "shareddefs.h"
+
 static constexpr const int WEP_NAME_MAXSTRLEN = 32;
 
 struct CNEOKillerInfos
@@ -13,5 +15,10 @@ struct CNEOKillerInfos
 	wchar_t wszKilledWith[WEP_NAME_MAXSTRLEN];
 };
 
-// Global instance of CNEOKillerInfos
+void NeoUserIDsLocalKilledClear();
+
+// Global instance of CNEOKillerInfos and local-player's kill record
 inline CNEOKillerInfos g_neoKillerInfos;
+inline int g_neoUserIDsLocalKilledSize;
+inline int g_neoUserIDsLocalKilled[MAX_PLAYERS_ARRAY_SAFE];
+

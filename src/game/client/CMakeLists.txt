@@ -1575,6 +1575,7 @@ set(UNITY_SOURCE_NEO_SRC_CLIENT
     neo/neo_fixup_glshaders.cpp
     neo/c_neo_bloom_controller.cpp
     neo/neo_killer_damage_info.cpp
+    neo/c_neo_killer_infos.cpp
 )
 
 set_source_files_properties(

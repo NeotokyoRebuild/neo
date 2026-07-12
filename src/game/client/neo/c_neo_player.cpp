@@ -479,6 +479,7 @@ C_NEO_Player::C_NEO_Player()
 	m_flTocFactor = 0.15f;
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	if (IsLocalPlayer()) NeoUserIDsLocalKilledClear();
 	m_szNameDupePos = 0;
 }
 
@@ -1207,6 +1208,9 @@ void C_NEO_Player::PreThink( void )
 			CLocalPlayerFilter filter;
 			enginesound->SetPlayerDSP(filter, 0, true);
 
+			NeoUserIDsLocalKilledClear();
+			V_memset(&g_neoKillerInfos, 0, sizeof(CNEOKillerInfos));
+
 			// Reset the cache of other players crosshair data on spawning in
 			if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
 			{
@@ -1625,10 +1629,9 @@ void C_NEO_Player::Spawn( void )
 		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
 		m_rfAttackersHits.GetForModify(i) = 0;
 	}
-	V_memset(m_rfNeoPlayerIdxsKilledByLocal, 0, sizeof(m_rfNeoPlayerIdxsKilledByLocal));
+	if (IsLocalPlayer()) NeoUserIDsLocalKilledClear();
 
 	Weapon_SetZoom(false);
-
 
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
