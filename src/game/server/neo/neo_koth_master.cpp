@@ -10,7 +10,8 @@ void CNEO_KOTHMaster::Spawn()
 	BaseClass::Spawn();
 
 	SetThink(&CNEO_KOTHMaster::Think);
-	SetNextThink(gpGlobals->curtime + sv_neo_koth_zone_switch_time.GetFloat());
+	// preparation time
+	SetNextThink(gpGlobals->curtime + sv_neo_koth_zone_prep_time.GetFloat());
 }
 
 void CNEO_KOTHMaster::Think()
