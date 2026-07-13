@@ -211,7 +211,7 @@ struct NeoSettings
 		bool bShowHudContextHintBotInteract;
 		bool bShowHudContextHighlightObject;
 		bool bShowHudContextHighlightPlayer;
-		int iKdinfoToggletype;
+		int iScoreboardPadding;
 
 		// IFF Markers
 		int optionChosen;
@@ -274,7 +274,6 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_streamermode_autodetect_obs);
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
-		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_player_takeover_hint);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_object_interact_hint);
@@ -284,6 +283,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_player);
 		CONVARREF_DEF(cl_neo_equip_utility_priority);
 		CONVARREF_DEF(cl_neo_taking_damage_sounds);
+		CONVARREF_DEF(cl_neo_hud_scoreboard_padding);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);

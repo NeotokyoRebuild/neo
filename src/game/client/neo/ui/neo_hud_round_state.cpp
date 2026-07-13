@@ -32,10 +32,7 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
-ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0,
-	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldValue, [[maybe_unused]] float flOldValue) {
-		g_pNeoScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
-	});
+ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling", 
 	[](IConVar* pConVar, char const* pOldString, float flOldValue) -> void {
@@ -1268,35 +1265,6 @@ void CNEOHud_RoundState::CheckActiveStar()
 	vgui::ImagePanel *target = m_ipStars[currentStar];
 	target->SetVisible(true);
 	target->SetDrawColor(currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
-}
-
-void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
-{
-	if (!g_pNeoScoreBoard)
-	{
-		return;
-	}
-
-	if (cl_neo_streamermode.GetBool())
-	{
-		return;
-	}
-
-	player_info_t pi;
-	if (!engine->GetPlayerInfo(playerIndex, &pi))
-		return;
-
-	if (!pi.friendsID)
-		return;
-
-	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-	const int mapIndex = g_pNeoScoreBoard->m_mapAvatarsToImageList.Find(steamIDForPlayer);
-	if ((mapIndex == g_pNeoScoreBoard->m_mapAvatarsToImageList.InvalidIndex()))
-		return;
-
-	CAvatarImage* pAvIm = (CAvatarImage*)g_pNeoScoreBoard->m_pImageList->GetImage(g_pNeoScoreBoard->m_mapAvatarsToImageList[mapIndex]);
-	surface()->DrawSetTexture(pAvIm->getTextureID());
-	surface()->DrawSetColor(COLOR_WHITE);
 }
 
 void CNEOHud_RoundState::Paint()

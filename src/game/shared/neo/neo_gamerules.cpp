@@ -54,6 +54,10 @@ ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If
 
 ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
 
+ConVar sv_neo_class_limit_recon("sv_neo_class_limit_recon", "-1", FCVAR_REPLICATED, "Maximum number of Recon class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+ConVar sv_neo_class_limit_assault("sv_neo_class_limit_assault", "-1", FCVAR_REPLICATED, "Maximum number of Assault class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+ConVar sv_neo_class_limit_support("sv_neo_class_limit_support", "-1", FCVAR_REPLICATED, "Maximum number of Support class players per team (-1 = no limit, 0 = banned).", true, -1, true, 32);
+
 #ifdef CLIENT_DLL
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_PRINTABLEONLY, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
@@ -74,9 +78,27 @@ ConVar neo_vip_eligible("cl_neo_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
 ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "20", FCVAR_GAMEDLL, "Maximum points required for a team to win in JGR", true, 1, false, 0);
-#endif
 
-#ifdef GAME_DLL
+void ReadyToggleCB(const CCommand &command)
+{
+	if (auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_GetCommandClient()))
+	{
+		if (2 != command.ArgC())
+		{
+			Msg("Usage: readytoggle [ready|unready]\n");
+			return;
+		}
+		CNEORules::ReadyToggleFlags flags = CNEORules::READYTOGGLEFLAG_PRINTCHANGE;
+		if (0 == V_strcmp(command[1], "unready"))
+		{
+			flags |= CNEORules::READYTOGGLEFLAG_UNREADY;
+		}
+		NEORules()->ReadyToggle(pNeoPlayer, flags);
+	}
+}
+
+ConCommand readytoggle("readytoggle", ReadyToggleCB, "Toggle ready state", FCVAR_USERINFO);
+
 // NEO TODO (nullsystem): Change how voting done from convar to menu selection
 enum eGamemodeEnforcement
 {
@@ -146,6 +168,7 @@ ConVar sv_neo_cap_reward("sv_neo_cap_reward", "0", FCVAR_REPLICATED, "How much X
 ConVar sv_neo_cap_reward_dead("sv_neo_cap_reward_dead", "0", FCVAR_REPLICATED, "Whether dead players should receive the ghost capture or escape reward.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_survivor_bonus("sv_neo_survivor_bonus", "1", FCVAR_REPLICATED, "Whether surviving players on the winning team in CTG and VIP should receive extra XP.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_ghost_carrier_bonus("sv_neo_ghost_carrier_bonus", "1", FCVAR_REPLICATED, "Whether the ghost carrier on the winning team should receive extra XP.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
 #endif // GAME_DLL
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
@@ -157,7 +180,6 @@ ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATE
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
-ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Automatically record demos serverside", true, 0, true, 1);
 #ifdef CLIENT_DLL
 ConVar cl_neo_client_autorecord_allow("cl_neo_client_autorecord_allow", "1", FCVAR_ARCHIVE, "Allow servers to automatically record demos on the client", true, 0, true, 1);
 #endif
@@ -302,6 +324,15 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iLastGhoster)),
 	RecvPropInt(RECVINFO(m_iKothTimeJinrai)),
 	RecvPropInt(RECVINFO(m_iKothTimeNSF)),
+	RecvPropInt(RECVINFO(m_iClassLimitRecon)),
+	RecvPropInt(RECVINFO(m_iClassLimitAssault)),
+	RecvPropInt(RECVINFO(m_iClassLimitSupport)),
+	RecvPropInt(RECVINFO(m_iJinraiReconCount)),
+	RecvPropInt(RECVINFO(m_iJinraiAssaultCount)),
+	RecvPropInt(RECVINFO(m_iJinraiSupportCount)),
+	RecvPropInt(RECVINFO(m_iNsfReconCount)),
+	RecvPropInt(RECVINFO(m_iNsfAssaultCount)),
+	RecvPropInt(RECVINFO(m_iNsfSupportCount)),
 #else
 	SendPropTime(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropTime(SENDINFO(m_flNeoRoundStartTime)),
@@ -338,6 +369,15 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iLastGhoster), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iKothTimeJinrai)),
 	SendPropInt(SENDINFO(m_iKothTimeNSF)),
+	SendPropInt(SENDINFO(m_iClassLimitRecon)),
+	SendPropInt(SENDINFO(m_iClassLimitAssault)),
+	SendPropInt(SENDINFO(m_iClassLimitSupport)),
+	SendPropInt(SENDINFO(m_iJinraiReconCount)),
+	SendPropInt(SENDINFO(m_iJinraiAssaultCount)),
+	SendPropInt(SENDINFO(m_iJinraiSupportCount)),
+	SendPropInt(SENDINFO(m_iNsfReconCount)),
+	SendPropInt(SENDINFO(m_iNsfAssaultCount)),
+	SendPropInt(SENDINFO(m_iNsfSupportCount)),
 #endif
 END_NETWORK_TABLE()
 
@@ -398,8 +438,8 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 	}
 
 	BEGIN_RECV_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
-		RecvPropDataTable( "neo_gamerules_data", 0, 0,	
-			&REFERENCE_RECV_TABLE( DT_NEORules ), 
+		RecvPropDataTable( "neo_gamerules_data", 0, 0,
+			&REFERENCE_RECV_TABLE( DT_NEORules ),
 			RecvProxy_NEORules )
 	END_RECV_TABLE()
 #else
@@ -668,6 +708,17 @@ CNEORules::CNEORules()
 	m_iForcedWeapon = -1;
 	m_bCyberspaceLevel = false;
 
+	m_iClassLimitRecon = -1;
+	m_iClassLimitAssault = -1;
+	m_iClassLimitSupport = -1;
+
+	m_iJinraiReconCount = 0;
+	m_iJinraiAssaultCount = 0;
+	m_iJinraiSupportCount = 0;
+	m_iNsfReconCount = 0;
+	m_iNsfAssaultCount = 0;
+	m_iNsfSupportCount = 0;
+
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("game_end");
@@ -689,7 +740,7 @@ void CNEORules::Precache()
 {
 	BaseClass::Precache();
 }
-#endif
+#endif // GAME_DLL
 
 ConVar	sk_max_neo_ammo("sk_max_neo_ammo", "10000", FCVAR_REPLICATED);
 ConVar	sk_plr_dmg_neo("sk_plr_dmg_neo", "0", FCVAR_REPLICATED);
@@ -1428,7 +1479,7 @@ void CNEORules::Think(void)
 		}
 		else if (GetGameType() == NEO_GAME_TYPE_JGR)
 		{
-			if ((!m_pJuggernautPlayer && m_pJuggernautItem && !m_pJuggernautItem->IsBeingActivatedByLosingTeam()) || 
+			if ((!m_pJuggernautPlayer && m_pJuggernautItem && !m_pJuggernautItem->IsBeingActivatedByLosingTeam()) ||
 				(!m_pJuggernautPlayer && !m_pJuggernautItem)) // Juggernaut is absent entirely
 			{
 				if (GetGlobalTeam(TEAM_JINRAI)->GetScore() > GetGlobalTeam(TEAM_NSF)->GetScore())
@@ -1523,7 +1574,7 @@ void CNEORules::Think(void)
 					{
 						Assert(false);
 						continue;
-					}	
+					}
 					pGhostCap->SetActive(false);
 				}
 
@@ -2407,31 +2458,15 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 		if (steamID.IsValid())
 		{
 			const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
-			if (V_strcmp(pSzChat, "ready") == 0)
+			const bool bIsSetUnReady = (0 == V_strcmp(pSzChat, "unready"));
+			if (bIsSetUnReady || 0 == V_strcmp(pSzChat, "ready"))
 			{
-				m_readyAccIDs.Insert(steamID.GetAccountID());
-				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as ready.");
-				const auto readyPlayers = FetchReadyPlayers();
-				if (readyPlayers.array[TEAM_JINRAI] == iThres && readyPlayers.array[TEAM_NSF] == iThres)
+				ReadyToggleFlags flags = READYTOGGLEFLAG_NIL;
+				if (bIsSetUnReady)
 				{
-					UTIL_ClientPrintAll(HUD_PRINTTALK, "All players are ready! Starting soon...");
+					flags |= READYTOGGLEFLAG_UNREADY;
 				}
-				else
-				{
-					char szReadyText[32];
-					V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
-					UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
-				}
-			}
-			else if (V_strcmp(pSzChat, "unready") == 0)
-			{
-				m_readyAccIDs.Remove(steamID.GetAccountID());
-				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as unready.");
-
-				char szReadyText[32];
-				const auto readyPlayers = FetchReadyPlayers();
-				V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
-				UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
+				ReadyToggle(pNeoCmdPlayer, flags);
 			}
 			else if (V_strcmp(pSzChat, "start") == 0)
 			{
@@ -4034,10 +4069,13 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 {
 	// Non-CNEO_Player, return NULL
-	if (!attacker || !victim)
+	if (!victim)
 	{
 		return NULL;
 	}
+
+	// If it's a suicide, use the victim as the attacker
+	attacker = attacker ? attacker : victim;
 
 	// Check for assistance (> 50 dmg, not final attacker)
 	CNEO_Player* pImpersonated = attacker->GetSpectatorTakeoverPlayerTarget();
@@ -5091,6 +5129,58 @@ void CNEORules::InitDefaultAIRelationships( void )
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY,		D_HT, 0);
 		CBaseCombatCharacter::SetDefaultRelationship(CLASS_EARTH_FAUNA,			CLASS_PLAYER_ALLY_VITAL,D_HT, 0);
 }
+
+void CNEORules::ReadyToggle(CNEO_Player *pNeoPlayer, const ReadyToggleFlags flags)
+{
+	const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
+	const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+
+	if (flags & READYTOGGLEFLAG_PRINTCHANGE)
+	{
+		// Have to go one by one due to streamer-mode
+		char szReadyPrint[MAX_PLAYER_NAME_LENGTH + 32 + 1];
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			auto *pNeoOtherPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (!pNeoOtherPlayer)
+			{
+				continue;
+			}
+
+			V_sprintf_safe(szReadyPrint, "Player %s now %s"
+					, pNeoPlayer->GetNeoPlayerName(pNeoOtherPlayer)
+					, (flags & READYTOGGLEFLAG_UNREADY) ? "unready" : "ready");
+			ClientPrint(pNeoOtherPlayer, HUD_PRINTTALK, szReadyPrint);
+		}
+	}
+
+	if (flags & READYTOGGLEFLAG_UNREADY)
+	{
+		m_readyAccIDs.Remove(steamID.GetAccountID());
+		ClientPrint(pNeoPlayer, HUD_PRINTTALK, "You are now marked as unready.");
+		char szReadyText[32];
+		const auto readyPlayers = FetchReadyPlayers();
+		V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
+		UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
+	}
+	else
+	{
+		m_readyAccIDs.Insert(steamID.GetAccountID());
+		ClientPrint(pNeoPlayer, HUD_PRINTTALK, "You are now marked as ready.");
+		const auto readyPlayers = FetchReadyPlayers();
+		if (readyPlayers.array[TEAM_JINRAI] == iThres && readyPlayers.array[TEAM_NSF] == iThres)
+		{
+			UTIL_ClientPrintAll(HUD_PRINTTALK, "All players are ready! Starting soon...");
+		}
+		else
+		{
+			char szReadyText[32];
+			V_sprintf_safe(szReadyText, "%d/%d players are ready.", readyPlayers.array[TEAM_JINRAI] + readyPlayers.array[TEAM_NSF], iThres * 2);
+			UTIL_ClientPrintAll(HUD_PRINTTALK, szReadyText);
+		}
+	}
+}
+
 #endif
 
 #ifdef CLIENT_DLL

@@ -192,38 +192,38 @@ ConVar sv_neo_bot_cloak_detection_bonus_assault_motion_vision("sv_neo_bot_cloak_
 	"Bot cloak detection bonus for assault class detecting movement with motion vision", true, 0, true, 100);
 
 // Support has difficulty seeing cloak in thermal vision
-ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for non-support classes", true, 0, true, 100);
 
 // 0.7 dot product is about a 45 degree half hangle for a 90 degree cone
 ConVar sv_neo_bot_cloak_detection_aim_bonus_dot_threshold("sv_neo_bot_cloak_detection_aim_bonus_dot_threshold", "0.3", FCVAR_NONE,
 	"Bot cloak detection bonus minimum dot product threshold for aim bonus", true, 0.01, true, 0.7);
 
-ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "2", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "10", FCVAR_NONE,
 	"Bot cloak detection bonus for observer being stationary", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_observer_walking("sv_neo_bot_cloak_detection_bonus_observer_walking", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_observer_walking("sv_neo_bot_cloak_detection_bonus_observer_walking", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for observer walking", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_running("sv_neo_bot_cloak_detection_bonus_target_running", "2", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_running("sv_neo_bot_cloak_detection_bonus_target_running", "10", FCVAR_NONE,
 	"Bot cloak detection bonus for target running", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_moving("sv_neo_bot_cloak_detection_bonus_target_moving", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_moving("sv_neo_bot_cloak_detection_bonus_target_moving", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for target moving", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_standing("sv_neo_bot_cloak_detection_bonus_target_standing", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_standing("sv_neo_bot_cloak_detection_bonus_target_standing", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for target standing", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_scope_range("sv_neo_bot_cloak_detection_bonus_scope_range", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_scope_range("sv_neo_bot_cloak_detection_bonus_scope_range", "10", FCVAR_NONE,
 	"Bot cloak detection bonus for being in scope range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_shotgun_range("sv_neo_bot_cloak_detection_bonus_shotgun_range", "5", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_shotgun_range("sv_neo_bot_cloak_detection_bonus_shotgun_range", "60", FCVAR_NONE,
 	"Bot cloak detection bonus for being in shotgun range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_melee_range("sv_neo_bot_cloak_detection_bonus_melee_range", "50", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_melee_range("sv_neo_bot_cloak_detection_bonus_melee_range", "80", FCVAR_NONE,
 	"Bot cloak detection bonus for being in melee range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_per_injury("sv_neo_bot_cloak_detection_bonus_per_injury", "1", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_per_injury("sv_neo_bot_cloak_detection_bonus_per_injury", "5", FCVAR_NONE,
 	"Bot cloak detection bonus per injury event", true, 0, true, 100);
 
 // TODO: Lighting information is not yet baked into NavAreas, so we would need to implement that for bots to detect based on lighting
@@ -251,6 +251,14 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
+	// Enforce class limits for Recon/Assault/Support
+	if (CTeam *team = GetTeam())
+	{
+		newClass = team->GetAppropriateClass(newClass);
+		if (newClass == -1)
+			return;
+	}
+
 	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
@@ -258,7 +266,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup || status == NeoRoundStatus::Countdown))
 	{
-		m_iNeoClass = newClass;
+		SetClass(newClass);
 		m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 
 		SetPlayerTeamModel();
@@ -438,9 +446,19 @@ void SetClass(const CCommand &command)
 		{
 			return;
 		}
-		
+
 		nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
-		player->RequestSetClass(nextClass);
+		
+		// Enforce class limits for Recon/Assault/Support
+		if (CTeam *team = player->GetTeam())
+		{
+			nextClass = team->GetAppropriateClass(nextClass);
+		}
+
+		if (nextClass != -1)
+		{
+			player->RequestSetClass(nextClass);
+		}
 	}
 }
 
@@ -565,7 +583,7 @@ static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 
 CNEO_Player::CNEO_Player()
 {
-	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	SetClass(NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT);
 	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
@@ -692,7 +710,18 @@ void CNEO_Player::Spawn(void)
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != NEO_CLASS_RANDOM) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
-		m_iNeoClass = m_iNextSpawnClassChoice;
+		int desiredClass = m_iNextSpawnClassChoice;
+
+		// Enforce class limits for Recon/Assault/Support
+		if (CTeam *team = GetTeam())
+		{
+			if (team->GetTeamNumber() == TEAM_JINRAI || team->GetTeamNumber() == TEAM_NSF)
+			{
+				desiredClass = team->GetAppropriateClass(desiredClass);
+			}
+		}
+
+		SetClass(desiredClass);
 	}
 
 	BaseClass::Spawn();
@@ -756,7 +785,7 @@ void CNEO_Player::Spawn(void)
 			engine->ClientCommand(this->edict(), "classmenu");
 			return;
 		}
-		m_iNeoClass = NEORules()->GetForcedClass();
+		SetClass(NEORules()->GetForcedClass());
 
 		if (NEORules()->GetForcedWeapon() < 0)
 		{
@@ -1895,6 +1924,18 @@ void CNEO_Player::SetClientWantNeoName(const bool b)
 	m_bClientWantNeoName = b;
 }
 
+void CNEO_Player::SetClass(int neoClass)
+{
+	if (neoClass <= NEO_CLASS_RANDOM || neoClass >= NEO_CLASS__ENUM_COUNT)
+		return;
+
+	m_iNeoClass.Set(neoClass);
+	if (CTeam* team = GetTeam())
+	{
+		team->UpdateClassCounts();
+	}
+}
+
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
 	if (bZoomIn == m_bInAim)
@@ -2256,7 +2297,7 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 	CSingleUserRecipientFilter filter(this);
 	filter.MakeReliable();
 
-	UserMessageBegin(filter, "DamageInfo");
+	UserMessageBegin(filter, "KillerDamageInfo");
 	{
 		short attackerIdx = 0;
 		auto *neoAttacker = info ? ToNEOPlayer(info->GetAttacker()) : nullptr;
@@ -3228,6 +3269,10 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
 		SetPlayerTeamModel();
+		if (CTeam *team = GetTeam())
+		{
+			SetClass(team->GetAppropriateClass(GetClass()));
+		}
 	}
 
 	if (!changedTeams)
@@ -3365,7 +3410,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			{
 				m_rfAttackersScores.GetForModify(attackerIdx) += Min(iDamage, GetHealth());
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
-				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
+				m_rfAttackersHits.GetForModify(attackerIdx) += info.GetNumDamageEvents();
 
 				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->IsRoundLive())
 				{
@@ -3624,6 +3669,38 @@ void CNEO_Player::ResetBotCommandState()
 	}
 }
 
+void CNEO_Player::SendMessageToCommander( const char *message )
+{
+	SendMessageToPlayer( m_hCommandingPlayer.Get(), message );
+}
+
+void CNEO_Player::SendMessageToPlayer( CNEO_Player *pPlayer, const char *message )
+{
+	if ( pPlayer && pPlayer->IsNetClient() )
+	{
+		CSingleUserRecipientFilter user( pPlayer );
+		user.MakeReliable();
+
+		char szText[256];
+		V_snprintf( szText, sizeof( szText ), "%s: %s\n", GetNeoPlayerName(), message );
+		UTIL_SayTextFilter( user, szText, this, true );
+	}
+}
+
+const char *CNEO_Player::GetStarName( int iStar ) const
+{
+	switch ( iStar )
+	{
+	case STAR_ALPHA:	return "alpha";
+	case STAR_BRAVO:	return "bravo";
+	case STAR_CHARLIE:	return "charlie";
+	case STAR_DELTA:	return "delta";
+	case STAR_ECHO:		return "echo";
+	case STAR_FOXTROT:	return "foxtrot";
+	default:			return "unknown";
+	}
+}
+
 void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 {
 	if (!sv_neo_bot_cmdr_enable.GetBool())
@@ -3656,6 +3733,7 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 		{
 			// Commander is a player and stars are different, just update bot's star
 			RequestSetStar(pCommander->GetStar());
+			SendMessageToCommander( UTIL_VarArgs( "Joining %s squad", GetStarName( GetStar() ) ) );
 
 			// Behavior without resetting pings/commander/leader:
 			// If this is a new squad star with no waypoint this round, bots will leave waypoint to come follow.
@@ -3667,6 +3745,7 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 		{
 			// Bot is already following this player in same star, so toggle off.
 			// Bot will return to following general uncommanded bot behavior.
+			SendMessageToCommander( "Leaving your squad" );
 			m_hLeadingPlayer = nullptr;
 			m_hCommandingPlayer = nullptr;
 		}
@@ -3675,6 +3754,11 @@ void CNEO_Player::ToggleBotFollowCommander(CNEO_Player* pCommander)
 	else
 	{
 		// Bot starts following this player.
+		if ( m_hCommandingPlayer.Get() && m_hCommandingPlayer.Get() != pCommander )
+		{
+			SendMessageToCommander( UTIL_VarArgs( "Joining %s's squad", pCommander->GetNeoPlayerName() ) );
+		}
+
 		m_hLeadingPlayer = pCommander;
 		if (!pCommander->IsBot())
 		{
@@ -4049,7 +4133,7 @@ void CNEO_Player::BecomeJuggernaut()
 	UTIL_ScreenFade(this, COLOR_JGR_FADE, 1.0f, 0.0f, FFADE_IN);
 
 	RemoveAllItems(false);
-	m_iNeoClass = NEO_CLASS_JUGGERNAUT;
+	SetClass(NEO_CLASS_JUGGERNAUT);
 	GiveDefaultItems();
 	// Set model after weapon change to avoid studio asserts
 	SetPlayerTeamModel();
@@ -4170,14 +4254,13 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 
 		if (pPlayerTakeoverTarget)
 		{
-			m_iNeoClass = pPlayerTakeoverTarget->m_iNeoClass;
+			SetClass(pPlayerTakeoverTarget->m_iNeoClass);
 			m_iNeoSkin = pPlayerTakeoverTarget->m_iNeoSkin;
 			SetMaxHealth(pPlayerTakeoverTarget->GetMaxHealth());
 			SetHealth(pPlayerTakeoverTarget->GetHealth());
 			SetArmorValue(pPlayerTakeoverTarget->ArmorValue());
 			m_HL2Local.m_cloakPower = pPlayerTakeoverTarget->m_HL2Local.m_cloakPower;
 			m_HL2Local.m_flSuitPower = pPlayerTakeoverTarget->m_HL2Local.m_flSuitPower;
-			m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
 
 			m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
 			m_bHasBeenAirborneForTooLongToSuperJump = pPlayerTakeoverTarget->m_bHasBeenAirborneForTooLongToSuperJump;
@@ -4185,8 +4268,6 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			Weapon_SetZoom(pPlayerTakeoverTarget->m_bInAim);
 			m_bCarryingGhost = pPlayerTakeoverTarget->m_bCarryingGhost;
 			m_bInLean = pPlayerTakeoverTarget->m_bInLean;
-			m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
-			m_iNextSpawnClassChoice = pPlayerTakeoverTarget->m_iNextSpawnClassChoice;
 			m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
 			m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
 			m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
@@ -4290,7 +4371,7 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 		case NEO_CLASS_RECON:
 		case NEO_CLASS_ASSAULT:
 		case NEO_CLASS_SUPPORT:
-			m_iNeoClass = m_iClassBeforeTakeover;
+			SetClass(m_iClassBeforeTakeover);
 			break;
 		default:
 			// Don't reset class if spectator was a special class (VIP, Juggernaut)

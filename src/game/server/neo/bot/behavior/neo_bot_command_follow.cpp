@@ -36,7 +36,7 @@ CNEOBotCommandFollow::CNEOBotCommandFollow() : m_vGoalPos( CNEO_Player::VECTOR_I
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCommandFollow::OnStart(CNEOBot *me, Action< CNEOBot > *priorAction)
 {
-	SendUpdateToCommander( me, "Joining your squad." );
+	me->SendMessageToCommander( "Joining your squad" );
 	m_path.SetMinLookAheadDistance(me->GetDesiredPathLookAheadRange());
 	m_commanderLookingAtMeTimer.Invalidate();
 	m_bWasCommanderLookingAtMe = false;
@@ -57,10 +57,23 @@ ActionResult< CNEOBot >	CNEOBotCommandFollow::Update(CNEOBot *me, float interval
 		return Done("Lost commander or released");
 	}
 
+	if (const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true) )
+	{
+		if ( CNEO_Player *pCommander = me->m_hCommandingPlayer.Get() )
+		{
+			const Vector& vWaypointPingLocation = pCommander->m_vLastPingByStar.Get(me->GetStar());
+			return SuspendFor( new CNEOBotAttack(vWaypointPingLocation), "Engaging enemy en route to waypoint" );
+		}
+		else
+		{
+			return SuspendFor( new CNEOBotAttack, "Breaking formation to engage enemy" );
+		}
+	}
+
 	ActionResult<CNEOBot> weaponRequestResult = CheckCommanderWeaponRequest(me);
 	if (weaponRequestResult.IsRequestingChange())
 	{
-		SendUpdateToCommander( me, "Here, take this." );
+		me->SendMessageToCommander( "Here, take this" );
 		return weaponRequestResult;
 	}
 
@@ -185,6 +198,38 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		return false;
 	}
 
+	// Sneak if commander is currently quiet
+	bool commanderIsQuiet = false;
+	if ( pCommander->m_nButtons & IN_WALK )
+	{
+		// Urge bots to sneak when walk button is held
+		commanderIsQuiet = true;
+	}
+	else if ( !(pCommander->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_SPEED | IN_RUN )) )
+	{
+		// Standing still (or at least not pressing movement buttons) also implies quiet
+		// Even while standing still, press IN_SPEED / IN_RUN to urge bots to move faster
+		commanderIsQuiet = true;
+	}
+
+	if (pCommander->IsDucking())
+	{
+		commanderIsQuiet = true;
+		me->PressCrouchButton(0.5f);
+	}
+
+	if (commanderIsQuiet)
+	{
+		m_bSneakWhenFollowingPing = true;
+		me->ReleaseRunButton();
+		me->PressSneakButton(0.5f);
+	}
+	else
+	{
+		m_bSneakWhenFollowingPing = false;
+		me->ReleaseSneakButton();
+	}
+
 	// Mirror behavior of leader if we have one
 	if ( CNEO_Player *pPlayerToMirror = me->m_hLeadingPlayer.Get() )
 	{
@@ -195,15 +240,6 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		else
 		{
 			me->DisableCloak();
-		}
-
-		if (pPlayerToMirror->IsDucking())
-		{
-			me->PressCrouchButton(0.5f);
-		}
-		else
-		{
-			me->ReleaseCrouchButton();
 		}
 	}
 
@@ -227,7 +263,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 	{
 		if ( !me->m_hLeadingPlayer.Get() )
 		{
-			SendUpdateToCommander( me, "Following you." );
+			me->SendMessageToCommander( "Following you" );
 		}
 
 		// Use sv_neo_bot_cmdr_stop_distance_sq for consistent bot collection range
@@ -242,7 +278,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		// Check if there's been an update for this star's ping waypoint
 		if (pCommander->m_vLastPingByStar.Get(me->GetStar()) != me->m_vLastPingByStar.Get(me->GetStar()))
 		{
-			SendUpdateToCommander( me, "On my way." );
+			me->SendMessageToCommander( "On my way" );
 			me->m_hLeadingPlayer = nullptr; // Stop following and start travelling to ping
 			m_vGoalPos = pCommander->m_vLastPingByStar.Get(me->GetStar());
 			me->m_vLastPingByStar.GetForModify(me->GetStar()) = pCommander->m_vLastPingByStar.Get(me->GetStar());
@@ -258,6 +294,12 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 				me->m_hLeadingPlayer = pCommander; // fallback to following commander
 				// continue with leader following logic below
 			}
+		}
+
+		if (m_bSneakWhenFollowingPing)
+		{
+			me->ReleaseRunButton();
+			me->PressSneakButton(0.3f);
 		}
 
 		if (FanOutAndCover(me, m_vGoalPos))
@@ -468,17 +510,3 @@ bool CNEOBotCommandFollow::FanOutAndCover(CNEOBot* me, Vector& movementTarget, b
 	return false;
 }
 
-//---------------------------------------------------------------------------------------------
-void CNEOBotCommandFollow::SendUpdateToCommander( CNEOBot *me, const char *message )
-{
-	CNEO_Player *pCommander = me->m_hCommandingPlayer.Get();
-	if ( pCommander && pCommander->IsNetClient() )
-	{
-		CSingleUserRecipientFilter user( pCommander );
-		user.MakeReliable();
-
-		char szText[256];
-		V_snprintf( szText, sizeof( szText ), "%s: %s\n", me->GetNeoPlayerName(), message );
-		UTIL_SayTextFilter( user, szText, me, true );
-	}
-}

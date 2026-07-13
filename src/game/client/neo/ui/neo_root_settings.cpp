@@ -12,7 +12,6 @@
 #include <vgui_controls/Controls.h>
 #include <vgui/ISurface.h>
 #include "vgui/ISystem.h"
-#include "neo_hud_killer_damage_info.h"
 #include "voice_status.h"
 
 #include "neo_ui.h"
@@ -20,6 +19,7 @@
 #include "neo/ui/neo_utils.h"
 #include "neo_theme.h"
 #include "neo_mp3player.h"
+#include "neo/ui/neo_scoreboard.h"
 
 #include <cwctype>
 
@@ -688,7 +688,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pHUD->iShowFps = cvr->cl_showfps.GetInt();
 		pHUD->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pHUD->iExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetInt();
-		pHUD->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
+		pHUD->iScoreboardPadding = cvr->cl_neo_hud_scoreboard_padding.GetInt();
 		pHUD->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
 		pHUD->bShowHudContextHintPlayerTakeover = cvr->cl_neo_hud_context_hint_show_player_takeover_hint.GetBool();
 		pHUD->bShowHudContextHintObjectInteract = cvr->cl_neo_hud_context_hint_show_object_interact_hint.GetBool();
@@ -955,7 +955,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_showfps.SetValue(pHUD->iShowFps);
 		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pHUD->bEnableRangeFinder);
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pHUD->iExtendedKillfeed);
-		cvr->cl_neo_kdinfo_toggletype.SetValue(pHUD->iKdinfoToggletype);
+		cvr->cl_neo_hud_scoreboard_padding.SetValue(pHUD->iScoreboardPadding);
 		cvr->cl_neo_hud_context_hint_enabled.SetValue(pHUD->bShowHudContextHints);
 		cvr->cl_neo_hud_context_hint_show_player_takeover_hint.SetValue(pHUD->bShowHudContextHintPlayerTakeover);
 		cvr->cl_neo_hud_context_hint_show_object_interact_hint.SetValue(pHUD->bShowHudContextHintObjectInteract);
@@ -1057,12 +1057,6 @@ static const wchar_t* IFFVERBOSITY_LABELS[] = { L"Minimal", L"Clean", L"Full" };
 static const wchar_t* OBJVERBOSITY_LABELS[] = { L"Minimal", L"Full" };
 
 static const wchar_t *SHOWFPS_LABELS[] = { L"Disabled", L"Enabled (FPS)", L"Enabled (Smooth FPS)", };
-
-static const wchar_t *KDMGINFO_TOGGLETYPE_LABELS[KDMGINFO_TOGGLETYPE__TOTAL] = {
-	L"Always", // KDMGINFO_TOGGLETYPE_ROUND
-	L"Reset per match", // KDMGINFO_TOGGLETYPE_MATCH
-	L"Never", // KDMGINFO_TOGGLETYPE_NEVER
-};
 
 static const wchar_t *EQUIP_UTILITY_PRIORITY_LABELS[NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL] = {
 	L"Frag, Smoke, Detpack", // EQUIP_UTILITY_PRIORITY_FRAG_SMOKE_DETPACK
@@ -1663,6 +1657,12 @@ static const wchar_t *EXT_KILLFEED_LABELS[] = {
 	L"Objectives & rank-ups"
 };
 
+static const wchar_t *NEOSCOREBOARDPADDING_LABELS[NEOSCOREBOARDPADDING__TOTAL] = {
+	L"Default",		// NEOSCOREBOARDPADDING_DEFAULT
+	L"Compact",		// NEOSCOREBOARDPADDING_COMPACT
+	L"Spacious",	// NEOSCOREBOARDPADDING_SPACIOUS
+};
+
 void NeoSettings_HUD(NeoSettings *ns)
 {
 	NeoSettings::HUD *pHud = &ns->hud;
@@ -1675,7 +1675,7 @@ void NeoSettings_HUD(NeoSettings *ns)
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pHud->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pHud->bEnableRangeFinder);
 	NeoUI::RingBox(L"Extended killfeed", EXT_KILLFEED_LABELS, ARRAYSIZE(EXT_KILLFEED_LABELS), &pHud->iExtendedKillfeed);
-	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pHud->iKdinfoToggletype);
+	NeoUI::RingBox(L"Scoreboard padding", NEOSCOREBOARDPADDING_LABELS, NEOSCOREBOARDPADDING__TOTAL, &pHud->iScoreboardPadding);
 
 	NeoUI::Divider(L"Contextual hints");
 	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pHud->bShowHudContextHints);

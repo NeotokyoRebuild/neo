@@ -48,7 +48,7 @@
 #include "rendertexture.h"
 #include "ivieweffects.h"
 #include "iachievementmgr.h"
-#include "c_neo_killer_damage_infos.h"
+#include "c_neo_killer_infos.h"
 #include <vgui/ILocalize.h>
 #include <tier3.h>
 
@@ -2051,8 +2051,6 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 
 	m_nSkin = pPlayerTakeoverTarget->m_iNeoSkin;
 	m_iNeoClass = pPlayerTakeoverTarget->m_iNeoClass;
-	m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
-	m_iNextSpawnClassChoice = pPlayerTakeoverTarget->m_iNextSpawnClassChoice;
 
 	m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
 	m_bInVision = pPlayerTakeoverTarget->m_bInVision;

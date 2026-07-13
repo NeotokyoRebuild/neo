@@ -23,7 +23,6 @@ extern ConVar sv_neo_serverside_beacons;
 extern ConVar sv_neo_spec_replace_player_bot_enable;
 extern ConVar sv_neo_spec_replace_player_afk_enable;
 extern ConVar sv_neo_spec_replace_player_min_exp;
-extern ConVar sv_neo_spec_replace_player_afk_time_sec;
 
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS
@@ -293,6 +292,7 @@ inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
 
 int GetRank(const int xp);
 const char *GetRankName(const int xp, const bool shortened = false);
+const wchar_t *GetRankNameW(const int xp, const bool shortened = false);
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
 

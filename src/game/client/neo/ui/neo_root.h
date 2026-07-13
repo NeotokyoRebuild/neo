@@ -77,7 +77,6 @@ enum RootState
 	STATE__SUBSTATES,
 	STATE_MAPLIST = STATE__SUBSTATES,
 	STATE_SERVERDETAILS,
-	STATE_PLAYERLIST,
 	STATE_SPRAYPICKER,
 	STATE_SPRAYDELETER,
 
@@ -100,7 +99,6 @@ enum MainMenuButtons
 	MMBTN_FINDSERVER,
 	MMBTN_CREATESERVER,
 	MMBTN_DISCONNECT,
-	MMBTN_PLAYERLIST,
 	MMBTN_TUTORIAL,
 	MMBTN_FIRINGRANGE,
 	MMBTN_OPTIONS,
@@ -167,7 +165,6 @@ public:
 	void MainLoopCredits(const MainLoopParam param);
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
-	void MainLoopPlayerList(const MainLoopParam param);
 	void MainLoopSprayPicker(const MainLoopParam param);
 	void MainLoopPopup(const MainLoopParam param);
 

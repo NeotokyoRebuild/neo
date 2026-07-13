@@ -60,7 +60,6 @@ private:
 	int DrawPlayerRow_BotCmdr(int playerIndex, int yOffset, bool small = false, const Color* highlightColor = nullptr);
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
 					const int xOffset, const bool drawHealthClass, const bool isSelected = false);
-	void SetTextureToAvatar(int playerIndex);
 
 	virtual void LevelShutdown(void) override;
 

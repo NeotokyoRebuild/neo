@@ -12,6 +12,7 @@
 #ifdef NEO
 #include "neo_player.h"
 #include "neo_player_shared.h"
+#include "neo_gamerules.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -33,6 +34,8 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 	SendPropArray3(SENDINFO_ARRAY3(m_szNeoClantag), SendPropString(SENDINFO_ARRAY(m_szNeoClantag), 0, SendProxy_StringT_To_String)),
 	SendPropArray3(SENDINFO_ARRAY3(m_iMaxHealth), SendPropInt(SENDINFO_ARRAY(m_iMaxHealth), -1, SPROP_VARINT | SPROP_UNSIGNED)),
 	SendPropArray3(SENDINFO_ARRAY3(m_bAfk), SendPropInt(SENDINFO_ARRAY(m_bAfk), 1, SPROP_UNSIGNED)),
+	SendPropArray3(SENDINFO_ARRAY3(m_szNeoCrosshair), SendPropString(SENDINFO_ARRAY(m_szNeoCrosshair), 0, SendProxy_StringT_To_String)),
+	SendPropArray3(SENDINFO_ARRAY3(m_bReady), SendPropInt(SENDINFO_ARRAY(m_bReady), 1, SPROP_UNSIGNED)),
 #endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),
@@ -99,6 +102,8 @@ void CPlayerResource::Init( int iIndex )
 	m_szNeoClantag.Set(iIndex, m_szNeoNameNone);
 	m_iMaxHealth.Set(iIndex, 1);
 	m_bAfk.Set(iIndex, 0);
+	m_szNeoCrosshair.Set(iIndex, m_szNeoNameNone);
+	m_bReady.Set(iIndex, 0);
 #endif
 	m_iPing.Set( iIndex, 0 );
 	m_iScore.Set( iIndex, 0 );
@@ -180,6 +185,20 @@ void CPlayerResource::UpdatePlayerData( void )
 			}
 			m_iNeoNameDupeIdx.Set(i, neoPlayer->NameDupePos());
 			m_bAfk.Set(i, neoPlayer->IsAFK());
+			{
+				const char *neoCrosshair = neoPlayer->m_szNeoCrosshair.Get();
+				string_t strt;
+				if (neoCrosshair && neoCrosshair[0] != '\0')
+				{
+					strt = AllocPooledString(neoCrosshair);
+				}
+				else
+				{
+					strt = m_szNeoNameNone;
+				}
+				m_szNeoCrosshair.Set(i, strt);
+			}
+			m_bReady.Set(i, NEORules() ? NEORules()->ReadyUpPlayerIsReady(neoPlayer) : false);
 #endif
 			UpdateConnectedPlayer( i, pPlayer );
 		}
