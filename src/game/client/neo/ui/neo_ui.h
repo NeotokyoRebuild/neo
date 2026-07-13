@@ -535,6 +535,7 @@ void EndWidget(const CurrentWidgetState &wdgState);
 
 void SetPerRowLayout(const int iColTotal, const int *iColProportions = nullptr, const int iRowHeight = -1);
 // Layout a vertical within the (horizontal) column, iRowTotal = 0 to disable
+// NEO TODO (nullsystem): Remove Vert layouting?
 void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions = nullptr);
 
 void BeginOverridePanelWide(const int iOverridePanelWide);

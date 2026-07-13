@@ -1445,9 +1445,6 @@ void CHLClient::PostInit()
 			if (iCfgVerMajor < 22)
 			{
 				SetupBindIfNotSet("+attack3", MOUSE_MIDDLE);	// Ping location
-				SetupBindIfNotSet("kdinfo_toggle", KEY_F11);	// KD-info toggle
-				SetupBindIfNotSet("kdinfo_page_prev", KEY_P);	// KD-info page previous
-				SetupBindIfNotSet("kdinfo_page_next", KEY_N);	// KD-info page next
 				SetupBindIfNotSet("neo_mp3", KEY_M);			// MP3 player toggle
 			
 				// neo_aim_hold removal, +aim split to +aim and toggle_aim

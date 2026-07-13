@@ -1574,6 +1574,7 @@ set(UNITY_SOURCE_NEO_SRC_CLIENT
     neo/c_neo_te_tocflash.cpp
     neo/neo_fixup_glshaders.cpp
     neo/c_neo_bloom_controller.cpp
+    neo/neo_killer_damage_info.cpp
 )
 
 set_source_files_properties(
@@ -1590,7 +1591,7 @@ target_sources_grouped(
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.h
     neo/neo_fixup_glshaders.h
-    neo/c_neo_killer_damage_infos.h
+    neo/c_neo_killer_infos.h
     ${UNITY_SOURCE_NEO_SRC_CLIENT}
 )
 
@@ -1658,7 +1659,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_ghost_beacons.cpp
     neo/ui/neo_hud_ghost_cap_point.cpp
     neo/ui/neo_hud_ghost_marker.cpp
-    neo/ui/neo_hud_killer_damage_info.cpp
+    neo/ui/neo_hud_killer_info.cpp
     neo/ui/neo_hud_ghost_uplink_state.cpp
     neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_hint.cpp
@@ -1697,7 +1698,7 @@ target_sources_grouped(
     neo/ui/neo_hud_ghost_beacons.h
     neo/ui/neo_hud_ghost_cap_point.h
     neo/ui/neo_hud_ghost_marker.h
-    neo/ui/neo_hud_killer_damage_info.h
+    neo/ui/neo_hud_killer_info.h
     neo/ui/neo_hud_ghost_uplink_state.h
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_hint.h

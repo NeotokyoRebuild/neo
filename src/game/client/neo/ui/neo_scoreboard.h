@@ -27,21 +27,32 @@ struct MapAvatarValue
 
 struct CNEOScoreBoardPlayer
 {
+	// Common section
 	int iUserID; // More reliable than player index
 	int iTeam;
-	int iDeaths;
-	int iXP;
-	int iClass;
 	int iPing;
 	bool bDead;
 	bool bBot;
 	bool bMuted;
-	bool bReady;
 	CSteamID steamID;
 	MapAvatarValue avatar;
 	wchar_t wszName[MAX_PLAYER_NAME_LENGTH];
 	wchar_t wszClantag[NEO_MAX_CLANTAG_LENGTH];
 	char szCrosshair[NEO_XHAIR_SEQMAX];
+
+	// Normal scoreboard section
+	int iDeaths;
+	int iXP;
+	int iClass;
+	bool bReady;
+
+	// Damage info
+	int iDealtDmgs;
+	int iDealtHits;
+	int iTakenDmgs;
+	int iTakenHits;
+	bool bKilledYou;
+	bool bYouKilled;
 };
 
 class CNEOScoreBoard : public vgui::Panel, public IViewPortPanel, public CGameEventListener
@@ -51,6 +62,8 @@ class CNEOScoreBoard : public vgui::Panel, public IViewPortPanel, public CGameEv
 public:
 	CNEOScoreBoard(IViewPort *pViewPort);
 	~CNEOScoreBoard();
+
+	static bool ShowAvatars();
 
 	const char *GetName() final;
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
@@ -76,8 +89,6 @@ public:
 	void SetParent(vgui::VPANEL parent) final { BaseClass::SetParent( parent ); }
 	void FireGameEvent(IGameEvent *event) final;
 
-	bool ShowAvatars();
-
 	void OnMainLoop(const NeoUI::Mode eMode);
 
 	MESSAGE_FUNC_INT(OnPollHideCode, "PollHideCode", code);
@@ -87,7 +98,7 @@ public:
 
 	int	m_HLTVSpectators = 0;
 	int m_iTotalPlayers = 0;
-	CNEOScoreBoardPlayer m_playersInfo[MAX_PLAYERS] = {};
+	CNEOScoreBoardPlayer m_playersInfo[MAX_PLAYERS + 1] = {};
 	CNEOScoreBoardPlayer m_playerPopup = {};
 
 	wchar_t m_wszHostname[128] = {};
