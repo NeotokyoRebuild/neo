@@ -54,9 +54,11 @@ void CNEO_KOTHMaster::UnlockZoneThink()
 	}
 	m_hActiveZone = pZone;
 	m_hPendingZone = nullptr;
-
-	SetThink(&CNEO_KOTHMaster::CloseZoneThink);
-	SetNextThink(gpGlobals->curtime + sv_neo_koth_zone_switch_time.GetFloat());
+	// do not switch zones if we have only one
+	if (m_Zones.Size() > 1) {
+		SetThink(&CNEO_KOTHMaster::CloseZoneThink);
+		SetNextThink(gpGlobals->curtime + sv_neo_koth_zone_switch_time.GetFloat());
+	}
 }
 
 void CNEO_KOTHMaster::CloseZoneThink()
