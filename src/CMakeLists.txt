@@ -23,6 +23,12 @@ if(NOT OS_WINDOWS AND NOT OS_LINUX AND NOT OS_MACOS)
     message(FATAL_ERROR "Unknown OS")
 endif()
 
+if(OS_LINUX)
+    set(PLATSUBDIR "linux64")
+elseif(OS_WINDOWS)
+    set(PLATSUBDIR "x64")
+endif()
+
 option(CMAKE_COMPILE_WARNING_AS_ERROR "Treat compile warnings as errors" ${DEFAULT_WARN_AS_ERR})
 option(NEO_CI_BUILD "CI build mode" OFF)
 option(NEO_USE_CCACHE "Use ccache" ${OS_LINUX})
@@ -41,12 +47,9 @@ option(NEO_BUILD_UTILS "Build utils" ON)
 option(NEO_COPY_LIBRARIES "Copy libraries to bin directory by default" ON)
 option(NEO_EXTRA_ASSETS "Copy extra assets into game/neo" ON)
 set(NEO_EXTRA_ASSETS_ALT_PATH "" CACHE PATH "Alternate location to fetch the extra assets")
-if (OS_LINUX)
-    set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin/linux64" CACHE PATH "Directory for output libraries (linux64)")
-else ()
-    set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin/x64" CACHE PATH "Directory for output libraries (x64)")
-endif ()
+set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin/${PLATSUBDIR}" CACHE PATH "Output directory for libraries")
 option(NEO_INSTALL_LIBRARIES "Install game libraries" OFF)
+option(NEO_INSTALL_UTILS "Install utils (vbsp, vrad, vvis, vice)" OFF)
 option(NEO_INSTALL_RESOURCES "Install game resources" OFF)
 option(NEO_INSTALL_LAUNCHER "Install the Steam mod launcher" OFF)
 option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
@@ -111,17 +114,17 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         DEBUG
         _DEBUG
     )
-    if (NEO_USE_MEM_DEBUG)
+    if(NEO_USE_MEM_DEBUG)
         add_compile_definitions(
             USE_MEM_DEBUG
         )
-    endif ()
+    endif()
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     add_compile_definitions(
         NDEBUG
     )
 
-    if (NOT COMPILER_MSVC)
+    if(NOT COMPILER_MSVC)
         add_compile_options(
             #-fno-strict-aliasing
             -ffast-math
@@ -141,16 +144,10 @@ if(NEO_RAD_TELEMETRY_DISABLED)
     add_compile_definitions(RAD_TELEMETRY_DISABLED)
 endif()
 
-if (OS_LINUX)
-    set(PLATSUBDIR "linux64")
-elseif (OS_WINDOWS)
-    set(PLATSUBDIR "x64")
-endif ()
-
 set(STEAM_RUNTIME_PATH /usr)
 set(CRYPTOPPDIR steamrt_sniper64)
 
-if (NEO_DEDICATED AND OS_LINUX)
+if(NEO_DEDICATED AND OS_LINUX)
     set(SRV_SUFFIX "_srv")
 else()
     set(SRV_SUFFIX "")
@@ -504,13 +501,20 @@ set(INSTALL_PATH_PREFIX "neo-${BUILD_DATE_SHORT}-${GIT_HASH}")
 set(INSTALL_PATH_SUFFIX "${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/neo/bin")
 
 function(neo_install_targets)
-    cmake_parse_arguments(ARG "" "INSTALL_PATH;DEBUG_INFO_INSTALL_PATH" "TARGETS" ${ARGN})
+    cmake_parse_arguments(ARG "" "DIRECTORY_NAME;INSTALL_PATH_VARIABLE_NAME" "TARGETS" ${ARGN})
+    
+    set(INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-${INSTALL_PATH_SUFFIX}")
+    set(DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-debuginfo-${INSTALL_PATH_SUFFIX}")
+    
+    if(DEFINED ARG_INSTALL_PATH_VARIABLE_NAME)
+        set(${ARG_INSTALL_PATH_VARIABLE_NAME} "${INSTALL_PATH}" PARENT_SCOPE)
+    endif()
 
     if(NOT NEO_USE_SEPARATE_BUILD_INFO)
         install(
             TARGETS ${ARG_TARGETS}
-            LIBRARY DESTINATION "${ARG_INSTALL_PATH}/${PLATSUBDIR}"
-            RUNTIME DESTINATION "${ARG_INSTALL_PATH}/${PLATSUBDIR}"
+            LIBRARY DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
+            RUNTIME DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
         )
         return()
     endif()
@@ -518,8 +522,8 @@ function(neo_install_targets)
     if(OS_WINDOWS)
         install(
             TARGETS ${ARG_TARGETS}
-            LIBRARY DESTINATION "${ARG_INSTALL_PATH}/x64"
-            RUNTIME DESTINATION "${ARG_INSTALL_PATH}/x64"
+            LIBRARY DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
+            RUNTIME DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
         )
 
         set(PDB_FILES "")
@@ -529,7 +533,7 @@ function(neo_install_targets)
 
         install(
             FILES ${PDB_FILES}
-            DESTINATION "${ARG_DEBUG_INFO_INSTALL_PATH}/x64"
+            DESTINATION "${DEBUG_INFO_INSTALL_PATH}/${PLATSUBDIR}"
         )
     else()
         set(STRIPPED_FILES "")
@@ -543,45 +547,27 @@ function(neo_install_targets)
 
         install(
             FILES ${STRIPPED_FILES}
-            DESTINATION "${ARG_INSTALL_PATH}/linux64"
+            DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
         )
 
         install(
             FILES ${SPLIT_DEBUG_INFO_FILES}
-            DESTINATION "${ARG_DEBUG_INFO_INSTALL_PATH}/linux64"
+            DESTINATION "${DEBUG_INFO_INSTALL_PATH}/${PLATSUBDIR}"
         )
     endif()
 endfunction()
 
 if(NEO_INSTALL_LIBRARIES)
     if(NEO_DEDICATED)
-        set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-${INSTALL_PATH_SUFFIX}")
-        set(SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-debuginfo-${INSTALL_PATH_SUFFIX}")
-
         neo_install_targets(
             TARGETS server
-            INSTALL_PATH "${LIBRARY_INSTALL_PATH}"
-            DEBUG_INFO_INSTALL_PATH "${SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH}"
+            DIRECTORY_NAME dedicated
         )
     else()
-        set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-${INSTALL_PATH_SUFFIX}")
-        set(UTILS_INSTALL_PATH "${INSTALL_PATH_PREFIX}-utils-${INSTALL_PATH_SUFFIX}")
-        set(SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-debuginfo-${INSTALL_PATH_SUFFIX}")
-        set(SPLIT_DEBUG_INFO_UTILS_INSTALL_PATH "${INSTALL_PATH_PREFIX}-utils-debuginfo-${INSTALL_PATH_SUFFIX}")
-
         neo_install_targets(
             TARGETS client game_shader_dx9 server
-            INSTALL_PATH "${LIBRARY_INSTALL_PATH}"
-            DEBUG_INFO_INSTALL_PATH "${SPLIT_DEBUG_INFO_LIBRARIES_INSTALL_PATH}"
+            DIRECTORY_NAME libraries
         )
-
-        if(NEO_BUILD_UTILS)
-            neo_install_targets(
-                TARGETS vbsp vvis_library vvis vrad_library vrad vice
-                INSTALL_PATH "${UTILS_INSTALL_PATH}"
-                DEBUG_INFO_INSTALL_PATH "${SPLIT_DEBUG_INFO_UTILS_INSTALL_PATH}"
-            )
-        endif()
     endif()
 
     if(OS_LINUX AND NEO_GENERATE_GAMEDATA)
@@ -638,11 +624,29 @@ if(NEO_INSTALL_LAUNCHER AND NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
     endif()
 endif()
 
+if(NEO_BUILD_UTILS AND NEO_INSTALL_UTILS)
+    neo_install_targets(
+        TARGETS vbsp vvis_library vvis vrad_library vrad vice
+        DIRECTORY_NAME utils
+        INSTALL_PATH_VARIABLE_NAME UTILS_INSTALL_PATH
+    )
+
+    if(OS_LINUX)
+        install(
+            FILES
+                "${CMAKE_SOURCE_DIR}/utils/vbsp/vbsp.sh"
+                "${CMAKE_SOURCE_DIR}/utils/vvis/vvis.sh"
+                "${CMAKE_SOURCE_DIR}/utils/vrad/vrad.sh"
+            DESTINATION "${UTILS_INSTALL_PATH}/${PLATSUBDIR}"
+        )
+    endif()
+endif()
+
 if(NEO_INSTALL_RESOURCES)
     install(
         DIRECTORY
-        ${CMAKE_SOURCE_DIR}/../game/bin
-        ${CMAKE_SOURCE_DIR}/../game/neo
+            ${CMAKE_SOURCE_DIR}/../game/bin
+            ${CMAKE_SOURCE_DIR}/../game/neo
         DESTINATION "${INSTALL_PATH_PREFIX}-resources"
     )
 endif()
