@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "bot/behavior/neo_bot_ctg_capture.h"
+#include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/neo_bot_path_compute.h"
 #include "weapon_ghost.h"

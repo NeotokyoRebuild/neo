@@ -1625,6 +1625,40 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 
 
 //-----------------------------------------------------------------------------------------------------
+bool CNEOBot::DropGhost()
+{
+	if ( !IsCarryingGhost() )
+	{
+		return false;
+	}
+
+	CBaseCombatWeapon *pGhost = Weapon_GetSlot( 0 );
+	if ( pGhost )
+	{
+		if ( GetActiveWeapon() != pGhost )
+		{
+			Weapon_Switch( pGhost );
+		}
+		else
+		{
+			// Look behind where we are moving
+			Vector moveDir = GetLocomotionInterface()->GetMotionVector();
+			Vector lookDir = -moveDir;
+			GetBodyInterface()->AimHeadTowards( EyePosition() + lookDir * 100.0f, IBody::IMPORTANT, 0.2f, nullptr, "Preparing to drop ghost away from path" );
+
+			// Drop the ghost if we are looking anywhere but the front
+			Vector viewDir = GetBodyInterface()->GetViewVector();
+			if ( moveDir.Dot( viewDir ) < 0.4f )
+			{
+				PressDropButton();
+			}
+		}
+	}
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------------------------------
 // Reload the active weapon if it makes sense for the situation 
 void CNEOBot::ReloadIfLowClip(bool bForceReload)
 {
