@@ -17,6 +17,7 @@
 #include <dlfcn.h>
 #include <limits.h>
 #include <string.h>
+#include <errno.h>
 #define MAX_PATH PATH_MAX
 #endif
 
@@ -627,6 +628,10 @@ int main( int argc, char *argv[] )
 		return 1;
 	}
 
+	// Tell the engine where the SDK Base install lives so FileSystem_LoadSearchPaths
+	// resolves relative SDK mounts against it. Same thing the Windows path does above.
+	setenv( "SDK_EXEC_DIR", szGameInstallDir, 1 );
+
 	char szExecutable[8192];
 	snprintf(szExecutable, sizeof(szExecutable), "%s/hl2.sh", szGameInstallDir );
 
@@ -662,7 +667,9 @@ int main( int argc, char *argv[] )
 
 	execvp( szExecutable, new_argv.data() );
 
-	return 0;
+	// execvp only returns on failure
+	fprintf( stderr, "[Source Mod Launcher] Failed to exec %s: %s\n", szExecutable, strerror( errno ) );
+	return 1;
 }
 
 #else

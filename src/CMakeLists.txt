@@ -51,6 +51,8 @@ option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
 option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
+option(NEO_BUILD_LAUNCHER "Build the Steam mod launcher" OFF) # NOTE Linux only
+set(NEO_MOD_APPID "" CACHE STRING "Steam appid for the mod launcher's steam_appid.txt")
 
 message(STATUS "Treat compile warnings as errors: ${CMAKE_COMPILE_WARNING_AS_ERROR}")
 message(STATUS "CI build mode: ${NEO_CI_BUILD}")
@@ -74,6 +76,8 @@ message(STATUS "Install game libraries: ${NEO_INSTALL_LIBRARIES}")
 message(STATUS "Install game resources: ${NEO_INSTALL_RESOURCES}")
 message(STATUS "Use separate build info on Linux: ${NEO_USE_SEPARATE_BUILD_INFO}")
 message(STATUS "Enable CPack: ${NEO_ENABLE_CPACK}")
+message(STATUS "Build the Steam mod launcher: ${NEO_BUILD_LAUNCHER}")
+message(STATUS "Mod launcher appid override: ${NEO_MOD_APPID}")
 message("")
 
 if(NEO_COPY_LIBRARIES)
@@ -451,6 +455,10 @@ if(NOT NEO_DEDICATED)
 endif()
 
 add_subdirectory(game/server)
+
+if(NEO_BUILD_LAUNCHER AND OS_LINUX AND NOT NEO_DEDICATED)
+    add_subdirectory(launcher_main)
+endif()
 
 if(NEO_COPY_LIBRARIES)
     set(COPY_ALL_LIBS_FLAG ALL)
