@@ -697,9 +697,15 @@ void CNEO_Player::Spawn(void)
 		if (forcedBotClass == NEO_CLASS_RANDOM)
 		{
 			if (auto* thisBot = ToNEOBot(this))
+			{
 				m_iNextSpawnClassChoice = thisBot->ChooseRandomClass();
+				m_iNeoClass = m_iNextSpawnClassChoice;
+				m_iLoadoutWepChoice = thisBot->ChooseRandomWeaponIndex();
+			}
 			else
+			{
 				AssertMsg(false, "this IsBot() but can't convert to NEO bot!?");
+			}
 		}
 		else
 		{

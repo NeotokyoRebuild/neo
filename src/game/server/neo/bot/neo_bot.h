@@ -438,6 +438,8 @@ public:
 
 	CNEOBotProfile m_profile = {};
 	NeoClass ChooseRandomClass() const;
+	void ChooseRandomWeapon();
+	int ChooseRandomWeaponIndex() const;
 	int m_iIntendTeam = 0;
 	int m_iProfileIdx = -1;
 
