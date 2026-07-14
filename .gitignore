@@ -17,6 +17,10 @@ out
 
 /game/neo/screenshots
 
+# Mod launcher binary and the appid file it writes at runtime
+/game/neo_linux64
+/game/steam_appid.txt
+
 # Binary Assets
 /game/**/bin/**
 /game/neo/maps
