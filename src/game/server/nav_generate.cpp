@@ -3425,12 +3425,30 @@ void CNavMesh::AddWalkableSeeds( void )
  */
 void CNavMesh::BeginGeneration( bool incremental )
 {
+#ifdef NEO
+	if (nav_generate_debug_brushladders.GetBool())
+	{
+		if (!BuildBrushLaddersFromBsp())
+		{
+			Warning("Generating brush ladders...FAIL\n");
+		}
+		else
+		{
+			Msg( "Generating brush ladders...DONE\n" );
+		}
+		return;
+	}
+#endif
+
 	IGameEvent *event = gameeventmanager->CreateEvent( "nav_generate" );
 	if ( event )
 	{
 		gameeventmanager->FireEvent( event );
 	}
 
+#ifdef NEO
+	engine->ServerCommand( "neo_bot_kick all\n" );
+#else
 #ifdef TERROR
 	engine->ServerCommand( "director_stop\nnb_delete_all\n" );
 	if ( !incremental && !engine->IsDedicatedServer() )
@@ -3444,6 +3462,7 @@ void CNavMesh::BeginGeneration( bool incremental )
 #else
 	engine->ServerCommand( "bot_kick\n" );
 #endif
+#endif // NEO
 
 	// Right now, incrementally-generated areas won't connect to existing areas automatically.
 	// Since this means hand-editing will be necessary, don't do a full analyze.
@@ -4017,6 +4036,22 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			{
 				m_isAnalyzed = true;
 			}
+
+#ifdef NEO
+			// This runs earlier during the generation for the debug==true case, so skip here.
+			if (!nav_generate_debug_brushladders.GetBool())
+			{
+				// Post-gen because we want automatic merge with the final navmesh
+				if (!BuildBrushLaddersFromBsp())
+				{
+					Warning("Generating brush ladders...FAIL\n");
+				}
+				else
+				{
+					Msg( "Generating brush ladders...DONE\n" );
+				}
+			}
+#endif
 
 			// generation complete!
 			float generationTime = Plat_FloatTime() - m_generationStartTime;
