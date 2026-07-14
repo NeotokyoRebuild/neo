@@ -48,6 +48,7 @@ extern "C" { __declspec( dllexport ) int AmdPowerXpressRequestHighPerformance = 
 #endif
 
 
+#include "tier1/strtools.h" // matchmakingtypes.h (via steam_api.h) uses V_strcpy_safe
 #include <steam/steam_api.h>
 
 #ifdef _WIN32
