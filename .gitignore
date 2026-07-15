@@ -19,6 +19,7 @@ out
 
 # Mod launcher binary and the appid file it writes at runtime
 /game/neo_linux64
+/game/neo_win64.exe
 /game/steam_appid.txt
 
 # Binary Assets
