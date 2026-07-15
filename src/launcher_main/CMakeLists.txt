@@ -2,19 +2,35 @@
 # SDK_EXEC_DIR before exec'ing hl2.sh, so relative SDK search paths in
 # gameinfo.txt silently fail to mount on standalone (non-sourcemods) installs.
 # So we build it ourselves.
+if(OS_LINUX)
 find_package(SDL2 REQUIRED)
+endif()
+
+set(LAUNCHER_SOURCES main.cpp)
+
+if(OS_WINDOWS)
+    list(APPEND LAUNCHER_SOURCES launcher_main_mod_neo.rc)
+endif()
 
 add_executable(launcher_main
-    main.cpp
+    ${LAUNCHER_SOURCES}
 )
 
 # GetExecutableModName derives the default -game dir from the executable name
 # by stripping from the last underscore: neo_linux64 -> -game neo. The suffix
 # also avoids colliding with the game/neo directory at the install root.
+if(OS_LINUX)
 set_target_properties(launcher_main
     PROPERTIES
         OUTPUT_NAME neo_linux64
 )
+elseif(OS_WINDOWS)
+set_target_properties(launcher_main
+    PROPERTIES
+        OUTPUT_NAME neo_win64
+        WIN32_EXECUTABLE TRUE
+)
+endif()
 
 target_include_directories(launcher_main
     PRIVATE
@@ -22,6 +38,7 @@ target_include_directories(launcher_main
         ${CMAKE_SOURCE_DIR}/common
 )
 
+if(OS_LINUX)
 target_link_libraries(launcher_main
     PRIVATE
         SDL2::SDL2
@@ -34,6 +51,7 @@ target_link_options(launcher_main
         -Wl,--wrap=fopen
         -Wl,--wrap=fopen64
 )
+endif()
 
 if(NEO_MOD_APPID)
     target_compile_definitions(launcher_main

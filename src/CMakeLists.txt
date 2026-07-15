@@ -51,7 +51,7 @@ option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
 option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
-option(NEO_BUILD_LAUNCHER "Build the Steam mod launcher" OFF) # NOTE Linux only
+option(NEO_BUILD_LAUNCHER "Build the Steam mod launcher" ON)
 set(NEO_MOD_APPID "" CACHE STRING "Steam appid for the mod launcher's steam_appid.txt")
 
 message(STATUS "Treat compile warnings as errors: ${CMAKE_COMPILE_WARNING_AS_ERROR}")
@@ -215,7 +215,6 @@ if(OS_WINDOWS)
         _ALLOW_RUNTIME_LIBRARY_MISMATCH
         _ALLOW_ITERATOR_DEBUG_LEVEL_MISMATCH
         _ALLOW_MSC_VER_MISMATCH
-        fopen=dont_use_fopen
         _MBCS
     )
 
@@ -456,7 +455,7 @@ endif()
 
 add_subdirectory(game/server)
 
-if(NEO_BUILD_LAUNCHER AND OS_LINUX AND NOT NEO_DEDICATED)
+if(NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
     add_subdirectory(launcher_main)
 endif()
 
