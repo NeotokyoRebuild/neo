@@ -1367,7 +1367,7 @@ float CNEOBot::GetThreatDanger(CBaseCombatCharacter* who) const
 
 #if 1
 		CNEOBaseCombatWeapon *whoWeapon = static_cast<CNEOBaseCombatWeapon *>(player->GetActiveWeapon());
-		if (whoWeapon && (whoWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7))) // NEO TODO (Adam) NEO_WEP_SHOTGUN
+		if (whoWeapon && (whoWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN))
 		{
 			// Shotgunners are scary at close range
 			if (IsRangeLessThan(player, neo_bot_shotgunner_range.GetFloat()))
@@ -1441,12 +1441,12 @@ float CNEOBot::GetDesiredAttackRange(void) const
 		return 32.0f;
 	}
 
-	if (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7))
+	if (myWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN)
 	{
 		return 100.0f;
 	}
 
-	if (myWeapon->GetNeoWepBits() & (NEO_WEP_JITTE | NEO_WEP_JITTE_S | NEO_WEP_KYLA | NEO_WEP_MILSO | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_TACHI))
+	if (myWeapon->GetNeoWepBits() & (NEO_WEP_PISTOL | NEO_WEP_SMG))
 	{
 		return 250.0f;
 	}
@@ -1592,7 +1592,7 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 		// passthrough
 	}
 	else if (secondaryWeapon
-		&& primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)
+		&& primaryWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN
 		&& IsRangeGreaterThan(threat->GetLastKnownPosition(), 1000.0f))
 	{
 		// passthrough
@@ -2279,7 +2279,7 @@ bool CNEOBot::FindSplashTarget(CBaseEntity* target, float maxSplashRadius, Vecto
 		NextBotTraceFilterIgnoreActors filter(NULL, COLLISION_GROUP_NONE);
 
 		auto *myWeapon = static_cast<const CNEOBaseCombatWeapon *>(GetActiveWeapon());
-		const bool bIsShotgun = (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)));
+		const bool bIsShotgun = (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN));
 		const LineOfFireFlags flags = bIsShotgun ? LINE_OF_FIRE_FLAGS_SHOTGUN : LINE_OF_FIRE_FLAGS_DEFAULT;
 		UTIL_TraceLine(target->WorldSpaceCenter(), probe, LineOfFireMask(flags), &filter, &trace);
 		if (trace.DidHitWorld())
@@ -2700,7 +2700,7 @@ CNEOBaseCombatWeapon* CNEOBot::GetBludgeonWeapon(void)
 	if (!pWeapon)
 		return false;
 
-	return (pWeapon->IsMeleeWeapon() || pWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7));
+	return (pWeapon->IsMeleeWeapon() || pWeapon->GetNeoWepBits() & NEO_WEP_SHOTGUN);
 }
 
 /*static*/ bool CNEOBot::IsBludgeon(CNEOBaseCombatWeapon* pWeapon)

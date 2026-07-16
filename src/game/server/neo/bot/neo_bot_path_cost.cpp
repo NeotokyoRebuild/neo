@@ -151,24 +151,19 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 					const int visibleAreaCount = area->GetPotentiallyVisibleAreaCount();
 					if (visibleAreaCount > 0)
 					{
-						constexpr int nShotgunBits = NEO_WEP_AA13 | NEO_WEP_SUPA7;
-						constexpr int nBattleRifleBits = NEO_WEP_M41 | NEO_WEP_M41_S;
-						constexpr int nPistolCaliberBits = NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA
-							| NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_JITTE | NEO_WEP_JITTE_S | NEO_WEP_SRM | NEO_WEP_SRM_S;
-
-						if (nWeaponBits & nPistolCaliberBits)
+						if (nWeaponBits & (NEO_WEP_PISTOL | NEO_WEP_SMG))
 						{
 							// Weapons that don't have max first shot accuracy
 							const float exposurePenalty = neo_bot_path_penalty_exposure_pistol.GetFloat();
 							cost += visibleAreaCount * exposurePenalty;
 						}
-						else if (nWeaponBits & nShotgunBits)
+						else if (nWeaponBits & NEO_WEP_SHOTGUN)
 						{
 							// Weapons that have spread that can't hit long range targets
 							const float exposurePenalty = neo_bot_path_penalty_exposure_shotgun.GetFloat();
 							cost += visibleAreaCount * exposurePenalty;
 						}
-						else if (nWeaponBits & nBattleRifleBits)
+						else if (nWeaponBits & NEO_WEP_BATTLERIFLE)
 						{
 							// Weapons that benefit from medium sightlines that can see many NavAreas
 							const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_battle_rifle.GetFloat();
