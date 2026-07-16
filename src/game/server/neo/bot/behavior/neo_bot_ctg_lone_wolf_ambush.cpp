@@ -254,18 +254,7 @@ bool CNEOBotCtgLoneWolfAmbush::Is1v1( CNEOBot *me )
 	// I entered this function because my teammates are dead
 	if ( !m_1v1Timer.HasStarted() || m_1v1Timer.IsElapsed() )
 	{
-		int iAliveEnemyCount = 0;
-		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-			if ( pPlayer && pPlayer->IsAlive() && !me->InSameTeam( pPlayer ) )
-			{
-				if ( ++iAliveEnemyCount > 1 )
-				{
-					break;
-				}
-			}
-		}
+		int iAliveEnemyCount = g_Teams[GetEnemyTeam(me->GetTeamNumber())]->GetAliveMembers();
 		m_bIs1v1 = ( iAliveEnemyCount == 1 );
 		m_1v1Timer.Start( 2.0f );
 	}

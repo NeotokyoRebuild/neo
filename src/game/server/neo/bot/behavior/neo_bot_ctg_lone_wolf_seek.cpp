@@ -158,27 +158,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 		}
 	}
 
-	Vector vecSoundPos = me->GetAudibleEnemySoundPos();
-	if ( vecSoundPos != CNEO_Player::VECTOR_INVALID_WAYPOINT )
-	{
-		// Don't veer path for sound if waypoint is not that far off
-		if ( m_vecSearchWaypoint.DistToSqr( vecSoundPos ) > Square( 200.0f ) )
-		{
-			m_vecSearchWaypoint = vecSoundPos;
-			m_path.Invalidate();
-			m_repathTimer.Invalidate(); // path to sound next tick
-
-			CNavArea *soundArea = TheNavMesh->GetNearestNavArea( vecSoundPos );
-			if ( soundArea )
-			{
-				m_iExplorationTargetId = (int)soundArea->GetID();
-				// Mark sound area as not explored
-				m_exploredAreaIds.Remove( m_iExplorationTargetId );
-			}
-		}
-	}
-
-	const Vector currentGhostPos = NEORules()->GetGhostPos();
+	const Vector& currentGhostPos = NEORules()->GetGhostPos();
 	if ( !m_pCachedGhostArea || currentGhostPos.DistToSqr( m_vecLastGhostPos ) > Square( 64.0f ) )
 	{
 		CNavArea *pLastGhostArea = m_pCachedGhostArea;
@@ -237,7 +217,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 				if ( search.m_candidateAreas.IsEmpty() )
 				{
 					// Track already explored areas around the ghost
-				auto searchFromVisible = [&]( CNavArea *visibleArea ) -> bool
+					auto searchFromVisible = [&search]( CNavArea *visibleArea ) -> bool
 					{
 						if ( search.m_candidateAreas.Count() >= CSearchForUnexplored::CANDIDATE_LIMIT || search.m_iAreaCount >= search.m_iAreaLimit )
 						{

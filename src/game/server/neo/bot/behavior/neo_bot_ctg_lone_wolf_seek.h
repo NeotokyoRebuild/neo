@@ -5,7 +5,6 @@
 #include "utlmap.h"
 #include <memory>
 
-class CWeaponDetpack;
 class CNEOIgnoredWeaponsCache;
 
 //--------------------------------------------------------------------------------------------------------
