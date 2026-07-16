@@ -172,7 +172,6 @@ public:
 	bool IsQuietWeapon(CNEOBaseCombatWeapon* weapon) const;				// return true if given weapon doesn't make much sound when used (ie: spy knife, etc)
 
 	bool IsEnvironmentNoisy(void) const;							// return true if there are/have been loud noises (ie: non-quiet weapons) nearby very recently
-	Vector GetAudibleEnemySoundPos(const Vector& vecReferencePos = CNEO_Player::VECTOR_INVALID_WAYPOINT, float flMaxRangeSq = -1.0f) const;
 
 	bool IsEnemy(const CBaseEntity* them) const OVERRIDE;
 
