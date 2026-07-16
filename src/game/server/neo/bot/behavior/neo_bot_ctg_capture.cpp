@@ -56,7 +56,9 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 	{
 		if ( !CNEOBotPathCompute( me, m_path, m_hObjective->GetAbsOrigin(), FASTEST_ROUTE ) )
 		{
-			return Done( "Unable to find a path to the ghost capture target" );
+			// Something has gone wrong if we can't path to a ghost that we by convention started close to
+			// Transition to search around the ghost behavior to avoid cycle of ghost search failure and retry attempts
+			return ChangeTo( new CNEOBotCtgLoneWolf(), "Unable to find a path to the ghost capture target, searching around nearest areas" );
 		}
 		m_repathTimer.Start( RandomFloat( 0.3f, 0.6f ) );
 	}
@@ -84,7 +86,9 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 	
 	if ( m_captureAttemptTimer.IsElapsed() )
 	{
-		return ChangeTo( new CNEOBotSeekWeapon, "Failed to capture ghost in time" );
+		// If the bot fails to capture the ghost, it's sometimes because the ghost is lodged into an awkward position
+		// Have the bot search around the location instead, to avoid cycle of failing to pick up ghost and retrying
+		return ChangeTo( new CNEOBotCtgLoneWolf(), "Failed to pick up ghost in time, searching around nearest areas" );
 	}
 
 	return Continue();
