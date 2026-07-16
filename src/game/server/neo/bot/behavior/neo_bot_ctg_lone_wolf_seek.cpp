@@ -106,6 +106,12 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::OnStart( CNEOBot *me, Action< CN
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float interval )
 {
+	ActionResult< CNEOBot > result = ConsiderGhostCaptureTransition( me );
+	if ( result.IsRequestingChange() )
+	{
+		return result;
+	}
+
 	me->PressCrouchButton( 0.2f ); // Keep a lower profile
 
 	if ( !NEORules()->GhostExists() || !NEORules()->m_pGhost )
