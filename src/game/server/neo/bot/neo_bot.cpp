@@ -5,6 +5,7 @@
 #include "team_train_watcher.h"
 #include "neo_bot.h"
 #include "neo_bot_manager.h"
+#include "neo_bot_path_reservation.h"
 #include "neo_bot_vision.h"
 #include "trigger_area_capture.h"
 #include "GameEventListener.h"
@@ -2844,6 +2845,54 @@ CNEOBotIntention::CNEOBotIntention(CNEOBot *bot)
 CNEOBotIntention::~CNEOBotIntention()
 {
 	delete m_behavior;
+}
+
+static void CNEOBotApplyOnStuckAreaPenalty( CNEOBot *me )
+{
+	// NEO Jank: For the current match, all bots share where they get stuck.
+	// The reasoning is that bots on either team will get stuck in their respective half of the map
+	// so the overall fairness may balance out for both teams sharing common sticking points.
+	if ( const CNavArea *navArea = me->GetLastKnownArea() )
+	{
+		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
+	}
+	else
+	{
+		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
+		if ( nearestArea )
+		{
+			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
+		}
+	}
+
+	if ( const PathFollower *path = me->GetCurrentPath() )
+	{
+		if ( const Path::Segment *currentGoal = path->GetCurrentGoal() )
+		{
+			if ( const Path::Segment *nextSegment = path->NextSegment( currentGoal ) )
+			{
+				if ( nextSegment->area )
+				{
+					CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nextSegment->area->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
+				}
+			}
+		}
+	}
+}
+
+void CNEOBotIntention::OnStuck()
+{
+	CNEOBotApplyOnStuckAreaPenalty( static_cast<CNEOBot *>( GetBot() ) );
+	INextBotEventResponder::OnStuck();
+}
+
+void CNEOBotIntention::OnMoveToFailure( const Path *path, MoveToFailureType reason )
+{
+	if ( reason == FAIL_STUCK )
+	{
+		CNEOBotApplyOnStuckAreaPenalty( static_cast<CNEOBot *>( GetBot() ) );
+	}
+	INextBotEventResponder::OnMoveToFailure( path, reason );
 }
 
 void CNEOBotIntention::Reset()
