@@ -406,7 +406,6 @@ EventDesiredResult< CNEOBot > CNEOBotAttack::OnStuck( CNEOBot *me )
 {
 	m_path.Invalidate();
 	m_attackCoverArea = nullptr;
-	CNEOBotPathReservations()->IncrementAreaAvoidPenalty(me->GetLastKnownArea()->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat());
 	return TryContinue();
 }
 
@@ -423,7 +422,6 @@ EventDesiredResult< CNEOBot > CNEOBotAttack::OnMoveToFailure( CNEOBot *me, const
 {
 	m_path.Invalidate();
 	m_attackCoverArea = nullptr;
-	CNEOBotPathReservations()->IncrementAreaAvoidPenalty(me->GetLastKnownArea()->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat());
 	return TryContinue();
 }
 
