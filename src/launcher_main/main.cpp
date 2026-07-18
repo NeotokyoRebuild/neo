@@ -592,7 +592,13 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 bool GetExePath( char *pszPath, size_t size )
 {
-	return readlink("/proc/self/exe", pszPath, size ) > 0;
+	ssize_t nLength = readlink( "/proc/self/exe", pszPath, size - 1 );
+	if ( nLength <= 0 )
+	{
+		return false;
+	}
+	pszPath[nLength] = '\0';
+	return true;
 }
 
 #include <fcntl.h>
