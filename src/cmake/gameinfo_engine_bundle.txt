@@ -1,0 +1,49 @@
+// gameinfo.txt for the self-contained ("engine bundle") game layout: every
+// search path is plain and relative, resolved against the install root, so
+// the game runs without a Source SDK Base install or |appid_XXX| mounts.
+"GameInfo"
+{
+	Game        "Neotokyo;Rebuild"
+	Title       ""
+	Title2      ""
+	Type        Multiplayer_Only
+	Icon        "resource/icon"
+	NoModels    1
+	NoHIModel   1
+	NoCrosshair 1
+	Hidden_Maps
+	{
+		"test_speakers" 1
+		"test_hardware" 1
+	}
+	SupportsVR  0
+
+	FileSystem
+	{
+		SteamAppId 3172910
+
+		SearchPaths
+		{
+			Game				|gameinfo_path|materials.vpk
+			Game				|gameinfo_path|models.vpk
+			Game				|gameinfo_path|sound.vpk
+			Game				|gameinfo_path|shaders.vpk
+			Game				|gameinfo_path|particles.vpk
+			Game 							 |gameinfo_path|.
+			Game+Mod+Mod_Write+Default_Write_Path |gameinfo_path|.
+			GameBin                          |gameinfo_path|bin
+
+			Game                             hl2/hl2_english.vpk
+			Game                             hl2/hl2_pak.vpk
+			Game                             hl2/hl2_textures.vpk
+			Game                             hl2/hl2_sound_misc.vpk
+			Game                             hl2/hl2_misc.vpk
+			Platform                         platform/platform_misc.vpk
+
+			Game                             hl2
+			Platform                         platform
+
+			game+download                    |gameinfo_path|download
+		}
+	}
+}

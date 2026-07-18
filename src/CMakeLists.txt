@@ -47,6 +47,12 @@ else ()
 endif ()
 option(NEO_INSTALL_LIBRARIES "Install game libraries" OFF)
 option(NEO_INSTALL_RESOURCES "Install game resources" OFF)
+option(NEO_INSTALL_ENGINE_BUNDLE "Install the engine, base content, and launch chain for a self-contained depot" OFF)
+if(OS_WINDOWS)
+    set(NEO_SDK_BASE_DIR "C:/Program Files (x86)/Steam/steamapps/common/Source SDK Base 2013 Multiplayer" CACHE PATH "Source SDK Base 2013 Multiplayer install directory")
+else()
+    set(NEO_SDK_BASE_DIR "$ENV{HOME}/.local/share/Steam/steamapps/common/Source SDK Base 2013 Multiplayer" CACHE PATH "Source SDK Base 2013 Multiplayer install directory")
+endif()
 option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
 option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
@@ -72,6 +78,7 @@ message(STATUS "Alternate location to fetch the extra assets: ${NEO_EXTRA_ASSETS
 message(STATUS "Directory for output libraries: ${NEO_OUTPUT_LIBRARY_PATH}")
 message(STATUS "Install game libraries: ${NEO_INSTALL_LIBRARIES}")
 message(STATUS "Install game resources: ${NEO_INSTALL_RESOURCES}")
+message(STATUS "Install engine bundle: ${NEO_INSTALL_ENGINE_BUNDLE}")
 message(STATUS "Use separate build info on Linux: ${NEO_USE_SEPARATE_BUILD_INFO}")
 message(STATUS "Enable CPack: ${NEO_ENABLE_CPACK}")
 message("")
@@ -591,6 +598,87 @@ if(NEO_INSTALL_RESOURCES)
         ${CMAKE_SOURCE_DIR}/../game/bin
         ${CMAKE_SOURCE_DIR}/../game/neo
         DESTINATION "${INSTALL_PATH_PREFIX}-resources"
+    )
+endif()
+
+if(NEO_INSTALL_ENGINE_BUNDLE)
+    # The engine payload for a self-contained depot: engine binaries, base
+    # content, and the launch chain from a local Source SDK Base 2013
+    # Multiplayer install, plus a gameinfo.txt that mounts everything with
+    # plain relative search paths. Overlaid onto the game content, the depot
+    # then runs without SDK Base installed.
+    #
+    # Plain relative paths avoid |appid_243750| search path resolution, which
+    # is broken on case-sensitive filesystems: the engine lowercases the SDK
+    # install folder name when resolving those mounts, so they silently fail
+    # to mount. Relative paths also remove the runtime requirement that SDK
+    # Base is installed.
+    #
+    # Filename casing must be preserved all the way to the Steam depot: the
+    # engine loads several libraries by exact name (GameUI, ServerBrowser).
+    set(ENGINE_BUNDLE_INSTALL_PATH "${INSTALL_PATH_PREFIX}-engine-bundle")
+
+    foreach(SDK_ITEM bin hl2 platform)
+        if(NOT EXISTS "${NEO_SDK_BASE_DIR}/${SDK_ITEM}")
+            message(FATAL_ERROR "NEO_INSTALL_ENGINE_BUNDLE: '${NEO_SDK_BASE_DIR}/${SDK_ITEM}' not found; set NEO_SDK_BASE_DIR to a Source SDK Base 2013 Multiplayer install")
+        endif()
+    endforeach()
+
+    install(
+        DIRECTORY
+        "${NEO_SDK_BASE_DIR}/bin"
+        "${NEO_SDK_BASE_DIR}/hl2"
+        "${NEO_SDK_BASE_DIR}/platform"
+        DESTINATION "${ENGINE_BUNDLE_INSTALL_PATH}"
+        USE_SOURCE_PERMISSIONS
+    )
+    install(
+        FILES "${NEO_SDK_BASE_DIR}/thirdpartylegalnotices.txt"
+        DESTINATION "${ENGINE_BUNDLE_INSTALL_PATH}"
+    )
+
+    # Valve's launch chain, renamed to the mod's executable names. The Steam
+    # launch option must pass "-game neo": the launch scripts derive their
+    # default game directory from the executable basename, which does not
+    # match the mod directory.
+    if(OS_WINDOWS)
+        # NOTE: The Windows flow is untested and needs scrutiny before use.
+        # In particular, verify that the SDK bootstrap executables staged
+        # here match what the depot currently ships and launches.
+        install(
+            PROGRAMS "${NEO_SDK_BASE_DIR}/hl2.exe"
+            DESTINATION "${ENGINE_BUNDLE_INSTALL_PATH}"
+            RENAME "ntre.exe"
+        )
+        install(
+            PROGRAMS "${NEO_SDK_BASE_DIR}/hl2_win64.exe"
+            DESTINATION "${ENGINE_BUNDLE_INSTALL_PATH}"
+            RENAME "ntre64.exe"
+            OPTIONAL
+        )
+    else()
+        install(
+            PROGRAMS "${NEO_SDK_BASE_DIR}/hl2.sh"
+            DESTINATION "${ENGINE_BUNDLE_INSTALL_PATH}"
+            RENAME "ntre.sh"
+        )
+        install(
+            PROGRAMS "${NEO_SDK_BASE_DIR}/hl2_linux64"
+            DESTINATION "${ENGINE_BUNDLE_INSTALL_PATH}"
+            RENAME "ntre_linux64"
+        )
+        install(
+            PROGRAMS "${NEO_SDK_BASE_DIR}/hl2_linux"
+            DESTINATION "${ENGINE_BUNDLE_INSTALL_PATH}"
+            RENAME "ntre_linux"
+            OPTIONAL
+        )
+    endif()
+
+    install(
+        FILES "${CMAKE_SOURCE_DIR}/cmake/gameinfo_engine_bundle.txt"
+        DESTINATION "${ENGINE_BUNDLE_INSTALL_PATH}/neo"
+        RENAME "gameinfo.txt"
     )
 endif()
 

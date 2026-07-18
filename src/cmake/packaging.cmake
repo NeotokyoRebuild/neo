@@ -10,6 +10,10 @@ if(NEO_INSTALL_RESOURCES)
     set(CPACK_PACKAGE_FILE_NAME "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-resources")
 endif()
 
+if(NEO_INSTALL_ENGINE_BUNDLE)
+    set(CPACK_PACKAGE_FILE_NAME "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-engine-bundle-${CMAKE_SYSTEM_NAME}")
+endif()
+
 if(OS_WINDOWS)
     set(CPACK_GENERATOR "ZIP")
 else()
