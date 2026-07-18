@@ -1,7 +1,6 @@
-# Steam mod launcher (Linux). Valve's prebuilt Linux launcher never sets
-# SDK_EXEC_DIR before exec'ing hl2.sh, so relative SDK search paths in
-# gameinfo.txt silently fail to mount on standalone (non-sourcemods) installs.
-# So we build it ourselves.
+# Steam mod launcher. Runs the game from the mod's own install directory
+# using the mod's shipped engine binaries; the Source SDK Base 2013 MP
+# install is only an asset dependency, mounted through gameinfo.txt.
 if(OS_LINUX)
 find_package(SDL2 REQUIRED)
 endif()

@@ -52,7 +52,7 @@ option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
 option(NEO_BUILD_LAUNCHER "Build the Steam mod launcher" ON)
-set(NEO_MOD_APPID "" CACHE STRING "Steam appid for the mod launcher's steam_appid.txt")
+set(NEO_MOD_APPID "3172910" CACHE STRING "Steam appid for the mod launcher's steam_appid.txt")
 
 message(STATUS "Treat compile warnings as errors: ${CMAKE_COMPILE_WARNING_AS_ERROR}")
 message(STATUS "CI build mode: ${NEO_CI_BUILD}")

@@ -167,7 +167,7 @@ static bool LoadSteam( const char *pRootDir )
 		return false;
 	}
 
-	// Make a steam_appid.txt now, of just eg. Source SDK 2013 MP for this.
+	// Write steam_appid.txt so the Steam API identifies this process as the mod.
 	FILE *pFile = fopen( "steam_appid.txt", "w" );
 	if ( pFile )
 	{
