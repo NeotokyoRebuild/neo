@@ -758,6 +758,9 @@ int main( int argc, char *argv[] )
 		return 1;
 	}
 
+	// Give a debugger a chance to attach before anything interesting runs.
+	WaitForDebuggerConnect( argc, argv, 30 );
+
 	// The stock launch script raises the fd limit; the engine leans on it.
 	struct rlimit fdLimit;
 	if ( getrlimit( RLIMIT_NOFILE, &fdLimit ) == 0 && fdLimit.rlim_cur < 2048 )
