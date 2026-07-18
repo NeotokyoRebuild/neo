@@ -663,6 +663,53 @@ static void WaitForDebuggerConnect( int argc, char *argv[], int time )
 
 #endif // !LINUX
 
+// The engine resolves |appid_243750| gameinfo mounts by opening the SDK Base
+// 2013 Multiplayer install path with the final word of the folder name
+// lowercased ("...2013 multiplayer"). On case-sensitive filesystems that path
+// does not exist, so every SDK asset mount fails silently. Give the mangled
+// name a symlink to the real install so those mounts resolve.
+static void CreateSDKCaseShim( const char *pszSDKInstallDir )
+{
+	static const char szExpectedName[] = "Source SDK Base 2013 Multiplayer";
+	static const char szMangledName[]  = "Source SDK Base 2013 multiplayer";
+
+	const char *pszLeaf = strrchr( pszSDKInstallDir, '/' );
+	if ( !pszLeaf || strcmp( pszLeaf + 1, szExpectedName ) != 0 )
+	{
+		// Unexpected install folder name; the engine's mangling is only
+		// known for the stock name, so do nothing.
+		return;
+	}
+
+	char szMangledPath[4096];
+	snprintf( szMangledPath, sizeof( szMangledPath ), "%.*s/%s",
+		(int)( pszLeaf - pszSDKInstallDir ), pszSDKInstallDir, szMangledName );
+
+	// Already resolves on case-insensitive filesystems or if the link exists.
+	if ( access( szMangledPath, F_OK ) == 0 )
+	{
+		return;
+	}
+
+	// A leftover link can dangle (SDK moved or reinstalled elsewhere);
+	// replace it instead of failing with EEXIST. Anything that is not a
+	// symlink was not created by us, so leave it alone.
+	struct stat linkStat;
+	if ( lstat( szMangledPath, &linkStat ) == 0 )
+	{
+		if ( !S_ISLNK( linkStat.st_mode ) )
+		{
+			return;
+		}
+		unlink( szMangledPath );
+	}
+
+	if ( symlink( pszSDKInstallDir, szMangledPath ) != 0 )
+	{
+		fprintf( stderr, "[NT;RE launcher] Warning: couldn't create '%s' -> '%s' (%s); SDK content may fail to mount.\n",
+			szMangledPath, pszSDKInstallDir, strerror( errno ) );
+	}
+}
 
 int main( int argc, char *argv[] )
 {
@@ -719,6 +766,7 @@ int main( int argc, char *argv[] )
 		return 1;
 	}
 
+	CreateSDKCaseShim( szSDKInstallDir );
 
 	// Build the argument list for LauncherMain, appending a default -game
 	// derived from our binary name (neo_linux64 -> neo) when absent.
