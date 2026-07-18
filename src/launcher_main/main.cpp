@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <direct.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 
 #ifdef POSIX
@@ -17,6 +19,7 @@
 #include <dlfcn.h>
 #include <limits.h>
 #include <string.h>
+#include <sys/stat.h>
 #ifdef NEO
 #include <errno.h>
 #endif
@@ -194,7 +197,7 @@ static bool LoadSteam( const char *pRootDir )
 	return true;
 }
 
-static bool GetGameInstallDir( const char *pRootDir, char *pszBuf, int nBufSize )
+static bool GetSDKInstallDir( const char *pRootDir, char *pszBuf, int nBufSize )
 {
 	if ( !LoadSteam( pRootDir ) )
 	{
@@ -233,6 +236,16 @@ static bool GetGameInstallDir( const char *pRootDir, char *pszBuf, int nBufSize 
 	if ( unLength == 0 )
 	{
 		MessageBox( 0, "Source SDK 2013 Multiplayer (243750) must be installed to launch this mod.", "Launcher Error", MB_OK );
+		return false;
+	}
+
+	// Steam reports the app as installed from its manifest alone; the files
+	// can still be missing (moved library, interrupted uninstall). Mounting
+	// would fail silently later, so check the directory really exists.
+	struct stat sdkStat;
+	if ( stat( pszBuf, &sdkStat ) != 0 || !( sdkStat.st_mode & S_IFDIR ) )
+	{
+		MessageBox( 0, "The Source SDK 2013 Multiplayer (243750) files are missing from disk. Verify or reinstall it in Steam to play this mod.", "Launcher Error", MB_OK );
 		return false;
 	}
 
@@ -279,6 +292,55 @@ static char *GetBaseDir( const char *pszBuffer )
 	}
 
 	return basedir;
+}
+
+static const char *GetExecutableModName( char *pszExePath )
+{
+	static char s_szFinalFilename[ MAX_PATH + 1 ] = "hl2";
+
+	char szExePath[ MAX_PATH + 1 ];
+	strncpy( szExePath, pszExePath, sizeof( szExePath ) );
+	szExePath[ MAX_PATH ] = 0;
+
+	if ( !*szExePath )
+		return s_szFinalFilename;
+
+	const char *pszLastSeparator = strrchr( szExePath, '/' );
+#ifdef _WIN32
+	// Steam and the shell may hand us either separator on Windows.
+	const char *pszLastBackslash = strrchr( szExePath, '\\' );
+	if ( !pszLastSeparator || ( pszLastBackslash && pszLastBackslash > pszLastSeparator ) )
+	{
+		pszLastSeparator = pszLastBackslash;
+	}
+#endif
+	if ( !pszLastSeparator )
+		return s_szFinalFilename;
+
+	strncpy( s_szFinalFilename, pszLastSeparator + 1, sizeof( s_szFinalFilename ) );
+	s_szFinalFilename[ MAX_PATH ] = 0;
+	char *pszLastUnderscore = NULL;
+	char* pszLastDot = NULL;
+	for ( char *ch = s_szFinalFilename; *ch != 0; ch++ )
+	{
+		if ( *ch == '_' )
+		{
+			pszLastUnderscore = ch;
+		}
+
+		if ( *ch == '.' )
+		{
+			pszLastDot = ch;
+		}
+	}
+
+	if ( pszLastUnderscore )
+		*pszLastUnderscore = 0;
+
+	if ( pszLastDot )
+		*pszLastDot = 0;
+
+	return s_szFinalFilename;
 }
 
 #ifdef WIN32
@@ -453,16 +515,17 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 	// Get the root directory the .exe is in
 	char* pRootDir = GetBaseDir( moduleName );
-	const char *pBinaryGameDir = pRootDir;
-	char szGameInstallDir[4096];
-	if ( !GetGameInstallDir( pRootDir, szGameInstallDir, 4096 ) )
+
+	// NOTE: The Windows flow is untested and needs scrutiny before use.
+	// The game runs from its own install with its own bin\; the SDK Base
+	// install is only checked here because gameinfo.txt mounts its assets.
+	char szSDKInstallDir[4096];
+	if ( !GetSDKInstallDir( pRootDir, szSDKInstallDir, sizeof( szSDKInstallDir ) ) )
 	{
 		return 1;
 	}
 
-	pBinaryGameDir = szGameInstallDir;
-
-	SetEnvironmentVariableA( "SDK_EXEC_DIR", szGameInstallDir );
+	const char *pBinaryGameDir = pRootDir;
 
 #define LAUNCHER_DLL_PATH	"%s\\" PLATFORM_BIN_DIR "\\launcher.dll"
 #define LAUNCHER_PATH		"%s\\" PLATFORM_BIN_DIR
@@ -490,6 +553,33 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 		LocalFree(pszError);
 		return 0;
+	}
+
+	// Launch options carry no -game; derive the mod dir from our own
+	// binary name (neo_win64.exe -> neo) like the POSIX launcher does.
+	char szNewCmdLine[8192];
+	bool bHasGame = false;
+	{
+		const char *pszScan = lpCmdLine;
+		while ( ( pszScan = strstr( pszScan, "-game" ) ) != NULL )
+		{
+			const bool bStartOk = ( pszScan == lpCmdLine ) || ( pszScan[-1] == ' ' ) || ( pszScan[-1] == '\t' );
+			const char chEnd = pszScan[5];
+			if ( bStartOk && ( chEnd == '\0' || chEnd == ' ' || chEnd == '\t' ) )
+			{
+				bHasGame = true;
+				break;
+			}
+			pszScan += 5;
+		}
+	}
+
+	if ( !bHasGame )
+	{
+		_snprintf( szNewCmdLine, sizeof( szNewCmdLine ), "%s -game \"%s\\%s\"",
+			lpCmdLine, pRootDir, GetExecutableModName( moduleName ) );
+		szNewCmdLine[sizeof( szNewCmdLine ) - 1] = '\0';
+		lpCmdLine = szNewCmdLine;
 	}
 
 	LauncherMain_t main = (LauncherMain_t)GetProcAddress( launcher, "LauncherMain" );
@@ -574,47 +664,6 @@ static void WaitForDebuggerConnect( int argc, char *argv[], int time )
 #endif // !LINUX
 
 
-static const char *GetExecutableModName( char *pszExePath )
-{
-	static char s_szFinalFilename[ MAX_PATH + 1 ] = "hl2";
-
-	char szExePath[ MAX_PATH + 1 ];
-	strncpy( szExePath, pszExePath, sizeof( szExePath ) );
-	szExePath[ MAX_PATH ] = 0;
-
-	if ( !*szExePath )
-		return s_szFinalFilename;
-
-	const char *pszLastSeparator = strrchr( szExePath, '/' );
-	if ( !pszLastSeparator )
-		return s_szFinalFilename;
-
-	strncpy( s_szFinalFilename, pszLastSeparator + 1, sizeof( s_szFinalFilename ) );
-	s_szFinalFilename[ MAX_PATH ] = 0;
-	char *pszLastUnderscore = NULL;
-	char* pszLastDot = NULL;
-	for ( char *ch = s_szFinalFilename; *ch != 0; ch++ )
-	{
-		if ( *ch == '_' )
-		{
-			pszLastUnderscore = ch;
-		}
-
-		if ( *ch == '.' )
-		{
-			pszLastDot = ch;
-		}
-	}
-
-	if ( pszLastUnderscore )
-		*pszLastUnderscore = 0;
-
-	if ( pszLastDot )
-		*pszLastDot = 0;
-
-	return s_szFinalFilename;
-}
-
 int main( int argc, char *argv[] )
 {
 	char moduleName[MAX_PATH];
@@ -627,20 +676,14 @@ int main( int argc, char *argv[] )
 
 	const char *pBinaryGameDir = pRootDir;
 
-	char szGameInstallDir[4096];
-	if ( !GetGameInstallDir( pRootDir, szGameInstallDir, 4096 ) )
+	char szSDKInstallDir[4096];
+	if ( !GetSDKInstallDir( pRootDir, szSDKInstallDir, 4096 ) )
 	{
 		return 1;
 	}
 
-#ifdef NEO
-	// Tell the engine where the SDK Base install lives so FileSystem_LoadSearchPaths
-	// resolves relative SDK mounts against it. Same thing the Windows path does above.
-	setenv( "SDK_EXEC_DIR", szGameInstallDir, 1 );
-#endif
-
 	char szExecutable[8192];
-	snprintf(szExecutable, sizeof(szExecutable), "%s/hl2.sh", szGameInstallDir );
+	snprintf(szExecutable, sizeof(szExecutable), "%s/hl2.sh", szSDKInstallDir );
 
 	std::vector<char *> new_argv;
 
