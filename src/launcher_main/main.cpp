@@ -20,9 +20,9 @@
 #include <limits.h>
 #include <string.h>
 #include <sys/stat.h>
-#ifdef NEO
+#include <unistd.h>
+#include <sys/resource.h>
 #include <errno.h>
-#endif
 #define MAX_PATH PATH_MAX
 #endif
 
@@ -674,20 +674,56 @@ int main( int argc, char *argv[] )
 
 	char* pRootDir = GetBaseDir( moduleName );
 
-	const char *pBinaryGameDir = pRootDir;
+	// Run from the install root: relative engine paths and steam_appid.txt
+	// both resolve against the working directory.
+	if ( chdir( pRootDir ) != 0 )
+	{
+		fprintf( stderr, "[NT;RE launcher] Warning: chdir(%s) failed: %s\n", pRootDir, strerror( errno ) );
+	}
+
+	// The dynamic linker only reads LD_LIBRARY_PATH at process start, and
+	// launcher.so's dependencies resolve through it, so prepend our bin dir
+	// and re-exec ourselves exactly once.
+	if ( !getenv( "NEO_LAUNCHER_BOOTSTRAPPED" ) )
+	{
+		char szLibPath[8192];
+		const char *pszOldPath = getenv( "LD_LIBRARY_PATH" );
+		snprintf( szLibPath, sizeof( szLibPath ), "%s/" PLATFORM_BIN_DIR "%s%s",
+			pRootDir, pszOldPath ? ":" : "", pszOldPath ? pszOldPath : "" );
+		setenv( "LD_LIBRARY_PATH", szLibPath, 1 );
+		setenv( "NEO_LAUNCHER_BOOTSTRAPPED", "1", 1 );
+
+		// Same environment the stock launch script sets up.
+		setenv( "__GL_THREADED_OPTIMIZATIONS", "1", 1 );
+		if ( access( "pathmatch.inf", F_OK ) == 0 )
+		{
+			setenv( "ENABLE_PATHMATCH", "1", 1 );
+		}
+
+		execv( moduleName, argv );
+		fprintf( stderr, "[NT;RE launcher] Failed to re-exec %s: %s\n", moduleName, strerror( errno ) );
+		return 1;
+	}
+
+	// The stock launch script raises the fd limit; the engine leans on it.
+	struct rlimit fdLimit;
+	if ( getrlimit( RLIMIT_NOFILE, &fdLimit ) == 0 && fdLimit.rlim_cur < 2048 )
+	{
+		fdLimit.rlim_cur = ( fdLimit.rlim_max == RLIM_INFINITY || fdLimit.rlim_max > 2048 ) ? 2048 : fdLimit.rlim_max;
+		setrlimit( RLIMIT_NOFILE, &fdLimit );
+	}
 
 	char szSDKInstallDir[4096];
-	if ( !GetSDKInstallDir( pRootDir, szSDKInstallDir, 4096 ) )
+	if ( !GetSDKInstallDir( pRootDir, szSDKInstallDir, sizeof( szSDKInstallDir ) ) )
 	{
 		return 1;
 	}
 
-	char szExecutable[8192];
-	snprintf(szExecutable, sizeof(szExecutable), "%s/hl2.sh", szSDKInstallDir );
 
+	// Build the argument list for LauncherMain, appending a default -game
+	// derived from our binary name (neo_linux64 -> neo) when absent.
 	std::vector<char *> new_argv;
-
-	new_argv.push_back( szExecutable );
+	new_argv.push_back( moduleName );
 
 	bool bHasGame = false;
 	for ( int i = 1; i < argc; i++ )
@@ -696,34 +732,52 @@ int main( int argc, char *argv[] )
 		{
 			bHasGame = true;
 		}
-
-		new_argv.push_back(argv[i]);
+		new_argv.push_back( argv[i] );
 	}
 
 	char szGamePath[8192];
 	if ( !bHasGame )
 	{
-		new_argv.push_back("-game");
-
+		new_argv.push_back( (char *)"-game" );
 		const char *pModName = GetExecutableModName( moduleName );
 		snprintf( szGamePath, sizeof( szGamePath ), "%s/%s", pRootDir, pModName );
-
-		printf( "[Source Mod Launcher] Launching default game: %s\n", pModName );
-
-		new_argv.push_back(szGamePath);
+		printf( "[NT;RE launcher] Launching default game: %s\n", pModName );
+		new_argv.push_back( szGamePath );
 	}
 
-	new_argv.push_back(NULL);
+	const int nLauncherArgc = (int)new_argv.size();
+	new_argv.push_back( NULL );
 
-	execvp( szExecutable, new_argv.data() );
+	char szLauncherPath[8192];
+	snprintf( szLauncherPath, sizeof( szLauncherPath ), "%s/" PLATFORM_BIN_DIR "/launcher.so", pRootDir );
 
-#ifdef NEO
-	// execvp only returns on failure
-	fprintf( stderr, "[Source Mod Launcher] Failed to exec %s: %s\n", szExecutable, strerror( errno ) );
-	return 1;
-#else
-	return 0;
-#endif
+	void *pLauncherModule = Launcher_LoadModule( szLauncherPath );
+	if ( !pLauncherModule )
+	{
+		char szError[sizeof( szLauncherPath ) + 2048];
+		snprintf( szError, sizeof( szError ), "Failed to load %s:\n%s", szLauncherPath, dlerror() );
+		MessageBox( 0, szError, "Launcher Error", MB_OK );
+		return 1;
+	}
+
+	LauncherMain_t pfnLauncherMain = (LauncherMain_t)Launcher_GetProcAddress( pLauncherModule, "LauncherMain" );
+	if ( !pfnLauncherMain )
+	{
+		MessageBox( 0, "LauncherMain not found in launcher.so", "Launcher Error", MB_OK );
+		return 1;
+	}
+
+	const int nStatus = pfnLauncherMain( nLauncherArgc, new_argv.data() );
+
+	// The engine requests a relaunch (e.g. video mode changes) with this
+	// status; the stock launch script loops on it, we re-exec fresh.
+	if ( nStatus == 42 )
+	{
+		execv( moduleName, argv );
+		fprintf( stderr, "[NT;RE launcher] Failed to re-exec %s after engine restart request: %s\n", moduleName, strerror( errno ) );
+	}
+
+	return nStatus;
 }
 
 #else
