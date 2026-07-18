@@ -52,6 +52,7 @@ option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
 option(NEO_BUILD_LAUNCHER "Build the Steam mod launcher" ON)
+option(NEO_INSTALL_LAUNCHER "Install the Steam mod launcher" OFF)
 set(NEO_MOD_APPID "3172910" CACHE STRING "Steam appid for the mod launcher's steam_appid.txt")
 
 message(STATUS "Treat compile warnings as errors: ${CMAKE_COMPILE_WARNING_AS_ERROR}")
@@ -77,6 +78,7 @@ message(STATUS "Install game resources: ${NEO_INSTALL_RESOURCES}")
 message(STATUS "Use separate build info on Linux: ${NEO_USE_SEPARATE_BUILD_INFO}")
 message(STATUS "Enable CPack: ${NEO_ENABLE_CPACK}")
 message(STATUS "Build the Steam mod launcher: ${NEO_BUILD_LAUNCHER}")
+message(STATUS "Install the Steam mod launcher: ${NEO_INSTALL_LAUNCHER}")
 message(STATUS "Mod launcher appid override: ${NEO_MOD_APPID}")
 message("")
 
@@ -590,6 +592,14 @@ if(NEO_INSTALL_LIBRARIES)
             DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/sdktools.games/custom"
         )
     endif()
+endif()
+
+if(NEO_INSTALL_LAUNCHER AND NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
+    # The launcher sits at the install root, next to the neo/ game directory.
+    # steam_api ships with the engine binaries in bin/, so only the launcher
+    # itself is staged here.
+    set(LAUNCHER_INSTALL_PATH "${INSTALL_PATH_PREFIX}-launcher-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
+    install(TARGETS launcher_main RUNTIME DESTINATION "${LAUNCHER_INSTALL_PATH}")
 endif()
 
 if(NEO_INSTALL_RESOURCES)
