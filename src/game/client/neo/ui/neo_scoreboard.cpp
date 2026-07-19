@@ -3,6 +3,7 @@
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
 #include "neo_theme.h"
+#include "c_neo_killer_infos.h"
 
 #include <inputsystem/iinputsystem.h>
 #include <voice_status.h>
@@ -393,9 +394,9 @@ void CNEOScoreBoard::Update()
 			pPlayerInfo->iTakenHits = pLocalPlayer->GetAttackerHits(pNeoPlayer->entindex());
 			pPlayerInfo->bKilledYou = (pNeoPlayer->entindex() == g_neoKillerInfos.iEntIndex);
 			pPlayerInfo->bYouKilled = false;
-			for (int i = 0; i < g_neoUserIDsLocalKilledSize; ++i)
+			for (int j = 0; j < g_neoUserIDsLocalKilledSize; ++j)
 			{
-				if (g_neoUserIDsLocalKilled[i] == pPlayerInfo->iUserID)
+				if (g_neoUserIDsLocalKilled[j] == pPlayerInfo->iUserID)
 				{
 					pPlayerInfo->bYouKilled = true;
 					break;
