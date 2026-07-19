@@ -498,13 +498,18 @@ else()
 endif()
 
 set(INSTALL_PATH_PREFIX "neo-${BUILD_DATE_SHORT}-${GIT_HASH}")
-set(INSTALL_PATH_SUFFIX "${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/neo/bin")
+set(INSTALL_PATH_SUFFIX "${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
 
 function(neo_install_targets)
-    cmake_parse_arguments(ARG "" "DIRECTORY_NAME;INSTALL_PATH_VARIABLE_NAME" "TARGETS" ${ARGN})
+    cmake_parse_arguments(ARG "INSTALL_PATH_NO_SUBDIR" "DIRECTORY_NAME;INSTALL_PATH_VARIABLE_NAME" "TARGETS" ${ARGN})
     
-    set(INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-${INSTALL_PATH_SUFFIX}")
-    set(DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-debuginfo-${INSTALL_PATH_SUFFIX}")
+    set(INSTALL_PATH_SUBDIR "/neo/bin/${PLATSUBDIR}")
+    if(ARG_INSTALL_PATH_NO_SUBDIR)
+        set(INSTALL_PATH_SUBDIR "")
+    endif()
+    
+    set(INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-${INSTALL_PATH_SUFFIX}${INSTALL_PATH_SUBDIR}")
+    set(DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-debuginfo-${INSTALL_PATH_SUFFIX}${INSTALL_PATH_SUBDIR}")
     
     if(DEFINED ARG_INSTALL_PATH_VARIABLE_NAME)
         set(${ARG_INSTALL_PATH_VARIABLE_NAME} "${INSTALL_PATH}" PARENT_SCOPE)
@@ -513,8 +518,8 @@ function(neo_install_targets)
     if(NOT NEO_USE_SEPARATE_BUILD_INFO)
         install(
             TARGETS ${ARG_TARGETS}
-            LIBRARY DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
-            RUNTIME DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
+            LIBRARY DESTINATION "${INSTALL_PATH}"
+            RUNTIME DESTINATION "${INSTALL_PATH}"
         )
         return()
     endif()
@@ -522,8 +527,8 @@ function(neo_install_targets)
     if(OS_WINDOWS)
         install(
             TARGETS ${ARG_TARGETS}
-            LIBRARY DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
-            RUNTIME DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
+            LIBRARY DESTINATION "${INSTALL_PATH}"
+            RUNTIME DESTINATION "${INSTALL_PATH}"
         )
 
         set(PDB_FILES "")
@@ -533,7 +538,7 @@ function(neo_install_targets)
 
         install(
             FILES ${PDB_FILES}
-            DESTINATION "${DEBUG_INFO_INSTALL_PATH}/${PLATSUBDIR}"
+            DESTINATION "${DEBUG_INFO_INSTALL_PATH}"
         )
     else()
         set(STRIPPED_FILES "")
@@ -547,12 +552,12 @@ function(neo_install_targets)
 
         install(
             FILES ${STRIPPED_FILES}
-            DESTINATION "${INSTALL_PATH}/${PLATSUBDIR}"
+            DESTINATION "${INSTALL_PATH}"
         )
 
         install(
             FILES ${SPLIT_DEBUG_INFO_FILES}
-            DESTINATION "${DEBUG_INFO_INSTALL_PATH}/${PLATSUBDIR}"
+            DESTINATION "${DEBUG_INFO_INSTALL_PATH}"
         )
     endif()
 endfunction()
@@ -594,34 +599,12 @@ if(NEO_INSTALL_LAUNCHER AND NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
     # The launcher sits at the install root, next to the neo/ game directory.
     # steam_api ships with the engine binaries in bin/, so only the launcher
     # itself is staged here.
-    set(LAUNCHER_INSTALL_PATH "${INSTALL_PATH_PREFIX}-launcher-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
 
-    if(NEO_USE_SEPARATE_BUILD_INFO)
-        set(LAUNCHER_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-launcher-debuginfo-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
-
-        if(OS_WINDOWS)
-            install(TARGETS launcher_main RUNTIME DESTINATION "${LAUNCHER_INSTALL_PATH}")
-
-            install(
-                FILES "$<TARGET_PDB_FILE:launcher_main>"
-                DESTINATION "${LAUNCHER_DEBUG_INFO_INSTALL_PATH}"
-            )
-        else()
-            get_target_property(LAUNCHER_STRIPPED_FILE launcher_main STRIPPED_FILE)
-            install(
-                PROGRAMS ${LAUNCHER_STRIPPED_FILE}
-                DESTINATION "${LAUNCHER_INSTALL_PATH}"
-            )
-
-            get_target_property(LAUNCHER_SPLIT_DEBUG_INFO_FILE launcher_main SPLIT_DEBUG_INFO_FILE)
-            install(
-                FILES ${LAUNCHER_SPLIT_DEBUG_INFO_FILE}
-                DESTINATION "${LAUNCHER_DEBUG_INFO_INSTALL_PATH}"
-            )
-        endif()
-    else()
-        install(TARGETS launcher_main RUNTIME DESTINATION "${LAUNCHER_INSTALL_PATH}")
-    endif()
+    neo_install_targets(
+        TARGETS launcher_main
+        DIRECTORY_NAME launcher
+        INSTALL_PATH_NO_SUBDIR
+    )
 endif()
 
 if(NEO_BUILD_UTILS AND NEO_INSTALL_UTILS)
