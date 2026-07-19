@@ -62,16 +62,25 @@ endif()
 
 if(NEO_COPY_LIBRARIES)
     # Stage the standalone-install layout: launcher at the install root next to
-    # neo/, and the steam_api lib where the launcher dlopens it.
+    # neo/, and the steam_api lib where the launcher dlopens it (game/bin, the
+    # engine binary dir).
     add_custom_command(TARGET launcher_main POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:launcher_main>
             ${CMAKE_SOURCE_DIR}/../game/
-        COMMAND ${CMAKE_COMMAND} -E make_directory
-            ${CMAKE_SOURCE_DIR}/../game/bin/linux64
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_SOURCE_DIR}/lib/public/linux64/libsteam_api.so
-            ${CMAKE_SOURCE_DIR}/../game/bin/linux64/
         VERBATIM
     )
+    # The repo only carries the Linux steam_api runtime; on Windows
+    # lib/public/x64 has the import lib, and the launcher loads
+    # bin/x64/steam_api64.dll from a Source SDK Base / depot install.
+    if(OS_LINUX)
+        add_custom_command(TARGET launcher_main POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                ${CMAKE_SOURCE_DIR}/../game/bin/linux64
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_SOURCE_DIR}/lib/public/linux64/libsteam_api.so
+                ${CMAKE_SOURCE_DIR}/../game/bin/linux64/
+            VERBATIM
+        )
+    endif()
 endif()
