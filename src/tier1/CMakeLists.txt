@@ -30,6 +30,7 @@ target_include_directories(tier1
 )
 
 if(OS_WINDOWS)
+    target_compile_definitions(tier1 PRIVATE fopen=dont_use_fopen)
     target_link_libraries(tier1 PRIVATE Rpcrt4.lib Ws2_32.lib)
 elseif(OS_LINUX)
     target_link_libraries(tier1 PUBLIC

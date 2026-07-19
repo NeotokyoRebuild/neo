@@ -1,16 +1,12 @@
 #pragma once
 
 #include "bot/neo_bot.h"
-#include <memory>
-
-class CNEOIgnoredWeaponsCache;
 
 //--------------------------------------------------------------------------------------------------------
 class CNEOBotCtgLoneWolf : public Action< CNEOBot >
 {
 public:
-	CNEOBotCtgLoneWolf( void );
-	virtual ~CNEOBotCtgLoneWolf();
+	CNEOBotCtgLoneWolf( void ) = default;
 
 	virtual ActionResult< CNEOBot > OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot > Update( CNEOBot *me, float interval ) override;
@@ -18,30 +14,15 @@ public:
 	virtual ActionResult< CNEOBot > OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
 
 	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me ) override;
-	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path ) override;
-	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason ) override;
 
 	virtual const char *GetName( void ) const override { return "ctgLoneWolf"; }
 
-private:
-	PathFollower m_path;
-	CHandle<CWeaponGhost> m_hGhost;
+protected:
+	virtual ActionResult< CNEOBot > ConsiderGhostInterception( CNEOBot *me, const CBaseCombatCharacter *pGhostOwner = nullptr );
+	virtual ActionResult< CNEOBot > ConsiderGhostVisualCheck( CNEOBot *me );
+
+	Vector GetNearestEnemyCapPoint( CNEOBot *me ) const;
+
 	CountdownTimer m_repathTimer;
-	CountdownTimer m_useAttemptTimer;
-	bool m_bHasRetreatedFromGhost;
-
-	Vector m_vecDropThreatPos;
-	CHandle<CBaseEntity> m_hPursueTarget;
-	bool m_bPursuingDropThreat;
-	std::unique_ptr<CNEOIgnoredWeaponsCache> m_pIgnoredWeapons;
-	CountdownTimer m_scavengeTimer;
-
-	ActionResult< CNEOBot > UpdateLookAround( CNEOBot *me, const Vector &anchorPos );
-	CountdownTimer m_lookAroundTimer;
-	CountdownTimer m_stalemateTimer;
-
-	CountdownTimer m_capPointUpdateTimer;
-	Vector m_closestCapturePoint;
-
-	CUtlVector< CNavArea * > m_visibleAreas;
+	PathFollower m_path;
 };

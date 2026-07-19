@@ -157,6 +157,7 @@ public:
 	bool EquipRequiredWeapon(void);								// if we're required to equip a specific weapon, do it.
 	void EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary = false);	// equip the best weapon we have to attack the given threat
 	void ReloadIfLowClip(bool bForceReload = false);
+	bool DropGhost();
 
 	void DropPrimaryWeapon(void);
 
@@ -438,6 +439,8 @@ public:
 
 	CNEOBotProfile m_profile = {};
 	NeoClass ChooseRandomClass() const;
+	void ChooseRandomWeapon();
+	int ChooseRandomWeaponIndex() const;
 	int m_iIntendTeam = 0;
 	int m_iProfileIdx = -1;
 

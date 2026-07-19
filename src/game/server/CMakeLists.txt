@@ -99,6 +99,11 @@ if(OS_LINUX OR OS_MACOS)
 endif()
 
 if(OS_WINDOWS)
+    target_compile_definitions(server
+        PRIVATE
+        fopen=dont_use_fopen
+    )
+
     target_link_libraries(server
         PRIVATE 
         winmm.lib 
@@ -1582,6 +1587,11 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_ctg_enemy.h
     neo/bot/behavior/neo_bot_ctg_escort.h
     neo/bot/behavior/neo_bot_ctg_lone_wolf.h
+    neo/bot/behavior/neo_bot_ctg_lone_wolf_ambush.cpp
+    neo/bot/behavior/neo_bot_ctg_lone_wolf_ambush.h
+    neo/bot/behavior/neo_bot_ctg_lone_wolf_seek.cpp
+    neo/bot/behavior/neo_bot_ctg_lone_wolf_seek.h
+    neo/bot/behavior/neo_bot_ctg_seek.cpp
     neo/bot/behavior/neo_bot_ctg_seek.h
     neo/bot/behavior/neo_bot_dead.h
     neo/bot/behavior/neo_bot_grenade_dispatch.h

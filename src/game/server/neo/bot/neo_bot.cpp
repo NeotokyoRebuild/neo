@@ -601,52 +601,17 @@ CNEOBot::~CNEOBot()
 void CNEOBot::Spawn()
 {
 	// CNEOBot do m_iNeoClass a bit earlier
-	if ((m_iNextSpawnClassChoice != NEO_CLASS_RANDOM) && (m_iNeoClass != m_iNextSpawnClassChoice))
+	// so that we get correct loadout choices for the class
+	if (m_iNextSpawnClassChoice == NEO_CLASS_RANDOM) 
+	{
+		m_iNeoClass = ChooseRandomClass();
+	}
+	else if (m_iNeoClass != m_iNextSpawnClassChoice)
 	{
 		RequestSetClass(m_iNextSpawnClassChoice);
 	}
 
-	const ENeoRank eRank = static_cast<ENeoRank>(GetRank(m_iXP) - 1);
-	if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
-	{
-		m_iLoadoutWepChoice = 0;
-	}
-	else
-	{
-		const NEO_WEP_BITS_UNDERLYING_TYPE wepPrefsForCurRank = m_profile.flagsWepPrefs[m_iNeoClass][eRank];
-
-		int iChosenWeps[MAX_WEAPON_LOADOUTS] = {};
-		int iChosenWepsSize = 0;
-		for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
-		{
-			if (wepPrefsForCurRank & CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].info.m_iWepBit)
-			{
-				iChosenWeps[iChosenWepsSize++] = i;
-			}
-		}
-
-		if (iChosenWepsSize == 0)
-		{
-			// Generally shouldn't happen, but if so, just pick from any under the XP limit
-			for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
-			{
-				if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > m_iXP)
-				{
-					break;
-				}
-				iChosenWeps[iChosenWepsSize++] = i;
-			}
-		}
-
-		if (iChosenWepsSize == 1)
-		{
-			m_iLoadoutWepChoice = iChosenWeps[0];
-		}
-		else
-		{
-			m_iLoadoutWepChoice = iChosenWeps[RandomInt(0, iChosenWepsSize - 1)];
-		}
-	}
+	ChooseRandomWeapon();
 
 	BaseClass::Spawn();
 
@@ -673,6 +638,53 @@ void CNEOBot::Spawn()
 
 	m_bWantsRespawn = false;
 	m_bRespawnCopyCorpse = false;
+}
+
+int CNEOBot::ChooseRandomWeaponIndex() const
+{
+    const ENeoRank eRank = static_cast<ENeoRank>(GetRank(m_iXP) - 1);
+    if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
+    {
+        return 0;
+    }
+    const NEO_WEP_BITS_UNDERLYING_TYPE wepPrefsForCurRank = m_profile.flagsWepPrefs[m_iNeoClass][eRank];
+
+    int iChosenWeps[MAX_WEAPON_LOADOUTS] = {};
+    int iChosenWepsSize = 0;
+    for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
+    {
+        if (wepPrefsForCurRank & CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].info.m_iWepBit)
+        {
+            iChosenWeps[iChosenWepsSize++] = i;
+        }
+    }
+
+    if (iChosenWepsSize == 0)
+    {
+		// Generally shouldn't happen, but if so, just pick from any under the XP limit
+        for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
+        {
+            if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > m_iXP)
+            {
+                break;
+            }
+            iChosenWeps[iChosenWepsSize++] = i;
+        }
+    }
+
+    if (iChosenWepsSize == 1)
+    {
+        return iChosenWeps[0];
+    }
+    else
+    {
+        return iChosenWeps[RandomInt(0, iChosenWepsSize - 1)];
+    }
+}
+
+void CNEOBot::ChooseRandomWeapon()
+{
+	m_iLoadoutWepChoice = ChooseRandomWeaponIndex();
 }
 
 
@@ -1611,6 +1623,40 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	}
 }
 
+
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::DropGhost()
+{
+	if ( !IsCarryingGhost() )
+	{
+		return false;
+	}
+
+	CBaseCombatWeapon *pGhost = Weapon_GetSlot( 0 );
+	if ( pGhost )
+	{
+		if ( GetActiveWeapon() != pGhost )
+		{
+			Weapon_Switch( pGhost );
+		}
+		else
+		{
+			// Look behind where we are moving
+			Vector moveDir = GetLocomotionInterface()->GetMotionVector();
+			Vector lookDir = -moveDir;
+			GetBodyInterface()->AimHeadTowards( EyePosition() + lookDir * 100.0f, IBody::IMPORTANT, 0.2f, nullptr, "Preparing to drop ghost away from path" );
+
+			// Drop the ghost if we are looking anywhere but the front
+			Vector viewDir = GetBodyInterface()->GetViewVector();
+			if ( moveDir.Dot( viewDir ) < 0.4f )
+			{
+				PressDropButton();
+			}
+		}
+	}
+
+	return true;
+}
 
 //-----------------------------------------------------------------------------------------------------
 // Reload the active weapon if it makes sense for the situation 
