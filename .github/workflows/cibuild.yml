@@ -133,6 +133,7 @@ jobs:
         echo "dedicated_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-dedicated-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher=$(find . -regex '\.\/neo-\w*-\w*-launcher-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "launcher_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-launcher-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
 
     - name: Upload libraries
       uses: actions/upload-artifact@v7
@@ -175,6 +176,13 @@ jobs:
       with:
         name: ${{ env.launcher }}
         path: ${{ env.install_dir }}/${{ env.launcher }}
+        if-no-files-found: error
+
+    - name: Upload launcher debug information
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.launcher_debuginfo }}
+        path: ${{ env.install_dir }}/${{ env.launcher_debuginfo }}
         if-no-files-found: error
 
   windows-build:
@@ -297,6 +305,7 @@ jobs:
         echo "dedicated_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-dedicated-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher=$(find . -regex '\.\/neo-\w*-\w*-launcher-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "launcher_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-launcher-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
 
     - name: Upload libraries
       uses: actions/upload-artifact@v7
@@ -331,6 +340,13 @@ jobs:
       with:
         name: ${{ env.launcher }}
         path: ${{ env.install_dir }}/${{ env.launcher }}
+        if-no-files-found: error
+
+    - name: Upload launcher debug information
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.launcher_debuginfo }}
+        path: ${{ env.install_dir }}/${{ env.launcher_debuginfo }}
         if-no-files-found: error
 
   pack-resources:

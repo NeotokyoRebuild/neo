@@ -31,6 +31,10 @@ elseif(OS_WINDOWS)
     )
 endif()
 
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET launcher_main)
+endif()
+
 target_include_directories(launcher_main
     PRIVATE
         ${CMAKE_SOURCE_DIR}/public

@@ -599,7 +599,33 @@ if(NEO_INSTALL_LAUNCHER AND NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
     # steam_api ships with the engine binaries in bin/, so only the launcher
     # itself is staged here.
     set(LAUNCHER_INSTALL_PATH "${INSTALL_PATH_PREFIX}-launcher-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
-    install(TARGETS launcher_main RUNTIME DESTINATION "${LAUNCHER_INSTALL_PATH}")
+
+    if(NEO_USE_SEPARATE_BUILD_INFO)
+        set(LAUNCHER_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-launcher-debuginfo-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
+
+        if(OS_WINDOWS)
+            install(TARGETS launcher_main RUNTIME DESTINATION "${LAUNCHER_INSTALL_PATH}")
+
+            install(
+                FILES "$<TARGET_PDB_FILE:launcher_main>"
+                DESTINATION "${LAUNCHER_DEBUG_INFO_INSTALL_PATH}"
+            )
+        else()
+            get_target_property(LAUNCHER_STRIPPED_FILE launcher_main STRIPPED_FILE)
+            install(
+                PROGRAMS ${LAUNCHER_STRIPPED_FILE}
+                DESTINATION "${LAUNCHER_INSTALL_PATH}"
+            )
+
+            get_target_property(LAUNCHER_SPLIT_DEBUG_INFO_FILE launcher_main SPLIT_DEBUG_INFO_FILE)
+            install(
+                FILES ${LAUNCHER_SPLIT_DEBUG_INFO_FILE}
+                DESTINATION "${LAUNCHER_DEBUG_INFO_INSTALL_PATH}"
+            )
+        endif()
+    else()
+        install(TARGETS launcher_main RUNTIME DESTINATION "${LAUNCHER_INSTALL_PATH}")
+    endif()
 endif()
 
 if(NEO_INSTALL_RESOURCES)
