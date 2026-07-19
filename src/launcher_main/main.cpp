@@ -108,6 +108,12 @@ static const AppId_t k_unMyModAppid = k_unSDK2013MPAppId;
 #endif
 
 static bool s_bInittedSteam = false;
+#ifdef NEO
+// Set when Steam reports the SDK Base app as not installed. The launch
+// continues anyway: the engine detects the missing dependency at gameinfo
+// mount and raises Steam's install dialog, same as the retail flow.
+static bool s_bSDKNotInstalled = false;
+#endif // NEO
 
 #ifdef _WIN32
 static HMODULE s_SteamModule;
@@ -239,7 +245,13 @@ static bool GetGameInstallDir( const char *pRootDir, char *pszBuf, int nBufSize 
 
 	if ( unLength == 0 )
 	{
+#ifdef NEO
+		// No error box: letting the engine run produces its own prompt plus
+		// the Steam install dialog for the missing SDK.
+		s_bSDKNotInstalled = true;
+#else
 		MessageBox( 0, "Source SDK 2013 Multiplayer (243750) must be installed to launch this mod.", "Launcher Error", MB_OK );
+#endif // NEO
 		return false;
 	}
 
@@ -526,7 +538,7 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	// The game runs from its own install with its own bin\; the SDK Base
 	// install is only checked here because gameinfo.txt mounts its assets.
 	char szSDKInstallDir[4096];
-	if ( !GetGameInstallDir( pRootDir, szSDKInstallDir, sizeof( szSDKInstallDir ) ) )
+	if ( !GetGameInstallDir( pRootDir, szSDKInstallDir, sizeof( szSDKInstallDir ) ) && !s_bSDKNotInstalled )
 	{
 		return 1;
 	}
@@ -838,12 +850,14 @@ int main( int argc, char *argv[] )
 	}
 
 	char szSDKInstallDir[4096];
-	if ( !GetGameInstallDir( pRootDir, szSDKInstallDir, sizeof( szSDKInstallDir ) ) )
+	if ( GetGameInstallDir( pRootDir, szSDKInstallDir, sizeof( szSDKInstallDir ) ) )
+	{
+		CreateSDKCaseShim( szSDKInstallDir );
+	}
+	else if ( !s_bSDKNotInstalled )
 	{
 		return 1;
 	}
-
-	CreateSDKCaseShim( szSDKInstallDir );
 
 	// Build the argument list for LauncherMain, appending a default -game
 	// derived from our binary name (neo_linux64 -> neo) when absent.
