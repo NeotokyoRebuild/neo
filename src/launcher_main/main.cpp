@@ -534,7 +534,6 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	// Get the root directory the .exe is in
 	char* pRootDir = GetBaseDir( moduleName );
 #ifdef NEO
-	// NOTE: The Windows flow is untested and needs scrutiny before use.
 	// The game runs from its own install with its own bin\; the SDK Base
 	// install is only checked here because gameinfo.txt mounts its assets.
 	char szSDKInstallDir[4096];
