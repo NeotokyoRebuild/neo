@@ -263,6 +263,8 @@ public:
 	unsigned char m_NeoFlags;
 
 private:
+	friend C_HL2MP_Player;
+
 	bool m_bFirstAliveTick;
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
@@ -277,9 +279,6 @@ private:
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
-
-public:
-	bool m_rfNeoPlayerIdxsKilledByLocal[MAX_PLAYERS_ARRAY_SAFE];
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

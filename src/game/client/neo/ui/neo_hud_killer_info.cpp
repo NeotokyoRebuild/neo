@@ -63,13 +63,6 @@ void CNEOHud_KillerInfo::resetHUDState()
 
 void CNEOHud_KillerInfo::UpdateStateForNeoHudElementDraw()
 {
-	const bool bIsPreRoundFreeze = (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze);
-	if (bIsPreRoundFreeze && false == m_preRoundFreezeCleared)
-	{
-		resetHUDState();
-	}
-	m_preRoundFreezeCleared = bIsPreRoundFreeze;
-
 	// If to show or not
 	const C_NEO_Player *pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	m_bPlayerShownHud = pLocalPlayer
@@ -91,8 +84,13 @@ void CNEOHud_KillerInfo::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_KillerInfo::DrawNeoHudElement()
 {
+	if (!ShouldDraw() || !m_bPlayerShownHud)
+	{
+		return;
+	}
+
 	const C_NEO_Player *pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!ShouldDraw() || !m_bPlayerShownHud || !pLocalPlayer)
+	if (!pLocalPlayer)
 	{
 		return;
 	}

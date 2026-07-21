@@ -98,7 +98,7 @@ public:
 
 	int	m_HLTVSpectators = 0;
 	int m_iTotalPlayers = 0;
-	CNEOScoreBoardPlayer m_playersInfo[MAX_PLAYERS + 1] = {};
+	CNEOScoreBoardPlayer m_playersInfo[MAX_PLAYERS_ARRAY_SAFE] = {};
 	CNEOScoreBoardPlayer m_playerPopup = {};
 
 	wchar_t m_wszHostname[128] = {};

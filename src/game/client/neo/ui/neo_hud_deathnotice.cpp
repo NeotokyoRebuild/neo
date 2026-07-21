@@ -765,7 +765,8 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 {
 	// the event should be "player_death"
 	const int killer = engine->GetPlayerForUserID(event->GetInt("attacker"));
-	const int victim = engine->GetPlayerForUserID(event->GetInt("userid"));
+	const int iVictimUserID = event->GetInt("userid");
+	const int victim = engine->GetPlayerForUserID(iVictimUserID);
 	const int assistInt = event->GetInt("assists");
 	const int assist = engine->GetPlayerForUserID(assistInt);
 	const bool hasAssists = assist > 0;
@@ -859,9 +860,24 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	deathMsg.bInvolved = killer == GetLocalPlayerIndex() || victim == GetLocalPlayerIndex() || assist == GetLocalPlayerIndex();
 	Assert(victim >= 0 && victim < (MAX_PLAYERS + 1));
 	C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (localPlayer)
+	if (localPlayer
+			&& killer == localPlayer->entindex()
+			&& g_neoUserIDsLocalKilledSize < MAX_PLAYERS_ARRAY_SAFE)
 	{
-		localPlayer->m_rfNeoPlayerIdxsKilledByLocal[victim] = (killer == localPlayer->entindex());
+		// Sanity check it's not there already just in-case
+		bool bVictimUserIDExists = false;
+		for (int i = 0; i < g_neoUserIDsLocalKilledSize; ++i)
+		{
+			if (iVictimUserID == g_neoUserIDsLocalKilled[i])
+			{
+				bVictimUserIDExists = true;
+				break;
+			}
+		}
+		if (false == bVictimUserIDExists)
+		{
+			g_neoUserIDsLocalKilled[g_neoUserIDsLocalKilledSize++] = iVictimUserID;
+		}
 	}
 
 	SetDeathNoticeItemDimensions(&deathMsg);
