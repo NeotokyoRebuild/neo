@@ -56,6 +56,9 @@ public:
 	INextBotEventResponder *FirstContainedResponder() const override;
 	INextBotEventResponder *NextContainedResponder(INextBotEventResponder *current) const override;
 
+	void OnStuck() override;
+	void OnMoveToFailure( const Path *path, MoveToFailureType reason ) override;
+
 	QueryResultType ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const final;
 	QueryResultType ShouldAim(const CNEOBot *me, const bool bWepHasClip) const final;
 
