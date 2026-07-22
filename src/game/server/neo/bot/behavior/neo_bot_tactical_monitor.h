@@ -33,6 +33,8 @@ private:
 	CountdownTimer m_attentionTimer;
 	std::unique_ptr<CNEOIgnoredWeaponsCache> m_pIgnoredWeapons;
 
+	CountdownTimer m_detpackCheckTimer;
+	ActionResult< CNEOBot > MonitorArmedDetpack(CNEOBot *me);
 #if 0
 	CountdownTimer m_stickyBombCheckTimer;
 	void MonitorArmedStickyBombs(CNEOBot* me);
