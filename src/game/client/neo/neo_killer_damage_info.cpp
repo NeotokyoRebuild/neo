@@ -23,8 +23,6 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 
 	// Print damage stats into the console
 	// Print to console
-	AttackersTotals totals = {};
-
 	const int thisIdx = localPlayer->entindex();
 
 	// Can't rely on Msg as it can print out of order, so do it in chunks
@@ -94,15 +92,20 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	}
 
 	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
-	
-	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
-	{
-		if (pIdx == thisIdx)
-		{
-			continue;
-		}
 
-		auto* neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
+	AttackersTotals totals = {};
+
+	// Read per-player damage stats from the message (authoritative server data)
+	const int iAtkSize = static_cast<int>(msg.ReadShort());
+	for (int i = 0; i < iAtkSize; ++i)
+	{
+		const short pIdx = msg.ReadShort();
+		const short dealtDmgs = msg.ReadShort();
+		const short dealtHits = msg.ReadShort();
+		const short takenDmgs = msg.ReadShort();
+		const short takenHits = msg.ReadShort();
+
+		auto *neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
 		if (!neoAttacker || neoAttacker->IsHLTV())
 		{
 			continue;
@@ -114,32 +117,26 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 			continue;
 		}
 
-		const AttackersTotals attackerInfo = {
-			.dealtDmgs = neoAttacker->GetAttackersScores(thisIdx),
-			.dealtHits = neoAttacker->GetAttackerHits(thisIdx),
-			.takenDmgs = localPlayer->GetAttackersScores(pIdx),
-			.takenHits = localPlayer->GetAttackerHits(pIdx),
-		};
-		if (attackerInfo.dealtDmgs > 0 || attackerInfo.takenDmgs > 0)
+		const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+
+		char infoLine[128] = {};
+		if (dealtDmgs > 0)
 		{
-			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
-
-			char infoLine[128] = {};
-			if (attackerInfo.dealtDmgs > 0)
-			{
-				V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
-						   dmgerName, dmgerClass,
-						   attackerInfo.dealtDmgs, attackerInfo.dealtHits);
-			}
-			if (attackerInfo.takenDmgs > 0)
-			{
-				V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
-						   dmgerName, dmgerClass,
-						   attackerInfo.takenDmgs, attackerInfo.takenHits);
-			}
+			V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
+					   dmgerName, dmgerClass,
+					   dealtDmgs, dealtHits);
 			ConMsg("%s", infoLine);
-
-			totals += attackerInfo;
+			totals.takenDmgs += dealtDmgs;
+			totals.takenHits += dealtHits;
+		}
+		if (takenDmgs > 0)
+		{
+			V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
+					   dmgerName, dmgerClass,
+					   takenDmgs, takenHits);
+			ConMsg("%s", infoLine);
+			totals.dealtDmgs += takenDmgs;
+			totals.dealtHits += takenHits;
 		}
 	}
 

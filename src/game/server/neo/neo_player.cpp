@@ -76,9 +76,9 @@ SendPropTime(SENDINFO(m_flNextPingTime)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
-SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersScores)), m_rfAttackersScores),
+SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_CHANGES_OFTEN), m_rfAttackersScores),
 SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersAccumlator), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersAccumlator),
-SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits),
+SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits), -1, SPROP_CHANGES_OFTEN), m_rfAttackersHits),
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_vLastPingByStar), -1, SPROP_COORD), m_vLastPingByStar),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
@@ -2347,6 +2347,55 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 		}
 		WRITE_SHORT(attackerIdx);
 		WRITE_STRING(killedWithName);
+
+		AttackersTotals atkTotals[MAX_PLAYERS_ARRAY_SAFE] = {};
+		int atkPlayerIdxs[MAX_PLAYERS_ARRAY_SAFE] = {};
+		int iAtkSize = 0;
+
+		// Send authoritative per-player damage stats directly from server
+		const int thisIdx = entindex();
+		for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+		{
+			if (pIdx == thisIdx)
+			{
+				continue;
+			}
+
+			auto *pNeoOther = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(pIdx));
+			if (!pNeoOther || pNeoOther->IsHLTV())
+			{
+				continue;
+			}
+
+			const int dealtDmgs = pNeoOther->GetAttackersScores(thisIdx);
+			const int dealtHits = pNeoOther->GetAttackerHits(thisIdx);
+			const int takenDmgs = GetAttackersScores(pIdx);
+			const int takenHits = GetAttackerHits(pIdx);
+
+			if ((dealtDmgs > 0 && dealtHits > 0) || (takenDmgs > 0 && takenHits > 0))
+			{
+				atkPlayerIdxs[iAtkSize] = pIdx;
+
+				AttackersTotals *atk = &atkTotals[iAtkSize];
+				atk->dealtDmgs = dealtDmgs;
+				atk->dealtHits = dealtHits;
+				atk->takenDmgs = takenDmgs;
+				atk->takenHits = takenHits;
+
+				++iAtkSize;
+			}
+		}
+
+		WRITE_SHORT(iAtkSize);
+		for (int i = 0; i < iAtkSize; ++i)
+		{
+			WRITE_SHORT(atkPlayerIdxs[i]);
+			const AttackersTotals *atk = &atkTotals[i];
+			WRITE_SHORT(static_cast<short>(atk->dealtDmgs));
+			WRITE_SHORT(static_cast<short>(atk->dealtHits));
+			WRITE_SHORT(static_cast<short>(atk->takenDmgs));
+			WRITE_SHORT(static_cast<short>(atk->takenHits));
+		}
 	}
 	MessageEnd();
 }
