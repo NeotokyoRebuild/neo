@@ -25,7 +25,7 @@ extern float		g_maxLightmapDimension;
 char		source[1024];
 char		mapbase[ 64 ];
 char		name[1024];
-char		materialPath[1024];
+char		materialPath[1024 + 16];
 
 vec_t		microvolume = 1.0;
 qboolean	noprune;
@@ -787,7 +787,7 @@ static void Compute3DSkyboxAreas( node_t *headnode, CUtlVector<int>& areas )
 {
 	for (int i = 0; i < g_MainMap->num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!strcmp(pEntity, "sky_camera"))
 		{
 			// Found a 3D skybox camera, get a leaf that lies in it
@@ -885,7 +885,7 @@ int RunVBSP( int argc, char **argv )
 {
 	int		i;
 	double		start, end;
-	char		path[1024];
+	char		path[1024 + 4];
 
 	CommandLine()->CreateCmdLine( argc, argv );
 	MathLib_Init( 2.2f, 2.2f, 0.0f, OVERBRIGHT, false, false, false, false );
@@ -906,7 +906,7 @@ int RunVBSP( int argc, char **argv )
 
 	LoadCmdLineFromFile( argc, argv, mapbase, "vbsp" );
 
-	Msg( "Valve Software - vbsp.exe (%s)\n", __DATE__ );
+	Msg( "Valve Software - vbsp (%s)\n", __DATE__ );
 
 	for (i=1 ; i<argc ; i++)
 	{
@@ -1177,7 +1177,7 @@ int RunVBSP( int argc, char **argv )
 			"                file. -onlyents won't reimport brush models.\n"
 			"  -onlyprops  : Only update the static props and detail props.\n"
 			"  -glview     : Writes .gl files in the current directory that can be viewed\n"
-			"                with glview.exe. If you use -tmpout, it will write the files\n"
+			"                with glview. If you use -tmpout, it will write the files\n"
 			"                into the \\tmp folder.\n"
 			"  -nodetail   : Get rid of all detail geometry. The geometry left over is\n"
 			"                what affects visibility.\n"
@@ -1241,7 +1241,7 @@ int RunVBSP( int argc, char **argv )
 
 		DeleteCmdLine( argc, argv );
 		CmdLib_Cleanup();
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	// Sanity check
@@ -1252,7 +1252,7 @@ int RunVBSP( int argc, char **argv )
 		         "Use the bspzip utility to update embedded files.\n" );
 		DeleteCmdLine( argc, argv );
 		CmdLib_Cleanup();
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	start = Plat_FloatTime();
@@ -1280,8 +1280,8 @@ int RunVBSP( int argc, char **argv )
 	numthreads = 1;		// multiple threads aren't helping...
 
 	// Setup the logfile.
-	char logFile[512];
-	_snprintf( logFile, sizeof(logFile), "%s.log", source );
+	char logFile[sizeof(source) + 4];
+	Q_snprintf( logFile, sizeof(logFile), "%s.log", source );
 	SetSpewFunctionLogFile( logFile );
 
 	LoadPhysicsDLL();
@@ -1293,7 +1293,7 @@ int RunVBSP( int argc, char **argv )
 	Msg( "basegamedir: %s This is the base engine + base game directory (e.g. e:/hl2/hl2/, or d:/tf2/tf2/ )\n", basegamedir );
 #endif
 
-	sprintf( materialPath, "%smaterials", gamedir );
+	snprintf( materialPath, sizeof(materialPath), "%smaterials", gamedir );
 	InitMaterialSystem( materialPath, CmdLib_GetFileSystemFactory() );
 	Msg( "materialPath: %s\n", materialPath );
 
@@ -1332,7 +1332,8 @@ int RunVBSP( int argc, char **argv )
 		g_nCubemapSamples = 0;
 
 		// Mark as stale since the lighting could be screwed with new ents.
-		AddBufferToPak( GetPakFile(), "stale.txt", "stale", strlen( "stale" ) + 1, false );
+        auto data = "stale";
+        AddBufferToPak( GetPakFile(), "stale.txt", (void *)(data), (int)strlen(data) + 1, false );
 
 		LoadMapFile (name);
 		SetModelNumbers ();
@@ -1389,7 +1390,8 @@ int RunVBSP( int argc, char **argv )
 		{
 			LoadBSPFile_FileSystemOnly (mapFile);
 			// Mark as stale since the lighting could be screwed with new ents.
-			AddBufferToPak( GetPakFile(), "stale.txt", "stale", strlen( "stale" ) + 1, false );
+            auto data = "stale";
+            AddBufferToPak( GetPakFile(), "stale.txt", (void *)(data), (int)strlen(data) + 1, false );
 		}
 
 		LoadMapFile (name);

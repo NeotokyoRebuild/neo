@@ -11,7 +11,6 @@
 #include "radial.h"
 #include "mathlib/bumpvects.h"
 #include "tier1/utlvector.h"
-#include "vmpi.h"
 #include "mathlib/anorms.h"
 #include "map_utils.h"
 #include "mathlib/halton.h"
@@ -89,8 +88,8 @@ int CNormalList::FindOrAddNormal( Vector const &vNormal )
 	// See which grid element it's in.
 	for( int iDim=0; iDim < 3; iDim++ )
 	{
-		gi[iDim] = (int)( ((vNormal[iDim] + 1.0f) * 0.5f) * NUM_SUBDIVS - 0.000001f );
-		gi[iDim] = min( gi[iDim], NUM_SUBDIVS );
+		gi[iDim] = (int)( ((vNormal[iDim] + 1.0f) * 0.5f) * (int)NUM_SUBDIVS - 0.000001f );
+		gi[iDim] = min( gi[iDim], (int)NUM_SUBDIVS );
 		gi[iDim] = max( gi[iDim], 0 );
 	}
 
@@ -799,7 +798,7 @@ bool BuildFacesamples( lightinfo_t *pLightInfo, facelight_t *pFaceLight )
 	// statistics - warning?!
 	if( pFaceLight->numsamples == 0 )
 	{
-		Msg( "no samples %d\n", pLightInfo->face - g_pFaces );
+		Msg( "no samples %d\n", (int)(pLightInfo->face - g_pFaces) );
 	}
 
 	return true;
@@ -938,15 +937,14 @@ int				numdlights;
   FindTargetEntity
   ==================
 */
-entity_t *FindTargetEntity (char *target)
+entity_t *FindTargetEntity (const char *target)
 {
 	int		i;
-	char	*n;
 
 	for (i=0 ; i<num_entities ; i++)
 	{
-		n = ValueForKey (&entities[i], "targetname");
-		if (!strcmp (n, target))
+        auto n = ValueForKey (&entities[i], "targetname");
+        if (!strcmp (n, target))
 			return &entities[i];
 	}
 
@@ -1044,16 +1042,14 @@ void MergeDLightVis( directlight_t *dl, int cluster )
   LightForKey
   =============
 */
-int LightForKey (entity_t *ent, char *key, Vector& intensity )
+int LightForKey (entity_t *ent, const char *key, Vector& intensity )
 {
-	char *pLight;
-
-	pLight = ValueForKey( ent, key );
+    auto pLight = ValueForKey( ent, key );
 
 	return LightForString( pLight, intensity );
 }
 
-int LightForString( char *pLight, Vector& intensity )
+int LightForString( const char *pLight, Vector& intensity )
 {
 	double r, g, b, scaler;
 	int argCnt;
@@ -1124,7 +1120,7 @@ int LightForString( char *pLight, Vector& intensity )
 static void ParseLightGeneric( entity_t *e, directlight_t *dl )
 {
 	entity_t		*e2;
-	char	        *target;
+    const char	    *target;
 	Vector	        dest;
 
 	dl->light.style = (int)FloatForKey (e, "style");
@@ -1462,7 +1458,7 @@ void BuildVisForLightEnvironment( void )
 	}
 }
 
-static char *ValueForKeyWithDefault (entity_t *ent, char *key, char *default_value = NULL)
+static char *ValueForKeyWithDefault (entity_t *ent, const char *key, char *default_value = NULL)
 {
 	epair_t	*ep;
 	
@@ -1544,8 +1540,7 @@ void CreateDirectLights (void)
 	CPatch	        *p = NULL;
 	directlight_t	*dl = NULL;
 	entity_t	    *e = NULL;
-	char	        *name;
-	Vector	        dest;
+    const char      *name;
 
 	numdlights = 0;
 
@@ -2436,9 +2431,6 @@ static int FindOrAllocateLightstyleSamples( dface_t* f, facelight_t	*fl, int lig
 //-----------------------------------------------------------------------------
 static void ComputeIlluminationPointAndNormalsSSE( lightinfo_t const& l, FourVectors const &pos, FourVectors const &norm, SSE_SampleInfo_t* pInfo, int numSamples )
 {
-
-	Vector v[4];
-
 	pInfo->m_Points = pos;
 	bool computeNormals = ( pInfo->m_NormalCount > 1 && ( pInfo->m_IsDispFace || !l.isflat ) );
 
@@ -2534,7 +2526,7 @@ static void GatherSampleLightAt4Points( SSE_SampleInfo_t& info, int sampleIdx, i
 			if (info.m_WarnFace != info.m_FaceNum)
 			{
 				Warning ("\nWARNING: Too many light styles on a face at (%f, %f, %f)\n",
-					info.m_Points.x.m128_f32[0], info.m_Points.y.m128_f32[0], info.m_Points.z.m128_f32[0] );
+					SubFloat( info.m_Points.x, 0 ), SubFloat( info.m_Points.y, 0 ), SubFloat( info.m_Points.z, 0 ) );
 				info.m_WarnFace = info.m_FaceNum;
 			}
 			continue;
@@ -2817,18 +2809,18 @@ static void ComputeLightmapGradients( SSE_SampleInfo_t& info, bool const* pHasPr
 
 			if (sample.t > 0)
 			{
-				if (sample.s > 0)   gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j-1-w] ) );
-				gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j-w] ) );
-				if (sample.s < w-1) gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j+1-w] ) );
+				if (sample.s > 0)   gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j-1-w] ) );
+				gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j-w] ) );
+				if (sample.s < w-1) gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j+1-w] ) );
 			}
 			if (sample.t < h-1)
 			{
-				if (sample.s > 0)   gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j-1+w] ) );
-				gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j+w] ) );
-				if (sample.s < w-1) gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j+1+w] ) );
+				if (sample.s > 0)   gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j-1+w] ) );
+				gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j+w] ) );
+				if (sample.s < w-1) gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j+1+w] ) );
 			}
-			if (sample.s > 0)   gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j-1] ) );
-			if (sample.s < w-1) gradient[i] = max( gradient[i], fabs( pIntensity[j] - pIntensity[j+1] ) );
+			if (sample.s > 0)   gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j-1] ) );
+			if (sample.s < w-1) gradient[i] = Max( gradient[i], fabsf( pIntensity[j] - pIntensity[j+1] ) );
 		}
 	}
 }
@@ -3065,7 +3057,6 @@ void BuildFacelights (int iThread, int facenum)
 	facelight_t	*fl;
 	SSE_SampleInfo_t sampleInfo;
 	directlight_t *dl;
-	Vector spot;
 	Vector v[4], n[4];
 
 	if( g_bInterrupt )
@@ -3174,15 +3165,7 @@ void BuildFacelights (int iThread, int facenum)
 		}
 	}
 
-#ifdef MPI
-	if (!g_bUseMPI) 
-#endif
-	{
-		//
-		// This is done on the master node when MPI is used
-		//
-		BuildPatchLights( facenum );
-	}
+	BuildPatchLights( facenum );
 
 	if( g_bDumpPatches )
 	{
@@ -3528,7 +3511,7 @@ static void LinearToBumpedLightmap(
 	VectorMultiply( linearBump2, correctionScale, correctedBumpColor2 );
 	VectorMultiply( linearBump3, correctionScale, correctedBumpColor3 );
 
-	Vector check = ( correctedBumpColor1 + correctedBumpColor2 + correctedBumpColor3 ) / 3.0f;
+	//Vector check = ( correctedBumpColor1 + correctedBumpColor2 + correctedBumpColor3 ) / 3.0f;
 
 	ColorClampBumped( correctedBumpColor1, correctedBumpColor2, correctedBumpColor3 );
 

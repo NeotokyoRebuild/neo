@@ -11,14 +11,14 @@
 #include "utlvector.h"
 #include "bspfile.h"
 #include "gamebspfile.h"
-#include "VPhysics_Interface.h"
-#include "Studio.h"
+#include "vphysics_interface.h"
+#include "studio.h"
 #include "byteswap.h"
-#include "UtlBuffer.h"
-#include "CollisionUtils.h"
+#include "utlbuffer.h"
+#include "collisionutils.h"
 #include <float.h>
-#include "CModel.h"
-#include "PhysDll.h"
+#include "cmodel.h"
+#include "physdll.h"
 #include "utlsymbol.h"
 #include "tier1/strtools.h"
 #include "KeyValues.h"
@@ -131,7 +131,8 @@ isstaticprop_ret IsStaticProp( studiohdr_t* pHdr )
 static int AddStaticPropDictLump( char const* pModelName )
 {
 	StaticPropDictLump_t dictLump;
-	strncpy( dictLump.m_Name, pModelName, DETAIL_NAME_LENGTH );
+	memset( &dictLump, 0, sizeof( dictLump ) );
+	V_strncpy( dictLump.m_Name, pModelName, sizeof( dictLump.m_Name ) );
 
 	for (int i = s_StaticPropDictLump.Size(); --i >= 0; )
 	{
@@ -247,7 +248,7 @@ static CPhysCollide* GetCollisionModel( char const* pModelName )
 	// Convert to a common string
 	char* pTemp = (char*)_alloca(strlen(pModelName) + 1);
 	strcpy( pTemp, pModelName );
-	_strlwr( pTemp );
+	strlwr( pTemp );
 
 	char* pSlash = strchr( pTemp, '\\' );
 	while( pSlash )
@@ -581,7 +582,7 @@ void EmitStaticProps()
 	int i;
 	for ( i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!Q_strcmp(pEntity, "info_lighting"))
 		{
 			s_LightingInfo.AddToTail(i);
@@ -591,7 +592,7 @@ void EmitStaticProps()
 	// Emit specifically specified static props
 	for ( i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!strcmp(pEntity, "static_prop") || !strcmp(pEntity, "prop_static"))
 		{
 			StaticPropBuild_t build;

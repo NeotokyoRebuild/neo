@@ -51,7 +51,7 @@
 #define GAMEINFO_FILENAME_ALTERNATE	"gameinfo.txt"
 
 static char g_FileSystemError[256];
-static bool s_bUseVProjectBinDir = false;
+static bool s_bUseVProjectBinDir = true;
 static FSErrorMode_t g_FileSystemErrorMode = FS_ERRORMODE_VCONFIG;
 
 // Call this to use a bin directory relative to VPROJECT
@@ -348,11 +348,8 @@ bool FileSystem_GetExecutableDir( char *exedir, int exeDirLen )
 		{
 
 			// Only used by external code, i.e. maya but needed so app system loads the correct game DLLs
-			#ifdef WIN64
-			Q_snprintf( exedir, exeDirLen, "%s%c..%cbin%cx64", pProject, CORRECT_PATH_SEPARATOR, CORRECT_PATH_SEPARATOR, CORRECT_PATH_SEPARATOR );
-			#else
-			Q_snprintf( exedir, exeDirLen, "%s%c..%cbin", pProject, CORRECT_PATH_SEPARATOR, CORRECT_PATH_SEPARATOR );
-			#endif //
+			constexpr auto s = CORRECT_PATH_SEPARATOR;
+			Q_snprintf( exedir, exeDirLen, "%s%c..%c%s", pProject, s, s, PLATFORM_BIN_DIR );
 			return true;
 		}
 		return false;
@@ -417,11 +414,11 @@ void LaunchVConfig()
 	Q_AppendSlash( vconfigExe, sizeof( vconfigExe ) );
 	Q_strncat( vconfigExe, "vconfig.exe", sizeof( vconfigExe ), COPY_ALL_CHARACTERS );
 
-	char *argv[] =
+    const char *argv[] =
 	{
 		vconfigExe,
 		"-allowdebug",
-		NULL
+        nullptr
 	};
 
 	_spawnv( _P_NOWAIT, vconfigExe, argv );
@@ -1211,7 +1208,9 @@ void SetSteamAppUser( KeyValues *pSteamInfo, const char *steamInstallPath, CStea
 		char fullFilename[MAX_PATH];
 		Q_strncpy( fullFilename, steamInstallPath, sizeof( fullFilename ) );
 		Q_AppendSlash( fullFilename, sizeof( fullFilename ) );
-		Q_strncat( fullFilename, "config\\SteamAppData.vdf", sizeof( fullFilename ), COPY_ALL_CHARACTERS );
+		Q_strncat( fullFilename, "config", sizeof( fullFilename ), COPY_ALL_CHARACTERS );
+		Q_AppendSlash( fullFilename, sizeof( fullFilename ) );
+		Q_strncat( fullFilename, "SteamAppData.vdf", sizeof( fullFilename ), COPY_ALL_CHARACTERS );
 
 		KeyValues *pSteamAppData = ReadKeyValuesFile( fullFilename );
 		if ( !pSteamAppData || (pTempAppUser = pSteamAppData->GetString( "AutoLoginUser", NULL )) == NULL )

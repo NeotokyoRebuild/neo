@@ -13,11 +13,6 @@ set_target_properties(tier1 PROPERTIES
     UNITY_BUILD_MODE GROUP
     UNITY_BUILD_CODE_BEFORE_INCLUDE "${unity_before}"
 )
-if (OS_LINUX)
-    set_target_properties(tier1 PROPERTIES
-        POSITION_INDEPENDENT_CODE ON
-    )
-endif ()
 
 target_include_directories(tier1
     PUBLIC
@@ -30,16 +25,30 @@ target_include_directories(tier1
 )
 
 if(OS_WINDOWS)
-    target_compile_definitions(tier1 PRIVATE fopen=dont_use_fopen)
-    target_link_libraries(tier1 PRIVATE Rpcrt4.lib Ws2_32.lib)
+    target_compile_definitions(tier1
+        PRIVATE
+        fopen=dont_use_fopen
+    )
+
+    target_link_libraries(tier1
+        PRIVATE
+        Rpcrt4.lib
+        Ws2_32.lib
+    )
 elseif(OS_LINUX)
-    target_link_libraries(tier1 PUBLIC
+    set_target_properties(tier1 PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+
+    target_link_libraries(tier1
+        PUBLIC
         dl
     )
 endif()
 
 target_link_libraries(tier1
     PUBLIC
+    vstdlib::vstdlib
     tier0::tier0
 )
 

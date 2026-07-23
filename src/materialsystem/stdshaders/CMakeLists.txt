@@ -14,11 +14,9 @@ endif()
 
 target_include_directories(game_shader_dx9
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/common
-        ${CMAKE_SOURCE_DIR}/public
-        fxctmp9
-        vshtmp9
-	include
+    fxctmp9
+    vshtmp9
+    include
 )
 
 target_compile_definitions(game_shader_dx9
@@ -32,6 +30,7 @@ if(OS_WINDOWS)
     target_compile_definitions(game_shader_dx9
         PRIVATE
         USE_ACTUAL_DX
+        fopen=dont_use_fopen
     )
 
     target_link_libraries(game_shader_dx9
@@ -51,8 +50,6 @@ endif()
 
 target_link_libraries(game_shader_dx9
     PRIVATE
-    tier0::tier0
-    tier1::tier1
     tier2::tier2
     mathlib::mathlib
     vstdlib::vstdlib
