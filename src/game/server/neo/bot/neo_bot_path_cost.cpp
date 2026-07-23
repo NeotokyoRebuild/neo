@@ -55,158 +55,167 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 		// first area in path, no cost
 		return 0.0f;
 	}
-	else
+
+	if (!m_me->GetLocomotionInterface()->IsAreaTraversable(area))
 	{
-		if (!m_me->GetLocomotionInterface()->IsAreaTraversable(area))
+		return -1.0f;
+	}
+
+	if ( CNEOBotPathReservations()->IsAreaHazardous(area->GetID(), m_me) )
+	{
+		if ( m_routeType == DEFAULT_ROUTE )
 		{
+			// attempt to route around hazards
+			// if blocked, assumes includeGoalIfPathFails=true
+			// to partially path up to boundary of hazard area
 			return -1.0f;
 		}
+	}
 
-		// compute distance traveled along path so far
-		float dist;
+	// compute distance traveled along path so far
+	float dist;
 
-		if (ladder)
+	if (ladder)
+	{
+		dist = ladder->m_length;
+
+		// ladders leave bots exposed, but can be a shortcut
+		const float ladderPenalty = neo_bot_path_penalty_ladder_multiplier.GetFloat();
+		dist *= ladderPenalty;
+	}
+	else if (length > 0.0)
+	{
+		dist = length;
+	}
+	else
+	{
+		dist = (area->GetCenter() - fromArea->GetCenter()).Length();
+	}
+
+	// Only apply height restrictions for non-ladder jump paths
+	if (!ladder)
+	{
+		// check height change
+		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
+
+		if (deltaZ >= m_stepHeight)
 		{
-			dist = ladder->m_length;
-
-			// ladders leave bots exposed, but can be a shortcut
-			const float ladderPenalty = neo_bot_path_penalty_ladder_multiplier.GetFloat();
-			dist *= ladderPenalty;
-		}
-		else if (length > 0.0)
-		{
-			dist = length;
-		}
-		else
-		{
-			dist = (area->GetCenter() - fromArea->GetCenter()).Length();
-		}
-
-		// Only apply height restrictions for non-ladder jump paths
-		if (!ladder)
-		{
-			// check height change
-			float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
-
-			if (deltaZ >= m_stepHeight)
+			if (deltaZ >= m_maxJumpHeight)
 			{
-				if (deltaZ >= m_maxJumpHeight)
-				{
-					// too high to reach
-					return -1.0f;
-				}
-
-				// jumping is slower than flat ground
-				const float jumpPenalty = neo_bot_path_penalty_jump_multiplier.GetFloat() * Square( deltaZ / m_maxJumpHeight );
-				dist *= jumpPenalty;
-			}
-			else if (deltaZ < -m_maxDropHeight)
-			{
-				// too far to drop
+				// too high to reach
 				return -1.0f;
 			}
+
+			// jumping is slower than flat ground
+			const float jumpPenalty = neo_bot_path_penalty_jump_multiplier.GetFloat() * Square( deltaZ / m_maxJumpHeight );
+			dist *= jumpPenalty;
 		}
-
-		// add a random penalty unique to this character so they choose different routes to the same place
-		float preference = 1.0f;
-
-		if (m_routeType == DEFAULT_ROUTE)
+		else if (deltaZ < -m_maxDropHeight)
 		{
-			// this term causes the same bot to choose different routes over time,
-			// but keep the same route for a period in case of repaths
-			int timeMod = (int)(gpGlobals->curtime / 10.0f) + 1;
-			preference = 1.0f + 50.0f * (1.0f + FastCos((float)(m_me->GetEntity()->entindex() * area->GetID() * timeMod)));
+			// too far to drop
+			return -1.0f;
+		}
+	}
+
+	// add a random penalty unique to this character so they choose different routes to the same place
+	float preference = 1.0f;
+
+	if (m_routeType == DEFAULT_ROUTE)
+	{
+		// this term causes the same bot to choose different routes over time,
+		// but keep the same route for a period in case of repaths
+		int timeMod = (int)(gpGlobals->curtime / 10.0f) + 1;
+		preference = 1.0f + 50.0f * (1.0f + FastCos((float)(m_me->GetEntity()->entindex() * area->GetID() * timeMod)));
+	}
+
+	if (m_routeType == SAFEST_ROUTE)
+	{
+		// misyl: combat areas.
+#if 0
+		// avoid combat areas
+		if (area->IsInCombat())
+		{
+			const float combatDangerCost = 4.0f;
+			dist *= combatDangerCost * area->GetCombatIntensity();
+		}
+#endif
+	}
+
+
+	float cost = (dist * preference);
+
+	// ------------------------------------------------------------------------------------------------
+	// New path reservation related cost adjustments
+	if ( !m_bIgnoreReservations && (m_routeType != FASTEST_ROUTE) )
+	{
+		cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber()) * neo_bot_path_reservation_penalty.GetFloat();
+		cost += CNEOBotPathReservations()->GetAreaAvoidPenalty(area->GetID());
+
+		// Weapon range penalties
+		auto* myWeapon = assert_cast<CNEOBaseCombatWeapon*>(m_me->GetActiveWeapon());
+		if (myWeapon)
+		{
+			const int nWeaponBits = myWeapon->GetNeoWepBits();
+			if (nWeaponBits & NEO_WEP_FIREARM)
+			{
+				const int visibleAreaCount = area->GetPotentiallyVisibleAreaCount();
+				if (visibleAreaCount > 0)
+				{
+					constexpr int nShotgunBits = NEO_WEP_AA13 | NEO_WEP_SUPA7;
+					constexpr int nBattleRifleBits = NEO_WEP_M41 | NEO_WEP_M41_S;
+					constexpr int nPistolCaliberBits = NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA
+						| NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_JITTE | NEO_WEP_JITTE_S | NEO_WEP_SRM | NEO_WEP_SRM_S;
+
+					if (nWeaponBits & nPistolCaliberBits)
+					{
+						// Weapons that don't have max first shot accuracy
+						const float exposurePenalty = neo_bot_path_penalty_exposure_pistol.GetFloat();
+						cost += visibleAreaCount * exposurePenalty;
+					}
+					else if (nWeaponBits & nShotgunBits)
+					{
+						// Weapons that have spread that can't hit long range targets
+						const float exposurePenalty = neo_bot_path_penalty_exposure_shotgun.GetFloat();
+						cost += visibleAreaCount * exposurePenalty;
+					}
+					else if (nWeaponBits & nBattleRifleBits)
+					{
+						// Weapons that benefit from medium sightlines that can see many NavAreas
+						const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_battle_rifle.GetFloat();
+						cost += baseline_penalty / visibleAreaCount;
+					}
+					else if (nWeaponBits & NEO_WEP_SCOPEDWEAPON)
+					{
+						// Weapons that benefit from long sightlines that can see many NavAreas
+						const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_scoped.GetFloat();
+						cost += baseline_penalty / visibleAreaCount;
+					}
+					else
+					{
+						// Generally avoiding exposed areas when traversing a wide open area
+						const float exposurePenalty = neo_bot_path_penalty_exposure_base.GetFloat();
+						cost += visibleAreaCount * exposurePenalty;
+					}
+				}
+			}
 		}
 
 		if (m_routeType == SAFEST_ROUTE)
 		{
-			// misyl: combat areas.
-#if 0
-			// avoid combat areas
-			if (area->IsInCombat())
-			{
-				const float combatDangerCost = 4.0f;
-				dist *= combatDangerCost * area->GetCombatIntensity();
-			}
-#endif
+			// NEO Jank Cheat: Incorporate enemy bot paths so that we don't run directly into their line of fire
+			// Intended for use by ghost carrier team, to emulate a team that knows where enemies are likely to ambush
+			// Compensates for bots' lack of meta knowledge by making them prefer routes not reserved by enemies
+			// Adheres to cheat against bots but not against humans philosophy by not considering human players' positions
+			cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), GetEnemyTeam(m_me->GetTeamNumber())) * neo_bot_path_reservation_penalty.GetFloat() * 2;
 		}
-
-
-		float cost = (dist * preference);
-
-		// ------------------------------------------------------------------------------------------------
-		// New path reservation related cost adjustments
-		if ( !m_bIgnoreReservations && (m_routeType != FASTEST_ROUTE) )
-		{
-			cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber()) * neo_bot_path_reservation_penalty.GetFloat();
-			cost += CNEOBotPathReservations()->GetAreaAvoidPenalty(area->GetID());
-
-			// Weapon range penalties
-			auto* myWeapon = assert_cast<CNEOBaseCombatWeapon*>(m_me->GetActiveWeapon());
-			if (myWeapon)
-			{
-				const int nWeaponBits = myWeapon->GetNeoWepBits();
-				if (nWeaponBits & NEO_WEP_FIREARM)
-				{
-					const int visibleAreaCount = area->GetPotentiallyVisibleAreaCount();
-					if (visibleAreaCount > 0)
-					{
-						constexpr int nShotgunBits = NEO_WEP_AA13 | NEO_WEP_SUPA7;
-						constexpr int nBattleRifleBits = NEO_WEP_M41 | NEO_WEP_M41_S;
-						constexpr int nPistolCaliberBits = NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA
-							| NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_JITTE | NEO_WEP_JITTE_S | NEO_WEP_SRM | NEO_WEP_SRM_S;
-
-						if (nWeaponBits & nPistolCaliberBits)
-						{
-							// Weapons that don't have max first shot accuracy
-							const float exposurePenalty = neo_bot_path_penalty_exposure_pistol.GetFloat();
-							cost += visibleAreaCount * exposurePenalty;
-						}
-						else if (nWeaponBits & nShotgunBits)
-						{
-							// Weapons that have spread that can't hit long range targets
-							const float exposurePenalty = neo_bot_path_penalty_exposure_shotgun.GetFloat();
-							cost += visibleAreaCount * exposurePenalty;
-						}
-						else if (nWeaponBits & nBattleRifleBits)
-						{
-							// Weapons that benefit from medium sightlines that can see many NavAreas
-							const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_battle_rifle.GetFloat();
-							cost += baseline_penalty / visibleAreaCount;
-						}
-						else if (nWeaponBits & NEO_WEP_SCOPEDWEAPON)
-						{
-							// Weapons that benefit from long sightlines that can see many NavAreas
-							const float baseline_penalty = neo_bot_path_penalty_exposure_inverse_base_scoped.GetFloat();
-							cost += baseline_penalty / visibleAreaCount;
-						}
-						else
-						{
-							// Generally avoiding exposed areas when traversing a wide open area
-							const float exposurePenalty = neo_bot_path_penalty_exposure_base.GetFloat();
-							cost += visibleAreaCount * exposurePenalty;
-						}
-					}
-				}
-			}
-
-			if (m_routeType == SAFEST_ROUTE)
-			{
-				// NEO Jank Cheat: Incorporate enemy bot paths so that we don't run directly into their line of fire
-				// Intended for use by ghost carrier team, to emulate a team that knows where enemies are likely to ambush
-				// Compensates for bots' lack of meta knowledge by making them prefer routes not reserved by enemies
-				// Adheres to cheat against bots but not against humans philosophy by not considering human players' positions
-				cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), GetEnemyTeam(m_me->GetTeamNumber())) * neo_bot_path_reservation_penalty.GetFloat() * 2;
-			}
-		}
-		// ------------------------------------------------------------------------------------------------
-
-		if (area->HasAttributes(NAV_MESH_FUNC_COST))
-		{
-			cost *= area->ComputeFuncNavCost(m_me);
-			DebuggerBreakOnNaN_StagingOnly(cost);
-		}
-
-		return cost + fromArea->GetCostSoFar();
 	}
+	// ------------------------------------------------------------------------------------------------
+
+	if (area->HasAttributes(NAV_MESH_FUNC_COST))
+	{
+		cost *= area->ComputeFuncNavCost(m_me);
+		DebuggerBreakOnNaN_StagingOnly(cost);
+	}
+
+	return cost + fromArea->GetCostSoFar();
 }

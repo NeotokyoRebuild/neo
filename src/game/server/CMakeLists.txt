@@ -1546,6 +1546,7 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/behavior/neo_bot_pause.cpp
     neo/bot/behavior/neo_bot_retreat_to_cover.cpp
     neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
+    neo/bot/behavior/neo_bot_retreat_from_hazard_area.cpp
     neo/bot/behavior/neo_bot_scenario_monitor.cpp
     neo/bot/behavior/neo_bot_seek_and_destroy.cpp
     neo/bot/behavior/neo_bot_seek_weapon.cpp

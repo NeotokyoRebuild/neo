@@ -23,6 +23,7 @@
 #include "neo_model_manager.h"
 #include "neo_ghost_spawn_point.h"
 #include "neo_ghost_cap_point.h"
+#include "neo/bot/neo_bot_path_reservation.h"
 #include "neo/weapons/weapon_ghost.h"
 #include "neo/weapons/weapon_neobasecombatweapon.h"
 #include "eventqueue.h"
@@ -2822,6 +2823,10 @@ void CNEORules::StartNextRound()
 	m_flNeoRoundStartTime = gpGlobals->curtime;
 	m_flNeoNextRoundStartTime = 0;
 	m_flGhostLastHeld = 0;
+
+#ifdef GAME_DLL
+	CNEOBotPathReservations()->ClearRound();
+#endif
 
 	CleanUpMap();
 	const bool bFromStarting = (m_nRoundStatus == NeoRoundStatus::Warmup
