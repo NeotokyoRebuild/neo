@@ -1,4 +1,7 @@
+#include "c_neo_killer_damage_infos.h"
+
 #include <cbase.h>
+#include "strtools.h"
 
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
@@ -7,6 +10,18 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+void NeoUserIDsLocalKilledClear()
+{
+	g_neoUserIDsLocalKilledSize = 0;
+	V_memset(g_neoUserIDsLocalKilled, 0, sizeof(g_neoUserIDsLocalKilled));
+}
+
+void NeoDamageReportClear()
+{
+	g_neoDamageReportSize = 0;
+	V_memset(g_neoDamageReport, 0, sizeof(g_neoDamageReport));
+}
 
 // Console + activation of damage info
 static void __MsgFunc_KillerDamageInfo(bf_read &msg)
@@ -93,19 +108,21 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 
 	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
 
+	NeoDamageReportClear();
 	AttackersTotals totals = {};
 
 	// Read per-player damage stats from the message (authoritative server data)
-	const int iAtkSize = static_cast<int>(msg.ReadShort());
+	const int iAtkSize = msg.ReadShort();
 	for (int i = 0; i < iAtkSize; ++i)
 	{
-		const short pIdx = msg.ReadShort();
-		const short dealtDmgs = msg.ReadShort();
-		const short dealtHits = msg.ReadShort();
-		const short takenDmgs = msg.ReadShort();
-		const short takenHits = msg.ReadShort();
+		AttackersTotals *pDmgReport = &g_neoDamageReport[g_neoDamageReportSize];
+		pDmgReport->iUserID = msg.ReadShort();
+		pDmgReport->dealtDmgs = msg.ReadShort();
+		pDmgReport->dealtHits = msg.ReadShort();
+		pDmgReport->takenDmgs = msg.ReadShort();
+		pDmgReport->takenHits = msg.ReadShort();
 
-		auto *neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		auto *neoAttacker = USERID2NEOPLAYER(pDmgReport->iUserID);
 		if (!neoAttacker || neoAttacker->IsHLTV())
 		{
 			continue;
@@ -120,24 +137,26 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 		const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 
 		char infoLine[128] = {};
-		if (dealtDmgs > 0)
+		if (pDmgReport->dealtDmgs > 0 && pDmgReport->dealtHits > 0)
 		{
 			V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
 					   dmgerName, dmgerClass,
-					   dealtDmgs, dealtHits);
+					   pDmgReport->dealtDmgs, pDmgReport->dealtHits);
 			ConMsg("%s", infoLine);
-			totals.takenDmgs += dealtDmgs;
-			totals.takenHits += dealtHits;
+			totals.takenDmgs += pDmgReport->dealtDmgs;
+			totals.takenHits += pDmgReport->dealtHits;
 		}
-		if (takenDmgs > 0)
+		if (pDmgReport->takenDmgs > 0 && pDmgReport->takenHits > 0)
 		{
 			V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
 					   dmgerName, dmgerClass,
-					   takenDmgs, takenHits);
+					   pDmgReport->takenDmgs, pDmgReport->takenHits);
 			ConMsg("%s", infoLine);
-			totals.dealtDmgs += takenDmgs;
-			totals.dealtHits += takenHits;
+			totals.dealtDmgs += pDmgReport->takenDmgs;
+			totals.dealtHits += pDmgReport->takenHits;
 		}
+
+		++g_neoDamageReportSize;
 	}
 
 	ConMsg("Total damage dealt: %d in %d hits\nTotal damage received from players: %d in %d hits\n%s\n",
@@ -146,3 +165,4 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 		BORDER);
 }
 USER_MESSAGE_REGISTER(KillerDamageInfo);
+

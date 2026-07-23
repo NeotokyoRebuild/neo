@@ -75,10 +75,6 @@ SendPropTime(SENDINFO(m_flJumpLastTime)),
 SendPropTime(SENDINFO(m_flNextPingTime)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
-
-SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_CHANGES_OFTEN), m_rfAttackersScores),
-SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersAccumlator), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersAccumlator),
-SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits), -1, SPROP_CHANGES_OFTEN), m_rfAttackersHits),
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_vLastPingByStar), -1, SPROP_COORD), m_vLastPingByStar),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
@@ -118,10 +114,6 @@ DEFINE_FIELD(m_flJumpLastTime, FIELD_TIME),
 DEFINE_FIELD(m_flNextPingTime, FIELD_TIME),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
-
-DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
-DEFINE_FIELD(m_rfAttackersAccumlator, FIELD_CUSTOM),
-DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
@@ -749,14 +741,32 @@ void CNEO_Player::Spawn(void)
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
-	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
-	for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
+	static_assert(_ARRAYSIZE(m_riAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_rflAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_riAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
+	V_memset(m_riAttackersScores, 0, sizeof(m_riAttackersScores));
+	V_memset(m_rflAttackersAccumlator, 0, sizeof(m_rflAttackersAccumlator));
+	V_memset(m_riAttackersHits, 0, sizeof(m_riAttackersHits));
+
+	// Also set zero on other player's held stats of this player's index, needed
+	// for gamemodes where player respawn within a round
+	const int thisIdx = entindex();
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
 	{
-		m_rfAttackersScores.GetForModify(i) = 0;
-		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
-		m_rfAttackersHits.GetForModify(i) = 0;
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto *pNeoOther = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(pIdx));
+		if (!pNeoOther || pNeoOther->IsHLTV())
+		{
+			continue;
+		}
+
+		pNeoOther->m_riAttackersScores[thisIdx] = 0;
+		pNeoOther->m_rflAttackersAccumlator[thisIdx] = 0.0f;
+		pNeoOther->m_riAttackersHits[thisIdx] = 0;
 	}
 
 	m_flRanOutSprintTime = 0.0f;
@@ -2349,7 +2359,6 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 		WRITE_STRING(killedWithName);
 
 		AttackersTotals atkTotals[MAX_PLAYERS_ARRAY_SAFE] = {};
-		int atkPlayerIdxs[MAX_PLAYERS_ARRAY_SAFE] = {};
 		int iAtkSize = 0;
 
 		// Send authoritative per-player damage stats directly from server
@@ -2367,30 +2376,27 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 				continue;
 			}
 
-			const int dealtDmgs = pNeoOther->GetAttackersScores(thisIdx);
-			const int dealtHits = pNeoOther->GetAttackerHits(thisIdx);
-			const int takenDmgs = GetAttackersScores(pIdx);
-			const int takenHits = GetAttackerHits(pIdx);
+			const int dealtDmgs = pNeoOther->m_riAttackersScores[thisIdx];
+			const int dealtHits = pNeoOther->m_riAttackersHits[thisIdx];
+			const int takenDmgs = m_riAttackersScores[pIdx];
+			const int takenHits = m_riAttackersHits[pIdx];
 
 			if ((dealtDmgs > 0 && dealtHits > 0) || (takenDmgs > 0 && takenHits > 0))
 			{
-				atkPlayerIdxs[iAtkSize] = pIdx;
-
-				AttackersTotals *atk = &atkTotals[iAtkSize];
+				AttackersTotals *atk = &atkTotals[iAtkSize++];
+				atk->iUserID = pNeoOther->GetUserID();
 				atk->dealtDmgs = dealtDmgs;
 				atk->dealtHits = dealtHits;
 				atk->takenDmgs = takenDmgs;
 				atk->takenHits = takenHits;
-
-				++iAtkSize;
 			}
 		}
 
 		WRITE_SHORT(iAtkSize);
 		for (int i = 0; i < iAtkSize; ++i)
 		{
-			WRITE_SHORT(atkPlayerIdxs[i]);
 			const AttackersTotals *atk = &atkTotals[i];
+			WRITE_SHORT(atk->iUserID);
 			WRITE_SHORT(static_cast<short>(atk->dealtDmgs));
 			WRITE_SHORT(static_cast<short>(atk->dealtHits));
 			WRITE_SHORT(static_cast<short>(atk->takenDmgs));
@@ -3355,46 +3361,6 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	return true;
 }
 
-int CNEO_Player::GetAttackersScores(const int attackerIdx) const
-{
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		return m_rfAttackersScores.Get(attackerIdx);
-	}
-	return m_rfAttackersScores.Get(attackerIdx);
-}
-
-int CNEO_Player::GetAttackerHits(const int attackerIdx) const
-{
-	return m_rfAttackersHits.Get(attackerIdx);
-}
-
-AttackersTotals CNEO_Player::GetAttackersTotals() const
-{
-	AttackersTotals totals = {};
-
-	const int thisIdx = entindex();
-	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
-	{
-		if (pIdx == thisIdx)
-		{
-			continue;
-		}
-
-		auto* neoAttacker = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
-		if (!neoAttacker || neoAttacker->IsHLTV())
-		{
-			continue;
-		}
-
-		totals.dealtDmgs += neoAttacker->GetAttackersScores(thisIdx);
-		totals.takenDmgs += GetAttackersScores(pIdx);
-		totals.dealtHits += neoAttacker->GetAttackerHits(thisIdx);
-		totals.takenHits += GetAttackerHits(pIdx);
-	}
-	return totals;
-}
-
 int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	NEORules()->SetLastHurt(entindex());
@@ -3425,7 +3391,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			const float flFractionalDamage = info.GetDamage() - floor(info.GetDamage());
 			int iDamage = static_cast<int>(info.GetDamage() - flFractionalDamage);
 
-			float flDmgAccumlator = m_rfAttackersAccumlator.Get(attackerIdx);
+			float flDmgAccumlator = m_rflAttackersAccumlator[attackerIdx];
 			flDmgAccumlator += flFractionalDamage;
 			if (flDmgAccumlator >= 1.0f)
 			{
@@ -3463,9 +3429,9 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
-				m_rfAttackersScores.GetForModify(attackerIdx) += Min(iDamage, GetHealth());
-				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
-				m_rfAttackersHits.GetForModify(attackerIdx) += info.GetNumDamageEvents();
+				m_riAttackersScores[attackerIdx] += Min(iDamage, GetHealth());
+				m_rflAttackersAccumlator[attackerIdx] = flDmgAccumlator;
+				m_riAttackersHits[attackerIdx] += info.GetNumDamageEvents();
 
 				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->IsRoundLive())
 				{

@@ -3,7 +3,7 @@
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
 #include "neo_theme.h"
-#include "c_neo_killer_infos.h"
+#include "c_neo_killer_damage_infos.h"
 
 #include <inputsystem/iinputsystem.h>
 #include <voice_status.h>
@@ -331,7 +331,14 @@ void CNEOScoreBoard::Update()
 	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 
+	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
+			&& NEORules()->InRoundState()
+			&& bLocalPlaying;
+
+	// Zero array every update
 	m_iTotalPlayers = 0;
+	V_memset(m_playersInfo, 0, sizeof(m_playersInfo));
+
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		if (false == g_PR->IsConnected(i))
@@ -373,44 +380,45 @@ void CNEOScoreBoard::Update()
 			pPlayerInfo->steamID.Clear();
 		}
 
-		const bool bIsPlaying = (TEAM_JINRAI == pPlayerInfo->iTeam || TEAM_NSF == pPlayerInfo->iTeam);
-		pPlayerInfo->iXP = bIsPlaying ? g_PR->GetXP(i) : 0;
-		pPlayerInfo->iDeaths = bIsPlaying ? g_PR->GetDeaths(i) : 0;
+		const bool bIsPlaying = (
+				TEAM_JINRAI == pPlayerInfo->iTeam
+				|| TEAM_NSF == pPlayerInfo->iTeam);
 
-		// Damage infos
-		const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
-				&& NEORules()->InRoundState()
-				&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI
-						|| pLocalPlayer->GetTeamNumber() == TEAM_NSF)
-				&& bIsTeamplay;
-
-		if (bShowDamageInfo && pNeoPlayer && false == pNeoPlayer->IsHLTV()
-				&& (pNeoPlayer->GetTeamNumber() == TEAM_JINRAI
-						|| pNeoPlayer->GetTeamNumber() == TEAM_NSF))
+		if (bIsPlaying)
 		{
-			pPlayerInfo->iDealtDmgs = pNeoPlayer->GetAttackersScores(pLocalPlayer->entindex());
-			pPlayerInfo->iDealtHits = pNeoPlayer->GetAttackerHits(pLocalPlayer->entindex());
-			pPlayerInfo->iTakenDmgs = pLocalPlayer->GetAttackersScores(pNeoPlayer->entindex());
-			pPlayerInfo->iTakenHits = pLocalPlayer->GetAttackerHits(pNeoPlayer->entindex());
-			pPlayerInfo->bKilledYou = (pNeoPlayer->entindex() == g_neoKillerInfos.iEntIndex);
-			pPlayerInfo->bYouKilled = false;
-			for (int j = 0; j < g_neoUserIDsLocalKilledSize; ++j)
+			pPlayerInfo->iXP = g_PR->GetXP(i);
+			pPlayerInfo->iDeaths = g_PR->GetDeaths(i);
+
+			// Damage infos
+			if (bShowDamageInfo)
 			{
-				if (g_neoUserIDsLocalKilled[j] == pPlayerInfo->iUserID)
+				AttackersTotals *pDmgReport = nullptr;
+				for (int j = 0; j < g_neoDamageReportSize; ++j)
 				{
-					pPlayerInfo->bYouKilled = true;
-					break;
+					if (g_neoDamageReport[j].iUserID == pPlayerInfo->iUserID)
+					{
+						pDmgReport = &g_neoDamageReport[j];
+						break;
+					}
+				}
+				if (pDmgReport)
+				{
+					pPlayerInfo->iDealtDmgs = pDmgReport->dealtDmgs;
+					pPlayerInfo->iDealtHits = pDmgReport->dealtHits;
+					pPlayerInfo->iTakenDmgs = pDmgReport->takenDmgs;
+					pPlayerInfo->iTakenHits = pDmgReport->takenHits;
+					pPlayerInfo->bKilledYou = pNeoPlayer ? (pNeoPlayer->entindex() == g_neoKillerInfos.iEntIndex) : false;
+					pPlayerInfo->bYouKilled = false;
+					for (int j = 0; j < g_neoUserIDsLocalKilledSize; ++j)
+					{
+						if (g_neoUserIDsLocalKilled[j] == pPlayerInfo->iUserID)
+						{
+							pPlayerInfo->bYouKilled = true;
+							break;
+						}
+					}
 				}
 			}
-		}
-		else
-		{
-			pPlayerInfo->iDealtDmgs = 0;
-			pPlayerInfo->iDealtHits = 0;
-			pPlayerInfo->iTakenDmgs = 0;
-			pPlayerInfo->iTakenHits = 0;
-			pPlayerInfo->bKilledYou = false;
-			pPlayerInfo->bYouKilled = false;
 		}
 
 		// pPlayerInfo->iClass
@@ -459,7 +467,7 @@ void CNEOScoreBoard::Update()
 
 		// pPlayerInfo->bDead
 		pPlayerInfo->bDead = (false == g_PR->IsAlive(i));
-		if (pPlayerInfo->iTeam == TEAM_JINRAI || pPlayerInfo->iTeam == TEAM_NSF)
+		if (bIsPlaying)
 		{
 			if (bIsImpersonating)
 			{
@@ -577,7 +585,6 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
 			&& NEORules()->InRoundState()
 			&& g_neoKillerInfos.bHasDmgInfos
-			&& bIsTeamplay
 			&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI
 					|| pLocalPlayer->GetTeamNumber() == TEAM_NSF);
 	static CrosshairInfo staticXhairInfo = {};

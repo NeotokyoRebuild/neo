@@ -48,7 +48,7 @@
 #include "rendertexture.h"
 #include "ivieweffects.h"
 #include "iachievementmgr.h"
-#include "c_neo_killer_infos.h"
+#include "c_neo_killer_damage_infos.h"
 #include <vgui/ILocalize.h>
 #include <tier3.h>
 
@@ -98,9 +98,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 	RecvPropTime(RECVINFO(m_flNextPingTime)),
 
-	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
-	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
-	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
 	RecvPropArray(RecvPropVector(RECVINFO(m_vLastPingByStar[0])), m_vLastPingByStar),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
@@ -475,7 +472,7 @@ C_NEO_Player::C_NEO_Player()
 	m_flTocFactor = 0.15f;
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
-	if (IsLocalPlayer()) NeoUserIDsLocalKilledClear();
+	ClearLocalPlayerDmgReports();
 	m_szNameDupePos = 0;
 }
 
@@ -569,15 +566,6 @@ void C_NEO_Player::CheckLeanButtons()
 	}
 }
 
-int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
-{
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		return m_rfAttackersScores.Get(attackerIdx);
-	}
-	return m_rfAttackersScores.Get(attackerIdx);
-}
-
 const char *C_NEO_Player::GetNeoClantag() const
 {
 	if (!sv_neo_clantag_allow.GetBool() ||
@@ -644,11 +632,6 @@ const char *C_NEO_Player::GetNeoPlayerName() const
 bool C_NEO_Player::ClientWantNeoName() const
 {
 	return m_bClientWantNeoName;
-}
-
-int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
-{
-	return m_rfAttackersHits.Get(attackerIdx);
 }
 
 ConVar cl_neo_hud_health_mode("cl_neo_hud_health_mode", "1", FCVAR_ARCHIVE,
@@ -1204,8 +1187,7 @@ void C_NEO_Player::PreThink( void )
 			CLocalPlayerFilter filter;
 			enginesound->SetPlayerDSP(filter, 0, true);
 
-			NeoUserIDsLocalKilledClear();
-			V_memset(&g_neoKillerInfos, 0, sizeof(CNEOKillerInfos));
+			ClearLocalPlayerDmgReports();
 
 			// Reset the cache of other players crosshair data on spawning in
 			if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
@@ -1616,16 +1598,7 @@ void C_NEO_Player::Spawn( void )
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 
-	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
-	for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
-	{
-		m_rfAttackersScores.GetForModify(i) = 0;
-		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
-		m_rfAttackersHits.GetForModify(i) = 0;
-	}
-	if (IsLocalPlayer()) NeoUserIDsLocalKilledClear();
+	ClearLocalPlayerDmgReports();
 
 	Weapon_SetZoom(false);
 
@@ -2161,5 +2134,15 @@ void C_NEO_Player::PlayerUse()
 			m_afButtonPressed &= ~IN_USE;
 			engine->ExecuteClientCmd(VarArgs("useplayer %i", pTargetPlayer->entindex()));
 		}
+	}
+}
+
+void C_NEO_Player::ClearLocalPlayerDmgReports()
+{
+	if (IsLocalPlayer())
+	{
+		NeoDamageReportClear();
+		NeoUserIDsLocalKilledClear();
+		V_memset(&g_neoKillerInfos, 0, sizeof(CNEOKillerInfos));
 	}
 }

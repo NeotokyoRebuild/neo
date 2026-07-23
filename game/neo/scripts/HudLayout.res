@@ -998,14 +998,9 @@
 		"tall"	"200"
 	}
 
-	neo_killer_damage_info
+	neo_killer_info
 	{
-		"fieldName"		"neo_killer_damage_info"
-		"xpos"	"20"
-		"ypos"	"150"
-		"wide"	"640"
-		"tall"	"480"
-		"box_color"		"150 150 150 60"
+		"fieldName"		"neo_killer_info"
 	}
 
 	neo_context_hint

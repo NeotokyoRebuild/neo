@@ -316,6 +316,7 @@ void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos);
 
 struct AttackersTotals
 {
+	int iUserID;
 	int dealtDmgs;
 	int dealtHits;
 	int takenDmgs;

@@ -226,13 +226,9 @@ public:
 	
 	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 
-	int GetAttackersScores(const int attackerIdx) const;
-	int GetAttackerHits(const int attackerIdx) const;
-
 	void SetNameDupePos(const int dupePos);
 	int NameDupePos() const;
 
-	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
 	void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
@@ -308,9 +304,9 @@ public:
 	CNetworkVar(float, m_flNextPingTime);
 
 	// Used as 1-indexed, need MAX_PLAYERS_ARRAY_SAFE
-	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS_ARRAY_SAFE);
-	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS_ARRAY_SAFE);
-	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS_ARRAY_SAFE);
+	int m_riAttackersScores[MAX_PLAYERS_ARRAY_SAFE];
+	float m_rflAttackersAccumlator[MAX_PLAYERS_ARRAY_SAFE];
+	int m_riAttackersHits[MAX_PLAYERS_ARRAY_SAFE];
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);

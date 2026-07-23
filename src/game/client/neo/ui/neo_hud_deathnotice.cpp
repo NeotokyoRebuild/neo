@@ -22,7 +22,7 @@
 #include "neo_hud_childelement.h"
 #include "spectatorgui.h"
 #include "takedamageinfo.h"
-#include "c_neo_killer_infos.h"
+#include "c_neo_killer_damage_infos.h"
 #include "neo_scoreboard.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
