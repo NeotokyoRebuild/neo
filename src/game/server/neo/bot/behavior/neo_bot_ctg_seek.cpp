@@ -89,7 +89,7 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 				}
 				else
 				{
-					return Done("Capture target was not a ghost");
+					return SuspendFor(new CNEOBotCtgLoneWolf, "Capture target is blocked by some other entity, searching around the nearest areas");
 				}
 			}
 		}
