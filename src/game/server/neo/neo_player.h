@@ -101,6 +101,7 @@ public:
 	virtual CBaseEntity* FindUseEntity() override;
 
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
+	virtual bool TestHitboxes(const Ray_t &ray, unsigned int fContentsMask, trace_t &tr) override;
 
 	virtual void ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo) OVERRIDE;
 
