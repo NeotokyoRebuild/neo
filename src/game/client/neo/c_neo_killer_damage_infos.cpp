@@ -143,8 +143,8 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 					   dmgerName, dmgerClass,
 					   pDmgReport->iDealtDmgs, pDmgReport->iDealtHits);
 			ConMsg("%s", infoLine);
-			totals.iTakenDmgs += pDmgReport->iDealtDmgs;
-			totals.iTakenHits += pDmgReport->iDealtHits;
+			totals.iDealtDmgs += pDmgReport->iDealtDmgs;
+			totals.iDealtHits += pDmgReport->iDealtHits;
 		}
 		if (pDmgReport->iTakenDmgs > 0 && pDmgReport->iTakenHits > 0)
 		{
@@ -152,8 +152,8 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 					   dmgerName, dmgerClass,
 					   pDmgReport->iTakenDmgs, pDmgReport->iTakenHits);
 			ConMsg("%s", infoLine);
-			totals.iDealtDmgs += pDmgReport->iTakenDmgs;
-			totals.iDealtHits += pDmgReport->iTakenHits;
+			totals.iTakenDmgs += pDmgReport->iTakenDmgs;
+			totals.iTakenDmgs += pDmgReport->iTakenHits;
 		}
 
 		++g_neoDamageReportSize;
