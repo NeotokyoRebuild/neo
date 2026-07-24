@@ -2361,7 +2361,8 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 		AttackersTotals atkTotals[MAX_PLAYERS_ARRAY_SAFE] = {};
 		int iAtkSize = 0;
 
-		// Send authoritative per-player damage stats directly from server
+		// Send server's per-player damage stats. This is the proper damage and
+		// hit count on player's death.
 		const int thisIdx = entindex();
 		for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
 		{
@@ -2376,19 +2377,19 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 				continue;
 			}
 
-			const int dealtDmgs = pNeoOther->m_riAttackersScores[thisIdx];
-			const int dealtHits = pNeoOther->m_riAttackersHits[thisIdx];
-			const int takenDmgs = m_riAttackersScores[pIdx];
-			const int takenHits = m_riAttackersHits[pIdx];
+			const int iDealtDmgs = pNeoOther->m_riAttackersScores[thisIdx];
+			const int iDealtHits = pNeoOther->m_riAttackersHits[thisIdx];
+			const int iTakenDmgs = m_riAttackersScores[pIdx];
+			const int iTakenHits = m_riAttackersHits[pIdx];
 
-			if ((dealtDmgs > 0 && dealtHits > 0) || (takenDmgs > 0 && takenHits > 0))
+			if ((iDealtDmgs > 0 && iDealtHits > 0) || (iTakenDmgs > 0 && iTakenHits > 0))
 			{
 				AttackersTotals *atk = &atkTotals[iAtkSize++];
 				atk->iUserID = pNeoOther->GetUserID();
-				atk->dealtDmgs = dealtDmgs;
-				atk->dealtHits = dealtHits;
-				atk->takenDmgs = takenDmgs;
-				atk->takenHits = takenHits;
+				atk->iDealtDmgs = iDealtDmgs;
+				atk->iDealtHits = iDealtHits;
+				atk->iTakenDmgs = iTakenDmgs;
+				atk->iTakenHits = iTakenHits;
 			}
 		}
 
@@ -2397,10 +2398,10 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 		{
 			const AttackersTotals *atk = &atkTotals[i];
 			WRITE_SHORT(atk->iUserID);
-			WRITE_SHORT(static_cast<short>(atk->dealtDmgs));
-			WRITE_SHORT(static_cast<short>(atk->dealtHits));
-			WRITE_SHORT(static_cast<short>(atk->takenDmgs));
-			WRITE_SHORT(static_cast<short>(atk->takenHits));
+			WRITE_SHORT(static_cast<short>(atk->iDealtDmgs));
+			WRITE_SHORT(static_cast<short>(atk->iDealtHits));
+			WRITE_SHORT(static_cast<short>(atk->iTakenDmgs));
+			WRITE_SHORT(static_cast<short>(atk->iTakenHits));
 		}
 	}
 	MessageEnd();

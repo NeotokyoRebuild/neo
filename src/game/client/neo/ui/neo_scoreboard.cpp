@@ -403,10 +403,10 @@ void CNEOScoreBoard::Update()
 				}
 				if (pDmgReport)
 				{
-					pPlayerInfo->iDealtDmgs = pDmgReport->dealtDmgs;
-					pPlayerInfo->iDealtHits = pDmgReport->dealtHits;
-					pPlayerInfo->iTakenDmgs = pDmgReport->takenDmgs;
-					pPlayerInfo->iTakenHits = pDmgReport->takenHits;
+					pPlayerInfo->iDealtDmgs = pDmgReport->iDealtDmgs;
+					pPlayerInfo->iDealtHits = pDmgReport->iDealtHits;
+					pPlayerInfo->iTakenDmgs = pDmgReport->iTakenDmgs;
+					pPlayerInfo->iTakenHits = pDmgReport->iTakenHits;
 					pPlayerInfo->bKilledYou = pNeoPlayer ? (pNeoPlayer->entindex() == g_neoKillerInfos.iEntIndex) : false;
 					pPlayerInfo->bYouKilled = false;
 					for (int j = 0; j < g_neoUserIDsLocalKilledSize; ++j)

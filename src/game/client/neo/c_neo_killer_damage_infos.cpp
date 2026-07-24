@@ -111,16 +111,16 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	NeoDamageReportClear();
 	AttackersTotals totals = {};
 
-	// Read per-player damage stats from the message (authoritative server data)
+	// Read (server side) per-player damage stats
 	const int iAtkSize = msg.ReadShort();
 	for (int i = 0; i < iAtkSize; ++i)
 	{
 		AttackersTotals *pDmgReport = &g_neoDamageReport[g_neoDamageReportSize];
 		pDmgReport->iUserID = msg.ReadShort();
-		pDmgReport->dealtDmgs = msg.ReadShort();
-		pDmgReport->dealtHits = msg.ReadShort();
-		pDmgReport->takenDmgs = msg.ReadShort();
-		pDmgReport->takenHits = msg.ReadShort();
+		pDmgReport->iDealtDmgs = msg.ReadShort();
+		pDmgReport->iDealtHits = msg.ReadShort();
+		pDmgReport->iTakenDmgs = msg.ReadShort();
+		pDmgReport->iTakenHits = msg.ReadShort();
 
 		auto *neoAttacker = USERID2NEOPLAYER(pDmgReport->iUserID);
 		if (!neoAttacker || neoAttacker->IsHLTV())
@@ -137,31 +137,31 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 		const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 
 		char infoLine[128] = {};
-		if (pDmgReport->dealtDmgs > 0 && pDmgReport->dealtHits > 0)
+		if (pDmgReport->iDealtDmgs > 0 && pDmgReport->iDealtHits > 0)
 		{
 			V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
 					   dmgerName, dmgerClass,
-					   pDmgReport->dealtDmgs, pDmgReport->dealtHits);
+					   pDmgReport->iDealtDmgs, pDmgReport->iDealtHits);
 			ConMsg("%s", infoLine);
-			totals.takenDmgs += pDmgReport->dealtDmgs;
-			totals.takenHits += pDmgReport->dealtHits;
+			totals.iTakenDmgs += pDmgReport->iDealtDmgs;
+			totals.iTakenHits += pDmgReport->iDealtHits;
 		}
-		if (pDmgReport->takenDmgs > 0 && pDmgReport->takenHits > 0)
+		if (pDmgReport->iTakenDmgs > 0 && pDmgReport->iTakenHits > 0)
 		{
 			V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
 					   dmgerName, dmgerClass,
-					   pDmgReport->takenDmgs, pDmgReport->takenHits);
+					   pDmgReport->iTakenDmgs, pDmgReport->iTakenHits);
 			ConMsg("%s", infoLine);
-			totals.dealtDmgs += pDmgReport->takenDmgs;
-			totals.dealtHits += pDmgReport->takenHits;
+			totals.iDealtDmgs += pDmgReport->iTakenDmgs;
+			totals.iDealtHits += pDmgReport->iTakenHits;
 		}
 
 		++g_neoDamageReportSize;
 	}
 
 	ConMsg("Total damage dealt: %d in %d hits\nTotal damage received from players: %d in %d hits\n%s\n",
-		totals.dealtDmgs, totals.dealtHits,
-		totals.takenDmgs, totals.takenHits,
+		totals.iDealtDmgs, totals.iDealtHits,
+		totals.iTakenDmgs, totals.iTakenHits,
 		BORDER);
 }
 USER_MESSAGE_REGISTER(KillerDamageInfo);
