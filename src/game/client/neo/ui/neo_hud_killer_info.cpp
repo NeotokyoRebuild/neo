@@ -3,7 +3,7 @@
 
 #include "iclientmode.h"
 
-#include "c_neo_killer_infos.h"
+#include "c_neo_killer_damage_infos.h"
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
 #include "vgui/ILocalize.h"
@@ -17,7 +17,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-DECLARE_NAMED_HUDELEMENT(CNEOHud_KillerInfo, neo_killer_damage_info)
+DECLARE_NAMED_HUDELEMENT(CNEOHud_KillerInfo, neo_killer_info)
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(KillerInfo, 0.25)
 

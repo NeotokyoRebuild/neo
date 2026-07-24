@@ -172,9 +172,6 @@ public:
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
 
-	int GetAttackersScores(const int attackerIdx) const;
-	int GetAttackerHits(const int attackerIdx) const;
-
 	const char *InternalGetNeoPlayerName() const;
 	const char *GetNeoPlayerName() const;
 	bool ClientWantNeoName() const;
@@ -212,6 +209,8 @@ private:
 
 	bool IsAllowedToSuperJump(void);
 
+	void ClearLocalPlayerDmgReports();
+
 	// Spectator takeover player related functionality
 	bool IsAFK() const;
 	bool IsFakePlayer() const;
@@ -224,10 +223,6 @@ public:
 	CNetworkVar(int, m_iXP);
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
-
-	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS_ARRAY_SAFE);
-	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS_ARRAY_SAFE);
-	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS_ARRAY_SAFE);
 	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 

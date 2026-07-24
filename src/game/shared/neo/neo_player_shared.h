@@ -316,18 +316,11 @@ void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos);
 
 struct AttackersTotals
 {
-	int dealtDmgs;
-	int dealtHits;
-	int takenDmgs;
-	int takenHits;
-
-	void operator+=(const AttackersTotals &other)
-	{
-		dealtDmgs += other.dealtDmgs;
-		dealtHits += other.dealtHits;
-		takenDmgs += other.takenDmgs;
-		takenHits += other.takenHits;
-	}
+	int iUserID;
+	int iDealtDmgs;
+	int iDealtHits;
+	int iTakenDmgs;
+	int iTakenHits;
 };
 
 [[deprecated]] void KillerLineStr(char* killByLine, const int killByLineMax,

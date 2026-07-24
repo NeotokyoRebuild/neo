@@ -3968,7 +3968,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	m_bGotMatchWinner = gotMatchWinner;
 	m_iMatchWinner = team;
 }
-#endif
 
 // NEO JANK (nullsystem): Dont like how this is fetched twice (PlayerKilled, DeathNotice),
 // but blame the structure of the base classes
@@ -3994,7 +3993,7 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 			continue;
 		}
 
-		const int assistDmg = victim->GetAttackersScores(assistIdx);
+		const int assistDmg = victim->m_riAttackersScores[assistIdx];
 		static const float MIN_DMG_QUALIFY_ASSIST = 0.5f;
 		if ((float)assistDmg / victim->GetMaxHealth() >= MIN_DMG_QUALIFY_ASSIST)
 		{
@@ -4004,7 +4003,6 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 	return NULL;
 }
 
-#ifdef GAME_DLL
 void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 {
 	if (!NEO_GAME_TYPE_SETTINGS[GetGameType()].capPrevent)
@@ -4069,6 +4067,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 {
 	BaseClass::PlayerKilled(pVictim, info);
 
+#ifdef GAME_DLL
 	auto attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker());
 	auto victim = dynamic_cast<CNEO_Player*>(pVictim);
 	auto grenade = dynamic_cast<CBaseGrenade *>(info.GetInflictor());
@@ -4080,10 +4079,8 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 
 	if (m_nRoundStatus == NeoRoundStatus::Pause)
 	{
-#ifdef GAME_DLL
 		// Counter-act the death count for pausing state
 		victim->IncrementDeathCount(-1);
-#endif
 		return;
 	}
 
@@ -4091,24 +4088,19 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 	if (attacker == victim || (!attacker && !grenade))
 	{
 		victim->AddPoints(-1, true);
-#ifdef GAME_DLL
 		CheckIfCapPrevent(victim);
-#endif
 	}
-#ifdef GAME_DLL
 	else if (!attacker && grenade && grenade->GetTeamNumber() == victim->GetTeamNumber())
 	{
 		// Death by own team's grenade, but the player is already disconnected. Check for cap prevent.
 		CheckIfCapPrevent(victim);
 	}
-#endif
 	else if (attacker)
 	{
 		// Team kill
 		if (IsTeamplay() && attacker->GetTeamNumber() == victim->GetTeamNumber())
 		{
 			attacker->AddPoints(-1, true);
-#ifdef GAME_DLL
 			if (sv_neo_teamdamage_kick.GetBool() && IsRoundLive())
 			{
 				++attacker->m_iTeamKillsInflicted;
@@ -4127,13 +4119,11 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 					break;
 				}
 			}
-#endif
 		}
 		// Enemy kill
 		else
 		{
 			attacker->AddPoints(1, false);
-#ifdef GAME_DLL
 			if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
 			{
 				if (attacker->GetClass() == NEO_CLASS_JUGGERNAUT)
@@ -4152,7 +4142,6 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 					}
 				}
 			}
-#endif
 		}
 	}
 
@@ -4177,6 +4166,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 			assister->AddPoints(1, false, true);
 		}
 	}
+#endif // GAME_DLL
 }
 
 #ifdef GAME_DLL

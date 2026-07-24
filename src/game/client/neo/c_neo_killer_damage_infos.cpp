@@ -1,4 +1,7 @@
+#include "c_neo_killer_damage_infos.h"
+
 #include <cbase.h>
+#include "strtools.h"
 
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
@@ -7,6 +10,18 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+void NeoUserIDsLocalKilledClear()
+{
+	g_neoUserIDsLocalKilledSize = 0;
+	V_memset(g_neoUserIDsLocalKilled, 0, sizeof(g_neoUserIDsLocalKilled));
+}
+
+void NeoDamageReportClear()
+{
+	g_neoDamageReportSize = 0;
+	V_memset(g_neoDamageReport, 0, sizeof(g_neoDamageReport));
+}
 
 // Console + activation of damage info
 static void __MsgFunc_KillerDamageInfo(bf_read &msg)
@@ -23,8 +38,6 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 
 	// Print damage stats into the console
 	// Print to console
-	AttackersTotals totals = {};
-
 	const int thisIdx = localPlayer->entindex();
 
 	// Can't rely on Msg as it can print out of order, so do it in chunks
@@ -94,15 +107,22 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	}
 
 	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
-	
-	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
-	{
-		if (pIdx == thisIdx)
-		{
-			continue;
-		}
 
-		auto* neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
+	NeoDamageReportClear();
+	AttackersTotals totals = {};
+
+	// Read (server side) per-player damage stats
+	const int iAtkSize = msg.ReadShort();
+	for (int i = 0; i < iAtkSize; ++i)
+	{
+		AttackersTotals *pDmgReport = &g_neoDamageReport[g_neoDamageReportSize];
+		pDmgReport->iUserID = msg.ReadLong();
+		pDmgReport->iDealtDmgs = msg.ReadShort();
+		pDmgReport->iDealtHits = msg.ReadShort();
+		pDmgReport->iTakenDmgs = msg.ReadShort();
+		pDmgReport->iTakenHits = msg.ReadShort();
+
+		auto *neoAttacker = USERID2NEOPLAYER(pDmgReport->iUserID);
 		if (!neoAttacker || neoAttacker->IsHLTV())
 		{
 			continue;
@@ -114,38 +134,35 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 			continue;
 		}
 
-		const AttackersTotals attackerInfo = {
-			.dealtDmgs = neoAttacker->GetAttackersScores(thisIdx),
-			.dealtHits = neoAttacker->GetAttackerHits(thisIdx),
-			.takenDmgs = localPlayer->GetAttackersScores(pIdx),
-			.takenHits = localPlayer->GetAttackerHits(pIdx),
-		};
-		if (attackerInfo.dealtDmgs > 0 || attackerInfo.takenDmgs > 0)
+		const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+
+		char infoLine[128] = {};
+		if (pDmgReport->iDealtDmgs > 0 && pDmgReport->iDealtHits > 0)
 		{
-			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
-
-			char infoLine[128] = {};
-			if (attackerInfo.dealtDmgs > 0)
-			{
-				V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
-						   dmgerName, dmgerClass,
-						   attackerInfo.dealtDmgs, attackerInfo.dealtHits);
-			}
-			if (attackerInfo.takenDmgs > 0)
-			{
-				V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
-						   dmgerName, dmgerClass,
-						   attackerInfo.takenDmgs, attackerInfo.takenHits);
-			}
+			V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
+					   dmgerName, dmgerClass,
+					   pDmgReport->iDealtDmgs, pDmgReport->iDealtHits);
 			ConMsg("%s", infoLine);
-
-			totals += attackerInfo;
+			totals.iTakenDmgs += pDmgReport->iDealtDmgs;
+			totals.iTakenHits += pDmgReport->iDealtHits;
 		}
+		if (pDmgReport->iTakenDmgs > 0 && pDmgReport->iTakenHits > 0)
+		{
+			V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
+					   dmgerName, dmgerClass,
+					   pDmgReport->iTakenDmgs, pDmgReport->iTakenHits);
+			ConMsg("%s", infoLine);
+			totals.iDealtDmgs += pDmgReport->iTakenDmgs;
+			totals.iDealtHits += pDmgReport->iTakenHits;
+		}
+
+		++g_neoDamageReportSize;
 	}
 
 	ConMsg("Total damage dealt: %d in %d hits\nTotal damage received from players: %d in %d hits\n%s\n",
-		totals.dealtDmgs, totals.dealtHits,
-		totals.takenDmgs, totals.takenHits,
+		totals.iDealtDmgs, totals.iDealtHits,
+		totals.iTakenDmgs, totals.iTakenHits,
 		BORDER);
 }
 USER_MESSAGE_REGISTER(KillerDamageInfo);
+

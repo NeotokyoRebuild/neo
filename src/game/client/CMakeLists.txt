@@ -1574,8 +1574,7 @@ set(UNITY_SOURCE_NEO_SRC_CLIENT
     neo/c_neo_te_tocflash.cpp
     neo/neo_fixup_glshaders.cpp
     neo/c_neo_bloom_controller.cpp
-    neo/neo_killer_damage_info.cpp
-    neo/c_neo_killer_infos.cpp
+    neo/c_neo_killer_damage_infos.cpp
 )
 
 set_source_files_properties(
@@ -1592,7 +1591,7 @@ target_sources_grouped(
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.h
     neo/neo_fixup_glshaders.h
-    neo/c_neo_killer_infos.h
+    neo/c_neo_killer_damage_infos.h
     ${UNITY_SOURCE_NEO_SRC_CLIENT}
 )
 
