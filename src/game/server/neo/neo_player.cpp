@@ -2393,11 +2393,11 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 			}
 		}
 
-		WRITE_SHORT(iAtkSize);
+		WRITE_SHORT(static_cast<short>(iAtkSize));
 		for (int i = 0; i < iAtkSize; ++i)
 		{
 			const AttackersTotals *atk = &atkTotals[i];
-			WRITE_SHORT(atk->iUserID);
+			WRITE_LONG(atk->iUserID);
 			WRITE_SHORT(static_cast<short>(atk->iDealtDmgs));
 			WRITE_SHORT(static_cast<short>(atk->iDealtHits));
 			WRITE_SHORT(static_cast<short>(atk->iTakenDmgs));

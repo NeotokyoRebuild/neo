@@ -116,7 +116,7 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	for (int i = 0; i < iAtkSize; ++i)
 	{
 		AttackersTotals *pDmgReport = &g_neoDamageReport[g_neoDamageReportSize];
-		pDmgReport->iUserID = msg.ReadShort();
+		pDmgReport->iUserID = msg.ReadLong();
 		pDmgReport->iDealtDmgs = msg.ReadShort();
 		pDmgReport->iDealtHits = msg.ReadShort();
 		pDmgReport->iTakenDmgs = msg.ReadShort();
