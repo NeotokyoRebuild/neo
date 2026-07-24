@@ -112,7 +112,7 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	AttackersTotals totals = {};
 
 	// Read (server side) per-player damage stats
-	const int iAtkSize = msg.ReadShort();
+	const int iAtkSize = Min(msg.ReadShort(), MAX_PLAYERS);
 	for (int i = 0; i < iAtkSize; ++i)
 	{
 		AttackersTotals *pDmgReport = &g_neoDamageReport[g_neoDamageReportSize];
