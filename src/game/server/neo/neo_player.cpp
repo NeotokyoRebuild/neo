@@ -75,10 +75,6 @@ SendPropTime(SENDINFO(m_flJumpLastTime)),
 SendPropTime(SENDINFO(m_flNextPingTime)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
-
-SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersScores)), m_rfAttackersScores),
-SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersAccumlator), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersAccumlator),
-SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits),
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_vLastPingByStar), -1, SPROP_COORD), m_vLastPingByStar),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
@@ -118,10 +114,6 @@ DEFINE_FIELD(m_flJumpLastTime, FIELD_TIME),
 DEFINE_FIELD(m_flNextPingTime, FIELD_TIME),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
-
-DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
-DEFINE_FIELD(m_rfAttackersAccumlator, FIELD_CUSTOM),
-DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
@@ -749,14 +741,32 @@ void CNEO_Player::Spawn(void)
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
-	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
-	for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
+	static_assert(_ARRAYSIZE(m_riAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_rflAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
+	static_assert(_ARRAYSIZE(m_riAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
+	V_memset(m_riAttackersScores, 0, sizeof(m_riAttackersScores));
+	V_memset(m_rflAttackersAccumlator, 0, sizeof(m_rflAttackersAccumlator));
+	V_memset(m_riAttackersHits, 0, sizeof(m_riAttackersHits));
+
+	// Also set zero on other player's held stats of this player's index, needed
+	// for gamemodes where player respawn within a round
+	const int thisIdx = entindex();
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
 	{
-		m_rfAttackersScores.GetForModify(i) = 0;
-		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
-		m_rfAttackersHits.GetForModify(i) = 0;
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto *pNeoOther = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(pIdx));
+		if (!pNeoOther || pNeoOther->IsHLTV())
+		{
+			continue;
+		}
+
+		pNeoOther->m_riAttackersScores[thisIdx] = 0;
+		pNeoOther->m_rflAttackersAccumlator[thisIdx] = 0.0f;
+		pNeoOther->m_riAttackersHits[thisIdx] = 0;
 	}
 
 	m_flRanOutSprintTime = 0.0f;
@@ -2347,6 +2357,106 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 		}
 		WRITE_SHORT(attackerIdx);
 		WRITE_STRING(killedWithName);
+
+		AttackersTotals atkTotals[MAX_PLAYERS_ARRAY_SAFE] = {};
+		int iAtkSize = 0;
+		int iMaxDmgs = 0;
+		int iMaxHits = 0;
+
+		// Send server's per-player damage stats. This is the proper damage and
+		// hit count on player's death.
+		const int thisIdx = entindex();
+		for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+		{
+			if (pIdx == thisIdx)
+			{
+				continue;
+			}
+
+			auto *pNeoOther = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(pIdx));
+			if (!pNeoOther || pNeoOther->IsHLTV())
+			{
+				continue;
+			}
+
+			const int iDealtDmgs = pNeoOther->m_riAttackersScores[thisIdx];
+			const int iDealtHits = pNeoOther->m_riAttackersHits[thisIdx];
+			const int iTakenDmgs = m_riAttackersScores[pIdx];
+			const int iTakenHits = m_riAttackersHits[pIdx];
+
+			if ((iDealtDmgs > 0 && iDealtHits > 0) || (iTakenDmgs > 0 && iTakenHits > 0))
+			{
+				AttackersTotals *atk = &atkTotals[iAtkSize++];
+				atk->iUserID = pNeoOther->GetUserID();
+				atk->iDealtDmgs = iDealtDmgs;
+				atk->iDealtHits = iDealtHits;
+				atk->iTakenDmgs = iTakenDmgs;
+				atk->iTakenHits = iTakenHits;
+
+				iMaxDmgs = Max(iMaxDmgs, Max(iTakenDmgs, iDealtDmgs));
+				iMaxHits = Max(iMaxHits, Max(iTakenHits, iDealtHits));
+			}
+		}
+
+		// CTG will never hit more than 255 per person, and improbable for hits per person
+		// But for juggernaut or respawns in a round, this can happen
+		ENEOCompactMsgFlag flags = 0;
+		if (iMaxDmgs <= UCHAR_MAX) flags |= NEO_COMPACT_MSG_FLAG_DMGS;
+		if (iMaxHits <= UCHAR_MAX) flags |= NEO_COMPACT_MSG_FLAG_HITS;
+
+		const int iWriteSize = 2 + (V_strlen(killedWithName) + 1) + 1 + 1;
+
+		int iDmgInfoWriteSize = 4;
+		iDmgInfoWriteSize += (flags & NEO_COMPACT_MSG_FLAG_DMGS) ? 2 : 4;
+		iDmgInfoWriteSize += (flags & NEO_COMPACT_MSG_FLAG_HITS) ? 2 : 4;
+
+		// Improbable it'll happen but just in-case
+		int iAtkFirstSize = iAtkSize;
+		if ((iWriteSize + (iAtkSize * iDmgInfoWriteSize)) > MAX_USER_MSG_DATA)
+		{
+			const int iFreeSpace = MAX_USER_MSG_DATA - iWriteSize;
+			iAtkFirstSize = iFreeSpace / iDmgInfoWriteSize;
+			flags |= NEO_COMPACT_MSG_FLAG_EXTRA;
+		}
+
+		// MAX_PLAYERS fits in a byte
+		WRITE_BYTE(static_cast<char>(iAtkFirstSize));
+		WRITE_BYTE(flags);
+
+		for (int i = 0; i < iAtkSize; ++i)
+		{
+			if (i == iAtkFirstSize)
+			{
+				MessageEnd();
+				UserMessageBegin(filter, "KillerDamageInfoExtra");
+				WRITE_BYTE(static_cast<char>(iAtkSize - iAtkFirstSize));
+				WRITE_BYTE(flags);
+			}
+
+			const AttackersTotals *atk = &atkTotals[i];
+			WRITE_LONG(atk->iUserID);
+			if (flags & NEO_COMPACT_MSG_FLAG_DMGS)
+			{
+				WRITE_BYTE(static_cast<unsigned char>(atk->iDealtDmgs));
+				WRITE_BYTE(static_cast<unsigned char>(atk->iTakenDmgs));
+			}
+			else
+			{
+				WRITE_SHORT(static_cast<short>(atk->iDealtDmgs));
+				WRITE_SHORT(static_cast<short>(atk->iTakenDmgs));
+			}
+
+			if (flags & NEO_COMPACT_MSG_FLAG_HITS)
+			{
+				WRITE_BYTE(static_cast<unsigned char>(atk->iDealtHits));
+				WRITE_BYTE(static_cast<unsigned char>(atk->iTakenHits));
+			}
+			else
+			{
+				WRITE_SHORT(static_cast<short>(atk->iDealtHits));
+				WRITE_SHORT(static_cast<short>(atk->iTakenHits));
+			}
+		}
 	}
 	MessageEnd();
 }
@@ -3306,46 +3416,6 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	return true;
 }
 
-int CNEO_Player::GetAttackersScores(const int attackerIdx) const
-{
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		return m_rfAttackersScores.Get(attackerIdx);
-	}
-	return m_rfAttackersScores.Get(attackerIdx);
-}
-
-int CNEO_Player::GetAttackerHits(const int attackerIdx) const
-{
-	return m_rfAttackersHits.Get(attackerIdx);
-}
-
-AttackersTotals CNEO_Player::GetAttackersTotals() const
-{
-	AttackersTotals totals = {};
-
-	const int thisIdx = entindex();
-	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
-	{
-		if (pIdx == thisIdx)
-		{
-			continue;
-		}
-
-		auto* neoAttacker = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
-		if (!neoAttacker || neoAttacker->IsHLTV())
-		{
-			continue;
-		}
-
-		totals.dealtDmgs += neoAttacker->GetAttackersScores(thisIdx);
-		totals.takenDmgs += GetAttackersScores(pIdx);
-		totals.dealtHits += neoAttacker->GetAttackerHits(thisIdx);
-		totals.takenHits += GetAttackerHits(pIdx);
-	}
-	return totals;
-}
-
 int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	NEORules()->SetLastHurt(entindex());
@@ -3369,6 +3439,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		if (auto *attacker = ToNEOPlayer(info.GetAttacker()))
 		{
 			CNEO_Player* pImpersonated = attacker->GetSpectatorTakeoverPlayerTarget();
+			const int attackerRecIdx = attacker->entindex(); // Record goes to the impersonator's original index
 			const int attackerIdx = pImpersonated ? pImpersonated->entindex() : attacker->entindex();
 			NEORules()->SetLastAttacker(entindex()); // NEO TODO (Adam) Once we can spectate non-players, let last attacker be non-neoplayer (Jeff)
 
@@ -3376,7 +3447,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			const float flFractionalDamage = info.GetDamage() - floor(info.GetDamage());
 			int iDamage = static_cast<int>(info.GetDamage() - flFractionalDamage);
 
-			float flDmgAccumlator = m_rfAttackersAccumlator.Get(attackerIdx);
+			float flDmgAccumlator = m_rflAttackersAccumlator[attackerRecIdx];
 			flDmgAccumlator += flFractionalDamage;
 			if (flDmgAccumlator >= 1.0f)
 			{
@@ -3414,9 +3485,9 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
-				m_rfAttackersScores.GetForModify(attackerIdx) += Min(iDamage, GetHealth());
-				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
-				m_rfAttackersHits.GetForModify(attackerIdx) += info.GetNumDamageEvents();
+				m_riAttackersScores[attackerRecIdx] += Min(iDamage, GetHealth());
+				m_rflAttackersAccumlator[attackerRecIdx] = flDmgAccumlator;
+				m_riAttackersHits[attackerRecIdx] += info.GetNumDamageEvents();
 
 				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->IsRoundLive())
 				{
@@ -4289,6 +4360,29 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			m_bInVision = pPlayerTakeoverTarget->m_bInVision;
 			m_nVisionLastTick = pPlayerTakeoverTarget->m_nVisionLastTick;
 
+			// Just clear this so the attackers scores/hits are based on only when it's
+			// impersonated not including the bot controlled part
+			const int thisIdx = entindex();
+			V_memset(m_riAttackersScores, 0, sizeof(m_riAttackersScores));
+			V_memset(m_rflAttackersAccumlator, 0, sizeof(m_rflAttackersAccumlator));
+			V_memset(m_riAttackersHits, 0, sizeof(m_riAttackersHits));
+			for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+			{
+				if (pIdx == thisIdx)
+				{
+					continue;
+				}
+
+				auto *pNeoOther = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(pIdx));
+				if (!pNeoOther || pNeoOther->IsHLTV())
+				{
+					continue;
+				}
+
+				pNeoOther->m_riAttackersScores[thisIdx] = 0;
+				pNeoOther->m_rflAttackersAccumlator[thisIdx] = 0.0f;
+				pNeoOther->m_riAttackersHits[thisIdx] = 0;
+			}
 
 			// Transfer weapons from the takeover target.
 			RemoveAllItems(false);

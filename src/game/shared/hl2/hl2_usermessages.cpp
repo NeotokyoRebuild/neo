@@ -49,6 +49,7 @@ void RegisterUserMessages( void )
 
 #ifdef NEO
 	usermessages->Register( "KillerDamageInfo", -1 );
+	usermessages->Register( "KillerDamageInfoExtra", -1 );
 	usermessages->Register( "IdleRespawnShowMenu", -1 );
 	usermessages->Register( "CSpectatorTakeoverPlayer", -1 );
 	usermessages->Register( "AchievementMark", -1 );
