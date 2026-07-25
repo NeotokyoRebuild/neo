@@ -1677,7 +1677,7 @@ void NeoSettings_HUD(NeoSettings *ns)
 	NeoUI::RingBox(L"Extended killfeed", EXT_KILLFEED_LABELS, ARRAYSIZE(EXT_KILLFEED_LABELS), &pHud->iExtendedKillfeed);
 	NeoUI::RingBox(L"Scoreboard padding", NEOSCOREBOARDPADDING_LABELS, NEOSCOREBOARDPADDING__TOTAL, &pHud->iScoreboardPadding);
 
-	NeoUI::Divider(L"Contextual hints");
+	NeoUI::Divider(L"CONTEXTUAL HINTS");
 	NeoUI::RingBoxBool(L"Show HUD contextual hints", &pHud->bShowHudContextHints);
 	if (pHud->bShowHudContextHints)
 	{

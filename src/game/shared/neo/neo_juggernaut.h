@@ -68,7 +68,6 @@ private:
 	float m_flHoldStartTime = 0.0f;
 	bool m_bActivationRemoval = false;
 
-	hudtextparms_t	m_textParms;
 	COutputEvent m_OnPlayerActivate;
 #endif
 };
