@@ -2856,28 +2856,6 @@ static void CNEOBotApplyOnStuckAreaPenalty( CNEOBot *me )
 	{
 		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
 	}
-	else
-	{
-		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
-		if ( nearestArea )
-		{
-			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
-		}
-	}
-
-	if ( const PathFollower *path = me->GetCurrentPath() )
-	{
-		if ( const Path::Segment *currentGoal = path->GetCurrentGoal() )
-		{
-			if ( const Path::Segment *nextSegment = path->NextSegment( currentGoal ) )
-			{
-				if ( nextSegment->area )
-				{
-					CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nextSegment->area->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
-				}
-			}
-		}
-	}
 }
 
 void CNEOBotIntention::OnStuck()
