@@ -2425,7 +2425,7 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 
 		for (int i = 0; i < iAtkSize; ++i)
 		{
-			if (i >= iAtkFirstSize)
+			if (i == iAtkFirstSize)
 			{
 				MessageEnd();
 				UserMessageBegin(filter, "KillerDamageInfoExtra");
