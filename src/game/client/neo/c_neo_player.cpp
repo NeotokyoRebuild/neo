@@ -1996,7 +1996,10 @@ void __MsgFunc_CSpectatorTakeoverPlayer(bf_read &msg)
 		// Save for later in C_NEO_Player::OnDataChanged
 		pSpectatorTakingOver->m_hSpectatorTakeoverPlayerTarget = pPlayerTakeoverTarget;
 		pSpectatorTakingOver->m_bCopyOverTakeoverPlayerDetails = true;
-		NeoAllKDReportsClear();
+		if (pSpectatorTakingOver->IsLocalPlayer())
+		{
+			NeoAllKDReportsClear();
+		}
 	}
 }
 
