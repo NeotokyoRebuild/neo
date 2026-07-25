@@ -1,4 +1,3 @@
-buildallprojects text
 vpc binary
 
 *.sh text
