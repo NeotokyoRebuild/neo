@@ -271,38 +271,6 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 		me->PressRightButton();
 	}
 
-	// NEO Jank: For the current match, all bots share where they get stuck
-	// The reasoning is that bots on either team will get stuck in their respective half of the map
-	// so the overall fairness may balance out for both teams sharing common sticking points.
-	if ( const CNavArea *navArea = me->GetLastKnownArea() )
-	{
-		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
-	}
-	else
-	{
-		// Fallback if GetLastKnownArea is null, try finding nearest nav area
-		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
-		if ( nearestArea )
-		{
-			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
-		}
-	}
-
-	// Also penalize the immediate next nav area bot was trying to get to
-	if ( const PathFollower *path = me->GetCurrentPath() )
-	{
-		if ( const Path::Segment *currentGoal = path->GetCurrentGoal() )
-		{
-			if ( const Path::Segment *nextSegment = path->NextSegment( currentGoal ) )
-			{
-				if ( nextSegment->area )
-				{
-					CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nextSegment->area->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
-				}
-			}
-		}
-	}
-
 	return TryContinue();
 }
 
