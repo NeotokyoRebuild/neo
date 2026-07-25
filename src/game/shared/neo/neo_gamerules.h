@@ -88,6 +88,21 @@ class CNEOBotCtgLoneWolf;
 class CNEOBotCtgLoneWolfAmbush;
 class CNEOBotCtgLoneWolfSeek;
 class CNEOBotSeekAndDestroy;
+class CNEO_KOTHMaster;
+
+// this is not good, but it is used ONLY to indicate who controls the checkpoint.
+// when its possible I prefer default TEAM_NSF/JINRAI vars
+enum KothControllingTeams
+{
+	KOTH_NONE = 0,
+	KOTH_BOTH,
+	KOTH_NSF,
+	KOTH_JINRAI,
+};
+
+extern ConVar sv_neo_koth_seconds_per_point;
+extern ConVar sv_neo_koth_zone_switch_time;
+extern ConVar sv_neo_koth_zone_pause_time;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
@@ -97,6 +112,8 @@ extern ConVar sv_neo_teamdamage_kick;
 #else
 class C_NEO_Player;
 #endif
+
+extern ConVar sv_neo_koth_max_score;
 
 extern ConVar sv_neo_player_restore;
 
@@ -108,6 +125,7 @@ enum NeoGameType {
 	NEO_GAME_TYPE_EMT,
 	NEO_GAME_TYPE_TUT,
 	NEO_GAME_TYPE_JGR,
+	NEO_GAME_TYPE_KOTH,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -279,6 +297,7 @@ public:
 	void ResetGhost();
 	void ResetVIP();
 	void ResetJGR();
+	void ResetKOTH();
 
 	void CheckRestartGame();
 
@@ -363,6 +382,12 @@ public:
 
 	bool InReadyUpState() const;
 	bool InRoundState() const;
+#ifdef GAME_DLL
+	// called by the currently active neo_info_koth_zone once it has accumulated whole points
+	void AddKothScore(const int team, const int points);
+#endif
+	int GetKothTimeJinrai() const { return m_iKothTimeJinrai; }
+	int GetKothTimeNSF() const { return m_iKothTimeNSF; }
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -484,6 +509,7 @@ public:
 	const int GetLastGhoster() const { return m_iLastGhoster; }
 #ifdef GAME_DLL
 private:
+	CNEO_KOTHMaster *m_pKothMaster = nullptr;
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
 	float m_flJuggernautDeathTime = 0.0f;
@@ -545,6 +571,10 @@ private:
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(float, m_flGhostLastHeld);
 	CNetworkHandle( CWeaponGhost, m_hGhost );
+
+	// KOTH networked variables
+	CNetworkVar(int, m_iKothTimeJinrai);
+	CNetworkVar(int, m_iKothTimeNSF);
 
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);

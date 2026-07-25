@@ -23,6 +23,7 @@
 #include "neo_model_manager.h"
 #include "neo_ghost_spawn_point.h"
 #include "neo_ghost_cap_point.h"
+#include "neo_koth_master.h"
 #include "neo/weapons/weapon_ghost.h"
 #include "neo/weapons/weapon_neobasecombatweapon.h"
 #include "eventqueue.h"
@@ -151,6 +152,12 @@ ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1
 										 "while the other team is holding the ghost, reward the ghost holder team "
 										 "a rank up.",
 										 true, 0.0f, true, 1.0f);
+// koth
+ConVar sv_neo_koth_seconds_per_point("sv_neo_koth_point_multiplyer", "1.75", FCVAR_REPLICATED, "Seconds to get 1 point");
+ConVar sv_neo_koth_zone_switch_time("sv_neo_koth_zone_switch_time", "45", FCVAR_REPLICATED,
+	"How often (in seconds) neo_koth_master rotates the active KOTH zone.", true, 5.0f, false, 0.0f);
+ConVar sv_neo_koth_zone_pause_time("sv_neo_koth_zone_pause_time", "5", FCVAR_REPLICATED,
+	"How long (in seconds) neo_koth_master waits after closing a zone before opening the next one.", true, 0.0f, false, 0.0f);
 
 #define DEF_TEAMPLAYERTHRES 5
 static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
@@ -166,6 +173,7 @@ ConVar sv_neo_server_autorecord("sv_neo_server_autorecord", "0", FCVAR_NONE, "Au
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
 ConVar sv_neo_readyup_lobby("sv_neo_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_koth_max_score("sv_neo_koth_max_score", "100", FCVAR_REPLICATED, "The points needed to win this round");
 ConVar sv_neo_pausematch_enabled("sv_neo_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
@@ -314,6 +322,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iLastAttacker)),
 	RecvPropInt(RECVINFO(m_iLastKiller)),
 	RecvPropInt(RECVINFO(m_iLastGhoster)),
+	RecvPropInt(RECVINFO(m_iKothTimeJinrai)),
+	RecvPropInt(RECVINFO(m_iKothTimeNSF)),
 	RecvPropInt(RECVINFO(m_iClassLimitRecon)),
 	RecvPropInt(RECVINFO(m_iClassLimitAssault)),
 	RecvPropInt(RECVINFO(m_iClassLimitSupport)),
@@ -357,6 +367,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iLastAttacker), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iLastKiller), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_iLastGhoster), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_iKothTimeJinrai)),
+	SendPropInt(SENDINFO(m_iKothTimeNSF)),
 	SendPropInt(SENDINFO(m_iClassLimitRecon)),
 	SendPropInt(SENDINFO(m_iClassLimitAssault)),
 	SendPropInt(SENDINFO(m_iClassLimitSupport)),
@@ -413,6 +425,7 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 /*NEO_GAME_TYPE_EMT*/	{"EMT",			true,		false,			true,							false,	false},
 /*NEO_GAME_TYPE_TUT*/	{"TUT",			true,		false,			false,							false,	false},
 /*NEO_GAME_TYPE_JGR*/	{"JGR",			true,		true,			false,							true,	false},
+/*NEO_GAME_TYPE_KOTH*/	{"KOTH",		true,		true,			false,							false,	false},
 };
 
 #ifdef CLIENT_DLL
@@ -525,6 +538,9 @@ ConVar neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATE
 	true, 0.0f, false, 600.0f);
 
 ConVar neo_jgr_round_timelimit("neo_jgr_round_timelimit", "4.25", FCVAR_REPLICATED, "JGR round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
+
+ConVar neo_koth_round_timelimit("neo_koth_round_timelimit", "5", FCVAR_REPLICATED, "KOTH round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
@@ -1087,6 +1103,7 @@ void CNEORules::CheckGameType()
 		m_nGameTypeSelected = (pEntGameCfg) ? pEntGameCfg->m_GameType : NEO_GAME_TYPE_EMT;
 	} break;
 	}
+
 	m_bGamemodeTypeBeenInitialized = true;
 	iStaticInitOnCmd = iGamemodeEnforce;
 	iStaticInitOnRandAllow = iGamemodeRandAllow;
@@ -1120,6 +1137,21 @@ bool CNEORules::CheckShouldNotThink()
 	}
 	return false;
 }
+
+#ifdef GAME_DLL
+void CNEORules::AddKothScore(const int team, const int points)
+{
+	if (points <= 0)
+		return;
+
+	if (team == TEAM_JINRAI)
+		m_iKothTimeJinrai = Min(m_iKothTimeJinrai + points, sv_neo_koth_max_score.GetInt());
+	else if (team == TEAM_NSF)
+		m_iKothTimeNSF = Min(m_iKothTimeNSF + points, sv_neo_koth_max_score.GetInt());
+	else
+		Warning("Got unexpected KOTH team in score count: %d\n", team);
+}
+#endif
 
 void CNEORules::Think(void)
 {
@@ -1414,6 +1446,23 @@ void CNEORules::Think(void)
 				return;
 			}
 		}
+		if (GetGameType() == NEO_GAME_TYPE_KOTH)
+		{
+			if (m_iKothTimeJinrai > m_iKothTimeNSF)
+			{
+				SetWinningTeam(TEAM_JINRAI, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
+
+			if (m_iKothTimeNSF > m_iKothTimeJinrai)
+			{
+				SetWinningTeam(TEAM_NSF, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
+
+			SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, true, true, false);
+			return;
+		}
 		else if (GetGameType() == NEO_GAME_TYPE_DM)
 		{
 			// Winning player
@@ -1565,7 +1614,6 @@ void CNEORules::Think(void)
 			m_pJuggernautItem->m_bLocked = false;
 		}
 	}
-
 	if (GetGameType() == NEO_GAME_TYPE_JGR && IsRoundLive())
 	{
 		if (GetGlobalTeam(TEAM_JINRAI)->GetScore() >= sv_neo_jgr_max_points.GetInt())
@@ -1680,7 +1728,8 @@ void CNEORules::Think(void)
 	else if (IsRoundLive())
 	{
 		COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
-		if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM && GetGameType() != NEO_GAME_TYPE_JGR)
+		if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM &&
+			GetGameType() != NEO_GAME_TYPE_JGR && GetGameType() != NEO_GAME_TYPE_KOTH)
 		{
 			auto jinraiAlive = GetGlobalTeam(TEAM_JINRAI)->GetAliveMembers();
 			auto nsfAlive = GetGlobalTeam(TEAM_NSF)->GetAliveMembers();
@@ -1703,6 +1752,29 @@ void CNEORules::Think(void)
 			if (iWinningXP >= sv_neo_dm_win_xp.GetInt() && iWinningTotal == 1)
 			{
 				SetWinningDMPlayer(pHighestPlayers[0]);
+			}
+		}
+		if (GetGameType() == NEO_GAME_TYPE_KOTH)
+		{
+			if (m_iKothTimeJinrai >= sv_neo_koth_max_score.GetInt() && m_iKothTimeNSF >= sv_neo_koth_max_score.GetInt())
+			{
+				// impossible but we should do something here...
+				SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, true, true, false);
+				return;
+			}
+
+			if (m_iKothTimeNSF >= sv_neo_koth_max_score.GetInt())
+			{
+				m_iKothTimeNSF = sv_neo_koth_max_score.GetInt();
+				SetWinningTeam(TEAM_NSF, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
+
+			if (m_iKothTimeJinrai >= sv_neo_koth_max_score.GetInt())
+			{
+				m_iKothTimeJinrai = sv_neo_koth_max_score.GetInt();
+				SetWinningTeam(TEAM_JINRAI, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
 			}
 		}
 	}
@@ -1859,6 +1931,9 @@ float CNEORules::GetRoundRemainingTime() const
 				break;
 			case NEO_GAME_TYPE_JGR:
 				roundTimeLimit = neo_jgr_round_timelimit.GetFloat() * 60.f;
+				break;
+			case NEO_GAME_TYPE_KOTH:
+				roundTimeLimit = neo_koth_round_timelimit.GetFloat() * 60.f;
 				break;
 			default:
 				break;
@@ -3026,6 +3101,9 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Deathmatch"),
 	SZWSZ_INIT("Free Roam"),
 	SZWSZ_INIT("Training"),
+	// neo todo: I added this line and then commented it out because I thought it might have been missed on purpose
+	// SZWSZ_INIT("Juggernaut"),
+	SZWSZ_INIT("King of the Hill"),
 };
 
 const char *CNEORules::GetGameDescription(void)
@@ -3295,6 +3373,11 @@ void CNEORules::SetGameRelatedVars()
 		ResetJGR();
 		SpawnTheJuggernaut();
 	}
+
+	if (GetGameType() == NEO_GAME_TYPE_KOTH)
+	{
+		ResetKOTH();
+	}
 }
 
 void CNEORules::ResetTDM()
@@ -3343,6 +3426,17 @@ void CNEORules::ResetJGR()
 			pPlayer->m_iXP.GetForModify() = 10;
 		}
 	}
+}
+
+void CNEORules::ResetKOTH() {
+	m_iKothTimeJinrai = 0;
+	m_iKothTimeNSF = 0;
+	// neo TODO: give xp for holding the point?
+
+	if (!m_pKothMaster)
+		m_pKothMaster = dynamic_cast<CNEO_KOTHMaster*>(gEntList.FindEntityByClassname(nullptr, "neo_koth_master"));
+
+	m_pKothMaster->ResetAllZones();
 }
 
 void CNEORules::RestartGame()
