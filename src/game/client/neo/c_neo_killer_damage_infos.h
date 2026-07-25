@@ -18,6 +18,9 @@ struct CNEOKillerInfos
 
 void NeoUserIDsLocalKilledClear();
 void NeoDamageReportClear();
+void NeoKillerInfoClear();
+
+void NeoAllKDReportsClear();
 
 // Global instance of CNEOKillerInfos and local-player's kill record
 inline CNEOKillerInfos g_neoKillerInfos;

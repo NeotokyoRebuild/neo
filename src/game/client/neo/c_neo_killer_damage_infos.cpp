@@ -26,6 +26,18 @@ void NeoDamageReportClear()
 	V_memset(g_neoDamageReport, 0, sizeof(g_neoDamageReport));
 }
 
+void NeoKillerInfoClear()
+{
+	V_memset(&g_neoKillerInfos, 0, sizeof(CNEOKillerInfos));
+}
+
+void NeoAllKDReportsClear()
+{
+	NeoDamageReportClear();
+	NeoUserIDsLocalKilledClear();
+	NeoKillerInfoClear();
+}
+
 static ENEOCompactMsgFlag ReadDamageReport(bf_read &msg)
 {
 	// Read (server side) per-player damage stats
@@ -129,7 +141,7 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 
 	bool setKillByLine = false;
 
-	V_memset(&g_neoKillerInfos, 0, sizeof(CNEOKillerInfos));
+	NeoKillerInfoClear();
 	g_neoKillerInfos.bHasDmgInfos = true;
 
 	if (killerIdx > 0 && killerIdx <= gpGlobals->maxClients)

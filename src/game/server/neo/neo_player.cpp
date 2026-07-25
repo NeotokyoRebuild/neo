@@ -3439,6 +3439,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		if (auto *attacker = ToNEOPlayer(info.GetAttacker()))
 		{
 			CNEO_Player* pImpersonated = attacker->GetSpectatorTakeoverPlayerTarget();
+			const int attackerRecIdx = attacker->entindex(); // Record goes to the impersonator's original index
 			const int attackerIdx = pImpersonated ? pImpersonated->entindex() : attacker->entindex();
 			NEORules()->SetLastAttacker(entindex()); // NEO TODO (Adam) Once we can spectate non-players, let last attacker be non-neoplayer (Jeff)
 
@@ -3446,7 +3447,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			const float flFractionalDamage = info.GetDamage() - floor(info.GetDamage());
 			int iDamage = static_cast<int>(info.GetDamage() - flFractionalDamage);
 
-			float flDmgAccumlator = m_rflAttackersAccumlator[attackerIdx];
+			float flDmgAccumlator = m_rflAttackersAccumlator[attackerRecIdx];
 			flDmgAccumlator += flFractionalDamage;
 			if (flDmgAccumlator >= 1.0f)
 			{
@@ -3484,9 +3485,9 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
-				m_riAttackersScores[attackerIdx] += Min(iDamage, GetHealth());
-				m_rflAttackersAccumlator[attackerIdx] = flDmgAccumlator;
-				m_riAttackersHits[attackerIdx] += info.GetNumDamageEvents();
+				m_riAttackersScores[attackerRecIdx] += Min(iDamage, GetHealth());
+				m_rflAttackersAccumlator[attackerRecIdx] = flDmgAccumlator;
+				m_riAttackersHits[attackerRecIdx] += info.GetNumDamageEvents();
 
 				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->IsRoundLive())
 				{
@@ -4359,6 +4360,29 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			m_bInVision = pPlayerTakeoverTarget->m_bInVision;
 			m_nVisionLastTick = pPlayerTakeoverTarget->m_nVisionLastTick;
 
+			// Just clear this so the attackers scores/hits are based on only when it's
+			// impersonated not including the bot controlled part
+			const int thisIdx = entindex();
+			V_memset(m_riAttackersScores, 0, sizeof(m_riAttackersScores));
+			V_memset(m_rflAttackersAccumlator, 0, sizeof(m_rflAttackersAccumlator));
+			V_memset(m_riAttackersHits, 0, sizeof(m_riAttackersHits));
+			for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+			{
+				if (pIdx == thisIdx)
+				{
+					continue;
+				}
+
+				auto *pNeoOther = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(pIdx));
+				if (!pNeoOther || pNeoOther->IsHLTV())
+				{
+					continue;
+				}
+
+				pNeoOther->m_riAttackersScores[thisIdx] = 0;
+				pNeoOther->m_rflAttackersAccumlator[thisIdx] = 0.0f;
+				pNeoOther->m_riAttackersHits[thisIdx] = 0;
+			}
 
 			// Transfer weapons from the takeover target.
 			RemoveAllItems(false);

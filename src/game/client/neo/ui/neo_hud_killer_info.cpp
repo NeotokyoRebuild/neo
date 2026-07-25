@@ -58,7 +58,7 @@ void CNEOHud_KillerInfo::CommonSetupHUD()
 
 void CNEOHud_KillerInfo::resetHUDState()
 {
-	V_memset(&g_neoKillerInfos, 0, sizeof(CNEOKillerInfos));
+	NeoKillerInfoClear();
 }
 
 void CNEOHud_KillerInfo::UpdateStateForNeoHudElementDraw()
