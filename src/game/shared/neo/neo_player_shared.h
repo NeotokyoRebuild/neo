@@ -323,6 +323,17 @@ struct AttackersTotals
 	int iTakenHits;
 };
 
+enum ENEOCompactMsgFlag_ : unsigned char
+{
+	NEO_COMPACT_MSG_FLAG_NIL = 0,
+	NEO_COMPACT_MSG_FLAG_DMGS = (1 << 0),
+	NEO_COMPACT_MSG_FLAG_HITS = (1 << 1),
+	NEO_COMPACT_MSG_FLAG_EXTRA = (1 << 2),
+};
+
+typedef unsigned char ENEOCompactMsgFlag;
+
+
 [[deprecated]] void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith = "");
 

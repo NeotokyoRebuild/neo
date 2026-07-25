@@ -11,6 +11,9 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+static inline AttackersTotals gTotals;
+static const char *BORDER = "==========================\n";
+
 void NeoUserIDsLocalKilledClear()
 {
 	g_neoUserIDsLocalKilledSize = 0;
@@ -21,6 +24,87 @@ void NeoDamageReportClear()
 {
 	g_neoDamageReportSize = 0;
 	V_memset(g_neoDamageReport, 0, sizeof(g_neoDamageReport));
+}
+
+static ENEOCompactMsgFlag ReadDamageReport(bf_read &msg)
+{
+	// Read (server side) per-player damage stats
+	const int iAtkSize = Min(msg.ReadByte(), MAX_PLAYERS);
+	const ENEOCompactMsgFlag flags = static_cast<ENEOCompactMsgFlag>(msg.ReadByte());
+
+	for (int i = 0; i < iAtkSize; ++i)
+	{
+		AttackersTotals *pDmgReport = &g_neoDamageReport[g_neoDamageReportSize];
+		pDmgReport->iUserID = msg.ReadLong();
+
+		if (flags & NEO_COMPACT_MSG_FLAG_DMGS)
+		{
+			pDmgReport->iDealtDmgs = static_cast<unsigned char>(msg.ReadByte());
+			pDmgReport->iTakenDmgs = static_cast<unsigned char>(msg.ReadByte());
+		}
+		else
+		{
+			pDmgReport->iDealtDmgs = msg.ReadShort();
+			pDmgReport->iTakenDmgs = msg.ReadShort();
+		}
+
+		if (flags & NEO_COMPACT_MSG_FLAG_HITS)
+		{
+			pDmgReport->iDealtHits = static_cast<unsigned char>(msg.ReadByte());
+			pDmgReport->iTakenHits = static_cast<unsigned char>(msg.ReadByte());
+		}
+		else
+		{
+			pDmgReport->iDealtHits = msg.ReadShort();
+			pDmgReport->iTakenHits = msg.ReadShort();
+		}
+
+		auto *neoAttacker = USERID2NEOPLAYER(pDmgReport->iUserID);
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		const char *dmgerName = neoAttacker->GetNeoPlayerName();
+		if (!dmgerName)
+		{
+			continue;
+		}
+
+		const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+
+		char infoLine[128] = {};
+		if (pDmgReport->iDealtDmgs > 0 && pDmgReport->iDealtHits > 0)
+		{
+			V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
+					   dmgerName, dmgerClass,
+					   pDmgReport->iDealtDmgs, pDmgReport->iDealtHits);
+			ConMsg("%s", infoLine);
+			gTotals.iDealtDmgs += pDmgReport->iDealtDmgs;
+			gTotals.iDealtHits += pDmgReport->iDealtHits;
+		}
+		if (pDmgReport->iTakenDmgs > 0 && pDmgReport->iTakenHits > 0)
+		{
+			V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
+					   dmgerName, dmgerClass,
+					   pDmgReport->iTakenDmgs, pDmgReport->iTakenHits);
+			ConMsg("%s", infoLine);
+			gTotals.iTakenDmgs += pDmgReport->iTakenDmgs;
+			gTotals.iTakenHits += pDmgReport->iTakenHits;
+		}
+
+		++g_neoDamageReportSize;
+	}
+
+	return flags;
+}
+
+static void PrintTotalReport()
+{
+	ConMsg("Total damage dealt: %d in %d hits\nTotal damage received from players: %d in %d hits\n%s\n",
+		gTotals.iDealtDmgs, gTotals.iDealtHits,
+		gTotals.iTakenDmgs, gTotals.iTakenHits,
+		BORDER);
 }
 
 // Console + activation of damage info
@@ -43,7 +127,6 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	// Can't rely on Msg as it can print out of order, so do it in chunks
 	static char killByLine[512];
 
-	static const char *BORDER = "==========================\n";
 	bool setKillByLine = false;
 
 	V_memset(&g_neoKillerInfos, 0, sizeof(CNEOKillerInfos));
@@ -109,60 +192,20 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
 
 	NeoDamageReportClear();
-	AttackersTotals totals = {};
-
-	// Read (server side) per-player damage stats
-	const int iAtkSize = Min(msg.ReadShort(), MAX_PLAYERS);
-	for (int i = 0; i < iAtkSize; ++i)
+	gTotals = {};
+	const ENEOCompactMsgFlag flags = ReadDamageReport(msg);
+	if (!(flags & NEO_COMPACT_MSG_FLAG_EXTRA))
 	{
-		AttackersTotals *pDmgReport = &g_neoDamageReport[g_neoDamageReportSize];
-		pDmgReport->iUserID = msg.ReadLong();
-		pDmgReport->iDealtDmgs = msg.ReadShort();
-		pDmgReport->iDealtHits = msg.ReadShort();
-		pDmgReport->iTakenDmgs = msg.ReadShort();
-		pDmgReport->iTakenHits = msg.ReadShort();
-
-		auto *neoAttacker = USERID2NEOPLAYER(pDmgReport->iUserID);
-		if (!neoAttacker || neoAttacker->IsHLTV())
-		{
-			continue;
-		}
-
-		const char *dmgerName = neoAttacker->GetNeoPlayerName();
-		if (!dmgerName)
-		{
-			continue;
-		}
-
-		const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
-
-		char infoLine[128] = {};
-		if (pDmgReport->iDealtDmgs > 0 && pDmgReport->iDealtHits > 0)
-		{
-			V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
-					   dmgerName, dmgerClass,
-					   pDmgReport->iDealtDmgs, pDmgReport->iDealtHits);
-			ConMsg("%s", infoLine);
-			totals.iDealtDmgs += pDmgReport->iDealtDmgs;
-			totals.iDealtHits += pDmgReport->iDealtHits;
-		}
-		if (pDmgReport->iTakenDmgs > 0 && pDmgReport->iTakenHits > 0)
-		{
-			V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
-					   dmgerName, dmgerClass,
-					   pDmgReport->iTakenDmgs, pDmgReport->iTakenHits);
-			ConMsg("%s", infoLine);
-			totals.iTakenDmgs += pDmgReport->iTakenDmgs;
-			totals.iTakenDmgs += pDmgReport->iTakenHits;
-		}
-
-		++g_neoDamageReportSize;
+		PrintTotalReport();
 	}
-
-	ConMsg("Total damage dealt: %d in %d hits\nTotal damage received from players: %d in %d hits\n%s\n",
-		totals.iDealtDmgs, totals.iDealtHits,
-		totals.iTakenDmgs, totals.iTakenHits,
-		BORDER);
 }
+
+static void __MsgFunc_KillerDamageInfoExtra(bf_read &msg)
+{
+	ReadDamageReport(msg);
+	PrintTotalReport();
+}
+
 USER_MESSAGE_REGISTER(KillerDamageInfo);
+USER_MESSAGE_REGISTER(KillerDamageInfoExtra);
 

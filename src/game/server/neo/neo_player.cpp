@@ -2360,6 +2360,8 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 
 		AttackersTotals atkTotals[MAX_PLAYERS_ARRAY_SAFE] = {};
 		int iAtkSize = 0;
+		int iMaxDmgs = 0;
+		int iMaxHits = 0;
 
 		// Send server's per-player damage stats. This is the proper damage and
 		// hit count on player's death.
@@ -2390,18 +2392,70 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 				atk->iDealtHits = iDealtHits;
 				atk->iTakenDmgs = iTakenDmgs;
 				atk->iTakenHits = iTakenHits;
+
+				iMaxDmgs = Max(iMaxDmgs, Max(iTakenDmgs, iDealtDmgs));
+				iMaxHits = Max(iMaxHits, Max(iTakenHits, iDealtHits));
 			}
 		}
 
-		WRITE_SHORT(static_cast<short>(iAtkSize));
+		// CTG will never hit more than 255 per person, and improbable for hits per person
+		// But for juggernaut or respawns in a round, this can happen
+		ENEOCompactMsgFlag flags = 0;
+		if (iMaxDmgs <= UCHAR_MAX) flags |= NEO_COMPACT_MSG_FLAG_DMGS;
+		if (iMaxHits <= UCHAR_MAX) flags |= NEO_COMPACT_MSG_FLAG_HITS;
+
+		const int iWriteSize = 2 + (V_strlen(killedWithName) + 1) + 1 + 1;
+
+		int iDmgInfoWriteSize = 4;
+		iDmgInfoWriteSize += (flags & NEO_COMPACT_MSG_FLAG_DMGS) ? 2 : 4;
+		iDmgInfoWriteSize += (flags & NEO_COMPACT_MSG_FLAG_HITS) ? 2 : 4;
+
+		// Improbable it'll happen but just in-case
+		int iAtkFirstSize = iAtkSize;
+		if ((iWriteSize + (iAtkSize * iDmgInfoWriteSize)) > MAX_USER_MSG_DATA)
+		{
+			const int iFreeSpace = MAX_USER_MSG_DATA - iWriteSize;
+			iAtkFirstSize = iFreeSpace / iDmgInfoWriteSize;
+			flags |= NEO_COMPACT_MSG_FLAG_EXTRA;
+		}
+
+		// MAX_PLAYERS fits in a byte
+		WRITE_BYTE(static_cast<char>(iAtkFirstSize));
+		WRITE_BYTE(flags);
+
 		for (int i = 0; i < iAtkSize; ++i)
 		{
+			if (i >= iAtkFirstSize)
+			{
+				MessageEnd();
+				UserMessageBegin(filter, "KillerDamageInfoExtra");
+				WRITE_BYTE(static_cast<char>(iAtkSize - iAtkFirstSize));
+				WRITE_BYTE(flags);
+			}
+
 			const AttackersTotals *atk = &atkTotals[i];
 			WRITE_LONG(atk->iUserID);
-			WRITE_SHORT(static_cast<short>(atk->iDealtDmgs));
-			WRITE_SHORT(static_cast<short>(atk->iDealtHits));
-			WRITE_SHORT(static_cast<short>(atk->iTakenDmgs));
-			WRITE_SHORT(static_cast<short>(atk->iTakenHits));
+			if (flags & NEO_COMPACT_MSG_FLAG_DMGS)
+			{
+				WRITE_BYTE(static_cast<unsigned char>(atk->iDealtDmgs));
+				WRITE_BYTE(static_cast<unsigned char>(atk->iTakenDmgs));
+			}
+			else
+			{
+				WRITE_SHORT(static_cast<short>(atk->iDealtDmgs));
+				WRITE_SHORT(static_cast<short>(atk->iTakenDmgs));
+			}
+
+			if (flags & NEO_COMPACT_MSG_FLAG_HITS)
+			{
+				WRITE_BYTE(static_cast<unsigned char>(atk->iDealtHits));
+				WRITE_BYTE(static_cast<unsigned char>(atk->iTakenHits));
+			}
+			else
+			{
+				WRITE_SHORT(static_cast<short>(atk->iDealtHits));
+				WRITE_SHORT(static_cast<short>(atk->iTakenHits));
+			}
 		}
 	}
 	MessageEnd();
