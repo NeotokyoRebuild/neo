@@ -41,7 +41,7 @@ CSound* CNEOBotSeekAndDestroy::SearchGunfireSounds(CNEOBot* me, const Vector* cu
 			break;
 		}
 
-		if (!(pSound->SoundType() & SOUND_COMBAT))
+		if (!(pSound->SoundType() & (SOUND_COMBAT | SOUND_PLAYER)))
 		{
 			continue;
 		}

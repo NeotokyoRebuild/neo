@@ -90,6 +90,40 @@ enum
 #define SOUNDENT_VOLUME_PISTOL		1500.0
 #define SOUNDENT_VOLUME_EMPTY		 500.0 // volume of the "CLICK" when you have no bullets
 
+#ifdef NEO
+// Used for calibrating bot detection distances for CSoundEnt::InsertSound()
+
+// Murata shotgun sound uses SNDLVL_150dB with volume 1.0 [weapon_murata.single in game_sounds_weapons.txt]
+// Human player recipient list hearing distance calculation:
+//   maxAudible = (2 * SOUND_NORMAL_CLIP_DIST) / attenuation [recipientfilter.cpp]
+//   SOUND_NORMAL_CLIP_DIST = 10000.0f [public/const.h]
+//   attenuation = SNDLVL_TO_ATTN(150) = 20.0f / (150 - 50) = 0.2 [public/soundflags.h]
+//   maxAudible = (2 * 10000.0) / 0.2 = 100000 units
+//   Volume multiplier: 100000 * 1.0 = 100000 units
+// SOUNDENT_VOLUME_SHOTGUN = 1500.0
+// ratio = 100000 / 1500 = 66.666...u
+
+// Cloak sound uses SNDLVL_75dB with volume 0.7 [NeoPlayer.ThermOpticOn/Off in game_sounds_player.txt]
+// Human player recipient list hearing distance calculation:
+//   maxAudible = (2 * SOUND_NORMAL_CLIP_DIST) / attenuation [recipientfilter.cpp]
+//   SOUND_NORMAL_CLIP_DIST = 10000.0f [public/const.h]
+//   attenuation = SNDLVL_TO_ATTN(75) = 20.0f / (75 - 50) = 0.8 [public/soundflags.h]
+//   maxAudible = (2 * 10000.0) / 0.8 = 25000 units
+//   Volume multiplier: 25000 * 0.7 = 17500 units
+// SOUNDENT_VOLUME_CLOAK = 17500 / 66.666... = 262.5 units
+#define SOUNDENT_VOLUME_CLOAK 262 // round down in context of int volume param
+
+// Footstep sounds use SNDLVL_75dB with volume 1.0 [Lowest of StepLeft/StepRight in game_sounds_physics.txt]
+// Human player recipient list hearing distance calculation:
+//   maxAudible = (2 * SOUND_NORMAL_CLIP_DIST) / attenuation [recipientfilter.cpp]
+//   SOUND_NORMAL_CLIP_DIST = 10000.0f [public/const.h]
+//   attenuation = SNDLVL_TO_ATTN(75) = 20.0f / (75 - 50) = 0.8 [public/soundflags.h]
+//   maxAudible = (2 * 10000.0) / 0.8 = 25000 units
+//   Volume multiplier: 25000 * 1.0 = 25000 units
+// SOUNDENT_VOLUME_FOOTSTEP = 25000 / 66.666... = 375.0 units
+#define SOUNDENT_VOLUME_FOOTSTEP 375 // round down in context of int volume param
+#endif
+
 enum
 {
 	SOUND_PRIORITY_VERY_LOW = -2,
