@@ -1527,6 +1527,7 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/behavior/neo_bot_ctg_capture.cpp
     neo/bot/behavior/neo_bot_ctg_carrier.cpp
     neo/bot/behavior/neo_bot_ctg_enemy.cpp
+    neo/bot/behavior/neo_bot_ctg_enemy_intercept_cap_path.cpp
     neo/bot/behavior/neo_bot_ctg_escort.cpp
     neo/bot/behavior/neo_bot_ctg_lone_wolf.cpp
     neo/bot/behavior/neo_bot_ctg_seek.cpp
@@ -1587,6 +1588,7 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_ctg_capture.h
     neo/bot/behavior/neo_bot_ctg_carrier.h
     neo/bot/behavior/neo_bot_ctg_enemy.h
+    neo/bot/behavior/neo_bot_ctg_enemy_intercept_cap_path.h
     neo/bot/behavior/neo_bot_ctg_escort.h
     neo/bot/behavior/neo_bot_ctg_lone_wolf.h
     neo/bot/behavior/neo_bot_ctg_lone_wolf_ambush.cpp
