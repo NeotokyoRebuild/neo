@@ -30,6 +30,8 @@ target_include_directories(vvis_library
 target_compile_definitions(vvis_library
     PRIVATE
     PROTECTED_THINGS_DISABLE
+    
+    USE_APPID_MOUNTING
 )
 
 if(OS_WINDOWS)
