@@ -11,6 +11,8 @@ endif()
 
 add_library_copy_target(TARGET vice)
 
+add_origin_rpath(TARGET vice)
+
 if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
     add_dependencies(vice_copy_lib vice_split_debug_information)
 endif()
@@ -19,6 +21,11 @@ target_include_directories(vice
     PRIVATE
     ${CMAKE_SOURCE_DIR}/utils
     ${CMAKE_SOURCE_DIR}/utils/common
+)
+
+target_compile_definitions(vice
+    PRIVATE
+    USE_APPID_MOUNTING
 )
 
 target_link_libraries(vice

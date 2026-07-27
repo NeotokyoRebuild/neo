@@ -82,6 +82,28 @@ function(add_library_copy_target)
 
 endfunction()
 
+function(add_origin_rpath)
+    cmake_parse_arguments(
+        PARSED_ARGS
+        ""
+        "TARGET"
+        ""
+        ${ARGN}
+    )
+
+    if(NOT PARSED_ARGS_TARGET)
+        message(FATAL_ERROR "You must provide a target name")
+    endif()
+
+    if(OS_LINUX)
+        set(ORIGIN_TOKEN "$ORIGIN")
+    else()
+        return()
+    endif()
+
+    target_link_options(${PARSED_ARGS_TARGET} PRIVATE "-Wl,-rpath,${ORIGIN_TOKEN}")
+endfunction()
+
 # Used by split_debug_information
 if(NOT COMPILER_MSVC)
     include(CMakeFindBinUtils)

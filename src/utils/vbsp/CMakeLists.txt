@@ -11,6 +11,8 @@ endif()
 
 add_library_copy_target(TARGET vbsp)
 
+add_origin_rpath(TARGET vbsp)
+
 if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
     add_dependencies(vbsp_copy_lib vbsp_split_debug_information)
 endif()
