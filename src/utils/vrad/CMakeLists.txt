@@ -31,6 +31,8 @@ target_compile_definitions(vrad_library
     PRIVATE
     PROTECTED_THINGS_DISABLE
     VRAD
+    
+    USE_APPID_MOUNTING
 )
 
 target_link_libraries(vrad_library

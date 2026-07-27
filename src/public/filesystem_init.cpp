@@ -637,6 +637,196 @@ const Source1AppidInfo_t *GetKnownAppidInfo( uint32 nAppid )
 	return nullptr;
 }
 
+#ifdef USE_APPID_MOUNTING
+#define LIBRARYFOLDERS_FILENAME "config/libraryfolders.vdf"
+
+#if defined( POSIX )
+static bool IsSteamDir( const char *pszDir )
+{
+	char szTest[MAX_PATH];
+	V_ComposeFileName( pszDir, LIBRARYFOLDERS_FILENAME, szTest, sizeof( szTest ) );
+	return _access( szTest, 0 ) == 0;
+}
+#endif
+
+//-----------------------------------------------------------------------------
+// Find where the Steam client is installed. Returns NULL if it can't be found.
+// The returned string points at static storage.
+//-----------------------------------------------------------------------------
+static const char *GetSteamDir()
+{
+	static char szPath[MAX_PATH];
+
+#if defined( _WIN32 )
+	HKEY hKey;
+	if ( RegOpenKeyExA( HKEY_CURRENT_USER, "Software\\Valve\\Steam", 0, KEY_READ, &hKey ) != ERROR_SUCCESS )
+	{
+		return NULL;
+	}
+
+	DWORD dwType = REG_NONE;
+	DWORD dwSize = sizeof( szPath ) - 1;
+	LONG lResult = RegQueryValueExA( hKey, "SteamPath", NULL, &dwType, (LPBYTE)szPath, &dwSize );
+	RegCloseKey( hKey );
+
+	if ( lResult != ERROR_SUCCESS || dwType != REG_SZ )
+	{
+		return NULL;
+	}
+
+	// RegQueryValueEx doesn't promise the value is null terminated
+	szPath[dwSize] = 0;
+	V_FixSlashes( szPath );
+	return szPath;
+#elif defined( POSIX )
+	// Probe the well known data dirs
+	static const char * const s_pHomeRelativeSteamDirs[] =
+	{
+		".steam/steam",
+		".steam/root",
+		".local/share/Steam",
+		".steam/debian-installation",
+		".var/app/com.valvesoftware.Steam/data/Steam",	// flatpak
+	};
+
+	const char *pszDataHome = getenv( "XDG_DATA_HOME" );
+	if ( pszDataHome && pszDataHome[0] )
+	{
+		V_ComposeFileName( pszDataHome, "Steam", szPath, sizeof( szPath ) );
+		if ( IsSteamDir( szPath ) )
+		{
+			return szPath;
+		}
+	}
+
+	const char *pszHome = getenv( "HOME" );
+	if ( !pszHome || !pszHome[0] )
+	{
+		return nullptr;
+	}
+
+	for ( size_t i = 0; i < ARRAYSIZE( s_pHomeRelativeSteamDirs ); i++ )
+	{
+		V_ComposeFileName( pszHome, s_pHomeRelativeSteamDirs[i], szPath, sizeof( szPath ) );
+		if ( IsSteamDir( szPath ) )
+		{
+			return szPath;
+		}
+	}
+
+	return nullptr;
+#else
+	return nullptr;
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Resolve an appid's install dir inside a single Steam library folder
+//-----------------------------------------------------------------------------
+static bool GetAppDirFromLibrary( const char *pszLibraryPath, int nAppId, char *szOutPath, int nBufSize )
+{
+	char szManifestName[MAX_PATH];
+	V_snprintf( szManifestName, sizeof( szManifestName ), "steamapps/appmanifest_%d.acf", nAppId );
+
+	char szManifestPath[MAX_PATH];
+	V_ComposeFileName( pszLibraryPath, szManifestName, szManifestPath, sizeof( szManifestPath ) );
+
+	KeyValues *pAppManifest = ReadKeyValuesFile( szManifestPath );
+	if ( !pAppManifest )
+	{
+		// The app just isn't in this library
+		return false;
+	}
+
+	bool bFound = false;
+	const char *pszInstallDir = pAppManifest->GetString( "installdir" );
+	if ( pszInstallDir )
+	{
+		char szCommonPath[MAX_PATH];
+		V_ComposeFileName( pszLibraryPath, "steamapps/common", szCommonPath, sizeof( szCommonPath ) );
+		V_ComposeFileName( szCommonPath, pszInstallDir, szOutPath, nBufSize );
+
+		// A manifest can be left behind for content that is only partially installed or that
+		// was removed outside of Steam, so make sure there really is something there
+		bFound = ( _access( szOutPath, 0 ) == 0 );
+		if ( !bFound )
+		{
+			Warning( "Steam says appid %d is installed at %s, but it isn't there.\n", nAppId, szOutPath );
+		}
+	}
+	else
+	{
+		Warning( "%s has no installdir key!\n", szManifestPath );
+	}
+
+	pAppManifest->deleteThis();
+	return bFound;
+}
+
+//-----------------------------------------------------------------------------
+// Find the install dir of an installed Steam app without talking to a running
+// Steam client, by walking the library folders the client wrote out.
+//-----------------------------------------------------------------------------
+bool GetSteamAppDir( int nAppId, char *szOutPath, int nBufSize )
+{
+	if ( nAppId <= 0 )
+	{
+		Warning( "Can't mount content from invalid appid %d.\n", nAppId );
+		return false;
+	}
+
+	const char *pszSteamDir = GetSteamDir();
+	if ( !pszSteamDir )
+	{
+		Warning( "Couldn't find the Steam install dir!\n" );
+		return false;
+	}
+
+	char szLibraryFolders[MAX_PATH];
+	V_ComposeFileName( pszSteamDir, LIBRARYFOLDERS_FILENAME, szLibraryFolders, sizeof( szLibraryFolders ) );
+
+	KeyValues *pLibraryFolders = ReadKeyValuesFile( szLibraryFolders );
+	if ( !pLibraryFolders )
+	{
+		Warning( "Couldn't read %s!\n", szLibraryFolders );
+		return false;
+	}
+
+	bool bFound = false;
+	for ( KeyValues *pLibrary = pLibraryFolders->GetFirstSubKey(); pLibrary && !bFound; pLibrary = pLibrary->GetNextKey() )
+	{
+		// Current format is a subkey per library holding a "path" value, the legacy one is a
+		// plain "<index>" "<path>" value.
+		const char *pszLibraryPath = pLibrary->GetString( "path" );
+		if ( !pszLibraryPath )
+		{
+			pszLibraryPath = pLibrary->GetString();
+		}
+
+		if ( pszLibraryPath && pszLibraryPath[0] )
+		{
+			bFound = GetAppDirFromLibrary( pszLibraryPath, nAppId, szOutPath, nBufSize );
+		}
+	}
+
+	pLibraryFolders->deleteThis();
+
+	// The Steam install dir is a library folder itself, and it's the one the legacy
+	// libraryfolders.vdf format doesn't list.
+	if ( !bFound )
+	{
+		bFound = GetAppDirFromLibrary( pszSteamDir, nAppId, szOutPath, nBufSize );
+	}
+
+	if ( !bFound )
+	{
+		Warning( "Couldn't find appid %d installed in any Steam library.\n", nAppId );
+	}
+
+	return bFound;
+}
+#endif
+
 FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 {
 	if ( !initInfo.m_pFileSystem || !initInfo.m_pDirectoryName )
@@ -684,7 +874,7 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 		const char *pszPathID = pCur->GetName();
 		const char *pLocation = pCur->GetString();
 		const char *pszBaseDir = baseDir;
-#ifdef ENGINE_DLL
+#if defined( ENGINE_DLL ) || defined( USE_APPID_MOUNTING )
 		char szAppInstallDir[ 1024 ];
 #endif
 
@@ -693,7 +883,7 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 
 		if ( Q_stristr( pLocation, APPID_PREFIX_TOKEN ) == pLocation )
 		{
-#ifdef ENGINE_DLL
+#if defined( ENGINE_DLL ) || defined( USE_APPID_MOUNTING )
 			pLocation += strlen( APPID_PREFIX_TOKEN );
 			const char *pNumberLoc = pLocation;
 			int nAppId = V_atoi( pNumberLoc );
@@ -704,6 +894,13 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 			}
 			pLocation += strlen( "|" );
 
+#ifdef USE_APPID_MOUNTING
+			if ( !GetSteamAppDir( nAppId, szAppInstallDir, sizeof( szAppInstallDir ) ) )
+			{
+				Warning( "Failed to load content for steam AppID %d, skipping. Try -insert_search_path\n", nAppId );
+				continue;
+			}
+#else
 			if ( !nAppId )
 			{
 				Error( "Can't mount content from invalid appid." );
@@ -741,6 +938,7 @@ FSReturnCode_t FileSystem_LoadSearchPaths( CFSSearchPathsInit &initInfo )
 			{
 				Error( "Couldn't get install dir for appid: %d", nAppId );
 			}
+#endif
 			pszBaseDir = szAppInstallDir;
 #else
 			Error( "Appid based mounting is not supported on non-engine DLL projects." );
