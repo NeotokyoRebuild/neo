@@ -192,6 +192,12 @@ void CNEOScoreBoard::FireGameEvent(IGameEvent *event)
 	{
 		m_HLTVSpectators = event->GetInt("clients") - event->GetInt("proxies");
 	}
+	else if (0 == V_strcmp(type, "server_spawn"))
+	{
+		const char *hostname = event->GetString("hostname");
+		g_pVGuiLocalize->ConvertANSIToUnicode(hostname,
+				m_wszHostname, sizeof(m_wszHostname));
+	}
 
 	if (IsVisible())
 	{
@@ -539,10 +545,7 @@ void CNEOScoreBoard::Update()
 	}, nullptr);
 
 	// NEO JANK (nullsystem): FireGameEvent is unreliable for fetching
-	// hostname and current map so just poll it from ConVar/NEORules instead
-	const ConVarRef cvr_hostname("hostname");
-	g_pVGuiLocalize->ConvertANSIToUnicode(cvr_hostname.GetString(),
-			m_wszHostname, sizeof(m_wszHostname));
+	// current map so just poll it from NEORules instead
 	g_pVGuiLocalize->ConvertANSIToUnicode(NEORules()->MapName(),
 			m_wszMap, sizeof(m_wszMap));
 
