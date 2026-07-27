@@ -26,6 +26,8 @@ target_compile_definitions(vbsp
     MACRO_MATHLIB
     PROTECTED_THINGS_DISABLE
     
+    USE_APPID_MOUNTING
+    
     DX_TO_GL_ABSTRACTION
     USE_SDL
     ALLOW_NOSHADERAPI
