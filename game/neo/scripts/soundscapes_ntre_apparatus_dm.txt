@@ -1,0 +1,68 @@
+"apparatus.outside"
+
+{
+	"dsp"	"1"
+	"playlooping"
+	{
+		"volume"	"0.8"
+		"pitch"		"100"
+		"wave"		"ocean_rain_lp.wav"
+	}
+}
+
+"apparatus.inside"
+
+{
+	"dsp"	"1"
+	"playlooping"
+	{
+		"volume"	"0.8"
+		"pitch"		"100"
+		"wave"		"ocean_rain_inside_lp.wav"
+	}
+
+	"playlooping"
+	{
+		"volume"	"0.2"
+		"pitch"		"100"
+		"wave"		"pissalley/Parking_Garage_wind.wav"
+	}
+}
+
+"apparatus.chamber"
+
+{
+	"dsp"	"1"
+	"playlooping"
+	{
+		"volume"	"0.3"
+		"pitch"		"100"
+		"wave"		"ocean_rain_inside_lp.wav"
+	}
+
+	"playlooping"
+	{
+		"volume"	"0.2"
+		"pitch"		"100"
+		"wave"		"servers01.wav"
+	}
+}
+
+"apparatus.deepinside"
+
+{
+	"dsp"	"1"
+	"playlooping"
+	{
+		"volume"	"0.3"
+		"pitch"		"100"
+		"wave"		"ocean_rain_inside_lp.wav"
+	}
+
+	"playlooping"
+	{
+		"volume"	"0.6"
+		"pitch"		"100"
+		"wave"		"ambient/atmosphere/underground_hall_loop1.wav"
+	}
+}
