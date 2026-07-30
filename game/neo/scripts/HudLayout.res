@@ -911,14 +911,17 @@
 	neo_walking_indicator
 	{
 		"fieldName"		"neo_walking_indicator"
-		"xpos"	"c-8-50"
-		"ypos"	"c+8"
-		"wide"	"16"
-		"tall"  "16"
-		"color" "255 255 255 200"
-		"texture" "vgui/hud/player/walkingIndicator"
 		"visible" "1"
 		"enabled" "1"
+		
+		"xpos"	"208"
+		"ypos"	"446"
+		"wide"	"24"
+		"tall"  "24"
+		"color" "255 255 255 200"
+		"texture" "vgui/hud/player/walkingIndicator"
+		
+		"barwidth"	"2"
 	}
 	RoundResult
 	{

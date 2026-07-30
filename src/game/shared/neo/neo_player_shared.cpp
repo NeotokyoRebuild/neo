@@ -730,8 +730,9 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	return pNearest;
 }
 
-// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
+// Changing movement direction, looking around, wall-running accelerate the player. Raise the threshold.
 constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
+#define MAX_SILENT_SPEED SILENT_THRESHOLD_GRACE * (GetFlags() & FL_DUCKING ? GetCrouchSpeed() : GetNormSpeed())
 bool CNEO_Player::ShouldPlayerMakeFootsteps(float speed) // Could simply always get speed from the player, but didnt want to risk changing the behavior of UpdateStepSound in baseplayer_shared
 {
 	if (speed < 0)
@@ -739,11 +740,14 @@ bool CNEO_Player::ShouldPlayerMakeFootsteps(float speed) // Could simply always 
 		speed = GetAbsVelocity().Length();
 	}
 
-	if ( GetFlags() & FL_DUCKING && (IsInAim() || IsWalking()) && speed <= (GetCrouchSpeed() * SILENT_THRESHOLD_GRACE) )
+	if (const bool canBeSilent = IsInAim() || IsWalking();
+		!canBeSilent)
 	{
-		return false;
+		return true;
 	}
-	else if ((IsInAim() || IsWalking()) && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
+
+	if (const float maxSilentSpeed = MAX_SILENT_SPEED;
+		speed <= maxSilentSpeed)
 	{
 		return false;
 	}
@@ -758,10 +762,23 @@ float CNEO_Player::SpeedFractionToSoundThreshold(float speed)
 		speed = GetAbsVelocity().Length();
 	}
 
-	if (IsInAim() || IsWalking())
+	if (const bool canBeSilent = IsInAim() || IsWalking())
 	{
-		const float difference = ((GetFlags() & FL_DUCKING ? GetCrouchSpeed() : GetNormSpeed()) * SILENT_THRESHOLD_GRACE) - GetPlayerMaxSpeed();
-		return (speed - GetPlayerMaxSpeed()) / difference;
+		const float bottom = GetPlayerMaxSpeed();
+		if (speed < bottom)
+		{
+			return 0.f;
+		}
+		
+		float top = MAX_SILENT_SPEED;
+		if (speed > top)
+		{
+			return 1.f;
+		}
+		
+		top -= bottom;
+		speed -= bottom;
+		return top != 0 ? speed / top : 1.f;
 	}
 	return 1.f;
 }

@@ -34,7 +34,7 @@ void CNEOHud_WalkingIndicator::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 	
-	SetBounds(xpos, ypos-tall, wide, tall);
+	SetBounds(xpos, ypos, wide, tall);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 }
@@ -63,21 +63,13 @@ void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 	vgui::surface()->DrawSetColor(color);
 	vgui::surface()->DrawTexturedRect(0, 0, wide, tall);
 
-#if 0
-	// we don't want the subrectangle taken from the texture to vary in size when speed changes but the split between the top and bottom image remains in the same spot since texture can be larger than the area its drawn to
-	const int pictureSplitDistanceInPixels = tall * (1 - Max(0.f, Min(1.f, pTargetPlayer->SpeedFractionToSoundThreshold())));
-	const float pictureSplitDistanceFraction = (float)pictureSplitDistanceInPixels / tall;
-
-	vgui::surface()->DrawSetTexture(m_hWalkingIndicatorTexture);
-	vgui::surface()->DrawSetColor(COLOR_WHITE);
-	const float ICON_WIDTH = 1 / 2.f;
-	const float ICON_HEIGHT = 1 / 2.f;
-	vgui::surface()->DrawTexturedSubRect(0, 0, wide, pictureSplitDistanceInPixels, 
-		0, ICON_HEIGHT, ICON_WIDTH, ICON_HEIGHT + (ICON_HEIGHT * pictureSplitDistanceFraction));
-	vgui::surface()->DrawSetColor(255, 255 * pictureSplitDistanceFraction, 255 * pictureSplitDistanceFraction, 255);
-	vgui::surface()->DrawTexturedSubRect(0, pictureSplitDistanceInPixels, wide, tall, 
-		0, ICON_HEIGHT * pictureSplitDistanceFraction, ICON_WIDTH, ICON_HEIGHT);
-#endif
+	if (barwidth)
+	{
+		const float percentageTowardsGraceThreshold = pTargetPlayer->SpeedFractionToSoundThreshold();
+		const float colourGB = 255 - (255 * (percentageTowardsGraceThreshold < 1 ? percentageTowardsGraceThreshold * 0.5f : 1));
+		vgui::surface()->DrawSetColor(255, colourGB, colourGB, 255);
+		vgui::surface()->DrawFilledRect(0, tall - (tall * percentageTowardsGraceThreshold), barwidth, tall);
+	}
 }
 
 void CNEOHud_WalkingIndicator::Paint()
