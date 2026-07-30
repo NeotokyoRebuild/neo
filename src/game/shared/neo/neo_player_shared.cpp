@@ -746,8 +746,7 @@ bool CNEO_Player::ShouldPlayerMakeFootsteps(float speed) // Could simply always 
 		return true;
 	}
 
-	if (const float maxSilentSpeed = MAX_SILENT_SPEED;
-		speed <= maxSilentSpeed)
+	if (speed <= MAX_SILENT_SPEED)
 	{
 		return false;
 	}
@@ -780,5 +779,6 @@ float CNEO_Player::SpeedFractionToSoundThreshold(float speed)
 		speed -= bottom;
 		return top != 0 ? speed / top : 1.f;
 	}
+
 	return 1.f;
 }
