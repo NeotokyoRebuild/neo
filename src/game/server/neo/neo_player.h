@@ -247,6 +247,9 @@ public:
 	bool IsAFK() const;
 	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
+	bool ShouldPlayerMakeFootsteps(float speed = -1.f);
+	float SpeedFractionToSoundThreshold(float speed = -1.f);
+
 private:
 	bool m_bAllowGibbing;
 

@@ -198,6 +198,9 @@ public:
 	
 	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
+	bool ShouldPlayerMakeFootsteps(float speed = -1.f);
+	float SpeedFractionToSoundThreshold(float speed = -1.f);
+
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
 	void CheckAimButtons();
