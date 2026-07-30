@@ -912,7 +912,6 @@
 	{
 		"fieldName"		"neo_walking_indicator"
 		"visible" "1"
-		"enabled" "1"
 		
 		"xpos"	"208"
 		"ypos"	"446"

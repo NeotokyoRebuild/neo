@@ -20,8 +20,7 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
-	CPanelAnimationVarAliasType(int, visible, "visible", "1", "int");
-	CPanelAnimationVarAliasType(int, enabled, "enabled", "1", "int");
+	CPanelAnimationVarAliasType(bool, visible, "visible", "1", "bool");
 
 	CPanelAnimationVarAliasType(int, xpos, "xpos", "r203", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "446", "proportional_ypos");
@@ -30,7 +29,7 @@ private:
 	CPanelAnimationVarAliasType(Color, color, "color", "150 150 150 40", "Color");
 	CPanelAnimationVarAliasType(int, texture, "texture", "vgui/hud/player/walkingIndicatorInverted", "textureid");
 
-	CPanelAnimationVarAliasType(int, barwidth, "barwidth", "4", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, barwidth, "barwidth", "0", "proportional_xpos");
 
 private:
 	CNEOHud_WalkingIndicator(const CNEOHud_WalkingIndicator&other);

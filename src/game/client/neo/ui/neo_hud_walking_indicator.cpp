@@ -45,7 +45,7 @@ void CNEOHud_WalkingIndicator::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 {
-	if (!ShouldDraw())
+	if (!ShouldDraw() || !visible)
 		return;
 
 	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
