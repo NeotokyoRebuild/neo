@@ -712,6 +712,7 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	return pNearest;
 }
 
+ConVar sv_neo_hitboxgroup_pen("sv_neo_hitboxgroup_pen", "0", FCVAR_REPLICATED, "When hitting outer limbs, do a second trace against head, chest and stomach", true, 0.f, true, 1.f); // NEO TODO (Adam) remove this and pick one
 bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr)
 {
 #ifdef CLIENT_DLL
@@ -755,7 +756,7 @@ bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, tra
 		tr.surface.flags = SURF_HITBOX;
 		tr.surface.surfaceProps = physprops->GetSurfaceIndex( pBone->pszSurfaceProp() );
 		
-		if (fContentsMask & CONTENTS_HITBOX)
+		if (fContentsMask & CONTENTS_HITBOX && sv_neo_hitboxgroup_pen.GetBool())
 		{
 			switch (tr.hitgroup)
 			{
