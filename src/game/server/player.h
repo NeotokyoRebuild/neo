@@ -889,12 +889,21 @@ public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_vecVelocity );
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_nWaterLevel );
 	
+#ifdef NEO
+	long long int			m_nButtons;
+	long long int			m_afButtonPressed;
+	long long int			m_afButtonReleased;
+	long long int			m_afButtonLast;
+	long long int			m_afButtonDisabled;	// A mask of input flags that are cleared automatically
+	long long int			m_afButtonForced;	// These are forced onto the player's inputs
+#else
 	int						m_nButtons;
 	int						m_afButtonPressed;
 	int						m_afButtonReleased;
 	int						m_afButtonLast;
 	int						m_afButtonDisabled;	// A mask of input flags that are cleared automatically
 	int						m_afButtonForced;	// These are forced onto the player's inputs
+#endif // NEO
 
 	CNetworkVar( bool, m_fOnTarget );		//Is the crosshair on a target?
 
@@ -959,7 +968,11 @@ protected:
 
 	int						m_iVehicleAnalogBias;
 
+#ifdef NEO
+	void					UpdateButtonState( int64 nUserCmdButtonMask );
+#else
 	void					UpdateButtonState( int nUserCmdButtonMask );
+#endif // NEO
 
 	bool	m_bPauseBonusProgress;
 	CNetworkVar( int, m_iBonusProgress );

@@ -46,8 +46,13 @@ public:
 	int				m_nImpulseCommand;	// Impulse command issued.
 	QAngle			m_vecViewAngles;	// Command view angles (local space)
 	QAngle			m_vecAbsViewAngles;	// Command view angles (world space)
+#ifdef NEO
+	long long int	m_nButtons;			// Attack buttons.
+	long long int	m_nOldButtons;		// From host_client->oldbuttons;
+#else
 	int				m_nButtons;			// Attack buttons.
 	int				m_nOldButtons;		// From host_client->oldbuttons;
+#endif // NEO
 	float			m_flForwardMove;
 	float			m_flOldForwardMove;
 	float			m_flSideMove;

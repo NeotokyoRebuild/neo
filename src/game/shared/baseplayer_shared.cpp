@@ -809,14 +809,22 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 	OnEmitFootstepSound( params, vecOrigin, fvol );
 }
 
+#ifdef NEO
+void CBasePlayer::UpdateButtonState( int64 nUserCmdButtonMask )
+#else
 void CBasePlayer::UpdateButtonState( int nUserCmdButtonMask )
+#endif // NEO
 {
 	// Track button info so we can detect 'pressed' and 'released' buttons next frame
 	m_afButtonLast = m_nButtons;
 
 	// Get button states
 	m_nButtons = nUserCmdButtonMask;
+#ifdef NEO
+ 	int64 buttonsChanged = m_afButtonLast ^ m_nButtons;
+#else
  	int buttonsChanged = m_afButtonLast ^ m_nButtons;
+#endif // NEO
 	
 	// Debounced button codes for pressed/released
 	// UNDONE: Do we need auto-repeat?

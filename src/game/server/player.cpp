@@ -4221,7 +4221,11 @@ void CBasePlayer::PreThink(void)
 
 	HandleFuncTrain();
 
+#ifdef NEO
+	if (m_nButtons & IN_JUMP || m_nButtons & IN_JUMP2)
+#else
 	if (m_nButtons & IN_JUMP)
+#endif // NEO
 	{
 		// If on a ladder, jump off the ladder
 		// else Jump

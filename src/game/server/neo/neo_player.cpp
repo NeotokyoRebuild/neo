@@ -1728,7 +1728,7 @@ bool CNEO_Player::IsAllowedToSuperJump(void)
 
 	// Only superjump if we have a reasonable jump direction in mind
 	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
+	if ((m_nButtons & (IN_FORWARD | IN_BACK )) == 0)
 	{
 		return false;
 	}
