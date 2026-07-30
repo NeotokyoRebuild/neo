@@ -921,7 +921,7 @@
 		"color" "255 255 255 200"
 		"texture" "vgui/hud/player/walkingIndicator"
 		
-		"barwidth"	"2"
+		"barwidth"	"0"
 	}
 	RoundResult
 	{
