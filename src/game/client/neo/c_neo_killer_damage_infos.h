@@ -1,9 +1,14 @@
 #pragma once
 
+#include "shareddefs.h"
+#include "neo_player_shared.h"
+
 static constexpr const int WEP_NAME_MAXSTRLEN = 32;
 
-struct CNEOKillerInfo
+struct CNEOKillerInfos
 {
+	bool bHasDmgInfos = false;
+	wchar_t wszKillerName[MAX_PLAYER_NAME_LENGTH + 1];
 	int iEntIndex;
 	int iClass;
 	int iHP;
@@ -11,12 +16,17 @@ struct CNEOKillerInfo
 	wchar_t wszKilledWith[WEP_NAME_MAXSTRLEN];
 };
 
-struct CNEOKillerDamageInfos
-{
-	bool bHasDmgInfos = false;
-	CNEOKillerInfo killerInfo;
-	wchar_t wszKillerName[MAX_PLAYER_NAME_LENGTH + 1];
-};
+void NeoUserIDsLocalKilledClear();
+void NeoDamageReportClear();
+void NeoKillerInfoClear();
 
-// Global instance of CNEOKillerDamageInfos
-inline CNEOKillerDamageInfos g_neoKDmgInfos;
+void NeoAllKDReportsClear();
+
+// Global instance of CNEOKillerInfos and local-player's kill record
+inline CNEOKillerInfos g_neoKillerInfos;
+inline int g_neoUserIDsLocalKilledSize;
+inline int g_neoUserIDsLocalKilled[MAX_PLAYERS_ARRAY_SAFE];
+
+inline int g_neoDamageReportSize;
+inline AttackersTotals g_neoDamageReport[MAX_PLAYERS_ARRAY_SAFE];
+

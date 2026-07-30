@@ -25,6 +25,12 @@
 #pragma once
 #endif
 
+#ifdef NEO // Unity build
+#ifdef GetCurrentDirectory
+#undef GetCurrentDirectory
+#endif
+#endif
+
 //-----------------------------------------------------------------------------
 // Forward declarations
 //-----------------------------------------------------------------------------

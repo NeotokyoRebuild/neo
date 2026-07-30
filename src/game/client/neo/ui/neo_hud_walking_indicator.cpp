@@ -27,10 +27,6 @@ CNEOHud_WalkingIndicator::CNEOHud_WalkingIndicator(const char *pElementName, vgu
 		SetParent(g_pClientMode->GetViewport());
 	}
 
-	m_hWalkingIndicatorTexture = vgui::surface()->CreateNewTextureID();
-	Assert(m_hWalkingIndicatorTexture > 0);
-	vgui::surface()->DrawSetTextureFile(m_hWalkingIndicatorTexture, "vgui/hud/player/walkingIndicator", 1, false);
-
 	SetVisible(true);
 }
 
@@ -60,9 +56,14 @@ void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 	if (!pTargetPlayer)
 		return;
 
-	if (!pTargetPlayer->IsAlive() || !pTargetPlayer->IsWalking())// && !pTargetPlayer->IsInAim()) player is also silent if aiming and not abusing the threshold, but its much harder to make noise when aiming, better for the indicator to strictly appear when walk is pressed
+	if (!pTargetPlayer->IsAlive() || !pTargetPlayer->IsWalking())
 		return;
+	
+	vgui::surface()->DrawSetTexture(texture);
+	vgui::surface()->DrawSetColor(color);
+	vgui::surface()->DrawTexturedRect(0, 0, wide, tall);
 
+#if 0
 	// we don't want the subrectangle taken from the texture to vary in size when speed changes but the split between the top and bottom image remains in the same spot since texture can be larger than the area its drawn to
 	const int pictureSplitDistanceInPixels = tall * (1 - Max(0.f, Min(1.f, pTargetPlayer->SpeedFractionToSoundThreshold())));
 	const float pictureSplitDistanceFraction = (float)pictureSplitDistanceInPixels / tall;
@@ -76,6 +77,7 @@ void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 	vgui::surface()->DrawSetColor(255, 255 * pictureSplitDistanceFraction, 255 * pictureSplitDistanceFraction, 255);
 	vgui::surface()->DrawTexturedSubRect(0, pictureSplitDistanceInPixels, wide, tall, 
 		0, ICON_HEIGHT * pictureSplitDistanceFraction, ICON_WIDTH, ICON_HEIGHT);
+#endif
 }
 
 void CNEOHud_WalkingIndicator::Paint()

@@ -5,6 +5,7 @@
 #include "team_train_watcher.h"
 #include "neo_bot.h"
 #include "neo_bot_manager.h"
+#include "neo_bot_path_reservation.h"
 #include "neo_bot_vision.h"
 #include "trigger_area_capture.h"
 #include "GameEventListener.h"
@@ -139,21 +140,45 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 		}
 	}
 
-	const CNEOBotProfileFilter botFilter = {
-		.flagTargetDifficulty = (1 << skill),
-	};
 
 	int iTeam = Bot_GetTeamByName(teamname);
-
 	if (NEORules()->IsTeamplay() && iTeam == TEAM_UNASSIGNED)
 	{
 		CTeam* pJinrai = GetGlobalTeam(TEAM_JINRAI);
 		CTeam* pNSF = GetGlobalTeam(TEAM_NSF);
-		const int numJinrai = pJinrai->GetNumPlayers();
-		const int numNSF = pNSF->GetNumPlayers();
+		if (pJinrai && pNSF)
+		{
+			const int numJinrai = pJinrai->GetNumPlayers();
+			const int numNSF = pNSF->GetNumPlayers();
 
-		iTeam = numJinrai < numNSF ? TEAM_JINRAI : numNSF < numJinrai ? TEAM_NSF : RandomInt(TEAM_JINRAI, TEAM_NSF);
+			iTeam = numJinrai < numNSF ? TEAM_JINRAI : numNSF < numJinrai ? TEAM_NSF : RandomInt(TEAM_JINRAI, TEAM_NSF);
+		}
+		else
+		{
+			Assert(false);
+		}
 	}
+
+	int classFlag = BOT_CLASS_FLAG_NONE;
+	if (CTeam* team = GetGlobalTeam(iTeam))
+	{
+		for (int i = NEO_CLASS_RECON; i <= NEO_CLASS_SUPPORT; i++)
+		{
+			if (!team->IsClassFull(i))
+			{
+				classFlag += 1 << i;
+			}
+		}
+	}
+	else
+	{
+		Assert(false);
+	}
+
+	const CNEOBotProfileFilter botFilter = {
+		.flagTargetDifficulty = (1 << skill),
+		.flagTargetClass = classFlag
+	};
 
 	int iNumAdded = 0;
 	for (i = 0; i < botCount; ++i)
@@ -469,7 +494,7 @@ void CNEOBot::PressFireButton(float duration)
 {
 	// can't fire if stunned
 	// @todo Tom Bui: Eventually, we'll probably want to check the actual weapon for supress fire
-	if (HasAttribute(CNEOBot::SUPPRESS_FIRE))
+	if ( GetBotPauseFiring() || HasAttribute(CNEOBot::SUPPRESS_FIRE) )
 	{
 		ReleaseFireButton();
 		return;
@@ -550,36 +575,6 @@ CNEOBot::CNEOBot()
 	SetAutoJump(0.f, 0.f);
 
 	V_memcpy(&m_profile, &FIXED_DEFAULT_PROFILE, sizeof(CNEOBotProfile));
-
-	// set default values for convars only present on the client
-	edict_t* edict = GetEntity()->edict();
-	if (edict)
-	{
-		{
-			char szCrhSerial[NEO_XHAIR_SEQMAX] = {};
-			DefaultCrosshairSerial(szCrhSerial);
-			engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", szCrhSerial);
-		}
-
-		constexpr struct {
-			const char* name, *value;
-		} convars[] = {
-			{ "cl_neo_pvs_cull_roaming_observer", "0" },
-			{ "cl_neo_streamermode", "0" },
-			{ "cl_neo_tachi_prefer_auto", "1" },
-			{ "cl_neo_taking_damage_sounds", "0" },
-			{ "cl_onlysteamnick", "0" },
-			{ "hap_HasDevice", "0" },
-			{ "neo_clantag", "" },
-			{ "neo_fov", "90" },
-			{ "neo_name", "" },
-		};
-
-		for (const auto& convar : convars)
-		{
-			engine->SetFakeClientConVarValue(edict, convar.name, convar.value);
-		}
-	}
 }
 
 
@@ -607,52 +602,17 @@ CNEOBot::~CNEOBot()
 void CNEOBot::Spawn()
 {
 	// CNEOBot do m_iNeoClass a bit earlier
-	if ((m_iNextSpawnClassChoice != NEO_CLASS_RANDOM) && (m_iNeoClass != m_iNextSpawnClassChoice))
+	// so that we get correct loadout choices for the class
+	if (m_iNextSpawnClassChoice == NEO_CLASS_RANDOM) 
 	{
-		m_iNeoClass = m_iNextSpawnClassChoice;
+		m_iNeoClass = ChooseRandomClass();
+	}
+	else if (m_iNeoClass != m_iNextSpawnClassChoice)
+	{
+		RequestSetClass(m_iNextSpawnClassChoice);
 	}
 
-	const ENeoRank eRank = static_cast<ENeoRank>(GetRank(m_iXP) - 1);
-	if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
-	{
-		m_iLoadoutWepChoice = 0;
-	}
-	else
-	{
-		const NEO_WEP_BITS_UNDERLYING_TYPE wepPrefsForCurRank = m_profile.flagsWepPrefs[m_iNeoClass][eRank];
-
-		int iChosenWeps[MAX_WEAPON_LOADOUTS] = {};
-		int iChosenWepsSize = 0;
-		for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
-		{
-			if (wepPrefsForCurRank & CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].info.m_iWepBit)
-			{
-				iChosenWeps[iChosenWepsSize++] = i;
-			}
-		}
-
-		if (iChosenWepsSize == 0)
-		{
-			// Generally shouldn't happen, but if so, just pick from any under the XP limit
-			for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
-			{
-				if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > m_iXP)
-				{
-					break;
-				}
-				iChosenWeps[iChosenWepsSize++] = i;
-			}
-		}
-
-		if (iChosenWepsSize == 1)
-		{
-			m_iLoadoutWepChoice = iChosenWeps[0];
-		}
-		else
-		{
-			m_iLoadoutWepChoice = iChosenWeps[RandomInt(0, iChosenWepsSize - 1)];
-		}
-	}
+	ChooseRandomWeapon();
 
 	BaseClass::Spawn();
 
@@ -662,7 +622,6 @@ void CNEOBot::Spawn()
 	m_didReselectClass = false;
 	m_isLookingAroundForEnemies = true;
 	m_attentionFocusEntity = NULL;
-	GetLocomotionInterface()->m_bBreakBreakableInPath = false;
 
 	m_delayedNoticeVector.RemoveAll();
 
@@ -680,6 +639,53 @@ void CNEOBot::Spawn()
 
 	m_bWantsRespawn = false;
 	m_bRespawnCopyCorpse = false;
+}
+
+int CNEOBot::ChooseRandomWeaponIndex() const
+{
+    const ENeoRank eRank = static_cast<ENeoRank>(GetRank(m_iXP) - 1);
+    if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
+    {
+        return 0;
+    }
+    const NEO_WEP_BITS_UNDERLYING_TYPE wepPrefsForCurRank = m_profile.flagsWepPrefs[m_iNeoClass][eRank];
+
+    int iChosenWeps[MAX_WEAPON_LOADOUTS] = {};
+    int iChosenWepsSize = 0;
+    for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
+    {
+        if (wepPrefsForCurRank & CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].info.m_iWepBit)
+        {
+            iChosenWeps[iChosenWepsSize++] = i;
+        }
+    }
+
+    if (iChosenWepsSize == 0)
+    {
+		// Generally shouldn't happen, but if so, just pick from any under the XP limit
+        for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
+        {
+            if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > m_iXP)
+            {
+                break;
+            }
+            iChosenWeps[iChosenWepsSize++] = i;
+        }
+    }
+
+    if (iChosenWepsSize == 1)
+    {
+        return iChosenWeps[0];
+    }
+    else
+    {
+        return iChosenWeps[RandomInt(0, iChosenWepsSize - 1)];
+    }
+}
+
+void CNEOBot::ChooseRandomWeapon()
+{
+	m_iLoadoutWepChoice = ChooseRandomWeaponIndex();
 }
 
 
@@ -1479,6 +1485,24 @@ bool CNEOBot::EquipRequiredWeapon(void)
 
 
 //-----------------------------------------------------------------------------------------------------
+void CNEOBot::DropPrimaryWeapon(void)
+{
+	CBaseCombatWeapon *pPrimary = Weapon_GetSlot( 0 );
+	if ( pPrimary )
+	{
+		if ( GetActiveWeapon() != pPrimary )
+		{
+			Weapon_Switch( pPrimary );
+		}
+		else
+		{
+			PressDropButton();
+		}
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 // Equip the best weapon we have to attack the given threat
 void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary)
 {
@@ -1602,41 +1626,112 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 
 
 //-----------------------------------------------------------------------------------------------------
-// Reload the active weapon if it makes sense for the situation 
-void CNEOBot::ReloadIfLowClip(void)
+bool CNEOBot::DropGhost()
 {
-	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-	if (myWeapon && myWeapon->GetPrimaryAmmoCount() > 0)
+	if ( !IsCarryingGhost() )
 	{
-		bool shouldReload = false;
-		// SUPA7 reload doesn't discard ammo
-		if ((myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+		return false;
+	}
+
+	CBaseCombatWeapon *pGhost = Weapon_GetSlot( 0 );
+	if ( pGhost )
+	{
+		if ( GetActiveWeapon() != pGhost )
 		{
-			shouldReload = true;
+			Weapon_Switch( pGhost );
 		}
 		else
 		{
-			int maxClip = myWeapon->GetMaxClip1();
-			bool isBarrage = IsBarrageAndReloadWeapon(myWeapon);
+			// Look behind where we are moving
+			Vector moveDir = GetLocomotionInterface()->GetMotionVector();
+			Vector lookDir = -moveDir;
+			GetBodyInterface()->AimHeadTowards( EyePosition() + lookDir * 100.0f, IBody::IMPORTANT, 0.2f, nullptr, "Preparing to drop ghost away from path" );
 
-			int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
-
-			float aggressionFactor = 1.0f - HealthFraction();
-
-			float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
-
-			if (myWeapon->Clip1() < static_cast<int>(dynamicThreshold))
+			// Drop the ghost if we are looking anywhere but the front
+			Vector viewDir = GetBodyInterface()->GetViewVector();
+			if ( moveDir.Dot( viewDir ) < 0.4f )
 			{
-				shouldReload = true;
+				PressDropButton();
 			}
 		}
+	}
 
-		if (shouldReload)
+	return true;
+}
+
+//-----------------------------------------------------------------------------------------------------
+// Reload the active weapon if it makes sense for the situation 
+void CNEOBot::ReloadIfLowClip(bool bForceReload)
+{
+	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+
+	if (!myWeapon)
+	{
+		return;
+	}
+
+	if (myWeapon->GetPrimaryAmmoCount() <= 0)
+	{
+		return;
+	}
+
+	if (myWeapon->Clip1() >= myWeapon->GetMaxClip1())
+	{
+		return;
+	}
+
+	const auto wepBits = myWeapon->GetNeoWepBits();
+
+	if (!(wepBits & NEO_WEP_FIREARM))
+	{
+		return;
+	}
+
+	if (wepBits & NEO_WEP_BALC)
+	{
+		return;
+	}
+
+	if (wepBits & NEO_WEP_SMAC)
+	{
+		return;
+	}
+
+	if (wepBits & NEO_WEP_SUPA7)
+	{
+		// Consider loading slug
+		if ( (myWeapon->m_iSecondaryAmmoCount > 0) && (myWeapon->Clip1() == myWeapon->GetMaxClip1() - 1))
 		{
 			ReleaseFireButton();
-			PressReloadButton();
+			PressAltFireButton();
+			return; // attempt to load slug
+		}
+		// SUPA7 reload doesn't discard ammo, continue
+	}
+	else if (myWeapon->Clip1() > 0)
+	{
+		if (GetTimeSinceWeaponFired() < 3.0f)
+		{
+			return; // still in the middle of a fight
+		}
+
+		int maxClip = myWeapon->GetMaxClip1();
+		bool isBarrage = IsBarrageAndReloadWeapon(myWeapon);
+
+		int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
+
+		float aggressionFactor = 1.0f - HealthFraction();
+
+		float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
+
+		if (!bForceReload && myWeapon->Clip1() > static_cast<int>(dynamicThreshold))
+		{
+			return; // reloads drop ammo, still have enough in clip
 		}
 	}
+
+	ReleaseFireButton();
+	PressReloadButton();
 }
 
 
@@ -1787,7 +1882,7 @@ bool CNEOBot::IsLineOfFirePenetrationClear(const trace_t &tr, const Vector &from
 
 	// Only bother with fire penetration in short distance
 	auto *neoWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
-	if (!neoWeapon)
+	if (!neoWeapon || !(neoWeapon->GetNeoWepBits() & NEO_WEP_FIREARM))
 	{
 		return false;
 	}
@@ -2581,6 +2676,21 @@ bool CNEOBot::IsEnemy(const CBaseEntity* them) const
 	}
 }
 
+
+bool CNEOBot::IsBotOnLadder() const
+{
+	ILocomotion* mover = GetLocomotionInterface();
+	if ( !mover )
+	{
+		return false;
+	}
+	
+	return ( GetMoveType() == MOVETYPE_LADDER ) ||
+		mover->IsUsingLadder() ||
+		mover->IsAscendingOrDescendingLadder();
+}
+
+
 CNEOBaseCombatWeapon* CNEOBot::GetBludgeonWeapon(void)
 {
 	return static_cast<CNEOBaseCombatWeapon *>(Weapon_GetSlot(2));
@@ -2633,17 +2743,43 @@ NeoClass CNEOBot::ChooseRandomClass() const
 		}
 	}
 
+	CTeam *team = GetTeam();
+	if (!team)
+	{
+		Assert(false);
+		return NEO_CLASS_ASSAULT;
+	}
+
 	bool bValidClasses[NEO_CLASS__ENUM_COUNT] = {};
 	int iClassCounts = 0;
 	for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
 	{
 		bValidClasses[i] = (m_profile.flagClass & (1 << i));
+		// Check class limits
+		if (bValidClasses[i] && team->IsClassFull(i))
+		{
+			bValidClasses[i] = false;
+		}
 		if (bValidClasses[i])
 		{
 			++iClassCounts;
 		}
 	}
 
+	if (iClassCounts == 0)
+	{
+		// If all profile classes are full/banned, allow any class that isn't full
+		for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
+		{
+			if (!team->IsClassFull(i))
+			{
+				bValidClasses[i] = true;
+				++iClassCounts;
+			}
+		}
+	}
+
+	// NEO JANK: If still no valid classes (all full), allow any class as fallback
 	if (iClassCounts == 0)
 	{
 		for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
@@ -2709,6 +2845,32 @@ CNEOBotIntention::CNEOBotIntention(CNEOBot *bot)
 CNEOBotIntention::~CNEOBotIntention()
 {
 	delete m_behavior;
+}
+
+static void CNEOBotApplyOnStuckAreaPenalty( CNEOBot *me )
+{
+	// NEO Jank: For the current match, all bots share where they get stuck.
+	// The reasoning is that bots on either team will get stuck in their respective half of the map
+	// so the overall fairness may balance out for both teams sharing common sticking points.
+	if ( const CNavArea *navArea = me->GetLastKnownArea() )
+	{
+		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
+	}
+}
+
+void CNEOBotIntention::OnStuck()
+{
+	CNEOBotApplyOnStuckAreaPenalty( static_cast<CNEOBot *>( GetBot() ) );
+	INextBotEventResponder::OnStuck();
+}
+
+void CNEOBotIntention::OnMoveToFailure( const Path *path, MoveToFailureType reason )
+{
+	if ( reason == FAIL_STUCK )
+	{
+		CNEOBotApplyOnStuckAreaPenalty( static_cast<CNEOBot *>( GetBot() ) );
+	}
+	INextBotEventResponder::OnMoveToFailure( path, reason );
 }
 
 void CNEOBotIntention::Reset()

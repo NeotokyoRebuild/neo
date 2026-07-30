@@ -9,6 +9,10 @@
 #include <stdio.h>
 #include <assert.h>
 #include <direct.h>
+#ifdef NEO
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif // NEO
 #endif
 
 #ifdef POSIX
@@ -17,6 +21,12 @@
 #include <dlfcn.h>
 #include <limits.h>
 #include <string.h>
+#ifdef NEO
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/resource.h>
+#include <errno.h>
+#endif // NEO
 #define MAX_PATH PATH_MAX
 #endif
 
@@ -47,6 +57,9 @@ extern "C" { __declspec( dllexport ) int AmdPowerXpressRequestHighPerformance = 
 #endif
 
 
+#ifdef NEO
+#include "tier1/strtools.h" // matchmakingtypes.h (via steam_api.h) uses V_strcpy_safe
+#endif
 #include <steam/steam_api.h>
 
 #ifdef _WIN32
@@ -95,6 +108,12 @@ static const AppId_t k_unMyModAppid = k_unSDK2013MPAppId;
 #endif
 
 static bool s_bInittedSteam = false;
+#ifdef NEO
+// Set when Steam reports the SDK Base app as not installed. The launch
+// continues anyway: the engine detects the missing dependency at gameinfo
+// mount and raises Steam's install dialog, same as the retail flow.
+static bool s_bSDKNotInstalled = false;
+#endif // NEO
 
 #ifdef _WIN32
 static HMODULE s_SteamModule;
@@ -226,10 +245,27 @@ static bool GetGameInstallDir( const char *pRootDir, char *pszBuf, int nBufSize 
 
 	if ( unLength == 0 )
 	{
+#ifdef NEO
+		// No error box: letting the engine run produces its own prompt plus
+		// the Steam install dialog for the missing SDK.
+		s_bSDKNotInstalled = true;
+#else
 		MessageBox( 0, "Source SDK 2013 Multiplayer (243750) must be installed to launch this mod.", "Launcher Error", MB_OK );
+#endif // NEO
 		return false;
 	}
 
+#ifdef NEO
+	// Steam reports the app as installed from its manifest alone; the files
+	// can still be missing (moved library, interrupted uninstall). Mounting
+	// would fail silently later, so check the directory really exists.
+	struct stat sdkStat;
+	if ( stat( pszBuf, &sdkStat ) != 0 || !( sdkStat.st_mode & S_IFDIR ) )
+	{
+		MessageBox( 0, "The Source SDK 2013 Multiplayer (243750) files are missing from disk. Verify or reinstall it in Steam to play this mod.", "Launcher Error", MB_OK );
+		return false;
+	}
+#endif // NEO
 	return true;
 }
 
@@ -275,6 +311,56 @@ static char *GetBaseDir( const char *pszBuffer )
 	return basedir;
 }
 
+#ifdef NEO
+static const char *GetExecutableModName( char *pszExePath )
+{
+	static char s_szFinalFilename[ MAX_PATH + 1 ] = "hl2";
+
+	char szExePath[ MAX_PATH + 1 ];
+	strncpy( szExePath, pszExePath, sizeof( szExePath ) );
+	szExePath[ MAX_PATH ] = 0;
+
+	if ( !*szExePath )
+		return s_szFinalFilename;
+
+	const char *pszLastSeparator = strrchr( szExePath, '/' );
+#ifdef _WIN32
+	// Steam and the shell may hand us either separator on Windows.
+	const char *pszLastBackslash = strrchr( szExePath, '\\' );
+	if ( !pszLastSeparator || ( pszLastBackslash && pszLastBackslash > pszLastSeparator ) )
+	{
+		pszLastSeparator = pszLastBackslash;
+	}
+#endif
+	if ( !pszLastSeparator )
+		return s_szFinalFilename;
+
+	strncpy( s_szFinalFilename, pszLastSeparator + 1, sizeof( s_szFinalFilename ) );
+	s_szFinalFilename[ MAX_PATH ] = 0;
+	char *pszLastUnderscore = NULL;
+	char* pszLastDot = NULL;
+	for ( char *ch = s_szFinalFilename; *ch != 0; ch++ )
+	{
+		if ( *ch == '_' )
+		{
+			pszLastUnderscore = ch;
+		}
+
+		if ( *ch == '.' )
+		{
+			pszLastDot = ch;
+		}
+	}
+
+	if ( pszLastUnderscore )
+		*pszLastUnderscore = 0;
+
+	if ( pszLastDot )
+		*pszLastDot = 0;
+
+	return s_szFinalFilename;
+}
+#endif // NEO
 #ifdef WIN32
 
 #include <process.h>
@@ -447,6 +533,17 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 	// Get the root directory the .exe is in
 	char* pRootDir = GetBaseDir( moduleName );
+#ifdef NEO
+	// The game runs from its own install with its own bin\; the SDK Base
+	// install is only checked here because gameinfo.txt mounts its assets.
+	char szSDKInstallDir[4096];
+	if ( !GetGameInstallDir( pRootDir, szSDKInstallDir, sizeof( szSDKInstallDir ) ) && !s_bSDKNotInstalled )
+	{
+		return 1;
+	}
+
+	const char *pBinaryGameDir = pRootDir;
+#else
 	const char *pBinaryGameDir = pRootDir;
 	char szGameInstallDir[4096];
 	if ( !GetGameInstallDir( pRootDir, szGameInstallDir, 4096 ) )
@@ -457,6 +554,7 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	pBinaryGameDir = szGameInstallDir;
 
 	SetEnvironmentVariableA( "SDK_EXEC_DIR", szGameInstallDir );
+#endif // NEO
 
 #define LAUNCHER_DLL_PATH	"%s\\" PLATFORM_BIN_DIR "\\launcher.dll"
 #define LAUNCHER_PATH		"%s\\" PLATFORM_BIN_DIR
@@ -486,6 +584,34 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 		return 0;
 	}
 
+#ifdef NEO
+	// Launch options carry no -game; derive the mod dir from our own
+	// binary name (neo_win64.exe -> neo) like the POSIX launcher does.
+	char szNewCmdLine[8192];
+	bool bHasGame = false;
+	{
+		const char *pszScan = lpCmdLine;
+		while ( ( pszScan = strstr( pszScan, "-game" ) ) != NULL )
+		{
+			const bool bStartOk = ( pszScan == lpCmdLine ) || ( pszScan[-1] == ' ' ) || ( pszScan[-1] == '\t' );
+			const char chEnd = pszScan[5];
+			if ( bStartOk && ( chEnd == '\0' || chEnd == ' ' || chEnd == '\t' ) )
+			{
+				bHasGame = true;
+				break;
+			}
+			pszScan += 5;
+		}
+	}
+
+	if ( !bHasGame )
+	{
+		_snprintf( szNewCmdLine, sizeof( szNewCmdLine ), "%s -game \"%s\\%s\"",
+			lpCmdLine, pRootDir, GetExecutableModName( moduleName ) );
+		szNewCmdLine[sizeof( szNewCmdLine ) - 1] = '\0';
+		lpCmdLine = szNewCmdLine;
+	}
+#endif // NEO
 	LauncherMain_t main = (LauncherMain_t)GetProcAddress( launcher, "LauncherMain" );
 	return main( hInstance, hPrevInstance, lpCmdLine, nCmdShow );
 }
@@ -496,7 +622,17 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 bool GetExePath( char *pszPath, size_t size )
 {
+#ifdef NEO
+	ssize_t nLength = readlink( "/proc/self/exe", pszPath, size - 1 );
+	if ( nLength <= 0 )
+	{
+		return false;
+	}
+	pszPath[nLength] = '\0';
+	return true;
+#else
 	return readlink("/proc/self/exe", pszPath, size ) > 0;
+#endif // NEO
 }
 
 #include <fcntl.h>
@@ -567,6 +703,55 @@ static void WaitForDebuggerConnect( int argc, char *argv[], int time )
 
 #endif // !LINUX
 
+#ifdef NEO
+// The engine resolves |appid_243750| gameinfo mounts by opening the SDK Base
+// 2013 Multiplayer install path with the final word of the folder name
+// lowercased ("...2013 multiplayer"). On case-sensitive filesystems that path
+// does not exist, so every SDK asset mount fails silently. Give the mangled
+// name a symlink to the real install so those mounts resolve.
+static void CreateSDKCaseShim( const char *pszSDKInstallDir )
+{
+	static const char szExpectedName[] = "Source SDK Base 2013 Multiplayer";
+	static const char szMangledName[]  = "Source SDK Base 2013 multiplayer";
+
+	const char *pszLeaf = strrchr( pszSDKInstallDir, '/' );
+	if ( !pszLeaf || strcmp( pszLeaf + 1, szExpectedName ) != 0 )
+	{
+		// Unexpected install folder name; the engine's mangling is only
+		// known for the stock name, so do nothing.
+		return;
+	}
+
+	char szMangledPath[4096];
+	snprintf( szMangledPath, sizeof( szMangledPath ), "%.*s/%s",
+		(int)( pszLeaf - pszSDKInstallDir ), pszSDKInstallDir, szMangledName );
+
+	// Already resolves on case-insensitive filesystems or if the link exists.
+	if ( access( szMangledPath, F_OK ) == 0 )
+	{
+		return;
+	}
+
+	// A leftover link can dangle (SDK moved or reinstalled elsewhere);
+	// replace it instead of failing with EEXIST. Anything that is not a
+	// symlink was not created by us, so leave it alone.
+	struct stat linkStat;
+	if ( lstat( szMangledPath, &linkStat ) == 0 )
+	{
+		if ( !S_ISLNK( linkStat.st_mode ) )
+		{
+			return;
+		}
+		unlink( szMangledPath );
+	}
+
+	if ( symlink( pszSDKInstallDir, szMangledPath ) != 0 )
+	{
+		fprintf( stderr, "[NT;RE launcher] Warning: couldn't create '%s' -> '%s' (%s); SDK content may fail to mount.\n",
+			szMangledPath, pszSDKInstallDir, strerror( errno ) );
+	}
+}
+#else
 
 static const char *GetExecutableModName( char *pszExePath )
 {
@@ -608,9 +793,130 @@ static const char *GetExecutableModName( char *pszExePath )
 
 	return s_szFinalFilename;
 }
+#endif // NEO
 
 int main( int argc, char *argv[] )
 {
+#ifdef NEO
+	char moduleName[MAX_PATH];
+	if ( !GetExePath( moduleName, sizeof( moduleName ) ) )
+	{
+		return 1;
+	}
+
+	char* pRootDir = GetBaseDir( moduleName );
+
+	// Run from the install root: relative engine paths and steam_appid.txt
+	// both resolve against the working directory.
+	if ( chdir( pRootDir ) != 0 )
+	{
+		fprintf( stderr, "[NT;RE launcher] Warning: chdir(%s) failed: %s\n", pRootDir, strerror( errno ) );
+	}
+
+	// The dynamic linker only reads LD_LIBRARY_PATH at process start, and
+	// launcher.so's dependencies resolve through it, so prepend our bin dir
+	// and re-exec ourselves exactly once.
+	if ( !getenv( "NEO_LAUNCHER_BOOTSTRAPPED" ) )
+	{
+		char szLibPath[8192];
+		const char *pszOldPath = getenv( "LD_LIBRARY_PATH" );
+		snprintf( szLibPath, sizeof( szLibPath ), "%s/" PLATFORM_BIN_DIR "%s%s",
+			pRootDir, pszOldPath ? ":" : "", pszOldPath ? pszOldPath : "" );
+		setenv( "LD_LIBRARY_PATH", szLibPath, 1 );
+		setenv( "NEO_LAUNCHER_BOOTSTRAPPED", "1", 1 );
+
+		// Same environment the stock launch script sets up.
+		setenv( "__GL_THREADED_OPTIMIZATIONS", "1", 1 );
+		if ( access( "pathmatch.inf", F_OK ) == 0 )
+		{
+			setenv( "ENABLE_PATHMATCH", "1", 1 );
+		}
+
+		execv( moduleName, argv );
+		fprintf( stderr, "[NT;RE launcher] Failed to re-exec %s: %s\n", moduleName, strerror( errno ) );
+		return 1;
+	}
+
+	// Give a debugger a chance to attach before anything interesting runs.
+	WaitForDebuggerConnect( argc, argv, 30 );
+
+	// The stock launch script raises the fd limit; the engine leans on it.
+	struct rlimit fdLimit;
+	if ( getrlimit( RLIMIT_NOFILE, &fdLimit ) == 0 && fdLimit.rlim_cur < 2048 )
+	{
+		fdLimit.rlim_cur = ( fdLimit.rlim_max == RLIM_INFINITY || fdLimit.rlim_max > 2048 ) ? 2048 : fdLimit.rlim_max;
+		setrlimit( RLIMIT_NOFILE, &fdLimit );
+	}
+
+	char szSDKInstallDir[4096];
+	if ( GetGameInstallDir( pRootDir, szSDKInstallDir, sizeof( szSDKInstallDir ) ) )
+	{
+		CreateSDKCaseShim( szSDKInstallDir );
+	}
+	else if ( !s_bSDKNotInstalled )
+	{
+		return 1;
+	}
+
+	// Build the argument list for LauncherMain, appending a default -game
+	// derived from our binary name (neo_linux64 -> neo) when absent.
+	std::vector<char *> new_argv;
+	new_argv.push_back( moduleName );
+
+	bool bHasGame = false;
+	for ( int i = 1; i < argc; i++ )
+	{
+		if ( !strcmp( argv[i], "-game" ) )
+		{
+			bHasGame = true;
+		}
+		new_argv.push_back( argv[i] );
+	}
+
+	char szGamePath[8192];
+	if ( !bHasGame )
+	{
+		new_argv.push_back( (char *)"-game" );
+		const char *pModName = GetExecutableModName( moduleName );
+		snprintf( szGamePath, sizeof( szGamePath ), "%s/%s", pRootDir, pModName );
+		printf( "[NT;RE launcher] Launching default game: %s\n", pModName );
+		new_argv.push_back( szGamePath );
+	}
+
+	const int nLauncherArgc = (int)new_argv.size();
+	new_argv.push_back( NULL );
+
+	char szLauncherPath[8192];
+	snprintf( szLauncherPath, sizeof( szLauncherPath ), "%s/" PLATFORM_BIN_DIR "/launcher.so", pRootDir );
+
+	void *pLauncherModule = Launcher_LoadModule( szLauncherPath );
+	if ( !pLauncherModule )
+	{
+		char szError[sizeof( szLauncherPath ) + 2048];
+		snprintf( szError, sizeof( szError ), "Failed to load %s:\n%s", szLauncherPath, dlerror() );
+		MessageBox( 0, szError, "Launcher Error", MB_OK );
+		return 1;
+	}
+
+	LauncherMain_t pfnLauncherMain = (LauncherMain_t)Launcher_GetProcAddress( pLauncherModule, "LauncherMain" );
+	if ( !pfnLauncherMain )
+	{
+		MessageBox( 0, "LauncherMain not found in launcher.so", "Launcher Error", MB_OK );
+		return 1;
+	}
+
+	const int nStatus = pfnLauncherMain( nLauncherArgc, new_argv.data() );
+
+	// The engine requests a relaunch (e.g. video mode changes) with this
+	// status; the stock launch script loops on it, we re-exec fresh.
+	if ( nStatus == 42 )
+	{
+		execv( moduleName, argv );
+		fprintf( stderr, "[NT;RE launcher] Failed to re-exec %s after engine restart request: %s\n", moduleName, strerror( errno ) );
+	}
+
+	return nStatus;
+#else
 	char moduleName[MAX_PATH];
 	if ( !GetExePath( moduleName, sizeof( moduleName ) ) )
 	{
@@ -663,6 +969,7 @@ int main( int argc, char *argv[] )
 	execvp( szExecutable, new_argv.data() );
 
 	return 0;
+#endif // NEO
 }
 
 #else

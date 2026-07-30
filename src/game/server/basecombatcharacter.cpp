@@ -3470,6 +3470,21 @@ float CBaseCombatCharacter::GetFogObscuredRatio( CBaseEntity *target ) const
 //-----------------------------------------------------------------------------
 float CBaseCombatCharacter::GetFogObscuredRatio( float range ) const
 {
+#ifdef NEO // Generic solution for NPCs
+	auto controller = FogSystem()->GetMasterFogController();
+
+	if ( controller )
+	{
+		const fogparams_t &fog = controller->m_fog;
+
+		if ( !fog.enable )
+			return 0.0f;
+
+		float ratio = RemapValClamped( range, fog.start, fog.end, 0.0f, 1.0f );
+		ratio = MIN( ratio, fog.maxdensity );
+		return ratio;
+	}
+#endif
 /* TODO: Get global fog from map somehow since nav mesh fog is gone
 	fogparams_t fog;
 	GetFogParams( &fog );

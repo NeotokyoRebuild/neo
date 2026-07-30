@@ -117,16 +117,16 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 			return;
 		}
 
-		const int localTeam = GetLocalPlayerTeam();
-		const int playerTeam = event->GetInt("playerteam");
-		if (localTeam != TEAM_SPECTATOR && playerTeam != localTeam)
+		const int userID = event->GetInt("userid");
+		const int playerIndex = engine->GetPlayerForUserID(userID);
+		if (GetClientVoiceMgr()->IsPlayerBlocked(playerIndex) || (!NEORules()->IsTeamplay() && playerIndex != GetLocalPlayerIndex()))
 		{
 			return;
 		}
 
-		const int userID = event->GetInt("userid");
-		const int playerIndex = engine->GetPlayerForUserID(userID);
-		if (GetClientVoiceMgr()->IsPlayerBlocked(playerIndex))
+		const int localTeam = GetLocalPlayerTeam();
+		const int playerTeam = event->GetInt("playerteam");
+		if (localTeam != TEAM_SPECTATOR && playerTeam != localTeam)
 		{
 			return;
 		}
@@ -167,7 +167,7 @@ enum NeoPlayerPingsInSpectate
 ConVar cl_neo_player_pings_in_spectate("cl_neo_player_pings_in_spectate", "1", FCVAR_ARCHIVE, "See pings of players playing the game. 0 = disabled, 1 = spectate target team, 2 = all", true, NEO_SPECTATE_PINGS_DISABLED, true, NEO_SPECTATE_PINGS_LAST_VALUE);
 void CNEOHud_PlayerPing::DrawNeoHudElement()
 {
-	if (!ShouldDraw() || !NEORules()->IsTeamplay())
+	if (!ShouldDraw())
 	{
 		return;
 	}
@@ -364,10 +364,14 @@ void CNEOHud_PlayerPing::NotifyPing(const int playerSlot)
 
 	if (cl_neo_player_pings_chat_message.GetBool())
 	{
-		CBaseHudChat* hudChat = (CBaseHudChat*)GET_HUDELEMENT(CHudChat);
-		if (hudChat)
+		// Skip text notification for bots
+		if (g_PR && !g_PR->IsFakePlayer(playerSlot + 1))
 		{
-			hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged a location\n", pPlayer->GetNeoPlayerName());
+			CBaseHudChat* hudChat = (CBaseHudChat*)GET_HUDELEMENT(CHudChat);
+			if (hudChat)
+			{
+				hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged a location\n", pPlayer->GetNeoPlayerName());
+			}
 		}
 	}
 	

@@ -44,6 +44,10 @@
 
 #include "tier0/vprof.h"
 
+#ifdef NEO // Unity build
+#include "Common.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
@@ -68,6 +72,7 @@ COMPILE_TIME_ASSERT( Panel::PIN_LAST == ARRAYSIZE( g_PinCornerStrings ) );
 
 extern int GetBuildModeDialogCount();
 
+#ifndef NEO // Unity build
 static char *CopyString( const char *in )
 {
 	if ( !in )
@@ -78,6 +83,7 @@ static char *CopyString( const char *in )
 	V_strncpy( n, in, len  + 1 );
 	return n;
 }
+#endif
 
 
 // Temporary convar to help debug why the MvMVictoryMannUpPanel TabContainer is sometimes way off to the left.

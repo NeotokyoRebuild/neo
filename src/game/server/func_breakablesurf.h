@@ -53,6 +53,10 @@ public:
 	CNetworkVar( float, m_flPanelHeight );
 	CNetworkVector( m_vNormal );
 	CNetworkVector( m_vCorner );
+#ifdef NEO
+	CNetworkVector( m_vWidthDir );
+	CNetworkVector( m_vHeightDir );
+#endif
 	CNetworkVar( bool, m_bIsBroken );
 	CNetworkVar( ShatterSurface_t, m_nSurfaceType );
 	int					m_nNumBrokenPanes;

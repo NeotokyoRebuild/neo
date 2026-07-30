@@ -40,8 +40,10 @@ extern void OverrideGameUI();
 
 using namespace vgui;
 
+#ifndef NEO
 void MP3Player_Create( vgui::VPANEL parent );
 void MP3Player_Destroy();
+#endif
 
 #include <vgui/IInputInternal.h>
 vgui::IInputInternal *g_InputInternal = NULL;
@@ -230,8 +232,10 @@ void VGui_CreateGlobalPanels( void )
 	debugoverlaypanel->Create( gameToolParent );
 
 #ifndef _X360
+#ifndef NEO
 	// Create mp3 player off of tool parent panel
 	MP3Player_Create( toolParent );
+#endif
 #endif
 #ifdef SIXENSE
 	g_pSixenseInput->CreateGUI( gameToolParent );
@@ -243,7 +247,9 @@ void VGui_Shutdown()
 	VGUI_DestroyClientDLLRootPanel();
 
 #ifndef _X360
+#ifndef NEO
 	MP3Player_Destroy();
+#endif
 #endif
 
 	netgraphpanel->Destroy();

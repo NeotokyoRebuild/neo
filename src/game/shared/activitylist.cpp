@@ -80,7 +80,11 @@ activitylist_t *ActivityList_AddActivityEntry( const char *pName, int iActivityI
 }
 
 // get the database entry from a string
+#ifdef NEO // Unity build
+static activitylist_t *ActivityListFromString( const char *pString )
+#else
 static activitylist_t *ListFromString( const char *pString )
+#endif
 {
 	// just use the string registry to do this search/map
 	int stringID = g_ActivityStrings.GetStringID( pString );
@@ -118,7 +122,11 @@ bool ActivityList_RegisterSharedActivity( const char *pszActivityName, int iActi
 
 	// first, check to make sure the slot we're asking for is free. It must be for 
 	// a shared activity.
+#ifdef NEO // Unity build
+	activitylist_t *pList = ActivityListFromString( pszActivityName );
+#else
 	activitylist_t *pList = ListFromString( pszActivityName );
+#endif
 	if ( !pList )
 	{
 		pList = ListFromActivity( iActivityIndex );
@@ -139,7 +147,11 @@ bool ActivityList_RegisterSharedActivity( const char *pszActivityName, int iActi
 
 Activity ActivityList_RegisterPrivateActivity( const char *pszActivityName )
 {
+#ifdef NEO // Unity build
+	activitylist_t *pList = ActivityListFromString( pszActivityName );
+#else
 	activitylist_t *pList = ListFromString( pszActivityName );
+#endif
 	if ( pList )
 	{
 		// this activity is already in the list. If the activity we collided with is also private, 
@@ -166,7 +178,11 @@ Activity ActivityList_RegisterPrivateActivity( const char *pszActivityName )
 int ActivityList_IndexForName( const char *pszActivityName )
 {
 	// this is a fast O(lgn) search (actually does 2 O(lgn) searches)
+#ifdef NEO // Unity build
+	activitylist_t *pList = ActivityListFromString( pszActivityName );
+#else
 	activitylist_t *pList = ListFromString( pszActivityName );
+#endif
 
 	if ( pList )
 	{

@@ -104,7 +104,11 @@ public:
 	float				m_flGlowProxySize;
 };
 
+#ifdef NEO // Unity build
+static void RecvProxy_HDRColorScaleLightGlow( const CRecvProxyData *pData, void *pStruct, void *pOut )
+#else
 static void RecvProxy_HDRColorScale( const CRecvProxyData *pData, void *pStruct, void *pOut )
+#endif
 {
 	C_LightGlow *pLightGlow = ( C_LightGlow * )pStruct;
 
@@ -123,7 +127,11 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE( C_LightGlow, DT_LightGlow, CLightGlow )
 	RecvPropQAngles( RECVINFO_NAME( m_angNetworkAngles, m_angRotation ) ),
 	RecvPropInt( RECVINFO_NAME(m_hNetworkMoveParent, moveparent), 0, RecvProxy_IntToMoveParent ),
 	RecvPropFloat(RECVINFO(m_flGlowProxySize)),
+#ifdef NEO // Unity build
+	RecvPropFloat("HDRColorScale", 0, SIZEOF_IGNORE, 0, RecvProxy_HDRColorScaleLightGlow),
+#else
 	RecvPropFloat("HDRColorScale", 0, SIZEOF_IGNORE, 0, RecvProxy_HDRColorScale),
+#endif
 END_RECV_TABLE()
 
 //-----------------------------------------------------------------------------

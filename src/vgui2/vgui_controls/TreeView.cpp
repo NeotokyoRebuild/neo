@@ -28,6 +28,9 @@
 #include <vgui_controls/TextImage.h>
 #include <vgui_controls/ImageList.h>
 #include <vgui_controls/ImagePanel.h>
+#ifdef NEO // Unity build
+#include "Common.h"
+#endif
 
 #include "tier1/utlstring.h"
 
@@ -39,10 +42,12 @@
 #endif
 
 using namespace vgui;
+#ifndef NEO // Unity build
 enum 
 {
 	WINDOW_BORDER_WIDTH=2 // the width of the window's border
 };
+#endif
 
 #define TREE_INDENT_AMOUNT 20
 

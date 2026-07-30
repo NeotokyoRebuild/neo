@@ -346,15 +346,6 @@ FileWeaponInfo_t::FileWeaponInfo_t()
 	bShowUsageHint = false;
 	m_bAllowFlipping = true;
 	m_bBuiltRightHanded = true;
-
-#ifdef NEO
-	vecVmOffset = vec3_origin;
-	szBulletCharacter[0] = 0;
-	szDeathIcon[0] = 0;
-	iAimFOV = 0;
-	m_flPenetration = 0.f;
-	m_bDropOnDeath = true;
-#endif
 }
 
 #ifdef CLIENT_DLL
@@ -373,16 +364,6 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 
 	// View model
 	Q_strncpy(szViewModel, pKeyValuesData->GetString("viewmodel"), MAX_WEAPON_STRING);
-#ifdef NEO
-	const char *notFoundStr = "notfound";
-	Q_strncpy(szViewModel2, pKeyValuesData->GetString("team2viewmodel", notFoundStr), MAX_WEAPON_STRING);
-	// If there was no NSF viewmodel specified, fall back to Source's default "viewmodel" to ensure we have something sensible available.
-	// This might happen when attempting to equip a non-NT weapon.
-	if (Q_strcmp(szViewModel2, notFoundStr) == 0)
-	{
-		Q_strncpy(szViewModel2, pKeyValuesData->GetString("viewmodel"), MAX_WEAPON_STRING);
-	}
-#endif
 
 	// World model
 	Q_strncpy( szWorldModel, pKeyValuesData->GetString( "playermodel" ), MAX_WEAPON_STRING );
@@ -424,18 +405,6 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 			iFlags |= g_ItemFlags[i].m_iFlagValue;
 		}
 	}
-
-#ifdef NEO
-	const float VMOffsetForward = pKeyValuesData->GetFloat("VMOffsetForward");
-	const float VMOffsetRight = pKeyValuesData->GetFloat("VMOffsetRight");
-	const float VMOffsetUp = pKeyValuesData->GetFloat("VMOffsetUp");
-	vecVmOffset = Vector(VMOffsetForward, VMOffsetRight, VMOffsetUp);
-	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
-	Q_strncpy( szDeathIcon, pKeyValuesData->GetString("iDeathIcon", ""), MAX_BULLET_CHARACTER);
-	iAimFOV = pKeyValuesData->GetInt("AimFov", 45);
-	m_flPenetration = pKeyValuesData->GetFloat("Penetration", 0);
-	m_bDropOnDeath = pKeyValuesData->GetBool("DropOnDeath", true);
-#endif
 
 	bShowUsageHint = ( pKeyValuesData->GetInt( "showusagehint", 0 ) != 0 ) ? true : false;
 	bAutoSwitchTo = ( pKeyValuesData->GetInt( "autoswitchto", 1 ) != 0 ) ? true : false;

@@ -2247,8 +2247,13 @@ void CMultiPlayerAnimState::ConvergeYawAngles( float flGoalYaw, float flYawRate,
 
 	// Find the yaw delta.
 	float flDeltaYaw = flGoalYaw - flCurrentYaw;
+#ifdef NEO
+	flDeltaYaw = AngleNormalize( flDeltaYaw );
+	float flDeltaYawAbs = fabs( flDeltaYaw );
+#else
 	float flDeltaYawAbs = fabs( flDeltaYaw );
 	flDeltaYaw = AngleNormalize( flDeltaYaw );
+#endif // NEO
 
 	// Always do at least a bit of the turn (1%).
 	float flScale = 1.0f;

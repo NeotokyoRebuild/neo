@@ -14,6 +14,7 @@ class INEOPlayerAnimState;
 #include "hl2mp_player.h"
 #include "in_buttons.h"
 #include "neo_crosshair.h"
+#include "neo_gamerules_restore.h"
 
 #include "neo_player_shared.h"
 
@@ -67,7 +68,6 @@ public:
 	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
-	virtual void PlayerUse(void) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
@@ -81,11 +81,12 @@ public:
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
 	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
-	bool Weapon_GetPosition(int slot, int position);
+	CNEOBaseCombatWeapon* Weapon_GetPosition(int slot, int position);
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
 	const char* GetOverrideStepSound(const char* pBaseStepSound) override;
+	virtual void Splash() override;
 	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
 	void Weapon_DropOnDeath(CNEOBaseCombatWeapon *pWeapon, Vector damageForce);
 	void Weapon_DropAllOnDeath(const CTakeDamageInfo &info);
@@ -97,6 +98,7 @@ public:
 	virtual void GiveDefaultItems(void) OVERRIDE;
 	virtual int	OnTakeDamage_Alive(const CTakeDamageInfo& info) OVERRIDE;
 	virtual CBaseEntity* GiveNamedItem(const char* szName, int iSubType = 0) override;
+	virtual CBaseEntity* FindUseEntity() override;
 
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
@@ -111,6 +113,8 @@ public:
 	// -----------------------
 	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of "fog"
 	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+	virtual float		GetFogObscuredRatio(float range) const OVERRIDE;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+	float				GetCloakObscuredRatio(CNEO_Player* target) const;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 
 	void AddNeoFlag(int flags)
 	{
@@ -148,7 +152,7 @@ public:
 	const char *GetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
 	// "neo_name" even if it's nothing
 	const char *GetNeoPlayerNameDirect() const;
-	void SetNeoPlayerName(const char *newNeoName);
+	[[nodiscard]] bool SetNeoPlayerName(const char *newNeoName);
 	void SetClientWantNeoName(const bool b);
 	const char *GetNeoClantag() const;
 
@@ -168,7 +172,9 @@ public:
 
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
+	void SetClass(int neoClass);
 	int GetStar() const { return m_iNeoStar; }
+	const char *GetStarName( int iStar ) const;
 	bool IsInAim() const { return m_bInAim; }
 	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
 
@@ -178,7 +184,11 @@ public:
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotCloakStateDisrupted() const { return !m_botThermOpticCamoDisruptedTimer.IsElapsed(); }
+	bool GetBotPauseFiring() const { return !m_botPauseFiringTimer.IsElapsed(); }
 	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
+
+	CNEO_Player* GetSpectatorTakeoverPlayerTarget() const { return m_hSpectatorTakeoverPlayerTarget.Get(); }
+	CNEO_Player* GetSpectatorTakeoverPlayerImpersonatingMe() const { return m_hSpectatorTakeoverPlayerImpersonatingMe.Get(); }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
 	virtual void StartSprinting(void) OVERRIDE;
@@ -216,13 +226,9 @@ public:
 	
 	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 
-	int GetAttackersScores(const int attackerIdx) const;
-	int GetAttackerHits(const int attackerIdx) const;
-
 	void SetNameDupePos(const int dupePos);
 	int NameDupePos() const;
 
-	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
 	void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
@@ -238,6 +244,9 @@ public:
 	void BecomeJuggernaut();
 	void SpawnJuggernautPostDeath();
 
+	bool IsAFK() const;
+	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
+
 	bool ShouldPlayerMakeFootsteps(float speed = -1.f);
 	float SpeedFractionToSoundThreshold(float speed = -1.f);
 
@@ -246,6 +255,8 @@ private:
 
 	// tracks time since last cloak disruption event for bots who can't actually see
 	CountdownTimer m_botThermOpticCamoDisruptedTimer;
+	// cooldown after inflicting accidental team damage
+	CountdownTimer m_botPauseFiringTimer;
 
 private:
 	float GetActiveWeaponSpeedScale() const;
@@ -265,6 +276,14 @@ public:
 	CNetworkVar(int, m_iClassBeforeTakeover);
 
 	CNetworkVar(int, m_iXP);
+
+	struct NeoRestore
+	{
+		NextRoundPlayerRestoreFlags flags;
+		int iXP;
+		int iDeaths;
+	};
+	NeoRestore m_iNextRestore = {};
 
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
@@ -288,9 +307,9 @@ public:
 	CNetworkVar(float, m_flNextPingTime);
 
 	// Used as 1-indexed, need MAX_PLAYERS_ARRAY_SAFE
-	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS_ARRAY_SAFE);
-	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS_ARRAY_SAFE);
-	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS_ARRAY_SAFE);
+	int m_riAttackersScores[MAX_PLAYERS_ARRAY_SAFE];
+	float m_rflAttackersAccumlator[MAX_PLAYERS_ARRAY_SAFE];
+	int m_riAttackersHits[MAX_PLAYERS_ARRAY_SAFE];
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
@@ -320,14 +339,17 @@ public:
 	CNetworkArray(Vector, m_vLastPingByStar, STAR__TOTAL); // The last ping location from this player for each squad star
 	// Bot Functions
 	void ResetBotCommandState();
+	void SendMessageToCommander( const char *message );
+	void SendMessageToPlayer( CNEO_Player *pPlayer, const char *message );
 	void ToggleBotFollowCommander( CNEO_Player *pCommander );
 	static const Vector VECTOR_INVALID_WAYPOINT;
+	float m_flLastInputTime = gpGlobals->curtime;
 
 private:
 	bool m_bFirstDeathTick;
 	bool m_bCorpseSet;
 	bool m_bPreviouslyReloading;
-	bool m_szNeoNameHasSet;
+	bool m_bNeoNameHasSet;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
@@ -342,26 +364,12 @@ private:
 
 	// Cache for GetFogObscuredRatio for each player
 	mutable CNEO_Player_FogCacheEntry m_playerFogCache[MAX_PLAYERS_ARRAY_SAFE];
-	
-	static int m_iLastHurt;
-	static int m_iLastShooter;
-public:
-	void SetLastShooter() { m_iLastShooter = entindex(); };
-
-private:
-	static int m_iLastEvent;
-	static int m_iLastAttacker;
-	static int m_iLastKiller;
-	static int m_iLastGhoster;
-public:
-	void SetLastGhoster() { m_iLastGhoster = m_iLastEvent = entindex(); };
 
 private:
 	CNEO_Player(const CNEO_Player&);
 
 	// Spectator takeover player related functionality
-	int GetSecondsUntilAFK() const;
-	bool IsAFK() const;
+	bool IsFakePlayer() const;
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
@@ -379,6 +387,15 @@ inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 		return nullptr;
 	}
 	return assert_cast<CNEO_Player*>(pEntity);
+}
+
+inline const CNEO_Player *ToNEOPlayer(const CBaseEntity *pEntity)
+{
+	if (!pEntity || !pEntity->IsPlayer())
+	{
+		return nullptr;
+	}
+	return assert_cast<const CNEO_Player*>(pEntity);
 }
 
 #endif // NEO_PLAYER_H

@@ -64,4 +64,8 @@ void CopySoundNameWithModifierToken( char *pchDest, const char *pchSource, int n
 #include "player.h"
 #endif
 
+#ifdef NEO
+float IntervalDistance(float x, float x0, float x1);
+#endif // NEO
+
 #endif // BASEPLAYER_SHARED_H

@@ -50,6 +50,8 @@ void AddSubKeyNamed( KeyValues *pKeys, const char *pszName );
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "c_neo_player.h"
+#include "view.h"
+#include "hltvcamera.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -986,48 +988,77 @@ CON_COMMAND_F( spec_player, "Spectate player by partial name, steamid, or userid
 	}
 }
 
-#ifdef NEO 
+#ifdef NEO
 CON_COMMAND_F( spec_player_under_mouse, "Spectate player by partial name, steamid, or userid", FCVAR_CLIENTCMD_CAN_EXECUTE )
+{
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
+		return;
+	}
+
+	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
+		return;
+
+	C_BaseEntity* currentTarget = pNeoPlayer->GetObserverTarget();
+	C_NEO_Player *target = nullptr;
+	float targetDotProduct = -1;
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+		if (currentTarget != pPlayer && pNeoPlayer->IsValidObserverTarget(pPlayer) && pPlayer->IsAlive())
+		{
+			Vector vecToTarget = pPlayer->WorldSpaceCenter() - MainViewOrigin();
+			vecToTarget.NormalizeInPlace();
+			float dotProduct = DotProduct(MainViewForward(), vecToTarget);
+			if (dotProduct > targetDotProduct && dotProduct > 0.5)
+			{
+				targetDotProduct = dotProduct;
+				target = pPlayer;
+			}
+		}
+	}
+
+	if (target)
+	{
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(target->entindex()) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", target->entindex()));
+	}
+}
+
+CON_COMMAND_F( spec_fastest_player, "Spectate the fastest player", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
 	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
 		return;
 
-	if (!engine->IsHLTV() || !HLTVCamera()->IsPVSLocked())
+	if (engine->IsHLTV())
 	{
-		C_BaseEntity* currentTarget = pNeoPlayer->GetObserverTarget();
-		C_NEO_Player *target = nullptr;
-		float targetDotProduct = -1;
-		for (int i = 1; i < gpGlobals->maxClients; i++)
+		if (HLTVCamera()->IsPVSLocked())
 		{
-			C_NEO_Player* pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
-			if (currentTarget != pPlayer && pNeoPlayer->IsValidObserverTarget(pPlayer) && pPlayer->IsAlive())
-			{
-				Vector vecForward;
-				AngleVectors( pNeoPlayer->EyeAngles(), &vecForward );
+			ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
+			return;
+		}
 
-				Vector vecToTarget = pPlayer->WorldSpaceCenter() - pNeoPlayer->EyePosition();
-				vecToTarget.NormalizeInPlace();
-				float dotProduct = DotProduct(vecForward, vecToTarget);
-				if (dotProduct > targetDotProduct && dotProduct > 0.5)
-				{
-					targetDotProduct = dotProduct;
-					target = pPlayer;
-				}
+		// We have up to date information on all the players, just do it here
+		float fastestSpeedSquared = 0;
+		CBasePlayer* pFastestEntity = nullptr;
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+			if (pPlayer && !pPlayer->IsObserver() && pPlayer->GetAbsVelocity().LengthSqr() > fastestSpeedSquared)
+			{
+				fastestSpeedSquared = pPlayer->GetAbsVelocity().LengthSqr();
+				pFastestEntity = pPlayer;
 			}
 		}
 
-		if (target)
-		{
-			if (engine->IsHLTV())
-			{
-				HLTVCamera()->SetPrimaryTarget(target->entindex());
-			}
-			else
-			{
-				engine->ClientCmd( VarArgs("spec_player_entity_number %d", target->entindex()) );
-			}
-		}
+		if (pFastestEntity)
+			HLTVCamera()->SetPrimaryTarget(pFastestEntity->entindex());
+	}
+	else
+	{
+		engine->ClientCmd(VarArgs("spectate_fastest_player"));
 	}
 }
 #endif // NEO

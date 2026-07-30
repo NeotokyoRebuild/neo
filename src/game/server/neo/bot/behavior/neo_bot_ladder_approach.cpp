@@ -11,6 +11,7 @@
 CNEOBotLadderApproach::CNEOBotLadderApproach( const CNavLadder *ladder, bool goingUp )
 	: m_ladder( ladder ), m_bGoingUp( goingUp )
 {
+	m_ladderCenter = ladder ? ( ladder->m_top + ladder->m_bottom ) * 0.5f : vec3_origin;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -32,20 +33,30 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 			m_ladder->m_length );
 	}
 
+	// Don't interfere with look direction
+	// Can exit out of behavior if threat is present
+	me->StopLookingAroundForEnemies();
+	me->SetAttribute( CNEOBot::IGNORE_ENEMIES );
+
 	return Continue();
 }
 
 //---------------------------------------------------------------------------------------------
 // Implementation based on ladder climbing implementation in https://github.com/Dragoteryx/drgbase/
-ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval )
+ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 {
+	if ( !m_ladder )
+	{
+		return Done( "Ladder is invalid" );
+	}
+
 	if ( m_timeoutTimer.IsElapsed() )
 	{
 		return Done( "Ladder approach timeout" );
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	if ( threat && threat->IsVisibleRecently() )
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
+	if ( threat )
 	{
 		if ( me->IsDebugging( NEXTBOT_PATH ) )
 		{
@@ -60,8 +71,20 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 
 	const Vector& myPos = mover->GetFeet();
 
+	// If we end up closer to exit point than entry point,
+	// may not need to continue climb, exit to reevaluate situation
+	Vector entryPos = m_bGoingUp ? m_ladder->m_bottom : m_ladder->m_top;
+	Vector exitPos = m_bGoingUp ? m_ladder->m_top : m_ladder->m_bottom;
+	float distToEntrySq = myPos.DistToSqr( entryPos );
+	float distToExitSq = myPos.DistToSqr( exitPos );
+
+	if ( distToExitSq < distToEntrySq )
+	{
+		return Done( "Closer to ladder exit than entry, assuming goal reached accidentally" );
+	}
+
 	// Are we climbing up or down the ladder?
-	const Vector& targetPos = m_bGoingUp ? m_ladder->m_bottom : m_ladder->m_top;
+	Vector targetPos = m_bGoingUp ? m_ladder->m_bottom : m_ladder->m_top;
 
 	// Calculate 2D vector from bot to ladder mount point
 	Vector2D to = ( targetPos - myPos ).AsVector2D();
@@ -71,81 +94,97 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float interval
 	Vector2D ladderNormal2D = m_ladder->GetNormal().AsVector2D();
 	float dot = DotProduct2D( ladderNormal2D, to );
 
+	// Aim at the ladder center at eye level to carefully attach to ladder
+	// Eye level in order to not accidentally move and detach between behavior transition
+	// If bot was looking up or down, sometimes the fast climb movement causes a detachment
+	Vector lookTarget = m_ladderCenter;
+	lookTarget.z = me->EyePosition().z;
+	body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr, "Stare at ladder center" );
+
 	if ( me->IsDebugging( NEXTBOT_PATH ) )
 	{
+		NDebugOverlay::Cross3D( targetPos, 5.0f, 255, 255, 0, true, 0.1f );
 		NDebugOverlay::Line( myPos, targetPos, 255, 255, 0, true, 0.1f );
 	}
 
 	// Are we aligned and close enough to mount the ladder?
-	if ( range >= ALIGN_RANGE )
+	if ( range >= MOUNT_RANGE )
 	{
-		// Far from ladder - just approach the target position
-		body->AimHeadTowards( targetPos, IBody::CRITICAL, 0.5f, nullptr, "Moving toward ladder" );
-		mover->Approach( targetPos );
-	}
-	else if ( range >= MOUNT_RANGE )
-	{
-		// Within alignment range but not mount range - need to align with ladder
-		if ( dot >= ALIGN_DOT_THRESHOLD )
+		// Perpendicular alignment line
+		Vector2D alignNormal = ladderNormal2D;
+		if ( dot > 0.0f )
 		{
-			// Not aligned - rotate around the ladder to get aligned
-			Vector2D myPerp( -to.y, to.x );
-			Vector2D ladderPerp2D( -ladderNormal2D.y, ladderNormal2D.x );
-
-			Vector goal = targetPos;
-			
-			// Calculate offset to circle around
-			float alignRange = MOUNT_RANGE + (1.0f + dot) * (ALIGN_RANGE - MOUNT_RANGE);
-			goal.x -= alignRange * to.x;
-			goal.y -= alignRange * to.y;
-
-			// Choose direction to circle based on perpendicular alignment
-			if ( DotProduct2D( to, ladderPerp2D ) < 0.0f )
-			{
-				goal.x += 10.0f * myPerp.x;
-				goal.y += 10.0f * myPerp.y;
-			}
-			else
-			{
-				goal.x -= 10.0f * myPerp.x;
-				goal.y -= 10.0f * myPerp.y;
-			}
-
-			body->AimHeadTowards( goal, IBody::CRITICAL, 0.3f, nullptr, "Aligning with ladder" );
-			mover->Approach( goal );
-
-			if ( me->IsDebugging( NEXTBOT_PATH ) )
-			{
-				NDebugOverlay::Cross3D( goal, 5.0f, 255, 0, 255, true, 0.1f );
-			}
+			alignNormal = -alignNormal; // Target behind ladder
 		}
-		else
+
+		Vector goal = targetPos;
+		
+		// Pull the goal point outwards along the ladder's normal
+		// to guide bot movement along approach
+		float offsetDist = Clamp( range * 0.8f, 10.0f, ALIGN_RANGE );
+		goal.x += alignNormal.x * offsetDist;
+		goal.y += alignNormal.y * offsetDist;
+
+		mover->Approach( goal );
+
+		if ( me->IsDebugging( NEXTBOT_PATH ) )
 		{
-			// Aligned - approach the ladder base directly
-			body->AimHeadTowards( targetPos, IBody::CRITICAL, 0.3f, nullptr, "Approaching ladder" );
-			mover->Approach( targetPos );
+			NDebugOverlay::Cross3D( goal, 5.0f, 255, 0, 255, true, 0.1f );
 		}
 	}
 	else
 	{
 		// Within mount range - check if aligned to start climbing
-		if ( dot < ALIGN_DOT_THRESHOLD )
+		bool onLadder = me->IsOnLadder();
+		if ( onLadder )
 		{
 			if ( me->IsDebugging( NEXTBOT_PATH ) )
 			{
 				DevMsg( "%s: Starting ladder climb\n", me->GetDebugIdentifier() );
 			}
 
+			// Stop the bot before behavior transition to prevent falling off the ladder
+			// there can be a delay in the state change, so momentum can cause a fall
+			me->SetAbsVelocity( vec3_origin );
 			// ChangeTo: if something goes wrong during climb, reevaluate situation
 			return ChangeTo( new CNEOBotLadderClimb( m_ladder, m_bGoingUp ), "Mounting ladder" );
+		}
+		else if ( !m_bGoingUp || dot < ALIGN_DOT_THRESHOLD )
+		{
+			// Aligned (or going down), push forward to attach to the ladder
+			me->PressForwardButton();
+			mover->Approach( targetPos );
 		}
 		else
 		{
 			// Close but not aligned - continue approaching to align
-			body->AimHeadTowards( targetPos, IBody::CRITICAL, 0.3f, nullptr, "Approaching ladder" );
 			mover->Approach( targetPos );
 		}
 	}
 
 	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotLadderApproach::OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction )
+{
+	me->StartLookingAroundForEnemies();
+	me->ClearAttribute( CNEOBot::IGNORE_ENEMIES );
+
+	if ( me->IsDebugging( NEXTBOT_PATH ) )
+	{
+		DevMsg( "%s: Finished ladder approach\n", me->GetDebugIdentifier() );
+	}
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult<CNEOBot> CNEOBotLadderApproach::OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+{
+	return Done( "OnSuspend: Cancel out of ladder approach, situation will likely become stale." );
+}
+
+//---------------------------------------------------------------------------------------------
+ActionResult<CNEOBot> CNEOBotLadderApproach::OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction )
+{
+	return Done( "OnResume: Cancel out of ladder approach, situation is likely stale." );
 }

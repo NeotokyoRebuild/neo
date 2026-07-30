@@ -41,6 +41,8 @@ public:
 	char m_szLocalStrPlayersCrosshair[MAX_PLAYERS][NEO_XHAIR_SEQMAX] = {};
 	CrosshairInfo m_playersCrosshairInfos[MAX_PLAYERS] = {};
 	float m_aflLastCheckedPlayersCrosshair[MAX_PLAYERS] = {};
+
+	void resetPlayersCrosshair();
 #endif
 
 	virtual void	SetCrosshairAngle( const QAngle& angle );

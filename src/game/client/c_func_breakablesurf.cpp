@@ -87,6 +87,10 @@ public:
 	float			m_flPanelHeight;
 	Vector			m_vNormal;
 	Vector			m_vCorner;
+#ifdef NEO
+	Vector			m_vWidthDir;
+	Vector			m_vHeightDir;
+#endif
 	bool			m_bIsBroken;
 	int				m_nSurfaceType;
 
@@ -274,6 +278,10 @@ IMPLEMENT_CLIENTCLASS_DT( C_BreakableSurface, DT_BreakableSurface, CBreakableSur
 	RecvPropFloat( RECVINFO( m_flPanelHeight) ),
 	RecvPropVector( RECVINFO( m_vNormal ) ),
 	RecvPropVector( RECVINFO( m_vCorner ) ),
+#ifdef NEO
+	RecvPropVector( RECVINFO( m_vWidthDir ) ),
+	RecvPropVector( RECVINFO( m_vHeightDir ) ),
+#endif
 	RecvPropInt( RECVINFO( m_bIsBroken )),
 	RecvPropInt( RECVINFO( m_nSurfaceType )),
 	RecvPropArray3( RECVINFO_ARRAY(m_RawPanelBitVec), RecvPropInt( RECVINFO( m_RawPanelBitVec[ 0 ] ))),
@@ -349,6 +357,10 @@ C_BreakableSurface::C_BreakableSurface()
 {
 	m_vNormal.Init();
 	m_vCorner.Init();
+#ifdef NEO
+	m_vWidthDir.Init();
+	m_vHeightDir.Init();
+#endif
 	m_bIsBroken = false;
 
 	m_pCurrentDetailTexture = NULL;
@@ -548,6 +560,12 @@ bool C_BreakableSurface::RenderBrushModelSurface( IClientEntity* pBaseEntity, IB
 //------------------------------------------------------------------------------
 void C_BreakableSurface::DrawRenderList(IBrushSurface* pBrushSurface)
 {
+#ifdef NEO
+	// Width and height directions are sent at full float precision by the server,
+	// so no cross product or derivation is needed here.
+	Vector vWidthStep  = m_vWidthDir  * m_flPanelWidth;
+	Vector vHeightStep = m_vHeightDir * m_flPanelHeight;
+#else
 	// Get width and height steps
 	QAngle vAngles;
 	VectorAngles(-1*m_vNormal,vAngles);
@@ -555,6 +573,7 @@ void C_BreakableSurface::DrawRenderList(IBrushSurface* pBrushSurface)
 	AngleVectors(vAngles,NULL,&vWidthStep,&vHeightStep);
 	vWidthStep	*= m_flPanelWidth;
 	vHeightStep *= m_flPanelHeight;
+#endif
 
 	CMeshBuilder	pMeshBuilder;
 	IMesh*			pMesh			= NULL;
@@ -592,6 +611,12 @@ void C_BreakableSurface::DrawRenderList(IBrushSurface* pBrushSurface)
 //------------------------------------------------------------------------------
 void C_BreakableSurface::DrawRenderListHighlights(IBrushSurface* pBrushSurface)
 {
+#ifdef NEO
+	// Width and height directions are sent at full float precision by the server,
+	// so no cross product or derivation is needed here.
+	Vector vWidthStep  = m_vWidthDir  * m_flPanelWidth;
+	Vector vHeightStep = m_vHeightDir * m_flPanelHeight;
+#else
 	// Get width and height steps
 	QAngle vAngles;
 	VectorAngles(-1*m_vNormal,vAngles);
@@ -599,6 +624,7 @@ void C_BreakableSurface::DrawRenderListHighlights(IBrushSurface* pBrushSurface)
 	AngleVectors(vAngles,NULL,&vWidthStep,&vHeightStep);
 	vWidthStep	*= m_flPanelWidth;
 	vHeightStep *= m_flPanelHeight;
+#endif
 
 
 	CMeshBuilder	pMeshBuilder;
@@ -924,12 +950,19 @@ void C_BreakableSurface::DrawSolidBlocks(IBrushSurface* pBrushSurface)
 	// ---------------
 	// Create panels
 	// ---------------
+#ifdef NEO
+	// Get width and height steps from the networked width direction.
+	// vHeightDir = Cross(m_vNormal, m_vWidthDir) is guaranteed correct by the server.
+	Vector vWidthStep  = m_vWidthDir  * m_flPanelWidth;
+	Vector vHeightStep = m_vHeightDir * m_flPanelHeight;
+#else
 	QAngle vAngles;
 	VectorAngles(-1*m_vNormal,vAngles);
 	Vector vWidthStep,vHeightStep;
 	AngleVectors(vAngles,NULL,&vWidthStep,&vHeightStep);
 	vWidthStep	*= m_flPanelWidth;
 	vHeightStep *= m_flPanelHeight;
+#endif
 
 	Vector vCurPos = m_vCorner;
 	for (int width=0;width<m_nNumWide;width++)

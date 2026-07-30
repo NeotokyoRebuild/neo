@@ -33,7 +33,11 @@ extern ConVar    sk_plr_dmg_smg1_grenade;
 extern ConVar    sk_npc_dmg_smg1_grenade;
 extern ConVar    sk_max_smg1_grenade;
 
+#ifdef NEO
+ConVar	  sk_smg1_grenade_radius		( "sk_smg1_grenade_radius","256", FCVAR_CHEAT);
+#else
 ConVar	  sk_smg1_grenade_radius		( "sk_smg1_grenade_radius","0");
+#endif
 
 ConVar g_CV_SmokeTrail("smoke_trail", "1", 0); // temporary dust explosion switch
 
@@ -58,7 +62,11 @@ void CGrenadeAR2::Spawn( void )
 	SetMoveType( MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE );
 
 	// Hits everything but debris
+#ifdef NEO // NEO NOTE DG: Unlike other nades, collide with players
+	SetCollisionGroup( COLLISION_GROUP_INTERACTIVE );
+#else
 	SetCollisionGroup( COLLISION_GROUP_PROJECTILE );
+#endif
 
 	SetModel( "models/Weapons/ar2_grenade.mdl");
 	UTIL_SetSize(this, Vector(-3, -3, -3), Vector(3, 3, 3));
@@ -80,7 +88,9 @@ void CGrenadeAR2::Spawn( void )
 
 	m_DmgRadius		= sk_smg1_grenade_radius.GetFloat();
 	m_takedamage	= DAMAGE_YES;
+#ifndef NEO
 	m_bIsLive		= true;
+#endif
 	m_iHealth		= 1;
 
 	SetGravity( UTIL_ScaleForGravity( 400 ) );	// use a lower gravity for grenades to make them easier to see
@@ -185,6 +195,12 @@ void CGrenadeAR2::GrenadeAR2Touch( CBaseEntity *pOther )
 			m_bIsLive = true;
 			Detonate();
 		}
+#ifdef NEO
+		else
+		{
+			EmitSound( "FX_RicochetSound.Ricochet" );
+		}
+#endif
 	}
 }
 

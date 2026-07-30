@@ -24,16 +24,20 @@
 #include <vgui_controls/Label.h>
 #include <vgui_controls/TextImage.h>
 #include <vgui_controls/ListViewPanel.h>
+#ifdef NEO // Unity build
+#include "Common.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
 using namespace vgui;
-	
+#ifndef NEO // Unity build
 enum 
 {
 	WINDOW_BORDER_WIDTH=2 // the width of the window's border
 };
+#endif
 
 namespace vgui
 {

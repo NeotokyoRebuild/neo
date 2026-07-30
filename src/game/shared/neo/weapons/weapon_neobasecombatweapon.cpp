@@ -41,12 +41,14 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
+	RecvPropInt(RECVINFO(m_spawnflags)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
+	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
 END_NETWORK_TABLE()
@@ -119,7 +121,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{0.25, 0.5, -0.6, 0.6},
 	},
 	{NEO_WEP_BALC,
-		{{VECTOR_CONE_1DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_5DEGREES}},
+		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_6DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
 		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
 	},
@@ -229,9 +231,37 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 	m_bTriggerReset = true;
 }
 
+const CNEOWeaponInfo &CNEOBaseCombatWeapon::GetNEOWpnData() const
+{
+	const FileWeaponInfo_t *pWeaponInfo = &GetWpnData();
+	const CNEOWeaponInfo *pNEOInfo;
+
+#ifdef _DEBUG
+	pNEOInfo = dynamic_cast< const CNEOWeaponInfo* >( pWeaponInfo );
+	Assert( pNEOInfo );
+#else
+	pNEOInfo = static_cast< const CNEOWeaponInfo* >( pWeaponInfo );
+#endif
+
+	return *pNEOInfo;
+}
+
 void CNEOBaseCombatWeapon::Precache()
 {
 	BaseClass::Precache();
+}
+
+const char *CNEOBaseCombatWeapon::GetViewModel( int ) const
+{
+	auto owner = GetOwner();
+
+	if (!owner)
+	{
+		return GetWpnData().szViewModel;
+	}
+
+	return owner->GetTeamNumber() == TEAM_JINRAI ?
+			   GetWpnData().szViewModel : GetNEOWpnData().szViewModel2;
 }
 
 void CNEOBaseCombatWeapon::Spawn()
@@ -490,7 +520,7 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 				}
 				else
 				{
-					pOwner->SetFOV(pOwner, GetWpnData().iAimFOV, 0.1);
+					pOwner->SetFOV(pOwner, GetNEOWpnData().iAimFOV, 0.1);
 				}
 			}
 			else
@@ -505,12 +535,12 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 
 float CNEOBaseCombatWeapon::GetFireRate()
 {
-	return GetHL2MPWpnData().m_flCycleTime;
+	return GetNEOWpnData().m_flCycleTime;
 }
 
 float CNEOBaseCombatWeapon::GetPenetration() const
 {
-	return GetWpnData().m_flPenetration;
+	return GetNEOWpnData().m_flPenetration;
 }
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
@@ -956,9 +986,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 
-#ifdef GAME_DLL
-	pPlayer->SetLastShooter();
-#endif // GAME_DLL
 	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 	{
 		pPlayer->DoMuzzleFlash();
@@ -1145,7 +1172,7 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 
 	if (GetWpnData().iconCrosshair)
 	{
-		crosshair->SetCrosshair(GetWpnData().iconCrosshair, crosshair->m_crosshairInfo.color);
+		crosshair->SetCrosshair(GetWpnData().iconCrosshair, crosshair->m_crosshairInfo.wep[CROSSHAIR_WEP_DEFAULT].color);
 	}
 	else
 	{
@@ -1293,10 +1320,9 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 
 RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()
 {
-	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	if (pPlayer)
+	if (auto pPlayer = static_cast<C_NEO_Player*>(GetOwner()))
 	{
-		return pPlayer->IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+		return pPlayer->IsDrawnTransparent() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
 	}
 
 	return BaseClass::GetRenderGroup();
@@ -1304,10 +1330,9 @@ RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()
 
 bool CNEOBaseCombatWeapon::UsesPowerOfTwoFrameBufferTexture()
 {
-	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	if (pPlayer)
+	if (auto pPlayer = static_cast<C_NEO_Player*>(GetOwner()))
 	{
-		return pPlayer->IsCloaked();
+		return pPlayer->IsDrawnTransparent();
 	}
 
 	return BaseClass::UsesPowerOfTwoFrameBufferTexture();
@@ -1350,16 +1375,26 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 #ifdef GAME_DLL
 void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	auto* neoPlayer = ToNEOPlayer(pActivator);
+	m_OnPlayerUse.FireOutput( pActivator, pCaller );
 
-	if (neoPlayer && neoPlayer->Weapon_CanSwitchTo(this) && CanBePickedUpByClass(neoPlayer->GetClass()))
+	if (m_pfnTouch)
 	{
-		neoPlayer->Weapon_DropSlot(GetSlot());
-		neoPlayer->Weapon_Equip(this);
+		if (CNEO_Player* pNeoPlayer = ToNEOPlayer(pActivator);
+			pNeoPlayer && CanBePickedUpByClass(pNeoPlayer->GetClass()))
+		{
+			CBaseCombatWeapon* pActiveWeapon = pNeoPlayer->GetActiveWeapon();
+			const int activeSlot = pActiveWeapon ? pActiveWeapon->GetSlot() : -1;
+			pNeoPlayer->Weapon_DropSlot(GetSlot());
 
-		RemoveEffects(EF_BONEMERGE);
+			(this->*m_pfnTouch)(pActivator);
+
+			if (GetOwner() == pNeoPlayer && activeSlot == GetSlot())
+			{
+				pNeoPlayer->Weapon_Switch(this);
+			}
+		}
 	}
 
-	BaseClass::Use(pActivator, pCaller, useType, value);
+	// Calling BaseClass::Use will pick the weapon up without waiting for the touch cooldown, don't see anything important there that we need to do that we aren't doing here
 }
 #endif

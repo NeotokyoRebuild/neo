@@ -24,7 +24,9 @@
 #include "vgui/ILocalize.h"
 #include "vgui_controls/PHandle.h"
 
+#ifndef NEO
 #include "vgui_controls/PropertySheet.h"
+#endif // NEO
 #include "vgui_controls/PropertyPage.h"
 #include "vgui_controls/TreeView.h"
 #include "vgui_controls/FileOpenDialog.h"
@@ -69,13 +71,13 @@ vgui::Panel *GetSDKRootPanel();
 
 #define MP3_DEFAULT_MP3DIR "c:\\my music"
 
+#ifndef NEO
 CMP3Player *GetMP3Player()
 {
 	Assert( g_pPlayer );
 	return g_pPlayer;
 }
 
-#ifndef NEO
 static void mp3_f()
 {
 	CMP3Player *player = GetMP3Player();
@@ -84,7 +86,7 @@ static void mp3_f()
 		player->SetVisible( !player->IsVisible() );
 	}
 }
-#endif // NEO
+
 void MP3Player_Create( vgui::VPANEL parent )
 {
 	Assert( !g_pPlayer );
@@ -105,7 +107,6 @@ void MP3Player_Destroy()
 	}
 }
 
-#ifndef NEO
 static ConCommand mp3( "mp3", mp3_f, "Show/hide mp3 player UI." );
 #endif // NEO
 
@@ -315,19 +316,6 @@ void CMP3FileListPage::OnCommand( char const *cmd )
 	}
 }
 
-#ifdef NEO
-class CMP3PlayListListPanel : public ListPanel
-{
-public:
-	CMP3PlayListListPanel(Panel* parent, const char* panelName) : ListPanel(parent, panelName) {}
-
-	virtual void OnMouseDoublePressed(vgui::MouseCode code) OVERRIDE
-	{
-		g_pPlayer->PlaySong(GetSelectedItem(0));
-	}
-};
-
-#endif // NEO
 class CMP3PlayListPage : public PropertyPage
 {
 	DECLARE_CLASS_SIMPLE( CMP3PlayListPage, PropertyPage );
@@ -338,11 +326,7 @@ public:
 	  BaseClass( parent, panelName ),
 	  m_pPlayer( player )
 	{
-#ifdef NEO
-		m_pList = new CMP3PlayListListPanel( this, "PlayList" );
-#else
 		m_pList = new ListPanel( this, "PlayList" );
-#endif // NEO
 		m_pList->AddColumnHeader( 0, "File", "File", 400, ListPanel::COLUMN_RESIZEWITHWINDOW );
 		m_pList->AddColumnHeader( 1, "Artist", "Artist", 150, ListPanel::COLUMN_RESIZEWITHWINDOW );
 		m_pList->AddColumnHeader( 2, "Album", "Album", 150, ListPanel::COLUMN_RESIZEWITHWINDOW );
@@ -475,11 +459,7 @@ public:
 private:
 
 	CMP3Player		*m_pPlayer;
-#ifdef NEO
-	CMP3PlayListListPanel	*m_pList;
-#else
 	ListPanel		*m_pList;
-#endif // NEO
 
 	DHANDLE< Menu >	m_hMenu;
 };
@@ -544,6 +524,7 @@ void CMP3PlayListPage::OnCommand( char const *cmd )
 	}
 }
 
+#ifndef NEO
 class CMP3FileSheet : public PropertySheet
 {
 	DECLARE_CLASS_SIMPLE( CMP3FileSheet, PropertySheet );
@@ -601,13 +582,6 @@ public:
 		}
 	}
 
-#ifdef NEO
-	CMP3PlayListPage* GetPlayList()
-	{
-		return m_pPlayList;
-	}
-#endif // NEO
-
 protected:
 
 	CMP3Player			*m_pPlayer;
@@ -634,6 +608,7 @@ CMP3FileSheet::CMP3FileSheet( CMP3Player *player, char const *panelName ) :
 
 	SetActivePage( m_pPlayList );
 }	
+#endif // NEO
 
 class CMP3TreeControl : public TreeView
 {
@@ -789,6 +764,7 @@ public:
 };
 
 #ifdef NEO
+#if 0
 ConVar cl_neo_radio_shuffle("cl_neo_radio_shuffle", "0", FCVAR_CLIENTDLL| FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Randomize song order", true, 0, true, 1);
 ConVar cl_neo_radio_mute("cl_neo_radio_mute", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Turn down sound volume as far as possible", true, 0, true, 1);
 ConVar cl_neo_radio_menu_pause("cl_neo_radio_menu_pause", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Pause NEO Radio song when loading into the menu", true, 0, true, 1);
@@ -803,6 +779,7 @@ ConVar cl_neo_radio_volume_ingame("cl_neo_radio_volume_ingame", "0.2", FCVAR_CLI
 	{
 		if (auto pPlayer = GetMP3Player()) {pPlayer->SetInGameVolumeSlider(cl_neo_radio_volume_ingame.GetFloat() * 100);}
 	});
+#endif
 #endif // NEO
 CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	BaseClass( NULL, panelName ),
@@ -813,7 +790,9 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	m_bSavingFile( false ),
 	m_bEnableAutoAdvance( true )
 {
+#ifndef NEO
 	g_pPlayer = this;
+#endif
 
 	// Get strings...
 	g_pVGuiLocalize->AddFile( "resource/mp3player_%language%.txt" );
@@ -843,8 +822,10 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	HFont treeFont = pscheme->GetFont( "DefaultVerySmall" );
 	m_pTree->SetFont( treeFont );
 
+#ifndef NEO
 	m_pFileSheet = new CMP3FileSheet( this, "FileSheet" );
 	m_pFileSheet->SetTabWidth(0);
+#endif
 
 	m_pPlay = new Button( this, "Play", "#Play", this, "play" );
 #ifdef NEO
@@ -918,11 +899,6 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 
 	PopulateTree();
 	m_bFirstTime = false;
-	int randomSong = m_pFileSheet->GetPlayList()->GetSong();
-	if (randomSong >= 0)
-	{
-		PlaySong(randomSong);
-	}
 #endif // NEO
 }
 
@@ -1113,57 +1089,6 @@ void CMP3Player::ApplySchemeSettings(IScheme *pScheme)
 	m_pTree->SetFont( treeFont );
 }
 
-#ifdef NEO
-class neo_mp3_Cb : public ICommandCallback
-{
-public:
-	virtual void CommandCallback(const CCommand& command)
-	{
-		if (!g_pPlayer)
-		{
-			return;
-		}
-
-		if (g_pPlayer->IsVisible())
-		{
-			g_pPlayer->Close();
-		}
-		else
-		{
-			g_pPlayer->Activate();
-		}
-	}
-};
-neo_mp3_Cb neo_mp3_callback;
-
-ConCommand neo_mp3("neo_mp3", &neo_mp3_callback, "Toggle the mp3 player", FCVAR_DONTRECORD);
-
-void CMP3Player::OnKeyCodePressed(vgui::KeyCode code)
-{
-	// This can happen if the user presses a key which has no corresponding mapping,
-	// for example multimedia keys like "Volume Up" will trigger this.
-	if (code == BUTTON_CODE_NONE || code == BUTTON_CODE_INVALID)
-	{
-		return;
-	}
-
-	const auto toggleMP3Bind = gameuifuncs->GetButtonCodeForBind("neo_mp3");
-	if (toggleMP3Bind != code || !g_pPlayer)
-	{
-		return;
-	}
-
-	if (g_pPlayer->IsVisible())
-	{
-		g_pPlayer->Close();
-	}
-	else
-	{
-		g_pPlayer->Activate();
-	}
-}
-
-#endif // NEO
 void CMP3Player::OnCommand( char const *cmd )
 {
 	if ( !Q_stricmp( cmd, "OnClose" ) )
@@ -1771,16 +1696,6 @@ void CMP3Player::OnPlay()
 			AddToPlayList( songIndex, i == 0 );
 		}
 	}
-#ifdef NEO
-	if (c == 0)
-	{ // play a random song from the playlist, if any
-		int randomSong = m_pFileSheet->GetPlayList()->GetSong();
-		if (randomSong >= 0)
-		{
-			PlaySong(randomSong);
-		}
-	}
-#endif // NEO
 }
 
 #ifdef NEO
@@ -1822,12 +1737,14 @@ void CMP3Player::OnTick()
 	{ // NEO HACK (Adam) Saved values for these convars are not read until after this Panel is initialized, read values on first tick instead
 		// NEO TODO (Adam) give these convars an onchange function to update the relevant mp3 player values instead?
 		m_bFirstEverTick = false;
+#if 0
 		m_pMute->SetSelected(cl_neo_radio_mute.GetBool());
 		m_pShuffle->SetSelected(cl_neo_radio_shuffle.GetBool());
 		m_pMenuPause->SetSelected(cl_neo_radio_menu_pause.GetBool());
 		m_pGamePause->SetSelected(cl_neo_radio_game_pause.GetBool());
 		m_pVolume->SetValue(cl_neo_radio_volume.GetFloat() * 100);
 		m_pVolumeInGame->SetValue(cl_neo_radio_volume_ingame.GetFloat() * 100);
+#endif
 		m_flCurrentVolume = m_pVolume->GetValue();
 		m_bMuted = m_pMute->IsSelected();
 		m_bShuffle = m_pShuffle->IsSelected();
@@ -1863,7 +1780,9 @@ void CMP3Player::OnTick()
 	{
 		m_bMuted = m_pMute->IsSelected();
 #ifdef NEO
+#if 0
 		cl_neo_radio_mute.SetValue(m_bMuted);
+#endif
 #endif // NEO
 	}
 #ifdef NEO
@@ -1871,19 +1790,25 @@ void CMP3Player::OnTick()
 	if (shuffleChanged)
 	{
 		m_bShuffle = m_pShuffle->IsSelected();
+#if 0
 		cl_neo_radio_shuffle.SetValue(m_bShuffle);
+#endif
 	}
 	bool pauseInMenuChanged = m_bPauseInMenu != m_pMenuPause->IsSelected();
 	if (pauseInMenuChanged)
 	{
 		m_bPauseInMenu = m_pMenuPause->IsSelected();
+#if 0
 		cl_neo_radio_menu_pause.SetValue(m_bPauseInMenu);
+#endif
 	}
 	bool pauseInGameChanged = m_bPauseInGame != m_pGamePause->IsSelected();
 	if (pauseInGameChanged)
 	{
 		m_bPauseInGame = m_pGamePause->IsSelected();
+#if 0
 		cl_neo_radio_game_pause.SetValue(m_bPauseInGame);
+#endif
 	}
 
 	// For now we want to save these button states even when not playing any music so move this down
@@ -2027,7 +1952,9 @@ void CMP3Player::GoToNextSong( int skip )
 		}
 		nextSong = m_PlayList[ m_nCurrentPlaylistSong ];
 
+#ifndef NEO
 		m_pFileSheet->OnPlayListItemPlaying( m_nCurrentPlaylistSong );
+#endif
 	}
 	else
 	{
@@ -2175,7 +2102,9 @@ MP3File_t *CMP3Player::GetSongInfo( int songIndex )
 
 void CMP3Player::AddToPlayList( int songIndex, bool playNow )
 {
+#ifndef NEO
 	m_pFileSheet->AddSongToPlayList( songIndex );
+#endif
 	m_PlayList.AddToTail( songIndex );
 
 	if ( playNow )
@@ -2189,7 +2118,9 @@ void CMP3Player::AddToPlayList( int songIndex, bool playNow )
 
 void CMP3Player::RemoveFromPlayList( int songIndex )
 {
+#ifndef NEO
 	m_pFileSheet->RemoveSongFromPlayList( songIndex );
+#endif
 	m_PlayList.FindAndRemove( songIndex );
 
 	SetPlayListSong( m_nCurrentPlaylistSong );
@@ -2197,7 +2128,9 @@ void CMP3Player::RemoveFromPlayList( int songIndex )
 
 void CMP3Player::ClearPlayList()
 {
+#ifndef NEO
 	m_pFileSheet->ResetPlayList();
+#endif
 	m_PlayList.RemoveAll();
 	m_nCurrentPlaylistSong = 0;
 }
@@ -2521,32 +2454,6 @@ void CMP3Player::OnSliderMoved()
 #endif
 }
 
-#ifdef NEO
-void CMP3Player::OnSliderDragEnd(KeyValues* data)
-{
-	KeyValues* pData = data->GetFirstSubKey();
-	if (!pData)
-	{
-		return;
-	}
-	const float newValue = pData->GetInt() * 0.01f;
-
-	pData = pData->GetNextKey();
-	if (!pData)
-	{
-		return;
-	}
-
-	if (m_pVolume == pData->GetPtr())
-	{
-		cl_neo_radio_volume.SetValue(newValue);
-	}
-	else if (m_pVolumeInGame == pData->GetPtr())
-	{
-		cl_neo_radio_volume_ingame.SetValue(newValue);
-	}
-}
-#endif // NEO
 
 void CMP3Player::LoadPlayList( char const *filename )
 {
@@ -2561,7 +2468,6 @@ void CMP3Player::LoadPlayList( char const *filename )
 #ifdef NEO
 	// Clear existing playlist
 	m_PlayList.RemoveAll();
-	m_pFileSheet->ResetPlayList();
 
 	// Update most recent playlist
 	SetMostRecentPlayList(filename);
@@ -2628,9 +2534,6 @@ void CMP3Player::LoadPlayList( char const *filename )
 			if ( songIndex >= 0 )
 			{
 				m_PlayList.AddToTail( songIndex );
-#ifdef NEO
-				m_pFileSheet->AddSongToPlayList( songIndex );
-#endif // NEO
 			}
 		}
 	}
@@ -2902,61 +2805,28 @@ public:
 	{
 	}
 
-#ifdef NEO
-	virtual void LevelInitPostEntity()
-	{
-		if (engine->IsLevelMainMenuBackground())
-		{
-			if (cl_neo_radio_menu_pause.GetBool())
-			{
-				g_pPlayer->EnableAutoAdvance( false );
-				g_pPlayer->OnPause(); // NEO TODO (Adam) OnPause can both pause and resume, perhaps this should explicitly call a Pause function that can only pause
-			}
-			else
-			{
-				g_pPlayer->EnableAutoAdvance( true );
-			}
-		}
-		else if (cl_neo_radio_game_pause.GetBool())
-		{
-			g_pPlayer->EnableAutoAdvance( false );
-			g_pPlayer->OnPause();
-		}
-		else
-		{
-			g_pPlayer->EnableAutoAdvance( true );
-		}
-	}
-#else
+#ifndef NEO
 	virtual void LevelInitPreEntity()
 	{
 		g_pPlayer->EnableAutoAdvance( true );
 	}
 #endif // NEO
 
-
 	virtual void LevelShutdownPostEntity()
 	{
+#ifndef NEO
 		// If we are still connected, disable auto advance until we get into the next level
 		if ( engine->IsConnected() )
 		{
 			g_pPlayer->EnableAutoAdvance( false );
 		}
-#ifdef NEO
-		else if (cl_neo_radio_menu_pause.GetBool())
-		{
-			g_pPlayer->EnableAutoAdvance( false );
-			g_pPlayer->OnPause();
-		}
-		else
-		{
-			g_pPlayer->EnableAutoAdvance( true );
-		}
-#endif // NEO
+#endif
 	}
 };
 
+#if 0
 static CMP3PlayerGameSystem g_MP3Helper;
+#endif
 
 #else
 

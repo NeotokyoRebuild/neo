@@ -22,6 +22,12 @@
 #pragma GCC visibility push(hidden)
 #endif
 
+#ifdef NEO // Unity build
+#ifdef sprintf
+#undef sprintf
+#endif
+#endif
+
 //=============================================================================
 
 // using macro to be compatable with GCC

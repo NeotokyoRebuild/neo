@@ -223,7 +223,11 @@ inline const char* gameserveritem_t::GetName() const
 
 inline void gameserveritem_t::SetName( const char *pName )
 {
+#ifdef NEO
+	V_strcpy_safe(m_szServerName, pName);
+#else
 	strncpy( m_szServerName, pName, sizeof( m_szServerName ) );
+#endif
 	m_szServerName[ sizeof( m_szServerName ) - 1 ] = '\0';
 }
 

@@ -478,6 +478,24 @@ void FX_DebrisFlecks( const Vector& origin, trace_t *tr, char materialType, int 
 #endif
 }
 
+#ifdef NEO // Unity build
+#ifdef GLASS_SHARD_MIN_LIFE
+#undef GLASS_SHARD_MIN_LIFE
+#endif
+#ifdef GLASS_SHARD_MAX_LIFE
+#undef GLASS_SHARD_MAX_LIFE
+#endif
+#ifdef GLASS_SHARD_NOISE
+#undef GLASS_SHARD_NOISE
+#endif
+#ifdef GLASS_SHARD_GRAVITY
+#undef GLASS_SHARD_GRAVITY
+#endif
+#ifdef GLASS_SHARD_DAMPING
+#undef GLASS_SHARD_DAMPING
+#endif
+#endif // NEO
+
 #define	GLASS_SHARD_MIN_LIFE	2.5f
 #define	GLASS_SHARD_MAX_LIFE	5.0f
 #define	GLASS_SHARD_NOISE		0.8

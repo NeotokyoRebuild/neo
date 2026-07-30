@@ -11,6 +11,9 @@
 #endif
 
 #include "GameEventListener.h"
+#ifdef NEO
+#include "neo_gamerules.h"
+#endif // NEO
 
 class C_HLTVCamera : CGameEventListener
 {
@@ -36,6 +39,9 @@ public:
 	int  GetMode();	// returns current camera mode
 	C_BaseEntity *GetPrimaryTarget();  // return primary target
 	void SetPrimaryTarget( int nEntity); // set the primary obs target
+#ifdef NEO
+	void SpectateEvent(NeoSpectateEvent event);
+#endif // NEO
 	C_BaseEntity *GetCameraMan();  // return camera entity if any
 
 	void CreateMove(CUserCmd *cmd);
@@ -53,7 +59,11 @@ protected:
 
 	void SmoothCameraAngle( QAngle& targetAngle );
 	void SetCameraAngle( QAngle& targetAngle );
+#ifdef NEO
+	void Accelerate( Vector& wishdir, float wishspeed, float accel, float flDeltaTime );
+#else
 	void Accelerate( Vector& wishdir, float wishspeed, float accel );
+#endif
 
 	int			m_nCameraMode; // current camera mode
 	int			m_iCameraMan; // camera man entindex or 0
@@ -74,6 +84,9 @@ protected:
 	char		m_szTitleText[64];
 	CUserCmd	m_LastCmd;
 	Vector		m_vecVelocity;
+#ifdef NEO
+	float		m_flLastRealTime = 0; // use realtime instead of frametime to process movement even while paused
+#endif
 };
 
 

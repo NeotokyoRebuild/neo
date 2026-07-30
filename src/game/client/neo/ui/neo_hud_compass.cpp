@@ -31,6 +31,9 @@ ConVar cl_neo_hud_rangefinder_pos_frac_y("cl_neo_hud_rangefinder_pos_frac_y", "0
 										 "In fractional to the total screen height, the y-axis position of the rangefinder.",
 										 true, 0.0f, true, 1.0f);
 
+ConVar cl_neo_ghost_callout_compass_time("cl_neo_ghost_callout_compass_time", "10.0", FCVAR_CHEAT,
+	"Time in seconds that ghost callouts remain on the compass.", true, 0.0f, false, 0.0f);
+
 DECLARE_NAMED_HUDELEMENT(CNEOHud_Compass, NHudCompass);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(Compass, 0.00695)
@@ -56,6 +59,61 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 	m_hFont = 0;
 
 	SetVisible(true);
+}
+
+void CNEOHud_Compass::Init()
+{
+	ListenForGameEvent("ghost_enemy_callout");
+	ListenForGameEvent("round_start");
+	ListenForGameEvent("player_team");
+}
+
+void CNEOHud_Compass::LevelShutdown()
+{
+	HideAllGhostCallouts();
+}
+
+void CNEOHud_Compass::HideAllGhostCallouts()
+{
+	for (int i = 0; i < V_ARRAYSIZE(m_GhostCallouts); ++i)
+	{
+		m_GhostCallouts[i].timer.Invalidate();
+	}
+}
+
+void CNEOHud_Compass::FireGameEvent(IGameEvent* event)
+{
+	auto eventName = event->GetName();
+	if (!Q_stricmp(eventName, "ghost_enemy_callout"))
+	{
+		const int localTeam = GetLocalPlayerTeam();
+		const int playerTeam = event->GetInt("team");
+		
+		if (localTeam == TEAM_SPECTATOR || playerTeam != localTeam)
+		{
+			return;
+		}
+		
+		int targetId = event->GetInt("targetid");
+		if (targetId > 0 && targetId < V_ARRAYSIZE(m_GhostCallouts))
+		{
+			GhostCallout &callout = m_GhostCallouts[targetId];
+			callout.worldPos = Vector(event->GetInt("targetx"), event->GetInt("targety"), event->GetInt("targetz"));
+			callout.timer.Start(cl_neo_ghost_callout_compass_time.GetFloat());
+		}
+	}
+	else if (!Q_stricmp(eventName, "round_start"))
+	{
+		HideAllGhostCallouts();
+	}
+	else if (!Q_stricmp(eventName, "player_team"))
+	{
+		auto player = UTIL_PlayerByUserId(event->GetInt("userid"));
+		if (player && player->IsLocalPlayer())
+		{
+			HideAllGhostCallouts();
+		}
+	}
 }
 
 void CNEOHud_Compass::Paint()
@@ -159,6 +217,7 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 	LoadControlSettings("scripts/HudLayout.res");
 
 	m_hFont = pScheme->GetFont("NHudOCRSmall");
+	m_hFontSmall = pScheme->GetFont("NHudOCRSmallerNoAdditive");
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
@@ -231,5 +290,112 @@ void CNEOHud_Compass::DrawCompass() const
 			surface()->DrawSetTextPos(m_xPos + padding + (m_width - padding * 2) * proportion - (float)labelWidth / 2, m_yPos - labelHeight);
 			surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
 		}
+	}
+
+	DrawCallouts();
+}
+
+void CNEOHud_Compass::DrawCallouts() const
+{
+	struct CalloutDrawInfo
+	{
+		int calloutIdx; // Index into m_GhostCallouts
+		float age;
+		float renderX;
+		float renderY;
+	};
+
+	CUtlVectorFixed<CalloutDrawInfo, MAX_PLAYERS_ARRAY_SAFE> visibleCallouts;
+
+	int latestIdx = -1;
+	float newestAge = 9999.0f;
+
+	const wchar_t arrowUnicode[] = L"▼";
+	int labelWidth, labelHeight;
+	surface()->GetTextSize(m_hFont, arrowUnicode, labelWidth, labelHeight);
+	const float padding = (float)labelHeight;
+
+	// Cache ConVars and View parameters
+	const float maxAge = cl_neo_ghost_callout_compass_time.GetFloat();
+	const Vector viewOrigin = MainViewOrigin();
+	const float viewYaw = MainViewAngles()[YAW];
+
+	// Collect visible callouts
+	for (int i = 0; i < V_ARRAYSIZE(m_GhostCallouts); ++i)
+	{
+		const GhostCallout& callout = m_GhostCallouts[i];
+		
+		if (!callout.timer.HasStarted() || callout.timer.IsElapsed())
+			continue;
+			
+		float age = callout.timer.GetElapsedTime();
+
+		const Vector objVec = callout.worldPos - viewOrigin;
+		const float objYaw = RAD2DEG(atan2f(objVec.y, objVec.x));
+		float drawObjAngle = AngleNormalize(-objYaw + viewYaw);
+		float clampedAngle = Clamp(drawObjAngle, -(float)m_fov / 2, (float)m_fov / 2);
+
+		const float proportion = clampedAngle / m_fov + 0.5;
+
+		float renderX = m_xPos + padding + (m_width - padding * 2) * proportion - (float)labelWidth / 2;
+		float renderY = m_yPos - labelHeight;
+
+		CalloutDrawInfo info;
+		info.calloutIdx = i;
+		info.age = age;
+		info.renderX = renderX;
+		info.renderY = renderY;
+
+		int currentIdx = visibleCallouts.AddToTail(info);
+
+		// Determine latest
+		if (age < newestAge)
+		{
+			newestAge = age;
+			latestIdx = currentIdx;
+		}
+	}
+
+	auto DrawSingleCallout = [&](int idx, bool bDrawText)
+	{
+		CalloutDrawInfo& info = visibleCallouts[idx];
+
+		float alphaScale = (maxAge > 0.f) ? (1.0f - Clamp(info.age / maxAge, 0.0f, 1.0f)) : 0.0f;
+		int alpha = Clamp((int)(255.0f * alphaScale), 0, 255);
+		Color calloutColor = Color(255, 0, 0, alpha);
+
+		surface()->DrawSetTextColor(calloutColor);
+		surface()->DrawSetTextPos(info.renderX, info.renderY);
+		surface()->DrawPrintText(arrowUnicode, 1);
+
+		if (bDrawText)
+		{
+			float dist = METERS_PER_INCH * viewOrigin.DistTo(m_GhostCallouts[info.calloutIdx].worldPos);
+
+			wchar_t wszDist[16];
+			V_swprintf_safe(wszDist, L"%im", (int)dist);
+
+			int distWidth, distHeight;
+			surface()->GetTextSize(m_hFontSmall, wszDist, distWidth, distHeight);
+
+			surface()->DrawSetTextFont(m_hFontSmall);
+			surface()->DrawSetTextPos(info.renderX + (labelWidth / 2) - (distWidth / 2), info.renderY - distHeight);
+			surface()->DrawPrintText(wszDist, Q_UnicodeLength(wszDist));
+		}
+	};
+
+	// Draw older ones first
+	for (int i = 0; i < visibleCallouts.Count(); ++i)
+	{
+		if (i == latestIdx)
+			continue;
+		
+		DrawSingleCallout(i, false);
+	}
+
+	// Draw the latest one on top with distance text
+	if (latestIdx != -1)
+	{
+		DrawSingleCallout(latestIdx, true);
 	}
 }

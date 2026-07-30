@@ -15,9 +15,9 @@ struct DrawWater_params_t
 	float4 vRefractTint;
 	half3 vTangentEyeVect;
 	float4 waterFogColor;
-#if BASETEXTURE
+#if BASETEXTURE || LIGHTMAPWATERFOG
 	HALF4 lightmapTexCoord1And2;
-	HALF4 lightmapTexCoord3;
+	HALF2 lightmapTexCoord3;
 #endif
 	float4 vProjPos;
 	float4 pixelFogParams;
@@ -30,6 +30,8 @@ struct DrawWater_params_t
 void DrawWater( in DrawWater_params_t i, 
 #if BASETEXTURE
 				in sampler BaseTextureSampler,
+#endif
+#if BASETEXTURE || LIGHTMAPWATERFOG
 			    in sampler LightmapSampler,
 #endif
 				in sampler NormalSampler,
@@ -176,17 +178,10 @@ void DrawWater( in DrawWater_params_t i,
 	fFresnel *= saturate( ( waterFogDepthValue - 0.05f ) * 20.0f );
 #endif
 
-
-	// blend between refraction and fog color.
-#if ABOVEWATER
-	vRefractColor = lerp( vRefractColor, i.waterFogColor * LINEAR_LIGHT_SCALE, saturate( waterFogDepthValue - 0.05f ) );
-#else
-	float waterFogFactor = saturate( ( i.vProjPos.z - i.fWaterFogStart ) / i.fWaterFogEndMinusStart );
-	vRefractColor = lerp( vRefractColor, i.waterFogColor * LINEAR_LIGHT_SCALE, waterFogFactor );
-#endif
-
+#if BASETEXTURE || LIGHTMAPWATERFOG
 #if BASETEXTURE
 	float4 baseSample = tex2D( BaseTextureSampler, i.vBumpTexCoord.xy );
+#endif
 	HALF2 bumpCoord1;
 	HALF2 bumpCoord2;
 	HALF2 bumpCoord3;
@@ -209,7 +204,23 @@ void DrawWater( in DrawWater_params_t i,
 		dp.z * lightmapColor3;
 	float sum = dot( dp, float3( 1.0f, 1.0f, 1.0f ) );
 	diffuseLighting *= LIGHT_MAP_SCALE / sum;
+#if BASETEXTURE
 	HALF3 diffuseComponent = baseSample.rgb * diffuseLighting;
+#endif
+#endif
+
+	// blend between refraction and fog color.
+#if LIGHTMAPWATERFOG
+	// shift lightmap value by fog alpha
+	float4 waterFogColor = i.waterFogColor * float4(lerp(diffuseLighting, (255.f, 255.f, 255.f), i.waterFogColor.a), 1.f);
+#else
+	float4 waterFogColor = i.waterFogColor;
+#endif
+#if ABOVEWATER
+	vRefractColor = lerp( vRefractColor, waterFogColor * LINEAR_LIGHT_SCALE, saturate( waterFogDepthValue - 0.05f ) );
+#else
+	float waterFogFactor = saturate((i.vProjPos.z - i.fWaterFogStart) / i.fWaterFogEndMinusStart);
+	vRefractColor = lerp( vRefractColor, waterFogColor * LINEAR_LIGHT_SCALE, waterFogFactor );
 #endif
 
 	if( bReflect && bRefract )

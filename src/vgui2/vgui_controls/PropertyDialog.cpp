@@ -60,7 +60,11 @@ PropertyDialog::~PropertyDialog()
 // Purpose: Returns a pointer to the PropertySheet this dialog encapsulates
 // Output : PropertySheet *
 //-----------------------------------------------------------------------------
+#ifdef NEO // Unity build
+vgui::PropertySheet *PropertyDialog::GetPropertySheet()
+#else
 PropertySheet *PropertyDialog::GetPropertySheet()
+#endif
 {
 	return _propertySheet;
 }

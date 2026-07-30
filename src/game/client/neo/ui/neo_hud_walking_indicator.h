@@ -20,12 +20,12 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
-	vgui::HTexture m_hWalkingIndicatorTexture = 0;
-	
 	CPanelAnimationVarAliasType(int, xpos, "xpos", "r203", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "446", "proportional_ypos");
-	CPanelAnimationVarAliasType(int, wide, "wide", "203", "proportional_xpos");
-	CPanelAnimationVarAliasType(int, tall, "tall", "32", "proportional_ypos");
+	CPanelAnimationVarAliasType(int, wide, "wide", "24", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, tall, "tall", "24", "proportional_ypos");
+	CPanelAnimationVarAliasType(Color, color, "color", "150 150 150 40", "Color");
+	CPanelAnimationVarAliasType(int, texture, "texture", "vgui/hud/player/walkingIndicatorInverted", "textureid");
 	CPanelAnimationVarAliasType(int, visible, "visible", "1", "int");
 	CPanelAnimationVarAliasType(int, enabled, "enabled", "1", "int");
 

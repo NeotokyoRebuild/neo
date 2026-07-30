@@ -22,13 +22,18 @@ public:
 
 	virtual ActionResult<CNEOBot> OnStart( CNEOBot *me, Action<CNEOBot> *priorAction ) override;
 	virtual ActionResult<CNEOBot> Update( CNEOBot *me, float interval ) override;
+	virtual void OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction ) override;
+	virtual ActionResult<CNEOBot> OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction ) override;
+	virtual ActionResult<CNEOBot> OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction ) override;
+
+	static constexpr float ALIGN_RANGE = 100.0f;        // Distance to start alignment behavior
 
 private:
 	const CNavLadder *m_ladder;
 	bool m_bGoingUp;
+	Vector m_ladderCenter;
 	CountdownTimer m_timeoutTimer;
 
 	static constexpr float MOUNT_RANGE = 25.0f;         // Distance to start climbing
-	static constexpr float ALIGN_RANGE = 50.0f;         // Distance to start alignment behavior
 	static constexpr float ALIGN_DOT_THRESHOLD = -0.9f;	// cos(~25 degrees) alignment tolerance
 };

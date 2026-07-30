@@ -84,9 +84,6 @@ public:
 	char					szPrintName[MAX_WEAPON_STRING];			// Name for showing in HUD, etc.
 
 	char					szViewModel[MAX_WEAPON_STRING];			// View model of this weapon
-#ifdef NEO
-	char					szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
-#endif
 	char					szWorldModel[MAX_WEAPON_STRING];		// Model of this weapon seen carried by the player
 	char					szAnimationPrefix[MAX_WEAPON_PREFIX];	// Prefix of the animations that should be used by the player carrying this weapon
 	int						iSlot;									// inventory slot.
@@ -102,15 +99,6 @@ public:
 	int						iFlags;									// miscellaneous weapon flags
 	char					szAmmo1[MAX_WEAPON_AMMO_NAME];			// "primary" ammo type
 	char					szAmmo2[MAX_WEAPON_AMMO_NAME];			// "secondary" ammo type
-
-#ifdef NEO
-	Vector					vecVmOffset;
-	char					szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
-	char					szDeathIcon[MAX_BULLET_CHARACTER];
-	int						iAimFOV;
-	float					m_flPenetration;
-	bool					m_bDropOnDeath;
-#endif
 
 	// Sound blocks
 	char					aShootSounds[NUM_SHOOT_SOUND_TYPES][MAX_WEAPON_STRING];	

@@ -98,9 +98,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 	RecvPropTime(RECVINFO(m_flNextPingTime)),
 
-	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
-	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
-	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
 	RecvPropArray(RecvPropVector(RECVINFO(m_vLastPingByStar[0])), m_vLastPingByStar),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
@@ -117,10 +114,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
-	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
-
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	
 	DEFINE_PRED_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
@@ -474,10 +467,12 @@ C_NEO_Player::C_NEO_Player()
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
+	m_bSpecRefreshedStates = false;
 
 	m_flTocFactor = 0.15f;
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	ClearLocalPlayerDmgReports();
 	m_szNameDupePos = 0;
 }
 
@@ -571,15 +566,6 @@ void C_NEO_Player::CheckLeanButtons()
 	}
 }
 
-int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
-{
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		return m_rfAttackersScores.Get(attackerIdx);
-	}
-	return m_rfAttackersScores.Get(attackerIdx);
-}
-
 const char *C_NEO_Player::GetNeoClantag() const
 {
 	if (!sv_neo_clantag_allow.GetBool() ||
@@ -646,11 +632,6 @@ const char *C_NEO_Player::GetNeoPlayerName() const
 bool C_NEO_Player::ClientWantNeoName() const
 {
 	return m_bClientWantNeoName;
-}
-
-int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
-{
-	return m_rfAttackersHits.Get(attackerIdx);
 }
 
 ConVar cl_neo_hud_health_mode("cl_neo_hud_health_mode", "1", FCVAR_ARCHIVE,
@@ -748,8 +729,23 @@ void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePl
 	//pl.frags = m_iFrags; NEO TODO (Adam) Is this actually used anywhere? should we include a xp field in CPlayerState?
 }
 
+bool C_NEO_Player::IsDrawnTransparent() const
+{
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+	if (!pTargetPlayer)
+	{
+		return IsCloaked();
+	}
+	
+	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	return IsCloaked() && !inThermalVision;
+}
+
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
+	// NEO TODO (Adam) should cloaked players cast shadows in thermals? If they are drawn opaque, it follows that cloaked players block light on a 
+	// spectrum that thermals can see, so light in that same spectrum would be absent where the shadow would be, hence the shadow should be drawn
+	// if so, replace IsCloaked() with IsDrawnTransparent()
 	if (IsCloaked())
 	{
 		return SHADOWS_NONE;
@@ -769,12 +765,12 @@ const QAngle& C_NEO_Player::GetRenderAngles()
 
 RenderGroup_t C_NEO_Player::GetRenderGroup()
 {
-	return IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+	return IsDrawnTransparent() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
 }
 
 bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()
 {
-	return IsCloaked();
+	return IsDrawnTransparent();
 }
 
 bool C_NEO_Player::ShouldDraw( void )
@@ -1154,6 +1150,28 @@ void C_NEO_Player::PreThink( void )
 		m_flCamoAuxLastTime = 0;
 	}
 
+	// If spectating, won't be "alive/dead" so have its own
+	// path of resetting the cache of other players crosshair
+	// data on pre-round freeze time
+	if (IsLocalPlayer() && GetTeamNumber() == TEAM_SPECTATOR)
+	{
+		if (NEORules()->IsRoundPreRoundFreeze())
+		{
+			if (false == m_bSpecRefreshedStates)
+			{
+				if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+				{
+					crosshair->resetPlayersCrosshair();
+				}
+			}
+			m_bSpecRefreshedStates = true;
+		}
+		else
+		{
+			m_bSpecRefreshedStates = false;
+		}
+	}
+
 	if (IsAlive())
 	{
 		if (IsLocalPlayer() && m_bFirstAliveTick)
@@ -1168,6 +1186,14 @@ void C_NEO_Player::PreThink( void )
 			// so it could arrive too late.
 			CLocalPlayerFilter filter;
 			enginesound->SetPlayerDSP(filter, 0, true);
+
+			ClearLocalPlayerDmgReports();
+
+			// Reset the cache of other players crosshair data on spawning in
+			if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+			{
+				crosshair->resetPlayersCrosshair();
+			}
 		}
 	}
 	else
@@ -1432,11 +1458,6 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 #ifdef GLOWS_ENABLE
 void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 {
-	if (!glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
-	{
-		return;
-	}
-
 	auto updateGlowColour = [](C_BasePlayer* pPlayer, int iTeam = 0) {
 		float r, g, b;
 		NEORules()->GetTeamGlowColor(iTeam ? iTeam : pPlayer->GetTeamNumber(), r, g, b);
@@ -1444,13 +1465,13 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 	};
 
 	if (IsLocalPlayer()) {
-		for (int i = 1; i < gpGlobals->maxClients; i++) {
+		for (int i = 1; i <= gpGlobals->maxClients; i++) {
 			CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
 			if (!pPlayer || pPlayer == this) {
 				continue;
 			}
 
-			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED)
+			if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR || pPlayer->GetTeamNumber() == TEAM_UNASSIGNED || !glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 			{
 				pPlayer->SetClientSideGlowEnabled(false);
 				continue;
@@ -1466,7 +1487,7 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 		}
 	}
 	else {
-		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED)
+		if (iNewTeam == TEAM_SPECTATOR || iNewTeam == TEAM_UNASSIGNED || !glow_outline_effect_enable.GetBool() || NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_FRIENDLY_MARKER)
 		{
 			SetClientSideGlowEnabled(false);
 			return;
@@ -1577,19 +1598,9 @@ void C_NEO_Player::Spawn( void )
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 
-	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
-	for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
-	{
-		m_rfAttackersScores.GetForModify(i) = 0;
-		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
-		m_rfAttackersHits.GetForModify(i) = 0;
-	}
-	V_memset(m_rfNeoPlayerIdxsKilledByLocal, 0, sizeof(m_rfNeoPlayerIdxsKilledByLocal));
+	ClearLocalPlayerDmgReports();
 
 	Weapon_SetZoom(false);
-
 
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
@@ -1604,6 +1615,15 @@ void C_NEO_Player::Spawn( void )
 				neoHud->resetLastUpdateTime();
 				neoHud->resetHUDState();
 			}
+		}
+	}
+
+	// Only do cached crosshair reset for confirmed local player
+	if (IsLocalPlayer())
+	{
+		if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
+		{
+			crosshair->resetPlayersCrosshair();
 		}
 	}
 }
@@ -1640,12 +1660,7 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	m_bIneligibleForLoadoutPick = true;
 
-	if (pWeapon->IsGhost())
-	{
-		pWeapon->Holster(NULL);
-		assert_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
-	}
-	else if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
+	if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
 	{
 		assert_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
 	}
@@ -1981,6 +1996,10 @@ void __MsgFunc_CSpectatorTakeoverPlayer(bf_read &msg)
 		// Save for later in C_NEO_Player::OnDataChanged
 		pSpectatorTakingOver->m_hSpectatorTakeoverPlayerTarget = pPlayerTakeoverTarget;
 		pSpectatorTakingOver->m_bCopyOverTakeoverPlayerDetails = true;
+		if (pSpectatorTakingOver->IsLocalPlayer())
+		{
+			NeoAllKDReportsClear();
+		}
 	}
 }
 
@@ -2008,8 +2027,6 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 
 	m_nSkin = pPlayerTakeoverTarget->m_iNeoSkin;
 	m_iNeoClass = pPlayerTakeoverTarget->m_iNeoClass;
-	m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
-	m_iNextSpawnClassChoice = pPlayerTakeoverTarget->m_iNextSpawnClassChoice;
 
 	m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
 	m_bInVision = pPlayerTakeoverTarget->m_bInVision;
@@ -2066,3 +2083,68 @@ const char* C_NEO_Player::GetPlayerNameWithTakeoverContext(int player_index)
     return base_name;
 }
 
+C_NEO_Player* C_NEO_Player::PlayerUseTraceLine()
+{
+	// Select player under cursor
+	Vector eyePos = EyePosition();
+	Vector forward;
+	EyeVectors( &forward );
+	Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
+
+	// MASK_SHOT_HULL to match friendly fire warning trace
+	trace_t tr;
+	UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr );
+	
+	if (tr.DidHit() && tr.m_pEnt)
+	{
+		return ToNEOPlayer(tr.m_pEnt);
+	}
+	return nullptr;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Return true if this object can be +used by the player
+//-----------------------------------------------------------------------------
+bool C_NEO_Player::IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps )
+{
+	if (!pEntity)
+		return false;
+
+	if (int caps = pEntity->ObjectCaps();
+		caps & (FCAP_IMPULSE_USE|FCAP_CONTINUOUS_USE|FCAP_ONOFF_USE|FCAP_DIRECTIONAL_USE) &&
+		(caps & requiredCaps) == requiredCaps)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+
+void C_NEO_Player::PlayerUse()
+{
+	BaseClass::PlayerUse();
+	
+	// Was use pressed or released?
+	if ( ! ((m_nButtons | m_afButtonPressed | m_afButtonReleased) & IN_USE) )
+		return;
+
+	if ( (m_afButtonPressed & IN_USE) && prediction->IsFirstTimePredicted() && !GetUseEntity())
+	{
+		if (C_NEO_Player* pTargetPlayer = PlayerUseTraceLine())
+		{
+			m_Local.m_nOldButtons |= IN_USE;
+			m_afButtonPressed &= ~IN_USE;
+			engine->ExecuteClientCmd(VarArgs("useplayer %i", pTargetPlayer->entindex()));
+		}
+	}
+}
+
+void C_NEO_Player::ClearLocalPlayerDmgReports()
+{
+	if (IsLocalPlayer())
+	{
+		NeoAllKDReportsClear();
+	}
+}

@@ -40,6 +40,7 @@ public:
 
 private:
 	CountdownTimer m_reloadTimer;
+	CountdownTimer m_reconSuperJumpPathCheckTimer;
 	mutable CountdownTimer m_aimAdjustTimer;
 	mutable float m_aimErrorRadius;
 	mutable float m_aimErrorAngle;
@@ -51,6 +52,7 @@ private:
 	bool m_isWaitingForFullReload;
 
 	void FireWeaponAtEnemy( CNEOBot *me );
+	void FireBalcAtEnemy( CNEOBot *me, CNEOBaseCombatWeapon *myWeapon, const CKnownEntity *threat, float threatRange );
 	float GetFireDurationByDifficulty( CNEOBot *me ) const;
 
 	CHandle< CBaseEntity > m_lastTouch;
@@ -67,9 +69,7 @@ private:
 
 
 	void Dodge( CNEOBot *me );
+	void ReconConsiderSuperJump(CNEOBot *me);
 
 	IntervalTimer m_undergroundTimer;
-
-	CountdownTimer m_reevaluateClassTimer;
-	bool m_bPrevBreakBreakableInPath = false;
 };

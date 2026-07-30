@@ -57,6 +57,7 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 		{
 			// Update target to immediate threat
 			m_hThreatGrenadeTarget = pPrimaryThreat->GetEntity();
+			m_vantageArea = nullptr; // reconsider vantage point
 			m_vecTarget = pPrimaryThreat->GetLastKnownPosition();
 			m_vecThreatLastKnownPos = m_vecTarget;
 			m_scanTimer.Start( 0.2f );

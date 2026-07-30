@@ -40,6 +40,7 @@ public:
 
 	CWeaponGrenade();
 
+	NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const override { return NEO_WIDX_FRAG_GRENADE; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_FRAG_GRENADE | NEO_WEP_THROWABLE | NEO_WEP_EXPLOSIVE; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
@@ -58,6 +59,7 @@ public:
 
 	void	Drop(const Vector& vecVelocity) OVERRIDE;
 	bool	CanDrop(void) OVERRIDE;
+	virtual bool CanAim() final { return false; }
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 #ifndef CLIENT_DLL

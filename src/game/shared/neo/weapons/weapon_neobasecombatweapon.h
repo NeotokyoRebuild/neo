@@ -22,6 +22,7 @@
 #endif
 
 #include "weapon_bits.h"
+#include "neo_weapon_parse.h"
 
 // These are the .res file id numbers for
 // NEO weapon loadout choices used by the
@@ -86,6 +87,7 @@ struct WeaponSeeds_t
 };
 
 #define	SOUNDENT_VOLUME_NEO_SUPPRESSED 900.0
+#define NEO_THROWABLES_WEAPON_SLOT 3
 
 #if(1)
 		// This does nothing; dummy value for network test. Remove when not needed anymore.
@@ -139,7 +141,32 @@ public:
 	virtual void FinishReload(void) override;
 
 	virtual bool CanBeSelected(void) override;
+	virtual bool IsFollowingEntity() override {
+		// NEO NOTE (Adam) stops non-active weapons attached to players from showing a pickup hint, also should fix position of attached weapons where they were previously interpolated separate to the owner instead of always being attached to the owner
+		return (GetMoveType() == MOVETYPE_NONE) && GetMoveParent();
+	};
+	virtual int	ObjectCaps(void) override
+	{
+		int caps = BaseClass::ObjectCaps();
+		if (!IsFollowingEntity()
+#ifdef GAME_DLL
+			&& !HasSpawnFlags(SF_WEAPON_NO_PLAYER_PICKUP)
+#else
+			&& !(m_spawnflags & SF_WEAPON_NO_PLAYER_PICKUP)
+#endif // GAME_DLL
+			)
+		{
+			caps |= FCAP_IMPULSE_USE|FCAP_USE_IN_RADIUS; 
+		}
 
+		return caps;
+	};
+
+	CNEOWeaponInfo const &GetNEOWpnData() const;
+
+	virtual const char *GetViewModel( int viewmodelindex = 0 ) const override;
+
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const { Assert(false); return NEO_WIDX_INVALID; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { Assert(false); return NEO_WEP_INVALID; } // Should never call this base class; implement in children.
 	virtual int GetNeoWepXPCost(const int neoClass) const { Assert(false); return 0; } // Should never call this base class; implement in children.
 
@@ -154,6 +181,7 @@ public:
 #ifdef GAME_DLL
 	virtual void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value ) override;
 #endif
+
 	virtual void DryFire(void);
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
@@ -191,7 +219,7 @@ public:
 	{
 		return ((GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
-			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C | NEO_WEP_ZR68_S | NEO_WEP_BALC
+			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C | NEO_WEP_ZR68_S
 #ifdef INCLUDE_WEP_PBK
 			| NEO_WEP_PBK56S
 #endif
@@ -207,6 +235,7 @@ public:
 
 	virtual bool CanBePickedUpByClass(int classId);
 	virtual bool CanDrop(void);
+	virtual bool CanAim(void) { return true; }
 	virtual bool UsesTracers() { return false; }
 
 	virtual void SetPickupTouch(void) override;
@@ -228,6 +257,7 @@ public:
 	float GetPenetration() const;
 #ifdef CLIENT_DLL
 	float m_flTemperature;
+	int m_spawnflags;
 #endif // CLIENT_DLL
 
 protected:

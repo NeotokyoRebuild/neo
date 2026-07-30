@@ -62,14 +62,6 @@ void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldStri
 	}
 }
 
-ConVar cl_neo_crosshair_hip_fire("cl_neo_crosshair_hip_fire", "0", FCVAR_ARCHIVE, "Show the crosshair when not aiming", true, 0, true, 1,
-	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldString, [[maybe_unused]] float flOldValue)->void{
-		CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair);
-		if (crosshair)
-		{
-			crosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR));
-		}
-	});
 ConVar cl_neo_crosshair_scope_inaccuracy("cl_neo_crosshair_scope_inaccuracy", "1", FCVAR_ARCHIVE, "Show the player's inaccuracy when scoped", true, 0, true, 1);
 ConVar cl_neo_crosshair_friendly_fire_warning("cl_neo_crosshair_friendly_fire_warning", "1", FCVAR_ARCHIVE, "Replace crosshair with friendly fire warning where applicable", true, 0, true, 1);
 #endif
@@ -116,7 +108,7 @@ CHudCrosshair::CHudCrosshair( const char *pElementName ) :
 	surface()->DrawSetTextureFile(m_hCrosshairLight, "vgui/hud/scopes/scope03-1", 1, false);
 	surface()->DrawGetTextureSize(m_hCrosshairLight, m_iCrosshairLightWidth, m_iCrosshairLightHeight);
 
-	SetHiddenBits( HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR) );
+	SetHiddenBits( HIDEHUD_PLAYERDEAD );
 #else
 	SetHiddenBits( HIDEHUD_PLAYERDEAD | HIDEHUD_CROSSHAIR );
 #endif // NEO
@@ -168,9 +160,14 @@ bool CHudCrosshair::ShouldDraw( void )
 		{
 		case OBS_MODE_IN_EYE:
 			player = ToNEOPlayer(player->GetObserverTarget());
+			if (engine->IsHLTV() && player && player->IsObserver())
+			{ // HLTV can spectate other spectators (and doesn't switch away from dead players by default)
+				return false;
+			}
 			break;
-		case OBS_MODE_ROAMING:
-			return cl_observercrosshair.GetBool();
+			// NEO NOTE (Adam) technically cl_observercrosshair should allow us to see a crosshair when roaming, but we're early returning in the draw function anyway if we dont have a valid target so 
+			// I removed the OBS_MODE_ROAMING clause here so stv demo watchers, who still have an observer target even when roaming, dont see a crosshair when normal spectators watching live dont.
+			// NEO TODO Fix cl_observercrosshair for both
 		default:
 			return false;
 		}
@@ -372,6 +369,17 @@ void CHudCrosshair::GetDrawPosition ( float *pX, float *pY, bool *pbBehindCamera
 ConVar cl_neo_scope_restrict_to_rectangle("cl_neo_scope_restrict_to_rectangle", "1", FCVAR_CHEAT,
 	"Whether to enforce rectangular sniper scope shape regardless of screen ratio.", true, 0.0, true, 1.0);
 
+#ifdef NEO
+
+void CHudCrosshair::resetPlayersCrosshair()
+{
+	V_memset(m_szLocalStrPlayersCrosshair, 0, sizeof(m_szLocalStrPlayersCrosshair));
+	V_memset(m_playersCrosshairInfos, 0, sizeof(m_playersCrosshairInfos));
+	V_memset(m_aflLastCheckedPlayersCrosshair, 0, sizeof(m_aflLastCheckedPlayersCrosshair));
+}
+
+#endif // NEO
+
 void CHudCrosshair::Paint( void )
 {
 	if ( !m_pCrosshair )
@@ -497,7 +505,6 @@ void CHudCrosshair::Paint( void )
 		if (bPlayerIdxValid)
 		{
 			bTakeSpecCrosshair = true;
-			m_playersCrosshairInfos;
 			bThisFrameRefreshCrosshair = false;
 			pCrosshairInfo = &m_playersCrosshairInfos[iPlayerIdx];
 			pszNeoCrosshair = pNeoPlayer->m_szNeoCrosshair.Get();
@@ -531,7 +538,24 @@ void CHudCrosshair::Paint( void )
 			m_bRefreshCrosshair = false;
 		}
 	}
-	const int iXHairStyle = pCrosshairInfo->iStyle;
+
+	bool bHideCrosshair = (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_CROSSHAIR);
+
+	ENeoCrosshairWep eNeoXHairWep = CROSSHAIR_WEP_DEFAULT;
+	if (pWeapon)
+	{
+		int iNeoXHairWep = MAP_WEAPON_TYPE_TO_XHAIR[NEO_WEAPON_TYPE[pWeapon->WeaponIndex()]];
+		if (iNeoXHairWep >= CROSSHAIR_WEP_DEFAULT
+				&& iNeoXHairWep < CROSSHAIR_WEP_DEFAULT_HIPFIRE
+				&& false == pNeoPlayer->m_bInAim)
+		{
+			iNeoXHairWep += CROSSHAIR_WEP_DEFAULT_HIPFIRE;
+		}
+		eNeoXHairWep = static_cast<ENeoCrosshairWep>(
+				UseCrosshairIndexFor(pCrosshairInfo, iNeoXHairWep, &bHideCrosshair));
+	}
+	CrosshairWepInfo *crh = &pCrosshairInfo->wep[eNeoXHairWep];
+	const int iTexXHId = m_iTexXHId[clamp(crh->iStyle, 0, CROSSHAIR_STYLE__TOTAL - 1)];
 
 	bool showFriendlyFireCrosshair = false;
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && cl_neo_crosshair_friendly_fire_warning.GetBool())
@@ -594,29 +618,32 @@ void CHudCrosshair::Paint( void )
 			}
 		}
 	}
-	else if (showFriendlyFireCrosshair)
+	else if (!bHideCrosshair)
 	{
-		vgui::surface()->DrawSetTexture(m_iTexIFFId);
-		int iTexWide, iTexTall;
-		vgui::surface()->DrawGetTextureSize(m_iTexIFFId, iTexWide, iTexTall);
-		iTexWide >>= 2;
-		iTexTall >>= 2;
-		vgui::surface()->DrawSetColor(COLOR_RED);
-		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
-	}
-	else if (m_iTexXHId[iXHairStyle] > 0)
-	{
-		vgui::surface()->DrawSetTexture(m_iTexXHId[iXHairStyle]);
-		int iTexWide, iTexTall;
-		vgui::surface()->DrawGetTextureSize(m_iTexXHId[iXHairStyle], iTexWide, iTexTall);
-		iTexWide >>= 1;
-		iTexTall >>= 1;
-		vgui::surface()->DrawSetColor(pCrosshairInfo->color);
-		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
-	}
-	else
-	{
-		PaintCrosshair(*pCrosshairInfo, HalfInaccuracyConeInScreenPixels(pWeapon, m_iHalfScreenWidth), iX, iY);
+		if (showFriendlyFireCrosshair)
+		{
+			vgui::surface()->DrawSetTexture(m_iTexIFFId);
+			int iTexWide, iTexTall;
+			vgui::surface()->DrawGetTextureSize(m_iTexIFFId, iTexWide, iTexTall);
+			iTexWide >>= 2;
+			iTexTall >>= 2;
+			vgui::surface()->DrawSetColor(COLOR_RED);
+			vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
+		}
+		else if (iTexXHId > 0)
+		{
+			vgui::surface()->DrawSetTexture(iTexXHId);
+			int iTexWide, iTexTall;
+			vgui::surface()->DrawGetTextureSize(iTexXHId, iTexWide, iTexTall);
+			iTexWide >>= 1;
+			iTexTall >>= 1;
+			vgui::surface()->DrawSetColor(crh->color);
+			vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
+		}
+		else
+		{
+			PaintCrosshair(crh, HalfInaccuracyConeInScreenPixels(pWeapon, m_iHalfScreenWidth), iX, iY);
+		}
 	}
 
 	if (bIsScopedWep && pPlayer->m_bInAim)

@@ -52,7 +52,9 @@ extern IFileSystem *filesystem;
 // gpGlobals->frametime are. We should probably set tickcount (to player->m_nTickBase),
 // but we're REALLY close to shipping, so we can change that later and people can use
 // player->CurrentCommandNumber() in the meantime.
+#ifndef NEO // Unity build | NEO NOTE (nullsystem): This tickcount never used in this cpp file
 #define tickcount USE_PLAYER_CURRENT_COMMAND_NUMBER__INSTEAD_OF_TICKCOUNT
+#endif
 
 #if defined( HL2_DLL )
 ConVar xc_uncrouch_on_jump( "xc_uncrouch_on_jump", "1", FCVAR_ARCHIVE, "Uncrouch when jump occurs" );
@@ -2251,9 +2253,13 @@ void CGameMovement::FullWalkMove( )
 		  ( m_nOldWaterLevel != WL_NotInWater && player->GetWaterLevel() == WL_NotInWater ) )
 	{
 		PlaySwimSound();
+#ifdef NEO
+		player->Splash();
+#else
 #if !defined( CLIENT_DLL )
 		player->Splash();
 #endif
+#endif // NEO
 	}
 }
 
@@ -3137,6 +3143,14 @@ bool CGameMovement::LadderMove( void )
 	if ( mv->m_nButtons & IN_MOVERIGHT )
 		rightSpeed += climbSpeed;
 
+#ifdef NEO
+	if (mv->m_flUpMove)
+	{
+		forwardSpeed = mv->m_flUpMove > 0 ? climbSpeed : -climbSpeed;
+		rightSpeed = 0;
+	}
+#endif // NEO
+
 	if ( mv->m_nButtons & IN_JUMP )
 	{
 		player->SetMoveType( MOVETYPE_WALK );
@@ -3154,7 +3168,11 @@ bool CGameMovement::LadderMove( void )
 			//	pev->velocity.x, pev->velocity.y, pev->velocity.z);
 			// Calculate player's intended velocity
 			//Vector velocity = (forward * gpGlobals->v_forward) + (right * gpGlobals->v_right);
+#ifdef NEO
+			VectorScale( mv->m_flUpMove ? -player->m_vecLadderNormal : m_vecForward, forwardSpeed, velocity );
+#else
 			VectorScale( m_vecForward, forwardSpeed, velocity );
+#endif // NEO
 			VectorMA( velocity, rightSpeed, m_vecRight, velocity );
 
 			// Perpendicular in the ladder plane
@@ -4085,11 +4103,19 @@ void CGameMovement::CategorizePosition( void )
 			}
 			else
 			{
+#ifdef NEO
+				// don't glide along a slope when noclipping as a player
+				if (player->GetMoveType() != MOVETYPE_NOCLIP)
+#endif // NEO
 				SetGroundEntity( &pm );
 			}
 		}
 		else
 		{
+#ifdef NEO
+			// don't glide along the ground when noclipping as a player
+			if (player->GetMoveType() != MOVETYPE_NOCLIP)
+#endif // NEO
 			SetGroundEntity( &pm );  // Otherwise, point to index of ent under us.
 		}
 

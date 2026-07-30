@@ -136,7 +136,11 @@ int AE_VORTIGAUNT_STOP_HEAL_GLOW;	// '
 //-----------------------------------------------------------------------------
 // Squad slots
 //-----------------------------------------------------------------------------
+#ifdef NEO // Unity build
+enum SquadSlotVortigauntEpisodic_T
+#else
 enum SquadSlot_T
+#endif
 {	
 	SQUAD_SLOT_HEAL_PLAYER = LAST_SHARED_SQUADSLOT,
 };

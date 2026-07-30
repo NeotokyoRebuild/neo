@@ -88,12 +88,10 @@ struct NeoSettings
 			ButtonCode_t bcDefault;
 			ButtonCode_t bcSecondaryNext;
 			ButtonCode_t bcSecondaryCurrent;
+			bool bSkipSecondary = false;
 		};
 		Bind vBinds[NEO_BINDS_TOTAL];
 		int iBindsSize = 0;
-
-		// Will be checked often so cached
-		ButtonCode_t bcConsole;
 
 		enum Flags
 		{
@@ -126,11 +124,15 @@ struct NeoSettings
 	{
 		float flVolMain;
 		float flVolMusic;
+		bool bVolMusicSepInGame;
+		float flVolMusicInGame;
 		float flVolVictory;
 		float flVolPing;
 		int iSoundSetup;
 		int iSoundQuality;
 		bool bMuteAudioUnFocus;
+		bool bPauseMusicInGame;
+		int iMusicStartupType;
 		bool bVoiceEnabled;
 		float flVolVoiceRecv;
 		bool bMicBoost;
@@ -169,11 +171,13 @@ struct NeoSettings
 
 	struct Crosshair
 	{
+		ENeoCrosshairWep eXHairWep;
+		EHipfireOpt aeHipfireOpts[CROSSHAIR_WEP__TOTAL];
+
 		CrosshairInfo info;
 		XHairExportNotify eClipboardInfo;
 		bool bNetworkCrosshair;
 		bool bInaccuracyInScope;
-		bool bHipFireCrosshair;
 		bool bFriendlyFireWarning;
 		bool bPreviewDynamicAccuracy;
 
@@ -201,7 +205,13 @@ struct NeoSettings
 		bool bEnableRangeFinder;
 		int iExtendedKillfeed;
 		bool bShowHudContextHints;
-		int iKdinfoToggletype;
+		bool bShowHudContextHintPlayerTakeover;
+		bool bShowHudContextHintObjectInteract;
+		bool bShowHudContextAdjacentObjects;
+		bool bShowHudContextHintBotInteract;
+		bool bShowHudContextHighlightObject;
+		bool bShowHudContextHighlightPlayer;
+		int iScoreboardPadding;
 
 		// IFF Markers
 		int optionChosen;
@@ -264,10 +274,16 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_streamermode_autodetect_obs);
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
-		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
+		CONVARREF_DEF(cl_neo_hud_context_hint_show_player_takeover_hint);
+		CONVARREF_DEF(cl_neo_hud_context_hint_show_object_interact_hint);
+		CONVARREF_DEF(cl_neo_hud_context_hint_show_adjacent_interactable_objects);
+		CONVARREF_DEF(cl_neo_hud_context_hint_show_bot_interact_hint);
+		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_object);
+		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_player);
 		CONVARREF_DEF(cl_neo_equip_utility_priority);
 		CONVARREF_DEF(cl_neo_taking_damage_sounds);
+		CONVARREF_DEF(cl_neo_hud_scoreboard_padding);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
@@ -292,12 +308,16 @@ struct NeoSettings
 		// Audio
 		CONVARREF_DEFNOGLOBALPTR(volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_musicvolume);
+		CONVARREF_DEF(cl_neo_radio_volume_separate_ingame);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_radio_volume_ingame);
 		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_ping_volume);
 		CONVARREF_DEF(snd_surround_speakers);
 		CONVARREF_DEF(voice_modenable);
 		CONVARREF_DEF(voice_scale);
 		CONVARREF_DEF(snd_mute_losefocus);
+		CONVARREF_DEF(cl_neo_radio_pause_ingame);
+		CONVARREF_DEF(cl_neo_radio_startup);
 		CONVARREF_DEF(snd_pitchquality);
 		CONVARREF_DEF(dsp_slow_cpu);
 
@@ -324,7 +344,6 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_crosshair);
 		CONVARREF_DEF(cl_neo_crosshair_network);
 		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
-		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
 		CONVARREF_DEF(cl_neo_crosshair_friendly_fire_warning);
 
 		// Friendly Markers

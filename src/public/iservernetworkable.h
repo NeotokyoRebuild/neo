@@ -18,7 +18,11 @@
 #include "const.h"
 #include "bspfile.h"
 
-
+#ifdef NEO // Unity build
+#ifdef GetClassName
+#undef GetClassName
+#endif
+#endif
 
 // Entities can span this many clusters before we revert to a slower area checking algorithm
 #define	MAX_FAST_ENT_CLUSTERS	4

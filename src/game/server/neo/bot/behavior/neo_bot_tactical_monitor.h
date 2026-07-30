@@ -1,10 +1,16 @@
 #pragma once
 
+#include <memory>
+
 class CObjectTeleporter;
+class CNEOIgnoredWeaponsCache;
 
 class CNEOBotTacticalMonitor : public Action< CNEOBot >
 {
 public:
+	CNEOBotTacticalMonitor();
+	virtual ~CNEOBotTacticalMonitor();
+
 	virtual Action< CNEOBot >* InitialContainedAction(CNEOBot* me);
 
 	virtual ActionResult< CNEOBot >	OnStart(CNEOBot* me, Action< CNEOBot >* priorAction);
@@ -21,11 +27,11 @@ public:
 
 private:
 	CountdownTimer m_maintainTimer;
-	CountdownTimer m_reconSuperJumpPathCheckTimer;
 
 	CountdownTimer m_acknowledgeAttentionTimer;
 	CountdownTimer m_acknowledgeRetryTimer;
 	CountdownTimer m_attentionTimer;
+	std::unique_ptr<CNEOIgnoredWeaponsCache> m_pIgnoredWeapons;
 
 #if 0
 	CountdownTimer m_stickyBombCheckTimer;
@@ -35,6 +41,5 @@ private:
 	ActionResult< CNEOBot > ScavengeForPrimaryWeapon(CNEOBot* me);
 
 	void AvoidBumpingFriends(CNEOBot* me);
-	void ReconConsiderSuperJump(CNEOBot *me);
 	ActionResult< CNEOBot > WatchForLadders(CNEOBot* me);
 };

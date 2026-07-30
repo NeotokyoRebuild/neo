@@ -91,6 +91,16 @@
 		"ghosterping"	"bool"		// the player is carrying the ghost
 	}
 	
+	"ghost_enemy_callout"
+	{
+		"userid"		"short"		// user ID of ghoster sending callout
+		"team"			"short"		// team of ghoster
+		"targetid"		"short"		// ID of target being called out
+		"targetx"		"short"		// target x position
+		"targety"		"short"		// target y position
+		"targetz"		"short"		// target z position
+	}
+	
 	// inherited from NT
 	"game_round_start"
 	{

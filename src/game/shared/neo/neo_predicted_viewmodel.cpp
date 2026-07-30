@@ -3,7 +3,7 @@
 
 #include "in_buttons.h"
 #include "neo_gamerules.h"
-#include "weapon_hl2mpbase.h"
+#include "weapon_neobasecombatweapon.h"
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
@@ -480,14 +480,14 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	}
 
 	// Is there a nicer way to do this?
-	auto weapon = static_cast<CWeaponHL2MPBase*>(GetOwningWeapon());
+	auto weapon = static_cast<CNEOBaseCombatWeapon*>(GetOwningWeapon());
 
 	if (!weapon)
 	{
 		return;
 	}
 
-	CHL2MPSWeaponInfo data = weapon->GetHL2MPWpnData();
+	CNEOWeaponInfo data = weapon->GetNEOWpnData();
 
 	Vector vForward, vRight, vUp, newPos, vOffset;
 	QAngle newAng, angOffset;
@@ -626,10 +626,9 @@ void CNEOPredictedViewModel::ProcessMuzzleFlashEvent()
 
 RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
 {
-	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	if (pPlayer)
+	if (auto pPlayer = static_cast<C_NEO_Player*>(GetOwner()))
 	{
-		return pPlayer->IsCloaked() ? RENDER_GROUP_VIEW_MODEL_TRANSLUCENT : RENDER_GROUP_VIEW_MODEL_OPAQUE;
+		return pPlayer->IsDrawnTransparent() ? RENDER_GROUP_VIEW_MODEL_TRANSLUCENT : RENDER_GROUP_VIEW_MODEL_OPAQUE;
 	}
 
 	return BaseClass::GetRenderGroup();
@@ -637,10 +636,9 @@ RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
 
 bool CNEOPredictedViewModel::UsesPowerOfTwoFrameBufferTexture()
 {
-	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	if (pPlayer)
+	if (auto pPlayer = static_cast<C_NEO_Player*>(GetOwner()))
 	{
-		return pPlayer->IsCloaked() ? true : false;
+		return pPlayer->IsDrawnTransparent() ? true : false;
 	}
 
 	return BaseClass::UsesPowerOfTwoFrameBufferTexture();

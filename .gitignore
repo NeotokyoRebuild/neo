@@ -9,10 +9,18 @@ out
 
 /src/CMakeSettings.json
 
+# ctest
+/src/Testing
+
 # Possible symlink for fixing tools that hardcode "game/mod_hl2mp" - we use "game/neo".
 /game/mod_hl2mp
 
 /game/neo/screenshots
+
+# Mod launcher binary and the appid file it writes at runtime
+/game/neo_linux64
+/game/neo_win64.exe
+/game/steam_appid.txt
 
 # Binary Assets
 /game/**/bin/**
@@ -26,6 +34,7 @@ out
 /game/neo/resource/*.sfd
 /game/neo/resource/*.ttf
 /game/neo/resource/OFL.txt
+/game/neo/resource/*.tga
 /game/neo/sound
 
 # Use -f to override it
@@ -35,6 +44,9 @@ out
 # Any debug or user specific configs that shouldn't be pushed
 /game/neo/cfg/config.cfg
 /game/neo/cfg/rain.cfg
+
+# Match session restore file
+/game/neo/scripts/match_session_restore_point.txt
 
 # Shader state debug image dumps
 /game/neo/*.tga
@@ -680,6 +692,7 @@ FodyWeavers.xsd
 
 !/game/bin/
 !/game/bin/x64/
+!/game/bin/x64/CmdSeq.wc
 !/game/bin/rebuild.fgd
 !/game/bin/**/[Gg]ame[Cc]onfig.txt
 

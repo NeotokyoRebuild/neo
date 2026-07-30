@@ -34,7 +34,9 @@ namespace vgui
 	class DirectorySelectDialog;
 };
 
+#ifndef NEO
 class CMP3FileSheet;
+#endif
 class CMP3TreeControl;
 class CMP3SongProgress;
 
@@ -242,17 +244,11 @@ public:
 
 protected:
 	virtual void			OnCommand( char const *cmd );
-#ifdef NEO
-	void					OnKeyCodePressed(vgui::KeyCode code) override;
-#endif // NEO
 	virtual void			ApplySchemeSettings( vgui::IScheme *pScheme );
 	virtual void			OnTick();
 
 	MESSAGE_FUNC( OnTreeViewItemSelected, "TreeViewItemSelected" );
 	MESSAGE_FUNC( OnSliderMoved, "SliderMoved" );
-#ifdef NEO
-	MESSAGE_FUNC_PARAMS(OnSliderDragEnd, "SliderDragEnd", data);
-#endif // NEO
 
 	void					PopulateTree();
 	void					PopulateLists();
@@ -347,7 +343,9 @@ private:
 // UI elements
 	vgui::MenuButton		*m_pOptions;
 	CMP3TreeControl			*m_pTree;
+#ifndef NEO
 	CMP3FileSheet			*m_pFileSheet;
+#endif
 	vgui::Label				*m_pCurrentSong;
 	vgui::Label				*m_pDuration;
 	CMP3SongProgress		*m_pSongProgress;
@@ -423,10 +421,5 @@ private:
 
 	bool					m_bEnableAutoAdvance;
 };
-
-#ifdef NEO
-// Singleton
-static CMP3Player* g_pPlayer;
-#endif // NEO
 
 #endif // !MP3PLAYER_H

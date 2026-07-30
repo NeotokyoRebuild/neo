@@ -3,6 +3,7 @@
 #include "neo_gamerules.h"
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_path_compute.h"
+#include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_jgr_seek.h"
 #include "bot/behavior/neo_bot_jgr_escort.h"
 #include "bot/behavior/neo_bot_jgr_enemy.h"
@@ -54,6 +55,11 @@ ActionResult< CNEOBot > CNEOBotJgrSeek::Update( CNEOBot *me, float interval )
 	// Juggernaut objective capture logic
 	if (m_bGoingToTargetEntity && m_hTargetEntity)
 	{
+		if ( me->GetVisionInterface()->GetPrimaryKnownThreat(true) )
+		{
+			return SuspendFor( new CNEOBotAttack( m_hTargetEntity->GetAbsOrigin() ), "Engaging enemies en route to juggernaut" );
+		}
+
 		const float useRangeSq = CNEO_Juggernaut::GetUseDistanceSquared() * 0.8f;
 		if ( me->GetAbsOrigin().DistToSqr( m_hTargetEntity->GetAbsOrigin() ) < useRangeSq ) 
 		{
@@ -65,7 +71,20 @@ ActionResult< CNEOBot > CNEOBotJgrSeek::Update( CNEOBot *me, float interval )
 
 					if ( FStrEq( classname, "neo_juggernaut" ) )
 					{
-						return SuspendFor( new CNEOBotJgrCapture( static_cast<CNEO_Juggernaut*>(m_hTargetEntity.Get()) ), "Capturing Juggernaut" );
+						CNEO_Juggernaut *pJgr = static_cast<CNEO_Juggernaut*>( m_hTargetEntity.Get() );
+						if ( pJgr )
+						{
+							CBasePlayer *pActivatingPlayer = pJgr->GetActivatingPlayer();
+							if ( NEORules()->IsJuggernautLocked()
+								|| ( pActivatingPlayer && me->InSameTeam( pActivatingPlayer ) && pActivatingPlayer != me ) )
+							{
+								CNEOBotJgrCapture::LookAwayFrom( me, pJgr );
+								m_path.Invalidate(); // wait at juggernaut
+								return Continue();
+							}
+						}
+
+						return SuspendFor( new CNEOBotJgrCapture( pJgr ), "Capturing Juggernaut" );
 					}
 				}
 			}
@@ -98,6 +117,17 @@ void CNEOBotJgrSeek::RecomputeSeekPath( CNEOBot *me )
 			CBaseEntity* pJuggernaut = gEntList.FindEntityByClassname(NULL, "neo_juggernaut");
 			if (pJuggernaut)
 			{
+				const float useRangeSq = CNEO_Juggernaut::GetUseDistanceSquared() * 0.8f;
+				if ( me->GetAbsOrigin().DistToSqr( pJuggernaut->GetAbsOrigin() ) < useRangeSq )
+				{
+					// We're already at the goal, no need to path.
+					m_vGoalPos = pJuggernaut->WorldSpaceCenter();
+					m_bGoingToTargetEntity = true;
+					m_hTargetEntity = pJuggernaut;
+					m_path.Invalidate();
+					return;
+				}
+
 				m_vGoalPos = pJuggernaut->WorldSpaceCenter();
 				m_bGoingToTargetEntity = true;
 				m_hTargetEntity = pJuggernaut;

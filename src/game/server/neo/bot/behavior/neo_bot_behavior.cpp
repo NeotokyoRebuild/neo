@@ -15,12 +15,12 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 #include "bot/behavior/neo_bot_tactical_monitor.h"
+#include "weapons/weapon_balc.h"
 
 ConVar neo_bot_path_lookahead_range( "neo_bot_path_lookahead_range", "300" );
 ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT );
 ConVar neo_bot_sniper_aim_steady_rate( "neo_bot_sniper_aim_steady_rate", "10", FCVAR_CHEAT );
 ConVar neo_bot_debug_sniper( "neo_bot_debug_sniper", "0", FCVAR_CHEAT );
-ConVar neo_bot_fire_at_breakable_weapon_min_time( "neo_bot_fire_at_breakable_weapon_min_time", "0.4", FCVAR_CHEAT, "Minimum time to fire at breakables", true, 0.0f, true, 60.0f );
 
 ConVar neo_bot_notice_backstab_chance( "neo_bot_notice_backstab_chance", "25", FCVAR_CHEAT );
 ConVar neo_bot_notice_backstab_min_range( "neo_bot_notice_backstab_min_range", "100", FCVAR_CHEAT );
@@ -35,6 +35,12 @@ ConVar neo_bot_always_full_reload( "neo_bot_always_full_reload", "0", FCVAR_CHEA
 ConVar neo_bot_fire_weapon_allowed( "neo_bot_fire_weapon_allowed", "1", FCVAR_CHEAT, "If zero, NEOBots will not pull the trigger of their weapons (but will act like they did)" );
 
 ConVar neo_bot_allow_retreat( "neo_bot_allow_retreat", "1", FCVAR_CHEAT, "If zero, bots will not attempt to retreat if they are are in a bad situation." );
+
+ConVar neo_bot_recon_superjump_min_dist( "neo_bot_recon_superjump_min_dist", "4096", FCVAR_NONE,
+	"Minimum straight-line path distance required for a Recon bot to super jump while moving", true, 0, false, 0 );
+
+ConVar neo_bot_recon_superjump_min_accuracy( "neo_bot_recon_superjump_min_accuracy", "0.96", FCVAR_NONE,
+	"Minimum directional alignment with path required for a Recon bot to super jump while moving", true, 0.1f, false, 1.0f );
 
 //---------------------------------------------------------------------------------------------
 Action< CNEOBot > *CNEOBotMainAction::InitialContainedAction( CNEOBot *me )
@@ -176,6 +182,8 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 	
 	me->RepathIfFriendlyBlockingLineOfFire();
 
+	ReconConsiderSuperJump( me );
+
 	return Continue();
 }
 
@@ -263,38 +271,6 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 		me->PressRightButton();
 	}
 
-	// NEO Jank: For the current match, all bots share where they get stuck
-	// The reasoning is that bots on either team will get stuck in their respective half of the map
-	// so the overall fairness may balance out for both teams sharing common sticking points.
-	if ( const CNavArea *navArea = me->GetLastKnownArea() )
-	{
-		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
-	}
-	else
-	{
-		// Fallback if GetLastKnownArea is null, try finding nearest nav area
-		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
-		if ( nearestArea )
-		{
-			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
-		}
-	}
-
-	// Also penalize the immediate next nav area bot was trying to get to
-	if ( const PathFollower *path = me->GetCurrentPath() )
-	{
-		if ( const Path::Segment *currentGoal = path->GetCurrentGoal() )
-		{
-			if ( const Path::Segment *nextSegment = path->NextSegment( currentGoal ) )
-			{
-				if ( nextSegment->area )
-				{
-					CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nextSegment->area->GetID(), neo_bot_path_reservation_onstuck_penalty.GetFloat() );
-				}
-			}
-		}
-	}
-
 	return TryContinue();
 }
 
@@ -356,6 +332,138 @@ Vector CNEOBotMainAction::SelectTargetPoint( const INextBot *meBot, const CBaseC
 	}
 
 	return vec3_origin;
+}
+
+
+//-----------------------------------------------------------------------------------------
+void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
+{
+	if (me->IsSneakButtonDown())
+	{
+		return;
+	}
+
+	if ( me->GetClass() != NEO_CLASS_RECON )
+	{
+		return;
+	}
+
+	// Check that bot isn't only moving sideways which wastes aux power
+	// Also determines a direction to jump towards
+	// NEO Jank: We don't check sprint here because bots don't anticipate using sprint in a smart manner
+	const int nForwardBack = me->m_nButtons & ( IN_FORWARD | IN_BACK );
+	if ( nForwardBack == 0 || nForwardBack == ( IN_FORWARD | IN_BACK ) )
+	{
+		// Remove this check if we add sideways super jump in the future
+		return;
+	}
+
+	if (!me->IsAllowedToSuperJump())
+	{
+		return;
+	}
+
+	bool bImmediateDanger = gpGlobals->curtime - me->GetLastDamageTime() <= 2.0f;
+
+	if (!bImmediateDanger
+		&& (me->m_nButtons & IN_FORWARD)
+		&& (neo_bot_recon_superjump_min_dist.GetFloat() > 1))
+	{
+		if (!m_reconSuperJumpPathCheckTimer.IsElapsed())
+		{
+			return;
+		}
+		m_reconSuperJumpPathCheckTimer.Start(1.0f);
+
+		const PathFollower *path = me->GetCurrentPath();
+		if (!path || !path->IsValid())
+		{
+			return;
+		}
+
+		const Path::Segment *seg = path->GetCurrentGoal();
+		if (!seg)
+		{
+			return;
+		}
+
+		// Get the bot motion to know which direction the jump will be boosted
+		Vector vecMovement = me->GetLocomotionInterface()->GetGroundMotionVector();
+		vecMovement.z = 0.0f;
+		vecMovement.NormalizeInPlace();
+
+		// Get the bot's facing direction
+		Vector vecFacing;
+		me->EyeVectors( &vecFacing );
+		vecFacing.z = 0.0f;
+		vecFacing.NormalizeInPlace();
+
+		if (vecMovement.Dot(vecFacing) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+		{
+			return;
+		}
+
+		// Check that upcoming path is in line of a jump
+		bool bCanJump = false;
+		while (seg)
+		{
+			constexpr int maskAttributesToStopPathEval = (
+				NAV_MESH_AVOID |
+				NAV_MESH_CLIFF |
+				NAV_MESH_CROUCH |
+				NAV_MESH_HAS_ELEVATOR |
+				NAV_MESH_JUMP | // likely to interrupt superjump trajectory
+				NAV_MESH_NAV_BLOCKER |
+				NAV_MESH_NO_JUMP |
+				NAV_MESH_OBSTACLE_TOP |
+				NAV_MESH_PRECISE |
+				NAV_MESH_STAIRS |
+				NAV_MESH_STOP |
+				NAV_MESH_TRANSIENT
+			);
+
+			if (seg->area && seg->area->HasAttributes( maskAttributesToStopPathEval ))
+			{
+				return; // Don't superjump toward areas with potentially problematic attributes
+			}
+
+			// Sanity check that each waypoint is relatively aligned with our jump direction
+			Vector vecToWaypoint = seg->pos - me->GetAbsOrigin();
+			vecToWaypoint.z = 0.0f;
+			
+			float flDist = vecToWaypoint.NormalizeInPlace();
+
+			if (vecMovement.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+			{
+				return; // Diverges too much from trajectory
+			}
+
+			if (flDist >= neo_bot_recon_superjump_min_dist.GetFloat())
+			{
+				bCanJump = true;
+				break;
+			}
+			else if ( !IsFinite( flDist ) || flDist < 0 )
+			{
+				return; // Just in case of a bad value
+			}
+
+			seg = path->NextSegment(seg);
+		}
+
+		if (!bCanJump)
+		{
+			return;
+		}
+	}
+
+	// NEO Jank: We allow bots to super jump even if they didn't perform the prerequisite inputs
+	// For example, they don't consistently hold sprint when it's appropriate so we just boost their speed
+	me->GetLocomotionInterface()->Run();
+	me->PressRunButton();
+	me->GetLocomotionInterface()->Jump();
+	me->PressJumpButton();
+	me->SuperJump();
 }
 
 
@@ -569,7 +677,17 @@ QueryResultType CNEOBotMainAction::ShouldWalk(const CNEOBot *me, const QueryResu
 
 	// Walk if reloading or firing
 	CNEOBaseCombatWeapon *myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
-	return (myWeapon && (myWeapon->m_bInReload || me->m_bOnTarget || me->IsFiring())) ? ANSWER_YES : ANSWER_NO;
+	if (myWeapon && (myWeapon->m_bInReload || me->m_bOnTarget || me->IsFiring()))
+	{
+		return ANSWER_YES;
+	}
+
+	if (me->IsSneakButtonDown())
+	{
+		return ANSWER_YES;
+	}
+
+	return ANSWER_NO;
 }
 
 QueryResultType CNEOBotMainAction::ShouldAim(const CNEOBot *me, const bool bWepHasClip) const
@@ -622,10 +740,9 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if ( myWeapon->Clip1() <= 0 )
 			{
-				me->ReleaseFireButton();
 				me->EnableCloak(3.0f);
 				m_isWaitingForFullReload = true;
-				me->PressReloadButton();
+				me->ReloadIfLowClip(true);
 			}
 
 			if ( m_isWaitingForFullReload )
@@ -651,77 +768,10 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	const bool bIgnoreThreat = (threat == nullptr || !threat->GetEntity() || !threat->IsVisibleRecently());
 
-	if (me->GetNeoFlags() & NEO_FL_FREEZETIME)
-	{
-		me->GetLocomotionInterface()->m_bBreakBreakableInPath = false;
-	}
-
-	if (me->GetLocomotionInterface()->m_bBreakBreakableInPath)
-	{
-		if (me->GetDifficulty() >= CNEOBot::HARD && !m_bPrevBreakBreakableInPath && bIgnoreThreat)
-		{
-			auto *secondaryWep = static_cast<CNEOBaseCombatWeapon *>(me->Weapon_GetSlot(1)); 
-			if (secondaryWep != myWeapon && secondaryWep && 
-					((secondaryWep->Clip1() + secondaryWep->m_iPrimaryAmmoCount) > 0))
-			{
-				me->Weapon_Switch(secondaryWep);
-			}
-		}
-
-		if (myWeapon->Clip1() <= 0)
-		{
-			me->ReleaseFireButton();
-			me->PressReloadButton();
-			m_isWaitingForFullReload = true;
-		}
-
-		if (m_isWaitingForFullReload)
-		{
-			m_isWaitingForFullReload = (myWeapon->Clip1() < myWeapon->GetMaxClip1());
-		}
-
-		if (!m_isWaitingForFullReload)
-		{
-			if (me->IsContinuousFireWeapon(myWeapon))
-			{
-				me->PressFireButton(neo_bot_fire_at_breakable_weapon_min_time.GetFloat());
-			}
-			else
-			{
-				if (me->m_nButtons & IN_ATTACK)
-				{
-					me->ReleaseFireButton();
-				}
-				else
-				{
-					me->PressFireButton();
-				}
-			}
-		}
-		m_bPrevBreakBreakableInPath = true;
-		return;
-	}
-
 	// ignore non-visible threats here so we don't force a premature weapon switch if we're doing something else
 	if (bIgnoreThreat)
 	{
 		return;
-	}
-
-	// After bIgnoreThreat so it doesn't go at a continous cycle switching weapons
-	if (!me->GetLocomotionInterface()->m_bBreakBreakableInPath && m_bPrevBreakBreakableInPath)
-	{
-		if (me->GetDifficulty() >= CNEOBot::HARD &&
-				(!myWeapon ||
-				 (myWeapon->GetNeoWepBits() & (NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA | NEO_WEP_KNIFE | NEO_WEP_THROWABLE))))
-		{
-			auto *primaryWeapon = static_cast<CNEOBaseCombatWeapon *>(me->Weapon_GetSlot(0)); 
-			if (primaryWeapon && (primaryWeapon->Clip1() + primaryWeapon->m_iPrimaryAmmoCount) > 0)
-			{
-				me->Weapon_Switch(primaryWeapon);
-			}
-		}
-		m_bPrevBreakBreakableInPath = false;
 	}
 
 	CNEOBot::LineOfFireFlags lofFlags = CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT;
@@ -820,6 +870,11 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 	if (bOnTarget)
 	{
+		if (NEORules()->IsTeamplay())
+		{
+			me->PressSpecialFireButton(); // place a player ping to alert friends
+		}
+
 		if (bThreatIsGhoster)
 		{
 			me->GetBodyInterface()->AimHeadTowards(vShootablePos, IBody::CRITICAL, 1.0f, nullptr,
@@ -830,10 +885,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
 			{
-				// Minimum viable firing BALC
-				// TODO: Proper heat management for higher difficulty bots
-				me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
-				me->PressFireButton(GetFireDurationByDifficulty(me));
+				FireBalcAtEnemy( me, myWeapon, threat, threatRange );
 				return;
 			}
 			else if (myWeapon->m_iClip1 <= 0)
@@ -849,8 +901,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				}
 				else
 				{
-					me->ReleaseFireButton();
-					me->PressReloadButton();
+					me->ReloadIfLowClip(true);
 					m_isWaitingForFullReload = true;
 				}
 				return;
@@ -903,6 +954,33 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			}
 		}
 	}
+}
+
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotMainAction::FireBalcAtEnemy( CNEOBot *me, CNEOBaseCombatWeapon *myWeapon, const CKnownEntity *threat, float threatRange )
+{
+	Assert( myWeapon->GetNeoWepBits() & NEO_WEP_BALC );
+	auto *pBalc = static_cast<CWeaponBALC *>( myWeapon );
+	me->ReleaseWalkButton(); // NEO Jank: this actually cancels sprint
+
+	// NEO JANK: To simplify alt fire input management
+	// we allow the bot to bypass button-hold charge firing requirement
+	// with approximation of charge fire delay
+	if ( threatRange > 300.0f && ( me->GetTimeSinceWeaponFired() > pBalc->GetChargeDuration() * 1.2f ) )
+	{
+		// Check if threat is clearly exposed for a shot
+		const CNavArea *meArea = me->GetLastKnownArea();
+		const CNavArea *targetArea = TheNavMesh->GetNearestNavArea( threat->GetEntity()->GetAbsOrigin() );
+		if ( meArea && targetArea && meArea->IsCompletelyVisible( targetArea ) )
+		{
+			pBalc->ShootGrenade( me );
+			return;
+		}
+	}
+
+	// Fallback to using the primary fire mode
+	me->PressFireButton( GetFireDurationByDifficulty( me ) );
 }
 
 

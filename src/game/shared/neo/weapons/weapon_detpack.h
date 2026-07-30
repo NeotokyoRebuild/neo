@@ -34,6 +34,7 @@ public:
 
 	CWeaponDetpack();
 
+	NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const override { return NEO_WIDX_DETPACK; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_DETPACK | NEO_WEP_THROWABLE | NEO_WEP_EXPLOSIVE; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE;
 
@@ -53,6 +54,7 @@ public:
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 
 	bool	CanDrop(void) OVERRIDE;
+	virtual bool CanAim() final { return false; }
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;

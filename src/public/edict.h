@@ -20,6 +20,12 @@
 #include "iservernetworkable.h"
 #include "bitvec.h"
 
+#ifdef NEO // Unity build
+#ifdef GetClassName
+#undef GetClassName
+#endif
+#endif
+
 struct edict_t;
 
 

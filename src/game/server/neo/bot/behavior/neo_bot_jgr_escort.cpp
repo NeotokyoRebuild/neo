@@ -3,9 +3,10 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_jgr_escort.h"
-#include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
+
+extern ConVar sv_neo_grenade_blast_radius;
 
 //---------------------------------------------------------------------------------------------
 CNEOBotJgrEscort::CNEOBotJgrEscort( void )
@@ -46,34 +47,20 @@ ActionResult< CNEOBot >	CNEOBotJgrEscort::Update( CNEOBot *me, float interval )
 		return Done( "Juggernaut is not friendly" );
 	}
 
-	// Check if we can assist the Juggernaut (if they are a bot)
-	CNEOBot *pBotJuggernaut = ToNEOBot( pJuggernaut );
-	if ( pBotJuggernaut )
-	{
-		const CKnownEntity *juggernautThreat = pBotJuggernaut->GetVisionInterface()->GetPrimaryKnownThreat();
-		if ( juggernautThreat )
-		{
-			// Check if the threat has a clear shot at our friend
-			if ( me->IsLineOfFireClear( juggernautThreat->GetLastKnownPosition(), pJuggernaut, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
-			{
-				return SuspendFor( new CNEOBotAttack, "Assisting Juggernaut with their threat" );
-			}
-		}
-	}
-
 	// Check for own threats
-	const CKnownEntity *myThreat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	if ( myThreat )
+	const CKnownEntity *myThreat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
+	if ( myThreat && myThreat->GetEntity() && myThreat->GetEntity()->IsAlive() )
 	{
-		return SuspendFor( new CNEOBotRetreatToCover, "Retreating to let Juggernaut get the kill" );
+		return SuspendFor( new CNEOBotAttack( pJuggernaut->GetAbsOrigin() ), "Engaging enemy to lure them to Juggernaut" );
 	}
 
 	// Just follow the Juggernaut
 	// If too close, stop moving to avoid crowding
-	constexpr float flMinFollowDistSq = 200.0f * 200.0f;
 	float flDistSq = me->GetAbsOrigin().DistToSqr( pJuggernaut->GetAbsOrigin() );
+	float flSafeRadius = sv_neo_grenade_blast_radius.GetFloat();
+	float flSafeRadiusSq = flSafeRadius * flSafeRadius;
 
-	if ( flDistSq < flMinFollowDistSq )
+	if ( flDistSq < flSafeRadiusSq )
 	{
 		// Too close, stop moving
 		if ( m_chasePath.IsValid() )

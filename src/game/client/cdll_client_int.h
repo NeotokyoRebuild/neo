@@ -126,7 +126,33 @@ extern AchievementsAndStatsInterface* g_pAchievementsAndStatsInterface;
 extern bool	g_bLevelInitialized;
 extern bool g_bTextMode;
 
+#ifdef NEO
+template <int STR_LIMIT_SIZE>
+	requires (STR_LIMIT_SIZE > 0)
+// De-mangle bad Unicode and trim leading and trailing whitespace.
+inline void NeoConVarFixPrintable(IConVar *cvar, const char *, float)
+{
+	// prevent reentrancy
+	static bool bStaticCallbackChangedCVar = false;
+	if (bStaticCallbackChangedCVar)
+	{
+		return;
+	}
 
+	char mutStr[STR_LIMIT_SIZE];
+	ConVarRef cvarRef(cvar);
+	V_strcpy_safe(mutStr, cvarRef.GetString());
+
+	Q_UnicodeRepair(mutStr);
+
+	V_StripTrailingWhitespace(mutStr);
+	V_StripLeadingWhitespace(mutStr);
+
+	bStaticCallbackChangedCVar = true;
+	cvarRef.SetValue(mutStr);
+	bStaticCallbackChangedCVar = false;
+}
+#endif
 
 // Returns true if a new OnDataChanged event is registered for this frame.
 bool AddDataChangeEvent( IClientNetworkable *ent, DataUpdateType_t updateType, int *pStoredEvent );

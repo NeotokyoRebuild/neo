@@ -18,6 +18,7 @@ public:
 	
 	static float GetUseDuration();
 	static float GetUseDistanceSquared();
+	CNEO_Juggernaut() { m_bIsHolding = false; }
 #ifdef GAME_DLL
 	virtual ~CNEO_Juggernaut();
 	DECLARE_SERVERCLASS();
@@ -30,18 +31,22 @@ public:
 	void	Precache(void);
 	void	Spawn(void);
     void	Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
-	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
 	virtual int UpdateTransmitState() override;
 
+	CNEO_Player* GetActivatingPlayer() const { return m_hHoldingPlayer.Get(); }
+	bool IsBeingActivated() const { return m_bIsHolding; }
 	const bool IsBeingActivatedByLosingTeam();
 
 	bool	m_bPostDeath = false;
 #endif
+	virtual int	ObjectCaps(void) override { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
 
 	virtual unsigned int PhysicsSolidMaskForEntity() const final override { return MASK_PLAYERSOLID; }
 	virtual void UpdateOnRemove() override;
 
 	CNetworkVar(bool, m_bLocked);
+	CNetworkVar(CHandle<CNEO_Player>, m_hHoldingPlayer);
+	CNetworkVar(bool, m_bIsHolding);
 
 private:
 #ifdef GAME_DLL
@@ -58,14 +63,11 @@ private:
 #endif
 
 #ifdef GAME_DLL
-	CHandle<CNEO_Player> m_hHoldingPlayer;
 	EHANDLE m_hPush;
 	float m_flWarpedPlaybackRate;
 	float m_flHoldStartTime = 0.0f;
-	bool m_bIsHolding = false;
 	bool m_bActivationRemoval = false;
 
-	hudtextparms_t	m_textParms;
 	COutputEvent m_OnPlayerActivate;
 #endif
 };

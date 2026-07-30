@@ -2,7 +2,11 @@ add_library(vgui_controls STATIC)
 
 add_library(vgui_controls::vgui_controls ALIAS vgui_controls)
 
-set_target_properties(vgui_controls PROPERTIES PREFIX "")
+set_target_properties(vgui_controls PROPERTIES
+    PREFIX ""
+    UNITY_BUILD ON
+    UNITY_BUILD_MODE GROUP
+)
 
 target_include_directories(vgui_controls
     PRIVATE
@@ -22,11 +26,7 @@ if (OS_LINUX)
     )
 endif ()
 
-target_sources_grouped(
-    TARGET vgui_controls
-    NAME "Source Files"
-    FILES
-    ${CMAKE_SOURCE_DIR}/public/filesystem_helpers.cpp
+set(UNITY_SOURCE_VGUI_CONTROLS
     ${CMAKE_SOURCE_DIR}/vgui2/src/vgui_key_translation.cpp
     AnalogBar.cpp
     AnimatingImagePanel.cpp
@@ -75,7 +75,6 @@ target_sources_grouped(
     ProgressBox.cpp
     PropertyDialog.cpp
     PropertyPage.cpp
-    PropertySheet.cpp
     QueryBox.cpp
     RadioButton.cpp
     RichText.cpp
@@ -103,6 +102,20 @@ target_sources_grouped(
     perforcefilelistframe.cpp
     savedocumentquery.cpp
     subrectimage.cpp
+)
+
+set_source_files_properties(
+    ${UNITY_SOURCE_VGUI_CONTROLS}
+    PROPERTIES UNITY_GROUP vgui2_vgui_controls
+)
+
+target_sources_grouped(
+    TARGET vgui_controls
+    NAME "Source Files"
+    FILES
+    ${UNITY_SOURCE_VGUI_CONTROLS}
+    ${CMAKE_SOURCE_DIR}/public/filesystem_helpers.cpp
+    PropertySheet.cpp
 )
 
 target_sources_grouped(
@@ -199,4 +212,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/public/vgui_controls/perforcefilelistframe.h
     ${CMAKE_SOURCE_DIR}/public/vgui_controls/savedocumentquery.h
     ${CMAKE_SOURCE_DIR}/public/vgui_controls/subrectimage.h
+
+    ${CMAKE_SOURCE_DIR}/vgui2/vgui_controls/Common.h # Unity build
 )

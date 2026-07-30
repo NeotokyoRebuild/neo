@@ -327,10 +327,6 @@ void Precache_NEO_Sounds( void )
 	CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
 	CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
 	CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
-	CBaseEntity::PrecacheScriptSound("Victory.Draw");
-	CBaseEntity::PrecacheScriptSound("Victory.Jinrai");
-	CBaseEntity::PrecacheScriptSound("Victory.NSF");
-
 }
 
 //-----------------------------------------------------------------------------

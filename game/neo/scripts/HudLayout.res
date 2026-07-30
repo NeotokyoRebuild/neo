@@ -857,10 +857,10 @@
 		"ammo_text_color"	"255 255 255 100"
 		"ammo_color"		"255 255 255 150"
 		"emptied_ammo_color"	"255 255 255 50"
-		"heatbar_xpos"	"45"
+		"heatbar_xpos"	"23"
 		"heatbar_ypos"	"12"
-		"heatbar_w"		"150"
-		"heatbar_h"		"15"
+		"heatbar_w"		"172"
+		"heatbar_h"		"11"
 		"heat_color"	"255 50 50 200"
 	}
 	NHudHealth
@@ -911,10 +911,12 @@
 	neo_walking_indicator
 	{
 		"fieldName"		"neo_walking_indicator"
-		"xpos"	"208"
-		"ypos"	"470"
-		"wide"	"24"
-		"tall"  "24"
+		"xpos"	"c-8-50"
+		"ypos"	"c+8"
+		"wide"	"16"
+		"tall"  "16"
+		"color" "255 255 255 200"
+		"texture" "vgui/hud/player/walkingIndicator"
 		"visible" "1"
 		"enabled" "1"
 	}
@@ -1008,14 +1010,9 @@
 		"tall"	"200"
 	}
 
-	neo_killer_damage_info
+	neo_killer_info
 	{
-		"fieldName"		"neo_killer_damage_info"
-		"xpos"	"20"
-		"ypos"	"150"
-		"wide"	"640"
-		"tall"	"480"
-		"box_color"		"150 150 150 60"
+		"fieldName"		"neo_killer_info"
 	}
 
 	neo_context_hint

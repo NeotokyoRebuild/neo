@@ -13,6 +13,9 @@
 #include "tier0/threadtools.h"
 #include "utlmultilist.h"
 #include "utlvector.h"
+#ifdef NEO // Unity build
+#include "basetypes.h"
+#endif
 
 FORWARD_DECLARE_HANDLE( memhandle_t );
 

@@ -38,6 +38,8 @@ public:
 		UpdateNearestGhostBeaconDist();
 		TryGhostPing();
 	}
+
+	virtual void OnDataChanged(DataUpdateType_t updateType) override final;
 #endif
 
 	// When the player "activates" the ghost, there is a slight time delay until they're allowed
@@ -55,18 +57,16 @@ public:
 	// If the enemy is not in range, the distance will not be written into.
 	[[nodiscard]] bool BeaconRange(CBaseEntity* enemy, float& outDistance) const;
 
-	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }
 
 	virtual bool Deploy() override;
 	virtual void Drop(const Vector &vecVelocity) override;
-	virtual void ItemHolsterFrame(void);
 	virtual void Equip(CBaseCombatCharacter *pNewOwner) override;
-	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE;};
-	void HandleGhostUnequip(void);
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
+	virtual bool CanAim() final { return false; }
 
+	NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const override { return NEO_WIDX_GHOST; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
@@ -77,11 +77,6 @@ public:
 #ifdef GAME_DLL
 	int UpdateTransmitState() override;
 	int ShouldTransmit(const CCheckTransmitInfo *pInfo) override;
-#endif
-
-#ifdef CLIENT_DLL
-	void StopGhostSound(void);
-	void HandleGhostEquip(void);
 #endif
 
 	virtual void UpdateOnRemove() override
@@ -98,12 +93,11 @@ public:
 	};
 
 private:
-	void PlayGhostSound(float volume = 1.0f);
 #ifdef CLIENT_DLL
+	void PlayGhostSound();
+	void StopGhostSound();
 	void TryGhostPing();
 
-	bool m_bHavePlayedGhostEquipSound;
-	bool m_bHaveHolsteredTheGhost;
 	float m_flLastGhostBeepTime;
 #endif
 

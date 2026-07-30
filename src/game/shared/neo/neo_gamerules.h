@@ -22,6 +22,7 @@
 	#include "neo_player.h"
 	#include "neo_ghost_spawn_point.h"
 	#include "utlhashtable.h"
+	#include "neo_gamerules_restore.h"
 #endif
 
 #include "neo_player_shared.h"
@@ -83,6 +84,9 @@ public:
 class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
+class CNEOBotCtgLoneWolf;
+class CNEOBotCtgLoneWolfAmbush;
+class CNEOBotCtgLoneWolfSeek;
 class CNEOBotSeekAndDestroy;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
@@ -159,6 +163,15 @@ enum NeoHudElements : NEO_HUD_BITS_UNDERLYING_TYPE {
 	NEO_HUD_ELEMENT_PLAYER_PING = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 15),
 	NEO_HUD_ELEMENT_WORLDPOS_MARKER_ENT = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 16),
 	NEO_HUD_ELEMENT_WALKING_INDICATOR = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 17),
+};
+
+enum NeoSpectateEvent {
+	NEO_SPECTATE_EVENT_LAST_HURT = 0,
+	NEO_SPECTATE_EVENT_LAST_SHOOTER,
+	NEO_SPECTATE_EVENT_LAST_EVENT,
+	NEO_SPECTATE_EVENT_LAST_ATTACKER,
+	NEO_SPECTATE_EVENT_LAST_KILLER,
+	NEO_SPECTATE_EVENT_LAST_GHOSTER,
 };
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -349,6 +362,8 @@ public:
 	const Vector& GetJuggernautMarkerPos() const;
 	bool IsJuggernautLocked() const;
 
+	bool InReadyUpState() const;
+	bool InRoundState() const;
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -369,6 +384,7 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
+	inline void SetRoundNumber(const int iNewVal) { m_iRoundNumber.Set(iNewVal); }
     inline int roundNumber() const { return m_iRoundNumber; }
     inline bool roundNumberIsEven() const { return (roundNumber() % 2 == 0); }
 
@@ -401,6 +417,11 @@ public:
 	void OnNavMeshLoad() override;
 #endif // GAME_DL:
 
+	// Class limit methods
+	int GetClassCount(int team, int classId) const;
+	bool IsClassFull(int team, int classId) const;
+	int GetFallbackClass(int team, int preferredClass) const;
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.
@@ -429,6 +450,9 @@ private:
 	void ResetMapSessionCommon();
 
 #ifdef GAME_DLL
+	const int GetScoreLimit() const;
+	const int GetRoundLimit() const;
+
 	void SpawnTheGhost(const Vector *origin = nullptr);
 	void SpawnTheJuggernaut(const Vector *origin = nullptr);
 	void SelectTheVIP();
@@ -436,6 +460,30 @@ public:
 	void JuggernautActivated(CNEO_Player *pPlayer);
 	void JuggernautDeactivated(CNEO_Juggernaut *pJuggernaut);
 	void JuggernautTotalRemoval(CNEO_Juggernaut *pJuggernaut);
+
+	void SetLastHurt(const int index) { m_iLastHurt = index; }
+	void SetLastShooter(const int index) { m_iLastShooter = index; }
+	void SetLastAttacker(const int index) { m_iLastAttacker = m_iLastEvent = index; }
+	void SetLastKiller(const int index) { m_iLastKiller = m_iLastEvent = index; }
+	void SetLastGhoster(const int index) { m_iLastGhoster = m_iLastEvent = index; }
+
+	enum ReadyToggleFlag_
+	{
+		READYTOGGLEFLAG_NIL = 0,
+		READYTOGGLEFLAG_UNREADY = 1 << 0,
+		READYTOGGLEFLAG_PRINTCHANGE = 1 << 1,
+	};
+	typedef int ReadyToggleFlags;
+	void ReadyToggle(CNEO_Player *pNeoPlayer, const ReadyToggleFlags flags);
+#endif // GAME_DLL
+public:
+	const int GetLastHurt() const { return m_iLastHurt; }
+	const int GetLastShooter() const { return m_iLastShooter; }
+	const int GetLastEvent() const { return m_iLastEvent; }
+	const int GetLastAttacker() const { return m_iLastAttacker; }
+	const int GetLastKiller() const { return m_iLastKiller; }
+	const int GetLastGhoster() const { return m_iLastGhoster; }
+#ifdef GAME_DLL
 private:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player *m_pJuggernautPlayer = nullptr;
@@ -446,6 +494,10 @@ private:
 	friend class CNEOBotCtgCarrier;
 	friend class CNEOBotCtgEscort;
 	friend class CNEOBotCtgLoneWolf;
+	friend class CNEOBotCtgLoneWolfAmbush;
+	friend class CNEOBotCtgLoneWolfDetpack;
+	friend class CNEOBotCtgLoneWolfSeek;
+	friend class CNEOBotTacticalMonitor;
 
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
@@ -460,13 +512,17 @@ private:
 	int m_iEntPrevCapSize = 0;
 	int m_iPrintHelpCounter = 0;
 	bool m_bGamemodeTypeBeenInitialized = false;
+	bool m_bServerIsCurrentlyAutoRecording = false;
 	friend class CNEO_GhostBoundary;
 	friend class CNEOGhostSpawnPoint;
+	friend class CNEOJuggernautSpawnPoint;
 	friend class CMultiplayRules;
 	CUtlVector<CHandle<CNEOGhostSpawnPoint>> m_ghostSpawns;
+	CUtlVector<CHandle<CNEOJuggernautSpawnPoint>> m_jgrSpawns;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
 	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 	bool m_bGotMatchWinner = false;
+	int m_iMatchWinner = TEAM_UNASSIGNED;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
@@ -499,9 +555,44 @@ private:
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
 
+	// For spectator commands. Networked so can be saved in demos for hltv
+	CNetworkVar(int, m_iLastHurt);
+	CNetworkVar(int, m_iLastShooter);
+	CNetworkVar(int, m_iLastEvent);
+	CNetworkVar(int, m_iLastAttacker);
+	CNetworkVar(int, m_iLastKiller);
+	CNetworkVar(int, m_iLastGhoster);
+
+	// Class limit networked variables
+	CNetworkVar(int, m_iClassLimitRecon);
+	CNetworkVar(int, m_iClassLimitAssault);
+	CNetworkVar(int, m_iClassLimitSupport);
+
+	// Class count networked variables (for client UI)
+	CNetworkVar(int, m_iJinraiReconCount);
+	CNetworkVar(int, m_iJinraiAssaultCount);
+	CNetworkVar(int, m_iJinraiSupportCount);
+	CNetworkVar(int, m_iNsfReconCount);
+	CNetworkVar(int, m_iNsfAssaultCount);
+	CNetworkVar(int, m_iNsfSupportCount);
+
 public:
 	// VIP networked variables
 	CNetworkVar(int, m_iEscortingTeam);
+
+#ifdef GAME_DLL
+	// sv_neo_restore_...
+	struct NeoRestore
+	{
+		NextRoundGameruleRestoreFlags flags;
+		int iScoreJinrai;
+		int iScoreNSF;
+		int iRoundNumber;
+		int iRoundsWonJinrai;
+		int iRoundsWonNSF;
+	};
+	NeoRestore m_iNextRestore = {};
+#endif
 };
 
 inline CNEORules *NEORules()

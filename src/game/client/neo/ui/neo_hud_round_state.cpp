@@ -21,6 +21,8 @@
 #include "vgui_avatarimage.h"
 #include "neo_scoreboard.h"
 
+#include "hltvcamera.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -30,12 +32,13 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
-ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0,
-	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldValue, [[maybe_unused]] float flOldValue) {
-		g_pNeoScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
-	});
+ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
-ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
+ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling", 
+	[](IConVar* pConVar, char const* pOldString, float flOldValue) -> void {
+		if (g_pNeoHudRoundState)
+			g_pNeoHudRoundState->UpdateStarSize();
+});
 extern ConVar sv_neo_dm_win_xp;
 extern ConVar cl_neo_streamermode;
 extern ConVar sv_neo_readyup_countdown;
@@ -160,6 +163,20 @@ void CNEOHud_RoundState::UpdateAvatarSize()
 	}
 }
 
+void CNEOHud_RoundState::UpdateStarSize()
+{
+	IntDim res = {};
+	surface()->GetScreenSize(res.w, res.h);
+	const float scale = cl_neo_squad_hud_star_scale.GetFloat() != 0 ? cl_neo_squad_hud_star_scale.GetFloat() * (res.h / 1080.0f)
+																	: 1.f;
+
+	for (auto* star : m_ipStars)
+	{
+		star->SetWide(192 * scale);
+		star->SetTall(48 * scale);
+	}
+}
+
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
@@ -179,23 +196,6 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	surface()->GetScreenSize(res.w, res.h);
 	m_iXpos = (res.w / 2);
 
-	if (cl_neo_squad_hud_star_scale.GetFloat())
-	{
-		const float scale = cl_neo_squad_hud_star_scale.GetFloat() * (res.h / 1080.0);
-		for (auto* star : m_ipStars)
-		{
-			star->SetWide(192 * scale);
-			star->SetTall(48 * scale);
-		}
-	}
-	else {
-		for (auto* star : m_ipStars)
-		{
-			star->SetWide(192);
-			star->SetTall(48);
-		}
-	}
-
 	// Box dimensions
 	[[maybe_unused]] int iSmallFontWidth = 0;
 	int iFontHeight = 0;
@@ -214,6 +214,7 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_iBoxYEnd = Y_POS + iBoxHeight;
 
 	UpdateAvatarSize();
+	UpdateStarSize();
 
 	m_rectLeftTeamTotalLogo = vgui::IntRect{
 		.x0 = m_iLeftOffset,
@@ -701,6 +702,11 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 
 void CNEOHud_RoundState::DrawPlayerList()
 {
+	if (!NEORules()->IsTeamplay())
+	{
+		return;
+	}
+
 	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
 	Assert(cl_neo_bot_cmdr_enable_ref.IsValid());
 	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
@@ -728,7 +734,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const bool hideDueToScoreboard = cl_neo_hud_scoreboard_hide_others.GetBool() && g_pNeoScoreBoard->IsVisible();
 
 		// Draw squad mates
-		if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != 0 && !hideDueToScoreboard)
+		if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != STAR_NONE && !hideDueToScoreboard)
 		{
 			bool squadMateFound = false;
 
@@ -1070,7 +1076,10 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 
 	// Draw Avatar
 	{
+		// There are 4 rows, the first has generic colour icons, second has jinrai colour icons, third has nsf colour icons and last has dead colour icons with a skull on top
 		const float TEXTURE_HEIGHT = 1 / 4.f;
+		// There are 8 columns. The first column contains the icon for team jinrai, the second for team nsf (for the team colour rows instead two versions of that teams icon are in column 0 and 1)
+		// column 2 onwards contains class specific icons, the last column is unused since vtfs need to have power of 2 dimensions
 		const float TEXTURE_WIDTH = 1 / 8.f;
 		float textureYOffset = 3.f * TEXTURE_HEIGHT;
 		if (g_PR->IsAlive(playerIndex))
@@ -1085,15 +1094,8 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 			}
 		}
 
-		float textureXOffset = 0.f;
-		if (!drawHealthClass)
-		{
-			if (!g_PR->IsAlive(playerIndex))
-			{
-				textureXOffset = (g_PR->GetTeam(playerIndex) - TEAM_NSF + 1) * TEXTURE_WIDTH;
-			}
-		}
-		else
+		float textureXOffset = g_PR->GetTeam(playerIndex) == TEAM_JINRAI ? 0 : TEXTURE_WIDTH;
+		if (drawHealthClass)
 		{
 			textureXOffset = (2 + g_PR->GetClass(playerIndex)) * TEXTURE_WIDTH;
 		}
@@ -1242,35 +1244,6 @@ void CNEOHud_RoundState::CheckActiveStar()
 	target->SetDrawColor(currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
 }
 
-void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
-{
-	if (!g_pNeoScoreBoard)
-	{
-		return;
-	}
-
-	if (cl_neo_streamermode.GetBool())
-	{
-		return;
-	}
-
-	player_info_t pi;
-	if (!engine->GetPlayerInfo(playerIndex, &pi))
-		return;
-
-	if (!pi.friendsID)
-		return;
-
-	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-	const int mapIndex = g_pNeoScoreBoard->m_mapAvatarsToImageList.Find(steamIDForPlayer);
-	if ((mapIndex == g_pNeoScoreBoard->m_mapAvatarsToImageList.InvalidIndex()))
-		return;
-
-	CAvatarImage* pAvIm = (CAvatarImage*)g_pNeoScoreBoard->m_pImageList->GetImage(g_pNeoScoreBoard->m_mapAvatarsToImageList[mapIndex]);
-	surface()->DrawSetTexture(pAvIm->getTextureID());
-	surface()->DrawSetColor(COLOR_WHITE);
-}
-
 void CNEOHud_RoundState::Paint()
 {
 	BaseClass::Paint();
@@ -1392,6 +1365,12 @@ int CNEOHud_RoundState::GetSelectedPlayerInHud()
 
 CON_COMMAND_F( spec_player_by_hud_position, "Spectate player by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
+		return;
+	}
+
 	if ( args.ArgC() != 2 )
 	{
 		ConMsg( "Usage: spec_player_by_hud_position { player position in top hud, 0 indexed }\n" );
@@ -1415,12 +1394,18 @@ CON_COMMAND_F( spec_player_by_hud_position, "Spectate player by position in the 
 	const int entityIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(positionInHud, true);
 	if (entityIndex)
 	{
-		engine->ClientCmd( VarArgs("spec_player_entity_number %d", entityIndex) );
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(entityIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", entityIndex));
 	}
 }
 
 CON_COMMAND_F( spec_next_entity_in_hud, "Spectate next valid player to the right of the current spectate target", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1438,12 +1423,18 @@ CON_COMMAND_F( spec_next_entity_in_hud, "Spectate next valid player to the right
 	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(g_pNeoHudRoundState->GetNextAlivePlayerInHud(spectateTargetMinusIndexedPositionInHud, false));
 	if (playerIndex)
 	{
-		engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(playerIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
 	}
 }
 
 CON_COMMAND_F( spec_previous_entity_in_hud, "Spectate next valid player to the left of the current spectate target", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1461,12 +1452,18 @@ CON_COMMAND_F( spec_previous_entity_in_hud, "Spectate next valid player to the l
 	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(g_pNeoHudRoundState->GetNextAlivePlayerInHud(spectateTargetMinusIndexedPositionInHud, true));
 	if (playerIndex)
 	{
-		engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(playerIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
 	}
 }
 
 CON_COMMAND_F( select_next_alive_player_in_hud, "Select the next alive player in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked\n", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1479,6 +1476,12 @@ CON_COMMAND_F( select_next_alive_player_in_hud, "Select the next alive player in
 
 CON_COMMAND_F( select_previous_alive_player_in_hud, "Select the previous alive player in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked\n", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1491,6 +1494,12 @@ CON_COMMAND_F( select_previous_alive_player_in_hud, "Select the previous alive p
 
 CON_COMMAND_F( spectate_player_selected_in_hud, "Spectate entity selected in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
 {
+	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
+	{
+		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
+		return;
+	}
+
 	if (!g_pNeoHudRoundState)
 		return;
 	
@@ -1501,6 +1510,6 @@ CON_COMMAND_F( spectate_player_selected_in_hud, "Spectate entity selected in the
 	const int entityIndex = g_pNeoHudRoundState->GetSelectedPlayerInHud();
 	if (entityIndex)
 	{
-		engine->ClientCmd( VarArgs("spec_player_entity_number %d", entityIndex) );
+		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(entityIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", entityIndex));
 	}
 }

@@ -5,6 +5,10 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#if defined(NEO) && defined(_WIN32) // Unity build
+#pragma warning(disable : 4355) // warning C4355: 'this': used in base member initializer list
+#endif
+
 static CClientSteamContext g_ClientSteamContext;
 CClientSteamContext  &ClientSteamContext()
 {

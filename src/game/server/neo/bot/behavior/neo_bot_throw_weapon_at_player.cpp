@@ -20,12 +20,19 @@ ActionResult< CNEOBot >	CNEOBotThrowWeaponAtPlayer::OnStart( CNEOBot *me, Action
 		return Done( "No target player to throw weapon at" );
 	}
 
+	m_expirationTimer.Start( 5.0f );
+
 	return Continue();
 }
 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotThrowWeaponAtPlayer::Update( CNEOBot *me, float interval )
 {
+	if ( m_expirationTimer.IsElapsed() )
+	{
+		return Done( "Expiration timer elapsed" );
+	}
+
 	CNEO_Player *pTarget = m_hTargetPlayer.Get();
 	if ( !pTarget || !pTarget->IsAlive() )
 	{

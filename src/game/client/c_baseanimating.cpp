@@ -1421,6 +1421,15 @@ void C_BaseAnimating::GetBoneControllers(float controllers[MAXSTUDIOBONECTRLS])
 	}
 }
 
+#ifdef NEO
+float C_BaseAnimating::GetBoneController(int iController) const
+{
+	if (IN_BETWEEN_AR(0, iController, MAXSTUDIOBONECTRLS))
+		return m_flEncodedController[ iController ];
+	return 0.f;
+}
+#endif // NEO
+
 float C_BaseAnimating::GetPoseParameter( int iPoseParameter )
 {
 	CStudioHdr *pStudioHdr = GetModelPtr();
@@ -3619,16 +3628,19 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 #ifdef NEO
 	if (IsViewModel())
 	{ // view models become dark when standing close to and facing a wall, change lighting origin
-		auto pOwner = UTIL_PlayerByIndex(GetLocalPlayerIndex());
-		if (pOwner)
+		if (!engine->IsHLTV())
 		{
-			static Vector ownerOrigin;
-			ownerOrigin = pOwner->EyePosition();
-			pInfo->pLightingOrigin = &ownerOrigin;
+			auto pOwner = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+			if (pOwner)
+			{
+				static Vector ownerOrigin;
+				ownerOrigin = pOwner->EyePosition();
+				pInfo->pLightingOrigin = &ownerOrigin;
+			}
 		}
 	}
-	else if (IsBaseCombatWeapon())
-	{
+	else if (IsBaseCombatWeapon() && !GetMoveParent())
+	{ // dropped weapons can become dark when they rotate such that their origin falls through the floor
 		static Vector worldSpaceCenter;
 		worldSpaceCenter = WorldSpaceCenter();
 		pInfo->pLightingOrigin = &worldSpaceCenter;

@@ -17,6 +17,24 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef NEO // Unity build
+#ifdef GLASS_SHARD_MIN_LIFE
+#undef GLASS_SHARD_MIN_LIFE
+#endif
+#ifdef GLASS_SHARD_MAX_LIFE
+#undef GLASS_SHARD_MAX_LIFE
+#endif
+#ifdef GLASS_SHARD_NOISE
+#undef GLASS_SHARD_NOISE
+#endif
+#ifdef GLASS_SHARD_GRAVITY
+#undef GLASS_SHARD_GRAVITY
+#endif
+#ifdef GLASS_SHARD_DAMPING
+#undef GLASS_SHARD_DAMPING
+#endif
+#endif // NEO
+
 #define PI 3.14159265359
 #define GLASS_SHARD_MIN_LIFE 2
 #define GLASS_SHARD_MAX_LIFE 5

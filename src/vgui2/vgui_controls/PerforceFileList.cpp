@@ -14,6 +14,9 @@
 #include "filesystem.h"
 #include "p4lib/ip4.h"
 #include "tier2/tier2.h"
+#ifdef NEO // Unity build
+#include "Common.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
@@ -22,6 +25,7 @@
 using namespace vgui;
 
 
+#ifndef NEO // Unity build
 static int ListFileNameSortFunc([[maybe_unused]] ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
 	bool dir1 = item1.kv->GetInt("directory") == 1;
@@ -123,11 +127,13 @@ static int ListFileTypeSortFunc(ListPanel *pPanel, const ListPanelItem &item1, c
 {
 	return ListBaseStringSortFunc( pPanel, item1, item2, "type" );
 }
+#endif // NEO
 
 
 //-----------------------------------------------------------------------------
 // Dictionary of start dir contexts 
 //-----------------------------------------------------------------------------
+#ifndef NEO // Unity build
 struct ColumnInfo_t
 {
 	char const	*columnName;
@@ -139,8 +145,13 @@ struct ColumnInfo_t
 	SortFunc	*pfnSort;
 	Label::Alignment alignment;
 };
+#endif
 
+#ifdef NEO // Unity build
+static ColumnInfo_t g_ColInfoPerforce[] =
+#else
 static ColumnInfo_t g_ColInfo[] =
+#endif
 {
 	{	"text",				"#PerforceFileList_Col_Name",			175,	20, 10000, ListPanel::COLUMN_UNHIDABLE,		&ListFileNameSortFunc			, Label::a_west },
 	{	"type",				"#PerforceFileList_Col_Type",			150,	20, 10000, 0,								&ListFileTypeSortFunc			, Label::a_west },
@@ -161,9 +172,15 @@ PerforceFileList::PerforceFileList( Panel *pParent, const char *pPanelName ) :
 	m_bShowDeletedFiles = false;
 
 	// list panel
+#ifdef NEO // Unity build
+	for ( int i = 0; i < ARRAYSIZE( g_ColInfoPerforce ); ++i )
+	{
+		const ColumnInfo_t& info = g_ColInfoPerforce[ i ];
+#else
 	for ( int i = 0; i < ARRAYSIZE( g_ColInfo ); ++i )
 	{
 		const ColumnInfo_t& info = g_ColInfo[ i ];
+#endif
 
 		AddColumnHeader( i, info.columnName, info.columnText, info.startingWidth, info.minWidth, info.maxWidth, info.flags );
 		SetSortFunc( i, info.pfnSort );

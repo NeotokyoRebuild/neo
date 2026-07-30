@@ -168,7 +168,11 @@ void URLLabel::GetSettings( KeyValues *outResourceData )
 const char *URLLabel::GetDescription( void )
 {
 	static char buf[1024];
+#ifdef NEO // Unity build
+	V_sprintf_safe(buf, "%s, string URLText", BaseClass::GetDescription());
+#else
 	_snprintf(buf, sizeof(buf), "%s, string URLText", BaseClass::GetDescription());
+#endif
 	return buf;
 }
 

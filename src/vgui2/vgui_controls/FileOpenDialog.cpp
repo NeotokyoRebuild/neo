@@ -47,6 +47,9 @@
 #include <vgui_controls/ImageList.h>
 #include <vgui_controls/MenuItem.h>
 #include <vgui_controls/Tooltip.h>
+#ifdef NEO // Unity build
+#include "Common.h"
+#endif
 
 #if defined( _X360 )
 #include "xbox/xbox_win32stubs.h"
@@ -60,6 +63,7 @@ using namespace vgui;
 
 static int s_nLastSortColumn = 0;
 
+#ifndef NEO // Unity build
 static int ListFileNameSortFunc([[maybe_unused]] ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
 	bool dir1 = item1.kv->GetInt("directory") == 1;
@@ -147,6 +151,8 @@ static int ListBaseIntegerSortFunc(ListPanel *pPanel, const ListPanelItem &item1
 	return ( i1 < i2 ) ? -1 : 1;
 }
 
+#endif // NEO
+
 static int ListBaseInteger64SortFunc(ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2, char const *lowfield, char const *highfield )
 {
 	bool dir1 = item1.kv->GetInt("directory") == 1;
@@ -174,11 +180,12 @@ static int ListBaseInteger64SortFunc(ListPanel *pPanel, const ListPanelItem &ite
 	return ( i1 < i2 ) ? -1 : 1;
 }
 
-
+#ifndef NEO // Unity build
 static int ListFileSizeSortFunc(ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
 	return ListBaseIntegerSortFunc( pPanel, item1, item2, "filesizeint" );
 }
+#endif
 
 static int ListFileModifiedSortFunc(ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
@@ -190,6 +197,7 @@ static int ListFileCreatedSortFunc(ListPanel *pPanel, const ListPanelItem &item1
 	// NOTE: Backward order to get most recent files first
 	return ListBaseInteger64SortFunc( pPanel, item2, item1, "createdint_low", "createdint_high" );
 }
+#ifndef NEO // Unity build
 static int ListFileAttributesSortFunc(ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
 	return ListBaseStringSortFunc( pPanel, item1, item2, "attributes" );
@@ -198,7 +206,7 @@ static int ListFileTypeSortFunc(ListPanel *pPanel, const ListPanelItem &item1, c
 {
 	return ListBaseStringSortFunc( pPanel, item1, item2, "type" );
 }
-
+#endif
 
 
 namespace vgui
@@ -461,6 +469,7 @@ void FileCompletionEdit::OnMenuItemHighlight( int itemID )
 //-----------------------------------------------------------------------------
 static CUtlDict< CUtlString, unsigned short > s_StartDirContexts;
 
+#ifndef NEO // Unity build
 struct ColumnInfo_t
 {
 	char const	*columnName;
@@ -472,8 +481,13 @@ struct ColumnInfo_t
 	SortFunc	*pfnSort;
 	Label::Alignment alignment;
 };
+#endif
 
+#ifdef NEO // Unity build
+static ColumnInfo_t g_ColInfoFileOpenDl[] =
+#else
 static ColumnInfo_t g_ColInfo[] =
+#endif
 {
 	{	"text",				"#FileOpenDialog_Col_Name",				175,	20, 10000, ListPanel::COLUMN_UNHIDABLE,		&ListFileNameSortFunc			, Label::a_west },
 	{	"filesize",			"#FileOpenDialog_Col_Size",				100,	20, 10000, 0,								&ListFileSizeSortFunc			, Label::a_east },
@@ -522,9 +536,15 @@ void FileOpenDialog::Init( const char *title, KeyValues *pContextKeyValues )
 
 	// list panel
 	m_pFileList = new ListPanel(this, "FileList");
+#ifdef NEO // Unity build
+	for ( int i = 0; i < ARRAYSIZE( g_ColInfoFileOpenDl ); ++i )
+	{
+		const ColumnInfo_t& info = g_ColInfoFileOpenDl[ i ];
+#else
 	for ( int i = 0; i < ARRAYSIZE( g_ColInfo ); ++i )
 	{
 		const ColumnInfo_t& info = g_ColInfo[ i ];
+#endif
 
 		m_pFileList->AddColumnHeader( i, info.columnName, info.columnText, QuickPropScale( info.startingWidth ), QuickPropScale( info.minWidth ), QuickPropScale( info.maxWidth ), info.flags );
 		m_pFileList->SetSortFunc( i, info.pfnSort );

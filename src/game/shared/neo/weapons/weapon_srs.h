@@ -38,6 +38,7 @@ public:
 	virtual void	PrimaryAttack() override;
 	virtual bool	Reload(void) OVERRIDE;
 
+	NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const override { return NEO_WIDX_SRS; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_SRS | NEO_WEP_SCOPEDWEAPON | NEO_WEP_FIREARM; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 20; }
 

@@ -82,6 +82,7 @@ target_sources_grouped(
     example_model_dx9_helper.cpp
     lightmappedgeneric_dx9.cpp
     lightmappedgeneric_dx9_helper.cpp
+    water.cpp
     screenspace_general.cpp
 )
 
@@ -106,6 +107,7 @@ target_sources_grouped(
     common_vs_fxc.h
     example_model_dx9_helper.h
     lightmappedgeneric_dx9_helper.h
+    water_ps2x_helper.h
     shader_constant_register_map.h
 )
 

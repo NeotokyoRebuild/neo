@@ -134,6 +134,13 @@ enum Interruptability_t
 #define bits_MEMORY_CUSTOM2				( 1 << 30 )	// NPC-specific memory
 #define bits_MEMORY_CUSTOM1				( 1 << 31 )	// NPC-specific memory
 
+#ifdef NEO // Unity build
+#define bits_MEMORY_PAIN_LIGHT_SOUND		bits_MEMORY_CUSTOM1
+#define bits_MEMORY_PAIN_HEAVY_SOUND		bits_MEMORY_CUSTOM2
+#define bits_MEMORY_PLAYER_HURT				bits_MEMORY_CUSTOM3
+#define bits_MEMORY_PLAYER_HARASSED			bits_MEMORY_CUSTOM4
+#endif
+
 //-------------------------------------
 // Spawn flags
 //-------------------------------------

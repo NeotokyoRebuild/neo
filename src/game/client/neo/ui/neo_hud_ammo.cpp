@@ -26,17 +26,8 @@
 
 using vgui::surface;
 
-ConVar cl_neo_hud_ammo_enabled("cl_neo_hud_ammo_enabled", "1", FCVAR_USERINFO,
+ConVar cl_neo_hud_ammo_enabled("cl_neo_hud_ammo_enabled", "1", FCVAR_ARCHIVE,
 	"Whether the HUD ammo is enabled or not.", true, 0, true, 1);
-
-ConVar cl_neo_hud_debug_ammo_color_r("cl_neo_hud_debug_ammo_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
-	"Red color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar cl_neo_hud_debug_ammo_color_g("cl_neo_hud_debug_ammo_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
-	"Green color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar cl_neo_hud_debug_ammo_color_b("cl_neo_hud_debug_ammo_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
-	"Blue value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar cl_neo_hud_debug_ammo_color_a("cl_neo_hud_debug_ammo_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
-	"Alpha color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_Ammo, NHudWeapon);
 
@@ -124,12 +115,6 @@ void CNEOHud_Ammo::DrawAmmo() const
 	if(activeWep->IsGhost())
 		return;
 
-	if (activeWep->GetNeoWepBits() & NEO_WEP_BALC)
-	{
-		DrawHeatMeter(activeWep);
-		return;
-	}
-
 	const int maxClip = activeWep->GetMaxClip1();
 	if (maxClip == 0 || activeWep->IsMeleeWeapon())
 		return;
@@ -166,11 +151,11 @@ void CNEOHud_Ammo::DrawAmmo() const
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
 		
-	if (activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) 
+	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || (activeWep->GetNeoWepBits() & NEO_WEP_BALC))
 	{
 		char fireModeText[2]{ '\0' };
 
-		ammoChar = activeWep->GetWpnData().szBulletCharacter;
+		ammoChar = activeWep->GetNEOWpnData().szBulletCharacter;
 		magSizeMax = activeWep->GetMaxClip1();
 		magSizeCurrent = activeWep->Clip1();
 			
@@ -207,6 +192,12 @@ void CNEOHud_Ammo::DrawAmmo() const
 			ammoChar = "g";
 			magSizeMax = magSizeCurrent = ammoCount;
 		}			
+	}
+
+	if (activeWep->GetNeoWepBits() & NEO_WEP_BALC)
+	{
+		DrawHeatMeter(activeWep);
+		return;
 	}
 
 	surface()->DrawSetTextColor(ammo_color);
@@ -310,9 +301,9 @@ void CNEOHud_Ammo::DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep) const
 	
 	if (activeWep->GetPrimaryAmmoCount() == 0)
 	{
-		surface()->DrawSetTextFont(m_hBulletFont);
-		surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
-		surface()->DrawPrintText(L"HOT", 3);
+		surface()->DrawSetTextFont(m_hSmallTextFont);
+		surface()->DrawSetTextPos(heatbar_xpos + xpos, (heatbar_ypos + ypos) - 22);
+		surface()->DrawPrintText(L"OVERHEAT", 8);
 	}
 
 	surface()->DrawSetColor(heatColorLerp);

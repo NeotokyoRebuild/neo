@@ -92,7 +92,11 @@ enum cameraState_e
 
 
 // Eye states
+#ifdef NEO // Unity build
+enum eyeStateCombineCamera_t
+#else
 enum eyeState_t
+#endif
 {
 	CAMERA_EYE_IDLE,				// Nothing abnormal in the inner or outer viewcone, dim green.
 	CAMERA_EYE_SEEKING_TARGET,		// Something in the outer viewcone, flashes amber as it converges on the target.
@@ -162,7 +166,11 @@ protected:
 	void TrackTarget(CBaseEntity *pTarget);
 
 	bool PreThink(cameraState_e state);
+#ifdef NEO // Unity build
+	void SetEyeState(eyeStateCombineCamera_t state);
+#else
 	void SetEyeState(eyeState_t state);
+#endif
 	void MaintainEye();
 	void Ping();	
 	void Toggle();
@@ -828,7 +836,11 @@ bool CNPC_CombineCamera::PreThink(cameraState_e state)
 // Purpose: Sets the state of the glowing eye attached to the camera
 // Input  : state - state the eye should be in
 //-----------------------------------------------------------------------------
+#ifdef NEO // Unity build
+void CNPC_CombineCamera::SetEyeState(eyeStateCombineCamera_t state)
+#else
 void CNPC_CombineCamera::SetEyeState(eyeState_t state)
+#endif
 {
 	// Must have a valid eye to affect
 	if (m_pEyeGlow == NULL)

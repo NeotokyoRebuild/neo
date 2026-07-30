@@ -7,11 +7,11 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_colorblind_shift_rgb("mat_neo_colorblind_shift_rgb", "0", FCVAR_USERINFO, "Reorder RGB color values.\n\t0: RGB (regular order)\n\t1: GBR\n\t2: BRG\n\t3: BGR\n\t4: GRB\n\t5: RBG", true, 0.0f, true, 5.0f);
-ConVar mat_neo_colorblind_deuteranopia_mode("mat_neo_colorblind_deuteranopia_mode", "0", FCVAR_USERINFO, "Enable deuteranopia adjustment. 0: disabled, 1: simulate deuteranopia colors, 2: apply color correction, 3: simulate color corrected deuteranopia colors", true, 0.0f, true, 3.0f);
-ConVar mat_neo_colorblind_deuteranopia_brightness("mat_neo_colorblind_deuteranopia_brightness", "1.2", FCVAR_USERINFO, "Post-effect brightness scaler", true, 0.0f, true, 2.2f);
+ConVar mat_neo_colorblind_shift_rgb("mat_neo_colorblind_shift_rgb", "0", FCVAR_ARCHIVE, "Reorder RGB color values.\n\t0: RGB (regular order)\n\t1: GBR\n\t2: BRG\n\t3: BGR\n\t4: GRB\n\t5: RBG", true, 0.0f, true, 5.0f);
+ConVar mat_neo_colorblind_deuteranopia_mode("mat_neo_colorblind_deuteranopia_mode", "0", FCVAR_ARCHIVE, "Enable deuteranopia adjustment. 0: disabled, 1: simulate deuteranopia colors, 2: apply color correction, 3: simulate color corrected deuteranopia colors", true, 0.0f, true, 3.0f);
+ConVar mat_neo_colorblind_deuteranopia_brightness("mat_neo_colorblind_deuteranopia_brightness", "1.2", FCVAR_ARCHIVE, "Post-effect brightness scaler", true, 0.0f, true, 2.2f);
 ConVar mat_neo_colorblind_deuteranopia_saturation("mat_neo_colorblind_deuteranopia_saturation", "1.0", FCVAR_CHEAT, "Post-effect saturation adjust", true, 0.0f, true, 2.0f);
-ConVar mat_neo_colorblind_deuteranopia_saturation_b("mat_neo_colorblind_deuteranopia_saturation_b", "1.0", FCVAR_USERINFO, "Post-effect saturation adjust exclusively for the blue channel", true, 0.0f, true, 2.0f);
+ConVar mat_neo_colorblind_deuteranopia_saturation_b("mat_neo_colorblind_deuteranopia_saturation_b", "1.0", FCVAR_ARCHIVE, "Post-effect saturation adjust exclusively for the blue channel", true, 0.0f, true, 2.0f);
 
 BEGIN_VS_SHADER_FLAGS(Neo_ColorBlind, "Help for Neo_ColorBlind", SHADER_NOT_EDITABLE)
 BEGIN_SHADER_PARAMS

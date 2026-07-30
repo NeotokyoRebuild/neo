@@ -150,7 +150,11 @@ enum LandingState_t
 #define DROPSHIP_CONTAINER_MODEL "models/combine_dropship_container.mdl"
 
 #define DROPSHIP_CONTAINER_MAX_CHUNKS	3
+#ifdef NEO // Unity build
+static const char *s_pChunkModelNameNpcCDS[DROPSHIP_CONTAINER_MAX_CHUNKS] = 
+#else
 static const char *s_pChunkModelName[DROPSHIP_CONTAINER_MAX_CHUNKS] = 
+#endif
 {
 	"models/gibs/helicopter_brokenpiece_01.mdl",
 	"models/gibs/helicopter_brokenpiece_02.mdl",
@@ -428,7 +432,11 @@ void CCombineDropshipContainer::Precache()
 	int i;
 	for ( i = 0; i < DROPSHIP_CONTAINER_MAX_CHUNKS; ++i )
 	{
+#ifdef NEO // Unity build
+		PrecacheModel( s_pChunkModelNameNpcCDS[i] );
+#else
 		PrecacheModel( s_pChunkModelName[i] );
+#endif
 	}
 
 	for ( i = 0; i < DROPSHIP_CONTAINER_MAX_GIBS; ++i )
@@ -544,7 +552,11 @@ void CCombineDropshipContainer::ThrowFlamingGib( void )
 	pChunk->SetAbsAngles( vecSpawnAngles );
 
 	int nGib = random->RandomInt( 0, DROPSHIP_CONTAINER_MAX_CHUNKS - 1 );
+#ifdef NEO // Unity build
+	pChunk->Spawn( s_pChunkModelNameNpcCDS[nGib] );
+#else
 	pChunk->Spawn( s_pChunkModelName[nGib] );
+#endif
 	pChunk->SetOwnerEntity( this );
 	pChunk->m_lifeTime = random->RandomFloat( 6.0f, 8.0f );
 	pChunk->SetCollisionGroup( COLLISION_GROUP_DEBRIS );

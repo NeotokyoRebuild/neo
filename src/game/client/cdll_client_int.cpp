@@ -150,6 +150,11 @@
 
 #endif
 
+#ifdef NEO
+#include <vgui_controls/Button.h>
+#include <vgui_controls/MenuButton.h>
+#include "neo_mp3player.h"
+#endif
 
 extern vgui::IInputInternal *g_InputInternal;
 
@@ -485,6 +490,8 @@ class CClientDLLSharedAppSystems : public IClientDLLSharedAppSystems
 public:
 	CClientDLLSharedAppSystems()
 	{
+		#define DLL_EXT_STRING DLLExtTokenPaste2( _DLL_EXT )
+		
 		AddAppSystem( "soundemittersystem" DLL_EXT_STRING, SOUNDEMITTERSYSTEM_INTERFACE_VERSION );
 		AddAppSystem( "scenefilecache" DLL_EXT_STRING, SCENE_FILE_CACHE_INTERFACE_VERSION );
 	}
@@ -1246,27 +1253,6 @@ bool CHLClient::ReplayPostInit()
 
 #ifdef NEO
 extern void NeoToggleConsoleEnforce();
-
-template <int STR_LIMIT_SIZE>
-static void NeoConVarStrLimitChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
-{
-	static bool bStaticCallbackChangedCVar = false;
-	if (bStaticCallbackChangedCVar)
-	{
-		return;
-	}
-
-	ConVarRef cvarRef(cvar);
-	if (V_strlen(cvarRef.GetString()) >= STR_LIMIT_SIZE)
-	{
-		bStaticCallbackChangedCVar = true;
-		char mutStr[STR_LIMIT_SIZE];
-		V_strcpy_safe(mutStr, cvarRef.GetString());
-		Q_UnicodeRepair(mutStr);
-		cvarRef.SetValue(mutStr);
-		bStaticCallbackChangedCVar = false;
-	}
-}
 #endif
 
 #ifdef NEO
@@ -1412,13 +1398,25 @@ void CHLClient::PostInit()
 	}
 #endif
 
+	NeoMP3::Init();
+
 	if (g_pCVar)
 	{
-		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<MAX_PLAYER_NAME_LENGTH>);
-		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_MAX_CLANTAG_LENGTH>);
-		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_XHAIR_SEQMAX>);
+		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarFixPrintable<MAX_PLAYER_NAME_LENGTH>);
+		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarFixPrintable<NEO_MAX_CLANTAG_LENGTH>);
+		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarCrosshairChangeCallback);
+		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(NeoMP3::MusicVolCallback);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 		RestrictNeoClientCheats();
+
+		// Fixup invalid crosshair to default
+		ConVarRef cl_neo_crosshair("cl_neo_crosshair");
+		if (false == ValidateCrosshairSerial(cl_neo_crosshair.GetString()))
+		{
+			char szSequence[NEO_XHAIR_SEQMAX] = {};
+			DefaultCrosshairSerial(szSequence);
+			cl_neo_crosshair.SetValue(szSequence);
+		}
 
 		ConVar *sv_maxupdaterate = g_pCVar->FindVar( "sv_maxupdaterate" ); Assert(sv_maxupdaterate);
 		ConVar *cl_updaterate = g_pCVar->FindVar( "cl_updaterate" ); Assert(cl_updaterate);
@@ -1447,9 +1445,6 @@ void CHLClient::PostInit()
 			if (iCfgVerMajor < 22)
 			{
 				SetupBindIfNotSet("+attack3", MOUSE_MIDDLE);	// Ping location
-				SetupBindIfNotSet("kdinfo_toggle", KEY_F11);	// KD-info toggle
-				SetupBindIfNotSet("kdinfo_page_prev", KEY_P);	// KD-info page previous
-				SetupBindIfNotSet("kdinfo_page_next", KEY_N);	// KD-info page next
 				SetupBindIfNotSet("neo_mp3", KEY_M);			// MP3 player toggle
 			
 				// neo_aim_hold removal, +aim split to +aim and toggle_aim
@@ -1520,6 +1515,18 @@ void CHLClient::PostInit()
 				if (cl_updaterate->GetInt() == oldClUpdaterateDefault)
 				{
 					cl_updaterate->SetValue(svMaxUpdateRateDefault);
+				}
+			}
+
+			if (iCfgVerMajor < 29)
+			{
+				// Upgrade pre NEOXHAIR_SERIAL_ALPHA_V29 crosshairs to NEOXHAIR_SERIAL_ALPHA_V29+
+				CrosshairInfo xhairInfo = {};
+				if (ImportCrosshair(&xhairInfo, cl_neo_crosshair.GetString()))
+				{
+					char szExportSeq[NEO_XHAIR_SEQMAX];
+					ExportCrosshair(&xhairInfo, szExportSeq);
+					cl_neo_crosshair.SetValue(szExportSeq);
 				}
 			}
 
@@ -1619,6 +1626,7 @@ void CHLClient::PostInit()
 void CHLClient::Shutdown( void )
 {
 #ifdef NEO
+	NeoMP3::Deinit();
 	NeoDeleteDownloadedSprays();
 	ServerBlacklistWrite(SERVER_BLACKLIST_DEFFILE);
 #endif
@@ -1943,6 +1951,79 @@ void CHLClient::DecodeUserCmdFromBuffer( bf_read& buf, int slot )
 	input->DecodeUserCmdFromBuffer( buf, slot );
 }
 
+#ifdef NEO
+inline static vgui::VPANEL ChildOf(const vgui::VPANEL parent, const char* childName)
+{
+	Assert(parent);
+	const auto& children = vgui::ipanel()->GetChildren(parent);
+	for (const auto& child : children)
+	{
+		const char* name = vgui::ipanel()->GetName(child);
+		Assert(childName && *childName);
+		if (name && V_strcmp(name, childName) == 0)
+			return child;
+	}
+	return {};
+}
+
+static void FixupDemoSmoother()
+{
+	VPROF_BUDGET(__FUNCTION__, VPROF_BUDGETGROUP_REPLAY);
+
+	static bool alreadyDone = false;
+	if (alreadyDone)
+		return;
+
+	// Don't spam the vgui iteration attempts too often...
+	static float lastAttemptTime{};
+	if (gpGlobals->curtime - lastAttemptTime < 1)
+	{
+		// ...except if we're not ticking, since who knows how long it's been.
+		// Luckily perf doesn't really matter if the entire game is currently frozen.
+		if (!engine->IsPaused())
+		{
+			return;
+		}
+	}
+
+	lastAttemptTime = gpGlobals->curtime;
+
+	Assert(enginevgui);
+	const auto toolsPanel = enginevgui->GetPanel(PANEL_TOOLS);
+	const auto demoUiPanel = ChildOf(toolsPanel, "DemoUIPanel");
+	const auto demoSmootherPanel = ChildOf(demoUiPanel, "DemoSmootherPanel");
+	if (!demoSmootherPanel)
+		return;
+
+	constexpr const char* demoSmootherPanelButtonsToFix[]{
+		"DemoSmoothFixFrameButton",
+		"DemoSmootherType" };
+
+	int numFixed = 0;
+	for (const auto& buttonName : demoSmootherPanelButtonsToFix)
+	{
+		auto button = vgui::ipanel()->GetPanel(ChildOf(demoSmootherPanel, buttonName), "BaseUI");
+		if (!button)
+			continue;
+
+		// The buttons live in engine dll, so this could theoretically change in SDK update.
+		using ExpectedButtonType = vgui::MenuButton;
+		// And so we check
+		if (!dynamic_cast<ExpectedButtonType*>(button))
+		{
+			Assert(false);
+			alreadyDone = true; // nothing we can do until code fix... just mark as done
+			return;
+		}
+
+		((ExpectedButtonType*)button)->SetButtonActivationType(vgui::Button::ACTIVATE_ONPRESSED);
+		++numFixed;
+	}
+
+	alreadyDone = (numFixed == ARRAYSIZE(demoSmootherPanelButtonsToFix));
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -1956,6 +2037,12 @@ void CHLClient::View_Render( vrect_t *rect )
 
 	view->Render( rect );
 	UpdatePerfStats();
+#ifdef NEO
+	if (engine->IsPlayingDemo())
+	{
+		FixupDemoSmoother();
+	}
+#endif
 }
 
 
@@ -2569,6 +2656,29 @@ void OnRenderStart()
 	VPROF( "OnRenderStart" );
 	MDLCACHE_CRITICAL_SECTION();
 	MDLCACHE_COARSE_LOCK();
+
+#ifdef NEO
+	if (engine->IsPaused())
+	{
+		Rope_ResetCounters();
+
+		{
+			PREDICTION_TRACKVALUECHANGESCOPE( "interpolation" );
+			C_BaseEntity::InterpolateServerEntities();
+		}
+
+		{
+			C_BaseAnimating::PushAllowBoneAccess( true, false, "OnRenderStart->CViewRender::SetUpView" ); // pops in CViewRender::SetUpView
+		}
+
+		input->CAM_Think();
+		view->OnRenderStart();
+		
+		RopeManager()->OnRenderStart();
+		
+		return;
+	}
+#endif // NEO
 
 #ifdef PORTAL
 	g_pPortalRender->UpdatePortalPixelVisibility(); //updating this one or two lines before querying again just isn't cutting it. Update as soon as it's cheap to do so.

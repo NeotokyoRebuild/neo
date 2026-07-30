@@ -223,6 +223,37 @@ static void SetProfileTempBotCommon(CNEOBotProfile *pProfile, KeyValues *kv)
 				++iBitWise;
 			}
 		}
+
+		// Initialize loot prefs first with class compatible weapon selection prefs
+		for (int idxClass = 0; idxClass < NEO_CLASS__LOADOUTABLE_COUNT; ++idxClass)
+		{
+			for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
+			{
+				pProfile->flagsLootWepPrefs[idxClass][idxRank] = pProfile->flagsWepPrefs[idxClass][idxRank];
+			}
+		}
+
+		// Apply additional looting preferences for class-excluded weapons
+		for (int idxClass = 0; idxClass < NEO_CLASS_VIP; ++idxClass)
+		{
+			KeyValues *wepClassKv = wepKv->FindKey(SZ_CLASSES[idxClass]);
+			if (!wepClassKv)
+			{
+				continue;
+			}
+
+			const auto lootFlags = FlagsFromStr(
+				(NEO_WEP_BITS_UNDERLYING_TYPE)0,
+				WEP_BIT_FLAG_CMP,
+				wepClassKv->GetString("loot"),
+				&pProfile->flagTemplateApplied,
+				static_cast<BotTemplateApplied_>(
+					BOT_TEMPLATE_APPLIED_WEP_PREF_RECON_LOOT << idxClass));
+
+			// Append loot preference to lieutenant level
+			const int idxLieutenant = NEO_RANK__TOTAL - 1;
+			pProfile->flagsLootWepPrefs[idxClass][idxLieutenant] |= lootFlags;
+		}
 	}
 
 	pProfile->flagDifficulty = FlagsFromStr(pProfile->flagDifficulty,
@@ -338,6 +369,15 @@ void NEOBotProfileLoad()
 	CNEOBotProfile defaultProfile;
 	V_memcpy(&defaultProfile, &FIXED_DEFAULT_PROFILE, sizeof(CNEOBotProfile));
 
+	// Initialize bot weapon looting preferences from weapon selection preferences
+	for (int idxClass = 0; idxClass < NEO_CLASS__LOADOUTABLE_COUNT; ++idxClass)
+	{
+		for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
+		{
+			defaultProfile.flagsLootWepPrefs[idxClass][idxRank] = defaultProfile.flagsWepPrefs[idxClass][idxRank];
+		}
+	}
+
 	KeyValues *kv = new KeyValues("ntre_bot_profiles");
 	if (!kv->LoadFromFile(g_pFullFileSystem, "scripts/" MAIN_PROFILE_FNAME))
 	{
@@ -423,6 +463,24 @@ void NEOBotProfileLoad()
 										newBotProfile.flagsWepPrefs[idxClass][idxRank] = templateProfile->flagsWepPrefs[idxClass][idxRank];
 									}
 									++iBitWise;
+								}
+							}
+							for (int idxClass = 0; idxClass < NEO_CLASS_VIP; ++idxClass)
+							{
+								const auto lootFlag =
+									static_cast<BotTemplateApplied>(
+										BOT_TEMPLATE_APPLIED_WEP_PREF_RECON_LOOT << idxClass);
+
+								if (templateProfile->flagTemplateApplied & lootFlag)
+								{
+									for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
+									{
+#if LOG_DBG_LEVEL >= 2
+										Msg("  BOTS: Template (%s): Applied loot wep pref %d,%d = %d\n", szKey, idxClass, idxRank, templateProfile->flagsLootWepPrefs[idxClass][idxRank]);
+#endif
+										newBotProfile.flagsLootWepPrefs[idxClass][idxRank] =
+											templateProfile->flagsLootWepPrefs[idxClass][idxRank];
+									}
 								}
 							}
 							if (templateProfile->flagTemplateApplied & BOT_TEMPLATE_APPLIED_DIFFICULTY)

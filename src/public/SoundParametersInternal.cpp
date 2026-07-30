@@ -34,6 +34,14 @@ static SoundChannels g_pChannelNames[] =
 	{ CHAN_STREAM, "CHAN_STREAM" },
 	{ CHAN_STATIC, "CHAN_STATIC" },
 	{ CHAN_VOICE2, "CHAN_VOICE2" },
+#ifdef NEO
+	// Sadly we can't use these in soundscripts directly,
+	// because the lookup is baked to the closed-source
+	// soundemittersystem dll's version of this array... :-(
+	{ CHAN_VOICE_BASE, "CHAN_VOICE_BASE" },
+	{ CHAN_USER_BASE, "CHAN_USER_BASE" },
+	{ CHAN_GHOST_PICKUP, "CHAN_GHOST_PICKUP" },
+#endif
 };
 
 struct VolumeLevel

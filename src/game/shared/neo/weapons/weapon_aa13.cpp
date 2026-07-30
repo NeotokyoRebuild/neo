@@ -104,7 +104,8 @@ void CWeaponAA13::PrimaryAttack(void)
 	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
 
 	Vector vecSpread = GetBulletSpread();
-	FireBulletsInfo_t info(5, vecSrc, vecAiming, vecSpread, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
+	int numBullets = GetNEOWpnData().m_iBullets;
+	FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, vecSpread, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
 	info.m_pAttacker = pPlayer;
 	info.m_iTracerFreq = 0;
 

@@ -56,6 +56,9 @@ public:
 	INextBotEventResponder *FirstContainedResponder() const override;
 	INextBotEventResponder *NextContainedResponder(INextBotEventResponder *current) const override;
 
+	void OnStuck() override;
+	void OnMoveToFailure( const Path *path, MoveToFailureType reason ) override;
+
 	QueryResultType ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const final;
 	QueryResultType ShouldAim(const CNEOBot *me, const bool bWepHasClip) const final;
 
@@ -156,7 +159,10 @@ public:
 
 	bool EquipRequiredWeapon(void);								// if we're required to equip a specific weapon, do it.
 	void EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary = false);	// equip the best weapon we have to attack the given threat
-	void ReloadIfLowClip(void);
+	void ReloadIfLowClip(bool bForceReload = false);
+	bool DropGhost();
+
+	void DropPrimaryWeapon(void);
 
 	void PushRequiredWeapon(CNEOBaseCombatWeapon* weapon);				// force us to equip and use this weapon until popped off the required stack
 	void PopRequiredWeapon(void);									// pop top required weapon off of stack and discard
@@ -171,6 +177,8 @@ public:
 	bool IsEnvironmentNoisy(void) const;							// return true if there are/have been loud noises (ie: non-quiet weapons) nearby very recently
 
 	bool IsEnemy(const CBaseEntity* them) const OVERRIDE;
+
+	bool IsBotOnLadder( ) const;
 
 	CNEOBaseCombatWeapon* GetBludgeonWeapon(void);
 
@@ -434,6 +442,8 @@ public:
 
 	CNEOBotProfile m_profile = {};
 	NeoClass ChooseRandomClass() const;
+	void ChooseRandomWeapon();
+	int ChooseRandomWeaponIndex() const;
 	int m_iIntendTeam = 0;
 	int m_iProfileIdx = -1;
 

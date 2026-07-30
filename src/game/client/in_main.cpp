@@ -47,6 +47,10 @@ extern ConVar cam_idealyaw;
 // Need this for steam controller
 #include "clientsteamcontext.h"
 
+#ifdef NEO
+#include "ui/neo_scoreboard.h"
+#endif // NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -456,6 +460,39 @@ void KeyDownHoldReplaceToggle( kbutton_t *b, const char *c )
 		return;		// still down
 	b->state |= 1 + 2;	// down + impulse down
 }
+
+/*
+============
+KeyDown with a minimum time between any two keydowns of a button. Not intended to limit players, rather its to help players not accidentally execute actions bound to the mouse wheel more than once
+============
+*/
+ConVar cl_neo_mouse_wheel_action_cool_down("cl_neo_mouse_wheel_action_cool_down", "0", FCVAR_ARCHIVE, "If the mouse wheel is bound to an action with a mouse wheel delay, controls how long that delay is to prevent accidental activations of the action", true, 0, true, 1.f);
+static float nextMouseWheelUp = 0.f;
+static float nextMouseWheelDown = 0.f;
+void KeyDownWithMouseWheelDelay(kbutton_t* b, const char* c)
+{
+	if (cl_neo_mouse_wheel_action_cool_down.GetFloat() > 0.f && c && c[0])
+	{
+		int k = atoi(&c[0]);
+		if (k == MOUSE_WHEEL_UP)
+		{
+			if (gpGlobals->curtime < nextMouseWheelUp)
+			{
+				return;
+			}
+			nextMouseWheelUp = gpGlobals->curtime + cl_neo_mouse_wheel_action_cool_down.GetFloat();
+		}
+		else if (k == MOUSE_WHEEL_DOWN)
+		{
+			if (gpGlobals->curtime < nextMouseWheelDown)
+			{
+				return;
+			}
+			nextMouseWheelDown = gpGlobals->curtime + cl_neo_mouse_wheel_action_cool_down.GetFloat();
+		}
+	}
+	KeyDown(b, c);
+}
 #endif // NEO
 
 /*
@@ -630,10 +667,10 @@ void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); 
 void IN_LeanRightDown(const CCommand& args) { KeyDown(&in_lean_right, args[1]); IN_LeanToggleReset(); }
 
 void IN_ThermOpticUp(const CCommand &args) { KeyUp(&in_thermoptic, args[1]); }
-void IN_ThermOpticDown(const CCommand &args) { KeyDown(&in_thermoptic, args[1]); }
+void IN_ThermOpticDown(const CCommand &args) { KeyDownWithMouseWheelDelay(&in_thermoptic, args[1]); }
 
 void IN_VisionUp(const CCommand &args) { KeyUp(&in_vision, args[1]); }
-void IN_VisionDown(const CCommand &args) { KeyDown(&in_vision, args[1]); }
+void IN_VisionDown(const CCommand &args) { KeyDownWithMouseWheelDelay(&in_vision, args[1]); }
 
 void IN_SpecNextUp(const CCommand &args) { KeyUp(&in_spec_next, args[1]); }
 void IN_SpecNextDown(const CCommand &args) { KeyDown(&in_spec_next, args[1]); }
@@ -664,6 +701,18 @@ void IN_LeanRightToggle(const CCommand& args)
 	{
 		KeyDown(&in_lean_right, args[1]);
 		KeyUp(&in_lean_left, args[1]);
+	}
+}
+
+void IN_SpeedToggle(const CCommand& args)
+{
+	if (::input->KeyState(&in_speed))
+	{
+		KeyUp(&in_speed, args[1]);
+	}
+	else
+	{
+		KeyDown(&in_speed, args[1]);
 	}
 }
 
@@ -719,6 +768,12 @@ void IN_ScoreDown( const CCommand &args )
 	KeyDown( &in_score, args[1] );
 	if ( gViewPortInterface )
 	{
+#ifdef NEO
+		if (g_pNeoScoreBoard)
+		{
+			g_pNeoScoreBoard->ToggleMouseCapture(g_pNeoScoreBoard->InCopyCrosshairPopup());
+		}
+#endif // NEO
 		gViewPortInterface->ShowPanel( PANEL_SCOREBOARD, true );
 	}
 }
@@ -728,6 +783,16 @@ void IN_ScoreUp( const CCommand &args )
 	KeyUp( &in_score, args[1] );
 	if ( gViewPortInterface )
 	{
+#ifdef NEO
+		if (g_pNeoScoreBoard)
+		{
+			if (g_pNeoScoreBoard->InCopyCrosshairPopup())
+			{
+				return;
+			}
+			g_pNeoScoreBoard->ToggleMouseCapture(false);
+		}
+#endif // NEO
 		gViewPortInterface->ShowPanel( PANEL_SCOREBOARD, false );
 		GetClientVoiceMgr()->StopSquelchMode();
 	}
@@ -1839,6 +1904,9 @@ static ConCommand endattack3("-attack3", IN_Attack3Up);
 #ifdef TF_CLIENT_DLL
 static ConCommand toggle_duck( "toggle_duck", IN_DuckToggle );
 #endif
+#ifdef NEO
+static ConCommand toggle_duck( "toggle_duck", IN_DuckToggle );
+#endif
 
 // Xbox 360 stub commands
 static ConCommand xboxmove("xmove", IN_XboxStub);
@@ -1868,6 +1936,8 @@ static ConCommand endvision("-vision", IN_VisionUp);
 
 static ConCommand toggle_leanleft("toggle_leanl", IN_LeanLeftToggle);
 static ConCommand toggle_leanright("toggle_leanr", IN_LeanRightToggle);
+
+static ConCommand toggle_sprint("toggle_sprint", IN_SpeedToggle);
 
 static ConCommand toggle_walk("toggle_walk", IN_WalkToggle);
 
@@ -1945,5 +2015,9 @@ void CInput::LevelInit( void )
 	// Remove any IK information
 	m_EntityGroundContact.RemoveAll();
 #endif
+#ifdef NEO
+	nextMouseWheelUp = 0.f;
+	nextMouseWheelDown = 0.f;
+#endif // NEO
 }
 

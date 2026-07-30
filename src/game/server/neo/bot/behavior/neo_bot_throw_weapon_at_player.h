@@ -19,6 +19,9 @@ public:
 
 	virtual const char *GetName( void ) const override { return "ThrowWeaponAtPlayer"; };
 
+protected:
+	CountdownTimer m_expirationTimer;
+
 private:
 	CHandle<CNEO_Player> m_hTargetPlayer;
 };

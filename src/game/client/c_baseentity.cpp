@@ -3246,7 +3246,11 @@ void C_BaseEntity::InterpolateServerEntities()
 	s_bInterpolate = cl_interpolate.GetBool();
 
 	// Don't interpolate during timedemo playback
+#ifdef NEO
+	if ( engine->IsPlayingTimeDemo() )
+#else
 	if ( engine->IsPlayingTimeDemo() || engine->IsPaused() )
+#endif // NEO
 	{										 
 		s_bInterpolate = false;
 	}
@@ -3277,7 +3281,11 @@ void C_BaseEntity::InterpolateServerEntities()
 	// Enable extrapolation?
 	CInterpolationContext context;
 	context.SetLastTimeStamp( engine->GetLastTimeStamp() );
+#ifdef NEO
+	if ( cl_extrapolate.GetBool() )
+#else
 	if ( cl_extrapolate.GetBool() && !engine->IsPaused() )
+#endif // NEO
 	{
 		context.EnableExtrapolation( true );
 	}

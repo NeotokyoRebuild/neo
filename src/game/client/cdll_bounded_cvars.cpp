@@ -10,6 +10,9 @@
 #include "convar_serverbounded.h"
 #include "tier0/icommandline.h"
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif
 
 bool g_bForceCLPredictOff = false;
 
@@ -65,7 +68,11 @@ class CBoundedCvar_InterpRatio : public ConVar_ServerBounded
 public:
 	CBoundedCvar_InterpRatio() :
 	  ConVar_ServerBounded( "cl_interp_ratio", 
+#ifdef NEO
+		  NEO_CL_INTERP_RATIO_DEFAULT_STR,
+#else
 		  "2.0", 
+#endif
 		  FCVAR_USERINFO | FCVAR_NOT_CONNECTED | FCVAR_ARCHIVE, 
 		  "Sets the interpolation amount (final amount is cl_interp_ratio / cl_updaterate)." )
 	  {
