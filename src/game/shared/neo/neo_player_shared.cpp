@@ -764,14 +764,11 @@ bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, tra
 				case HITGROUP_RIGHTARM:
 				case HITGROUP_LEFTLEG:
 				case HITGROUP_RIGHTLEG:
-				case HITGROUP_GEAR:
 					trace_t secondTrace;
-					unsigned int fHitboxGroupMask = UINT_MAX;
-					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_LEFTARM);
-					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_RIGHTARM);
-					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_LEFTLEG);
-					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_RIGHTLEG);
-					fHitboxGroupMask = fHitboxGroupMask & ~(1 << HITGROUP_GEAR);
+					unsigned int fHitboxGroupMask = UINT_MAX & ~((1 << HITGROUP_LEFTARM) | 
+																(1 << HITGROUP_RIGHTARM) | 
+																(1 << HITGROUP_LEFTLEG) | 
+																(1 << HITGROUP_RIGHTLEG));
 	#ifdef GAME_DLL
 					if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetAbsOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
 	#else
