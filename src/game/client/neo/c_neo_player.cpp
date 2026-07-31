@@ -94,7 +94,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bCarryingGhost)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
-	RecvPropInt(RECVINFO(m_nVisionLastTick)),
+	RecvPropTime(RECVINFO(m_flVisionLastTime)),
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 	RecvPropTime(RECVINFO(m_flNextPingTime)),
 
@@ -123,7 +123,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
-	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD_TOL(m_flVisionLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD_TOL(m_flNextPingTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
@@ -458,7 +458,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_flCamoAuxLastTime = 0;
-	m_nVisionLastTick = 0;
+	m_flVisionLastTime = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 
@@ -466,7 +466,6 @@ C_NEO_Player::C_NEO_Player()
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
-	m_bIsAllowedToToggleVision = false;
 	m_bSpecRefreshedStates = false;
 
 	m_flTocFactor = 0.15f;
@@ -507,44 +506,6 @@ void C_NEO_Player::CheckThermOpticButtons()
 	if (m_bInThermOpticCamo != m_bLastTickInThermOpticCamo)
 	{
 		PlayCloakSound();
-	}
-}
-
-void C_NEO_Player::CheckVisionButtons()
-{
-	if (!m_bIsAllowedToToggleVision)
-	{
-		return;
-	}
-
-	if (m_afButtonPressed & IN_VISION)
-	{
-		if (IsAlive())
-		{
-			m_bIsAllowedToToggleVision = false;
-
-			m_bInVision = !m_bInVision;
-
-			if (m_bInVision)
-			{
-				DevMsg("Playing sound at :%f\n", gpGlobals->curtime);
-
-				C_RecipientFilter filter;
-				filter.AddRecipient(this);
-				filter.MakeReliable();
-				filter.UsePredictionRules();
-
-				EmitSound_t params;
-				params.m_bEmitCloseCaption = false;
-				params.m_pOrigin = &GetAbsOrigin();
-				params.m_nChannel = CHAN_ITEM;
-				params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
-				static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
-				params.m_hSoundScriptHandle = visionToggle;
-
-				EmitSound(filter, entindex(), params);
-			}
-		}
 	}
 }
 
@@ -1595,7 +1556,7 @@ void C_NEO_Player::Spawn( void )
 	m_flCamoAuxLastTime = 0;
 
 	m_bInVision = false;
-	m_nVisionLastTick = 0;
+	m_flVisionLastTime = 0;
 	m_bInLean = NEO_LEAN_NONE;
 
 	ClearLocalPlayerDmgReports();
@@ -1925,23 +1886,6 @@ void C_NEO_Player::SetCloakState(bool state)
 	}
 }
 
-void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
-{
-	if (updateType == DATA_UPDATE_DATATABLE_CHANGED)
-	{
-		if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
-		{
-			return;
-		}
-		else
-		{
-			m_bIsAllowedToToggleVision = true;
-		}
-	}
-
-	BaseClass::PreDataUpdate(updateType);
-}
-
 // NEO NOTE (Rain): doesn't seem to be implemented at all clientside?
 // Don't need to do this, unless we want it for prediction with proper implementation later.
 // Keeping it for now.
@@ -2036,12 +1980,11 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 	m_bInLean = pPlayerTakeoverTarget->m_bInLean;
 
 	m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
-	m_nVisionLastTick = pPlayerTakeoverTarget->m_nVisionLastTick;
+	m_flVisionLastTime = pPlayerTakeoverTarget->m_flVisionLastTime;
 	m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
 	m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
 	m_bPreviouslyReloading = pPlayerTakeoverTarget->m_bPreviouslyReloading;
 	m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
-	m_bIsAllowedToToggleVision = pPlayerTakeoverTarget->m_bIsAllowedToToggleVision;
 	m_flTocFactor = pPlayerTakeoverTarget->m_flTocFactor;
 
 	pPlayerTakeoverTarget->SnatchModelInstance(this);

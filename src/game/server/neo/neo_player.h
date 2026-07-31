@@ -299,7 +299,7 @@ public:
 	CNetworkHandle(CBaseEntity, m_hServerRagdoll);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
-	CNetworkVar(int, m_nVisionLastTick);
+	CNetworkVar(float, m_flVisionLastTime);
 	CNetworkVar(float, m_flJumpLastTime);
 	CNetworkVar(float, m_flNextPingTime);
 

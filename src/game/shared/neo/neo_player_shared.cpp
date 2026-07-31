@@ -16,6 +16,7 @@
 #include "c_neo_player.h"
 #include "c_playerresource.h"
 #include "ui/neo_hud_context_hint.h"
+#include "prediction.h"
 #define CNEO_Player C_NEO_Player
 #else
 #include "neo_player.h"
@@ -728,4 +729,85 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	}
 
 	return pNearest;
+}
+
+void CNEO_Player::CheckVisionButtons()
+{
+	if (m_iNeoClass == NEO_CLASS_VIP)
+	{
+		return;
+	}
+	
+	constexpr float MIN_INTERVAL_BETWEEN_VISION_TOGGLE = 0.1f;
+	if (gpGlobals->curtime - m_flVisionLastTime < MIN_INTERVAL_BETWEEN_VISION_TOGGLE)
+	{
+		return;
+	}
+
+	if (!(m_afButtonPressed & IN_VISION))
+	{
+		return;
+	}
+
+	if (!IsAlive())
+	{
+		return;
+	}
+
+	m_flVisionLastTime = gpGlobals->curtime;
+	m_bInVision = !m_bInVision;
+
+	if (!m_bInVision)
+	{
+		return;
+	}
+
+#ifdef CLIENT_DLL
+	if (prediction->IsFirstTimePredicted())
+	{
+		DevMsg("Playing sound at :%f\n", gpGlobals->curtime);
+	}
+				
+	CLocalPlayerFilter filter;
+	filter.MakeReliable();
+	filter.UsePredictionRules();
+
+#else
+	CRecipientFilter filter;
+
+	// NEO TODO/FIXME (Rain): optimise this loop to once per cycle instead of repeating for each client
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		if (edict()->m_EdictIndex == i)
+		{
+			continue;
+		}
+
+		auto player = UTIL_PlayerByIndex(i);
+		if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
+		{
+			continue;
+		}
+
+		if (player->GetObserverTarget() == this)
+		{
+			filter.AddRecipient(player);
+		}
+	}
+
+	if (filter.GetRecipientCount() == 0)
+	{
+		return;
+	}
+#endif // CLIENT_DLL
+
+	EmitSound_t params;
+	params.m_bEmitCloseCaption = false;
+	params.m_pOrigin = &GetAbsOrigin();
+	params.m_nChannel = CHAN_ITEM;
+	//params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+	static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+	params.m_hSoundScriptHandle = visionToggle;
+
+	EmitSound(filter, entindex(), params);
 }
