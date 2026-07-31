@@ -1341,7 +1341,11 @@ void CFourWheelVehiclePhysics::UpdateDriverControls( CUserCmd *cmd, float flFram
 	}
 
 	// Using has brakepedal for handbrake as well.
+#ifdef NEO
+	if ( ( nButtons & (IN_JUMP | IN_JUMP2) ) && m_controls.bHasBrakePedal )
+#else
 	if ( ( nButtons & IN_JUMP ) && m_controls.bHasBrakePedal )
+#endif // NEO
 	{
 		m_controls.handbrake = true;	
 

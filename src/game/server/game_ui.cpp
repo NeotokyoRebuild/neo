@@ -295,7 +295,11 @@ void CGameUI::Think( void )
 	// Deactivate if they jump or press +use.
 	// FIXME: prevent the use from going through in player.cpp
 	if ((( pPlayer->m_afButtonPressed & IN_USE ) && ( m_spawnflags & SF_GAMEUI_USE_DEACTIVATES )) ||
+#ifdef NEO
+		(( pPlayer->m_afButtonPressed & (IN_JUMP | IN_JUMP2) ) && ( m_spawnflags & SF_GAMEUI_JUMP_DEACTIVATES )))
+#else
 		(( pPlayer->m_afButtonPressed & IN_JUMP ) && ( m_spawnflags & SF_GAMEUI_JUMP_DEACTIVATES )))
+#endif // NEO
 	{
 		Deactivate( pPlayer );
 		return;

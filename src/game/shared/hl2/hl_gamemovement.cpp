@@ -597,14 +597,23 @@ void CHL2GameMovement::FullLadderMove()
 	CheckWater();
 
 	// Was jump button pressed?  If so, don't do anything here
+#ifdef NEO
+	if ( mv->m_nButtons & (IN_JUMP | IN_JUMP2) )
+#else
 	if ( mv->m_nButtons & IN_JUMP )
+#endif // NEO
 	{
 		CheckJumpButton();
 		return;
 	}
 	else
 	{
+#ifdef NEO
+		const int64 jumpButtonsPressed = mv->m_nButtons & (IN_JUMP | IN_JUMP2);
+		mv->m_nOldButtons &= ~jumpButtonsPressed;
+#else
 		mv->m_nOldButtons &= ~IN_JUMP;
+#endif // NEO
 	}
 
 	player->SetGroundEntity( NULL );
@@ -629,8 +638,13 @@ void CHL2GameMovement::FullLadderMove()
 	VectorSubtract (mv->m_vecVelocity, player->GetBaseVelocity(), mv->m_vecVelocity);
 
 	// Pressed buttons are "changed(xor)" and'ed with the mask of currently held buttons
+#ifdef NEO
+	int64 buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
+	int64 buttonsPressed = buttonsChanged & mv->m_nButtons;
+#else
 	int buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
 	int buttonsPressed = buttonsChanged & mv->m_nButtons;
+#endif // NEO
 	bool pressed_use = ( buttonsPressed & IN_USE ) ? true : false;
 	bool pressing_forward_or_side = mv->m_flForwardMove != 0.0f || mv->m_flSideMove != 0.0f;
 
@@ -1001,8 +1015,13 @@ bool CHL2GameMovement::LadderMove( void )
 	}
 #endif
 
+#ifdef NEO
+	int64 buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
+	int64 buttonsPressed = buttonsChanged & mv->m_nButtons;
+#else
 	int buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
 	int buttonsPressed = buttonsChanged & mv->m_nButtons;
+#endif // NEO
 	bool pressed_use = ( buttonsPressed & IN_USE ) ? true : false;
 
 	// If I'm already moving on a ladder, use the previous ladder direction
@@ -1095,7 +1114,11 @@ bool CHL2GameMovement::LadderMove( void )
 		rightSpeed += speed;
 	}
 	
+#ifdef NEO
+	if ( mv->m_nButtons & (IN_JUMP | IN_JUMP2) )
+#else
 	if ( mv->m_nButtons & IN_JUMP )
+#endif // NEO
 	{
 		player->SetMoveType( MOVETYPE_WALK );
 		// Remove from ladder

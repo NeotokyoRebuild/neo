@@ -110,7 +110,7 @@ void WriteUsercmd( bf_write *buf, const CUserCmd *to, const CUserCmd *from )
 	{
 		buf->WriteOneBit( 1 );
 #ifdef NEO
-	  	buf->WriteVarInt64( to->buttons );
+	  	buf->WriteLongLong( to->buttons );
 #else
 	  	buf->WriteUBitLong( to->buttons, 32 );
 #endif // NEO
@@ -263,7 +263,7 @@ void ReadUsercmd( bf_read *buf, CUserCmd *move, CUserCmd *from )
 	if ( buf->ReadOneBit() )
 	{
 #ifdef NEO
-		move->buttons = buf->ReadVarInt64();
+		move->buttons = buf->ReadLongLong();
 #else
 		move->buttons = buf->ReadUBitLong( 32 );
 #endif // NEO

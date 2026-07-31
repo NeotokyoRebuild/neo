@@ -58,7 +58,7 @@ extern ConVar cam_idealyaw;
 int g_iAlive = 1;
 
 #ifdef NEO
-static long long int s_ClearInputState = 0;
+static int64 s_ClearInputState = 0;
 #else
 static int s_ClearInputState = 0;
 #endif // NEO

@@ -971,7 +971,11 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 
 	if ( !NextBotPlayerMove.GetBool() )
 	{
+#ifdef NEO
+		inputButtons &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_JUMP2 );
+#else
 		inputButtons &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP );
+#endif // NEO
 		forwardSpeed = 0.0f;
 		strafeSpeed = 0.0f;
 		verticalSpeed = 0.0f;

@@ -3996,7 +3996,7 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 			}
 
 			ucmd->buttons &= ~(IN_ATTACK | IN_JUMP | IN_SPEED |
-                IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN);
+                IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_JUMP2);
 			const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
 			if (!isTachi)
 			{
@@ -4049,7 +4049,7 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		ucmd->sidemove = 0;
 		ucmd->upmove = 0;
 		ucmd->impulse = 0;
-		ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
+		ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM | IN_JUMP2);
 	}
 #endif
 	
@@ -4059,7 +4059,11 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 //-----------------------------------------------------------------------------
 // Purpose: Strips off IN_xxx flags from the player's input
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CBasePlayer::DisableButtons( int64 nButtons )
+#else
 void CBasePlayer::DisableButtons( int nButtons )
+#endif // NEO
 {
 	m_afButtonDisabled |= nButtons;
 }
@@ -4067,7 +4071,11 @@ void CBasePlayer::DisableButtons( int nButtons )
 //-----------------------------------------------------------------------------
 // Purpose: Re-enables stripped IN_xxx flags to the player's input
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CBasePlayer::EnableButtons( int64 nButtons )
+#else
 void CBasePlayer::EnableButtons( int nButtons )
+#endif // NEO
 {
 	m_afButtonDisabled &= ~nButtons;
 }
@@ -4075,7 +4083,11 @@ void CBasePlayer::EnableButtons( int nButtons )
 //-----------------------------------------------------------------------------
 // Purpose: Strips off IN_xxx flags from the player's input
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CBasePlayer::ForceButtons( int64 nButtons )
+#else
 void CBasePlayer::ForceButtons( int nButtons )
+#endif // NEO
 {
 	m_afButtonForced |= nButtons;
 }
@@ -4083,7 +4095,11 @@ void CBasePlayer::ForceButtons( int nButtons )
 //-----------------------------------------------------------------------------
 // Purpose: Re-enables stripped IN_xxx flags to the player's input
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CBasePlayer::UnforceButtons( int64 nButtons )
+#else
 void CBasePlayer::UnforceButtons( int nButtons )
+#endif // NEO
 {
 	m_afButtonForced &= ~nButtons;
 }
@@ -4222,7 +4238,7 @@ void CBasePlayer::PreThink(void)
 	HandleFuncTrain();
 
 #ifdef NEO
-	if (m_nButtons & IN_JUMP || m_nButtons & IN_JUMP2)
+	if (m_nButtons & (IN_JUMP | IN_JUMP2))
 #else
 	if (m_nButtons & IN_JUMP)
 #endif // NEO
@@ -4752,7 +4768,11 @@ void CBasePlayer::UpdatePlayerSound ( void )
 		iBodyVolume = 0;
 	}
 
+#ifdef NEO
+	if ( m_nButtons & (IN_JUMP | IN_JUMP2) )
+#else
 	if ( m_nButtons & IN_JUMP )
+#endif // NEO
 	{
 		// Jumping is a little louder.
 		iBodyVolume += 100;
@@ -8322,7 +8342,11 @@ public:
 	void InputSpeedMod(inputdata_t &data);
 
 private:
+#ifdef NEO
+	int64 GetDisabledButtonMask( void );
+#else
 	int GetDisabledButtonMask( void );
+#endif // NEO
 
 	DECLARE_DATADESC();
 };
@@ -8332,14 +8356,26 @@ LINK_ENTITY_TO_CLASS( player_speedmod, CMovementSpeedMod );
 BEGIN_DATADESC( CMovementSpeedMod )
 	DEFINE_INPUTFUNC( FIELD_FLOAT, "ModifySpeed", InputSpeedMod ),
 END_DATADESC()
-	
+
+#ifdef NEO
+int64 CMovementSpeedMod::GetDisabledButtonMask( void )
+#else
 int CMovementSpeedMod::GetDisabledButtonMask( void )
+#endif // NEO
 {
+#ifdef NEO
+	int64 nMask = 0;
+#else
 	int nMask = 0;
+#endif // NEO
 
 	if ( HasSpawnFlags( SF_SPEED_MOD_SUPPRESS_JUMP ) )
 	{
+#ifdef NEO
+		nMask |= (IN_JUMP | IN_JUMP2);
+#else
 		nMask |= IN_JUMP;
+#endif // NEO
 	}
 	
 	if ( HasSpawnFlags( SF_SPEED_MOD_SUPPRESS_DUCK ) )

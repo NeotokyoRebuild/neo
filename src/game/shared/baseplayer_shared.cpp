@@ -1421,7 +1421,11 @@ void CBasePlayer::PlayerUse ( void )
 			else
 			{	// Start controlling the train!
 				CBaseEntity *pTrain = GetGroundEntity();
+#ifdef NEO
+				if ( pTrain && !(m_nButtons & (IN_JUMP | IN_JUMP2)) && (GetFlags() & FL_ONGROUND) && (pTrain->ObjectCaps() & FCAP_DIRECTIONAL_USE) && pTrain->OnControls(this) )
+#else
 				if ( pTrain && !(m_nButtons & IN_JUMP) && (GetFlags() & FL_ONGROUND) && (pTrain->ObjectCaps() & FCAP_DIRECTIONAL_USE) && pTrain->OnControls(this) )
+#endif // NEO
 				{
 					m_afPhysicsFlags |= PFLAG_DIROVERRIDE;
 					m_iTrain = TrainSpeed(pTrain->m_flSpeed, ((CFuncTrackTrain*)pTrain)->GetMaxSpeed());

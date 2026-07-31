@@ -447,11 +447,11 @@ public:
 	char			m_szAnimExtension[32];
 
 #ifdef NEO
-	int64	m_afButtonLast;
-	int64	m_afButtonPressed;
-	int64	m_afButtonReleased;
+	int64			m_afButtonLast;
+	int64			m_afButtonPressed;
+	int64			m_afButtonReleased;
 
-	int64	m_nButtons;
+	int64			m_nButtons;
 #else
 	int				m_afButtonLast;
 	int				m_afButtonPressed;

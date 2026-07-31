@@ -47,8 +47,8 @@ public:
 	QAngle			m_vecViewAngles;	// Command view angles (local space)
 	QAngle			m_vecAbsViewAngles;	// Command view angles (world space)
 #ifdef NEO
-	long long int	m_nButtons;			// Attack buttons.
-	long long int	m_nOldButtons;		// From host_client->oldbuttons;
+	int64			m_nButtons;			// Attack buttons.
+	int64			m_nOldButtons;		// From host_client->oldbuttons;
 #else
 	int				m_nButtons;			// Attack buttons.
 	int				m_nOldButtons;		// From host_client->oldbuttons;

@@ -783,10 +783,17 @@ public:
 	float	LastTimePlayerTalked() const { return m_fLastPlayerTalkTime; }
 	bool	ArePlayerTalkMessagesAvailable();
 
+#ifdef NEO
+	void	DisableButtons( int64 nButtons );
+	void	EnableButtons( int64 nButtons );
+	void	ForceButtons( int64 nButtons );
+	void	UnforceButtons( int64 nButtons );
+#else
 	void	DisableButtons( int nButtons );
 	void	EnableButtons( int nButtons );
 	void	ForceButtons( int nButtons );
 	void	UnforceButtons( int nButtons );
+#endif // NEO
 
 	//---------------------------------
 	// Inputs
@@ -890,12 +897,12 @@ public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_nWaterLevel );
 	
 #ifdef NEO
-	long long int			m_nButtons;
-	long long int			m_afButtonPressed;
-	long long int			m_afButtonReleased;
-	long long int			m_afButtonLast;
-	long long int			m_afButtonDisabled;	// A mask of input flags that are cleared automatically
-	long long int			m_afButtonForced;	// These are forced onto the player's inputs
+	int64					m_nButtons;
+	int64					m_afButtonPressed;
+	int64					m_afButtonReleased;
+	int64					m_afButtonLast;
+	int64					m_afButtonDisabled;	// A mask of input flags that are cleared automatically
+	int64					m_afButtonForced;	// These are forced onto the player's inputs
 #else
 	int						m_nButtons;
 	int						m_afButtonPressed;

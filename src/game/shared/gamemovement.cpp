@@ -1378,7 +1378,12 @@ void CGameMovement::CheckWaterJump( void )
 			if ( ( tr.fraction < 1.0f ) && ( tr.plane.normal.z >= 0.7 ) )
 			{
 				mv->m_vecVelocity[2] = 256.0f;			// Push up
+#ifdef NEO
+				const int64 jumpButtonsPressed = mv->m_nButtons & (IN_JUMP | IN_JUMP2);
+				mv->m_nOldButtons |= jumpButtonsPressed;	// Don't jump again until released
+#else
 				mv->m_nOldButtons |= IN_JUMP;		// Don't jump again until released
+#endif // NEO
 				player->AddFlag( FL_WATERJUMP );
 				player->m_flWaterJumpTime = 2000.0f;	// Do this for 2 seconds
 			}
@@ -1436,7 +1441,7 @@ void CGameMovement::WaterMove( void )
 
 	// if we have the jump key down, move us up as well
 #ifdef NEO
-	if (mv->m_nButtons & IN_JUMP || mv->m_nButtons & IN_JUMP2)
+	if (mv->m_nButtons & (IN_JUMP | IN_JUMP2))
 #else
 	if (mv->m_nButtons & IN_JUMP)
 #endif // NEO
@@ -2174,7 +2179,7 @@ void CGameMovement::FullWalkMove( )
 
 		// Was jump button pressed?
 #ifdef NEO
-		if (mv->m_nButtons & IN_JUMP || mv->m_nButtons & IN_JUMP2)
+		if (mv->m_nButtons & (IN_JUMP | IN_JUMP2))
 #else
 		if (mv->m_nButtons & IN_JUMP)
 #endif // NEO
@@ -2183,9 +2188,10 @@ void CGameMovement::FullWalkMove( )
 		}
 		else
 		{
-			mv->m_nOldButtons &= ~IN_JUMP;
 #ifdef NEO
-			mv->m_nOldButtons &= ~IN_JUMP2;
+			mv->m_nOldButtons &= ~(IN_JUMP | IN_JUMP2);
+#else
+			mv->m_nOldButtons &= ~IN_JUMP;
 #endif // NEO
 		}
 
@@ -2206,7 +2212,7 @@ void CGameMovement::FullWalkMove( )
 	{
 		// Was jump button pressed?
 #ifdef NEO
-		if (mv->m_nButtons & IN_JUMP || mv->m_nButtons & IN_JUMP2)
+		if (mv->m_nButtons & (IN_JUMP | IN_JUMP2))
 #else
 		if (mv->m_nButtons & IN_JUMP)
 #endif // NEO
@@ -2215,9 +2221,10 @@ void CGameMovement::FullWalkMove( )
 		}
 		else
 		{
-			mv->m_nOldButtons &= ~IN_JUMP;
 #ifdef NEO
-			mv->m_nOldButtons &= ~IN_JUMP2;
+			mv->m_nOldButtons &= ~(IN_JUMP | IN_JUMP2);
+#else
+			mv->m_nOldButtons &= ~IN_JUMP;
 #endif // NEO
 		}
 
@@ -2528,9 +2535,16 @@ void CGameMovement::PlaySwimSound()
 //-----------------------------------------------------------------------------
 bool CGameMovement::CheckJumpButton( void )
 {
+#ifdef NEO
+	const int64 jumpButtonsPressed = mv->m_nButtons & (IN_JUMP | IN_JUMP2);
+#endif // NEO
 	if (player->pl.deadflag)
 	{
+#ifdef NEO
+		mv->m_nOldButtons |= jumpButtonsPressed; // don't jump again until released
+#else
 		mv->m_nOldButtons |= IN_JUMP ;	// don't jump again until released
+#endif // NEO
 		return false;
 	}
 
@@ -2572,22 +2586,19 @@ bool CGameMovement::CheckJumpButton( void )
 #ifdef NEO
 		if (sv_jumpbuffer.GetBool())
 		{
-			if (!(mv->m_nOldButtons & IN_JUMP))
+			// both jump keys have to be released at the same time at some point before the next auto jump
+			if (!(mv->m_nOldButtons & (IN_JUMP | IN_JUMP2)))
 			{
-				mv->m_nButtons &= ~IN_JUMP;
-			}
-
-			if (!(mv->m_nOldButtons & IN_JUMP2))
-			{
-				mv->m_nButtons &= ~IN_JUMP2;
+				mv->m_nButtons &= ~(IN_JUMP | IN_JUMP2);
 			}
 		}
 		else
 #endif
 		{
-			mv->m_nOldButtons |= IN_JUMP;
 #ifdef NEO
-			mv->m_nOldButtons |= IN_JUMP2;
+			mv->m_nOldButtons |= jumpButtonsPressed;
+#else
+			mv->m_nOldButtons |= IN_JUMP;
 #endif // NEO
 		}
 		return false;		// in air, so no effect
@@ -2600,7 +2611,7 @@ bool CGameMovement::CheckJumpButton( void )
 #endif
 
 #ifdef NEO
-	if ( mv->m_nOldButtons & IN_JUMP || mv->m_nOldButtons & IN_JUMP2 )
+	if (mv->m_nOldButtons & (IN_JUMP | IN_JUMP2))
 #else
 	if ( mv->m_nOldButtons & IN_JUMP )
 #endif // NEO
@@ -2766,9 +2777,10 @@ bool CGameMovement::CheckJumpButton( void )
 #endif
 
 	// Flag that we jumped.
-	mv->m_nOldButtons |= IN_JUMP;	// don't jump again until released
 #ifdef NEO
-	mv->m_nOldButtons |= IN_JUMP2;
+	mv->m_nOldButtons |= jumpButtonsPressed;	// don't jump again until released
+#else
+	mv->m_nOldButtons |= IN_JUMP;	// don't jump again until released
 #endif // NEO
 	return true;
 }
@@ -2783,7 +2795,7 @@ void CGameMovement::FullLadderMove()
 
 	// Was jump button pressed? If so, set velocity to 270 away from ladder.
 #ifdef NEO
-	if ( mv->m_nButtons & IN_JUMP || mv->m_nButtons & IN_JUMP2 )
+	if ( mv->m_nButtons & (IN_JUMP | IN_JUMP2) )
 #else
 	if ( mv->m_nButtons & IN_JUMP )
 #endif // NEO
@@ -2792,9 +2804,10 @@ void CGameMovement::FullLadderMove()
 	}
 	else
 	{
-		mv->m_nOldButtons &= ~IN_JUMP;
 #ifdef NEO
-		mv->m_nOldButtons &= ~IN_JUMP2;
+		mv->m_nOldButtons &= ~(IN_JUMP | IN_JUMP2);
+#else
+		mv->m_nOldButtons &= ~IN_JUMP;
 #endif // NEO
 	}
 
@@ -3190,7 +3203,7 @@ bool CGameMovement::LadderMove( void )
 		rightSpeed = 0;
 	}
 
-	if ( mv->m_nButtons & IN_JUMP || mv->m_nButtons & IN_JUMP2 )
+	if ( mv->m_nButtons & (IN_JUMP | IN_JUMP2) )
 #else
 
 	if ( mv->m_nButtons & IN_JUMP )
@@ -4733,9 +4746,15 @@ bool CGameMovement::CanUnDuckJump( trace_t &trace )
 //-----------------------------------------------------------------------------
 void CGameMovement::Duck( void )
 {
+#ifdef NEO
+	int64 buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
+	int64 buttonsPressed	=  buttonsChanged & mv->m_nButtons;			// The changed ones still down are "pressed"
+	int64 buttonsReleased	=  buttonsChanged & mv->m_nOldButtons;		// The changed ones which were previously down are "released"
+#else
 	int buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
 	int buttonsPressed	=  buttonsChanged & mv->m_nButtons;			// The changed ones still down are "pressed"
 	int buttonsReleased	=  buttonsChanged & mv->m_nOldButtons;		// The changed ones which were previously down are "released"
+#endif // NEO
 
 	// Check to see if we are in the air.
 	bool bInAir = ( player->GetGroundEntity() == NULL );

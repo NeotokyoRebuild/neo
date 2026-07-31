@@ -469,7 +469,11 @@ public:
 
 			if ( GetActiveNode() && GetActiveNode()->PreventsMovement() )
 			{
+#ifdef NEO
+ 				pUserCmds->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_DUCK | IN_JUMP2 );
+#else
  				pUserCmds->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_DUCK );
+#endif // NEO
 				pUserCmds->upmove = 0;
 				pUserCmds->sidemove = 0;
 				pUserCmds->forwardmove = 0;

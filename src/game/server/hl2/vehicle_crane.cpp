@@ -1004,7 +1004,11 @@ void CCraneServerVehicle::NPC_DriveVehicle( void )
 			{
 				NDebugOverlay::Line( GetCrane()->GetAbsOrigin(), GetCrane()->GetAbsOrigin() + vecRight * 200, 0,255,0, true, 0.1 );
 			}
+#ifdef NEO
+			if ( m_nNPCButtons & (IN_JUMP | IN_JUMP2) )
+#else
 			if ( m_nNPCButtons & IN_JUMP )
+#endif // NEO
 			{
 				NDebugOverlay::Box( GetCrane()->GetAbsOrigin(), -Vector(20,20,20), Vector(20,20,20), 0,255,0, true, 0.1 );
 			}
