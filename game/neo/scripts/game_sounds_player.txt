@@ -25,7 +25,7 @@
 
 "NeoPlayer.VisionOn"
 {
-	"channel"	"CHAN_ITEM"
+	"channel"	"137" // CHAN_VISION
 	"volume"     	"VOL_NORM"
 	"soundlevel"	"SNDLVL_75dB"
 
@@ -34,7 +34,7 @@
 
 "NeoPlayer.VisionOff"
 {
-	"channel"	"CHAN_ITEM"
+	"channel"	"137" // CHAN_VISION
 	"volume"     	"VOL_NORM"
 	"soundlevel"	"SNDLVL_75dB"
 

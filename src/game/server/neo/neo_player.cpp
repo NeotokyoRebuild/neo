@@ -1236,7 +1236,7 @@ void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 		params.m_bEmitCloseCaption = false;
 		params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
 		params.m_pOrigin = &GetAbsOrigin();
-		params.m_nChannel = CHAN_VOICE;
+		params.m_nChannel = CHAN_VOICE; // NEO TODO (Adam) This doesn't change the channel this sound is played on, set correct channel in sound script
 
 		EmitSound(filter, edict()->m_EdictIndex, params);
 
@@ -4180,7 +4180,6 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 		{
 			EmitSound_t soundParams;
 			soundParams.m_pSoundName = "HUD.GhostPickUp";
-			soundParams.m_nChannel = CHAN_GHOST_PICKUP;
 			soundParams.m_bWarnOnDirectWaveReference = false;
 			soundParams.m_bEmitCloseCaption = false;
 			soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);

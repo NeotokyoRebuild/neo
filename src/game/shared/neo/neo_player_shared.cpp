@@ -760,6 +760,7 @@ void CNEO_Player::CheckVisionButtons()
 #ifdef CLIENT_DLL
 	if (prediction->IsFirstTimePredicted())
 	{
+		// NEO TODO (Adam) Is this still needed?
 		DevMsg("Playing sound at :%f\n", gpGlobals->curtime);
 	}
 				
@@ -799,7 +800,6 @@ void CNEO_Player::CheckVisionButtons()
 	EmitSound_t params;
 	params.m_bEmitCloseCaption = false;
 	params.m_pOrigin = &GetAbsOrigin();
-	params.m_nChannel = CHAN_VISION;
 	static int VISION_ON = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
 	static int VISION_OFF = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOff");
 	params.m_hSoundScriptHandle = m_bInVision ? VISION_ON : VISION_OFF;
