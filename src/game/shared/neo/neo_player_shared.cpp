@@ -757,11 +757,6 @@ void CNEO_Player::CheckVisionButtons()
 	m_flVisionLastTime = gpGlobals->curtime;
 	m_bInVision = !m_bInVision;
 
-	if (!m_bInVision)
-	{
-		return;
-	}
-
 #ifdef CLIENT_DLL
 	if (prediction->IsFirstTimePredicted())
 	{
@@ -804,10 +799,10 @@ void CNEO_Player::CheckVisionButtons()
 	EmitSound_t params;
 	params.m_bEmitCloseCaption = false;
 	params.m_pOrigin = &GetAbsOrigin();
-	params.m_nChannel = CHAN_ITEM;
-	params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL; // NEO TODO (Adam) This sound only ever plays for the local player or spectate target, better to have a separate channel for this sound and allow overwriting existing sound imo
-	static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
-	params.m_hSoundScriptHandle = visionToggle;
+	params.m_nChannel = CHAN_VISION;
+	static int VISION_ON = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+	static int VISION_OFF = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOff");
+	params.m_hSoundScriptHandle = m_bInVision ? VISION_ON : VISION_OFF;
 
 	EmitSound(filter, entindex(), params);
 }
