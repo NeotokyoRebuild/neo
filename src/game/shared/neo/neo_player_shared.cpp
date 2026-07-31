@@ -805,7 +805,7 @@ void CNEO_Player::CheckVisionButtons()
 	params.m_bEmitCloseCaption = false;
 	params.m_pOrigin = &GetAbsOrigin();
 	params.m_nChannel = CHAN_ITEM;
-	//params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+	params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL; // NEO TODO (Adam) This sound only ever plays for the local player or spectate target, better to have a separate channel for this sound and allow overwriting existing sound imo
 	static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
 	params.m_hSoundScriptHandle = visionToggle;
 
