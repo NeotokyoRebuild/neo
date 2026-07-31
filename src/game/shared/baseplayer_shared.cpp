@@ -821,7 +821,7 @@ void CBasePlayer::UpdateButtonState( int nUserCmdButtonMask )
 	// Get button states
 	m_nButtons = nUserCmdButtonMask;
 #ifdef NEO
- 	int64 buttonsChanged = m_afButtonLast ^ m_nButtons;
+ 	const int64 buttonsChanged = m_afButtonLast ^ m_nButtons;
 #else
  	int buttonsChanged = m_afButtonLast ^ m_nButtons;
 #endif // NEO

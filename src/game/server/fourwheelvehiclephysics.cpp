@@ -1054,7 +1054,11 @@ void CFourWheelVehiclePhysics::SteeringTurnAnalog( float carSpeed, const vehicle
 void CFourWheelVehiclePhysics::UpdateDriverControls( CUserCmd *cmd, float flFrameTime )
 {
 	const float SPEED_THROTTLE_AS_BRAKE = 2.0f;
+#ifdef NEO
+	const int64 nButtons = cmd->buttons;
+#else
 	int nButtons = cmd->buttons;
+#endif // NEO
 
 	// Get vehicle data.
 	const vehicle_operatingparams_t &carState = m_pVehicle->GetOperatingParams();

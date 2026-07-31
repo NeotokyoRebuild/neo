@@ -198,7 +198,11 @@ public:
 
 	// Driving
 	void	DriveVehicle( CBasePlayer *pPlayer, CUserCmd *ucmd );	// Player driving entrypoint
+#ifdef NEO
+	virtual void DriveVehicle( float flFrameTime, CUserCmd *ucmd, int64 iButtonsDown, int64 iButtonsReleased ); // Driving Button handling
+#else
 	virtual void DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased ); // Driving Button handling
+#endif // NEO
 
 	virtual bool IsOverturned( void );
 	virtual bool IsVehicleBodyInWater( void ) { return false; }

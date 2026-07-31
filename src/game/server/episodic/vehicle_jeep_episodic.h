@@ -66,7 +66,7 @@ public:
 	void			AddPropToCargoHold( CPhysicsProp *pProp );
 
 	virtual CBaseEntity *OnFailedPhysGunPickup( Vector vPhysgunPos );
-	virtual void	DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased );
+	virtual void	DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased ); // NEO TODO (Adam) change to int64 when building this
 	virtual int DrawDebugTextOverlays( void );
 
 	DECLARE_DATADESC();

@@ -639,8 +639,8 @@ void CHL2GameMovement::FullLadderMove()
 
 	// Pressed buttons are "changed(xor)" and'ed with the mask of currently held buttons
 #ifdef NEO
-	int64 buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
-	int64 buttonsPressed = buttonsChanged & mv->m_nButtons;
+	const int64 buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
+	const int64 buttonsPressed = buttonsChanged & mv->m_nButtons;
 #else
 	int buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
 	int buttonsPressed = buttonsChanged & mv->m_nButtons;
@@ -1016,8 +1016,8 @@ bool CHL2GameMovement::LadderMove( void )
 #endif
 
 #ifdef NEO
-	int64 buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
-	int64 buttonsPressed = buttonsChanged & mv->m_nButtons;
+	const int64 buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
+	const int64 buttonsPressed = buttonsChanged & mv->m_nButtons;
 #else
 	int buttonsChanged	= ( mv->m_nOldButtons ^ mv->m_nButtons );	// These buttons have changed this frame
 	int buttonsPressed = buttonsChanged & mv->m_nButtons;

@@ -610,7 +610,7 @@ extern ConVar sv_maxspeed;
 void CHL2_Player::HandleSpeedChanges( CMoveData *mv )
 {
 #ifndef NEO
-	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
+	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons; // NEO TODO (Adam) change to int64 if building this
 
 	bool bJustPressedSpeed = !!( nChangedButtons & IN_SPEED );
 

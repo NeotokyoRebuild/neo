@@ -969,7 +969,7 @@ void CNEO_Player::CalculateSpeed(void)
 
 void CNEO_Player::HandleSpeedChangesLegacy()
 {
-	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
+	const int64 buttonsChanged = m_afButtonPressed | m_afButtonReleased;
 
 	bool bCanSprint = CanSprint();
 	bool bIsSprinting = IsSprinting();
@@ -1048,7 +1048,7 @@ void CNEO_Player::HandleSpeedChangesLegacy()
 #if 0
 void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
 {
-	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
+	const int64 nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
 
 	bool bJustPressedSpeed = !!( nChangedButtons & IN_SPEED );
 

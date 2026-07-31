@@ -297,8 +297,13 @@ public:
 	virtual void Update( void );												// (EXTEND) update internal state
 
 protected:
+#ifdef NEO
+	int64 m_inputButtons;					// this is still needed to guarantee each button press is captured at least once
+	int64 m_prevInputButtons;
+#else
 	int m_inputButtons;					// this is still needed to guarantee each button press is captured at least once
 	int m_prevInputButtons;
+#endif // NEO
 	CountdownTimer m_fireButtonTimer;
 	CountdownTimer m_meleeButtonTimer;
 	CountdownTimer m_specialFireButtonTimer;
@@ -749,7 +754,11 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 
 
 //-----------------------------------------------------------------------------------------------------
+#ifdef NEO
+inline void _NextBot_BuildUserCommand( CUserCmd *cmd, const QAngle &viewangles, float forwardmove, float sidemove, float upmove, int64 buttons, byte impulse )
+#else
 inline void _NextBot_BuildUserCommand( CUserCmd *cmd, const QAngle &viewangles, float forwardmove, float sidemove, float upmove, int buttons, byte impulse )
+#endif // NEO
 {
 	Q_memset( cmd, 0, sizeof( CUserCmd ) );
 
@@ -826,8 +835,10 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 			}
 		}
 	}
-#endif // NEO
+	int64 inputButtons;
+#else
 	int inputButtons;
+#endif // NEO
 	//
 	// Update bot behavior
 	//

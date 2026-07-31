@@ -2266,7 +2266,11 @@ void CBasePlayer::PlayerDeathThink(void)
 	IncrementInterpolationFrame();
 	m_flPlaybackRate = 0.0;
 	
+#ifdef NEO
+	int64 fAnyButtonDown = (m_nButtons & ~IN_SCORE);
+#else
 	int fAnyButtonDown = (m_nButtons & ~IN_SCORE);
+#endif // NEO
 	
 	// Strip out the duck key from this check if it's toggled
 	if ( (fAnyButtonDown & IN_DUCK) && GetToggledDuckState())

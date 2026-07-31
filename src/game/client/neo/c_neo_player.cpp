@@ -936,7 +936,7 @@ void C_NEO_Player::CalculateSpeed(void)
 
 void C_NEO_Player::HandleSpeedChangesLegacy()
 {
-	int64 buttonsChanged = m_afButtonPressed | m_afButtonReleased;
+	const int64 buttonsChanged = m_afButtonPressed | m_afButtonReleased;
 
 	if( buttonsChanged & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)  || m_nButtons & IN_SPEED)
 	{
@@ -993,7 +993,7 @@ void C_NEO_Player::HandleSpeedChangesLegacy()
 #if 0
 void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 {
-	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
+	const int64 nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
 
 	bool bJustPressedSpeed = !!( nChangedButtons & IN_SPEED );
 

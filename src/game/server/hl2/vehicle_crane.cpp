@@ -484,7 +484,11 @@ void CPropCrane::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *pH
 	// If the player's entering/exiting the vehicle, prevent movement
 	if ( !m_bEnterAnimOn && !m_bExitAnimOn )
 	{
+#ifdef NEO
+		int64 buttons = ucmd->buttons;
+#else
 		int buttons = ucmd->buttons;
+#endif // NEO
 		if ( !(buttons & (IN_MOVELEFT|IN_MOVERIGHT)) )
 		{
 			if ( ucmd->sidemove < 0 )
@@ -507,7 +511,11 @@ void CPropCrane::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *pH
 // Purpose: Crane rotates around with +left and +right, and extends/retracts 
 //			the cable with +forward and +back.
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CPropCrane::DriveCrane( int64 iDriverButtons, int64 iButtonsPressed, float flNPCSteering )
+#else
 void CPropCrane::DriveCrane( int iDriverButtons, int iButtonsPressed, float flNPCSteering )
+#endif // NEO
 {
 	bool bWasExtending = m_bExtending;
 

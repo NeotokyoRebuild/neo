@@ -107,7 +107,7 @@ public:
 
 	// CPropVehicle
 	virtual void	ProcessMovement( CBasePlayer *pPlayer, CMoveData *pMoveData );
-	virtual void	DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased );
+	virtual void	DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased ); // NEO TODO (Adam) change to int64 when building this
 	virtual void	SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *pHelper, CMoveData *move );
 	virtual void	Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
 	virtual void	DampenEyePosition( Vector &vecVehicleEyePos, QAngle &vecVehicleEyeAngles );
@@ -1324,7 +1324,7 @@ void CPropJeep::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *pHe
 //-----------------------------------------------------------------------------
 void CPropJeep::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased )
 {
-	int iButtons = ucmd->buttons;
+	int iButtons = ucmd->buttons; // NEO TODO (Adam) change to int64 when building this
 
 	//Adrian: No headlights on Superfly.
 /*	if ( ucmd->impulse == 100 )

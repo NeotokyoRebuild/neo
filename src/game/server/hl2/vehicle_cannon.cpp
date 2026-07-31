@@ -122,7 +122,7 @@ public:
 	virtual	bool CreateVPhysics( void );
 	virtual void UpdateOnRemove( void );
 
-	void	DriveCannon( int iDriverButtons, int iButtonsPressed );
+	void	DriveCannon( int iDriverButtons, int iButtonsPressed ); // NEO TODO (Adam) change iDriverButtons and iButtonsPressed to int64 when building this
 	void	ResetUseKey( CBasePlayer *pPlayer );
 	void	InitCannonSpeeds( void );
 	void	RunCraneMovement( float flTime );
