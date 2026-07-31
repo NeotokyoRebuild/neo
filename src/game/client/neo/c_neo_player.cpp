@@ -1865,7 +1865,7 @@ void C_NEO_Player::PlayCloakSound(void)
 	params.m_bEmitCloseCaption = false;
 	params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
 	params.m_pOrigin = &GetAbsOrigin();
-	params.m_nChannel = CHAN_VOICE; // NEO TODO (Adam) Changing the channel a sound is played on didn't work before I added the new flag SND_CHANGE_CHANNEL, use it here if we want this sound to actually play on CHAN_VOICE
+	params.m_nChannel = CHAN_VOICE; // NEO TODO (Adam) This doesn't change the channel this sound is played on, set correct channel in sound script
 	
 	EmitSound(filter, entindex(), params);
 }

@@ -30,6 +30,10 @@ enum
 	CHAN_VOICE_BASE	= 8,		// allocate channel for network voice data
 	CHAN_USER_BASE	= (CHAN_VOICE_BASE+128)		// Anything >= this number is allocated to game code.
 #ifdef NEO
+	// NEO NOTE (Adam) These cannot be used inside of sound scripts, nor does using them in code do much (EmitSound ignores the channel set in the EmitSound_t param passed to it).
+	// We could add a flag like SND_CHANGE_PITCH and SND_CHANGE_VOL, but the reason SND_CHANGE_CHANNEL doesn't exist is because it cannot be changed for already playing sounds.
+	// Still might be useful for sounds that aren't playing yet if theres some disclaimer attached to the flag I guess. If you add something like that please update this comment.
+	// For now add any channels you may need, then use the integer equivalent in the sound scripts. If any of the enums here change, remember to update all the soundscripts.
 	,CHAN_GHOST_PICKUP = CHAN_USER_BASE,
 	CHAN_VISION,
 #endif // NEO
