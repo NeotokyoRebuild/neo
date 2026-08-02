@@ -758,16 +758,9 @@ void CNEO_Player::CheckVisionButtons()
 	m_bInVision = !m_bInVision;
 
 #ifdef CLIENT_DLL
-	if (prediction->IsFirstTimePredicted())
-	{
-		// NEO TODO (Adam) Is this still needed?
-		DevMsg("Playing sound at :%f\n", gpGlobals->curtime);
-	}
-				
 	CLocalPlayerFilter filter;
 	filter.MakeReliable();
 	filter.UsePredictionRules();
-
 #else
 	CRecipientFilter filter;
 
