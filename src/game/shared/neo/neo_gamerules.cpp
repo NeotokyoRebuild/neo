@@ -36,6 +36,8 @@
 #include "neo_npc_dummy.h"
 #include "materialsystem/imaterialsystem.h"
 #include "neo_gamerules_restore.h"
+#include "voice_gamemgr.h"
+#include "voice_common.h"
 
 #include <utility>
 
@@ -260,6 +262,45 @@ void sndVictoryVolumeChangeCallback(IConVar* cvar [[maybe_unused]], const char* 
 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0, sndVictoryVolumeChangeCallback);
 #endif // CLIENT_DLL
+
+#ifdef GAME_DLL
+	class CVoiceGameMgrHelper : public IVoiceGameMgrHelper
+	{
+	public:
+		virtual bool CanPlayerHearPlayer( CBasePlayer *pListener, CBasePlayer *pTalker, bool &bProximity )
+		{
+			if (const bool notTalking = pTalker->GetLastUserCommand() ? (pTalker->GetLastUserCommand()->voiceTransmitType == NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_NONE) : true)
+			{
+				return false;
+			}
+
+			if (const bool talkingLocally = pTalker->GetLastUserCommand() ? (pTalker->GetLastUserCommand()->voiceTransmitType == NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL) : false;
+				talkingLocally && pTalker->IsAlive())
+			{
+				bProximity = true;
+				return true;
+			}
+
+			if (pListener->GetTeamNumber() == pTalker->GetTeamNumber())
+			{
+				return true;
+			}
+
+			if (pListener->GetTeamNumber() == TEAM_SPECTATOR && (pListener->GetObserverMode() == OBS_MODE_IN_EYE || pListener->GetObserverMode() == OBS_MODE_CHASE))
+			{
+				if (CBaseEntity* pListenerSpectateTarget = static_cast<CBaseEntity*>(pListener->GetObserverTarget());
+					pListenerSpectateTarget && pListenerSpectateTarget->GetTeamNumber() == pTalker->GetTeamNumber())
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+	};
+	CVoiceGameMgrHelper g_VoiceGameMgrHelper;
+	IVoiceGameMgrHelper *g_pVoiceGameMgrHelper = &g_VoiceGameMgrHelper;
+#endif
 
 #ifdef CLIENT_DLL
 void CNEOGameRulesProxy::OnDataChanged(DataUpdateType_t updateType)
@@ -1124,6 +1165,7 @@ bool CNEORules::CheckShouldNotThink()
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
+	GetVoiceGameMgr()->Update( gpGlobals->frametime );
 	CheckGameConfig();
 	if (CheckShouldNotThink())
 	{

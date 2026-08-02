@@ -208,7 +208,11 @@ void CHudVoiceStatus::OnThink( void )
 	for ( int iPlayerIndex=1; iPlayerIndex<=gpGlobals->maxClients; iPlayerIndex++ )
 	{
 		int activeSpeakerIndex = FindActiveSpeaker(iPlayerIndex);
+#ifdef NEO
+		bool bSpeaking = GetClientVoiceMgr()->IsPlayerAudible(iPlayerIndex);
+#else
 		bool bSpeaking = GetClientVoiceMgr()->IsPlayerSpeaking(iPlayerIndex);
+#endif // NEO
 
 		if (activeSpeakerIndex != m_SpeakingList.InvalidIndex() )
 		{

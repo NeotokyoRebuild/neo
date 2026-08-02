@@ -421,6 +421,8 @@ public:
 	bool IsClassFull(int team, int classId) const;
 	int GetFallbackClass(int team, int preferredClass) const;
 
+	bool ShouldDrawHeadLabels() override { return false; };
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.

@@ -13,6 +13,9 @@
 
 
 #include "kbutton.h"
+#ifdef NEO
+#include "voice_common.h"
+#endif // NEO
 
 
 extern kbutton_t in_commandermousemove;
@@ -25,6 +28,7 @@ void IN_LeanReset();
 void IN_SpeedReset();
 void IN_LeanToggleReset();
 void LiftAllToggleKeys();
+NeoVoiceTransmitType GetVoiceTransmitType();
 #endif // NEO
 
 #endif // IN_MAIN_H

@@ -17,7 +17,11 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef NEO
+#define UPDATE_INTERVAL	0.1
+#else
 #define UPDATE_INTERVAL	0.3
+#endif // NEO
 
 
 // These are stored off as CVoiceGameMgr is created and deleted.
@@ -103,7 +107,11 @@ CVoiceGameMgr::CVoiceGameMgr()
 {
 	m_UpdateInterval = 0;
 	m_nMaxPlayers = 0;
+#ifdef NEO
+	m_iProximityDistance = 10;
+#else
 	m_iProximityDistance = -1;
+#endif // NEO
 }
 
 
@@ -117,7 +125,7 @@ bool CVoiceGameMgr::Init(
 {		  
 	m_pHelper = pHelper;
 	m_nMaxPlayers = VOICE_MAX_PLAYERS < maxClients ? VOICE_MAX_PLAYERS : maxClients;
-
+	
 	return true;
 }
 
@@ -132,8 +140,10 @@ void CVoiceGameMgr::Update(double frametime)
 {
 	// Only update periodically.
 	m_UpdateInterval += frametime;
+#ifndef NEO
 	if(m_UpdateInterval < UPDATE_INTERVAL)
 		return;
+#endif // NEO
 
 	UpdateMasks();
 }
@@ -199,7 +209,9 @@ bool CVoiceGameMgr::ClientCommand( CBasePlayer *pPlayer, const CCommand &args )
 
 void CVoiceGameMgr::UpdateMasks()
 {
+#ifndef NEO
 	m_UpdateInterval = 0;
+#endif // NEO
 
 	bool bAllTalk = !!sv_alltalk.GetInt();
 
@@ -241,34 +253,62 @@ void CVoiceGameMgr::UpdateMasks()
 			}
 		}
 
+#ifdef NEO
+		if (m_UpdateInterval >= UPDATE_INTERVAL)
+		{
+			m_UpdateInterval = 0;
+			CPlayerBitVec NotProximityMask;
+			ProximityMask.Not(&NotProximityMask);
+			CPlayerBitVec NonProximityGameRulesMask;
+			gameRulesMask.And(NotProximityMask, &NonProximityGameRulesMask);
+#endif // NEO
 		// If this is different from what the client has, send an update. 
+#ifdef NEO
+		if(NonProximityGameRulesMask != g_SentGameRulesMasks[iClient] || 
+#else
 		if(gameRulesMask != g_SentGameRulesMasks[iClient] || 
+#endif // NEO
 			g_BanMasks[iClient] != g_SentBanMasks[iClient])
 		{
+#ifdef NEO
+			g_SentGameRulesMasks[iClient] = NonProximityGameRulesMask;
+#else
 			g_SentGameRulesMasks[iClient] = gameRulesMask;
+#endif // NEO
 			g_SentBanMasks[iClient] = g_BanMasks[iClient];
 
 			UserMessageBegin( user, "VoiceMask" );
 				int dw;
 				for(dw=0; dw < VOICE_MAX_PLAYERS_DW; dw++)
 				{
+#ifdef NEO
+					WRITE_LONG(NonProximityGameRulesMask.GetDWord(dw));
+#else
 					WRITE_LONG(gameRulesMask.GetDWord(dw));
+#endif // NEO
 					WRITE_LONG(g_BanMasks[iClient].GetDWord(dw));
 				}
 				WRITE_BYTE( !!g_PlayerModEnable[iClient] );
 			MessageEnd();
 		}
+#ifdef NEO
+		}
+#endif // NEO
 
 		// Tell the engine.
 		for(int iOtherClient=0; iOtherClient < m_nMaxPlayers; iOtherClient++)
 		{
 			bool bCanHear = gameRulesMask[iOtherClient] && !g_BanMasks[iClient][iOtherClient];
 			g_pVoiceServer->SetClientListening( iClient+1, iOtherClient+1, bCanHear );
-
+			
+#ifdef NEO
+			g_pVoiceServer->SetClientProximity( iClient+1, iOtherClient+1, !!ProximityMask[iOtherClient] );
+#else
 			if ( bCanHear )
 			{
 				g_pVoiceServer->SetClientProximity( iClient+1, iOtherClient+1, !!ProximityMask[iOtherClient] );
 			}
+#endif // NEO
 		}
 	}
 }
