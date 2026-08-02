@@ -501,7 +501,12 @@ void CNeoClassMenu::OnThink()
 				V_sprintf_safe(textBuff, "%d", numClassPlayers);
 				pClassButton->SetEnabled(true);
 			}
-			pClassLabel->SetText(textBuff);
+
+			if (NEORules()->IsTeamplay())
+			{
+				pClassLabel->SetVisible(true);
+				pClassLabel->SetText(textBuff);
+			}
 
 			if (pLocalPlayer->GetClass() == neoClass)
 			{
