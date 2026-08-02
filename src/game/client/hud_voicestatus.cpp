@@ -95,13 +95,15 @@ void CHudVoiceSelfStatus::Paint()
 {
 #ifdef NEO
 	static CHudTexture* icon = m_pVoiceIcon;
+	static ConVarRef sv_neo_proximity_VoIP("sv_neo_proximity_VoIP");
 	switch (GetVoiceTransmitType())
 	{
 		case NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_NONE:
-			if (IsLocalPlayerHoldingAVoiceTransmitKey())
+			if (!IsLocalPlayerHoldingAVoiceTransmitKey())
 			{
-				icon = m_pNoVoiceIcon;
+				return;
 			}
+			icon = m_pNoVoiceIcon;
 			break;
 		case NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_GLOBALTEAM:
 			if (sv_alltalk->GetBool())
@@ -114,8 +116,15 @@ void CHudVoiceSelfStatus::Paint()
 			}
 			break;
 		case NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL:
+			if (!sv_neo_proximity_VoIP.GetBool())
+			{
+				return;
+			}
 			icon = m_pVoiceIcon;
 			break;
+		default:
+			Assert(false);
+			return;
 	}
 
 	if (!icon)

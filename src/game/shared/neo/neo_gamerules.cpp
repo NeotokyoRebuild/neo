@@ -263,6 +263,7 @@ void sndVictoryVolumeChangeCallback(IConVar* cvar [[maybe_unused]], const char* 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0, sndVictoryVolumeChangeCallback);
 #endif // CLIENT_DLL
 
+ConVar sv_neo_proximity_VoIP("sv_neo_proximity_VoIP", "1", FCVAR_NONE, "Enable proximity VoIP", true, 0, true, 1);
 #ifdef GAME_DLL
 	class CVoiceGameMgrHelper : public IVoiceGameMgrHelper
 	{
@@ -274,11 +275,14 @@ ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DO
 				return false;
 			}
 
-			if (const bool talkingLocally = pTalker->GetLastUserCommand() ? (pTalker->GetLastUserCommand()->voiceTransmitType == NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL) : false;
-				talkingLocally && pTalker->IsAlive())
+			if (sv_neo_proximity_VoIP.GetBool())
 			{
-				bProximity = true;
-				return true;
+				if (const bool talkingLocally = pTalker->GetLastUserCommand() ? (pTalker->GetLastUserCommand()->voiceTransmitType == NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL) : false;
+					talkingLocally && pTalker->IsAlive())
+				{
+					bProximity = true;
+					return true;
+				}
 			}
 
 			if (pListener->GetTeamNumber() == pTalker->GetTeamNumber())
