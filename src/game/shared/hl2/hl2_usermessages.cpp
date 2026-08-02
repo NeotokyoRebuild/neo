@@ -34,7 +34,11 @@ void RegisterUserMessages( void )
 	usermessages->Register( "Rumble", 3 );	// Send a rumble to a controller
 	usermessages->Register( "Battery", 2 );
 	usermessages->Register( "Damage", 18 );		// BUG: floats are sent for coords, no variable bitfields in hud & fixed size Msg
+#ifdef NEO
+	usermessages->Register( "VoiceMask", VOICE_MAX_PLAYERS_DW*4 * 3 + 1 );
+#else
 	usermessages->Register( "VoiceMask", VOICE_MAX_PLAYERS_DW*4 * 2 + 1 );
+#endif // NEO
 	usermessages->Register( "RequestState", 0 );
 	usermessages->Register( "CloseCaption", -1 ); // Show a caption (by string id number)(duration in 10th of a second)
 	usermessages->Register( "HintText", -1 );	// Displays hint text display

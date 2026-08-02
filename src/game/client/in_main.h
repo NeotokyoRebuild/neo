@@ -29,6 +29,7 @@ void IN_SpeedReset();
 void IN_LeanToggleReset();
 void LiftAllToggleKeys();
 NeoVoiceTransmitType GetVoiceTransmitType();
+bool IsLocalPlayerHoldingAVoiceTransmitKey();
 #endif // NEO
 
 #endif // IN_MAIN_H

@@ -703,7 +703,7 @@ void IN_VoiceRecordLocalDown(const CCommand& args) {
 	KeyDown(&in_voicerecordlocal, args[1]);
 	if (gpGlobals->curtime < nextLocalSpeakTime)
 	{
-		return; // NEO TODO (Adam) Show in local voice status ui element that cannot talk, and clear when releasing button
+		return;
 	}
 	
 	if (const bool isSpeaking = GetClientVoiceMgr() ? GetClientVoiceMgr()->IsLocalPlayerSpeaking() : true)
@@ -739,6 +739,10 @@ void IN_VoiceRecordGlobalTeamDown(const CCommand& args) {
 	
 	voiceTransmitType = NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_GLOBALTEAM;
 	engine->ExecuteClientCmd("+voicerecord");
+}
+
+bool IsLocalPlayerHoldingAVoiceTransmitKey() {
+	return (in_voicerecordglobalteam.state & 1) || (in_voicerecordlocal.state & 1);
 }
 
 void IN_LeanLeftToggle(const CCommand& args)

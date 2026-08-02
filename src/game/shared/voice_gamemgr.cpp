@@ -33,8 +33,15 @@ CPlayerBitVec	g_BanMasks[VOICE_MAX_PLAYERS];	// Tells which players don't want t
 												// These are indexed as clients and each bit represents a client
 												// (so player entity is bit+1).
 
+#ifdef NEO
+CPlayerBitVec	g_ProximityMasks[VOICE_MAX_PLAYERS];
+#endif // NEO
+
 CPlayerBitVec	g_SentGameRulesMasks[VOICE_MAX_PLAYERS];	// These store the masks we last sent to each client so we can determine if
 CPlayerBitVec	g_SentBanMasks[VOICE_MAX_PLAYERS];			// we need to resend them.
+#ifdef NEO
+CPlayerBitVec	g_SentProximityMasks[VOICE_MAX_PLAYERS];
+#endif // NEO
 CPlayerBitVec	g_bWantModEnable;
 
 ConVar voice_serverdebug( "voice_serverdebug", "0" );
@@ -243,13 +250,25 @@ void CVoiceGameMgr::UpdateMasks()
 			// Build a mask of who they can hear based on the game rules.
 			for(int iOtherClient=0; iOtherClient < m_nMaxPlayers; iOtherClient++)
 			{
-				CBaseEntity *pEnt = UTIL_PlayerByIndex(iOtherClient+1);
+#ifdef NEO
+				if (CBaseEntity *pEnt = UTIL_PlayerByIndex(iOtherClient+1);
+					pEnt && pEnt->IsPlayer())
+				{
+					if (const bool canHearPlayer = m_pHelper->CanPlayerHearPlayer(pPlayer, (CBasePlayer*)pEnt, bProximity);
+						bAllTalk || canHearPlayer)
+					{
+						gameRulesMask[iOtherClient] = true;
+						ProximityMask[iOtherClient] = bProximity;
+					}
+				}
+#else
 				if(pEnt && pEnt->IsPlayer() && 
 					(bAllTalk || m_pHelper->CanPlayerHearPlayer(pPlayer, (CBasePlayer*)pEnt, bProximity )) )
 				{
 					gameRulesMask[iOtherClient] = true;
 					ProximityMask[iOtherClient] = bProximity;
 				}
+#endif // NEO
 			}
 		}
 
@@ -257,26 +276,17 @@ void CVoiceGameMgr::UpdateMasks()
 		if (m_UpdateInterval >= UPDATE_INTERVAL)
 		{
 			m_UpdateInterval = 0;
-
-			// I do not want the local player to know which players are speaking in proximity, instead of appending a new long to 
-			// the VoiceMask message, pass a new mask that contains all speaking players - players speaking locally
-			CPlayerBitVec NotProximityMask;
-			ProximityMask.Not(&NotProximityMask);
-			CPlayerBitVec NonProximityGameRulesMask;
-			gameRulesMask.And(NotProximityMask, &NonProximityGameRulesMask);
 #endif // NEO
-		// If this is different from what the client has, send an update. 
+		// If this is different from what the client has, send an update.
+		if(gameRulesMask != g_SentGameRulesMasks[iClient] ||
 #ifdef NEO
-		if(NonProximityGameRulesMask != g_SentGameRulesMasks[iClient] || 
-#else
-		if(gameRulesMask != g_SentGameRulesMasks[iClient] || 
+			ProximityMask!= g_SentProximityMasks[iClient] ||
 #endif // NEO
 			g_BanMasks[iClient] != g_SentBanMasks[iClient])
 		{
-#ifdef NEO
-			g_SentGameRulesMasks[iClient] = NonProximityGameRulesMask;
-#else
 			g_SentGameRulesMasks[iClient] = gameRulesMask;
+#ifdef NEO
+			g_SentProximityMasks[iClient] = ProximityMask;
 #endif // NEO
 			g_SentBanMasks[iClient] = g_BanMasks[iClient];
 
@@ -284,10 +294,9 @@ void CVoiceGameMgr::UpdateMasks()
 				int dw;
 				for(dw=0; dw < VOICE_MAX_PLAYERS_DW; dw++)
 				{
-#ifdef NEO
-					WRITE_LONG(NonProximityGameRulesMask.GetDWord(dw));
-#else
 					WRITE_LONG(gameRulesMask.GetDWord(dw));
+#ifdef NEO
+					WRITE_LONG(ProximityMask.GetDWord(dw));
 #endif // NEO
 					WRITE_LONG(g_BanMasks[iClient].GetDWord(dw));
 				}
