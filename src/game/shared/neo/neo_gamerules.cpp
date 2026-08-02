@@ -263,7 +263,8 @@ void sndVictoryVolumeChangeCallback(IConVar* cvar [[maybe_unused]], const char* 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0, sndVictoryVolumeChangeCallback);
 #endif // CLIENT_DLL
 
-ConVar sv_neo_proximity_VoIP("sv_neo_proximity_VoIP", "1", FCVAR_NONE, "Enable proximity VoIP", true, 0, true, 1);
+ConVar sv_neo_proximity_VoIP("sv_neo_proximity_VoIP", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enable proximity VoIP", true, 0, true, 1);
+ConVar sv_neo_spectators_hear_spectate_target_team("sv_neo_spectators_hear_spectate_target_team", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Can spectators hear the spectate target's team when in Eye or Chase observer mode", true, 0, true, 1);
 #ifdef GAME_DLL
 	class CVoiceGameMgrHelper : public IVoiceGameMgrHelper
 	{
@@ -275,14 +276,15 @@ ConVar sv_neo_proximity_VoIP("sv_neo_proximity_VoIP", "1", FCVAR_NONE, "Enable p
 				return false;
 			}
 
-			if (sv_neo_proximity_VoIP.GetBool())
+			if (const bool talkingLocally = pTalker->GetLastUserCommand() ? (pTalker->GetLastUserCommand()->voiceTransmitType == NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL) : false;
+				talkingLocally && pTalker->IsAlive())
 			{
-				if (const bool talkingLocally = pTalker->GetLastUserCommand() ? (pTalker->GetLastUserCommand()->voiceTransmitType == NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL) : false;
-					talkingLocally && pTalker->IsAlive())
+				if (!sv_neo_proximity_VoIP.GetBool())
 				{
-					bProximity = true;
-					return true;
+					return false;
 				}
+				bProximity = true;
+				return true;
 			}
 
 			if (pListener->GetTeamNumber() == pTalker->GetTeamNumber())
@@ -295,6 +297,10 @@ ConVar sv_neo_proximity_VoIP("sv_neo_proximity_VoIP", "1", FCVAR_NONE, "Enable p
 				if (CBaseEntity* pListenerSpectateTarget = static_cast<CBaseEntity*>(pListener->GetObserverTarget());
 					pListenerSpectateTarget && pListenerSpectateTarget->GetTeamNumber() == pTalker->GetTeamNumber())
 				{
+					if (!sv_neo_spectators_hear_spectate_target_team.GetBool())
+					{
+						return false;
+					}
 					return true;
 				}
 			}
