@@ -257,6 +257,9 @@ void CVoiceGameMgr::UpdateMasks()
 		if (m_UpdateInterval >= UPDATE_INTERVAL)
 		{
 			m_UpdateInterval = 0;
+
+			// I do not want the local player to know which players are speaking in proximity, instead of appending a new long to 
+			// the VoiceMask message, pass a new mask that contains all speaking players - players speaking locally
 			CPlayerBitVec NotProximityMask;
 			ProximityMask.Not(&NotProximityMask);
 			CPlayerBitVec NonProximityGameRulesMask;
@@ -300,15 +303,10 @@ void CVoiceGameMgr::UpdateMasks()
 		{
 			bool bCanHear = gameRulesMask[iOtherClient] && !g_BanMasks[iClient][iOtherClient];
 			g_pVoiceServer->SetClientListening( iClient+1, iOtherClient+1, bCanHear );
-			
-#ifdef NEO
-			g_pVoiceServer->SetClientProximity( iClient+1, iOtherClient+1, !!ProximityMask[iOtherClient] );
-#else
 			if ( bCanHear )
 			{
 				g_pVoiceServer->SetClientProximity( iClient+1, iOtherClient+1, !!ProximityMask[iOtherClient] );
 			}
-#endif // NEO
 		}
 	}
 }
