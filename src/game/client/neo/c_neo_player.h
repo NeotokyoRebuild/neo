@@ -61,6 +61,7 @@ public:
 	virtual float GetFOV( void );
 	virtual CStudioHdr *OnNewModel( void );
 	virtual void TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, trace_t *ptr, CDmgAccumulator *pAccumulator );
+	virtual bool TestHitboxes(const Ray_t &ray, unsigned int fContentsMask, trace_t &tr) override;
 	virtual void ItemPreFrame( void );
 	virtual void ItemPostFrame( void );
 	virtual float GetMinFOV()	const;
