@@ -345,10 +345,17 @@ void CNEOScoreBoard::Update()
 	m_iTotalPlayers = 0;
 	V_memset(m_playersInfo, 0, sizeof(m_playersInfo));
 
+	m_bSourceTVEnabled = false;
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		if (false == g_PR->IsConnected(i))
 		{
+			continue;
+		}
+
+		if (true == g_PR->IsHLTV(i))
+		{
+			m_bSourceTVEnabled = true;
 			continue;
 		}
 
@@ -795,14 +802,14 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 							}
 							if (bShowReadyUp)
 							{
-								V_swprintf_safe(wszText, L"%ls: %d (%d players - %d ready)",
-										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam],
+								V_swprintf_safe(wszText, L"%ls: %d (%d player%s - %d ready)",
+										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s",
 										iaTeamReadyTally[iCurTeam]);
 							}
 							else
 							{
-								V_swprintf_safe(wszText, L"%ls: %d (%d players)",
-										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam]);
+								V_swprintf_safe(wszText, L"%ls: %d (%d player%s)",
+										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s");
 							}
 						}
 					}
@@ -811,8 +818,9 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						// DM - Print players total on the left side only
 						if (iCurTeam == TEAM_JINRAI)
 						{
-							V_swprintf_safe(wszText, L"Players: %d",
-									iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF]);
+							const int total = iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF];
+							V_swprintf_safe(wszText, L"Player%s: %d",
+									total == 1 ? "" : "s", total);
 						}
 						else
 						{
@@ -820,16 +828,22 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						}
 					}
 				}
-				else if (TEAM_SPECTATOR == iCurTeam && m_HLTVSpectators > 0)
-				{
-					V_swprintf_safe(wszText, L"%ls + %d HLTV spectators",
-							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, m_HLTVSpectators);
-				}
 				else
 				{
-					V_wcscpy_safe(wszText, SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr);
+					V_swprintf_safe(wszText, L"%ls (%d player%s)",
+							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s");
 				}
 				NeoUI::Label(wszText, true);
+
+				if (TEAM_SPECTATOR == iCurTeam && m_bSourceTVEnabled)
+				{
+					V_swprintf_safe(wszText,L"SourceTV Enabled (%d watching)", m_HLTVSpectators);
+					int x = 0;
+					[[maybe_unused]] int y = 0;
+					vgui::surface()->GetTextSize(m_uiCtx.fonts[m_uiCtx.eFont].hdl, wszText, x, y);
+					vgui::surface()->DrawSetTextPos(m_uiCtx.rWidgetArea.x0 + m_uiCtx.dPanel.wide - x - m_uiCtx.iMarginX, m_uiCtx.rWidgetArea.y0 + m_uiCtx.fonts[m_uiCtx.eFont].iYFontOffset);
+					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				}
 
 				NeoUI::Pad(); // Avatar/Dead-indicator
 				NeoUI::Pad(); // Name column
