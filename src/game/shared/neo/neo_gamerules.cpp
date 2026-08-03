@@ -910,7 +910,7 @@ void CNEORules::ResetMapSessionCommon()
 void CNEORules::ChangeLevel(void)
 {
 	ResetMapSessionCommon();
-	if (!m_bRotatingMapRightNow && sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
+	if (!m_bRotatingMapRightNow && IsReadyUpEnabled() && !sv_neo_readyup_autointermission.GetBool())
 	{
 		m_bChangelevelDone = false;
 	}
@@ -1371,7 +1371,7 @@ void CNEORules::Think(void)
 					gameeventmanager->FireEvent(event);
 				}
 
-				if (sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
+				if (IsReadyUpEnabled() && !sv_neo_readyup_autointermission.GetBool())
 				{
 					ResetMapSessionCommon();
 				}
@@ -2689,7 +2689,7 @@ void CNEORules::StartNextRound()
 				 || GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() != GetGlobalTeam(TEAM_NSF)->GetNumPlayers()))
 			)
 	{
-		if (sv_neo_readyup_lobby.GetBool())
+		if (bLobby)
 		{
 			bool bPrintHelpInfo = (m_iPrintHelpCounter == 0);
 			if (!m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres))
@@ -4735,9 +4735,15 @@ bool CNEORules::IsJuggernautLocked() const
 	return false;
 }
 
+bool CNEORules::IsReadyUpEnabled() const
+{
+	return (sv_neo_readyup_lobby.GetBool()
+		&& NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].comp);
+}
+
 bool CNEORules::InReadyUpState() const
 {
-	return (sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle);
+	return (IsReadyUpEnabled() && m_nRoundStatus == NeoRoundStatus::Idle);
 }
 
 bool CNEORules::InRoundState() const

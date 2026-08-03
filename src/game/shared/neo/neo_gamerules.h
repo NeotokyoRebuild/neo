@@ -369,6 +369,7 @@ public:
 	const Vector& GetJuggernautMarkerPos() const;
 	bool IsJuggernautLocked() const;
 
+	bool IsReadyUpEnabled() const;
 	bool InReadyUpState() const;
 	bool InRoundState() const;
 
