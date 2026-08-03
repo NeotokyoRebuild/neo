@@ -82,6 +82,28 @@ function(add_library_copy_target)
 
 endfunction()
 
+function(add_origin_rpath)
+    cmake_parse_arguments(
+        PARSED_ARGS
+        ""
+        "TARGET"
+        ""
+        ${ARGN}
+    )
+
+    if(NOT PARSED_ARGS_TARGET)
+        message(FATAL_ERROR "You must provide a target name")
+    endif()
+
+    if(OS_LINUX)
+        set(ORIGIN_TOKEN "$ORIGIN")
+    else()
+        return()
+    endif()
+
+    target_link_options(${PARSED_ARGS_TARGET} PRIVATE "-Wl,-rpath,${ORIGIN_TOKEN}")
+endfunction()
+
 # Used by split_debug_information
 if(NOT COMPILER_MSVC)
     include(CMakeFindBinUtils)
@@ -129,7 +151,6 @@ function(split_debug_information)
     endif()
 
     get_target_property(TARGET_OUTPUT_NAME ${PARSED_ARGS_TARGET} OUTPUT_NAME)
-
     if(NOT TARGET_OUTPUT_NAME)
         set(TARGET_OUTPUT_NAME "${PARSED_ARGS_TARGET}")
     endif()
@@ -157,7 +178,7 @@ function(split_debug_information)
             message(WARNING "Unknown TARGET_TYPE value")
         endif()
     endif()
-
+    
     set(SPLITDEBUG_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_SUFFIX}")
     set(SPLITDEBUG_TARGET "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUBDIRECTORY}/${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_SUFFIX}")
     set(SPLITDEBUG_TARGET_DEBUG "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUBDIRECTORY}/${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_SUFFIX}.debug")

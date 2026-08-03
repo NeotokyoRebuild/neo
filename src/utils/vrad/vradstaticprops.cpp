@@ -11,16 +11,16 @@
 
 #include "vrad.h"
 #include "mathlib/vector.h"
-#include "UtlBuffer.h"
+#include "utlbuffer.h"
 #include "utlvector.h"
-#include "GameBSPFile.h"
-#include "BSPTreeData.h"
-#include "VPhysics_Interface.h"
-#include "Studio.h"
-#include "Optimize.h"
-#include "Bsplib.h"
-#include "CModel.h"
-#include "PhysDll.h"
+#include "gamebspfile.h"
+#include "bsptreedata.h"
+#include "vphysics_interface.h"
+#include "studio.h"
+#include "optimize.h"
+#include "bsplib.h"
+#include "cmodel.h"
+#include "physdll.h"
 #include "phyfile.h"
 #include "collisionutils.h"
 #include "tier1/KeyValues.h"
@@ -29,16 +29,10 @@
 #include "materialsystem/hardwareverts.h"
 #include "materialsystem/hardwaretexels.h"
 #include "byteswap.h"
-#include "mpivrad.h"
 #include "vtf/vtf.h"
 #include "tier1/utldict.h"
 #include "tier1/utlsymbol.h"
 #include "bitmap/tgawriter.h"
-
-#include "messbuf.h"
-#include "vmpi.h"
-#include "vmpi_distribute_work.h"
-
 
 #define ALIGN_TO_POW2(x,y) (((x)+(y-1))&~(y-1))
 
@@ -165,8 +159,8 @@ void Rasterizer::Build()
 		return;
 
 	// Clamp to 0..1
-	fMinX = max(0, fMinX);
-	fMinY = max(0, fMinY);
+	fMinX = max(0.0f, fMinX);
+	fMinY = max(0.0f, fMinY);
 	fMaxX = min(1.0f, fMaxX);
 	fMaxY = min(1.0f, fMaxY);
 
@@ -174,16 +168,16 @@ void Rasterizer::Build()
 	// If we wanted to support better texturing (almost definitely unnecessary), we'd change this to a larger size.
 	const int kFilterSampleRadius = 1;
 
-	int iMinX = GetCol(fMinX) - kFilterSampleRadius;
-	int iMinY = GetRow(fMinY) - kFilterSampleRadius;
-	int iMaxX = GetCol(fMaxX) + 1 + kFilterSampleRadius;
-	int iMaxY = GetRow(fMaxY) + 1 + kFilterSampleRadius;
+	int iMinX = (int)GetCol(fMinX) - kFilterSampleRadius;
+	int iMinY = (int)GetRow(fMinY) - kFilterSampleRadius;
+	int iMaxX = (int)GetCol(fMaxX) + 1 + kFilterSampleRadius;
+	int iMaxY = (int)GetRow(fMaxY) + 1 + kFilterSampleRadius;
 
 	// Clamp to valid texture (integer) locations
 	iMinX = max(0, iMinX);
 	iMinY = max(0, iMinY);
-	iMaxX = min(iMaxX, mResX - 1);
-	iMaxY = min(iMaxY, mResY - 1);
+	iMaxX = min(iMaxX, (int)(mResX - 1));
+	iMaxY = min(iMaxY, (int)(mResY - 1));
 
 	// Set the size to be as expected. 
 	// TODO: Pass this in from outside to minimize allocations
@@ -258,15 +252,7 @@ public:
 	// iterate all the instanced static props and compute their vertex lighting
 	void ComputeLighting( int iThread );
 
-private:
-	// VMPI stuff.
-#ifdef MPI
-	static void VMPI_ProcessStaticProp_Static( int iThread, uint64 iStaticProp, MessageBuffer *pBuf );
-	static void VMPI_ReceiveStaticPropResults_Static( uint64 iStaticProp, MessageBuffer *pBuf, int iWorker );
-	void VMPI_ProcessStaticProp( int iThread, int iStaticProp, MessageBuffer *pBuf );
-	void VMPI_ReceiveStaticPropResults( int iStaticProp, MessageBuffer *pBuf, int iWorker );
-#endif
-	
+private:	
 	// local thread version
 	static void ThreadComputeStaticPropLighting( int iThread, void *pUserData );
 	void ComputeLightingForProp( int iThread, int iStaticProp );
@@ -1203,7 +1189,7 @@ void ComputeDirectLightingAtPoint( Vector &position, Vector &normal, Vector &out
 		GatherSampleLightSSE( sampleOutput, dl, -1, adjusted_pos4, &normal4, 1, iThread, nLFlags | GATHERLFLAGS_FORCE_FAST,
 		                      static_prop_id_to_skip, flEpsilon );
 		
-		VectorMA( outColor, sampleOutput.m_flFalloff.m128_f32[0] * sampleOutput.m_flDot[0].m128_f32[0], dl->light.intensity, outColor );
+		VectorMA( outColor, SubFloat( sampleOutput.m_flFalloff, 0 ) * SubFloat( sampleOutput.m_flDot[0], 0 ), dl->light.intensity, outColor );
 	}
 }
 
@@ -1330,10 +1316,6 @@ void CVradStaticPropMgr::ComputeLighting( CStaticProp &prop, int iThread, int pr
 
 	const int skip_prop = (g_bDisablePropSelfShadowing || (prop.m_Flags & STATIC_PROP_NO_SELF_SHADOWING)) ? prop_index : -1;
 	const int nFlags = ( prop.m_Flags & STATIC_PROP_IGNORE_NORMALS ) ? GATHERLFLAGS_IGNORE_NORMALS : 0;
-
-#ifdef MPI
-	VMPI_SetCurrentStage( "ComputeLighting" );
-#endif
 
 	matrix3x4_t	matPos, matNormal;
 	AngleMatrix(prop.m_Angles, prop.m_Origin, matPos);
@@ -1557,7 +1539,7 @@ void CVradStaticPropMgr::SerializeLighting()
 
 		// align to start of vertex data
 		unsigned char *pVertexData = (unsigned char *)(sizeof( HardwareVerts::FileHeader_t ) + m_StaticProps[i].m_MeshData.Count()*sizeof(HardwareVerts::MeshHeader_t));
-		pVertexData = (unsigned char*)pVhvHdr + ALIGN_TO_POW2( (unsigned int)pVertexData, 512 );
+		pVertexData = (unsigned char*)pVhvHdr + ALIGN_TO_POW2( (uintp)pVertexData, 512 );
 		
 		// construct header
 		pVhvHdr->m_nVersion     = VHV_VERSION;
@@ -1573,7 +1555,7 @@ void CVradStaticPropMgr::SerializeLighting()
 			HardwareVerts::MeshHeader_t *pMesh = pVhvHdr->pMesh( n );
 			pMesh->m_nLod      = m_StaticProps[i].m_MeshData[n].m_nLod;
 			pMesh->m_nVertexes = m_StaticProps[i].m_MeshData[n].m_VertexColors.Count();
-			pMesh->m_nOffset   = (unsigned int)pVertexData - (unsigned int)pVhvHdr; 
+			pMesh->m_nOffset   = (uintp)pVertexData - (uintp)pVhvHdr; 
 
 			// construct vertexes
 			for (int k=0; k<pMesh->m_nVertexes; k++)
@@ -1595,8 +1577,8 @@ void CVradStaticPropMgr::SerializeLighting()
 		}
 
 		// align to end of file
-		pVertexData = (unsigned char *)((unsigned int)pVertexData - (unsigned int)pVhvHdr);
-		pVertexData = (unsigned char*)pVhvHdr + ALIGN_TO_POW2( (unsigned int)pVertexData, 512 );
+		pVertexData = (unsigned char *)((uintp)pVertexData - (uintp)pVhvHdr);
+		pVertexData = (unsigned char*)pVhvHdr + ALIGN_TO_POW2( (uintp)pVertexData, 512 );
 
 		AddBufferToPak( GetPakFile(), filename, (void*)pVhvHdr, pVertexData - (unsigned char*)pVhvHdr, false );
 	}
@@ -1632,7 +1614,7 @@ void CVradStaticPropMgr::SerializeLighting()
 
 		// align start of texel data
 		unsigned char *pTexelData = (unsigned char *)(sizeof(HardwareTexels::FileHeader_t) + m_StaticProps[i].m_MeshData.Count() * sizeof(HardwareTexels::MeshHeader_t));
-		pTexelData = (unsigned char*)pVhtHdr + ALIGN_TO_POW2((unsigned int)pTexelData, kAlignment);
+		pTexelData = (unsigned char*)pVhtHdr + ALIGN_TO_POW2((uintp)pTexelData, kAlignment);
 
 		pVhtHdr->m_nVersion	    = VHT_VERSION;
 		pVhtHdr->m_nChecksum    = m_StaticPropDict[m_StaticProps[i].m_ModelIdx].m_pStudioHdr->checksum;
@@ -1643,7 +1625,7 @@ void CVradStaticPropMgr::SerializeLighting()
 		{
 			HardwareTexels::MeshHeader_t *pMesh = pVhtHdr->pMesh(n);
 			pMesh->m_nLod = m_StaticProps[i].m_MeshData[n].m_nLod;
-			pMesh->m_nOffset = (unsigned int)pTexelData - (unsigned int)pVhtHdr;
+			pMesh->m_nOffset = (uintp)pTexelData - (uintp)pVhtHdr;
 			pMesh->m_nBytes = m_StaticProps[i].m_MeshData[n].m_TexelsEncoded.Count();
 			pMesh->m_nWidth = m_StaticProps[i].m_LightmapImageWidth;
 			pMesh->m_nHeight = m_StaticProps[i].m_LightmapImageHeight;
@@ -1652,101 +1634,12 @@ void CVradStaticPropMgr::SerializeLighting()
 			pTexelData += m_StaticProps[i].m_MeshData[n].m_TexelsEncoded.Count();
 		}
 
-		pTexelData = (unsigned char *)((unsigned int)pTexelData - (unsigned int)pVhtHdr);
-		pTexelData = (unsigned char*)pVhtHdr + ALIGN_TO_POW2((unsigned int)pTexelData, kAlignment);
+		pTexelData = (unsigned char *)((uintp)pTexelData - (uintp)pVhtHdr);
+		pTexelData = (unsigned char*)pVhtHdr + ALIGN_TO_POW2((uintp)pTexelData, kAlignment);
 
 		AddBufferToPak(GetPakFile(), filename, (void*)pVhtHdr, pTexelData - (unsigned char*)pVhtHdr, false);
 	}
 }
-
-#ifdef MPI
-void CVradStaticPropMgr::VMPI_ProcessStaticProp_Static( int iThread, uint64 iStaticProp, MessageBuffer *pBuf )
-{
-	g_StaticPropMgr.VMPI_ProcessStaticProp( iThread, iStaticProp, pBuf );
-}
-
-void CVradStaticPropMgr::VMPI_ReceiveStaticPropResults_Static( uint64 iStaticProp, MessageBuffer *pBuf, int iWorker )
-{
-	g_StaticPropMgr.VMPI_ReceiveStaticPropResults( iStaticProp, pBuf, iWorker );
-}
-	
-//-----------------------------------------------------------------------------
-// Called on workers to do the computation for a static prop and send
-// it to the master.
-//-----------------------------------------------------------------------------
-void CVradStaticPropMgr::VMPI_ProcessStaticProp( int iThread, int iStaticProp, MessageBuffer *pBuf )
-{
-	// Compute the lighting.
-	CComputeStaticPropLightingResults results;
-	ComputeLighting( m_StaticProps[iStaticProp], iThread, iStaticProp, &results );
-
-#ifdef MPI
-	VMPI_SetCurrentStage( "EncodeLightingResults" );
-#endif
-	
-	// Encode the results.
-	int nLists = results.m_ColorVertsArrays.Count();
-	pBuf->write( &nLists, sizeof( nLists ) );
-	
-	for ( int i=0; i < nLists; i++ )
-	{
-		CUtlVector<colorVertex_t> &curList = *results.m_ColorVertsArrays[i];
-		int count = curList.Count();
-		pBuf->write( &count, sizeof( count ) );
-		pBuf->write( curList.Base(), curList.Count() * sizeof( colorVertex_t ) );
-	}
-
-	nLists = results.m_ColorTexelsArrays.Count();
-	pBuf->write(&nLists, sizeof(nLists));
-
-	for (int i = 0; i < nLists; i++)
-	{
-		CUtlVector<colorTexel_t> &curList = *results.m_ColorTexelsArrays[i];
-		int count = curList.Count();
-		pBuf->write(&count, sizeof(count));
-		pBuf->write(curList.Base(), curList.Count() * sizeof(colorTexel_t));
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Called on the master when a worker finishes processing a static prop.
-//-----------------------------------------------------------------------------
-void CVradStaticPropMgr::VMPI_ReceiveStaticPropResults( int iStaticProp, MessageBuffer *pBuf, int iWorker )
-{
-	// Read in the results.
-	CComputeStaticPropLightingResults results;
-	
-	int nLists;
-	pBuf->read( &nLists, sizeof( nLists ) );
-	
-	for ( int i=0; i < nLists; i++ )
-	{
-		CUtlVector<colorVertex_t> *pList = new CUtlVector<colorVertex_t>;
-		results.m_ColorVertsArrays.AddToTail( pList );
-		
-		int count;
-		pBuf->read( &count, sizeof( count ) );
-		pList->SetSize( count );
-		pBuf->read( pList->Base(), count * sizeof( colorVertex_t ) );
-	}
-
-	pBuf->read(&nLists, sizeof(nLists));
-
-	for (int i = 0; i < nLists; i++)
-	{
-		CUtlVector<colorTexel_t> *pList = new CUtlVector<colorTexel_t>;
-		results.m_ColorTexelsArrays.AddToTail(pList);
-
-		int count;
-		pBuf->read(&count, sizeof(count));
-		pList->SetSize(count);
-		pBuf->read(pList->Base(), count * sizeof(colorTexel_t));
-	}
-	
-	// Apply the results.
-	ApplyLightingToStaticProp( iStaticProp, m_StaticProps[iStaticProp], &results );
-}
-#endif
 
 void CVradStaticPropMgr::ComputeLightingForProp( int iThread, int iStaticProp )
 {
@@ -1787,19 +1680,6 @@ void CVradStaticPropMgr::ComputeLighting( int iThread )
 	// ensure any traces against us are ignored because we have no inherit lighting contribution
 	m_bIgnoreStaticPropTrace = true;
 
-#ifdef MPI
-	if ( g_bUseMPI )
-	{
-		// Distribute the work among the workers.
-		VMPI_SetCurrentStage( "CVradStaticPropMgr::ComputeLighting" );
-		
-		DistributeWork( 
-			count, 
-			&CVradStaticPropMgr::VMPI_ProcessStaticProp_Static, 
-			&CVradStaticPropMgr::VMPI_ReceiveStaticPropResults_Static );
-	}
-	else
-#endif
 	{
 		RunThreadsOn(count, true, ThreadComputeStaticPropLighting);
 	}
@@ -2364,7 +2244,7 @@ static void GenerateLightmapSamplesForMesh( const matrix3x4_t& _matPos, const ma
 
 					for (auto it = rasterizer.begin(); it != rasterizer.end(); ++it)
 					{
-						size_t linearPos = rasterizer.GetLinearPos(it);
+						int linearPos = (int)rasterizer.GetLinearPos(it);
 						Assert(linearPos < cTotalPixelCount);
 
 						if ( colorTexels[linearPos].m_bValid )
@@ -2463,8 +2343,8 @@ static int GetTexelCount(unsigned int _resX, unsigned int _resY, bool _mipmaps)
 	while (_resX > 1 || _resY > 1) 
 	{
 		retVal += _resX * _resY;
-		_resX = max(1, _resX >> 1);
-		_resY = max(1, _resY >> 1);
+		_resX = max(1u, _resX >> 1);
+		_resY = max(1u, _resY >> 1);
 	}
 
 	// Add in the 1x1 mipmap level, which wasn't hit above. This could be done in the initializer of 
