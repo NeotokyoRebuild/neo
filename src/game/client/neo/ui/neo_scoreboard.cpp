@@ -345,10 +345,17 @@ void CNEOScoreBoard::Update()
 	m_iTotalPlayers = 0;
 	V_memset(m_playersInfo, 0, sizeof(m_playersInfo));
 
+	m_bSourceTVEnabled = false;
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		if (false == g_PR->IsConnected(i))
 		{
+			continue;
+		}
+
+		if (true == g_PR->IsHLTV(i))
+		{
+			m_bSourceTVEnabled = true;
 			continue;
 		}
 
@@ -716,7 +723,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		// Output all the players in the server
 		for (int iCurTeam = TEAM_UNASSIGNED; iCurTeam < TEAM__TOTAL; ++iCurTeam)
 		{
-			if (iaTeamTally[iCurTeam] <= 0 && iCurTeam <= TEAM_SPECTATOR)
+			if (iaTeamTally[iCurTeam] <= 0 && iCurTeam <= TEAM_SPECTATOR && !(iCurTeam == TEAM_SPECTATOR && !m_bSourceTVEnabled))
 			{
 				continue;
 			}
@@ -820,16 +827,21 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						}
 					}
 				}
-				else if (TEAM_SPECTATOR == iCurTeam && m_HLTVSpectators > 0)
-				{
-					V_swprintf_safe(wszText, L"%ls + %d HLTV spectators",
-							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, m_HLTVSpectators);
-				}
 				else
 				{
 					V_wcscpy_safe(wszText, SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr);
 				}
 				NeoUI::Label(wszText, true);
+
+				if (TEAM_SPECTATOR == iCurTeam && m_bSourceTVEnabled)
+				{
+					V_swprintf_safe(wszText,L"SourceTV Enabled (%d Spectators)", m_HLTVSpectators);
+					int x = 0;
+					[[maybe_unused]] int y = 0;
+					vgui::surface()->GetTextSize(m_uiCtx.fonts[m_uiCtx.eFont].hdl, wszText, x, y);
+					vgui::surface()->DrawSetTextPos(m_uiCtx.rWidgetArea.x0 + m_uiCtx.dPanel.wide - x - m_uiCtx.iMarginX, m_uiCtx.rWidgetArea.y0 + m_uiCtx.fonts[m_uiCtx.eFont].iYFontOffset);
+					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				}
 
 				NeoUI::Pad(); // Avatar/Dead-indicator
 				NeoUI::Pad(); // Name column
