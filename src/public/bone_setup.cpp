@@ -5380,8 +5380,12 @@ bool SweepBoxToStudio( IPhysicsSurfaceProps *pProps, const Ray_t& ray, CStudioHd
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool TraceToStudio( IPhysicsSurfaceProps *pProps, const Ray_t& ray, CStudioHdr *pStudioHdr, mstudiohitboxset_t *set, 
+bool TraceToStudio( IPhysicsSurfaceProps *pProps, const Ray_t& ray, CStudioHdr *pStudioHdr, mstudiohitboxset_t *set,
+#ifdef NEO
+				   matrix3x4_t **hitboxbones, int fContentsMask, const Vector &vecOrigin, float flScale, trace_t &tr, unsigned int fHitboxGroupMask )
+#else
 				   matrix3x4_t **hitboxbones, int fContentsMask, const Vector &vecOrigin, float flScale, trace_t &tr )
+#endif // NEO
 {
 	if ( !ray.m_IsRay )
 	{
@@ -5399,6 +5403,11 @@ bool TraceToStudio( IPhysicsSurfaceProps *pProps, const Ray_t& ray, CStudioHdr *
 	for ( int i = 0; i < set->numhitboxes; i++ )
 	{
 		mstudiobbox_t *pbox = set->pHitbox(i);
+
+#ifdef NEO
+		if ((fHitboxGroupMask & (1 << pbox->group)) == 0)
+			continue;
+#endif // NEO
 
 		// Filter based on contents mask
 		int fBoneContents = pStudioHdr->pBone( pbox->bone )->contents;
