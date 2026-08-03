@@ -583,8 +583,10 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const int iAvatarOffset = m_uiCtx.iMarginX;
 	const int iAvatarWT = ShowAvatars() ? (iPopupCardPerRowTallAvatarName - (iAvatarOffset * 2)) : 0;
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
+	const int iGameType = NEORules()->GetGameType();
 	const bool bShowReadyUp = sv_neo_readyup_lobby.GetBool()
-			&& NEORules()->m_nRoundStatus == NeoRoundStatus::Idle;
+			&& NEORules()->m_nRoundStatus == NeoRoundStatus::Idle
+			&& NEO_GAME_TYPE_SETTINGS[iGameType].comp;
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
 			&& NEORules()->InRoundState()
 			&& g_neoKillerInfos.bHasDmgInfos
