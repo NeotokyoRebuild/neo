@@ -6,7 +6,7 @@
 	{
 		"volume"	"0.8"
 		"pitch"		"100"
-		"wave"		"ocean_rain_lp.wav"
+		"wave"		"apparatus/ocean_rain_lp.wav"
 	}
 }
 
@@ -18,7 +18,7 @@
 	{
 		"volume"	"0.8"
 		"pitch"		"100"
-		"wave"		"ocean_rain_inside_lp.wav"
+		"wave"		"apparatus/ocean_rain_inside_lp.wav"
 	}
 
 	"playlooping"
@@ -37,7 +37,7 @@
 	{
 		"volume"	"0.3"
 		"pitch"		"100"
-		"wave"		"ocean_rain_inside_lp.wav"
+		"wave"		"apparatus/ocean_rain_inside_lp.wav"
 	}
 
 	"playlooping"
@@ -56,7 +56,7 @@
 	{
 		"volume"	"0.3"
 		"pitch"		"100"
-		"wave"		"ocean_rain_inside_lp.wav"
+		"wave"		"apparatus/ocean_rain_inside_lp.wav"
 	}
 
 	"playlooping"
