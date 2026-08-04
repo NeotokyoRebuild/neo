@@ -472,8 +472,13 @@ C_NEO_Player::C_NEO_Player()
 	m_flTocFactor = 0.15f;
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
-	ClearLocalPlayerDmgReports();
 	m_szNameDupePos = 0;
+
+	if (IsLocalPlayer())
+	{
+		ListenForGameEvent( "game_freezetime_end" );
+		ClearLocalPlayerDmgReports();
+	}
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -1186,8 +1191,6 @@ void C_NEO_Player::PreThink( void )
 			// so it could arrive too late.
 			CLocalPlayerFilter filter;
 			enginesound->SetPlayerDSP(filter, 0, true);
-
-			ClearLocalPlayerDmgReports();
 
 			// Reset the cache of other players crosshair data on spawning in
 			if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
@@ -2144,6 +2147,15 @@ void C_NEO_Player::PlayerUse()
 void C_NEO_Player::ClearLocalPlayerDmgReports()
 {
 	if (IsLocalPlayer())
+	{
+		NeoAllKDReportsClear();
+	}
+}
+
+void C_NEO_Player::FireGameEvent(IGameEvent* event)
+{
+	auto eventName = event->GetName();
+	if (!Q_stricmp(eventName, "game_freezetime_end"))
 	{
 		NeoAllKDReportsClear();
 	}

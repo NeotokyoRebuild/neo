@@ -47,6 +47,7 @@ public:
 	virtual void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
 
 	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
+	virtual void FireGameEvent( IGameEvent * event ) override;
 
 	// Should this object cast shadows?
 	virtual ShadowType_t		ShadowCastType( void );

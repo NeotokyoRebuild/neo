@@ -4577,6 +4577,11 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 			{
 				pEntGameCfg->m_OnRoundStart.FireOutput(nullptr, pEntGameCfg);
 			}
+			
+			if (IGameEvent* event = gameeventmanager->CreateEvent("game_freezetime_end"))
+			{
+				gameeventmanager->FireEvent(event);
+			}
 		}
 #endif
 	}
