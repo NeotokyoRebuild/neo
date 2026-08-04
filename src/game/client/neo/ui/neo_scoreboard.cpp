@@ -337,8 +337,7 @@ void CNEOScoreBoard::Update()
 	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 
-	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
-			&& NEORules()->InRoundState()
+	const bool bShowDamageInfo = (pLocalPlayer->IsPlayerDead() && NEORules()->IsRoundOn()) || (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
 			&& bLocalPlaying;
 
 	// Zero array every update
@@ -585,11 +584,9 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 	const bool bShowReadyUp = sv_neo_readyup_lobby.GetBool()
 			&& NEORules()->m_nRoundStatus == NeoRoundStatus::Idle;
-	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
-			&& NEORules()->InRoundState()
+	const bool bShowDamageInfo = (pLocalPlayer->IsPlayerDead() && NEORules()->IsRoundOn()) || (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
 			&& g_neoKillerInfos.bHasDmgInfos
-			&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI
-					|| pLocalPlayer->GetTeamNumber() == TEAM_NSF);
+			&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI || pLocalPlayer->GetTeamNumber() == TEAM_NSF);
 	static CrosshairInfo staticXhairInfo = {};
 
 	bool bHasRanklessDog = false;

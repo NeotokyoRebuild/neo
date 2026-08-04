@@ -203,7 +203,7 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 
 	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
 
-	NeoDamageReportClear();
+	//NeoDamageReportClear();
 	gTotals = {};
 	const ENEOCompactMsgFlag flags = ReadDamageReport(msg);
 	if (!(flags & NEO_COMPACT_MSG_FLAG_EXTRA))

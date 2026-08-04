@@ -107,6 +107,11 @@
 	
 	}
 	
+	"game_freezetime_end"
+	{
+	
+	}
+	
 	// inherited from NT
 	"game_round_end"
 	{
