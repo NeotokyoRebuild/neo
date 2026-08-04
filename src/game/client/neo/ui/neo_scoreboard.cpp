@@ -337,8 +337,11 @@ void CNEOScoreBoard::Update()
 	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 
-	const bool bShowDamageInfo = (pLocalPlayer->IsPlayerDead() && NEORules()->IsRoundOn()) || (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
-			&& bLocalPlaying;
+	const bool bShowDamageInfo =
+			   bLocalPlaying
+			&& ((pLocalPlayer->IsPlayerDead() && NEORules()->IsRoundOn())
+				|| (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze
+					|| NEORules()->GetRoundStatus() == NeoRoundStatus::Pause));
 
 	// Zero array every update
 	m_iTotalPlayers = 0;
@@ -433,7 +436,8 @@ void CNEOScoreBoard::Update()
 				|| (bIsTeamplay && iLocalPlayerTeam == pPlayerInfo->iTeam) // Team - See own team's classes
 				|| (bShowDamageInfo
 						&& ((pPlayerInfo->iDealtDmgs > 0 && pPlayerInfo->iDealtHits > 0)
-							|| (pPlayerInfo->iTakenDmgs > 0 && pPlayerInfo->iTakenHits > 0))); // Dead and have damage dealt/taken
+							|| (pPlayerInfo->iTakenDmgs > 0 && pPlayerInfo->iTakenHits > 0)) // Dead and have damage dealt/taken
+						&& !(NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Pause));
 		if (bShowClass)
 		{
 			pPlayerInfo->iClass = (bIsImpersonating)
@@ -584,9 +588,11 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 	const bool bShowReadyUp = sv_neo_readyup_lobby.GetBool()
 			&& NEORules()->m_nRoundStatus == NeoRoundStatus::Idle;
-	const bool bShowDamageInfo = (pLocalPlayer->IsPlayerDead() && NEORules()->IsRoundOn()) || (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
-			&& g_neoKillerInfos.bHasDmgInfos
-			&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI || pLocalPlayer->GetTeamNumber() == TEAM_NSF);
+	const bool bShowDamageInfo =
+			   g_neoKillerInfos.bHasDmgInfos
+			&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI || pLocalPlayer->GetTeamNumber() == TEAM_NSF)
+			&& ((pLocalPlayer->IsPlayerDead() && NEORules()->IsRoundOn())
+				|| (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Pause));
 	static CrosshairInfo staticXhairInfo = {};
 
 	bool bHasRanklessDog = false;
