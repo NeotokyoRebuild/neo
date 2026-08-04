@@ -1049,7 +1049,7 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	InitializeNeoClRenderer();
 	InitializeClNeoCrosshair();
 #ifdef DEBUG
-	InitializeDbgNeoClGitHashEdit();
+	InitializeDbgNeoClGitHashTagEdit();
 #endif // DEBUG
 #endif // NEO
 
