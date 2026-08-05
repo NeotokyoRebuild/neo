@@ -101,7 +101,7 @@ function(add_origin_rpath)
         return()
     endif()
 
-    target_link_options(${PARSED_ARGS_TARGET} PRIVATE "-Wl,-rpath,${ORIGIN_TOKEN}")
+    target_link_options(${PARSED_ARGS_TARGET} PRIVATE "-Wl,--disable-new-dtags" "-Wl,-rpath,${ORIGIN_TOKEN}")
 endfunction()
 
 # Used by split_debug_information
@@ -194,7 +194,8 @@ function(split_debug_information)
     # - .strtab: String table.
     # These sections are split into the .debug file, so there's no reason to keep them in the executable
     add_custom_command(
-        OUTPUT ${SPLITDEBUG_TARGET}
+        OUTPUT ${SPLITDEBUG_TARGET} ${SPLITDEBUG_TARGET_DEBUG}
+        DEPENDS ${PARSED_ARGS_TARGET} ${SPLITDEBUG_SOURCE}
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM} ${SPLITDEBUG_SOURCE} ${SPLITDEBUG_TARGET_DEBUG}
         COMMAND ${CMAKE_STRIP} --strip-debug ${SPLITDEBUG_SOURCE} -o ${SPLITDEBUG_TARGET}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink="${SPLITDEBUG_TARGET_DEBUG}" ${SPLITDEBUG_TARGET}
