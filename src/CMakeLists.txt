@@ -362,6 +362,9 @@ if(OS_LINUX OR OS_MACOS)
         #-Wno-strict-aliasing
         #-Wno-address
         $<$<CXX_COMPILER_ID:Clang>:-Wno-inconsistent-missing-override>
+        
+        -Wno-maybe-uninitialized
+        -Wno-array-bounds
 
         # Unsupported by the steamrt3 Clang compiler
         $<$<NOT:$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang>,$<CXX_COMPILER_VERSION:11.0.1>>>:-Wno-unused-but-set-variable>
