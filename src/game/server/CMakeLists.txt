@@ -2,7 +2,7 @@ add_library(server SHARED)
 
 set_target_properties(server PROPERTIES
     PREFIX ""
-    UNITY_BUILD ON
+    UNITY_BUILD ${NEO_UNITY_BUILD_CLIENT_SERVER}
     UNITY_BUILD_MODE GROUP
 )
 
@@ -65,6 +65,7 @@ target_compile_definitions(server
     sprintf=use_Q_snprintf_instead_of_sprintf
     strncpy=use_Q_strncpy_instead
     NEXT_BOT
+    ${UNITY_BUILD_DEF_CLIENT_SERVER}
 )
 
 target_link_libraries(server

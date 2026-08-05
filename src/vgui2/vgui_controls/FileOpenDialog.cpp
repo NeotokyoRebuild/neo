@@ -47,7 +47,7 @@
 #include <vgui_controls/ImageList.h>
 #include <vgui_controls/MenuItem.h>
 #include <vgui_controls/Tooltip.h>
-#ifdef NEO // Unity build
+#ifdef NEO_UNITY // Unity build
 #include "Common.h"
 #endif
 
@@ -63,7 +63,7 @@ using namespace vgui;
 
 static int s_nLastSortColumn = 0;
 
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 static int ListFileNameSortFunc([[maybe_unused]] ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
 	bool dir1 = item1.kv->GetInt("directory") == 1;
@@ -180,7 +180,7 @@ static int ListBaseInteger64SortFunc(ListPanel *pPanel, const ListPanelItem &ite
 	return ( i1 < i2 ) ? -1 : 1;
 }
 
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 static int ListFileSizeSortFunc(ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
 	return ListBaseIntegerSortFunc( pPanel, item1, item2, "filesizeint" );
@@ -197,7 +197,7 @@ static int ListFileCreatedSortFunc(ListPanel *pPanel, const ListPanelItem &item1
 	// NOTE: Backward order to get most recent files first
 	return ListBaseInteger64SortFunc( pPanel, item2, item1, "createdint_low", "createdint_high" );
 }
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 static int ListFileAttributesSortFunc(ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
 	return ListBaseStringSortFunc( pPanel, item1, item2, "attributes" );
@@ -469,7 +469,7 @@ void FileCompletionEdit::OnMenuItemHighlight( int itemID )
 //-----------------------------------------------------------------------------
 static CUtlDict< CUtlString, unsigned short > s_StartDirContexts;
 
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 struct ColumnInfo_t
 {
 	char const	*columnName;

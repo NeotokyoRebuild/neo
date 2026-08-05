@@ -320,6 +320,12 @@ shaders\fxc\sdk_screenspaceeffect_vs20.vcs
 10.41
 ```
 
+## Unity build
+
+By default, this project uses Unity Build to speed up compilation times. However, if you need to disable it for development
+reasons, set the CMake options `NEO_UNITY_BUILD_CLIENT_SERVER` or `NEO_UNITY_BUILD_OTHERS` to `OFF`. This will disable
+Unity Build for client/server libraries and vgui2/tier1/mathlib libraries, respectively.
+
 ## Credits
 * [NeotokyoRevamp/neo](https://github.com/NeotokyoRevamp/neo) - Original fork source
 * [ValveSoftware/source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) - Source SDK 2013 (2025 TF2 SDK Update)
