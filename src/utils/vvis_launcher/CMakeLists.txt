@@ -22,6 +22,11 @@ target_link_libraries(vvis
     tier1::tier1
 )
 
+target_compile_definitions(vvis
+    PRIVATE
+    USE_APPID_MOUNTING
+)
+
 target_sources_grouped(
     TARGET vvis
     NAME "Source Files"
