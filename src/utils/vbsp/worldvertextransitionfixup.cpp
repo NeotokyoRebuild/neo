@@ -84,8 +84,7 @@ void CreateWorldVertexTransitionPatchedMaterial( const char *pOriginalMaterialNa
 		RemoveKey( kv, "$maskedblending" );
 		RemoveKey( kv, "$surfaceprop2" );
 		// If we didn't want a basetexture on the first texture in the blend, we don't want an envmap at all.
-		KeyValues *basetexturenoenvmap = kv->FindKey( "$BASETEXTURENOENVMAP" );
-		if( basetexturenoenvmap->GetInt() )
+		if( kv->GetInt( "$BASETEXTURENOENVMAP" ) )
 		{
 			RemoveKey( kv, "$envmap" );
 		}
