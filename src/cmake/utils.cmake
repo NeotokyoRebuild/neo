@@ -87,7 +87,7 @@ function(add_origin_rpath)
         PARSED_ARGS
         ""
         "TARGET"
-        ""
+        "PATHS"
         ${ARGN}
     )
 
@@ -101,7 +101,12 @@ function(add_origin_rpath)
         return()
     endif()
 
-    target_link_options(${PARSED_ARGS_TARGET} PRIVATE "-Wl,--disable-new-dtags" "-Wl,-rpath,${ORIGIN_TOKEN}")
+    set(RPATH "${ORIGIN_TOKEN}")
+    foreach(RELATIVE_PATH ${PARSED_ARGS_PATHS})
+        string(APPEND RPATH ":${ORIGIN_TOKEN}/${RELATIVE_PATH}")
+    endforeach()
+
+    target_link_options(${PARSED_ARGS_TARGET} PRIVATE "-Wl,--disable-new-dtags" "-Wl,-rpath,${RPATH}")
 endfunction()
 
 # Used by split_debug_information

@@ -11,7 +11,7 @@ endif()
 
 add_library_copy_target(TARGET vvis)
 
-add_origin_rpath(TARGET vvis)
+add_origin_rpath(TARGET vvis PATHS "../vvis" "../../vvis/out")
 
 if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
     add_dependencies(vvis_copy_lib vvis_split_debug_information)

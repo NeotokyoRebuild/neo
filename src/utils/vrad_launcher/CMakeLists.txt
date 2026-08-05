@@ -11,7 +11,7 @@ endif()
 
 add_library_copy_target(TARGET vrad)
 
-add_origin_rpath(TARGET vrad)
+add_origin_rpath(TARGET vrad PATHS "../vrad" "../../vrad/out")
 
 if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
     add_dependencies(vrad_copy_lib vrad_split_debug_information)
