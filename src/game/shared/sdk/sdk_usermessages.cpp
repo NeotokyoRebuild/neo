@@ -28,7 +28,7 @@ void RegisterUserMessages()
 
 	usermessages->Register( "SendAudio", -1 );	// play radion command
 
-	usermessages->Register( "VoiceMask", VOICE_MAX_PLAYERS_DW*4 * 2 + 1 );
+	usermessages->Register( "VoiceMask", VOICE_MAX_PLAYERS_DW*4 * 2 + 1 ); // NEO TODO (Adam) increase to VOICE_MAX_PLAYERS_DW*4 * 3 + 1 when building this
 	usermessages->Register( "RequestState", 0 );
 
 	usermessages->Register( "BarTime", -1 );	// For the C4 progress bar.
