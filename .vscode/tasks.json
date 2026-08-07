@@ -1,0 +1,32 @@
+{
+    // The only tracked file under .vscode/ (see the re-include at the end of
+    // .gitignore); the setup task writes the per-developer settings.json and
+    // extensions.json.
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "ntre-dev-setup: Set up VS Code",
+            "detail": "Installs the pinned clangd, generates the compile database and writes .vscode/settings.json + extensions.json. Linux or macOS shell (WSL on Windows).",
+            "type": "shell",
+            "command": "${workspaceFolder}/tools/ntre-dev-setup.sh",
+            "args": ["--editor", "vscode"],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "ntre-dev-setup: Refresh compile database",
+            "detail": "Run after adding, removing or renaming sources, or after pulling changes to a CMakeLists.txt.",
+            "type": "shell",
+            "command": "${workspaceFolder}/tools/ntre-dev-setup.sh",
+            "args": ["--reconfigure"],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            }
+        }
+    ]
+}
