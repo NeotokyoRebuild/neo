@@ -3231,7 +3231,7 @@ void CNEORules::ResetGhostCapPoints()
 			{
 				ghostCap->ResetCaptureState();
 				m_pGhostCaps.AddToTail(ghostCap->entindex());
-				ghostCap->SetActive(true);
+				ghostCap->SetActive(!ghostCap->m_bStartDisabled);
 				ghostCap->Think_CheckMyRadius();
 			}
 
