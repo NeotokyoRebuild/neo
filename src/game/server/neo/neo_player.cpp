@@ -69,7 +69,7 @@ SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 SendPropBool(SENDINFO(m_bCarryingGhost)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
-SendPropInt(SENDINFO(m_nVisionLastTick), -1, SPROP_UNSIGNED),
+SendPropTime(SENDINFO(m_flVisionLastTime)),
 SendPropTime(SENDINFO(m_flJumpLastTime)),
 
 SendPropTime(SENDINFO(m_flNextPingTime)),
@@ -109,7 +109,7 @@ DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
 DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
-DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
+DEFINE_FIELD(m_flVisionLastTime, FIELD_TIME),
 DEFINE_FIELD(m_flJumpLastTime, FIELD_TIME),
 DEFINE_FIELD(m_flNextPingTime, FIELD_TIME),
 
@@ -597,7 +597,7 @@ CNEO_Player::CNEO_Player()
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
 
 	m_flCamoAuxLastTime = 0;
-	m_nVisionLastTick = 0;
+	m_flVisionLastTime = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 	m_botThermOpticCamoDisruptedTimer.Invalidate();
@@ -735,7 +735,7 @@ void CNEO_Player::Spawn(void)
 	m_flCamoAuxLastTime = 0;
 
 	m_bInVision = false;
-	m_nVisionLastTick = 0;
+	m_flVisionLastTime = 0;
 	m_bInLean = NEO_LEAN_NONE;
 	m_bCorpseSet = false;
 	m_bAllowGibbing = true;
@@ -829,65 +829,6 @@ void CNEO_Player::Lean(void)
 	{
 		Assert(GetBaseAnimating());
 		GetBaseAnimating()->SetBoneController(0, vm->lean(this));
-	}
-}
-
-void CNEO_Player::CheckVisionButtons()
-{
-	if (m_iNeoClass == NEO_CLASS_VIP)
-		return;
-
-	if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
-	{
-		return;
-	}
-
-	if (m_afButtonPressed & IN_VISION)
-	{
-		if (IsAlive())
-		{
-			m_nVisionLastTick = gpGlobals->tickcount;
-
-			m_bInVision = !m_bInVision;
-
-			if (m_bInVision)
-			{
-				CRecipientFilter filter;
-
-				// NEO TODO/FIXME (Rain): optimise this loop to once per cycle instead of repeating for each client
-				for (int i = 1; i <= gpGlobals->maxClients; ++i)
-				{
-					if (edict()->m_EdictIndex == i)
-					{
-						continue;
-					}
-
-					auto player = UTIL_PlayerByIndex(i);
-					if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
-					{
-						continue;
-					}
-
-					if (player->GetObserverTarget() == this)
-					{
-						filter.AddRecipient(player);
-					}
-				}
-
-				if (filter.GetRecipientCount() > 0)
-				{
-					static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
-
-					EmitSound_t params;
-					params.m_bEmitCloseCaption = false;
-					params.m_hSoundScriptHandle = visionToggle;
-					params.m_pOrigin = &GetAbsOrigin();
-					params.m_nChannel = CHAN_ITEM;
-
-					EmitSound(filter, edict()->m_EdictIndex, params);
-				}
-			}
-		}
 	}
 }
 
@@ -1295,7 +1236,7 @@ void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 		params.m_bEmitCloseCaption = false;
 		params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
 		params.m_pOrigin = &GetAbsOrigin();
-		params.m_nChannel = CHAN_VOICE;
+		params.m_nChannel = CHAN_VOICE; // NEO TODO (Adam) This doesn't change the channel this sound is played on, set correct channel in sound script
 
 		EmitSound(filter, edict()->m_EdictIndex, params);
 
@@ -4239,7 +4180,6 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 		{
 			EmitSound_t soundParams;
 			soundParams.m_pSoundName = "HUD.GhostPickUp";
-			soundParams.m_nChannel = CHAN_GHOST_PICKUP;
 			soundParams.m_bWarnOnDirectWaveReference = false;
 			soundParams.m_bEmitCloseCaption = false;
 			soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
@@ -4358,7 +4298,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			m_iBotDetectableBleedingInjuryEvents = pPlayerTakeoverTarget->m_iBotDetectableBleedingInjuryEvents;
 
 			m_bInVision = pPlayerTakeoverTarget->m_bInVision;
-			m_nVisionLastTick = pPlayerTakeoverTarget->m_nVisionLastTick;
+			m_flVisionLastTime = pPlayerTakeoverTarget->m_flVisionLastTime;
 
 			// Just clear this so the attackers scores/hits are based on only when it's
 			// impersonated not including the bot controlled part

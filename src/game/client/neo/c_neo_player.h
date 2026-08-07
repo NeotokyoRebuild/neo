@@ -46,8 +46,6 @@ public:
 	virtual void AddEntity( void );
 	virtual void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
 
-	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
-
 	// Should this object cast shadows?
 	virtual ShadowType_t		ShadowCastType( void );
 
@@ -228,7 +226,7 @@ public:
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
-	CNetworkVar(int, m_nVisionLastTick);
+	CNetworkVar(float, m_flVisionLastTime);
 	CNetworkVar(float, m_flJumpLastTime);
 
 	CNetworkVar(float, m_flNextPingTime);
@@ -264,7 +262,6 @@ private:
 	bool m_bFirstAliveTick;
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
-	bool m_bIsAllowedToToggleVision;
 	bool m_bSpecRefreshedStates;
 
 	float m_flLastAirborneJumpOkTime;

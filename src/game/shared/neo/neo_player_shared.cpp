@@ -733,6 +733,74 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	return pNearest;
 }
 
+void CNEO_Player::CheckVisionButtons()
+{
+	if (m_iNeoClass == NEO_CLASS_VIP)
+	{
+		return;
+	}
+	
+	constexpr float MIN_INTERVAL_BETWEEN_VISION_TOGGLE = 0.1f;
+	if (gpGlobals->curtime - m_flVisionLastTime < MIN_INTERVAL_BETWEEN_VISION_TOGGLE)
+	{
+		return;
+	}
+
+	if (!(m_afButtonPressed & IN_VISION))
+	{
+		return;
+	}
+
+	if (!IsAlive())
+	{
+		return;
+	}
+
+	m_flVisionLastTime = gpGlobals->curtime;
+	m_bInVision = !m_bInVision;
+
+#ifdef CLIENT_DLL
+	CLocalPlayerFilter filter;
+	filter.MakeReliable();
+	filter.UsePredictionRules();
+#else
+	CRecipientFilter filter;
+
+	// NEO TODO/FIXME (Rain): optimise this loop to once per cycle instead of repeating for each client
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		if (edict()->m_EdictIndex == i)
+		{
+			continue;
+		}
+
+		auto player = UTIL_PlayerByIndex(i);
+		if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
+		{
+			continue;
+		}
+
+		if (player->GetObserverTarget() == this)
+		{
+			filter.AddRecipient(player);
+		}
+	}
+
+	if (filter.GetRecipientCount() == 0)
+	{
+		return;
+	}
+#endif // CLIENT_DLL
+
+	EmitSound_t params;
+	params.m_bEmitCloseCaption = false;
+	params.m_pOrigin = &GetAbsOrigin();
+	static int VISION_ON = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+	static int VISION_OFF = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOff");
+	params.m_hSoundScriptHandle = m_bInVision ? VISION_ON : VISION_OFF;
+
+	EmitSound(filter, entindex(), params);
+}
 ConVar sv_neo_hitboxgroup_pen("sv_neo_hitboxgroup_pen", "0", FCVAR_REPLICATED, "When hitting outer limbs, do a second trace against head, chest and stomach", true, 0.f, true, 1.f); // NEO TODO (Adam) remove this and pick one
 bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr)
 {
