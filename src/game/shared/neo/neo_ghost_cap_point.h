@@ -57,6 +57,7 @@ public:
 	virtual void ClientThink(void);
 #endif
 
+#ifdef GAME_DLL
 	void SetActive(bool isActive);
 	void ResetCaptureState()
 	{
@@ -64,43 +65,33 @@ public:
 		m_iSuccessfulCaptorClientIndex = 0;
 	}
 
-#ifdef GAME_DLL
 	int UpdateTransmitState() OVERRIDE;
 
 	bool IsGhostCaptured(int &outTeamNumber, int &outCaptorClientIndex);
 
 private:
-	COutputEvent m_OnCap;
-#endif
+	void InputEnable(inputdata_t &inputData);
+	void InputDisable(inputdata_t &inputData);
 
-#ifdef GAME_DLL
+	COutputEvent m_OnCap;
+
 public:
 	void Think_CheckMyRadius(void); // NEO FIXME (Rain): this should be private
-#endif
+
+	bool m_bStartDisabled = false;
 
 private:
-	inline void UpdateVisibility(void);
-
-private:
-#ifdef GAME_DLL
 	CNetworkVar(int, m_iOwningTeam);
-	CNetworkVar(int, m_iSuccessfulCaptorClientIndex);
-
 	CNetworkVar(float, m_flCapzoneRadius);
-
-	CNetworkVar(bool, m_bGhostHasBeenCaptured);
 	CNetworkVar(bool, m_bIsActive);
+
+	int m_iSuccessfulCaptorClientIndex = 0;
+	bool m_bGhostHasBeenCaptured = false;
 #else
 	int m_iOwningTeam;
-	int m_iSuccessfulCaptorClientIndex;
-
 	float m_flCapzoneRadius;
-
-	bool m_bGhostHasBeenCaptured;
 	bool m_bIsActive;
-#endif
 
-#ifdef CLIENT_DLL
 	CNEOHud_GhostCapPoint *m_pHUDCapPoint = nullptr;
 #endif
 };
