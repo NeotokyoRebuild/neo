@@ -2,7 +2,7 @@ add_library(client SHARED)
 
 set_target_properties(client PROPERTIES
     PREFIX ""
-    UNITY_BUILD ON
+    UNITY_BUILD ${NEO_UNITY_BUILD_CLIENT_SERVER}
     UNITY_BUILD_MODE GROUP
 )
 
@@ -49,6 +49,7 @@ target_compile_definitions(client
     VECTOR
     VERSION_SAFE_STEAM_API_INTERFACES
     NEXT_BOT
+    ${UNITY_BUILD_DEF_CLIENT_SERVER}
 )
 
 target_link_libraries(client

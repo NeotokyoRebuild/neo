@@ -10,6 +10,7 @@
 #include "NextBotUtil.h"
 #include "NextBotPlayer.h"
 #include "NextBotPlayerLocomotion.h"
+#include "bot/neo_bot.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"

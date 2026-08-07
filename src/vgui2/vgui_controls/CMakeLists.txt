@@ -4,8 +4,13 @@ add_library(vgui_controls::vgui_controls ALIAS vgui_controls)
 
 set_target_properties(vgui_controls PROPERTIES
     PREFIX ""
-    UNITY_BUILD ON
+    UNITY_BUILD ${NEO_UNITY_BUILD_OTHERS}
     UNITY_BUILD_MODE GROUP
+)
+
+target_compile_definitions(vgui_controls
+    PRIVATE
+        ${UNITY_BUILD_DEF_OTHERS}
 )
 
 target_include_directories(vgui_controls

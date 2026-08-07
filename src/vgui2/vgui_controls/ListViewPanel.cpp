@@ -24,7 +24,7 @@
 #include <vgui_controls/Label.h>
 #include <vgui_controls/TextImage.h>
 #include <vgui_controls/ListViewPanel.h>
-#ifdef NEO // Unity build
+#ifdef NEO_UNITY // Unity build
 #include "Common.h"
 #endif
 
@@ -32,7 +32,7 @@
 #include <tier0/memdbgon.h>
 
 using namespace vgui;
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 enum 
 {
 	WINDOW_BORDER_WIDTH=2 // the width of the window's border

@@ -2,6 +2,8 @@
 
 #include <cbase.h>
 #include "strtools.h"
+#include "vgui/ILocalize.h"
+#include "tier3/tier3.h"
 
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
