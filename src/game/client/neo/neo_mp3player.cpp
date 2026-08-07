@@ -281,7 +281,11 @@ void Init()
 
 void Deinit()
 {
-	g_NeoMP3Thread.CallWorker(CNeoMP3Thread::EXIT);
+	if (g_NeoMP3Thread.IsAlive())
+	{
+		g_NeoMP3Thread.CallWorker(CNeoMP3Thread::EXIT);
+		g_NeoMP3Thread.Join();
+	}
 }
 
 void Update()
