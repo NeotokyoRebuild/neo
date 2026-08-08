@@ -1,4 +1,18 @@
 #!/bin/bash
+#                    ████
+#       ████████    ██████████     ▓▓▓▓
+#     ████████████  ███████████   ▓▓▓▓▓▓
+#    █████░░░█████░ █████░░░░░░░  ▓▓▓▓▓▓░
+#    █████░  █████░ █████░         ▓▓▓▓░░
+#    █████░  █████░ █████░          ░░░░
+#    █████░  █████░ ██████████      █████
+#    █████░  █████░ ██████████░     █████░
+#     ░░░░░  █████░  ░░░░░░░░░░    ████░░░
+#            █████░               ███░░░
+#             ░░░░░                ░░░
+#
+#      N E O T O K Y O ; R E B U I L D
+
 # Repairs an NT;RE Linux install whose engine binaries have fully
 # lowercased file names. The engine loads these binaries by exact
 # mixed-case name, and Steam neither renames files on disk nor fails
@@ -13,6 +27,10 @@
 # (PR #2055, the launcher-side repair that runs at every startup).
 
 set -u
+
+# Show the logo when running in a terminal. The helper lives next to this
+# script in the repo; a standalone copy of this script skips it silently.
+[ -f "$(dirname "$0")/nt-logo.sh" ] && . "$(dirname "$0")/nt-logo.sh" && nt_logo
 
 root="${1:-.}"
 
