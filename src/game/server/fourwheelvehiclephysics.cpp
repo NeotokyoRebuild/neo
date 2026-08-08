@@ -1054,7 +1054,11 @@ void CFourWheelVehiclePhysics::SteeringTurnAnalog( float carSpeed, const vehicle
 void CFourWheelVehiclePhysics::UpdateDriverControls( CUserCmd *cmd, float flFrameTime )
 {
 	const float SPEED_THROTTLE_AS_BRAKE = 2.0f;
+#ifdef NEO
+	const int64 nButtons = cmd->buttons;
+#else
 	int nButtons = cmd->buttons;
+#endif // NEO
 
 	// Get vehicle data.
 	const vehicle_operatingparams_t &carState = m_pVehicle->GetOperatingParams();
@@ -1341,7 +1345,11 @@ void CFourWheelVehiclePhysics::UpdateDriverControls( CUserCmd *cmd, float flFram
 	}
 
 	// Using has brakepedal for handbrake as well.
+#ifdef NEO
+	if ( ( nButtons & (IN_JUMP | IN_JUMP2) ) && m_controls.bHasBrakePedal )
+#else
 	if ( ( nButtons & IN_JUMP ) && m_controls.bHasBrakePedal )
+#endif // NEO
 	{
 		m_controls.handbrake = true;	
 

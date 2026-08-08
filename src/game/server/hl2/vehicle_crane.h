@@ -141,7 +141,11 @@ public:
 	void			PlayerControlShutdown( void );
 	void			ResetUseKey( CBasePlayer *pPlayer );
 
+#ifdef NEO
+	void			DriveCrane( int64 iDriverButtons, int64 iButtonsPressed, float flNPCSteering = 0.0 );
+#else
 	void			DriveCrane( int iDriverButtons, int iButtonsPressed, float flNPCSteering = 0.0 );
+#endif // NEO
 	void			RunCraneMovement( float flTime );
 
 	void			TurnMagnetOn( void );
@@ -201,7 +205,11 @@ private:
 
 	// NPC Driving
 	CHandle<CNPC_VehicleDriver>		m_hNPCDriver;
+#ifdef NEO
+	int64							m_nNPCButtons;
+#else
 	int								m_nNPCButtons;
+#endif // NEO
 
 	// Entering / Exiting
 	bool				m_bLocked;

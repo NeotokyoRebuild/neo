@@ -1322,7 +1322,7 @@ void CPropJeep::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *pHe
 //-----------------------------------------------------------------------------
 void CPropJeep::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased )
 {
-	int iButtons = ucmd->buttons;
+	int iButtons = ucmd->buttons; // NEO TODO (Adam) change to int64 when building this
 
 	//Adrian: No headlights on Superfly.
 /*	if ( ucmd->impulse == 100 )

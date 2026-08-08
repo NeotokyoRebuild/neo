@@ -2323,7 +2323,11 @@ void CWeaponPhysCannon::ItemPostFrame()
 	}
 
 	// NOTE: Attack2 will be considered to be pressed until the first item is picked up.
+#ifdef NEO
+	const int64 nAttack2Mask = pOwner->m_nButtons & (~m_nAttack2Debounce);
+#else
 	int nAttack2Mask = pOwner->m_nButtons & (~m_nAttack2Debounce);
+#endif // NEO
 	if ( nAttack2Mask & IN_ATTACK2 )
 	{
 		SecondaryAttack();

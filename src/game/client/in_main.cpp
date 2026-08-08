@@ -57,7 +57,11 @@ extern ConVar cam_idealyaw;
 // FIXME, tie to entity state parsing for player!!!
 int g_iAlive = 1;
 
+#ifdef NEO
+static int64 s_ClearInputState = 0;
+#else
 static int s_ClearInputState = 0;
+#endif // NEO
 
 // Defined in pm_math.c
 float anglemod( float a );
@@ -161,6 +165,7 @@ static	kbutton_t	in_thermoptic;
 static	kbutton_t	in_vision;
 static	kbutton_t	in_spec_next;
 static	kbutton_t	in_spec_prev;
+static	kbutton_t	in_jump2;
 #endif
 
 /*
@@ -649,6 +654,9 @@ void IN_Attack3Down( const CCommand &args ) { KeyDown(&in_attack3, args[1] );}
 void IN_Attack3Up( const CCommand &args ) { KeyUp(&in_attack3, args[1] );}
 
 #ifdef NEO
+void IN_Jump2Down ( const CCommand &args ) {KeyDown(&in_jump2, args[1] );}
+void IN_Jump2Up ( const CCommand &args ) {KeyUp(&in_jump2, args[1] );}
+
 void IN_DropUp( const CCommand &args ) { KeyUp( &in_drop, args[1] ); }
 void IN_DropDown( const CCommand &args ) { KeyDown( &in_drop, args[1] ); }
 
@@ -1668,7 +1676,11 @@ CUserCmd *CInput::GetUserCmd( int sequence_number )
 //			reset - 
 // Output : static void
 //-----------------------------------------------------------------------------
+#ifdef NEO
+static void CalcButtonBits( int64& bits, int64 in_button, int64 in_ignore, kbutton_t *button, bool reset )
+#else
 static void CalcButtonBits( int& bits, int in_button, int in_ignore, kbutton_t *button, bool reset )
+#endif // NEO
 {
 	// Down or still down?
 	if ( button->state & 3 )
@@ -1699,9 +1711,17 @@ Returns appropriate button info for keyboard and mouse state
 Set bResetState to 1 to clear old state info
 ============
 */
+#ifdef NEO
+int64 CInput::GetButtonBits( int64 bResetState )
+#else
 int CInput::GetButtonBits( int bResetState )
+#endif // NEO
 {
+#ifdef NEO
+	int64 bits = 0;
+#else
 	int bits = 0;
+#endif // NEO
 
 	CalcButtonBits( bits, IN_SPEED, s_ClearInputState, &in_speed, bResetState );
 	CalcButtonBits( bits, IN_WALK, s_ClearInputState, &in_walk, bResetState );
@@ -1732,6 +1752,7 @@ int CInput::GetButtonBits( int bResetState )
 	CalcButtonBits( bits, IN_LEAN_RIGHT, s_ClearInputState, &in_lean_right, bResetState );
 	CalcButtonBits( bits, IN_THERMOPTIC, s_ClearInputState, &in_thermoptic, bResetState);
 	CalcButtonBits( bits, IN_VISION, s_ClearInputState, &in_vision, bResetState);
+	CalcButtonBits( bits, IN_JUMP2, s_ClearInputState, &in_jump2, bResetState );
 	if (KeyState(&in_speed) && !IsLocalPlayerSpectator())
 	{
 		// Cancel walk toggle if sprinting
@@ -1775,7 +1796,11 @@ int CInput::GetButtonBits( int bResetState )
 //-----------------------------------------------------------------------------
 // Causes an input to have to be re-pressed to become active
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CInput::ClearInputButton( int64 bits )
+#else
 void CInput::ClearInputButton( int bits )
+#endif // NEO
 {
 	s_ClearInputState |= bits;
 }
@@ -1946,6 +1971,9 @@ static ConCommand endspecnextplayer("-specnextplayer", IN_SpecNextUp);
 
 static ConCommand startspecprevplayer("+specprevplayer", IN_SpecPrevDown);
 static ConCommand endspecprevplayer("-specprevplayer", IN_SpecPrevUp);
+
+static ConCommand startjump2("+jump2", IN_Jump2Down);
+static ConCommand endjump2("-jump2", IN_Jump2Up);
 #endif
 
 /*

@@ -1066,7 +1066,7 @@ int32 bf_read::ReadSignedVarInt32()
 
 int64 bf_read::ReadSignedVarInt64()
 {
-	uint32 value = ReadVarInt64();
+	uint32 value = ReadVarInt64(); // NEO TODO (Adam) https://github.com/ValveSoftware/source-sdk-2013/issues/322
 	return bitbuf::ZigZagDecode64( value );
 }
 
