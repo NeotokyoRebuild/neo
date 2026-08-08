@@ -1,4 +1,18 @@
 #!/bin/sh
+#                    ████
+#       ████████    ██████████     ▓▓▓▓
+#     ████████████  ███████████   ▓▓▓▓▓▓
+#    █████░░░█████░ █████░░░░░░░  ▓▓▓▓▓▓░
+#    █████░  █████░ █████░         ▓▓▓▓░░
+#    █████░  █████░ █████░          ░░░░
+#    █████░  █████░ ██████████      █████
+#    █████░  █████░ ██████████░     █████░
+#     ░░░░░  █████░  ░░░░░░░░░░    ████░░░
+#            █████░               ███░░░
+#             ░░░░░                ░░░
+#
+#      N E O T O K Y O ; R E B U I L D
+
 # Checks a depot staging tree for engine binaries staged under the wrong
 # file name casing. The engine loads these binaries by exact mixed-case
 # name, and Steam never repairs casing on installs, so a miscased file
@@ -10,6 +24,10 @@
 # Exits 0 when clean, 1 with one line per offending file otherwise.
 # Keep the list below in sync with src/launcher_main/neo_case_heal.cpp
 # (PR #2055, the launcher-side repair for already-broken installs).
+
+# Show the logo when running in a terminal. The helper lives next to this
+# script in the repo; a standalone copy of this script skips it silently.
+[ -f "$(dirname "$0")/nt-logo.sh" ] && . "$(dirname "$0")/nt-logo.sh" && nt_logo
 
 root="${1:?usage: check-depot-casing.sh <staging-root>}"
 
