@@ -704,6 +704,10 @@ static void WaitForDebuggerConnect( int argc, char *argv[], int time )
 #endif // !LINUX
 
 #ifdef NEO
+#if defined( LINUX )
+#include "neo_case_heal.h"
+#endif
+
 // The engine resolves |appid_243750| gameinfo mounts by opening the SDK Base
 // 2013 Multiplayer install path with the final word of the folder name
 // lowercased ("...2013 multiplayer"). On case-sensitive filesystems that path
@@ -812,6 +816,12 @@ int main( int argc, char *argv[] )
 	{
 		fprintf( stderr, "[NT;RE launcher] Warning: chdir(%s) failed: %s\n", pRootDir, strerror( errno ) );
 	}
+
+#if defined( LINUX )
+	// Must run before any engine library is opened. Runs on both sides of
+	// the bootstrap re-exec below; the second pass is a no-op.
+	NEO_HealBinaryCasing( pRootDir );
+#endif
 
 	// The dynamic linker only reads LD_LIBRARY_PATH at process start, and
 	// launcher.so's dependencies resolve through it, so prepend our bin dir
