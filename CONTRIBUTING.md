@@ -134,7 +134,7 @@ Only the x86-64 architecture is supported.
 
 ### Windows
 * MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest)
-* MSVC version used by the latest `windows-2025` [runner image](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md) (Microsoft.VisualStudio.Component.VC.Tools.x86.x64)
+* MSVC version used by the latest `windows-2022` [runner image](https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md) (Microsoft.VisualStudio.Component.VC.Tools.x86.x64)
 
 ### Linux
 * GCC 10 [steamrt3 'sniper'](https://gitlab.steamos.cloud/steamrt/sniper/sdk#toolchains)
