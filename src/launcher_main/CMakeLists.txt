@@ -11,6 +11,10 @@ if(OS_WINDOWS)
     list(APPEND LAUNCHER_SOURCES launcher_main_mod_neo.rc)
 endif()
 
+if(OS_LINUX)
+    list(APPEND LAUNCHER_SOURCES neo_case_heal.cpp neo_case_heal.h)
+endif()
+
 add_executable(launcher_main
     ${LAUNCHER_SOURCES}
 )
