@@ -96,7 +96,7 @@ public:
 
 	NeoUI::Context m_uiCtx;
 
-	bool m_bSourceTVEnabled = 0;
+	bool m_bSourceTVEnabled = false;
 	int	m_HLTVSpectators = 0;
 
 	int m_iTotalPlayers = 0;

@@ -353,7 +353,7 @@ void CNEOScoreBoard::Update()
 			continue;
 		}
 
-		if (true == g_PR->IsHLTV(i))
+		if (g_PR->IsHLTV(i))
 		{
 			m_bSourceTVEnabled = true;
 			continue;
@@ -723,10 +723,15 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		// Output all the players in the server
 		for (int iCurTeam = TEAM_UNASSIGNED; iCurTeam < TEAM__TOTAL; ++iCurTeam)
 		{
-			if (iaTeamTally[iCurTeam] <= 0 && iCurTeam <= TEAM_SPECTATOR)
+			if (iCurTeam == TEAM_UNASSIGNED && iaTeamTally[iCurTeam] <= 0)
 			{
 				continue;
 			}
+			else if (iCurTeam == TEAM_SPECTATOR && iaTeamTally[iCurTeam] <= 0 && !m_bSourceTVEnabled)
+			{
+				continue;
+			}
+
 			m_uiCtx.dPanel.wide = (iCurTeam <= TEAM_SPECTATOR)
 					? iRootSubPanelWide
 					: iRootSubPanelWide / 2;
@@ -837,7 +842,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 				if (TEAM_SPECTATOR == iCurTeam && m_bSourceTVEnabled)
 				{
-					V_swprintf_safe(wszText,L"SourceTV Enabled (%d watching)", m_HLTVSpectators);
+					V_swprintf_safe(wszText, L"SourceTV Enabled (%d watching)", m_HLTVSpectators);
 					int x = 0;
 					[[maybe_unused]] int y = 0;
 					vgui::surface()->GetTextSize(m_uiCtx.fonts[m_uiCtx.eFont].hdl, wszText, x, y);
