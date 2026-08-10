@@ -262,6 +262,7 @@ void CVoiceGameMgr::UpdateMasks()
 					}
 				}
 #else
+				CBaseEntity *pEnt = UTIL_PlayerByIndex(iOtherClient+1);
 				if(pEnt && pEnt->IsPlayer() && 
 					(bAllTalk || m_pHelper->CanPlayerHearPlayer(pPlayer, (CBasePlayer*)pEnt, bProximity )) )
 				{
@@ -312,6 +313,7 @@ void CVoiceGameMgr::UpdateMasks()
 		{
 			bool bCanHear = gameRulesMask[iOtherClient] && !g_BanMasks[iClient][iOtherClient];
 			g_pVoiceServer->SetClientListening( iClient+1, iOtherClient+1, bCanHear );
+
 			if ( bCanHear )
 			{
 				g_pVoiceServer->SetClientProximity( iClient+1, iOtherClient+1, !!ProximityMask[iOtherClient] );

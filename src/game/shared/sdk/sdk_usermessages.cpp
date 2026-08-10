@@ -28,7 +28,10 @@ void RegisterUserMessages()
 
 	usermessages->Register( "SendAudio", -1 );	// play radion command
 
-	usermessages->Register( "VoiceMask", VOICE_MAX_PLAYERS_DW*4 * 2 + 1 ); // NEO TODO (Adam) increase to VOICE_MAX_PLAYERS_DW*4 * 3 + 1 when building this
+#ifdef NEO
+	Assert(false); // NEO TODO (Adam) increase "VoiceMask" to VOICE_MAX_PLAYERS_DW*4 * 3 + 1 to accommodate g_SentProximityMasks when building this
+#endif // NEO
+	usermessages->Register( "VoiceMask", VOICE_MAX_PLAYERS_DW*4 * 2 + 1 );
 	usermessages->Register( "RequestState", 0 );
 
 	usermessages->Register( "BarTime", -1 );	// For the C4 progress bar.
