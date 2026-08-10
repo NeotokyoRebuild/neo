@@ -122,7 +122,7 @@ public:
 	virtual	bool CreateVPhysics( void );
 	virtual void UpdateOnRemove( void );
 
-	void	DriveCannon( int iDriverButtons, int iButtonsPressed ); // NEO TODO (Adam) change iDriverButtons and iButtonsPressed to int64 when building this
+	void	DriveCannon( int iDriverButtons, int iButtonsPressed );
 	void	ResetUseKey( CBasePlayer *pPlayer );
 	void	InitCannonSpeeds( void );
 	void	RunCraneMovement( float flTime );
@@ -380,6 +380,9 @@ void CPropCannon::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *p
 //-----------------------------------------------------------------------------
 void CPropCannon::DriveCannon( int iDriverButtons, int iButtonsPressed )
 {
+#ifdef NEO
+	Assert(false); // NEO TODO (Adam) change iDriverButtons and iButtonsPressed to int64 when building this
+#endif // NEO
 	bool bWasExtending = m_bExtending;
 
 	// Handle rotation of the crane
