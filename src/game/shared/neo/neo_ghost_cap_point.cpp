@@ -313,6 +313,11 @@ void CNEOGhostCapturePoint::SetActive(bool isActive)
 	m_bIsActive = isActive;
 }
 
+bool CNEOGhostCapturePoint::GetActive()
+{
+	return m_bIsActive;
+}
+
 void CNEOGhostCapturePoint::InputEnable(inputdata_t &inputData)
 {
 	if (m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF || m_iOwningTeam == TEAM_ANY)

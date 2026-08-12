@@ -59,6 +59,7 @@ public:
 
 #ifdef GAME_DLL
 	void SetActive(bool isActive);
+	bool GetActive();
 	void ResetCaptureState()
 	{
 		m_bGhostHasBeenCaptured = false;
