@@ -180,7 +180,7 @@ Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
 		float flNearestSq = FLT_MAX;
 		for ( int i = 0; i < NEORules()->m_pGhostCaps.Count(); ++i )
 		{
-			CNEOGhostCapturePoint *pCapPoint = assert_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
+			CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
 			if ( !pCapPoint || !pCapPoint->GetActive() )
 			{
 				continue;
