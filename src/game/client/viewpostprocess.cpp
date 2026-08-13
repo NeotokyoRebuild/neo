@@ -87,7 +87,7 @@ ConVar mat_tonemap_algorithm( "mat_tonemap_algorithm", "1", FCVAR_CHEAT, "0 = Or
 ConVar mat_tonemap_percent_target( "mat_tonemap_percent_target", "60.0", FCVAR_CHEAT );
 ConVar mat_tonemap_percent_bright_pixels( "mat_tonemap_percent_bright_pixels", "2.0", FCVAR_CHEAT );
 ConVar mat_tonemap_min_avglum( "mat_tonemap_min_avglum", "3.0", FCVAR_CHEAT );
-#ifdef NEO // Unity build
+#ifdef NEO_UNITY // Unity build
 extern ConVar mat_fullbright;
 #else
 ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );

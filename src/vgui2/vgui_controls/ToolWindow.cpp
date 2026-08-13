@@ -108,7 +108,7 @@ bool ToolWindow::IsDraggableTabContainer() const
 // Purpose: Returns a pointer to the PropertySheet this dialog encapsulates
 // Output : PropertySheet *
 //-----------------------------------------------------------------------------
-#ifdef NEO // Unity build
+#ifdef NEO_UNITY // Unity build
 vgui::PropertySheet *ToolWindow::GetPropertySheet()
 #else
 PropertySheet *ToolWindow::GetPropertySheet()

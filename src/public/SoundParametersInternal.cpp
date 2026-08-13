@@ -41,6 +41,7 @@ static SoundChannels g_pChannelNames[] =
 	{ CHAN_VOICE_BASE, "CHAN_VOICE_BASE" },
 	{ CHAN_USER_BASE, "CHAN_USER_BASE" },
 	{ CHAN_GHOST_PICKUP, "CHAN_GHOST_PICKUP" },
+	{ CHAN_VISION, "CHAN_VISION" },
 #endif
 };
 

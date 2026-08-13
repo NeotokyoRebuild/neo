@@ -53,6 +53,8 @@ option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
 option(NEO_BUILD_LAUNCHER "Build the Steam mod launcher" ON)
+option(NEO_UNITY_BUILD_CLIENT_SERVER "Enable unity build for client/server libraries" ON)
+option(NEO_UNITY_BUILD_OTHERS "Enable unity build for vgui2, tier1, and mathlib libraries" ON)
 set(NEO_MOD_APPID "3172910" CACHE STRING "Steam appid for the mod launcher's steam_appid.txt")
 
 message(STATUS "Treat compile warnings as errors: ${CMAKE_COMPILE_WARNING_AS_ERROR}")
@@ -80,7 +82,19 @@ message(STATUS "Use separate build info on Linux: ${NEO_USE_SEPARATE_BUILD_INFO}
 message(STATUS "Enable CPack: ${NEO_ENABLE_CPACK}")
 message(STATUS "Build the Steam mod launcher: ${NEO_BUILD_LAUNCHER}")
 message(STATUS "Mod launcher appid override: ${NEO_MOD_APPID}")
+message(STATUS "Enable unity build for client/server libraries (NEO_UNITY_BUILD_CLIENT_SERVER): ${NEO_UNITY_BUILD_CLIENT_SERVER}")
+message(STATUS "Enable unity build for vgui2, tier1, and mathlib libraries (NEO_UNITY_BUILD_OTHERS): ${NEO_UNITY_BUILD_OTHERS}")
 message("")
+
+set(UNITY_BUILD_DEF_OTHERS)
+if (NEO_UNITY_BUILD_OTHERS)
+    set(UNITY_BUILD_DEF_OTHERS NEO_UNITY)
+endif ()
+
+set(UNITY_BUILD_DEF_CLIENT_SERVER)
+if (NEO_UNITY_BUILD_CLIENT_SERVER)
+    set(UNITY_BUILD_DEF_CLIENT_SERVER NEO_UNITY)
+endif ()
 
 if(NEO_COPY_LIBRARIES)
     file(MAKE_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}")

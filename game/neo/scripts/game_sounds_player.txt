@@ -25,11 +25,20 @@
 
 "NeoPlayer.VisionOn"
 {
-	"channel"	"CHAN_ITEM"
+	"channel"	"137" // CHAN_VISION
 	"volume"     	"VOL_NORM"
 	"soundlevel"	"SNDLVL_75dB"
 
 	"wave"	"player/vision_on.wav"
+}
+
+"NeoPlayer.VisionOff"
+{
+	"channel"	"137" // CHAN_VISION
+	"volume"     	"VOL_NORM"
+	"soundlevel"	"SNDLVL_75dB"
+
+	"wave"	"player/vision_off.wav"
 }
 
 "NeoPlayer.RankUp"

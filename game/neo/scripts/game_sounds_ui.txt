@@ -92,7 +92,7 @@
 
 "HUD.GhostPickUp"
 {
-	"channel"		"CHAN_ITEM"
+	"channel"		"136" // CHAN_GHOST_PICKUP
 	"volume"		"0.9"
 	"pitch"			"PITCH_NORM"
 

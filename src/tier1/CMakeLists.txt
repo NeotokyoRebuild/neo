@@ -2,14 +2,18 @@ add_library(tier1 STATIC)
 
 add_library(tier1::tier1 ALIAS tier1)
 
-target_compile_definitions(tier1 PRIVATE TIER1_STATIC_LIB)
+target_compile_definitions(tier1
+    PRIVATE
+        TIER1_STATIC_LIB
+        ${UNITY_BUILD_DEF_OTHERS}
+)
 
 set(unity_before [[
 #include "tier0/memdbgoff.h"
 ]])
 
 set_target_properties(tier1 PROPERTIES
-    UNITY_BUILD ON
+    UNITY_BUILD ${NEO_UNITY_BUILD_OTHERS}
     UNITY_BUILD_MODE GROUP
     UNITY_BUILD_CODE_BEFORE_INCLUDE "${unity_before}"
 )

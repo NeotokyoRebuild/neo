@@ -44,7 +44,7 @@
 
 #include "tier0/vprof.h"
 
-#ifdef NEO // Unity build
+#ifdef NEO_UNITY // Unity build
 #include "Common.h"
 #endif
 
@@ -72,7 +72,7 @@ COMPILE_TIME_ASSERT( Panel::PIN_LAST == ARRAYSIZE( g_PinCornerStrings ) );
 
 extern int GetBuildModeDialogCount();
 
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 static char *CopyString( const char *in )
 {
 	if ( !in )
