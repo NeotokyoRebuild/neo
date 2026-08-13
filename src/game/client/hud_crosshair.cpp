@@ -518,10 +518,6 @@ void CHudCrosshair::Paint( void )
 			{
 				m_flLastCheckedXHair = gpGlobals->curtime;
 				bThisFrameRefreshCrosshair = (V_strcmp(m_szLocalStrPlayerCrosshair, pszNeoCrosshair) != 0);
-				if (bThisFrameRefreshCrosshair)
-				{
-					V_strcpy_safe(m_szLocalStrPlayerCrosshair, pszNeoCrosshair);
-				}
 			}
 		}
 	}
@@ -533,6 +529,7 @@ void CHudCrosshair::Paint( void )
 
 	if (bThisFrameRefreshCrosshair)
 	{
+		V_strcpy_safe(m_szLocalStrPlayerCrosshair, pszNeoCrosshair);
 		const bool bImported = ImportCrosshair(&m_crosshairInfo, pszNeoCrosshair);
 		if (!bImported)
 		{
