@@ -594,6 +594,303 @@ Scheme
 			}
 		}
 
+		NHudSpectatorOverlayName
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"9" [!$LINUX]
+				"tall"		"12" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"11" [!$LINUX]
+				"tall"		"14" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"18" [!$LINUX]
+				"tall"		"24" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1200 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+		}
+
+		NHudSpectatorOverlayInfo
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"8" [!$LINUX]
+				"tall"		"10" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"10" [!$LINUX]
+				"tall"		"13" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"		"15" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"17" [!$LINUX]
+				"tall"		"22" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1200 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+		}
+
+		NHudSpectatorOverlayClass
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"8" [!$LINUX]
+				"tall"		"10" [$LINUX]
+				"weight"	"500"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"9" [!$LINUX]
+				"tall"		"12" [$LINUX]
+				"weight"	"500"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"11" [!$LINUX]
+				"tall"		"14" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1200 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+		}
+
+		NHudSpectatorOverlayHP
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"		"14" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"20" [!$LINUX]
+				"tall"		"24" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"22" [!$LINUX]
+				"tall"		"26" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1200 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+		}
+
+		NHudSpectatorOverlayGhost
+		{
+			"1"
+			{
+				"name"		"killfeedicons"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+				"additive"	"0"
+			}
+			"2"
+			{
+				"name"		"killfeedicons"
+				"tall"		"32"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+				"additive"	"0"
+			}
+			"3"
+			{
+				"name"		"killfeedicons"
+				"tall"		"36"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"768 1023"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"4"
+			{
+				"name"		"killfeedicons"
+				"tall"		"40"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"5"
+			{
+				"name"		"killfeedicons"
+				"tall"		"44"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"6"
+			{
+				"name"		"killfeedicons"
+				"tall"		"48"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"7"
+			{
+				"name"		"killfeedicons"
+				"tall"		"52"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+		}
+
+
 		BudgetLabel
 		{
 			"1"

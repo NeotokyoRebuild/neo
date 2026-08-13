@@ -259,6 +259,8 @@ public:
 	float m_flTemperature;
 	int m_spawnflags;
 #endif // CLIENT_DLL
+	
+	const char *GetDeathIcon() const;
 
 protected:
 	WeaponHandlingInfo_t m_weaponHandling;

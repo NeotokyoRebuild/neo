@@ -1013,4 +1013,9 @@
 		"box_color" 	"20 20 20 0"
 		"text_color" 	"255 255 255 255"
 	}
+
+	neo_spectator_overlay
+	{
+		"fieldName" 	"neo_spectator_overlay"
+	}
 }

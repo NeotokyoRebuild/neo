@@ -419,4 +419,6 @@ static constexpr const SZWSZTexts SZWSZ_NEO_TEAM_STRS[TEAM__TOTAL] = {
 
 #define NEO_GAME_NAME "NEOTOKYO;REBUILD"
 
+static constexpr const int WEP_NAME_MAXSTRLEN = 32;
+
 #endif // NEO_PLAYER_SHARED_H
