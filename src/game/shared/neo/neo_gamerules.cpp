@@ -3434,6 +3434,7 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 	if (sv_neo_build_integrity_check.GetBool())
 	{
 		const char *clientGitHash = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__cl_neo_git_hash");
+		const char *clientGitTag = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__cl_neo_version_tag");
 		const bool dbgBuildSkip = (sv_neo_build_integrity_check_allow_debug.GetBool()) ? (clientGitHash[0] & 0b1000'0000) : false;
 		if (dbgBuildSkip)
 		{
@@ -3447,9 +3448,11 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 		{
 			// Truncate the git hash so it's short hash and doesn't make message too long
 			static constexpr int MAX_GITHASH_SHOW = 7;
-			V_snprintf(reject, maxrejectlen, "Build integrity failed! Client vs server mis-match: Check your neo_version. "
-											 "Client: %.*s | Server: %.*s",
-					   MAX_GITHASH_SHOW, cmpClientGitHash, MAX_GITHASH_SHOW, GIT_LONGHASH);
+			static constexpr int MAX_GITTAG_SHOW = 12;
+			V_snprintf(reject, maxrejectlen, "Build integrity failed! Client-server mismatch: Check neo_version. "
+											 "Client: %.*s %.*s | Server: %.*s %.*s",
+					   MAX_GITHASH_SHOW, cmpClientGitHash, MAX_GITTAG_SHOW, clientGitTag,
+					   MAX_GITHASH_SHOW, GIT_LONGHASH, MAX_GITTAG_SHOW, GIT_LATESTTAG);
 			return false;
 		}
 	}
