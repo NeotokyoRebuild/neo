@@ -114,7 +114,8 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 
 	if ( m_vecAmbushGoal == CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
-		return Done( "No ambush spot found" );
+		// Example: When the opposing team does not have any cap zones
+		return ChangeTo( new CNEOBotCtgLoneWolfSeek(), "No ambush spot found, searching for enemy instead" );
 	}
 
 	if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() || !m_path.IsValid() )

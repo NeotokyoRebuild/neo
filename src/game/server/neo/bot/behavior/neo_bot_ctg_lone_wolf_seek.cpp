@@ -11,7 +11,7 @@
 class CSearchForUnexplored : public ISearchSurroundingAreasFunctor
 {
 public:
-	static constexpr int DEFAULT_AREA_LIMIT = 1000;
+	static constexpr int DEFAULT_AREA_LIMIT = 100000;
 	static constexpr int CANDIDATE_LIMIT = 10;
 
 	CSearchForUnexplored( CNEOBot *me, CUtlMap<int, bool> &exploredAreaIds, int areaLimit = DEFAULT_AREA_LIMIT )
