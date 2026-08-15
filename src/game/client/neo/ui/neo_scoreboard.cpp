@@ -333,7 +333,7 @@ void CNEOScoreBoard::Update()
 	}
 
 	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
-	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
+	const bool bLocalPlaying = (iLocalPlayerTeam >= FIRST_GAME_TEAM);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
@@ -385,9 +385,7 @@ void CNEOScoreBoard::Update()
 			pPlayerInfo->steamID.Clear();
 		}
 
-		const bool bIsPlaying = (
-				TEAM_JINRAI == pPlayerInfo->iTeam
-				|| TEAM_NSF == pPlayerInfo->iTeam);
+		const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 
 		if (bIsPlaying)
 		{
@@ -582,7 +580,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const int iAvatarOffset = m_uiCtx.iMarginX;
 	const int iAvatarWT = ShowAvatars() ? (iPopupCardPerRowTallAvatarName - (iAvatarOffset * 2)) : 0;
 	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
-	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
+	const bool bLocalPlaying = (iLocalPlayerTeam >= FIRST_GAME_TEAM);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 	const bool bShowReadyUp = NEORules()->InReadyUpState();
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
@@ -868,8 +866,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				for (int i = 0; i < m_iTotalPlayers; ++i)
 				{
 					const CNEOScoreBoardPlayer *pPlayerInfo = &m_playersInfo[i];
-					const bool bIsPlaying = (TEAM_JINRAI == pPlayerInfo->iTeam
-							|| TEAM_NSF == pPlayerInfo->iTeam);
+					const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 					const bool bIsDMPlaying = false == bIsTeamplay && bIsPlaying;
 					iInPlaying += (bIsPlaying);
 
