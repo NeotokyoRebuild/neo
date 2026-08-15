@@ -118,16 +118,11 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float int
 		return ChangeTo( new CNEOBotCtgLoneWolfSeek(), "No ambush spot found, searching for enemy instead" );
 	}
 
-	if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() || !m_path.IsValid() )
+	if ( !m_path.IsValid() )
 	{
 		CNEOBotPathCompute( me, m_path, m_vecAmbushGoal, SAFEST_ROUTE );
-		m_path.Update( me );
-		m_repathTimer.Start( RandomFloat( 0.5f, 1.5f ) );
 	}
-	else
-	{
-		m_path.Update( me );
-	}
+	m_path.Update( me );
 
 	return Continue();
 }

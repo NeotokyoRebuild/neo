@@ -7,6 +7,8 @@
 #include "neo_gamerules.h"
 #include "neo_player.h"
 
+ConVar sv_neo_bot_path_debug_lone_wolf_seek( "sv_neo_bot_path_debug_lone_wolf_seek", "0", FCVAR_CHEAT, "Debug lone wolf area seeking", true, 0, true, 1 );
+
 //---------------------------------------------------------------------------------------------
 class CSearchForUnexplored : public ISearchSurroundingAreasFunctor
 {
@@ -201,7 +203,6 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 		m_iExplorationTargetId = -1;
 		m_vecSearchWaypoint = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 		m_path.Invalidate();
-		m_repathTimer.Invalidate();
 	}
 
 	if ( m_vecSearchWaypoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
@@ -242,9 +243,8 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 					m_exploredAreaIds.InsertOrReplace( m_iExplorationTargetId, true );
 					m_vecSearchWaypoint = target->GetCenter();
 					m_path.Invalidate();
-					m_repathTimer.Invalidate();
 
-					if ( me->IsDebugging( NEXTBOT_PATH ) )
+					if ( sv_neo_bot_path_debug_lone_wolf_seek.GetBool() )
 					{
 						target->DrawFilled( 255, 255, 0, 128, DEBUG_OVERLAY_DURATION );
 					}
@@ -257,7 +257,6 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 
 					// Fallback: move towards the ghost itself while we search
 					m_path.Invalidate();
-					m_repathTimer.Invalidate();
 					
 					if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
 					{
@@ -275,10 +274,9 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 
 	if ( me->GetAbsOrigin().DistToSqr( m_vecSearchWaypoint ) > Square( PATH_RECOMPUTE_DIST ) )
 	{
-		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
+		if ( !m_path.IsValid() )
 		{
 			CNEOBotPathCompute( me, m_path, m_vecSearchWaypoint, FASTEST_ROUTE );
-			m_repathTimer.Start( RandomFloat( 0.3f, 1.0f ) );
 		}
 	}
 
@@ -339,7 +337,7 @@ void CNEOBotCtgLoneWolfSeek::MarkVisibleAreasAsExplored( CNEOBot *me, CNavArea *
 	// Mark the currently occupied area explored
 	if ( m_exploredAreaIds.InsertOrReplace( (int)currentArea->GetID(), true ) != m_exploredAreaIds.InvalidIndex() )
 	{
-		if ( me->IsDebugging( NEXTBOT_PATH ) )
+		if ( sv_neo_bot_path_debug_lone_wolf_seek.GetBool() )
 		{
 			currentArea->DrawFilled( 0, 255, 0, 128, DEBUG_OVERLAY_DURATION );
 		}
@@ -352,7 +350,7 @@ void CNEOBotCtgLoneWolfSeek::MarkVisibleAreasAsExplored( CNEOBot *me, CNavArea *
 		{
 			if ( m_exploredAreaIds.InsertOrReplace( (int)area->GetID(), true ) != m_exploredAreaIds.InvalidIndex() )
 			{
-				if ( me->IsDebugging( NEXTBOT_PATH ) )
+				if ( sv_neo_bot_path_debug_lone_wolf_seek.GetBool() )
 				{
 					area->DrawFilled( 0, 255, 0, 128, DEBUG_OVERLAY_DURATION );
 				}

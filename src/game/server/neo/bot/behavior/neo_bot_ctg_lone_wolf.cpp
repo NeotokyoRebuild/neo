@@ -18,7 +18,6 @@
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
-	m_repathTimer.Invalidate();
 	return Continue();
 }
 
@@ -110,11 +109,10 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostInterception( CNEOBot *
 	const Vector& vecInterceptGoal = NEORules()->GetGhostPos();
 	if ( vecInterceptGoal != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
-		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
+		if ( !m_path.IsValid() )
 		{
 			CNEOBotPathCompute( me, m_path, vecInterceptGoal, FASTEST_ROUTE );
 			m_path.Update( me );
-			m_repathTimer.Start( RandomFloat( 0.3f, 1.0f ) );
 		}
 		else
 		{
@@ -146,11 +144,11 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostVisualCheck( CNEOBot *m
 	const Vector& vecAcquireGoal = NEORules()->GetGhostPos();
 	if ( vecAcquireGoal != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
-		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
+		// Proof-of-concept: only recompute the path when the current path is invalid.
+		if ( !m_path.IsValid() )
 		{
 			CNEOBotPathCompute( me, m_path, vecAcquireGoal, FASTEST_ROUTE );
 			m_path.Update( me );
-			m_repathTimer.Start( RandomFloat( 0.3f, 1.0f ) );
 		}
 		else
 		{
@@ -216,6 +214,11 @@ EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolf::OnStuck( CNEOBot *me )
 	return TryContinue();
 }
 
+EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolf::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
+{
+	m_path.Invalidate();
+	return TryContinue();
+}
 
 //---------------------------------------------------------------------------------------------
 Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
