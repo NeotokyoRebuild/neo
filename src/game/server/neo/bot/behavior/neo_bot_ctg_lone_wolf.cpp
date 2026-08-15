@@ -68,7 +68,8 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	{
 		if ( pDetpackWeapon && !pDetpackWeapon->m_bThisDetpackHasBeenThrown && NEORules()->m_pGhost )
 		{
-			if ( me->GetAbsOrigin().DistToSqr( NEORules()->GetGhostPos() ) < Square(200.0f) )
+			const float fDetpackDeployPrepDistSq = Square( 200.0f );
+			if ( me->GetAbsOrigin().DistToSqr( NEORules()->GetGhostPos() ) < fDetpackDeployPrepDistSq )
 			{
 				return ChangeTo( new CNEOBotDetpackDeploy( NEORules()->GetGhostPos(), new CNEOBotCtgLoneWolfAmbush() ), "Moving to plant detpack" );
 			}
