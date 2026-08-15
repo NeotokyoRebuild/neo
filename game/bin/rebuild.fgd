@@ -100,7 +100,7 @@
 	output OnCompetitive(void) : "Fires when competitive mode is enabled"
 ]
 
-@PointClass base(Angles) sphere() sphere(Radius) iconsprite("vgui/hud/ctg/g_beacon_arrow_down.vmt") = neo_ghost_retrieval_point : "Ghost Retrieval Point"
+@PointClass base(Targetname, Angles, EnableDisable) sphere() sphere(Radius) iconsprite("vgui/hud/ctg/g_beacon_arrow_down.vmt") = neo_ghost_retrieval_point : "Ghost Retrieval Point"
 [
 	team(choices) : "Owning Team (int)" : 0 : "Team that can capture at this point" =
 	[
@@ -110,6 +110,12 @@
 	]
 	
 	Radius(integer) : "Radius in inches (48 - 256)" : 128 : "Radius of the Ghost Retrieval Point in inches."	
+
+	StartDisabled(choices) : "Start Disabled" : 0 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
 
 	output OnCap(void) : "Fires when capped here"
 ]

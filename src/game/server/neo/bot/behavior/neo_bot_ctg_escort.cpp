@@ -327,7 +327,7 @@ void CNEOBotCtgEscort::UpdateGoalPosition( CNEOBot *me, CNEO_Player *pGhostCarri
 	for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
 	{
 		CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
-		if ( !pCapPoint ) continue;
+		if ( !pCapPoint || !pCapPoint->GetActive() ) continue;
 		if ( pCapPoint->owningTeamAlternate() == iMyTeam )
 		{
 			float d = pGhostCarrier->GetAbsOrigin().DistToSqr( pCapPoint->GetAbsOrigin() );
