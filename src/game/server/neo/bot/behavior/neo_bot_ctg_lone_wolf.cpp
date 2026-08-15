@@ -2,6 +2,8 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/behavior/neo_bot_ctg_enemy.h"
+#include "bot/behavior/neo_bot_ctg_escort.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_ambush.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
@@ -23,6 +25,12 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBo
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval )
 {
+	ActionResult< CNEOBot > result = ConsiderGhostCaptureTransition( me );
+	if ( result.IsRequestingChange() )
+	{
+		return result;
+	}
+
 	if ( me->DropGhost() )
 	{
 		return Continue(); // ghost drop in progress
@@ -143,6 +151,39 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostVisualCheck( CNEOBot *m
 
 
 //---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostCaptureTransition( CNEOBot *me )
+{
+	if (NEORules()->GhostExists())
+	{
+		int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+		if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
+		{
+			CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
+			if (pGhostCarrier && pGhostCarrier != me)
+			{
+				// We sometimes flow into CNEOBotCtgLoneWolf if this bot failed to get the ghost
+				// Use ChangeTo to reset scenario evaluation after reacting to ghost pickup
+				if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
+				{
+					return ChangeTo(new CNEOBotCtgEscort, "Protect teammate that had better luck capturing ghost");
+				}
+				else
+				{
+					return ChangeTo(new CNEOBotCtgEnemy, "Intercepting the ghost carrier!");
+				}
+			}
+		}
+	}
+	else
+	{
+		return Done("No ghost exists, exiting behavior to reevaluate situation.");
+	}
+
+	return Continue();
+}
+
+
+//---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgLoneWolf::OnSuspend( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
 	m_path.Invalidate();
@@ -180,8 +221,8 @@ Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
 		float flNearestSq = FLT_MAX;
 		for ( int i = 0; i < NEORules()->m_pGhostCaps.Count(); ++i )
 		{
-			CNEOGhostCapturePoint *pCapPoint = assert_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
-			if ( !pCapPoint )
+			CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
+			if ( !pCapPoint || !pCapPoint->GetActive() )
 			{
 				continue;
 			}

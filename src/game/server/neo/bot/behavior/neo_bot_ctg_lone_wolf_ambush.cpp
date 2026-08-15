@@ -29,6 +29,12 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::OnStart( CNEOBot *me, Action< 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolfAmbush::Update( CNEOBot *me, float interval )
 {
+	ActionResult< CNEOBot > result = ConsiderGhostCaptureTransition( me );
+	if ( result.IsRequestingChange() )
+	{
+		return result;
+	}
+
 	CWeaponGhost *pGhost = NEORules()->m_pGhost;
 	if ( !pGhost )
 	{

@@ -3,6 +3,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_command_follow.h"
 #include "bot/behavior/neo_bot_throw_weapon_at_player.h"
+#include "bot/behavior/neo_bot_attack.h"
 #include "nav_mesh.h"
 
 // memdbgon must be the last include file in a .cpp file!!!

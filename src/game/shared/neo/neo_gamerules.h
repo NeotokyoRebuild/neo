@@ -112,8 +112,16 @@ enum NeoGameType {
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
 
-struct NeoGameTypeSettings;
+struct NeoGameTypeSettings {
+	const char* gameTypeName;
+	bool respawns;
+	bool neoRulesThink;
+	bool changeTeamClassLoadoutWhenAlive;
+	bool comp;
+	bool capPrevent;
+};
 
+extern const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL];
 extern const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL];
 
 enum NeoRoundStatus {
@@ -362,6 +370,7 @@ public:
 	const Vector& GetJuggernautMarkerPos() const;
 	bool IsJuggernautLocked() const;
 
+	bool IsReadyUpEnabled() const;
 	bool InReadyUpState() const;
 	bool InRoundState() const;
 

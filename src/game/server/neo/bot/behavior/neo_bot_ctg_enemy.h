@@ -2,6 +2,7 @@
 #define NEO_BOT_CTG_ENEMY_H
 
 #include "bot/neo_bot.h"
+#include "Path/NextBotChasePath.h"
 
 //--------------------------------------------------------------------------------------------------------
 class CNEOBotCtgEnemy : public Action< CNEOBot >

@@ -7,6 +7,7 @@
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
 #include "vgui/ILocalize.h"
+#include "ui/neo_theme.h"
 #include "inputsystem/iinputsystem.h"
 #include "IGameUIFuncs.h"
 #include "igamesystem.h"

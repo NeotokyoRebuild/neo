@@ -39,11 +39,7 @@ LINK_ENTITY_TO_CLASS(neo_ghost_retrieval_point, CNEOGhostCapturePoint);
 #ifdef GAME_DLL
 IMPLEMENT_SERVERCLASS_ST(CNEOGhostCapturePoint, DT_NEOGhostCapturePoint)
 	SendPropFloat(SENDINFO(m_flCapzoneRadius)),
-
 	SendPropInt(SENDINFO(m_iOwningTeam)),
-	SendPropInt(SENDINFO(m_iSuccessfulCaptorClientIndex), NumBitsForCount(MAX_PLAYERS_ARRAY_SAFE), SPROP_UNSIGNED),
-
-	SendPropBool(SENDINFO(m_bGhostHasBeenCaptured)),
 	SendPropBool(SENDINFO(m_bIsActive)),
 END_SEND_TABLE()
 #else
@@ -51,13 +47,9 @@ END_SEND_TABLE()
 #undef CNEOGhostCapturePoint
 #endif
 IMPLEMENT_CLIENTCLASS_DT(C_NEOGhostCapturePoint, DT_NEOGhostCapturePoint, CNEOGhostCapturePoint)
-RecvPropFloat(RECVINFO(m_flCapzoneRadius)),
-
-RecvPropInt(RECVINFO(m_iOwningTeam)),
-RecvPropInt(RECVINFO(m_iSuccessfulCaptorClientIndex)),
-
-RecvPropBool(RECVINFO(m_bGhostHasBeenCaptured)),
-RecvPropBool(RECVINFO(m_bIsActive)),
+	RecvPropFloat(RECVINFO(m_flCapzoneRadius)),
+	RecvPropInt(RECVINFO(m_iOwningTeam)),
+	RecvPropBool(RECVINFO(m_bIsActive)),
 END_RECV_TABLE()
 #define CNEOGhostCapturePoint C_NEOGhostCapturePoint
 #endif
@@ -72,6 +64,13 @@ BEGIN_DATADESC(CNEOGhostCapturePoint)
 	DEFINE_KEYFIELD(m_iOwningTeam, FIELD_INTEGER, "team"),
 
 #ifdef GAME_DLL
+// These are new
+	DEFINE_KEYFIELD(m_bStartDisabled, FIELD_BOOLEAN, "StartDisabled"),
+
+// Inputs
+	DEFINE_INPUTFUNC(FIELD_VOID, "Enable", InputEnable),
+	DEFINE_INPUTFUNC(FIELD_VOID, "Disable", InputDisable),
+
 // Outputs
 	DEFINE_OUTPUT(m_OnCap, "OnCap"),
 #endif
@@ -79,10 +78,9 @@ END_DATADESC()
 
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 {
-	m_iSuccessfulCaptorClientIndex = 0;
-
+	m_flCapzoneRadius = -1;
+	m_iOwningTeam = TEAM_INVALID;
 	m_bIsActive = true;
-	m_bGhostHasBeenCaptured = false;
 
 #ifdef CLIENT_DLL
 	m_pHUDCapPoint = NULL;
@@ -190,8 +188,15 @@ void CNEOGhostCapturePoint::Spawn(void)
 	// Actually clamp.
 	m_flCapzoneRadius = clamp(m_flCapzoneRadius, NEO_CAP_MIN_RADIUS, NEO_CAP_MAX_RADIUS);
 
-	// Set cap zone active if we've got a valid owner.
-	SetActive(m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF || m_iOwningTeam == TEAM_ANY);
+	if (!m_bStartDisabled)
+	{
+		// Set cap zone active if we've got a valid owner.
+		SetActive(m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF || m_iOwningTeam == TEAM_ANY);
+	}
+	else
+	{
+		SetActive(false);
+	}
 
 	RegisterThinkContext("CheckMyRadius");
 	SetContextThink(&CNEOGhostCapturePoint::Think_CheckMyRadius,
@@ -221,7 +226,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 	const int checksPerSecond = 10;
 
 	//DevMsg("CNEOGhostCapturePoint::Think_CheckMyRadius\n");
-	if (NEORules()->IsRoundLive())
+	if (NEORules()->IsRoundLive() && m_bIsActive)
 	{ // VIP can escort themselves if sitting in their extract as the round restarts
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
@@ -289,7 +294,7 @@ void CNEOGhostCapturePoint::ClientThink(void)
 	m_pHUDCapPoint->SetPos(GetAbsOrigin());
 	m_pHUDCapPoint->SetRadius(m_flCapzoneRadius);
 	m_pHUDCapPoint->SetTeam(owningTeamAlternate());
-	m_pHUDCapPoint->SetVisible(true);
+	m_pHUDCapPoint->SetVisible(m_bIsActive);
 
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 }
@@ -302,20 +307,27 @@ void CNEOGhostCapturePoint::Precache(void)
 	AddEFlags(EFL_FORCE_CHECK_TRANSMIT);
 }
 
+#ifdef GAME_DLL
 void CNEOGhostCapturePoint::SetActive(bool isActive)
 {
 	m_bIsActive = isActive;
-	UpdateVisibility();
 }
 
-inline void CNEOGhostCapturePoint::UpdateVisibility(void)
+bool CNEOGhostCapturePoint::GetActive()
 {
-	if (m_bIsActive)
+	return m_bIsActive;
+}
+
+void CNEOGhostCapturePoint::InputEnable(inputdata_t &inputData)
+{
+	if (m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF || m_iOwningTeam == TEAM_ANY)
 	{
-		RemoveEFlags(EF_NODRAW);
-	}
-	else
-	{
-		AddEFlags(EF_NODRAW);
+		SetActive(true);
 	}
 }
+
+void CNEOGhostCapturePoint::InputDisable(inputdata_t &inputData)
+{
+	SetActive(false);
+}
+#endif

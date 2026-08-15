@@ -2,6 +2,8 @@
 
 #include <cbase.h>
 #include "strtools.h"
+#include "vgui/ILocalize.h"
+#include "tier3/tier3.h"
 
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
@@ -13,6 +15,8 @@
 
 static inline AttackersTotals gTotals;
 static const char *BORDER = "==========================\n";
+static char gPrintBuffer[4096];
+static char gConcatBuffer[512];
 
 void NeoUserIDsLocalKilledClear()
 {
@@ -91,7 +95,8 @@ static ENEOCompactMsgFlag ReadDamageReport(bf_read &msg)
 			V_sprintf_safe(infoLine, "Damage dealt to %s [%s]: %d in %d hits\n",
 					   dmgerName, dmgerClass,
 					   pDmgReport->iDealtDmgs, pDmgReport->iDealtHits);
-			ConMsg("%s", infoLine);
+			V_sprintf_safe(gConcatBuffer, "%s", infoLine);
+			V_strcat_safe(gPrintBuffer, gConcatBuffer);
 			gTotals.iDealtDmgs += pDmgReport->iDealtDmgs;
 			gTotals.iDealtHits += pDmgReport->iDealtHits;
 		}
@@ -100,7 +105,8 @@ static ENEOCompactMsgFlag ReadDamageReport(bf_read &msg)
 			V_sprintf_safe(infoLine, "Damage taken from %s [%s]: %d in %d hits\n",
 					   dmgerName, dmgerClass,
 					   pDmgReport->iTakenDmgs, pDmgReport->iTakenHits);
-			ConMsg("%s", infoLine);
+			V_sprintf_safe(gConcatBuffer, "%s", infoLine);
+			V_strcat_safe(gPrintBuffer, gConcatBuffer);
 			gTotals.iTakenDmgs += pDmgReport->iTakenDmgs;
 			gTotals.iTakenHits += pDmgReport->iTakenHits;
 		}
@@ -113,10 +119,11 @@ static ENEOCompactMsgFlag ReadDamageReport(bf_read &msg)
 
 static void PrintTotalReport()
 {
-	ConMsg("Total damage dealt: %d in %d hits\nTotal damage received from players: %d in %d hits\n%s\n",
+	V_sprintf_safe(gConcatBuffer, "Total damage dealt: %d in %d hits\nTotal damage received from players: %d in %d hits\n%s\n",
 		gTotals.iDealtDmgs, gTotals.iDealtHits,
 		gTotals.iTakenDmgs, gTotals.iTakenHits,
 		BORDER);
+	V_strcat_safe(gPrintBuffer, gConcatBuffer);
 }
 
 // Console + activation of damage info
@@ -131,6 +138,8 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	{
 		return;
 	}
+
+	V_memset(gPrintBuffer, 0, sizeof(gPrintBuffer));
 
 	// Print damage stats into the console
 	// Print to console
@@ -201,7 +210,8 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 		}
 	}
 
-	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
+	V_sprintf_safe(gConcatBuffer, "%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
+	V_strcat_safe(gPrintBuffer, gConcatBuffer);
 
 	NeoDamageReportClear();
 	gTotals = {};
@@ -210,12 +220,15 @@ static void __MsgFunc_KillerDamageInfo(bf_read &msg)
 	{
 		PrintTotalReport();
 	}
+	ConMsg("%s", gPrintBuffer);
 }
 
 static void __MsgFunc_KillerDamageInfoExtra(bf_read &msg)
 {
+	V_memset(gPrintBuffer, 0, sizeof(gPrintBuffer));
 	ReadDamageReport(msg);
 	PrintTotalReport();
+	ConMsg("%s", gPrintBuffer);
 }
 
 USER_MESSAGE_REGISTER(KillerDamageInfo);

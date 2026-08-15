@@ -46,8 +46,6 @@ public:
 	virtual void AddEntity( void );
 	virtual void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
 
-	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
-
 	// Should this object cast shadows?
 	virtual ShadowType_t		ShadowCastType( void );
 
@@ -61,6 +59,7 @@ public:
 	virtual float GetFOV( void );
 	virtual CStudioHdr *OnNewModel( void );
 	virtual void TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, trace_t *ptr, CDmgAccumulator *pAccumulator );
+	virtual bool TestHitboxes(const Ray_t &ray, unsigned int fContentsMask, trace_t &tr) override;
 	virtual void ItemPreFrame( void );
 	virtual void ItemPostFrame( void );
 	virtual float GetMinFOV()	const;
@@ -230,7 +229,7 @@ public:
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
-	CNetworkVar(int, m_nVisionLastTick);
+	CNetworkVar(float, m_flVisionLastTime);
 	CNetworkVar(float, m_flJumpLastTime);
 
 	CNetworkVar(float, m_flNextPingTime);
@@ -266,7 +265,6 @@ private:
 	bool m_bFirstAliveTick;
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
-	bool m_bIsAllowedToToggleVision;
 	bool m_bSpecRefreshedStates;
 
 	float m_flLastAirborneJumpOkTime;

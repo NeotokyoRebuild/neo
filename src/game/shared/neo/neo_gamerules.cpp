@@ -395,15 +395,6 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector(16, 16, 60)	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
 
-struct NeoGameTypeSettings {
-	const char* gameTypeName;
-	bool respawns;
-	bool neoRulesThink;
-	bool changeTeamClassLoadoutWhenAlive;
-	bool comp;
-	bool capPrevent;
-};
-
 const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 //						gametypeName	respawns	neoRulesThink	changeTeamClassLoadoutWhenAlive	comp	capPrevent
 /*NEO_GAME_TYPE_TDM*/	{"TDM",			true,		true,			false,							false,	false},
@@ -919,7 +910,7 @@ void CNEORules::ResetMapSessionCommon()
 void CNEORules::ChangeLevel(void)
 {
 	ResetMapSessionCommon();
-	if (!m_bRotatingMapRightNow && sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
+	if (!m_bRotatingMapRightNow && IsReadyUpEnabled() && !sv_neo_readyup_autointermission.GetBool())
 	{
 		m_bChangelevelDone = false;
 	}
@@ -1380,7 +1371,7 @@ void CNEORules::Think(void)
 					gameeventmanager->FireEvent(event);
 				}
 
-				if (sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
+				if (IsReadyUpEnabled() && !sv_neo_readyup_autointermission.GetBool())
 				{
 					ResetMapSessionCommon();
 				}
@@ -1552,7 +1543,6 @@ void CNEORules::Think(void)
 
 			EmitSound_t soundParams;
 			soundParams.m_pSoundName = "HUD.GhostPickUp";
-			soundParams.m_nChannel = CHAN_GHOST_PICKUP;
 			soundParams.m_bWarnOnDirectWaveReference = false;
 			soundParams.m_bEmitCloseCaption = false;
 			soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
@@ -2698,7 +2688,7 @@ void CNEORules::StartNextRound()
 				 || GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() != GetGlobalTeam(TEAM_NSF)->GetNumPlayers()))
 			)
 	{
-		if (sv_neo_readyup_lobby.GetBool())
+		if (bLobby)
 		{
 			bool bPrintHelpInfo = (m_iPrintHelpCounter == 0);
 			if (!m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres))
@@ -3232,7 +3222,7 @@ void CNEORules::ResetGhostCapPoints()
 			{
 				ghostCap->ResetCaptureState();
 				m_pGhostCaps.AddToTail(ghostCap->entindex());
-				ghostCap->SetActive(true);
+				ghostCap->SetActive(!ghostCap->m_bStartDisabled);
 				ghostCap->Think_CheckMyRadius();
 			}
 
@@ -3435,6 +3425,7 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 	if (sv_neo_build_integrity_check.GetBool())
 	{
 		const char *clientGitHash = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__cl_neo_git_hash");
+		const char *clientGitTag = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__cl_neo_version_tag");
 		const bool dbgBuildSkip = (sv_neo_build_integrity_check_allow_debug.GetBool()) ? (clientGitHash[0] & 0b1000'0000) : false;
 		if (dbgBuildSkip)
 		{
@@ -3448,9 +3439,11 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 		{
 			// Truncate the git hash so it's short hash and doesn't make message too long
 			static constexpr int MAX_GITHASH_SHOW = 7;
-			V_snprintf(reject, maxrejectlen, "Build integrity failed! Client vs server mis-match: Check your neo_version. "
-											 "Client: %.*s | Server: %.*s",
-					   MAX_GITHASH_SHOW, cmpClientGitHash, MAX_GITHASH_SHOW, GIT_LONGHASH);
+			static constexpr int MAX_GITTAG_SHOW = 12;
+			V_snprintf(reject, maxrejectlen, "Build integrity failed! Client-server mismatch: Check neo_version. "
+											 "Client: %.*s %.*s | Server: %.*s %.*s",
+					   MAX_GITHASH_SHOW, cmpClientGitHash, MAX_GITTAG_SHOW, clientGitTag,
+					   MAX_GITHASH_SHOW, GIT_LONGHASH, MAX_GITTAG_SHOW, GIT_LATESTTAG);
 			return false;
 		}
 	}
@@ -4744,9 +4737,15 @@ bool CNEORules::IsJuggernautLocked() const
 	return false;
 }
 
+bool CNEORules::IsReadyUpEnabled() const
+{
+	return (sv_neo_readyup_lobby.GetBool()
+		&& NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].comp);
+}
+
 bool CNEORules::InReadyUpState() const
 {
-	return (sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle);
+	return (IsReadyUpEnabled() && m_nRoundStatus == NeoRoundStatus::Idle);
 }
 
 bool CNEORules::InRoundState() const

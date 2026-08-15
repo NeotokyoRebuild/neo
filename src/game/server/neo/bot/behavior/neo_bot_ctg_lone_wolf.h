@@ -20,6 +20,7 @@ public:
 protected:
 	virtual ActionResult< CNEOBot > ConsiderGhostInterception( CNEOBot *me, const CBaseCombatCharacter *pGhostOwner = nullptr );
 	virtual ActionResult< CNEOBot > ConsiderGhostVisualCheck( CNEOBot *me );
+	virtual ActionResult< CNEOBot > ConsiderGhostCaptureTransition( CNEOBot *me );
 
 	Vector GetNearestEnemyCapPoint( CNEOBot *me ) const;
 
