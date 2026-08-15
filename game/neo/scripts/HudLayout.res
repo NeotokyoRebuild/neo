@@ -908,6 +908,20 @@
 		"sprint_text_color"		"255 255 255 100"
 		"sprint_color"		"255 255 255 150"
 	}
+	neo_walking_indicator
+	{
+		"fieldName"		"neo_walking_indicator"
+		"visible" "1"
+		
+		"xpos"	"208"
+		"ypos"	"446"
+		"wide"	"24"
+		"tall"  "24"
+		"color" "255 255 255 200"
+		"texture" "vgui/hud/player/walkingIndicator"
+		
+		"barwidth"	"0"
+	}
 	RoundResult
 	{
 		"fieldName"		"RoundResult"

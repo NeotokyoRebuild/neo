@@ -733,6 +733,59 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	return pNearest;
 }
 
+// Changing movement direction, looking around, wall-running accelerate the player. Raise the threshold.
+constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
+#define MAX_SILENT_SPEED SILENT_THRESHOLD_GRACE * (GetFlags() & FL_DUCKING ? GetCrouchSpeed() : GetNormSpeed())
+bool CNEO_Player::ShouldPlayerMakeFootsteps(float speed) // Could simply always get speed from the player, but didnt want to risk changing the behavior of UpdateStepSound in baseplayer_shared
+{
+	if (speed < 0)
+	{
+		speed = GetAbsVelocity().Length();
+	}
+
+	if (const bool canBeSilent = IsInAim() || IsWalking();
+		!canBeSilent)
+	{
+		return true;
+	}
+
+	if (speed <= MAX_SILENT_SPEED)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+float CNEO_Player::SpeedFractionToSoundThreshold(float speed)
+{
+	if (speed < 0)
+	{
+		speed = GetAbsVelocity().Length();
+	}
+
+	if (const bool canBeSilent = IsInAim() || IsWalking())
+	{
+		const float bottom = GetPlayerMaxSpeed();
+		if (speed < bottom)
+		{
+			return 0.f;
+		}
+		
+		float top = MAX_SILENT_SPEED;
+		if (speed > top)
+		{
+			return 1.f;
+		}
+		
+		top -= bottom;
+		speed -= bottom;
+		return top != 0 ? speed / top : 1.f;
+	}
+
+	return 1.f;
+}
+
 void CNEO_Player::CheckVisionButtons()
 {
 	if (m_iNeoClass == NEO_CLASS_VIP)
@@ -801,6 +854,7 @@ void CNEO_Player::CheckVisionButtons()
 
 	EmitSound(filter, entindex(), params);
 }
+
 ConVar sv_neo_hitboxgroup_pen("sv_neo_hitboxgroup_pen", "0", FCVAR_REPLICATED, "When hitting outer limbs, do a second trace against head, chest and stomach", true, 0.f, true, 1.f); // NEO TODO (Adam) remove this and pick one
 bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr)
 {
