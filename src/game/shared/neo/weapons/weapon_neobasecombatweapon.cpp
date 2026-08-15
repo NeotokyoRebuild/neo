@@ -919,6 +919,8 @@ void CNEOBaseCombatWeapon::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
 
+extern ConVar sv_suppress_viewpunch;
+
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -1069,8 +1071,12 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		m_flAccuracyPenalty + GetAccuracyPenalty() * sv_neo_accuracy_penalty_scale.GetFloat()
 	);
 
+	// TODO: Resetting viewpunch here doesn't just affect viewkick, but also aimpunch.
+	// This if-check is a temporary workaround until we can separate the two.
+	if (!sv_suppress_viewpunch.GetBool()) {
+		pOwner->ViewPunchReset();
+	}
 	//Add our view kick in
-	pOwner->ViewPunchReset();
 	AddViewKick();
 }
 
