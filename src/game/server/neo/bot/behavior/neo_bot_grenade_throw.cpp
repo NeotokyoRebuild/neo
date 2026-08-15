@@ -385,7 +385,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 
 				if ( m_repathTimer.IsElapsed() )
 				{
-					m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
+					m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 					CNEOBotPathCompute( me, m_PathFollower, m_vecTarget, FASTEST_ROUTE );
 				}
 			}
@@ -412,7 +412,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 
 		if ( m_repathTimer.IsElapsed() )
 		{
-			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
+			m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 
 			if ( !m_vantageArea && !m_bVantagePointBlocked )
 			{

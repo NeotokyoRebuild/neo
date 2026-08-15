@@ -60,7 +60,7 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 			// Transition to search around the ghost behavior to avoid cycle of ghost search failure and retry attempts
 			return ChangeTo( new CNEOBotCtgLoneWolf(), "Unable to find a path to the ghost capture target, searching around nearest areas" );
 		}
-		m_repathTimer.Start( RandomFloat( 0.3f, 0.6f ) );
+		m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 	}
 	m_path.Update( me );
 
