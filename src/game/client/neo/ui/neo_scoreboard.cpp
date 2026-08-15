@@ -584,7 +584,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
 	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
-	const bool bShowReadyUp = NEORules()->InReadyUpState() && bLocalPlaying;
+	const bool bShowReadyUp = NEORules()->InReadyUpState();
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
 			&& NEORules()->InRoundState()
 			&& g_neoKillerInfos.bHasDmgInfos
@@ -1233,7 +1233,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 				if (m_playerPopup.iUserID == iLocalUserID)
 				{
-					if (bShowReadyUp)
+					if (bShowReadyUp && bLocalPlaying)
 					{
 						if (NeoUI::ButtonTexture(
 									m_playerPopup.bReady
