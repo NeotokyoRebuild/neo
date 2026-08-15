@@ -23,7 +23,6 @@ ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARC
 ConVar cl_neo_hud_scoreboard_padding("cl_neo_hud_scoreboard_padding", "0", FCVAR_ARCHIVE, "Adjust scoreboard space padding. 0 = default, 1 = compact, 2 = spacious", true, 0.0f, true, 2.0f);
 extern ConVar cl_neo_streamermode;
 extern ConVar cl_neo_squad_hud_original;
-extern ConVar sv_neo_readyup_lobby;
 extern ConVar cl_neo_hud_team_swap_sides;
 
 enum ENeoScoreBoardPopup
@@ -334,7 +333,7 @@ void CNEOScoreBoard::Update()
 	}
 
 	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
-	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
+	const bool bLocalPlaying = (iLocalPlayerTeam >= FIRST_GAME_TEAM);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
@@ -386,9 +385,7 @@ void CNEOScoreBoard::Update()
 			pPlayerInfo->steamID.Clear();
 		}
 
-		const bool bIsPlaying = (
-				TEAM_JINRAI == pPlayerInfo->iTeam
-				|| TEAM_NSF == pPlayerInfo->iTeam);
+		const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 
 		if (bIsPlaying)
 		{
@@ -582,16 +579,14 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const int iPopupCardPerRowTallButtons = iPopupCardRowTallBase * 2.25f;
 	const int iAvatarOffset = m_uiCtx.iMarginX;
 	const int iAvatarWT = ShowAvatars() ? (iPopupCardPerRowTallAvatarName - (iAvatarOffset * 2)) : 0;
+	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
+	const bool bLocalPlaying = (iLocalPlayerTeam >= FIRST_GAME_TEAM);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
-	const int iGameType = NEORules()->GetGameType();
-	const bool bShowReadyUp = sv_neo_readyup_lobby.GetBool()
-			&& NEORules()->m_nRoundStatus == NeoRoundStatus::Idle
-			&& NEO_GAME_TYPE_SETTINGS[iGameType].comp;
+	const bool bShowReadyUp = NEORules()->InReadyUpState();
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
 			&& NEORules()->InRoundState()
 			&& g_neoKillerInfos.bHasDmgInfos
-			&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI
-					|| pLocalPlayer->GetTeamNumber() == TEAM_NSF);
+			&& bLocalPlaying;
 	static CrosshairInfo staticXhairInfo = {};
 
 	bool bHasRanklessDog = false;
@@ -618,7 +613,6 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 			? Max(iaTeamTally[TEAM_JINRAI], iaTeamTally[TEAM_NSF])
 			: Ceil2Int((iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF]) / 2.0f);
 	const int iLocalUserID = pLocalPlayer->GetUserID();
-	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
 
 	int iTies = 0;
 	if (bIsTeamplay)
@@ -872,8 +866,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				for (int i = 0; i < m_iTotalPlayers; ++i)
 				{
 					const CNEOScoreBoardPlayer *pPlayerInfo = &m_playersInfo[i];
-					const bool bIsPlaying = (TEAM_JINRAI == pPlayerInfo->iTeam
-							|| TEAM_NSF == pPlayerInfo->iTeam);
+					const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 					const bool bIsDMPlaying = false == bIsTeamplay && bIsPlaying;
 					iInPlaying += (bIsPlaying);
 
@@ -1237,7 +1230,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 				if (m_playerPopup.iUserID == iLocalUserID)
 				{
-					if (bShowReadyUp)
+					if (bShowReadyUp && bLocalPlaying)
 					{
 						if (NeoUI::ButtonTexture(
 									m_playerPopup.bReady

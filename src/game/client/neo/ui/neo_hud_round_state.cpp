@@ -245,8 +245,6 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetZPos(90);
 }
 
-extern ConVar sv_neo_readyup_lobby;
-
 void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 {
 	float roundTimeLeft = NEORules()->GetRoundRemainingTime();
@@ -258,7 +256,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	m_pWszStatusUnicode = L"";
 	if (roundStatus == NeoRoundStatus::Idle)
 	{
-		m_pWszStatusUnicode = sv_neo_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
+		m_pWszStatusUnicode = NEORules()->IsReadyUpEnabled() ? L"Waiting for players to ready up" : L"Waiting for players";
 	}
 	else if (roundStatus == NeoRoundStatus::Warmup)
 	{
