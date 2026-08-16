@@ -187,10 +187,6 @@ ConVar sv_neo_bot_cloak_detection_bonus_assault_motion_vision("sv_neo_bot_cloak_
 ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "5", FCVAR_NONE,
 	"Bot cloak detection bonus for non-support classes", true, 0, true, 100);
 
-// 0.7 dot product is about a 45 degree half hangle for a 90 degree cone
-ConVar sv_neo_bot_cloak_detection_aim_bonus_dot_threshold("sv_neo_bot_cloak_detection_aim_bonus_dot_threshold", "0.3", FCVAR_NONE,
-	"Bot cloak detection bonus minimum dot product threshold for aim bonus", true, 0.01, true, 0.7);
-
 ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "10", FCVAR_NONE,
 	"Bot cloak detection bonus for observer being stationary", true, 0, true, 100);
 
@@ -1472,11 +1468,6 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		return 0.0f;
 	}
 
-	// The closer a target is to the bot's center aim, the more noticeable they are.
-	float flFovBonusRatio = RemapValClamped(flDot, sv_neo_bot_cloak_detection_aim_bonus_dot_threshold.GetFloat(), 1.0f, 0.0f, 1.0f);
-	// Make bonus more pronounced closer to the center and less so at edges
-	flFovBonusRatio *= flFovBonusRatio;
-
 	// From this point on, assume we are counting bonus points towards observer detection
 	float flDetectionBonus = 0.0f; // # of factors that are helping the observer detect the target
 
@@ -1585,7 +1576,6 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	float obscuredDenominator = 100.0f; // scale from 0-100 percent likelyhood to detect every 200ms
 
 	float obscuredNumerator = Max(0.0f, obscuredDenominator - flDetectionBonus);
-	obscuredNumerator *= (1.0f - flFovBonusRatio);
 
 	float obscuredRatio = obscuredNumerator / obscuredDenominator;
 	obscuredRatio = Clamp(obscuredRatio, 0.0f, 1.0f);
