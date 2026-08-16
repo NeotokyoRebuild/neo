@@ -168,6 +168,9 @@ ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detec
 ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.45", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.50", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
 
+// onTargetTolerance defines on-target aim threshold as 0.98
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_aim_on_target("sv_neo_bot_cloak_detection_threshold_ratio_aim_on_target", "0.98", FCVAR_NONE, "Bot cloak detection threshold when considered aimed on target", true, 0.0f, true, 1.0f);
+
 // Bot Cloak Detection Bonus Factors
 // Used in CNEO_Player::GetFogObscuredRatio to determine if the bot (me) can detect a cloaked target given circumstances
 // Style guide:
@@ -1463,7 +1466,7 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	const float flDot = vEyeForward.Dot(vToTarget);
 
 	// If the aim is close on target, consider the target spotted
-	if (flDot > 0.98f) // onTargetTolerance
+	if (flDot > sv_neo_bot_cloak_detection_threshold_ratio_aim_on_target.GetFloat())
 	{
 		return 0.0f;
 	}
