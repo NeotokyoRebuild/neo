@@ -1459,6 +1459,24 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		return 0.0f;
 	}
 
+	// Compute how closely player is looking at the target
+	Vector vEyeForward;
+	AngleVectors(pl.v_angle, &vEyeForward);
+	Vector vToTarget = target->WorldSpaceCenter() - (GetAbsOrigin() + GetViewOffset());
+	vToTarget.NormalizeInPlace();
+	const float flDot = vEyeForward.Dot(vToTarget);
+
+	// If the aim is close on target, consider the target spotted
+	if (flDot > 0.98f) // onTargetTolerance
+	{
+		return 0.0f;
+	}
+
+	// The closer a target is to the bot's center aim, the more noticeable they are.
+	float flFovBonusRatio = RemapValClamped(flDot, sv_neo_bot_cloak_detection_aim_bonus_dot_threshold.GetFloat(), 1.0f, 0.0f, 1.0f);
+	// Make bonus more pronounced closer to the center and less so at edges
+	flFovBonusRatio *= flFovBonusRatio;
+
 	// From this point on, assume we are counting bonus points towards observer detection
 	float flDetectionBonus = 0.0f; // # of factors that are helping the observer detect the target
 
@@ -1563,16 +1581,6 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 			flDetectionBonus += lightIntensity * sv_neo_bot_cloak_detection_bonus_lighting.GetFloat();
 		}
 	}
-
-	// The closer a target is to the bot's center aim, the more noticeable they are
-	Vector vEyeForward;
-	AngleVectors(pl.v_angle, &vEyeForward);
-	Vector vToTarget = target->WorldSpaceCenter() - (GetAbsOrigin() + GetViewOffset());
-	vToTarget.NormalizeInPlace();
-	float flDot = vEyeForward.Dot(vToTarget);
-	float flFovBonusRatio = RemapValClamped(flDot, sv_neo_bot_cloak_detection_aim_bonus_dot_threshold.GetFloat(), 1.0f, 0.0f, 1.0f);
-	// Make bonus more pronounced closer to the center and less so at edges
-	flFovBonusRatio *= flFovBonusRatio;
 
 	float obscuredDenominator = 100.0f; // scale from 0-100 percent likelyhood to detect every 200ms
 
