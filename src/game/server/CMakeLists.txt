@@ -1530,6 +1530,7 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/behavior/neo_bot_ctg_lone_wolf.cpp
     neo/bot/behavior/neo_bot_ctg_seek.cpp
     neo/bot/behavior/neo_bot_dead.cpp
+    neo/bot/behavior/neo_bot_freezetime.cpp
     neo/bot/behavior/neo_bot_grenade_dispatch.cpp
     neo/bot/behavior/neo_bot_grenade_throw.cpp
     neo/bot/behavior/neo_bot_grenade_throw_frag.cpp
@@ -1595,6 +1596,7 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_ctg_seek.cpp
     neo/bot/behavior/neo_bot_ctg_seek.h
     neo/bot/behavior/neo_bot_dead.h
+    neo/bot/behavior/neo_bot_freezetime.h
     neo/bot/behavior/neo_bot_grenade_dispatch.h
     neo/bot/behavior/neo_bot_grenade_throw.h
     neo/bot/behavior/neo_bot_grenade_throw_frag.h

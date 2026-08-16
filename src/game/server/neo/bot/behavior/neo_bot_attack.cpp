@@ -46,7 +46,29 @@ CNEOBotAttack::CNEOBotAttack( const Vector &goalPosition ) : m_chasePath( ChaseP
 ActionResult< CNEOBot >	CNEOBotAttack::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
+
+	// NEO Jank: Rudimentary communication between paired buddy bots regarding threat
+	// If this bot was following another bot buddy,
+	// becoming the commander recalls their buddy to regroup
+	// and pings when shooting direct the buddy to the enemy's position
+	if ( CNEO_Player* commander = me->m_hCommandingPlayer.Get() )
+	{
+		if ( commander->IsBot() )
+		{
+			me->m_hCommandingPlayer.Set( nullptr );
+			commander->m_hCommandingPlayer.Set( me );
+		}
+	}
+
 	return Continue();
+}
+
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotAttack::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
+{
+	// Clear out any target callouts when disengaged from threat
+	me->m_vLastPingByStar.GetForModify(me->GetStar()) = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 }
 
 

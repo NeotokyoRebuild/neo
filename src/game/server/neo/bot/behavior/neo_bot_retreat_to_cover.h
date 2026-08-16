@@ -6,8 +6,9 @@ public:
 	CNEOBotRetreatToCover( float hideDuration = -1.0f );
 	CNEOBotRetreatToCover( Action< CNEOBot > *actionToChangeToOnceCoverReached );
 
-	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
-	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
+	virtual void OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction ) override;
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval ) override;
 
 	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me );
 	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path );

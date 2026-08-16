@@ -14,7 +14,8 @@ public:
 	CNEOBotAttack( const Vector &goalPosition );
 	virtual ~CNEOBotAttack() { }
 
-	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
+	virtual void OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction ) override;
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
 
 	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me );
