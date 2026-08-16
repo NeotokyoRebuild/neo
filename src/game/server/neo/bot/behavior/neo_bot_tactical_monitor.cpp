@@ -11,6 +11,7 @@
 #include "bot/behavior/neo_bot_tactical_monitor.h"
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
+#include "bot/behavior/neo_bot_freezetime.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
@@ -32,6 +33,11 @@ ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots t
 
 ConVar neo_bot_scavenge_upgrade_delay( "neo_bot_scavenge_upgrade_delay", "4", FCVAR_GAMEDLL,
 	"Delay in seconds between checking for a better weapon if the bot already has a primary weapon.", true, 1, false, 0 );
+
+extern ConVar mp_chattime;
+extern ConVar sv_neo_bot_freezetime_planning_start_time_buffer;
+extern ConVar sv_neo_bot_freezetime_planning_end_time_buffer;
+extern ConVar sv_neo_preround_freeze_time;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -325,6 +331,19 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	if ( !threat )
 	{
 		me->ReloadIfLowClip();
+	}
+
+	// if we are in freezetime, make plans before next round
+	if ( !m_freezeTimeDecisionTimer.HasStarted() ||  m_freezeTimeDecisionTimer.IsElapsed() )
+	{
+		const float freezeCheckDelay = mp_chattime.GetFloat() + Max( 0.0f, sv_neo_preround_freeze_time.GetFloat() - sv_neo_bot_freezetime_planning_start_time_buffer.GetFloat() );
+		m_freezeTimeDecisionTimer.Start( freezeCheckDelay );
+
+		const float freezeTimeLeft = NEORules()->GetRemainingPreRoundFreezeTime( true );
+		if ( freezeTimeLeft > sv_neo_bot_freezetime_planning_end_time_buffer.GetFloat() )
+		{
+			return SuspendFor( new CNEOBotFreezeTime, "Planning next round during freezetime" );
+		}
 	}
 
 	me->UpdateDelayedThreatNotices();

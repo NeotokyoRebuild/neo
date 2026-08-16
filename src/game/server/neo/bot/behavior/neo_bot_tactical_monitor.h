@@ -27,6 +27,7 @@ public:
 
 private:
 	CountdownTimer m_maintainTimer;
+	CountdownTimer m_freezeTimeDecisionTimer;
 
 	CountdownTimer m_acknowledgeAttentionTimer;
 	CountdownTimer m_acknowledgeRetryTimer;
