@@ -204,7 +204,6 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOB
 	if ( pWep )
 	{
 		Assert( ( pWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE ) || ( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE ) );
-		me->PushRequiredWeapon( m_hGrenadeWeapon );
 	}
 	else
 	{
@@ -220,6 +219,22 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOB
 	{
 		return Done( "Targeted threat is dead" );
 	}
+
+	// Smoke grenades don't need vantage point planning since they don't have unsafe radius
+	if ( !( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE ) )
+	{
+		CFindVantagePointTargetPos find( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget.Get() );
+		SearchSurroundingAreas( me->GetLastKnownArea(), find, sv_neo_bot_grenade_search_range.GetFloat() );
+		m_vantageArea = find.m_vantageArea;
+
+		if ( !m_vantageArea )
+		{
+			return Done( "No viable vantage point for grenade throw" );
+		}
+	}
+
+	// Swap to grenade as we have decided to commit to throw by this point
+	me->PushRequiredWeapon( m_hGrenadeWeapon );
 	
 	m_giveUpTimer.Start( sv_neo_bot_grenade_give_up_time.GetFloat() );
 	m_bPinPulled = false;
