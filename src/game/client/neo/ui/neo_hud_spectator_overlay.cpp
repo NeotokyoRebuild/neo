@@ -34,8 +34,9 @@ static const struct Theme
 	Color hpLossBg = Color(150, 20, 20, 255);
 	Color cardBg = Color(20, 20, 20, 180);
 	Color deadBg = Color(40, 20, 20, 180);
-	Color textPrimary = Color(240, 240, 245, 255);
-	Color textSecondary = Color(180, 180, 190, 230);
+	Color textPrimary = Color(240, 240, 240, 255);
+	Color textSecondary = Color(180, 180, 180, 230);
+	Color wepInactive = Color(120, 120, 120, 255);
 	Color deadAvatarTint = Color(90, 40, 40, 160);
 } OVERLAY_THEME = {};
 
@@ -133,15 +134,17 @@ void CNEOHud_SpectatorOverlay::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_hNameFont = pScheme->GetFont("NHudSpectatorOverlayName", true);
 	m_hInfoFont = pScheme->GetFont("NHudSpectatorOverlayInfo", true);
 	m_hClassFont = pScheme->GetFont("NHudSpectatorOverlayClass", true);
-	m_hHPFont = pScheme->GetFont("NHudSpectatorOverlayHP", true);
+	m_hRKHPFont = pScheme->GetFont("NHudSpectatorOverlayRoundKillHP", true);
 	m_hGhostFont = pScheme->GetFont("NHudSpectatorOverlayGhost", true);
+	m_hSmallWeaponsFont = pScheme->GetFont("NHudSpectatorOverlaySmallWeapons", true);
 
 	// Fallbacks
 	if (!m_hNameFont) m_hNameFont = pScheme->GetFont("Default", true);
 	if (!m_hInfoFont) m_hInfoFont = pScheme->GetFont("DefaultSmall", true);
 	if (!m_hClassFont) m_hClassFont = pScheme->GetFont("DefaultSmall", true);
-	if (!m_hHPFont) m_hHPFont = pScheme->GetFont("Default", true);
+	if (!m_hRKHPFont) m_hRKHPFont = pScheme->GetFont("Default", true);
 	if (!m_hGhostFont) m_hGhostFont = pScheme->GetFont("NHudKillfeedIcons", true);
+	if (!m_hSmallWeaponsFont) m_hSmallWeaponsFont = pScheme->GetFont("NHudKillfeedIcons", true);
 
 	int iScrWide, iScrTall;
 	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
@@ -276,16 +279,41 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 		}
 
 		// Weapon
-		pCard->wszWeaponIcon[0] = L'\0';
 		pCard->flLastAttackTime = 0.0f;
+		pCard->iTotalWeaponIcons = 0;
+		pCard->iWeaponIdxPrimary = -1;
+		pCard->iWeaponIdxActive = -1;
 		if (pNeoPlayer)
 		{
-			auto *neoWep = static_cast<CNEOBaseCombatWeapon *>(pNeoPlayer->GetActiveWeapon());
-			if (neoWep)
+			const auto *pWepActive = static_cast<CNEOBaseCombatWeapon *>(pNeoPlayer->GetActiveWeapon());
+			if (pWepActive)
 			{
-				Q_UTF8ToUnicode(neoWep->GetDeathIcon(),
-						pCard->wszWeaponIcon, sizeof(pCard->wszWeaponIcon));
-				pCard->flLastAttackTime = neoWep->GetLastAttackTime();
+				pCard->flLastAttackTime = pWepActive->GetLastAttackTime();
+			}
+
+			wchar_t wszWeaponIcon[2] = {};
+			for (int j = 0; j < MAX_WEAPONS; ++j)
+			{
+				// NEO NOTE (nullsystem): Disallow knife, but keep ghost in
+				// array but ghost only for the outside indicator will be
+				// skipped over in the weapon icons list
+				if (const auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(pNeoPlayer->GetWeapon(j));
+						pNeoWep && pNeoWep->WeaponIndex() != NEO_WIDX_KNIFE)
+				{
+					if (pNeoWep->GetSlot() == 0)
+					{
+						pCard->iWeaponIdxPrimary = pCard->iTotalWeaponIcons;
+					}
+					if (pWepActive == pNeoWep)
+					{
+						pCard->iWeaponIdxActive = pCard->iTotalWeaponIcons;
+					}
+
+					// Icons are really only 1 character long
+					Q_UTF8ToUnicode(pNeoWep->GetDeathIcon(),
+							wszWeaponIcon, sizeof(wszWeaponIcon));
+					pCard->wcaWeaponIcons[pCard->iTotalWeaponIcons++] = wszWeaponIcon[0];
+				}
 			}
 		}
 	}
@@ -363,8 +391,8 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 		V_swprintf_safe(wszHP, L"%d", card.iHP);
 
 		int iWideHP = 0, iTallHP = 0;
-		vgui::surface()->GetTextSize(m_hHPFont, wszHP, iWideHP, iTallHP);
-		vgui::surface()->DrawSetTextFont(m_hHPFont);
+		vgui::surface()->GetTextSize(m_hRKHPFont, wszHP, iWideHP, iTallHP);
+		vgui::surface()->DrawSetTextFont(m_hRKHPFont);
 
 		const int iHPTextX = bIsLeftSide
 				? iAvatarX + iTextPad
@@ -399,6 +427,33 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 				iAvatarY,
 				iAvatarX + iAvatarSize,
 				iAvatarY + iAvatarSize);
+	}
+
+	// Round kills, over avatar, upper section
+	if (card.iRoundKills > 0)
+	{
+		// Kills in current round
+		wchar_t wszNum[8] = {};
+		V_swprintf_safe(wszNum, L"x%d", card.iRoundKills);
+
+		int iWideRK = 0, iTallRK = 0;
+		vgui::surface()->GetTextSize(m_hRKHPFont, wszNum, iWideRK, iTallRK);
+		vgui::surface()->DrawSetTextFont(m_hRKHPFont);
+
+		const int iRKTextX = bIsLeftSide
+				? iAvatarX + iTextPad
+				: iAvatarX + iAvatarSize - iWideRK - iTextPad;
+		const int iRKTextY = iAvatarY;
+
+		// Shadow
+		vgui::surface()->DrawSetTextColor(COLOR_BLACK);
+		vgui::surface()->DrawSetTextPos(iRKTextX + 2, iRKTextY + 2);
+		vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
+
+		// Front
+		vgui::surface()->DrawSetTextColor(OVERLAY_THEME.textPrimary);
+		vgui::surface()->DrawSetTextPos(iRKTextX, iRKTextY);
+		vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
 	}
 
 	// HP bar(s)
@@ -528,13 +583,12 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 	// Extra info row: XP | Death | Round kills | Weapon logo
 	{
 		const int iInfoTall = iAvatarSize / 2.0f;
-		const int iInfoX = bIsLeftSide ? x + iAvatarSize + iTextPad : x + iTextPad;
 		const int iInfoY = y + iInfoTall;
 		const int iTotalW = wide - iAvatarSize - (iTextPad * 2);
 
-		// Split available width into 4 equal columns with small gaps
+		// Sizing split between XP and death
 		const int iGap = flWideAs43 / 360.0f;
-		const int iColW = iTotalW / 4;
+		const int iColW = iTotalW / 5;
 
 		const int iTextFontTall = vgui::surface()->GetFontTall(m_hInfoFont);
 		const int iTextFontOffset = (iInfoTall - iTextFontTall) / 2.0f;
@@ -551,13 +605,11 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 			vgui::surface()->GetTextSize(g_hFontKillfeedIcons, wszDeathsIcon, iDeathIconWide, iDeathIconTall);
 		}
 
-		int iWepWide = 0, iWepTall = 0;
-		vgui::surface()->GetTextSize(g_hFontKillfeedIcons, card.wszWeaponIcon, iWepWide, iWepTall);
-
 		wchar_t wszNum[8] = {};
+		const int iInfoX = bIsLeftSide ? x + iAvatarSize + iTextPad : x + (wide - iAvatarSize) - iTextPad;
 
-		// XP
-		const int iXPosXP = bIsLeftSide ? iInfoX + iGap : x + (wide - iAvatarSize) - iColW + iGap;
+		// XP (left of death)
+		const int iXPosXP = bIsLeftSide ? iInfoX + iGap : iInfoX - (iColW * 2) + iGap;
 		// XP - Rank Icon
 		{
 			const wchar_t wcRankIcon = NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + GetRank(card.iXP);
@@ -573,8 +625,8 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 			vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
 		}
 
-		// Death
-		const int iXPosDeath = bIsLeftSide ? iXPosXP + iColW + iGap : iXPosXP - iColW + iGap;
+		// Death (right of XP)
+		const int iXPosDeath = bIsLeftSide ? iInfoX + iColW + iGap : iInfoX - iColW + iGap;
 		// Death - Icon
 		{
 			static const wchar_t WC_KILLICON = NEO_HUD_DEATHNOTICEICON_KILL;
@@ -590,24 +642,50 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 			vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
 		}
 
-		if (card.iRoundKills > 0)
-		{
-			const int iXPosRoundKills = bIsLeftSide
-					? iXPosDeath + iColW + iGap
-					: iXPosDeath - iColW + iGap;
-			// Kills in current round
-			V_swprintf_safe(wszNum, L"x%d", card.iRoundKills);
-			vgui::surface()->DrawSetTextFont(m_hInfoFont);
-			vgui::surface()->DrawSetTextPos(iXPosRoundKills, iInfoY + iTextFontOffset);
-			vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
-		}
-
 		if (card.bAlive)
 		{
-			const int iXPosWepIcon = bIsLeftSide ? x + wide - iTextPad - iWepWide : x + iTextPad;
-			vgui::surface()->DrawSetTextFont(g_hFontKillfeedIcons);
-			vgui::surface()->DrawSetTextPos(iXPosWepIcon, iInfoY + ((iInfoTall - iWepTall) / 2.0f));
-			vgui::surface()->DrawPrintText(card.wszWeaponIcon, 1);
+			int iWepPosOffsetX = iTextPad;
+
+			// Primary (larger icon, most right in card for Jinrai, most left in card for NSF)
+			// If ghost is primary, this is differed to the ghoster player indicator
+			if (card.iWeaponIdxPrimary >= 0
+					&& NEO_HUD_DEATHNOTICEICON_GHOST != card.wcaWeaponIcons[card.iWeaponIdxPrimary])
+			{
+				wchar_t wszWeaponIcon[2] = { card.wcaWeaponIcons[card.iWeaponIdxPrimary], L'\0' };
+
+				int iWepWide = 0, iWepTall = 0;
+				vgui::surface()->GetTextSize(g_hFontKillfeedIcons, wszWeaponIcon, iWepWide, iWepTall);
+
+				const int iXPosWepIcon = bIsLeftSide ? x + wide - iTextPad - iWepWide : x + iTextPad;
+				iWepPosOffsetX += iWepWide + iTextPad;
+				vgui::surface()->DrawSetTextColor((card.iWeaponIdxPrimary == card.iWeaponIdxActive)
+						? OVERLAY_THEME.textPrimary : OVERLAY_THEME.wepInactive);
+				vgui::surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+				vgui::surface()->DrawSetTextPos(iXPosWepIcon, iInfoY + ((iInfoTall - iWepTall) / 2.0f));
+				vgui::surface()->DrawPrintText(wszWeaponIcon, 1);
+			}
+
+			// Secondary + Throwables (smaller icons)
+			for (int i = 0; i < card.iTotalWeaponIcons; ++i)
+			{
+				if (i == card.iWeaponIdxPrimary)
+				{
+					continue;
+				}
+
+				wchar_t wszWeaponIcon[2] = { card.wcaWeaponIcons[i], L'\0' };
+
+				int iWepWide = 0, iWepTall = 0;
+				vgui::surface()->GetTextSize(m_hSmallWeaponsFont, wszWeaponIcon, iWepWide, iWepTall);
+
+				const int iXPosWepIcon = bIsLeftSide ? x + wide - iWepPosOffsetX - iWepWide : x + iWepPosOffsetX;
+				iWepPosOffsetX += iWepWide + iTextPad;
+				vgui::surface()->DrawSetTextColor((i == card.iWeaponIdxActive)
+						? OVERLAY_THEME.textPrimary : OVERLAY_THEME.wepInactive);
+				vgui::surface()->DrawSetTextFont(m_hSmallWeaponsFont);
+				vgui::surface()->DrawSetTextPos(iXPosWepIcon, iInfoY + ((iInfoTall - iWepTall) * 0.66f));
+				vgui::surface()->DrawPrintText(wszWeaponIcon, 1);
+			}
 		}
 	}
 
@@ -619,6 +697,11 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 		int iGhostWide = 0, iGhostTall = 0;
 		vgui::surface()->GetTextSize(m_hGhostFont, WSZ_DNI_GHOST, iGhostWide, iGhostTall);
 
+		vgui::surface()->DrawSetTextColor(
+				(card.iWeaponIdxActive >= 0
+				 		&& NEO_HUD_DEATHNOTICEICON_GHOST == card.wcaWeaponIcons[card.iWeaponIdxActive])
+					? OVERLAY_THEME.textPrimary
+					: OVERLAY_THEME.wepInactive);
 		vgui::surface()->DrawSetTextFont(m_hGhostFont);
 		if (bIsLeftSide)
 		{
@@ -677,7 +760,7 @@ void CNEOHud_SpectatorOverlay::DrawNeoHudElement()
 	// In 1920x1080, the player card:
 	//   Converted to 4:3 is 1440x1080, calculate from 4:3 width regardless of
 	//   16:9/16:10:
-	// * Total width (including avatar) of 300px, 1440/4.8=300
+	// * Total width (including avatar) of 351px, 1440/4.1=~351
 	// * Avatar width of 64px, 1440/22.5=64
 	// * Gap from left or right edge of 12px, 1440/120=12
 	// * Gap between cards Y-axis of 4px, 1440/360=4
@@ -688,7 +771,7 @@ void CNEOHud_SpectatorOverlay::DrawNeoHudElement()
 	float flWideAs43 = static_cast<float>(iScrTall) * (4.0f / 3.0f);
 	if (flWideAs43 > flWide) flWideAs43 = flWide;
 
-	const int iTotalCardWide = flWideAs43 / 4.8f;
+	const int iTotalCardWide = flWideAs43 / 4.1f;
 	const int iAvatarWH = flWideAs43 / 22.5f;
 	const int iGapWide = flWideAs43 / 120.0f;
 	const int iGapBetween = flWideAs43 / 360.0f;

@@ -12,7 +12,12 @@ struct SpectatorPlayerCard
 	int iEntIndex = 0;
 	int iTeam = 0;
 	wchar_t wszPlayerName[MAX_PLAYER_NAME_LENGTH] = {};
-	wchar_t wszWeaponIcon[2] = {};
+	// NEO NOTE (nullsystem): wcaWeaponIcons is NOT used as a string
+	// but individual characters!
+	wchar_t wcaWeaponIcons[MAX_WEAPONS] = {};
+	int iTotalWeaponIcons = 0;
+	int iWeaponIdxActive = 0;
+	int iWeaponIdxPrimary = 0;
 	int iXP = 0;
 	int iDeath = 0;
 	int iClass = 0;
@@ -60,8 +65,9 @@ private:
 	vgui::HFont m_hNameFont = 0;
 	vgui::HFont m_hInfoFont = 0;
 	vgui::HFont m_hClassFont = 0;
-	vgui::HFont m_hHPFont = 0;
+	vgui::HFont m_hRKHPFont = 0;
 	vgui::HFont m_hGhostFont = 0;
+	vgui::HFont m_hSmallWeaponsFont = 0;
 	int m_iDeadTex = 0;
 
 	SpectatorPlayerCard m_cards[MAX_PLAYERS_ARRAY_SAFE] = {};
