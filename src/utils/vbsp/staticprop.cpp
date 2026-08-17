@@ -183,10 +183,6 @@ bool LoadStudioModel( char const* pModelName, char const* pEntityType, CUtlBuffe
 		return false;
 	}
 
-	// ensure reset
-	pHdr->SetVertexBase( NULL );
-	pHdr->SetIndexBase( NULL );
-
 	return true;
 }
 
@@ -683,20 +679,28 @@ void EmitStaticProps()
 }
 
 static studiohdr_t *g_pActiveStudioHdr;
+
+// The loaded .vvd used to be stashed in the studio header itself, but on 64-bit that
+// field lives in studiohdr2_t, which models compiled before that block existed don't
+// have - the store was dropped for them, so the file was reloaded on every access and
+// never freed. Only one model is active at a time here, so keep it alongside instead.
+static void *g_pActiveStudioVertexData;
+
 static void SetCurrentModel( studiohdr_t *pStudioHdr )
 {
 	// track the correct model
 	g_pActiveStudioHdr = pStudioHdr;
+	g_pActiveStudioVertexData = NULL;
 }
 
 static void FreeCurrentModelVertexes()
 {
 	Assert( g_pActiveStudioHdr );
 
-	if ( g_pActiveStudioHdr->VertexBase() )
+	if ( g_pActiveStudioVertexData )
 	{
-		free( g_pActiveStudioHdr->VertexBase() );
-		g_pActiveStudioHdr->SetVertexBase( NULL );
+		free( g_pActiveStudioVertexData );
+		g_pActiveStudioVertexData = NULL;
 	}
 }
 
@@ -709,9 +713,9 @@ const vertexFileHeader_t * mstudiomodel_t::CacheVertexData( void * pModelData )
 	Assert( pModelData == NULL );
 	Assert( g_pActiveStudioHdr );
 
-	if ( g_pActiveStudioHdr->VertexBase() )
+	if ( g_pActiveStudioVertexData )
 	{
-		return (vertexFileHeader_t *)g_pActiveStudioHdr->VertexBase();
+		return (vertexFileHeader_t *)g_pActiveStudioVertexData;
 	}
 
 	// mandatory callback to make requested data resident
@@ -754,7 +758,7 @@ const vertexFileHeader_t * mstudiomodel_t::CacheVertexData( void * pModelData )
 		Error("Error Vertex File %s checksum %d should be %d\n", fileName, pVvdHdr->checksum, g_pActiveStudioHdr->checksum);
 	}
 
-	g_pActiveStudioHdr->SetVertexBase( (void*)pVvdHdr );
+	g_pActiveStudioVertexData = (void*)pVvdHdr;
 	return pVvdHdr;
 }
 

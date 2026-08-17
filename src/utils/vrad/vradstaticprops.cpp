@@ -12,6 +12,7 @@
 #include "vrad.h"
 #include "mathlib/vector.h"
 #include "utlbuffer.h"
+#include "utlmap.h"
 #include "utlvector.h"
 #include "gamebspfile.h"
 #include "bsptreedata.h"
@@ -444,6 +445,49 @@ CPhysCollide* ComputeConvexHull( studiohdr_t* pStudioHdr )
 
 
 //-----------------------------------------------------------------------------
+// Loaded .vvd data, keyed on the studio header it belongs to.
+//
+// This used to be stashed in the studio header itself, but on 64-bit that field
+// lives in studiohdr2_t, which models compiled before that block existed don't
+// have - the store was dropped for them, so the file was reloaded on every access
+// and never freed. Several models are resident at once here, hence the map.
+//-----------------------------------------------------------------------------
+static CUtlMap<const studiohdr_t *, void *> s_ModelVertexData( DefLessFunc( const studiohdr_t * ) );
+
+static void *GetModelVertexData( const studiohdr_t *pStudioHdr )
+{
+	unsigned short iData = s_ModelVertexData.Find( pStudioHdr );
+	return s_ModelVertexData.IsValidIndex( iData ) ? s_ModelVertexData[iData] : NULL;
+}
+
+static void SetModelVertexData( const studiohdr_t *pStudioHdr, void *pVertexData )
+{
+	s_ModelVertexData.InsertOrReplace( pStudioHdr, pVertexData );
+}
+
+static void FreeModelVertexData( const studiohdr_t *pStudioHdr )
+{
+	unsigned short iData = s_ModelVertexData.Find( pStudioHdr );
+	if ( s_ModelVertexData.IsValidIndex( iData ) )
+	{
+		free( s_ModelVertexData[iData] );
+		s_ModelVertexData.RemoveAt( iData );
+	}
+}
+
+// Hands ownership of pFrom's vertex data, if any, to pTo.
+static void TransferModelVertexData( const studiohdr_t *pFrom, const studiohdr_t *pTo )
+{
+	unsigned short iData = s_ModelVertexData.Find( pFrom );
+	if ( s_ModelVertexData.IsValidIndex( iData ) )
+	{
+		SetModelVertexData( pTo, s_ModelVertexData[iData] );
+		s_ModelVertexData.RemoveAt( iData );
+	}
+}
+
+
+//-----------------------------------------------------------------------------
 // Load studio model vertex data from a file...
 //-----------------------------------------------------------------------------
 
@@ -482,9 +526,8 @@ bool LoadStudioModel( char const* pModelName, CUtlBuffer& buf )
 		return false;
 	}
 
-	// ensure reset
-	pHdr->SetVertexBase( NULL );
-	pHdr->SetIndexBase( NULL );
+	// ensure reset - buffers get recycled, so this address may carry a stale entry
+	FreeModelVertexData( pHdr );
 
 	return true;
 }
@@ -977,6 +1020,10 @@ void CVradStaticPropMgr::CreateCollisionModel( char const* pModelName )
 	m_StaticPropDict[i].m_pStudioHdr = (studiohdr_t *)malloc( buf.Size() );
 	memcpy( m_StaticPropDict[i].m_pStudioHdr, (studiohdr_t*)buf.Base(), buf.Size() );
 
+	// ComputeConvexHull() above may have loaded the vertex data against the header in
+	// buf, which goes away when we return - the clone owns that data from here on.
+	TransferModelVertexData( pHdr, m_StaticPropDict[i].m_pStudioHdr );
+
 	if ( !LoadVTXFile( pModelName, m_StaticPropDict[i].m_pStudioHdr, m_StaticPropDict[i].m_VtxBuf ) )
 	{
 		// failed, leave state identified as disabled
@@ -1098,10 +1145,7 @@ void CVradStaticPropMgr::Shutdown()
 		studiohdr_t *pStudioHdr = m_StaticPropDict[i].m_pStudioHdr;
 		if ( pStudioHdr )
 		{
-			if ( pStudioHdr->VertexBase() )
-			{
-				free( pStudioHdr->VertexBase() );
-			}
+			FreeModelVertexData( pStudioHdr );
 			free( pStudioHdr );
 		}
 	}
@@ -2057,9 +2101,9 @@ const vertexFileHeader_t * mstudiomodel_t::CacheVertexData( void *pModelData )
 	studiohdr_t *pActiveStudioHdr = static_cast<studiohdr_t *>(pModelData);
 	Assert( pActiveStudioHdr );
 
-	if ( pActiveStudioHdr->VertexBase() )
+	if ( void *pVertexData = GetModelVertexData( pActiveStudioHdr ) )
 	{
-		return (vertexFileHeader_t *)pActiveStudioHdr->VertexBase();
+		return (vertexFileHeader_t *)pVertexData;
 	}
 
 	// mandatory callback to make requested data resident
@@ -2118,7 +2162,7 @@ const vertexFileHeader_t * mstudiomodel_t::CacheVertexData( void *pModelData )
 	free( pVvdHdr );
 	pVvdHdr = pNewVvdHdr;
 
-	pActiveStudioHdr->SetVertexBase( (void*)pVvdHdr );
+	SetModelVertexData( pActiveStudioHdr, (void*)pVvdHdr );
 	return pVvdHdr;
 }
 
