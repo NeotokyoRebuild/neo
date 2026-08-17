@@ -803,14 +803,16 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 							}
 							if (bShowReadyUp)
 							{
-								V_swprintf_safe(wszText, L"%ls: %d (%d player%s - %d ready)",
-										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s",
+								V_swprintf_safe(wszText, L"%ls: %d (%d player%ls - %d ready)",
+										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam],
+										iaTeamTally[iCurTeam] == 1 ? L"" : L"s",
 										iaTeamReadyTally[iCurTeam]);
 							}
 							else
 							{
-								V_swprintf_safe(wszText, L"%ls: %d (%d player%s)",
-										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s");
+								V_swprintf_safe(wszText, L"%ls: %d (%d player%ls)",
+										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam],
+										iaTeamTally[iCurTeam] == 1 ? L"" : L"s");
 							}
 						}
 					}
@@ -820,8 +822,8 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						if (iCurTeam == TEAM_JINRAI)
 						{
 							const int total = iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF];
-							V_swprintf_safe(wszText, L"Player%s: %d",
-									total == 1 ? "" : "s", total);
+							V_swprintf_safe(wszText, L"Player%ls: %d",
+									total == 1 ? L"" : L"s", total);
 						}
 						else
 						{
@@ -831,8 +833,9 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				}
 				else
 				{
-					V_swprintf_safe(wszText, L"%ls (%d player%s)",
-							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s");
+					V_swprintf_safe(wszText, L"%ls (%d player%ls)",
+							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, iaTeamTally[iCurTeam],
+							iaTeamTally[iCurTeam] == 1 ? L"" : L"s");
 				}
 				NeoUI::Label(wszText, true);
 
