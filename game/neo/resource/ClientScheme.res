@@ -464,6 +464,133 @@ Scheme
 				"weight"		"0"
 			}
 		}
+		// For the class, loadout, and team menu font, not scaled for higher res
+		"CLTDefault"
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+				"yres"		"480 599"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"13" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+				"yres"		"600 767"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX] //"20"
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"18" [!$LINUX] //"24"
+				"tall"		"22" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1200 10000"
+			}
+			"8"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
+				"range"		"0x0000 0x00FF"
+				"weight"	"900"
+			}
+			"9"
+			{
+				"name"		"Arial"
+				"tall"		"12"
+				"range"		"0x0000 0x00FF"
+				"weight"	"800"
+			}
+		}
+		"CLTDefaultBold"
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+				"yres"		"480 599"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"13" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+				"yres"		"600 767"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX] //"20"
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"18" [!$LINUX] //"24"
+				"tall"		"22" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1200 10000"
+			}
+			"8"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
+				"range"		"0x0000 0x00FF"
+				"weight"	"900"
+			}
+			"9"
+			{
+				"name"		"Arial"
+				"tall"		"12"
+				"range"		"0x0000 0x00FF"
+				"weight"	"800"
+			}
+		}
 		HudHintText
 		{
 			"1"
