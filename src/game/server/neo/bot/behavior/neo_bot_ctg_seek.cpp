@@ -1,11 +1,13 @@
 #include "cbase.h"
 #include "neo_player.h"
 #include "neo_gamerules.h"
+#include "neo_ghost_cap_point.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_seek.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/behavior/neo_bot_ctg_escort.h"
 #include "bot/behavior/neo_bot_ctg_enemy.h"
+#include "bot/behavior/neo_bot_ctg_enemy_intercept_cap_path.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_capture.h"
 #include "bot/neo_bot_path_compute.h"
@@ -25,6 +27,49 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		return result;
 	}
 
+	if (!NEORules()->GhostExists())
+	{
+		return Done("Ghost does not exist");
+	}
+
+	if (me->IsCarryingGhost())
+	{
+		return SuspendFor(new CNEOBotCtgCarrier, "I am the ghost carrier!");
+	}
+
+	int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+	if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
+	{
+		CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
+		if (pGhostCarrier && pGhostCarrier != me)
+		{
+			if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
+			{
+				return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");
+			}
+
+			bool bHasEnemyCap = false;
+			for ( int i = 0; i < NEORules()->m_pGhostCaps.Count(); ++i )
+			{
+				CNEOGhostCapturePoint *pCapPoint = dynamic_cast< CNEOGhostCapturePoint* >( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
+				if ( pCapPoint && pCapPoint->owningTeamAlternate() != me->GetTeamNumber() )
+				{
+					bHasEnemyCap = true;
+					break;
+				}
+			}
+
+			if ( bHasEnemyCap )
+			{
+				return SuspendFor( new CNEOBotCtgEnemyInterceptCapPath, "Intercepting capture zone" );
+			}
+			else
+			{
+				return SuspendFor( new CNEOBotCtgEnemy, "Stopping the ghost carrier!" );
+			}
+		}
+	}
+
 	int team_members = 0;
 	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
@@ -40,31 +85,6 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one on my team!" );
 	}
 
-	if (NEORules()->GhostExists())
-	{
-		int iGhosterPlayer = NEORules()->GetGhosterPlayer();
-		if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
-		{
-			CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
-			if (pGhostCarrier && pGhostCarrier != me)
-			{
-				if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
-				{
-					return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");
-				}
-				else
-				{
-					return SuspendFor(new CNEOBotCtgEnemy, "Stopping the ghost carrier!");
-				}
-			}
-
-			// If I have the ghost, switch to ghost behavior
-			if (me->IsCarryingGhost())
-			{
-				return SuspendFor(new CNEOBotCtgCarrier, "I am the ghost carrier!");
-			}
-		}
-	}
 
 	// Ghost capture logic
 	if (m_bGoingToTargetEntity && m_hTargetEntity)
