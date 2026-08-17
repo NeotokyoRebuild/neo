@@ -282,13 +282,31 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"16" [!$LINUX] //"24"
-				"tall"		"20" [$LINUX]
+				"tall"		"18" [!$LINUX] //"24"
+				"tall"		"22" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1599"
 			}
 			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"22" [!$LINUX] //"24"
+				"tall"		"26" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1600 2099"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"26" [!$LINUX] //"24"
+				"tall"		"32" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"2100 10000"
+			}
+			"8"
 			{
 				"name"		"Verdana"
 				"tall"		"12" [!$LINUX]
@@ -296,7 +314,7 @@ Scheme
 				"range"		"0x0000 0x00FF"
 				"weight"	"900"
 			}
-			"7"
+			"9"
 			{
 				"name"		"Arial"
 				"tall"		"12"
@@ -589,7 +607,27 @@ Scheme
 				"tall"		"22" [$LINUX]
 				"weight"	"1000"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"20" [!$LINUX]
+				"tall"		"24" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 2099"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"24" [!$LINUX]
+				"tall"		"28" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"2100 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
@@ -645,7 +683,17 @@ Scheme
 				"tall"		"24" [$LINUX]
 				"weight"	"1000"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"26" [!$LINUX]
+				"tall"		"32" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
@@ -701,7 +749,17 @@ Scheme
 				"tall"		"22" [$LINUX]
 				"weight"	"1000"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"24" [!$LINUX]
+				"tall"		"28" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
@@ -757,7 +815,17 @@ Scheme
 				"tall"		"20" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"24" [!$LINUX]
+				"tall"		"28" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1600 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
@@ -813,7 +881,27 @@ Scheme
 				"tall"		"26" [$LINUX]
 				"weight"	"1000"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"26" [!$LINUX]
+				"tall"		"32" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 2099"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"36" [!$LINUX]
+				"tall"		"42" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"2100 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
@@ -884,7 +972,17 @@ Scheme
 				"tall"		"52"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1600 6000"
+				"yres"	"1600 2099"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"8"
+			{
+				"name"		"killfeedicons"
+				"tall"		"62"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"2100 6000"
 				"antialias"	"1"
 				"additive"	"0"
 			}
@@ -895,7 +993,7 @@ Scheme
 			"1"
 			{
 				"name"		"killfeedicons"
-				"tall"		"12"
+				"tall"		"9"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"480 599"
@@ -904,7 +1002,7 @@ Scheme
 			"2"
 			{
 				"name"		"killfeedicons"
-				"tall"		"14"
+				"tall"		"10"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"600 767"
@@ -913,7 +1011,7 @@ Scheme
 			"3"
 			{
 				"name"		"killfeedicons"
-				"tall"		"16"
+				"tall"		"12"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"768 1023"
@@ -923,7 +1021,7 @@ Scheme
 			"4"
 			{
 				"name"		"killfeedicons"
-				"tall"		"14"// TESTING
+				"tall"		"14"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1024 1199"
@@ -933,7 +1031,7 @@ Scheme
 			"5"
 			{
 				"name"		"killfeedicons"
-				"tall"		"24"
+				"tall"		"16"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1200 1440"
@@ -943,7 +1041,7 @@ Scheme
 			"6"
 			{
 				"name"		"killfeedicons"
-				"tall"		"26"
+				"tall"		"22"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1441 1599"
@@ -953,7 +1051,7 @@ Scheme
 			"7"
 			{
 				"name"		"killfeedicons"
-				"tall"		"28"
+				"tall"		"26"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1600 6000"
@@ -1753,7 +1851,7 @@ Scheme
 			"7"
 			{
 				"name"		"killfeedicons"
-				"tall"		"28"
+				"tall"		"32"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1600 6000"
@@ -2875,7 +2973,25 @@ Scheme
 				"tall"		"15"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"		"1200 6000"
+				"yres"		"1200 1599"
+				"antialias"	"1"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"18"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"1600 2099"
+				"antialias"	"1"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"24"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"2100 6000"
 				"antialias"	"1"
 			}
 		}
