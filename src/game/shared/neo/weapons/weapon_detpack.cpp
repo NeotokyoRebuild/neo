@@ -272,6 +272,7 @@ bool CWeaponDetpack::CanDrop()
 	return m_bThisDetpackHasBeenThrown && owner && !GetOwner()->IsAlive();
 }
 
+extern ConVar sv_neo_exp_dmg_modifier;
 void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 {
 	Assert(HasPrimaryAmmo());
@@ -297,7 +298,7 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 
 	if (m_pDetpack)
 	{
-		m_pDetpack->SetDamage(NEO_DETPACK_DAMAGE);
+		m_pDetpack->SetDamage(NEO_DETPACK_DAMAGE * sv_neo_exp_dmg_modifier.GetFloat());
 		m_pDetpack->SetDamageRadius(NEO_DETPACK_DAMAGE_RADIUS);
 	}
 	else
