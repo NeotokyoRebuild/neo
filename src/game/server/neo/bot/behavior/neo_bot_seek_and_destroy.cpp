@@ -6,11 +6,13 @@
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_ctg_seek.h"
+#include "bot/behavior/neo_bot_ctg_enemy.h"
 #include "bot/behavior/neo_bot_jgr_seek.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "soundent.h"
 
+extern ConVar mp_chattime;
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar neo_bot_offense_must_push_time;
 extern ConVar neo_bot_defense_must_defend_time;
@@ -160,7 +162,43 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 	// Check for Game Type Specific behaviors and suspend for them
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
 	{
-		return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
+		// Check if enemy has the ghost
+		if (NEORules()->GhostExists())
+		{
+			int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+			if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
+			{
+				CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
+				if (pGhostCarrier && pGhostCarrier != me && pGhostCarrier->GetTeamNumber() != me->GetTeamNumber())
+				{
+					return SuspendFor(new CNEOBotCtgEnemy, "Stopping the ghost carrier!");
+				}
+			}
+		}
+
+		if (!m_ctgCheckTimer.HasStarted() || m_ctgCheckTimer.IsElapsed())
+		{
+			m_ctgCheckTimer.Start(mp_chattime.GetFloat());
+
+			// Only switch to CTG behavior if there are available capture zones this round
+			bool bHasAvailableCapZone = false;
+			const int iMyTeam = me->GetTeamNumber();
+
+			for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
+			{
+				CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
+				if ( pCapPoint && pCapPoint->GetActive() && pCapPoint->owningTeamAlternate() == iMyTeam )
+				{
+					bHasAvailableCapZone = true;
+					break;
+				}
+			}
+
+			if ( bHasAvailableCapZone )
+			{
+				return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
+			}
+		}
 	}
 	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
 	{
