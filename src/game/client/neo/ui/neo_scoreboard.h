@@ -23,6 +23,7 @@ struct MapAvatarValue
 	int i32Idx;
 	int i64Idx;
 	int i184Idx;
+	int i184DeadIdx;
 };
 
 struct CNEOScoreBoardPlayer

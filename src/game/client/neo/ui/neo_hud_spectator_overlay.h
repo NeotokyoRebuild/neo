@@ -24,7 +24,8 @@ struct SpectatorPlayerCard
 	int iHP = 0;
 	int iRoundKills = 0;
 	bool bAlive = false;
-	CAvatarImage *pAvatar = nullptr;
+	CAvatarImage *pAvatarAlive = nullptr;
+	CAvatarImage *pAvatarDead = nullptr;
 	// Used for animations/fading
 	float flLastAttackTime = 0.0f;
 	float flLastAliveTime = 0.0f;

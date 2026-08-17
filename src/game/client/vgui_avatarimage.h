@@ -37,15 +37,28 @@
 struct AvatarImagePair_t
 {
 	AvatarImagePair_t() { m_iAvatar = 0; }
+#ifdef NEO
+	AvatarImagePair_t( CSteamID steamID, int av, bool dead ) { m_SteamID = steamID; m_iAvatar = av; m_bDeadAvatar = dead; }
+#else
 	AvatarImagePair_t( CSteamID steamID, int av ) { m_SteamID = steamID; m_iAvatar = av; }
+#endif
 	bool operator<( const AvatarImagePair_t &rhs ) const
 	{
+#ifdef NEO
+		return m_SteamID.ConvertToUint64() < rhs.m_SteamID.ConvertToUint64() || 
+		( m_SteamID.ConvertToUint64() == rhs.m_SteamID.ConvertToUint64() && m_iAvatar < rhs.m_iAvatar ) ||
+		( m_SteamID.ConvertToUint64() == rhs.m_SteamID.ConvertToUint64() && m_iAvatar == rhs.m_iAvatar && m_bDeadAvatar < rhs.m_bDeadAvatar );
+#else
 		return m_SteamID.ConvertToUint64() < rhs.m_SteamID.ConvertToUint64() || 
 		( m_SteamID.ConvertToUint64() == rhs.m_SteamID.ConvertToUint64() && m_iAvatar < rhs.m_iAvatar );
+#endif
 	}	
 					  
 	CSteamID m_SteamID;
 	int m_iAvatar;
+#ifdef NEO
+	bool m_bDeadAvatar = false;
+#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -121,6 +134,7 @@ public:
 	int		GetAvatarTall() { return m_avatarTall; }
 #ifdef NEO
 	int		getTextureID() { return m_iTextureID; }
+	bool m_bDeadAvatar = false;
 #endif
 
 	//=============================================================================
