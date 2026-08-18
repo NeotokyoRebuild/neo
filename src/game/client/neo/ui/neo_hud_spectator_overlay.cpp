@@ -210,9 +210,26 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 					{
 						pCard->pAvatarAlive = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i184Idx));
 					}
+					else if (avatar.i64Idx >= 0)
+					{
+						pCard->pAvatarAlive = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i64Idx));
+					}
+					else if (avatar.i32Idx >= 0)
+					{
+						pCard->pAvatarAlive = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i32Idx));
+					}
+
 					if (avatar.i184DeadIdx >= 0)
 					{
 						pCard->pAvatarDead = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i184DeadIdx));
+					}
+					else if (avatar.i64DeadIdx >= 0)
+					{
+						pCard->pAvatarDead = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i64DeadIdx));
+					}
+					else if (avatar.i32DeadIdx >= 0)
+					{
+						pCard->pAvatarDead = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i32DeadIdx));
 					}
 				}
 

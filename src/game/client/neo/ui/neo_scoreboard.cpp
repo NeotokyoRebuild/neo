@@ -498,21 +498,31 @@ void CNEOScoreBoard::Update()
 			int iMapIndex = m_mapAvatarsToImageList.Find(pPlayerInfo->steamID);
 			if (iMapIndex == m_mapAvatarsToImageList.InvalidIndex())
 			{
+				// NEO TODO (nullsystem): Improve the way it fetches images, generate
+				// both non-altered and dead from one request
 				auto *pImage32 = new CAvatarImage;
 				auto *pImage64 = new CAvatarImage;
 				auto *pImage184 = new CAvatarImage;
 
+				auto *pImageDead32 = new CAvatarImage;
+				auto *pImageDead64 = new CAvatarImage;
 				auto *pImageDead184 = new CAvatarImage;
+				pImageDead32->m_bDeadAvatar = true;
+				pImageDead64->m_bDeadAvatar = true;
 				pImageDead184->m_bDeadAvatar = true;
 
 				pImage32->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize32x32);
 				pImage64->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize64x64);
 				pImage184->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize184x184);
+				pImageDead32->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize32x32);
+				pImageDead64->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize64x64);
 				pImageDead184->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize184x184);
 
 				pPlayerInfo->avatar = {
 					.i32Idx = m_pImageList->AddImage(pImage32),
+					.i32DeadIdx = m_pImageList->AddImage(pImageDead32),
 					.i64Idx = m_pImageList->AddImage(pImage64),
+					.i64DeadIdx = m_pImageList->AddImage(pImageDead64),
 					.i184Idx = m_pImageList->AddImage(pImage184),
 					.i184DeadIdx = m_pImageList->AddImage(pImageDead184),
 				};
@@ -529,6 +539,9 @@ void CNEOScoreBoard::Update()
 			pPlayerInfo->avatar.i32Idx = -1;
 			pPlayerInfo->avatar.i64Idx = -1;
 			pPlayerInfo->avatar.i184Idx = -1;
+			pPlayerInfo->avatar.i32DeadIdx = -1;
+			pPlayerInfo->avatar.i64DeadIdx = -1;
+			pPlayerInfo->avatar.i184DeadIdx = -1;
 		}
 
 		++m_iTotalPlayers;

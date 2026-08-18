@@ -21,7 +21,9 @@ enum ENeoScoreBoardPadding
 struct MapAvatarValue
 {
 	int i32Idx;
+	int i32DeadIdx;
 	int i64Idx;
+	int i64DeadIdx;
 	int i184Idx;
 	int i184DeadIdx;
 };
