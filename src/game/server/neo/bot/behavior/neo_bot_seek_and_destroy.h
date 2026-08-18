@@ -52,6 +52,5 @@ protected:
 	bool m_bOverrideApproach = false;
 	Vector m_vOverrideApproach = vec3_origin;
 
-	CountdownTimer m_ctgCheckTimer;
 	CountdownTimer m_giveUpTimer;
 };
