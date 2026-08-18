@@ -12,7 +12,6 @@
 #include "nav_mesh.h"
 #include "soundent.h"
 
-extern ConVar mp_chattime;
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar neo_bot_offense_must_push_time;
 extern ConVar neo_bot_defense_must_defend_time;
@@ -176,9 +175,8 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 			}
 		}
 
-		if (!m_ctgCheckTimer.HasStarted() || m_ctgCheckTimer.IsElapsed())
+		if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
 		{
-			m_ctgCheckTimer.Start(mp_chattime.GetFloat());
 
 			// Only switch to CTG behavior if there are available capture zones this round
 			bool bHasAvailableCapZone = false;
