@@ -154,30 +154,11 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNE
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interval )
 {
-	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
-	if ( result.IsRequestingChange() || result.IsDone() )
-		return result;
-
 	// Check for Game Type Specific behaviors and suspend for them
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
 	{
-		// Check if enemy has the ghost
-		if (NEORules()->GhostExists())
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
 		{
-			int iGhosterPlayer = NEORules()->GetGhosterPlayer();
-			if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
-			{
-				CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
-				if (pGhostCarrier && pGhostCarrier != me && pGhostCarrier->GetTeamNumber() != me->GetTeamNumber())
-				{
-					return SuspendFor(new CNEOBotCtgEnemy, "Stopping the ghost carrier!");
-				}
-			}
-		}
-
-		if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
-		{
-
 			// Only switch to CTG behavior if there are available capture zones this round
 			bool bHasAvailableCapZone = false;
 			const int iMyTeam = me->GetTeamNumber();
@@ -196,11 +177,37 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 			{
 				return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
 			}
+
+		}
+		else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+		{
+			return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
+		}
+
+		return Continue();
+	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		// Check if enemy has the ghost
+		if (NEORules()->GhostExists())
+		{
+			int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+			if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
+			{
+				CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
+				if (pGhostCarrier && pGhostCarrier != me && pGhostCarrier->GetTeamNumber() != me->GetTeamNumber())
+				{
+					return SuspendFor(new CNEOBotCtgEnemy, "Stopping the ghost carrier!");
+				}
+			}
 		}
 	}
-	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+
+	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
+	if ( result.IsRequestingChange() || result.IsDone() )
 	{
-		return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
+		return result;
 	}
 
 	return Continue();
