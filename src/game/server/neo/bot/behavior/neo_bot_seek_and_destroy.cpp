@@ -166,7 +166,13 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 			for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
 			{
 				CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
-				if ( pCapPoint && pCapPoint->GetActive() && pCapPoint->owningTeamAlternate() == iMyTeam )
+				if ( !pCapPoint || !pCapPoint->GetActive() )
+				{
+					continue;
+				}
+
+				const int iCapTeam = pCapPoint->owningTeamAlternate();
+				if ( iCapTeam == iMyTeam || iCapTeam == TEAM_ANY )
 				{
 					bHasAvailableCapZone = true;
 					break;
