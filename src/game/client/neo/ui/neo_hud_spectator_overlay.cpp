@@ -15,6 +15,7 @@
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 #include <vgui_controls/Controls.h>
+#include <vgui_controls/ImageList.h>
 #include <vgui/IScheme.h>
 #include <vgui_avatarimage.h>
 
