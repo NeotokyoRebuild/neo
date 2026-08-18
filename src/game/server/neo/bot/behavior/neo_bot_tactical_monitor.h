@@ -35,10 +35,6 @@ private:
 
 	CountdownTimer m_detpackCheckTimer;
 	ActionResult< CNEOBot > MonitorArmedDetpack(CNEOBot *me);
-#if 0
-	CountdownTimer m_stickyBombCheckTimer;
-	void MonitorArmedStickyBombs(CNEOBot* me);
-#endif
 
 	ActionResult< CNEOBot > ScavengeForPrimaryWeapon(CNEOBot* me);
 

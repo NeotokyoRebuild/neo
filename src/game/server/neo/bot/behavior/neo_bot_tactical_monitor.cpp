@@ -207,68 +207,6 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::MonitorArmedDetpack( CNEOBot *me
 }
 
 
-#ifndef NEO // NEO TODO (Adam) Monitor the remote detpack
-//-----------------------------------------------------------------------------------------
-void CNEOBotTacticalMonitor::MonitorArmedStickyBombs( CNEOBot *me )
-{
-	if ( m_stickyBombCheckTimer.IsElapsed() )
-	{
-		m_stickyBombCheckTimer.Start( RandomFloat( 0.3f, 1.0f ) );
-
-		// are there any enemies on/near my sticky bombs?
-		CWeapon_SLAM *slam = dynamic_cast< CWeapon_SLAM* >( me->Weapon_OwnsThisType( "weapon_slam" ) );
-		if ( slam )
-		{
-			const CUtlVector< CBaseEntity* > &satchelVector = slam->GetSatchelVector();
-
-			if ( satchelVector.Count() > 0 )
-			{
-				CUtlVector< CKnownEntity > knownVector;
-				me->GetVisionInterface()->CollectKnownEntities( &knownVector );
-
-				for( int p=0; p< satchelVector.Count(); ++p )
-				{
-					CBaseEntity *satchel = satchelVector[p];
-					if ( !satchel )
-					{
-						continue;
-					}
-
-					for( int k=0; k<knownVector.Count(); ++k )
-					{
-						if ( knownVector[k].IsObsolete() )
-						{
-							continue;
-						}
-
-						if ( knownVector[k].GetEntity()->IsBaseObject() )
-						{
-							// we want to put several stickies on a sentry and det at once
-							continue;
-						}
-
-						if ( satchel->GetTeamNumber() != GetEnemyTeam( knownVector[k].GetEntity()->GetTeamNumber() ) )
-						{
-							// "known" is either a spectator, or on our team
-							continue;
-						}
-
-						const float closeRange = 150.0f;
-						if ( ( knownVector[k].GetLastKnownPosition() - satchel->GetAbsOrigin() ).IsLengthLessThan( closeRange ) )
-						{
-							// they are close - blow it!
-							me->PressFireButton();
-							return;
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-
-#endif //NEO
 //-----------------------------------------------------------------------------------------
 void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 {
@@ -438,11 +376,6 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	{
 		return detpackResult;
 	}
-
-#if 0 // NEO TODO (Adam) detonate remote detpacks
-	// detonate sticky bomb traps when victims are near
-	MonitorArmedStickyBombs( me );
-#endif
 
 	if ( !(me->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_USE)) )
 	{
