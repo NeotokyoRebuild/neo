@@ -770,7 +770,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1 599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"additive"	"1"
+				"dropshadow"	"1"
 			}
 			"2"
 			{
@@ -781,7 +781,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"600 767"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"additive"	"1"
+				"dropshadow"	"1"
 			}
 			"3"
 			{
@@ -792,6 +792,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"768 1023"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
 			}
 			"4"
 			{
@@ -802,6 +803,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1024 1199"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
 			}
 			"5"
 			{
@@ -812,6 +814,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1200 1599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
 			}
 			"6"
 			{
@@ -822,6 +825,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1600 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
 			}
 		}
 
@@ -902,7 +906,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1 599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"additive"	"1"
+				"dropshadow"	"1"
 			}
 			"2"
 			{
@@ -913,7 +917,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"600 767"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"additive"	"1"
+				"dropshadow"	"1"
 			}
 			"3"
 			{
@@ -924,6 +928,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"768 1023"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
 			}
 			"4"
 			{
@@ -934,6 +939,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1024 1199"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
 			}
 			"5"
 			{
@@ -944,6 +950,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1200 1599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
 			}
 			"6"
 			{
@@ -954,6 +961,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1600 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
 			}
 		}
 
@@ -968,7 +976,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1 599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"additive"	"1"
+				"outline"  "1"
 			}
 			"2"
 			{
@@ -979,7 +987,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"600 767"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"additive"	"1"
+				"outline"  "1"
 			}
 			"3"
 			{
@@ -990,6 +998,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"768 1023"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
 			}
 			"4"
 			{
@@ -1000,6 +1009,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1024 1199"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
 			}
 			"5"
 			{
@@ -1010,6 +1020,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1200 1599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
 			}
 			"6"
 			{
@@ -1020,6 +1031,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1600 2099"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
 			}
 			"7"
 			{
@@ -1030,6 +1042,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"2100 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
 			}
 		}
 

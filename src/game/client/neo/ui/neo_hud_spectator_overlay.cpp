@@ -405,12 +405,6 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 				: iAvatarX + iAvatarSize - iWideHP - iTextPad;
 		const int iHPTextY = iAvatarY + iAvatarSize - iTallHP;
 
-		// Shadow
-		vgui::surface()->DrawSetTextColor(COLOR_BLACK);
-		vgui::surface()->DrawSetTextPos(iHPTextX + 2, iHPTextY + 2);
-		vgui::surface()->DrawPrintText(wszHP, V_wcslen(wszHP));
-
-		// Front
 		vgui::surface()->DrawSetTextColor(OVERLAY_THEME.textPrimary);
 		vgui::surface()->DrawSetTextPos(iHPTextX, iHPTextY);
 		vgui::surface()->DrawPrintText(wszHP, V_wcslen(wszHP));
@@ -443,12 +437,6 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 				: iAvatarX + iAvatarSize - iWideRK - iTextPad;
 		const int iRKTextY = iAvatarY;
 
-		// Shadow
-		vgui::surface()->DrawSetTextColor(COLOR_BLACK);
-		vgui::surface()->DrawSetTextPos(iRKTextX + 2, iRKTextY + 2);
-		vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
-
-		// Front
 		vgui::surface()->DrawSetTextColor(OVERLAY_THEME.textPrimary);
 		vgui::surface()->DrawSetTextPos(iRKTextX, iRKTextY);
 		vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
@@ -537,20 +525,11 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 				: x + (wide - iAvatarSize) - iTextPad - iPlayerNameWide;
 		const int iNameY = y + (((iAvatarSize / 2.0f) - iPlayerNameTall) / 2.0f);
 
-		// Shadow
-		{
-			vgui::surface()->DrawSetTextColor(COLOR_BLACK);
-			vgui::surface()->DrawSetTextPos(iNameX + 2, iNameY + 2);
-			vgui::surface()->DrawPrintText(card.wszPlayerName, V_wcslen(card.wszPlayerName));
-		}
-		// Front
-		{
-			vgui::surface()->DrawSetTextColor(card.bAlive
-					? OVERLAY_THEME.textPrimary
-					: Color(140, 140, 150, 200));
-			vgui::surface()->DrawSetTextPos(iNameX, iNameY);
-			vgui::surface()->DrawPrintText(card.wszPlayerName, V_wcslen(card.wszPlayerName));
-		}
+		vgui::surface()->DrawSetTextColor(card.bAlive
+				? OVERLAY_THEME.textPrimary
+				: Color(140, 140, 150, 200));
+		vgui::surface()->DrawSetTextPos(iNameX, iNameY);
+		vgui::surface()->DrawPrintText(card.wszPlayerName, V_wcslen(card.wszPlayerName));
 
 		// Class name
 		vgui::surface()->DrawSetTextFont(m_hClassFont);
@@ -562,20 +541,11 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 				: x + iTextPad;
 		const int iClNamePosY = y + (((iAvatarSize / 2.0f) - iClassNameTall) / 2.0f);
 
-		// Shadow
-		{
-			vgui::surface()->DrawSetTextColor(COLOR_BLACK);
-			vgui::surface()->DrawSetTextPos(iClNamePosX + 1, iClNamePosY + 1);
-			vgui::surface()->DrawPrintText(pwszClassName, V_wcslen(pwszClassName));
-		}
-		// Front
-		{
-			vgui::surface()->DrawSetTextColor(card.bAlive
-					? OVERLAY_THEME.textPrimary
-					: Color(140, 140, 150, 200));
-			vgui::surface()->DrawSetTextPos(iClNamePosX, iClNamePosY);
-			vgui::surface()->DrawPrintText(pwszClassName, V_wcslen(pwszClassName));
-		}
+		vgui::surface()->DrawSetTextColor(card.bAlive
+				? OVERLAY_THEME.textPrimary
+				: Color(140, 140, 150, 200));
+		vgui::surface()->DrawSetTextPos(iClNamePosX, iClNamePosY);
+		vgui::surface()->DrawPrintText(pwszClassName, V_wcslen(pwszClassName));
 	}
 
 	// Extra info row: XP | Death | Round kills | Weapon logo
