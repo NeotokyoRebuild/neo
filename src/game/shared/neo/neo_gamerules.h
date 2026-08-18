@@ -503,7 +503,6 @@ private:
 	friend class CNEOBotCtgEscort;
 	friend class CNEOBotCtgLoneWolf;
 	friend class CNEOBotCtgLoneWolfAmbush;
-	friend class CNEOBotCtgLoneWolfDetpack;
 	friend class CNEOBotCtgLoneWolfSeek;
 	friend class CNEOBotTacticalMonitor;
 
