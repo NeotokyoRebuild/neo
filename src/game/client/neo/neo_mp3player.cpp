@@ -76,7 +76,11 @@ public:
 	int Run()
 	{
 		ma_engine maEngine = {};
-		ma_result maResult = ma_engine_init(NULL, &maEngine);
+
+		ma_engine_config maEngineConfig = ma_engine_config_init();
+		maEngineConfig.channels = 2;
+
+		ma_result maResult = ma_engine_init(&maEngineConfig, &maEngine);
 		if (maResult != MA_SUCCESS)
 		{
 			Msg("NEO MP3 Player error: Failed to initalize engine!");
@@ -153,6 +157,7 @@ public:
 			WaitForCall(250, &nCall);
 			if (nCall == EXIT)
 			{
+				ma_sound_stop(&maSound);
 				break;
 			}
 
