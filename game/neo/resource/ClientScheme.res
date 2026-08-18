@@ -965,7 +965,88 @@ Scheme
 			}
 		}
 
-		NHudSpectatorOverlayRoundKillHP
+		NHudSpectatorOverlayRoundKillHPFront
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"		"14" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"20" [!$LINUX]
+				"tall"		"24" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"22" [!$LINUX]
+				"tall"		"26" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"26" [!$LINUX]
+				"tall"		"32" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 2099"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"36" [!$LINUX]
+				"tall"		"42" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"2100 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+		}
+
+		NHudSpectatorOverlayRoundKillHPBack
 		{
 			"1"
 			{
@@ -977,6 +1058,7 @@ Scheme
 				"yres"	"1 599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"outline"  "1"
+				"blur"  "1"
 			}
 			"2"
 			{
@@ -988,6 +1070,7 @@ Scheme
 				"yres"	"600 767"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"outline"  "1"
+				"blur"  "1"
 			}
 			"3"
 			{
@@ -999,6 +1082,7 @@ Scheme
 				"yres"	"768 1023"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"outline"  "1"
+				"blur"  "1"
 			}
 			"4"
 			{
@@ -1010,6 +1094,7 @@ Scheme
 				"yres"	"1024 1199"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"outline"  "1"
+				"blur"  "1"
 			}
 			"5"
 			{
@@ -1021,6 +1106,7 @@ Scheme
 				"yres"	"1200 1599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"outline"  "1"
+				"blur"  "1"
 			}
 			"6"
 			{
@@ -1032,6 +1118,7 @@ Scheme
 				"yres"	"1600 2099"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"outline"  "1"
+				"blur"  "1"
 			}
 			"7"
 			{
@@ -1043,8 +1130,10 @@ Scheme
 				"yres"	"2100 10000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"outline"  "1"
+				"blur"  "1"
 			}
 		}
+
 
 		NHudSpectatorOverlayGhost
 		{

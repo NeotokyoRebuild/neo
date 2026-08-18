@@ -67,6 +67,7 @@ private:
 	vgui::HFont m_hInfoFont = 0;
 	vgui::HFont m_hClassFont = 0;
 	vgui::HFont m_hRKHPFont = 0;
+	vgui::HFont m_hRKHPBackFont = 0;
 	vgui::HFont m_hGhostFont = 0;
 	vgui::HFont m_hSmallWeaponsFont = 0;
 	int m_iDeadTex = 0;

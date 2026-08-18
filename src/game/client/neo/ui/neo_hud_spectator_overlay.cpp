@@ -135,7 +135,8 @@ void CNEOHud_SpectatorOverlay::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_hNameFont = pScheme->GetFont("NHudSpectatorOverlayName", true);
 	m_hInfoFont = pScheme->GetFont("NHudSpectatorOverlayInfo", true);
 	m_hClassFont = pScheme->GetFont("NHudSpectatorOverlayClass", true);
-	m_hRKHPFont = pScheme->GetFont("NHudSpectatorOverlayRoundKillHP", true);
+	m_hRKHPFont = pScheme->GetFont("NHudSpectatorOverlayRoundKillHPFront", true);
+	m_hRKHPBackFont = pScheme->GetFont("NHudSpectatorOverlayRoundKillHPBack", true);
 	m_hGhostFont = pScheme->GetFont("NHudSpectatorOverlayGhost", true);
 	m_hSmallWeaponsFont = pScheme->GetFont("NHudSpectatorOverlaySmallWeapons", true);
 
@@ -144,6 +145,7 @@ void CNEOHud_SpectatorOverlay::ApplySchemeSettings(vgui::IScheme* pScheme)
 	if (!m_hInfoFont) m_hInfoFont = pScheme->GetFont("DefaultSmall", true);
 	if (!m_hClassFont) m_hClassFont = pScheme->GetFont("DefaultSmall", true);
 	if (!m_hRKHPFont) m_hRKHPFont = pScheme->GetFont("Default", true);
+	if (!m_hRKHPBackFont) m_hRKHPBackFont = pScheme->GetFont("Default", true);
 	if (!m_hGhostFont) m_hGhostFont = pScheme->GetFont("NHudKillfeedIcons", true);
 	if (!m_hSmallWeaponsFont) m_hSmallWeaponsFont = pScheme->GetFont("NHudKillfeedIcons", true);
 
@@ -399,13 +401,20 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 
 		int iWideHP = 0, iTallHP = 0;
 		vgui::surface()->GetTextSize(m_hRKHPFont, wszHP, iWideHP, iTallHP);
-		vgui::surface()->DrawSetTextFont(m_hRKHPFont);
 
 		const int iHPTextX = bIsLeftSide
 				? iAvatarX + iTextPad
 				: iAvatarX + iAvatarSize - iWideHP - iTextPad;
 		const int iHPTextY = iAvatarY + iAvatarSize - iTallHP;
 
+		// Back
+		vgui::surface()->DrawSetTextFont(m_hRKHPBackFont);
+		vgui::surface()->DrawSetTextColor(COLOR_BLACK);
+		vgui::surface()->DrawSetTextPos(iHPTextX, iHPTextY);
+		vgui::surface()->DrawPrintText(wszHP, V_wcslen(wszHP));
+
+		// Front
+		vgui::surface()->DrawSetTextFont(m_hRKHPFont);
 		vgui::surface()->DrawSetTextColor(OVERLAY_THEME.textPrimary);
 		vgui::surface()->DrawSetTextPos(iHPTextX, iHPTextY);
 		vgui::surface()->DrawPrintText(wszHP, V_wcslen(wszHP));
@@ -431,13 +440,20 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 
 		int iWideRK = 0, iTallRK = 0;
 		vgui::surface()->GetTextSize(m_hRKHPFont, wszNum, iWideRK, iTallRK);
-		vgui::surface()->DrawSetTextFont(m_hRKHPFont);
 
 		const int iRKTextX = bIsLeftSide
 				? iAvatarX + iTextPad
 				: iAvatarX + iAvatarSize - iWideRK - iTextPad;
 		const int iRKTextY = iAvatarY;
 
+		// Back
+		vgui::surface()->DrawSetTextFont(m_hRKHPBackFont);
+		vgui::surface()->DrawSetTextColor(COLOR_BLACK);
+		vgui::surface()->DrawSetTextPos(iRKTextX, iRKTextY);
+		vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
+
+		// Front
+		vgui::surface()->DrawSetTextFont(m_hRKHPFont);
 		vgui::surface()->DrawSetTextColor(OVERLAY_THEME.textPrimary);
 		vgui::surface()->DrawSetTextPos(iRKTextX, iRKTextY);
 		vgui::surface()->DrawPrintText(wszNum, V_wcslen(wszNum));
