@@ -34,31 +34,26 @@
 // be retrieved.
 //=============================================================================
 
+#ifdef NEO
+struct AvatarImagePairValue_t
+{
+	int normal;
+	int dead;
+};
+#endif // NEO
+
 struct AvatarImagePair_t
 {
 	AvatarImagePair_t() { m_iAvatar = 0; }
-#ifdef NEO
-	AvatarImagePair_t( CSteamID steamID, int av, bool dead ) { m_SteamID = steamID; m_iAvatar = av; m_bDeadAvatar = dead; }
-#else
 	AvatarImagePair_t( CSteamID steamID, int av ) { m_SteamID = steamID; m_iAvatar = av; }
-#endif
 	bool operator<( const AvatarImagePair_t &rhs ) const
 	{
-#ifdef NEO
-		return m_SteamID.ConvertToUint64() < rhs.m_SteamID.ConvertToUint64() || 
-		( m_SteamID.ConvertToUint64() == rhs.m_SteamID.ConvertToUint64() && m_iAvatar < rhs.m_iAvatar ) ||
-		( m_SteamID.ConvertToUint64() == rhs.m_SteamID.ConvertToUint64() && m_iAvatar == rhs.m_iAvatar && m_bDeadAvatar < rhs.m_bDeadAvatar );
-#else
 		return m_SteamID.ConvertToUint64() < rhs.m_SteamID.ConvertToUint64() || 
 		( m_SteamID.ConvertToUint64() == rhs.m_SteamID.ConvertToUint64() && m_iAvatar < rhs.m_iAvatar );
-#endif
 	}	
 					  
 	CSteamID m_SteamID;
 	int m_iAvatar;
-#ifdef NEO
-	bool m_bDeadAvatar = false;
-#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -133,7 +128,6 @@ public:
 	int		GetAvatarWide() { return m_avatarWide; }
 	int		GetAvatarTall() { return m_avatarTall; }
 #ifdef NEO
-	int		getTextureID() { return m_iTextureID; }
 	bool m_bDeadAvatar = false;
 #endif
 
@@ -167,6 +161,9 @@ private:
 
 	Color m_Color;
 	int m_iTextureID;
+#ifdef NEO
+	int m_iTextureDeadID;
+#endif // NEO
 	int m_nX, m_nY;
 	int m_wide, m_tall;
 	int	m_avatarWide, m_avatarTall;
@@ -194,7 +191,11 @@ private:
 	// HPE_END
 	//=============================================================================
 
+#ifdef NEO
+	static CUtlMap< AvatarImagePair_t, AvatarImagePairValue_t > s_AvatarImageCache;
+#else
 	static CUtlMap< AvatarImagePair_t, int > s_AvatarImageCache;
+#endif
 	static bool m_sbInitializedAvatarCache;
 
 	CCallback<CAvatarImage, PersonaStateChange_t, false> m_sPersonaStateChangedCallback;
