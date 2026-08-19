@@ -2,6 +2,7 @@
 
 #include "tier0/dbg.h"
 #include "tier0/commonmacros.h"
+#include "convar.h"
 #include "neo_misc.h"
 
 namespace CNEOWeaponLoadout {
@@ -103,6 +104,15 @@ int GetNumberOfLoadoutWeapons(const int rank, const int classType)
 		Assert(false);
 	}
 	return amount;
+}
+
+ConVar sv_neo_wep_xp_override("sv_neo_wep_xp_override", "-1", FCVAR_CHEAT | FCVAR_REPLICATED,
+	"Override the effective XP used for weapon eligibility checks, or -1 to disable.", true, -1.0f, false, 0.0f);
+
+int GetEffectiveXP(const int actualXP)
+{
+	const int iOverride = sv_neo_wep_xp_override.GetInt();
+	return (iOverride >= 0) ? iOverride : actualXP;
 }
 
 } // namespace CNEOWeaponLoadout
