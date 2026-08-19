@@ -502,6 +502,10 @@ void CNEOScoreBoard::Update()
 				auto *pImage64 = new CAvatarImage;
 				auto *pImage184 = new CAvatarImage;
 
+				pImage32->SetAvatarSize(32, 32);
+				pImage64->SetAvatarSize(64, 64);
+				pImage184->SetAvatarSize(184, 184);
+
 				pImage32->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize32x32);
 				pImage64->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize64x64);
 				pImage184->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize184x184);
@@ -1109,9 +1113,20 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		if (NeoUI::BeginPopup(NEOSCOREBOARDPOPUP_CARD))
 		{
 			CAvatarImage *pAvatarImg = nullptr;
-			if (ShowAvatars() && m_playerPopup.avatar.i184Idx >= 0)
+			if (ShowAvatars())
 			{
-				pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i184Idx));
+				if (m_playerPopup.avatar.i184Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i184Idx));
+				}
+				if ((!pAvatarImg || !pAvatarImg->IsValid()) && m_playerPopup.avatar.i64Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i64Idx));
+				}
+				if ((!pAvatarImg || !pAvatarImg->IsValid()) && m_playerPopup.avatar.i32Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i32Idx));
+				}
 			}
 			if (pAvatarImg)
 			{

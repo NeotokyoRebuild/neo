@@ -92,6 +92,13 @@ void CAvatarImage::ClearAvatarSteamID( void )
 //-----------------------------------------------------------------------------
 bool CAvatarImage::SetAvatarSteamID( CSteamID steamIDUser, EAvatarSize avatarSize /*= k_EAvatarSize32x32 */ )
 {
+#ifdef NEO
+	// NEO NOTE (nullsystem): avatarSize is unused, so just check on steamIDUser
+	if (m_SteamID == steamIDUser)
+	{
+		return m_bValid;
+	}
+#endif // NEO
 	ClearAvatarSteamID();
 
 	m_SteamID = steamIDUser;
@@ -179,12 +186,16 @@ void CAvatarImage::LoadAvatarImage()
 				uint32 wide = 0, tall = 0;
 				if ( steamapicontext->SteamUtils()->GetImageSize( iAvatar, &wide, &tall ) && wide > 0 && tall > 0 )
 				{
+#ifdef NEO
+					// NEO NOTE (nullsystem): Moved off GetImageRGBA to inside InitFromRGBA
+					InitFromRGBA( iAvatar, nullptr, wide, tall );
+#else
 					int destBufferSize = wide * tall * 4;
 					byte *rgbDest = (byte*)stackalloc( destBufferSize );
 					if ( steamapicontext->SteamUtils()->GetImageRGBA( iAvatar, rgbDest, destBufferSize ) )
 						InitFromRGBA( iAvatar, rgbDest, wide, tall );
-
 					stackfree( rgbDest );
+#endif // NEO
 				}
 			}
 		}
@@ -223,10 +234,24 @@ void CAvatarImage::InitFromRGBA( int iAvatar, const byte *rgba, int width, int h
 	int iTexIndex = s_AvatarImageCache.Find( AvatarImagePair_t( m_SteamID, iAvatar ) );
 	if ( iTexIndex == s_AvatarImageCache.InvalidIndex() )
 	{
+#ifdef NEO
+		(void)(rgba); // unused
+		int destBufferSize = width * height * 4;
+		byte *rgbDest = (byte*)stackalloc( destBufferSize );
+		if ( steamapicontext->SteamUtils()->GetImageRGBA( iAvatar, rgbDest, destBufferSize ) )
+		{
+			m_iTextureID = vgui::surface()->CreateNewTextureID( true );
+			g_pMatSystemSurface->DrawSetTextureRGBAEx2( m_iTextureID, rgbDest, width, height, IMAGE_FORMAT_RGBA8888, true );
+			iTexIndex = s_AvatarImageCache.Insert( AvatarImagePair_t( m_SteamID, iAvatar ) );
+			s_AvatarImageCache[ iTexIndex ] = m_iTextureID;
+		}
+		stackfree( rgbDest );
+#else
 		m_iTextureID = vgui::surface()->CreateNewTextureID( true );
 		g_pMatSystemSurface->DrawSetTextureRGBAEx2( m_iTextureID, rgba, width, height, IMAGE_FORMAT_RGBA8888, true );
 		iTexIndex = s_AvatarImageCache.Insert( AvatarImagePair_t( m_SteamID, iAvatar ) );
 		s_AvatarImageCache[ iTexIndex ] = m_iTextureID;
+#endif // NEO
 	}
 	else
 		m_iTextureID = s_AvatarImageCache[ iTexIndex ];

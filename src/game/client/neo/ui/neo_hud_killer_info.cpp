@@ -37,6 +37,10 @@ CNEOHud_KillerInfo::CNEOHud_KillerInfo(const char *pszName, vgui::Panel *parent)
 	}
 	SetVisible(false);
 	CommonSetupHUD();
+
+	m_avatar32.SetAvatarSize(32, 32);
+	m_avatar64.SetAvatarSize(64, 64);
+	m_avatar184.SetAvatarSize(184, 184);
 }
 
 void CNEOHud_KillerInfo::ApplySchemeSettings(vgui::IScheme *pScheme)
@@ -75,11 +79,15 @@ void CNEOHud_KillerInfo::UpdateStateForNeoHudElementDraw()
 	const CSteamID steamID = GetSteamIDForPlayerIndex(g_neoKillerInfos.iEntIndex);
 	if (steamID.IsValid())
 	{
-		m_avatar.SetAvatarSteamID(steamID, k_EAvatarSize184x184);
+		m_avatar32.SetAvatarSteamID(steamID, k_EAvatarSize32x32);
+		m_avatar64.SetAvatarSteamID(steamID, k_EAvatarSize64x64);
+		m_avatar184.SetAvatarSteamID(steamID, k_EAvatarSize184x184);
 	}
 	else
 	{
-		m_avatar.ClearAvatarSteamID();
+		m_avatar32.ClearAvatarSteamID();
+		m_avatar64.ClearAvatarSteamID();
+		m_avatar184.ClearAvatarSteamID();
 	}
 }
 
@@ -109,8 +117,22 @@ void CNEOHud_KillerInfo::DrawNeoHudElement()
 	const bool bSuicideKill = (iKillerEntIndex == pLocalPlayer->entindex()) ||
 			(iKillerEntIndex == NEO_ENVIRON_KILLED);
 
-	CAvatarImage *pAvatarImg = (CNEOScoreBoard::ShowAvatars() && m_avatar.IsValid())
-			? &m_avatar : nullptr;
+	CAvatarImage *pAvatarImg = nullptr;
+	if (CNEOScoreBoard::ShowAvatars())
+	{
+		if (m_avatar184.IsValid())
+		{
+			pAvatarImg = &m_avatar184;
+		}
+		else if (m_avatar64.IsValid())
+		{
+			pAvatarImg = &m_avatar64;
+		}
+		else if (m_avatar32.IsValid())
+		{
+			pAvatarImg = &m_avatar32;
+		}
+	}
 
 	// NEO NOTE (nullsystem): Similar sizing to how the scoreboard popup card is
 	const int iMargin = wide / 384;
