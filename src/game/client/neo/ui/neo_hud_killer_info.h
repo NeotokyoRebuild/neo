@@ -28,6 +28,8 @@ private:
 
 	vgui::HFont m_hFontNormal;
 	vgui::HFont m_hFontTitle;
-	CAvatarImage m_avatar;
+	CAvatarImage m_avatar32;
+	CAvatarImage m_avatar64;
+	CAvatarImage m_avatar184;
 	bool m_bPlayerShownHud = false;
 };

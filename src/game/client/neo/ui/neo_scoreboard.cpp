@@ -507,9 +507,18 @@ void CNEOScoreBoard::Update()
 				auto *pImageDead32 = new CAvatarImage;
 				auto *pImageDead64 = new CAvatarImage;
 				auto *pImageDead184 = new CAvatarImage;
+
 				pImageDead32->m_bDeadAvatar = true;
 				pImageDead64->m_bDeadAvatar = true;
 				pImageDead184->m_bDeadAvatar = true;
+
+				pImage32->SetAvatarSize(32, 32);
+				pImage64->SetAvatarSize(64, 64);
+				pImage184->SetAvatarSize(184, 184);
+
+				pImageDead32->SetAvatarSize(32, 32);
+				pImageDead64->SetAvatarSize(64, 64);
+				pImageDead184->SetAvatarSize(184, 184);
 
 				pImage32->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize32x32);
 				pImage64->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize64x64);
@@ -821,14 +830,16 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 							}
 							if (bShowReadyUp)
 							{
-								V_swprintf_safe(wszText, L"%ls: %d (%d player%s - %d ready)",
-										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s",
+								V_swprintf_safe(wszText, L"%ls: %d (%d player%ls - %d ready)",
+										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam],
+										iaTeamTally[iCurTeam] == 1 ? L"" : L"s",
 										iaTeamReadyTally[iCurTeam]);
 							}
 							else
 							{
-								V_swprintf_safe(wszText, L"%ls: %d (%d player%s)",
-										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s");
+								V_swprintf_safe(wszText, L"%ls: %d (%d player%ls)",
+										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam],
+										iaTeamTally[iCurTeam] == 1 ? L"" : L"s");
 							}
 						}
 					}
@@ -838,8 +849,8 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						if (iCurTeam == TEAM_JINRAI)
 						{
 							const int total = iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF];
-							V_swprintf_safe(wszText, L"Player%s: %d",
-									total == 1 ? "" : "s", total);
+							V_swprintf_safe(wszText, L"Player%ls: %d",
+									total == 1 ? L"" : L"s", total);
 						}
 						else
 						{
@@ -849,8 +860,9 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				}
 				else
 				{
-					V_swprintf_safe(wszText, L"%ls (%d player%s)",
-							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, iaTeamTally[iCurTeam], iaTeamTally[iCurTeam] == 1 ? "" : "s");
+					V_swprintf_safe(wszText, L"%ls (%d player%ls)",
+							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, iaTeamTally[iCurTeam],
+							iaTeamTally[iCurTeam] == 1 ? L"" : L"s");
 				}
 				NeoUI::Label(wszText, true);
 
@@ -1124,9 +1136,20 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		if (NeoUI::BeginPopup(NEOSCOREBOARDPOPUP_CARD))
 		{
 			CAvatarImage *pAvatarImg = nullptr;
-			if (ShowAvatars() && m_playerPopup.avatar.i184Idx >= 0)
+			if (ShowAvatars())
 			{
-				pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i184Idx));
+				if (m_playerPopup.avatar.i184Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i184Idx));
+				}
+				if ((!pAvatarImg || !pAvatarImg->IsValid()) && m_playerPopup.avatar.i64Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i64Idx));
+				}
+				if ((!pAvatarImg || !pAvatarImg->IsValid()) && m_playerPopup.avatar.i32Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i32Idx));
+				}
 			}
 			if (pAvatarImg)
 			{
