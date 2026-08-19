@@ -182,18 +182,20 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 			{
 				CUtlMap<CSteamID, MapAvatarValue> &mapAvatars = g_pNeoScoreBoard->m_mapAvatarsToImageList;
 				const int iMapIdx = mapAvatars.Find(steamId);
+				bool bAvatarNeedUpdate = true;
 				if (iMapIdx != mapAvatars.InvalidIndex())
 				{
 					const MapAvatarValue &avatar = mapAvatars[iMapIdx];
 					if (avatar.i184Idx >= 0)
 					{
 						pCard->pAvatarAlive = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i184Idx));
+						bAvatarNeedUpdate = false;
 					}
-					else if (avatar.i64Idx >= 0)
+					if ((!pCard->pAvatarAlive || !pCard->pAvatarAlive->IsValid()) && avatar.i64Idx >= 0)
 					{
 						pCard->pAvatarAlive = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i64Idx));
 					}
-					else if (avatar.i32Idx >= 0)
+					if ((!pCard->pAvatarAlive || !pCard->pAvatarAlive->IsValid()) && avatar.i32Idx >= 0)
 					{
 						pCard->pAvatarAlive = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i32Idx));
 					}
@@ -201,18 +203,18 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 					if (avatar.i184DeadIdx >= 0)
 					{
 						pCard->pAvatarDead = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i184DeadIdx));
+						bAvatarNeedUpdate = false;
 					}
-					else if (avatar.i64DeadIdx >= 0)
+					if ((!pCard->pAvatarAlive || !pCard->pAvatarAlive->IsValid()) && avatar.i64DeadIdx >= 0)
 					{
 						pCard->pAvatarDead = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i64DeadIdx));
 					}
-					else if (avatar.i32DeadIdx >= 0)
+					if ((!pCard->pAvatarAlive || !pCard->pAvatarAlive->IsValid()) && avatar.i32DeadIdx >= 0)
 					{
 						pCard->pAvatarDead = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i32DeadIdx));
 					}
 				}
-
-				bScoreboardNeedUpdate = bScoreboardNeedUpdate || !pCard->pAvatarAlive || !pCard->pAvatarDead;
+				bScoreboardNeedUpdate = bScoreboardNeedUpdate || bAvatarNeedUpdate;
 			}
 		}
 
