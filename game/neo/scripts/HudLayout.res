@@ -1016,6 +1016,14 @@
 
 	neo_spectator_overlay
 	{
-		"fieldName" 	"neo_spectator_overlay"
+		"fieldName" 		"neo_spectator_overlay"
+		"NameFont"			"NHudSpectatorOverlayName"
+		"InfoFont"			"NHudSpectatorOverlayInfo"
+		"ClassFont"			"NHudSpectatorOverlayClass"
+		"RKHPFont"			"NHudSpectatorOverlayRoundKillHPFront"
+		"RKHPBackFont"		"NHudSpectatorOverlayRoundKillHPBack"
+		"GhostFont"			"NHudSpectatorOverlayGhost"
+		"SmallWeaponsFont"	"NHudSpectatorOverlaySmallWeapons"
+		"DeadTexture"		"vgui/hud/kill_kill"
 	}
 }

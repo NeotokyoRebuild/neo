@@ -58,9 +58,6 @@ CNEOHud_SpectatorOverlay::CNEOHud_SpectatorOverlay(const char* pElementName, vgu
 		SetParent(g_pClientMode->GetViewport());
 	}
 
-	m_iDeadTex = vgui::surface()->CreateNewTextureID(true);
-	vgui::surface()->DrawSetTextureFile(m_iDeadTex, "vgui/hud/kill_kill", false, true);
-
 	int iScrWide, iScrTall;
 	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 	SetBounds(0, 0, iScrWide, iScrTall);
@@ -130,24 +127,6 @@ void CNEOHud_SpectatorOverlay::ApplySchemeSettings(vgui::IScheme* pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	LoadControlSettings("scripts/HudLayout.res");
-
-	// Try to load fonts specifically for this HUD
-	m_hNameFont = pScheme->GetFont("NHudSpectatorOverlayName", true);
-	m_hInfoFont = pScheme->GetFont("NHudSpectatorOverlayInfo", true);
-	m_hClassFont = pScheme->GetFont("NHudSpectatorOverlayClass", true);
-	m_hRKHPFont = pScheme->GetFont("NHudSpectatorOverlayRoundKillHPFront", true);
-	m_hRKHPBackFont = pScheme->GetFont("NHudSpectatorOverlayRoundKillHPBack", true);
-	m_hGhostFont = pScheme->GetFont("NHudSpectatorOverlayGhost", true);
-	m_hSmallWeaponsFont = pScheme->GetFont("NHudSpectatorOverlaySmallWeapons", true);
-
-	// Fallbacks
-	if (!m_hNameFont) m_hNameFont = pScheme->GetFont("Default", true);
-	if (!m_hInfoFont) m_hInfoFont = pScheme->GetFont("DefaultSmall", true);
-	if (!m_hClassFont) m_hClassFont = pScheme->GetFont("DefaultSmall", true);
-	if (!m_hRKHPFont) m_hRKHPFont = pScheme->GetFont("Default", true);
-	if (!m_hRKHPBackFont) m_hRKHPBackFont = pScheme->GetFont("Default", true);
-	if (!m_hGhostFont) m_hGhostFont = pScheme->GetFont("NHudKillfeedIcons", true);
-	if (!m_hSmallWeaponsFont) m_hSmallWeaponsFont = pScheme->GetFont("NHudKillfeedIcons", true);
 
 	int iScrWide, iScrTall;
 	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
@@ -440,7 +419,7 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 	{
 		// Dead icon
 		vgui::surface()->DrawSetColor(COLOR_WHITE);
-		vgui::surface()->DrawSetTexture(m_iDeadTex);
+		vgui::surface()->DrawSetTexture(m_iDeadTexture);
 		vgui::surface()->DrawTexturedRect(
 				iAvatarX,
 				iAvatarY,

@@ -63,14 +63,14 @@ private:
 			const int wide, const int tall,
 			const Color accentColor, const float flWideAs43) const;
 
-	vgui::HFont m_hNameFont = 0;
-	vgui::HFont m_hInfoFont = 0;
-	vgui::HFont m_hClassFont = 0;
-	vgui::HFont m_hRKHPFont = 0;
-	vgui::HFont m_hRKHPBackFont = 0;
-	vgui::HFont m_hGhostFont = 0;
-	vgui::HFont m_hSmallWeaponsFont = 0;
-	int m_iDeadTex = 0;
+	CPanelAnimationVar(vgui::HFont, m_hNameFont, "NameFont", "NHudSpectatorOverlayName");
+	CPanelAnimationVar(vgui::HFont, m_hInfoFont, "InfoFont", "NHudSpectatorOverlayInfo");
+	CPanelAnimationVar(vgui::HFont, m_hClassFont, "ClassFont", "NHudSpectatorOverlayClass");
+	CPanelAnimationVar(vgui::HFont, m_hRKHPFont, "RKHPFont", "NHudSpectatorOverlayRoundKillHPFront");
+	CPanelAnimationVar(vgui::HFont, m_hRKHPBackFont, "RKHPBackFont", "NHudSpectatorOverlayRoundKillHPBack");
+	CPanelAnimationVar(vgui::HFont, m_hGhostFont, "GhostFont", "NHudSpectatorOverlayGhost");
+	CPanelAnimationVar(vgui::HFont, m_hSmallWeaponsFont, "SmallWeaponsFont", "NHudSpectatorOverlaySmallWeapons");
+	CPanelAnimationVarAliasType(int, m_iDeadTexture, "DeadTexture", "vgui/hud/kill_kill", "textureid");
 
 	SpectatorPlayerCard m_cards[MAX_PLAYERS_ARRAY_SAFE] = {};
 	int m_iCardsSize = 0;

@@ -464,7 +464,8 @@ Scheme
 				"weight"		"0"
 			}
 		}
-		// For the class, loadout, and team menu font, not scaled for higher res
+		// For the class, loadout, and team menu to use how the Default font used to be
+		// because those menu are very small for HiDPI res like 1440/4k
 		"CLTDefault"
 		{
 			"1"
@@ -512,7 +513,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1200 10000"
 			}
-			"8"
+			"6"
 			{
 				"name"		"Verdana"
 				"tall"		"12" [!$LINUX]
@@ -520,7 +521,7 @@ Scheme
 				"range"		"0x0000 0x00FF"
 				"weight"	"900"
 			}
-			"9"
+			"7"
 			{
 				"name"		"Arial"
 				"tall"		"12"
@@ -575,7 +576,7 @@ Scheme
 				"antialias" "1"
 				"yres"	"1200 10000"
 			}
-			"8"
+			"6"
 			{
 				"name"		"Verdana"
 				"tall"		"12" [!$LINUX]
@@ -583,7 +584,7 @@ Scheme
 				"range"		"0x0000 0x00FF"
 				"weight"	"900"
 			}
-			"9"
+			"7"
 			{
 				"name"		"Arial"
 				"tall"		"12"
