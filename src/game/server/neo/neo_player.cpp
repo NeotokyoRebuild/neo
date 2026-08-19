@@ -390,7 +390,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 	}
 
 	if (!sv_neo_ignore_wep_xp_limit.GetBool() &&
-			loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
+			loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
 				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
@@ -3597,7 +3597,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	if (pNeoWeapon)
 	{
 		if (sv_neo_ignore_wep_xp_limit.GetBool() ||
-				m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
+				m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
 					sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()))
 		{
 			pNeoWeapon->SetSubType(wepSubType);

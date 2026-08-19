@@ -643,7 +643,8 @@ void CNEOBot::Spawn()
 
 int CNEOBot::ChooseRandomWeaponIndex() const
 {
-    const ENeoRank eRank = static_cast<ENeoRank>(GetRank(m_iXP) - 1);
+    const int iEffectiveXP = CNEOWeaponLoadout::GetEffectiveXP(m_iXP);
+    const ENeoRank eRank = static_cast<ENeoRank>(GetRank(iEffectiveXP) - 1);
     if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
     {
         return 0;
@@ -665,7 +666,7 @@ int CNEOBot::ChooseRandomWeaponIndex() const
 		// Generally shouldn't happen, but if so, just pick from any under the XP limit
         for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
         {
-            if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > m_iXP)
+            if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > iEffectiveXP)
             {
                 break;
             }
