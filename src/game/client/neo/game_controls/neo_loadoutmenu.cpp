@@ -190,7 +190,6 @@ void CNeoLoadoutMenu::OnMousePressed(vgui::MouseCode code)
 
 extern ConCommand loadoutmenu;
 
-extern ConVar sv_neo_ignore_wep_xp_limit;
 extern ConVar sv_neo_dev_loadout;
 
 void CNeoLoadoutMenu::OnClose()
