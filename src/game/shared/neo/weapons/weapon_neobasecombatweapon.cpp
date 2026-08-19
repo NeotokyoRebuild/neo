@@ -865,6 +865,8 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 	return cone;
 }
 
+extern ConVar sv_suppress_viewpunch;
+
 void CNEOBaseCombatWeapon::AddViewKick()
 {
 	auto owner = ToNEOPlayer(GetOwner());
@@ -872,6 +874,13 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	if (!owner)
 	{
 		return;
+	}
+
+	// Reset any existing viewkick so it doesn't accumulate
+	// TODO: Resetting viewpunch here doesn't just affect viewkick, but also aimpunch.
+	// This if-check is a temporary workaround until we can separate the two.
+	if (!sv_suppress_viewpunch.GetBool()) {
+		owner->ViewPunchReset();
 	}
 
 	auto kickInfo = m_weaponHandling.kickInfo;
@@ -918,8 +927,6 @@ void CNEOBaseCombatWeapon::DryFire()
 	SendWeaponAnim(ACT_VM_DRYFIRE);
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
-
-extern ConVar sv_suppress_viewpunch;
 
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
@@ -1071,11 +1078,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		m_flAccuracyPenalty + GetAccuracyPenalty() * sv_neo_accuracy_penalty_scale.GetFloat()
 	);
 
-	// TODO: Resetting viewpunch here doesn't just affect viewkick, but also aimpunch.
-	// This if-check is a temporary workaround until we can separate the two.
-	if (!sv_suppress_viewpunch.GetBool()) {
-		pOwner->ViewPunchReset();
-	}
 	//Add our view kick in
 	AddViewKick();
 }
