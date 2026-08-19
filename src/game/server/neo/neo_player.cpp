@@ -3584,6 +3584,12 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	//DevMsg("Loadout slot: %i (\"%s\") for %s\n", m_iLoadoutWepChoice.Get(), szWep, GetPlayerName());
 #endif
 
+	// XP eligibility first, so ineligible picks don't pay a weapon entity create/destroy cycle
+	if (m_iLoadoutWepChoice+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP), iLoadoutClass))
+	{
+		return;
+	}
+
 	// If I already own this type don't create one
 	const int wepSubType = 0;
 	if (Weapon_OwnsThisType(szWep, wepSubType))
@@ -3607,33 +3613,22 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
-				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()))
+		pNeoWeapon->SetSubType(wepSubType);
+
+		DispatchSpawn(pEnt);
+
+		if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
 		{
-			pNeoWeapon->SetSubType(wepSubType);
-
-			DispatchSpawn(pEnt);
-
-			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+			RemoveAllItems(false);
+			GiveDefaultItems();
+			if (!BumpWeapon(pNeoWeapon))
 			{
-				RemoveAllItems(false);
-				GiveDefaultItems();
-				if (!BumpWeapon(pNeoWeapon))
-				{
-					UTIL_Remove( pNeoWeapon );
-				}
-				else
-				{
-					pEnt->Touch( this );
-					Weapon_Switch(Weapon_OwnsThisType(szWep));
-				}
+				UTIL_Remove( pNeoWeapon );
 			}
-		}
-		else
-		{
-			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+			else
 			{
-				UTIL_Remove(pEnt);
+				pEnt->Touch( this );
+				Weapon_Switch(Weapon_OwnsThisType(szWep));
 			}
 		}
 	}
