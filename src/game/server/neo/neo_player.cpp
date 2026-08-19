@@ -144,6 +144,7 @@ extern CBaseEntity *g_pLastSpawn;
 extern ConVar sv_neo_bot_cmdr_enable;
 extern ConVar sv_neo_ignore_wep_xp_limit;
 extern ConVar sv_neo_clantag_allow;
+extern ConVar sv_neo_detpack_xp_limit;
 extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
 extern ConVar sv_neo_dev_loadout;
@@ -3475,6 +3476,15 @@ CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
 
 void GiveDet(CNEO_Player* pPlayer)
 {
+	// Cost of -1 XP means no XP cost. Checked before creating the weapon
+	// entity so ineligible players don't pay a create/destroy cycle.
+	const int detXpCost = sv_neo_detpack_xp_limit.GetInt();
+	const bool canHaveDet = (detXpCost < 0 || CNEOWeaponLoadout::GetEffectiveXP(pPlayer->m_iXP) >= detXpCost);
+	if (!canHaveDet)
+	{
+		return;
+	}
+
 	constexpr const char* detpackClassname = "weapon_remotedet";
 	if (!pPlayer->Weapon_OwnsThisType(detpackClassname))
 	{
@@ -3492,23 +3502,12 @@ void GiveDet(CNEO_Player* pPlayer)
 			auto pWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
 			if (pWeapon)
 			{
-				const int detXpCost = pWeapon->GetNeoWepXPCost(pPlayer->GetClass());
-				// Cost of -1 XP means no XP cost.
-				const bool canHaveDet = (detXpCost < 0 || pPlayer->m_iXP >= detXpCost);
-
 				pWeapon->SetSubType(0);
-				if (canHaveDet)
-				{
-					DispatchSpawn(pent);
+				DispatchSpawn(pent);
 
-					if (pent != NULL && !(pent->IsMarkedForDeletion()))
-					{
-						pent->Touch(pPlayer);
-					}
-				}
-				else
+				if (pent != NULL && !(pent->IsMarkedForDeletion()))
 				{
-					UTIL_Remove(pWeapon);
+					pent->Touch(pPlayer);
 				}
 			}
 		}
@@ -3522,7 +3521,7 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
-		if (this->m_iXP >= 4) { GiveDet(this); }
+		GiveDet(this);
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
