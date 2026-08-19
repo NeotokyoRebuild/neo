@@ -5,6 +5,8 @@
 #include "convar.h"
 #include "neo_misc.h"
 
+extern ConVar sv_neo_ignore_wep_xp_limit;
+
 namespace CNEOWeaponLoadout {
 
 #define WEAPON_DEF(M_BITWNAME, M_NAME, M_DISPLAY_NAME, ...) \
@@ -111,6 +113,11 @@ ConVar sv_neo_wep_xp_override("sv_neo_wep_xp_override", "-1", FCVAR_CHEAT | FCVA
 
 int GetEffectiveXP(const int actualXP)
 {
+	if (sv_neo_ignore_wep_xp_limit.GetBool())
+	{
+		// Treat as max rank so every XP-gated weapon is eligible
+		return XP_LIEUTENANT;
+	}
 	const int iOverride = sv_neo_wep_xp_override.GetInt();
 	return (iOverride >= 0) ? iOverride : actualXP;
 }
