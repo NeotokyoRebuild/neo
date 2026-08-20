@@ -984,7 +984,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 						if (pAvatarImg)
 						{
-							pAvatarImg->m_bDeadAvatar = pPlayerInfo->bDead;
+							pAvatarImg->m_bDeadAvatar = pPlayerInfo->bDead && bIsPlaying;
 							pAvatarImg->SetPos(m_uiCtx.rWidgetArea.x0, m_uiCtx.rWidgetArea.y0);
 							pAvatarImg->SetSize(m_uiCtx.irWidgetTall, m_uiCtx.irWidgetTall);
 							pAvatarImg->Paint();
