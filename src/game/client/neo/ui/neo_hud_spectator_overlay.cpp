@@ -347,11 +347,6 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 	const int iAvatarX = bIsLeftSide ? x : x + wide - iAvatarSize;
 	const int iAvatarY = y;
 
-	// Draw avatar background
-	vgui::surface()->DrawSetColor(OVERLAY_THEME.cardBg);
-	vgui::surface()->DrawOutlinedRect(iAvatarX, iAvatarY, iAvatarX + iAvatarSize, iAvatarY + iAvatarSize);
-	vgui::surface()->DrawFilledRect(iAvatarX + 1, iAvatarY + 1, iAvatarX + iAvatarSize - 1, iAvatarY + iAvatarSize - 1);
-
 	// Draw the actual Steam avatar (borrowed from the scoreboard's avatar list)
 	if (card.pAvatar && card.pAvatar->IsValid())
 	{
@@ -362,6 +357,9 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 	}
 	else if (card.wszPlayerName[0])
 	{
+		vgui::surface()->DrawSetColor(OVERLAY_THEME.cardBg);
+		vgui::surface()->DrawFilledRect(iAvatarX, iAvatarY, iAvatarX + iAvatarSize, iAvatarY + iAvatarSize);
+
 		// Fallback when no avatar: first character of the player name
 		// Usually just bots though
 		wchar_t wszInitial[2] = { card.wszPlayerName[0], L'\0' };
