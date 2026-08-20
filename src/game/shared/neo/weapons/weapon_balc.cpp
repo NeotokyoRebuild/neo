@@ -196,7 +196,6 @@ void CWeaponBALC::ShootGrenade(CNEO_Player *pPlayer)
 	// View kick
 	if (!pPlayer->IsBot())
 	{
-		pPlayer->ViewPunchReset();
 		AddViewKick();
 	}
 }
