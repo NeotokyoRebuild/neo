@@ -13,6 +13,7 @@
 
 #ifdef CLIENT_DLL
 #include "ui/neo_hud_ghost_cap_point.h"
+#include "materialsystem/imaterialsystem.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -202,6 +203,8 @@ void CNEOGhostCapturePoint::Spawn(void)
 	SetContextThink(&CNEOGhostCapturePoint::Think_CheckMyRadius,
 		gpGlobals->curtime, "CheckMyRadius");
 #else
+	m_pRingMaterial = materials->FindMaterial("effects/cap_zone_ring", TEXTURE_GROUP_CLIENT_EFFECTS);
+	AddToLeafSystem(RENDER_GROUP_TRANSLUCENT_ENTITY);
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 #endif
 }
@@ -297,6 +300,105 @@ void CNEOGhostCapturePoint::ClientThink(void)
 	m_pHUDCapPoint->SetVisible(m_bIsActive);
 
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
+}
+
+bool CNEOGhostCapturePoint::ShouldDraw()
+{
+	return m_bIsActive;
+}
+
+RenderGroup_t CNEOGhostCapturePoint::GetRenderGroup()
+{
+	return RENDER_GROUP_TRANSLUCENT_ENTITY;
+}
+
+void CNEOGhostCapturePoint::GetRenderBoundsWorldspace(Vector& mins, Vector& maxs)
+{
+	const Vector& origin = GetAbsOrigin();
+	const float r = m_flCapzoneRadius;
+	mins = origin + Vector(-r, -r, -16.0f);
+	maxs = origin + Vector(r, r, 16.0f);
+}
+
+int CNEOGhostCapturePoint::DrawModel(int flags)
+{
+	if (!m_bIsActive || !m_pRingMaterial)
+		return 0;
+
+	// Mirror the arrow color logic from CNEOHud_GhostCapPoint::DrawNeoHudElement exactly
+	const int capTeam = owningTeamAlternate();
+	Color ringColor = (capTeam == TEAM_ANY) ? COLOR_SPEC : ((capTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF);
+
+	auto *player = C_NEO_Player::GetLocalNEOPlayer();
+
+	if (player)
+	{
+		const int playerTeam = player->GetTeamNumber();
+		const bool playerIsPlaying = (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF);
+
+		if (playerIsPlaying && capTeam != TEAM_ANY && playerTeam != capTeam)
+		{
+			ringColor = COLOR_RED;
+		}
+	}
+
+	ringColor[3] = 180;
+
+	const Vector& origin = GetAbsOrigin();
+	constexpr int SEGMENTS = 64;
+	constexpr float RING_HEIGHT_BOTTOM = 4.0f;  // units above cap zone origin
+	constexpr float RING_HEIGHT_TOP    = 12.0f; // units above cap zone origin
+
+	const float zBottom = origin.z + RING_HEIGHT_BOTTOM;
+	const float zTop    = origin.z + RING_HEIGHT_TOP;
+	const float r = m_flCapzoneRadius;
+
+	CMatRenderContextPtr pRenderContext(materials);
+	pRenderContext->Bind(m_pRingMaterial);
+	IMesh *pMesh = pRenderContext->GetDynamicMesh(true);
+
+	CMeshBuilder meshBuilder;
+	meshBuilder.Begin(pMesh, MATERIAL_QUADS, SEGMENTS);
+
+	for (int i = 0; i < SEGMENTS; i++)
+	{
+		const float a0 = ((float)i       / SEGMENTS) * M_PI_F * 2.0f;
+		const float a1 = ((float)(i + 1) / SEGMENTS) * M_PI_F * 2.0f;
+		const float cos0 = cosf(a0), sin0 = sinf(a0);
+		const float cos1 = cosf(a1), sin1 = sinf(a1);
+
+		// Each segment gets its own full 0→1 tile; VMT TextureScroll handles animation
+		// Bottom at a0
+		meshBuilder.Position3f(origin.x + cos0 * r, origin.y + sin0 * r, zBottom);
+		meshBuilder.Normal3f(cos0, sin0, 0.0f);
+		meshBuilder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+		meshBuilder.TexCoord2f(0, 0.0f, 1.0f);
+		meshBuilder.AdvanceVertex();
+
+		// Bottom at a1
+		meshBuilder.Position3f(origin.x + cos1 * r, origin.y + sin1 * r, zBottom);
+		meshBuilder.Normal3f(cos1, sin1, 0.0f);
+		meshBuilder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+		meshBuilder.TexCoord2f(0, 1.0f, 1.0f);
+		meshBuilder.AdvanceVertex();
+
+		// Top at a1
+		meshBuilder.Position3f(origin.x + cos1 * r, origin.y + sin1 * r, zTop);
+		meshBuilder.Normal3f(cos1, sin1, 0.0f);
+		meshBuilder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+		meshBuilder.TexCoord2f(0, 1.0f, 0.0f);
+		meshBuilder.AdvanceVertex();
+
+		// Top at a0
+		meshBuilder.Position3f(origin.x + cos0 * r, origin.y + sin0 * r, zTop);
+		meshBuilder.Normal3f(cos0, sin0, 0.0f);
+		meshBuilder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+		meshBuilder.TexCoord2f(0, 0.0f, 0.0f);
+		meshBuilder.AdvanceVertex();
+	}
+
+	meshBuilder.End(false, true);
+	return 1;
 }
 #endif
 
