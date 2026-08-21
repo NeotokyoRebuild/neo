@@ -90,6 +90,28 @@ enum
 #define SOUNDENT_VOLUME_PISTOL		1500.0
 #define SOUNDENT_VOLUME_EMPTY		 500.0 // volume of the "CLICK" when you have no bullets
 
+#ifdef NEO
+// Bot hearing distances for CSoundEnt::InsertSound()
+// Despite the name, iVolume is commonly used as an AI hearing radius (in Hammer units).
+// While this is separate from client sound playback attenuation (CPASAttenuationFilter),
+// we use that system for reference of relative detection differences.
+//
+// BASELINE FROM EXISTING SOUNDENT_VOLUME_EMPTY VALUE:
+// weapon_milso.empty: SNDLVL_NORM (75dB), vol 1.0 [game_sounds_weapons.txt]
+//   Client hearing: (2 * SOUND_NORMAL_CLIP_DIST) / SNDLVL_TO_ATTN(75) = (2*10000)/0.8 = 25000 units
+//   AI value: SOUNDENT_VOLUME_EMPTY = 500.0
+//   AI-to-client ratio: 500 / 25000 = 0.02
+//
+// Footsteps (StepLeft/StepRight): SNDLVL_75dB, vol 1.0 [game_sounds_physics.txt]
+//   Client hearing: (2*10000)/0.8 * 1.0 = 25000 units
+//   Mathematical AI value: 25000 * 0.02 = 500 units
+#define SOUNDENT_VOLUME_FOOTSTEP 500
+// Cloak (ThermOpticOn/Off): SNDLVL_75dB, vol 0.7 [game_sounds_player.txt]
+//   Client hearing: (2*10000)/0.8 * 0.7 = 17500 units
+//   Mathematical AI value: 17500 * 0.02 = 350 units
+#define SOUNDENT_VOLUME_CLOAK    350
+#endif
+
 enum
 {
 	SOUND_PRIORITY_VERY_LOW = -2,
