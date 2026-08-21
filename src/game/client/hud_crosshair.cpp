@@ -373,9 +373,9 @@ ConVar cl_neo_scope_restrict_to_rectangle("cl_neo_scope_restrict_to_rectangle", 
 
 void CHudCrosshair::resetPlayersCrosshair()
 {
-	V_memset(m_szLocalStrPlayersCrosshair, 0, sizeof(m_szLocalStrPlayersCrosshair));
-	V_memset(m_playersCrosshairInfos, 0, sizeof(m_playersCrosshairInfos));
-	V_memset(m_aflLastCheckedPlayersCrosshair, 0, sizeof(m_aflLastCheckedPlayersCrosshair));
+	V_memset(m_szLocalStrPlayerCrosshair, 0, sizeof(m_szLocalStrPlayerCrosshair));
+	m_flLastCheckedXHair = 0.0f;
+	m_iPrevPlayerIdx = -1;
 }
 
 #endif // NEO
@@ -495,7 +495,6 @@ void CHudCrosshair::Paint( void )
 	bool bThisFrameRefreshCrosshair = m_bRefreshCrosshair;
 	auto *pNeoPlayer = static_cast<C_NEO_Player *>(pPlayer);
 	bool bTakeSpecCrosshair = false;
-	CrosshairInfo *pCrosshairInfo = &m_crosshairInfo;
 	const char *pszNeoCrosshair = cl_neo_crosshair.GetString();
 	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator())
 	{
@@ -504,34 +503,39 @@ void CHudCrosshair::Paint( void )
 		Assert(bPlayerIdxValid);
 		if (bPlayerIdxValid)
 		{
+			if (m_iPrevPlayerIdx != iPlayerIdx)
+			{
+				m_flLastCheckedXHair = 0.0f;
+				m_iPrevPlayerIdx = iPlayerIdx;
+			}
 			bTakeSpecCrosshair = true;
 			bThisFrameRefreshCrosshair = false;
-			pCrosshairInfo = &m_playersCrosshairInfos[iPlayerIdx];
-			pszNeoCrosshair = pNeoPlayer->m_szNeoCrosshair.Get();
+			pszNeoCrosshair = g_PR->GetNeoCrosshair(iPlayerIdx);
 
 			// NEO NOTE (nullsystem): Only check the string per second
 			static constexpr float FL_XHAIR_REFRESH_INTERVAL = 1.0f;
-			if (m_aflLastCheckedPlayersCrosshair[iPlayerIdx] + FL_XHAIR_REFRESH_INTERVAL < gpGlobals->curtime)
+			if (m_flLastCheckedXHair + FL_XHAIR_REFRESH_INTERVAL < gpGlobals->curtime)
 			{
-				m_aflLastCheckedPlayersCrosshair[iPlayerIdx] = gpGlobals->curtime;
-				bThisFrameRefreshCrosshair = (V_strcmp(m_szLocalStrPlayersCrosshair[iPlayerIdx], pszNeoCrosshair) != 0);
-				if (bThisFrameRefreshCrosshair)
-				{
-					V_strcpy_safe(m_szLocalStrPlayersCrosshair[iPlayerIdx], pszNeoCrosshair);
-				}
+				m_flLastCheckedXHair = gpGlobals->curtime;
+				bThisFrameRefreshCrosshair = (V_strcmp(m_szLocalStrPlayerCrosshair, pszNeoCrosshair) != 0);
 			}
-
 		}
+	}
+	else if (m_iPrevPlayerIdx != pNeoPlayer->entindex())
+	{
+		bThisFrameRefreshCrosshair = true;
+		m_iPrevPlayerIdx = pNeoPlayer->entindex();
 	}
 
 	if (bThisFrameRefreshCrosshair)
 	{
-		const bool bImported = ImportCrosshair(pCrosshairInfo, pszNeoCrosshair);
+		V_strcpy_safe(m_szLocalStrPlayerCrosshair, pszNeoCrosshair);
+		const bool bImported = ImportCrosshair(&m_crosshairInfo, pszNeoCrosshair);
 		if (!bImported)
 		{
 			// NEO NOTE (nullsystem): Don't revert, just enforce default if it
 			// is not given properly
-			ResetCrosshairToDefault(pCrosshairInfo);
+			ResetCrosshairToDefault(&m_crosshairInfo);
 		}
 		if (!bTakeSpecCrosshair)
 		{
@@ -552,9 +556,9 @@ void CHudCrosshair::Paint( void )
 			iNeoXHairWep += CROSSHAIR_WEP_DEFAULT_HIPFIRE;
 		}
 		eNeoXHairWep = static_cast<ENeoCrosshairWep>(
-				UseCrosshairIndexFor(pCrosshairInfo, iNeoXHairWep, &bHideCrosshair));
+				UseCrosshairIndexFor(&m_crosshairInfo, iNeoXHairWep, &bHideCrosshair));
 	}
-	CrosshairWepInfo *crh = &pCrosshairInfo->wep[eNeoXHairWep];
+	CrosshairWepInfo *crh = &m_crosshairInfo.wep[eNeoXHairWep];
 	const int iTexXHId = m_iTexXHId[clamp(crh->iStyle, 0, CROSSHAIR_STYLE__TOTAL - 1)];
 
 	bool showFriendlyFireCrosshair = false;
