@@ -22,7 +22,7 @@ jobs:
 
       matrix:
         platform:
-        - { display_name: 'Linux Native Libraries', os: ubuntu-24.04, preset_os: linux }
+        - { display_name: 'Linux Libraries', os: ubuntu-24.04, preset_os: linux }
 
         preset_build_type:
         - { display_name: 'Debug', name: debug }
@@ -87,6 +87,7 @@ jobs:
         -DNEO_USE_SEPARATE_BUILD_INFO=ON
         -DNEO_INSTALL_LIBRARIES=ON
         -DNEO_INSTALL_LAUNCHER=ON
+        -DNEO_INSTALL_UTILS=ON
         -DNEO_INSTALL_RESOURCES=OFF
         -DNEO_EXTRA_ASSETS_ALT_PATH=${{ github.workspace }}/neoAssets
 
@@ -131,6 +132,8 @@ jobs:
         echo "libraries_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-libraries-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "dedicated=$(find . -regex '\.\/neo-\w*-\w*-dedicated-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "dedicated_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-dedicated-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "utils=$(find . -regex '\.\/neo-\w*-\w*-utils-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "utils_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-utils-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher=$(find . -regex '\.\/neo-\w*-\w*-launcher-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-launcher-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
@@ -161,6 +164,20 @@ jobs:
       with:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
+        if-no-files-found: error
+
+    - name: Upload utils
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.utils }}
+        path: ${{ env.install_dir }}/${{ env.utils }}
+        if-no-files-found: error
+
+    - name: Upload utils debug information
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.utils_debuginfo }}
+        path: ${{ env.install_dir }}/${{ env.utils_debuginfo }}
         if-no-files-found: error
 
     - name: Upload SourceMod gamedata
@@ -199,7 +216,7 @@ jobs:
 
       matrix:
         platform:
-        - { display_name: 'Windows Native Libraries', os: windows-2022, preset_os: windows }
+        - { display_name: 'Windows Libraries', os: windows-2022, preset_os: windows }
 
         preset_build_type:
         - { display_name: 'Debug', name: debug }
@@ -259,6 +276,7 @@ jobs:
         -DNEO_USE_SEPARATE_BUILD_INFO=ON
         -DNEO_INSTALL_LIBRARIES=ON
         -DNEO_INSTALL_LAUNCHER=ON
+        -DNEO_INSTALL_UTILS=ON
         -DNEO_INSTALL_RESOURCES=OFF
         -DNEO_EXTRA_ASSETS_ALT_PATH=${{ github.workspace }}/neoAssets
 
@@ -306,6 +324,8 @@ jobs:
         echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher=$(find . -regex '\.\/neo-\w*-\w*-launcher-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "launcher_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-launcher-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "utils=$(find . -regex '\.\/neo-\w*-\w*-utils-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "utils_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-utils-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
 
     - name: Upload libraries
       uses: actions/upload-artifact@v7
@@ -347,10 +367,23 @@ jobs:
       with:
         name: ${{ env.launcher_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.launcher_debuginfo }}
+
+    - name: Upload utils
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.utils }}
+        path: ${{ env.install_dir }}/${{ env.utils }}
+        if-no-files-found: error
+
+    - name: Upload utils debug information
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.utils_debuginfo }}
+        path: ${{ env.install_dir }}/${{ env.utils_debuginfo }}
         if-no-files-found: error
 
   pack-resources:
-    name: Windows Native Resources
+    name: Windows Resources
 
     runs-on: windows-2022
 
@@ -391,6 +424,7 @@ jobs:
         -DNEO_USE_CCACHE=OFF
         -DNEO_COPY_LIBRARIES=OFF
         -DNEO_INSTALL_LIBRARIES=OFF
+        -DNEO_INSTALL_UTILS=OFF
         -DNEO_INSTALL_RESOURCES=ON
         -DNEO_INSTALL_LAUNCHER=OFF
 

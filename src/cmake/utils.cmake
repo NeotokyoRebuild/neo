@@ -82,6 +82,42 @@ function(add_library_copy_target)
 
 endfunction()
 
+function(add_origin_rpath)
+    cmake_parse_arguments(
+        PARSED_ARGS
+        ""
+        "TARGET"
+        "PATHS"
+        ${ARGN}
+    )
+
+    if(NOT PARSED_ARGS_TARGET)
+        message(FATAL_ERROR "You must provide a target name")
+    endif()
+
+    if(OS_LINUX)
+        set(ORIGIN_TOKEN "$ORIGIN")
+    else()
+        return()
+    endif()
+    
+    # Create a symlink so libraries (materialsystem.so, shaderapiempty.so, ...)
+    # can be loaded using dlopen from the CMake binary dir
+    if(NEO_TOOLS_STEAM_NTRE_PATH)
+        set(NEO_ENGINE_SYMLINK_NAME "engine")
+        
+        file(CREATE_LINK "${NEO_TOOLS_STEAM_NTRE_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/${NEO_ENGINE_SYMLINK_NAME}" SYMBOLIC)
+        list(APPEND PARSED_ARGS_PATHS "${NEO_ENGINE_SYMLINK_NAME}" "../${NEO_ENGINE_SYMLINK_NAME}")
+    endif()
+
+    set(RPATH "${ORIGIN_TOKEN}")
+    foreach(RELATIVE_PATH ${PARSED_ARGS_PATHS})
+        string(APPEND RPATH ":${ORIGIN_TOKEN}/${RELATIVE_PATH}")
+    endforeach()
+
+    target_link_options(${PARSED_ARGS_TARGET} PRIVATE "-Wl,--disable-new-dtags" "-Wl,-rpath,${RPATH}")
+endfunction()
+
 # Used by split_debug_information
 if(NOT COMPILER_MSVC)
     include(CMakeFindBinUtils)
@@ -95,6 +131,10 @@ function(split_debug_information)
         ""
         ${ARGN}
     )
+
+    if(NOT PARSED_ARGS_TARGET)
+        message(FATAL_ERROR "You must provide a target name")
+    endif()
 
     if(COMPILER_MSVC)
         # MSVC splits debug information by itself
@@ -129,7 +169,6 @@ function(split_debug_information)
     endif()
 
     get_target_property(TARGET_OUTPUT_NAME ${PARSED_ARGS_TARGET} OUTPUT_NAME)
-
     if(NOT TARGET_OUTPUT_NAME)
         set(TARGET_OUTPUT_NAME "${PARSED_ARGS_TARGET}")
     endif()
@@ -157,7 +196,7 @@ function(split_debug_information)
             message(WARNING "Unknown TARGET_TYPE value")
         endif()
     endif()
-
+    
     set(SPLITDEBUG_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_SUFFIX}")
     set(SPLITDEBUG_TARGET "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUBDIRECTORY}/${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_SUFFIX}")
     set(SPLITDEBUG_TARGET_DEBUG "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUBDIRECTORY}/${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_SUFFIX}.debug")
@@ -173,7 +212,8 @@ function(split_debug_information)
     # - .strtab: String table.
     # These sections are split into the .debug file, so there's no reason to keep them in the executable
     add_custom_command(
-        OUTPUT ${SPLITDEBUG_TARGET}
+        OUTPUT ${SPLITDEBUG_TARGET} ${SPLITDEBUG_TARGET_DEBUG}
+        DEPENDS ${PARSED_ARGS_TARGET} ${SPLITDEBUG_SOURCE}
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM} ${SPLITDEBUG_SOURCE} ${SPLITDEBUG_TARGET_DEBUG}
         COMMAND ${CMAKE_STRIP} --strip-debug ${SPLITDEBUG_SOURCE} -o ${SPLITDEBUG_TARGET}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink="${SPLITDEBUG_TARGET_DEBUG}" ${SPLITDEBUG_TARGET}

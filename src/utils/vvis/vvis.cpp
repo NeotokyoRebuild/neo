@@ -7,17 +7,13 @@
 //=============================================================================//
 // vis.c
 
-#include <windows.h>
 #include "vis.h"
 #include "threads.h"
 #include "stdlib.h"
 #include "pacifier.h"
-#include "vmpi.h"
-#include "mpivis.h"
 #include "tier1/strtools.h"
 #include "collisionutils.h"
 #include "tier0/icommandline.h"
-#include "vmpi_tools_shared.h"
 #include "ilaunchabledll.h"
 #include "tools_minidump.h"
 #include "loadcmdline.h"
@@ -84,7 +80,7 @@ winding_t *NewWinding (int points)
 	if (points > MAX_POINTS_ON_WINDING)
 		Error ("NewWinding: %i points, max %d", points, MAX_POINTS_ON_WINDING);
 	
-	size = (int)(&((winding_t *)0)->points[points]);
+	size = offsetof(winding_t, points) + sizeof(Vector) * points;
 	w = (winding_t*)malloc (size);
 	memset (w, 0, size);
 	
@@ -301,17 +297,7 @@ void CalcPortalVis (void)
 		return;
 	}
 
-
-#ifdef MPI
-    if (g_bUseMPI) 
-	{
- 		RunMPIPortalFlow();
-	}
-	else 
-#endif
-	{
-		RunThreadsOnIndividual (g_numportals*2, true, PortalFlow);
-	}
+	RunThreadsOnIndividual (g_numportals*2, true, PortalFlow);
 }
 
 
@@ -333,16 +319,7 @@ void CalcVis (void)
 {
 	int		i;
 
-#ifdef MPI
-	if (g_bUseMPI) 
-	{
-		RunMPIBasePortalVis();
-	}
-	else 
-#endif
-	{
-	    RunThreadsOnIndividual (g_numportals*2, true, BasePortalVis);
-	}
+	RunThreadsOnIndividual (g_numportals*2, true, BasePortalVis);
 
 	SortPortals ();
 
@@ -418,45 +395,7 @@ void LoadPortals (char *name)
 	FILE *f;
 
 	// Open the portal file.
-#ifdef MPI
-	if ( g_bUseMPI )
-	{
-		// If we're using MPI, copy off the file to a temporary first. This will download the file
-		// from the MPI master, then we get to use nice functions like fscanf on it.
-		char tempPath[MAX_PATH], tempFile[MAX_PATH];
-		if ( GetTempPath( sizeof( tempPath ), tempPath ) == 0 )
-		{
-			Error( "LoadPortals: GetTempPath failed.\n" );
-		}
-
-		if ( GetTempFileName( tempPath, "vvis_portal_", 0, tempFile ) == 0 )
-		{
-			Error( "LoadPortals: GetTempFileName failed.\n" );
-		}
-
-		// Read all the data from the network file into memory.
-		FileHandle_t hFile = g_pFileSystem->Open(name, "r");
-		if ( hFile == FILESYSTEM_INVALID_HANDLE )
-			Error( "LoadPortals( %s ): couldn't get file from master.\n", name );
-
-		CUtlVector<char> data;
-		data.SetSize( g_pFileSystem->Size( hFile ) );
-		g_pFileSystem->Read( data.Base(), data.Count(), hFile );
-		g_pFileSystem->Close( hFile );
-
-		// Dump it into a temp file.
-		f = fopen( tempFile, "wt" );
-		fwrite( data.Base(), 1, data.Count(), f );
-		fclose( f );
-
-		// Open the temp file up.
-		f = fopen( tempFile, "rSTD" ); // read only, sequential, temporary, delete on close
-	}
-	else
-#endif
-	{
-		f = fopen( name, "r" );
-	}
+	f = fopen( name, "r" );
 
 	if ( !f )
 		Error ("LoadPortals: couldn't read %s\n",name);
@@ -890,7 +829,7 @@ float DetermineVisRadius( )
 	// Check the max vis range to determine the vis radius
 	for (int i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!stricmp(pEntity, "env_fog_controller"))
 		{
 			flRadius = FloatForKey (&entities[i], "farz");
@@ -974,20 +913,6 @@ int ParseCommandLine( int argc, char **argv )
 		{
 			// nothing to do here, but don't bail on this option
 		}
-		// NOTE: the -mpi checks must come last here because they allow the previous argument 
-		// to be -mpi as well. If it game before something else like -game, then if the previous
-		// argument was -mpi and the current argument was something valid like -game, it would skip it.
-#ifdef MPI
-		else if ( !Q_strncasecmp( argv[i], "-mpi", 4 ) || !Q_strncasecmp( argv[i-1], "-mpi", 4 ) )
-		{
-			if ( stricmp( argv[i], "-mpi" ) == 0 )
-				g_bUseMPI = true;
-		
-			// Any other args that start with -mpi are ok too.
-			if ( i == argc - 1 )
-				break;
-		}
-#endif
 		else if (argv[i][0] == '-')
 		{
 			Warning("VBSP: Unknown option \"%s\"\n\n", argv[i]);
@@ -1024,9 +949,6 @@ void PrintUsage( int argc, char **argv )
 		"\n"
 		"  -v (or -verbose): Turn on verbose output (also shows more command\n"
 		"  -fast           : Only do first quick pass on vis calculations.\n"
-#ifdef MPI
-		"  -mpi            : Use VMPI to distribute computations.\n"
-#endif
 		"  -low            : Run as an idle-priority process.\n"
 		"                    env_fog_controller specifies one.\n"
 		"\n"
@@ -1036,9 +958,6 @@ void PrintUsage( int argc, char **argv )
 		"Other options:\n"
 		"  -novconfig      : Don't bring up graphical UI on vproject errors.\n"
 		"  -radius_override: Force a vis radius, regardless of whether an\n"
-#ifdef MPI
-		"  -mpi_pw <pw>    : Use a password to choose a specific set of VMPI workers.\n"
-#endif
 		"  -threads        : Control the number of threads vbsp uses (defaults to the #\n"
 		"                    or processors on your machine).\n"
 		"  -nosort         : Don't sort portals (sorting is an optimization).\n"
@@ -1049,34 +968,7 @@ void PrintUsage( int argc, char **argv )
 		"  -x360		   : Generate Xbox360 version of vsp\n"
 		"  -nox360		   : Disable generation Xbox360 version of vsp (default)\n"
 		"\n"
-#if 1 // Disabled for the initial SDK release with VMPI so we can get feedback from selected users.
 		);
-#else
-		"  -mpi_ListParams : Show a list of VMPI parameters.\n"
-		"\n"
-		);
-
-	// Show VMPI parameters?
-	for ( int i=1; i < argc; i++ )
-	{
-		if ( V_stricmp( argv[i], "-mpi_ListParams" ) == 0 )
-		{
-			Warning( "VMPI-specific options:\n\n" );
-
-			bool bIsSDKMode = VMPI_IsSDKMode();
-			for ( int i=k_eVMPICmdLineParam_FirstParam+1; i < k_eVMPICmdLineParam_LastParam; i++ )
-			{
-				if ( (VMPI_GetParamFlags( (EVMPICmdLineParam)i ) & VMPI_PARAM_SDK_HIDDEN) && bIsSDKMode )
-					continue;
-					
-				Warning( "[%s]\n", VMPI_GetParamString( (EVMPICmdLineParam)i ) );
-				Warning( VMPI_GetParamHelpString( (EVMPICmdLineParam)i ) );
-				Warning( "\n\n" );
-			}
-			break;
-		}
-	}
-#endif
 }
 
 
@@ -1088,14 +980,25 @@ int RunVVis( int argc, char **argv )
 	double		start, end;
 
 
-	Msg( "Valve Software - vvis.exe (%s)\n", __DATE__ );
+	Msg( "Valve Software - vvis (%s)\n", __DATE__ );
 
-	verbose = false;
-
-	LoadCmdLineFromFile( argc, argv, source, "vvis" );
-	int i = ParseCommandLine( argc, argv );
+    verbose = false;
 
 	CmdLib_InitFileSystem( argv[ argc - 1 ] );
+
+	char mapbase[64];
+	V_FileBase( argv[ argc - 1 ], mapbase, sizeof( mapbase ) );
+	strlwr( mapbase );
+	LoadCmdLineFromFile( argc, argv, mapbase, "vvis" );
+
+	int i = ParseCommandLine( argc, argv );
+
+    if (i != argc - 1)
+    {
+        PrintUsage( argc, argv );
+        DeleteCmdLine( argc, argv );
+        CmdLib_Exit( EXIT_FAILURE );
+    }
 
 	// The ExpandPath is just for VMPI. VMPI's file system needs the basedir in front of all filenames,
 	// so we prepend qdir here.
@@ -1112,22 +1015,12 @@ int RunVVis( int argc, char **argv )
 	V_strncpy( source, mapFile, sizeof( mapFile ) );
 	V_StripExtension( source, source, sizeof( source ) );
 
-	if (i != argc - 1)
-	{
-		PrintUsage( argc, argv );
-		DeleteCmdLine( argc, argv );
-		CmdLib_Exit( 1 );
-	}
-
 	start = Plat_FloatTime();
 
-#ifdef MPI
-	if (!g_bUseMPI)
-#endif
 	{
 		// Setup the logfile.
 		char logFile[512];
-		_snprintf( logFile, sizeof(logFile), "%s.log", source );
+		Q_snprintf( logFile, sizeof(logFile), "%s.log", source );
 		SetSpewFunctionLogFile( logFile );
 	}
 
@@ -1200,12 +1093,7 @@ int RunVVis( int argc, char **argv )
 		{
 			Error("Invalid cluster trace: %d to %d, valid range is 0 to %d\n", g_TraceClusterStart, g_TraceClusterStop, portalclusters-1 );
 		}
-#ifdef MPI
-		if ( g_bUseMPI )
-		{
-			Warning("Can't compile trace in MPI mode\n");
-		}
-#endif
+
 		CalcVisTrace ();
 		WritePortalTrace(source);
 	}
@@ -1235,20 +1123,7 @@ int main (int argc, char **argv)
 	MathLib_Init( 2.2f, 2.2f, 0.0f, 1.0f, false, false, false, false );
 	InstallAllocationFunctions();
 	InstallSpewFunction();
-
-#ifdef MPI
-	VVIS_SetupMPI( argc, argv );
-#endif
-
-	// Install an exception handler.
-#ifdef MPI
-	if ( g_bUseMPI && !g_bMPIMaster )
-		SetupToolsMinidumpHandler( VMPI_ExceptionFilter );
-	else
-#endif
-	{
-		SetupDefaultToolsMinidumpHandler();
-	}
+	SetupDefaultToolsMinidumpHandler();
 
 	return RunVVis( argc, argv );
 }
