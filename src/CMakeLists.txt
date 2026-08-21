@@ -520,20 +520,15 @@ set(INSTALL_PATH_PREFIX "neo-${BUILD_DATE_SHORT}-${GIT_HASH}")
 set(INSTALL_PATH_SUFFIX "${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
 
 function(neo_install_targets)
-    cmake_parse_arguments(ARG "INSTALL_PATH_NO_SUBDIR" "DIRECTORY_NAME;INSTALL_PATH_VARIABLE_NAME" "TARGETS" ${ARGN})
+    cmake_parse_arguments(ARG "" "DIRECTORY_NAME;SUBDIR" "TARGETS" ${ARGN})
     
-    set(INSTALL_PATH_SUBDIR "/neo/bin/${PLATSUBDIR}")
-    if(ARG_INSTALL_PATH_NO_SUBDIR)
-        set(INSTALL_PATH_SUBDIR "")
+    if(NOT ARG_DIRECTORY_NAME)
+        message(FATAL_ERROR "You must provide a directory name")
     endif()
+            
+    set(INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-${INSTALL_PATH_SUFFIX}/${ARG_SUBDIR}")
+    set(DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-debuginfo-${INSTALL_PATH_SUFFIX}/${ARG_SUBDIR}")
     
-    set(INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-${INSTALL_PATH_SUFFIX}${INSTALL_PATH_SUBDIR}")
-    set(DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-${ARG_DIRECTORY_NAME}-debuginfo-${INSTALL_PATH_SUFFIX}${INSTALL_PATH_SUBDIR}")
-    
-    if(DEFINED ARG_INSTALL_PATH_VARIABLE_NAME)
-        set(${ARG_INSTALL_PATH_VARIABLE_NAME} "${INSTALL_PATH}" PARENT_SCOPE)
-    endif()
-
     if(NOT NEO_USE_SEPARATE_BUILD_INFO)
         install(
             TARGETS ${ARG_TARGETS}
@@ -586,11 +581,13 @@ if(NEO_INSTALL_LIBRARIES)
         neo_install_targets(
             TARGETS server
             DIRECTORY_NAME dedicated
+            SUBDIR "neo/bin/${PLATSUBDIR}"
         )
     else()
         neo_install_targets(
             TARGETS client game_shader_dx9 server
             DIRECTORY_NAME libraries
+            SUBDIR "neo/bin/${PLATSUBDIR}"
         )
     endif()
 
@@ -622,7 +619,7 @@ if(NEO_INSTALL_LAUNCHER AND NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
     neo_install_targets(
         TARGETS launcher_main
         DIRECTORY_NAME launcher
-        INSTALL_PATH_NO_SUBDIR
+        SUBDIR ""
     )
 endif()
 
@@ -630,18 +627,8 @@ if(NEO_BUILD_UTILS AND NEO_INSTALL_UTILS)
     neo_install_targets(
         TARGETS vbsp vvis_library vvis vrad_library vrad vice
         DIRECTORY_NAME utils
-        INSTALL_PATH_VARIABLE_NAME UTILS_INSTALL_PATH
+        SUBDIR "bin/${PLATSUBDIR}"
     )
-
-    if(OS_LINUX)
-        install(
-            FILES
-                "${CMAKE_SOURCE_DIR}/utils/vbsp/vbsp.sh"
-                "${CMAKE_SOURCE_DIR}/utils/vvis/vvis.sh"
-                "${CMAKE_SOURCE_DIR}/utils/vrad/vrad.sh"
-            DESTINATION "${UTILS_INSTALL_PATH}/${PLATSUBDIR}"
-        )
-    endif()
 endif()
 
 if(NEO_INSTALL_RESOURCES)

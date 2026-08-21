@@ -132,6 +132,10 @@ function(split_debug_information)
         ${ARGN}
     )
 
+    if(NOT PARSED_ARGS_TARGET)
+        message(FATAL_ERROR "You must provide a target name")
+    endif()
+
     if(COMPILER_MSVC)
         # MSVC splits debug information by itself
         return()
