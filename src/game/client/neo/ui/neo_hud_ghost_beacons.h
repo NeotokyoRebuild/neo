@@ -30,9 +30,9 @@ protected:
 private:
 	int screenWidth = 0, screenHeight = 0, doubleScreenWidth = 0, doubleScreenHeight = 0;
 
-	CPanelAnimationVar(Color, beaconColor, "color", "");// "255, 20, 20, 150");
-	CPanelAnimationVar(vgui::HFont, m_hFont, "font", "");// "NHudOCRSmall");
-	CPanelAnimationVarAliasType(int, m_hTex, "texture", "", "textureid");// "vgui/hud/ctg/g_beacon_enemy", "textureid");
+	CPanelAnimationVar(Color, beaconColor, "color", "255, 20, 20, 150");
+	CPanelAnimationVar(vgui::HFont, m_hFont, "font", "NHudOCRSmall");
+	CPanelAnimationVarAliasType(int, m_hTex, "texture", "vgui/hud/ctg/g_beacon_enemy", "textureid");
 
 private:
 	CNEOHud_GhostBeacons(const CNEOHud_GhostBeacons &other);
