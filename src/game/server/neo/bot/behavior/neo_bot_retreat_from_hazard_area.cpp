@@ -88,7 +88,7 @@ ActionResult<CNEOBot> CNEOBotRetreatFromHazardArea::OnStart(CNEOBot *me, Action<
     }
 
     m_path.SetMinLookAheadDistance(me->GetDesiredPathLookAheadRange());
-    m_repathTimer.Invalidate();
+    m_path.Invalidate();
 
     return Continue();
 }
@@ -116,7 +116,7 @@ ActionResult<CNEOBot> CNEOBotRetreatFromHazardArea::Update(CNEOBot *me, float in
     {
         // Safe area is no longer safe at this point, look for new candidate
         m_safeArea = FindSafeArea(me);
-        m_repathTimer.Invalidate();
+        m_path.Invalidate();
     }
 
     if (!m_safeArea)
@@ -124,9 +124,8 @@ ActionResult<CNEOBot> CNEOBotRetreatFromHazardArea::Update(CNEOBot *me, float in
         return Done("Could not find replacement safe area!");
     }
 
-    if (m_repathTimer.IsElapsed())
+    if (!m_path.IsValid())
     {
-        m_repathTimer.Start(10.0f);
         // RETREAT_ROUTE: Allow pathing through hazardous areas in CNEOBotPathCost
         CNEOBotPathCompute(me, m_path, m_safeArea->GetCenter(), RETREAT_ROUTE);
     }
@@ -138,13 +137,13 @@ ActionResult<CNEOBot> CNEOBotRetreatFromHazardArea::Update(CNEOBot *me, float in
 EventDesiredResult< CNEOBot > CNEOBotRetreatFromHazardArea::OnStuck( CNEOBot *me )
 {
     m_safeArea = FindSafeArea(me);
-    m_repathTimer.Invalidate();
+    m_path.Invalidate();
 	return TryContinue();
 }
 
 EventDesiredResult< CNEOBot > CNEOBotRetreatFromHazardArea::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
     m_safeArea = FindSafeArea(me);
-    m_repathTimer.Invalidate();
+    m_path.Invalidate();
 	return TryContinue();
 }

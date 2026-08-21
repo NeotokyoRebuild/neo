@@ -20,7 +20,6 @@ public:
 
 private:
     CNavArea *m_safeArea;
-    CountdownTimer m_repathTimer;
     PathFollower m_path;
 
     CNavArea *FindSafeArea(CNEOBot *me);
