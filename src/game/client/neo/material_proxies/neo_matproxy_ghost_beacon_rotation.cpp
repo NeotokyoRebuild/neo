@@ -4,12 +4,10 @@
 //
 // $NoKeywords: $
 //=============================================================================//
-#include "cbase.h"
 #include "materialsystem/imaterialproxy.h"
 #include "materialsystem/imaterial.h"
 #include "materialsystem/imaterialvar.h"
 #include <KeyValues.h>
-#include "functionproxy.h"
 #include "neo/ui/neo_hud_ghost_beacons.h"
 #include "toolframework_client.h"
 
