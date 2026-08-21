@@ -10,7 +10,6 @@
 #include "neo_weapon_loadout.h"
 #include "neo_hud_deathnotice.h"
 #include "neo_misc.h"
-#include "hltvcamera.h"
 #include <c_playerresource.h>
 
 #include "iclientmode.h"
@@ -45,9 +44,12 @@ static const struct Theme
 
 static constexpr const float FL_CHECK_HP_REDUCTION_DELTA_MAX = 1.5f;
 
+CNEOHud_SpectatorOverlay *g_pNeoHudSpecOverlay;
+
 CNEOHud_SpectatorOverlay::CNEOHud_SpectatorOverlay(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
+	g_pNeoHudSpecOverlay = this;
 	SetAutoDelete(true);
 	m_iHideHudElementNumber = NEO_HUD_ELEMENT_SPECTATOR_OVERLAY;
 
@@ -69,6 +71,7 @@ CNEOHud_SpectatorOverlay::CNEOHud_SpectatorOverlay(const char* pElementName, vgu
 
 CNEOHud_SpectatorOverlay::~CNEOHud_SpectatorOverlay()
 {
+	g_pNeoHudSpecOverlay = nullptr;
 }
 
 static bool ShouldDrawHUD()
@@ -94,6 +97,7 @@ void CNEOHud_SpectatorOverlay::ClearAll()
 	m_iCardsSize = 0;
 	V_memset(m_cards, 0, sizeof(m_cards));
 	V_memset(m_iTeamPlayersCount, 0, sizeof(m_iTeamPlayersCount));
+	m_iEntIndexSelect = 0;
 }
 
 void CNEOHud_SpectatorOverlay::Init()
@@ -683,6 +687,8 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 		vgui::surface()->DrawPrintText(WSZ_DNI_GHOST, 1);
 	}
 
+	const int iMargin = flWideAs43 / 480.0f;
+
 	// Spectator current observing border
 	const auto *pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (card.iEntIndex == GetSpectatorTarget()
@@ -691,13 +697,27 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 			&& (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE
 				|| pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE))
 	{
-		const int iMargin = flWideAs43 / 480.0f;
-
 		vgui::surface()->DrawSetColor(COLOR_WHITE);
 		vgui::surface()->DrawFilledRect(x, y - iMargin, x + wide, y);									// top
 		vgui::surface()->DrawFilledRect(x, y + tall, x + wide, y + tall + iMargin);						// bottom
 		vgui::surface()->DrawFilledRect(x - iMargin, y - iMargin, x, y + tall + iMargin);				// left
 		vgui::surface()->DrawFilledRect(x + wide, y - iMargin, x + wide + iMargin, y + tall + iMargin);	// right
+	}
+
+	// m_iEntIndexSelect indicator
+	if (card.iEntIndex == m_iEntIndexSelect)
+	{
+		vgui::surface()->DrawSetColor(COLOR_NEO_ORANGE);
+		if (bIsLeftSide)
+		{
+			// Left border, Jinrai
+			vgui::surface()->DrawFilledRect(x - iMargin, y - iMargin, x, y + tall + iMargin);
+		}
+		else
+		{
+			// Right border, NSF
+			vgui::surface()->DrawFilledRect(x + wide, y - iMargin, x + wide + iMargin, y + tall + iMargin);
+		}
 	}
 
 	// Weapon firing indicator bar - Jinrai right side, NSF left side 
@@ -775,148 +795,61 @@ void CNEOHud_SpectatorOverlay::DrawNeoHudElement()
 	}
 }
 
-int CNEOHud_SpectatorOverlay::CardIdxFromLocalObserverTarget() const
+int CNEOHud_SpectatorOverlay::SpecTargetNextEntIdx(const ESpecType eSpecType, EDirection eDirection) const
 {
+	int iSpecTargetIdx = -1;
 	const C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (pNeoPlayer && pNeoPlayer->IsObserver())
 	{
-		if (const C_BaseEntity *pTarget = pNeoPlayer->GetObserverTarget())
+		const C_BaseEntity *pTarget = pNeoPlayer->GetObserverTarget();
+		const bool bHasSelEntIndex = (eSpecType == SPECTYPE_SELECT && m_iEntIndexSelect > 0);
+		if (pTarget || bHasSelEntIndex)
 		{
-			const int iCmpEntIndex = pTarget->entindex();
+			const int iCmpEntIndex = bHasSelEntIndex ? m_iEntIndexSelect : pTarget->entindex();
 			for (int i = 0; i < m_iCardsSize; ++i)
 			{
 				if (iCmpEntIndex == m_cards[i].iEntIndex)
 				{
-					return i;
+					iSpecTargetIdx = i;
+					break;
+				}
+			}
+			// If m_iEntIndexSelect selected is now invalid
+			if (pTarget && bHasSelEntIndex && iSpecTargetIdx == -1)
+			{
+				const int iCmpEntIndex2 = pTarget->entindex();
+				for (int i = 0; i < m_iCardsSize; ++i)
+				{
+					if (iCmpEntIndex2 == m_cards[i].iEntIndex)
+					{
+						iSpecTargetIdx = i;
+						break;
+					}
 				}
 			}
 		}
-	}
-	return -1;
-}
-
-static void SetPlayerTarget(const int iPlayerIndex)
-{
-	if (iPlayerIndex)
-	{
-		if (engine->IsHLTV())
+		else if ((eSpecType == SPECTYPE_SELECT && m_iEntIndexSelect == 0) || (eSpecType == SPECTYPE_DIRECT))
 		{
-			HLTVCamera()->SetPrimaryTarget(iPlayerIndex);
-		}
-		else
-		{
-			engine->ClientCmd(VarArgs("spec_player_entity_number %d", iPlayerIndex));
+			iSpecTargetIdx = 0;
+			eDirection = DIRECTION_NIL;
 		}
 	}
-}
-
-static const CNEOHud_SpectatorOverlay *CheckCommonSpecOverlayErrors(const char *pszFuncName)
-{
-	const auto *pOverlay = GET_NAMED_HUDELEMENT(CNEOHud_SpectatorOverlay, neo_spectator_overlay);
-	if (!pOverlay)
-	{
-		return nullptr;
-	}
-
-	if (false == cl_neo_hud_spectator_overlay_enabled.GetBool())
-	{
-		ConMsg("%s: Requires \"cl_neo_hud_spectator_overlay_enabled 1\"!\n", pszFuncName);
-		return nullptr;
-	}
-
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg("%s: HLTV Camera is PVS locked\n", pszFuncName);
-		return nullptr;
-	}
-
-	return pOverlay;
-}
-
-CON_COMMAND_F(spec_player_by_overlay_position, "Spectate player by position in the overlay hud, from first of Jinrai to last of NSF", FCVAR_CLIENTCMD_CAN_EXECUTE)
-{
-	static constexpr const char HELP_MSG[] =
-			"Usage: spec_player_by_overlay_position { player position in overlay hud, from first of Jinrai to last of NSF, 0 indexed }\n";
-
-	const CNEOHud_SpectatorOverlay *pOverlay = CheckCommonSpecOverlayErrors(__FUNCTION__);
-	if (!pOverlay) return;
-
-	if (args.ArgC() != 2)
-	{
-		ConMsg(HELP_MSG);
-		return;
-	}
-
-	const int iSpecTargetIdx = atoi(args[1]);
-	if (iSpecTargetIdx < 0 || iSpecTargetIdx >= pOverlay->m_iCardsSize)
-	{
-		ConMsg(HELP_MSG);
-		return;
-	}
-	SetPlayerTarget(pOverlay->m_cards[iSpecTargetIdx].iEntIndex);
-}
-
-CON_COMMAND_F(spec_next_entity_in_overlay, "Spectate the next valid player in the overlay hud", FCVAR_CLIENTCMD_CAN_EXECUTE)
-{
-	const CNEOHud_SpectatorOverlay *pOverlay = CheckCommonSpecOverlayErrors(__FUNCTION__);
-	if (!pOverlay) return;
-
-	const int iSpecTargetIdx = pOverlay->CardIdxFromLocalObserverTarget();
 	if (iSpecTargetIdx >= 0)
 	{
-		SetPlayerTarget(pOverlay->m_cards[LoopAroundInArray(iSpecTargetIdx + 1, pOverlay->m_iCardsSize)].iEntIndex);
-	}
-}
-
-CON_COMMAND_F(spec_previous_entity_in_overlay, "Spectate the previous valid player in the overlay hud", FCVAR_CLIENTCMD_CAN_EXECUTE)
-{
-	const CNEOHud_SpectatorOverlay *pOverlay = CheckCommonSpecOverlayErrors(__FUNCTION__);
-	if (!pOverlay) return;
-
-	const int iSpecTargetIdx = pOverlay->CardIdxFromLocalObserverTarget();
-	if (iSpecTargetIdx >= 0)
-	{
-		SetPlayerTarget(pOverlay->m_cards[LoopAroundInArray(iSpecTargetIdx - 1, pOverlay->m_iCardsSize)].iEntIndex);
-	}
-}
-
-CON_COMMAND_F(select_next_alive_player_in_overlay, "Select the next alive player in the overlay hud", FCVAR_CLIENTCMD_CAN_EXECUTE)
-{
-	const CNEOHud_SpectatorOverlay *pOverlay = CheckCommonSpecOverlayErrors(__FUNCTION__);
-	if (!pOverlay) return;
-
-	int iSpecTargetIdx = pOverlay->CardIdxFromLocalObserverTarget();
-	if (iSpecTargetIdx >= 0)
-	{
-		for (int i = 0; i < pOverlay->m_iCardsSize; ++i)
+		if (eDirection != DIRECTION_NIL)
 		{
-			iSpecTargetIdx = LoopAroundInArray(iSpecTargetIdx + 1, pOverlay->m_iCardsSize);
-			if (pOverlay->m_cards[iSpecTargetIdx].bAlive)
+			for (int i = 0; i < m_iCardsSize; ++i)
 			{
-				break;
+				iSpecTargetIdx = LoopAroundInArray(iSpecTargetIdx
+						+ ((eDirection == DIRECTION_PREV) ? -1 : +1), m_iCardsSize);
+				if (m_cards[iSpecTargetIdx].bAlive)
+				{
+					break;
+				}
 			}
 		}
-		SetPlayerTarget(pOverlay->m_cards[iSpecTargetIdx].iEntIndex);
+		return m_cards[iSpecTargetIdx].iEntIndex;
 	}
-}
-
-CON_COMMAND_F(select_previous_alive_player_in_overlay, "Select the previous alive player in the overlay hud", FCVAR_CLIENTCMD_CAN_EXECUTE)
-{
-	const CNEOHud_SpectatorOverlay *pOverlay = CheckCommonSpecOverlayErrors(__FUNCTION__);
-	if (!pOverlay) return;
-
-	int iSpecTargetIdx = pOverlay->CardIdxFromLocalObserverTarget();
-	if (iSpecTargetIdx >= 0)
-	{
-		for (int i = 0; i < pOverlay->m_iCardsSize; ++i)
-		{
-			iSpecTargetIdx = LoopAroundInArray(iSpecTargetIdx - 1, pOverlay->m_iCardsSize);
-			if (pOverlay->m_cards[iSpecTargetIdx].bAlive)
-			{
-				break;
-			}
-		}
-		SetPlayerTarget(pOverlay->m_cards[iSpecTargetIdx].iEntIndex);
-	}
+	return 0;
 }
 

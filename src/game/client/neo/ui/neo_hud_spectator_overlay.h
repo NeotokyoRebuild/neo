@@ -6,6 +6,8 @@
 
 class CAvatarImage;
 
+extern ConVar cl_neo_hud_spectator_overlay_enabled;
+
 struct SpectatorPlayerCard
 {
 	int iUserID = 0;
@@ -53,7 +55,19 @@ public:
 	SpectatorPlayerCard m_cards[MAX_PLAYERS_ARRAY_SAFE] = {};
 	int m_iCardsSize = 0;
 
-	int CardIdxFromLocalObserverTarget() const;
+	enum ESpecType
+	{
+		SPECTYPE_DIRECT = 0,
+		SPECTYPE_SELECT,
+	};
+	enum EDirection
+	{
+		DIRECTION_NIL = 0,
+		DIRECTION_NEXT,
+		DIRECTION_PREV,
+	};
+	int SpecTargetNextEntIdx(const ESpecType eSpecType, EDirection eDirection) const;
+	int m_iEntIndexSelect = 0;
 
 protected:
 	void UpdateStateForNeoHudElementDraw() final;
@@ -78,4 +92,6 @@ private:
 
 	int m_iTeamPlayersCount[TEAM__TOTAL] = {};
 };
+
+extern CNEOHud_SpectatorOverlay *g_pNeoHudSpecOverlay;
 
