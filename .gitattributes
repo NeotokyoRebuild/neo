@@ -1,7 +1,7 @@
-buildallprojects text
 vpc binary
 
-*.sh text
+# eol=lf: a shell script checked out with CRLF fails to run at all.
+*.sh text eol=lf
 *.bat text
 *.txt text
 *.c text
