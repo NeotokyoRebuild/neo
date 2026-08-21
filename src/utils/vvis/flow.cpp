@@ -489,10 +489,16 @@ void RecursiveLeafFlow (int leafnum, threaddata_t *thread, pstack_t *prevstack)
 
 	leaf = &leafs[leafnum];
 
+#ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic push
+#if (__GNUC__ >= 12)
 #pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif
+#endif
 	prevstack->next = &stack;
+#ifdef ACTUALLY_COMPILER_GCC
 #pragma GCC diagnostic pop
+#endif
 
 	stack.next = NULL;
 	stack.leaf = leaf;
