@@ -195,7 +195,8 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		{
 			m_chasePath.Invalidate();
 
-			CNEOBotPathCompute( me, m_path, vecMoveTarget, SAFEST_ROUTE );
+			// when using m_repathTimer approach, use FASTEST_ROUTE for path consistency
+			CNEOBotPathCompute( me, m_path, vecMoveTarget, FASTEST_ROUTE );
 			m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 		}
 		m_path.Update( me );
