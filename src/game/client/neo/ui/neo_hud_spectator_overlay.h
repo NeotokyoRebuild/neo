@@ -50,6 +50,11 @@ public:
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
 
+	SpectatorPlayerCard m_cards[MAX_PLAYERS_ARRAY_SAFE] = {};
+	int m_iCardsSize = 0;
+
+	int CardIdxFromLocalObserverTarget() const;
+
 protected:
 	void UpdateStateForNeoHudElementDraw() final;
 	void DrawNeoHudElement() final;
@@ -71,8 +76,6 @@ private:
 	CPanelAnimationVar(vgui::HFont, m_hSmallWeaponsFont, "SmallWeaponsFont", "NHudSpectatorOverlaySmallWeapons");
 	CPanelAnimationVarAliasType(int, m_iDeadTexture, "DeadTexture", "vgui/hud/kill_kill", "textureid");
 
-	SpectatorPlayerCard m_cards[MAX_PLAYERS_ARRAY_SAFE] = {};
-	int m_iCardsSize = 0;
 	int m_iTeamPlayersCount[TEAM__TOTAL] = {};
 };
 
