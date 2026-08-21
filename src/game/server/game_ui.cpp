@@ -68,7 +68,11 @@ public:
 	COutputFloat		m_attack2axis;
 
 	bool				m_bForceUpdate;
+#ifdef NEO
+	int64				m_nLastButtonState;
+#else
 	int					m_nLastButtonState;
+#endif // NEO
 
 	CHandle<CBasePlayer>	m_player;
 };
@@ -295,14 +299,22 @@ void CGameUI::Think( void )
 	// Deactivate if they jump or press +use.
 	// FIXME: prevent the use from going through in player.cpp
 	if ((( pPlayer->m_afButtonPressed & IN_USE ) && ( m_spawnflags & SF_GAMEUI_USE_DEACTIVATES )) ||
+#ifdef NEO
+		(( pPlayer->m_afButtonPressed & (IN_JUMP | IN_JUMP2) ) && ( m_spawnflags & SF_GAMEUI_JUMP_DEACTIVATES )))
+#else
 		(( pPlayer->m_afButtonPressed & IN_JUMP ) && ( m_spawnflags & SF_GAMEUI_JUMP_DEACTIVATES )))
+#endif // NEO
 	{
 		Deactivate( pPlayer );
 		return;
 	}
 
 	// Determine what's different
+#ifdef NEO
+	const int64 nButtonsChanged = ( pPlayer->m_nButtons ^ m_nLastButtonState );
+#else
 	int nButtonsChanged = ( pPlayer->m_nButtons ^ m_nLastButtonState );
+#endif // NEO
 
 	//
 	// Handle all our possible input triggers

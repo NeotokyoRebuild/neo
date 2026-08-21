@@ -2906,7 +2906,11 @@ private:
 	const static float kflPosInterpTime; // seconds
 #endif
 
+#ifdef NEO
+	int64   m_nPlayerButtons;
+#else
 	int   m_nPlayerButtons;
+#endif // NEO
 	int m_nOldTakeDamage;
 
 private:
@@ -3376,7 +3380,11 @@ void CTriggerCamera::Move()
 
 			if ( pPlayer  )
 			{
+#ifdef NEO
+				const int64 buttonsChanged = m_nPlayerButtons ^ pPlayer->m_nButtons;
+#else
 				int buttonsChanged = m_nPlayerButtons ^ pPlayer->m_nButtons;
+#endif // NEO
 
 				if ( buttonsChanged && pPlayer->m_nButtons )
 				{
