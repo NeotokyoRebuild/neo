@@ -72,6 +72,7 @@ enum RootState
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
 	STATE_CREDITS,
+	STATE_OVERLAY,
 
 	// Those that are not the main states goes under here
 	STATE__SUBSTATES,
@@ -163,6 +164,7 @@ public:
 	void MainLoopNewGame(const MainLoopParam param);
 	void MainLoopServerBrowser(const MainLoopParam param);
 	void MainLoopCredits(const MainLoopParam param);
+	void MainLoopOverlay(const MainLoopParam param);
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
 	void MainLoopSprayPicker(const MainLoopParam param);
@@ -220,6 +222,8 @@ public:
 		FILEIODLGMODE_SPRAY = 0,
 		FILEIODLGMODE_BLACKLIST_IMPORT,
 		FILEIODLGMODE_BLACKLIST_EXPORT,
+		FILEIODLGMODE_TEAMLOGO_JINRAI,
+		FILEIODLGMODE_TEAMLOGO_NSF,
 
 		FILEIODLGMODE__TOTAL,
 	};
@@ -274,6 +278,13 @@ public:
 
 	float m_flHtBtnCodeUpdate = 0.0f;
 	CUtlHashtable<int, ERootButtonAction> m_htButtonCodeToAction;
+
+	wchar_t m_wszTeamNameJinrai[MAX_PLAYER_NAME_LENGTH] = {};
+	wchar_t m_wszTeamNameNSF[MAX_PLAYER_NAME_LENGTH] = {};
+	wchar_t m_wszLogoPathJinrai[MAX_PATH] = {};
+	wchar_t m_wszLogoPathNSF[MAX_PATH] = {};
+	int m_iMatchesWonJinrai = 0;
+	int m_iMatchesWonNSF = 0;
 };
 
 extern CNeoRoot *g_pNeoRoot;

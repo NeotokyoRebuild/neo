@@ -573,15 +573,27 @@ struct TabsState
 	int iOffset;
 	bool bInYScroll;
 };
+
+enum TextureOptFlag_
+{
+	TEXTUREOPTFLAGS_NONE = 0,
+	TEXTUREOPTFLAGS_DONOTCROPTOPANEL = 1 << 0, // Disable cropping based on panel's dimension
+	TEXTUREOPTFLAGS_DONOTCACHEIFINVALID = 1 << 1, // Don't insert to htTexMap cache if invalid
+	TEXTUREOPTFLAGS_RESIZETO256 = 1 << 2, // Resize texture to 256px square using NeoUtils::CropScaleTo256
+};
+typedef int TextureOptFlags;
+
 /*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex,
 		const TabsFlags flags = TABFLAG_DEFAULT,
 		TabsState *pState = nullptr);
 /*1W*/ RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath, const char *szTextureGroup,
-		const EBaseButtonType eType, const bool bVal = false, const ButtonFlags flags = BUTTONFLAG_NONE, const float flScrollStart = 0.0f);
+		const EBaseButtonType eType, const bool bVal = false,
+		const ButtonFlags flags = BUTTONFLAG_NONE, const float flScrollStart = 0.0f,
+		const TextureOptFlags texFlags = TEXTUREOPTFLAGS_NONE);
 /*1W*/ RetButton Button(const wchar_t *wszText);
 /*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 /*1W*/ RetButton ButtonTexture(const char *szTexturePath, const char *szTextureGroup = "",
-		const wchar_t *wszText = L"");
+		const wchar_t *wszText = L"", const TextureOptFlags flags = TEXTUREOPTFLAGS_NONE);
 /*1W*/ RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal);
 /*1W*/ RetButton ButtonToggle(const wchar_t *wszText, const bool bVal, const ButtonFlags flags = BUTTONFLAG_NONE, const float flScrollStart = 0.0f);
 /*1W*/ void RingBoxFlag(const int iToggleFlag, int *iFlags, const wchar_t **wszLabelsCustomList = nullptr);
@@ -611,7 +623,7 @@ enum TextEditFlag_
 typedef int TextEditFlags;
 /*1W*/ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
 /*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize, const TextEditFlags flags = TEXTEDITFLAG_NONE);
-/*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "");
+/*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "", const TextureOptFlags flags = TEXTUREOPTFLAGS_NONE);
 
 // Table widgets + functionalities
 // NEO TODO (nullsystem): iColProportions non-const, resizable within TableHeader
@@ -650,14 +662,13 @@ void BeginIgnoreXOffset();
 void EndIgnoreXOffset();
 
 // NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
-enum TextureOptFlags
-{
-	TEXTUREOPTFLAGS_NONE = 0,
-	TEXTUREOPTFLAGS_DONOTCROPTOPANEL = 1, // Disable cropping based on panel's dimension
-};
 bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
 			 const char *szTextureGroup = "", const TextureOptFlags texFlags = TEXTUREOPTFLAGS_NONE);
 void ResetTextures();
+
+// NeoUI::TextureFromFile does not relies on NeoUI context and can be used anywhere
+int TextureFromFile(const char *szTexturePath, const char *szTextureGroup = "",
+		const  TextureOptFlags texFlags = TEXTUREOPTFLAGS_NONE);
 
 // Non-widgets/convenience functions
 bool Bind(const ButtonCode_t eCode);
