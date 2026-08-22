@@ -2369,7 +2369,26 @@ void CNeoRoot::MainLoopOverlay(const MainLoopParam param)
 				}
 				NeoUI::Pad();
 				NeoUI::Pad();
-				NeoUI::Pad();
+				if (NeoUI::Button(L"Swap Teams").bPressed)
+				{
+					wchar_t wszTeamNameJinraiTemp[MAX_PLAYER_NAME_LENGTH] = {};
+					wchar_t wszLogoPathJinraiTemp[MAX_PATH] = {};
+
+					// Jinrai -> Jinrai-Temp
+					V_wcscpy_safe(wszTeamNameJinraiTemp, m_wszTeamNameJinrai);
+					V_wcscpy_safe(wszLogoPathJinraiTemp, m_wszLogoPathJinrai);
+					const int iMatchesWonJinraiTemp = m_iMatchesWonJinrai;
+
+					// NSF -> Jinrai
+					V_wcscpy_safe(m_wszTeamNameJinrai, m_wszTeamNameNSF);
+					V_wcscpy_safe(m_wszLogoPathJinrai, m_wszLogoPathNSF);
+					m_iMatchesWonJinrai = m_iMatchesWonNSF;
+
+					// Jinrai-Temp -> NSF
+					V_wcscpy_safe(m_wszTeamNameNSF, wszTeamNameJinraiTemp);
+					V_wcscpy_safe(m_wszLogoPathNSF, wszLogoPathJinraiTemp);
+					m_iMatchesWonNSF = iMatchesWonJinraiTemp;
+				}
 				if (NeoUI::Button(L"Save (F8)").bPressed || NeoUI::Bind(KEY_F8))
 				{
 					{
