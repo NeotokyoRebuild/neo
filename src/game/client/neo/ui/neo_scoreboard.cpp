@@ -984,6 +984,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 						if (pAvatarImg)
 						{
+							pAvatarImg->m_bDeadAvatar = pPlayerInfo->bDead && bIsPlaying;
 							pAvatarImg->SetPos(m_uiCtx.rWidgetArea.x0, m_uiCtx.rWidgetArea.y0);
 							pAvatarImg->SetSize(m_uiCtx.irWidgetTall, m_uiCtx.irWidgetTall);
 							pAvatarImg->Paint();
@@ -1012,10 +1013,9 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 					}
 					if (iCurTeam >= FIRST_GAME_TEAM)
 					{
-						// Darken the avatar if dead or not ready
+						// Darken the avatar if not ready
 						if (pAvatarImg
-								&& (pPlayerInfo->bDead
-									|| (bShowReadyUp && false == pPlayerInfo->bReady)))
+								&& (bShowReadyUp && false == pPlayerInfo->bReady))
 						{
 							vgui::surface()->DrawSetColor(0, 0, 0, 200);
 							vgui::surface()->DrawFilledRect(
@@ -1130,6 +1130,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 			}
 			if (pAvatarImg)
 			{
+				pAvatarImg->m_bDeadAvatar = false;
 				pAvatarImg->SetPos(m_uiCtx.dPanel.x + iAvatarOffset,
 						m_uiCtx.dPanel.y + iAvatarOffset);
 				pAvatarImg->SetSize(iAvatarWT, iAvatarWT);

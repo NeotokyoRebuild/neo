@@ -282,13 +282,31 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"16" [!$LINUX] //"24"
-				"tall"		"20" [$LINUX]
+				"tall"		"18" [!$LINUX] //"24"
+				"tall"		"22" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1599"
 			}
 			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"22" [!$LINUX] //"24"
+				"tall"		"26" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1600 2099"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"26" [!$LINUX] //"24"
+				"tall"		"32" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"2100 10000"
+			}
+			"8"
 			{
 				"name"		"Verdana"
 				"tall"		"12" [!$LINUX]
@@ -296,7 +314,7 @@ Scheme
 				"range"		"0x0000 0x00FF"
 				"weight"	"900"
 			}
-			"7"
+			"9"
 			{
 				"name"		"Arial"
 				"tall"		"12"
@@ -446,6 +464,134 @@ Scheme
 				"weight"		"0"
 			}
 		}
+		// For the class, loadout, and team menu to use how the Default font used to be
+		// because those menu are very small for HiDPI res like 1440/4k
+		"CLTDefault"
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+				"yres"		"480 599"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"13" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+				"yres"		"600 767"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX] //"20"
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"18" [!$LINUX] //"24"
+				"tall"		"22" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1200 10000"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
+				"range"		"0x0000 0x00FF"
+				"weight"	"900"
+			}
+			"7"
+			{
+				"name"		"Arial"
+				"tall"		"12"
+				"range"		"0x0000 0x00FF"
+				"weight"	"800"
+			}
+		}
+		"CLTDefaultBold"
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+				"yres"		"480 599"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"13" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+				"yres"		"600 767"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX] //"20"
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"18" [!$LINUX] //"24"
+				"tall"		"22" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1200 10000"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"      "15" [$LINUX]
+				"range"		"0x0000 0x00FF"
+				"weight"	"900"
+			}
+			"7"
+			{
+				"name"		"Arial"
+				"tall"		"12"
+				"range"		"0x0000 0x00FF"
+				"weight"	"800"
+			}
+		}
 		HudHintText
 		{
 			"1"
@@ -589,8 +735,558 @@ Scheme
 				"tall"		"22" [$LINUX]
 				"weight"	"1000"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1599"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"20" [!$LINUX]
+				"tall"		"24" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 2099"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"24" [!$LINUX]
+				"tall"		"28" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"2100 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+		}
+
+		NHudSpectatorOverlayName
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"9" [!$LINUX]
+				"tall"		"12" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"11" [!$LINUX]
+				"tall"		"14" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"18" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"18" [!$LINUX]
+				"tall"		"24" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"26" [!$LINUX]
+				"tall"		"32" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+		}
+
+		NHudSpectatorOverlayInfo
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"8" [!$LINUX]
+				"tall"		"10" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"10" [!$LINUX]
+				"tall"		"13" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"		"15" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"17" [!$LINUX]
+				"tall"		"22" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"24" [!$LINUX]
+				"tall"		"28" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+		}
+
+		NHudSpectatorOverlayClass
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"8" [!$LINUX]
+				"tall"		"10" [$LINUX]
+				"weight"	"500"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"9" [!$LINUX]
+				"tall"		"12" [$LINUX]
+				"weight"	"500"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"11" [!$LINUX]
+				"tall"		"14" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"24" [!$LINUX]
+				"tall"		"28" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1600 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+		}
+
+		NHudSpectatorOverlayRoundKillHPFront
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"		"14" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"20" [!$LINUX]
+				"tall"		"24" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"22" [!$LINUX]
+				"tall"		"26" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"26" [!$LINUX]
+				"tall"		"32" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 2099"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"36" [!$LINUX]
+				"tall"		"42" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"2100 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"dropshadow"	"1"
+			}
+		}
+
+		NHudSpectatorOverlayRoundKillHPBack
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12" [!$LINUX]
+				"tall"		"14" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"1 599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
+				"blur"  "1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"14" [!$LINUX]
+				"tall"		"16" [$LINUX]
+				"weight"	"700"
+				"antialias" "1"
+				"yres"	"600 767"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
+				"blur"  "1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"16" [!$LINUX]
+				"tall"		"20" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"768 1023"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
+				"blur"  "1"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"20" [!$LINUX]
+				"tall"		"24" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1024 1199"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
+				"blur"  "1"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"22" [!$LINUX]
+				"tall"		"26" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1200 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
+				"blur"  "1"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"26" [!$LINUX]
+				"tall"		"32" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 2099"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
+				"blur"  "1"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"36" [!$LINUX]
+				"tall"		"42" [$LINUX]
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"2100 10000"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"outline"  "1"
+				"blur"  "1"
+			}
+		}
+
+
+		NHudSpectatorOverlayGhost
+		{
+			"1"
+			{
+				"name"		"killfeedicons"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+				"additive"	"0"
+			}
+			"2"
+			{
+				"name"		"killfeedicons"
+				"tall"		"32"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+				"additive"	"0"
+			}
+			"3"
+			{
+				"name"		"killfeedicons"
+				"tall"		"36"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"768 1023"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"4"
+			{
+				"name"		"killfeedicons"
+				"tall"		"40"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"5"
+			{
+				"name"		"killfeedicons"
+				"tall"		"44"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"6"
+			{
+				"name"		"killfeedicons"
+				"tall"		"48"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"7"
+			{
+				"name"		"killfeedicons"
+				"tall"		"52"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 2099"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"8"
+			{
+				"name"		"killfeedicons"
+				"tall"		"62"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"2100 6000"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+		}
+
+		NHudSpectatorOverlaySmallWeapons
+		{
+			"1"
+			{
+				"name"		"killfeedicons"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+				"additive"	"0"
+			}
+			"2"
+			{
+				"name"		"killfeedicons"
+				"tall"		"10"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+				"additive"	"0"
+			}
+			"3"
+			{
+				"name"		"killfeedicons"
+				"tall"		"12"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"768 1023"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"4"
+			{
+				"name"		"killfeedicons"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"5"
+			{
+				"name"		"killfeedicons"
+				"tall"		"16"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"6"
+			{
+				"name"		"killfeedicons"
+				"tall"		"22"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"7"
+			{
+				"name"		"killfeedicons"
+				"tall"		"26"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+				"additive"	"0"
 			}
 		}
 
@@ -1385,7 +2081,7 @@ Scheme
 			"7"
 			{
 				"name"		"killfeedicons"
-				"tall"		"28"
+				"tall"		"32"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1600 6000"
@@ -2507,7 +3203,25 @@ Scheme
 				"tall"		"15"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"		"1200 6000"
+				"yres"		"1200 1599"
+				"antialias"	"1"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"18"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"1600 2099"
+				"antialias"	"1"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"24"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"2100 6000"
 				"antialias"	"1"
 			}
 		}

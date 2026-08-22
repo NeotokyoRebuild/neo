@@ -175,6 +175,7 @@ void CNEOHud_KillerInfo::DrawNeoHudElement()
 
 	if (pAvatarImg)
 	{
+		pAvatarImg->m_bDeadAvatar = false;
 		pAvatarImg->SetPos(rect.x0 + iMargin, rect.y0 + iMargin);
 		pAvatarImg->SetSize(iAvatarWT, iAvatarWT);
 		pAvatarImg->Paint();

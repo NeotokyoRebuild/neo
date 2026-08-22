@@ -17,6 +17,7 @@
 #include "filesystem.h"
 #include "hltvcamera.h"
 #include "hud_crosshair.h"
+#include "ui/neo_hud_deathnotice.h"
 #else
 #include "neo_player.h"
 #include "team.h"
@@ -1922,6 +1923,9 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 		{
 			StartAutoRecording();
 		}
+
+		V_memset(gRoundKillerUserIDs, 0, sizeof(gRoundKillerUserIDs));
+		gRoundKillerUserIDsSize = 0;
 #endif
 #ifdef GAME_DLL
 		m_flNeoRoundStartTime = gpGlobals->curtime;
@@ -4347,24 +4351,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		event->SetInt("priority", 7);
 		event->SetBool("headshot", pVictim->LastHitGroup() == HITGROUP_HEAD);
 		event->SetBool("suicide", pKiller == pVictim || !pKiller->IsPlayer());
-
-		if (isGrenade)
-		{
-			event->SetString("deathIcon", "2"); // NEO TODO (Adam) get from enum
-		}
-		else if (isRemoteDetpack)
-		{
-			event->SetString("deathIcon", "A"); // NEO TODO (Adam) get from enum
-		}
-		else if (neoWep)
-		{
-			event->SetString("deathIcon", neoWep->GetNEOWpnData().szDeathIcon);
-		}
-		else
-		{
-			event->SetString("deathIcon", "");
-		}
-
+		event->SetString("deathIcon", neoWep ? neoWep->GetDeathIcon() : "");
 		event->SetBool("explosive", isGrenade || isRemoteDetpack);
 		event->SetBool("ghoster", m_iGhosterPlayer == pVictim->entindex());
 
