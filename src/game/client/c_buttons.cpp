@@ -8,6 +8,8 @@ LINK_ENTITY_TO_CLASS(func_button, C_BaseButton);
 
 IMPLEMENT_CLIENTCLASS_DT( C_BaseButton, DT_BaseButton, CBaseButton )
 	RecvPropInt( RECVINFO(m_spawnflags) ),
+	RecvPropString( RECVINFO(m_szUseHintText) ),
+	RecvPropBool( RECVINFO(m_bUseHint) )
 END_RECV_TABLE()
 
 int C_BaseButton::ObjectCaps(void) {
