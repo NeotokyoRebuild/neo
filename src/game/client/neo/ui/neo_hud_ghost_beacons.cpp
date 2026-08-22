@@ -1,17 +1,9 @@
 #include "neo_hud_ghost_beacons.h"
 
-#include "cbase.h"
-
 #include "iclientmode.h"
-#include "ienginevgui.h"
-#include <vgui/ILocalize.h>
-#include <vgui/ISurface.h>
-#include <vgui_controls/Controls.h>
-#include <vgui_controls/ImagePanel.h>
 
 #include "c_neo_npc_dummy.h"
 #include "c_neo_player.h"
-#include "neo_player_shared.h"
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
@@ -19,18 +11,20 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-using vgui::surface;
-
-ConVar cl_neo_ghost_beacon_scale("cl_neo_ghost_beacon_scale", "1", FCVAR_ARCHIVE,
+ConVar cl_neo_hud_ghost_beacon_scale("cl_neo_hud_ghost_beacon_scale", "1", FCVAR_ARCHIVE,
 	"Ghost beacons scale.", true, 0.01, false, 0);
 
-ConVar cl_neo_ghost_beacon_scale_with_distance("cl_neo_ghost_beacon_scale_with_distance", "0", FCVAR_ARCHIVE,
-	"Toggles the scaling of ghost beacons with distance.", true, 0, true, 1);
+static float ghostBeaconRotation = 0.f;
+ConVar cl_neo_hud_ghost_beacon_scale_with_distance("cl_neo_hud_ghost_beacon_scale_with_distance", "0", FCVAR_ARCHIVE,
+	"Toggles the scaling of ghost beacons with distance.", true, 0, true, 1, [](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (!cl_neo_hud_ghost_beacon_scale_with_distance.GetBool())
+			ghostBeaconRotation = 0.f;
+});
 
-ConVar cl_neo_ghost_beacon_alpha("cl_neo_ghost_beacon_alpha", "150", FCVAR_ARCHIVE,
-	"Alpha channel transparency of HUD ghost beacons.", true, 0, true, 255);
+ConVar cl_neo_hud_ghost_beacon_draw_distance("cl_neo_hud_ghost_beacon_draw_distance", "1", FCVAR_ARCHIVE,
+	"Draw the distance to the ghost beacons.", true, 0, true, 1);
 
-
+CNEOHud_GhostBeacons* gHudGhostBeacons;
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostBeacons, neo_ghost_beacons);
 
@@ -39,6 +33,8 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostBeacons, 0.01)
 CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
+	gHudGhostBeacons = this;
+
 	SetAutoDelete(true);
 	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_BEACONS;
 
@@ -51,15 +47,12 @@ CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel
 		SetParent(g_pClientMode->GetViewport());
 	}
 
-	int screenWidth, screenHeight;
-	surface()->GetScreenSize(screenWidth, screenHeight);
-	SetBounds(0, 0, screenWidth, screenHeight);
-	
-	m_hTex = surface()->CreateNewTextureID();
-	Assert(m_hTex > 0);
-	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/ctg/g_beacon_enemy", 1, false);
-
 	SetVisible(true);
+}
+
+CNEOHud_GhostBeacons::~CNEOHud_GhostBeacons()
+{
+	gHudGhostBeacons = nullptr;
 }
 
 void CNEOHud_GhostBeacons::UpdateStateForNeoHudElementDraw()
@@ -70,11 +63,11 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
-
-	int screenWidth, screenHeight;
-	surface()->GetScreenSize(screenWidth, screenHeight);
+	vgui::surface()->GetScreenSize(screenWidth, screenHeight);
 	SetBounds(0, 0, screenWidth, screenHeight);
+	doubleScreenWidth = 2 * screenWidth;
+	doubleScreenHeight = 2 * screenHeight;
+
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 }
@@ -160,42 +153,79 @@ void CNEOHud_GhostBeacons::Paint()
 
 void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) const
 {	
-	const auto distInMeters = distance * METERS_PER_INCH;
-	const float scale = cl_neo_ghost_beacon_scale.GetFloat();
-	constexpr float HALF_BASE_TEX_LENGTH = 32;
+	const float distInMeters = distance * METERS_PER_INCH;
+	constexpr float BASE_TEX_LENGTH = 64;
+	float halfBeaconLength = BASE_TEX_LENGTH * 0.5f * cl_neo_hud_ghost_beacon_scale.GetFloat();
 
-	float halfBeaconLength = HALF_BASE_TEX_LENGTH * scale;
 	int posX, posY;
-	Vector ghostBeaconOffset = Vector(0, 0, cl_neo_ghost_beacon_scale_with_distance.GetBool() ? 32 : 48); // The center of the player, or raise slightly if not scaling
-	GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
-	if (cl_neo_ghost_beacon_scale_with_distance.GetBool())
+	Vector ghostBeaconOffset = Vector(0, 0, cl_neo_hud_ghost_beacon_scale_with_distance.GetBool() ? 0 : 48);
+	if (!GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset))
 	{
-		int pos2X, pos2Y;
-		Vector ghostBeaconOffset2 = Vector(0, 0, 64); // The top of the player
-		GetVectorInScreenSpace(playerPos, pos2X, pos2Y, &ghostBeaconOffset2);
-		halfBeaconLength = (posY - pos2Y) * 0.5 * scale;
+		return;
 	}
-	
-	wchar_t m_wszBeaconTextUnicode[4 + 1];
-	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(distInMeters));
+	bool centerXClamped = clamp(&posX, -screenWidth, doubleScreenWidth);
+	bool centerYClamped = clamp(&posY, -screenHeight, doubleScreenHeight);
+
+	if (cl_neo_hud_ghost_beacon_scale_with_distance.GetBool())
+	{
+		if (centerXClamped && centerYClamped)
+		{
+			return;
+		}
+
+		int pos2X, pos2Y;
+		Vector ghostBeaconEyeOffset = Vector(0, 0, 64);
+		if (!GetVectorInScreenSpace(playerPos, pos2X, pos2Y, &ghostBeaconEyeOffset))
+		{
+			return;
+		}
+
+		if (clamp(&pos2X, -screenWidth, doubleScreenWidth) && clamp(&pos2Y, -screenHeight, doubleScreenHeight))
+		{
+			return;
+		}
+
+		Vector2D playerUpDirectionOnScreen = Vector2D(pos2X - posX, pos2Y - posY);
+		const Vector2D screenUpDirection = Vector2D(0, 1);
+		float rotation = acos((playerUpDirectionOnScreen.Dot(screenUpDirection)) / playerUpDirectionOnScreen.Length()) + M_PI;
+		if (pos2X < posX)
+		{
+			rotation *= -1;
+		}
+		ghostBeaconRotation = RAD2DEG(rotation);
+
+		halfBeaconLength = (posY - pos2Y) * 0.5f * cl_neo_hud_ghost_beacon_scale.GetFloat();
+		posX = (posX + pos2X) / 2;
+		posY = (posY + pos2Y) / 2;
+	}
 
 	const auto ghostViewDist = sv_neo_ghost_view_distance.GetFloat();
-	const float alphaMultiplier = (distInMeters < ghostViewDist * 35.f / 45) ? 1.0 : ((ghostViewDist - distInMeters) / 10);
-	const int alpha = cl_neo_ghost_beacon_alpha.GetInt() * alphaMultiplier;
-	surface()->DrawSetTextColor(255, 255, 255, alpha);
-	surface()->DrawSetTextFont(m_hFont);
-	int textWidth, textHeight;
-	surface()->GetTextSize(m_hFont, m_wszBeaconTextUnicode, textWidth, textHeight);
-	surface()->DrawSetTextPos(posX - (textWidth / 2), posY + halfBeaconLength);
-	surface()->DrawPrintText(m_wszBeaconTextUnicode, V_wcslen(m_wszBeaconTextUnicode));
+	const float alphaMultiplier = distInMeters < (ghostViewDist * 35.f / 45) ? 1.0f : (ghostViewDist - distInMeters) / 10;
+	const int alpha = beaconColor.a() * alphaMultiplier;
 
-	surface()->DrawSetColor(255, 20, 20, alpha);
-	surface()->DrawSetTexture(m_hTex);
+	if (cl_neo_hud_ghost_beacon_draw_distance.GetBool())
+	{
+		wchar_t m_wszBeaconTextUnicode[4 + 1];
+		V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(distInMeters));
 
-	// End coordinates according to art size (and our distance scaling)
-	surface()->DrawTexturedRect(
+		vgui::surface()->DrawSetTextColor(255, 255, 255, alpha);
+		vgui::surface()->DrawSetTextFont(m_hFont);
+		int textWidth, textHeight;
+		vgui::surface()->GetTextSize(m_hFont, m_wszBeaconTextUnicode, textWidth, textHeight);
+		vgui::surface()->DrawSetTextPos(posX - (textWidth / 2), posY + halfBeaconLength);
+		vgui::surface()->DrawPrintText(m_wszBeaconTextUnicode, V_wcslen(m_wszBeaconTextUnicode));
+	}
+
+	vgui::surface()->DrawSetColor(beaconColor.r(), beaconColor.g(), beaconColor.b(), alpha);
+	vgui::surface()->DrawSetTexture(m_hTex);
+	vgui::surface()->DrawTexturedRect(
 		posX - halfBeaconLength,
 		posY - halfBeaconLength,
 		posX + halfBeaconLength,
 		posY + halfBeaconLength);
+}
+
+float CNEOHud_GhostBeacons::GetRotation()
+{
+	return ghostBeaconRotation;
 }
