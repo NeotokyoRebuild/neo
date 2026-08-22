@@ -281,8 +281,8 @@ public:
 
 	wchar_t m_wszTeamNameJinrai[MAX_PLAYER_NAME_LENGTH] = {};
 	wchar_t m_wszTeamNameNSF[MAX_PLAYER_NAME_LENGTH] = {};
-	wchar_t m_wszLogoPathJinrai[MAX_PATH] = {};
-	wchar_t m_wszLogoPathNSF[MAX_PATH] = {};
+	char m_szLogoPathJinrai[MAX_PATH] = {};
+	char m_szLogoPathNSF[MAX_PATH] = {};
 	int m_iMatchesWonJinrai = 0;
 	int m_iMatchesWonNSF = 0;
 };

@@ -1003,10 +1003,8 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 					m_wszTeamNameJinrai, sizeof(m_wszTeamNameJinrai));
 			Q_UTF8ToUnicode(cl_neo_hud_spectator_overlay_nsf_name.GetString(),
 					m_wszTeamNameNSF, sizeof(m_wszTeamNameNSF));
-			Q_UTF8ToUnicode(cl_neo_hud_spectator_overlay_jinrai_logo.GetString(),
-					m_wszLogoPathJinrai, sizeof(m_wszLogoPathJinrai));
-			Q_UTF8ToUnicode(cl_neo_hud_spectator_overlay_nsf_logo.GetString(),
-					m_wszLogoPathNSF, sizeof(m_wszLogoPathNSF));
+			V_strcpy_safe(m_szLogoPathJinrai, cl_neo_hud_spectator_overlay_jinrai_logo.GetString());
+			V_strcpy_safe(m_szLogoPathNSF, cl_neo_hud_spectator_overlay_nsf_logo.GetString());
 			m_iMatchesWonJinrai = cl_neo_hud_spectator_overlay_jinrai_matches_won.GetInt();
 			m_iMatchesWonNSF = cl_neo_hud_spectator_overlay_nsf_matches_won.GetInt();
 
@@ -2297,14 +2295,12 @@ void CNeoRoot::MainLoopOverlay(const MainLoopParam param)
 				}
 				if (NeoUI::Button(L"Clear logo").bPressed)
 				{
-					m_wszLogoPathJinrai[0] = L'\0';
+					m_szLogoPathJinrai[0] = '\0';
 				}
 				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 			}
 			NeoUI::SetPerRowLayout(1, nullptr, iThisRowTall * 4);
-			static char szLogoPathJinrai[MAX_PATH] = {};
-			Q_UnicodeToUTF8(m_wszLogoPathJinrai, szLogoPathJinrai, sizeof(szLogoPathJinrai));
-			NeoUI::ImageTexture(szLogoPathJinrai, L"No logo applied", "",
+			NeoUI::ImageTexture(m_szLogoPathJinrai, L"No logo applied", "",
 					NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL
 						| NeoUI::TEXTUREOPTFLAGS_DONOTCACHEIFINVALID
 						| NeoUI::TEXTUREOPTFLAGS_RESIZETO256);
@@ -2322,14 +2318,12 @@ void CNeoRoot::MainLoopOverlay(const MainLoopParam param)
 				}
 				if (NeoUI::Button(L"Clear logo").bPressed)
 				{
-					m_wszLogoPathNSF[0] = L'\0';
+					m_szLogoPathNSF[0] = '\0';
 				}
 				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 			}
 			NeoUI::SetPerRowLayout(1, nullptr, iThisRowTall * 4);
-			static char szLogoPathNSF[MAX_PATH] = {};
-			Q_UnicodeToUTF8(m_wszLogoPathNSF, szLogoPathNSF, sizeof(szLogoPathNSF));
-			NeoUI::ImageTexture(szLogoPathNSF, L"No logo applied", "",
+			NeoUI::ImageTexture(m_szLogoPathNSF, L"No logo applied", "",
 					NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL
 						| NeoUI::TEXTUREOPTFLAGS_DONOTCACHEIFINVALID
 						| NeoUI::TEXTUREOPTFLAGS_RESIZETO256);
@@ -2372,21 +2366,21 @@ void CNeoRoot::MainLoopOverlay(const MainLoopParam param)
 				if (NeoUI::Button(L"Swap Teams").bPressed)
 				{
 					wchar_t wszTeamNameJinraiTemp[MAX_PLAYER_NAME_LENGTH] = {};
-					wchar_t wszLogoPathJinraiTemp[MAX_PATH] = {};
+					char szLogoPathJinraiTemp[MAX_PATH] = {};
 
 					// Jinrai -> Jinrai-Temp
 					V_wcscpy_safe(wszTeamNameJinraiTemp, m_wszTeamNameJinrai);
-					V_wcscpy_safe(wszLogoPathJinraiTemp, m_wszLogoPathJinrai);
+					V_strcpy_safe(szLogoPathJinraiTemp, m_szLogoPathJinrai);
 					const int iMatchesWonJinraiTemp = m_iMatchesWonJinrai;
 
 					// NSF -> Jinrai
 					V_wcscpy_safe(m_wszTeamNameJinrai, m_wszTeamNameNSF);
-					V_wcscpy_safe(m_wszLogoPathJinrai, m_wszLogoPathNSF);
+					V_strcpy_safe(m_szLogoPathJinrai, m_szLogoPathNSF);
 					m_iMatchesWonJinrai = m_iMatchesWonNSF;
 
 					// Jinrai-Temp -> NSF
 					V_wcscpy_safe(m_wszTeamNameNSF, wszTeamNameJinraiTemp);
-					V_wcscpy_safe(m_wszLogoPathNSF, wszLogoPathJinraiTemp);
+					V_strcpy_safe(m_szLogoPathNSF, szLogoPathJinraiTemp);
 					m_iMatchesWonNSF = iMatchesWonJinraiTemp;
 				}
 				if (NeoUI::Button(L"Save (F8)").bPressed || NeoUI::Bind(KEY_F8))
@@ -2401,16 +2395,8 @@ void CNeoRoot::MainLoopOverlay(const MainLoopParam param)
 						Q_UnicodeToUTF8(m_wszTeamNameNSF, szTeamNameNSF, sizeof(szTeamNameNSF));
 						cl_neo_hud_spectator_overlay_nsf_name.SetValue(szTeamNameNSF);
 					}
-					{
-						char szLogoPathJinrai[MAX_PATH] = {};
-						Q_UnicodeToUTF8(m_wszLogoPathJinrai, szLogoPathJinrai, sizeof(szLogoPathJinrai));
-						cl_neo_hud_spectator_overlay_jinrai_logo.SetValue(szLogoPathJinrai);
-					}
-					{
-						char szLogoPathNSF[MAX_PATH] = {};
-						Q_UnicodeToUTF8(m_wszLogoPathNSF, szLogoPathNSF, sizeof(szLogoPathNSF));
-						cl_neo_hud_spectator_overlay_nsf_logo.SetValue(szLogoPathNSF);
-					}
+					cl_neo_hud_spectator_overlay_jinrai_logo.SetValue(m_szLogoPathJinrai);
+					cl_neo_hud_spectator_overlay_nsf_logo.SetValue(m_szLogoPathNSF);
 					cl_neo_hud_spectator_overlay_jinrai_matches_won.SetValue(m_iMatchesWonJinrai);
 					cl_neo_hud_spectator_overlay_nsf_matches_won.SetValue(m_iMatchesWonNSF);
 
@@ -3164,12 +3150,10 @@ static void OnFileSelectedTeamLogo(const char *szFullpath)
 	switch (g_pNeoRoot->m_eFileIOMode)
 	{
 	case CNeoRoot::FILEIODLGMODE_TEAMLOGO_JINRAI:
-		Q_UTF8ToUnicode(szFullpath,
-				g_pNeoRoot->m_wszLogoPathJinrai, sizeof(g_pNeoRoot->m_wszLogoPathJinrai));
+		V_strcpy_safe(g_pNeoRoot->m_szLogoPathJinrai, szFullpath);
 		break;
 	case CNeoRoot::FILEIODLGMODE_TEAMLOGO_NSF:
-		Q_UTF8ToUnicode(szFullpath,
-				g_pNeoRoot->m_wszLogoPathNSF, sizeof(g_pNeoRoot->m_wszLogoPathNSF));
+		V_strcpy_safe(g_pNeoRoot->m_szLogoPathNSF, szFullpath);
 		break;
 	default:
 		break;
