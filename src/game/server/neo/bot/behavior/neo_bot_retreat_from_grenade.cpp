@@ -221,7 +221,15 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 	// track projectile and relation to escape destination every update
 	if ( !m_coverArea || ( grenadeArea && grenadeArea->IsPotentiallyVisible( m_coverArea ) ) )
 	{
+		CNavArea *pPrevCoverArea = m_coverArea;
 		m_coverArea = FindCoverArea( me );
+
+		// cover destination changed, stop following the path to the old spot
+		if ( m_coverArea != pPrevCoverArea )
+		{
+			m_path.Invalidate();
+			m_repathTimer.Invalidate();
+		}
 	}
 
 	if (!m_coverArea)
