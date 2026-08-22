@@ -913,6 +913,12 @@ void CNEOHud_SpectatorOverlay::DrawNeoHudElement()
 			{
 				vgui::surface()->DrawSetColor(rsColor);
 				vgui::surface()->DrawFilledRect(x, y, x + iLogoWH, y + iLogoWH);
+				if (pRoundStateHUD)
+				{
+					vgui::surface()->DrawSetColor(COLOR_FADED_DARK);
+					vgui::surface()->DrawSetTexture(pRoundStateHUD->m_teamLogoColors[TEAM_JINRAI].logo);
+					vgui::surface()->DrawTexturedRect(x, y, x + iLogoWH, y + iLogoWH);
+				}
 			}
 
 			// NEO TODO (nullsystem): Deal with very long team name that needs multiline?
@@ -978,6 +984,12 @@ void CNEOHud_SpectatorOverlay::DrawNeoHudElement()
 			{
 				vgui::surface()->DrawSetColor(rsColor);
 				vgui::surface()->DrawFilledRect(x, y, x + iLogoWH, y + iLogoWH);
+				if (pRoundStateHUD)
+				{
+					vgui::surface()->DrawSetColor(COLOR_FADED_DARK);
+					vgui::surface()->DrawSetTexture(pRoundStateHUD->m_teamLogoColors[TEAM_NSF].logo);
+					vgui::surface()->DrawTexturedRect(x, y, x + iLogoWH, y + iLogoWH);
+				}
 			}
 
 			// NEO TODO (nullsystem): Deal with very long team name that needs multiline?

@@ -2340,6 +2340,10 @@ void CNeoRoot::MainLoopOverlay(const MainLoopParam param)
 							? "Import Jinrai team logo"
 							: "Import NSF team logo",
 						vgui::FOD_OPEN);
+				if (m_szNextLogoPathStartDir[0])
+				{
+					m_pFileIODialog->SetStartDirectory(m_szNextLogoPathStartDir);
+				}
 				m_eFileIOMode = eNextFileIOMode;
 				m_pFileIODialog->AddFilter("*.jpg;*.jpeg;*.png;*.vtf", "Images (JPEG, PNG, VTF)", true);
 				m_pFileIODialog->AddFilter("*.jpg;*.jpeg", "JPEG Image", false);
@@ -3156,8 +3160,12 @@ static void OnFileSelectedTeamLogo(const char *szFullpath)
 		V_strcpy_safe(g_pNeoRoot->m_szLogoPathNSF, szFullpath);
 		break;
 	default:
+		Assert(false);
 		break;
 	}
+
+	V_strcpy_safe(g_pNeoRoot->m_szNextLogoPathStartDir, szFullpath);
+	V_StripFilename(g_pNeoRoot->m_szNextLogoPathStartDir);
 }
 
 static void OnFileSelectedMode_Spray(const char *szFullpath)

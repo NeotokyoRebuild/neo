@@ -285,6 +285,7 @@ public:
 	char m_szLogoPathNSF[MAX_PATH] = {};
 	int m_iMatchesWonJinrai = 0;
 	int m_iMatchesWonNSF = 0;
+	char m_szNextLogoPathStartDir[MAX_PATH] = {};
 };
 
 extern CNeoRoot *g_pNeoRoot;
