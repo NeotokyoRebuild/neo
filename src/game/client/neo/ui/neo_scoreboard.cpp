@@ -894,6 +894,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 					const CNEOScoreBoardPlayer *pPlayerInfo = &m_playersInfo[i];
 					const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 					const bool bIsDMPlaying = false == bIsTeamplay && bIsPlaying;
+					const bool bIsMuted = pPlayerInfo->bMuted && false == pPlayerInfo->bBot;
 					iInPlaying += (bIsPlaying);
 
 					const bool bDMNotThisSide = bIsDMPlaying &&
@@ -947,6 +948,15 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 								m_uiCtx.dPanel.x + m_uiCtx.dPanel.wide,
 								m_uiCtx.dPanel.y + m_uiCtx.iLayoutY + m_uiCtx.layout.iRowTall);
 					}
+					else if (bIsMuted)
+					{
+						vgui::surface()->DrawSetColor(COLOR_MUTE_BG);
+						vgui::surface()->DrawFilledRect(
+								m_uiCtx.dPanel.x,
+								m_uiCtx.dPanel.y + m_uiCtx.iLayoutY,
+								m_uiCtx.dPanel.x + m_uiCtx.dPanel.wide,
+								m_uiCtx.dPanel.y + m_uiCtx.iLayoutY + m_uiCtx.layout.iRowTall);
+					}
 
 					// Ping/BOT
 					if (pPlayerInfo->iPing >= 0)
@@ -991,7 +1001,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						}
 					}
 					// Voice mute icon - layered over avatar, only do for actual players
-					if (pPlayerInfo->bMuted && false == pPlayerInfo->bBot)
+					if (bIsMuted)
 					{
 						// Slightly redden the avatar
 						if (pAvatarImg)
