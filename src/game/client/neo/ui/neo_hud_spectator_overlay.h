@@ -7,6 +7,14 @@
 class CAvatarImage;
 
 extern ConVar cl_neo_hud_spectator_overlay_enabled;
+extern ConVar cl_neo_hud_spectator_overlay_jinrai_name;
+extern ConVar cl_neo_hud_spectator_overlay_nsf_name;
+extern ConVar cl_neo_hud_spectator_overlay_jinrai_logo;
+extern ConVar cl_neo_hud_spectator_overlay_nsf_logo;
+extern ConVar cl_neo_hud_spectator_overlay_jinrai_matches_won;
+extern ConVar cl_neo_hud_spectator_overlay_nsf_matches_won;
+
+static constexpr const int COMP_MATCHES_WON_MAX = 2;
 
 struct SpectatorPlayerCard
 {
@@ -69,6 +77,9 @@ public:
 	int SpecTargetNextEntIdx(const ESpecType eSpecType, EDirection eDirection) const;
 	int m_iEntIndexSelect = 0;
 
+	int m_iTexLogoJinrai = -1;
+	int m_iTexLogoNSF = -1;
+
 protected:
 	void UpdateStateForNeoHudElementDraw() final;
 	void DrawNeoHudElement() final;
@@ -88,6 +99,7 @@ private:
 	CPanelAnimationVar(vgui::HFont, m_hRKHPBackFont, "RKHPBackFont", "NHudSpectatorOverlayRoundKillHPBack");
 	CPanelAnimationVar(vgui::HFont, m_hGhostFont, "GhostFont", "NHudSpectatorOverlayGhost");
 	CPanelAnimationVar(vgui::HFont, m_hSmallWeaponsFont, "SmallWeaponsFont", "NHudSpectatorOverlaySmallWeapons");
+	CPanelAnimationVar(vgui::HFont, m_hTeamNameFont, "TeamNameFont", "HudHintTextLarge");
 	CPanelAnimationVarAliasType(int, m_iDeadTexture, "DeadTexture", "vgui/hud/kill_kill", "textureid");
 
 	int m_iTeamPlayersCount[TEAM__TOTAL] = {};

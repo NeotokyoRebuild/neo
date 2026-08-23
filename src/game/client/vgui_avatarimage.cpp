@@ -254,7 +254,7 @@ void CAvatarImage::InitFromRGBA( int iAvatar, const byte *rgba, int width, int h
 			// Create dead avatar from RGBA with redness edits
 			const float contrast = -64.0f;
 			const float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
-			for (uint32 offset = 0; offset < (width * height * 4); offset += 4)
+			for (int offset = 0; offset < (width * height * 4); offset += 4)
 			{
 				int r = (rgbDest + offset)[0];
 				int g = (rgbDest + offset)[1];

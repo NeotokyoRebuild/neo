@@ -10,6 +10,10 @@
 #include "neo_weapon_loadout.h"
 #include "neo_hud_deathnotice.h"
 #include "neo_misc.h"
+#include "neo_hud_round_state.h"
+#include "neo_theme.h"
+#include "neo_ui.h"
+#include "neo_gamerules.h"
 #include <c_playerresource.h>
 
 #include "iclientmode.h"
@@ -23,9 +27,55 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+static void cvCallbackOverlayLogoJinrai(
+		[[maybe_unused]] IConVar *cvar,
+		[[maybe_unused]] const char *pOldVal,
+		[[maybe_unused]] float flOldVal)
+{
+	if (g_pNeoHudSpecOverlay &&
+			vgui::surface()->IsTextureIDValid(g_pNeoHudSpecOverlay->m_iTexLogoJinrai))
+	{
+		vgui::surface()->DeleteTextureByID(g_pNeoHudSpecOverlay->m_iTexLogoJinrai);
+		g_pNeoHudSpecOverlay->m_iTexLogoJinrai = -1;
+	}
+}
+
+static void cvCallbackOverlayLogoNSF(
+		[[maybe_unused]] IConVar *cvar,
+		[[maybe_unused]] const char *pOldVal,
+		[[maybe_unused]] float flOldVal)
+{
+	if (g_pNeoHudSpecOverlay &&
+			vgui::surface()->IsTextureIDValid(g_pNeoHudSpecOverlay->m_iTexLogoNSF))
+	{
+		vgui::surface()->DeleteTextureByID(g_pNeoHudSpecOverlay->m_iTexLogoNSF);
+		g_pNeoHudSpecOverlay->m_iTexLogoNSF = -1;
+	}
+}
+
 ConVar cl_neo_hud_spectator_overlay_enabled("cl_neo_hud_spectator_overlay_enabled", "0",
 		FCVAR_ARCHIVE | FCVAR_DONTRECORD,
 		"Whether the spectator overlay HUD is enabled", true, 0.0f, true, 1.0f);
+ConVar cl_neo_hud_spectator_overlay_jinrai_name("cl_neo_hud_spectator_overlay_jinrai_name", "",
+		FCVAR_ARCHIVE | FCVAR_DONTRECORD,
+		"The name of the Jinrai team");
+ConVar cl_neo_hud_spectator_overlay_nsf_name("cl_neo_hud_spectator_overlay_nsf_name", "",
+		FCVAR_ARCHIVE | FCVAR_DONTRECORD,
+		"The name of the NSF team");
+ConVar cl_neo_hud_spectator_overlay_jinrai_logo("cl_neo_hud_spectator_overlay_jinrai_logo", "",
+		FCVAR_ARCHIVE | FCVAR_DONTRECORD,
+		"The logo of the Jinrai team, have to be png or jpg", false, 0.0f, false, 0.0f,
+		cvCallbackOverlayLogoJinrai);
+ConVar cl_neo_hud_spectator_overlay_nsf_logo("cl_neo_hud_spectator_overlay_nsf_logo", "",
+		FCVAR_ARCHIVE | FCVAR_DONTRECORD,
+		"The logo of the NSF team, have to be png or jpg", false, 0.0f, false, 0.0f,
+		cvCallbackOverlayLogoNSF);
+ConVar cl_neo_hud_spectator_overlay_jinrai_matches_won("cl_neo_hud_spectator_overlay_jinrai_matches_won", "0",
+		FCVAR_ARCHIVE | FCVAR_DONTRECORD,
+		"The amount of matches Jinrai team won", true, 0.0f, true, static_cast<float>(COMP_MATCHES_WON_MAX));
+ConVar cl_neo_hud_spectator_overlay_nsf_matches_won("cl_neo_hud_spectator_overlay_nsf_matches_won", "0",
+		FCVAR_ARCHIVE | FCVAR_DONTRECORD,
+		"The amount of matches NSF team won", true, 0.0f, true, static_cast<float>(COMP_MATCHES_WON_MAX));
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_SpectatorOverlay, neo_spectator_overlay);
 
@@ -98,11 +148,14 @@ void CNEOHud_SpectatorOverlay::ClearAll()
 	V_memset(m_cards, 0, sizeof(m_cards));
 	V_memset(m_iTeamPlayersCount, 0, sizeof(m_iTeamPlayersCount));
 	m_iEntIndexSelect = 0;
+	m_iTexLogoJinrai = -1;
+	m_iTexLogoNSF = -1;
 }
 
 void CNEOHud_SpectatorOverlay::Init()
 {
 	ListenForGameEvent("round_start");
+	ListenForGameEvent("game_end");
 	ClearAll();
 }
 
@@ -124,6 +177,30 @@ void CNEOHud_SpectatorOverlay::FireGameEvent(IGameEvent *event)
 			pCard->flLastAliveTime = 0.0f;
 			pCard->flLastHPChangeTime = 0.0f;
 			pCard->iLastHP = 0;
+		}
+	}
+	else if (0 == V_strcmp(type, "game_end"))
+	{
+		// NEO NOTE (nullsystem): Match winner auto update only works on live
+		// games, not demos
+		if (NEORules()
+				&& cl_neo_hud_spectator_overlay_enabled.GetBool()
+				&& NEO_GAME_TYPE_SETTINGS[NEORules()->GetGameType()].comp)
+		{
+			const int iMatchWinner = event->GetInt("winner");
+			switch (iMatchWinner)
+			{
+			case TEAM_JINRAI:
+				cl_neo_hud_spectator_overlay_jinrai_matches_won.SetValue(
+						cl_neo_hud_spectator_overlay_jinrai_matches_won.GetInt() + 1);
+				break;
+			case TEAM_NSF:
+				cl_neo_hud_spectator_overlay_nsf_matches_won.SetValue(
+						cl_neo_hud_spectator_overlay_nsf_matches_won.GetInt() + 1);
+				break;
+			default:
+				break;
+			}
 		}
 	}
 }
@@ -195,7 +272,7 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 						if (avatar.i184Idx >= 0)
 						{
 							pCard->pAvatar = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i184Idx));
-							bAvatarNeedUpdate = false;
+							bAvatarNeedUpdate = (!pCard->pAvatar || !pCard->pAvatar->IsValid());
 						} if ((!pCard->pAvatar || !pCard->pAvatar->IsValid()) && avatar.i64Idx >= 0)
 						{
 							pCard->pAvatar = static_cast<CAvatarImage *>(g_pNeoScoreBoard->m_pImageList->GetImage(avatar.i64Idx));
@@ -760,12 +837,181 @@ void CNEOHud_SpectatorOverlay::DrawNeoHudElement()
 	float flWideAs43 = static_cast<float>(iScrTall) * (4.0f / 3.0f);
 	if (flWideAs43 > flWide) flWideAs43 = flWide;
 
+	// Draw team's name and logo on top
+	const auto *pRoundStateHUD = GET_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
+	if (pRoundStateHUD)
+	{
+		wchar_t wszJinName[64] = {};
+		wchar_t wszNSFName[64] = {};
+		Q_UTF8ToUnicode(cl_neo_hud_spectator_overlay_jinrai_name.GetString(), wszJinName, sizeof(wszJinName));
+		Q_UTF8ToUnicode(cl_neo_hud_spectator_overlay_nsf_name.GetString(), wszNSFName, sizeof(wszNSFName));
+
+		// 14px [16px] 14px [80px] 14px [name]
+		// Team logo: 1440/20=72px
+		// Gaps: 1440/100~=14.4 -> 14px
+		const int iLogoWH = flWideAs43 / 20.0f;
+		const int iGapW = flWideAs43 / 100.0f;
+
+		// Won indicators:
+		//   Box WH: 1440/90=16px
+		//   Starting y: 1080/108=10px
+		//   Gap y: 1080/180=6px
+		const int iIndWinWH = flWideAs43 / 90.0f;
+		const int iYIndStart = iScrTall / 108.0f;
+		const int iYIndGap = iScrTall / 180.0f;
+		// Team logo and name starting y: 1080/270=4px
+		const int iYNameLogoStart = iScrTall / 270.0f;
+		// Name:
+		//   Pad wide: 1440/72=20px
+		//   Tall: 1080/24=45px
+		const int iNamePadW = flWideAs43 / 72.0f;
+		const int iNameT = iScrTall / 24.0f;
+
+		Color rsColor = pRoundStateHUD->box_color;
+
+		// Jinrai - Left team
+		{
+			int x = pRoundStateHUD->m_iLeftOffset;
+			x -= (iGapW + iIndWinWH);
+
+			// Matches won indicators
+			{
+				int y = iYIndStart;
+				const int iJinWin = cl_neo_hud_spectator_overlay_jinrai_matches_won.GetInt();
+				for (int i = 0; i < COMP_MATCHES_WON_MAX; ++i)
+				{
+					vgui::surface()->DrawSetColor((iJinWin > i) ? COLOR_NEO_WHITE : rsColor);
+					vgui::surface()->DrawFilledRect(x, y, x + iIndWinWH, y + iIndWinWH);
+					y += iIndWinWH + iYIndGap;
+				}
+			}
+
+			x -= (iGapW + iLogoWH);
+			const int y = iYNameLogoStart;
+
+			// Team logo
+			const char *pszJinLogo = cl_neo_hud_spectator_overlay_jinrai_logo.GetString();
+			if (pszJinLogo[0])
+			{
+				if (!vgui::surface()->IsTextureIDValid(m_iTexLogoJinrai) || m_iTexLogoJinrai == -1)
+				{
+					m_iTexLogoJinrai = NeoUI::TextureFromFile(
+							pszJinLogo, "", NeoUI::TEXTUREOPTFLAGS_RESIZETO256);
+				}
+				if (vgui::surface()->IsTextureIDValid(m_iTexLogoJinrai) && m_iTexLogoJinrai != -1)
+				{
+					vgui::surface()->DrawSetColor(COLOR_WHITE);
+					vgui::surface()->DrawSetTexture(m_iTexLogoJinrai);
+					vgui::surface()->DrawTexturedRect(
+						x,
+						y,
+						x + iLogoWH,
+						y + iLogoWH);
+				}
+			}
+			else
+			{
+				vgui::surface()->DrawSetColor(rsColor);
+				vgui::surface()->DrawFilledRect(x, y, x + iLogoWH, y + iLogoWH);
+				vgui::surface()->DrawSetColor(COLOR_FADED_DARK);
+				vgui::surface()->DrawSetTexture(pRoundStateHUD->m_teamLogoColors[TEAM_JINRAI].logo);
+				vgui::surface()->DrawTexturedRect(x, y, x + iLogoWH, y + iLogoWH);
+			}
+
+			// NEO TODO (nullsystem): Deal with very long team name that needs multiline?
+			// Team name
+			if (wszJinName[0])
+			{
+				int iJinNameWide = 0, iJinNameTall = 0;
+				vgui::surface()->GetTextSize(m_hTeamNameFont, wszJinName, iJinNameWide, iJinNameTall);
+
+				const int iNameBoxW = iNamePadW + iJinNameWide + iNamePadW;
+				x -= (iGapW + iNameBoxW);
+
+				DrawNeoHudRoundedBox(x, y, x + iNameBoxW, y + iNameT, COLOR_BLACK_TRANSPARENT);
+
+				vgui::surface()->DrawSetTextFont(m_hTeamNameFont);
+				vgui::surface()->DrawSetTextColor(COLOR_WHITE);
+				vgui::surface()->DrawSetTextPos(x + ((iNameBoxW - iJinNameWide) / 2.0f), y);
+				vgui::surface()->DrawPrintText(wszJinName, V_wcslen(wszJinName));
+			}
+		}
+
+		// NSF - Right team
+		{
+			int x = pRoundStateHUD->m_iRightOffset;
+			x += iGapW;
+
+			// Matches won indicators
+			{
+				int y = iYIndStart;
+				const int iNSFWin = cl_neo_hud_spectator_overlay_nsf_matches_won.GetInt();
+				for (int i = 0; i < COMP_MATCHES_WON_MAX; ++i)
+				{
+					vgui::surface()->DrawSetColor((iNSFWin > i) ? COLOR_NEO_WHITE : rsColor);
+					vgui::surface()->DrawFilledRect(x, y, x + iIndWinWH, y + iIndWinWH);
+					y += iIndWinWH + iYIndGap;
+				}
+			}
+
+			x += (iGapW + iIndWinWH);
+			const int y = iYNameLogoStart;
+
+			// Team logo
+			const char *pszNSFLogo = cl_neo_hud_spectator_overlay_nsf_logo.GetString();
+			if (pszNSFLogo[0])
+			{
+				if (!vgui::surface()->IsTextureIDValid(m_iTexLogoNSF) || m_iTexLogoNSF == -1)
+				{
+					m_iTexLogoNSF = NeoUI::TextureFromFile(
+							pszNSFLogo, "", NeoUI::TEXTUREOPTFLAGS_RESIZETO256);
+				}
+				if (vgui::surface()->IsTextureIDValid(m_iTexLogoNSF) && m_iTexLogoNSF != -1)
+				{
+					vgui::surface()->DrawSetColor(COLOR_WHITE);
+					vgui::surface()->DrawSetTexture(m_iTexLogoNSF);
+					vgui::surface()->DrawTexturedRect(
+						x,
+						y,
+						x + iLogoWH,
+						y + iLogoWH);
+				}
+			}
+			else
+			{
+				vgui::surface()->DrawSetColor(rsColor);
+				vgui::surface()->DrawFilledRect(x, y, x + iLogoWH, y + iLogoWH);
+				vgui::surface()->DrawSetColor(COLOR_FADED_DARK);
+				vgui::surface()->DrawSetTexture(pRoundStateHUD->m_teamLogoColors[TEAM_NSF].logo);
+				vgui::surface()->DrawTexturedRect(x, y, x + iLogoWH, y + iLogoWH);
+			}
+
+			// NEO TODO (nullsystem): Deal with very long team name that needs multiline?
+			// Team name
+			if (wszNSFName[0])
+			{
+				int iNSFNameWide = 0, iNSFNameTall = 0;
+				vgui::surface()->GetTextSize(m_hTeamNameFont, wszNSFName, iNSFNameWide, iNSFNameTall);
+
+				const int iNameBoxW = iNamePadW + iNSFNameWide + iNamePadW;
+				x += (iGapW + iLogoWH);
+
+				DrawNeoHudRoundedBox(x, y, x + iNameBoxW, y + iNameT, COLOR_BLACK_TRANSPARENT);
+
+				vgui::surface()->DrawSetTextFont(m_hTeamNameFont);
+				vgui::surface()->DrawSetTextColor(COLOR_WHITE);
+				vgui::surface()->DrawSetTextPos(x + ((iNameBoxW - iNSFNameWide) / 2.0f), y);
+				vgui::surface()->DrawPrintText(wszNSFName, V_wcslen(wszNSFName));
+			}
+		}
+	}
+
 	const int iTotalCardWide = flWideAs43 / 4.1f;
 	const int iAvatarWH = flWideAs43 / 22.5f;
 	const int iGapWide = flWideAs43 / 120.0f;
 	const int iGapBetween = flWideAs43 / 360.0f;
 
-	// NEO TODO (nullsystem): Draw team's name and logo on top
+	// Draw player cards on the side
 	for (const auto iTeam : {TEAM_JINRAI, TEAM_NSF})
 	{
 		const bool bIsLeftSide = (iTeam == TEAM_JINRAI);
