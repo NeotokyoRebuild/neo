@@ -15,6 +15,7 @@
 		"tabPosition"		"0"
 		"settitlebarvisible"		"0"
 		"title"		"#Frame_Untitled"
+		"font"			"CLTDefault"
 	}
 	"ngui_corner"
 	{
@@ -83,6 +84,7 @@
 		"dulltext"		"0"
 		"brighttext"		"0"
 		"wrap"		"0"
+		"font"			"CLTDefault"
 	}
 	"IconPanel1"
 	{
@@ -198,6 +200,7 @@
 		"wrap"		"0"
 		"Command"		"setclass 2"
 		"Default"		"0"
+		"font"			"CLTDefault"
 	}
 	"Support_Label"
 	{
@@ -239,6 +242,7 @@
 		"wrap"		"0"
 		"Command"		"setclass 3"
 		"Default"		"0"
+		"font"			"CLTDefault"
 	}
 	"Skin1_Button"
 	{
