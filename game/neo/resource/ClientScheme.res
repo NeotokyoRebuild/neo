@@ -507,8 +507,8 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"18" [!$LINUX] //"24"
-				"tall"		"22" [$LINUX]
+				"tall"		"16" [!$LINUX] //"24"
+				"tall"		"20" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
 				"yres"	"1200 10000"
@@ -570,8 +570,8 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"18" [!$LINUX] //"24"
-				"tall"		"22" [$LINUX]
+				"tall"		"16" [!$LINUX] //"24"
+				"tall"		"20" [$LINUX]
 				"weight"	"900"
 				"antialias" "1"
 				"yres"	"1200 10000"
