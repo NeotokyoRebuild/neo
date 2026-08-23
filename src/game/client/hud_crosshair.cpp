@@ -18,6 +18,7 @@
 #include "client_virtualreality.h"
 #include "sourcevr/isourcevirtualreality.h"
 #include "neo_crosshair.h"
+#include "c_playerresource.h"
 
 #ifdef SIXENSE
 #include "sixense/in_sixense.h"
