@@ -252,23 +252,25 @@ void CAvatarImage::InitFromRGBA( int iAvatar, const byte *rgba, int width, int h
 			g_pMatSystemSurface->DrawSetTextureRGBAEx2( m_iTextureID, rgbDest, width, height, IMAGE_FORMAT_RGBA8888, true );
 
 			// Create dead avatar from RGBA with redness edits
-			const float contrast = -64.0f;
-			const float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
+			const float flContrast = 64.0f;
+			const float flBrightness = 0.5f;
+
+			const float flCFactor = (259.0f * (flContrast + 255.0f)) / (255.0f * (259.0f - flContrast));
 			for (int offset = 0; offset < (width * height * 4); offset += 4)
 			{
 				int r = (rgbDest + offset)[0];
 				int g = (rgbDest + offset)[1];
 				int b = (rgbDest + offset)[2];
 
-				// Bump brightness
-				r = Clamp((int)(((r / 255.0f) * 1.25f) * 255.0f), 0, 255);
-				g = Clamp((int)(((g / 255.0f) * 1.25f) * 255.0f), 0, 255);
-				b = Clamp((int)(((b / 255.0f) * 1.25f) * 255.0f), 0, 255);
+				// Bump contrast
+				r = Clamp((int)(flCFactor * (r - 128) + 128), 0, 255);
+				g = Clamp((int)(flCFactor * (g - 128) + 128), 0, 255);
+				b = Clamp((int)(flCFactor * (b - 128) + 128), 0, 255);
 
-				// Bump down contrast
-				r = Clamp((int)(factor * (r - 128) + 128), 0, 255);
-				g = Clamp((int)(factor * (g - 128) + 128), 0, 255);
-				b = Clamp((int)(factor * (b - 128) + 128), 0, 255);
+				// Halve brightness
+				r = Clamp((int)(((r / 255.0f) * flBrightness) * 255.0f), 0, 255);
+				g = Clamp((int)(((g / 255.0f) * flBrightness) * 255.0f), 0, 255);
+				b = Clamp((int)(((b / 255.0f) * flBrightness) * 255.0f), 0, 255);
 
 				// Convert to grayscale - Luminosity, then only for red
 				const float flNGray = ((0.3f * (r / 255.0f)) + (0.59f * (g / 255.0f)) + (0.11f * (b / 255.0f)));
