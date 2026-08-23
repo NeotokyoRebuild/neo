@@ -23,7 +23,6 @@ ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARC
 ConVar cl_neo_hud_scoreboard_padding("cl_neo_hud_scoreboard_padding", "0", FCVAR_ARCHIVE, "Adjust scoreboard space padding. 0 = default, 1 = compact, 2 = spacious", true, 0.0f, true, 2.0f);
 extern ConVar cl_neo_streamermode;
 extern ConVar cl_neo_squad_hud_original;
-extern ConVar sv_neo_readyup_lobby;
 extern ConVar cl_neo_hud_team_swap_sides;
 
 enum ENeoScoreBoardPopup
@@ -334,7 +333,7 @@ void CNEOScoreBoard::Update()
 	}
 
 	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
-	const bool bLocalPlaying = (TEAM_JINRAI == iLocalPlayerTeam || TEAM_NSF == iLocalPlayerTeam);
+	const bool bLocalPlaying = (iLocalPlayerTeam >= FIRST_GAME_TEAM);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
 
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
@@ -345,10 +344,17 @@ void CNEOScoreBoard::Update()
 	m_iTotalPlayers = 0;
 	V_memset(m_playersInfo, 0, sizeof(m_playersInfo));
 
+	m_bSourceTVEnabled = false;
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		if (false == g_PR->IsConnected(i))
 		{
+			continue;
+		}
+
+		if (g_PR->IsHLTV(i))
+		{
+			m_bSourceTVEnabled = true;
 			continue;
 		}
 
@@ -386,9 +392,7 @@ void CNEOScoreBoard::Update()
 			pPlayerInfo->steamID.Clear();
 		}
 
-		const bool bIsPlaying = (
-				TEAM_JINRAI == pPlayerInfo->iTeam
-				|| TEAM_NSF == pPlayerInfo->iTeam);
+		const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 
 		if (bIsPlaying)
 		{
@@ -498,6 +502,10 @@ void CNEOScoreBoard::Update()
 				auto *pImage64 = new CAvatarImage;
 				auto *pImage184 = new CAvatarImage;
 
+				pImage32->SetAvatarSize(32, 32);
+				pImage64->SetAvatarSize(64, 64);
+				pImage184->SetAvatarSize(184, 184);
+
 				pImage32->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize32x32);
 				pImage64->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize64x64);
 				pImage184->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize184x184);
@@ -582,14 +590,14 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 	const int iPopupCardPerRowTallButtons = iPopupCardRowTallBase * 2.25f;
 	const int iAvatarOffset = m_uiCtx.iMarginX;
 	const int iAvatarWT = ShowAvatars() ? (iPopupCardPerRowTallAvatarName - (iAvatarOffset * 2)) : 0;
+	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
+	const bool bLocalPlaying = (iLocalPlayerTeam >= FIRST_GAME_TEAM);
 	const bool bIsTeamplay = NEORules()->IsTeamplay();
-	const bool bShowReadyUp = sv_neo_readyup_lobby.GetBool()
-			&& NEORules()->m_nRoundStatus == NeoRoundStatus::Idle;
+	const bool bShowReadyUp = NEORules()->InReadyUpState();
 	const bool bShowDamageInfo = pLocalPlayer->IsPlayerDead()
 			&& NEORules()->InRoundState()
 			&& g_neoKillerInfos.bHasDmgInfos
-			&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI
-					|| pLocalPlayer->GetTeamNumber() == TEAM_NSF);
+			&& bLocalPlaying;
 	static CrosshairInfo staticXhairInfo = {};
 
 	bool bHasRanklessDog = false;
@@ -616,7 +624,6 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 			? Max(iaTeamTally[TEAM_JINRAI], iaTeamTally[TEAM_NSF])
 			: Ceil2Int((iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF]) / 2.0f);
 	const int iLocalUserID = pLocalPlayer->GetUserID();
-	const int iLocalPlayerTeam = pLocalPlayer->GetTeamNumber();
 
 	int iTies = 0;
 	if (bIsTeamplay)
@@ -716,10 +723,15 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		// Output all the players in the server
 		for (int iCurTeam = TEAM_UNASSIGNED; iCurTeam < TEAM__TOTAL; ++iCurTeam)
 		{
-			if (iaTeamTally[iCurTeam] <= 0 && iCurTeam <= TEAM_SPECTATOR)
+			if (iCurTeam == TEAM_UNASSIGNED && iaTeamTally[iCurTeam] <= 0)
 			{
 				continue;
 			}
+			else if (iCurTeam == TEAM_SPECTATOR && iaTeamTally[iCurTeam] <= 0 && !m_bSourceTVEnabled)
+			{
+				continue;
+			}
+
 			m_uiCtx.dPanel.wide = (iCurTeam <= TEAM_SPECTATOR)
 					? iRootSubPanelWide
 					: iRootSubPanelWide / 2;
@@ -795,14 +807,16 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 							}
 							if (bShowReadyUp)
 							{
-								V_swprintf_safe(wszText, L"%ls: %d (%d players - %d ready)",
+								V_swprintf_safe(wszText, L"%ls: %d (%d player%ls - %d ready)",
 										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam],
+										iaTeamTally[iCurTeam] == 1 ? L"" : L"s",
 										iaTeamReadyTally[iCurTeam]);
 							}
 							else
 							{
-								V_swprintf_safe(wszText, L"%ls: %d (%d players)",
-										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam]);
+								V_swprintf_safe(wszText, L"%ls: %d (%d player%ls)",
+										wszTeamtag, pTeam->GetRoundsWon(), iaTeamTally[iCurTeam],
+										iaTeamTally[iCurTeam] == 1 ? L"" : L"s");
 							}
 						}
 					}
@@ -811,8 +825,9 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						// DM - Print players total on the left side only
 						if (iCurTeam == TEAM_JINRAI)
 						{
-							V_swprintf_safe(wszText, L"Players: %d",
-									iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF]);
+							const int total = iaTeamTally[TEAM_JINRAI] + iaTeamTally[TEAM_NSF];
+							V_swprintf_safe(wszText, L"Player%ls: %d",
+									total == 1 ? L"" : L"s", total);
 						}
 						else
 						{
@@ -820,16 +835,23 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						}
 					}
 				}
-				else if (TEAM_SPECTATOR == iCurTeam && m_HLTVSpectators > 0)
-				{
-					V_swprintf_safe(wszText, L"%ls + %d HLTV spectators",
-							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, m_HLTVSpectators);
-				}
 				else
 				{
-					V_wcscpy_safe(wszText, SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr);
+					V_swprintf_safe(wszText, L"%ls (%d player%ls)",
+							SZWSZ_NEO_TEAM_STRS[iCurTeam].wszStr, iaTeamTally[iCurTeam],
+							iaTeamTally[iCurTeam] == 1 ? L"" : L"s");
 				}
 				NeoUI::Label(wszText, true);
+
+				if (TEAM_SPECTATOR == iCurTeam && m_bSourceTVEnabled)
+				{
+					V_swprintf_safe(wszText, L"SourceTV Enabled (%d watching)", m_HLTVSpectators);
+					int x = 0;
+					[[maybe_unused]] int y = 0;
+					vgui::surface()->GetTextSize(m_uiCtx.fonts[m_uiCtx.eFont].hdl, wszText, x, y);
+					vgui::surface()->DrawSetTextPos(m_uiCtx.rWidgetArea.x0 + m_uiCtx.dPanel.wide - x - m_uiCtx.iMarginX, m_uiCtx.rWidgetArea.y0 + m_uiCtx.fonts[m_uiCtx.eFont].iYFontOffset);
+					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
+				}
 
 				NeoUI::Pad(); // Avatar/Dead-indicator
 				NeoUI::Pad(); // Name column
@@ -870,8 +892,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				for (int i = 0; i < m_iTotalPlayers; ++i)
 				{
 					const CNEOScoreBoardPlayer *pPlayerInfo = &m_playersInfo[i];
-					const bool bIsPlaying = (TEAM_JINRAI == pPlayerInfo->iTeam
-							|| TEAM_NSF == pPlayerInfo->iTeam);
+					const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 					const bool bIsDMPlaying = false == bIsTeamplay && bIsPlaying;
 					iInPlaying += (bIsPlaying);
 
@@ -963,6 +984,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 						if (pAvatarImg)
 						{
+							pAvatarImg->m_bDeadAvatar = pPlayerInfo->bDead && bIsPlaying;
 							pAvatarImg->SetPos(m_uiCtx.rWidgetArea.x0, m_uiCtx.rWidgetArea.y0);
 							pAvatarImg->SetSize(m_uiCtx.irWidgetTall, m_uiCtx.irWidgetTall);
 							pAvatarImg->Paint();
@@ -991,10 +1013,9 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 					}
 					if (iCurTeam >= FIRST_GAME_TEAM)
 					{
-						// Darken the avatar if dead or not ready
+						// Darken the avatar if not ready
 						if (pAvatarImg
-								&& (pPlayerInfo->bDead
-									|| (bShowReadyUp && false == pPlayerInfo->bReady)))
+								&& (bShowReadyUp && false == pPlayerInfo->bReady))
 						{
 							vgui::surface()->DrawSetColor(0, 0, 0, 200);
 							vgui::surface()->DrawFilledRect(
@@ -1092,12 +1113,24 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 		if (NeoUI::BeginPopup(NEOSCOREBOARDPOPUP_CARD))
 		{
 			CAvatarImage *pAvatarImg = nullptr;
-			if (ShowAvatars() && m_playerPopup.avatar.i184Idx >= 0)
+			if (ShowAvatars())
 			{
-				pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i184Idx));
+				if (m_playerPopup.avatar.i184Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i184Idx));
+				}
+				if ((!pAvatarImg || !pAvatarImg->IsValid()) && m_playerPopup.avatar.i64Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i64Idx));
+				}
+				if ((!pAvatarImg || !pAvatarImg->IsValid()) && m_playerPopup.avatar.i32Idx >= 0)
+				{
+					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i32Idx));
+				}
 			}
 			if (pAvatarImg)
 			{
+				pAvatarImg->m_bDeadAvatar = false;
 				pAvatarImg->SetPos(m_uiCtx.dPanel.x + iAvatarOffset,
 						m_uiCtx.dPanel.y + iAvatarOffset);
 				pAvatarImg->SetSize(iAvatarWT, iAvatarWT);
@@ -1235,7 +1268,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 				if (m_playerPopup.iUserID == iLocalUserID)
 				{
-					if (bShowReadyUp)
+					if (bShowReadyUp && bLocalPlaying)
 					{
 						if (NeoUI::ButtonTexture(
 									m_playerPopup.bReady

@@ -112,8 +112,16 @@ enum NeoGameType {
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
 
-struct NeoGameTypeSettings;
+struct NeoGameTypeSettings {
+	const char* gameTypeName;
+	bool respawns;
+	bool neoRulesThink;
+	bool changeTeamClassLoadoutWhenAlive;
+	bool comp;
+	bool capPrevent;
+};
 
+extern const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL];
 extern const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL];
 
 enum NeoRoundStatus {
@@ -162,6 +170,7 @@ enum NeoHudElements : NEO_HUD_BITS_UNDERLYING_TYPE {
 	NEO_HUD_ELEMENT_SCOREBOARD = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 14),
 	NEO_HUD_ELEMENT_PLAYER_PING = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 15),
 	NEO_HUD_ELEMENT_WORLDPOS_MARKER_ENT = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 16),
+	NEO_HUD_ELEMENT_SPECTATOR_OVERLAY = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 17),
 };
 
 enum NeoSpectateEvent {
@@ -361,6 +370,7 @@ public:
 	const Vector& GetJuggernautMarkerPos() const;
 	bool IsJuggernautLocked() const;
 
+	bool IsReadyUpEnabled() const;
 	bool InReadyUpState() const;
 	bool InRoundState() const;
 
@@ -494,7 +504,6 @@ private:
 	friend class CNEOBotCtgEscort;
 	friend class CNEOBotCtgLoneWolf;
 	friend class CNEOBotCtgLoneWolfAmbush;
-	friend class CNEOBotCtgLoneWolfDetpack;
 	friend class CNEOBotCtgLoneWolfSeek;
 	friend class CNEOBotTacticalMonitor;
 

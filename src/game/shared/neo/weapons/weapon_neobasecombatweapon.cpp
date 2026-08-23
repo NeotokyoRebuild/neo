@@ -865,6 +865,8 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 	return cone;
 }
 
+extern ConVar sv_suppress_viewpunch;
+
 void CNEOBaseCombatWeapon::AddViewKick()
 {
 	auto owner = ToNEOPlayer(GetOwner());
@@ -872,6 +874,13 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	if (!owner)
 	{
 		return;
+	}
+
+	// Reset any existing viewkick so it doesn't accumulate
+	// TODO: Resetting viewpunch here doesn't just affect viewkick, but also aimpunch.
+	// This if-check is a temporary workaround until we can separate the two.
+	if (!sv_suppress_viewpunch.GetBool()) {
+		owner->ViewPunchReset();
 	}
 
 	auto kickInfo = m_weaponHandling.kickInfo;
@@ -1070,7 +1079,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	);
 
 	//Add our view kick in
-	pOwner->ViewPunchReset();
 	AddViewKick();
 }
 
@@ -1398,3 +1406,17 @@ void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 	// Calling BaseClass::Use will pick the weapon up without waiting for the touch cooldown, don't see anything important there that we need to do that we aren't doing here
 }
 #endif
+
+const char *CNEOBaseCombatWeapon::GetDeathIcon() const
+{
+	if (WeaponIndex() == NEO_WIDX_FRAG_GRENADE)
+	{
+		return "2";
+	}
+	else if (WeaponIndex() == NEO_WIDX_DETPACK)
+	{
+		return "A";
+	}
+	return GetNEOWpnData().szDeathIcon;
+}
+

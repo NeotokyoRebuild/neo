@@ -280,7 +280,7 @@ ActionResult< CNEOBot >	CNEOBotSeekWeapon::Update( CNEOBot *me, float interval )
 		{
 			return Done("Unable to find a path to the nearest primary weapon");
 		}
-		m_repathTimer.Start( RandomFloat( 0.3f, 0.6f ) );
+		m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 	}
 
 	if (!m_path.IsValid())

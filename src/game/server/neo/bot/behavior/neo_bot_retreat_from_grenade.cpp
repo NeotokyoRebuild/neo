@@ -232,10 +232,10 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 	if ( me->GetLastKnownArea() != m_coverArea || !bIsExposed )
 	{
 		// not in cover yet
-		if (m_repathTimer.IsElapsed())
+		if ( m_repathTimer.IsElapsed() || !m_path.IsValid() )
 		{
-			CNEOBotPathCompute(me, m_path, m_coverArea->GetCenter(), FASTEST_ROUTE);
-			m_repathTimer.Start(0.2f); // Recompute path every 0.2 seconds
+			CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), FASTEST_ROUTE );
+			m_repathTimer.Start( 1.0f );
 		}
 		m_path.Update( me );
 	}
@@ -247,6 +247,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnStuck( CNEOBot *me )
 {
+	m_path.Invalidate();
+	m_repathTimer.Invalidate();
 	return TryContinue();
 }
 
@@ -261,6 +263,8 @@ EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnMoveToSuccess( CNEOBo
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
+	m_path.Invalidate();
+	m_repathTimer.Invalidate();
 	return TryContinue();
 }
 

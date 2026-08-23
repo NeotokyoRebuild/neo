@@ -21,7 +21,11 @@ DECLARE_BUILD_FACTORY( CAvatarImagePanel );
 #pragma warning(disable : 4355) // warning C4355: 'this': used in base member initializer list
 #endif
 
+#ifdef NEO
+CUtlMap< AvatarImagePair_t, AvatarImagePairValue_t> CAvatarImage::s_AvatarImageCache;
+#else
 CUtlMap< AvatarImagePair_t, int> CAvatarImage::s_AvatarImageCache; // cache of steam id's to textureids to use for images
+#endif // NEO
 bool CAvatarImage::m_sbInitializedAvatarCache = false;
 
 //-----------------------------------------------------------------------------
@@ -55,6 +59,9 @@ CAvatarImage::CAvatarImage( void )
 
 	// [menglish] Default icon for avatar icons if there is no avatar icon for the player
 	m_iTextureID = -1;
+#ifdef NEO
+	m_iTextureDeadID = -1;
+#endif // NEO
 
 	// set up friend icon
 	m_pFriendIcon = gHUD.GetIcon( "ico_friend_indicator_avatar" );
@@ -92,6 +99,13 @@ void CAvatarImage::ClearAvatarSteamID( void )
 //-----------------------------------------------------------------------------
 bool CAvatarImage::SetAvatarSteamID( CSteamID steamIDUser, EAvatarSize avatarSize /*= k_EAvatarSize32x32 */ )
 {
+#ifdef NEO
+	// NEO NOTE (nullsystem): avatarSize is unused, so just check on steamIDUser
+	if (m_SteamID == steamIDUser)
+	{
+		return m_bValid;
+	}
+#endif // NEO
 	ClearAvatarSteamID();
 
 	m_SteamID = steamIDUser;
@@ -179,12 +193,16 @@ void CAvatarImage::LoadAvatarImage()
 				uint32 wide = 0, tall = 0;
 				if ( steamapicontext->SteamUtils()->GetImageSize( iAvatar, &wide, &tall ) && wide > 0 && tall > 0 )
 				{
+#ifdef NEO
+					// NEO NOTE (nullsystem): Moved off GetImageRGBA to inside InitFromRGBA
+					InitFromRGBA( iAvatar, nullptr, wide, tall );
+#else
 					int destBufferSize = wide * tall * 4;
 					byte *rgbDest = (byte*)stackalloc( destBufferSize );
 					if ( steamapicontext->SteamUtils()->GetImageRGBA( iAvatar, rgbDest, destBufferSize ) )
 						InitFromRGBA( iAvatar, rgbDest, wide, tall );
-
 					stackfree( rgbDest );
+#endif // NEO
 				}
 			}
 		}
@@ -223,13 +241,68 @@ void CAvatarImage::InitFromRGBA( int iAvatar, const byte *rgba, int width, int h
 	int iTexIndex = s_AvatarImageCache.Find( AvatarImagePair_t( m_SteamID, iAvatar ) );
 	if ( iTexIndex == s_AvatarImageCache.InvalidIndex() )
 	{
+#ifdef NEO
+		(void)(rgba); // unused
+		int destBufferSize = width * height * 4;
+		byte *rgbDest = (byte*)stackalloc( destBufferSize );
+		if ( steamapicontext->SteamUtils()->GetImageRGBA( iAvatar, rgbDest, destBufferSize ) )
+		{
+			// Create normal avatar from RGBA without edits
+			m_iTextureID = vgui::surface()->CreateNewTextureID( true );
+			g_pMatSystemSurface->DrawSetTextureRGBAEx2( m_iTextureID, rgbDest, width, height, IMAGE_FORMAT_RGBA8888, true );
+
+			// Create dead avatar from RGBA with redness edits
+			const float contrast = -64.0f;
+			const float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
+			for (uint32 offset = 0; offset < (width * height * 4); offset += 4)
+			{
+				int r = (rgbDest + offset)[0];
+				int g = (rgbDest + offset)[1];
+				int b = (rgbDest + offset)[2];
+
+				// Bump brightness
+				r = Clamp((int)(((r / 255.0f) * 1.25f) * 255.0f), 0, 255);
+				g = Clamp((int)(((g / 255.0f) * 1.25f) * 255.0f), 0, 255);
+				b = Clamp((int)(((b / 255.0f) * 1.25f) * 255.0f), 0, 255);
+
+				// Bump down contrast
+				r = Clamp((int)(factor * (r - 128) + 128), 0, 255);
+				g = Clamp((int)(factor * (g - 128) + 128), 0, 255);
+				b = Clamp((int)(factor * (b - 128) + 128), 0, 255);
+
+				// Convert to grayscale - Luminosity, then only for red
+				const float flNGray = ((0.3f * (r / 255.0f)) + (0.59f * (g / 255.0f)) + (0.11f * (b / 255.0f)));
+				const int iGray = Clamp((int)(255.0f * flNGray), 0, 255);
+				(rgbDest + offset)[0] = iGray;
+				(rgbDest + offset)[1] = 0;
+				(rgbDest + offset)[2] = 0;
+			}
+			m_iTextureDeadID = vgui::surface()->CreateNewTextureID( true );
+			g_pMatSystemSurface->DrawSetTextureRGBAEx2( m_iTextureDeadID, rgbDest, width, height, IMAGE_FORMAT_RGBA8888, true );
+
+			// Add textures to global cache
+			iTexIndex = s_AvatarImageCache.Insert( AvatarImagePair_t( m_SteamID, iAvatar ) );
+			s_AvatarImageCache[ iTexIndex ].normal = m_iTextureID;
+			s_AvatarImageCache[ iTexIndex ].dead = m_iTextureDeadID;
+		}
+		stackfree( rgbDest );
+#else
 		m_iTextureID = vgui::surface()->CreateNewTextureID( true );
 		g_pMatSystemSurface->DrawSetTextureRGBAEx2( m_iTextureID, rgba, width, height, IMAGE_FORMAT_RGBA8888, true );
 		iTexIndex = s_AvatarImageCache.Insert( AvatarImagePair_t( m_SteamID, iAvatar ) );
 		s_AvatarImageCache[ iTexIndex ] = m_iTextureID;
+#endif // NEO
 	}
+#ifdef NEO
+	else
+	{
+		m_iTextureID = s_AvatarImageCache[ iTexIndex ].normal;
+		m_iTextureDeadID = s_AvatarImageCache[ iTexIndex ].dead;
+	}
+#else
 	else
 		m_iTextureID = s_AvatarImageCache[ iTexIndex ];
+#endif // NEO
 
 	m_bValid = true;
 }
@@ -262,7 +335,11 @@ void CAvatarImage::Paint( void )
 
 	if ( m_bValid )
 	{
+#ifdef NEO
+		vgui::surface()->DrawSetTexture( m_bDeadAvatar ? m_iTextureDeadID : m_iTextureID );
+#else
 		vgui::surface()->DrawSetTexture( m_iTextureID );
+#endif // NEO
 		vgui::surface()->DrawSetColor( m_Color );
 		vgui::surface()->DrawTexturedRect(posX, posY, posX + m_avatarWide, posY + m_avatarTall);
 	}

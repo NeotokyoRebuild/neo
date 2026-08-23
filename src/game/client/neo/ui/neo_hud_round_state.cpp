@@ -20,6 +20,7 @@
 #include "c_playerresource.h"
 #include "vgui_avatarimage.h"
 #include "neo_scoreboard.h"
+#include "neo_hud_spectator_overlay.h"
 
 #include "hltvcamera.h"
 
@@ -245,8 +246,6 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetZPos(90);
 }
 
-extern ConVar sv_neo_readyup_lobby;
-
 void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 {
 	float roundTimeLeft = NEORules()->GetRoundRemainingTime();
@@ -258,7 +257,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	m_pWszStatusUnicode = L"";
 	if (roundStatus == NeoRoundStatus::Idle)
 	{
-		m_pWszStatusUnicode = sv_neo_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
+		m_pWszStatusUnicode = NEORules()->IsReadyUpEnabled() ? L"Waiting for players to ready up" : L"Waiting for players";
 	}
 	else if (roundStatus == NeoRoundStatus::Warmup)
 	{
@@ -559,6 +558,11 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 
 	if (!g_PR)
 		return;
+
+	if (localPlayerSpecOrNoTeam && cl_neo_hud_spectator_overlay_enabled.GetBool())
+	{
+		return;
+	}
 
 	if (NEORules()->IsTeamplay() && (!cl_neo_squad_hud_original.GetBool() || localPlayerSpecOrNoTeam))
 	{ // Sort player list even if not drawing new hud so spectators can use commands
@@ -1363,153 +1367,3 @@ int CNEOHud_RoundState::GetSelectedPlayerInHud()
 	return -1;
 }
 
-CON_COMMAND_F( spec_player_by_hud_position, "Spectate player by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if ( args.ArgC() != 2 )
-	{
-		ConMsg( "Usage: spec_player_by_hud_position { player position in top hud, 0 indexed }\n" );
-		return;
-	}
-
-	int positionInHud = atoi( args[1] );
-	if (positionInHud < 0 || positionInHud > MAX_PLAYERS - 1)
-	{
-		ConMsg( "Usage: spec_player_by_hud_position { player position in top hud, 0 indexed }\n" );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	const int entityIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(positionInHud, true);
-	if (entityIndex)
-	{
-		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(entityIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", entityIndex));
-	}
-}
-
-CON_COMMAND_F( spec_next_entity_in_hud, "Spectate next valid player to the right of the current spectate target", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	int spectateTargetMinusIndexedPositionInHud = 0;
-	C_BaseEntity *pSpectateTarget = pNeoPlayer->GetObserverTarget();
-	if (pSpectateTarget)
-	{
-		spectateTargetMinusIndexedPositionInHud = g_pNeoHudRoundState->GetMinusIndexedPositionOfPlayerInHud(pSpectateTarget->entindex());
-	}
-
-	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(g_pNeoHudRoundState->GetNextAlivePlayerInHud(spectateTargetMinusIndexedPositionInHud, false));
-	if (playerIndex)
-	{
-		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(playerIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
-	}
-}
-
-CON_COMMAND_F( spec_previous_entity_in_hud, "Spectate next valid player to the left of the current spectate target", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-	
-	int spectateTargetMinusIndexedPositionInHud = 0;
-	C_BaseEntity *pSpectateTarget = pNeoPlayer->GetObserverTarget();
-	if (pSpectateTarget)
-	{
-		spectateTargetMinusIndexedPositionInHud = g_pNeoHudRoundState->GetMinusIndexedPositionOfPlayerInHud(pSpectateTarget->entindex());
-	}
-	
-	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(g_pNeoHudRoundState->GetNextAlivePlayerInHud(spectateTargetMinusIndexedPositionInHud, true));
-	if (playerIndex)
-	{
-		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(playerIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
-	}
-}
-
-CON_COMMAND_F( select_next_alive_player_in_hud, "Select the next alive player in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	g_pNeoHudRoundState->SelectNextAlivePlayerInHud();
-}
-
-CON_COMMAND_F( select_previous_alive_player_in_hud, "Select the previous alive player in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	g_pNeoHudRoundState->SelectPreviousAlivePlayerInHud();
-}
-
-CON_COMMAND_F( spectate_player_selected_in_hud, "Spectate entity selected in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	const int entityIndex = g_pNeoHudRoundState->GetSelectedPlayerInHud();
-	if (entityIndex)
-	{
-		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(entityIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", entityIndex));
-	}
-}

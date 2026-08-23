@@ -45,7 +45,6 @@ private:
 	PathFollower m_path;
 	ChasePath m_chasePath;
 	CountdownTimer m_aloneTimer;
-	CountdownTimer m_repathTimer;
 	
 	CNEOBotGhostEquipmentHandler m_ghostEquipmentHandler;
 	

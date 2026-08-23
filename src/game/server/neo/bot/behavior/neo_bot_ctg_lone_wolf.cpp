@@ -2,9 +2,12 @@
 #include "neo_player.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/behavior/neo_bot_ctg_enemy.h"
+#include "bot/behavior/neo_bot_ctg_escort.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_ambush.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
+#include "bot/behavior/neo_bot_detpack_deploy.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 #include "neo_ghost_cap_point.h"
@@ -15,7 +18,6 @@
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
-	m_repathTimer.Invalidate();
 	return Continue();
 }
 
@@ -23,6 +25,12 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBo
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval )
 {
+	ActionResult< CNEOBot > result = ConsiderGhostCaptureTransition( me );
+	if ( result.IsRequestingChange() )
+	{
+		return result;
+	}
+
 	if ( me->DropGhost() )
 	{
 		return Continue(); // ghost drop in progress
@@ -57,7 +65,18 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::Update( CNEOBot *me, float interval 
 	const CNavArea *myArea = me->GetLastKnownArea();
 	if ( ghostArea && myArea && ghostArea->IsPotentiallyVisible( myArea ) )
 	{
-		return ChangeTo( new CNEOBotCtgLoneWolfAmbush(), "Waiting in ambush near ghost" );
+		if ( pDetpackWeapon && !pDetpackWeapon->m_bThisDetpackHasBeenThrown && NEORules()->m_pGhost )
+		{
+			const float fDetpackDeployPrepDistSq = Square( 200.0f );
+			if ( me->GetAbsOrigin().DistToSqr( NEORules()->GetGhostPos() ) < fDetpackDeployPrepDistSq )
+			{
+				return ChangeTo( new CNEOBotDetpackDeploy( NEORules()->GetGhostPos(), new CNEOBotCtgLoneWolfAmbush() ), "Moving to plant detpack" );
+			}
+		}
+		else
+		{
+			return ChangeTo( new CNEOBotCtgLoneWolfAmbush(), "Waiting in ambush near ghost" );
+		}
 	}
 
 	return ConsiderGhostVisualCheck( me );
@@ -90,11 +109,10 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostInterception( CNEOBot *
 	const Vector& vecInterceptGoal = NEORules()->GetGhostPos();
 	if ( vecInterceptGoal != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
-		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
+		if ( !m_path.IsValid() )
 		{
 			CNEOBotPathCompute( me, m_path, vecInterceptGoal, FASTEST_ROUTE );
 			m_path.Update( me );
-			m_repathTimer.Start( RandomFloat( 0.3f, 1.0f ) );
 		}
 		else
 		{
@@ -126,16 +144,49 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostVisualCheck( CNEOBot *m
 	const Vector& vecAcquireGoal = NEORules()->GetGhostPos();
 	if ( vecAcquireGoal != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
-		if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
+		// Proof-of-concept: only recompute the path when the current path is invalid.
+		if ( !m_path.IsValid() )
 		{
 			CNEOBotPathCompute( me, m_path, vecAcquireGoal, FASTEST_ROUTE );
 			m_path.Update( me );
-			m_repathTimer.Start( RandomFloat( 0.3f, 1.0f ) );
 		}
 		else
 		{
 			m_path.Update( me );
 		}
+	}
+
+	return Continue();
+}
+
+
+//---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostCaptureTransition( CNEOBot *me )
+{
+	if (NEORules()->GhostExists())
+	{
+		int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+		if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
+		{
+			CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
+			if (pGhostCarrier && pGhostCarrier != me)
+			{
+				// We sometimes flow into CNEOBotCtgLoneWolf if this bot failed to get the ghost
+				// Use ChangeTo to reset scenario evaluation after reacting to ghost pickup
+				if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
+				{
+					return ChangeTo(new CNEOBotCtgEscort, "Protect teammate that had better luck capturing ghost");
+				}
+				else
+				{
+					return ChangeTo(new CNEOBotCtgEnemy, "Intercepting the ghost carrier!");
+				}
+			}
+		}
+	}
+	else
+	{
+		return Done("No ghost exists, exiting behavior to reevaluate situation.");
 	}
 
 	return Continue();
@@ -163,6 +214,11 @@ EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolf::OnStuck( CNEOBot *me )
 	return TryContinue();
 }
 
+EventDesiredResult< CNEOBot > CNEOBotCtgLoneWolf::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
+{
+	m_path.Invalidate();
+	return TryContinue();
+}
 
 //---------------------------------------------------------------------------------------------
 Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
@@ -180,8 +236,8 @@ Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
 		float flNearestSq = FLT_MAX;
 		for ( int i = 0; i < NEORules()->m_pGhostCaps.Count(); ++i )
 		{
-			CNEOGhostCapturePoint *pCapPoint = assert_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
-			if ( !pCapPoint )
+			CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
+			if ( !pCapPoint || !pCapPoint->GetActive() )
 			{
 				continue;
 			}

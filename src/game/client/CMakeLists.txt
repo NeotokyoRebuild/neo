@@ -1667,11 +1667,13 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_message.cpp
     neo/ui/neo_hud_player_ping.cpp
     neo/ui/neo_hud_round_state.cpp
+    neo/ui/neo_hud_spectator_overlay.cpp
     neo/ui/neo_hud_startup_sequence.cpp
     neo/ui/neo_hud_worldpos_marker.cpp
     neo/ui/neo_hud_worldpos_marker_generic.cpp
     neo/ui/neo_scoreboard.cpp
     neo/ui/neo_hud_context_hint.cpp
+    neo/ui/neo_spec_player_by_hud.cpp
 )
 
 set_source_files_properties(
@@ -1694,6 +1696,7 @@ target_sources_grouped(
     neo/ui/neo_hud_ammo.h
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_compass.h
+    neo/ui/neo_hud_deathnotice.h
     neo/ui/neo_hud_friendly_marker.h
     neo/ui/neo_hud_game_event.h
     neo/ui/neo_hud_ghost_beacons.h
@@ -1706,6 +1709,7 @@ target_sources_grouped(
     neo/ui/neo_hud_message.h
     neo/ui/neo_hud_player_ping.h
     neo/ui/neo_hud_round_state.h
+    neo/ui/neo_hud_spectator_overlay.h
     neo/ui/neo_hud_startup_sequence.h
     neo/ui/neo_hud_worldpos_marker.h
     neo/ui/neo_hud_worldpos_marker_generic.h
