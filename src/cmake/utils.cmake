@@ -103,10 +103,10 @@ function(add_origin_rpath)
     
     # Create a symlink so libraries (materialsystem.so, shaderapiempty.so, ...)
     # can be loaded using dlopen from the CMake binary dir
-    if(NEO_TOOLS_STEAM_NTRE_PATH)
+    if(NEO_TOOLS_ENGINE_BIN_PATH)
         set(NEO_ENGINE_SYMLINK_NAME "engine")
-        
-        file(CREATE_LINK "${NEO_TOOLS_STEAM_NTRE_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/${NEO_ENGINE_SYMLINK_NAME}" SYMBOLIC)
+
+        file(CREATE_LINK "${NEO_TOOLS_ENGINE_BIN_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/${NEO_ENGINE_SYMLINK_NAME}" SYMBOLIC)
         list(APPEND PARSED_ARGS_PATHS "${NEO_ENGINE_SYMLINK_NAME}" "../${NEO_ENGINE_SYMLINK_NAME}")
     endif()
 
