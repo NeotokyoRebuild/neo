@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "neo_player.h"
 #include "neo_gamerules.h"
+#include "neo_ghost_cap_point.h"
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
