@@ -61,6 +61,13 @@ void FileSystem_UseVProjectBinDir( bool bEnable )
 }
 
 bool FileSystem_AllowedSearchPath( const char *pchPath );
+bool DoesFileExistIn( const char *pDirectoryName, const char *pFilename );
+
+#define DLL_EXT_STRING DLLExtTokenPaste2( _DLL_EXT )
+
+#ifdef USE_APPID_MOUNTING
+bool GetSteamAppDir( int nAppId, char *szOutPath, int nBufSize );
+#endif
 
 // This class lets you modify environment variables, and it restores the original value
 // when it goes out of scope.
@@ -332,6 +339,65 @@ static bool Sys_GetExecutableName( char *out, int len )
 	return true;
 }
 
+#ifdef USE_APPID_MOUNTING
+//-----------------------------------------------------------------------------
+// The engine binaries a tool needs are normally one directory up from the game
+// directory it was pointed at, but that isn't true for a mod that lives outside
+// of its engine's install, like one under steamapps/sourcemods or one run out of
+// a source tree. Fall back to the engine the mod's gameinfo.txt asks for.
+//-----------------------------------------------------------------------------
+static bool GetEngineBinDirFromGameInfo( const char *pGameDir, char *szOutPath, int nBufSize )
+{
+	static char s_szEngineBinDir[MAX_PATH];
+	static bool s_bResolveAttempted = false;
+
+	if ( !s_bResolveAttempted )
+	{
+		s_bResolveAttempted = true;
+
+		char szGameInfoPath[MAX_PATH];
+		V_ComposeFileName( pGameDir, GAMEINFO_FILENAME, szGameInfoPath, sizeof( szGameInfoPath ) );
+
+		KeyValues *pMainFile = ReadKeyValuesFile( szGameInfoPath );
+		if ( !pMainFile )
+		{
+			return false;
+		}
+
+		int nAppId = 0;
+		KeyValues *pFileSystemInfo = pMainFile->FindKey( "FileSystem" );
+		if ( pFileSystemInfo )
+		{
+			nAppId = pFileSystemInfo->GetInt( "SteamAppId" );
+		}
+		pMainFile->deleteThis();
+
+		if ( nAppId <= 0 )
+		{
+			Warning( "%s doesn't say which engine to use (no SteamAppId).\n", szGameInfoPath );
+			return false;
+		}
+
+		char szAppInstallDir[MAX_PATH];
+		if ( !GetSteamAppDir( nAppId, szAppInstallDir, sizeof( szAppInstallDir ) ) )
+		{
+			return false;
+		}
+
+		V_ComposeFileName( szAppInstallDir, PLATFORM_BIN_DIR, s_szEngineBinDir, sizeof( s_szEngineBinDir ) );
+		V_FixSlashes( s_szEngineBinDir );
+	}
+
+	if ( !s_szEngineBinDir[0] )
+	{
+		return false;
+	}
+
+	V_strncpy( szOutPath, s_szEngineBinDir, nBufSize );
+	return true;
+}
+#endif
+
 bool FileSystem_GetExecutableDir( char *exedir, int exeDirLen )
 {
 	exedir[0] = 0;
@@ -350,6 +416,12 @@ bool FileSystem_GetExecutableDir( char *exedir, int exeDirLen )
 			// Only used by external code, i.e. maya but needed so app system loads the correct game DLLs
 			constexpr auto s = CORRECT_PATH_SEPARATOR;
 			Q_snprintf( exedir, exeDirLen, "%s%c..%c%s", pProject, s, s, PLATFORM_BIN_DIR );
+#ifdef USE_APPID_MOUNTING
+			if ( !DoesFileExistIn( exedir, "filesystem_stdio" DLL_EXT_STRING ) )
+			{
+				GetEngineBinDirFromGameInfo( pProject, exedir, exeDirLen );
+			}
+#endif
 			return true;
 		}
 		return false;
@@ -1478,8 +1550,6 @@ FSReturnCode_t FileSystem_GetFileSystemDLLName( char *pFileSystemDLL, int nMaxLe
 	if ( !FileSystem_GetExecutableDir( executablePath, sizeof( executablePath ) )	)
 		return SetupFileSystemError( false, FS_INVALID_PARAMETERS, "FileSystem_GetExecutableDir failed." );
 
-	#define DLL_EXT_STRING DLLExtTokenPaste2( _DLL_EXT )
-	
 	// Assume we'll use local files
 	Q_snprintf( pFileSystemDLL, nMaxLen, "%s%cfilesystem_stdio" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
 
