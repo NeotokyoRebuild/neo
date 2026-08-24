@@ -1665,6 +1665,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_hint.cpp
     neo/ui/neo_hud_message.cpp
+    neo/ui/neo_hud_place_name.cpp
     neo/ui/neo_hud_player_ping.cpp
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_spectator_overlay.cpp
@@ -1707,6 +1708,7 @@ target_sources_grouped(
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_hint.h
     neo/ui/neo_hud_message.h
+    neo/ui/neo_hud_place_name.h
     neo/ui/neo_hud_player_ping.h
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_spectator_overlay.h
