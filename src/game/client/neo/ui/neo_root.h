@@ -286,6 +286,14 @@ public:
 	int m_iMatchesWonJinrai = 0;
 	int m_iMatchesWonNSF = 0;
 	char m_szNextLogoPathStartDir[MAX_PATH] = {};
+
+	struct TeamInfo
+	{
+		wchar_t wszName[MAX_PLAYER_NAME_LENGTH] = {};
+		char szLogoPath[MAX_PATH] = {};
+	};
+	CUtlVector<TeamInfo> m_teamInfos;
+	int m_iSetTeamPreset = 0;
 };
 
 extern CNeoRoot *g_pNeoRoot;
