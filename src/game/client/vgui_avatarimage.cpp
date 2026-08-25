@@ -252,31 +252,44 @@ void CAvatarImage::InitFromRGBA( int iAvatar, const byte *rgba, int width, int h
 			g_pMatSystemSurface->DrawSetTextureRGBAEx2( m_iTextureID, rgbDest, width, height, IMAGE_FORMAT_RGBA8888, true );
 
 			// Create dead avatar from RGBA with redness edits
-			const float contrast = -64.0f;
-			const float factor = (259.0f * (contrast + 255.0f)) / (255.0f * (259.0f - contrast));
 			for (int offset = 0; offset < (width * height * 4); offset += 4)
 			{
-				int r = (rgbDest + offset)[0];
-				int g = (rgbDest + offset)[1];
-				int b = (rgbDest + offset)[2];
+				constexpr float brightness = 0.5f;
+				constexpr float contrast = 1.5f;
 
-				// Bump brightness
-				r = Clamp((int)(((r / 255.0f) * 1.25f) * 255.0f), 0, 255);
-				g = Clamp((int)(((g / 255.0f) * 1.25f) * 255.0f), 0, 255);
-				b = Clamp((int)(((b / 255.0f) * 1.25f) * 255.0f), 0, 255);
+				float r = (rgbDest + offset)[0] / 255.0f;
+				float g = (rgbDest + offset)[1] / 255.0f;
+				float b = (rgbDest + offset)[2] / 255.0f;
 
-				// Bump down contrast
-				r = Clamp((int)(factor * (r - 128) + 128), 0, 255);
-				g = Clamp((int)(factor * (g - 128) + 128), 0, 255);
-				b = Clamp((int)(factor * (b - 128) + 128), 0, 255);
+				// Contrast
+				r = Clamp((r - 0.5f) * contrast + 0.5f, 0.0f, 1.0f);
+				g = Clamp((g - 0.5f) * contrast + 0.5f, 0.0f, 1.0f);
+				b = Clamp((b - 0.5f) * contrast + 0.5f, 0.0f, 1.0f);
 
-				// Convert to grayscale - Luminosity, then only for red
-				const float flNGray = ((0.3f * (r / 255.0f)) + (0.59f * (g / 255.0f)) + (0.11f * (b / 255.0f)));
-				const int iGray = Clamp((int)(255.0f * flNGray), 0, 255);
-				(rgbDest + offset)[0] = iGray;
-				(rgbDest + offset)[1] = 0;
-				(rgbDest + offset)[2] = 0;
+				// Convert to grayscale - Luminosity, then gradient from black -> red -> white
+				const float gray = 0.3f * r + 0.59f * g  + 0.11f * b;
+				if (gray < 0.5)
+				{
+					r = gray * 2.0f;
+					g = 0;
+					b = 0;
+				}
+				else {
+					r = 1.0f;
+					g = (gray - 0.5f) * 2.0f;
+					b = (gray - 0.5f) * 2.0f;
+				}
+
+				// Brightness
+				r = Clamp(r * brightness, 0.0f, 1.0f);
+				g = Clamp(g * brightness, 0.0f, 1.0f);
+				b = Clamp(b * brightness, 0.0f, 1.0f);
+
+				(rgbDest + offset)[0] = r * 255;
+				(rgbDest + offset)[1] = g * 255;
+				(rgbDest + offset)[2] = b * 255;
 			}
+
 			m_iTextureDeadID = vgui::surface()->CreateNewTextureID( true );
 			g_pMatSystemSurface->DrawSetTextureRGBAEx2( m_iTextureDeadID, rgbDest, width, height, IMAGE_FORMAT_RGBA8888, true );
 
