@@ -384,7 +384,7 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 						}
 
 						// Icons are really only 1 character long
-						Q_UTF8ToUnicode(pNeoWep->GetDeathIcon(),
+						Q_UTF8ToUnicode(pNeoWep->GetDeathIcon(DEATHICONTYPE_IDX),
 								wszWeaponIcon, sizeof(wszWeaponIcon));
 						pCard->wcaWeaponIcons[pCard->iTotalWeaponIcons++] = wszWeaponIcon[0];
 					}

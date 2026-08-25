@@ -4351,7 +4351,9 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		event->SetInt("priority", 7);
 		event->SetBool("headshot", pVictim->LastHitGroup() == HITGROUP_HEAD);
 		event->SetBool("suicide", pKiller == pVictim || !pKiller->IsPlayer());
-		event->SetString("deathIcon", neoWep ? neoWep->GetDeathIcon() : "");
+		event->SetString("deathIcon", neoWep
+				? neoWep->GetDeathIcon(DEATHICONTYPE_BOOLS, isGrenade, isRemoteDetpack)
+				: "");
 		event->SetBool("explosive", isGrenade || isRemoteDetpack);
 		event->SetBool("ghoster", m_iGhosterPlayer == pVictim->entindex());
 
