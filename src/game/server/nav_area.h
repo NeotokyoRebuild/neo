@@ -299,7 +299,11 @@ public:
 	bool HasAttributes( int bits ) const	{ return ( m_attributeFlags & bits ) ? true : false; }
 	void RemoveAttributes( int bits )		{ m_attributeFlags &= ( ~bits ); }
 
+#ifdef NEO
+	void SetPlace( Place place );								// set place descriptor
+#else
 	void SetPlace( Place place )		{ m_place = place; }	// set place descriptor
+#endif // NEO
 	Place GetPlace( void ) const		{ return m_place; }		// get place descriptor
 
 	void MarkAsBlocked( int teamID, CBaseEntity *blocker, bool bGenerateEvent = true );	// An entity can force a nav area to be blocked

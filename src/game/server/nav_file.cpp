@@ -156,13 +156,20 @@ void PlaceDirectory::Load( CUtlBuffer &fileBuffer, int version )
 	m_directory.RemoveAll();
 
 	// read each entry
+#ifdef NEO
+	char placeName[MAX_PLACE_NAME_LENGTH];
+#else
 	char placeName[256];
+#endif // NEO
 	unsigned short len;
 	for( int i=0; i<count; ++i )
 	{
 		len = fileBuffer.GetUnsignedShort();
 		fileBuffer.Get( placeName, MIN( sizeof( placeName ), len ) );
 
+#ifdef NEO
+		TheNavMesh->NextPlace(placeName);
+#endif // NEO
 		Place place = TheNavMesh->NameToPlace( placeName );
 		if (place == UNDEFINED_PLACE)
 		{

@@ -1265,6 +1265,12 @@ bool CNavArea::SplitEdit( bool splitAlongX, float splitEdge, CNavArea **outAlpha
 	SplitNotification notify( this, alpha, beta );
 	TheNavMesh->ForAllLadders( notify );
 
+#ifdef NEO
+	// If the old area had a place name, the new areas will inherit it
+	alpha->m_place = m_place;
+	beta->m_place = m_place;
+#endif // NEO
+
 	// return new areas
 	if (outAlpha)
 		*outAlpha = alpha;
@@ -4701,6 +4707,21 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 	int teamIdx = teamID % MAX_NAV_TEAMS;
 	return m_isBlocked[ teamIdx ];
 }
+
+#ifdef NEO
+void CNavArea::SetPlace(Place place)
+{
+	if (m_place == place)
+		return;
+
+	if (this == TheNavMesh->GetNavAreaByID(GetID()))
+	{
+		TheNavMesh->DecrementNumPlaces(m_place);
+		TheNavMesh->IncrementNumPlaces(place);
+	}
+	m_place = place;
+}
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::MarkAsBlocked( int teamID, CBaseEntity *blocker, bool bGenerateEvent )
