@@ -92,9 +92,7 @@ private:
 	int m_iStatusUnicodeSize = 0;
 
 	// Totals info
-	int m_iLeftPlayersAlive = 0;
 	int m_iLeftPlayersTotal = 0;
-	int m_iRightPlayersAlive = 0;
 	int m_iRightPlayersTotal = 0;
 
 	// Element Positions
