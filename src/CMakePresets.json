@@ -64,6 +64,17 @@
     }
   },
   {
+    "name": "linux-debug-hotreload",
+    "displayName": "Linux Debug (hot reload)",
+    "inherits": "linux-debug",
+    "cacheVariables": {
+      "NEO_ENABLE_LINUX_HOT_RELOAD": "ON",
+      "NEO_UNITY_BUILD_CLIENT_SERVER": "OFF",
+      "NEO_UNITY_BUILD_OTHERS": "OFF",
+      "NEO_USE_CCACHE": "OFF"
+    }
+  },
+  {
     "name": "linux-release",
     "displayName": "Linux Release",
     "inherits": "linux",
@@ -87,6 +98,11 @@
     "name": "linux-debug",
     "displayName": "Linux Debug",
     "configurePreset": "linux-debug"
+  },
+  {
+    "name": "linux-debug-hotreload",
+    "displayName": "Linux Debug (hot reload)",
+    "configurePreset": "linux-debug-hotreload"
   },
   {
     "name": "linux-release",
