@@ -1000,7 +1000,6 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 							pAvatarImg->Paint();
 						}
 					}
-					// Voice mute icon - layered over avatar, only do for actual players
 					if (bIsMuted && pAvatarImg)
 					{
 						// Slightly redden the avatar
@@ -1050,6 +1049,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 					}
 					NeoUI::Label(wszText);
 
+					// Voice mute icon - after name, only do for actual players
 					if (bIsMuted)
 					{
 						const auto *pFontI = &m_uiCtx.fonts[m_uiCtx.eFont];
@@ -1057,14 +1057,15 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						int iNameWide = 0, iNameTall = 0;
 						vgui::surface()->GetTextSize(pFontI->hdl, wszText, iNameWide, iNameTall);
 
+						const int iMuteIconWH = (m_uiCtx.irWidgetTall * 0.75f);
 						const int iStartX = m_uiCtx.rWidgetArea.x0 + iNameWide + (2 * m_uiCtx.iMarginX);
-						if ((iStartX + m_uiCtx.irWidgetTall) < m_uiCtx.rWidgetArea.x1)
+						if ((iStartX + iMuteIconWH) < m_uiCtx.rWidgetArea.x1)
 						{
 							NeoUI::Texture("vgui/hud/voice_mute",
 									iStartX,
-									m_uiCtx.rWidgetArea.y0,
-									m_uiCtx.irWidgetTall,
-									m_uiCtx.irWidgetTall,
+									m_uiCtx.rWidgetArea.y0 + ((m_uiCtx.irWidgetTall - iMuteIconWH) / 2.0f),
+									iMuteIconWH,
+									iMuteIconWH,
 									"",
 									NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL);
 						}
