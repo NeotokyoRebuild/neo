@@ -1972,3 +1972,28 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/client/NextBot/C_NextBot.cpp
     ${CMAKE_SOURCE_DIR}/game/client/NextBot/C_NextBot.h
 )
+
+if(NEO_ENABLE_LINUX_HOT_RELOAD)
+    set(NEO_HR_DIR ${CMAKE_SOURCE_DIR}/game/shared/neo/hotreload)
+    file(GLOB NEO_HR_VENDOR_SOURCES CONFIGURE_DEPENDS ${NEO_HR_DIR}/vendor/src/*.cpp)
+
+    target_sources_grouped(
+        TARGET client
+        NAME "Hot Reload"
+        FILES
+        ${NEO_HR_DIR}/neo_hot_reload.cpp
+        ${NEO_HR_DIR}/neo_hot_reload.h
+        ${NEO_HR_VENDOR_SOURCES}
+    )
+
+    target_include_directories(client PRIVATE ${NEO_HR_DIR}/vendor)
+
+    target_compile_definitions(client PRIVATE
+        NEO_LINUX_HOT_RELOAD
+        NEO_HOT_RELOAD_BUILD_DIR_REL="${NEO_HOT_RELOAD_BUILD_DIR_REL}"
+        NEO_HOT_RELOAD_BUILD_DIR_ABS="${CMAKE_BINARY_DIR}"
+    )
+
+    # The vendored loader core is plain C++ that does not include the game PCH.
+    set_source_files_properties(${NEO_HR_VENDOR_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+endif()

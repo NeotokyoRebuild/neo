@@ -7,6 +7,9 @@
 //===========================================================================//
 
 #include "cbase.h"
+#ifdef NEO_LINUX_HOT_RELOAD
+#include "neo/hotreload/neo_hot_reload.h"
+#endif
 #include "gamestringpool.h"
 #include "mapentities_shared.h"
 #include "game.h"
@@ -764,6 +767,10 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	gamestatsuploader->InitConnection();
 #endif
 
+#ifdef NEO_LINUX_HOT_RELOAD
+	NeoHotReload_Init();
+#endif
+
 	return true;
 }
 
@@ -832,6 +839,11 @@ void CServerGameDLL::DLLShutdown( void )
 	DisconnectTier3Libraries();
 	DisconnectTier2Libraries();
 	ConVar_Unregister();
+#ifdef NEO_LINUX_HOT_RELOAD
+	// After the cvars are gone (shims registered some) and before the engine unloads us:
+	// runs the shims' static destructors while everything they reference is alive.
+	NeoHotReload_Shutdown();
+#endif
 	DisconnectTier1Libraries();
 }
 
@@ -991,6 +1003,9 @@ float g_flServerCurTime = 0.0f;
 bool CServerGameDLL::LevelInit( const char *pMapName, char const *pMapEntities, char const *pOldLevel, char const *pLandmarkName, bool loadGame, bool background )
 {
 	VPROF("CServerGameDLL::LevelInit");
+#ifdef NEO_LINUX_HOT_RELOAD
+	NeoHotReload_LevelInitNotice();
+#endif
 
 	g_flServerCurTime = gpGlobals->curtime;
 
@@ -1235,6 +1250,10 @@ ConVar  trace_report( "trace_report", "0" );
 void CServerGameDLL::GameFrame( bool simulating )
 {
 	VPROF( "CServerGameDLL::GameFrame" );
+
+#ifdef NEO_LINUX_HOT_RELOAD
+	NeoHotReload_Frame();
+#endif
 
 	// Don't run frames until fully restored
 	if ( g_InRestore )

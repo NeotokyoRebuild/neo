@@ -5,6 +5,9 @@
 // $NoKeywords: $
 //===========================================================================//
 #include "cbase.h"
+#ifdef NEO_LINUX_HOT_RELOAD
+#include "neo/hotreload/neo_hot_reload.h"
+#endif
 #include <crtmemdebug.h>
 #include "vgui_int.h"
 #include "clientmode.h"
@@ -1213,6 +1216,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	VerifyValidDxLevel();
 #endif
 
+#ifdef NEO_LINUX_HOT_RELOAD
+	NeoHotReload_Init();
+#endif
+
 	return true;
 }
 
@@ -1681,6 +1688,9 @@ void CHLClient::Shutdown( void )
 //	DisconnectTier3Libraries( );
 	DisconnectTier2Libraries( );
 	ConVar_Unregister();
+#ifdef NEO_LINUX_HOT_RELOAD
+	NeoHotReload_Shutdown();
+#endif
 	DisconnectTier1Libraries( );
 
 	gameeventmanager = NULL;
@@ -1725,6 +1735,10 @@ void CHLClient::HudProcessInput( bool bActive )
 void CHLClient::HudUpdate( bool bActive )
 {
 	float frametime = gpGlobals->frametime;
+
+#ifdef NEO_LINUX_HOT_RELOAD
+	NeoHotReload_Frame();
+#endif
 
 #if defined( TF_CLIENT_DLL )
 	CRTime::UpdateRealTime();

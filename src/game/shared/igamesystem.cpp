@@ -131,6 +131,27 @@ void IGameSystem::Remove( IGameSystem* pSys )
 	}
 }
 
+#ifdef NEO_LINUX_HOT_RELOAD
+void IGameSystem::HotReloadSnapshot( CUtlVector<IGameSystem*> &out )
+{
+	out.RemoveAll();
+	out.AddVectorToTail( s_GameSystems );
+}
+
+void IGameSystem::HotReloadPrune( const CUtlVector<IGameSystem*> &snapshot )
+{
+	CUtlVector<IGameSystem*> current;
+	current.AddVectorToTail( s_GameSystems );
+	for ( int i = 0; i < current.Count(); ++i )
+	{
+		if ( !snapshot.HasElement( current[i] ) )
+		{
+			Remove( current[i] );
+		}
+	}
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Removes *all* systems from the list of systems to update
 //-----------------------------------------------------------------------------
