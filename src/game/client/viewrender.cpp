@@ -2003,7 +2003,7 @@ void CViewRender::RenderPlayerSprites()
 
 #ifdef NEO
 //-----------------------------------------------------------------------------
-// Purpose: Renders voice feedback and other sprites attached to players
+// Purpose: Renders navigation mesh place names
 // Input  : none
 //-----------------------------------------------------------------------------
 void CViewRender::RenderPlaceNames()

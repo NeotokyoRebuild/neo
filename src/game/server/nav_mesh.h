@@ -343,7 +343,8 @@ public:
 	Place PartialNameToPlace( const char *name ) const;					// given the first part of a place name, return a place ID or zero if no place is defined, or the partial match is ambiguous
 	void PrintAllPlaces( void ) const;									// output a list of names to the console
 #ifdef NEO
-	Place NextPlace(const char* name);
+	const Vector PlaceToLocation(Place place) const;
+	Place LoadPlace(const char* name);
 	Place NextAvailablePlace(const char* name);
 	void IncrementNumPlaces(Place place, CNavArea* area);
 	void DecrementNumPlaces(Place place, CNavArea* area);

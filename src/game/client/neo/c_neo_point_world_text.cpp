@@ -234,6 +234,14 @@ int PointWorldText::DrawModel(float alpha)
 			// center the text for nicer rotation
 			vecStartPos -= GetTextWorldWidth() * 0.5f * ViewRight;
 			break;
+		// orient along vector from origin to camera origin, aligned with z axis
+		case 3:
+			ViewForward = -CurrentViewOrigin() + GetAbsOrigin();
+			ViewUp = Vector(0, 0, 1);
+			ViewRight = ViewForward.Cross(ViewUp).Normalized();
+			// center the text for nicer rotation
+			vecStartPos -= GetTextWorldWidth() * 0.5f * ViewRight;
+			break;
 		// entity orientation
 		default:
 			AngleVectors( GetAbsAngles(), &ViewForward, &ViewRight, &ViewUp );

@@ -4,6 +4,7 @@
 #include <vgui/ISurface.h>
 #include "c_neo_player.h"
 #include "view.h"
+#include "tier1/lzmaDecoder.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -48,9 +49,6 @@ CNEOHud_PlaceName::CNEOHud_PlaceName(const char *pElementName, vgui::Panel *pare
 
 	PrecacheMaterial( TEXT_MATERIAL );
 	m_Font.Init(TEXT_MATERIAL, TEXTURE_GROUP_PRECACHED, true);
-
-	const PointWorldText foo = {"Important Place", {100, 100, 400}, &m_Font};
-	places.AddToTail(foo);
 }
 
 CNEOHud_PlaceName::~CNEOHud_PlaceName()
@@ -174,6 +172,147 @@ void CNEOHud_PlaceName::DrawPlaceNames()
 			place.DrawModel(alpha);
 		}
 	}
+}
+
+#if defined( _X360 )
+	#define FORMAT_BSPFILE "maps\\%s.360.bsp"
+	#define FORMAT_NAVFILE "maps\\%s.360.nav"
+#else
+	#define FORMAT_BSPFILE "maps\\%s.bsp"
+#ifdef NEO
+	#define FORMAT_NAVFILE "maps\\nav\\%s.nav"
+#else
+	#define FORMAT_NAVFILE "maps\\%s.nav"
+#endif // NEO
+	#define PATH_NAVFILE_EMBEDDED "maps\\embed.nav"
+#endif
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Fetch raw nav data into buffer
+ */
+NavErrorType CNEOHud_PlaceName::GetNavDataFromFile( CUtlBuffer &outBuffer, bool *pNavDataFromBSP )
+{
+	char maptmp[256];
+	Q_FileBase( engine->GetLevelName(), maptmp, sizeof( maptmp) );
+	const char* pszMapName = maptmp;
+
+	// nav filename is derived from map filename
+	char filename[MAX_PATH] = { 0 };
+	Q_snprintf( filename, sizeof( filename ), FORMAT_NAVFILE, pszMapName );
+
+	if ( !filesystem->ReadFile( filename, "MOD", outBuffer ) )	// this ignores .nav files embedded in the .bsp ...
+	{
+		if ( !filesystem->ReadFile( filename, "BSP", outBuffer ) )	// ... and this looks for one if it's the only one around.
+		{
+			// Finally, check for the special embed name for in-BSP nav meshes only
+			if ( !filesystem->ReadFile( PATH_NAVFILE_EMBEDDED, "BSP", outBuffer ) )
+			{
+				return NAV_CANT_ACCESS_FILE;
+			}
+		}
+		if ( pNavDataFromBSP )
+		{
+			*pNavDataFromBSP = true;
+		}
+	}
+
+	if ( IsX360() )
+	{
+		// 360 has compressed NAVs
+		if ( CLZMA::IsCompressed( (unsigned char *)outBuffer.Base() ) )
+		{
+			int originalSize = CLZMA::GetActualSize( (unsigned char *)outBuffer.Base() );
+			unsigned char *pOriginalData = new unsigned char[originalSize];
+			CLZMA::Uncompress( (unsigned char *)outBuffer.Base(), pOriginalData );
+			outBuffer.AssumeMemory( pOriginalData, originalSize, originalSize, CUtlBuffer::READ_ONLY );
+		}
+	}
+
+	return NAV_OK;
+}
+
+#define NAV_MAGIC_NUMBER 0xFEEDFACE				// to help identify nav files
+
+const int NavCurrentVersion = 17;
+
+typedef unsigned short IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
+ */
+void CNEOHud_PlaceName::GetPlacesFromNavFile()
+{
+	places.RemoveAll();
+	// nav filename is derived from map filename
+	char filename[256];
+	Q_snprintf( filename, sizeof( filename ), FORMAT_NAVFILE, STRING( engine->GetLevelName() ) );
+
+	CUtlBuffer fileBuffer( 4096, 1024*1024, CUtlBuffer::READ_ONLY );
+	if ( GetNavDataFromFile( fileBuffer ) != NAV_OK )
+	{
+		return;
+	}
+
+	// check magic number
+	unsigned int magic = fileBuffer.GetUnsignedInt();
+	if ( !fileBuffer.IsValid() || magic != NAV_MAGIC_NUMBER )
+	{
+		return;	// Corrupt nav file?
+	}
+
+	// read file version number
+	unsigned int version = fileBuffer.GetUnsignedInt();
+	if ( !fileBuffer.IsValid() || version > NavCurrentVersion )
+	{
+		return;	// Unknown nav file version
+	}
+
+	if ( version < 17 )
+	{
+		return;	// Too old to have place names and their average origin
+	}
+
+	unsigned int subVersion = 0;
+	if ( version >= 10 )
+	{
+		subVersion = fileBuffer.GetUnsignedInt();
+		if ( !fileBuffer.IsValid() )
+		{
+			return;	// No sub-version
+		}
+	}
+
+	fileBuffer.GetUnsignedInt();	// skip BSP file size
+	if ( version >= 14 )
+	{
+		fileBuffer.GetUnsignedChar();	// skip m_isAnalyzed
+	}
+
+	{
+		// read number of entries
+		IndexType count = fileBuffer.GetUnsignedShort();
+
+		places.RemoveAll();
+
+		// read each entry
+		char placeName[256];
+		unsigned short len;
+		for( int i=0; i<count; ++i )
+		{
+			len = fileBuffer.GetUnsignedShort();
+			fileBuffer.Get( placeName, MIN( sizeof( placeName ), len ) );
+#ifdef NEO
+			Vector averageOrigin;
+			fileBuffer.Get(&averageOrigin, 3 * sizeof(float));
+			averageOrigin.z += 128;
+			places.AddToTail({placeName, averageOrigin, &m_Font});
+#endif // NEO
+		}
+	}
+
+	return;
 }
 
 CNEOHud_PlaceName* GetPlaceName()

@@ -5,7 +5,18 @@
 #include "c_neo_point_world_text.h"
 #include <vgui_controls/Panel.h>
 
-class CNEOHud_PlaceName : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
+enum NavErrorType
+{
+	NAV_OK,
+	NAV_CANT_ACCESS_FILE,
+	NAV_INVALID_FILE,
+	NAV_BAD_FILE_VERSION,
+	NAV_FILE_OUT_OF_DATE,
+	NAV_CORRUPT_DATA,
+	NAV_OUT_OF_MEMORY,
+};
+
+class CNEOHud_PlaceName : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel, public CAutoGameSystem
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_PlaceName, Panel);
 
@@ -24,6 +35,16 @@ protected:
 
 private:
 	CNEOHud_PlaceName(const CNEOHud_PlaceName&other);
+
+	NavErrorType GetNavDataFromFile(CUtlBuffer& outBuffer, bool* pNavDataFromBSP = nullptr);
+	void GetPlacesFromNavFile();
+
+	// CAutoGameSystem
+	
+	virtual void LevelInitPostEntity() override
+	{
+		GetPlacesFromNavFile();
+	}
 	
     wchar_t m_szPlaceName[MAX_PLACE_NAME_LENGTH];
 	int textXOffset = 0;

@@ -1308,9 +1308,21 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
 #ifdef NEO
 //--------------------------------------------------------------------------------------------------------------
 /**
+ * Given a place, return the average center of all the nav areas belonging to that place.
+ */
+const Vector CNavMesh::PlaceToLocation( Place place ) const
+{
+	if (place >= 1 && place <= m_placeName.Count())
+		return m_placeName[ (int)place - 1 ].averageCenter;
+
+	return vec3_origin;
+}
+
+//--------------------------------------------------------------------------------------------------------------
+/**
  * Return the first unused index in m_placeName
  */
-Place CNavMesh::NextPlace(const char* name)
+Place CNavMesh::LoadPlace(const char* name)
 {
 	PlaceNameAndCount placeNameAndCount = { "", 0 };
 	V_strcpy_safe(placeNameAndCount.name, name);

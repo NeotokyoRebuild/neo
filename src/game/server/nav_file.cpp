@@ -44,7 +44,11 @@
 /// IMPORTANT: If this version changes, the swap function in makegamedata 
 /// must be updated to match. If not, this will break the Xbox 360.
 // TODO: Was changed from 15, update when latest 360 code is integrated (MSB 5/5/09)
+#ifdef NEO
+const int NavCurrentVersion = 17; // Version 17 Places now store average origin
+#else
 const int NavCurrentVersion = 16;
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------------
 //
@@ -142,6 +146,10 @@ void PlaceDirectory::Save( CUtlBuffer &fileBuffer )
 		unsigned short len = (unsigned short)(strlen( placeName ) + 1);
 		fileBuffer.PutUnsignedShort( len );
 		fileBuffer.Put( placeName, len );
+#ifdef NEO
+		Vector averageOrigin = TheNavMesh->PlaceToLocation(m_directory[i]);
+		fileBuffer.Put(&averageOrigin, 3 * sizeof(float));
+#endif // NEO
 	}
 
 	fileBuffer.PutUnsignedChar( m_hasUnnamedAreas );
@@ -156,19 +164,16 @@ void PlaceDirectory::Load( CUtlBuffer &fileBuffer, int version )
 	m_directory.RemoveAll();
 
 	// read each entry
-#ifdef NEO
-	char placeName[MAX_PLACE_NAME_LENGTH];
-#else
 	char placeName[256];
-#endif // NEO
 	unsigned short len;
 	for( int i=0; i<count; ++i )
 	{
 		len = fileBuffer.GetUnsignedShort();
 		fileBuffer.Get( placeName, MIN( sizeof( placeName ), len ) );
-
 #ifdef NEO
-		TheNavMesh->NextPlace(placeName);
+		[[maybe_unused]] Vector averageOrigin; // origin will be recalculated when all the nav areas are loaded
+		fileBuffer.Get(&averageOrigin, 3 * sizeof(float));
+		TheNavMesh->LoadPlace(placeName);
 #endif // NEO
 		Place place = TheNavMesh->NameToPlace( placeName );
 		if (place == UNDEFINED_PLACE)
