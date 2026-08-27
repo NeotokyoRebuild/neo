@@ -525,7 +525,7 @@ void CNavMesh::AddNavArea( CNavArea *area )
 	}
 	
 #ifdef NEO
-	IncrementNumPlaces(area->GetPlace());
+	IncrementNumPlaces(area->GetPlace(), area);
 #endif // NEO
 
 	++m_areaCount;
@@ -583,7 +583,7 @@ void CNavMesh::RemoveNavArea( CNavArea *area )
 	m_blockedAreas.FindAndRemove( area );
 
 #ifdef NEO
-	DecrementNumPlaces(area->GetPlace());
+	DecrementNumPlaces(area->GetPlace(), area);
 #endif // NEO
 
 	--m_areaCount;
@@ -1312,7 +1312,7 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
  */
 Place CNavMesh::NextPlace(const char* name)
 {
-	auto placeNameAndCount = PlaceNameAndCount("", 0);
+	PlaceNameAndCount placeNameAndCount = { "", 0 };
 	V_strcpy_safe(placeNameAndCount.name, name);
 	return m_placeName.AddToTail(placeNameAndCount) + 1;
 }
@@ -1333,25 +1333,49 @@ Place CNavMesh::NextAvailablePlace(const char* name)
 		}
 	}
 	
-	auto placeNameAndCount = PlaceNameAndCount("", 0);
+	PlaceNameAndCount placeNameAndCount = { "", 0 };
 	V_strcpy_safe(placeNameAndCount.name, name);
 	return m_placeName.AddToTail(placeNameAndCount) + 1;
 }
 
-void CNavMesh::IncrementNumPlaces(Place place)
+void CNavMesh::IncrementNumPlaces(Place place, CNavArea* area)
 {
-	if (place > UNDEFINED_PLACE && place <= m_placeName.Count())
+	if (place <= UNDEFINED_PLACE || place > m_placeName.Count())
 	{
-		m_placeName[place-1].count++;
+		return;
 	}
+
+	const int i = place - 1;
+	const int newCount = m_placeName[i].count + 1;
+	if (newCount != 0)
+	{
+		m_placeName[i].averageCenter = ((m_placeName[i].averageCenter * m_placeName[i].count) + area->GetCenter()) / newCount;
+	}
+	else
+	{
+		m_placeName[i].averageCenter = vec3_origin;
+	}
+	m_placeName[i].count = newCount;
 }
 
-void CNavMesh::DecrementNumPlaces(Place place)
+void CNavMesh::DecrementNumPlaces(Place place, CNavArea* area)
 {
-	if (place > UNDEFINED_PLACE && place <= m_placeName.Count())
+	if (place <= UNDEFINED_PLACE || place > m_placeName.Count())
 	{
-		m_placeName[place-1].count--;
+		return;
 	}
+	
+	const int i = place - 1;
+	const int newCount = m_placeName[i].count - 1;
+	if (newCount != 0)
+	{
+		m_placeName[i].averageCenter = ((m_placeName[i].averageCenter * m_placeName[i].count) - area->GetCenter()) / newCount;
+	}
+	else
+	{
+		m_placeName[i].averageCenter = vec3_origin;
+	}
+	m_placeName[i].count = newCount;
 }
 #endif // NEO
 

@@ -4716,8 +4716,8 @@ void CNavArea::SetPlace(Place place)
 
 	if (this == TheNavMesh->GetNavAreaByID(GetID()))
 	{
-		TheNavMesh->DecrementNumPlaces(m_place);
-		TheNavMesh->IncrementNumPlaces(place);
+		TheNavMesh->DecrementNumPlaces(m_place, this);
+		TheNavMesh->IncrementNumPlaces(place, this);
 	}
 	m_place = place;
 }

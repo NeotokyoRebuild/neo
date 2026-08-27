@@ -345,8 +345,8 @@ public:
 #ifdef NEO
 	Place NextPlace(const char* name);
 	Place NextAvailablePlace(const char* name);
-	void IncrementNumPlaces(Place place);
-	void DecrementNumPlaces(Place place);
+	void IncrementNumPlaces(Place place, CNavArea* area);
+	void DecrementNumPlaces(Place place, CNavArea* area);
 #endif // NEO
 	int PlaceNameAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] );	// Given a partial place name, fill in possible place names for ConCommand autocomplete
 
@@ -1139,6 +1139,7 @@ private:
 	{
 		char name[MAX_PLACE_NAME_LENGTH];
 		int count;
+		Vector averageCenter;
 	};
 	CUtlVector<PlaceNameAndCount>m_placeName;					// master directory of place names (i.e: "places")
 #else

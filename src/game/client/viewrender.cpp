@@ -68,6 +68,7 @@
 #ifdef NEO
 #include "neo_player_shared.h"
 #include <type_traits>
+#include "ui/neo_hud_place_name.h"
 #endif // NEO
 #include "rendertexture.h"
 #include "viewpostprocess.h"
@@ -2000,6 +2001,22 @@ void CViewRender::RenderPlayerSprites()
 	GetClientVoiceMgr()->DrawHeadLabels();
 }
 
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: Renders voice feedback and other sprites attached to players
+// Input  : none
+//-----------------------------------------------------------------------------
+void CViewRender::RenderPlaceNames()
+{
+	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
+
+	if (auto placeNameHudElement = GetPlaceName())
+	{
+		placeNameHudElement->DrawPlaceNames();
+	}
+}
+#endif // NEO
+
 //-----------------------------------------------------------------------------
 // Sets up, cleans up the main 3D view
 //-----------------------------------------------------------------------------
@@ -2239,6 +2256,10 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 		render->DrawLights();
 
 		RenderPlayerSprites();
+
+#ifdef NEO
+		RenderPlaceNames();
+#endif // NEO
 
 		// Image-space motion blur
 		if ( !building_cubemaps.GetBool() && viewRender.m_bDoBloomAndToneMapping ) // We probably should use a different view. variable here

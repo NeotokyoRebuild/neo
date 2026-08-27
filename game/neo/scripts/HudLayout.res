@@ -1030,10 +1030,9 @@
 	neo_place_name
 	{
 		"fieldName"			"neo_place_name"
-		"xpos"				"-4"
-		"ypos"				"4"
-		"wide"				"f"
 		
+		"textXpos"				"-4"
+		"textYpos"				"4"
 		"textFont"			"NHudOCRSmallNoAdditive"
 		"textColor"			"255 255 255 255"
 		"textXAlignment"	"2"
