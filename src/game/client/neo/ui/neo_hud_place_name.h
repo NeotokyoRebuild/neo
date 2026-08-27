@@ -2,46 +2,8 @@
 
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
+#include "c_neo_point_world_text.h"
 #include <vgui_controls/Panel.h>
-
-class PointWorldText
-{
-public:
-	PointWorldText();
-	PointWorldText(const char* pszText, Vector pos);
-	~PointWorldText();
-
-	int DrawModel();
-
-	void SetText(const char* pszText);
-	void SetFont(int nFont);
-
-	Vector GetAbsOrigin() { return m_vecAbsOrigin; }
-	QAngle GetAbsAngles() { return m_vecAbsAngles; }
-
-private:
-	void CalcTextTotalSize(float &outWidth, float &outHeight);
-	void UpdateTextWorldSize();
-
-	float GetTextWorldWidth() const;
-	float GetTextWorldHeight() const;
-	float GetTextSpacingX() const;
-	float GetTextSpacingY() const;
-
-	Vector m_vecAbsOrigin = {0, 0, 0};
-	QAngle m_vecAbsAngles = {0, 0, 0};
-
-	char m_szText[ MAX_PLACE_NAME_LENGTH ];
-	float m_flTextSize = 100.f;
-	float m_flTextSpacingX = 0.f;
-	float m_flTextSpacingY = 0.f;
-	color32 m_colTextColor = {255, 255, 255, 255};
-	int m_nOrientation = 2;
-	int m_nTextLength = 0;
-
-	float m_flTextWorldWidth = 0.f;
-	float m_flTextWorldHeight = 0.f;
-};
 
 class CNEOHud_PlaceName : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
