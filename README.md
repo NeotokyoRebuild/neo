@@ -97,14 +97,15 @@ $ cmake --build --preset PRESET_NAME
 Available PRESET_NAME values: `windows-debug`, `windows-release`, `linux-debug`, `linux-release`.
 
 #### Hot reload (Linux)
-Edit C++ while the game runs.
+Edit C++ while the game runs. Setup is the [ntre-build-hot-reloader Quick start](https://github.com/sunmachine/ntre-build-hot-reloader#quick-start):
+check out that repo next to this one, install its Rust toolchain, then
 
 ```
 $ make watch-configure   # once
 $ make watch             # every session
 ```
 
-Launch the game from Steam with `-insecure -dev` in the launch options, edit a `.cpp`, save. Requirements: Podman with the sniper image (see [Linux prerequisite](#linux-prerequisite---steam-runtime-3-sniper-container); `make watch-configure` creates a persistent container from it, or point `CONTAINER=` at your own Toolbx or distrobox one), and a checkout of [ntre-build-hot-reloader](https://github.com/sunmachine/ntre-build-hot-reloader) next to this repo with a Rust toolchain that has the `x86_64-unknown-linux-musl` target (`make watch-configure` builds the sidecar from it). More in [CONTRIBUTING.md](CONTRIBUTING.md#hot-reload-linux).
+and launch the game from Steam with `-insecure -dev`. Needs Podman with the sniper image (see [Linux prerequisite](#linux-prerequisite---steam-runtime-3-sniper-container)). More in [CONTRIBUTING.md](CONTRIBUTING.md#hot-reload-linux).
 
 ## Steam mod setup
 To make it appear in Steam, the install files have to appear under the sourcemods directory or
