@@ -1407,13 +1407,20 @@ void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 }
 #endif
 
-const char *CNEOBaseCombatWeapon::GetDeathIcon() const
+const char *CNEOBaseCombatWeapon::GetDeathIcon(const EDeathIconType eType,
+		bool isGrenade, bool isRemoteDetpack) const
 {
-	if (WeaponIndex() == NEO_WIDX_FRAG_GRENADE)
+	if (eType == DEATHICONTYPE_IDX)
+	{
+		isGrenade = WeaponIndex() == NEO_WIDX_FRAG_GRENADE;
+		isRemoteDetpack = WeaponIndex() == NEO_WIDX_DETPACK;
+	}
+
+	if (isGrenade)
 	{
 		return "2";
 	}
-	else if (WeaponIndex() == NEO_WIDX_DETPACK)
+	else if (isRemoteDetpack)
 	{
 		return "A";
 	}

@@ -114,6 +114,12 @@ SendPropInt(SENDINFO(m_nNumShotsFired)),
 #endif
 #endif
 
+enum EDeathIconType
+{
+	DEATHICONTYPE_IDX = 0,
+	DEATHICONTYPE_BOOLS,
+};
+
 class CNEOBaseCombatWeapon : public CBaseHL2MPCombatWeapon
 {
 	DECLARE_CLASS(CNEOBaseCombatWeapon, CBaseHL2MPCombatWeapon);
@@ -260,7 +266,8 @@ public:
 	int m_spawnflags;
 #endif // CLIENT_DLL
 	
-	const char *GetDeathIcon() const;
+	const char *GetDeathIcon(const EDeathIconType eType,
+			bool isGrenade = false, bool isRemoteDetpack = false) const;
 
 protected:
 	WeaponHandlingInfo_t m_weaponHandling;
