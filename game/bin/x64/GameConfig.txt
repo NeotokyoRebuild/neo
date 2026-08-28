@@ -12,7 +12,7 @@
 				"MapFormat"		"4"
 				"DefaultTextureScale"		"0.250000"
 				"DefaultLightmapScale"		"16"
-				"GameExe"		"..\..\ntre64.exe"
+				"GameExe"		"..\..\neo_win64.exe"
 				"DefaultSolidEntity"		"func_detail"
 				"DefaultPointEntity"		"info_player_start"
 				"BSP"		"vbsp.exe"
