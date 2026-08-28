@@ -894,6 +894,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 					const CNEOScoreBoardPlayer *pPlayerInfo = &m_playersInfo[i];
 					const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 					const bool bIsDMPlaying = false == bIsTeamplay && bIsPlaying;
+					const bool bIsMuted = pPlayerInfo->bMuted && false == pPlayerInfo->bBot;
 					iInPlaying += (bIsPlaying);
 
 					const bool bDMNotThisSide = bIsDMPlaying &&
@@ -947,6 +948,15 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 								m_uiCtx.dPanel.x + m_uiCtx.dPanel.wide,
 								m_uiCtx.dPanel.y + m_uiCtx.iLayoutY + m_uiCtx.layout.iRowTall);
 					}
+					else if (bIsMuted)
+					{
+						vgui::surface()->DrawSetColor(COLOR_MUTE_BG);
+						vgui::surface()->DrawFilledRect(
+								m_uiCtx.dPanel.x,
+								m_uiCtx.dPanel.y + m_uiCtx.iLayoutY,
+								m_uiCtx.dPanel.x + m_uiCtx.dPanel.wide,
+								m_uiCtx.dPanel.y + m_uiCtx.iLayoutY + m_uiCtx.layout.iRowTall);
+					}
 
 					// Ping/BOT
 					if (pPlayerInfo->iPing >= 0)
@@ -990,26 +1000,15 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 							pAvatarImg->Paint();
 						}
 					}
-					// Voice mute icon - layered over avatar, only do for actual players
-					if (pPlayerInfo->bMuted && false == pPlayerInfo->bBot)
+					if (bIsMuted && pAvatarImg)
 					{
 						// Slightly redden the avatar
-						if (pAvatarImg)
-						{
-							vgui::surface()->DrawSetColor(100, 0, 0, 75);
-							vgui::surface()->DrawFilledRect(
-									m_uiCtx.rWidgetArea.x0,
-									m_uiCtx.rWidgetArea.y0,
-									m_uiCtx.rWidgetArea.x0 + m_uiCtx.irWidgetTall,
-									m_uiCtx.rWidgetArea.y0 + m_uiCtx.irWidgetTall);
-						}
-						NeoUI::Texture("vgui/hud/voice_mute",
+						vgui::surface()->DrawSetColor(100, 0, 0, 75);
+						vgui::surface()->DrawFilledRect(
 								m_uiCtx.rWidgetArea.x0,
 								m_uiCtx.rWidgetArea.y0,
-								m_uiCtx.irWidgetTall,
-								m_uiCtx.irWidgetTall,
-								"",
-								NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL);
+								m_uiCtx.rWidgetArea.x0 + m_uiCtx.irWidgetTall,
+								m_uiCtx.rWidgetArea.y0 + m_uiCtx.irWidgetTall);
 					}
 					if (iCurTeam >= FIRST_GAME_TEAM)
 					{
@@ -1049,6 +1048,28 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 						V_wcscpy_safe(wszText, pPlayerInfo->wszName);
 					}
 					NeoUI::Label(wszText);
+
+					// Voice mute icon - after name, only do for actual players
+					if (bIsMuted)
+					{
+						const auto *pFontI = &m_uiCtx.fonts[m_uiCtx.eFont];
+
+						int iNameWide = 0, iNameTall = 0;
+						vgui::surface()->GetTextSize(pFontI->hdl, wszText, iNameWide, iNameTall);
+
+						const int iMuteIconWH = (m_uiCtx.irWidgetTall * 0.75f);
+						const int iStartX = m_uiCtx.rWidgetArea.x0 + iNameWide + (2 * m_uiCtx.iMarginX);
+						if ((iStartX + iMuteIconWH) < m_uiCtx.rWidgetArea.x1)
+						{
+							NeoUI::Texture("vgui/hud/voice_mute",
+									iStartX,
+									m_uiCtx.rWidgetArea.y0 + ((m_uiCtx.irWidgetTall - iMuteIconWH) / 2.0f),
+									iMuteIconWH,
+									iMuteIconWH,
+									"",
+									NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL);
+						}
+					}
 
 					if (iCurTeam >= FIRST_GAME_TEAM)
 					{
