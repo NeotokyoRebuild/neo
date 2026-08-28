@@ -7,6 +7,7 @@
 #include "tier1/lzmaDecoder.h"
 #include "smoke_fog_overlay.h"
 #include "nav_shared.h"
+#include "filesystem.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -18,6 +19,15 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(PlaceName, 0.1)
 static CNEOHud_PlaceName *g_PlaceName = nullptr;
 
 static const char* TEXT_MATERIAL = "vgui/callout_text";
+
+static float placeNameRadiusSquared = 0.f;
+extern ConVar cl_neo_hud_place_name_radius;
+void placeNameRadiusChangeCallback(IConVar* var = nullptr, const char* pOldValue = nullptr, float flOldValue = 0.f)
+{
+	placeNameRadiusSquared = pow(cl_neo_hud_place_name_radius.GetFloat(), 2);
+}
+ConVar cl_neo_hud_place_name_radius("cl_neo_hud_place_name_radius", "1024", FCVAR_ARCHIVE, "Radius from the camera within which to draw the names of all nearby places", true, 0.0f, false, 0.0f,
+	placeNameRadiusChangeCallback);
 
 CNEOHud_PlaceName::CNEOHud_PlaceName(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
@@ -41,6 +51,8 @@ CNEOHud_PlaceName::CNEOHud_PlaceName(const char *pElementName, vgui::Panel *pare
 
 	PrecacheMaterial( TEXT_MATERIAL );
 	m_Font.Init(TEXT_MATERIAL, TEXTURE_GROUP_PRECACHED, true);
+
+	placeNameRadiusChangeCallback();
 }
 
 CNEOHud_PlaceName::~CNEOHud_PlaceName()
@@ -131,12 +143,6 @@ void CNEOHud_PlaceName::Paint()
 static bool shouldDrawPlaceNames = false;
 static ConCommand startshowplacenames("+showPlaceNames", [](const CCommand& args)->void {shouldDrawPlaceNames = true; });
 static ConCommand endshowplacenames("-showPlaceNames", [](const CCommand& args)->void {shouldDrawPlaceNames = false; });
-
-static float placeNameRadiusSquared = 0.0f;
-ConVar cl_neo_hud_place_name_radius("cl_neo_hud_place_name_radius", "1024", FCVAR_ARCHIVE, "Radius from the camera within which to draw the names of all nearby places", true, 0.0f, false, 0.0f,
-	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
-		placeNameRadiusSquared = pow(cl_neo_hud_place_name_radius.GetFloat(), 2);
-});
 
 static float animationAlpha = 0.f;
 void CNEOHud_PlaceName::DrawPlaceNames()

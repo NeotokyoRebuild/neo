@@ -1213,7 +1213,7 @@ void CNavMesh::LoadPlaceDatabase( void )
 const char *CNavMesh::PlaceToName( Place place ) const
 {
 #ifdef NEO
-	if (place >= 1 && place <= m_placeName.Count())
+	if (place >= 1 && place <= (Place)m_placeName.Count())
 		return m_placeName[ (int)place - 1 ].name;
 #else
 	if (place >= 1 && place <= m_placeCount)
@@ -1232,7 +1232,7 @@ const char *CNavMesh::PlaceToName( Place place ) const
 Place CNavMesh::NameToPlace( const char *name ) const
 {
 #ifdef NEO
-	for( unsigned int i=0; i<m_placeName.Count(); ++i )
+	for( unsigned int i=0; i<(Place)m_placeName.Count(); ++i )
 	{
 		if (FStrEq( m_placeName[i].name, name ))
 			return i+1;
@@ -1257,7 +1257,7 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
 	Place found = UNDEFINED_PLACE;
 	bool isAmbiguous = false;
 #ifdef NEO
-	for(unsigned int i=0; i<m_placeName.Count(); i++)
+	for(unsigned int i=0; i<(Place)m_placeName.Count(); i++)
 #else
 	for( unsigned int i=0; i<m_placeCount; ++i )
 #endif // NEO
@@ -1312,7 +1312,7 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
  */
 const Vector CNavMesh::PlaceToLocation( Place place ) const
 {
-	if (place >= 1 && place <= m_placeName.Count())
+	if (place >= 1 && place <= (Place)m_placeName.Count())
 		return m_placeName[ (int)place - 1 ].averageCenter;
 
 	return vec3_origin;
@@ -1352,7 +1352,7 @@ Place CNavMesh::NextAvailablePlace(const char* name)
 
 void CNavMesh::IncrementNumPlaces(Place place, CNavArea* area)
 {
-	if (place <= UNDEFINED_PLACE || place > m_placeName.Count())
+	if (place <= UNDEFINED_PLACE || place > (Place)m_placeName.Count())
 	{
 		return;
 	}
@@ -1372,7 +1372,7 @@ void CNavMesh::IncrementNumPlaces(Place place, CNavArea* area)
 
 void CNavMesh::DecrementNumPlaces(Place place, CNavArea* area)
 {
-	if (place <= UNDEFINED_PLACE || place > m_placeName.Count())
+	if (place <= UNDEFINED_PLACE || place > (Place)m_placeName.Count())
 	{
 		return;
 	}
@@ -1402,7 +1402,7 @@ int CNavMesh::PlaceNameAutocomplete( char const *partial, char commands[ COMMAND
 	int partialLength = Q_strlen( partial );
 
 #ifdef NEO
-	for( unsigned int i=0; i<m_placeName.Count(); i++ )
+	for( unsigned int i=0; i<(Place)m_placeName.Count(); i++ )
 #else
 	for( unsigned int i=0; i<m_placeCount; ++i )
 #endif // NEO
@@ -1458,7 +1458,7 @@ void CNavMesh::PrintAllPlaces( void ) const
 
 	CUtlVector< SortStringType > placeNames;
 #ifdef NEO
-	for ( i=0; i<m_placeName.Count(); i++ )
+	for ( i=0; i<(Place)m_placeName.Count(); i++ )
 #else
 	for ( i=0; i<m_placeCount; ++i )
 #endif // NEO

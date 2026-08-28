@@ -1,4 +1,5 @@
 #include "c_neo_point_world_text.h"
+#include "view_scene.h"
 #include "view.h"
 
 typedef struct Character {
