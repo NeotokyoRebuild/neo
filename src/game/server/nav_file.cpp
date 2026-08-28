@@ -168,7 +168,9 @@ void PlaceDirectory::Load( CUtlBuffer &fileBuffer, int version )
 	{
 		len = fileBuffer.GetUnsignedShort();
 		fileBuffer.Get( placeName, MIN( sizeof( placeName ), len ) );
+#ifdef NEO
 		TheNavMesh->LoadPlace(placeName);
+#endif // NEO
 		Place place = TheNavMesh->NameToPlace( placeName );
 		if (place == UNDEFINED_PLACE)
 		{
