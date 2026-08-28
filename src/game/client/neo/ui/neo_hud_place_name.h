@@ -16,6 +16,13 @@ enum NavErrorType
 	NAV_OUT_OF_MEMORY,
 };
 
+struct PlaceNameCallout
+{
+	PointWorldText pointWorldText;
+	Vector origin;
+	int navAreaCount;
+};
+
 class CNEOHud_PlaceName : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel, public CAutoGameSystem
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_PlaceName, Panel);
@@ -27,6 +34,11 @@ public:
 	virtual void Paint() override;
 	void DrawPlaceNames();
 	CMaterialReference GetFont() const { return m_Font; };
+
+	void SetPlaceNameOffset(const float offset);
+	void SetPlaceNameTextSize(const float textSize);
+	void SetPlaceNameTextSpacingX(const float textSpacing);
+	void SetPlaceNameOrientation(const PointWorldTextOrientation orientation);
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw() override;
@@ -50,7 +62,7 @@ private:
 	int textXOffset = 0;
 	int wide = 0;
 
-	CUtlVector<PointWorldText> places;
+	CUtlVector<PlaceNameCallout> places;
 	CMaterialReference m_Font;
 
     CPanelAnimationVarAliasType(int, textXpos, "textXpos", "80", "proportional_xpos");

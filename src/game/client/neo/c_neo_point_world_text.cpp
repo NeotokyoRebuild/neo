@@ -116,7 +116,7 @@ PointWorldText::PointWorldText()
 	V_memset(m_szText, 0, sizeof(m_szText));
 }
 
-PointWorldText::PointWorldText(const char* pszText, Vector pos, CMaterialReference* font)
+PointWorldText::PointWorldText(char* pszText, Vector pos, CMaterialReference* font)
 {
 	m_vecAbsOrigin = pos;
 	m_Font = font;
@@ -138,6 +138,7 @@ void PointWorldText::UpdateTextWorldSize()
 {
 	CalcTextTotalSize( m_flTextWorldWidth, m_flTextWorldHeight );
 }
+
 void PointWorldText::CalcTextTotalSize(float &outWidth, float &outHeight)
 {
 	outWidth = 0.0f;
@@ -192,19 +193,22 @@ float PointWorldText::GetTextSpacingY() const
 	return m_flTextSpacingY;
 }
 
-int PointWorldText::DrawModel(float alpha)
+void PointWorldText::DrawModel()
 {
 	const char *szText = m_szText;
-	if ( !szText[0] )
-		return 0;
+	if (!szText[0])
+		return;
 
 	int nNumChars = m_nTextLength;
-	if ( !nNumChars )
-		return 0;
+	if (!nNumChars)
+		return;
 
 	IMaterial* pDebugText = *m_Font;
-	if ( !pDebugText )
-		return 0;
+	if (!pDebugText)
+		return;
+
+	if (m_colTextColor.a <= 0)
+		return;
 
 	Vector ViewForward( 1.0f, 0.0f, 0.0f );
 	Vector ViewUp( 0.0f, 1.0f, 0.0f );
@@ -218,34 +222,45 @@ int PointWorldText::DrawModel(float alpha)
 
 	switch ( m_nOrientation )
 	{
-		// always orient towards screen
-		case 1:
+		case POINTWORLDTEXTORIENTATION_VIEW_DIRECTION:
 			ViewForward = -CurrentViewForward();
 			ViewUp = CurrentViewUp();
 			ViewRight = CurrentViewRight();
-			// center the text for nicer rotation
 			vecStartPos -= GetTextWorldWidth() * 0.5f * ViewRight;
 			break;
-		// orient towards screen but align with Z axis
-		case 2:
+		case POINTWORLDTEXTORIENTATION_VIEW_DIRECTION_Z_ALIGNED:
 			ViewForward = -CurrentViewForward();
 			ViewUp = Vector(0, 0, 1);
 			ViewRight = CurrentViewRight();
 			// center the text for nicer rotation
 			vecStartPos -= GetTextWorldWidth() * 0.5f * ViewRight;
 			break;
-		// orient along vector from origin to camera origin, aligned with z axis
-		case 3:
+		case POINTWORLDTEXTORIENTATION_VIEW_ORIGIN_Z_ALIGNED:
 			ViewForward = -CurrentViewOrigin() + GetAbsOrigin();
 			ViewUp = Vector(0, 0, 1);
 			ViewRight = ViewForward.Cross(ViewUp).Normalized();
 			// center the text for nicer rotation
 			vecStartPos -= GetTextWorldWidth() * 0.5f * ViewRight;
 			break;
-		// entity orientation
+		case POINTWORLDTEXTORIENTATION_ENTITY_ORIENTATION:
 		default:
 			AngleVectors( GetAbsAngles(), &ViewForward, &ViewRight, &ViewUp );
 			break;
+	}
+
+	Vector vecOrigStartPos = vecStartPos;
+	{
+		Vector screen;
+		if (bool behind = ScreenTransform(vecStartPos, screen);
+			behind)
+		{
+			Vector vecEndPos = vecStartPos + (ViewRight * GetTextWorldWidth());
+			if (bool behind = ScreenTransform(vecEndPos, screen);
+				behind)
+			{
+				return;
+			}
+		}
 	}
 
 	CMatRenderContextPtr pRenderContext( g_pMaterialSystem );
@@ -253,17 +268,11 @@ int PointWorldText::DrawModel(float alpha)
 	pDebugText->IncrementReferenceCount();
 
 	IMesh* pMesh = pRenderContext->GetDynamicMesh();
-
 	CMeshBuilder meshBuilder;
 	meshBuilder.Begin( pMesh, MATERIAL_QUADS, nNumChars );
 
-	Vector vecOrigStartPos = vecStartPos;
-
 	Font *font = &font_Roboto_Mono;
-
 	color32 color = m_colTextColor;
-	color.a *= alpha;
-
 	byte* pColor = (byte*)&color;
 
 	for ( int i = 0; i < nNumChars; i++ )
@@ -326,5 +335,5 @@ int PointWorldText::DrawModel(float alpha)
 	}
 	meshBuilder.End();
 	pMesh->Draw();
-	return 1;
+	return;
 }

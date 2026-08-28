@@ -2257,10 +2257,6 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 
 		RenderPlayerSprites();
 
-#ifdef NEO
-		RenderPlaceNames();
-#endif // NEO
-
 		// Image-space motion blur
 		if ( !building_cubemaps.GetBool() && viewRender.m_bDoBloomAndToneMapping ) // We probably should use a different view. variable here
 		{
@@ -2354,6 +2350,7 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 
 #ifdef NEO // && defined GLOWS_ENABLE? // Add glow effect after HDR stuff is done and vision modes are applied, so the colour of the effect doesn't vary
 		GetClientModeNormal()->DoPostScreenSpaceEffects(&viewRender);
+		RenderPlaceNames();
 #endif // NEO
 		CleanupMain3DView( viewRender );
 

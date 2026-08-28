@@ -35,6 +35,10 @@
 #include "team.h"
 #include "nav_entities.h"
 
+#ifdef NEO
+#include "nav_shared.h"
+#endif // NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 

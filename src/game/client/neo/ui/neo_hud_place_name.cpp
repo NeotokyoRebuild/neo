@@ -5,6 +5,8 @@
 #include "c_neo_player.h"
 #include "view.h"
 #include "tier1/lzmaDecoder.h"
+#include "smoke_fog_overlay.h"
+#include "nav_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -15,26 +17,16 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(PlaceName, 0.1)
 
 static CNEOHud_PlaceName *g_PlaceName = nullptr;
 
-ConVar cl_neo_hud_place_names_depth_test("cl_neo_hud_place_names_depth_test", "0", FCVAR_ARCHIVE, "Depth test in-world nearby place names", true, 0.0f, true, 1.0f,
-	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
-		if (!g_PlaceName)
-			return;
+static const char* TEXT_MATERIAL = "vgui/callout_text";
 
-		IMaterial* textMaterial = g_PlaceName->GetFont();
-		if (!textMaterial)
-			return;
-
-		textMaterial->SetMaterialVarFlag( MATERIAL_VAR_IGNOREZ, !cl_neo_hud_place_names_depth_test.GetBool() );
-});
-
-const char* TEXT_MATERIAL = "editor/worldtext_9";
 CNEOHud_PlaceName::CNEOHud_PlaceName(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
 	SetAutoDelete(true);
 	m_iHideHudElementNumber = NEO_HUD_ELEMENT_PLACE_NAME;
 
-	if (parent) {
+	if (parent)
+	{
 		SetParent(parent);
 	}
 	else
@@ -114,24 +106,14 @@ void CNEOHud_PlaceName::UpdateStateForNeoHudElementDraw()
 	}
 }
 
-ConVar cl_neo_hud_curent_place_name_draw("cl_neo_hud_curent_place_name_draw", "1", FCVAR_ARCHIVE, "Draw the current place name", true, 0.0f, true, 1.0f);
-
-static bool shouldDrawPlaceNames = false;
-static ConCommand startshowplacenames("+showplacenames", [](const CCommand& args)->void {shouldDrawPlaceNames = true; });
-static ConCommand endshowplacenames("-showplacenames", [](const CCommand& args)->void {shouldDrawPlaceNames = false; });
-
-static float placeNamesRadiusSquared = 0.0f;
-ConVar cl_neo_hud_place_names_radius("cl_neo_hud_place_names_radius", "2048", FCVAR_ARCHIVE, "Radius from the camera within which to draw the names of all nearby places", true, 0.0f, false, 0.0f,
-	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
-		placeNamesRadiusSquared = pow(cl_neo_hud_place_names_radius.GetFloat(), 2);
-});
+ConVar cl_neo_hud_current_place_name_draw("cl_neo_hud_current_place_name_draw", "1", FCVAR_ARCHIVE, "Draw the current place name", true, 0.0f, true, 1.0f);
 
 void CNEOHud_PlaceName::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
 		return;
 
-	if (cl_neo_hud_curent_place_name_draw.GetBool())
+	if (cl_neo_hud_current_place_name_draw.GetBool())
 	{
 		vgui::surface()->DrawSetTextFont(textFont);
 		vgui::surface()->DrawSetTextColor(textColor);
@@ -146,46 +128,113 @@ void CNEOHud_PlaceName::Paint()
 	PaintNeoElement();
 }
 
-static float placeNameAlpha = 0.f;
+static bool shouldDrawPlaceNames = false;
+static ConCommand startshowplacenames("+showPlaceNames", [](const CCommand& args)->void {shouldDrawPlaceNames = true; });
+static ConCommand endshowplacenames("-showPlaceNames", [](const CCommand& args)->void {shouldDrawPlaceNames = false; });
+
+static float placeNameRadiusSquared = 0.0f;
+ConVar cl_neo_hud_place_name_radius("cl_neo_hud_place_name_radius", "1024", FCVAR_ARCHIVE, "Radius from the camera within which to draw the names of all nearby places", true, 0.0f, false, 0.0f,
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		placeNameRadiusSquared = pow(cl_neo_hud_place_name_radius.GetFloat(), 2);
+});
+
+static float animationAlpha = 0.f;
 void CNEOHud_PlaceName::DrawPlaceNames()
 {
 	constexpr int ANIMATION_SPEED = 2;
-	if (shouldDrawPlaceNames)
-	{
-		placeNameAlpha = min(1.0f, placeNameAlpha + (gpGlobals->frametime * ANIMATION_SPEED));
-	}
-	else
-	{
-		placeNameAlpha = max(0.0f, placeNameAlpha - (gpGlobals->frametime * ANIMATION_SPEED));
-	}
-	if (placeNameAlpha)
-	{
-		for (PointWorldText place : places)
-		{
-			float alpha = placeNameAlpha;
-			const float distanceSquared = MainViewOrigin().DistToSqr(place.GetAbsOrigin());
-			if (distanceSquared > placeNamesRadiusSquared)
-			{
-				alpha *= 1.f - min(1.f, ((distanceSquared - placeNamesRadiusSquared) / placeNamesRadiusSquared));
-			}
+	animationAlpha =   shouldDrawPlaceNames	? min(1.0f, animationAlpha + (gpGlobals->frametime * ANIMATION_SPEED))
+											: max(0.0f, animationAlpha - (gpGlobals->frametime * ANIMATION_SPEED));
 
-			place.DrawModel(alpha);
+	for (PlaceNameCallout place : places)
+	{
+		if (place.navAreaCount <= 0)
+		{
+			continue;
 		}
+
+		float alpha = animationAlpha;
+		if (placeNameRadiusSquared != 0)
+		{
+			if (const float distanceSquared = MainViewOrigin().DistToSqr(place.pointWorldText.GetAbsOrigin());
+				distanceSquared > placeNameRadiusSquared)
+			{
+				alpha *= 1.f - min(1.f, ((distanceSquared - placeNameRadiusSquared) / placeNameRadiusSquared));
+			}
+		}
+
+		alpha -= g_SmokeFogOverlayAlpha;
+		alpha = clamp(alpha, 0.f, 1.f);
+
+		place.pointWorldText.SetAlpha(255 * alpha);
+		place.pointWorldText.DrawModel();
 	}
 }
 
-#if defined( _X360 )
-	#define FORMAT_BSPFILE "maps\\%s.360.bsp"
-	#define FORMAT_NAVFILE "maps\\%s.360.nav"
-#else
-	#define FORMAT_BSPFILE "maps\\%s.bsp"
-#ifdef NEO
-	#define FORMAT_NAVFILE "maps\\nav\\%s.nav"
-#else
-	#define FORMAT_NAVFILE "maps\\%s.nav"
-#endif // NEO
-	#define PATH_NAVFILE_EMBEDDED "maps\\embed.nav"
-#endif
+ConVar cl_neo_hud_place_name_text_size("cl_neo_hud_place_name_text_size", "32", FCVAR_ARCHIVE, "Place name text size", true, 1.f, false, 0.f, 
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (g_PlaceName)
+		{
+			g_PlaceName->SetPlaceNameTextSize(cl_neo_hud_place_name_text_size.GetFloat());
+		}
+
+});
+void CNEOHud_PlaceName::SetPlaceNameTextSize(const float textSize)
+{
+	for (int i=0; i<places.Count(); i++)
+	{
+		places[i].pointWorldText.SetTextSize(textSize);
+	}
+}
+
+ConVar cl_neo_hud_place_name_text_spacing_x("cl_neo_hud_place_name_text_spacing_x", "-8", FCVAR_ARCHIVE, "Place name spacing between characters", false, 0.f, false, 0.f, 
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (g_PlaceName)
+		{
+			g_PlaceName->SetPlaceNameTextSpacingX(cl_neo_hud_place_name_text_spacing_x.GetFloat());
+		}
+
+});
+void CNEOHud_PlaceName::SetPlaceNameTextSpacingX(const float textSpacingX)
+{
+	for (int i=0; i<places.Count(); i++)
+	{
+		places[i].pointWorldText.SetTextSpacingX(textSpacingX);
+	}
+}
+
+ConVar cl_neo_hud_place_name_offset("cl_neo_hud_place_name_offset", "96", FCVAR_ARCHIVE, "Place name offset from place origin", false, 0.f, false, 0.f, 
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (g_PlaceName)
+		{
+			g_PlaceName->SetPlaceNameOffset(cl_neo_hud_place_name_offset.GetFloat());
+		}
+
+});
+void CNEOHud_PlaceName::SetPlaceNameOffset(const float offset)
+{
+	const Vector vOffset = Vector(0, 0, offset);
+	for (int i=0; i<places.Count(); i++)
+	{
+		places[i].pointWorldText.SetAbsOrigin(places[i].origin + vOffset);
+	}
+}
+
+
+ConVar cl_neo_hud_place_name_orientation("cl_neo_hud_place_name_orientation", "3", FCVAR_ARCHIVE, "Place name orientation", true, 0, true, POINTWORLDTEXTORIENTATION__TOTAL - 1, 
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void{
+		if (g_PlaceName)
+		{
+			g_PlaceName->SetPlaceNameOrientation((PointWorldTextOrientation)cl_neo_hud_place_name_orientation.GetInt());
+		}
+
+});
+void CNEOHud_PlaceName::SetPlaceNameOrientation(const PointWorldTextOrientation orientation)
+{
+	for (int i=0; i<places.Count(); i++)
+	{
+		places[i].pointWorldText.SetOrientation(orientation);
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -232,12 +281,6 @@ NavErrorType CNEOHud_PlaceName::GetNavDataFromFile( CUtlBuffer &outBuffer, bool 
 	return NAV_OK;
 }
 
-#define NAV_MAGIC_NUMBER 0xFEEDFACE				// to help identify nav files
-
-const int NavCurrentVersion = 17;
-
-typedef unsigned short IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
@@ -269,9 +312,9 @@ void CNEOHud_PlaceName::GetPlacesFromNavFile()
 		return;	// Unknown nav file version
 	}
 
-	if ( version < 17 )
+	if ( version < 5 )
 	{
-		return;	// Too old to have place names and their average origin
+		return;	// Too old to have place names
 	}
 
 	unsigned int subVersion = 0;
@@ -284,7 +327,7 @@ void CNEOHud_PlaceName::GetPlacesFromNavFile()
 		}
 	}
 
-	fileBuffer.GetUnsignedInt();	// skip BSP file size
+	fileBuffer.GetUnsignedInt();	// skip BSP file size (version >= 4)
 	if ( version >= 14 )
 	{
 		fileBuffer.GetUnsignedChar();	// skip m_isAnalyzed
@@ -292,24 +335,178 @@ void CNEOHud_PlaceName::GetPlacesFromNavFile()
 
 	{
 		// read number of entries
-		IndexType count = fileBuffer.GetUnsignedShort();
+		unsigned short placeCount = fileBuffer.GetUnsignedShort();
 
 		places.RemoveAll();
 
 		// read each entry
 		char placeName[256];
 		unsigned short len;
-		for( int i=0; i<count; ++i )
+		for( int i=0; i<placeCount; ++i )
 		{
 			len = fileBuffer.GetUnsignedShort();
 			fileBuffer.Get( placeName, MIN( sizeof( placeName ), len ) );
-#ifdef NEO
-			Vector averageOrigin;
-			fileBuffer.Get(&averageOrigin, 3 * sizeof(float));
-			averageOrigin.z += 128;
-			places.AddToTail({placeName, averageOrigin, &m_Font});
-#endif // NEO
+			int index = places.AddToTail({ {placeName, {0, 0, 0}, &m_Font}, {0, 0, 0}, 0 });
+			places[index].pointWorldText.SetTextSize(cl_neo_hud_place_name_text_size.GetFloat());
+			places[index].pointWorldText.SetTextSpacingX(cl_neo_hud_place_name_text_spacing_x.GetFloat());
+			places[index].pointWorldText.SetOrientation((PointWorldTextOrientation)cl_neo_hud_place_name_orientation.GetInt());
 		}
+
+		if (version > 11)
+		{
+			fileBuffer.GetUnsignedChar(); // Skip has unnamed areas
+		}
+	}
+
+	// get number of areas
+	unsigned int areaCount = fileBuffer.GetUnsignedInt();
+	unsigned int i;
+
+	if (areaCount == 0)
+	{
+		return;
+	}
+
+	// Read each nav area
+	for (i = 0; i < areaCount; ++i)
+	{
+		fileBuffer.GetUnsignedInt(); // Skip ID
+
+		if (version <= 8) // Skip attribute flags
+		{
+			fileBuffer.GetUnsignedChar();
+		}
+		else if (version < 13)
+		{
+			fileBuffer.GetUnsignedShort();
+		}
+		else
+		{
+			fileBuffer.GetUnsignedInt();
+		}
+
+		Vector nwCorner;
+		Vector seCorner;
+		fileBuffer.Get(&nwCorner, 3 * sizeof(float));
+		fileBuffer.Get(&seCorner, 3 * sizeof(float));
+
+		fileBuffer.GetFloat(); // Skip heights of implicit corners
+		fileBuffer.GetFloat();
+
+		for (int d = 0; d < NavDirType::NUM_DIRECTIONS; d++)
+		{
+			unsigned int connectionCount = fileBuffer.GetUnsignedInt();
+			Assert(fileBuffer.IsValid());
+
+			for (unsigned int j = 0; j < connectionCount; ++j)
+			{
+				fileBuffer.GetUnsignedInt(); // Skip connection ID
+				Assert(fileBuffer.IsValid());
+			}
+		}
+
+		unsigned char hidingSpotCount = fileBuffer.GetUnsignedChar();
+		for (unsigned char h = 0; h < hidingSpotCount; ++h)
+		{
+			fileBuffer.GetUnsignedInt(); // Skip hiding spot ID
+			fileBuffer.GetFloat(); // Skip hiding spot pos X
+			fileBuffer.GetFloat(); // Skip hiding spot pos Y
+			fileBuffer.GetFloat(); // Skip hiding spot pos Z
+			fileBuffer.GetUnsignedChar(); // Skip hiding spot flags
+		}
+
+		if (version < 15)
+		{
+			// Skip the approach areas
+			unsigned char nToEat = fileBuffer.GetUnsignedChar();
+			for (unsigned char a = 0; a < nToEat; ++a)
+			{
+				fileBuffer.GetUnsignedInt();
+				fileBuffer.GetUnsignedInt();
+				fileBuffer.GetUnsignedChar();
+				fileBuffer.GetUnsignedInt();
+				fileBuffer.GetUnsignedChar();
+			}
+		}
+
+		// Skip encounter paths
+		unsigned int encounterCount = fileBuffer.GetUnsignedInt();
+		for (unsigned int e = 0; e < encounterCount; ++e)
+		{
+			fileBuffer.GetUnsignedInt(); // Skip from ID
+			fileBuffer.GetUnsignedChar(); // Skip from dir
+			fileBuffer.GetUnsignedInt(); // Skip to ID
+			fileBuffer.GetUnsignedChar(); // Skip to dir
+
+			unsigned char spotCount = fileBuffer.GetUnsignedChar();
+			for(unsigned char s=0; s<spotCount; ++s)
+			{
+				fileBuffer.GetUnsignedInt(); // Skip spot ID
+				fileBuffer.GetUnsignedChar(); // Skip parametric distance along ray...
+			}
+		}
+
+		// Place data
+		unsigned short entry = fileBuffer.GetUnsignedShort();
+		if (entry > 0 && entry <= places.Count())
+		{
+			entry -= 1;
+			Vector newNavCenter = (nwCorner + seCorner) / 2.f;
+			places[entry].origin = ((places[entry].origin * places[entry].navAreaCount) + newNavCenter) / ++places[entry].navAreaCount;
+			places[entry].pointWorldText.SetAbsOrigin(places[entry].origin + Vector(0, 0, cl_neo_hud_place_name_offset.GetFloat()));
+		}
+
+		if (version < 7)
+		{
+			continue;
+		}
+
+		// Skip ladder data
+		for (int dir=0; dir<LadderDirectionType::NUM_LADDER_DIRECTIONS; ++dir)
+		{
+			unsigned int ladderConnectionCount = fileBuffer.GetUnsignedInt();
+			for (unsigned int j = 0; j < ladderConnectionCount; ++j)
+			{
+				fileBuffer.GetUnsignedInt(); // Skip ladder connection ID
+			}
+		}
+
+		if (version < 8)
+		{
+			continue;
+		}
+
+		// Skip earliest occupy times
+		for (int j = 0; j < MAX_NAV_TEAMS; ++j)
+		{
+			fileBuffer.GetFloat();
+		}
+
+		if (version < 11)
+		{
+			continue;
+		}
+
+		// Skip light intensity
+		for (int j = 0; j <NavCornerType::NUM_CORNERS; ++j)
+		{
+			fileBuffer.GetFloat();
+		}
+
+		if (version < 16)
+		{
+			continue;
+		}
+		
+		// Skip visibility information
+		unsigned int visibleAreaCount = fileBuffer.GetUnsignedInt();
+		for (unsigned int j = 0; j < visibleAreaCount; ++j)
+		{
+			fileBuffer.GetUnsignedInt(); // Skip area ID
+			fileBuffer.GetUnsignedChar(); // Skip area attributes
+		}
+
+		fileBuffer.GetUnsignedInt(); // Skip inherited visibility from ID
 	}
 
 	return;

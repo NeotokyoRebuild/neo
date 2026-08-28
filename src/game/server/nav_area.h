@@ -15,8 +15,12 @@
 #include "nav_ladder.h"
 #include "tier1/memstack.h"
 
+#ifdef NEO
+#include "nav_shared.h"
+#else
 // BOTPORT: Clean up relationship between team index and danger storage in nav areas
 enum { MAX_NAV_TEAMS = 2 };
+#endif // NEO
 
 #define DebuggerBreakOnNaN_StagingOnly( _val )
 
