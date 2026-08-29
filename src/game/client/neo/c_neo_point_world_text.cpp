@@ -266,7 +266,6 @@ void PointWorldText::DrawModel()
 
 	CMatRenderContextPtr pRenderContext( g_pMaterialSystem );
 	pRenderContext->Bind( pDebugText );
-	pDebugText->IncrementReferenceCount();
 
 	IMesh* pMesh = pRenderContext->GetDynamicMesh();
 	CMeshBuilder meshBuilder;
