@@ -1271,8 +1271,8 @@ bool CNavArea::SplitEdit( bool splitAlongX, float splitEdge, CNavArea **outAlpha
 
 #ifdef NEO
 	// If the old area had a place name, the new areas will inherit it
-	alpha->m_place = m_place;
-	beta->m_place = m_place;
+	alpha->SetPlace( m_place );
+	beta->SetPlace( m_place );
 #endif // NEO
 
 	// return new areas

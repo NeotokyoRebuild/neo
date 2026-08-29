@@ -130,8 +130,8 @@ PointWorldText::~PointWorldText()
 
 void PointWorldText::SetText( const char* pszText )
 {
-	m_nTextLength = V_strlen( pszText );
 	V_strncpy( m_szText, pszText, sizeof(m_szText) );
+	m_nTextLength = V_strlen( m_szText );
 	UpdateTextWorldSize();
 }
 
