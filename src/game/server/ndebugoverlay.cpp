@@ -66,7 +66,11 @@ OverlayLine_t* GetDebugOverlayLine(void)
 // Input  : If testLOS is true, color is based on line of sight test
 // Output : 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void UTIL_AddDebugLine(const Vector &startPos, const Vector &endPos, bool noDepthTest, bool testLOS, const Color& color)
+#else
 void UTIL_AddDebugLine(const Vector &startPos, const Vector &endPos, bool noDepthTest, bool testLOS) 
+#endif
 {
 	OverlayLine_t* debugLine = GetDebugOverlayLine();
 
@@ -87,10 +91,15 @@ void UTIL_AddDebugLine(const Vector &startPos, const Vector &endPos, bool noDept
 			return;
 		}
 	}
-
+#ifdef NEO
+	debugLine->r = color.r();
+	debugLine->g = color.g();
+	debugLine->b = color.b();
+#else
 	debugLine->r = 255;
 	debugLine->g = 255;
 	debugLine->b = 255;
+#endif
 }
 
 //-----------------------------------------------------------------------------

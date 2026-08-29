@@ -628,6 +628,9 @@ typedef enum
 #define COLOR_TRANSPARENT 	Color(0, 0, 0, 0)
 #define COLOR_DARK 			Color(55, 55, 55, 255)
 #define COLOR_FADED_DARK	Color(55, 55, 55, 176)
+#define COLOR_NEON_PINK		Color(255, 16, 240)
+#define COLOR_DARK_ORANGE	Color(255, 140, 0)
+#define COLOR_LIME			Color(0, 255, 0)
 #endif
 
 // All NPCs need this data
