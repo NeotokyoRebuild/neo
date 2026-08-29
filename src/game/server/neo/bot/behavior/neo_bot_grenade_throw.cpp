@@ -25,6 +25,8 @@ ConVar sv_neo_bot_grenade_search_range("sv_neo_bot_grenade_search_range", "1000"
 //---------------------------------------------------------------------------------------------
 CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat )
 {
+	m_bFocusedOnThrow = false;
+	m_bPinPulled = false;
 	m_hGrenadeWeapon = pWeapon;
 	m_bVantagePointBlocked = false;
 	m_vantageArea = nullptr;
@@ -132,20 +134,17 @@ public:
 
 		float flRadius = sv_neo_grenade_blast_radius.GetFloat() * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat();
 		m_flSafetyRadiusSq = flRadius * flRadius;
+
+		m_flSearchRange = sv_neo_bot_grenade_search_range.GetFloat();
 	}
 
 	virtual bool operator() ( CNavArea* baseArea, CNavArea* priorArea, float travelDistanceSoFar )
 	{
 		CNavArea* area = (CNavArea*)baseArea;
 
-		if (!m_targetArea)
+		if ( area->IsCompletelyVisible( m_targetArea ) )
 		{
-			return false; // can't search
-		}
-
-		if ( area->IsPotentiallyVisible( m_targetArea ) )
-		{
-			// nearby area from which we can see the last known position
+			// nearby area from which we have a full view of the last known position
 			m_vantageArea = area;
 			return false; // stop searching
 		}
@@ -156,7 +155,7 @@ public:
 	// return true if 'adjArea' should be included in the ongoing search
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) 
 	{
-		if ( travelDistanceSoFar > sv_neo_bot_grenade_search_range.GetFloat() )
+		if ( travelDistanceSoFar > m_flSearchRange )
 		{
 			return false;
 		}
@@ -194,21 +193,70 @@ public:
 	CNavArea *m_vantageArea;
 	const CNavArea *m_threatArea;
 	float m_flSafetyRadiusSq;
+	float m_flSearchRange;
 };
 
+
+//---------------------------------------------------------------------------------------------
+// Search outwards from the bot for the nearest reachable area with a full view of the
+// threat's last known position. Returns nullptr if the last known position is off the nav
+// mesh, or if there is no such area within range.
+CNavArea *CNEOBotGrenadeThrow::FindVantageArea( CNEOBot *me )
+{
+	CFindVantagePointTargetPos find( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget.Get() );
+	if ( !find.m_targetArea )
+	{
+		// The last known position isn't on the nav mesh, so there is nothing to get a view of
+		return nullptr;
+	}
+
+	SearchSurroundingAreas( me->GetLastKnownArea(), find, find.m_flSearchRange );
+	return find.m_vantageArea;
+}
+
+//---------------------------------------------------------------------------------------------
+// Take over the bot's weapon handling and looking while the throw is in progress.
+// Paired with EndThrowFocus - anything added here needs its inverse added there.
+void CNEOBotGrenadeThrow::BeginThrowFocus( CNEOBot *me )
+{
+	m_bFocusedOnThrow = true;
+
+	// Swap to the grenade
+	me->PushRequiredWeapon( m_hGrenadeWeapon );
+
+	// Stop distracting looking or weapon handling behavior that could interrupt the throw
+	me->StopLookingAroundForEnemies(); // reduce distractions for manual look aiming
+	me->SetAttribute( CNEOBot::IGNORE_ENEMIES ); // suppress reaction to swap back to firearm
+}
+
+//---------------------------------------------------------------------------------------------
+// Undo BeginThrowFocus. Safe to call unconditionally, because the behavior framework
+// runs OnEnd even when OnStart returns Done before ever committing to the throw.
+void CNEOBotGrenadeThrow::EndThrowFocus( CNEOBot *me )
+{
+	if ( !m_bFocusedOnThrow )
+	{
+		return;
+	}
+	m_bFocusedOnThrow = false;
+
+	// Restore looking and weapon handling behaviors
+	me->PopRequiredWeapon();
+	me->StartLookingAroundForEnemies();
+	me->ClearAttribute( CNEOBot::IGNORE_ENEMIES );
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	me->EquipBestWeaponForThreat( threat );
+}
 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	CNEOBaseCombatWeapon *pWep = m_hGrenadeWeapon.Get();
-	if ( pWep )
-	{
-		Assert( ( pWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE ) || ( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE ) );
-	}
-	else
+	if ( !pWep )
 	{
 		return Done( "Grenade input invalid" );
 	}
+	Assert( ( pWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE ) || ( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE ) );
 
 	if ( !m_hThreatGrenadeTarget.Get() )
 	{
@@ -220,34 +268,29 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::OnStart( CNEOBot *me, Action< CNEOB
 		return Done( "Targeted threat is dead" );
 	}
 
-	// Smoke grenades don't need vantage point planning since they don't have unsafe radius
+	if ( m_vecThreatLastKnownPos == vec3_invalid )
+	{
+		return Done( "Targeted threat position invalid" );
+	}
+
+	// Smoke grenades don't need vantage point planning since they don't have unsafe radius.
 	if ( !( pWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE ) )
 	{
-		CFindVantagePointTargetPos find( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget.Get() );
-		SearchSurroundingAreas( me->GetLastKnownArea(), find, sv_neo_bot_grenade_search_range.GetFloat() );
-		m_vantageArea = find.m_vantageArea;
-
+		m_vantageArea = FindVantageArea( me );
 		if ( !m_vantageArea )
 		{
 			return Done( "No viable vantage point for grenade throw" );
 		}
 	}
 
-	// Swap to grenade as we have decided to commit to throw by this point
-	me->PushRequiredWeapon( m_hGrenadeWeapon );
-	
+	// We have decided to commit to the throw by this point
+	BeginThrowFocus( me );
+
 	m_giveUpTimer.Start( sv_neo_bot_grenade_give_up_time.GetFloat() );
 	m_bPinPulled = false;
 
 	m_PathFollower.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
-	if ( m_vecThreatLastKnownPos != vec3_invalid )
-	{
-		CNEOBotPathCompute( me, m_PathFollower, m_vecThreatLastKnownPos, FASTEST_ROUTE );
-	}
-
-	// Stop distracting looking or weapon handling behavior that could interrupt the throw
-	me->StopLookingAroundForEnemies(); // reduce distractions for manual look aiming
-	me->SetAttribute( CNEOBot::IGNORE_ENEMIES ); // suppress reaction to swap back to firearm
+	CNEOBotPathCompute( me, m_PathFollower, m_vantageArea ? m_vantageArea->GetCenter() : m_vecThreatLastKnownPos, FASTEST_ROUTE );
 
 	return Continue();
 }
@@ -431,9 +474,7 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 
 			if ( !m_vantageArea && !m_bVantagePointBlocked )
 			{
-				CFindVantagePointTargetPos find( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget.Get() );
-				SearchSurroundingAreas( me->GetLastKnownArea(), find, sv_neo_bot_grenade_search_range.GetFloat() );
-				m_vantageArea = find.m_vantageArea;
+				m_vantageArea = FindVantageArea( me );
 
 				if ( !m_vantageArea )
 				{
@@ -515,12 +556,8 @@ void CNEOBotGrenadeThrow::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
 		return;
 	}
 
-	// Restore looking and weapon handling behaviors
-	me->PopRequiredWeapon();
-	me->StartLookingAroundForEnemies();
-	me->ClearAttribute( CNEOBot::IGNORE_ENEMIES );
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	me->EquipBestWeaponForThreat( threat );
+	// No-ops if OnStart bailed out before committing to the throw
+	EndThrowFocus( me );
 }
 
 //---------------------------------------------------------------------------------------------
