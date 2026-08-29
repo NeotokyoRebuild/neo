@@ -67,7 +67,7 @@ void CNEOHud_PlaceName::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	int wide = 0, tall = 0;
+	int tall = 0;
 	vgui::surface()->GetScreenSize(wide, tall);
 	SetBounds(0, 0, wide, tall);
 
@@ -129,7 +129,7 @@ void CNEOHud_PlaceName::DrawNeoHudElement()
 	{
 		vgui::surface()->DrawSetTextFont(textFont);
 		vgui::surface()->DrawSetTextColor(textColor);
-		vgui::surface()->DrawSetTextPos(textXOffset, 0);
+		vgui::surface()->DrawSetTextPos(textXpos + textXOffset, textYpos);
 		vgui::surface()->DrawPrintText(m_szPlaceName, V_wcslen(m_szPlaceName));
 	}
 }

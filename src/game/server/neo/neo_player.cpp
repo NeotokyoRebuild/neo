@@ -1196,17 +1196,14 @@ void CNEO_Player::PreThink(void)
 
 	if (TheNavMesh)
 	{
-		if (const char* placeName = TheNavMesh->PlaceToName(TheNavMesh->GetPlace(GetAbsOrigin()));
-			placeName && placeName[0])
+		const char* placeName = TheNavMesh->PlaceToName(TheNavMesh->GetPlace(GetAbsOrigin()));
+		if (!placeName || !placeName[0])
 		{
-			if (Q_strcmp(m_szLastPlaceName.Get(), placeName))
-			{
-				Q_strncpy(m_szLastPlaceName.GetForModify(), placeName, MAX_PLACE_NAME_LENGTH);
-			}
+			placeName = "";
 		}
-		else
+		if (Q_strcmp(m_szLastPlaceName.Get(), placeName))
 		{
-			Q_strncpy(m_szLastPlaceName.GetForModify(), "", MAX_PLACE_NAME_LENGTH);
+			Q_strncpy(m_szLastPlaceName.GetForModify(), placeName, sizeof(m_szLastPlaceName));
 		}
 	}
 }
