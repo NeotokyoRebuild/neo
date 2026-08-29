@@ -814,22 +814,30 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 				cmd = *pPlayerMimicked->GetLastUserCommand();
 				cmd.viewangles[YAW] += bot_mimic_yaw_offset.GetFloat();
 
-				if ( cmd.weaponselect != 0 ) // Mimicked player swapped weapon
+				if (cmd.weaponselect != 0) // mimicked player swapped weapon
 				{
-					// Instead of trying to select the exact weapon the mimicked player just equipped...
-					CBaseCombatWeapon *pSrcWeapon = dynamic_cast<CBaseCombatWeapon *>(
-						CBaseEntity::Instance( cmd.weaponselect ) );
+					CBaseEntity *pSrcEnt = CBaseEntity::Instance(cmd.weaponselect);
+					cmd.weaponselect = 0; // default to not swapping weapon
 
-					if ( pSrcWeapon )
+					if (pSrcEnt && pSrcEnt->IsBaseCombatWeapon())
 					{
-						// ... get the slot number of the mimicked player's weapon choice
-						CBaseCombatWeapon *pBotWeapon = pThisBot->Weapon_GetSlot( pSrcWeapon->GetSlot() );
-						// and swap to the same slot weapon if available
-						cmd.weaponselect = pBotWeapon ? pBotWeapon->entindex() : 0;
-					}
-					else
-					{
-						cmd.weaponselect = 0; // Could not identify mimicked player's weapon
+						CBaseCombatWeapon *pSrcWeapon = static_cast<CBaseCombatWeapon *>(pSrcEnt);
+
+						CBaseCombatWeapon *pBotWeapon = pThisBot->Weapon_OwnsThisType(
+							pSrcWeapon->GetClassname(), cmd.weaponsubtype);
+
+						if (!pBotWeapon) // did not have exact weapon match
+						{
+							// fall back to swapping to any weapon in that slot if available
+							pBotWeapon = pThisBot->Weapon_GetSlot(pSrcWeapon->GetSlot());
+						}
+
+						if (pBotWeapon) // candidate weapon swap found
+						{
+							// queue bot weapon swap
+							cmd.weaponselect = pBotWeapon->entindex();
+							cmd.weaponsubtype = pBotWeapon->GetSubType();
+						}
 					}
 				}
 
