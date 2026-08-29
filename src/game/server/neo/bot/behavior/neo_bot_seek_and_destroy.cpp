@@ -41,7 +41,7 @@ CSound* CNEOBotSeekAndDestroy::SearchGunfireSounds(CNEOBot* me, const Vector* cu
 			break;
 		}
 
-		if (!(pSound->SoundType() & SOUND_COMBAT))
+		if (!(pSound->SoundType() & (SOUND_COMBAT | SOUND_PLAYER)))
 		{
 			continue;
 		}
@@ -62,6 +62,13 @@ CSound* CNEOBotSeekAndDestroy::SearchGunfireSounds(CNEOBot* me, const Vector* cu
 
 		// Search for the closest gunfire sounds
 		float distSqr = vecMyOrigin.DistToSqr(pSound->GetSoundOrigin());
+
+		// Only consider sounds within hearing range
+		float hearingRangeSqr = Square((float)pSound->m_iVolume);
+		if (distSqr > hearingRangeSqr)
+		{
+			continue;
+		}
 
 		// Only consider sounds that are closer than the current goal
 		if (distSqr >= flGoalDistSqr)
