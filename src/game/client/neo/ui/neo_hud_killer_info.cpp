@@ -37,10 +37,6 @@ CNEOHud_KillerInfo::CNEOHud_KillerInfo(const char *pszName, vgui::Panel *parent)
 	}
 	SetVisible(false);
 	CommonSetupHUD();
-
-	m_avatar32.SetAvatarSize(32, 32);
-	m_avatar64.SetAvatarSize(64, 64);
-	m_avatar184.SetAvatarSize(184, 184);
 }
 
 void CNEOHud_KillerInfo::ApplySchemeSettings(vgui::IScheme *pScheme)
@@ -77,18 +73,10 @@ void CNEOHud_KillerInfo::UpdateStateForNeoHudElementDraw()
 			&& (gpGlobals->curtime < (const_cast<C_NEO_Player *>(pLocalPlayer)->GetDeathTime() + DEATH_ANIMATION_TIME));
 
 	const CSteamID steamID = GetSteamIDForPlayerIndex(g_neoKillerInfos.iEntIndex);
-	if (steamID.IsValid())
-	{
-		m_avatar32.SetAvatarSteamID(steamID, k_EAvatarSize32x32);
-		m_avatar64.SetAvatarSteamID(steamID, k_EAvatarSize64x64);
-		m_avatar184.SetAvatarSteamID(steamID, k_EAvatarSize184x184);
-	}
-	else
-	{
-		m_avatar32.ClearAvatarSteamID();
-		m_avatar64.ClearAvatarSteamID();
-		m_avatar184.ClearAvatarSteamID();
-	}
+	m_avatar.SetSteamID(
+			(steamID.IsValid() && (CNEOScoreBoard::ShowAvatars()))
+				? steamID : CSteamID{});
+	m_avatar.Fetch(184);
 }
 
 void CNEOHud_KillerInfo::DrawNeoHudElement()
@@ -116,28 +104,12 @@ void CNEOHud_KillerInfo::DrawNeoHudElement()
 
 	const bool bSuicideKill = (iKillerEntIndex == pLocalPlayer->entindex()) ||
 			(iKillerEntIndex == NEO_ENVIRON_KILLED);
-
-	CAvatarImage *pAvatarImg = nullptr;
-	if (CNEOScoreBoard::ShowAvatars())
-	{
-		if (m_avatar184.IsValid())
-		{
-			pAvatarImg = &m_avatar184;
-		}
-		else if (m_avatar64.IsValid())
-		{
-			pAvatarImg = &m_avatar64;
-		}
-		else if (m_avatar32.IsValid())
-		{
-			pAvatarImg = &m_avatar32;
-		}
-	}
+	const bool bValidAvatar = m_avatar.m_iTextureID > 0;
 
 	// NEO NOTE (nullsystem): Similar sizing to how the scoreboard popup card is
 	const int iMargin = wide / 384;
-	const int iAvatarWT = pAvatarImg ? (((tall / 35) * 3) - (iMargin * 2)) : 0;
-	const int iTextOffsetX = pAvatarImg ? (iAvatarWT + (2 * iMargin)) : iMargin;
+	const int iAvatarWT = bValidAvatar ? (((tall / 35) * 3) - (iMargin * 2)) : 0;
+	const int iTextOffsetX = bValidAvatar ? (iAvatarWT + (2 * iMargin)) : iMargin;
 
 	wchar_t wszText[256] = {};
 
@@ -161,7 +133,7 @@ void CNEOHud_KillerInfo::DrawNeoHudElement()
 	vgui::surface()->GetTextSize(m_hFontNormal, L"A", iNormalWide, iNormalTall);
 
 	const int iBoxWide = Max(wide / 4, iTextOffsetX + iTitleWide + iMargin);
-	const int iBoxHeight = (pAvatarImg)
+	const int iBoxHeight = (bValidAvatar)
 			? (2 * iMargin) + iAvatarWT
 			: iMargin + iTitleTall + iNormalTall + iMargin;
 
@@ -173,12 +145,9 @@ void CNEOHud_KillerInfo::DrawNeoHudElement()
 	};
 	DrawNeoHudRoundedBox(rect.x0, rect.y0, rect.x1, rect.y1, COLOR_BLACK_TRANSPARENT);
 
-	if (pAvatarImg)
+	if (bValidAvatar)
 	{
-		pAvatarImg->m_bDeadAvatar = false;
-		pAvatarImg->SetPos(rect.x0 + iMargin, rect.y0 + iMargin);
-		pAvatarImg->SetSize(iAvatarWT, iAvatarWT);
-		pAvatarImg->Paint();
+		m_avatar.Paint(rect.x0 + iMargin, rect.y0 + iMargin, iAvatarWT);
 	}
 
 	vgui::surface()->DrawSetTextFont(m_hFontTitle);

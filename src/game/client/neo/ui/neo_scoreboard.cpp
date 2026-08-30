@@ -10,7 +10,6 @@
 #include <c_playerresource.h>
 #include <steam/isteamutils.h>
 #include <c_team.h>
-#include <vgui_avatarimage.h>
 #include <vgui_controls/ImageList.h>
 #include <vgui/ILocalize.h>
 #include <vgui/IInput.h>
@@ -73,9 +72,6 @@ CNEOScoreBoard::CNEOScoreBoard(IViewPort *pViewPort)
 	ListenForGameEvent("game_newmap");
 	ListenForGameEvent("hltv_status");
 
-	m_mapAvatarsToImageList.SetLessFunc(DefLessFunc(CSteamID));
-	m_mapAvatarsToImageList.RemoveAll();
-
 	g_pNeoScoreBoard = this;
 
 	for (int i = 0; i < CROSSHAIR_STYLE__TOTAL; ++i)
@@ -95,10 +91,6 @@ CNEOScoreBoard::~CNEOScoreBoard()
 	if (g_pNeoScoreBoard == this)
 	{
 		g_pNeoScoreBoard = nullptr;
-	}
-	if (m_pImageList)
-	{
-		delete m_pImageList;
 	}
 }
 
@@ -153,7 +145,7 @@ void CNEOScoreBoard::ShowPanel(bool bShow)
 	}
 	// Catch the case where we call ShowPanel before ApplySchemeSettings, eg when
 	// going from windowed <-> fullscreen
-	if (m_pImageList == NULL)
+	if (!m_bAppliedApplyScheme)
 	{
 		InvalidateLayout(true, true);
 	}
@@ -229,12 +221,7 @@ void CNEOScoreBoard::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	m_playerPopup = {};
 	m_iTotalPlayers = 0;
-	if (m_pImageList)
-	{
-		delete m_pImageList;
-	}
-	m_pImageList = new vgui::ImageList(false);
-	m_mapAvatarsToImageList.RemoveAll();
+	m_bAppliedApplyScheme = true;
 
 	m_flNextUpdateTime = gpGlobals->curtime + 0.1f;
 
@@ -298,7 +285,6 @@ void CNEOScoreBoard::Reset()
 	m_iTotalPlayers = 0;
 	V_memset(m_playersInfo, 0, sizeof(m_playersInfo));
 	m_flNextUpdateTime = 0;
-	m_mapAvatarsToImageList.RemoveAll();
 }
 
 void CNEOScoreBoard::ToggleMouseCapture(const bool bUseMouse)
@@ -491,44 +477,12 @@ void CNEOScoreBoard::Update()
 			}
 		}
 
-		// pPlayerInfo->avatar
-		if (ShowAvatars() && pPlayerInfo->steamID.IsValid())
-		{
-			// See if we already have that avatar in our list
-			int iMapIndex = m_mapAvatarsToImageList.Find(pPlayerInfo->steamID);
-			if (iMapIndex == m_mapAvatarsToImageList.InvalidIndex())
-			{
-				auto *pImage32 = new CAvatarImage;
-				auto *pImage64 = new CAvatarImage;
-				auto *pImage184 = new CAvatarImage;
+		pPlayerInfo->iAvatarIdx = m_iTotalPlayers;
 
-				pImage32->SetAvatarSize(32, 32);
-				pImage64->SetAvatarSize(64, 64);
-				pImage184->SetAvatarSize(184, 184);
-
-				pImage32->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize32x32);
-				pImage64->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize64x64);
-				pImage184->SetAvatarSteamID(pPlayerInfo->steamID, k_EAvatarSize184x184);
-
-				pPlayerInfo->avatar = {
-					.i32Idx = m_pImageList->AddImage(pImage32),
-					.i64Idx = m_pImageList->AddImage(pImage64),
-					.i184Idx = m_pImageList->AddImage(pImage184),
-				};
-
-				m_mapAvatarsToImageList.Insert(pPlayerInfo->steamID, pPlayerInfo->avatar);
-			}
-			else
-			{
-				pPlayerInfo->avatar = m_mapAvatarsToImageList[iMapIndex];
-			}
-		}
-		else
-		{
-			pPlayerInfo->avatar.i32Idx = -1;
-			pPlayerInfo->avatar.i64Idx = -1;
-			pPlayerInfo->avatar.i184Idx = -1;
-		}
+		NeoAvatar *pAvatar = &m_avatars[m_iTotalPlayers];
+		pAvatar->SetSteamID((ShowAvatars() && pPlayerInfo->steamID.IsValid())
+				? pPlayerInfo->steamID : CSteamID{});
+		pAvatar->Fetch(64);
 
 		++m_iTotalPlayers;
 	}
@@ -892,6 +846,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				for (int i = 0; i < m_iTotalPlayers; ++i)
 				{
 					const CNEOScoreBoardPlayer *pPlayerInfo = &m_playersInfo[i];
+					const NeoAvatar *pAvatar = &m_avatars[pPlayerInfo->iAvatarIdx];
 					const bool bIsPlaying = (pPlayerInfo->iTeam >= FIRST_GAME_TEAM);
 					const bool bIsDMPlaying = false == bIsTeamplay && bIsPlaying;
 					const bool bIsMuted = pPlayerInfo->bMuted && false == pPlayerInfo->bBot;
@@ -909,6 +864,8 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 							&& false == pPlayerInfo->bBot)
 					{
 						m_playerPopup = *pPlayerInfo;
+						m_avatarPopup = *pAvatar;
+						m_avatarPopup.Fetch(184);
 						const bool bHaveFriendReq = (SteamFriends()
 								&& k_EFriendRelationshipRequestInitiator == SteamFriends()->GetFriendRelationship(m_playerPopup.steamID));
 
@@ -975,32 +932,15 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 					// Avatar/Dead-indicator
 					NeoUI::Pad();
-					CAvatarImage *pAvatarImg = nullptr;
-					if (ShowAvatars() && pPlayerInfo->avatar.i32Idx >= 0)
+					const bool bValidAvatar = (pAvatar->m_iTextureID > 0);
+					if (bValidAvatar)
 					{
-						// Use higher px image if wanted, otherwise fallback to i32Idx
-						if (pPlayerInfo->avatar.i64Idx >= 0 && IN_BETWEEN_EQ(32, m_uiCtx.irWidgetTall, 64))
-						{
-							pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(pPlayerInfo->avatar.i64Idx));
-						}
-						else if (pPlayerInfo->avatar.i184Idx >= 0 && m_uiCtx.irWidgetTall > 64)
-						{
-							pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(pPlayerInfo->avatar.i184Idx));
-						}
-						else
-						{
-							pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(pPlayerInfo->avatar.i32Idx));
-						}
-
-						if (pAvatarImg)
-						{
-							pAvatarImg->m_bDeadAvatar = pPlayerInfo->bDead && bIsPlaying;
-							pAvatarImg->SetPos(m_uiCtx.rWidgetArea.x0, m_uiCtx.rWidgetArea.y0);
-							pAvatarImg->SetSize(m_uiCtx.irWidgetTall, m_uiCtx.irWidgetTall);
-							pAvatarImg->Paint();
-						}
+						pAvatar->Paint(m_uiCtx.rWidgetArea.x0,
+								m_uiCtx.rWidgetArea.y0,
+								m_uiCtx.irWidgetTall,
+								pPlayerInfo->bDead && bIsPlaying);
 					}
-					if (bIsMuted && pAvatarImg)
+					if (bIsMuted && bValidAvatar)
 					{
 						// Slightly redden the avatar
 						vgui::surface()->DrawSetColor(100, 0, 0, 75);
@@ -1013,7 +953,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 					if (iCurTeam >= FIRST_GAME_TEAM)
 					{
 						// Darken the avatar if not ready
-						if (pAvatarImg
+						if (bValidAvatar
 								&& (bShowReadyUp && false == pPlayerInfo->bReady))
 						{
 							vgui::surface()->DrawSetColor(0, 0, 0, 200);
@@ -1133,29 +1073,12 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 
 		if (NeoUI::BeginPopup(NEOSCOREBOARDPOPUP_CARD))
 		{
-			CAvatarImage *pAvatarImg = nullptr;
-			if (ShowAvatars())
+			const bool bValidAvatar = (m_avatarPopup.m_iTextureID > 0);
+			if (bValidAvatar)
 			{
-				if (m_playerPopup.avatar.i184Idx >= 0)
-				{
-					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i184Idx));
-				}
-				if ((!pAvatarImg || !pAvatarImg->IsValid()) && m_playerPopup.avatar.i64Idx >= 0)
-				{
-					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i64Idx));
-				}
-				if ((!pAvatarImg || !pAvatarImg->IsValid()) && m_playerPopup.avatar.i32Idx >= 0)
-				{
-					pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(m_playerPopup.avatar.i32Idx));
-				}
-			}
-			if (pAvatarImg)
-			{
-				pAvatarImg->m_bDeadAvatar = false;
-				pAvatarImg->SetPos(m_uiCtx.dPanel.x + iAvatarOffset,
-						m_uiCtx.dPanel.y + iAvatarOffset);
-				pAvatarImg->SetSize(iAvatarWT, iAvatarWT);
-				pAvatarImg->Paint();
+				m_avatarPopup.Paint(m_uiCtx.dPanel.x + iAvatarOffset,
+						m_uiCtx.dPanel.y + iAvatarOffset,
+						iAvatarWT);
 			}
 
 			NeoUI::SetPerRowLayout(1, nullptr, iPopupCardPerRowTallAvatarName);
@@ -1163,7 +1086,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 			NeoUI::Pad();
 
 			vgui::surface()->DrawSetTextPos(
-					m_uiCtx.dPanel.x + iAvatarOffset + (pAvatarImg ? (iAvatarWT + iAvatarOffset) : 0),
+					m_uiCtx.dPanel.x + iAvatarOffset + (bValidAvatar ? (iAvatarWT + iAvatarOffset) : 0),
 					m_uiCtx.dPanel.y + iAvatarOffset);
 			if (m_playerPopup.wszClantag[0])
 			{
@@ -1174,7 +1097,7 @@ void CNEOScoreBoard::OnMainLoop(const NeoUI::Mode eMode)
 				const auto *pFontI = &m_uiCtx.fonts[m_uiCtx.eFont];
 				const int iClantagTall = vgui::surface()->GetFontTall(pFontI->hdl);
 				vgui::surface()->DrawSetTextPos(
-						m_uiCtx.dPanel.x + iAvatarOffset + (pAvatarImg ? (iAvatarWT + iAvatarOffset) : 0),
+						m_uiCtx.dPanel.x + iAvatarOffset + (bValidAvatar ? (iAvatarWT + iAvatarOffset) : 0),
 						m_uiCtx.dPanel.y + iAvatarOffset + iClantagTall + iAvatarOffset);
 			}
 			NeoUI::SwapFont(NeoUI::FONT_NTLARGE);

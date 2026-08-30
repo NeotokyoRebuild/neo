@@ -3,8 +3,8 @@
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/EditablePanel.h>
-
-class CAvatarImage;
+#include <vgui_controls/ImageList.h>
+#include "neo_avatar.h"
 
 extern ConVar cl_neo_hud_spectator_overlay_enabled;
 extern ConVar cl_neo_hud_spectator_overlay_jinrai_name;
@@ -34,7 +34,6 @@ struct SpectatorPlayerCard
 	int iHP = 0;
 	int iRoundKills = 0;
 	bool bAlive = false;
-	CAvatarImage *pAvatar = nullptr;
 	// Used for animations/fading
 	float flLastAttackTime = 0.0f;
 	float flLastAliveTime = 0.0f;
@@ -61,6 +60,8 @@ public:
 	void Paint() final;
 
 	SpectatorPlayerCard m_cards[MAX_PLAYERS_ARRAY_SAFE] = {};
+	// m_avatars separate as m_cards always cleared
+	NeoAvatar m_avatars[MAX_PLAYERS_ARRAY_SAFE] = {};
 	int m_iCardsSize = 0;
 
 	enum ESpecType
@@ -86,7 +87,7 @@ protected:
 	ConVar *GetUpdateFrequencyConVar() const final;
 
 private:
-	void DrawPlayerCard(const SpectatorPlayerCard &card,
+	void DrawPlayerCard(const int iPlayerIdx,
 			const bool bIsLeftSide,
 			const int x, const int y,
 			const int wide, const int tall,

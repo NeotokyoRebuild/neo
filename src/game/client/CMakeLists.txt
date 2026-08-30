@@ -1674,6 +1674,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_scoreboard.cpp
     neo/ui/neo_hud_context_hint.cpp
     neo/ui/neo_spec_player_by_hud.cpp
+    neo/ui/neo_avatar.cpp
 )
 
 set_source_files_properties(
@@ -1715,6 +1716,7 @@ target_sources_grouped(
     neo/ui/neo_hud_worldpos_marker_generic.h
     neo/ui/neo_scoreboard.h
     neo/ui/neo_hud_context_hint.h
+    neo/ui/neo_avatar.h
     ${UNITY_SOURCE_NEO_UI}
 )
 
