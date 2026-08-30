@@ -100,7 +100,7 @@ CNEOHud_SpectatorOverlay::CNEOHud_SpectatorOverlay(const char* pElementName, vgu
 	g_pNeoHudSpecOverlay = this;
 	SetAutoDelete(true);
 	m_iHideHudElementNumber = NEO_HUD_ELEMENT_SPECTATOR_OVERLAY;
-	m_pImageList = new vgui::ImageList(false);
+	m_pImageList = new vgui::ImageList(true);
 
 	if (parent)
 	{
@@ -229,8 +229,10 @@ void CNEOHud_SpectatorOverlay::ApplySchemeSettings(vgui::IScheme* pScheme)
 	{
 		delete m_pImageList;
 	}
-	m_pImageList = new vgui::ImageList(false);
+	m_pImageList = new vgui::ImageList(true);
 	m_mapAvatarsToImageList.RemoveAll();
+	m_iCardsSize = 0;
+	V_memset(m_cards, 0, sizeof(m_cards));
 }
 
 void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
@@ -275,31 +277,19 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 				int iMapIndex = m_mapAvatarsToImageList.Find(steamID);
 				if (iMapIndex == m_mapAvatarsToImageList.InvalidIndex())
 				{
-					auto *pImage64 = new CAvatarImage;
-					auto *pImage184 = new CAvatarImage;
-
-					pImage64->SetAvatarSize(64, 64);
-					pImage184->SetAvatarSize(184, 184);
-
-					pImage64->SetAvatarSteamID(steamID, k_EAvatarSize64x64);
-					pImage184->SetAvatarSteamID(steamID, k_EAvatarSize184x184);
-
-					pCard->avatar = {
-						.i64Idx = m_pImageList->AddImage(pImage64),
-						.i184Idx = m_pImageList->AddImage(pImage184),
-					};
-
-					m_mapAvatarsToImageList.Insert(steamID, pCard->avatar);
+					auto *pImageAvatar = new CAvatarImage;
+					pImageAvatar->SetAvatarSize(184, 184);
+					pImageAvatar->SetAvatarSteamID(steamID, k_EAvatarSize184x184);
+					m_mapAvatarsToImageList.Insert(steamID, m_pImageList->AddImage(pImageAvatar));
 				}
 				else
 				{
-					pCard->avatar = m_mapAvatarsToImageList[iMapIndex];
+					pCard->iAvatar = m_mapAvatarsToImageList[iMapIndex];
 				}
 			}
 			else
 			{
-				pCard->avatar.i64Idx = -1;
-				pCard->avatar.i184Idx = -1;
+				pCard->iAvatar = -1;
 			}
 
 			Q_UTF8ToUnicode(g_PR->GetPlayerName(i), pCard->wszPlayerName, sizeof(pCard->wszPlayerName));
@@ -437,18 +427,9 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 	const int iAvatarY = y;
 
 	// Draw the actual Steam avatar
-	if (card.avatar.i184Idx >= 0 || card.avatar.i64Idx >= 0)
+	if (card.iAvatar >= 0)
 	{
-		CAvatarImage *pAvatarImg = nullptr;
-		if (card.avatar.i184Idx >= 0)
-		{
-			pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(card.avatar.i184Idx));
-		}
-		if ((!pAvatarImg || !pAvatarImg->IsValid()) && card.avatar.i64Idx >= 0)
-		{
-			pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(card.avatar.i64Idx));
-		}
-
+		CAvatarImage *pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(card.iAvatar));
 		if (pAvatarImg)
 		{
 			pAvatarImg->m_bDeadAvatar = !card.bAlive;

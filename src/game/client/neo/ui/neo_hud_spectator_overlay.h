@@ -16,12 +16,6 @@ extern ConVar cl_neo_hud_spectator_overlay_nsf_matches_won;
 
 static constexpr const int COMP_MATCHES_WON_MAX = 2;
 
-struct OverlayMapAvatarValue
-{
-	int i64Idx;
-	int i184Idx;
-};
-
 struct SpectatorPlayerCard
 {
 	int iUserID = 0;
@@ -40,7 +34,7 @@ struct SpectatorPlayerCard
 	int iHP = 0;
 	int iRoundKills = 0;
 	bool bAlive = false;
-	OverlayMapAvatarValue avatar;
+	int iAvatar = -1;
 	// Used for animations/fading
 	float flLastAttackTime = 0.0f;
 	float flLastAliveTime = 0.0f;
@@ -68,7 +62,7 @@ public:
 
 	SpectatorPlayerCard m_cards[MAX_PLAYERS_ARRAY_SAFE] = {};
 	vgui::ImageList *m_pImageList = nullptr;
-	CUtlMap<CSteamID, OverlayMapAvatarValue> m_mapAvatarsToImageList;
+	CUtlMap<CSteamID, int> m_mapAvatarsToImageList;
 	int m_iCardsSize = 0;
 
 	enum ESpecType
