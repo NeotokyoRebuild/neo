@@ -42,28 +42,28 @@ void NeoAvatar::SetSteamID(const CSteamID &steamID)
 void NeoAvatar::Fetch(const int iAvatarWH)
 {
 	if (!m_SteamID.IsValid()
-			|| !steamapicontext->SteamFriends()
-			|| !steamapicontext->SteamUtils()
+			|| !SteamFriends()
+			|| !SteamUtils()
 			|| (m_iTextureID > 0 && m_iTexForAvatarWH == iAvatarWH)
 			|| (m_flPrevLoadAttempt + 1.0f) > gpGlobals->realtime)
 	{
 		return;
 	}
 
-	if (!steamapicontext->SteamFriends()->RequestUserInformation(m_SteamID, false))
+	if (!SteamFriends()->RequestUserInformation(m_SteamID, false))
 	{
 		int iAvatar = 0;
 		if (iAvatarWH <= 32)
 		{
-			iAvatar = steamapicontext->SteamFriends()->GetSmallFriendAvatar(m_SteamID);
+			iAvatar = SteamFriends()->GetSmallFriendAvatar(m_SteamID);
 		}
 		else if (iAvatarWH <= 64)
 		{
-			iAvatar = steamapicontext->SteamFriends()->GetMediumFriendAvatar(m_SteamID);
+			iAvatar = SteamFriends()->GetMediumFriendAvatar(m_SteamID);
 		}
 		else
 		{
-			iAvatar = steamapicontext->SteamFriends()->GetLargeFriendAvatar(m_SteamID);
+			iAvatar = SteamFriends()->GetLargeFriendAvatar(m_SteamID);
 		}
 		m_iTexForAvatarWH = iAvatarWH;
 
@@ -79,14 +79,14 @@ void NeoAvatar::Fetch(const int iAvatarWH)
 			if (iTexIndex == gAvatarImageCache.InvalidIndex())
 			{
 				uint32 u32wide = 0, u32tall = 0;
-				if (steamapicontext->SteamUtils()->GetImageSize(iAvatar, &u32wide, &u32tall)
+				if (SteamUtils()->GetImageSize(iAvatar, &u32wide, &u32tall)
 						&& u32wide > 0 && u32tall > 0)
 				{
 					const int wide = u32wide;
 					const int tall = u32tall;
 					const int destBufferSize = wide * tall * 4;
 					byte *rgbaBuf = (byte *)stackalloc(destBufferSize);
-					if (steamapicontext->SteamUtils()->GetImageRGBA(iAvatar, rgbaBuf, destBufferSize))
+					if (SteamUtils()->GetImageRGBA(iAvatar, rgbaBuf, destBufferSize))
 					{
 						// Create normal avatar from RGBA without edits
 						m_iTextureID = vgui::surface()->CreateNewTextureID(true);
