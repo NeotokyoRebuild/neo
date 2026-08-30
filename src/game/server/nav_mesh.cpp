@@ -2624,9 +2624,9 @@ void CommandNavPlaceReplace( const CCommand &args )
 			Msg("Old place name not found");
 			return;
 		}
-
+		
 		Place newPlace = TheNavMesh->NameToPlace(args[2]);
-		if (newPlace == UNDEFINED_PLACE)
+		if (Q_stricmp(args[2], "") != 0 && newPlace == UNDEFINED_PLACE)
 		{
 			newPlace = TheNavMesh->NextAvailablePlace(args[2]);
 		}
