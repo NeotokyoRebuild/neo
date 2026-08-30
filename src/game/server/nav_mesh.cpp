@@ -2551,6 +2551,13 @@ void CommandNavUsePlace( const CCommand &args )
 		Warning("Usage: nav_use_place \"custom place name\";");
 		return;
 	}
+	
+	if (Q_strcmp(args[1], "") == 0)
+	{
+		TheNavMesh->SetNavPlace(UNDEFINED_PLACE);
+		Msg( "Current place cleared, paint to remove places\n" );
+		return;
+	}
 
 	char usePlaceName[MAX_PLACE_NAME_LENGTH];
 	V_strcpy_safe(usePlaceName, args[1]);
