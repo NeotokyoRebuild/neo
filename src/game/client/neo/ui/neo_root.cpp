@@ -971,6 +971,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 		if (NeoUI::Button(m_wszCachedTexts[MMBTN_CREATESERVER]).bPressed)
 		{
+			DefaultNewGameLanMode();
 			m_state = STATE_NEWGAME;
 		}
 		if (!bIsInGame)
@@ -979,11 +980,19 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			if (NeoUI::Button(m_wszCachedTexts[MMBTN_TUTORIAL]).bPressed)
 			{
 				m_state = STATE_ROOT;
+				if (NeoIsSteamOffline())
+				{
+					ConVarRef("sv_lan").SetValue(true);
+				}
 				engine->ClientCmd("sv_use_steam_networking 0; map " TUTORIAL_MAP_CLASSES);
 			}
 			if (NeoUI::Button(m_wszCachedTexts[MMBTN_FIRINGRANGE]).bPressed)
 			{
 				m_state = STATE_ROOT;
+				if (NeoIsSteamOffline())
+				{
+					ConVarRef("sv_lan").SetValue(true);
+				}
 				engine->ClientCmd("sv_use_steam_networking 0; map " TUTORIAL_MAP_SHOOTING);
 			}
 			if (NeoUI::Button(L"CREDITS").bPressed)
@@ -1509,6 +1518,21 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 	}
 }
 
+// Give m_newGame.bLanMode its default from whether Steam is currently reachable.
+// For players in Steam offline mode that might not know about sv_lan.
+void CNeoRoot::DefaultNewGameLanMode()
+{
+	const bool bSteamOffline = NeoIsSteamOffline();
+	if (m_bLanModeDefaulted && m_bLanModeDefaultedWhileOffline == bSteamOffline)
+	{
+		return;
+	}
+
+	m_newGame.bLanMode = bSteamOffline;
+	m_bLanModeDefaultedWhileOffline = bSteamOffline;
+	m_bLanModeDefaulted = true;
+}
+
 void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 {
 	static const wchar_t *DIFFICULTY_LABELS[] = { L"Easy", L"Normal", L"Hard", L"Expert" };
@@ -1536,6 +1560,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword),
 					cl_neo_streamermode.GetBool() ? NeoUI::TEXTEDITFLAG_PASSWORD : NeoUI::TEXTEDITFLAG_NONE);
 			NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
+			NeoUI::RingBoxBool(L"LAN mode", &m_newGame.bLanMode);
 			NeoUI::RingBoxBool(L"Use Steam networking", &m_newGame.bUseSteamNetworking);
 		}
 		NeoUI::EndSection();
@@ -1576,7 +1601,8 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					ConVarRef("hostname").SetValue(szHostname);
 					ConVarRef("sv_password").SetValue(szPassword);
 					ConVarRef("mp_friendlyfire").SetValue(m_newGame.bFriendlyFire);
-					ConVarRef("sv_use_steam_networking").SetValue(m_newGame.bUseSteamNetworking);
+					ConVarRef("sv_lan").SetValue(m_newGame.bLanMode);
+					ConVarRef("sv_use_steam_networking").SetValue(!NeoIsSteamOffline() && m_newGame.bUseSteamNetworking);
 					ConVarRef("neo_bot_quota").SetValue(m_newGame.iBotQuota);
 					ConVarRef("neo_bot_difficulty").SetValue(m_newGame.iBotDifficulty);
 
