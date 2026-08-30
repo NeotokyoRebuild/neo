@@ -60,8 +60,8 @@ public:
 	void Paint() final;
 
 	SpectatorPlayerCard m_cards[MAX_PLAYERS_ARRAY_SAFE] = {};
-        // m_avatars separate as m_cards always cleared
-        NeoAvatar m_avatars[MAX_PLAYERS_ARRAY_SAFE] = {};
+	// m_avatars separate as m_cards always cleared
+	NeoAvatar m_avatars[MAX_PLAYERS_ARRAY_SAFE] = {};
 	int m_iCardsSize = 0;
 
 	enum ESpecType
