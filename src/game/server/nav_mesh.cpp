@@ -2552,16 +2552,24 @@ void CommandNavUsePlace( const CCommand &args )
 		return;
 	}
 
-	if (Place place = TheNavMesh->NameToPlace(args[1]);
+	char usePlaceName[MAX_PLACE_NAME_LENGTH];
+	V_strcpy_safe(usePlaceName, args[1]);
+
+	if (V_strlen(usePlaceName) != V_strlen(args[1]))
+	{
+		Warning("Place name clamped to \"%s\"\n", usePlaceName);
+	}
+
+	if (Place place = TheNavMesh->NameToPlace(usePlaceName);
 		place != UNDEFINED_PLACE)
 	{
-		Msg( "Current place set to '%s'\n", args[1] );
+		Msg( "Current place set to '%s'\n", usePlaceName );
 		TheNavMesh->SetNavPlace(place);
 		return;
 	}
 	
-	Msg( "Current place set to new place '%s'\n", args[1] );
-	TheNavMesh->SetNavPlace(TheNavMesh->NextAvailablePlace(args[1]));
+	Msg( "Current place set to new place '%s'\n", usePlaceName );
+	TheNavMesh->SetNavPlace(TheNavMesh->NextAvailablePlace(usePlaceName));
 #else
 	if (args.ArgC() == 1)
 	{
