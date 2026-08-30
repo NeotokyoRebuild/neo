@@ -100,7 +100,6 @@ CNEOHud_SpectatorOverlay::CNEOHud_SpectatorOverlay(const char* pElementName, vgu
 	g_pNeoHudSpecOverlay = this;
 	SetAutoDelete(true);
 	m_iHideHudElementNumber = NEO_HUD_ELEMENT_SPECTATOR_OVERLAY;
-	m_pImageList = new vgui::ImageList(true);
 
 	if (parent)
 	{
@@ -116,18 +115,11 @@ CNEOHud_SpectatorOverlay::CNEOHud_SpectatorOverlay(const char* pElementName, vgu
 	SetBounds(0, 0, iScrWide, iScrTall);
 
 	SetVisible(true);
-
-	m_mapAvatarsToImageList.SetLessFunc(DefLessFunc(CSteamID));
-	m_mapAvatarsToImageList.RemoveAll();
 }
 
 CNEOHud_SpectatorOverlay::~CNEOHud_SpectatorOverlay()
 {
 	g_pNeoHudSpecOverlay = nullptr;
-	if (m_pImageList)
-	{
-		delete m_pImageList;
-	}
 }
 
 static bool ShouldDrawHUD()
@@ -156,7 +148,6 @@ void CNEOHud_SpectatorOverlay::ClearAll()
 	m_iEntIndexSelect = 0;
 	m_iTexLogoJinrai = -1;
 	m_iTexLogoNSF = -1;
-	m_mapAvatarsToImageList.RemoveAll();
 }
 
 void CNEOHud_SpectatorOverlay::Init()
@@ -170,7 +161,6 @@ void CNEOHud_SpectatorOverlay::LevelShutdown()
 {
 	ClearAll();
 }
-
 void CNEOHud_SpectatorOverlay::FireGameEvent(IGameEvent *event)
 {
 	const char *type = event->GetName();
@@ -225,12 +215,6 @@ void CNEOHud_SpectatorOverlay::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 
-	if (m_pImageList)
-	{
-		delete m_pImageList;
-	}
-	m_pImageList = new vgui::ImageList(true);
-	m_mapAvatarsToImageList.RemoveAll();
 	m_iCardsSize = 0;
 	V_memset(m_cards, 0, sizeof(m_cards));
 }
@@ -252,6 +236,14 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 		return;
 	}
 
+	int iScrWide, iScrTall;
+	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
+
+	const float flWide = static_cast<float>(iScrWide);
+	float flWideAs43 = static_cast<float>(iScrTall) * (4.0f / 3.0f);
+	if (flWideAs43 > flWide) flWideAs43 = flWide;
+	const int iAvatarSize = flWideAs43 / 22.5f;
+
 	for (const auto iPutTeam : {TEAM_JINRAI, TEAM_NSF})
 	{
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
@@ -267,30 +259,16 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 				continue;
 			}
 
-			SpectatorPlayerCard *pCard = &m_cards[m_iCardsSize++];
+			NeoAvatar *pAvatar = &m_avatars[m_iCardsSize];
+			SpectatorPlayerCard *pCard = &m_cards[m_iCardsSize];
+			++m_iCardsSize;
 			++m_iTeamPlayersCount[iTeam];
 
 			const CSteamID steamID = GetSteamIDForPlayerIndex(i);
-			if (steamID.IsValid() && CNEOScoreBoard::ShowAvatars())
-			{
-				// See if we already have that avatar in our list
-				int iMapIndex = m_mapAvatarsToImageList.Find(steamID);
-				if (iMapIndex == m_mapAvatarsToImageList.InvalidIndex())
-				{
-					auto *pImageAvatar = new CAvatarImage;
-					pImageAvatar->SetAvatarSize(184, 184);
-					pImageAvatar->SetAvatarSteamID(steamID, k_EAvatarSize184x184);
-					m_mapAvatarsToImageList.Insert(steamID, m_pImageList->AddImage(pImageAvatar));
-				}
-				else
-				{
-					pCard->iAvatar = m_mapAvatarsToImageList[iMapIndex];
-				}
-			}
-			else
-			{
-				pCard->iAvatar = -1;
-			}
+			pAvatar->SetSteamID(
+					(steamID.IsValid() && CNEOScoreBoard::ShowAvatars())
+						? steamID : CSteamID{});
+			pAvatar->Fetch(iAvatarSize);
 
 			Q_UTF8ToUnicode(g_PR->GetPlayerName(i), pCard->wszPlayerName, sizeof(pCard->wszPlayerName));
 
@@ -400,12 +378,15 @@ void CNEOHud_SpectatorOverlay::UpdateStateForNeoHudElementDraw()
 	}
 }
 
-void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
+void CNEOHud_SpectatorOverlay::DrawPlayerCard(const int iPlayerIdx,
 		const bool bIsLeftSide,
 		const int x, const int y,
 		const int wide, const int tall,
 		const Color accentColor, const float flWideAs43) const
 {
+	const SpectatorPlayerCard &card = m_cards[iPlayerIdx];
+	const NeoAvatar &avatar = m_avatars[iPlayerIdx];
+
 	// Card background
 	static constexpr const float FL_LAST_ALIVE_DELTA_MAX = 1.5f;
 	const float flLastAliveDelta = gpGlobals->curtime - card.flLastAliveTime;
@@ -427,16 +408,10 @@ void CNEOHud_SpectatorOverlay::DrawPlayerCard(const SpectatorPlayerCard &card,
 	const int iAvatarY = y;
 
 	// Draw the actual Steam avatar
-	if (card.iAvatar >= 0)
+	if (avatar.m_iTextureID > 0)
 	{
-		CAvatarImage *pAvatarImg = (CAvatarImage *)(m_pImageList->GetImage(card.iAvatar));
-		if (pAvatarImg)
-		{
-			pAvatarImg->m_bDeadAvatar = !card.bAlive;
-			pAvatarImg->SetPos(iAvatarX, iAvatarY);
-			pAvatarImg->SetSize(iAvatarSize, iAvatarSize);
-			pAvatarImg->Paint();
-		}
+		avatar.Paint(iAvatarX, iAvatarY,
+				iAvatarSize, !card.bAlive);
 	}
 	else if (card.wszPlayerName[0])
 	{
@@ -1031,7 +1006,7 @@ void CNEOHud_SpectatorOverlay::DrawNeoHudElement()
 			{
 				const int iRowY = iColYStart + (iPlayerRow * iAvatarWH)
 						+ ((iPlayerRow > 0) ? (iPlayerRow * iGapBetween) : 0);
-				DrawPlayerCard(m_cards[i], bIsLeftSide,
+				DrawPlayerCard(i, bIsLeftSide,
 						iColXStart, iRowY, iTotalCardWide, iAvatarWH,
 						accentColor, flWideAs43);
 				++iPlayerRow;

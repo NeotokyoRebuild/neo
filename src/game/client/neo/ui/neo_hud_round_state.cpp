@@ -18,7 +18,6 @@
 #include "c_neo_player.h"
 #include "c_team.h"
 #include "c_playerresource.h"
-#include "vgui_avatarimage.h"
 #include "neo_scoreboard.h"
 #include "neo_hud_spectator_overlay.h"
 
