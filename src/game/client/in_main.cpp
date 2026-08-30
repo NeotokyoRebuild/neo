@@ -153,6 +153,7 @@ static	kbutton_t	in_attack3;
 kbutton_t	in_ducktoggle;
 
 #ifdef NEO
+static	kbutton_t	in_ping;
 static	kbutton_t	in_drop;
 static	kbutton_t	in_aim;
 static	kbutton_t	in_lean_left;
@@ -649,6 +650,9 @@ void IN_Attack3Down( const CCommand &args ) { KeyDown(&in_attack3, args[1] );}
 void IN_Attack3Up( const CCommand &args ) { KeyUp(&in_attack3, args[1] );}
 
 #ifdef NEO
+void IN_PingDown( const CCommand &args ) { KeyDown(&in_ping, args[1] );}
+void IN_PingUp( const CCommand &args ) { KeyUp(&in_ping, args[1] );}
+
 void IN_DropUp( const CCommand &args ) { KeyUp( &in_drop, args[1] ); }
 void IN_DropDown( const CCommand &args ) { KeyDown( &in_drop, args[1] ); }
 
@@ -1726,6 +1730,7 @@ int CInput::GetButtonBits( int bResetState )
 	CalcButtonBits( bits, IN_ATTACK3, s_ClearInputState, &in_attack3, bResetState );
 
 #ifdef NEO
+	CalcButtonBits( bits, IN_PING, s_ClearInputState, &in_ping, bResetState );
 	CalcButtonBits( bits, IN_DROP, s_ClearInputState, &in_drop, bResetState );
 	CalcButtonBits( bits, IN_AIM, s_ClearInputState, &in_aim, bResetState );
 	CalcButtonBits( bits, IN_LEAN_LEFT, s_ClearInputState, &in_lean_left, bResetState );
@@ -1900,6 +1905,10 @@ static ConCommand endgrenade2( "-grenade2", IN_Grenade2Up );
 static ConCommand startgrenade2( "+grenade2", IN_Grenade2Down );
 static ConCommand startattack3("+attack3", IN_Attack3Down);
 static ConCommand endattack3("-attack3", IN_Attack3Up);
+#ifdef NEO
+static ConCommand startping("+ping", IN_PingDown);
+static ConCommand endping("-ping", IN_PingUp);
+#endif
 
 #ifdef TF_CLIENT_DLL
 static ConCommand toggle_duck( "toggle_duck", IN_DuckToggle );

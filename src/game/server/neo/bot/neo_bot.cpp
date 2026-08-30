@@ -443,6 +443,8 @@ DEFINE_SCRIPTFUNC_WRAPPED( GetSpawnArea, "Return the nav area of where we spawne
 DEFINE_SCRIPTFUNC( PressFireButton, "" )
 DEFINE_SCRIPTFUNC( PressAltFireButton, "" )
 DEFINE_SCRIPTFUNC( PressSpecialFireButton, "" )
+DEFINE_SCRIPTFUNC( PressPingButton, "" )
+DEFINE_SCRIPTFUNC( ReleasePingButton, "" )
 
 DEFINE_SCRIPTFUNC( GetBotId, "Get this bot's id" )
 DEFINE_SCRIPTFUNC( FlagForUpdate, "Flag this bot for update" )

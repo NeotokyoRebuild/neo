@@ -4049,7 +4049,7 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		ucmd->sidemove = 0;
 		ucmd->upmove = 0;
 		ucmd->impulse = 0;
-		ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
+		ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_PING | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
 	}
 #endif
 	

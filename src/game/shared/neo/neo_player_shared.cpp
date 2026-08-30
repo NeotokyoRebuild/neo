@@ -133,7 +133,7 @@ extern ConVar cl_neo_player_pings;
 #endif // CLIENT_DLL
 void CheckPingButton(CNEO_Player* player)
 {
-	if (!player->IsAlive() || !(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
+	if (!player->IsAlive() || !(player->m_afButtonPressed & IN_PING) || player->m_flNextPingTime > gpGlobals->curtime)
 	{
 		return;
 	}
