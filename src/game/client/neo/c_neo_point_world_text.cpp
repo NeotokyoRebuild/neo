@@ -2,6 +2,9 @@
 #include "view_scene.h"
 #include "view.h"
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 typedef struct Character {
   int codePoint, x, y, width, height, originX, originY, advance;
 } Character;

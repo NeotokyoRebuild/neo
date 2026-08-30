@@ -1140,7 +1140,7 @@ private:
 	{
 		char name[MAX_PLACE_NAME_LENGTH];
 		int count;
-		Vector averageCenter;
+		Vector averageCenter = vec3_origin;
 	};
 	CUtlVector<PlaceNameAndCount>m_placeName;					// master directory of place names (i.e: "places")
 #else

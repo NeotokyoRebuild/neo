@@ -1196,7 +1196,9 @@ void CNEO_Player::PreThink(void)
 
 	if (TheNavMesh)
 	{
-		const char* placeName = TheNavMesh->PlaceToName(TheNavMesh->GetPlace(GetAbsOrigin()));
+		// NEO TODO (Adam) do this in OnNavAreaChanged instead
+		const CNavArea* pArea = GetLastKnownArea();
+		const char* placeName = pArea ? TheNavMesh->PlaceToName(pArea->GetPlace()) : NULL;
 		if (!placeName || !placeName[0])
 		{
 			placeName = "";

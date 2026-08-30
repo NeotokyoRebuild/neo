@@ -57,6 +57,7 @@ CNEOHud_PlaceName::CNEOHud_PlaceName(const char *pElementName, vgui::Panel *pare
 
 CNEOHud_PlaceName::~CNEOHud_PlaceName()
 {
+	IGameSystem::Remove(this);
 	if (g_PlaceName == this)
 	{
 		g_PlaceName = nullptr;
@@ -151,7 +152,7 @@ void CNEOHud_PlaceName::DrawPlaceNames()
 	animationAlpha =   shouldDrawPlaceNames	? min(1.0f, animationAlpha + (gpGlobals->frametime * ANIMATION_SPEED))
 											: max(0.0f, animationAlpha - (gpGlobals->frametime * ANIMATION_SPEED));
 
-	for (PlaceNameCallout place : places)
+	for (PlaceNameCallout &place : places)
 	{
 		if (place.navAreaCount <= 0)
 		{
@@ -352,6 +353,7 @@ void CNEOHud_PlaceName::GetPlacesFromNavFile()
 		{
 			len = fileBuffer.GetUnsignedShort();
 			fileBuffer.Get( placeName, MIN( sizeof( placeName ), len ) );
+			placeName[ MIN( sizeof( placeName ) - 1, len ) ] = '\0';
 			int index = places.AddToTail({ {placeName, {0, 0, 0}, &m_Font}, {0, 0, 0}, 0 });
 			places[index].pointWorldText.SetTextSize(cl_neo_hud_place_name_text_size.GetFloat());
 			places[index].pointWorldText.SetTextSpacingX(cl_neo_hud_place_name_text_spacing_x.GetFloat());
@@ -458,7 +460,8 @@ void CNEOHud_PlaceName::GetPlacesFromNavFile()
 		{
 			entry -= 1;
 			Vector newNavCenter = (nwCorner + seCorner) / 2.f;
-			places[entry].origin = ((places[entry].origin * places[entry].navAreaCount) + newNavCenter) / ++places[entry].navAreaCount;
+			places[entry].navAreaCount++;
+			places[entry].origin = ((places[entry].origin * (places[entry].navAreaCount - 1)) + newNavCenter) / places[entry].navAreaCount;
 			places[entry].pointWorldText.SetAbsOrigin(places[entry].origin + Vector(0, 0, cl_neo_hud_place_name_offset.GetFloat()));
 		}
 
