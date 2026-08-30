@@ -1530,6 +1530,31 @@ void CHLClient::PostInit()
 				}
 			}
 
+			if (iCfgVerMajor < 34)
+			{
+				// Player pings moved off of +attack3 onto their own +ping bind,
+				// so move whichever key the player had bound to +attack3 over to it.
+				const ButtonCode_t bcPing = gameuifuncs->GetButtonCodeForBind("+attack3");
+				if (bcPing > BUTTON_CODE_NONE)
+				{
+					const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bcPing);
+					if (bindBtnName && bindBtnName[0])
+					{
+						char szCmd[128];
+
+						V_sprintf_safe(szCmd, "unbind \"%s\"\n", bindBtnName);
+						engine->ClientCmd_Unrestricted(szCmd);
+
+						V_sprintf_safe(szCmd, "bind \"%s\" \"+ping\"\n", bindBtnName);
+						engine->ClientCmd_Unrestricted(szCmd);
+					}
+				}
+				else
+				{
+					SetupBindIfNotSet("+ping", MOUSE_MIDDLE);	// Ping location
+				}
+			}
+
 			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
 			cvr_cl_neo_cfg_version_minor.SetValue(NEO_VERSION_MINOR);
 		}

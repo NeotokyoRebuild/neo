@@ -872,7 +872,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	{
 		if (NEORules()->IsTeamplay())
 		{
-			me->PressSpecialFireButton(); // place a player ping to alert friends
+			me->PressPingButton(); // place a player ping to alert friends
 		}
 
 		if (bThreatIsGhoster)

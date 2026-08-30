@@ -122,6 +122,9 @@ public:
 	virtual void ReleaseJumpButton( void ) = 0;
 	
 #ifdef NEO
+	virtual void PressPingButton( float duration = -1.0f ) = 0;
+	virtual void ReleasePingButton( void ) = 0;
+
 	virtual void PressDropButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseDropButton( void ) = 0;
 
@@ -216,6 +219,9 @@ public:
 	virtual void ReleaseSpecialFireButton( void );
 
 #ifdef NEO
+	virtual void PressPingButton( float duration = -1.0f );
+	virtual void ReleasePingButton( void );
+
 	virtual void PressDropButton( float duration = -1.0f );
 	virtual void ReleaseDropButton( void );
 
@@ -313,6 +319,7 @@ protected:
 	CountdownTimer m_walkButtonTimer;
 	CountdownTimer m_buttonScaleTimer;
 #ifdef NEO
+	CountdownTimer m_pingButtonTimer;
 	CountdownTimer m_moveUpButtonTimer;
 	CountdownTimer m_moveDownButtonTimer;
 	CountdownTimer m_dropButtonTimer;
@@ -432,6 +439,22 @@ inline void NextBotPlayer< PlayerType >::ReleaseSpecialFireButton( void )
 	m_inputButtons &= ~IN_ATTACK3;
 	m_specialFireButtonTimer.Invalidate();
 }
+
+#ifdef NEO
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressPingButton( float duration )
+{
+	m_inputButtons |= IN_PING;
+	m_pingButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleasePingButton( void )
+{
+	m_inputButtons &= ~IN_PING;
+	m_pingButtonTimer.Invalidate();
+}
+#endif // NEO
 
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressUseButton( float duration )
@@ -731,6 +754,7 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_forwardScale = m_rightScale = 0.04;
 	m_burningTimer.Invalidate();
 #ifdef NEO
+	m_pingButtonTimer.Invalidate();
 	m_moveUpButtonTimer.Invalidate();
 	m_moveDownButtonTimer.Invalidate();
 	m_dropButtonTimer.Invalidate();
@@ -873,6 +897,9 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 			m_inputButtons |= IN_SPEED;
 
 #ifdef NEO
+		if ( !m_pingButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_PING;
+
 		if ( !m_sneakButtonTimer.IsElapsed() )
 			m_inputButtons |= IN_WALK;
 

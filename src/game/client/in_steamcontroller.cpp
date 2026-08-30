@@ -137,6 +137,9 @@ static ControllerDigitalActionToCommand g_ControllerDigitalGameActions[] =
 	{ "attack", "+attack", CONTROLLER_ACTION_FLAGS_NONE },
 	{ "attack2", "+attack2", CONTROLLER_ACTION_FLAGS_NONE },
 	{ "attack3", "+attack3", CONTROLLER_ACTION_FLAGS_NONE },
+#ifdef NEO
+	{ "ping", "+ping", CONTROLLER_ACTION_FLAGS_NONE },
+#endif
 	{ "jump", "+jump", CONTROLLER_ACTION_FLAGS_STOPS_TAUNT },
 	{ "use_action_slot_item", "+use_action_slot_item", CONTROLLER_ACTION_FLAGS_NONE },
 	{ "invprev", "invprev", CONTROLLER_ACTION_FLAGS_STOPS_TAUNT|CONTROLLER_ACTION_FLAGS_NEEDS_DEBOUNCE },

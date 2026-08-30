@@ -2600,7 +2600,7 @@ void C_BasePlayer::PhysicsSimulate( void )
 		ctx->cmd.sidemove = 0;
 		ctx->cmd.upmove = 0;
 		ctx->cmd.impulse = 0;
-		ctx->cmd.buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
+		ctx->cmd.buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_PING | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
 	}
 	else if (static_cast<C_NEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
 	{
