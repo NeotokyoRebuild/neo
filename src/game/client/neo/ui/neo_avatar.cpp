@@ -14,10 +14,8 @@ struct CacheAvatarValue
 struct CacheAvatarKey
 {
 	CSteamID m_SteamID;
-	int m_iAvatar;
+	int m_iAvatar = 0;
 
-	CacheAvatarKey() { m_iAvatar = 0; }
-	CacheAvatarKey(CSteamID steamID, int av) { m_SteamID = steamID; m_iAvatar = av; }
 	bool operator<(const CacheAvatarKey &rhs) const
 	{
 		return m_SteamID.ConvertToUint64() < rhs.m_SteamID.ConvertToUint64()
@@ -73,7 +71,7 @@ void NeoAvatar::Fetch(const int iAvatarWH)
 			gAvatarImageCacheInit = true;
 		}
 
-		int iTexIndex = gAvatarImageCache.Find(CacheAvatarKey(m_SteamID, iAvatar));
+		int iTexIndex = gAvatarImageCache.Find(CacheAvatarKey{m_SteamID, iAvatar});
 		if (iTexIndex == gAvatarImageCache.InvalidIndex())
 		{
 			uint32 u32wide = 0, u32tall = 0;
@@ -133,7 +131,7 @@ void NeoAvatar::Fetch(const int iAvatarWH)
 					g_pMatSystemSurface->DrawSetTextureRGBAEx2(m_iTextureDeadID, rgbaBuf, wide, tall, IMAGE_FORMAT_RGBA8888, true);
 
 					// Add textures to global cache
-					iTexIndex = gAvatarImageCache.Insert(CacheAvatarKey(m_SteamID, iAvatar));
+					iTexIndex = gAvatarImageCache.Insert(CacheAvatarKey{m_SteamID, iAvatar});
 					gAvatarImageCache[iTexIndex].normal = m_iTextureID;
 					gAvatarImageCache[iTexIndex].dead = m_iTextureDeadID;
 				}
