@@ -62,16 +62,27 @@ static void MaMP3MetaCallback(void *pUserData, const ma_dr_mp3_metadata *pMetada
 	}
 }
 
+// How long the worker parks in WaitForCall before polling state again
+static constexpr unsigned POLL_INTERVAL_MS = 250;
+
 class CNeoMP3Thread : public CWorkerThread
 {
 public:
 	NeoMP3::State m_state = {};
 
+	// Sticky shutdown request. CWorkerThread::Reply() resets the send event, so an
+	// unsolicited reply from the worker can consume a CallWorker() request before
+	// the worker ever sees it. That is how the EXIT call kept getting lost, leaving
+	// the worker looping and the main thread stuck in Join(). A latched flag cannot
+	// be lost that way, so the shutdown path stays off the call channel entirely.
+	CInterlockedInt m_iExitRequest;
+
 	enum
 	{
 		UPDATE,
-		EXIT,
 	};
+
+	bool IsExiting() const { return m_iExitRequest != 0; }
 
 	int Run()
 	{
@@ -137,7 +148,6 @@ public:
 
 		bool bInitSound = false;
 		ma_sound maSound = {};
-		unsigned nCall = 0;
 
 		if (STARTUP_TYPE_RANDOM == cl_neo_radio_startup.GetInt()
 				|| (STARTUP_TYPE_SHUFFLETYPE == cl_neo_radio_startup.GetInt()
@@ -152,12 +162,16 @@ public:
 			CreateShuffle();
 		}
 
+		// Set while a CallWorker() is waiting on us, so that breaking out of the
+		// loop still answers it exactly once
+		bool bCallPending = false;
+
 		while (1)
 		{
-			WaitForCall(250, &nCall);
-			if (nCall == EXIT)
+			bCallPending = WaitForCall(POLL_INTERVAL_MS);
+
+			if (IsExiting())
 			{
-				ma_sound_stop(&maSound);
 				break;
 			}
 
@@ -223,6 +237,13 @@ public:
 					}
 				}
 
+				// Loading a song is the slowest thing this thread does, so give the
+				// exit request one more chance to be seen before committing to loading
+				if (IsExiting())
+				{
+					break;
+				}
+
 				if (bInitSound)
 				{
 					ma_sound_uninit(&maSound);
@@ -264,12 +285,29 @@ public:
 				m_state.flSecsLength = flNowSecsLength;
 			}
 
-			Reply(1);
+			if (bCallPending)
+			{
+				Reply(1);
+				bCallPending = false;
+			}
 		}
 
-		if (bInitSound) ma_sound_uninit(&maSound);
+		// Stop the device *before* detaching the sound. ma_sound_uninit() detaches
+		// from the node graph and then spins until the audio thread drops its
+		// reference, and that wait is unbounded. With the device stopped there is no
+		// audio thread left to wait on. ma_engine_uninit() does the same thing
+		// internally for its own inlined sounds, for the same reason.
+		ma_engine_stop(&maEngine);
+		if (bInitSound)
+		{
+			ma_sound_stop(&maSound);
+			ma_sound_uninit(&maSound);
+		}
 		ma_engine_uninit(&maEngine);
-		Reply(1);
+		if (bCallPending)
+		{
+			Reply(1);
+		}
 		return 0;
 	}
 };
@@ -280,6 +318,7 @@ void Init()
 {
 	if (!g_NeoMP3Thread.IsAlive())
 	{
+		g_NeoMP3Thread.m_iExitRequest = 0;
 		g_NeoMP3Thread.Start();
 	}
 }
@@ -288,13 +327,21 @@ void Deinit()
 {
 	if (g_NeoMP3Thread.IsAlive())
 	{
-		g_NeoMP3Thread.CallWorker(CNeoMP3Thread::EXIT);
+		// Latch the flag rather than posting a call, the worker picks it up on its
+		// next poll at the latest - see m_iExitRequest
+		g_NeoMP3Thread.m_iExitRequest = 1;
 		g_NeoMP3Thread.Join();
 	}
 }
 
 void Update()
 {
+	// Once shutdown has been requested there is nobody left to service a call, and
+	// CallWorker() would block on a reply that is never coming
+	if (g_NeoMP3Thread.IsExiting() || false == g_NeoMP3Thread.IsAlive())
+	{
+		return;
+	}
 	g_NeoMP3Thread.CallWorker(CNeoMP3Thread::UPDATE);
 }
 
