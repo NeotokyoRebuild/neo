@@ -342,6 +342,13 @@ public:
 	Place NameToPlace( const char *name ) const;						// given a place name, return a place ID or zero if no place is defined
 	Place PartialNameToPlace( const char *name ) const;					// given the first part of a place name, return a place ID or zero if no place is defined, or the partial match is ambiguous
 	void PrintAllPlaces( void ) const;									// output a list of names to the console
+#ifdef NEO
+	const Vector PlaceToLocation(Place place) const;
+	Place LoadPlace(const char* name);
+	Place NextAvailablePlace(const char* name);
+	void IncrementNumPlaces(Place place, CNavArea* area);
+	void DecrementNumPlaces(Place place, CNavArea* area);
+#endif // NEO
 	int PlaceNameAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] );	// Given a partial place name, fill in possible place names for ConCommand autocomplete
 
 	bool GetGroundHeight( const Vector &pos, float *height, Vector *normal = NULL ) const;		// get the Z coordinate of the topmost ground level below the given point
@@ -1128,9 +1135,19 @@ private:
 	//----------------------------------------------------------------------------------
 	// Place directory
 	//
+#ifdef NEO
+	struct PlaceNameAndCount
+	{
+		char name[MAX_PLACE_NAME_LENGTH];
+		int count;
+		Vector averageCenter = vec3_origin;
+	};
+	CUtlVector<PlaceNameAndCount>m_placeName;					// master directory of place names (i.e: "places")
+#else
 	char **m_placeName;											// master directory of place names (ie: "places")
 	unsigned int m_placeCount;									// number of "places" defined in placeName[]
 	void LoadPlaceDatabase( void );								// load the place names from a file
+#endif // NEO
 
 	//----------------------------------------------------------------------------------
 	// Edit mode

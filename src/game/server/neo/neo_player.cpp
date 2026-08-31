@@ -41,6 +41,7 @@
 #include "nav_mesh.h"
 #include "neo_spawn_manager.h"
 #include "recipientfilter.h"
+#include "nav_mesh.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1190,6 +1191,21 @@ void CNEO_Player::PreThink(void)
 		if (forward xor backward)
 		{
 			SuperJump();
+		}
+	}
+
+	if (TheNavMesh)
+	{
+		// NEO TODO (Adam) do this in OnNavAreaChanged instead
+		const CNavArea* pArea = GetLastKnownArea();
+		const char* placeName = pArea ? TheNavMesh->PlaceToName(pArea->GetPlace()) : NULL;
+		if (!placeName || !placeName[0])
+		{
+			placeName = "";
+		}
+		if (Q_strcmp(m_szLastPlaceName.Get(), placeName))
+		{
+			Q_strncpy(m_szLastPlaceName.GetForModify(), placeName, sizeof(m_szLastPlaceName));
 		}
 	}
 }

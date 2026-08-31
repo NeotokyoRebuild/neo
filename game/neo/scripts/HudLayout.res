@@ -1026,4 +1026,15 @@
 		"SmallWeaponsFont"	"NHudSpectatorOverlaySmallWeapons"
 		"DeadTexture"		"vgui/hud/kill_kill"
 	}
+	
+	neo_place_name
+	{
+		"fieldName"			"neo_place_name"
+		
+		"textXpos"				"-4"
+		"textYpos"				"4"
+		"textFont"			"NHudOCRSmallNoAdditive"
+		"textColor"			"255 255 255 255"
+		"textXAlignment"	"2"
+	}
 }

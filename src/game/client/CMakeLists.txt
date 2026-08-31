@@ -1571,6 +1571,7 @@ target_sources_grouped(
 set(UNITY_SOURCE_NEO_SRC_CLIENT
     neo/c_neo_message.cpp
     neo/c_neo_npc_dummy.cpp
+    neo/c_neo_point_world_text.cpp
     neo/c_neo_player.cpp
     neo/c_neo_te_tocflash.cpp
     neo/neo_fixup_glshaders.cpp
@@ -1589,6 +1590,7 @@ target_sources_grouped(
     FILES
     neo/c_neo_message.h
     neo/c_neo_npc_dummy.h
+    neo/c_neo_point_world_text.h
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.h
     neo/neo_fixup_glshaders.h
@@ -1665,6 +1667,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_hint.cpp
     neo/ui/neo_hud_message.cpp
+    neo/ui/neo_hud_place_name.cpp
     neo/ui/neo_hud_player_ping.cpp
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_spectator_overlay.cpp
@@ -1708,6 +1711,7 @@ target_sources_grouped(
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_hint.h
     neo/ui/neo_hud_message.h
+    neo/ui/neo_hud_place_name.h
     neo/ui/neo_hud_player_ping.h
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_spectator_overlay.h
@@ -1750,6 +1754,7 @@ target_sources_grouped(
     NAME "Source Files\\Shared"
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/nav_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h
