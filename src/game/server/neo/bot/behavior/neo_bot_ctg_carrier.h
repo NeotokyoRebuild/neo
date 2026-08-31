@@ -17,6 +17,7 @@ public:
 private:
 	void EquipBestWeaponForGhoster( CNEOBot *me );
 	float GetUpdateInterval( CNEOBot *me ) const;
+	bool IsValidFocusEnemy( CNEOBot *me, CBaseEntity *pFocus ) const;
 	void UpdateGhostCarrierCallout( CNEOBot *me, const CUtlVector<CNEO_Player*> &enemies );
 
 	EHANDLE m_hCurrentFocusEnemy{nullptr};
