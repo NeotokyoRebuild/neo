@@ -22,6 +22,7 @@
 class CNEOBotActionPoint;
 class CNEOBotGenerator;
 class CNEOBot;
+class CWeaponGhost;
 
 extern ConVar hl2_normspeed;
 
@@ -160,7 +161,10 @@ public:
 	bool EquipRequiredWeapon(void);								// if we're required to equip a specific weapon, do it.
 	void EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary = false);	// equip the best weapon we have to attack the given threat
 	void ReloadIfLowClip(bool bForceReload = false);
+
 	bool DropGhost();
+	CWeaponGhost *GetBeaconingGhost(void) const;
+	bool IsRevealedByMyGhost(CBaseEntity *subject) const;
 
 	void DropPrimaryWeapon(void);
 
