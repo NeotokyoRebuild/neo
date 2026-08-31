@@ -1,11 +1,13 @@
 #include "cbase.h"
 #include "neo_player.h"
 #include "neo_gamerules.h"
+#include "neo_ghost_cap_point.h"
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_ctg_seek.h"
+#include "bot/behavior/neo_bot_ctg_enemy.h"
 #include "bot/behavior/neo_bot_jgr_seek.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
@@ -153,18 +155,66 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNE
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interval )
 {
-	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
-	if ( result.IsRequestingChange() || result.IsDone() )
-		return result;
-
 	// Check for Game Type Specific behaviors and suspend for them
+	if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
+	{
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+		{
+			// Only switch to CTG behavior if there are available capture zones this round
+			bool bHasAvailableCapZone = false;
+			const int iMyTeam = me->GetTeamNumber();
+
+			for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
+			{
+				CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
+				if ( !pCapPoint || !pCapPoint->GetActive() )
+				{
+					continue;
+				}
+
+				const int iCapTeam = pCapPoint->owningTeamAlternate();
+				if ( iCapTeam == iMyTeam || iCapTeam == TEAM_ANY )
+				{
+					bHasAvailableCapZone = true;
+					break;
+				}
+			}
+
+			if ( bHasAvailableCapZone )
+			{
+				return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
+			}
+
+		}
+		else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+		{
+			return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
+		}
+
+		return Continue();
+	}
+
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
 	{
-		return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
+		// Check if enemy has the ghost
+		if (NEORules()->GhostExists())
+		{
+			int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+			if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
+			{
+				CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
+				if (pGhostCarrier && pGhostCarrier != me && pGhostCarrier->GetTeamNumber() != me->GetTeamNumber())
+				{
+					return SuspendFor(new CNEOBotCtgEnemy, "Stopping the ghost carrier!");
+				}
+			}
+		}
 	}
-	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+
+	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
+	if ( result.IsRequestingChange() || result.IsDone() )
 	{
-		return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
+		return result;
 	}
 
 	return Continue();
