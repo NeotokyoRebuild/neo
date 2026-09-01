@@ -266,8 +266,9 @@ public:
 	int m_spawnflags;
 #endif // CLIENT_DLL
 	
-	const char *GetDeathIcon(const EDeathIconType eType,
-			bool isGrenade = false, bool isRemoteDetpack = false) const;
+	static const char *GetDeathIcon(const CNEOBaseCombatWeapon *pNeoWep,
+			const EDeathIconType eType,
+			bool isGrenade = false, bool isRemoteDetpack = false);
 
 protected:
 	WeaponHandlingInfo_t m_weaponHandling;
