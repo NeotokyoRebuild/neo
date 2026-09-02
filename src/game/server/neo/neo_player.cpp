@@ -1340,9 +1340,10 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 		return false; // Not a player that is affected by cloaking/etc
 	}
 
-	if (GetTeamNumber() == targetPlayer->GetTeamNumber())
+	if (NEORules()->IsTeamplay() && GetTeamNumber() == targetPlayer->GetTeamNumber())
 	{
-		return false; // Teammates are always labeled with IFF
+		// Teammates are always labeled with IFF, unless in DM
+		return false;
 	}
 
 	// Check visibility cache for this player
@@ -3413,8 +3414,8 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				flDmgAccumlator -= 1.0f;
 			}
 
-			// Mirror team-damage
-			const bool bIsTeamDmg = (attackerIdx != entindex() && attacker->GetTeamNumber() == GetTeamNumber());
+			// Mirror team-damage (unless in DM)
+			const bool bIsTeamDmg = (NEORules()->IsTeamplay() && attackerIdx != entindex() && attacker->GetTeamNumber() == GetTeamNumber());
 			if (bIsTeamDmg)
 			{
 				const float flMirrorMult = NEORules()->MirrorDamageMultiplier();
@@ -3458,7 +3459,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 					++m_iBotDetectableBleedingInjuryEvents;
 				}
 
-				if (bIsTeamDmg && NEORules()->IsTeamplay() && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
+				if (bIsTeamDmg && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
 				{
 					attacker->m_botPauseFiringTimer.Start(1.0f);
 				}

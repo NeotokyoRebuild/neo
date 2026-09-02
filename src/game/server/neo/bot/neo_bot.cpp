@@ -1306,28 +1306,34 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 class CFindVantagePoint : public ISearchSurroundingAreasFunctor
 {
 public:
-	CFindVantagePoint(int enemyTeamIndex)
+	CFindVantagePoint(const CNEOBot* me)
 	{
-		m_enemyTeamIndex = enemyTeamIndex;
 		m_vantageArea = NULL;
+
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			CNEO_Player* enemy = ToNEOPlayer(UTIL_PlayerByIndex(i));
+
+			if (!enemy || !me->IsEnemy(enemy))
+				continue;
+
+			if (!enemy->IsAlive() || !enemy->GetLastKnownArea())
+				continue;
+
+			m_enemies.AddToTail(enemy);
+		}
 	}
 
 	virtual bool operator() (CNavArea* baseArea, CNavArea* priorArea, float travelDistanceSoFar)
 	{
 		CNavArea* area = (CNavArea*)baseArea;
 
-		CTeam* enemyTeam = GetGlobalTeam(m_enemyTeamIndex);
-		for (int i = 0; i < enemyTeam->GetNumPlayers(); ++i)
+		for (int i = 0; i < m_enemies.Count(); ++i)
 		{
-			CNEO_Player* enemy = (CNEO_Player*)enemyTeam->GetPlayer(i);
-
-			if (!enemy->IsAlive() || !enemy->GetLastKnownArea())
-				continue;
-
-			CNavArea* enemyArea = (CNavArea*)enemy->GetLastKnownArea();
+			CNavArea* enemyArea = (CNavArea*)m_enemies[i]->GetLastKnownArea();
 			if (enemyArea->IsCompletelyVisible(area))
 			{
-				// nearby area from which we can see the enemy team
+				// nearby area from which we can see an enemy
 				m_vantageArea = area;
 				return false;
 			}
@@ -1336,16 +1342,16 @@ public:
 		return true;
 	}
 
-	int m_enemyTeamIndex;
+	CUtlVector< CNEO_Player* > m_enemies;
 	CNavArea* m_vantageArea;
 };
 
 
 //-----------------------------------------------------------------------------------------------------
-// Return a nearby area where we can see a member of the enemy team
+// Return a nearby area where we can see an enemy
 CNavArea* CNEOBot::FindVantagePoint(float maxTravelDistance) const
 {
-	CFindVantagePoint find(GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+	CFindVantagePoint find(this);
 	SearchSurroundingAreas(GetLastKnownArea(), find, maxTravelDistance);
 	return find.m_vantageArea;
 }

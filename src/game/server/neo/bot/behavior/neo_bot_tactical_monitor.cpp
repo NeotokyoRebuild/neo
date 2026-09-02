@@ -212,6 +212,11 @@ void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 {
 	const float avoidRange = 32.0f;
 
+	if ( !NEORules()->IsTeamplay() )
+	{
+		return;
+	}
+
 	CUtlVector< CNEO_Player * > friendVector;
 	CollectPlayers( &friendVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 

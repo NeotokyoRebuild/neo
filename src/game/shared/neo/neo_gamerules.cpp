@@ -953,7 +953,7 @@ void CNEORules::GetDMHighestScorers(
 		return;
 	}
 
-	for (int i = 0; i < (MAX_PLAYERS + 1); ++i)
+	for (int i = 1; i < (MAX_PLAYERS + 1); ++i)
 #endif
 	{
 		int iXP = 0;
@@ -964,27 +964,31 @@ void CNEORules::GetDMHighestScorers(
 		{
 			continue;
 		}
+		if (pCmpPlayer->GetTeamNumber() < FIRST_GAME_TEAM)
+		{
+			continue;
+		}
 		iXP = pCmpPlayer->m_iXP;
 #else
-		if (!g_PR->IsConnected(i))
+		if (!g_PR->IsConnected(i) || g_PR->GetTeam(i) < FIRST_GAME_TEAM)
 		{
 			continue;
 		}
 		iXP = g_PR->GetXP(i);
 #endif
 
-		if (iXP == *iHighestXP)
+		if (*iHighestPlayersTotal == 0 || iXP > *iHighestXP)
 		{
+			*iHighestPlayersTotal = 0;
+			*iHighestXP = iXP;
 #ifdef GAME_DLL
 			(*pHighestPlayers)[(*iHighestPlayersTotal)++] = pCmpPlayer;
 #else
 			(*iHighestPlayersTotal)++;
 #endif
 		}
-		else if (iXP > *iHighestXP)
+		else if (iXP == *iHighestXP)
 		{
-			*iHighestPlayersTotal = 0;
-			*iHighestXP = iXP;
 #ifdef GAME_DLL
 			(*pHighestPlayers)[(*iHighestPlayersTotal)++] = pCmpPlayer;
 #else
@@ -1419,6 +1423,10 @@ void CNEORules::Think(void)
 				return;
 			}
 			// Otherwise go into overtime
+			if (m_nRoundStatus == NeoRoundStatus::RoundLive)
+			{
+				m_nRoundStatus = NeoRoundStatus::Overtime;
+			}
 		}
 		else if (GetGameType() == NEO_GAME_TYPE_JGR)
 		{
@@ -2682,8 +2690,12 @@ void CNEORules::StartNextRound()
 	const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
 	const bool bEqualThres = (iThres == GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers()) && (iThres == GetGlobalTeam(TEAM_NSF)->GetNumPlayers());
 	const auto readyPlayers = FetchReadyPlayers();
+	// Handle case where everyone joins same team in DM
+	const bool bTooFewToStart = IsTeamplay()
+			? (GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() == 0 || GetGlobalTeam(TEAM_NSF)->GetNumPlayers() == 0)
+			: ((GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() + GetGlobalTeam(TEAM_NSF)->GetNumPlayers()) < 2);
 	// Do not start if: Non-ready-up mode, no players in either teams
-	if ((!bLobby && (GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() == 0 || GetGlobalTeam(TEAM_NSF)->GetNumPlayers() == 0))
+	if ((!bLobby && bTooFewToStart)
 			// If ready-up mode and doesn't exactly match the threshold on ready-up or players
 			|| (bLobby && !m_bIgnoreOverThreshold && (!bEqualThres || (readyPlayers.array[TEAM_JINRAI] != iThres || readyPlayers.array[TEAM_NSF] != iThres)))
 			// If ready-up mode, allows over threshold and is lower than threshold or not equal teams
@@ -3666,6 +3678,11 @@ bool CNEORules::RoundIsInSuddenDeath() const
 #ifdef CLIENT_DLL
 	return m_bIsInSuddenDeath;
 #else
+	if (!GetTeamPlayEnabled())
+	{
+		return false;
+	}
+
 	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
 	if (teamJinrai && teamNSF)
@@ -3681,6 +3698,11 @@ bool CNEORules::RoundIsMatchPoint() const
 #ifdef CLIENT_DLL
 	return m_bIsMatchPoint;
 #else
+	if (!GetTeamPlayEnabled())
+	{
+		return false;
+	}
+
 	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
 	if (teamJinrai && teamNSF && GetRoundLimit() != 0)
@@ -3700,6 +3722,11 @@ bool CNEORules::RoundIsDoOrDie() const
 #ifdef CLIENT_DLL
 	return m_bIsDoOrDie;
 #else
+	if (!GetTeamPlayEnabled())
+	{
+		return false;
+	}
+
 	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
 	if (teamJinrai && teamNSF && GetRoundLimit() != 0)
@@ -3990,6 +4017,12 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 			continue;
 		}
 
+		// Never credit the victim with assisting their own death
+		if (assistIdx == victim->entindex())
+		{
+			continue;
+		}
+
 		const int assistDmg = victim->m_riAttackersScores[assistIdx];
 		static const float MIN_DMG_QUALIFY_ASSIST = 0.5f;
 		if ((float)assistDmg / victim->GetMaxHealth() >= MIN_DMG_QUALIFY_ASSIST)
@@ -4145,7 +4178,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 	if (auto *assister = FetchAssists(attacker, victim))
 	{
 		// Team kill assist
-		if (assister->GetTeamNumber() == victim->GetTeamNumber())
+		if (IsTeamplay() && assister->GetTeamNumber() == victim->GetTeamNumber())
 		{
 			if (sv_neo_teamdamage_assists.GetBool())
 			{
