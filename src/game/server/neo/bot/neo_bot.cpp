@@ -1687,7 +1687,7 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 		return;
 	}
 
-	if (wepBits & NEO_WEP_BALC)
+	if (!myWeapon->IsWeaponReloadable())
 	{
 		return;
 	}

@@ -879,7 +879,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	}
 
 	if ( myWeapon && me->IsCombatWeapon( myWeapon )
-		&& !( myWeapon->GetNeoWepBits() & NEO_WEP_BALC )
+		&& myWeapon->IsWeaponReloadable()
 		&& myWeapon->m_iClip1 <= 0 )
 	{
 		if (myWeapon->m_bInReload)
