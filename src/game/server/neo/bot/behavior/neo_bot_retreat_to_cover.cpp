@@ -273,11 +273,18 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		if ( threat )
 		{
 			// threats are still visible - find new cover
+			CNavArea *pPrevCoverArea = m_coverArea;
 			m_coverArea = FindCoverArea( me );
 
 			if ( m_coverArea == NULL )
 			{
 				return Done( "My cover is exposed, and there is no other cover available!" );
+			}
+
+			// cover destination changed, stop following the path to the old spot
+			if ( m_coverArea != pPrevCoverArea )
+			{
+				m_path.Invalidate();
 			}
 		}
 		else
