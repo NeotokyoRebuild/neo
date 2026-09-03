@@ -381,6 +381,11 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 		return Done( "No longer carrying the ghost" );
 	}
 	
+	if ( NEORules()->IsRoundOver() )
+	{
+		return Done( "Round Over: no CTG objectives to reach" );
+	}
+
 	m_teammates.RemoveAll();
 	CollectPlayers( me, &m_teammates );
 

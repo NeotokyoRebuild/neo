@@ -19,6 +19,11 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		return Done( "Game mode is no longer CTG" );
 	}
 
+	if (NEORules()->IsRoundOver())
+	{
+		return Done( "Round Over: CTG objective no longer relevant" );
+	}
+
 	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
 	if ( result.IsRequestingChange() || result.IsDone() )
 	{
