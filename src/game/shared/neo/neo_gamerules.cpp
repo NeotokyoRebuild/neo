@@ -977,8 +977,9 @@ void CNEORules::GetDMHighestScorers(
 		iXP = g_PR->GetXP(i);
 #endif
 
-		if (*iHighestPlayersTotal == 0 || iXP > *iHighestXP)
+		if (iXP > *iHighestXP)
 		{
+			// Higher top score found, clear previous count based on lower top score threshold
 			*iHighestPlayersTotal = 0;
 			*iHighestXP = iXP;
 #ifdef GAME_DLL

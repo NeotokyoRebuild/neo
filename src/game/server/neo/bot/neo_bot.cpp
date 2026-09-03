@@ -1310,6 +1310,8 @@ public:
 	{
 		m_vantageArea = NULL;
 
+		m_enemies.EnsureCapacity(gpGlobals->maxClients - 1);
+
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
 			CNEO_Player* enemy = ToNEOPlayer(UTIL_PlayerByIndex(i));
@@ -1330,7 +1332,7 @@ public:
 
 		for (int i = 0; i < m_enemies.Count(); ++i)
 		{
-			CNavArea* enemyArea = (CNavArea*)m_enemies[i]->GetLastKnownArea();
+			CNavArea* enemyArea = m_enemies[i]->GetLastKnownArea();
 			if (enemyArea->IsCompletelyVisible(area))
 			{
 				// nearby area from which we can see an enemy
