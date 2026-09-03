@@ -1607,9 +1607,8 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	// Ideally for close range empty primary reaction
 	else if ( secondaryWeapon
 		&& primaryWeapon->Clip1() <= 0
-		&& (secondaryWeapon->Clip1() > 0)
-		&& threat->IsVisibleInFOVNow()
-		&& (IsRangeLessThan(threat->GetLastKnownPosition(), 250.0f)) )
+		&& secondaryWeapon->Clip1() > 0
+		&& IsRangeLessThan(threat->GetLastKnownPosition(), 250.0f) )
 	{
 		// passthrough
 	}
@@ -1710,7 +1709,9 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 	}
 	else if (myWeapon->Clip1() > 0)
 	{
-		if (GetTimeSinceWeaponFired() < 3.0f)
+		const CKnownEntity *threat = GetVisionInterface()->GetPrimaryKnownThreat();
+		const bool bAwareOfThreat = threat && threat->GetEntity() && threat->IsVisibleRecently();
+		if (bAwareOfThreat)
 		{
 			return; // still in the middle of a fight
 		}
