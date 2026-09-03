@@ -86,7 +86,7 @@ void InitMacroTexture( const char *pBSPFilename )
 	int i = 0;
 	for (i; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if( !strcmp(pEntity, "worldspawn") )
 		{
 			GetVectorForKey( &entities[i], "world_mins", g_MacroWorldMins );
@@ -153,7 +153,6 @@ inline Vector SampleMacroTexture( const CMacroTextureData *t, const Vector &vWor
 void ApplyMacroTextures( int iFace, const Vector &vWorldPos, Vector &outLuxel )
 {
 	// Add the global macro texture.
-	Vector vGlobal;
 	if ( g_pGlobalMacroTextureData )
 		outLuxel *= SampleMacroTexture( g_pGlobalMacroTextureData, vWorldPos );
 

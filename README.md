@@ -134,6 +134,41 @@ Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer"
 ## SDK tools and SRCDS original NEOTOKYO mounting
 By default the `gameinfo.txt` provided utilizes TF2-SDK's new `|appid_244630|` appid-based search path to mount the original NEOTOKYO assets. However, some SDK tools and SRCDS either refuse to mount or crash when trying to use this. If the appid-based search path is an issue, just comment this line out and uncomment `|gameinfo_path|../../NEOTOKYO/NeotokyoSource` line below and alter if needed to the actual path of your original `NeotokyoSource` installation.
 
+## Map compile tools (`vbsp`, `vvis`, `vrad`)
+The map compile tools are built along with the game (`NEO_BUILD_UTILS`, on by default) and are
+staged into their own install directory when `NEO_INSTALL_UTILS` is enabled.
+
+The tools pick the engine to run on top of from the `-game` directory they are pointed at: they
+first look for the engine binaries next to it (`<gamedir>/../bin/PLATSUBDIR`), which is the layout
+of the Steam "NeotokyoRebuild" install. If there is no engine there - which is the case for a mod
+installed under `steamapps/sourcemods/neo`, or for a `game/neo` directory in a source tree - the
+engine is looked up from the `SteamAppId` in the mod's `gameinfo.txt` ("Source SDK Base 2013
+Multiplayer", appid 243750) through the local Steam installation. Content mounted through
+`|all_source_engine_paths|` comes from that same installation.
+
+The tool binaries themselves still need the engine libraries (`libtier0`, `libvstdlib`, ...) on
+their library path:
+
+* When running from the build tree, configure with `NEO_TOOLS_ENGINE_BIN_PATH` set to the engine's
+  `bin/PLATSUBDIR` directory. The build then symlinks it into the tool binary directories and adds
+  it to their rpath:
+  ```
+  $ cmake --preset linux-release -DNEO_TOOLS_ENGINE_BIN_PATH="$HOME/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin/linux64"
+  $ cmake --build --preset linux-release
+  $ ./build/linux-release/utils/vbsp/vbsp -game $HOME/.steam/steam/steamapps/sourcemods/neo /PATH_TO_MAP/mymap
+  ```
+* When installing (`NEO_INSTALL_UTILS`), the tools are staged into `bin/PLATSUBDIR` so the install
+  directory can be copied over an engine installation ("NeotokyoRebuild" or "Source SDK Base 2013
+  Multiplayer"), which puts them next to the engine libraries.
+
+`utils/test_tools.sh` (Linux) and `utils\test_tools.bat` (Windows) compile a map with every one of
+those tool locations against every kind of game directory, and report which combinations work:
+```
+$ ./utils/test_tools.sh          # everything
+$ ./utils/test_tools.sh --list   # only show what was detected
+$ ./utils/test_tools.sh --locations build-tree --game-types sourcemod --tools vbsp
+```
+
 ## Using `-tools`
 Engine tools have been broken since the TF2-SDK/64-bit update due to libraries being misplaced. To fix this, go to your Source SDK Base 2013 Multiplayer installation folder and move all files in `bin/tools/x64` to `bin/x64/tools`. You may have to create a tools folder if one does not exist already.
 

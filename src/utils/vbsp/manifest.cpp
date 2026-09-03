@@ -3,7 +3,10 @@
 #include "map_shared.h"
 #include "fgdlib/fgdlib.h"
 #include "manifest.h"
-#include "windows.h"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: default constructor
@@ -267,7 +270,7 @@ ChunkFileResult_t CManifest::LoadManifestCordoningPrefsCallback( CChunkFile *pFi
 //			pValue - the value of the pair
 // Output : returns a newly created epair structure
 //-----------------------------------------------------------------------------
-epair_t *CManifest::CreateEPair( char *pKey, char *pValue )
+epair_t *CManifest::CreateEPair( const char *pKey, const char *pValue )
 {
 	epair_t *pEPair = new epair_t;
 
@@ -306,9 +309,9 @@ bool CManifest::LoadSubMaps( CMapFile *pMapFile, const char *pszFileName )
 	{
 		//		if ( m_Maps[ i ]->m_bTopLevelMap == false )
 		{
-			char		FileName[ MAX_PATH ];
+			//char		FileName[ MAX_PATH ];
 
-			sprintf( FileName, "%s%s", m_InstancePath, m_Maps[ i ]->m_RelativeMapFileName );
+			//snprintf( FileName, sizeof(FileName), "%s%s", m_InstancePath, m_Maps[ i ]->m_RelativeMapFileName );
 
 			InstanceEntity = &pMapFile->entities[ pMapFile->num_entities ];
 			pMapFile->num_entities++;
@@ -354,16 +357,20 @@ bool CManifest::LoadSubMaps( CMapFile *pMapFile, const char *pszFileName )
 //-----------------------------------------------------------------------------
 bool CManifest::LoadVMFManifestUserPrefs( const char *pszFileName )
 {
-	char		UserName[ MAX_PATH ], FileName[ MAX_PATH ], UserPrefsFileName[ MAX_PATH ];
-	DWORD		UserNameSize;
+	char		UserName[ MAX_PATH - 12 ], FileName[ MAX_PATH ], UserPrefsFileName[ MAX_PATH ];
 
+#ifdef WIN32
+	DWORD		UserNameSize;
 	UserNameSize = sizeof( UserName );
 	if ( GetUserName( UserName, &UserNameSize ) == 0 )
+#else
+	if ( getlogin_r(UserName, sizeof(UserName)) != 0 )
+#endif
 	{
 		strcpy( UserPrefsFileName, "default" );
 	}
 
-	sprintf( UserPrefsFileName, "\\%s.vmm_prefs", UserName );
+	snprintf( UserPrefsFileName, sizeof(UserPrefsFileName), "\\%s.vmm_prefs", UserName );
 	V_StripExtension( pszFileName, FileName, sizeof( FileName ) );
 	strcat( FileName, UserPrefsFileName );
 

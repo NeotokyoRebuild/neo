@@ -26,14 +26,6 @@
 #include "KeyValues.h"
 #include "filesystem_tools.h"
 
-#if defined( MPI )
-
-	#include "vmpi.h"
-	#include "vmpi_tools_shared.h"
-
-#endif
-
-
 #if defined( _WIN32 ) || defined( WIN32 )
 #include <direct.h>
 #endif
@@ -60,8 +52,6 @@ CUtlLinkedList<SpewHookFn, unsigned short> g_ExtraSpewHooks;
 
 bool g_bStopOnExit = false;
 void (*g_ExtraSpewHook)(const char*) = NULL;
-
-#if defined( _WIN32 ) || defined( WIN32 )
 
 void CmdLib_FPrintf( FileHandle_t hFile, const char *pFormat, ... )
 {
@@ -128,7 +118,7 @@ char* CmdLib_FGets( char *pOut, int outSize, FileHandle_t hFile )
 	return pOut;
 }
 
-#if !defined( _X360 )
+#ifdef WIN32
 #include <wincon.h>
 #endif
 
@@ -141,7 +131,11 @@ public:
 		if ( g_bStopOnExit )
 		{
 			Warning( "\nPress any key to quit.\n" );
+#ifdef WIN32
 			getch();
+#else
+			getchar();
+#endif
 		}
 	}
 } g_ExitStopper;
@@ -153,7 +147,7 @@ static unsigned short g_BadColor = 0xFFFF;
 static WORD g_BackgroundFlags = 0xFFFF;
 static void GetInitialColors( )
 {
-#if !defined( _X360 )
+#ifdef WIN32
 	// Get the old background attributes.
 	CONSOLE_SCREEN_BUFFER_INFO oldInfo;
 	GetConsoleScreenBufferInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &oldInfo );
@@ -175,8 +169,7 @@ static void GetInitialColors( )
 WORD SetConsoleTextColor( int red, int green, int blue, int intensity )
 {
 	WORD ret = g_LastColor;
-#if !defined( _X360 )
-	
+#ifdef WIN32
 	g_LastColor = 0;
 	if( red )	g_LastColor |= FOREGROUND_RED;
 	if( green ) g_LastColor |= FOREGROUND_GREEN;
@@ -194,7 +187,7 @@ WORD SetConsoleTextColor( int red, int green, int blue, int intensity )
 
 void RestoreConsoleTextColor( WORD color )
 {
-#if !defined( _X360 )
+#ifdef WIN32
 	SetConsoleTextAttribute( GetStdHandle( STD_OUTPUT_HANDLE ), color | g_BackgroundFlags );
 	g_LastColor = color;
 #endif
@@ -216,23 +209,25 @@ void Error( char const *pMsg, ... )
 
 #else
 
-CRITICAL_SECTION g_SpewCS;
-bool g_bSpewCSInitted = false;
+CThreadMutex g_SpewCS;
 bool g_bSuppressPrintfOutput = false;
+
+// TODO move to platform.h?
+#ifndef WIN32
+// On Windows, OutputDebugString is a macro (-> OutputDebugStringA) provided by
+// the Win32 API; only supply a stub on platforms that lack it.
+void OutputDebugString(char const *pMsg)
+{
+	//printf("OutputDebugString: %s", pMsg);
+}
+#endif
 
 SpewRetval_t CmdLib_SpewOutputFunc( SpewType_t type, char const *pMsg )
 {
-	// Hopefully two threads won't call this simultaneously right at the start!
-	if ( !g_bSpewCSInitted )
-	{
-		InitializeCriticalSection( &g_SpewCS );
-		g_bSpewCSInitted = true;
-	}
-
 	WORD old;
 	SpewRetval_t retVal;
 	
-	EnterCriticalSection( &g_SpewCS );
+	g_SpewCS.Lock();
 	{
 		if (( type == SPEW_MESSAGE ) || (type == SPEW_LOG ))
 		{
@@ -257,31 +252,6 @@ SpewRetval_t CmdLib_SpewOutputFunc( SpewType_t type, char const *pMsg )
 		{
 			old = SetConsoleTextColor( 1, 0, 0, 1 );
 			retVal = SPEW_DEBUGGER;
-
-#ifdef MPI
-			// VMPI workers don't want to bring up dialogs and suchlike.
-			// They need to have a special function installed to handle
-			// the exceptions and write the minidumps.
-			// Install the function after VMPI_Init with a call:
-			// SetupToolsMinidumpHandler( VMPI_ExceptionFilter );
-			if ( g_bUseMPI && !g_bMPIMaster && !Plat_IsInDebugSession() )
-			{
-				// Generating an exception and letting the
-				// installed handler handle it
-				::RaiseException
-					(
-					0,							// dwExceptionCode
-					EXCEPTION_NONCONTINUABLE,	// dwExceptionFlags
-					0,							// nNumberOfArguments,
-					NULL						// const ULONG_PTR* lpArguments
-					);
-
-					// Never get here (non-continuable exception)
-				
-				VMPI_HandleCrash( pMsg, NULL, true );
-				exit( 0 );
-			}
-#endif
 		}
 		else if( type == SPEW_ERROR )
 		{
@@ -317,11 +287,11 @@ SpewRetval_t CmdLib_SpewOutputFunc( SpewType_t type, char const *pMsg )
 
 		RestoreConsoleTextColor( old );
 	}
-	LeaveCriticalSection( &g_SpewCS );
+	g_SpewCS.Unlock();
 
 	if ( type == SPEW_ERROR )
 	{
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	return retVal;
@@ -400,27 +370,18 @@ void CmdLib_Cleanup()
 
 	FOR_EACH_LL( g_CleanupFunctions, i )
 		g_CleanupFunctions[i]();
-
-#if defined( MPI )
-	// Unfortunately, when you call exit(), even if you have things registered with atexit(),
-	// threads go into a seemingly undefined state where GetExitCodeThread gives STILL_ACTIVE
-	// and WaitForSingleObject will stall forever on the thread. Because of this, we must cleanup
-	// everything that uses threads before exiting.
-	VMPI_Finalize();
-#endif
 }
 
 
 void CmdLib_Exit( int exitCode )
 {
-	TerminateProcess( GetCurrentProcess(), 1 );
-}	
+	_Exit(exitCode);
+}
 
 
 
 #endif
 
-#endif
 
 
 
