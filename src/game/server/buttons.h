@@ -18,6 +18,8 @@ public:
 	DECLARE_CLASS( CBaseButton, CBaseToggle );
 #ifdef NEO
 	DECLARE_SERVERCLASS();
+
+	CBaseButton();
 #endif // NEO
 
 	void Spawn( void );
@@ -80,6 +82,11 @@ protected:
 	bool	m_bSolidBsp;
 
 	string_t	m_sNoise;			// The actual WAV file name of the sound.
+
+#ifdef NEO
+	CNetworkString( m_szUseHintText, 64 );
+	CNetworkVar( bool, m_bUseHint );
+#endif
 
 	COutputEvent m_OnDamaged;
 	COutputEvent m_OnPressed;

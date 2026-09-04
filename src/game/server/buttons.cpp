@@ -47,6 +47,11 @@ BEGIN_DATADESC( CBaseButton )
 	DEFINE_FIELD( m_bSolidBsp, FIELD_BOOLEAN ),
 	
 	DEFINE_KEYFIELD( m_sounds, FIELD_INTEGER, "sounds" ),
+
+#ifdef NEO
+	DEFINE_KEYFIELD( m_szUseHintText, FIELD_STRING, "usehinttext" ),
+	DEFINE_KEYFIELD( m_bUseHint, FIELD_BOOLEAN, "usehint" ),
+#endif
 	
 //	DEFINE_FIELD( m_ls, FIELD_SOUNDNAME ),   // This is restored in Precache()
 //  DEFINE_FIELD( m_nState, FIELD_INTEGER ),
@@ -80,8 +85,16 @@ LINK_ENTITY_TO_CLASS( func_button, CBaseButton );
 
 #ifdef NEO
 IMPLEMENT_SERVERCLASS_ST( CBaseButton, DT_BaseButton )
-	SendPropInt( SENDINFO(m_spawnflags), 14, SPROP_UNSIGNED )
+	SendPropInt( SENDINFO(m_spawnflags), 14, SPROP_UNSIGNED ),
+	SendPropString( SENDINFO( m_szUseHintText ) ),
+	SendPropBool( SENDINFO( m_bUseHint ) )
 END_SEND_TABLE()
+
+
+CBaseButton::CBaseButton()
+{
+	m_bUseHint = true;
+}
 #endif // NEO
 
 
@@ -162,6 +175,13 @@ bool CBaseButton::KeyValue( const char *szKeyName, const char *szValue )
 	{
 		m_bUnlockedSentence = atof(szValue);
 	}
+#ifdef NEO
+	else if (FStrEq(szKeyName, "usehinttext"))
+	{
+		V_strncpy( m_szUseHintText.GetForModify(), szValue, sizeof( m_szUseHintText ) );
+		return true;
+	}
+#endif
 	else
 	{
 		return BaseClass::KeyValue( szKeyName, szValue );
