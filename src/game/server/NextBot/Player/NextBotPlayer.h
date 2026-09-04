@@ -814,6 +814,33 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 				cmd = *pPlayerMimicked->GetLastUserCommand();
 				cmd.viewangles[YAW] += bot_mimic_yaw_offset.GetFloat();
 
+				if (cmd.weaponselect != 0) // mimicked player swapped weapon
+				{
+					CBaseEntity *pSrcEnt = CBaseEntity::Instance(cmd.weaponselect);
+					cmd.weaponselect = 0; // default to not swapping weapon
+
+					if (pSrcEnt && pSrcEnt->IsBaseCombatWeapon())
+					{
+						CBaseCombatWeapon *pSrcWeapon = static_cast<CBaseCombatWeapon *>(pSrcEnt);
+
+						CBaseCombatWeapon *pBotWeapon = pThisBot->Weapon_OwnsThisType(
+							pSrcWeapon->GetClassname(), cmd.weaponsubtype);
+
+						if (!pBotWeapon) // did not have exact weapon match
+						{
+							// fall back to swapping to any weapon in that slot if available
+							pBotWeapon = pThisBot->Weapon_GetSlot(pSrcWeapon->GetSlot());
+						}
+
+						if (pBotWeapon) // candidate weapon swap found
+						{
+							// queue bot weapon swap
+							cmd.weaponselect = pBotWeapon->entindex();
+							cmd.weaponsubtype = pBotWeapon->GetSubType();
+						}
+					}
+				}
+
 				// allocate a new command and add it to the player's list of command to process
 				this->ProcessUsercmds(&cmd, 1, 1, 0, false);
 
