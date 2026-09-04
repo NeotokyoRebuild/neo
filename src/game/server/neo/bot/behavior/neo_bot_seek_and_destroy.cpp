@@ -351,9 +351,21 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 
 	if ( !m_path.IsValid() )
 	{
-		m_repathTimer.Start( 45.0f );
+		if ( !m_repathFailTimer.HasStarted() || m_repathFailTimer.IsElapsed() )
+		{
+			m_repathTimer.Start( 45.0f );
 
-		RecomputeSeekPath( me );
+			RecomputeSeekPath( me );
+
+			if ( m_path.IsValid() )
+			{
+				m_repathFailTimer.Invalidate();
+			}
+			else
+			{
+				m_repathFailTimer.Start( 1.0f );
+			}
+		}
 	}
 	else if ( m_bInvestigateGunfire && (!m_soundSearchTimer.HasStarted() || m_soundSearchTimer.IsElapsed()) )
 	{

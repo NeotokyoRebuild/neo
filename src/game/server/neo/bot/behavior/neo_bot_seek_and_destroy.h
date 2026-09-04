@@ -42,6 +42,7 @@ protected:
 
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
+	CountdownTimer m_repathFailTimer;
 	CountdownTimer m_soundSearchTimer;
 	CountdownTimer m_itemStolenTimer;
 	EHANDLE m_hTargetEntity;

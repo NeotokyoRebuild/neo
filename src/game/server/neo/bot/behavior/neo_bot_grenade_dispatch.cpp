@@ -86,7 +86,7 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 				continue;
 			}
 
-			if ( pPlayer->InSameTeam( me ) ) 
+			if ( !me->IsEnemy( pPlayer ) )
 			{
 				if ( !pPlayer->IsBot() && pPlayer->GetClass() != NEO_CLASS_SUPPORT )
 				{
