@@ -145,6 +145,7 @@ public:
 
 	virtual bool Reload( void ) override;
 	virtual void FinishReload(void) override;
+	virtual bool IsWeaponReloadable(void) const { return true; }
 
 	virtual bool CanBeSelected(void) override;
 	virtual bool IsFollowingEntity() override {
