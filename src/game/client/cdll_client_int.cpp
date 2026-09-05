@@ -154,6 +154,7 @@
 #include <vgui_controls/Button.h>
 #include <vgui_controls/MenuButton.h>
 #include "neo_mp3player.h"
+#include "neo/neo_debugoverlay_budget.h"
 #endif
 
 extern vgui::IInputInternal *g_InputInternal;
@@ -991,8 +992,15 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		return false;
 	if ( (render = (IVRenderView *)appSystemFactory( VENGINE_RENDERVIEW_INTERFACE_VERSION, NULL )) == NULL )
 		return false;
+#ifdef NEO
+	// Route every debug overlay through the budgeting proxy (neo/neo_debugoverlay_budget.*)
+	// so a runaway per-tick visualiser such as nb_debug can't exhaust the renderer.
+	if ( (debugoverlay = NEO_InstallDebugOverlayBudget( (IVDebugOverlay *)appSystemFactory( VDEBUG_OVERLAY_INTERFACE_VERSION, NULL ) )) == NULL )
+		return false;
+#else
 	if ( (debugoverlay = (IVDebugOverlay *)appSystemFactory( VDEBUG_OVERLAY_INTERFACE_VERSION, NULL )) == NULL )
 		return false;
+#endif
 	if ( (datacache = (IDataCache*)appSystemFactory(DATACACHE_INTERFACE_VERSION, NULL )) == NULL )
 		return false;
 	if ( !mdlcache )
