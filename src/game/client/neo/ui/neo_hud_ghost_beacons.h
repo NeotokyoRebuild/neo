@@ -8,16 +8,16 @@
 #include "hudelement.h"
 #include <vgui_controls/EditablePanel.h>
 
-#include "weapon_ghost.h"
-
 class CNEOHud_GhostBeacons : public CNEOHud_ChildElement, public CHudElement, public vgui::EditablePanel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_GhostBeacons, EditablePanel);
 
 public:
 	CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel *parent = NULL);
+	~CNEOHud_GhostBeacons();
 	virtual void ApplySchemeSettings(vgui::IScheme* pScheme) override;
 	virtual void Paint() override;
+	float GetRotation();
 
 private:
 	void DrawPlayer(float distance, const Vector& playerPos) const;
@@ -28,8 +28,11 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
-	vgui::HFont m_hFont;
-	vgui::HTexture m_hTex;
+	int screenWidth = 0, screenHeight = 0, doubleScreenWidth = 0, doubleScreenHeight = 0;
+
+	CPanelAnimationVar(Color, beaconColor, "color", "255, 20, 20, 150");
+	CPanelAnimationVar(vgui::HFont, m_hFont, "font", "NHudOCRSmall");
+	CPanelAnimationVarAliasType(int, m_hTex, "texture", "vgui/hud/ctg/g_beacon_enemy", "textureid");
 
 private:
 	CNEOHud_GhostBeacons(const CNEOHud_GhostBeacons &other);
