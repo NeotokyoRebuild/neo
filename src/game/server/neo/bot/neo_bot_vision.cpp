@@ -174,16 +174,9 @@ bool CNEOBotVision::IsInFieldOfView( CBaseEntity *subject ) const
 bool CNEOBotVision::IsAbleToSee(CBaseEntity *subject, FieldOfViewCheckType checkFOV, Vector *visibleSpot) const
 {
 	CNEOBot *me = (CNEOBot *)GetBot()->GetEntity();
-	if (me && me->IsCarryingGhost())
+	if (me && me->IsRevealedByMyGhost(subject))
 	{
-		auto *pGhost = dynamic_cast<CWeaponGhost *>(me->GetActiveWeapon());
-		if (pGhost && pGhost->IsGhost() && pGhost->IsBootupCompleted())
-		{
-			if (me->GetAbsOrigin().DistToSqr(subject->GetAbsOrigin()) < Square(CWeaponGhost::GetGhostRangeInHammerUnits()))
-			{
-				return true;
-			}
-		}
+		return true;
 	}
 
 	return IVision::IsAbleToSee(subject, checkFOV, visibleSpot);

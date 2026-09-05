@@ -263,6 +263,33 @@ void IVision::ForgetEntity( CBaseEntity *forgetMe )
 }
 
 
+#ifdef NEO
+//------------------------------------------------------------------------------------------
+// Update our knowledge of where an entity is, without asserting that we saw it ourselves.
+// Needed because AddKnownEntity does not refresh already known entity position data.
+void IVision::UpdateKnownEntityPosition( CBaseEntity *entity )
+{
+	if ( !entity )
+	{
+		return;
+	}
+
+	FOR_EACH_VEC( m_knownEntityVector, it )
+	{
+		if ( m_knownEntityVector[ it ].Is( entity ) )
+		{
+			// Found already known entity
+			m_knownEntityVector[ it ].UpdatePosition();
+			return;
+		}
+	}
+
+	// We had no idea this entity existed until now
+	AddKnownEntity( entity );
+}
+#endif // NEO
+
+
 //------------------------------------------------------------------------------------------
 void IVision::ForgetAllKnownEntities( void )
 {
