@@ -206,7 +206,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		// Urge bots to sneak when walk button is held
 		commanderIsQuiet = true;
 	}
-	else if ( !(pCommander->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_SPEED | IN_RUN )) )
+	else if ( !(pCommander->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_SPEED | IN_RUN | IN_JUMP2 )) )
 	{
 		// Standing still (or at least not pressing movement buttons) also implies quiet
 		// Even while standing still, press IN_SPEED / IN_RUN to urge bots to move faster

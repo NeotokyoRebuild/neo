@@ -351,7 +351,7 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 	// Check that bot isn't only moving sideways which wastes aux power
 	// Also determines a direction to jump towards
 	// NEO Jank: We don't check sprint here because bots don't anticipate using sprint in a smart manner
-	const int nForwardBack = me->m_nButtons & ( IN_FORWARD | IN_BACK );
+	const int64 nForwardBack = me->m_nButtons & ( IN_FORWARD | IN_BACK );
 	if ( nForwardBack == 0 || nForwardBack == ( IN_FORWARD | IN_BACK ) )
 	{
 		// Remove this check if we add sideways super jump in the future

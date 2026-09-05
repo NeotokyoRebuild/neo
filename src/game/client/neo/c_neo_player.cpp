@@ -897,7 +897,7 @@ void C_NEO_Player::CalculateSpeed(void)
 
 void C_NEO_Player::HandleSpeedChangesLegacy()
 {
-	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
+	const int64 buttonsChanged = m_afButtonPressed | m_afButtonReleased;
 
 	if( buttonsChanged & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)  || m_nButtons & IN_SPEED)
 	{
@@ -954,7 +954,7 @@ void C_NEO_Player::HandleSpeedChangesLegacy()
 #if 0
 void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 {
-	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
+	const int64 nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
 
 	bool bJustPressedSpeed = !!( nChangedButtons & IN_SPEED );
 
@@ -1486,7 +1486,7 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 
 	// Only superjump if we have a reasonable jump direction in mind
 	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
+	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
 	{
 		return false;
 	}
