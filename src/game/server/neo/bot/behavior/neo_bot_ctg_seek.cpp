@@ -30,6 +30,35 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		return result;
 	}
 
+	if (!NEORules()->GhostExists())
+	{
+		return Done("Ghost does not exist");
+	}
+
+	if (me->IsCarryingGhost())
+	{
+		return SuspendFor(new CNEOBotCtgCarrier, "I am the ghost carrier!");
+	}
+
+	int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+	if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
+	{
+		CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
+		if (pGhostCarrier && pGhostCarrier != me)
+		{
+			if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
+			{
+				return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");
+			}
+
+			// An enemy has the ghost: hand off to CNEOBotCtgEnemy and let it decide, tick by tick,
+			// whether to pursue the carrier directly or peel into CNEOBotCtgEnemyInterceptCapPath to
+			// hold a cut-off. That decision does not belong in this dispatcher -- it has to be able
+			// to re-evaluate as the situation develops.
+			return SuspendFor( new CNEOBotCtgEnemy, "Stopping the ghost carrier!" );
+		}
+	}
+
 	int team_members = 0;
 	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
@@ -45,31 +74,6 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one on my team!" );
 	}
 
-	if (NEORules()->GhostExists())
-	{
-		int iGhosterPlayer = NEORules()->GetGhosterPlayer();
-		if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
-		{
-			CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
-			if (pGhostCarrier && pGhostCarrier != me)
-			{
-				if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
-				{
-					return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");
-				}
-				else
-				{
-					return SuspendFor(new CNEOBotCtgEnemy, "Stopping the ghost carrier!");
-				}
-			}
-
-			// If I have the ghost, switch to ghost behavior
-			if (me->IsCarryingGhost())
-			{
-				return SuspendFor(new CNEOBotCtgCarrier, "I am the ghost carrier!");
-			}
-		}
-	}
 
 	// Ghost capture logic
 	if (m_bGoingToTargetEntity && m_hTargetEntity)
