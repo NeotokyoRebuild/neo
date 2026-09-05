@@ -54,6 +54,11 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		return Done( "Ghost carrier is not a teammate anymore" );
 	}
 	
+	if ( NEORules()->IsRoundOver() )
+	{
+		return Done( "Round Over: seek enemies instead of escorting CTG carrier" );
+	}
+
 	if ( m_repathTimer.IsElapsed() )
 	{
 		UpdateGoalPosition( me, pGhostCarrier );
