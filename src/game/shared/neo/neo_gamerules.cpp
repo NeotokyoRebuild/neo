@@ -3598,10 +3598,9 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	}
 
 	const char *pszClNeoCrosshair = engine->GetClientConVarValue(pNEOPlayer->entindex(), "cl_neo_crosshair");
-	const char *pszOldClNeoCrosshair = pNEOPlayer->m_szNeoCrosshair.Get();
-	if (V_strcmp(pszOldClNeoCrosshair, pszClNeoCrosshair) != 0)
+	if (V_strcmp(pNEOPlayer->m_szNeoCrosshair, pszClNeoCrosshair) != 0)
 	{
-		V_strncpy(pNEOPlayer->m_szNeoCrosshair.GetForModify(), pszClNeoCrosshair, NEO_XHAIR_SEQMAX);
+		V_strcpy_safe(pNEOPlayer->m_szNeoCrosshair, pszClNeoCrosshair);
 	}
 
 	const char *pszName = pszSteamName;
