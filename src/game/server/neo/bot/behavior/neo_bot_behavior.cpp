@@ -683,7 +683,8 @@ QueryResultType CNEOBotMainAction::ShouldWalk(const CNEOBot *me, const QueryResu
 	}
 
 	// Walk until reload actually starts so sprint does not block the reload initiation
-	if (myWeapon && myWeapon->Clip1() <= 0 && !myWeapon->m_bInReload)
+	if (myWeapon && !myWeapon->m_bInReload &&
+		(myWeapon->Clip1() <= 0 || (me->m_nButtons & IN_RELOAD)))
 	{
 		return ANSWER_YES;
 	}
@@ -716,7 +717,7 @@ QueryResultType CNEOBotMainAction::ShouldAim(const CNEOBot *me, const bool bWepH
 	}
 
 	const bool bIsPlayerStopped =
-			me->GetLocomotionInterface()->GetSpeed() == 0.0f && !(me->GetNeoFlags() & NEO_FL_FREEZETIME);
+			me->GetLocomotionInterface()->GetSpeed() < 10.0f && !(me->GetNeoFlags() & NEO_FL_FREEZETIME);
 	const bool bIsScoped = pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
 
 	const bool bIsNowFiring = me->IsFiring();
@@ -750,6 +751,12 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>( me->GetActiveWeapon() );
 	if ( !myWeapon )
 		return;
+
+	// Check reload waiting edge case, potentially from weapon swaps
+	if ( m_isWaitingForFullReload && myWeapon->GetMaxClip1() > 0 && myWeapon->Clip1() >= myWeapon->GetMaxClip1() )
+	{
+		m_isWaitingForFullReload = false;
+	}
 
 	if ( me->IsBarrageAndReloadWeapon( myWeapon ) )
 	{
@@ -882,6 +889,8 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		&& myWeapon->IsWeaponReloadable()
 		&& myWeapon->m_iClip1 <= 0 )
 	{
+		bool bShouldConsiderReload = false;
+
 		if (myWeapon->m_bInReload)
 		{
 			// passthrough: don't introduce decision jitter
@@ -890,10 +899,21 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			// intention is to swap to secondary if available
 			me->EquipBestWeaponForThreat(threat, bNotPrimary);
+
+			auto *pActive = static_cast<CNEOBaseCombatWeapon *>( me->GetActiveWeapon() );
+			if ( pActive && pActive->m_iClip1 <= 0 && !pActive->m_bInReload )
+			{
+				bShouldConsiderReload = true;
+			}
 		}
 		else
 		{
-			me->ReloadIfLowClip(true);
+			bShouldConsiderReload = true;
+		}
+
+		if ( bShouldConsiderReload )
+		{
+			me->ReloadIfLowClip( true );
 			m_isWaitingForFullReload = true;
 		}
 		return;
