@@ -127,6 +127,8 @@ extern bool	g_bLevelInitialized;
 extern bool g_bTextMode;
 
 #ifdef NEO
+bool NeoIsSteamOffline();
+
 template <int STR_LIMIT_SIZE>
 	requires (STR_LIMIT_SIZE > 0)
 // De-mangle bad Unicode and trim leading and trailing whitespace.

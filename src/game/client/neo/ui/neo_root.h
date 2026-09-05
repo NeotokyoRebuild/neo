@@ -34,6 +34,7 @@ struct NeoNewGame
 	int iBotDifficulty = 2;
 	wchar_t wszPassword[64] = L"neo";
 	bool bFriendlyFire = true;
+	bool bLanMode = false;
 	bool bUseSteamNetworking = false;
 };
 
@@ -173,6 +174,14 @@ public:
 	NeoSettings m_ns = {};
 
 	NeoNewGame m_newGame = {};
+
+	// m_newGame.bLanMode is defaulted from whether Steam is reachable, since a listen server
+	// hosted while Steam is offline has to run in LAN mode or the engine's Steam auth drops
+	// unauthenticated players a couple of minutes in.
+	void DefaultNewGameLanMode();
+	bool m_bLanModeDefaulted = false;
+	bool m_bLanModeDefaultedWhileOffline = false;
+
 	struct MapInfo
 	{
 		wchar_t wszName[64];

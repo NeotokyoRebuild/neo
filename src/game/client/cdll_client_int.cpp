@@ -939,6 +939,15 @@ static void RestrictNeoClientCheats()
 			AssertMsg1(false, "convar or concmd named \"%s\" was not found\n", cheatName);
 	}
 }
+
+bool NeoIsSteamOffline()
+{
+#ifdef NO_STEAM
+	return false;
+#else
+	return !ClientSteamContext().BLoggedOn();
+#endif
+}
 #endif
 
 // Purpose: Called when the DLL is first loaded.
