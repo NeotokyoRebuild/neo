@@ -16,9 +16,10 @@ CNEOBotCtgCapture::CNEOBotCtgCapture( CWeaponGhost *pObjective )
 //---------------------------------------------------------------------------------------------
 ActionResult<CNEOBot> CNEOBotCtgCapture::OnStart( CNEOBot *me, Action<CNEOBot> *priorAction )
 {
-	m_captureAttemptTimer.Invalidate();
-	m_repathTimer.Invalidate();
 	m_path.Invalidate();
+	m_repathTimer.Invalidate();
+	m_captureAttemptTimer.Start( 3.0f );
+	m_previousKnownArea = me->GetLastKnownArea();
 	
 	if ( !m_hObjective )
 	{
@@ -52,6 +53,14 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 		return Done( "Ghost was taken by someone else" );
 	}
 
+	// Add more capture time if we progressed to the next NavArea
+    CNavArea *pCurrentKnownArea = me->GetLastKnownArea();
+    if ( pCurrentKnownArea != m_previousKnownArea )
+    {
+        m_captureAttemptTimer.Start( 3.0f );
+        m_previousKnownArea = pCurrentKnownArea;
+    }
+
 	if ( !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
 	{
 		if ( !CNEOBotPathCompute( me, m_path, m_hObjective->GetAbsOrigin(), FASTEST_ROUTE ) )
@@ -63,12 +72,6 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 		m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 	}
 	m_path.Update( me );
-
-	if ( !m_captureAttemptTimer.HasStarted() )
-	{
-		// If this timer expires, give up
-		m_captureAttemptTimer.Start( 3.0f );
-	}
 
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
 	if ( pPrimary )
