@@ -27,6 +27,58 @@ It's recommended you fork [the master branch](https://github.com/NeotokyoRebuild
 
 See [README.md](README.md) in this repo for setting up your build environment (currently supporting Windows/Linux).
 
+### Hot reload (Linux)
+
+Edit C++ while the game runs: keep `make watch` running in your build shell and
+run the game through Steam. Saving a source file recompiles just that
+translation unit and applies it to the live process in a few seconds.
+
+Setup: follow the [ntre-build-hot-reloader Quick start](https://github.com/sunmachine/ntre-build-hot-reloader#quick-start) (checkout next to
+this repo or `RELOADER_DIR=`, Rust toolchain with the musl target, sniper image),
+then
+
+```bash
+make watch-configure   # once: the neo-sniper container, the sidecar binary, the hotreload preset
+make watch             # every session
+```
+
+`make watch-configure` needs Podman: it creates a persistent `neo-sniper`
+container from the sniper image that mounts your home at the host path and runs
+as your uid, or `CONTAINER=` points at an existing Toolbx or distrobox container.
+Each step is skipped when already done.
+
+Both Steam launch methods from the README work; the loader finds the build tree
+in either layout:
+
+* Source SDK Base 2013 Multiplayer with launch options
+  `%command% -insecure -dev -game /path/to/your/repo/game/neo`
+* the "Neotokyo: Rebuild" sourcemod entry (steamapps/sourcemods symlink or bind
+  mount of `game/neo`), with `-insecure -dev` as its launch options
+
+`make build` returns to the `linux-debug` preset. See `src/Makefile` (`make help`).
+In-game: `sv_neo_hot_reload_status`,
+`sv_neo_hot_reload` (apply when `sv_neo_hot_reload_auto` is 0); `cl_` variants
+for client.so. The sidecar in `.ide/bin/` and the vendored loader under
+`src/game/shared/neo/hotreload/vendor/` (`VENDORED.md` names the revision) come
+from the same reloader repo; keep them in step.
+
+To catch a crash with symbols while the game runs, attach the host's gdb by pid
+(`ptrace_scope` is 0 here) and launch with `-noassert`, or a pre-existing bot
+animation assert opens a modal dialog under a debugger.
+
+What hot reload does not do, by design: change a type's layout or vtable,
+apply edits to `BEGIN_DATADESC` / send and receive tables / prediction maps
+(they are built once at static init), or reload a header that dirties more
+than `--max-tus` units. Each of those is a rebuild. The reloader README lists
+the full set under Limits.
+
+Troubleshooting `make watch-configure`:
+
+* `crun: ptsname: Inappropriate ioctl for device`: transient Podman error on the
+  first exec after boot; re-run the same command.
+* `sidecar missing and no reloader checkout`: clone the reloader next to this
+  repo or set `RELOADER_DIR=`.
+
 ### Debugging
 To be safe and avoid problems with VAC, it's recommended to add a [-insecure](https://developer.valvesoftware.com/wiki/Command_Line_Options) launch flag before attaching your debugger.
 
