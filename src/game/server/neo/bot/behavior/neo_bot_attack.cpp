@@ -11,6 +11,9 @@
 #include "nav_mesh.h"
 #include "debugoverlay_shared.h"
 
+ConVar sv_neo_bot_attack_cover_search_interval("sv_neo_bot_attack_cover_search_interval", "1.0", FCVAR_CHEAT,
+	"Timer throttle (in seconds) for attempts between cover searches", true, 0, false, 0);
+
 ConVar sv_neo_bot_attack_debug_cover("sv_neo_bot_attack_debug_cover", "0", FCVAR_CHEAT,
 	"Draw debug overlays for bot attack/cover behavior", true, 0, true, 1);
 
@@ -58,10 +61,48 @@ public:
 	CSearchForAttackCover( CNEOBot *me, const CKnownEntity *threat, const CNavArea *goalArea = nullptr ) : m_me( me ), m_threat( threat )
 	{
 		m_attackCoverArea = nullptr;
+		m_coverAvoidPenalty = FLT_MAX;
 		m_myArea = m_me->GetLastKnownArea();
 		m_threatArea = threat->GetLastKnownArea();
 		m_goalArea = goalArea ? goalArea : m_threatArea; // prioritize movement towards input goal area or threat
 		m_myDistToGoalSq = m_goalArea ? ( m_goalArea->GetCenter() - m_me->GetAbsOrigin() ).LengthSqr() : 0;
+	}
+
+	bool IsBetterCandidate( CNavArea *area, float avoidPenalty ) const
+	{
+		if ( !m_attackCoverArea || avoidPenalty < m_coverAvoidPenalty )
+		{
+			return true;
+		}
+		if ( avoidPenalty > m_coverAvoidPenalty )
+		{
+			return false;
+		}
+
+		// If we already have a previous candidate cover area,
+		// only consider this new candidate area if it's an improvement
+		// as we assume earlier breadth first search nodes are closer to bot
+		// and thus faster to reach for safety.
+		if ( neo_bot_path_reservation_enable.GetBool() )
+		{
+			// prefer areas that friendly bots have reserved relatively less
+			return CNEOBotPathReservations()->GetPredictedFriendlyPathCount( area->GetID(), m_me->GetTeamNumber() )
+				< CNEOBotPathReservations()->GetPredictedFriendlyPathCount( m_attackCoverArea->GetID(), m_me->GetTeamNumber() );
+		}
+		// Fallback when path reservation is disabled: potentially visible area
+		// count is a rough proxy for how exposed an area is. It ignores whether
+		// the area is actually reachable and does nothing to keep friendlies
+		// from bunching up in the same area.
+		return area->GetPotentiallyVisibleAreaCount() < m_attackCoverArea->GetPotentiallyVisibleAreaCount();
+	}
+
+	// Record area as the current cover candidate. 
+	// Returns whether the search  should keep going
+	bool TakeCandidate( CNavArea *area, float avoidPenalty )
+	{
+		m_attackCoverArea = area;
+		m_coverAvoidPenalty = avoidPenalty;
+		return avoidPenalty != 0.0f; // negative value might indicate overflow
 	}
 
 	virtual bool operator() ( CNavArea *baseArea, CNavArea *priorArea, float travelDistanceSoFar )
@@ -79,36 +120,12 @@ public:
 			return true; // skip our starting area
 		}
 
-		if ( neo_bot_path_reservation_enable.GetBool() &&
-			( CNEOBotPathReservations()->GetAreaAvoidPenalty(area->GetID()) > 0 ) )
+		float avoidPenalty = neo_bot_path_reservation_enable.GetBool()
+			? CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() )
+			: 0.0f;
+		if ( !IsBetterCandidate( area, avoidPenalty ) )
 		{
-			return true; // skip areas that have had navigation hiccups
-		}
-
-		if ( m_attackCoverArea )
-		{
-			// If we already have a previous candidate cover area,
-			// only consider this new candidate area if it's an improvement
-			// as we assume earlier breadth first search nodes are closer to bot
-			// and thus faster to reach for safety.
-			if ( neo_bot_path_reservation_enable.GetBool() )
-			{
-				int candidateReservations = CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber());
-				int previousReservations = CNEOBotPathReservations()->GetPredictedFriendlyPathCount(m_attackCoverArea->GetID(), m_me->GetTeamNumber());
-				if (candidateReservations >= previousReservations)
-				{
-					return true; // skip areas that have been reserved relatively more or equal by friendly bots
-				}
-			}
-			// Fallback in case the path reservation system is disabled
-			else if (area->GetPotentiallyVisibleAreaCount() >= m_attackCoverArea->GetPotentiallyVisibleAreaCount())
-			{
-				// Use potentially visible area count as a rough proxy for how exposed the area is
-				// The downsides of this approach are:
-				// * It doesn't consider whether the nav area is actually reachable
-				// * It doesn't do anything to discourage friendlies from bunching up in the same area
-				return true; // skip areas that are relatively more exposed
-			}
+			return true; // the cover candidate we already have is at least as good
 		}
 
 		float goalAreaDistanceSq = ( m_goalArea->GetCenter() - area->GetCenter() ).LengthSqr();
@@ -139,22 +156,20 @@ public:
 
 					if ( trSmoke.fraction < trNormal.fraction )
 					{
-						m_attackCoverArea = area;
-						return false; // found smoke as concealment
+						return TakeCandidate( area, avoidPenalty ); // found smoke as concealment
 					}
 				}
 			}
 			else if (!m_threatArea->IsCompletelyVisible(area))
 			{
-				m_attackCoverArea = area;
+				TakeCandidate( area, avoidPenalty ); // partial cover, keep looking for something better
 			}
 
 			return true; // search for potentially better cover
 		}
 
 		// found hard cover
-		m_attackCoverArea = area;
-		return false; // found suitable cover
+		return TakeCandidate( area, avoidPenalty );
 	}
 
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar )
@@ -194,12 +209,29 @@ public:
 
 	CNEOBot *m_me;
 	const CKnownEntity *m_threat;
-	const CNavArea *m_attackCoverArea;
+	const CNavArea *m_attackCoverArea; // best cover candidate found so far
+	float m_coverAvoidPenalty;         // avoid penalty of m_attackCoverArea; 0 means no navigation hiccups
 	const CNavArea *m_goalArea;   // reference point of the optional goal direction
 	const CNavArea *m_myArea;     // reference point of myself
 	const CNavArea *m_threatArea; // reference point of the threat
 	float m_myDistToGoalSq;       // the bot's current distance to the threat
 };
+
+
+//---------------------------------------------------------------------------------------------
+// Pick the next cover area to leapfrog towards, or nullptr if no better area found
+const CNavArea *CNEOBotAttack::FindAttackCover( CNEOBot *me, const CKnownEntity *threat )
+{
+	CNavArea *pStartArea = me->GetLastKnownArea();
+	if ( !pStartArea )
+	{
+		return nullptr;
+	}
+
+	CSearchForAttackCover search( me, threat, m_goalArea );
+	SearchSurroundingAreas( pStartArea, search );
+	return search.m_attackCoverArea;
+}
 
 
 //---------------------------------------------------------------------------------------------
@@ -329,26 +361,16 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 	}
 
 	// Consider if there is cover between me and goal to leapfrog to
-	if ( m_bSawEnemySinceLastPathCompute &&
+	if ( m_bSawEnemySinceLastPathCompute && m_coverSearchTimer.IsElapsed() &&
 		(!m_attackCoverArea || (me->GetLastKnownArea() == m_attackCoverArea)) )
 	{
+		m_coverSearchTimer.Start( sv_neo_bot_attack_cover_search_interval.GetFloat() );
 		m_bSawEnemySinceLastPathCompute = false;
-		CSearchForAttackCover search( me, threat, m_goalArea );
-		SearchSurroundingAreas( me->GetLastKnownArea(), search );
 
-		if ( search.m_attackCoverArea )
+		m_attackCoverArea = FindAttackCover( me, threat );
+		if ( m_attackCoverArea )
 		{
-			m_attackCoverArea = search.m_attackCoverArea;
 			m_chasePath.Invalidate();
-		}
-		else if (m_goalArea)
-		{
-			// Even if we bounce back to Attack, goal position may get refreshed in prior behavior
-			return Done( "Reconsidering goal: Failed to find cover towards goal." );
-		}
-		else
-		{
-			m_attackCoverArea = nullptr;
 		}
 		m_path.Invalidate();
 	}
@@ -377,10 +399,6 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			m_path.Invalidate();
 			m_attackCoverArea = nullptr;
 		}
-	}
-	else if (m_goalArea)
-	{
-		return Done( "Reconsidering goal: No path to cover found." );
 	}
 	else
 	{
