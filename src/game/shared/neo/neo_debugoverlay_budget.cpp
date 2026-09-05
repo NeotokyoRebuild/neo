@@ -123,7 +123,7 @@ public:
 		// a bucket, lives for one bucket. Anything past the end of the wheel is
 		// charged as if it lived for the whole horizon, which still makes it far
 		// more expensive than a per-tick overlay.
-		int nBuckets = ( flDuration > 0.0f ) ? ( 1 + (int)( flDuration / BUCKET_SECONDS ) ) : 1;
+		int nBuckets = ( flDuration > 0.0f ) ? ( 1 + static_cast<int>( flDuration / BUCKET_SECONDS ) ) : 1;
 		nBuckets = clamp( nBuckets, 1, NUM_BUCKETS - 1 );
 
 		m_nExpiring[ ( m_nHead + nBuckets ) % NUM_BUCKETS ] += 1;
@@ -184,7 +184,7 @@ private:
 		// discards its overlays at the same time. So does any stretch where we were
 		// not tracking. Start over rather than locking the budget out on stale
 		// bookkeeping for a whole horizon.
-		if ( m_bStale || now < m_flHeadTime || ( now - m_flHeadTime ) > ( NUM_BUCKETS * BUCKET_SECONDS ) )
+		if ( m_bStale || now < m_flHeadTime || ( now - m_flHeadTime ) > ( static_cast<float>( NUM_BUCKETS ) * BUCKET_SECONDS ) )
 		{
 			Reset();
 			return;
