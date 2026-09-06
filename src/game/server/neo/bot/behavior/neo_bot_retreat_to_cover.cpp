@@ -273,11 +273,18 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		if ( threat )
 		{
 			// threats are still visible - find new cover
+			CNavArea *pPrevCoverArea = m_coverArea;
 			m_coverArea = FindCoverArea( me );
 
 			if ( m_coverArea == NULL )
 			{
 				return Done( "My cover is exposed, and there is no other cover available!" );
+			}
+
+			// cover destination changed, stop following the path to the old spot
+			if ( m_coverArea != pPrevCoverArea )
+			{
+				m_path.Invalidate();
 			}
 		}
 		else
@@ -309,10 +316,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 
 		m_waitInCoverTimer.Reset();
 
-		if ( m_repathTimer.IsElapsed() )
+		if ( !m_path.IsValid() )
 		{
-			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
-
 			CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
 		}
 
@@ -326,6 +331,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnStuck( CNEOBot *me )
 {
+	m_path.Invalidate();
 	return TryContinue();
 }
 
@@ -340,6 +346,7 @@ EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnMoveToSuccess( CNEOBot *m
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
+	m_path.Invalidate();
 	return TryContinue();
 }
 

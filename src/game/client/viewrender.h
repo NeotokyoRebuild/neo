@@ -362,6 +362,9 @@ public:
 	virtual	void	Render( vrect_t *rect );
 	virtual void	RenderView( const CViewSetup &view, int nClearFlags, int whatToDraw );
 	virtual void	RenderPlayerSprites();
+#ifdef NEO
+	virtual void	RenderPlaceNames();
+#endif // NEO
 	virtual void	Render2DEffectsPreHUD( const CViewSetup &view );
 	virtual void	Render2DEffectsPostHUD( const CViewSetup &view );
 

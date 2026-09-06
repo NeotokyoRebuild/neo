@@ -34,10 +34,15 @@
 
 #include "util_shared.h"
 
+#ifdef NEO
+#include "nav_shared.h"
+#endif // NEO
+
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
 
+#ifndef NEO
 //--------------------------------------------------------------------------------------------------------------
 /// The current version of the nav file format
 
@@ -45,6 +50,7 @@
 /// must be updated to match. If not, this will break the Xbox 360.
 // TODO: Was changed from 15, update when latest 360 code is integrated (MSB 5/5/09)
 const int NavCurrentVersion = 16;
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------------
 //
@@ -162,7 +168,9 @@ void PlaceDirectory::Load( CUtlBuffer &fileBuffer, int version )
 	{
 		len = fileBuffer.GetUnsignedShort();
 		fileBuffer.Get( placeName, MIN( sizeof( placeName ), len ) );
-
+#ifdef NEO
+		TheNavMesh->LoadPlace(placeName);
+#endif // NEO
 		Place place = TheNavMesh->NameToPlace( placeName );
 		if (place == UNDEFINED_PLACE)
 		{
@@ -181,18 +189,16 @@ void PlaceDirectory::Load( CUtlBuffer &fileBuffer, int version )
 
 PlaceDirectory placeDirectory;
 
+#ifndef NEO
 #if defined( _X360 )
 	#define FORMAT_BSPFILE "maps\\%s.360.bsp"
 	#define FORMAT_NAVFILE "maps\\%s.360.nav"
 #else
 	#define FORMAT_BSPFILE "maps\\%s.bsp"
-#ifdef NEO
-	#define FORMAT_NAVFILE "maps\\nav\\%s.nav"
-#else
 	#define FORMAT_NAVFILE "maps\\%s.nav"
-#endif // NEO
 	#define PATH_NAVFILE_EMBEDDED "maps\\embed.nav"
 #endif
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------------
 /**

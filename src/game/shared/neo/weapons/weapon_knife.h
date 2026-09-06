@@ -41,6 +41,7 @@ public:
 	virtual bool CanDrop() final { return false; }
 	virtual bool CanAim() final { return false; }
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }
+	virtual bool IsWeaponReloadable() const override final { return false; }
 
 #ifdef CLIENT_DLL
 	virtual bool ShouldDraw() final;

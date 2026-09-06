@@ -65,6 +65,7 @@ public:
 	virtual void Equip(CBaseCombatCharacter *pNewOwner) override;
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 	virtual bool CanAim() final { return false; }
+	virtual bool IsWeaponReloadable(void) const override final { return false; }
 
 	NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const override { return NEO_WIDX_GHOST; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_GHOST; }

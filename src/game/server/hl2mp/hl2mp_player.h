@@ -64,6 +64,12 @@ public:
 	void			SetupBones( matrix3x4_t *pBoneToWorld, int boneMask );
 	// TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK - END
 
+#ifdef NEO
+	// Mirrors C_HL2MP_Player::OnNewModel: the animation state must drop its per-model
+	// cache when the model changes, on the server as well as the client.
+	virtual CStudioHdr *OnNewModel( void ) OVERRIDE;
+#endif
+
 	DECLARE_ENT_SCRIPTDESC();
 
 	virtual void Precache( void );

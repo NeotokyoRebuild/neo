@@ -2619,5 +2619,14 @@ void CMultiPlayerAnimState::OnNewModel( void )
 {
 	m_bPoseParameterInit = false;
 	m_PoseParameterData.Init();
+#ifdef NEO
+	// NEO: a sequence index is only meaningful for the model it was computed against.
+	// The aim-layer transitioner keeps the previous sequence in its animation queue so
+	// it can blend out of it; after a model swap that index addresses a foreign sequence
+	// table, and CheckForSequenceChange() hands it straight to CStudioHdr::pSeqdesc().
+	// Drop the queue along with the model - an empty queue simply snaps, which is what
+	// the transitioner already does for STUDIO_SNAP sequences.
+	m_IdleSequenceTransitioner.RemoveAll();
+#endif
 	ClearAnimationState();
 }

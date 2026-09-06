@@ -68,6 +68,7 @@
 #ifdef NEO
 #include "neo_player_shared.h"
 #include <type_traits>
+#include "ui/neo_hud_place_name.h"
 #endif // NEO
 #include "rendertexture.h"
 #include "viewpostprocess.h"
@@ -2000,6 +2001,22 @@ void CViewRender::RenderPlayerSprites()
 	GetClientVoiceMgr()->DrawHeadLabels();
 }
 
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: Renders navigation mesh place names
+// Input  : none
+//-----------------------------------------------------------------------------
+void CViewRender::RenderPlaceNames()
+{
+	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
+
+	if (auto placeNameHudElement = GetPlaceName())
+	{
+		placeNameHudElement->DrawPlaceNames();
+	}
+}
+#endif // NEO
+
 //-----------------------------------------------------------------------------
 // Sets up, cleans up the main 3D view
 //-----------------------------------------------------------------------------
@@ -2333,6 +2350,7 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 
 #ifdef NEO // && defined GLOWS_ENABLE? // Add glow effect after HDR stuff is done and vision modes are applied, so the colour of the effect doesn't vary
 		GetClientModeNormal()->DoPostScreenSpaceEffects(&viewRender);
+		RenderPlaceNames();
 #endif // NEO
 		CleanupMain3DView( viewRender );
 

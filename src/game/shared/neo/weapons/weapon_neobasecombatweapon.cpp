@@ -1406,3 +1406,28 @@ void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 	// Calling BaseClass::Use will pick the weapon up without waiting for the touch cooldown, don't see anything important there that we need to do that we aren't doing here
 }
 #endif
+
+const char *CNEOBaseCombatWeapon::GetDeathIcon(const CNEOBaseCombatWeapon *pNeoWep,
+		const EDeathIconType eType, bool isGrenade, bool isRemoteDetpack)
+{
+	if (eType == DEATHICONTYPE_IDX && pNeoWep)
+	{
+		isGrenade = pNeoWep->WeaponIndex() == NEO_WIDX_FRAG_GRENADE;
+		isRemoteDetpack = pNeoWep->WeaponIndex() == NEO_WIDX_DETPACK;
+	}
+
+	if (isGrenade)
+	{
+		return "2";
+	}
+	else if (isRemoteDetpack)
+	{
+		return "A";
+	}
+	else if (pNeoWep)
+	{
+		return pNeoWep->GetNEOWpnData().szDeathIcon;
+	}
+	return "";
+}
+

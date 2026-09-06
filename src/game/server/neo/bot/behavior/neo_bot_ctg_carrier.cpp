@@ -356,7 +356,6 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::OnStart( CNEOBot *me, Action< CNEOBot
 {
 	m_chasePath.Invalidate();
 	m_aloneTimer.Invalidate();
-	m_repathTimer.Invalidate();
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
 	m_teammates.RemoveAll();
@@ -382,6 +381,11 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 		return Done( "No longer carrying the ghost" );
 	}
 	
+	if ( NEORules()->IsRoundOver() )
+	{
+		return Done( "Round Over: no CTG objectives to reach" );
+	}
+
 	m_teammates.RemoveAll();
 	CollectPlayers( me, &m_teammates );
 
@@ -542,12 +546,11 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 			{
 				m_chasePath.Invalidate();
 
-				if ( !m_path.IsValid() || !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
+				if ( !m_path.IsValid() )
 				{
 					CNEOBotPathCompute( me, m_path, vecGoalPos, FASTEST_ROUTE );
-					m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
 				}
-				
+                
 				m_path.Update( me );
 				return;
 			}
@@ -633,10 +636,9 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 
 	if ( bFoundGoal )
 	{
-		if ( !m_path.IsValid() || !m_repathTimer.HasStarted() || m_repathTimer.IsElapsed() )
+		if ( !m_path.IsValid() )
 		{
 			CNEOBotPathCompute( me, m_path, vecGoalPos, SAFEST_ROUTE );
-			m_repathTimer.Start( RandomFloat( 0.5f, 1.0f ) );
 		}
 		m_path.Update( me );
 	}
@@ -656,7 +658,6 @@ ActionResult< CNEOBot > CNEOBotCtgCarrier::OnResume( CNEOBot *me, Action< CNEOBo
 	// Re-evaluate nearest cap point on resume (in case we moved significantly while interrupted)
 	m_closestCapturePoint = GetNearestCapPoint( me );
 
-	m_repathTimer.Invalidate();
 	UpdateFollowPath( me, m_teammates );
 	return Continue();
 }
@@ -664,6 +665,7 @@ ActionResult< CNEOBot > CNEOBotCtgCarrier::OnResume( CNEOBot *me, Action< CNEOBo
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotCtgCarrier::OnStuck( CNEOBot *me )
 {
+	m_path.Invalidate();
 	m_teammates.RemoveAll();
 	CollectPlayers( me, &m_teammates );
 	UpdateFollowPath( me, m_teammates );
@@ -679,5 +681,6 @@ EventDesiredResult< CNEOBot > CNEOBotCtgCarrier::OnMoveToSuccess( CNEOBot *me, c
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotCtgCarrier::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
+	m_path.Invalidate();
 	return TryContinue();
 }

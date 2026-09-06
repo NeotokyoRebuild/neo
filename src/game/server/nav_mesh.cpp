@@ -69,10 +69,12 @@ CNavMesh::CNavMesh( void )
 	m_editMode = NORMAL;
 	m_bQuitWhenFinished = false;
 	m_hostThreadModeRestoreValue = 0;
+#ifndef NEO
 	m_placeCount = 0;
 	m_placeName = NULL;
 
 	LoadPlaceDatabase();
+#endif // NEO
 
 	ListenForGameEvent( "round_start" );
 //	ListenForGameEvent( "round_start_pre_entity" );
@@ -89,11 +91,15 @@ CNavMesh::~CNavMesh()
 	if (m_spawnName)
 		delete [] m_spawnName;
 
+#ifdef NEO
+	m_placeName.RemoveAll();
+#else
  // !!!!bug!!! why does this crash in linux on server exit
 	for( unsigned int i=0; i<m_placeCount; ++i )
 	{
 		delete [] m_placeName[i];
 	}
+#endif // NEO
 
 }
 
@@ -134,6 +140,10 @@ void CNavMesh::Reset( void )
 	}
 
 	m_spawnName = NULL;
+	
+#ifdef NEO
+	m_placeName.RemoveAll();
+#endif // NEO
 
 	m_walkableSeeds.RemoveAll();
 }
@@ -513,6 +523,10 @@ void CNavMesh::AddNavArea( CNavArea *area )
 	{
 		m_transientAreas.AddToTail( area );
 	}
+	
+#ifdef NEO
+	IncrementNumPlaces(area->GetPlace(), area);
+#endif // NEO
 
 	++m_areaCount;
 }
@@ -567,6 +581,10 @@ void CNavMesh::RemoveNavArea( CNavArea *area )
 
 	m_avoidanceObstacleAreas.FindAndRemove( area );
 	m_blockedAreas.FindAndRemove( area );
+
+#ifdef NEO
+	DecrementNumPlaces(area->GetPlace(), area);
+#endif // NEO
 
 	--m_areaCount;
 }
@@ -1100,6 +1118,7 @@ unsigned int CNavMesh::GetPlace( const Vector &pos ) const
 	return UNDEFINED_PLACE;
 }
 
+#ifndef NEO
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Load the place names from a file
@@ -1184,6 +1203,7 @@ void CNavMesh::LoadPlaceDatabase( void )
 		m_placeName[i] = placeNames[i];
 	}
 }
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -1192,8 +1212,13 @@ void CNavMesh::LoadPlaceDatabase( void )
  */
 const char *CNavMesh::PlaceToName( Place place ) const
 {
+#ifdef NEO
+	if (place >= 1 && place <= (Place)m_placeName.Count())
+		return m_placeName[ (int)place - 1 ].name;
+#else
 	if (place >= 1 && place <= m_placeCount)
 		return m_placeName[ (int)place - 1 ];
+#endif // NEO
 
 	return NULL;
 }
@@ -1206,10 +1231,17 @@ const char *CNavMesh::PlaceToName( Place place ) const
  */
 Place CNavMesh::NameToPlace( const char *name ) const
 {
+#ifdef NEO
+	for( unsigned int i=0; i<(Place)m_placeName.Count(); ++i )
+	{
+		if (FStrEq( m_placeName[i].name, name ))
+			return i+1;
+#else
 	for( unsigned int i=0; i<m_placeCount; ++i )
 	{
 		if (FStrEq( m_placeName[i], name ))
 			return i+1;
+#endif // NEO
 	}
 
 	return UNDEFINED_PLACE;
@@ -1224,14 +1256,30 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
 {
 	Place found = UNDEFINED_PLACE;
 	bool isAmbiguous = false;
+#ifdef NEO
+	for(unsigned int i=0; i<(Place)m_placeName.Count(); i++)
+#else
 	for( unsigned int i=0; i<m_placeCount; ++i )
+#endif // NEO
 	{
+#ifdef NEO
+		if (!strnicmp( m_placeName[i].name, name, strlen( name ) ))
+#else
 		if (!strnicmp( m_placeName[i], name, strlen( name ) ))
+#endif // NEO
 		{
 			// check for exact match in case of subsets of other strings
+#ifdef NEO
+			if (!stricmp( m_placeName[i].name, name ))
+#else
 			if (!stricmp( m_placeName[i], name ))
+#endif // NEO
 			{
+#ifdef NEO
+				found = NameToPlace( m_placeName[i].name );
+#else
 				found = NameToPlace( m_placeName[i] );
+#endif // NEO
 				isAmbiguous = false;
 				break;
 			}
@@ -1242,7 +1290,11 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
 			}
 			else
 			{
+#ifdef NEO
+				found = NameToPlace( m_placeName[i].name );
+#else
 				found = NameToPlace( m_placeName[i] );
+#endif // NEO
 			}
 		}
 	}
@@ -1253,6 +1305,91 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
 	return found;
 }
 
+#ifdef NEO
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Given a place, return the average center of all the nav areas belonging to that place.
+ */
+const Vector CNavMesh::PlaceToLocation( Place place ) const
+{
+	if (place >= 1 && place <= (Place)m_placeName.Count())
+		return m_placeName[ (int)place - 1 ].averageCenter;
+
+	return vec3_origin;
+}
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return the first unused index in m_placeName
+ */
+Place CNavMesh::LoadPlace(const char* name)
+{
+	PlaceNameAndCount placeNameAndCount = { "", 0 };
+	V_strcpy_safe(placeNameAndCount.name, name);
+	return m_placeName.AddToTail(placeNameAndCount) + 1;
+}
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return the first unused or empty index in m_placeName
+ */
+Place CNavMesh::NextAvailablePlace(const char* name)
+{
+	for (int i = 0; i < m_placeName.Count(); i++)
+	{
+		if (m_placeName[i].count <= 0)
+		{
+			V_strcpy_safe(m_placeName[i].name, name);
+			m_placeName[i].count = 0;
+			return i+1;
+		}
+	}
+	
+	PlaceNameAndCount placeNameAndCount = { "", 0 };
+	V_strcpy_safe(placeNameAndCount.name, name);
+	return m_placeName.AddToTail(placeNameAndCount) + 1;
+}
+
+void CNavMesh::IncrementNumPlaces(Place place, CNavArea* area)
+{
+	if (place <= UNDEFINED_PLACE || place > (Place)m_placeName.Count())
+	{
+		return;
+	}
+
+	const int i = place - 1;
+	const int newCount = m_placeName[i].count + 1;
+	if (newCount != 0)
+	{
+		m_placeName[i].averageCenter = ((m_placeName[i].averageCenter * m_placeName[i].count) + area->GetCenter()) / newCount;
+	}
+	else
+	{
+		m_placeName[i].averageCenter = vec3_origin;
+	}
+	m_placeName[i].count = newCount;
+}
+
+void CNavMesh::DecrementNumPlaces(Place place, CNavArea* area)
+{
+	if (place <= UNDEFINED_PLACE || place > (Place)m_placeName.Count())
+	{
+		return;
+	}
+	
+	const int i = place - 1;
+	const int newCount = m_placeName[i].count - 1;
+	if (newCount != 0)
+	{
+		m_placeName[i].averageCenter = ((m_placeName[i].averageCenter * m_placeName[i].count) - area->GetCenter()) / newCount;
+	}
+	else
+	{
+		m_placeName[i].averageCenter = vec3_origin;
+	}
+	m_placeName[i].count = newCount;
+}
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -1264,12 +1401,24 @@ int CNavMesh::PlaceNameAutocomplete( char const *partial, char commands[ COMMAND
 	partial += Q_strlen( "nav_use_place " );
 	int partialLength = Q_strlen( partial );
 
+#ifdef NEO
+	for( unsigned int i=0; i<(Place)m_placeName.Count(); i++ )
+#else
 	for( unsigned int i=0; i<m_placeCount; ++i )
+#endif // NEO
 	{
+#ifdef NEO
+		if ( !Q_strnicmp( m_placeName[i].name, partial, partialLength ) )
+#else
 		if ( !Q_strnicmp( m_placeName[i], partial, partialLength ) )
+#endif // NEO
 		{
 			// Add the place name to the autocomplete array
+#ifdef NEO
+			Q_snprintf( commands[ numMatches++ ], COMMAND_COMPLETION_ITEM_LENGTH, "nav_use_place %s", m_placeName[i].name );
+#else
 			Q_snprintf( commands[ numMatches++ ], COMMAND_COMPLETION_ITEM_LENGTH, "nav_use_place %s", m_placeName[i] );
+#endif // NEO
 
 			// Make sure we don't try to return too many place names
 			if ( numMatches == COMMAND_COMPLETION_MAXITEMS )
@@ -1295,7 +1444,11 @@ int StringSort (const SortStringType *s1, const SortStringType *s2)
  */
 void CNavMesh::PrintAllPlaces( void ) const
 {
+#ifdef NEO
+	if (m_placeName.Count() == 0)
+#else
 	if (m_placeCount == 0)
+#endif // NEO
 	{
 		Msg( "There are no entries in the Place database.\n" );
 		return;
@@ -1304,9 +1457,17 @@ void CNavMesh::PrintAllPlaces( void ) const
 	unsigned int i;
 
 	CUtlVector< SortStringType > placeNames;
+#ifdef NEO
+	for ( i=0; i<(Place)m_placeName.Count(); i++ )
+#else
 	for ( i=0; i<m_placeCount; ++i )
+#endif // NEO
 	{
+#ifdef NEO
+		placeNames.AddToTail( m_placeName[i].name );
+#else
 		placeNames.AddToTail( m_placeName[i] );
+#endif // NEO
 	}
 	placeNames.Sort( StringSort );
 
@@ -2384,6 +2545,39 @@ void CommandNavUsePlace( const CCommand &args )
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
+#ifdef NEO
+	if (args.ArgC() != 2)
+	{
+		Warning("Usage: nav_use_place \"custom place name\";");
+		return;
+	}
+	
+	if (Q_strcmp(args[1], "") == 0)
+	{
+		TheNavMesh->SetNavPlace(UNDEFINED_PLACE);
+		Msg( "Current place cleared, paint to remove places\n" );
+		return;
+	}
+
+	char usePlaceName[MAX_PLACE_NAME_LENGTH];
+	V_strcpy_safe(usePlaceName, args[1]);
+
+	if (V_strlen(usePlaceName) != V_strlen(args[1]))
+	{
+		Warning("Place name clamped to \"%s\"\n", usePlaceName);
+	}
+
+	if (Place place = TheNavMesh->NameToPlace(usePlaceName);
+		place != UNDEFINED_PLACE)
+	{
+		Msg( "Current place set to '%s'\n", usePlaceName );
+		TheNavMesh->SetNavPlace(place);
+		return;
+	}
+	
+	Msg( "Current place set to new place '%s'\n", usePlaceName );
+	TheNavMesh->SetNavPlace(TheNavMesh->NextAvailablePlace(usePlaceName));
+#else
 	if (args.ArgC() == 1)
 	{
 		// no arguments = list all available places
@@ -2404,6 +2598,7 @@ void CommandNavUsePlace( const CCommand &args )
 			TheNavMesh->SetNavPlace( place );
 		}
 	}
+#endif // NEO
 }
 static ConCommand nav_use_place( "nav_use_place", CommandNavUsePlace, "If used without arguments, all available Places will be listed. If a Place argument is given, the current Place is set.", FCVAR_GAMEDLL | FCVAR_CHEAT, PlaceNameAutocompleteCallback );
 
@@ -2422,6 +2617,20 @@ void CommandNavPlaceReplace( const CCommand &args )
 	else
 	{
 		// two arguments - replace the first place with the second
+#ifdef NEO
+		Place oldPlace = TheNavMesh->NameToPlace(args[1]);
+		if (oldPlace == UNDEFINED_PLACE)
+		{
+			Msg("Old place name not found");
+			return;
+		}
+		
+		Place newPlace = TheNavMesh->NameToPlace(args[2]);
+		if (Q_stricmp(args[2], "") != 0 && newPlace == UNDEFINED_PLACE)
+		{
+			newPlace = TheNavMesh->NextAvailablePlace(args[2]);
+		}
+#else
 		Place oldPlace = TheNavMesh->PartialNameToPlace( args[ 1 ] );
 		Place newPlace = TheNavMesh->PartialNameToPlace( args[ 2 ] );
 
@@ -2430,6 +2639,7 @@ void CommandNavPlaceReplace( const CCommand &args )
 			Msg( "Ambiguous\n" );
 		}
 		else
+#endif // NEO
 		{
 			FOR_EACH_VEC( TheNavAreas, it )
 			{

@@ -41,6 +41,7 @@
 #include "nav_mesh.h"
 #include "neo_spawn_manager.h"
 #include "recipientfilter.h"
+#include "nav_mesh.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -142,8 +143,8 @@ CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
 extern ConVar sv_neo_bot_cmdr_enable;
-extern ConVar sv_neo_ignore_wep_xp_limit;
 extern ConVar sv_neo_clantag_allow;
+extern ConVar sv_neo_detpack_xp_limit;
 extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
 extern ConVar sv_neo_dev_loadout;
@@ -389,9 +390,8 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (!sv_neo_ignore_wep_xp_limit.GetBool() &&
-			loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
-				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
+	if (loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
+			sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = RequestSetLoadout(0);
@@ -1192,6 +1192,21 @@ void CNEO_Player::PreThink(void)
 			SuperJump();
 		}
 	}
+
+	if (TheNavMesh)
+	{
+		// NEO TODO (Adam) do this in OnNavAreaChanged instead
+		const CNavArea* pArea = GetLastKnownArea();
+		const char* placeName = pArea ? TheNavMesh->PlaceToName(pArea->GetPlace()) : NULL;
+		if (!placeName || !placeName[0])
+		{
+			placeName = "";
+		}
+		if (Q_strcmp(m_szLastPlaceName.Get(), placeName))
+		{
+			Q_strncpy(m_szLastPlaceName.GetForModify(), placeName, sizeof(m_szLastPlaceName));
+		}
+	}
 }
 
 void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
@@ -1324,9 +1339,10 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 		return false; // Not a player that is affected by cloaking/etc
 	}
 
-	if (GetTeamNumber() == targetPlayer->GetTeamNumber())
+	if (NEORules()->IsTeamplay() && GetTeamNumber() == targetPlayer->GetTeamNumber())
 	{
-		return false; // Teammates are always labeled with IFF
+		// Teammates are always labeled with IFF, unless in DM
+		return false;
 	}
 
 	// Check visibility cache for this player
@@ -3397,8 +3413,8 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				flDmgAccumlator -= 1.0f;
 			}
 
-			// Mirror team-damage
-			const bool bIsTeamDmg = (attackerIdx != entindex() && attacker->GetTeamNumber() == GetTeamNumber());
+			// Mirror team-damage (unless in DM)
+			const bool bIsTeamDmg = (NEORules()->IsTeamplay() && attackerIdx != entindex() && attacker->GetTeamNumber() == GetTeamNumber());
 			if (bIsTeamDmg)
 			{
 				const float flMirrorMult = NEORules()->MirrorDamageMultiplier();
@@ -3442,7 +3458,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 					++m_iBotDetectableBleedingInjuryEvents;
 				}
 
-				if (bIsTeamDmg && NEORules()->IsTeamplay() && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
+				if (bIsTeamDmg && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
 				{
 					attacker->m_botPauseFiringTimer.Start(1.0f);
 				}
@@ -3475,6 +3491,15 @@ CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
 
 void GiveDet(CNEO_Player* pPlayer)
 {
+	// Cost of -1 XP means no XP cost. Checked before creating the weapon
+	// entity so ineligible players don't pay a create/destroy cycle.
+	const int detXpCost = sv_neo_detpack_xp_limit.GetInt();
+	const bool canHaveDet = (detXpCost < 0 || CNEOWeaponLoadout::GetEffectiveXP(pPlayer->m_iXP) >= detXpCost);
+	if (!canHaveDet)
+	{
+		return;
+	}
+
 	constexpr const char* detpackClassname = "weapon_remotedet";
 	if (!pPlayer->Weapon_OwnsThisType(detpackClassname))
 	{
@@ -3492,23 +3517,12 @@ void GiveDet(CNEO_Player* pPlayer)
 			auto pWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
 			if (pWeapon)
 			{
-				const int detXpCost = pWeapon->GetNeoWepXPCost(pPlayer->GetClass());
-				// Cost of -1 XP means no XP cost.
-				const bool canHaveDet = (detXpCost < 0 || pPlayer->m_iXP >= detXpCost);
-
 				pWeapon->SetSubType(0);
-				if (canHaveDet)
-				{
-					DispatchSpawn(pent);
+				DispatchSpawn(pent);
 
-					if (pent != NULL && !(pent->IsMarkedForDeletion()))
-					{
-						pent->Touch(pPlayer);
-					}
-				}
-				else
+				if (pent != NULL && !(pent->IsMarkedForDeletion()))
 				{
-					UTIL_Remove(pWeapon);
+					pent->Touch(pPlayer);
 				}
 			}
 		}
@@ -3522,7 +3536,7 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
-		if (this->m_iXP >= 4) { GiveDet(this); }
+		GiveDet(this);
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
@@ -3596,9 +3610,8 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (sv_neo_ignore_wep_xp_limit.GetBool() ||
-				m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
-					sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()))
+		if (m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
+				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 

@@ -14,6 +14,9 @@
 
 #include "modelentities.h"		// for CFuncBrush
 #include "doors.h"
+#ifdef NEO
+#include "nav_shared.h"
+#endif // NEO
 
 /**
  * Below are several constants used by the navigation system.
@@ -60,8 +63,9 @@ const float CliffHeight = 300.0f;				// height which we consider a significant c
 #define HumanCrouchHeight		55
 #define HumanCrouchEyeHeight	37
 
-
+#ifndef NEO
 #define NAV_MAGIC_NUMBER 0xFEEDFACE				// to help identify nav files
+#endif // NEO
 
 /**
  * A place is a named group of navigation areas
@@ -111,6 +115,7 @@ enum NavAttributeType
 
 extern NavAttributeType NameToNavAttribute( const char *name );
 
+#ifndef NEO
 enum NavDirType
 {
 	NORTH = 0,
@@ -120,6 +125,7 @@ enum NavDirType
 
 	NUM_DIRECTIONS
 };
+#endif // NEO
 
 /**
  * Defines possible ways to move from one area to another
@@ -141,6 +147,7 @@ enum NavTraverseType
 	NUM_TRAVERSE_TYPES
 };
 
+#ifndef NEO
 enum NavCornerType
 {
 	NORTH_WEST = 0,
@@ -150,6 +157,7 @@ enum NavCornerType
 
 	NUM_CORNERS
 };
+#endif // NEO
 
 enum NavRelativeDirType
 {

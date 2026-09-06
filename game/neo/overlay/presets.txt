@@ -1,0 +1,23 @@
+// overlay/presets.txt
+//
+// Team name and logo presets for the overlay HUD
+//
+// The logo files is relative from this "overlay"
+// directory, just place it all here for simplicity.
+// So EX: example.png resolves to overlay/example.png
+
+overlay_presets
+{
+	// Examples:
+	//
+	// team
+	// {
+	// 	name	"Team 1"
+	// 	logo	"team_1.png"
+	// }
+	// team
+	// {
+	// 	name	"Team 2"
+	// 	logo	"team_2.png"
+	// }
+}

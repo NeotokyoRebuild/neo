@@ -24,12 +24,16 @@
 #include "takedamageinfo.h"
 #include "c_neo_killer_damage_infos.h"
 #include "neo_scoreboard.h"
+#include "neo_hud_deathnotice.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 static ConVar hud_deathnotice_time( "hud_deathnotice_time", "20", 0 );
 extern ConVar cl_neo_hud_scoreboard_hide_others;
+
+inline int gRoundKillerUserIDs[MAX_PLAYERS_ARRAY_SAFE];
+inline int gRoundKillerUserIDsSize;
 
 // Player entries in a death notice
 struct DeathNoticePlayer
@@ -144,52 +148,6 @@ void CNEOHud_DeathNotice::UpdateStateForNeoHudElementDraw()
 {
 	
 }
-
-enum NeoHudDeathNoticeIcon : wchar_t
-{
-	NEO_HUD_DEATHNOTICEICON_EXPLODE = '!',
-	NEO_HUD_DEATHNOTICEICON_GUN,
-	NEO_HUD_DEATHNOTICEICON_HEADSHOT,
-	NEO_HUD_DEATHNOTICEICON_KILL,
-	NEO_HUD_DEATHNOTICEICON_MELEE,
-	NEO_HUD_DEATHNOTICEICON_SHORTBUS,
-
-	NEO_HUD_DEATHNOTICEICON_RANKUP = '(',
-	NEO_HUD_DEATHNOTICEICON_RANKDOWN,
-	NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG,
-	NEO_HUD_DEATHNOTICEICON_PVT,
-	NEO_HUD_DEATHNOTICEICON_CPL,
-	NEO_HUD_DEATHNOTICEICON_SGT,
-	NEO_HUD_DEATHNOTICEICON_LT,
-
-	NEO_HUD_DEATHNOTICEICON_AA12 = '0',
-	NEO_HUD_DEATHNOTICEICON_GHOST,
-	NEO_HUD_DEATHNOTICEICON_GRENADE,
-	NEO_HUD_DEATHNOTICEICON_JITTE,
-	NEO_HUD_DEATHNOTICEICON_JITTESCOPED,
-	NEO_HUD_DEATHNOTICEICON_KNIFE,
-	NEO_HUD_DEATHNOTICEICON_KYLA,
-	NEO_HUD_DEATHNOTICEICON_M41,
-	NEO_HUD_DEATHNOTICEICON_M41L,
-	NEO_HUD_DEATHNOTICEICON_M41S,
-	NEO_HUD_DEATHNOTICEICON_MILSO,
-	NEO_HUD_DEATHNOTICEICON_MPN,
-	NEO_HUD_DEATHNOTICEICON_MPN_UNSUPRESSED,
-	NEO_HUD_DEATHNOTICEICON_MX,
-	NEO_HUD_DEATHNOTICEICON_MX_SILENCED,
-	NEO_HUD_DEATHNOTICEICON_PBK56S,
-	NEO_HUD_DEATHNOTICEICON_PZ,
-	NEO_HUD_DEATHNOTICEICON_REMOTEDET,
-	NEO_HUD_DEATHNOTICEICON_SMAC,
-	NEO_HUD_DEATHNOTICEICON_SMOKEGRENADE,
-	NEO_HUD_DEATHNOTICEICON_SRM,
-	NEO_HUD_DEATHNOTICEICON_SRM_S,
-	NEO_HUD_DEATHNOTICEICON_SRS,
-	NEO_HUD_DEATHNOTICEICON_SUPA7,
-	NEO_HUD_DEATHNOTICEICON_ZR68C,
-	NEO_HUD_DEATHNOTICEICON_ZR68L,
-	NEO_HUD_DEATHNOTICEICON_ZR68S,
-};
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -797,6 +755,11 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	C_NEO_Player* pKiller = ToNEOPlayer(UTIL_PlayerByIndex(killer));
 	C_NEO_Player* pVictim = ToNEOPlayer(UTIL_PlayerByIndex(victim));
 	C_NEO_Player* pAssist = ToNEOPlayer(UTIL_PlayerByIndex(assist));
+
+	if (pKiller && gRoundKillerUserIDsSize < MAX_PLAYERS_ARRAY_SAFE)
+	{
+		gRoundKillerUserIDs[gRoundKillerUserIDsSize++] = pKiller->GetUserID();
+	}
 
 	// Special case: Spectator assisted their own bot-takeover kill
 	// Simplify to "Bot Name + Player Name"

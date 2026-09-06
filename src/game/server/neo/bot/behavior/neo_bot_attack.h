@@ -4,6 +4,7 @@
 #include "Path/NextBotChasePath.h"
 
 class CNEOBot;
+class CKnownEntity;
 
 
 //-------------------------------------------------------------------------------
@@ -27,10 +28,13 @@ public:
 	virtual const char *GetName( void ) const	{ return "Attack"; };
 
 private:
+	const CNavArea *FindAttackCover( CNEOBot *me, const CKnownEntity *threat );
+
 	bool m_bSawEnemySinceLastPathCompute; // throttles m_attackCoverArea search
 	const CNavArea *m_attackCoverArea; // attempting to advance towards this cover area
 	const CNavArea *m_goalArea; // if set, engage enemies while moving towards this destination
 	PathFollower m_path;
 	ChasePath m_chasePath;
+	CountdownTimer m_coverSearchTimer;
 	CountdownTimer m_grenadeThrowCooldownTimer;
 };

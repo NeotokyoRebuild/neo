@@ -28,6 +28,7 @@
 #include "neo_player_shared.h"
 #include "steamnetworkingtypes.h"
 #include "neo_mp3player.h"
+#include "neo_hud_spectator_overlay.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -100,6 +101,7 @@ enum ENeoPopup
 	NEOPOPUP_ACTIONSERVER = NeoUI::INTERNALPOPUP_NIL + 1,
 	NEOPOPUP_ACTIONBLACKLIST,
 	NEOPOPUP_MP3,
+	NEOPOPUP_OVERLAY_TEAM_PRESET,
 };
 
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
@@ -777,6 +779,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			&CNeoRoot::MainLoopNewGame,			// STATE_NEWGAME
 			&CNeoRoot::MainLoopServerBrowser,	// STATE_SERVERBROWSER
 			&CNeoRoot::MainLoopCredits,			// STATE_CREDITS
+			&CNeoRoot::MainLoopOverlay,			// STATE_OVERLAY
 
 			&CNeoRoot::MainLoopMapList,			// STATE_MAPLIST
 			&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
@@ -993,6 +996,48 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		{
 			m_state = STATE_SETTINGS;
 			NeoSettingsRestore(&m_ns);
+		}
+		if (cl_neo_hud_spectator_overlay_enabled.GetBool()
+				&& NeoUI::Button(L"OVERLAY").bPressed)
+		{
+			Q_UTF8ToUnicode(cl_neo_hud_spectator_overlay_jinrai_name.GetString(),
+					m_wszTeamNameJinrai, sizeof(m_wszTeamNameJinrai));
+			Q_UTF8ToUnicode(cl_neo_hud_spectator_overlay_nsf_name.GetString(),
+					m_wszTeamNameNSF, sizeof(m_wszTeamNameNSF));
+			V_strcpy_safe(m_szLogoPathJinrai, cl_neo_hud_spectator_overlay_jinrai_logo.GetString());
+			V_strcpy_safe(m_szLogoPathNSF, cl_neo_hud_spectator_overlay_nsf_logo.GetString());
+			m_iMatchesWonJinrai = cl_neo_hud_spectator_overlay_jinrai_matches_won.GetInt();
+			m_iMatchesWonNSF = cl_neo_hud_spectator_overlay_nsf_matches_won.GetInt();
+
+			{
+				m_iSetTeamPreset = 0;
+				KeyValues *kv = new KeyValues("overlay_presets");
+				if (kv->LoadFromFile(g_pFullFileSystem, "overlay/presets.txt"))
+				{
+					m_teamInfos.Purge();
+					for (KeyValues *teamKv = kv->GetFirstTrueSubKey();
+							teamKv;
+							teamKv = teamKv->GetNextTrueSubKey())
+					{
+						const char *pszName = teamKv->GetString("name");
+						const char *pszLogo = teamKv->GetString("logo");
+						if (pszName && pszLogo && pszName[0] && pszLogo[0])
+						{
+							TeamInfo teamInfo = {};
+							Q_UTF8ToUnicode(pszName, teamInfo.wszName, sizeof(teamInfo.wszName));
+
+							char szRelLogoPath[MAX_PATH];
+							V_sprintf_safe(szRelLogoPath, "overlay/%s", pszLogo);
+							filesystem->RelativePathToFullPath_safe(szRelLogoPath,
+									nullptr, teamInfo.szLogoPath);
+							m_teamInfos.AddToTail(teamInfo);
+						}
+					}
+				}
+				kv->deleteThis();
+			}
+
+			m_state = STATE_OVERLAY;
 		}
 		if (NeoUI::Button(m_wszCachedTexts[MMBTN_QUIT]).bPressed || (!IsInGame() && NeoUI::Bind(KEY_ESCAPE)))
 		{
@@ -2250,6 +2295,202 @@ void CNeoRoot::MainLoopCredits(const MainLoopParam param)
 	}
 }
 
+void CNeoRoot::MainLoopOverlay(const MainLoopParam param)
+{
+	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = ((param.wide - g_iRootSubPanelWide) / 2);
+	g_uiCtx.dPanel.y = ((param.tall - iTallTotal) / 2);
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
+	g_uiCtx.colors.sectionBg = COLOR_BLACK_TRANSPARENT;
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"OVERLAY", "CtxOverlay");
+	{
+		const int iMinPresetRows = Min(m_teamInfos.Size(), 6);
+		const int iThisRowTall = g_uiCtx.layout.iRowTall;
+		NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
+		{
+			FileIODialogMode eNextFileIOMode = FILEIODLGMODE__TOTAL;
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+
+			NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT, iThisRowTall);
+			NeoUI::Divider(L"JINRAI");
+			NeoUI::SliderInt(L"Matches won:", &m_iMatchesWonJinrai, 0, COMP_MATCHES_WON_MAX);
+			NeoUI::TextEdit(L"Team name:", m_wszTeamNameJinrai, SZWSZ_LEN(m_wszTeamNameJinrai));
+			NeoUI::SetPerRowLayout(3, nullptr, iThisRowTall);
+			{
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+				if (NeoUI::Button(L"Pick logo").bPressed)
+				{
+					eNextFileIOMode = FILEIODLGMODE_TEAMLOGO_JINRAI;
+				}
+				if (NeoUI::Button(L"Clear logo").bPressed)
+				{
+					m_szLogoPathJinrai[0] = '\0';
+				}
+				if (NeoUI::Button(L"Set team").bPressed)
+				{
+					NeoUI::OpenPopup(NEOPOPUP_OVERLAY_TEAM_PRESET,
+							NeoUI::Dim{
+								.x = g_uiCtx.rWidgetArea.x0,
+								.y = g_uiCtx.rWidgetArea.y1,
+								.wide = g_uiCtx.irWidgetWide,
+								.tall = g_uiCtx.layout.iDefRowTall * iMinPresetRows,
+							});
+					m_iSetTeamPreset = TEAM_JINRAI;
+				}
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+			}
+			NeoUI::SetPerRowLayout(1, nullptr, iThisRowTall * 4);
+			NeoUI::ImageTexture(m_szLogoPathJinrai, L"No logo applied", "",
+					NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL
+						| NeoUI::TEXTUREOPTFLAGS_DONOTCACHEIFINVALID
+						| NeoUI::TEXTUREOPTFLAGS_RESIZETO256);
+
+			NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT, iThisRowTall);
+			NeoUI::Divider(L"NSF");
+			NeoUI::SliderInt(L"Matches won:", &m_iMatchesWonNSF, 0, COMP_MATCHES_WON_MAX);
+			NeoUI::TextEdit(L"Team name:", m_wszTeamNameNSF, SZWSZ_LEN(m_wszTeamNameNSF));
+			NeoUI::SetPerRowLayout(3, nullptr, iThisRowTall);
+			{
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+				if (NeoUI::Button(L"Pick logo").bPressed)
+				{
+					eNextFileIOMode = FILEIODLGMODE_TEAMLOGO_NSF;
+				}
+				if (NeoUI::Button(L"Clear logo").bPressed)
+				{
+					m_szLogoPathNSF[0] = '\0';
+				}
+				if (NeoUI::Button(L"Set team").bPressed)
+				{
+					NeoUI::OpenPopup(NEOPOPUP_OVERLAY_TEAM_PRESET,
+							NeoUI::Dim{
+								.x = g_uiCtx.rWidgetArea.x0,
+								.y = g_uiCtx.rWidgetArea.y1,
+								.wide = g_uiCtx.irWidgetWide,
+								.tall = g_uiCtx.layout.iDefRowTall * iMinPresetRows,
+							});
+					m_iSetTeamPreset = TEAM_NSF;
+				}
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+			}
+			NeoUI::SetPerRowLayout(1, nullptr, iThisRowTall * 4);
+			NeoUI::ImageTexture(m_szLogoPathNSF, L"No logo applied", "",
+					NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL
+						| NeoUI::TEXTUREOPTFLAGS_DONOTCACHEIFINVALID
+						| NeoUI::TEXTUREOPTFLAGS_RESIZETO256);
+
+			if (FILEIODLGMODE_TEAMLOGO_JINRAI == eNextFileIOMode
+					|| FILEIODLGMODE_TEAMLOGO_NSF == eNextFileIOMode)
+			{
+				if (m_pFileIODialog)
+				{
+					m_pFileIODialog->MarkForDeletion();
+				}
+				m_pFileIODialog = new vgui::FileOpenDialog(this,
+						(FILEIODLGMODE_TEAMLOGO_JINRAI == eNextFileIOMode)
+							? "Import Jinrai team logo"
+							: "Import NSF team logo",
+						vgui::FOD_OPEN);
+				if (m_szNextLogoPathStartDir[0])
+				{
+					m_pFileIODialog->SetStartDirectory(m_szNextLogoPathStartDir);
+				}
+				m_eFileIOMode = eNextFileIOMode;
+				m_pFileIODialog->AddFilter("*.jpg;*.jpeg;*.png;*.vtf", "Images (JPEG, PNG, VTF)", true);
+				m_pFileIODialog->AddFilter("*.jpg;*.jpeg", "JPEG Image", false);
+				m_pFileIODialog->AddFilter("*.png", "PNG Image", false);
+				m_pFileIODialog->AddFilter("*.vtf", "VTF Image", false);
+				m_pFileIODialog->DoModal();
+			}
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
+		NeoUI::BeginSection(NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
+		{
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SetPerRowLayout(5, nullptr, iThisRowTall);
+			{
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::BindKeyBack())
+				{
+					m_state = STATE_ROOT;
+				}
+				NeoUI::Pad();
+				NeoUI::Pad();
+				if (NeoUI::Button(L"Swap Teams").bPressed)
+				{
+					wchar_t wszTeamNameJinraiTemp[MAX_PLAYER_NAME_LENGTH] = {};
+					char szLogoPathJinraiTemp[MAX_PATH] = {};
+
+					// Jinrai -> Jinrai-Temp
+					V_wcscpy_safe(wszTeamNameJinraiTemp, m_wszTeamNameJinrai);
+					V_strcpy_safe(szLogoPathJinraiTemp, m_szLogoPathJinrai);
+					const int iMatchesWonJinraiTemp = m_iMatchesWonJinrai;
+
+					// NSF -> Jinrai
+					V_wcscpy_safe(m_wszTeamNameJinrai, m_wszTeamNameNSF);
+					V_strcpy_safe(m_szLogoPathJinrai, m_szLogoPathNSF);
+					m_iMatchesWonJinrai = m_iMatchesWonNSF;
+
+					// Jinrai-Temp -> NSF
+					V_wcscpy_safe(m_wszTeamNameNSF, wszTeamNameJinraiTemp);
+					V_strcpy_safe(m_szLogoPathNSF, szLogoPathJinraiTemp);
+					m_iMatchesWonNSF = iMatchesWonJinraiTemp;
+				}
+				if (NeoUI::Button(L"Save (F8)").bPressed || NeoUI::Bind(KEY_F8))
+				{
+					{
+						char szTeamNameJinrai[MAX_PLAYER_NAME_LENGTH] = {};
+						Q_UnicodeToUTF8(m_wszTeamNameJinrai, szTeamNameJinrai, sizeof(szTeamNameJinrai));
+						cl_neo_hud_spectator_overlay_jinrai_name.SetValue(szTeamNameJinrai);
+					}
+					{
+						char szTeamNameNSF[MAX_PLAYER_NAME_LENGTH] = {};
+						Q_UnicodeToUTF8(m_wszTeamNameNSF, szTeamNameNSF, sizeof(szTeamNameNSF));
+						cl_neo_hud_spectator_overlay_nsf_name.SetValue(szTeamNameNSF);
+					}
+					cl_neo_hud_spectator_overlay_jinrai_logo.SetValue(m_szLogoPathJinrai);
+					cl_neo_hud_spectator_overlay_nsf_logo.SetValue(m_szLogoPathNSF);
+					cl_neo_hud_spectator_overlay_jinrai_matches_won.SetValue(m_iMatchesWonJinrai);
+					cl_neo_hud_spectator_overlay_nsf_matches_won.SetValue(m_iMatchesWonNSF);
+
+					m_state = STATE_ROOT;
+				}
+			}
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+		}
+		NeoUI::EndSection();
+
+		if (NeoUI::BeginPopup(NEOPOPUP_OVERLAY_TEAM_PRESET, NeoUI::POPUPFLAG_COLORHOTASACTIVE))
+		{
+			for (const TeamInfo &teamInfo : m_teamInfos)
+			{
+				if (NeoUI::Button(teamInfo.wszName).bPressed)
+				{
+					switch (m_iSetTeamPreset)
+					{
+					case TEAM_JINRAI:
+						V_wcscpy_safe(m_wszTeamNameJinrai, teamInfo.wszName);
+						V_strcpy_safe(m_szLogoPathJinrai, teamInfo.szLogoPath);
+						break;
+					case TEAM_NSF:
+						V_wcscpy_safe(m_wszTeamNameNSF, teamInfo.wszName);
+						V_strcpy_safe(m_szLogoPathNSF, teamInfo.szLogoPath);
+						break;
+					default:
+						break;
+					}
+					NeoUI::ClosePopup();
+					break;
+				}
+			}
+			NeoUI::EndPopup();
+		}
+	}
+}
+
 void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 {
 	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
@@ -2986,6 +3227,25 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 	}
 }
 
+static void OnFileSelectedTeamLogo(const char *szFullpath)
+{
+	switch (g_pNeoRoot->m_eFileIOMode)
+	{
+	case CNeoRoot::FILEIODLGMODE_TEAMLOGO_JINRAI:
+		V_strcpy_safe(g_pNeoRoot->m_szLogoPathJinrai, szFullpath);
+		break;
+	case CNeoRoot::FILEIODLGMODE_TEAMLOGO_NSF:
+		V_strcpy_safe(g_pNeoRoot->m_szLogoPathNSF, szFullpath);
+		break;
+	default:
+		Assert(false);
+		break;
+	}
+
+	V_strcpy_safe(g_pNeoRoot->m_szNextLogoPathStartDir, szFullpath);
+	V_StripFilename(g_pNeoRoot->m_szNextLogoPathStartDir);
+}
+
 static void OnFileSelectedMode_Spray(const char *szFullpath)
 {
 	// Ensure the directories are there to write to
@@ -3177,8 +3437,10 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 	{
 		static void (*FILESELMODEFNS[FILEIODLGMODE__TOTAL])(const char *) = {
 			&OnFileSelectedMode_Spray,		// FILEIODLGMODE_SPRAY
-			&ServerBlacklistRead,						// FILEIODLGMODE_BLACKLIST_IMPORT
-			&ServerBlacklistWrite,						// FILEIODLGMODE_BLACKLIST_EXPORT
+			&ServerBlacklistRead,			// FILEIODLGMODE_BLACKLIST_IMPORT
+			&ServerBlacklistWrite,			// FILEIODLGMODE_BLACKLIST_EXPORT
+			&OnFileSelectedTeamLogo,		// FILEIODLGMODE_TEAMLOGO_JINRAI
+			&OnFileSelectedTeamLogo,		// FILEIODLGMODE_TEAMLOGO_NSF
 		};
 		(*FILESELMODEFNS[m_eFileIOMode])(szFullpath);
 	}

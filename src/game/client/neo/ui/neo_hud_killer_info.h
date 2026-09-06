@@ -5,7 +5,7 @@
 
 #include <hudelement.h>
 #include <vgui_controls/Panel.h>
-#include <vgui_avatarimage.h>
+#include "neo_avatar.h"
 
 class CNEOHud_KillerInfo : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
@@ -28,8 +28,6 @@ private:
 
 	vgui::HFont m_hFontNormal;
 	vgui::HFont m_hFontTitle;
-	CAvatarImage m_avatar32;
-	CAvatarImage m_avatar64;
-	CAvatarImage m_avatar184;
+	NeoAvatar m_avatar = {};
 	bool m_bPlayerShownHud = false;
 };

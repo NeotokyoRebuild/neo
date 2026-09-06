@@ -8,6 +8,7 @@
 #include "neo_player_shared.h"
 #include "ui/neo_ui.h"
 #include "neo_crosshair.h"
+#include "neo_avatar.h"
 
 enum ENeoScoreBoardPadding
 {
@@ -16,13 +17,6 @@ enum ENeoScoreBoardPadding
 	NEOSCOREBOARDPADDING_SPACIOUS,
 
 	NEOSCOREBOARDPADDING__TOTAL,
-};
-
-struct MapAvatarValue
-{
-	int i32Idx;
-	int i64Idx;
-	int i184Idx;
 };
 
 struct CNEOScoreBoardPlayer
@@ -35,7 +29,9 @@ struct CNEOScoreBoardPlayer
 	bool bBot;
 	bool bMuted;
 	CSteamID steamID;
-	MapAvatarValue avatar;
+	// Becauses NeoAvatar is separate as this clears
+	// often, so have an index to it
+	int iAvatarIdx;
 	wchar_t wszName[MAX_PLAYER_NAME_LENGTH];
 	wchar_t wszClantag[NEO_MAX_CLANTAG_LENGTH];
 	char szCrosshair[NEO_XHAIR_SEQMAX];
@@ -101,13 +97,12 @@ public:
 
 	int m_iTotalPlayers = 0;
 	CNEOScoreBoardPlayer m_playersInfo[MAX_PLAYERS_ARRAY_SAFE] = {};
+	NeoAvatar m_avatars[MAX_PLAYERS_ARRAY_SAFE] = {};
 	CNEOScoreBoardPlayer m_playerPopup = {};
+	NeoAvatar m_avatarPopup = {};
 
 	wchar_t m_wszHostname[128] = {};
 	wchar_t m_wszMap[128] = {};
-
-	vgui::ImageList *m_pImageList = nullptr;
-	CUtlMap<CSteamID, MapAvatarValue> m_mapAvatarsToImageList;
 	float m_flNextUpdateTime = 0.0f;
 	ButtonCode_t m_nCloseKey = BUTTON_CODE_INVALID;
 
@@ -118,6 +113,8 @@ public:
 		int iTall;
 	};
 	Texture m_arTextures[CROSSHAIR_STYLE__TOTAL] = {};
+
+	bool m_bAppliedApplyScheme = false;
 };
 
 extern CNEOScoreBoard *g_pNeoScoreBoard;

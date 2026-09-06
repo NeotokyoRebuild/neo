@@ -17,6 +17,8 @@ class ImagePanel;
 class ImageList;
 }
 
+class CNEOHud_SpectatorOverlay;
+
 constexpr int MAX_GAME_TYPE_OBJECTIVE_LENGTH = 33;
 
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
@@ -64,6 +66,8 @@ private:
 	virtual void LevelShutdown(void) override;
 
 private:
+	friend class CNEOHud_SpectatorOverlay;
+
 	vgui::HFont m_hOCRLargeFont = 0UL;
 	vgui::HFont m_hOCRFont = 0UL;
 	vgui::HFont m_hOCRSmallFont = 0UL;
@@ -88,9 +92,7 @@ private:
 	int m_iStatusUnicodeSize = 0;
 
 	// Totals info
-	int m_iLeftPlayersAlive = 0;
 	int m_iLeftPlayersTotal = 0;
-	int m_iRightPlayersAlive = 0;
 	int m_iRightPlayersTotal = 0;
 
 	// Element Positions

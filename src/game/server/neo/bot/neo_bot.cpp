@@ -643,7 +643,8 @@ void CNEOBot::Spawn()
 
 int CNEOBot::ChooseRandomWeaponIndex() const
 {
-    const ENeoRank eRank = static_cast<ENeoRank>(GetRank(m_iXP) - 1);
+    const int iEffectiveXP = CNEOWeaponLoadout::GetEffectiveXP(m_iXP);
+    const ENeoRank eRank = static_cast<ENeoRank>(GetRank(iEffectiveXP) - 1);
     if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
     {
         return 0;
@@ -665,7 +666,7 @@ int CNEOBot::ChooseRandomWeaponIndex() const
 		// Generally shouldn't happen, but if so, just pick from any under the XP limit
         for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
         {
-            if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > m_iXP)
+            if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > iEffectiveXP)
             {
                 break;
             }
@@ -1306,28 +1307,36 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 class CFindVantagePoint : public ISearchSurroundingAreasFunctor
 {
 public:
-	CFindVantagePoint(int enemyTeamIndex)
+	CFindVantagePoint(const CNEOBot* me)
 	{
-		m_enemyTeamIndex = enemyTeamIndex;
 		m_vantageArea = NULL;
+
+		m_enemies.EnsureCapacity(gpGlobals->maxClients - 1);
+
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			CNEO_Player* enemy = ToNEOPlayer(UTIL_PlayerByIndex(i));
+
+			if (!enemy || !me->IsEnemy(enemy))
+				continue;
+
+			if (!enemy->IsAlive() || !enemy->GetLastKnownArea())
+				continue;
+
+			m_enemies.AddToTail(enemy);
+		}
 	}
 
 	virtual bool operator() (CNavArea* baseArea, CNavArea* priorArea, float travelDistanceSoFar)
 	{
 		CNavArea* area = (CNavArea*)baseArea;
 
-		CTeam* enemyTeam = GetGlobalTeam(m_enemyTeamIndex);
-		for (int i = 0; i < enemyTeam->GetNumPlayers(); ++i)
+		for (int i = 0; i < m_enemies.Count(); ++i)
 		{
-			CNEO_Player* enemy = (CNEO_Player*)enemyTeam->GetPlayer(i);
-
-			if (!enemy->IsAlive() || !enemy->GetLastKnownArea())
-				continue;
-
-			CNavArea* enemyArea = (CNavArea*)enemy->GetLastKnownArea();
+			CNavArea* enemyArea = m_enemies[i]->GetLastKnownArea();
 			if (enemyArea->IsCompletelyVisible(area))
 			{
-				// nearby area from which we can see the enemy team
+				// nearby area from which we can see an enemy
 				m_vantageArea = area;
 				return false;
 			}
@@ -1336,16 +1345,16 @@ public:
 		return true;
 	}
 
-	int m_enemyTeamIndex;
+	CUtlVector< CNEO_Player* > m_enemies;
 	CNavArea* m_vantageArea;
 };
 
 
 //-----------------------------------------------------------------------------------------------------
-// Return a nearby area where we can see a member of the enemy team
+// Return a nearby area where we can see an enemy
 CNavArea* CNEOBot::FindVantagePoint(float maxTravelDistance) const
 {
-	CFindVantagePoint find(GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+	CFindVantagePoint find(this);
 	SearchSurroundingAreas(GetLastKnownArea(), find, maxTravelDistance);
 	return find.m_vantageArea;
 }
@@ -1607,9 +1616,8 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	// Ideally for close range empty primary reaction
 	else if ( secondaryWeapon
 		&& primaryWeapon->Clip1() <= 0
-		&& (secondaryWeapon->Clip1() > 0)
-		&& threat->IsVisibleInFOVNow()
-		&& (IsRangeLessThan(threat->GetLastKnownPosition(), 250.0f)) )
+		&& secondaryWeapon->Clip1() > 0
+		&& IsRangeLessThan(threat->GetLastKnownPosition(), 250.0f) )
 	{
 		// passthrough
 	}
@@ -1687,7 +1695,7 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 		return;
 	}
 
-	if (wepBits & NEO_WEP_BALC)
+	if (!myWeapon->IsWeaponReloadable())
 	{
 		return;
 	}
@@ -1710,7 +1718,9 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 	}
 	else if (myWeapon->Clip1() > 0)
 	{
-		if (GetTimeSinceWeaponFired() < 3.0f)
+		const CKnownEntity *threat = GetVisionInterface()->GetPrimaryKnownThreat();
+		const bool bAwareOfThreat = threat && threat->GetEntity() && threat->IsVisibleRecently();
+		if (bAwareOfThreat)
 		{
 			return; // still in the middle of a fight
 		}

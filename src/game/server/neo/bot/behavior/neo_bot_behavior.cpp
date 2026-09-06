@@ -675,9 +675,16 @@ QueryResultType CNEOBotMainAction::ShouldWalk(const CNEOBot *me, const QueryResu
 		}
 	}
 
-	// Walk if reloading or firing
+	// Walk if firing or aiming on target
 	CNEOBaseCombatWeapon *myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
-	if (myWeapon && (myWeapon->m_bInReload || me->m_bOnTarget || me->IsFiring()))
+	if (myWeapon && (me->m_bOnTarget || me->IsFiring()))
+	{
+		return ANSWER_YES;
+	}
+
+	// Walk until reload actually starts so sprint does not block the reload initiation
+	if (myWeapon && !myWeapon->m_bInReload &&
+		(myWeapon->Clip1() <= 0 || (me->m_nButtons & IN_RELOAD)))
 	{
 		return ANSWER_YES;
 	}
@@ -693,13 +700,24 @@ QueryResultType CNEOBotMainAction::ShouldWalk(const CNEOBot *me, const QueryResu
 QueryResultType CNEOBotMainAction::ShouldAim(const CNEOBot *me, const bool bWepHasClip) const
 {
 	auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(me->GetActiveWeapon());
-	if (!bWepHasClip || !pNeoWep)
+	
+	if (!pNeoWep)
+	{
+		return ANSWER_NO;
+	}
+
+	if (!bWepHasClip)
+	{
+		return ANSWER_NO;
+	}
+
+	if (pNeoWep->m_bInReload)
 	{
 		return ANSWER_NO;
 	}
 
 	const bool bIsPlayerStopped =
-			me->GetLocomotionInterface()->GetSpeed() == 0.0f && !(me->GetNeoFlags() & NEO_FL_FREEZETIME);
+			me->GetLocomotionInterface()->GetSpeed() < 10.0f && !(me->GetNeoFlags() & NEO_FL_FREEZETIME);
 	const bool bIsScoped = pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
 
 	const bool bIsNowFiring = me->IsFiring();
@@ -734,6 +752,12 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	if ( !myWeapon )
 		return;
 
+	// Check reload waiting edge case, potentially from weapon swaps
+	if ( m_isWaitingForFullReload && myWeapon->GetMaxClip1() > 0 && myWeapon->Clip1() >= myWeapon->GetMaxClip1() )
+	{
+		m_isWaitingForFullReload = false;
+	}
+
 	if ( me->IsBarrageAndReloadWeapon( myWeapon ) )
 	{
 		if ( me->HasAttribute( CNEOBot::HOLD_FIRE_UNTIL_FULL_RELOAD ) || neo_bot_always_full_reload.GetBool() )
@@ -749,6 +773,10 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			{
 				if ( myWeapon->Clip1() < myWeapon->GetMaxClip1() )
 				{
+					if ( !myWeapon->m_bInReload )
+					{
+						me->ReloadIfLowClip(true);
+					}
 					return;
 				}
 
@@ -857,6 +885,40 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		me->EquipBestWeaponForThreat(threat, false);
 	}
 
+	if ( myWeapon && me->IsCombatWeapon( myWeapon )
+		&& myWeapon->IsWeaponReloadable()
+		&& myWeapon->m_iClip1 <= 0 )
+	{
+		bool bShouldConsiderReload = false;
+
+		if (myWeapon->m_bInReload)
+		{
+			// passthrough: don't introduce decision jitter
+		}
+		else if (IsImmediateThreat(me->GetEntity(), threat) && !m_isWaitingForFullReload)
+		{
+			// intention is to swap to secondary if available
+			me->EquipBestWeaponForThreat(threat, bNotPrimary);
+
+			auto *pActive = static_cast<CNEOBaseCombatWeapon *>( me->GetActiveWeapon() );
+			if ( pActive && pActive->m_iClip1 <= 0 && !pActive->m_bInReload )
+			{
+				bShouldConsiderReload = true;
+			}
+		}
+		else
+		{
+			bShouldConsiderReload = true;
+		}
+
+		if ( bShouldConsiderReload )
+		{
+			me->ReloadIfLowClip( true );
+			m_isWaitingForFullReload = true;
+		}
+		return;
+	}
+
 	float threatRange = ( threat->GetEntity()->GetAbsOrigin() - me->GetAbsOrigin() ).Length();
 
 	// actual head aiming is handled elsewhere, just check if we're on target
@@ -886,24 +948,6 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			if (myWeapon->GetNeoWepBits() & NEO_WEP_BALC)
 			{
 				FireBalcAtEnemy( me, myWeapon, threat, threatRange );
-				return;
-			}
-			else if (myWeapon->m_iClip1 <= 0)
-			{
-				if (m_isWaitingForFullReload)
-				{
-					// passthrough: don't introduce decision jitter
-				}
-				else if (IsImmediateThreat(me->GetEntity(), threat) && !m_isWaitingForFullReload)
-				{
-					// intention is to swap to secondary if available
-					me->EquipBestWeaponForThreat(threat, bNotPrimary);
-				}
-				else
-				{
-					me->ReloadIfLowClip(true);
-					m_isWaitingForFullReload = true;
-				}
 				return;
 			}
 
