@@ -440,7 +440,7 @@ Vector CNEOBotCtgCarrier::GetNearestCapPoint( const CNEOBot *me ) const
 			}
 
 			int iCapTeam = pCapPoint->owningTeamAlternate();
-			if ( iCapTeam == iMyTeam )
+			if ( iCapTeam == iMyTeam || iCapTeam == TEAM_ANY )
 			{
 				float distanceToCap = me->GetAbsOrigin().DistToSqr( pCapPoint->GetAbsOrigin() );
 				if ( distanceToCap < flNearestCapDistSq )
