@@ -339,7 +339,7 @@ int CNEOGhostCapturePoint::DrawModel(int flags)
 {
 	int cl_neo_cap_zone_edge_value = cl_neo_cap_zone_edge.GetInt();
 
-	if (!m_bIsActive && !m_pRingMaterial || !m_pRingJinraiMaterial || !m_pRingNsfMaterial || cl_neo_cap_zone_edge_value == NEO_CAP_EDGE_OFF) {
+	if (!m_bIsActive || !m_pRingMaterial || !m_pRingJinraiMaterial || !m_pRingNsfMaterial || cl_neo_cap_zone_edge_value == NEO_CAP_EDGE_OFF) {
 		return 0;
 	}
 
