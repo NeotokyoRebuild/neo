@@ -55,6 +55,27 @@ option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
 option(NEO_BUILD_LAUNCHER "Build the Steam mod launcher" ON)
 option(NEO_UNITY_BUILD_CLIENT_SERVER "Enable unity build for client/server libraries" ON)
 option(NEO_UNITY_BUILD_OTHERS "Enable unity build for vgui2, tier1, and mathlib libraries" ON)
+option(NEO_ENABLE_LINUX_HOT_RELOAD "Enable the Linux hot reload loader in client and server (Debug, non-unity, Linux only)" OFF)
+
+if(NEO_ENABLE_LINUX_HOT_RELOAD)
+    if(NOT OS_LINUX OR NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(FATAL_ERROR "NEO_ENABLE_LINUX_HOT_RELOAD needs OS_LINUX and CMAKE_BUILD_TYPE Debug")
+    endif()
+    if(NEO_UNITY_BUILD_CLIENT_SERVER)
+        message(FATAL_ERROR "NEO_ENABLE_LINUX_HOT_RELOAD needs NEO_UNITY_BUILD_CLIENT_SERVER=OFF (the sidecar maps saves to per-TU objects)")
+    endif()
+    if(NEO_USE_SEPARATE_BUILD_INFO)
+        message(FATAL_ERROR "NEO_ENABLE_LINUX_HOT_RELOAD needs NEO_USE_SEPARATE_BUILD_INFO=OFF (the loader reads the deployed module's .symtab)")
+    endif()
+    if(NEO_DEDICATED)
+        message(FATAL_ERROR "NEO_ENABLE_LINUX_HOT_RELOAD does not support NEO_DEDICATED (module must be named server.so)")
+    endif()
+    # The loader receives the build dir relative to the deployed module's directory,
+    # so the same binary works from any absolute repo location (host vs dev container).
+    get_filename_component(NEO_HR_OUTPUT_ABS "${NEO_OUTPUT_LIBRARY_PATH}" ABSOLUTE)
+    file(RELATIVE_PATH NEO_HOT_RELOAD_BUILD_DIR_REL "${NEO_HR_OUTPUT_ABS}" "${CMAKE_BINARY_DIR}")
+    message(STATUS "Linux hot reload: ON (mailbox at <module dir>/${NEO_HOT_RELOAD_BUILD_DIR_REL}/.hotreload)")
+endif()
 set(NEO_MOD_APPID "3172910" CACHE STRING "Steam appid for the mod launcher's steam_appid.txt")
 
 message(STATUS "Treat compile warnings as errors: ${CMAKE_COMPILE_WARNING_AS_ERROR}")
@@ -295,7 +316,24 @@ if(OS_WINDOWS)
 endif()
 
 if(OS_LINUX OR OS_MACOS)
-    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+    if(NEO_ENABLE_LINUX_HOT_RELOAD)
+        # Default visibility so shims can bind the module's definitions by name.
+        # -falign-functions=16 guarantees room for the entry hook, -fno-gnu-unique
+        # avoids process-wide STB_GNU_UNIQUE bindings that would pin a shim,
+        # -fdata-sections gives every static its own named section so the loader
+        # can share it exactly.
+        add_compile_options(
+            -falign-functions=16
+            -fno-gnu-unique
+            -fdata-sections
+            # fmtstr.h pins its classes hidden with a visibility pragma; under
+            # default visibility every exported class with such a field trips
+            # -Wattributes, which is noise for this dev-only preset.
+            -Wno-attributes
+        )
+    else()
+        set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+    endif()
 
     # Set default optimization option to O2 instead of O3
     string(REGEX REPLACE "([\\/\\-]O)3" "\\12" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -396,11 +434,21 @@ if(OS_LINUX OR OS_MACOS)
 
     # We should always specify -Wl,--build-id, as documented at:
     # http://linux.die.net/man/1/ld and http://fedoraproject.org/wiki/Releases/FeatureBuildId
+    if(NEO_ENABLE_LINUX_HOT_RELOAD)
+        # Same script minus the operator* localization (shims resolve the game's
+        # operator overloads from the module); -Bsymbolic keeps each module bound
+        # to its own definitions under default visibility.
+        set(NEO_VERSION_SCRIPT "${CMAKE_SOURCE_DIR}/version_script.linux.hotreload.txt")
+        add_link_options(-Wl,-Bsymbolic)
+    else()
+        set(NEO_VERSION_SCRIPT "${CMAKE_SOURCE_DIR}/version_script.linux.txt")
+    endif()
+
     add_link_options(
         -Wl,--build-id
         -static-libgcc
         -Wl,--no-undefined
-        -Wl,--version-script=${CMAKE_SOURCE_DIR}/version_script.linux.txt
+        -Wl,--version-script=${NEO_VERSION_SCRIPT}
     )
 
     # Fix undefined references in static libraries
@@ -411,6 +459,28 @@ if(OS_LINUX)
     set(LIBPUBLIC_RELATIVE_PATH "lib/public/${PLATSUBDIR}")
     set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/${LIBPUBLIC_RELATIVE_PATH}")
     set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/${PLATSUBDIR}")
+
+    if(NEO_ENABLE_LINUX_HOT_RELOAD)
+        # The prebuilt SDK archives were compiled with hidden visibility, so
+        # their globals (mdlcache, materials, g_pParticleSystemMgr, ...) would
+        # stay out of the module's dynamic symbol table and a shim rebuilt from
+        # a translation unit that references one could not link. Link this
+        # preset against byte-identical copies whose GLOBAL/WEAK symbols are
+        # promoted to default visibility; st_other is the only changed byte.
+        set(NEO_HR_LIBPUBLIC "${CMAKE_BINARY_DIR}/libpublic-hotreload")
+        execute_process(
+            COMMAND python3 "${CMAKE_SOURCE_DIR}/../tools/hotreload-default-visibility.py"
+                    "${LIBPUBLIC}" "${NEO_HR_LIBPUBLIC}"
+            RESULT_VARIABLE NEO_HR_LIBPATCH_RESULT
+            OUTPUT_VARIABLE NEO_HR_LIBPATCH_OUTPUT
+            ERROR_VARIABLE NEO_HR_LIBPATCH_OUTPUT
+        )
+        if(NOT NEO_HR_LIBPATCH_RESULT EQUAL 0)
+            message(FATAL_ERROR "hot reload library visibility patch failed:\n${NEO_HR_LIBPATCH_OUTPUT}")
+        endif()
+        message(STATUS "Linux hot reload: linking against ${NEO_HR_LIBPUBLIC}")
+        set(LIBPUBLIC "${NEO_HR_LIBPUBLIC}")
+    endif()
 
     add_compile_definitions(
         LINUX

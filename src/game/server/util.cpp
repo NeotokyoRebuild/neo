@@ -6,6 +6,9 @@
 //=============================================================================//
 
 #include "cbase.h"
+#ifdef NEO_LINUX_HOT_RELOAD
+#include "neo/hotreload/neo_hot_reload.h"
+#endif
 #include "saverestore.h"
 #include "globalstate.h"
 #include <stdarg.h>
@@ -153,6 +156,13 @@ IEntityFactory *CEntityFactoryDictionary::FindFactory( const char *pClassName )
 //-----------------------------------------------------------------------------
 void CEntityFactoryDictionary::InstallFactory( IEntityFactory *pFactory, const char *pClassName )
 {
+#ifdef NEO_LINUX_HOT_RELOAD
+	// A shim's static ctors re-run LINK_ENTITY_TO_CLASS while it is applied.
+	// The original factory keeps working (its members were re-pointed at the
+	// shim's code), so keep it and drop the duplicate.
+	if ( NeoHotReload_InApply() && FindFactory( pClassName ) != NULL )
+		return;
+#endif
 	Assert( FindFactory( pClassName ) == NULL );
 	m_Factories.Insert( pClassName, pFactory );
 }

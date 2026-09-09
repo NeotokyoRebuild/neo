@@ -699,3 +699,6 @@ FodyWeavers.xsd
 
 # Selected Background
 /game/neo/scripts/[Cc]hapter[Bb]ackgrounds.txt
+
+# Developer-local tools (the hot reload sidecar lives in .ide/bin)
+/.ide/

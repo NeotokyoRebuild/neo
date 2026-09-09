@@ -70,6 +70,13 @@ public:
 	static void Remove ( IGameSystem* pSys );
 	static void RemoveAll (  );
 
+#ifdef NEO_LINUX_HOT_RELOAD
+	// Hot reload registry fixup: copy the live system list, and remove systems
+	// that appeared since the snapshot (a shim's static ctors re-registering).
+	static void HotReloadSnapshot( CUtlVector<IGameSystem*> &out );
+	static void HotReloadPrune( const CUtlVector<IGameSystem*> &snapshot );
+#endif
+
 	// These methods are used to initialize, shutdown, etc all systems
 	static bool InitAllSystems();
 	static void PostInitAllSystems();
