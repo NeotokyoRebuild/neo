@@ -290,12 +290,11 @@ UtlHandle_t CUtlHandleTable<T, HandleBits>::CreateHandle( unsigned int nSerial, 
 	// but that'd widen the object from 4 bytes of data to 4+4 padding, which would need profiling.
 	static_assert(sizeof(h) == 4);
 	static_assert(sizeof(UtlHandle_t) >= sizeof(h));
-	UtlHandle_t ret;
+	UtlHandle_t ret = 0;
 	memcpy(&ret, &h, sizeof(h));
 #if defined(DBGFLAG_ASSERT) && defined(ACTUALLY_COMPILER_MSVC)
-	UtlHandle_t ref;
-	ref = *(UtlHandle_t*)&h;
-	Assert(ret == ref);
+	Assert(GetListIndex(ret) == nIndex);
+	Assert(GetSerialNumber(ret) == nSerial);
 #endif
 	return ret;
 #else
