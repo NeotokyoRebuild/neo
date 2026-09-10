@@ -95,7 +95,7 @@ ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );
 
 #ifdef NEO
 ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_ARCHIVE, "Whether to use SSAO.", true, 0.0f, true, 1.0f);
-ConVar mat_neo_colorblind_enable("mat_neo_colorblind_enable", "0", FCVAR_ARCHIVE, "Main switch to toggle color vision deficiency adjustments.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_colorblind_enable("mat_neo_colorblind_enable", "0", FCVAR_CHEAT | FCVAR_ARCHIVE, "Main switch to toggle color vision deficiency adjustments.", true, 0.0f, true, 1.0f);
 #endif
 
 extern ConVar localplayer_visionflags;
