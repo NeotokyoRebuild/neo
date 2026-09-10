@@ -17,6 +17,9 @@ ConVar sv_neo_bot_attack_cover_search_interval("sv_neo_bot_attack_cover_search_i
 ConVar sv_neo_bot_attack_debug_cover("sv_neo_bot_attack_debug_cover", "0", FCVAR_CHEAT,
 	"Draw debug overlays for bot attack/cover behavior", true, 0, true, 1);
 
+ConVar sv_neo_bot_attack_too_close_retreat_ratio("sv_neo_bot_attack_too_close_retreat_ratio", "0.33", FCVAR_CHEAT,
+	"Ratio of current weapon's optimal range that bots back away from threat", true, 0.0f, true, 1.0f);
+
 
 //---------------------------------------------------------------------------------------------
 // Enter the Attack behavior to chase and destroy primary known threat.
@@ -316,7 +319,13 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 		me->EnableCloak(3.0f);
 
-		if ( me->GetLastKnownArea() == m_goalArea )
+		if (!m_attackCoverArea
+			&& me->IsRanged( myWeapon )
+			&& me->IsRangeLessThan( threatLastKnownPos, sv_neo_bot_attack_too_close_retreat_ratio.GetFloat() * me->GetDesiredAttackRange() ) )
+		{
+			return SuspendFor( new CNEOBotRetreatToCover(), "Retreating from excessively close enemy" );
+		}
+		else if ( me->GetLastKnownArea() == m_goalArea )
 		{
 			return ChangeTo( new CNEOBotRetreatToCover(), "Taking cover as enemy is still present at my goal" );
 		}
