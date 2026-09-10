@@ -36,8 +36,11 @@ ConVar neo_bot_fire_weapon_allowed( "neo_bot_fire_weapon_allowed", "1", FCVAR_CH
 
 ConVar neo_bot_allow_retreat( "neo_bot_allow_retreat", "1", FCVAR_CHEAT, "If zero, bots will not attempt to retreat if they are are in a bad situation." );
 
-ConVar neo_bot_recon_superjump_min_dist( "neo_bot_recon_superjump_min_dist", "4096", FCVAR_NONE,
-	"Minimum straight-line path distance required for a Recon bot to super jump while moving", true, 0, false, 0 );
+ConVar neo_bot_recon_superjump_travel_min_dist( "neo_bot_recon_superjump_travel_min_dist", "4096", FCVAR_NONE,
+	"Minimum straight-line path distance required for a Recon bot to super jump while traveling", true, 0, false, 0 );
+
+ConVar neo_bot_recon_superjump_danger_min_dist( "neo_bot_recon_superjump_danger_min_dist", "200", FCVAR_NONE,
+	"Minimum straight-line path distance required for a Recon bot to super jump when in danger", true, 0, false, 0 );
 
 ConVar neo_bot_recon_superjump_min_accuracy( "neo_bot_recon_superjump_min_accuracy", "0.96", FCVAR_NONE,
 	"Minimum directional alignment with path required for a Recon bot to super jump while moving", true, 0.1f, false, 1.0f );
@@ -363,11 +366,35 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 		return;
 	}
 
+	// Compute boost direction
+	Vector vecLaunchDir;
+	me->EyeVectors( &vecLaunchDir );
+	vecLaunchDir.z = 0.0f;
+	vecLaunchDir.NormalizeInPlace();
+	if (me->m_nButtons & IN_BACK)
+	{
+		vecLaunchDir = -vecLaunchDir;
+	}
+
 	bool bImmediateDanger = gpGlobals->curtime - me->GetLastDamageTime() <= 2.0f;
 
-	if (!bImmediateDanger
-		&& (me->m_nButtons & IN_FORWARD)
-		&& (neo_bot_recon_superjump_min_dist.GetFloat() > 1))
+	// Relax eligibility checks if in danger
+	const float flDangerMinDist = neo_bot_recon_superjump_danger_min_dist.GetFloat();
+	if (bImmediateDanger && flDangerMinDist > 1.0f)
+	{
+		const PathFollower *pDangerPath = me->GetCurrentPath();
+		if (pDangerPath && pDangerPath->IsValid())
+		{
+			Vector vecToEnd = pDangerPath->GetEndPosition() - me->GetAbsOrigin();
+			vecToEnd.z = 0.0f;
+			if (vecToEnd.Length() < flDangerMinDist)
+			{
+				return;
+			}
+		}
+	}
+
+	if (!bImmediateDanger && (neo_bot_recon_superjump_travel_min_dist.GetFloat() > 1))
 	{
 		if (!m_reconSuperJumpPathCheckTimer.IsElapsed())
 		{
@@ -391,14 +418,7 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 		Vector vecMovement = me->GetLocomotionInterface()->GetGroundMotionVector();
 		vecMovement.z = 0.0f;
 		vecMovement.NormalizeInPlace();
-
-		// Get the bot's facing direction
-		Vector vecFacing;
-		me->EyeVectors( &vecFacing );
-		vecFacing.z = 0.0f;
-		vecFacing.NormalizeInPlace();
-
-		if (vecMovement.Dot(vecFacing) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+		if (vecMovement.Dot(vecLaunchDir) < neo_bot_recon_superjump_min_accuracy.GetFloat())
 		{
 			return;
 		}
@@ -433,12 +453,12 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 			
 			float flDist = vecToWaypoint.NormalizeInPlace();
 
-			if (vecMovement.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+			if (vecLaunchDir.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
 			{
 				return; // Diverges too much from trajectory
 			}
 
-			if (flDist >= neo_bot_recon_superjump_min_dist.GetFloat())
+			if (flDist >= neo_bot_recon_superjump_travel_min_dist.GetFloat())
 			{
 				bCanJump = true;
 				break;
@@ -453,6 +473,29 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 
 		if (!bCanJump)
 		{
+			return;
+		}
+	}
+
+	// Check for holes in the ground along jump path
+	const Vector vecFeet = me->GetAbsOrigin();
+	constexpr float flMaxDrop = 250.0f;
+	constexpr float flRampBuffer = 64.0f;
+	constexpr float flTraceDown = flMaxDrop + flRampBuffer;
+	constexpr int nNumProbes = 3;
+	constexpr float flProbeSpacing = 200.0f;
+
+	for (int i = 1; i <= nNumProbes; ++i)
+	{
+		Vector vecProbeStart = vecFeet + vecLaunchDir * (flProbeSpacing * i);
+		Vector vecProbeEnd   = vecProbeStart - Vector(0.0f, 0.0f, flTraceDown);
+
+		trace_t tr;
+		UTIL_TraceLine(vecProbeStart, vecProbeEnd, MASK_SOLID_BRUSHONLY, me, COLLISION_GROUP_NONE, &tr);
+
+		if (!tr.DidHit() || (vecFeet.z - tr.endpos.z) > flMaxDrop)
+		{
+			// Potential hole in ground detected
 			return;
 		}
 	}
