@@ -51,10 +51,11 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 // Checks if the input char is ';' (now changed by NeoSerial::SEGEND).
 // And if the char was ';', will print some helpful error for the user to fix their stuff.
 // Returns boolean of whether input "c" was the clashing character or not.
-bool NagBadSegEnd(int i, const char* pszSequence, int seqMax);
+// Will heap-allocate/free at most seqMax chars in the failure case for printing the message.
+bool NagBadSegEnd(const char* pszSequence, int seqMax);
 
-template <size_t seqMax>
-inline bool NagBadSegEnd(int i, char(&szSequence)[seqMax])
+template <int seqMax>
+inline bool NagBadSegEnd(char(&szSequence)[seqMax])
 {
-	return NagBadSegEnd(i, &szSequence[0], seqMax);
+	return NagBadSegEnd(&szSequence[0], seqMax);
 }

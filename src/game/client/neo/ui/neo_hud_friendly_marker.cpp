@@ -405,17 +405,16 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 		return false;
 	}
 
+	if (!NagBadSegEnd(pszSequence, NEO_IFFMARKER_SEQMAX))
+	{
+		return false;
+	}
+
 	char szMutSequence[NEO_IFFMARKER_SEQMAX];
 	V_memcpy(szMutSequence, pszSequence, sizeof(char) * iPszSequenceLength);
 	for (int i = 0; i < iPszSequenceLength && iSegmentIdx < NEOIFFMARKER_SEGMENT__TOTAL; ++i)
 	{
 		const char ch = szMutSequence[i];
-
-		if (!NagBadSegEnd(i, pszSequence, NEO_IFFMARKER_SEQMAX))
-		{
-			return false;
-		}
-
 		if (ch == NEO_MARKER_DELIMITER)
 		{
 			szMutSequence[i] = '\0';

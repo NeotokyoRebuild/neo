@@ -305,12 +305,9 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 	if (g_verbose > 0) fprintf(stderr, "%s: ImportOrExportCrosshair: iSeqSize: %d\n", g_testFnName, iSeqSize);
 #endif
 
-	for (int i = 0; i < iSeqSize; ++i)
+	if (!NagBadSegEnd(szMutSeq))
 	{
-		if (!NagBadSegEnd(i, szMutSeq))
-		{
-			return false;
-		}
+		return false;
 	}
 
 	const int iSerialVersion = SerialInt(iExportSerialVersion, NEOXHAIR_SERIAL_CURRENT,

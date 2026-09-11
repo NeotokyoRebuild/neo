@@ -239,9 +239,9 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 	V_strcpy_safe(szMutSeq, szFinalSeq);
 }
 
-bool NagBadSegEnd(int i, const char* pszSequence, int seqMax)
+bool NagBadSegEnd(const char* pszSequence, int seqMax)
 {
-	if (seqMax <= 0 || i >= seqMax)
+	if (seqMax <= 0)
 	{
 		Assert(false);
 		return false;
@@ -253,21 +253,30 @@ bool NagBadSegEnd(int i, const char* pszSequence, int seqMax)
 	static_assert(CH_XH_SEGSKIP != CH_XH_SEGEND);
 	static_assert(CH_XH_SEGSKIP != deprecated_delimiter);
 
-	char c = pszSequence[i];
-	if (c == deprecated_delimiter)
+	char* point_to = nullptr;
+	bool ok = true;
+	for (int i = 0; i < seqMax; ++i)
 	{
-		char* point_to = new char[seqMax];
-		V_memset(point_to, ' ', i);
-		point_to[i] = '^';
-		point_to[i + 1] = '\0';
-		Warning("Please replace the \"%c\" characters with \"%c\" in your serialization syntax.\n"
-			"Failed for input at pos %d:\n\t%s\n\t%s\n",
-			deprecated_delimiter, delimiter,
-			i, pszSequence,
-			point_to);
-		delete[] point_to;
-		return false;
+		char c = pszSequence[i];
+		if (c == deprecated_delimiter)
+		{
+			point_to = new char[i + 2];
+			V_memset(point_to, ' ', i);
+			point_to[i] = '^';
+			point_to[i + 1] = '\0';
+			Warning("Please replace the \"%c\" characters with \"%c\" in your serialization syntax.\n"
+				"Failed for input at pos %d:\n\t%s\n\t%s\n",
+				deprecated_delimiter, delimiter,
+				i, pszSequence,
+				point_to);
+			
+			ok = false;
+			break;
+		}
 	}
-
-	return true;
+	if (point_to)
+	{
+		delete[] point_to;
+	}
+	return ok;
 }
