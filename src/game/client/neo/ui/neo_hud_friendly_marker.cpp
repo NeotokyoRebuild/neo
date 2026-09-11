@@ -411,24 +411,8 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 	{
 		const char ch = szMutSequence[i];
 
-		// NEO NOTE (Rain): I am changing the delimiter away from ';' because the Source cmd tokenizer
-		// does not have a sensible character escape syntax, and ';' is already used as command end token,
-		// which causes issues when trying to chain commands with an inner semicolon.
-		// NEO TODO (Rain): we should probably also update the xhair syntax and any other such serializations
-		// to ideally use the same, non-semicolon token, and declare that in a global header somewhere.
-		constexpr char deprecated_delimiter = ';';
-		static_assert(deprecated_delimiter != NEO_MARKER_DELIMITER);
-		if (ch == deprecated_delimiter)
+		if (!NagBadSegEnd(ch, i, pszSequence, NEO_IFFMARKER_SEQMAX))
 		{
-			char point_to[NEO_IFFMARKER_SEQMAX];
-			V_memset(point_to, ' ', i);
-			point_to[i] = '^';
-			point_to[i+1] = '\0';
-			Warning("Please replace the \"%c\" characters with \"%c\" in your marker syntax.\n"
-				"Failed for input at pos %d:\n\t%s\n\t%s\n",
-				deprecated_delimiter, NEO_MARKER_DELIMITER,
-				i, pszSequence,
-				point_to);
 			return false;
 		}
 

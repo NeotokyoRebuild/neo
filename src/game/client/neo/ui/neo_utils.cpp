@@ -3,6 +3,7 @@
 #include <filesystem.h>
 
 #include "neo_misc.h"
+#include "neo_serial.h"
 
 #include <stb_image_resize2.h>
 #include <stb_dxt.h>
@@ -270,4 +271,3 @@ bool IsInGame()
 {
 	return (engine->IsInGame() && !engine->IsLevelMainMenuBackground());
 }
-

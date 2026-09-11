@@ -247,7 +247,7 @@ bool NagBadSegEnd(char c, int i, const char* pszSequence, int seqMax)
 		return false;
 	}
 
-	constexpr auto delimiter = NeoSerial::SEGEND;
+	constexpr auto delimiter = CH_XH_SEGEND;
 	constexpr char deprecated_delimiter = ';';
 	static_assert(delimiter != deprecated_delimiter);
 	static_assert(CH_XH_SEGSKIP != CH_XH_SEGEND);
