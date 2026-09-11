@@ -23,7 +23,7 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, NHudFriendlyMarker);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(FriendlyMarker, 0.01)
 
-constexpr auto NEO_MARKER_DELIMITER = NeoSerial::SEGEND;
+constexpr auto NEO_MARKER_DELIMITER = NeoSerial::V7::SEGEND;
 
 void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float flOldValue [[maybe_unused]])
 {
@@ -405,7 +405,7 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 		return false;
 	}
 
-	if (!NagBadSegEnd(pszSequence, NEO_IFFMARKER_SEQMAX))
+	if (!V7_NagBadSegEnd(pszSequence, NEO_IFFMARKER_SEQMAX))
 	{
 		return false;
 	}

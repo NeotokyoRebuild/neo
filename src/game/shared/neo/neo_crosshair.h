@@ -4,6 +4,8 @@
 #include "Color.h"
 #include "neo_weapon_types.h"
 
+#include <optional>
+
 #ifdef UNIT_TEST_DLL
 #define COLOR_WHITE Color(255, 255, 255, 255)
 #define COLOR_BLACK Color(0, 0, 0, 255)
@@ -175,6 +177,7 @@ enum NeoXHairSerial
 	NEOXHAIR_SERIAL_ALPHA_V22,
 	NEOXHAIR_SERIAL_ALPHA_V28,
 	NEOXHAIR_SERIAL_ALPHA_V29,
+	NEOXHAIR_SERIAL_ALPHA_V35,
 
 	NEOXHAIR_SERIAL__LATESTPLUSONE,
 	NEOXHAIR_SERIAL_CURRENT = NEOXHAIR_SERIAL__LATESTPLUSONE - 1,
@@ -197,13 +200,14 @@ void DefaultCrosshairSerial(char (&szSequence)[NEO_XHAIR_SEQMAX]);
 
 int UseCrosshairIndexFor(const CrosshairInfo *xhairInfo, const int iXHairWep, bool *pbHide = nullptr);
 
-bool ValidateCrosshairSerial(const char *pszSequence);
+bool ValidateCrosshairSerial(const char* pszSequence, const int ver = NEOXHAIR_SERIAL_CURRENT);
 
 // NEO NOTE (nullsystem): (*&)[NUM] enforces array size
 // paeHipfireOpts - Maps NeoUI RingBox int <-> NeoCrosshairWepFlags + NeoCrosshairHipfireCustomFlags
 // Only for import as export must have directly already set by flags and managed within UI
 bool ImportCrosshair(CrosshairInfo *xhairInfo, const char *pszSequence,
-		EHipfireOpt (*paeHipfireOpts)[CROSSHAIR_WEP__TOTAL] = nullptr);
+		EHipfireOpt (*paeHipfireOpts)[CROSSHAIR_WEP__TOTAL] = nullptr,
+		const std::optional<NeoXHairSerial> ver = std::nullopt);
 
 // iExportSerialVersion is only used for unit testing purpose, for usage in-game
 // it should always be exporting to NEOXHAIR_SERIAL_CURRENT
