@@ -2,6 +2,11 @@
 
 #include "neo_crosshair.h"
 
+namespace NeoSerial
+{
+	static constexpr char SEGEND = ',';
+}
+
 enum ESerialMode
 {
 	SERIALMODE_DESERIALIZE = 0,

@@ -23,6 +23,8 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, NHudFriendlyMarker);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(FriendlyMarker, 0.01)
 
+constexpr auto NEO_MARKER_DELIMITER = NeoSerial::SEGEND;
+
 void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float flOldValue [[maybe_unused]])
 {
 	CNEOHud_FriendlyMarker* iffHudElement = GET_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, NHudFriendlyMarker);

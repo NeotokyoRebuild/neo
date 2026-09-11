@@ -239,3 +239,34 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 	V_strcpy_safe(szMutSeq, szFinalSeq);
 }
 
+bool NagBadSegEnd(char c, int i, const char* pszSequence, int seqMax)
+{
+	if (seqMax <= 0 || i >= seqMax)
+	{
+		Assert(false);
+		return false;
+	}
+
+	constexpr auto delimiter = NeoSerial::SEGEND;
+	constexpr char deprecated_delimiter = ';';
+	static_assert(delimiter != deprecated_delimiter);
+	static_assert(CH_XH_SEGSKIP != CH_XH_SEGEND);
+	static_assert(CH_XH_SEGSKIP != deprecated_delimiter);
+
+	if (c == deprecated_delimiter)
+	{
+		char* point_to = new char[seqMax];
+		V_memset(point_to, ' ', i);
+		point_to[i] = '^';
+		point_to[i + 1] = '\0';
+		Warning("Please replace the \"%c\" characters with \"%c\" in your serialization syntax.\n"
+			"Failed for input at pos %d:\n\t%s\n\t%s\n",
+			deprecated_delimiter, delimiter,
+			i, pszSequence,
+			point_to);
+		delete[] point_to;
+		return false;
+	}
+
+	return true;
+}
