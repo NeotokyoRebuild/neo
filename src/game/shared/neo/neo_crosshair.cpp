@@ -307,7 +307,7 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 
 	for (int i = 0; i < iSeqSize; ++i)
 	{
-		if (!NagBadSegEnd(i, szMutSeq, NEO_XHAIR_SEQMAX))
+		if (!NagBadSegEnd(i, szMutSeq))
 		{
 			return false;
 		}
