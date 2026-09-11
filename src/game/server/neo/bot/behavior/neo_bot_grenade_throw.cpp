@@ -50,59 +50,7 @@ CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const C
 // (assuming "familiar" position is closer to the bot than the "obscured" position)
 const Vector& CNEOBotGrenadeThrow::FindEmergencePointAlongPath( const CNEOBot *me, const Vector &familiarPos, const Vector &obscuredPos )
 {
-	CNavArea *familiarArea = TheNavMesh->GetNavArea( familiarPos );
-	if ( !familiarArea )
-	{
-		return vec3_invalid;
-	}
-
-	CNavArea *obscuredArea = TheNavMesh->GetNavArea( obscuredPos );
-	if ( !obscuredArea )
-	{
-		return vec3_invalid;
-	}
-
-	ShortestPathCost cost;
-	const Vector& vecGoal = obscuredPos;
-	if ( NavAreaBuildPath( familiarArea, obscuredArea, &vecGoal, cost ) )
-	{
-		// search backwards from obscured position to find the first point visible to me
-		for ( CNavArea *area = obscuredArea; area; area = area->GetParent() )
-		{
-			// DEBUG: Draw emergence path
-			// Color: Yellow (255, 255, 0) to distinguish path analysis
-			if ( sv_neo_bot_grenade_debug_behavior.GetBool() )
-			{
-				if ( area->GetParent() )
-				{
-					NDebugOverlay::HorzArrow( area->GetCenter(), area->GetParent()->GetCenter(), 2.0f, 255, 255, 0, 255, true, 2.0f );
-				}
-				else
-				{
-					NDebugOverlay::Cross3D( area->GetCenter(), 16.0f, 255, 255, 0, true, 2.0f );
-				}
-			}
-
-			const Vector& vecTest = area->GetCenter();
-
-			if ( me->IsLineOfFireClear( vecTest, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )
-			{
-				// DEBUG: Draw emergence point
-				if ( sv_neo_bot_grenade_debug_behavior.GetBool() )
-				{
-					NDebugOverlay::Box( vecTest, Vector(-16,-16,-16), Vector(16,16,16), 255, 255, 0, 50, 2.0f );
-				}
-				return vecTest;
-			}
-
-			if ( area == familiarArea )
-			{
-				return vec3_invalid;
-			}
-		}
-	}
-
-	return vec3_invalid;
+	return CNEOBotFindPathEmergencePoint( me, familiarPos, obscuredPos );
 }
 
 

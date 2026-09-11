@@ -26,3 +26,10 @@ bool CNEOBotPathUpdateChase
 	RouteType route,
 	Vector *pPredictedSubjectPos = NULL
 );
+
+const Vector &CNEOBotFindPathEmergencePoint
+(
+	const CNEOBot *bot,
+	const Vector &familiarPos,
+	const Vector &obscuredPos
+);

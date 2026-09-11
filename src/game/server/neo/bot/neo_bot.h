@@ -458,6 +458,12 @@ private:
 
 	CountdownTimer m_lookAtEnemyInvasionAreasTimer;
 
+	CHandle< CBaseEntity > m_watchedEmergenceThreat;
+	CountdownTimer m_watchedEmergenceRecomputeTimer;
+	int m_watchedEmergenceThreatAreaId;
+	int m_watchedEmergenceBotAreaId;
+	Vector m_watchedEmergencePos;
+
 	CNavArea* m_spawnArea;			// where we spawned
 	CountdownTimer m_justLostPointTimer;
 

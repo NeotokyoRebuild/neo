@@ -35,6 +35,9 @@ ConVar neo_bot_shotgunner_range("neo_bot_shotgunner_range", "320", FCVAR_NONE);
 ConVar neo_bot_recon_ratio("neo_bot_recon_ratio", "0.2", FCVAR_NONE);
 ConVar neo_bot_support_ratio("neo_bot_support_ratio", "0.2", FCVAR_NONE);
 
+ConVar neo_bot_look_emergence_recompute_interval("neo_bot_look_emergence_recompute_interval", "0.5", FCVAR_CHEAT,
+	"Seconds a bot holds an anticipated emergence point before recomputing it for a known threat.");
+
 extern ConVar bot_class;
 extern ConVar neo_bot_fire_weapon_min_time;
 extern ConVar neo_bot_difficulty;
@@ -549,6 +552,10 @@ CNEOBot::CNEOBot()
 	m_squad = NULL;
 	m_didReselectClass = false;
 	m_spotWhereEnemySentryLastInjuredMe = vec3_origin;
+	m_watchedEmergenceThreatAreaId = -1;
+	m_watchedEmergenceBotAreaId = -1;
+	m_watchedEmergencePos = vec3_invalid;
+	m_watchedEmergenceRecomputeTimer.Invalidate();
 	m_isLookingAroundForEnemies = true;
 	m_behaviorFlags = 0;
 	m_attentionFocusEntity = NULL;
@@ -1248,7 +1255,34 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 		}
 
 		{
-			// look toward potentially visible area nearest the last known position
+			// Anticipate where threat could emerge based on last known position
+			const CNavArea* threatArea = known->GetLastKnownArea();
+			const int threatAreaId = threatArea ? threatArea->GetID() : -1;
+			const CNavArea* botArea = GetLastKnownArea();
+			const int botAreaId = botArea ? botArea->GetID() : -1;
+			CBaseEntity* threatEnt = known->GetEntity();
+
+			const bool threatChanged = (threatEnt != m_watchedEmergenceThreat.Get());
+			const bool areaChanged = (threatAreaId != m_watchedEmergenceThreatAreaId)
+				|| (botAreaId != m_watchedEmergenceBotAreaId);
+
+			if (threatChanged || (areaChanged && m_watchedEmergenceRecomputeTimer.IsElapsed()))
+			{
+				m_watchedEmergenceRecomputeTimer.Start(neo_bot_look_emergence_recompute_interval.GetFloat());
+				m_watchedEmergenceThreat = threatEnt;
+				m_watchedEmergenceThreatAreaId = threatAreaId;
+				m_watchedEmergenceBotAreaId = botAreaId;
+				m_watchedEmergencePos = CNEOBotFindPathEmergencePoint( this, GetAbsOrigin(), known->GetLastKnownPosition());
+			}
+
+			if (m_watchedEmergencePos != vec3_invalid)
+			{
+				GetBodyInterface()->AimHeadTowards(m_watchedEmergencePos + Vector(0, 0, HumanEyeHeight),
+					IBody::INTERESTING, maxLookInterval, NULL, "Watching a heard threat's likely emergence point");
+				return;
+			}
+
+			// Fall back to looking toward potentially visible area nearest the last known position
 			CNavArea* myArea = GetLastKnownArea();
 			if (myArea)
 			{

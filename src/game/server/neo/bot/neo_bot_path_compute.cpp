@@ -8,6 +8,9 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+ConVar sv_neo_bot_debug_emergence_area("sv_neo_bot_debug_emergence_area", "0", FCVAR_CHEAT,
+	"Draw the hidden route and emergence area bots find when anticipating where a threat will come into view", true, 0, true, 1);
+
 extern ConVar neo_bot_path_reservation_enable;
 extern ConVar neo_bot_path_reservation_penalty;
 extern ConVar neo_bot_path_reservation_duration;
@@ -81,4 +84,60 @@ bool CNEOBotPathUpdateChase(CNEOBot* bot, ChasePath& path, CBaseEntity* subject,
 	}
 
 	return false;
+}
+
+const Vector &CNEOBotFindPathEmergencePoint(const CNEOBot *bot, const Vector &familiarPos, const Vector &obscuredPos)
+{
+	CNavArea *myArea = bot->GetLastKnownArea();
+	if (!myArea)
+	{
+		return vec3_invalid;
+	}
+
+	CNavArea *familiarArea = TheNavMesh->GetNavArea(familiarPos);
+	if (!familiarArea)
+	{
+		return vec3_invalid;
+	}
+
+	CNavArea *obscuredArea = TheNavMesh->GetNavArea(obscuredPos);
+	if (!obscuredArea)
+	{
+		return vec3_invalid;
+	}
+
+	ShortestPathCost cost;
+	if (NavAreaBuildPath(familiarArea, obscuredArea, &obscuredPos, cost))
+	{
+		const bool debugDraw = sv_neo_bot_debug_emergence_area.GetBool();
+		constexpr float debugDrawDuration = 2.0f;
+
+		// search backwards from the obscured position for the first area visible to the bot
+		for (CNavArea *area = obscuredArea; area; area = area->GetParent())
+		{
+			// the bot's own area always counts as visible, but its center is no place to aim
+			if (area != myArea && myArea->IsPotentiallyVisible(area))
+			{
+				if (debugDraw)
+				{
+					area->DrawFilled(255, 255, 0, 64, debugDrawDuration);
+				}
+				return area->GetCenter();
+			}
+
+			if (area == familiarArea)
+			{
+				return vec3_invalid;
+			}
+
+			// Hidden stretch of the route leading out to the emergence area
+			if (debugDraw && area->GetParent())
+			{
+				NDebugOverlay::HorzArrow(area->GetCenter(), area->GetParent()->GetCenter(),
+					2.0f, 255, 255, 0, 255, true, debugDrawDuration);
+			}
+		}
+	}
+
+	return vec3_invalid;
 }
