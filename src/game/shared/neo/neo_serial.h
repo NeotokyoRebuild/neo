@@ -4,6 +4,7 @@
 
 namespace NeoSerial
 {
+	// The segment-end token was changed from ';' to ',' to avoid clashing with the statement-end token of consolecmds.
 	static constexpr char SEGEND = ',';
 }
 
@@ -47,7 +48,7 @@ struct SerialContext
 // 2nd pass - Serialization run length encoding on empty
 void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSerialMode);
 
-// The segment-end token was changed from ';' to ',' to avoid clashing with the statement-end token of consolecmds.
-// This checks if the input char is ';', and if so, will print some helpful error for the user to fix their stuff.
-// Returns boolean of whether the token was the clashing character or not.
+// Checks if the input char is ';' (now changed by NeoSerial::SEGEND).
+// And if the char was ';', will print some helpful error for the user to fix their stuff.
+// Returns boolean of whether input "c" was the clashing character or not.
 bool NagBadSegEnd(char c, int i, const char* pszSequence, int seqMax);
