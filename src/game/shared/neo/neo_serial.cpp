@@ -4,7 +4,7 @@
 #include "strtools.h"
 #include "mathlib/mathlib.h"
 
-static constexpr char CH_XH_SEGEND = ';';
+static constexpr char CH_XH_SEGEND = NeoSerial::SEGEND;
 static constexpr char CH_XH_SEGSKIP = '^';
 
 union SerialVariant
