@@ -253,30 +253,30 @@ bool NagBadSegEnd(const char* pszSequence, int seqMax)
 	static_assert(CH_XH_SEGSKIP != CH_XH_SEGEND);
 	static_assert(CH_XH_SEGSKIP != deprecated_delimiter);
 
-	char* point_to = nullptr;
+	char* pPointTo = nullptr;
 	bool ok = true;
 	for (int i = 0; i < seqMax; ++i)
 	{
 		char c = pszSequence[i];
 		if (c == deprecated_delimiter)
 		{
-			point_to = new char[i + 2];
-			V_memset(point_to, ' ', i);
-			point_to[i] = '^';
-			point_to[i + 1] = '\0';
+			pPointTo = new char[i + 2];
+			V_memset(pPointTo, ' ', i);
+			pPointTo[i] = '^';
+			pPointTo[i + 1] = '\0';
 			Warning("Please replace the \"%c\" characters with \"%c\" in your serialization syntax.\n"
 				"Failed for input at pos %d:\n\t%s\n\t%s\n",
 				deprecated_delimiter, delimiter,
 				i, pszSequence,
-				point_to);
-			
+				pPointTo);
 			ok = false;
 			break;
 		}
 	}
-	if (point_to)
+	AssertMsg(ok == (pPointTo == nullptr), "should not alloc pPointTo if ok and vice versa");
+	if (pPointTo)
 	{
-		delete[] point_to;
+		delete[] pPointTo;
 	}
 	return ok;
 }
