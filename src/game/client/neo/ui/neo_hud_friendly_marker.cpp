@@ -411,7 +411,7 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 	{
 		const char ch = szMutSequence[i];
 
-		if (!NagBadSegEnd(ch, i, pszSequence, NEO_IFFMARKER_SEQMAX))
+		if (!NagBadSegEnd(i, pszSequence, NEO_IFFMARKER_SEQMAX))
 		{
 			return false;
 		}

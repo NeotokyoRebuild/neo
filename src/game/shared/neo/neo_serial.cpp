@@ -239,7 +239,7 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 	V_strcpy_safe(szMutSeq, szFinalSeq);
 }
 
-bool NagBadSegEnd(char c, int i, const char* pszSequence, int seqMax)
+bool NagBadSegEnd(int i, const char* pszSequence, int seqMax)
 {
 	if (seqMax <= 0 || i >= seqMax)
 	{
@@ -253,6 +253,7 @@ bool NagBadSegEnd(char c, int i, const char* pszSequence, int seqMax)
 	static_assert(CH_XH_SEGSKIP != CH_XH_SEGEND);
 	static_assert(CH_XH_SEGSKIP != deprecated_delimiter);
 
+	char c = pszSequence[i];
 	if (c == deprecated_delimiter)
 	{
 		char* point_to = new char[seqMax];
