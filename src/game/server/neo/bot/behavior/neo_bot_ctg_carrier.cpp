@@ -79,18 +79,21 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 		m_enemyUpdateTimer.Start( GetUpdateInterval( me ) );
 	}
 
-	// Debug: Highlight the location of the enemy a bot ghost carrier is calling out
-	if ( neo_debug_ghost_carrier.GetBool() )
+	// Check if currently focused enemy has disappeared from beacon range
+	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
+	if ( !IsValidFocusEnemy( me, pFocus ) )
 	{
-		CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
-		if ( pFocus && pFocus->IsPlayer() && pFocus->IsAlive() )
-		{
-			NDebugOverlay::Cross3D( pFocus->GetAbsOrigin(), 20.0f, 255, 0, 0, true, 0.1f );
-		}
+		m_hCurrentFocusEnemy = nullptr;
+		pFocus = nullptr;
 	}
 
-	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
-	if ( pFocus && pFocus->IsAlive() )
+	// Debug: Highlight the location of the enemy a bot ghost carrier is calling out
+	if ( neo_debug_ghost_carrier.GetBool() && pFocus && pFocus->IsPlayer() )
+	{
+		NDebugOverlay::Cross3D( pFocus->GetAbsOrigin(), 20.0f, 255, 0, 0, true, 0.1f );
+	}
+
+	if ( pFocus )
 	{
 		if ( bUpdateCallout )
 		{
@@ -125,12 +128,8 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 					// NEO Jank: Urge relevant teammate bots look at the enemy
 					pBot->GetBodyInterface()->AimHeadTowards( pFocus, IBody::IMPORTANT, 0.5f, nullptr, "Ghost carrier teammate look override" );
 				}
-				else
-				{
-					// Force updates to known but not visible entity by forgetting them first
-					pBot->GetVisionInterface()->ForgetEntity( pFocus );
-				}
-				pBot->GetVisionInterface()->AddKnownEntity( pFocus ); // keep after ForgetEntity
+
+				pBot->GetVisionInterface()->UpdateKnownEntityPosition( pFocus );
 			}
 		}
 
@@ -175,6 +174,21 @@ void CNEOBotGhostEquipmentHandler::EquipBestWeaponForGhoster( CNEOBot *me )
 	{
 		me->Weapon_Switch( pGhost );
 	}
+}
+
+bool CNEOBotGhostEquipmentHandler::IsValidFocusEnemy( CNEOBot *me, CBaseEntity *pFocus ) const
+{
+	if ( !pFocus || !pFocus->IsAlive() || pFocus->IsEffectActive( EF_NODRAW ) )
+	{
+		return false;
+	}
+
+	if ( !me->IsEnemy( pFocus ) )
+	{
+		return false;
+	}
+
+	return me->GetVisionInterface()->IsAbleToSee( pFocus, IVision::DISREGARD_FOV );
 }
 
 float CNEOBotGhostEquipmentHandler::GetUpdateInterval( CNEOBot *me ) const
@@ -337,6 +351,11 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 		{
 			m_enemyLastPos[ idx ] = pBestCallout->GetAbsOrigin();
 		}
+	}
+	else
+	{
+		// Nobody is in beacon range or in sight
+		m_hCurrentFocusEnemy = nullptr;
 	}
 }
 
@@ -521,8 +540,7 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 	if ( bFoundGoal )
 	{
 		// We need to know where enemies are to determine if we are safe to cap
-		CWeaponGhost *pGhost = dynamic_cast<CWeaponGhost*>( me->Weapon_GetSlot( 0 ) );
-		if ( pGhost && pGhost->IsGhost() && pGhost->IsBootupCompleted() )
+		if ( me->GetBeaconingGhost() )
 		{
 			float flDistMeToGoalSq = me->GetAbsOrigin().DistToSqr( vecGoalPos );
 			
@@ -531,7 +549,8 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 			for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 			{
 				CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-				if ( pPlayer && pPlayer->IsAlive() && pPlayer->GetTeamNumber() != me->GetTeamNumber() )
+				if ( pPlayer && pPlayer->IsAlive() && pPlayer->GetTeamNumber() != me->GetTeamNumber()
+					&& me->GetVisionInterface()->IsAbleToSee( pPlayer, IVision::DISREGARD_FOV ) )
 				{
 					float dSq = pPlayer->GetAbsOrigin().DistToSqr( vecGoalPos );
 					if ( dSq <= flDistMeToGoalSq )

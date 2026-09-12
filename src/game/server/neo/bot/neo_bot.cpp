@@ -22,6 +22,7 @@
 #include "neo_weapon_loadout.h"
 #include "behavior/neo_bot_behavior.h"
 #include "neo_crosshair.h"
+#include "neo/weapons/weapon_ghost.h"
 
 ConVar neo_bot_notice_gunfire_range("neo_bot_notice_gunfire_range", "3000", FCVAR_GAMEDLL);
 ConVar neo_bot_notice_quiet_gunfire_range("neo_bot_notice_quiet_gunfire_range", "500", FCVAR_GAMEDLL);
@@ -41,6 +42,7 @@ extern ConVar neo_bot_difficulty;
 extern ConVar neo_bot_farthest_visible_theater_sample_count;
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar neo_bot_path_around_friendly_cooldown;
+extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 
 
 
@@ -1630,6 +1632,51 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	{
 		Weapon_Switch(pChosen);
 	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+// Return handle to ghost if it is beaconing for the bot player
+// Also useful to get true beacon range from weapon implementation
+CWeaponGhost *CNEOBot::GetBeaconingGhost( void ) const
+{
+	if ( !IsCarryingGhost() )
+	{
+		return nullptr;
+	}
+
+	CBaseCombatWeapon *pCandidate = sv_neo_ctg_ghost_beacons_when_inactive.GetBool()
+		? Weapon_GetSlot( 0 )
+		: GetActiveWeapon();
+
+	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>( pCandidate );
+	if ( !pNeoWeapon || !pNeoWeapon->IsGhost() )
+	{
+		return nullptr;
+	}
+
+	CWeaponGhost *pGhost = assert_cast<CWeaponGhost *>( pNeoWeapon );
+	return pGhost->IsBootupCompleted() ? pGhost : nullptr;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+// Returns whether the conditions are satisfied for the ghost revealing the subject
+bool CNEOBot::IsRevealedByMyGhost( CBaseEntity *subject ) const
+{
+	if ( !subject )
+	{
+		return false;
+	}
+
+	const CWeaponGhost *pGhost = GetBeaconingGhost();
+	if ( !pGhost )
+	{
+		return false;
+	}
+
+	float flDistIgnored;
+	return pGhost->BeaconRange( subject, flDistIgnored );
 }
 
 
