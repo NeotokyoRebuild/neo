@@ -7,7 +7,7 @@
 //=============================================================================//
 
 #include "vbsp.h"
-#include "color.h"
+#include "Color.h"
 
 /*
 ==============================================================================
@@ -32,7 +32,7 @@ void LeakFile (tree_t *tree)
 {
 	Vector	mid;
 	FILE	*linefile;
-	char	filename[1024];
+	char	filename[1024 + 4];
 	node_t	*node;
 	int		count;
 
@@ -96,7 +96,7 @@ void AreaportalLeakFile( tree_t *tree, portal_t *pStartPortal, portal_t *pEndPor
 {
 	Vector	mid;
 	FILE	*linefile;
-	char	filename[1024];
+	char	filename[1024 + 4];
 	node_t	*node;
 	int		count;
 

@@ -35,7 +35,7 @@ class IMaterial;
 //
 // Texture formats. hack: MUST correlate with radio buttons in IDD_OPTIONS_CONFIGS.
 //
-enum TEXTUREFORMAT
+enum class TEXTUREFORMAT : int
 {
 	tfNone = -1,
 	tfWAD = 0,
