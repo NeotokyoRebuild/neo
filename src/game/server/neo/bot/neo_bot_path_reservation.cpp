@@ -393,6 +393,7 @@ void CNEOBotPathReservationSystem::AddDeadlyHazard(int navAreaID, float expireTi
 		HazardInfo blank;
 		blank.hazardExpireTime = expireTime;
 		blank.smokeExpireTime = 0.0f;
+		blank.smokePropagateTime = 0.0f;
 		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
 	}
     else
@@ -466,6 +467,7 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
 		HazardInfo blank;
 		blank.hazardExpireTime = 0.0f;
 		blank.smokeExpireTime = expireTime;
+		blank.smokePropagateTime = 0.0f;
 		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
 	}
     else
@@ -475,6 +477,10 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
         // May also work for resetting an area to be non-hazardous early
         existing.smokeExpireTime = expireTime;
 
+        if (propagatePVS && (existing.smokePropagateTime == expireTime))
+        {
+            return;
+        }
     }
 
     if (propagatePVS)
@@ -482,6 +488,8 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
         CNavArea *area = TheNavMesh->GetNavAreaByID(navAreaID);
         if (area)
         {
+            m_HazardAreas[teamID][index].smokePropagateTime = expireTime;
+
             CNEOFunctorPropagatePVSSmokeHazard propagate(expireTime, teamID);
             // CompletelyVisible: fewer areas to iterate through and definitely exposed
             // vs PotentiallyVisible: for narrow corridors, some areas would count even if only a sliver was exposed

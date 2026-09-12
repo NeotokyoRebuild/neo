@@ -26,6 +26,7 @@ public:
 	bool m_bIgnoreReservations;
 
 private:
+	bool m_bIgnoreHazards;
 	CNEOBot* m_me;
 	RouteType m_routeType;
 	float m_stepHeight;
