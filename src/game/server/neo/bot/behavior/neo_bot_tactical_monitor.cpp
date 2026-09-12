@@ -327,53 +327,58 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return result;
 	}
 
-	// check if we need to get to cover
-	QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
-
-	if ( shouldRetreat == ANSWER_YES )
-	{
-		return SuspendFor( new CNEOBotRetreatToCover, "Backing off" );
-	}
-	else if ( shouldRetreat != ANSWER_NO )
-	{
-		// retreat if we need to do a full reload
-		if ( me->IsDifficulty( CNEOBot::HARD ) || me->IsDifficulty( CNEOBot::EXPERT ) )
-		{
-			CNEOBaseCombatWeapon *weapon = (CNEOBaseCombatWeapon*) me->GetActiveWeapon();
-			if ( weapon && weapon->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(weapon))
-			{
-				if ( weapon->Clip1() <= 1 )
-				{
-					return SuspendFor( new CNEOBotRetreatToCover, "Moving to cover to reload" );
-				}
-			}
-		}
-	}
-
 	if ( CBaseEntity *breakable = CNEOBotPathClearBreakable::GetBreakableInPath( me ) )
 	{
 		return SuspendFor( new CNEOBotPathClearBreakable( breakable ), "Clearing breakable in path" );
 	}
 
-	// Don't want to interfere with human squad leader's control just to ignore hazards
-	// Might be annoying if bots ignored following or waypoints (e.g. smoke sightlines avoidance)
-	if ( !me->m_hCommandingPlayer.Get() && m_hazardCheckTimer.IsElapsed() )
+	const bool bInAHurry = ( me->GetIntentionInterface()->ShouldHurry( me ) == ANSWER_YES );
+
+	if ( !bInAHurry )
 	{
-		m_hazardCheckTimer.Start( 0.5f );
-		CNavArea *myArea = me->GetLastKnownArea();
-		if ( myArea )
+		// check if we need to get to cover
+		QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
+
+		if ( shouldRetreat == ANSWER_YES )
 		{
-			if ( CNEOBotPathReservations()->IsAreaHazardous( myArea->GetID(), me ) )
+			return SuspendFor( new CNEOBotRetreatToCover, "Backing off" );
+		}
+		else if ( shouldRetreat != ANSWER_NO )
+		{
+			// retreat if we need to do a full reload
+			if ( me->IsDifficulty( CNEOBot::HARD ) || me->IsDifficulty( CNEOBot::EXPERT ) )
 			{
-				return SuspendFor( new CNEOBotRetreatFromHazardArea( ), "Avoiding hazard area" );
+				CNEOBaseCombatWeapon *weapon = (CNEOBaseCombatWeapon*) me->GetActiveWeapon();
+				if ( weapon && weapon->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(weapon))
+				{
+					if ( weapon->Clip1() <= 1 )
+					{
+						return SuspendFor( new CNEOBotRetreatToCover, "Moving to cover to reload" );
+					}
+				}
 			}
 		}
-	}
 
-	ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
-	if ( scavengeResult.IsRequestingChange() )
-	{
-		return scavengeResult;
+		// Don't want to interfere with human squad leader's control just to ignore hazards
+		// Might be annoying if bots ignored following or waypoints (e.g. smoke sightlines avoidance)
+		if ( !me->m_hCommandingPlayer.Get() && m_hazardCheckTimer.IsElapsed() )
+		{
+			m_hazardCheckTimer.Start( 0.5f );
+			CNavArea *myArea = me->GetLastKnownArea();
+			if ( myArea )
+			{
+				if ( CNEOBotPathReservations()->IsAreaHazardous( myArea->GetID(), me ) )
+				{
+					return SuspendFor( new CNEOBotRetreatFromHazardArea( ), "Avoiding hazard area" );
+				}
+			}
+		}
+
+		ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
+		if ( scavengeResult.IsRequestingChange() )
+		{
+			return scavengeResult;
+		}
 	}
 
 #if 0 // NEO TODO (Adam) search for dropped weapons to resupply ammunition

@@ -39,6 +39,8 @@ public:
 	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path ) override;
 	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason ) override;
 
+	virtual QueryResultType ShouldHurry( const INextBot *me ) const override;
+
 	virtual const char *GetName( void ) const override { return "ctgGhostCarrier"; }
 
 private:
@@ -51,7 +53,8 @@ private:
 	Vector m_closestCapturePoint;
 	CUtlVector<CNEO_Player*> m_teammates;
 
-	Vector GetNearestCapPoint( const CNEOBot *me ) const;
+	bool HasCleanRunToCap( const CNEOBot *me ) const;
+	bool IsCapPotentiallyVisible( const CNEOBot *me ) const;
 	void UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Player*> &teammates );
 };
 

@@ -10,7 +10,6 @@
 #include "bot/behavior/neo_bot_detpack_deploy.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
-#include "neo_ghost_cap_point.h"
 #include "weapon_detpack.h"
 #include "weapon_ghost.h"
 
@@ -229,33 +228,6 @@ Vector CNEOBotCtgLoneWolf::GetNearestEnemyCapPoint( CNEOBot *me ) const
 	}
 
 	const int iEnemyTeam = NEORules()->GetOpposingTeam( me->GetTeamNumber() );
-
-	if ( NEORules()->m_pGhostCaps.Count() > 0 )
-	{
-		const Vector* pBestPos = nullptr;
-		float flNearestSq = FLT_MAX;
-		for ( int i = 0; i < NEORules()->m_pGhostCaps.Count(); ++i )
-		{
-			CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
-			if ( !pCapPoint || !pCapPoint->GetActive() )
-			{
-				continue;
-			}
-
-			int iCapTeam = pCapPoint->owningTeamAlternate();
-			if ( iCapTeam == iEnemyTeam || iCapTeam == TEAM_ANY )
-			{
-				float distSq = me->GetAbsOrigin().DistToSqr( pCapPoint->GetAbsOrigin() );
-				if ( distSq < flNearestSq )
-				{
-					flNearestSq = distSq;
-					pBestPos = &pCapPoint->GetAbsOrigin();
-				}
-			}
-		}
-		return pBestPos ? *pBestPos : CNEO_Player::VECTOR_INVALID_WAYPOINT;
-	}
-
-	return CNEO_Player::VECTOR_INVALID_WAYPOINT;
+	return NEORules()->GetNearestGhostCapPoint( iEnemyTeam, me->GetAbsOrigin() );
 }
 

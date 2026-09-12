@@ -1,7 +1,6 @@
 #include "cbase.h"
 #include "neo_player.h"
 #include "neo_gamerules.h"
-#include "neo_ghost_cap_point.h"
 #include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
@@ -161,26 +160,8 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
 		{
 			// Only switch to CTG behavior if there are available capture zones this round
-			bool bHasAvailableCapZone = false;
-			const int iMyTeam = me->GetTeamNumber();
-
-			for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
-			{
-				CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
-				if ( !pCapPoint || !pCapPoint->GetActive() )
-				{
-					continue;
-				}
-
-				const int iCapTeam = pCapPoint->owningTeamAlternate();
-				if ( iCapTeam == iMyTeam || iCapTeam == TEAM_ANY )
-				{
-					bHasAvailableCapZone = true;
-					break;
-				}
-			}
-
-			if ( bHasAvailableCapZone )
+			const Vector vecCapPoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
+			if ( vecCapPoint != CNEO_Player::VECTOR_INVALID_WAYPOINT )
 			{
 				return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
 			}

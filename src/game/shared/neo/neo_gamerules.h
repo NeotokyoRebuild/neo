@@ -87,7 +87,6 @@ class CWeaponGhost;
 class CNEOBotCtgLoneWolf;
 class CNEOBotCtgLoneWolfAmbush;
 class CNEOBotCtgLoneWolfSeek;
-class CNEOBotSeekAndDestroy;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
@@ -283,6 +282,11 @@ public:
 	void PurgeGhostCapPoints();
 
 	void ResetGhostCapPoints();
+
+#ifdef GAME_DLL
+	// Nearest active capture zone that iTeam can deliver the ghost to, or VECTOR_INVALID_WAYPOINT if none
+	Vector GetNearestGhostCapPoint(const int iTeam, const Vector &vecFrom) const;
+#endif
 
 	void SetGameRelatedVars();
 	void ResetTDM();
@@ -500,15 +504,12 @@ private:
 	float m_flJuggernautDeathTime = 0.0f;
 	int m_iLastJuggernautTeam = TEAM_INVALID;
 	
-	// For looking up capture zone locations
-	friend class CNEOBotCtgCarrier;
-	friend class CNEOBotCtgEscort;
+	// For looking up the ghost
 	friend class CNEOBotCtgLoneWolf;
 	friend class CNEOBotCtgLoneWolfAmbush;
 	friend class CNEOBotCtgLoneWolfSeek;
 	friend class CNEOBotTacticalMonitor;
 
-	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;

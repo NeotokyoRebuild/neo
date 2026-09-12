@@ -3263,6 +3263,37 @@ void CNEORules::ResetGhostCapPoints()
 	}
 }
 
+Vector CNEORules::GetNearestGhostCapPoint(const int iTeam, const Vector &vecFrom) const
+{
+	Vector vecBest = CNEO_Player::VECTOR_INVALID_WAYPOINT;
+	float flNearestDistSq = FLT_MAX;
+
+	for (int i = 0; i < m_pGhostCaps.Count(); i++)
+	{
+		auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+		if (!pGhostCap || !pGhostCap->GetActive())
+		{
+			continue;
+		}
+
+		// A neutral zone accepts the ghost from either team
+		const int iCapTeam = pGhostCap->owningTeamAlternate();
+		if (iCapTeam != iTeam && iCapTeam != TEAM_ANY)
+		{
+			continue;
+		}
+
+		const float flDistSq = vecFrom.DistToSqr(pGhostCap->GetAbsOrigin());
+		if (flDistSq < flNearestDistSq)
+		{
+			flNearestDistSq = flDistSq;
+			vecBest = pGhostCap->GetAbsOrigin();
+		}
+	}
+
+	return vecBest;
+}
+
 void CNEORules::SetGameRelatedVars()
 {
 	ResetTDM();
