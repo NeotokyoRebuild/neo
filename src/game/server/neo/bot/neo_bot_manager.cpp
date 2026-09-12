@@ -5,6 +5,7 @@
 #include "team.h"
 #include "neo_bot.h"
 #include "neo_gamerules.h"
+#include "neo_bot_memory_sound_combat.h"
 #include "neo_bot_path_reservation.h"
 
 
@@ -139,6 +140,7 @@ void CNEOBotManager::OnMapLoaded( void )
 	ClearStuckBotData();
 
 	CNEOBotPathReservations()->Clear();
+	NEOMemorySoundCombat::Reset();
 }
 
 
@@ -146,6 +148,8 @@ void CNEOBotManager::OnMapLoaded( void )
 void CNEOBotManager::Update()
 {
 	MaintainBotQuota();
+
+	NEOMemorySoundCombat::Update();
 
 	DrawStuckBotData();
 
