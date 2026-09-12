@@ -55,25 +55,13 @@ void CNEOBotJgrJuggernaut::RecomputeSeekPath( CNEOBot *me )
 	m_bGoingToTargetEntity = false;
 	m_vGoalPos = vec3_origin;
 
-	// Listen for gunfights
-	const Vector& vGunfireLocation = SearchGunfireLocation(me);
-	if (vGunfireLocation != vec3_invalid)
+	// Listen for combat sounds
+	if ( TryPathToCombatSound( me ) )
 	{
-		m_vGoalPos = vGunfireLocation;
-		m_bGoingToTargetEntity = false;
-
-		if (CNEOBotPathCompute(me, m_path, m_vGoalPos, DEFAULT_ROUTE) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
-		{
-			return;
-		}
-		else
-		{
-			// NEO Jank: Sound is unreachable so wait for it clear from the sound list
-			m_soundSearchTimer.Start( 3.0f );
-		}
+		return;
 	}
 
-	// If unaware of gunfights, patrol spawn points
+	// If unaware of combat noises, patrol spawn points
 	if (m_jgrSpawns.Count() > 0)
 	{
 		CBaseEntity* pTargetSpawn = m_jgrSpawns[ RandomInt(0, m_jgrSpawns.Count() - 1) ];
