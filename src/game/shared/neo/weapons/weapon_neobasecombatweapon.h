@@ -135,6 +135,7 @@ public:
 	virtual void Precache() override;
 	virtual void Spawn() override;
 	virtual void Activate() override;
+	virtual void Detach() override;
 
 #ifdef CLIENT_DLL
 	virtual void ClientThink() override;
