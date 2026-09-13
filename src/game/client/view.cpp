@@ -148,23 +148,24 @@ static ConVar cl_demoviewoverride( "cl_demoviewoverride", "0", 0, "Override view
 
 
 #ifdef NEO
-void SoftwareCursorChangedCB( IConVar *pVar, const char *pOldValue, float fOldValue )
+void SoftwareCursorChangedCB( IConVar *pVar, const char *, float )
 {
 	ConVar *pConVar = (ConVar *)pVar;
-	bool enabled;
-#ifdef _WIN32
-	enabled = (pConVar->GetInt() & ESoftwareCursor::EnabledForWindows);
-#elif defined(LINUX)
-	enabled = (pConVar->GetInt() & ESoftwareCursor::EnabledForLinux);
-#else
-	enabled = false; Assert(!"unimplemented");
-#endif
+	bool enabled = (pConVar->GetInt() & ESoftwareCursor::EnabledForPlatform);
 	vgui::surface()->SetSoftwareCursor( enabled || UseVR() );
 }
 static ConVar cl_software_cursor( "cl_software_cursor", "1", FCVAR_ARCHIVE,
 	"Switches the game to use a larger software cursor instead of the normal OS cursor. "
 	"Set as bitflags. 1: enabled for Windows, 2: enabled for Linux, 3: enabled for both",
 	true, ESoftwareCursor::Disabled, true, ESoftwareCursor::Maximum, SoftwareCursorChangedCB );
+void SwCursorHack_RestoreValue()
+{
+	if (cl_software_cursor.GetBool())
+	{
+		SoftwareCursorChangedCB(&cl_software_cursor,
+			cl_software_cursor.GetString(), cl_software_cursor.GetFloat());
+	}
+}
 #else
 static ConVar cl_software_cursor ( "cl_software_cursor", "0", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
 void SoftwareCursorChangedCB( IConVar *pVar, const char *pOldValue, float fOldValue )

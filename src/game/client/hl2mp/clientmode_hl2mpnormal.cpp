@@ -122,24 +122,7 @@ ClientModeHL2MPNormal::ClientModeHL2MPNormal()
 	m_pViewport = new CHudViewport();
 	m_pViewport->Start(gameuifuncs, gameeventmanager);
 #ifdef NEO
-	ConVarRef cl_software_cursor( "cl_software_cursor" );
-	Assert(cl_software_cursor.IsValid());
-	if (cl_software_cursor.IsValid())
-	{
-		if (auto* surface = vgui::surface())
-		{
-			const int swCursorPreference = cl_software_cursor.GetInt();
-			if (swCursorPreference) // force the cvar callback to run by flipping the value
-			{
-				cl_software_cursor.SetValue(0);
-				cl_software_cursor.SetValue(swCursorPreference);
-			}
-		}
-		else
-		{
-			Assert(false);
-		}
-	}
+	SwCursorHack_RestoreValue();
 #endif
 }
 
