@@ -160,11 +160,7 @@ static ConVar cl_software_cursor( "cl_software_cursor", "1", FCVAR_ARCHIVE,
 	true, ESoftwareCursor::Disabled, true, ESoftwareCursor::Maximum, SoftwareCursorChangedCB );
 void SwCursorHack_RestoreValue()
 {
-	if (cl_software_cursor.GetBool())
-	{
-		SoftwareCursorChangedCB(&cl_software_cursor,
-			cl_software_cursor.GetString(), cl_software_cursor.GetFloat());
-	}
+	SoftwareCursorChangedCB(&cl_software_cursor, cl_software_cursor.GetString(), cl_software_cursor.GetFloat());
 }
 #else
 static ConVar cl_software_cursor ( "cl_software_cursor", "0", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
