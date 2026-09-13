@@ -20,6 +20,25 @@ class Vector;
 class QAngle;
 class VPlane;
 
+#ifdef NEO
+enum ESoftwareCursor // stored in user configs, don't reorder
+{
+	Disabled = 0,
+	EnabledForWindows = (1 << 0),
+	EnabledForLinux = (1 << 1),
+
+#ifdef _WIN32
+	EnabledForPlatform = EnabledForWindows,
+#elif defined(LINUX)
+	EnabledForPlatform = EnabledForLinux,
+#else
+	EnabledForPlatform = 0,
+#endif
+	Maximum = (EnabledForWindows | EnabledForLinux)
+};
+
+void SwCursorHack_RestoreValue();
+#endif
 
 // near and far Z it uses to render the world.
 #ifdef NEO
