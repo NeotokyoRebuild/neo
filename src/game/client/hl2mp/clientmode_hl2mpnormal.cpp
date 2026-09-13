@@ -128,7 +128,12 @@ ClientModeHL2MPNormal::ClientModeHL2MPNormal()
 	{
 		if (auto* surface = vgui::surface())
 		{
-			surface->SetSoftwareCursor(cl_software_cursor.GetBool());
+			const int swCursorPreference = cl_software_cursor.GetInt();
+			if (swCursorPreference) // force the cvar callback to run by flipping the value
+			{
+				cl_software_cursor.SetValue(0);
+				cl_software_cursor.SetValue(swCursorPreference);
+			}
 		}
 		else
 		{
