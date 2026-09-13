@@ -148,19 +148,15 @@ static ConVar cl_demoviewoverride( "cl_demoviewoverride", "0", 0, "Override view
 
 
 #ifdef NEO
-void SoftwareCursorChangedCB( IConVar *pVar, const char *, float )
-{
-	ConVar *pConVar = (ConVar *)pVar;
-	bool enabled = (pConVar->GetInt() & ESoftwareCursor::EnabledForPlatform);
-	vgui::surface()->SetSoftwareCursor( enabled || UseVR() );
-}
 static ConVar cl_software_cursor( "cl_software_cursor", "1", FCVAR_ARCHIVE,
 	"Switches the game to use a larger software cursor instead of the normal OS cursor. "
 	"Set as bitflags. 1: enabled for Windows, 2: enabled for Linux, 3: enabled for both",
-	true, ESoftwareCursor::Disabled, true, ESoftwareCursor::Maximum, SoftwareCursorChangedCB );
+	true, ESoftwareCursor::Disabled, true, ESoftwareCursor::Maximum,
+	[](IConVar*, const char*, float) { SwCursorHack_RestoreValue(); });
 void SwCursorHack_RestoreValue()
 {
-	SoftwareCursorChangedCB(&cl_software_cursor, cl_software_cursor.GetString(), cl_software_cursor.GetFloat());
+	bool enabled = (cl_software_cursor.GetInt() & ESoftwareCursor::EnabledForPlatform);
+	vgui::surface()->SetSoftwareCursor(enabled || UseVR());
 }
 #else
 static ConVar cl_software_cursor ( "cl_software_cursor", "0", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
@@ -356,8 +352,7 @@ void CViewRender::Init( void )
 #endif
 
 #ifdef NEO
-	// Call manually once to verify compatibility of the current setting (workaround for Linux bug #2114)
-	SoftwareCursorChangedCB(&cl_software_cursor, cl_software_cursor.GetString(), cl_software_cursor.GetFloat());
+	SwCursorHack_RestoreValue();
 
 	ITexture *pDepthOld = materials->FindTexture("_rt_FullFrameDepth", TEXTURE_GROUP_RENDER_TARGET);
 	const bool bDepthTexOk = ((pDepthOld != NULL) && (!pDepthOld->IsError()));
