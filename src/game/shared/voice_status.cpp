@@ -429,12 +429,18 @@ void CVoiceStatus::HandleVoiceMaskMsg(bf_read &msg)
 	for(dw=0; dw < VOICE_MAX_PLAYERS_DW; dw++)
 	{
 		m_AudiblePlayers.SetDWord(dw, (unsigned long)msg.ReadLong());
+#ifdef NEO
+		m_ProximityPlayers.SetDWord(dw, (unsigned long)msg.ReadLong());
+#endif // NEO
 		m_ServerBannedPlayers.SetDWord(dw, (unsigned long)msg.ReadLong());
 
 		if( voice_clientdebug.GetInt())
 		{
 			Msg("CVoiceStatus::HandleVoiceMaskMsg\n");
 			Msg("    - m_AudiblePlayers[%d] = %u\n", dw, m_AudiblePlayers.GetDWord(dw));
+#ifdef NEO
+			Msg("    - m_ProximityMasks[%d] = %u\n", dw, m_ProximityPlayers.GetDWord(dw));
+#endif // NEO
 			Msg("    - m_ServerBannedPlayers[%d] = %u\n", dw, m_ServerBannedPlayers.GetDWord(dw));
 		}
 	}
@@ -524,6 +530,17 @@ bool CVoiceStatus::IsPlayerSpeaking(int iPlayerIndex)
 {
 	return m_VoicePlayers[iPlayerIndex-1] != 0;
 }
+
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// returns true if the player is currently speaking through proximity chat
+// Calls IsPlayerAudible to stop hud item popping up for a split second after stopping talking
+//-----------------------------------------------------------------------------
+bool CVoiceStatus::IsPlayerSpeakingNonProximity(int iPlayerIndex)
+{
+	return IsPlayerAudible(iPlayerIndex) && IsPlayerSpeaking(iPlayerIndex) && (m_ProximityPlayers[iPlayerIndex - 1] == 0);
+}
+#endif // NEO
 
 //-----------------------------------------------------------------------------
 // returns true if the local player is attempting to speak

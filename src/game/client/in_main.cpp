@@ -161,6 +161,8 @@ static	kbutton_t	in_thermoptic;
 static	kbutton_t	in_vision;
 static	kbutton_t	in_spec_next;
 static	kbutton_t	in_spec_prev;
+static	kbutton_t	in_voicerecordlocal;
+static	kbutton_t	in_voicerecordglobalteam;
 #endif
 
 /*
@@ -677,6 +679,71 @@ void IN_SpecNextDown(const CCommand &args) { KeyDown(&in_spec_next, args[1]); }
 
 void IN_SpecPrevUp(const CCommand &args) { KeyUp(&in_spec_prev, args[1]); }
 void IN_SpecPrevDown(const CCommand &args) { KeyDown(&in_spec_prev, args[1]); }
+
+static NeoVoiceTransmitType voiceTransmitType = NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_NONE;
+NeoVoiceTransmitType GetVoiceTransmitType()
+{
+	return voiceTransmitType;
+}
+
+static float nextLocalSpeakTime = 0.f;
+static float nextGlobalTeamSpeakTime = 0.f;
+static constexpr float DELAY_BETWEEN_SWITCHING_SPEAK_TYPE = 0.25f;
+void IN_VoiceRecordLocalUp( const CCommand &args ) {
+	KeyUp(&in_voicerecordlocal, args[1]);
+	if (const bool isSpeaking = GetClientVoiceMgr() ? GetClientVoiceMgr()->IsLocalPlayerSpeaking() : true;
+		isSpeaking && GetVoiceTransmitType() == NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL)
+	{
+		nextGlobalTeamSpeakTime = Max(nextGlobalTeamSpeakTime, gpGlobals->curtime + DELAY_BETWEEN_SWITCHING_SPEAK_TYPE);
+		engine->ExecuteClientCmd("-voicerecord");
+		voiceTransmitType = NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_NONE;
+	}
+}
+void IN_VoiceRecordLocalDown(const CCommand& args) {
+	KeyDown(&in_voicerecordlocal, args[1]);
+	if (gpGlobals->curtime < nextLocalSpeakTime)
+	{
+		return;
+	}
+	
+	if (const bool isSpeaking = GetClientVoiceMgr() ? GetClientVoiceMgr()->IsLocalPlayerSpeaking() : true)
+	{
+		return;
+	}
+
+	voiceTransmitType = NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL;
+	engine->ExecuteClientCmd("+voicerecord");
+}
+
+void IN_VoiceRecordGlobalTeamUp( const CCommand &args ) {
+	KeyUp(&in_voicerecordglobalteam, args[1]);
+	if (const bool isSpeaking = GetClientVoiceMgr() ? GetClientVoiceMgr()->IsLocalPlayerSpeaking() : true;
+		isSpeaking && GetVoiceTransmitType() == NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_GLOBALTEAM)
+	{
+		nextLocalSpeakTime = Max(nextLocalSpeakTime, gpGlobals->curtime + DELAY_BETWEEN_SWITCHING_SPEAK_TYPE);
+		engine->ExecuteClientCmd("-voicerecord");
+		voiceTransmitType = NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_NONE;
+	}
+}
+void IN_VoiceRecordGlobalTeamDown(const CCommand& args) {
+	KeyDown(&in_voicerecordglobalteam, args[1]);
+	if (gpGlobals->curtime < nextGlobalTeamSpeakTime)
+	{
+		return;
+	}
+	
+	if (const bool isSpeaking = GetClientVoiceMgr() ? GetClientVoiceMgr()->IsLocalPlayerSpeaking() : true)
+	{
+		return;
+	}
+	
+	voiceTransmitType = NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_GLOBALTEAM;
+	engine->ExecuteClientCmd("+voicerecord");
+}
+
+bool IsLocalPlayerHoldingAVoiceTransmitKey() {
+	return (in_voicerecordglobalteam.state & 1) || (in_voicerecordlocal.state & 1);
+}
 
 void IN_LeanLeftToggle(const CCommand& args)
 {
@@ -1946,6 +2013,12 @@ static ConCommand endspecnextplayer("-specnextplayer", IN_SpecNextUp);
 
 static ConCommand startspecprevplayer("+specprevplayer", IN_SpecPrevDown);
 static ConCommand endspecprevplayer("-specprevplayer", IN_SpecPrevUp);
+
+static ConCommand startvoicerecordlocal("+voicerecordlocal", IN_VoiceRecordLocalDown);
+static ConCommand endvoicerecordlocal("-voicerecordlocal", IN_VoiceRecordLocalUp);
+
+static ConCommand startvoicerecordglobalteam("+voicerecordglobalteam", IN_VoiceRecordGlobalTeamDown);
+static ConCommand endvoicerecordglobalteam("-voicerecordglobalteam", IN_VoiceRecordGlobalTeamUp);
 #endif
 
 /*
@@ -2018,6 +2091,8 @@ void CInput::LevelInit( void )
 #ifdef NEO
 	nextMouseWheelUp = 0.f;
 	nextMouseWheelDown = 0.f;
+	nextLocalSpeakTime = 0.f;
+	nextGlobalTeamSpeakTime = 0.f;
 #endif // NEO
 }
 
