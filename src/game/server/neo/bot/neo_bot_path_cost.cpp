@@ -6,8 +6,6 @@
 #include "nav_mesh.h"
 #include "neo_bot_path_reservation.h"
 
-extern ConVar neo_bot_path_reservation_enable;
-
 ConVar neo_bot_path_around_friendly_cooldown("neo_bot_path_around_friendly_cooldown", "2.0", FCVAR_CHEAT,
 	"How often to check for friendly path dispersion", true, 0, true, 60);
 
@@ -32,6 +30,9 @@ ConVar neo_bot_path_penalty_exposure_inverse_base_battle_rifle("neo_bot_path_pen
 ConVar neo_bot_path_penalty_exposure_inverse_base_scoped("neo_bot_path_penalty_exposure_inverse_base_scoped", "1000.0", FCVAR_CHEAT,
 	"Base penalty for calculating inverse traversal penalty for scoped weapons", true, 1.0f, false, 0.0f);
 
+ConVar neo_bot_path_visibility_exposure_enable("neo_bot_path_visibility_exposure_enable", "1", FCVAR_NONE,
+	"Enable visibility-exposure pathing penalties", true, 0, true, 1);
+
 //-------------------------------------------------------------------------------------------------
 CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 {
@@ -41,6 +42,7 @@ CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 	m_maxJumpHeight = me->GetLocomotionInterface()->GetMaxJumpHeight();
 	m_maxDropHeight = me->GetLocomotionInterface()->GetDeathDropHeight();
 	m_bIgnoreReservations = !neo_bot_path_reservation_enable.GetBool();
+	m_bIgnoreVisibilityExposure = !neo_bot_path_visibility_exposure_enable.GetBool();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -146,11 +148,29 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 
 	// ------------------------------------------------------------------------------------------------
 	// New path reservation related cost adjustments
-	if ( !m_bIgnoreReservations && (m_routeType != FASTEST_ROUTE) )
+	if ( NEORules()->IsTeamplay() && !m_bIgnoreReservations && (m_routeType != FASTEST_ROUTE) )
 	{
-		cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber()) * neo_bot_path_reservation_penalty.GetFloat();
+		const int nFriendly = CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber(), m_me);
+		if (nFriendly > 0)
+		{
+			// Discourage team clustering: (n^2 * penalty)
+			cost += nFriendly * nFriendly * neo_bot_path_reservation_penalty.GetFloat();
+		}
 		cost += CNEOBotPathReservations()->GetAreaAvoidPenalty(area->GetID());
 
+		if (m_routeType == SAFEST_ROUTE)
+		{
+			// NEO Jank Cheat: Incorporate enemy bot paths so that we don't run directly into their line of fire
+			// Intended for use by ghost carrier team, to emulate a team that knows where enemies are likely to ambush
+			// Compensates for bots' lack of meta knowledge by making them prefer routes not reserved by enemies
+			// Adheres to cheat against bots but not against humans philosophy by not considering human players' positions
+			const int nEnemy = CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), GetEnemyTeam(m_me->GetTeamNumber()));
+			cost += nEnemy * neo_bot_path_reservation_penalty.GetFloat() * 2.0f;
+		}
+	}
+
+	if ( !m_bIgnoreVisibilityExposure && (m_routeType != FASTEST_ROUTE) )
+	{
 		// Weapon range penalties
 		auto* myWeapon = assert_cast<CNEOBaseCombatWeapon*>(m_me->GetActiveWeapon());
 		if (myWeapon)
@@ -198,15 +218,6 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 					}
 				}
 			}
-		}
-
-		if (m_routeType == SAFEST_ROUTE)
-		{
-			// NEO Jank Cheat: Incorporate enemy bot paths so that we don't run directly into their line of fire
-			// Intended for use by ghost carrier team, to emulate a team that knows where enemies are likely to ambush
-			// Compensates for bots' lack of meta knowledge by making them prefer routes not reserved by enemies
-			// Adheres to cheat against bots but not against humans philosophy by not considering human players' positions
-			cost += CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), GetEnemyTeam(m_me->GetTeamNumber())) * neo_bot_path_reservation_penalty.GetFloat() * 2;
 		}
 	}
 	// ------------------------------------------------------------------------------------------------

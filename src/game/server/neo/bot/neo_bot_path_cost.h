@@ -24,6 +24,7 @@ public:
 	virtual float operator()(CNavArea* baseArea, CNavArea* fromArea, const CNavLadder* ladder, const CFuncElevator* elevator, float length) const override;
 
 	bool m_bIgnoreReservations;
+	bool m_bIgnoreVisibilityExposure;
 
 private:
 	CNEOBot* m_me;

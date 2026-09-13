@@ -2,15 +2,25 @@
 
 #include "cbase.h"
 #include "utlmap.h"
+#include "utlvector.h"
 #include "nav_area.h"
 #include "neo_player_shared.h"
 
 class CNEOBot;
 
-struct ReservationInfo
+struct AreaClaim_t
 {
-    EHANDLE hOwner;             // The bot that reserved this area
-    float flExpirationTime;     // When the reservation expires (gpGlobals->curtime)
+    EHANDLE hOwner;
+    float flExpirationTime; // gpGlobals->curtime past which this claim no longer counts
+};
+
+struct AreaReservation_t
+{
+    CUtlVector<AreaClaim_t> claims;
+
+    AreaReservation_t() {}
+    AreaReservation_t(const AreaReservation_t& src) { claims = src.claims; }
+    AreaReservation_t& operator=(const AreaReservation_t& src) { claims = src.claims; return *this; }
 };
 
 struct HazardInfo
@@ -36,38 +46,28 @@ struct BotReservedAreas_t
 class CNEOBotPathReservationSystem
 {
 public:
-    // Need to define a less function for the CUtlMap
-    static bool ReservationLessFunc(const int &lhs, const int &rhs)
+    static bool AreaIDLessFunc(const int &lhs, const int &rhs)
     {
         return lhs < rhs;
     }
 
-    // Less function for EHANDLE in m_BotReservedAreas
-    inline static bool EHandleLessFunc(const EHANDLE &lhs, const EHANDLE &rhs)
-    {
-        return lhs.GetSerialNumber() < rhs.GetSerialNumber();
-    }
-
-    CNEOBotPathReservationSystem() : m_BotReservedAreas(EHandleLessFunc), m_AreaAvoidPenalties(DefLessFunc(unsigned int))
+    CNEOBotPathReservationSystem()
+        : m_BotReservedAreas(DefLessFunc(int))
+        , m_AreaAvoidPenalties(DefLessFunc(unsigned int))
     {
         for (int i = 0; i < TEAM__TOTAL; ++i)
         {
-            m_Reservations[i].SetLessFunc(ReservationLessFunc);
-            m_AreaPathCounts[i].SetLessFunc(ReservationLessFunc);
-            m_HazardAreas[i].SetLessFunc(ReservationLessFunc);
+            m_Reservations[i].SetLessFunc(AreaIDLessFunc);
+            m_HazardAreas[i].SetLessFunc(AreaIDLessFunc);
         }
     }
 
     void ReserveArea(CNavArea *area, CNEOBot *bot, float duration);
-    void ReleaseArea(CNavArea *area, CNEOBot *bot);
-    bool IsAreaReservedByTeammate(CNavArea *area, CNEOBot *avoider) const;
+    void ReleaseAllAreas(CNEOBot *bot);
     void Clear();
     void ClearRound();
-    void ReleaseAllAreas(CNEOBot *bot);
 
-    void IncrementPredictedFriendlyPathCount( int areaID, int teamID );
-    void DecrementPredictedFriendlyPathCount( int areaID, int teamID );
-    int GetPredictedFriendlyPathCount( int areaID, int teamID ) const;
+    int GetPredictedFriendlyPathCount( int areaID, int teamID, const CNEOBot *excluding = NULL ) const;
 
     void IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount);
     float GetAreaAvoidPenalty(unsigned int navAreaID) const;
@@ -78,13 +78,11 @@ public:
     float GetAreaHazardousTime(int navAreaID, const CNEOBot *me) const;
     bool IsAreaHazardous(int navAreaID, const CNEOBot *me) const;
 
-    // Allow the global accessor to access private members if needed, though constructor handles init now.
-    friend CNEOBotPathReservationSystem* CNEOBotPathReservations();
-
 private:
-    CUtlMap<int, ReservationInfo> m_Reservations[TEAM__TOTAL];
-    CUtlMap<EHANDLE, BotReservedAreas_t> m_BotReservedAreas;
-    CUtlMap<int, int> m_AreaPathCounts[TEAM__TOTAL];
+    int CountLiveClaims(const AreaReservation_t &res, const CNEOBot *excluding) const;
+
+    CUtlMap<int, AreaReservation_t> m_Reservations[TEAM__TOTAL];   // keyed by nav area ID
+    CUtlMap<int, BotReservedAreas_t> m_BotReservedAreas;           // keyed by bot entindex
     CUtlMap<unsigned int, float> m_AreaAvoidPenalties;
     CUtlMap<int, HazardInfo> m_HazardAreas[TEAM__TOTAL];
 };

@@ -817,6 +817,7 @@ void CNEOBot::AvoidPlayers(CUserCmd* pCmd)
 void CNEOBot::UpdateOnRemove(void)
 {
 	StopIdleSound();
+	CNEOBotPathReservations()->ReleaseAllAreas(this);
 
 	BaseClass::UpdateOnRemove();
 }
