@@ -393,6 +393,7 @@ void CNEOBotPathReservationSystem::AddDeadlyHazard(int navAreaID, float expireTi
 		HazardInfo blank;
 		blank.hazardExpireTime = expireTime;
 		blank.smokeExpireTime = 0.0f;
+		blank.npcTurretExpireTime = 0.0f;
 		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
 	}
     else
@@ -466,6 +467,7 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
 		HazardInfo blank;
 		blank.hazardExpireTime = 0.0f;
 		blank.smokeExpireTime = expireTime;
+		blank.npcTurretExpireTime = 0.0f;
 		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
 	}
     else
@@ -488,6 +490,49 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
             area->ForAllCompletelyVisibleAreas(propagate);
         }
     }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Area tagged by neo_npc_targetsystem turret, whose motion vision
+// cannot see slow cloaked players, so bots escaping it should cloak
+void CNEOBotPathReservationSystem::AddNpcTurretHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS)
+{
+    AddDeadlyHazard(navAreaID, expireTime, teamID, propagatePVS);
+
+    if ( (teamID < 0) || (teamID >= TEAM__TOTAL) )
+    {
+        return;
+    }
+
+    int index = m_HazardAreas[teamID].Find(navAreaID);
+    if ( m_HazardAreas[teamID].IsValidIndex(index) )
+    {
+        // Inform the bots in the specific target area to turn on cloak
+        m_HazardAreas[teamID][index].npcTurretExpireTime = expireTime;
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+bool CNEOBotPathReservationSystem::IsAreaNpcTurretHazard(int navAreaID, const CNEOBot *me) const
+{
+    if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() || !me )
+    {
+        return false;
+    }
+
+    int teamID = me->GetTeamNumber();
+    if ( (teamID < 0) || (teamID >= TEAM__TOTAL) )
+    {
+        return false;
+    }
+
+    int index = m_HazardAreas[teamID].Find(navAreaID);
+    if ( !m_HazardAreas[teamID].IsValidIndex(index) )
+    {
+        return false;
+    }
+
+    return m_HazardAreas[teamID][index].npcTurretExpireTime > gpGlobals->curtime;
 }
 
 //-------------------------------------------------------------------------------------------------

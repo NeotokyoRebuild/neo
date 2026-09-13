@@ -17,6 +17,7 @@ struct HazardInfo
 {
 	float smokeExpireTime;      // when the smoke hazard risk expires
 	float hazardExpireTime;     // when a general deadly hazard risk expires
+	float npcTurretExpireTime;  // when a neo_npc_targetsystem hazard expires
 };
 
 struct BotReservedAreas_t
@@ -75,6 +76,8 @@ public:
     void AddDeadlyHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS = false);
     void AddFragHazard(int navAreaID, float expireTime, int teamID);
     void AddSmokeHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS = true);
+    void AddNpcTurretHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS = true);
+    bool IsAreaNpcTurretHazard(int navAreaID, const CNEOBot *me) const;
     float GetAreaHazardousTime(int navAreaID, const CNEOBot *me) const;
     bool IsAreaHazardous(int navAreaID, const CNEOBot *me) const;
 
