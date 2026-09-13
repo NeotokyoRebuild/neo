@@ -36,6 +36,8 @@ enum ESoftwareCursor // stored in user configs, don't reorder
 #endif
 	Maximum = (EnabledForWindows | EnabledForLinux)
 };
+
+void SwCursorHack_RestoreValue();
 #endif
 
 // near and far Z it uses to render the world.
