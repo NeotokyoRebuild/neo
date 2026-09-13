@@ -147,15 +147,39 @@ static ConVar r_farz( "r_farz", "-1", FCVAR_CHEAT, "Override the far clipping pl
 static ConVar cl_demoviewoverride( "cl_demoviewoverride", "0", 0, "Override view during demo playback" );
 
 
+#ifdef NEO
+enum ESoftwareCursor // stored in user configs, don't reorder
+{
+	Disabled = 0,
+	EnabledForWindows = (1 << 0),
+	EnabledForLinux = (1 << 1),
+
+	Maximum = (EnabledForWindows | EnabledForLinux)
+};
+void SoftwareCursorChangedCB( IConVar *pVar, const char *pOldValue, float fOldValue )
+{
+	ConVar *pConVar = (ConVar *)pVar;
+	bool enabled;
+#ifdef _WIN32
+	enabled = (pConVar->GetInt() & ESoftwareCursor::EnabledForWindows);
+#elif defined(LINUX)
+	enabled = (pConVar->GetInt() & ESoftwareCursor::EnabledForLinux);
+#else
+	enabled = false; Assert(!"unimplemented");
+#endif
+	vgui::surface()->SetSoftwareCursor( enabled || UseVR() );
+}
+static ConVar cl_software_cursor( "cl_software_cursor", "1", FCVAR_ARCHIVE,
+	"Switches the game to use a larger software cursor instead of the normal OS cursor. "
+	"Set as bitflags. 1: enabled for Windows, 2: enabled for Linux, 3: enabled for both",
+	true, ESoftwareCursor::Disabled, true, ESoftwareCursor::Maximum, SoftwareCursorChangedCB );
+#else
+static ConVar cl_software_cursor ( "cl_software_cursor", "0", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
 void SoftwareCursorChangedCB( IConVar *pVar, const char *pOldValue, float fOldValue )
 {
 	ConVar *pConVar = (ConVar *)pVar;
 	vgui::surface()->SetSoftwareCursor( pConVar->GetBool() || UseVR() );
 }
-#ifdef NEO
-static ConVar cl_software_cursor ( "cl_software_cursor", "1", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
-#else
-static ConVar cl_software_cursor ( "cl_software_cursor", "0", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
 #endif
 
 
@@ -343,6 +367,9 @@ void CViewRender::Init( void )
 #endif
 
 #ifdef NEO
+	// Call manually once to verify compatibility of the current setting (workaround for Linux bug #2114)
+	SoftwareCursorChangedCB(&cl_software_cursor, cl_software_cursor.GetString(), cl_software_cursor.GetFloat());
+
 	ITexture *pDepthOld = materials->FindTexture("_rt_FullFrameDepth", TEXTURE_GROUP_RENDER_TARGET);
 	const bool bDepthTexOk = ((pDepthOld != NULL) && (!pDepthOld->IsError()));
 	const int flags = (bDepthTexOk ? pDepthOld->GetFlags() : TEXTUREFLAGS_NOMIP |
