@@ -63,7 +63,11 @@ public:
 	// Velocity at time when we hit ground
 	CNetworkVar( float, m_flFallVelocity );
 	// Previous button state
+#ifdef NEO
+	int64 m_nOldButtons;
+#else
 	int m_nOldButtons;
+#endif // NEO
 	float m_flOldForwardMove;
 	class CSkyCamera *m_pOldSkyCamera;
 	// Base velocity that was passed in to server physics so 

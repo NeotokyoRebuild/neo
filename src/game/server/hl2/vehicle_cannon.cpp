@@ -380,6 +380,9 @@ void CPropCannon::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *p
 //-----------------------------------------------------------------------------
 void CPropCannon::DriveCannon( int iDriverButtons, int iButtonsPressed )
 {
+#ifdef NEO
+	Assert(false); // NEO TODO (Adam) change iDriverButtons and iButtonsPressed to int64 when building this
+#endif // NEO
 	bool bWasExtending = m_bExtending;
 
 	// Handle rotation of the crane

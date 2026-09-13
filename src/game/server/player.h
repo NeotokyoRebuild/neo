@@ -783,10 +783,17 @@ public:
 	float	LastTimePlayerTalked() const { return m_fLastPlayerTalkTime; }
 	bool	ArePlayerTalkMessagesAvailable();
 
+#ifdef NEO
+	void	DisableButtons( int64 nButtons );
+	void	EnableButtons( int64 nButtons );
+	void	ForceButtons( int64 nButtons );
+	void	UnforceButtons( int64 nButtons );
+#else
 	void	DisableButtons( int nButtons );
 	void	EnableButtons( int nButtons );
 	void	ForceButtons( int nButtons );
 	void	UnforceButtons( int nButtons );
+#endif // NEO
 
 	//---------------------------------
 	// Inputs
@@ -889,12 +896,21 @@ public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_vecVelocity );
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_nWaterLevel );
 	
+#ifdef NEO
+	int64					m_nButtons;
+	int64					m_afButtonPressed;
+	int64					m_afButtonReleased;
+	int64					m_afButtonLast;
+	int64					m_afButtonDisabled;	// A mask of input flags that are cleared automatically
+	int64					m_afButtonForced;	// These are forced onto the player's inputs
+#else
 	int						m_nButtons;
 	int						m_afButtonPressed;
 	int						m_afButtonReleased;
 	int						m_afButtonLast;
 	int						m_afButtonDisabled;	// A mask of input flags that are cleared automatically
 	int						m_afButtonForced;	// These are forced onto the player's inputs
+#endif // NEO
 
 	CNetworkVar( bool, m_fOnTarget );		//Is the crosshair on a target?
 
@@ -959,7 +975,11 @@ protected:
 
 	int						m_iVehicleAnalogBias;
 
+#ifdef NEO
+	void					UpdateButtonState( int64 nUserCmdButtonMask );
+#else
 	void					UpdateButtonState( int nUserCmdButtonMask );
+#endif // NEO
 
 	bool	m_bPauseBonusProgress;
 	CNetworkVar( int, m_iBonusProgress );

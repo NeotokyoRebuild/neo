@@ -286,7 +286,11 @@ public:
 	virtual void				ViewPunch( const QAngle &angleOffset );
 	void						ViewPunchReset( float tolerance = 0 );
 
+#ifdef NEO
+	void						UpdateButtonState( int64 nUserCmdButtonMask );
+#else
 	void						UpdateButtonState( int nUserCmdButtonMask );
+#endif // NEO
 	int							GetImpulse( void ) const;
 
 	virtual void				Simulate();
@@ -442,11 +446,19 @@ public:
 	
 	char			m_szAnimExtension[32];
 
+#ifdef NEO
+	int64			m_afButtonLast;
+	int64			m_afButtonPressed;
+	int64			m_afButtonReleased;
+
+	int64			m_nButtons;
+#else
 	int				m_afButtonLast;
 	int				m_afButtonPressed;
 	int				m_afButtonReleased;
 
 	int				m_nButtons;
+#endif // NEO
 
 	CUserCmd		*m_pCurrentCommand;
 
