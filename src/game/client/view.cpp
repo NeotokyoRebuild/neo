@@ -148,14 +148,6 @@ static ConVar cl_demoviewoverride( "cl_demoviewoverride", "0", 0, "Override view
 
 
 #ifdef NEO
-enum ESoftwareCursor // stored in user configs, don't reorder
-{
-	Disabled = 0,
-	EnabledForWindows = (1 << 0),
-	EnabledForLinux = (1 << 1),
-
-	Maximum = (EnabledForWindows | EnabledForLinux)
-};
 void SoftwareCursorChangedCB( IConVar *pVar, const char *pOldValue, float fOldValue )
 {
 	ConVar *pConVar = (ConVar *)pVar;
