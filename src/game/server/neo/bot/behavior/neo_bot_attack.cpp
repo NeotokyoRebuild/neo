@@ -84,13 +84,14 @@ public:
 		// only consider this new candidate area if it's an improvement
 		// as we assume earlier breadth first search nodes are closer to bot
 		// and thus faster to reach for safety.
-		if ( neo_bot_path_reservation_enable.GetBool() )
+		const int nFriendlyHere = CNEOBotPathReservations()->GetPredictedFriendlyPathCount( area->GetID(), m_me->GetTeamNumber(), m_me );
+		const int nFriendlyBest = CNEOBotPathReservations()->GetPredictedFriendlyPathCount( m_attackCoverArea->GetID(), m_me->GetTeamNumber(), m_me );
+		if ( nFriendlyHere != nFriendlyBest )
 		{
 			// prefer areas that friendly bots have reserved relatively less
-			return CNEOBotPathReservations()->GetPredictedFriendlyPathCount( area->GetID(), m_me->GetTeamNumber() )
-				< CNEOBotPathReservations()->GetPredictedFriendlyPathCount( m_attackCoverArea->GetID(), m_me->GetTeamNumber() );
+			return nFriendlyHere < nFriendlyBest;
 		}
-		// Fallback when path reservation is disabled: potentially visible area
+		// Tie-break when friendly reservations are equal (or disabled): potentially visible area
 		// count is a rough proxy for how exposed an area is. It ignores whether
 		// the area is actually reachable and does nothing to keep friendlies
 		// from bunching up in the same area.
@@ -135,9 +136,7 @@ public:
 			}
 		}
 
-		float avoidPenalty = neo_bot_path_reservation_enable.GetBool()
-			? CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() )
-			: 0.0f;
+		float avoidPenalty = CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() );
 		if ( !IsBetterCandidate( area, avoidPenalty ) )
 		{
 			return true; // the cover candidate we already have is at least as good
