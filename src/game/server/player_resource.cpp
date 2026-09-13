@@ -186,11 +186,10 @@ void CPlayerResource::UpdatePlayerData( void )
 			m_iNeoNameDupeIdx.Set(i, neoPlayer->NameDupePos());
 			m_bAfk.Set(i, neoPlayer->IsAFK());
 			{
-				const char *neoCrosshair = neoPlayer->m_szNeoCrosshair.Get();
 				string_t strt;
-				if (neoCrosshair && neoCrosshair[0] != '\0')
+				if (neoPlayer->m_szNeoCrosshair[0] != '\0')
 				{
-					strt = AllocPooledString(neoCrosshair);
+					strt = AllocPooledString(neoPlayer->m_szNeoCrosshair);
 				}
 				else
 				{

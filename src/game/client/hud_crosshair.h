@@ -37,10 +37,10 @@ public:
 	bool m_bRefreshCrosshair = true;
 	CrosshairInfo m_crosshairInfo = {};
 
-	// m_szLocalStrPlayersCrosshair is just for crosshair refresh checks
-	char m_szLocalStrPlayersCrosshair[MAX_PLAYERS][NEO_XHAIR_SEQMAX] = {};
-	CrosshairInfo m_playersCrosshairInfos[MAX_PLAYERS] = {};
-	float m_aflLastCheckedPlayersCrosshair[MAX_PLAYERS] = {};
+	// m_szLocalStrPlayerCrosshair is just for crosshair refresh checks
+	char m_szLocalStrPlayerCrosshair[NEO_XHAIR_SEQMAX] = {};
+	float m_flLastCheckedXHair = 0.0f;
+	int m_iPrevPlayerIdx = -1;
 
 	void resetPlayersCrosshair();
 #endif
