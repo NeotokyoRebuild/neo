@@ -1,0 +1,72 @@
+{
+  "name": "NT;RE - Steam Runtime 3 (sniper) SDK",
+  // The CI image (.github/workflows/cibuild.yml) plus a non-root account; see
+  // the Dockerfile.
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      // Account name only; file ownership comes from updateRemoteUserUID below.
+      "USERNAME": "${localEnv:USER:dev}"
+    }
+  },
+  // SELinux hosts: without this the bind mount reads as Permission denied.
+  // Not :Z - that relabels the repo and breaks access from outside.
+  "runArgs": [
+    "--security-opt",
+    "label=disable"
+  ],
+  // Must match the USERNAME build arg. updateRemoteUserUID rebuilds the image
+  // with the local UID/GID so bind-mount files stay owned by the host user.
+  "remoteUser": "${localEnv:USER:dev}",
+  "updateRemoteUserUID": true,
+  "postCreateCommand": "bash tools/ntre-dev-setup.sh --editor none",
+  "remoteEnv": {
+    "PATH": "${containerWorkspaceFolder}/.ide/bin:${containerEnv:PATH}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cmake-tools",
+        "llvm-vs-code-extensions.vscode-clangd"
+      ],
+      // Mirrors what tools/ntre-dev-setup.sh writes for non-container users;
+      // keep in sync. ${workspaceFolder} is VS Code's, not devcontainer.json's.
+      "settings": {
+        "cmake.sourceDirectory": "${workspaceFolder}/src",
+        "cmake.useCMakePresets": "always",
+        "cmake.configureOnOpen": false,
+        // Stops the extension downloading its own clangd.
+        "clangd.path": "${workspaceFolder}/.ide/bin/clangd",
+        "clangd.checkUpdates": false,
+        "clangd.onConfigChanged": "restart",
+        "clangd.arguments": [
+          // Command-line-only option: reads include paths and predefined
+          // macros from the compiler that actually builds this tree.
+          "--query-driver=/usr/bin/g++*,/usr/bin/gcc*,/usr/bin/clang*,/usr/lib/llvm-*/bin/clang*",
+          "--header-insertion=never",
+          "--background-index",
+          "--completion-style=detailed",
+          "--pch-storage=memory"
+        ],
+        // clangd provides IntelliSense; stop cpptools double-indexing.
+        "C_Cpp.intelliSenseEngine": "disabled",
+        "files.associations": {
+          "*.h": "cpp",
+          "*.inc": "cpp"
+        },
+        "[cpp]": {
+          "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+        },
+        "files.watcherExclude": {
+          "**/src/build/**": true,
+          "**/.cache/**": true,
+          "**/.ide/**": true
+        },
+        "search.exclude": {
+          "**/src/build/**": true,
+          "**/.ide/**": true
+        }
+      }
+    }
+  }
+}

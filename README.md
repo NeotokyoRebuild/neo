@@ -96,6 +96,31 @@ $ cmake --build --preset PRESET_NAME
 
 Available PRESET_NAME values: `windows-debug`, `windows-release`, `linux-debug`, `linux-release`.
 
+## Development using Linux
+
+Optional tooling for working on the code, rather than for building it: a dev container definition and a setup script that give you a working C++ IntelliSense index. None of it changes how NT;RE is built. The [Qt Creator](#qt-creator-linux) and [CLI](#cli-with-ninja-windows--linux) workflows above are untouched, and every file the script generates is git-ignored.
+
+### Getting set up
+
+Either entry point is enough:
+
+* **Dev container** - open the repo in an editor that supports [dev containers](https://containers.dev/) (VS Code, Zed, the `devcontainer` CLI, JetBrains Gateway) and reopen in the container. It uses the same sniper SDK image as the CI runners and the manual container steps above, and runs the setup script for you on create.
+* **Run it yourself** - from inside your own sniper container, or on a native toolchain new enough for C++20:
+
+    ```bash
+    $ ./tools/ntre-dev-setup.sh
+    ```
+
+    Add `--editor vscode` to also write `.vscode/settings.json` and `extensions.json`; in VS Code, the *"ntre-dev-setup: Set up VS Code"* task does the same. `--editor zed` writes the equivalent `.zed/settings.json`. Run from an editor's own terminal, the default `--editor auto` picks whichever it detects. `--help` lists the rest.
+
+### What it sets up
+
+* A pinned `clangd` under `.ide/`, since distro packages are frequently too old for this tree's C++20. Use `--system-clangd` to keep your own instead, or `source .ide/env.sh` to put the pinned one on `PATH` for editors launched from a shell.
+* `compile_commands.json`, symlinked at the repo root where clangd, CLion, Qt Creator and Sublime look for it, alongside a `.clangd` carrying the compile flags that need adjusting for the SteamRT toolchain.
+* A `linux-debug-ide` preset in your `src/CMakeUserPresets.json` (per-developer, git-ignored) that generates the database with the [unity build](#unity-build) options off - the header of `tools/ntre-dev-setup.sh` explains why. **Do not build from it** - build with `linux-debug` as documented above.
+
+Re-run `./tools/ntre-dev-setup.sh --reconfigure` after adding, removing or renaming source files, or use the *"ntre-dev-setup: Refresh compile database"* task in VS Code or Zed, which imports the VS Code tasks automatically.
+
 ## Steam mod setup
 To make it appear in Steam, the install files have to appear under the sourcemods directory or
 be directed to it.
