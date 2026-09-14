@@ -463,7 +463,7 @@ void MatchSessionBackup()
 		pSnapshot->iPlayersSize = 0;
 
 		KeyValues *kvPlayersList = new KeyValues("players_list");
-		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		for (int i = 1; i <= gpGlobals->maxClients && pSnapshot->iPlayersSize < MAX_PLAYERS_ARRAY_SAFE; i++)
 		{
 			auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
 			if (pNeoPlayer
