@@ -21,6 +21,7 @@ public:
 
 protected:
 	virtual ThrowTargetResult UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon ) override;
+	virtual void OnThrowReleased( CNEOBot *me ) override;
 };
 
 #endif // NEO_BOT_GRENADE_THROW_FRAG_H

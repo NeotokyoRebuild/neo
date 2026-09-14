@@ -124,6 +124,12 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 			}
 		}
 
+		// Don't commit to a throw when there's nowhere to throw from yet
+		if ( me->FindVisibleThrowPointNear( threat->GetLastKnownPosition() ) == vec3_invalid )
+		{
+			return nullptr;
+		}
+
 		return new CNEOBotGrenadeThrowFrag( pFragGrenade, threat );
 	}
 
