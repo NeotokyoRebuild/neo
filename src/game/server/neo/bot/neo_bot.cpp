@@ -1148,10 +1148,10 @@ void CNEOBot::OnWeaponFired(CBaseCombatCharacter* whoFired, CBaseCombatWeapon* w
 
 
 //-----------------------------------------------------------------------------------------------------
-class CFindClosestPotentiallyVisibleAreaToPos
+class CNEOFindClosestPotentiallyVisibleAreaToPos
 {
 public:
-	CFindClosestPotentiallyVisibleAreaToPos(const Vector& pos)
+	CNEOFindClosestPotentiallyVisibleAreaToPos(const Vector& pos)
 	{
 		m_pos = pos;
 		m_closeArea = NULL;
@@ -1179,6 +1179,34 @@ public:
 	CNavArea* m_closeArea;
 	float m_closeRangeSq;
 };
+
+
+//-----------------------------------------------------------------------------------------------------
+Vector CNEOBot::FindVisibleThrowPointNear( const Vector &vecPos ) const
+{
+	CNavArea *myArea = GetLastKnownArea();
+	if ( !myArea )
+	{
+		return vec3_invalid;
+	}
+
+	CNEOFindClosestPotentiallyVisibleAreaToPos find( vecPos );
+	myArea->ForAllPotentiallyVisibleAreas( find );
+	if ( !find.m_closeArea )
+	{
+		return vec3_invalid;
+	}
+
+	Vector vecPoint;
+	find.m_closeArea->GetClosestPointOnArea( vecPos, &vecPoint );
+	if ( IsThrowLineClear( vecPoint ) )
+	{
+		return vecPoint;
+	}
+
+	const Vector &vecCenter = find.m_closeArea->GetCenter();
+	return IsThrowLineClear( vecCenter ) ? vecCenter : vec3_invalid;
+}
 
 
 //-----------------------------------------------------------------------------------------------------
@@ -1255,7 +1283,7 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 			if (myArea)
 			{
 				const CNavArea* closeArea = NULL;
-				CFindClosestPotentiallyVisibleAreaToPos find(known->GetLastKnownPosition());
+				CNEOFindClosestPotentiallyVisibleAreaToPos find(known->GetLastKnownPosition());
 				myArea->ForAllPotentiallyVisibleAreas(find);
 
 				closeArea = find.m_closeArea;
@@ -2032,6 +2060,24 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to, const Line
 bool CNEOBot::IsLineOfFireClear(const Vector& where, const LineOfFireFlags flags) const
 {
 	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), where, flags);
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+// Return true if a thrown object (like a grenade) has a completely unobstructed physical line to the target.
+// Unlike IsLineOfFireClear, this requires !trace.DidHit() and will NOT treat breakable entities (like glass) as clear.
+bool CNEOBot::IsThrowLineClear(const Vector& from, const Vector& to) const
+{
+	trace_t trace;
+	NextBotTraceFilterIgnoreActors filter(NULL, COLLISION_GROUP_NONE);
+	UTIL_TraceLine(from, to, MASK_SHOT, &filter, &trace);
+	return !trace.DidHit();
+}
+
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::IsThrowLineClear(const Vector& where) const
+{
+	return IsThrowLineClear(const_cast<CNEOBot*>(this)->EyePosition(), where);
 }
 
 

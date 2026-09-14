@@ -230,6 +230,10 @@ public:
 	bool IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to) const;
 	void RepathIfFriendlyBlockingLineOfFire();
 
+	Vector FindVisibleThrowPointNear( const Vector &vecPos ) const;
+	bool IsThrowLineClear(const Vector& where) const;
+	bool IsThrowLineClear(const Vector& from, const Vector& to) const;
+
 	bool IsEntityBetweenTargetAndSelf(CBaseEntity* other, CBaseEntity* target);	// return true if "other" is positioned inbetween us and "target"
 
 	CNEO_Player* GetClosestHumanLookingAtMe(int team = TEAM_ANY);	// return the nearest human player on the given team who is looking directly at me
