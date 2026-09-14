@@ -123,6 +123,12 @@ static const wchar_t* AUTOMATIC_LEAN_LABELS[] = {
 	L"Always",
 };
 
+static const wchar_t* CAP_ZONE_EDGE_LABELS[] = {
+	L"Disabled",
+	L"Line",
+	L"Line + Logo",
+};
+
 static const wchar_t *CROSSHAIR_HIPFIRE_LABELS_DEFAULT[HIPFIREOPT__TOTAL] = {
 	L"Disabled",
 	L"Use default",
@@ -424,6 +430,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
+		pGeneral->iCapZoneEdge = cvr->cl_neo_cap_zone_edge.GetInt();
 		pGeneral->iEquipUtilityPriority = cvr->cl_neo_equip_utility_priority.GetInt();
 		pGeneral->bWeaponFastSwitch = cvr->hud_fastswitch.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
@@ -792,6 +799,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
+		cvr->cl_neo_cap_zone_edge.SetValue(pGeneral->iCapZoneEdge);
 		cvr->cl_neo_equip_utility_priority.SetValue(pGeneral->iEquipUtilityPriority);
 		cvr->hud_fastswitch.SetValue(pGeneral->bWeaponFastSwitch);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
@@ -1110,6 +1118,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Utility slot equip priority", EQUIP_UTILITY_PRIORITY_LABELS, NeoSettings::EquipUtilityPriorityType::EQUIP_UTILITY_PRIORITY__TOTAL, &pGeneral->iEquipUtilityPriority);
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pGeneral->bWeaponFastSwitch);
 	NeoUI::RingBoxBool(L"Taking damage sounds", &pGeneral->bTakingDamageSounds);
+	NeoUI::RingBox(L"Cap zone edge", CAP_ZONE_EDGE_LABELS, ARRAYSIZE(CAP_ZONE_EDGE_LABELS), &pGeneral->iCapZoneEdge);
 
 	NeoUI::Divider(L"MAIN MENU");
 	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
