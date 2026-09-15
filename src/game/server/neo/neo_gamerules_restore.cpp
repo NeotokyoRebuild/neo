@@ -551,7 +551,9 @@ CON_COMMAND(sv_neo_restore_team_scores, "Set the scores for each team (not used 
 
 CON_COMMAND(sv_neo_restore_xp, "Give a player XP (and death) count")
 {
-	static constexpr const char SZ_COMMON_USAGE_PF[] = "Usage: %s <player argument> <xp> <deaths (optional)>";
+	static constexpr const char SZ_COMMON_USAGE_PF[] =
+			"Usage: %s <player name|steamid3> <xp> <deaths (optional)>\n"
+			"steamid3 = uniqueid in \"status\" command, must be surrounded with quotes";
 
 	if (!IN_BETWEEN_EQ(3, args.ArgC(), 4))
 	{
@@ -575,13 +577,27 @@ CON_COMMAND(sv_neo_restore_xp, "Give a player XP (and death) count")
 		return;
 	}
 
+	CSteamID steamIDFind;
+	steamIDFind.SetFromStringStrict(pszNameFind, k_EUniversePublic);
+
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		auto pNeoPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 		if (pNeoPlayer)
 		{
-			const char *pszNameCmp = pNeoPlayer->GetNeoPlayerName();
-			if (0 == V_strcmp(pszNameCmp, pszNameFind))
+			bool bFoundPlayer = false;
+			if (steamIDFind.IsValid())
+			{
+				const CSteamID playerSteamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+				bFoundPlayer = (playerSteamID.IsValid() && playerSteamID == steamIDFind);
+			}
+			else
+			{
+				const char *pszNameCmp = pNeoPlayer->GetNeoPlayerName();
+				bFoundPlayer = (0 == V_strcmp(pszNameCmp, pszNameFind));
+			}
+
+			if (bFoundPlayer)
 			{
 				RestoreSetXPDeath(pNeoPlayer, iXP, iDeaths, __func__);
 				return;
