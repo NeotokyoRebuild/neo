@@ -296,7 +296,8 @@ CON_COMMAND(sv_neo_restore_session, "Restore the previous session")
 {
 	if (false == sv_neo_restore_xp_death_any_round.GetBool() && false == NEORules()->InReadyUpState())
 	{
-		ErrorToWarningAndTalk("%s: error: Cannot set XPs if not idle and in a ready up lobby", __func__);
+		ErrorToWarningAndTalk("%s: error: Cannot set restore session if not idle and in a ready up lobby", __func__);
+		ErrorToWarningAndTalk("Set \"sv_neo_restore_xp_death_any_round 1\" if need to set anytime.", __func__);
 		return;
 	}
 
@@ -574,6 +575,7 @@ CON_COMMAND(sv_neo_restore_xp, "Give a player XP (and death) count")
 	if (false == sv_neo_restore_xp_death_any_round.GetBool() && false == NEORules()->InReadyUpState())
 	{
 		ErrorToWarningAndTalk("%s: error: Cannot set XPs if not idle and in a ready up lobby", __func__);
+		ErrorToWarningAndTalk("Set \"sv_neo_restore_xp_death_any_round 1\" if need to set anytime.", __func__);
 		return;
 	}
 
