@@ -15,7 +15,7 @@
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotJgrSeek::Update( CNEOBot *me, float interval )
 {
-	m_bInvestigateGunfire = false; // Focus on capturing JGR
+	m_bListenForCombatSounds = false; // Focus on capturing JGR
 
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_JGR)
 	{
