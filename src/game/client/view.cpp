@@ -724,7 +724,11 @@ float CViewRender::GetZFar()
 
 
 #ifdef NEO
-ConVar cl_neo_background_pan("cl_neo_background_pan", "1", FCVAR_ARCHIVE, "Pan the camera with the cursor in the main menu background maps");
+// The max pan scale value is arbitrary, chosen to prevent turning so much to see unmapped areas of the 3D background.
+ConVar cl_neo_background_pan("cl_neo_background_pan", "1", FCVAR_ARCHIVE,
+	"Scale by which to pan the camera with the cursor in the main menu background maps", true, -10, true, 10);
+ConVar cl_neo_background_lerp("cl_neo_background_lerp", "1", FCVAR_ARCHIVE,
+	"Scale by which to lerp the camera pan, or 0 to use frametime.", true, 0, true, 1);
 #endif // NEO
 //-----------------------------------------------------------------------------
 // Sets up the view parameters
@@ -776,7 +780,8 @@ void CViewRender::SetUpViews()
 	}
 #endif
 #if defined NEO
-	else if (engine->IsLevelMainMenuBackground() && cl_neo_background_pan.GetBool())
+	// float compare because background pan can be scalar, and .GetBool() casts via int which would round down for values 0-1
+	else if (engine->IsLevelMainMenuBackground() && cl_neo_background_pan.GetFloat() != 0)
 	{
 		if (pPlayer)
 		{
@@ -794,12 +799,25 @@ void CViewRender::SetUpViews()
 				flX = (1 / (1 + pow(2, -CURVE_STEEPNESS * flX))) - 0.5;
 				flY = (1 / (1 + pow(2, -CURVE_STEEPNESS * flY))) - 0.5;
 
-				constexpr int CAMERA_MOVEMENT_MULTIPIER = 3;
+				// Originally, the multiplier was 3 and cl_neo_background_pan was a bool (instead of scale),
+				// so doing it this way instead of defaulting the cvar to 3 keeps user configs compatible.
+				const float CAMERA_MOVEMENT_MULTIPIER = 3 * cl_neo_background_pan.GetFloat();
+
 				flX *= CAMERA_MOVEMENT_MULTIPIER;
 				flY *= CAMERA_MOVEMENT_MULTIPIER;
 
-				viewEye.angles.y += flX;
-				viewEye.angles.x -= flY;
+				static Vector2D lerpedOffs(0, 0);
+				viewEye.angles.x -= lerpedOffs.y;
+				viewEye.angles.y += lerpedOffs.x;
+
+				float lerpScale = cl_neo_background_lerp.GetFloat();
+				if (!lerpScale)
+					lerpScale = Min(gpGlobals->frametime, 1.f);
+				Assert(IN_BETWEEN_EQ(0, lerpScale, 1));
+				// if lerpScale==1, then this is just an unlerped assignment
+				lerpedOffs.x = Lerp(lerpScale, lerpedOffs.x, flX);
+				lerpedOffs.y = Lerp(lerpScale, lerpedOffs.y, flY);
+				Assert(lerpedOffs.IsValid());
 			}
 		}
 		else
