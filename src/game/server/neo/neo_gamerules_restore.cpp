@@ -270,12 +270,12 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 	RestoreSetRoundNumber(iRoundNumber, __func__);
 	RestoreSetRoundsWon(pSnapshot->iRoundsWonJinrai, pSnapshot->iRoundsWonNSF, __func__);
 	RestoreSetGhostSpawnIdx(pSnapshot->iGhostSpawnIdx, __func__);
-	for (int i = 0; i < pSnapshot->iPlayersSize; ++i)
+	for (int idxSnPlayer = 0; idxSnPlayer < pSnapshot->iPlayersSize; ++idxSnPlayer)
 	{
-		const MatchSnapshotPlayer *pSnPlayer = &pSnapshot->players[i];
-		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		const MatchSnapshotPlayer *pSnPlayer = &pSnapshot->players[idxSnPlayer];
+		for (int idxClient = 1; idxClient <= gpGlobals->maxClients; ++idxClient)
 		{
-			if (auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(idxClient));
 					pNeoPlayer && pNeoPlayer->GetUserID() == pSnPlayer->iUserID)
 			{
 				RestoreSetXPDeath(pNeoPlayer, pSnPlayer->iXP, pSnPlayer->iDeaths, __func__);
