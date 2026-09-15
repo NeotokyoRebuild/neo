@@ -266,6 +266,7 @@ private:
 	void CheckLeanButtons();
 	void PlayCloakSound(bool removeLocalPlayer = true);
 	void SetCloakState(bool state);
+	void FixupOnGroundFlag();
 
 public:
 	CNetworkVar(int, m_iNeoClass);
@@ -292,7 +293,6 @@ public:
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
-	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
@@ -348,9 +348,6 @@ private:
 	bool m_bCorpseSet;
 	bool m_bPreviouslyReloading;
 	bool m_bNeoNameHasSet;
-
-	float m_flLastAirborneJumpOkTime;
-	float m_flLastSuperJumpTime;
 
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
