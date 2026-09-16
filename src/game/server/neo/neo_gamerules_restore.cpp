@@ -270,20 +270,28 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 	RestoreSetRoundNumber(iRoundNumber, __func__);
 	RestoreSetRoundsWon(pSnapshot->iRoundsWonJinrai, pSnapshot->iRoundsWonNSF, __func__);
 	RestoreSetGhostSpawnIdx(pSnapshot->iGhostSpawnIdx, __func__);
-	for (int idxSnPlayer = 0; idxSnPlayer < pSnapshot->iPlayersSize; ++idxSnPlayer)
+	for (int idxClient = 1; idxClient <= gpGlobals->maxClients; ++idxClient)
 	{
-		const MatchSnapshotPlayer *pSnPlayer = &pSnapshot->players[idxSnPlayer];
-		for (int idxClient = 1; idxClient <= gpGlobals->maxClients; ++idxClient)
+		auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(idxClient));
+		if (!pNeoPlayer)
 		{
-			if (auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(idxClient)))
+			continue;
+		}
+
+		const CSteamID playerSteamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+		if (!playerSteamID.IsValid())
+		{
+			continue;
+		}
+
+		for (int idxSnPlayer = 0; idxSnPlayer < pSnapshot->iPlayersSize; ++idxSnPlayer)
+		{
+			const MatchSnapshotPlayer *pSnPlayer = &pSnapshot->players[idxSnPlayer];
+			if (playerSteamID == pSnPlayer->steamID)
 			{
-				const CSteamID playerSteamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
-				if (playerSteamID.IsValid() && playerSteamID == pSnPlayer->steamID)
-				{
-					RestoreSetXPDeath(pNeoPlayer, pSnPlayer->iXP, pSnPlayer->iDeaths, __func__);
-					RestoreSetSpawn(pNeoPlayer, pSnPlayer->iSpawnHdlEntryIndex, pSnPlayer->iSpawnHdlSerialNumber, __func__);
-					break;
-				}
+				RestoreSetXPDeath(pNeoPlayer, pSnPlayer->iXP, pSnPlayer->iDeaths, __func__);
+				RestoreSetSpawn(pNeoPlayer, pSnPlayer->iSpawnHdlEntryIndex, pSnPlayer->iSpawnHdlSerialNumber, __func__);
+				break;
 			}
 		}
 	}
