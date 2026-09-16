@@ -877,6 +877,7 @@ void CNEORules::ResetMapSessionCommon()
 	m_pRestoredInfos.Purge();
 	m_readyAccIDs.Purge();
 	m_bIgnoreOverThreshold = false;
+	ClearSnapshots();
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -2877,7 +2878,6 @@ void CNEORules::StartNextRound()
 		pJinrai->SetRoundsWon(0);
 		pNSF->SetScore(0);
 		pNSF->SetRoundsWon(0);
-
 		ClearSnapshots();
 	}
 
@@ -3434,6 +3434,7 @@ void CNEORules::RestartGame()
 	pJinrai->SetRoundsWon(0);
 	pNSF->SetScore(0);
 	pNSF->SetRoundsWon(0);
+	ClearSnapshots();
 
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0.0;

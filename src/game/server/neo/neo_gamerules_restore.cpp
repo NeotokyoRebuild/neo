@@ -49,13 +49,19 @@ struct MatchSnapshot
 	int iPlayersSize;
 };
 
+// NEO NOTE (nullsystem): giSnapshotsMin because
+// sv_neo_restore_session can cause snapshot to
+// start further than 1
+
 static constexpr const int SNAPSHOTS_TOTAL = 64;
 static MatchSnapshot gSnapshots[SNAPSHOTS_TOTAL];
+static int giSnapshotsMin = SNAPSHOTS_TOTAL;
 static int giSnapshotsMax = 0;
 
 void ClearSnapshots()
 {
 	V_memset(gSnapshots, 0, sizeof(gSnapshots));
+	giSnapshotsMin = SNAPSHOTS_TOTAL;
 	giSnapshotsMax = 0;
 }
 
@@ -263,7 +269,7 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 	}
 
 	const int iRoundNumber = V_atoi(args[1]);
-	if (iRoundNumber < 1 || iRoundNumber > giSnapshotsMax)
+	if (iRoundNumber < giSnapshotsMin || iRoundNumber > giSnapshotsMax)
 	{
 		if (giSnapshotsMax == 0)
 		{
@@ -271,7 +277,7 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 		}
 		else
 		{
-			ErrorToWarningAndTalk("%s: Round number must be within 1 to %d", __func__, giSnapshotsMax);
+			ErrorToWarningAndTalk("%s: Round number must be within %d to %d", __func__, giSnapshotsMin, giSnapshotsMax);
 		}
 		return;
 	}
@@ -462,6 +468,7 @@ void MatchSessionBackup()
 	MatchSnapshot *pSnapshot =
 			(iRoundNumber < 0 || iRoundNumber >= SNAPSHOTS_TOTAL) ?
 					&gSnapshots[0] : &gSnapshots[iRoundNumber];
+	giSnapshotsMin = Min(giSnapshotsMin, iRoundNumber);
 	giSnapshotsMax = Max(giSnapshotsMax, iRoundNumber);
 
 	{
