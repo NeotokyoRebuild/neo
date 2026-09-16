@@ -30,7 +30,7 @@ extern ConVar sv_neo_comp;
 
 struct MatchSnapshotPlayer
 {
-	int iUserID;
+	CSteamID steamID;
 	int iXP;
 	int iDeaths;
 	int iSpawnHdlEntryIndex;
@@ -275,12 +275,15 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 		const MatchSnapshotPlayer *pSnPlayer = &pSnapshot->players[idxSnPlayer];
 		for (int idxClient = 1; idxClient <= gpGlobals->maxClients; ++idxClient)
 		{
-			if (auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(idxClient));
-					pNeoPlayer && pNeoPlayer->GetUserID() == pSnPlayer->iUserID)
+			if (auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(idxClient)))
 			{
-				RestoreSetXPDeath(pNeoPlayer, pSnPlayer->iXP, pSnPlayer->iDeaths, __func__);
-				RestoreSetSpawn(pNeoPlayer, pSnPlayer->iSpawnHdlEntryIndex, pSnPlayer->iSpawnHdlSerialNumber, __func__);
-				break;
+				const CSteamID playerSteamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+				if (playerSteamID.IsValid() && playerSteamID == pSnPlayer->steamID)
+				{
+					RestoreSetXPDeath(pNeoPlayer, pSnPlayer->iXP, pSnPlayer->iDeaths, __func__);
+					RestoreSetSpawn(pNeoPlayer, pSnPlayer->iSpawnHdlEntryIndex, pSnPlayer->iSpawnHdlSerialNumber, __func__);
+					break;
+				}
 			}
 		}
 	}
@@ -472,7 +475,7 @@ void MatchSessionBackup()
 						|| pNeoPlayer->GetTeamNumber() == TEAM_NSF))
 			{
 				MatchSnapshotPlayer *pSnPlayer = &pSnapshot->players[pSnapshot->iPlayersSize++];
-				pSnPlayer->iUserID = pNeoPlayer->GetUserID();
+				pSnPlayer->steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
 				pSnPlayer->iXP = pNeoPlayer->m_iXP.Get();
 				pSnPlayer->iDeaths = pNeoPlayer->DeathCount();
 				pSnPlayer->iSpawnHdlEntryIndex = pNeoPlayer->m_iSpawnHdlEntryIndex;
@@ -486,12 +489,9 @@ void MatchSessionBackup()
 				// name - Always set regardless of sv_neo_restore_session_name_match, have a descriptive
 				//        purpose when looking inside the file
 				kvPlayer->SetString("name", pNeoPlayer->GetNeoPlayerName());
+				if (pSnPlayer->steamID.IsValid())
 				{
-					const CSteamID playerSteamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
-					if (playerSteamID.IsValid())
-					{
-						kvPlayer->SetString("steamid3", playerSteamID.Render());
-					}
+					kvPlayer->SetString("steamid3", pSnPlayer->steamID.Render());
 				}
 				kvPlayersList->AddSubKey(kvPlayer);
 			}
