@@ -17,6 +17,7 @@ enum NextRoundPlayerRestoreFlag_
 	NEXT_ROUND_PLAYER_RESTORE_FLAG_XP = 1 << 0,
 	NEXT_ROUND_PLAYER_RESTORE_FLAG_DEATH = 1 << 1,
 	NEXT_ROUND_PLAYER_RESTORE_FLAG_SPAWN = 1 << 2,
+	NEXT_ROUND_PLAYER_RESTORE_FLAG_WEAPON = 1 << 3,
 };
 typedef int NextRoundPlayerRestoreFlags;
 

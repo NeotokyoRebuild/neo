@@ -282,6 +282,7 @@ public:
 		int iDeaths;
 		int iSpawnHdlEntryIndex;
 		int iSpawnHdlSerialNumber;
+		int iLoadoutWepChoice;
 	};
 	NeoRestore m_iNextRestore = {};
 	int m_iSpawnHdlEntryIndex;

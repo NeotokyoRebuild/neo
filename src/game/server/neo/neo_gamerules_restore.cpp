@@ -35,6 +35,7 @@ struct MatchSnapshotPlayer
 	int iDeaths;
 	int iSpawnHdlEntryIndex;
 	int iSpawnHdlSerialNumber;
+	int iLoadoutWepChoice;
 };
 
 struct MatchSnapshot
@@ -243,6 +244,16 @@ static void RestoreSetSpawn(CNEO_Player *pNeoPlayer,
 	}
 }
 
+static void RestoreLoadoutWepChoice(CNEO_Player *pNeoPlayer,
+		const int iLoadoutWepChoice,
+		const char *pszFuncName)
+{
+	pNeoPlayer->m_iNextRestore.iLoadoutWepChoice = iLoadoutWepChoice;
+	pNeoPlayer->m_iNextRestore.flags |= NEXT_ROUND_PLAYER_RESTORE_FLAG_WEAPON;
+	PrintToMsgAndTalk("%s: Set loadout %d for %s", pszFuncName, iLoadoutWepChoice,
+			pNeoPlayer->GetNeoPlayerName());
+}
+
 CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded round snapshot")
 {
 	if (2 != args.ArgC())
@@ -290,7 +301,10 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 			if (playerSteamID == pSnPlayer->steamID)
 			{
 				RestoreSetXPDeath(pNeoPlayer, pSnPlayer->iXP, pSnPlayer->iDeaths, __func__);
-				RestoreSetSpawn(pNeoPlayer, pSnPlayer->iSpawnHdlEntryIndex, pSnPlayer->iSpawnHdlSerialNumber, __func__);
+				RestoreSetSpawn(pNeoPlayer,
+						pSnPlayer->iSpawnHdlEntryIndex, pSnPlayer->iSpawnHdlSerialNumber,
+						__func__);
+				RestoreLoadoutWepChoice(pNeoPlayer, pSnPlayer->iLoadoutWepChoice, __func__);
 				break;
 			}
 		}
@@ -399,6 +413,8 @@ CON_COMMAND(sv_neo_restore_session, "Restore the previous session")
 				const int iXP = kvPlayer->GetInt("xp");
 				const int iDeaths = kvPlayer->GetInt("deaths");
 				RestoreSetXPDeath(pNeoPlayerUpdate, iXP, iDeaths, __func__);
+				const int iWepChoice = kvPlayer->GetInt("wepchoice");
+				RestoreLoadoutWepChoice(pNeoPlayerUpdate, iWepChoice, __func__);
 			}
 			else
 			{
@@ -488,10 +504,12 @@ void MatchSessionBackup()
 				pSnPlayer->iDeaths = pNeoPlayer->DeathCount();
 				pSnPlayer->iSpawnHdlEntryIndex = pNeoPlayer->m_iSpawnHdlEntryIndex;
 				pSnPlayer->iSpawnHdlSerialNumber = pNeoPlayer->m_iSpawnHdlSerialNumber;
+				pSnPlayer->iLoadoutWepChoice = pNeoPlayer->m_iLoadoutWepChoice;
 
 				KeyValues *kvPlayer = new KeyValues("player");
 				kvPlayer->SetInt("xp", pSnPlayer->iXP);
 				kvPlayer->SetInt("deaths", pSnPlayer->iDeaths);
+				kvPlayer->SetInt("wepchoice", pSnPlayer->iLoadoutWepChoice);
 				// team - Unused on de-serialization as steamid3 is enough, but have descriptive purpose
 				kvPlayer->SetString("team", (pNeoPlayer->GetTeamNumber() == TEAM_JINRAI) ? "j" : "n");
 				// name - Always set regardless of sv_neo_restore_session_name_match, have a descriptive

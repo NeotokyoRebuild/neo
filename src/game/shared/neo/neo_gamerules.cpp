@@ -2936,6 +2936,11 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
+		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_WEAPON)
+		{
+			pPlayer->m_iLoadoutWepChoice = pPlayer->m_iNextRestore.iLoadoutWepChoice;
+		}
+
 		pPlayer->m_bKilledInflicted = false;
 		if (pPlayer->GetActiveWeapon())
 		{
