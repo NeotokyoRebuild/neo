@@ -280,13 +280,11 @@ public:
 		NextRoundPlayerRestoreFlags flags;
 		int iXP;
 		int iDeaths;
-		int iSpawnHdlEntryIndex;
-		int iSpawnHdlSerialNumber;
+		int iSpawnEntIdx;
 		int iLoadoutWepChoice;
 	};
 	NeoRestore m_iNextRestore = {};
-	int m_iSpawnHdlEntryIndex;
-	int m_iSpawnHdlSerialNumber;
+	int m_iSpawnEntIdx;
 
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);

@@ -82,8 +82,7 @@ namespace NeoSpawnManager
 		CNEOSpawnPoint* backup = nullptr;
 
 		bool bRestoreSpawn = (player->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_SPAWN
-				&& player->m_iNextRestore.iSpawnHdlEntryIndex >= 0
-				&& player->m_iNextRestore.iSpawnHdlSerialNumber >= 0);
+				&& player->m_iNextRestore.iSpawnEntIdx >= 0);
 
 		auto FindSpawn = [rules, team, player, &backup, bRestoreSpawn](const auto& spawn)->bool
 			{
@@ -116,8 +115,7 @@ namespace NeoSpawnManager
 
 				if (bRestoreSpawn)
 				{
-					return (spawn.handle.GetEntryIndex() == player->m_iNextRestore.iSpawnHdlEntryIndex
-							&& spawn.handle.GetSerialNumber() == player->m_iNextRestore.iSpawnHdlSerialNumber);
+					return (spawn.handle->entindex() == player->m_iNextRestore.iSpawnEntIdx);
 				}
 				else
 				{
@@ -134,8 +132,7 @@ namespace NeoSpawnManager
 			idx = manager.m_spawns.FindPredicate(FindSpawn);
 		}
 
-		player->m_iSpawnHdlEntryIndex = -1;
-		player->m_iSpawnHdlSerialNumber = -1;
+		player->m_iSpawnEntIdx = -1;
 
 		if (idx == manager.m_spawns.InvalidIndex())
 		{
@@ -153,8 +150,7 @@ namespace NeoSpawnManager
 		}
 
 		auto handle = manager.m_spawns[idx].handle;
-		player->m_iSpawnHdlEntryIndex = handle.GetEntryIndex();
-		player->m_iSpawnHdlSerialNumber = handle.GetSerialNumber();
+		player->m_iSpawnEntIdx = handle->entindex();
 		return handle;
 	}
 

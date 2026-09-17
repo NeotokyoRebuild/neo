@@ -6,6 +6,7 @@
 #include "KeyValues.h"
 #include "filesystem.h"
 #include "neo_gamerules.h"
+#include "neo_misc.h"
 
 #include <ctime>
 
@@ -24,17 +25,12 @@ static ConVar sv_neo_restore_session_allow_name_match("sv_neo_restore_session_al
 
 extern ConVar sv_neo_comp;
 
-// NOTE: Spawn restore is snapshot only, session restore cannot
-// from a crashed session cannot reliably restore spawn from
-// handle.
-
 struct MatchSnapshotPlayer
 {
 	CSteamID steamID;
 	int iXP;
 	int iDeaths;
-	int iSpawnHdlEntryIndex;
-	int iSpawnHdlSerialNumber;
+	int iSpawnEntIdx;
 	int iLoadoutWepChoice;
 };
 
@@ -44,7 +40,7 @@ struct MatchSnapshot
 	int iScoreNSF;
 	int iRoundsWonJinrai;
 	int iRoundsWonNSF;
-	int iGhostSpawnIdx;
+	int iGhostSpawnEntIdx;
 	MatchSnapshotPlayer players[MAX_PLAYERS_ARRAY_SAFE];
 	int iPlayersSize;
 };
@@ -96,6 +92,13 @@ static void ErrorToWarningAndTalk(PRINTF_FORMAT_STRING const char *pFormat, ...)
 	UTIL_ClientPrintAll(HUD_PRINTTALK, szDestAll);
 }
 
+static bool SetNextRestore()
+{
+	return NEORules()->InReadyUpState()
+			|| NEORules()->IsRoundOn()
+			|| NeoRoundStatus::Pause == NEORules()->GetRoundStatus();
+}
+
 static void RestoreSetRoundNumber(const int iRoundNumber, const char *pszFuncName)
 {
 	if (iRoundNumber < 0)
@@ -105,7 +108,7 @@ static void RestoreSetRoundNumber(const int iRoundNumber, const char *pszFuncNam
 	}
 
 	NEORules()->SetRoundNumber(iRoundNumber);
-	if (NEORules()->InReadyUpState() || NEORules()->IsRoundOn())
+	if (SetNextRestore())
 	{
 		NEORules()->m_iNextRestore.iRoundNumber = iRoundNumber;
 		NEORules()->m_iNextRestore.flags |= NEXT_ROUND_GAMERULE_RESTORE_FLAG_ROUND_NUMBER;
@@ -128,7 +131,7 @@ static void RestoreSetRoundsWon(const int iRoundsWonJinrai, const int iRoundsWon
 
 	GetGlobalTeam(TEAM_JINRAI)->SetRoundsWon(iRoundsWonJinrai);
 	GetGlobalTeam(TEAM_NSF)->SetRoundsWon(iRoundsWonNSF);
-	if (NEORules()->InReadyUpState() || NEORules()->IsRoundOn())
+	if (SetNextRestore())
 	{
 		NEORules()->m_iNextRestore.iRoundsWonJinrai = iRoundsWonJinrai;
 		NEORules()->m_iNextRestore.iRoundsWonNSF = iRoundsWonNSF;
@@ -142,17 +145,17 @@ static void RestoreSetRoundsWon(const int iRoundsWonJinrai, const int iRoundsWon
 	PrintToMsgAndTalk("%s: Rounds won set: Jinrai %d, NSF %d", pszFuncName, iRoundsWonJinrai, iRoundsWonNSF);
 }
 
-static void RestoreSetGhostSpawnIdx(const int iGhostSpawnIdx, const char *pszFuncName)
+static void RestoreSetGhostSpawnEntIdx(const int iGhostSpawnEntIdx, const char *pszFuncName)
 {
-	if (iGhostSpawnIdx < 0)
+	if (iGhostSpawnEntIdx < 0)
 	{
 		ErrorToWarningAndTalk("%s: error: Cannot have negative spawn index", pszFuncName);
 		return;
 	}
 
-	if (NEORules()->InReadyUpState() || NEORules()->IsRoundOn())
+	if (SetNextRestore())
 	{
-		NEORules()->m_iNextRestore.iGhostSpawnIdx = iGhostSpawnIdx;
+		NEORules()->m_iNextRestore.iGhostSpawnEntIdx = iGhostSpawnEntIdx;
 		NEORules()->m_iNextRestore.flags |= NEXT_ROUND_GAMERULE_RESTORE_FLAG_GHOST;
 	}
 	else
@@ -160,14 +163,14 @@ static void RestoreSetGhostSpawnIdx(const int iGhostSpawnIdx, const char *pszFun
 		NEORules()->m_iNextRestore.flags &= ~(NEXT_ROUND_GAMERULE_RESTORE_FLAG_GHOST);
 	}
 
-	PrintToMsgAndTalk("%s: Ghost spawn index set: %d", pszFuncName, iGhostSpawnIdx);
+	PrintToMsgAndTalk("%s: Ghost spawn index set: %d", pszFuncName, iGhostSpawnEntIdx);
 }
 
 static void RestoreSetScore(const int iScoreJinrai, const int iScoreNSF, const char *pszFuncName)
 {
 	GetGlobalTeam(TEAM_JINRAI)->SetScore(iScoreJinrai);
 	GetGlobalTeam(TEAM_NSF)->SetScore(iScoreNSF);
-	if (NEORules()->InReadyUpState() || NEORules()->IsRoundOn())
+	if (SetNextRestore())
 	{
 		NEORules()->m_iNextRestore.iScoreJinrai = iScoreJinrai;
 		NEORules()->m_iNextRestore.iScoreNSF = iScoreNSF;
@@ -195,7 +198,7 @@ static void RestoreSetXPDeath(CNEO_Player *pNeoPlayer, const int iXP, const int 
 		}
 	}
 
-	if (NEORules()->InReadyUpState() || NEORules()->IsRoundOn())
+	if (SetNextRestore())
 	{
 		pNeoPlayer->m_iNextRestore.iXP = iXP;
 		pNeoPlayer->m_iNextRestore.flags |= NEXT_ROUND_PLAYER_RESTORE_FLAG_XP;
@@ -228,17 +231,15 @@ static void RestoreSetXPDeath(CNEO_Player *pNeoPlayer, const int iXP, const int 
 }
 
 static void RestoreSetSpawn(CNEO_Player *pNeoPlayer,
-		const int iSpawnHdlEntryIndex,
-		const int iSpawnHdlSerialNumber,
+		const int iSpawnEntIdx,
 		const char *pszFuncName)
 {
-	if (NEORules()->InReadyUpState() || NEORules()->IsRoundOn())
+	if (SetNextRestore())
 	{
-		pNeoPlayer->m_iNextRestore.iSpawnHdlEntryIndex = iSpawnHdlEntryIndex;
-		pNeoPlayer->m_iNextRestore.iSpawnHdlSerialNumber = iSpawnHdlSerialNumber;
+		pNeoPlayer->m_iNextRestore.iSpawnEntIdx = iSpawnEntIdx;
 		pNeoPlayer->m_iNextRestore.flags |= NEXT_ROUND_PLAYER_RESTORE_FLAG_SPAWN;
-		PrintToMsgAndTalk("%s: Set spawn %d %d for %s", pszFuncName,
-				iSpawnHdlEntryIndex, iSpawnHdlSerialNumber,
+		PrintToMsgAndTalk("%s: Set spawn %d for %s", pszFuncName,
+				iSpawnEntIdx,
 				pNeoPlayer->GetNeoPlayerName());
 	}
 	else
@@ -268,6 +269,15 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 		return;
 	}
 
+	const NeoRoundStatus eRoundStatus = NEORules()->GetRoundStatus();
+	const bool bUnsupported = (Warmup == eRoundStatus || Countdown == eRoundStatus);
+	if (bUnsupported)
+	{
+		ErrorToWarningAndTalk("%s: error: Cannot restore snapshot while in warmup/countdown",
+				__func__);
+		return;
+	}
+
 	const int iRoundNumber = V_atoi(args[1]);
 	if (iRoundNumber < giSnapshotsMin || iRoundNumber > giSnapshotsMax)
 	{
@@ -286,7 +296,7 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 	RestoreSetScore(pSnapshot->iScoreJinrai, pSnapshot->iScoreNSF, __func__);
 	RestoreSetRoundNumber(iRoundNumber, __func__);
 	RestoreSetRoundsWon(pSnapshot->iRoundsWonJinrai, pSnapshot->iRoundsWonNSF, __func__);
-	RestoreSetGhostSpawnIdx(pSnapshot->iGhostSpawnIdx, __func__);
+	RestoreSetGhostSpawnEntIdx(pSnapshot->iGhostSpawnEntIdx, __func__);
 	for (int idxClient = 1; idxClient <= gpGlobals->maxClients; ++idxClient)
 	{
 		auto pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(idxClient));
@@ -307,9 +317,7 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 			if (playerSteamID == pSnPlayer->steamID)
 			{
 				RestoreSetXPDeath(pNeoPlayer, pSnPlayer->iXP, pSnPlayer->iDeaths, __func__);
-				RestoreSetSpawn(pNeoPlayer,
-						pSnPlayer->iSpawnHdlEntryIndex, pSnPlayer->iSpawnHdlSerialNumber,
-						__func__);
+				RestoreSetSpawn(pNeoPlayer, pSnPlayer->iSpawnEntIdx, __func__);
 				RestoreLoadoutWepChoice(pNeoPlayer, pSnPlayer->iLoadoutWepChoice, __func__);
 				break;
 			}
@@ -317,10 +325,21 @@ CON_COMMAND(sv_neo_restore_round_snapshot, "Restore the current match's recorded
 	}
 
 	// Unlike sv_neo_restore_session, this immediately resets to the restoring round
-	NEORules()->StartNextRound();
+	const bool bPaused = (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause);
+	if (false == bPaused)
+	{
+		NEORules()->StartNextRound();
+	}
 	char szCenterPrint[64];
-	V_sprintf_safe(szCenterPrint, "- MATCH RESTORED TO ROUND %d SNAPSHOT -\n", iRoundNumber);
+	V_sprintf_safe(szCenterPrint,
+			"- MATCH RESTORED TO ROUND %d SNAPSHOT%s -\n",
+			iRoundNumber,
+			bPaused ? " ON UNPAUSE" : "");
 	UTIL_CenterPrintAll(szCenterPrint);
+
+	PrintToMsgAndTalk("Match restored to round %d snapshot%s",
+			iRoundNumber,
+			bPaused ? " on unpause" : "");
 }
 
 CON_COMMAND(sv_neo_restore_session, "Restore the previous session")
@@ -362,7 +381,7 @@ CON_COMMAND(sv_neo_restore_session, "Restore the previous session")
 	{
 		RestoreSetRoundNumber(kvRounds->GetInt("number"), __func__);
 		RestoreSetRoundsWon(kvRounds->GetInt("jinrai"), kvRounds->GetInt("nsf"), __func__);
-		RestoreSetGhostSpawnIdx(kvRounds->GetInt("ghost"), __func__);
+		RestoreSetGhostSpawnEntIdx(kvRounds->GetInt("ghost"), __func__);
 	}
 
 	if (KeyValues *kvPlayersList = kv->FindKey("players_list"))
@@ -421,6 +440,8 @@ CON_COMMAND(sv_neo_restore_session, "Restore the previous session")
 				RestoreSetXPDeath(pNeoPlayerUpdate, iXP, iDeaths, __func__);
 				const int iWepChoice = kvPlayer->GetInt("wepchoice");
 				RestoreLoadoutWepChoice(pNeoPlayerUpdate, iWepChoice, __func__);
+				const int iSpawnEntIdx = kvPlayer->GetInt("spawn");
+				RestoreSetSpawn(pNeoPlayerUpdate, iSpawnEntIdx, __func__);
 			}
 			else
 			{
@@ -465,11 +486,13 @@ void MatchSessionBackup()
 	// From then on it won't crash the snapshotter as it just starts writing to
 	// snapshot index-0, but round numbers are indexed-1 so they won't get used anyway.
 	const int iRoundNumber = NEORules()->roundNumber();
-	MatchSnapshot *pSnapshot =
-			(iRoundNumber < 0 || iRoundNumber >= SNAPSHOTS_TOTAL) ?
-					&gSnapshots[0] : &gSnapshots[iRoundNumber];
-	giSnapshotsMin = Min(giSnapshotsMin, iRoundNumber);
-	giSnapshotsMax = Max(giSnapshotsMax, iRoundNumber);
+	const bool bSnapshotInRange = IN_BETWEEN_AR(0, iRoundNumber, SNAPSHOTS_TOTAL);
+	MatchSnapshot *pSnapshot = bSnapshotInRange ? &gSnapshots[iRoundNumber] : &gSnapshots[0];
+	if (bSnapshotInRange)
+	{
+		giSnapshotsMin = Min(giSnapshotsMin, iRoundNumber);
+		giSnapshotsMax = Max(giSnapshotsMax, iRoundNumber);
+	}
 
 	{
 		pSnapshot->iScoreJinrai = GetGlobalTeam(TEAM_JINRAI)->GetScore();
@@ -484,13 +507,13 @@ void MatchSessionBackup()
 	{
 		pSnapshot->iRoundsWonJinrai = GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon();
 		pSnapshot->iRoundsWonNSF = GetGlobalTeam(TEAM_NSF)->GetRoundsWon();
-		pSnapshot->iGhostSpawnIdx = NEORules()->m_iGhostSpawnIdx;
+		pSnapshot->iGhostSpawnEntIdx = NEORules()->m_iGhostSpawnEntIdx;
 
 		KeyValues *kvRounds = new KeyValues("rounds");
 		kvRounds->SetInt("number", iRoundNumber);
 		kvRounds->SetInt("jinrai", pSnapshot->iRoundsWonJinrai);
 		kvRounds->SetInt("nsf", pSnapshot->iRoundsWonNSF);
-		kvRounds->SetInt("ghost", pSnapshot->iGhostSpawnIdx);
+		kvRounds->SetInt("ghost", pSnapshot->iGhostSpawnEntIdx);
 		kv->AddSubKey(kvRounds);
 	}
 
@@ -509,14 +532,14 @@ void MatchSessionBackup()
 				pSnPlayer->steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
 				pSnPlayer->iXP = pNeoPlayer->m_iXP.Get();
 				pSnPlayer->iDeaths = pNeoPlayer->DeathCount();
-				pSnPlayer->iSpawnHdlEntryIndex = pNeoPlayer->m_iSpawnHdlEntryIndex;
-				pSnPlayer->iSpawnHdlSerialNumber = pNeoPlayer->m_iSpawnHdlSerialNumber;
+				pSnPlayer->iSpawnEntIdx = pNeoPlayer->m_iSpawnEntIdx;
 				pSnPlayer->iLoadoutWepChoice = pNeoPlayer->m_iLoadoutWepChoice;
 
 				KeyValues *kvPlayer = new KeyValues("player");
 				kvPlayer->SetInt("xp", pSnPlayer->iXP);
 				kvPlayer->SetInt("deaths", pSnPlayer->iDeaths);
 				kvPlayer->SetInt("wepchoice", pSnPlayer->iLoadoutWepChoice);
+				kvPlayer->SetInt("spawn", pSnPlayer->iSpawnEntIdx);
 				// team - Unused on de-serialization as steamid3 is enough, but have descriptive purpose
 				kvPlayer->SetString("team", (pNeoPlayer->GetTeamNumber() == TEAM_JINRAI) ? "j" : "n");
 				// name - Always set regardless of sv_neo_restore_session_name_match, have a descriptive
