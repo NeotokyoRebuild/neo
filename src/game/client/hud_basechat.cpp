@@ -1593,37 +1593,19 @@ void CBaseHudChatLine::InsertAndColorizeText( wchar_t *buf, int clientIndex )
 		range.start = 0;
 		range.end = m_iNameStart;
 
-		if (clientIndex != 0)
+		constexpr bool useCustomColor = false;
+		if constexpr (useCustomColor)
 		{
-			auto player = UTIL_PlayerByIndex(clientIndex);
-			if (player)
+			if (g_PR)
 			{
-				switch (player->GetTeamNumber())
-				{
-				case TEAM_JINRAI:
-					pChat->SetCustomColor(COLOR_JINRAI);
-					break;
-				case TEAM_NSF:
-					pChat->SetCustomColor(COLOR_NSF);
-					break;
-				default:
-					pChat->SetCustomColor(COLOR_SPEC);
-					break;
-				}
 				range.color = pChat->GetTextColorForClient(COLOR_CUSTOM, clientIndex);
 				m_textRanges.AddToTail(range);
 			}
 			else
 			{
-				Assert(false);
 				range.color = pChat->GetTextColorForClient(COLOR_NORMAL, clientIndex);
 				m_textRanges.AddToTail(range);
 			}
-		}
-		else
-		{
-			range.color = pChat->GetTextColorForClient(COLOR_NORMAL, clientIndex);
-			m_textRanges.AddToTail(range);
 		}
 
 		range.start = m_iNameStart;
