@@ -1962,6 +1962,22 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 	int iNameStart = 0;
 	int iNameLength = 0;
 
+#ifdef NEO
+	const char* pName;
+	if ( iPlayerIndex == 0 )
+	{
+		pName = "Console";
+	}
+	else if (g_PR)
+	{
+		pName = g_PR->GetPlayerName(iPlayerIndex);
+	}
+	else
+	{
+		Assert(false);
+		pName = "<unnamed>";
+	}
+#else
 	player_info_t sPlayerInfo;
 	if ( iPlayerIndex == 0 )
 	{
@@ -1972,6 +1988,7 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 	{
 		engine->GetPlayerInfo( iPlayerIndex, &sPlayerInfo );
 	}	
+#endif
 
 #ifdef NEO
 	int bufSize = narrow_cast<int>( (strlen( pmsg ) + 1 ) * sizeof(wchar_t) );
@@ -1990,9 +2007,14 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 
 		// find the player's name in the unicode string, in case there is no color markup
 #ifdef NEO
-		auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(iPlayerIndex));
-		const char *pName = neoPlayer ? neoPlayer->GetNeoPlayerName() :
-                    UTIL_GetFilteredPlayerName(iPlayerIndex, sPlayerInfo.name);
+		// Don't bother filtering the server's username ("Console") through Steam's profanity API;
+		// we already know it will be good since it's hardcoded clientside.
+		if (iPlayerIndex != 0)
+		{
+			char szName[MAX_PLAYER_NAME_LENGTH];
+			V_strcpy_safe(szName, pName ? pName : "");
+			pName = UTIL_GetFilteredPlayerName(iPlayerIndex, &szName[0]);
+		}
 #else
 		const char *pName = UTIL_GetFilteredPlayerName( iPlayerIndex, sPlayerInfo.name );
 #endif
