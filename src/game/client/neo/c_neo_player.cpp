@@ -349,7 +349,8 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		if (engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
+		if (!engine->IsInGame() || engine->IsLevelMainMenuBackground() ||
+			engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
 		{
 			return;
 		}
