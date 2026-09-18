@@ -1918,6 +1918,7 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 			return;
 		}
 	}
+	char szName[MAX_PLAYER_NAME_LENGTH];
 #endif
 
 	// If a player is muted for voice, also mute them for text because jerks gonna jerk.
@@ -1993,7 +1994,6 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 		// we already know it will be good since it's hardcoded clientside.
 		if (iPlayerIndex != 0)
 		{
-			char szName[MAX_PLAYER_NAME_LENGTH];
 			V_strcpy_safe(szName, pName ? pName : "");
 			pName = UTIL_GetFilteredPlayerName(iPlayerIndex, &szName[0]);
 		}
