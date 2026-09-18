@@ -1,7 +1,10 @@
-find_package(Appframework)
+find_package(AppFramework)
 find_package(Bitmap)
 find_package(ChoreoObjects)
+#find_package(DataModel)
 find_package(DMXLoader)
+#find_package(GCSDK)
+find_package(LibZ)
 find_package(MatSysControls)
 
 if(NEO_BUILD_MATHLIB)
@@ -11,6 +14,7 @@ else()
 endif()
 
 find_package(Particles)
+#find_package(ShaderLib)
 find_package(SteamAPI)
 find_package(Tier0)
 
@@ -29,5 +33,6 @@ else()
     find_package(VGUIControls)
 endif()
 
+#find_package(VPKLib)
 find_package(VSTDLib)
 find_package(VTF)

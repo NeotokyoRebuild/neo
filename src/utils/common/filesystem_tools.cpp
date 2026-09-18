@@ -20,12 +20,6 @@
 #include "KeyValues.h"
 #include "tier2/tier2.h"
 
-#ifdef MPI
-	#include "vmpi.h"
-	#include "vmpi_tools_shared.h"
-	#include "vmpi_filesystem.h"
-#endif
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
@@ -62,7 +56,9 @@ void FileSystem_SetupStandardDirectories( const char *pFilename, const char *pGa
 
 	Q_MakeAbsolutePath( qdir, sizeof( qdir ), pFilename, NULL );
 	Q_StripFilename( qdir );
+#ifdef WIN32
 	Q_strlower( qdir );
+#endif
 	if ( qdir[0] != 0 )
 	{
 		Q_AppendSlash( qdir, sizeof( qdir ) );
@@ -146,41 +142,13 @@ bool FileSystem_Init_Normal( const char *pFilename, FSInitType_t initType, bool 
 bool FileSystem_Init( const char *pBSPFilename, int maxMemoryUsage, FSInitType_t initType, bool bOnlyUseFilename )
 {
 	Assert( CommandLine()->GetCmdLine() != NULL ); // Should have called CreateCmdLine by now.
-
-	// If this app uses VMPI, then let VMPI intercept all filesystem calls.
-#if defined( MPI )
-	if ( g_bUseMPI )
-	{
-		if ( g_bMPIMaster )
-		{
-			if ( !FileSystem_Init_Normal( pBSPFilename, initType, bOnlyUseFilename ) )
-				return false;
-
-			g_pFileSystem = g_pFullFileSystem = VMPI_FileSystem_Init( maxMemoryUsage, g_pFullFileSystem );
-			SendQDirInfo();
-		}
-		else
-		{
-			g_pFileSystem = g_pFullFileSystem = VMPI_FileSystem_Init( maxMemoryUsage, NULL );
-			RecvQDirInfo();
-		}
-		return true;
-	}
-#endif
-
+	
 	return FileSystem_Init_Normal( pBSPFilename, initType, bOnlyUseFilename );
 }
 
 
 void FileSystem_Term()
 {
-#if defined( MPI )
-	if ( g_bUseMPI )
-	{
-		g_pFileSystem = g_pFullFileSystem = VMPI_FileSystem_Term();
-	}
-#endif
-
 	if ( g_pFullFileSystem )
 	{
 		g_pFullFileSystem->Shutdown();
@@ -198,9 +166,5 @@ void FileSystem_Term()
 
 CreateInterfaceFn FileSystem_GetFactory()
 {
-#if defined( MPI )
-	if ( g_bUseMPI )
-		return VMPI_FileSystem_GetFactory();
-#endif
 	return Sys_GetFactory( g_pFullFileSystemModule );
 }

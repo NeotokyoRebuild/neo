@@ -19,5 +19,14 @@ add_library(tier2::tier2 ALIAS tier2_tier2)
 
 set_target_properties(tier2_tier2 PROPERTIES
     IMPORTED_LOCATION "${TIER2_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/public/tier2"
+)
+
+target_include_directories(tier2_tier2
+    INTERFACE
+    "${CMAKE_SOURCE_DIR}/public/tier2"
+)
+
+target_link_libraries(tier2_tier2
+    INTERFACE
+    tier1::tier1
 )
