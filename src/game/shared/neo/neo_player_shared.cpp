@@ -352,6 +352,63 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
 }
 
+bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLadder) const
+{
+	if (GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
+		return false;
+
+	if (GetNeoFlags() & NEO_FL_FREEZETIME)
+		return false;
+
+	if (GetMoveType() == MOVETYPE_NOCLIP || GetMoveType() == MOVETYPE_OBSERVER)
+		return false;
+
+	extern ConVar sv_footsteps;
+	if (!sv_footsteps.GetFloat())
+		return false;
+
+	const Vector& absOrigin = GetAbsOrigin();
+	const Vector& absVel = GetAbsVelocity();
+	const float speed = absVel.Length();
+	if (pSpeed) *pSpeed = speed;
+	const float groundspeed = absVel.AsVector2D().Length();
+	const bool isOnLadder = (GetMoveType() == MOVETYPE_LADDER);
+	if (pLadder) *pLadder = isOnLadder;
+
+	float velwalk, velrun;
+	GetStepSoundVelocities(&velwalk, &velrun);
+	if (pVelRun) *pVelRun = velrun;
+
+	bool onground = (GetFlags() & FL_ONGROUND);
+	bool movingalongground = (groundspeed > 0.0001f);
+	// Support crouched with a supa7 aimed in has a speed of 55.f
+	const bool moving_fast_enough = speed >= 50.f;
+
+	// To hear step sounds you must be either on a ladder or moving along the ground AND
+	// You must be moving fast enough
+	if (!moving_fast_enough || !(isOnLadder || (onground && movingalongground)))
+		return false;
+
+	const bool bWalking = speed < velrun && !IsSprinting();
+
+	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
+	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
+
+	if (GetFlags() & FL_DUCKING)
+	{
+		if ((IsInAim() || IsWalking()) && speed <= (GetCrouchSpeed() * SILENT_THRESHOLD_GRACE))
+		{
+			return false;
+		}
+	}
+	else if ((IsInAim() || IsWalking()) && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 int GetRank(const int xp)
 {
 	int iRank = NEO_RANK_RANKLESS_DOG;

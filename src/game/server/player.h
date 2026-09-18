@@ -464,7 +464,11 @@ public:
 	virtual void			UpdateStepSound( surfacedata_t *psurface, const Vector &vecOrigin, const Vector &vecVelocity );
 	virtual void			PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
 	virtual const char	   *GetOverrideStepSound( const char *pszBaseStepSoundName ) { return pszBaseStepSoundName; }
+#ifdef NEO
+	virtual void			GetStepSoundVelocities( float *velwalk, float *velrun ) const final;
+#else
 	virtual void			GetStepSoundVelocities( float *velwalk, float *velrun );
+#endif
 	virtual void			SetStepSoundTime( stepsoundtimes_t iStepSoundTime, bool bWalking );
 	virtual void			DeathSound( const CTakeDamageInfo &info );
 	virtual const char*		GetSceneSoundToken( void ) { return ""; }
