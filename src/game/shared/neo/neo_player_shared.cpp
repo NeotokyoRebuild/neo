@@ -932,12 +932,10 @@ void CNEO_Player::FixupOnGroundFlag()
 	if (GetTeamNumber() < FIRST_GAME_TEAM) // if it's not a player, don't bother
 		return;
 	const Vector& start = GetAbsOrigin();
-	const Vector& maxs = GetPlayerMaxs();
-	const Vector& mins = GetPlayerMins();
-	float playerHeight = maxs.z - mins.z;
-	Vector end(start.x, start.y, start.z - playerHeight);
+	constexpr float offset = -2; // same value as CGameMovement::CategorizePosition flOffset
+	Vector end(start.x, start.y, start.z + offset);
 	Ray_t ray;
-	ray.Init(start, end, mins, maxs);
+	ray.Init(start, end, GetPlayerMins(), GetPlayerMaxs());
 	trace_t	trace;
 	UTIL_TraceRay(ray, MASK_PLAYERSOLID, this, COLLISION_GROUP_PLAYER_MOVEMENT, &trace);
 	const bool foundGround = trace.DidHit();
