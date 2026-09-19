@@ -39,10 +39,10 @@ inline char SegEnd(NeoXHairSerial ver)
 		: NeoSerial::V7::SEGEND;
 }
 
-static SerialVariant DeserialVariant(NeoXHairSerial ver,
-		char (&szMutStr)[NEO_XHAIR_SEQMAX],
+static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 		const ESerialVariantType eType, const SerialVariant varDefault,
-		const SerialVariant varMin, const SerialVariant varMax, SerialContext *ctx)
+		const SerialVariant varMin, const SerialVariant varMax, SerialContext *ctx,
+		NeoXHairSerial ver)
 {
 	SerialVariant var = varDefault;
 
@@ -136,9 +136,9 @@ static SerialVariant DeserialVariant(NeoXHairSerial ver,
 	}
 	else
 	{
-		return DeserialVariant(ver, szMutStr, SERIALVARIANTTYPE_INT,
+		return DeserialVariant(szMutStr, SERIALVARIANTTYPE_INT,
 				{ .iVal = (eCompMode == COMPMODE_EQUALS) ? iCompVal : iVal },
-				{ .iVal = iMin }, { .iVal = iMax }, ctx).iVal;
+				{ .iVal = iMin }, { .iVal = iMax }, ctx, ver).iVal;
 	}
 }
 
@@ -164,9 +164,9 @@ static SerialVariant DeserialVariant(NeoXHairSerial ver,
 	}
 	else
 	{
-		return DeserialVariant(ver, szMutStr, SERIALVARIANTTYPE_BOOL,
+		return DeserialVariant(szMutStr, SERIALVARIANTTYPE_BOOL,
 				{ .bVal = (eCompMode == COMPMODE_EQUALS) ? bCompVal : bVal },
-				{}, {}, ctx).bVal;
+				{}, {}, ctx, ver).bVal;
 	}
 }
 
@@ -193,9 +193,9 @@ static SerialVariant DeserialVariant(NeoXHairSerial ver,
 	}
 	else
 	{
-		return DeserialVariant(ver, szMutStr, SERIALVARIANTTYPE_FLOAT,
+		return DeserialVariant(szMutStr, SERIALVARIANTTYPE_FLOAT,
 				{ .flVal = (eCompMode == COMPMODE_EQUALS) ? flCompVal : flVal },
-				{ .flVal = flMin }, { .flVal = flMax }, ctx).flVal;
+				{ .flVal = flMin }, { .flVal = flMax }, ctx, ver).flVal;
 	}
 }
 
