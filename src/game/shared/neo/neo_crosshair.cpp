@@ -192,11 +192,11 @@ void NeoConVarCrosshairChangeCallback(IConVar *cvar, const char *pOldVal, [[mayb
 	}
 
 	ConVarRef cvarRef(cvar);
-	if (false == ValidateCrosshairSerial(cvarRef.GetString()))
+	if (false == ValidateCrosshairSerial(cvarRef.GetString(), V_atoi(cvarRef.GetString())))
 	{
 		bStaticCallbackChangedXHairCVar = true;
 		char mutStr[NEO_XHAIR_SEQMAX];
-		if (ValidateCrosshairSerial(pOldVal))
+		if (ValidateCrosshairSerial(pOldVal, V_atoi(pOldVal)))
 		{
 			V_strcpy_safe(mutStr, pOldVal);
 		}
@@ -295,7 +295,7 @@ int UseCrosshairIndexFor(const CrosshairInfo *xhairInfo, const int iXHairWep, bo
 }
 
 static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo *xhairInfo,
-		char (&szMutSeq)[NEO_XHAIR_SEQMAX], const int iSeqSize, const int iExportSerialVersion)
+		char (&szMutSeq)[NEO_XHAIR_SEQMAX], const int iSeqSize, std::optional<const int> iExportSerialVersion)
 {
 	SerialContext ctx = {
 		.eSerialMode = eSerialMode,
@@ -305,21 +305,30 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 	if (g_verbose > 0) fprintf(stderr, "%s: ImportOrExportCrosshair: iSeqSize: %d\n", g_testFnName, iSeqSize);
 #endif
 
-	if (iExportSerialVersion <= NEOXHAIR_SERIAL_INVALID || iExportSerialVersion > NEOXHAIR_SERIAL_CURRENT)
+	int iSerialVersion;
+	if (iExportSerialVersion.has_value())
 	{
-		// Unsupported serialization version or corrupted from first character
-		return false;
+		iSerialVersion = iExportSerialVersion.value();
 	}
-
-	int iSerialVersion = SerialInt(iExportSerialVersion, NEOXHAIR_SERIAL_CURRENT,
-		COMPMODE_IGNORE, szMutSeq, &ctx, 0, 0, ToSerialVer(iExportSerialVersion));
-	if (iSerialVersion != iExportSerialVersion)
+	else
 	{
-		Assert(false);
-		return false;
+		// parses first number of the input, doesn't mutate input
+		iSerialVersion = V_atoi(szMutSeq);
 	}
 
 	const auto eSerialVer = ToSerialVer(iSerialVersion);
+
+	// Unsupported serialization version or corrupted from first character
+	if (eSerialVer == NEOXHAIR_SERIAL_INVALID)
+	{
+		return false;
+	}
+	// Serial version mismatches what the input declared??
+	else if (iSerialVersion != SerialInt(iSerialVersion, NEOXHAIR_SERIAL_CURRENT,
+		COMPMODE_IGNORE, szMutSeq, &ctx, 0, 0, ToSerialVer(iSerialVersion)))
+	{
+		return false;
+	}
 
 	// v28 onwards cuts out segments if unused
 	const bool bNotCompact = (iSerialVersion < NEOXHAIR_SERIAL_ALPHA_V28);
