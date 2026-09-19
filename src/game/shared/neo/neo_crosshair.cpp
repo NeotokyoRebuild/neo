@@ -312,14 +312,14 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 	}
 
 	int iSerialVersion = SerialInt(iExportSerialVersion, NEOXHAIR_SERIAL_CURRENT,
-		COMPMODE_IGNORE, szMutSeq, &ctx, 0, 0, static_cast<NeoXHairSerial>(iExportSerialVersion));
+		COMPMODE_IGNORE, szMutSeq, &ctx, 0, 0, ToSerialVer(iExportSerialVersion));
 	if (iSerialVersion != iExportSerialVersion)
 	{
 		Assert(false);
 		return false;
 	}
 
-	const auto eSerialVer = static_cast<NeoXHairSerial>(iSerialVersion);
+	const auto eSerialVer = ToSerialVer(iSerialVersion);
 
 	// v28 onwards cuts out segments if unused
 	const bool bNotCompact = (iSerialVersion < NEOXHAIR_SERIAL_ALPHA_V28);

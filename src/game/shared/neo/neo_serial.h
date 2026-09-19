@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tier0/dbg.h"
+
 #include "neo_crosshair.h"
 
 namespace NeoSerial
@@ -69,4 +71,28 @@ template <int seqMax>
 inline bool V7_NagBadSegEnd(char(&szSequence)[seqMax])
 {
 	return V7_NagBadSegEnd(&szSequence[0], seqMax);
+}
+
+// Safe conversion to NeoXHairSerial with bounds checks.
+// Returns NEOXHAIR_SERIAL_INVALID if value is out of bounds.
+inline NeoXHairSerial ToSerialVer(auto input)
+{
+	using InputType = decltype(input);
+	using OutputType = std::underlying_type_t<NeoXHairSerial>;
+	static_assert(std::convertible_to<InputType, OutputType>);
+
+	switch (input)
+	{
+	case NEOXHAIR_SERIAL_PREALPHA_V8_2:
+	case NEOXHAIR_SERIAL_ALPHA_V17:
+	case NEOXHAIR_SERIAL_ALPHA_V19:
+	case NEOXHAIR_SERIAL_ALPHA_V22:
+	case NEOXHAIR_SERIAL_ALPHA_V28:
+	case NEOXHAIR_SERIAL_ALPHA_V29:
+	case NEOXHAIR_SERIAL_ALPHA_V35:
+		return static_cast<NeoXHairSerial>(input);
+	default:
+		Assert(false); // if you bumped the version and hit this, add its case above
+		return NEOXHAIR_SERIAL_INVALID;
+	}
 }
