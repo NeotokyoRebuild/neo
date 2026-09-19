@@ -7,10 +7,12 @@ void TestDeserial_V1_PREALPHA_V8_2()
 {
 	// v1 - is actually non-existant, just a placeholder version
 	// for back when the crosshair wasn't string serialized
+	static_assert(NEOXHAIR_SERIAL_PREALPHA_V8_2 == NEOXHAIR_SERIAL_INVALID);
+
 	CrosshairInfo xhairInfo = {};
-	const bool bValid = ImportCrosshair(&xhairInfo, "1;", nullptr, NEOXHAIR_SERIAL_PREALPHA_V8_2);
+	const bool bValid = ImportCrosshair(&xhairInfo, "1;", nullptr, NEOXHAIR_SERIAL_INVALID);
 	TEST_COMPARE_INT(bValid, false);
-	TEST_COMPARE_INT(false, ValidateCrosshairSerial("1;", NEOXHAIR_SERIAL_PREALPHA_V8_2));
+	TEST_COMPARE_INT(false, ValidateCrosshairSerial("1;", NEOXHAIR_SERIAL_INVALID));
 }
 
 void TestDeserial_V2_ALPHA_V17()

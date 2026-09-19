@@ -305,7 +305,7 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 	if (g_verbose > 0) fprintf(stderr, "%s: ImportOrExportCrosshair: iSeqSize: %d\n", g_testFnName, iSeqSize);
 #endif
 
-	if (iExportSerialVersion <= NEOXHAIR_SERIAL_PREALPHA_V8_2 || iExportSerialVersion > NEOXHAIR_SERIAL_CURRENT)
+	if (iExportSerialVersion <= NEOXHAIR_SERIAL_INVALID || iExportSerialVersion > NEOXHAIR_SERIAL_CURRENT)
 	{
 		// Unsupported serialization version or corrupted from first character
 		return false;
