@@ -316,18 +316,26 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 		iSerialVersion = V_atoi(szMutSeq);
 	}
 
-	const auto eSerialVer = ToSerialVer(iSerialVersion);
-
 	// Unsupported serialization version or corrupted from first character
-	if (eSerialVer == NEOXHAIR_SERIAL_INVALID)
+	if (iSerialVersion <= NEOXHAIR_SERIAL_INVALID || iSerialVersion > NEOXHAIR_SERIAL_CURRENT)
 	{
 		return false;
 	}
+
+	const auto eSerialVer = static_cast<NeoXHairSerial>(iSerialVersion);
 	// Serial version mismatches what the input declared??
-	else if (iSerialVersion != SerialInt(iSerialVersion, NEOXHAIR_SERIAL_CURRENT,
-		COMPMODE_IGNORE, szMutSeq, &ctx, 0, 0, ToSerialVer(iSerialVersion)))
+	if (iSerialVersion != SerialInt(iSerialVersion, NEOXHAIR_SERIAL_CURRENT,
+		COMPMODE_IGNORE, szMutSeq, &ctx, 0, 0, eSerialVer))
 	{
 		return false;
+	}
+
+	if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V35)
+	{
+		if (!V7_NagBadSegEnd(szMutSeq, ARRAYSIZE(szMutSeq)))
+		{
+			return false;
+		}
 	}
 
 	// v28 onwards cuts out segments if unused
@@ -339,14 +347,6 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 				COMPMODE_IGNORE, szMutSeq, &ctx, 0, CROSSHAIR_WEP_FLAG__HIGHESTFLAG, eSerialVer);
 		xhairInfo->hipfireFlags = SerialInt(xhairInfo->hipfireFlags, xhairInfo->hipfireFlags,
 				COMPMODE_IGNORE, szMutSeq, &ctx, 0, CROSSHAIR_HIPFIRECUSTOM_FLAG__HIGHESTFLAG, eSerialVer);
-	}
-
-	if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V35)
-	{
-		if (!V7_NagBadSegEnd(szMutSeq))
-		{
-			return false;
-		}
 	}
 
 	for (int i = 0; i < CROSSHAIR_WEP__TOTAL; ++i)

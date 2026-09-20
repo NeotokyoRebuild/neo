@@ -32,7 +32,7 @@ enum ESerialVariantType
 	return false;
 }
 
-inline char SegEnd(NeoXHairSerial ver)
+constexpr char SegEnd(NeoXHairSerial ver)
 {
 	return (ver < NEOXHAIR_SERIAL_ALPHA_V35)
 		? NeoSerial::V1::SEGEND
@@ -208,13 +208,13 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 	// first character. But in the general case it'll never really hit that scenario
 	// as typically you'll need some properly values to be serialize before the whole
 	// empty segments + run-length encoding becomes useful anyway.
-	char SZ_XH_MINSEGCOMPRESS[5];
-	SZ_XH_MINSEGCOMPRESS[0]
-		= SZ_XH_MINSEGCOMPRESS[1]
-		= SZ_XH_MINSEGCOMPRESS[2]
-		= SZ_XH_MINSEGCOMPRESS[3]
-		= CH_XH_SEGEND;
-	SZ_XH_MINSEGCOMPRESS[4] = '\0';
+	const char SZ_XH_MINSEGCOMPRESS[5]{
+		CH_XH_SEGEND,
+		CH_XH_SEGEND,
+		CH_XH_SEGEND,
+		CH_XH_SEGEND,
+		'\0'
+	};
 
 	if (eSerialMode != SERIALMODE_SERIALIZE)
 	{
@@ -246,10 +246,8 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 		{
 			// iPszToRLEPos == 0 never really going to happen for crosshair, but deal
 			// with the edge case anyway
-			char delim[2];
-			delim[0] = CH_XH_SEGEND;
-			delim[1] = '\0';
-			char szTmp[NEO_XHAIR_SEQMAX];
+			const char delim[2]{ CH_XH_SEGEND, '\0' };
+			char szTmp[sizeof(szFinalSeq)];
 			V_sprintf_safe(szTmp, "%s%d%c", (iPszToRLEPos == 0) ? delim : "", iLen, CH_XH_SEGSKIP);
 			V_strcat_safe(szFinalSeq, szTmp);
 		}
