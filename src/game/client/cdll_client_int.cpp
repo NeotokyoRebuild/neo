@@ -1538,6 +1538,16 @@ void CHLClient::PostInit()
 				}
 			}
 
+			if (iCfgVerMajor < 35)
+			{
+				ConVarRef cl_software_cursor("cl_software_cursor");
+				Assert(cl_software_cursor.IsValid());
+				if (cl_software_cursor.IsValid())
+				{
+					cl_software_cursor.SetValue(cl_software_cursor.GetDefault());
+				}
+			}
+
 			cvr_cl_neo_cfg_version_major.SetValue(NEO_VERSION_MAJOR);
 			cvr_cl_neo_cfg_version_minor.SetValue(NEO_VERSION_MINOR);
 		}
