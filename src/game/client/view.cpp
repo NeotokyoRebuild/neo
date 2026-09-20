@@ -167,6 +167,7 @@ void SwCursorHack_RestoreValue()
 			constexpr int cursorTypeStandard = 0;
 			enabled = (cursorType != cursorTypeStandard);
 		}
+		else Assert(false);
 	}
 #endif
 	vgui::surface()->SetSoftwareCursor(enabled || UseVR());
