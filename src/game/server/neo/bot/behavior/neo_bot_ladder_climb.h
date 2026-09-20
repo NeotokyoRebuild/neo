@@ -30,6 +30,7 @@ private:
 	void EnterDismountPhase( CNEOBot *me );
 	void ResolveExitArea( CNEOBot *me );
 	bool IsDismountBlocked( CNEOBot *me, const Vector &toExit ) const;
+	void ClaimLadder( CNEOBot *me ) const;
 
 	const CNavLadder *m_ladder;
 	const CNavArea *m_pExitArea;
