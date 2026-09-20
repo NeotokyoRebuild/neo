@@ -17,6 +17,26 @@
 
 ConVar NextBotPlayerMoveDirect( "nb_player_move_direct", "0" );
 
+// NEO: CGameMovement::LadderMove() puts a player on any ladder their wish direction points at,
+// while TraverseLadder()'s NO_LADDER branch drops the move type straight back to walking whenever
+// the bot's own state machine did not ask for a climb. A path that merely brushes past a ladder
+// leaves the two toggling every tick: the bot hangs on the ladder making no progress, and because
+// it never stops moving, no stuck event fires either.
+//
+// Letting go harder does not fix it - the wish direction still points at the brush. What does is
+// giving up the argument and riding the ladder out by its nearer end, but only for the contacts
+// that actually persist; most sort themselves out within a second and adopting those buys a lot of
+// climbing nobody asked for.
+
+// How long a bot must be held against a ladder it did not ask for before taking it over. Short
+// enough that a real snag is caught within half a second, long enough that the ordinary release
+// still handles the many contacts that clear themselves immediately.
+static const float LADDER_ADOPT_TIME = 0.5f;
+// A ladder further than this from the bot is not the one it is stuck on.
+static const float LADDER_TOUCH_RANGE = 64.0f;
+// A gap longer than this means the bot walked away and came back, so the bout starts over.
+static const float LADDER_CONTACT_RESET = 1.0f;
+
 //-----------------------------------------------------------------------------------------------------
 PlayerLocomotion::PlayerLocomotion( INextBot *bot ) : ILocomotion( bot )
 {
@@ -45,10 +65,113 @@ void PlayerLocomotion::Reset( void )
 	m_ladderDismountGoal = NULL;
 	m_ladderTimer.Invalidate();
 
+	m_unwantedLadderSince = 0.0f;
+	m_unwantedLadderLastTouch = 0.0f;
+
 	m_minSpeedLimit = 0.0f;
 	m_maxSpeedLimit = 9999999.9f;
 
 	BaseClass::Reset();
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+/**
+ * NEO: the nav ladder the bot is standing in, or NULL. The engine knows which brush it grabbed but
+ * keeps that normal private, so match against the nav record instead - close in xy, and inside the
+ * ladder's own height span.
+ */
+const CNavLadder *PlayerLocomotion::FindTouchedLadder( void ) const
+{
+	const Vector &feet = GetFeet();
+	const CNavLadder *best = NULL;
+	float bestRangeSq = LADDER_TOUCH_RANGE * LADDER_TOUCH_RANGE;
+
+	// The hull reaches a standing height above the feet, and the grab only needs the hull to touch
+	// the brush - so a bot standing on the floor well *below* a ladder whose foot hangs over a
+	// walkway is exactly the case to catch here, not one to filter out.
+	const float below = GetBot()->GetBodyInterface()->GetStandHullHeight();
+
+	for ( int i = 0; i < TheNavMesh->GetLadders().Count(); ++i )
+	{
+		const CNavLadder *ladder = TheNavMesh->GetLadders()[i];
+
+		if ( feet.z < ladder->m_bottom.z - below || feet.z > ladder->m_top.z + GetStepHeight() )
+		{
+			continue;
+		}
+
+		const float rangeSq = ( ladder->GetPosAtHeight( feet.z ) - feet ).AsVector2D().LengthSqr();
+		if ( rangeSq < bestRangeSq )
+		{
+			bestRangeSq = rangeSq;
+			best = ladder;
+		}
+	}
+
+	return best;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+/**
+ * NEO: called when the engine has us on a ladder our own path never asked for. Returns true if the
+ * ladder was taken over, in which case the caller leaves the move type alone and the normal ladder
+ * state machine drives from here.
+ */
+bool PlayerLocomotion::HandleUnwantedLadder( void )
+{
+	const CNavLadder *ladder = FindTouchedLadder();
+	if ( ladder == NULL )
+	{
+		return false;
+	}
+
+	// Most grabs sort themselves out within a second, and adopting every one of them buys a lot of
+	// climbing nobody asked for. Only take the ladder over once the bot has actually been held
+	// against it.
+	const float now = gpGlobals->curtime;
+
+	if ( now - m_unwantedLadderLastTouch > LADDER_CONTACT_RESET )
+	{
+		m_unwantedLadderSince = now;
+	}
+
+	m_unwantedLadderLastTouch = now;
+
+	if ( now - m_unwantedLadderSince < LADDER_ADOPT_TIME )
+	{
+		return false;
+	}
+
+	// Leave by the nearer end rather than argue about being here at all. Whichever end the bot is
+	// closer to is the one it can reach soonest, and the dismount goal has to be a real area or
+	// DismountLadderTop/Bottom has nothing to walk to.
+	//
+	// Climbing out upward only was measured and is worse: it sends the bot somewhere it then has to
+	// come back from, and costs captures even though it reads better on the ladder numbers.
+	const bool bGoUp = ( GetFeet().z - ladder->m_bottom.z ) > ( ladder->m_top.z - GetFeet().z );
+
+	// A ladder's top is recorded in whichever of the three slots the generator filled, and plenty
+	// of them leave m_topForwardArea empty - reading only that slot silently skips those ladders.
+	const CNavArea *dismount = ladder->m_bottomArea;
+
+	if ( bGoUp )
+	{
+		dismount = ladder->m_topForwardArea ? ladder->m_topForwardArea :
+			( ladder->m_topLeftArea ? ladder->m_topLeftArea : ladder->m_topRightArea );
+	}
+
+	if ( dismount == NULL )
+	{
+		return false;
+	}
+
+	m_ladderInfo = ladder;
+	m_ladderDismountGoal = dismount;
+	m_ladderState = bGoUp ? ASCENDING_LADDER : DESCENDING_LADDER;
+
+	return true;
 }
 
 
@@ -87,7 +210,13 @@ bool PlayerLocomotion::TraverseLadder( void )
 
 		if ( GetBot()->GetEntity()->GetMoveType() == MOVETYPE_LADDER )
 		{
-			// on ladder and don't want to be
+			// On a ladder and don't want to be. HandleUnwantedLadder() may take the ladder over
+			// instead, in which case the state machine drives from here and we are done.
+			if ( HandleUnwantedLadder() )
+			{
+				break;
+			}
+
 			GetBot()->GetEntity()->SetMoveType( MOVETYPE_WALK );
 		}
 		return false;
