@@ -61,6 +61,9 @@ public:
 	virtual bool IsUsingLadder( void ) const;
 	virtual bool IsAscendingOrDescendingLadder( void ) const;	// we are actually on the ladder right now, either climbing up or down
 	virtual bool IsAbleToAutoCenterOnLadder( void ) const;
+#ifdef NEO
+	bool IsForwardDownLadder( const CNavLadder *ladder ) const;	// would pressing forward move us down this ladder
+#endif
 
 	virtual void FaceTowards( const Vector &target );		// rotate body to face towards "target"
 
@@ -126,6 +129,17 @@ private:
 	const CNavLadder *m_ladderInfo;
 	const CNavArea *m_ladderDismountGoal;
 	CountdownTimer m_ladderTimer;			// a "give up" timer if things go awry
+
+#ifdef NEO
+	// a ladder the engine put us on that our own path never asked for. Releasing it is not
+	// enough on its own - CGameMovement::LadderMove() re-grabs from the bot's wish direction, so
+	// the two toggle each other until something breaks the loop. See TraverseLadder().
+	bool HandleUnwantedLadder( void );
+	const CNavLadder *FindTouchedLadder( void ) const;
+	Vector GetIntoLadderFace( const CNavLadder *ladder ) const;	// into the face of the ladder brush we hold
+	float m_unwantedLadderSince;			// when the current bout of unwanted contact began
+	float m_unwantedLadderLastTouch;		// last tick we were on a ladder we did not ask for
+#endif
 
 	bool IsClimbPossible( INextBot *me, const CBaseEntity *obstacle ) const;
 };

@@ -103,7 +103,49 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 	// Try to resolve the exit area from the current path early
 	ResolveExitArea( me );
 
+	ClaimLadder( me );
+
 	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+// PlayerLocomotion lets go of a ladder it was never asked to use, and once the contact persists
+// takes it over by the nearer end - at the foot, the bottom. Tell it this climb is wanted.
+void CNEOBotLadderClimb::ClaimLadder( CNEOBot *me ) const
+{
+	ILocomotion *mover = me->GetLocomotionInterface();
+	if ( mover->IsUsingLadder() )
+	{
+		return;
+	}
+
+	const CNavArea *pExitArea = m_pExitArea;
+	if ( !pExitArea )
+	{
+		pExitArea = m_bGoingUp ? m_ladder->m_topForwardArea : m_ladder->m_bottomArea;
+	}
+
+	// The generator fills whichever top slot the landing is in, often not the forward one
+	if ( !pExitArea && m_bGoingUp )
+	{
+		pExitArea = m_ladder->m_topLeftArea ? m_ladder->m_topLeftArea :
+			( m_ladder->m_topRightArea ? m_ladder->m_topRightArea : m_ladder->m_topBehindArea );
+	}
+
+	// The locomotion's dismount walks to this area, so there is nothing to claim with without one
+	if ( !pExitArea )
+	{
+		return;
+	}
+
+	if ( m_bGoingUp )
+	{
+		mover->ClimbLadder( m_ladder, pExitArea );
+	}
+	else
+	{
+		mover->DescendLadder( m_ladder, pExitArea );
+	}
 }
 
 //---------------------------------------------------------------------------------------------
@@ -218,8 +260,22 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 	//------------------------------------------------------------
 	if ( !m_bDismountPhase )
 	{
+		// The locomotion drops its claim whenever the engine lets go of the bot, even for a tick
+		if ( me->GetMoveType() == MOVETYPE_LADDER )
+		{
+			ClaimLadder( me );
+		}
+
 		float currentZ = myPos.z;
 		float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
+
+		// Going down, the bot holds still until its view makes forward take it down: not a stall
+		const bool bHoldForView = !m_bGoingUp && !me->GetLocomotionInterface()->IsForwardDownLadder( m_ladder );
+		if ( bHoldForView )
+		{
+			m_flLastZ = currentZ;
+			m_stuckTimer.Start( STUCK_CHECK_INTERVAL );
+		}
 
 		// Stuck detection: if we haven't made vertical progress, bail out gracefully
 		if ( m_stuckTimer.IsElapsed() )
@@ -251,13 +307,15 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			m_stuckTimer.Start( STUCK_CHECK_INTERVAL );
 		}
 
-		// Early jump-off
+		// Early jump-off. Going down, only once a standing height below the top: from any higher, the
+		// kick towards the exit lands the bot back on the floor the descent started from.
 		bool bWantsDismount = false;
 		if ( m_pExitArea )
 		{
 			float zDistToExit = currentZ - m_exitAreaCenter.z;
+			const bool bBelowTopFloor = m_bGoingUp || currentZ < m_ladder->m_top.z - body->GetStandHullHeight();
 
-			if ( zDistToExit > 0.0f && zDistToExit <= SAFE_FALL_DIST )
+			if ( zDistToExit > 0.0f && zDistToExit <= SAFE_FALL_DIST && bBelowTopFloor )
 			{
 				bWantsDismount = true;
 			}
@@ -329,12 +387,25 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		}
 
 
-		// Look at and move to the dismount height, slightly behind the ladder
-		Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
-		lookTarget -= m_ladder->GetNormal() * 50.0f;
-		body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr,
-			m_bGoingUp ? "Climbing up (looking at dismount position)" : "Climbing down (looking at dismount position)" );
-		me->PressForwardButton(0.1f);
+		// A descent the locomotion has claimed is aimed by its DescendLadder();
+		// a second MANDATORY aim here would hold the view back from it
+		if ( m_bGoingUp || !mover->IsUsingLadder() )
+		{
+			// Look at and move to the dismount height, slightly behind the ladder
+			Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
+			lookTarget -= m_ladder->GetNormal() * 50.0f;
+			body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr,
+				m_bGoingUp ? "Climbing up (looking at dismount position)" : "Climbing down (looking at dismount position)" );
+		}
+
+		if ( bHoldForView )
+		{
+			me->ReleaseForwardButton();
+		}
+		else
+		{
+			me->PressForwardButton(0.1f);
+		}
 	}
 
 	//------------------------------------------------------------
