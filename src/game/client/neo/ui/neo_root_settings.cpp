@@ -1355,7 +1355,9 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::SliderInt(L"FOV", &pVideo->iFov, MIN_FOV, MAX_FOV);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pVideo->iViewmodelFov, -20, 40);
 #ifndef LINUX // disabled on Linux for now, see bug #2114
-	NeoUI::RingBoxFlag(L"Software Cursor", ESoftwareCursor::EnabledForPlatform, &pVideo->iSoftwareCursor);
+	NeoUI::RingBoxFlag(L"Force software cursor", ESoftwareCursor::EnabledForWindows, &pVideo->iSoftwareCursor);
+	// workaround for Windows bug #1705
+	NeoUI::RingBoxFlag(L"Never auto-enable software cursor", ESoftwareCursor::EnabledForWindowsInvertedMouseOnly, &pVideo->iSoftwareCursor, RINGBOX_BOOL_LABELS_REVERSE);
 #endif
 
 	NeoUI::Divider(L"VISUALS");

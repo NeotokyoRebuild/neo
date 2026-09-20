@@ -148,14 +148,27 @@ static ConVar cl_demoviewoverride( "cl_demoviewoverride", "0", 0, "Override view
 
 
 #ifdef NEO
-static ConVar cl_software_cursor( "cl_software_cursor", "1", FCVAR_ARCHIVE,
+static ConVar cl_software_cursor( "cl_software_cursor", "4", FCVAR_ARCHIVE,
 	"Switches the game to use a larger software cursor instead of the normal OS cursor. "
-	"Set as bitflags. 1: enabled for Windows, 2: enabled for Linux, 3: enabled for both",
+	"Set as bitflags. 1: enabled for Windows, 2: enabled for Linux,"
+	"4: enabled for Windows, but only for inverted-colored OS mouse",
 	true, ESoftwareCursor::Disabled, true, ESoftwareCursor::Maximum,
 	[](IConVar*, const char*, float) { SwCursorHack_RestoreValue(); });
 void SwCursorHack_RestoreValue()
 {
-	bool enabled = (cl_software_cursor.GetInt() & ESoftwareCursor::EnabledForPlatform);
+	int enabledBits = cl_software_cursor.GetInt();
+	bool enabled = (enabledBits & ESoftwareCursor::EnabledForPlatform);
+#ifdef _WIN32
+	if (!enabled && (enabledBits & ESoftwareCursor::EnabledForWindowsInvertedMouseOnly))
+	{
+		int cursorType;
+		if (vgui::system()->GetRegistryInteger(R"(HKEY_CURRENT_USER\Software\Microsoft\Accessibility\CursorType)", cursorType))
+		{
+			constexpr int cursorTypeStandard = 0;
+			enabled = (cursorType != cursorTypeStandard);
+		}
+	}
+#endif
 	vgui::surface()->SetSoftwareCursor(enabled || UseVR());
 }
 #else

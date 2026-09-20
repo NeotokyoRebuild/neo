@@ -26,6 +26,7 @@ enum ESoftwareCursor // stored in user configs, don't reorder
 	Disabled = 0,
 	EnabledForWindows = (1 << 0),
 	EnabledForLinux = (1 << 1),
+	EnabledForWindowsInvertedMouseOnly = (1 << 2), // workaround for bug #1705
 
 #ifdef _WIN32
 	EnabledForPlatform = EnabledForWindows,
@@ -34,7 +35,7 @@ enum ESoftwareCursor // stored in user configs, don't reorder
 #else
 	EnabledForPlatform = 0,
 #endif
-	Maximum = (EnabledForWindows | EnabledForLinux)
+	Maximum = (EnabledForWindows | EnabledForWindowsInvertedMouseOnly | EnabledForLinux)
 };
 
 void SwCursorHack_RestoreValue();
