@@ -1419,7 +1419,7 @@ void CHLClient::PostInit()
 
 		// Fixup invalid crosshair to default
 		ConVarRef cl_neo_crosshair("cl_neo_crosshair");
-		if (false == ValidateCrosshairSerial(cl_neo_crosshair.GetString()))
+		if (false == ValidateCrosshairSerial(cl_neo_crosshair.GetString(), V_atoi(cl_neo_crosshair.GetString())))
 		{
 			char szSequence[NEO_XHAIR_SEQMAX] = {};
 			DefaultCrosshairSerial(szSequence);
