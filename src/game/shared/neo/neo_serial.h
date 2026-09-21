@@ -1,7 +1,5 @@
 #pragma once
 
-#include "tier0/dbg.h"
-
 #include "neo_crosshair.h"
 
 namespace NeoSerial
