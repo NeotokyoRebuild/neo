@@ -261,7 +261,7 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 	V_strcpy_safe(szMutSeq, szFinalSeq);
 }
 
-bool V7_NagBadSegEnd(const char* pszSequence, int seqMax)
+[[nodiscard]] bool V7_NagBadSegEnd(const char* pszSequence, const int seqMax)
 {
 	if (seqMax <= 0)
 	{
