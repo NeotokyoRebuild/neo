@@ -32,7 +32,7 @@ enum ESerialVariantType
 	return false;
 }
 
-constexpr char SegEnd(NeoXHairSerial ver)
+[[nodiscard]] constexpr char SegEnd(const NeoXHairSerial ver)
 {
 	return (ver < NEOXHAIR_SERIAL_ALPHA_V35)
 		? NeoSerial::V1::SEGEND
@@ -42,7 +42,7 @@ constexpr char SegEnd(NeoXHairSerial ver)
 static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 		const ESerialVariantType eType, const SerialVariant varDefault,
 		const SerialVariant varMin, const SerialVariant varMax, SerialContext *ctx,
-		NeoXHairSerial ver)
+		const NeoXHairSerial ver)
 {
 	SerialVariant var = varDefault;
 
@@ -115,7 +115,7 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 
 [[nodiscard]] int SerialInt(const int iVal, const int iCompVal,
 		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
-		const int iMin, const int iMax, NeoXHairSerial ver)
+		const int iMin, const int iMax, const NeoXHairSerial ver)
 {
 	if (ctx->eSerialMode == SERIALMODE_SERIALIZE)
 	{
@@ -144,7 +144,7 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 
 [[nodiscard]] bool SerialBool(const bool bVal, const bool bCompVal,
 		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
-		NeoXHairSerial ver)
+		const NeoXHairSerial ver)
 {
 	if (ctx->eSerialMode == SERIALMODE_SERIALIZE)
 	{
@@ -172,7 +172,7 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 
 [[nodiscard]] float SerialFloat(const float flVal, const float flCompVal,
 		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
-		const float flMin, const float flMax, NeoXHairSerial ver)
+		const float flMin, const float flMax, const NeoXHairSerial ver)
 {
 	if (ctx->eSerialMode == SERIALMODE_SERIALIZE)
 	{
@@ -200,7 +200,7 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 }
 
 void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSerialMode,
-	NeoXHairSerial ver)
+	const NeoXHairSerial ver)
 {
 	const char CH_XH_SEGEND = SegEnd(ver);
 
