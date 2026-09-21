@@ -12,6 +12,7 @@
 #include "ienginevgui.h"
 
 #include "neo_gamerules.h"
+#include "neo_serial.h"
 #include "c_neo_player.h"
 
 #include "c_team.h"
