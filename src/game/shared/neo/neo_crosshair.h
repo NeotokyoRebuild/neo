@@ -140,6 +140,8 @@ extern const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS;
 
 struct CrosshairWepInfo
 {
+	bool operator==(const CrosshairWepInfo&) const = default;
+
 	int iStyle;
 	Color color;
 	NeoCrosshairFlags flags;
@@ -160,6 +162,8 @@ struct CrosshairWepInfo
 
 struct CrosshairInfo
 {
+	bool operator==(const CrosshairInfo&) const = default;
+
 	NeoCrosshairWepFlags wepFlags;
 	NeoCrosshairHipfireCustomFlags hipfireFlags;
 	CrosshairWepInfo wep[CROSSHAIR_WEP__TOTAL];
