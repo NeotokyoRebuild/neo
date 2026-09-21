@@ -940,6 +940,31 @@ static void RestrictNeoClientCheats()
 			AssertMsg1(false, "convar or concmd named \"%s\" was not found\n", cheatName);
 	}
 }
+
+// Verify crosshair and fixup any invalid crosshair to default
+static void FixupNeoCrosshair()
+{
+	ConVarRef cl_neo_crosshair("cl_neo_crosshair");
+
+	const char* pszCrosshair = cl_neo_crosshair.GetString();
+	const int crosshairVer = V_atoi(pszCrosshair);
+
+	char szBuffer[NEO_XHAIR_SEQMAX];
+	if (!ValidateCrosshairSerial(pszCrosshair, crosshairVer))
+	{
+		DefaultCrosshairSerial(szBuffer);
+		cl_neo_crosshair.SetValue(szBuffer);
+		return;
+	}
+
+	// Upgrade pre NEOXHAIR_SERIAL_ALPHA_V35 crosshairs to NEOXHAIR_SERIAL_ALPHA_V35+
+	CrosshairInfo xhairInfo = {};
+	if (ImportCrosshair(&xhairInfo, pszCrosshair))
+	{
+		ExportCrosshair(&xhairInfo, szBuffer);
+		cl_neo_crosshair.SetValue(szBuffer);
+	}
+}
 #endif
 
 // Purpose: Called when the DLL is first loaded.
@@ -1417,14 +1442,7 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 		RestrictNeoClientCheats();
 
-		// Fixup invalid crosshair to default
-		ConVarRef cl_neo_crosshair("cl_neo_crosshair");
-		if (false == ValidateCrosshairSerial(cl_neo_crosshair.GetString(), V_atoi(cl_neo_crosshair.GetString())))
-		{
-			char szSequence[NEO_XHAIR_SEQMAX] = {};
-			DefaultCrosshairSerial(szSequence);
-			cl_neo_crosshair.SetValue(szSequence);
-		}
+		FixupNeoCrosshair();
 
 		ConVar *sv_maxupdaterate = g_pCVar->FindVar( "sv_maxupdaterate" ); Assert(sv_maxupdaterate);
 		ConVar *cl_updaterate = g_pCVar->FindVar( "cl_updaterate" ); Assert(cl_updaterate);
