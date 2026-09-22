@@ -179,6 +179,12 @@ int HalfInaccuracyConeInScreenPixels(C_NEOBaseCombatWeapon* pWeapon, int halfScr
 
 void InitializeClNeoCrosshair()
 {
+#ifdef DEBUG
+	// Initialize only once
+	static bool hasBeenCalled = false;
+	Assert(!hasBeenCalled);
+	hasBeenCalled = true;
+#endif
 	DefaultCrosshairSerial(static_szCrhSerialDefault);
 	cl_neo_crosshair.SetDefault(static_szCrhSerialDefault);
 }
