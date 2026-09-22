@@ -475,8 +475,7 @@ bool ValidateCrosshairSerial(const char *pszSequence, const int ver)
 }
 
 bool ImportCrosshair(CrosshairInfo *xhairInfo, const char *pszSequence,
-		EHipfireOpt (*paeHipfireOpts)[CROSSHAIR_WEP__TOTAL],
-		const std::optional<NeoXHairSerial> ver)
+		EHipfireOpt (*paeHipfireOpts)[CROSSHAIR_WEP__TOTAL])
 {
 	const int iSeqSize = V_strlen(pszSequence);
 	if (iSeqSize <= 0 || iSeqSize >= NEO_XHAIR_SEQMAX)
@@ -488,7 +487,7 @@ bool ImportCrosshair(CrosshairInfo *xhairInfo, const char *pszSequence,
 	V_strcpy_safe(szMutSeq, pszSequence);
 
 	ResetCrosshairToDefault(xhairInfo, paeHipfireOpts);
-	const int iExportSerialVersion = ver.has_value() ? ver.value() : V_atoi(pszSequence);
+	const int iExportSerialVersion = V_atoi(pszSequence); // Assuming first number of sequence must be the serial version
 	const bool bValid = ImportOrExportCrosshair(SERIALMODE_DESERIALIZE, xhairInfo, szMutSeq, iSeqSize, iExportSerialVersion);
 	if (!bValid)
 	{
