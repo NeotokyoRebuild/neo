@@ -197,29 +197,23 @@ void NeoConVarCrosshairChangeCallback(IConVar *icvar, const char *pOldVal, [[may
 	{
 		cvar->InstallChangeCallback(nullptr);
 
-		const char* pRevertReason, *pRevertOrigin;
-		auto fnPrintWarning = [&pRevertReason, &pRevertOrigin, &pOldVal, &cvar]() {
+		const auto fnPrintWarning = [&pOldVal, &cvar](const char* pRevertTo, const char* pRevertReason) {
 			Warning("Your crosshair has been reverted to %s due to syntax error(s) in its %s.\n"
 				"The old value was:\n\t\"%s\" \"%s\"\n"
 				"The new value was:\n\t\"%s\" \"%s\"\n",
-				pRevertOrigin, pRevertReason,
+				pRevertTo, pRevertReason,
 				cvar->GetName(), pOldVal,
 				cvar->GetName(), cvar->GetString());
 			};
-
 		if (!ValidateCrosshairSerial(pOldVal, V_atoi(pOldVal)))
 		{
-			pRevertReason = "new and old values";
-			pRevertOrigin = "default";
-			fnPrintWarning();
+			fnPrintWarning("default", "new and old values");
 			cvar->SetValue(cvar->GetDefault());
 			return;
 		}
 		else
 		{
-			pRevertReason = "new value";
-			pRevertOrigin = "its old value";
-			fnPrintWarning();
+			fnPrintWarning("its old value", "new value");
 		}
 
 		char mutStr[NEO_XHAIR_SEQMAX];
