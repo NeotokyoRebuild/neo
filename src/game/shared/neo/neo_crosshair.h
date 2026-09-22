@@ -196,7 +196,7 @@ int HalfInaccuracyConeInScreenPixels(C_NEOBaseCombatWeapon *pWeapon, int halfScr
 void InitializeClNeoCrosshair();
 
 class IConVar;
-void NeoConVarCrosshairChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal);
+void NeoConVarCrosshairChangeCallback(IConVar *icvar, const char *pOldVal, float flOldVal);
 
 #endif // CLIENT_DLL
 

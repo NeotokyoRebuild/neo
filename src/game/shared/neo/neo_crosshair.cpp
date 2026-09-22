@@ -183,35 +183,29 @@ void InitializeClNeoCrosshair()
 	cl_neo_crosshair.SetDefault(static_szCrhSerialDefault);
 }
 
-void NeoConVarCrosshairChangeCallback(IConVar *cvar, const char *pOldVal, [[maybe_unused]] float flOldVal)
+void NeoConVarCrosshairChangeCallback(IConVar *icvar, const char *pOldVal, [[maybe_unused]] float flOldVal)
 {
-	static bool bStaticCallbackChangedXHairCVar = false;
-	if (bStaticCallbackChangedXHairCVar)
-	{
-		return;
-	}
+	ConVar* cvar = assert_cast<ConVar*>(icvar);
 
-	ConVarRef cvarRef(cvar);
-	if (false == ValidateCrosshairSerial(cvarRef.GetString(), V_atoi(cvarRef.GetString())))
+	if (false == ValidateCrosshairSerial(cvar->GetString(), V_atoi(cvar->GetString())))
 	{
-		bStaticCallbackChangedXHairCVar = true;
+		cvar->InstallChangeCallback(nullptr);
+		
+		if (!ValidateCrosshairSerial(pOldVal, V_atoi(pOldVal)))
+		{
+			cvar->SetValue(cvar->GetDefault());
+			return;
+		}
+
 		char mutStr[NEO_XHAIR_SEQMAX];
-		if (ValidateCrosshairSerial(pOldVal, V_atoi(pOldVal)))
-		{
-			V_strcpy_safe(mutStr, pOldVal);
-		}
-		else
-		{
-			DefaultCrosshairSerial(mutStr);
-		}
-
+		V_strcpy_safe(mutStr, pOldVal);
 		Q_UnicodeRepair(mutStr);
 
 		V_StripTrailingWhitespace(mutStr);
 		V_StripLeadingWhitespace(mutStr);
 
-		cvarRef.SetValue(mutStr);
-		bStaticCallbackChangedXHairCVar = false;
+		cvar->SetValue(mutStr);
+		cvar->InstallChangeCallback(NeoConVarCrosshairChangeCallback);
 	}
 }
 
