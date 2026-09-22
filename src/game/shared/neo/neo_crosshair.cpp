@@ -314,7 +314,7 @@ int UseCrosshairIndexFor(const CrosshairInfo *xhairInfo, const int iXHairWep, bo
 }
 
 static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo *xhairInfo,
-		char (&szMutSeq)[NEO_XHAIR_SEQMAX], const int iSeqSize, std::optional<const int> iExportSerialVersion)
+		char (&szMutSeq)[NEO_XHAIR_SEQMAX], const int iSeqSize, const int iExportSerialVersion)
 {
 	SerialContext ctx = {
 		.eSerialMode = eSerialMode,
@@ -324,26 +324,15 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 	if (g_verbose > 0) fprintf(stderr, "%s: ImportOrExportCrosshair: iSeqSize: %d\n", g_testFnName, iSeqSize);
 #endif
 
-	int iSerialVersion;
-	if (iExportSerialVersion.has_value())
-	{
-		iSerialVersion = iExportSerialVersion.value();
-	}
-	else
-	{
-		// parses first number of the input, doesn't mutate input
-		iSerialVersion = V_atoi(szMutSeq);
-	}
-
 	// Unsupported serialization version or corrupted from first character
-	if (iSerialVersion <= NEOXHAIR_SERIAL_INVALID || iSerialVersion > NEOXHAIR_SERIAL_CURRENT)
+	if (iExportSerialVersion <= NEOXHAIR_SERIAL_INVALID || iExportSerialVersion > NEOXHAIR_SERIAL_CURRENT)
 	{
 		return false;
 	}
 
-	const auto eSerialVer = static_cast<NeoXHairSerial>(iSerialVersion);
+	const auto eSerialVer = static_cast<NeoXHairSerial>(iExportSerialVersion);
 	// Serial version mismatches what the input declared??
-	if (iSerialVersion != SerialInt(iSerialVersion, NEOXHAIR_SERIAL_CURRENT,
+	if (iExportSerialVersion != SerialInt(iExportSerialVersion, NEOXHAIR_SERIAL_CURRENT,
 		COMPMODE_IGNORE, szMutSeq, &ctx, 0, 0, eSerialVer))
 	{
 		return false;
@@ -355,9 +344,9 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 	}
 
 	// v28 onwards cuts out segments if unused
-	const bool bNotCompact = (iSerialVersion < NEOXHAIR_SERIAL_ALPHA_V28);
+	const bool bNotCompact = (eSerialVer < NEOXHAIR_SERIAL_ALPHA_V28);
 
-	if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V29)
+	if (eSerialVer >= NEOXHAIR_SERIAL_ALPHA_V29)
 	{
 		xhairInfo->wepFlags = SerialInt(xhairInfo->wepFlags, xhairInfo->wepFlags,
 				COMPMODE_IGNORE, szMutSeq, &ctx, 0, CROSSHAIR_WEP_FLAG__HIGHESTFLAG, eSerialVer);
@@ -385,7 +374,7 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 			continue;
 		}
 
-		if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V29)
+		if (eSerialVer >= NEOXHAIR_SERIAL_ALPHA_V29)
 		{
 			crh->flags = SerialInt(crh->flags, cmpCrh->flags, eCompMode, szMutSeq, &ctx, 0, CROSSHAIR_FLAG__HIGHESTFLAG, eSerialVer);
 		}
@@ -407,7 +396,7 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 			crh->iGap = SerialInt(crh->iGap, cmpCrh->iGap, eCompMode, szMutSeq, &ctx, 0, CROSSHAIR_MAX_GAP, eSerialVer);
 			crh->iOutline = SerialInt(crh->iOutline, cmpCrh->iOutline, eCompMode, szMutSeq, &ctx, 0, CROSSHAIR_MAX_OUTLINE, eSerialVer);
 			crh->iCenterDot = SerialInt(crh->iCenterDot, cmpCrh->iCenterDot, eCompMode, szMutSeq, &ctx, 0, CROSSHAIR_MAX_CENTER_DOT, eSerialVer);
-			if (iSerialVersion < NEOXHAIR_SERIAL_ALPHA_V29)
+			if (eSerialVer < NEOXHAIR_SERIAL_ALPHA_V29)
 			{
 				const bool bTopLine = SerialBool(!(crh->flags & CROSSHAIR_FLAG_NOTOPLINE), !(cmpCrh->flags & CROSSHAIR_FLAG_NOTOPLINE), eCompMode, szMutSeq, &ctx, eSerialVer);
 				if (!bTopLine)
@@ -421,17 +410,17 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 				crh->iCircleSegments = SerialInt(crh->iCircleSegments, cmpCrh->iCircleSegments, eCompMode, szMutSeq, &ctx, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS, eSerialVer);
 			}
 			
-			if (iSerialVersion < NEOXHAIR_SERIAL_ALPHA_V19)
+			if (eSerialVer < NEOXHAIR_SERIAL_ALPHA_V19)
 			{
 				continue;
 			}
 			// >= NEOXHAIR_SERIAL_ALPHA_V19 segments
 
-			crh->eDynamicType = (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V19)
+			crh->eDynamicType = (eSerialVer >= NEOXHAIR_SERIAL_ALPHA_V19)
 					? static_cast<NeoHudCrosshairDynamicType>(SerialInt(crh->eDynamicType, cmpCrh->eDynamicType, eCompMode, szMutSeq, &ctx, 0, CROSSHAIR_DYNAMICTYPE__TOTAL - 1, eSerialVer))
 					: CROSSHAIR_DYNAMICTYPE_NONE;
 
-			if (iSerialVersion < NEOXHAIR_SERIAL_ALPHA_V22)
+			if (eSerialVer < NEOXHAIR_SERIAL_ALPHA_V22)
 			{
 				continue;
 			}
@@ -439,7 +428,7 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 
 			if (bNotCompact || crh->iCenterDot > 0)
 			{
-				if (iSerialVersion < NEOXHAIR_SERIAL_ALPHA_V29)
+				if (eSerialVer < NEOXHAIR_SERIAL_ALPHA_V29)
 				{
 					const bool bSeparateColorDot = SerialBool((crh->flags & CROSSHAIR_FLAG_SEPERATEDOTCOLOR), (cmpCrh->flags & CROSSHAIR_FLAG_SEPERATEDOTCOLOR), eCompMode, szMutSeq, &ctx, eSerialVer);
 					if (bSeparateColorDot)
