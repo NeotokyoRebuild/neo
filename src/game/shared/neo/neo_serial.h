@@ -44,20 +44,21 @@ struct SerialContext
 
 [[nodiscard]] int SerialInt(const int iVal, const int iCompVal,
 		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
-		const int iMin = 0, const int iMax = 0, NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
+		const int iMin = 0, const int iMax = 0,
+		const NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
 
 [[nodiscard]] bool SerialBool(const bool bVal, const bool bCompVal,
 		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
-		NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
+		const NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
 
 [[nodiscard]] float SerialFloat(const float flVal, const float flCompVal,
 		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
 		const float flMin = 0.0f, const float flMax = 0.0f,
-		NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
+		const NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
 
 // 2nd pass - Serialization run length encoding on empty
 void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSerialMode,
-	NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
+	const NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
 
 // Checks the contents of "pszSequence" to verify the segment-end delimiter character
 // is compatible with the provided "ver" serial version.
@@ -65,4 +66,5 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 // and true otherwise.
 // Will heap-allocate/free at most seqMax chars in the failure case for printing the message.
 // Will return false if seqMax > NEO_XHAIR_SEQMAX or <= 0.
-bool NagBadSegEnd(const char* pszContext, const char* pszSequence, int seqMax, NeoXHairSerial ver);
+[[nodiscard]] bool NagBadSegEnd(const char* pszContext, const char* pszSequence, int seqMax,
+	const NeoXHairSerial ver);
