@@ -406,7 +406,7 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 		return false;
 	}
 
-	if (!V7_NagBadSegEnd(pszSequence, NEO_IFFMARKER_SEQMAX))
+	if (!NagBadSegEnd(__func__, pszSequence, NEO_IFFMARKER_SEQMAX, NEOXHAIR_SERIAL_CURRENT))
 	{
 		return false;
 	}

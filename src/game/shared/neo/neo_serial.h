@@ -59,8 +59,10 @@ struct SerialContext
 void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSerialMode,
 	NeoXHairSerial ver = NEOXHAIR_SERIAL_CURRENT);
 
-// Checks if the input char is ';' (now changed by NeoSerial::V<n>::SEGEND).
-// And if the char was ';', will print some helpful error for the user to fix their stuff.
-// Returns boolean of whether input "c" was the clashing character or not.
+// Checks the contents of "pszSequence" to verify the segment-end delimiter character
+// is compatible with the provided "ver" serial version.
+// Returns false if the input sequence had any invalid delimiters for the version,
+// and true otherwise.
 // Will heap-allocate/free at most seqMax chars in the failure case for printing the message.
-bool V7_NagBadSegEnd(const char* pszSequence, int seqMax);
+// Will return false if seqMax > NEO_XHAIR_SEQMAX or <= 0.
+bool NagBadSegEnd(const char* pszContext, const char* pszSequence, int seqMax, NeoXHairSerial ver);

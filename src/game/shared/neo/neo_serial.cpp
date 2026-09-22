@@ -261,18 +261,22 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 	V_strcpy_safe(szMutSeq, szFinalSeq);
 }
 
-[[nodiscard]] bool V7_NagBadSegEnd(const char* pszSequence, const int seqMax)
+[[nodiscard]] bool NagBadSegEnd(const char* pszContext, const char* pszSequence,
+	const int seqMax, NeoXHairSerial ver)
 {
-	if (seqMax <= 0)
+	if (seqMax <= 0 || seqMax > NEO_XHAIR_SEQMAX)
 	{
-		Assert(false);
+		AssertMsg(seqMax >= 0, "somehow passed negative seqMax?");
 		return false;
 	}
 
-	constexpr auto delimiter = NeoSerial::V7::SEGEND;
-	constexpr char deprecated_delimiter = ';';
-	static_assert(delimiter != deprecated_delimiter);
-	static_assert(CH_XH_SEGSKIP != delimiter);
+	const char correctDelimiter = SegEnd(ver),
+				wrongDelimiter = SegEnd(ver < NEOXHAIR_SERIAL_ALPHA_V35
+		? NEOXHAIR_SERIAL_ALPHA_V35
+		: NEOXHAIR_SERIAL_ALPHA_V29);
+	Assert(correctDelimiter != wrongDelimiter);
+	Assert(correctDelimiter != CH_XH_SEGSKIP);
+	Assert(wrongDelimiter != CH_XH_SEGSKIP);
 
 	char* pPointTo = nullptr;
 	bool ok = true;
@@ -281,15 +285,16 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 		char c = pszSequence[i];
 		if (c == '\0')
 			break;
-		if (c == deprecated_delimiter)
+		if (c == wrongDelimiter)
 		{
 			pPointTo = new char[i + 2];
 			V_memset(pPointTo, ' ', i);
 			pPointTo[i] = '^';
 			pPointTo[i + 1] = '\0';
-			Warning("Please replace the \"%c\" characters with \"%c\" in your serialization syntax.\n"
+			Warning("%s: replace the \"%c\" characters with \"%c\" in your serialization syntax.\n"
 				"Failed for input at pos %d:\n\t%s\n\t%s\n",
-				deprecated_delimiter, delimiter,
+				pszContext,
+				wrongDelimiter, correctDelimiter,
 				i, pszSequence,
 				pPointTo);
 			ok = false;

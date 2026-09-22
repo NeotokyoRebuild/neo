@@ -330,12 +330,9 @@ static bool ImportOrExportCrosshair(const ESerialMode eSerialMode, CrosshairInfo
 		return false;
 	}
 
-	if (iSerialVersion >= NEOXHAIR_SERIAL_ALPHA_V35)
+	if (!NagBadSegEnd(__func__, szMutSeq, ARRAYSIZE(szMutSeq), eSerialVer))
 	{
-		if (!V7_NagBadSegEnd(szMutSeq, ARRAYSIZE(szMutSeq)))
-		{
-			return false;
-		}
+		return false;
 	}
 
 	// v28 onwards cuts out segments if unused
