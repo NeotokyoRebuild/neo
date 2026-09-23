@@ -177,10 +177,6 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define MIN_CLOAK_AUX 0.1f
 #define SPRINT_START_MIN (2.0f)
 
-// Original NT allows chaining superjumps up ramps,
-// so leaving this zeroed for enabling movement tricks.
-#define SUPER_JMP_DELAY_BETWEEN_JUMPS 0
-
 // NEO Activities
 #define ACT_NEO_ATTACK ACT_RANGE_ATTACK1
 #define ACT_NEO_RELOAD ACT_RELOAD

@@ -88,7 +88,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
-	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
 	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
 	RecvPropBool(RECVINFO(m_bCarryingGhost)),
@@ -120,7 +119,6 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bInAim, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInLean, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flVisionLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
@@ -449,7 +447,6 @@ C_NEO_Player::C_NEO_Player()
 	m_iXP.GetForModify() = 0;
 
 	m_bInThermOpticCamo = m_bInVision = false;
-	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 	m_bCarryingGhost = false;
 	m_bIneligibleForLoadoutPick = false;
@@ -457,8 +454,6 @@ C_NEO_Player::C_NEO_Player()
 
 	m_flCamoAuxLastTime = 0;
 	m_flVisionLastTime = 0;
-	m_flLastAirborneJumpOkTime = 0;
-	m_flLastSuperJumpTime = 0;
 
 	m_bFirstAliveTick = true;
 	m_bFirstDeathTick = true;
@@ -1168,27 +1163,6 @@ void C_NEO_Player::PreThink( void )
 		Lean();
 	}
 
-	// Eek. See rationale for this thing in CNEO_Player::PreThink
-	if (IsAirborne())
-	{
-		m_flLastAirborneJumpOkTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		const float leeway = 0.5f;
-		if (deltaTime > leeway)
-		{
-			m_bHasBeenAirborneForTooLongToSuperJump = false;
-			m_flLastAirborneJumpOkTime = gpGlobals->curtime;
-		}
-		else
-		{
-			m_bHasBeenAirborneForTooLongToSuperJump = true;
-		}
-	}
-	else
-	{
-		m_bHasBeenAirborneForTooLongToSuperJump = false;
-	}
-
 	if (m_iNeoClass == NEO_CLASS_RECON && 
 		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) && 
 		IsAllowedToSuperJump())
@@ -1464,48 +1438,6 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 }
 #endif // GLOWS_ENABLE
 
-bool C_NEO_Player::IsAllowedToSuperJump(void)
-{
-	if (!IsSprinting())
-		return false;
-
-	if (IsCarryingGhost())
-		return false;
-
-	if (GetMoveParent())
-		return false;
-
-	if (IsPlayerUnderwater())
-		return false;
-
-	// Can't superjump whilst airborne (although it is kind of cool)
-	if (m_bHasBeenAirborneForTooLongToSuperJump)
-		return false;
-
-	// Only superjump if we have a reasonable jump direction in mind
-	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
-	{
-		return false;
-	}
-
-	// The suit check is for prediction only, actual power drain happens serverside
-	if (m_HL2Local.m_flSuitPower < SUPER_JMP_COST)
-		return false;
-
-	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
-	{
-		m_flLastSuperJumpTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - m_flLastSuperJumpTime;
-		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
-			return false;
-
-		m_flLastSuperJumpTime = gpGlobals->curtime;
-	}
-
-	return true;
-}
-
 // This is applied for prediction purposes. It should match CNEO_Player's method.
 void C_NEO_Player::SuperJump(void)
 {
@@ -1549,6 +1481,7 @@ float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
+	FixupOnGroundFlag();
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
 	m_flCamoAuxLastTime = 0;
@@ -1979,8 +1912,6 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 
 	m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
 	m_flVisionLastTime = pPlayerTakeoverTarget->m_flVisionLastTime;
-	m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
-	m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
 	m_bPreviouslyReloading = pPlayerTakeoverTarget->m_bPreviouslyReloading;
 	m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
 	m_flTocFactor = pPlayerTakeoverTarget->m_flTocFactor;
