@@ -218,6 +218,27 @@ inline void ChasePath::RefreshPath( INextBot *bot, CBaseEntity *subject, const I
 			isPath = Compute( bot, pathTarget, cost, GetMaxPathLength() );
 		}
 
+#ifdef NEO
+		// A failed Compute still leaves a valid PARTIAL_PATH, ending in the reachable area closest
+		// to the target. When that end is already most of the way there, the search arrived and
+		// stopped short (the target stands just off the mesh, on a prop, over a ledge) and the bot
+		// can walk it. Calling it FAIL_NO_PATH_EXISTS instead invalidates the path and blocks
+		// repathing for a range-scaled time, so the bot stands still where it could be closing in.
+		// A partial path that ends well short of that still fails, and the throttle keeps guarding
+		// the genuinely unreachable case.
+		if ( !isPath && IsValid() )
+		{
+			// share of the straight-line range to the target the partial path must already cover
+			constexpr float minPartialPathCoverage = 0.9f;
+			const float rangeToTarget = bot->GetPosition().DistTo( pathTarget );
+			if ( rangeToTarget > 0.0f )
+			{
+				const float covered = bot->GetPosition().DistTo( GetEndPosition() );
+				isPath = ( covered / rangeToTarget ) >= minPartialPathCoverage;
+			}
+		}
+#endif
+
 		if ( isPath )
 		{
 			if ( bot->IsDebugging( NEXTBOT_PATH ) )
