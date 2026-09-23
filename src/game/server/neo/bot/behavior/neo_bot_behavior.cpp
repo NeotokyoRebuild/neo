@@ -480,22 +480,21 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 	// Check for holes in the ground along jump path
 	const Vector vecFeet = me->GetAbsOrigin();
 	constexpr float flMaxDrop = 250.0f;
-	constexpr float flRampBuffer = 64.0f;
-	constexpr float flTraceDown = flMaxDrop + flRampBuffer;
 	constexpr int nNumProbes = 3;
 	constexpr float flProbeSpacing = 200.0f;
 
 	for (int i = 1; i <= nNumProbes; ++i)
 	{
 		Vector vecProbeStart = vecFeet + vecLaunchDir * (flProbeSpacing * i);
-		Vector vecProbeEnd   = vecProbeStart - Vector(0.0f, 0.0f, flTraceDown);
+		Vector vecProbeEnd   = vecProbeStart - Vector(0.0f, 0.0f, flMaxDrop);
 
 		trace_t tr;
 		UTIL_TraceLine(vecProbeStart, vecProbeEnd, MASK_SOLID_BRUSHONLY, me, COLLISION_GROUP_NONE, &tr);
 
-		if (!tr.DidHit() || (vecFeet.z - tr.endpos.z) > flMaxDrop)
+		if (!tr.DidHit())
 		{
-			// Potential hole in ground detected
+			// Abort if the floor at any sample point ahead is missing
+			// or more than flMaxDrop below the bot's feet (e.g. any long fall)
 			return;
 		}
 	}
