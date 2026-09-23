@@ -973,7 +973,7 @@ static void FixupNeoCrosshair()
 
 		// Verify old and new crosshair formats hold the same information
 		CrosshairInfo newXhairInfo = {};
-		if (!ImportCrosshair(&newXhairInfo, pszCrosshair) || newXhairInfo != oldXhairInfo)
+		if (!ImportCrosshair(&newXhairInfo, szBuffer) || newXhairInfo != oldXhairInfo)
 		{
 			Assert(false);
 			return fnRevertCrosshairToDefault();
