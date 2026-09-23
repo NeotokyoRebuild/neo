@@ -77,9 +77,10 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 
 		Vector vFight;
 		if ( !NEOMemorySoundCombat::FindNearestFight( me->GetAbsOrigin(), me->GetTeamNumber(), me->entindex(), vFight )
-			|| !BotInSoundPAS( me, vFight ) )
+			|| !BotInSoundPAS( me, vFight )
+			|| me->GetAbsOrigin().DistToSqr( vFight ) <= flArriveSqr )
 		{
-			return false;
+			return false; // no fight, out of PAS, or already there
 		}
 
 		if ( vGoalBefore != vec3_origin )
