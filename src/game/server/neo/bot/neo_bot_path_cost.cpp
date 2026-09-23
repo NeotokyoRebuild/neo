@@ -149,24 +149,28 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 
 	// ------------------------------------------------------------------------------------------------
 	// New path reservation related cost adjustments
-	if ( NEORules()->IsTeamplay() && !m_bIgnoreReservations && (m_routeType != FASTEST_ROUTE) )
+	if ( !m_bIgnoreReservations && (m_routeType != FASTEST_ROUTE) )
 	{
-		const int nFriendly = CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber(), m_me);
-		if (nFriendly > 0)
-		{
-			// Discourage team clustering: (n^2 * penalty)
-			cost += nFriendly * nFriendly * neo_bot_path_reservation_penalty.GetFloat();
-		}
 		cost += CNEOBotPathReservations()->GetAreaAvoidPenalty(area->GetID());
 
-		if (m_routeType == SAFEST_ROUTE)
+		if ( NEORules()->IsTeamplay() )
 		{
-			// NEO Jank Cheat: Incorporate enemy bot paths so that we don't run directly into their line of fire
-			// Intended for use by ghost carrier team, to emulate a team that knows where enemies are likely to ambush
-			// Compensates for bots' lack of meta knowledge by making them prefer routes not reserved by enemies
-			// Adheres to cheat against bots but not against humans philosophy by not considering human players' positions
-			const int nEnemy = CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), GetEnemyTeam(m_me->GetTeamNumber()));
-			cost += nEnemy * neo_bot_path_reservation_penalty.GetFloat() * 2.0f;
+			const int nFriendly = CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), m_me->GetTeamNumber(), m_me);
+			if (nFriendly > 0)
+			{
+				// Discourage team clustering: (n^2 * penalty)
+				cost += nFriendly * nFriendly * neo_bot_path_reservation_penalty.GetFloat();
+			}
+
+			if (m_routeType == SAFEST_ROUTE)
+			{
+				// NEO Jank Cheat: Incorporate enemy bot paths so that we don't run directly into their line of fire
+				// Intended for use by ghost carrier team, to emulate a team that knows where enemies are likely to ambush
+				// Compensates for bots' lack of meta knowledge by making them prefer routes not reserved by enemies
+				// Adheres to cheat against bots but not against humans philosophy by not considering human players' positions
+				const int nEnemy = CNEOBotPathReservations()->GetPredictedFriendlyPathCount(area->GetID(), GetEnemyTeam(m_me->GetTeamNumber()));
+				cost += nEnemy * neo_bot_path_reservation_penalty.GetFloat() * 2.0f;
+			}
 		}
 	}
 
