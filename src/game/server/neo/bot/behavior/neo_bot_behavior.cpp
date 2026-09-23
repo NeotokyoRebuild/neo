@@ -938,7 +938,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		 threatRange < me->GetMaxAttackRange() );
 	me->m_bOnTarget = bOnTarget;
 
-	// hold fire while a teammate is near where my weapon points
+	// hold fire while a teammate is ahead and near where my weapon points
 	if ( ( bOnTarget || ( me->m_nButtons & IN_ATTACK ) ) && me->IsFriendlyNearBarrel( threatRange ) )
 	{
 		me->ReleaseFireButton();

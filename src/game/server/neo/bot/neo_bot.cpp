@@ -2119,9 +2119,9 @@ bool CNEOBot::IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) con
 		{
 			const Vector toMate = pos - from;
 			const float along = DotProduct(toMate, line);
-			if (along < 0.0f)
+			if (along < clearance)
 			{
-				continue; // behind the muzzle
+				continue; // behind or beside the muzzle, not in front of it
 			}
 
 			if ((toMate - line * Min(along, lineLength)).IsLengthLessThan(clearance))
