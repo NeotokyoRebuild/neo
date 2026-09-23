@@ -176,8 +176,6 @@ bool CHudCrosshair::ShouldDraw( void )
 
 	if (!player)
 		return false;
-	else
-		Assert(!player->IsObserver());
 
 	if (player->m_lifeState != LIFE_ALIVE)
 		return false;
