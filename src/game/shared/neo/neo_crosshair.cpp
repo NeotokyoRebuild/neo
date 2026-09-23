@@ -209,6 +209,7 @@ void NeoConVarCrosshairChangeCallback(IConVar *icvar, const char *pOldVal, [[may
 		{
 			fnPrintWarning("default", "new and old values");
 			cvar->SetValue(cvar->GetDefault());
+			cvar->InstallChangeCallback(NeoConVarCrosshairChangeCallback);
 			return;
 		}
 		else
