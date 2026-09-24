@@ -138,6 +138,49 @@ bool Path::ComputePathDetails( INextBot *bot, const Vector &start )
 					}
 				}
 				
+#ifdef NEO
+				// The search above only looks straight ahead of the crossing point.
+				// When the opening below  is off to one side of it (a hatch in a floor),
+				// it finds no clear column and the drop point ends up on solid floor 2 hull widths out,
+				// where the bot stands and never falls.
+				// Look along the portal for the nearest clear column and cross there instead.
+				if ( pushDist > maxPushDist )
+				{
+					const Vector2D side( -dir.y, dir.x );
+					const float crossAlong = ( to->pos.x - to->m_portalCenter.x ) * side.x + ( to->pos.y - to->m_portalCenter.y ) * side.y;
+					bool found = false;
+					for ( float lat = inc; lat <= 2.0f * to->m_portalHalfWidth && !found; lat += inc )
+					{
+						for ( int sgn = -1; sgn <= 1 && !found; sgn += 2 )
+						{
+							if ( fabsf( crossAlong + sgn * lat ) > to->m_portalHalfWidth )
+								continue;
+
+							for ( float push = 0.0f; push <= maxPushDist; push += inc )
+							{
+								Vector pos = to->pos + Vector( push * dir.x + sgn * lat * side.x, push * dir.y + sgn * lat * side.y, 0.0f );
+								Vector lowerPos = Vector( pos.x, pos.y, toPos.z );
+
+								trace_t result;
+								NextBotTraceFilterIgnoreActors filter( bot->GetEntity(), COLLISION_GROUP_NONE );
+								UTIL_TraceHull( pos, lowerPos,
+												Vector( -halfWidth, -halfWidth, stepHeight ), Vector( halfWidth, halfWidth, hullHeight ),
+												bot->GetBodyInterface()->GetSolidMask(), &filter, &result );
+
+								if ( result.fraction >= 1.0f )
+								{
+									to->pos.x += sgn * lat * side.x;
+									to->pos.y += sgn * lat * side.y;
+									pushDist = push;
+									found = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+#endif
+
 				Vector startDrop( to->pos.x + pushDist * dir.x, to->pos.y + pushDist * dir.y, to->pos.z );
 				Vector endDrop( startDrop.x, startDrop.y, to->area->GetZ( to->pos ) );
 
