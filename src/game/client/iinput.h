@@ -34,7 +34,11 @@ public:
 	virtual	void		Init_All( void ) = 0;
 	virtual void		Shutdown_All( void ) = 0;
 	// Latching button states
+#ifdef NEO
+	virtual int64		GetButtonBits( int64 ) = 0;
+#else
 	virtual int			GetButtonBits( int ) = 0;
+#endif // NEO
 	// Create movement command
 	virtual void		CreateMove ( int sequence_number, float input_sample_frametime, bool active ) = 0;
 	virtual void		ExtraMouseSample( float frametime, bool active ) = 0;
@@ -109,7 +113,11 @@ public:
 	virtual void		LevelInit( void ) = 0;
 
 	// Causes an input to have to be re-pressed to become active
+#ifdef NEO
+	virtual void		ClearInputButton( int64 bits ) = 0;
+#else
 	virtual void		ClearInputButton( int bits ) = 0;
+#endif // NEO
 
 	virtual	void		CAM_SetCameraThirdData( CameraThirdData_t *pCameraData, const QAngle &vecCameraOffset ) = 0;
 	virtual void		CAM_CameraThirdThink( void ) = 0;

@@ -53,7 +53,11 @@ public:
 
 	// CPropVehicle
 	virtual void	CreateServerVehicle( void );
+#ifdef NEO
+	virtual void	DriveVehicle( float flFrameTime, CUserCmd *ucmd, int64 iButtonsDown, int64 iButtonsReleased );
+#else
 	virtual void	DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased );
+#endif // NEO
 	virtual void	ProcessMovement( CBasePlayer *pPlayer, CMoveData *pMoveData );
 	virtual Class_T	ClassifyPassenger( CBaseCombatCharacter *pPassenger, Class_T defaultClassification );
 	virtual int		OnTakeDamage( const CTakeDamageInfo &info );

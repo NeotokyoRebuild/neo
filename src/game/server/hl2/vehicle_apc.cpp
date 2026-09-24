@@ -710,13 +710,21 @@ void CPropAPC::AimSecondaryWeaponAt( CBaseEntity *pTarget )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CPropAPC::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int64 iButtonsDown, int64 iButtonsReleased )
+#else
 void CPropAPC::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased )
+#endif // NEO
 {
 	switch( m_lifeState )
 	{
 	case LIFE_ALIVE:
 		{
+#ifdef NEO
+			const int64 iButtons = ucmd->buttons;
+#else
 			int iButtons = ucmd->buttons;
+#endif // NEO
 			if ( iButtons & IN_ATTACK )
 			{
 				FireMachineGun();

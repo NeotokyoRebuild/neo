@@ -44,7 +44,8 @@
 #define IN_LEAN_LEFT    (1 << 28)
 #define IN_LEAN_RIGHT   (1 << 29)
 #define IN_THERMOPTIC	(1 << 30) // Thermoptic cloaking
-#define IN_VISION		(1 << 31) // Vision modes
+#define IN_VISION		((int64)1 << 31) // Vision modes
+#define IN_JUMP2		((int64)1 << 32) // Non-super jump
 #endif
 
 #endif // IN_BUTTONS_H

@@ -1324,6 +1324,9 @@ void CPropJeep::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper *pHe
 //-----------------------------------------------------------------------------
 void CPropJeep::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased )
 {
+#ifdef NEO
+	Assert(false); // NEO TODO (Adam) change iButtons to int64 when building this
+#endif // NEO
 	int iButtons = ucmd->buttons;
 
 	//Adrian: No headlights on Superfly.
