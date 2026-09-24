@@ -4,7 +4,6 @@
 #include "strtools.h"
 #include "mathlib/mathlib.h"
 
-static constexpr char CH_XH_SEGEND = ';';
 static constexpr char CH_XH_SEGSKIP = '^';
 
 union SerialVariant
@@ -33,9 +32,17 @@ enum ESerialVariantType
 	return false;
 }
 
+[[nodiscard]] constexpr char SegEnd(const NeoXHairSerial ver)
+{
+	return (ver < NEOXHAIR_SERIAL_ALPHA_V35)
+		? NeoSerial::V1::SEGEND
+		: NeoSerial::V7::SEGEND;
+}
+
 static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 		const ESerialVariantType eType, const SerialVariant varDefault,
-		const SerialVariant varMin, const SerialVariant varMax, SerialContext *ctx)
+		const SerialVariant varMin, const SerialVariant varMax, SerialContext *ctx,
+		const NeoXHairSerial ver)
 {
 	SerialVariant var = varDefault;
 
@@ -48,17 +55,18 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 	int *idx = &ctx->idx;
 	const int iPrevSegment = *idx;
 	Assert(ctx->iSeqSize <= NEO_XHAIR_SEQMAX);
+	const char chXhSegmentEnd = SegEnd(ver);
 
 	for (; *idx < ctx->iSeqSize; ++(*idx))
 	{
 		const char endCh = szMutStr[*idx];
-		if (endCh == CH_XH_SEGEND || endCh == CH_XH_SEGSKIP)
+		if (endCh == chXhSegmentEnd || endCh == CH_XH_SEGSKIP)
 		{
 			szMutStr[*idx] = '\0';
 			const char *pszCurSegment = szMutStr + iPrevSegment;
 			if (pszCurSegment[0] != '\0')
 			{
-				if (endCh == CH_XH_SEGEND) // Value
+				if (endCh == chXhSegmentEnd) // Value
 				{
 					switch (eType)
 					{
@@ -107,20 +115,21 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 
 [[nodiscard]] int SerialInt(const int iVal, const int iCompVal,
 		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
-		const int iMin, const int iMax)
+		const int iMin, const int iMax, const NeoXHairSerial ver)
 {
 	if (ctx->eSerialMode == SERIALMODE_SERIALIZE)
 	{
+		const char chXhSegmentEnd = SegEnd(ver);
 		if (eCompMode == COMPMODE_EQUALS && iVal == iCompVal)
 		{
-			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, CH_XH_SEGEND);
+			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, chXhSegmentEnd);
 			Assert(bPass);
 		}
 		else
 		{
 			Assert(iMin <= iMax);
 			char szTmp[NEO_XHAIR_SEQMAX];
-			V_sprintf_safe(szTmp, "%d%c", (iMin < iMax) ? clamp(iVal, iMin, iMax) : iVal, CH_XH_SEGEND);
+			V_sprintf_safe(szTmp, "%d%c", (iMin < iMax) ? clamp(iVal, iMin, iMax) : iVal, chXhSegmentEnd);
 			V_strcat_safe(szMutStr, szTmp);
 		}
 		return iVal;
@@ -129,24 +138,26 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 	{
 		return DeserialVariant(szMutStr, SERIALVARIANTTYPE_INT,
 				{ .iVal = (eCompMode == COMPMODE_EQUALS) ? iCompVal : iVal },
-				{ .iVal = iMin }, { .iVal = iMax }, ctx).iVal;
+				{ .iVal = iMin }, { .iVal = iMax }, ctx, ver).iVal;
 	}
 }
 
 [[nodiscard]] bool SerialBool(const bool bVal, const bool bCompVal,
-		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx)
+		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
+		const NeoXHairSerial ver)
 {
 	if (ctx->eSerialMode == SERIALMODE_SERIALIZE)
 	{
+		const char chXhSegmentEnd = SegEnd(ver);
 		if (eCompMode == COMPMODE_EQUALS && bVal == bCompVal)
 		{
-			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, CH_XH_SEGEND);
+			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, chXhSegmentEnd);
 			Assert(bPass);
 		}
 		else
 		{
 			char szTmp[NEO_XHAIR_SEQMAX];
-			V_sprintf_safe(szTmp, "%d%c", static_cast<int>(bVal), CH_XH_SEGEND);
+			V_sprintf_safe(szTmp, "%d%c", static_cast<int>(bVal), chXhSegmentEnd);
 			V_strcat_safe(szMutStr, szTmp);
 		}
 		return bVal;
@@ -155,26 +166,27 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 	{
 		return DeserialVariant(szMutStr, SERIALVARIANTTYPE_BOOL,
 				{ .bVal = (eCompMode == COMPMODE_EQUALS) ? bCompVal : bVal },
-				{}, {}, ctx).bVal;
+				{}, {}, ctx, ver).bVal;
 	}
 }
 
 [[nodiscard]] float SerialFloat(const float flVal, const float flCompVal,
 		const ECompMode eCompMode, char (&szMutStr)[NEO_XHAIR_SEQMAX], SerialContext *ctx,
-		const float flMin, const float flMax)
+		const float flMin, const float flMax, const NeoXHairSerial ver)
 {
 	if (ctx->eSerialMode == SERIALMODE_SERIALIZE)
 	{
+		const char chXhSegmentEnd = SegEnd(ver);
 		if (eCompMode == COMPMODE_EQUALS && flVal == flCompVal)
 		{
-			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, CH_XH_SEGEND);
+			[[maybe_unused]] const bool bPass = StrCatCh(szMutStr, chXhSegmentEnd);
 			Assert(bPass);
 		}
 		else
 		{
 			Assert(flMin <= flMax);
 			char szTmp[NEO_XHAIR_SEQMAX];
-			V_sprintf_safe(szTmp, "%.3f%c", (flMin < flMax) ? clamp(flVal, flMin, flMax) : flVal, CH_XH_SEGEND);
+			V_sprintf_safe(szTmp, "%.3f%c", (flMin < flMax) ? clamp(flVal, flMin, flMax) : flVal, chXhSegmentEnd);
 			V_strcat_safe(szMutStr, szTmp);
 		}
 		return flVal;
@@ -183,17 +195,26 @@ static SerialVariant DeserialVariant(char (&szMutStr)[NEO_XHAIR_SEQMAX],
 	{
 		return DeserialVariant(szMutStr, SERIALVARIANTTYPE_FLOAT,
 				{ .flVal = (eCompMode == COMPMODE_EQUALS) ? flCompVal : flVal },
-				{ .flVal = flMin }, { .flVal = flMax }, ctx).flVal;
+				{ .flVal = flMin }, { .flVal = flMax }, ctx, ver).flVal;
 	}
 }
 
-void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSerialMode)
+void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSerialMode,
+	const NeoXHairSerial ver)
 {
+	const char chXhSegmentEnd = SegEnd(ver);
+
 	// NEO NOTE (nullsystem): This RLE doesn't "properly" decode/encode right from the
 	// first character. But in the general case it'll never really hit that scenario
 	// as typically you'll need some properly values to be serialize before the whole
 	// empty segments + run-length encoding becomes useful anyway.
-	static constexpr char SZ_XH_MINSEGCOMPRESS[] = ";;;;";
+	const char szXHairMinSequenceCompress[5]{
+		chXhSegmentEnd,
+		chXhSegmentEnd,
+		chXhSegmentEnd,
+		chXhSegmentEnd,
+		'\0'
+	};
 
 	if (eSerialMode != SERIALMODE_SERIALIZE)
 	{
@@ -205,15 +226,15 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 	int iOffset = 0;
 	const int iSzMutSeqSize = V_strlen(szMutSeq);
 
-	while ((pszToRLE = V_strstr(szMutSeq + iOffset, SZ_XH_MINSEGCOMPRESS)))
+	while ((pszToRLE = V_strstr(szMutSeq + iOffset, szXHairMinSequenceCompress)))
 	{
 		// NEO NOTE (nullsystem): ";;;;" is already 3 segments (after the first),
 		// so start counting from the character after that (in index 4)
 		// It's also the minimal to take use of RLE as ";;;;" -> ";3^" saving 1 byte,
 		// greater saving the greater the repeats.
-		int iLen = sizeof(SZ_XH_MINSEGCOMPRESS) - 2;
-		static_assert((sizeof(SZ_XH_MINSEGCOMPRESS) - 2) == 3);
-		while (((iOffset + iLen + 1) < iSzMutSeqSize) && (pszToRLE[iLen + 1] == CH_XH_SEGEND))
+		int iLen = sizeof(szXHairMinSequenceCompress) - 2;
+		static_assert((sizeof(szXHairMinSequenceCompress) - 2) == 3);
+		while (((iOffset + iLen + 1) < iSzMutSeqSize) && (pszToRLE[iLen + 1] == chXhSegmentEnd))
 		{
 			++iLen;
 		}
@@ -225,8 +246,9 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 		{
 			// iPszToRLEPos == 0 never really going to happen for crosshair, but deal
 			// with the edge case anyway
-			char szTmp[NEO_XHAIR_SEQMAX];
-			V_sprintf_safe(szTmp, "%s%d%c", (iPszToRLEPos == 0) ? ";" : "", iLen, CH_XH_SEGSKIP);
+			const char delim[2]{ chXhSegmentEnd, '\0' };
+			char szTmp[sizeof(szFinalSeq)];
+			V_sprintf_safe(szTmp, "%s%d%c", (iPszToRLEPos == 0) ? delim : "", iLen, CH_XH_SEGSKIP);
 			V_strcat_safe(szFinalSeq, szTmp);
 		}
 		iOffset = iPszToRLEPos + iLen + 1;
@@ -239,3 +261,50 @@ void SerialRLEncode(char (&szMutSeq)[NEO_XHAIR_SEQMAX], const ESerialMode eSeria
 	V_strcpy_safe(szMutSeq, szFinalSeq);
 }
 
+[[nodiscard]] bool NagBadSegEnd(const char* pszContext, const char* pszSequence,
+	const int seqMax, NeoXHairSerial ver)
+{
+	if (seqMax <= 0 || seqMax > NEO_XHAIR_SEQMAX)
+	{
+		AssertMsg(seqMax >= 0, "somehow passed negative seqMax?");
+		return false;
+	}
+
+	const char correctDelimiter = SegEnd(ver),
+				wrongDelimiter = SegEnd(ver < NEOXHAIR_SERIAL_ALPHA_V35
+		? NEOXHAIR_SERIAL_ALPHA_V35
+		: NEOXHAIR_SERIAL_ALPHA_V29);
+	Assert(correctDelimiter != wrongDelimiter);
+	Assert(correctDelimiter != CH_XH_SEGSKIP);
+	Assert(wrongDelimiter != CH_XH_SEGSKIP);
+
+	char* pPointTo = nullptr;
+	bool ok = true;
+	for (int i = 0; i < seqMax; ++i)
+	{
+		char c = pszSequence[i];
+		if (c == '\0')
+			break;
+		if (c == wrongDelimiter)
+		{
+			pPointTo = new char[i + 2];
+			V_memset(pPointTo, ' ', i);
+			pPointTo[i] = '^';
+			pPointTo[i + 1] = '\0';
+			Warning("%s: replace the \"%c\" characters with \"%c\" in your serialization syntax.\n"
+				"Failed for input at pos %d:\n\t%s\n\t%s\n",
+				pszContext,
+				wrongDelimiter, correctDelimiter,
+				i, pszSequence,
+				pPointTo);
+			ok = false;
+			break;
+		}
+	}
+	AssertMsg(ok == (pPointTo == nullptr), "should not alloc pPointTo if ok and vice versa");
+	if (pPointTo)
+	{
+		delete[] pPointTo;
+	}
+	return ok;
+}
