@@ -125,6 +125,11 @@ public:
 	// returns true if the player is currently speaking
 	bool	IsPlayerSpeaking(int iPlayerIndex);
 
+#ifdef NEO
+	// returns true if the player is speaking in non proximity voice chat
+	bool	IsPlayerSpeakingNonProximity(int iPlayerIndex);
+#endif // NEO
+
 	// returns true if the local player is attempting to speak
 	bool	IsLocalPlayerSpeaking( void );
 
@@ -153,6 +158,10 @@ private:
 	// This is the gamerules-defined list of players that you can hear. It is based on what teams people are on 
 	// and is totally separate from the ban list. Indexed by client index.
 	CPlayerBitVec	m_AudiblePlayers;
+
+#ifdef NEO
+	CPlayerBitVec	m_ProximityPlayers;
+#endif // NEO
 
 	// Players who have spoken at least once in the game so far
 	CPlayerBitVec	m_VoiceEnabledPlayers;	

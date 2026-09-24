@@ -154,5 +154,29 @@
 				"width"		"64"
 				"height"	"64"
 		}
+		"voice_global"
+		{
+				"file"		"vgui/hud/voice_global"
+				"x"		"0"
+				"y"		"0"
+				"width"		"64"
+				"height"	"64"
+		}
+		"voice_team"
+		{
+				"file"		"vgui/hud/voice_team"
+				"x"		"0"
+				"y"		"0"
+				"width"		"64"
+				"height"	"64"
+		}
+		"voice_mute"
+		{
+				"file"		"vgui/hud/voice_mute"
+				"x"		"0"
+				"y"		"0"
+				"width"		"64"
+				"height"	"64"
+		}
 	}	
 }

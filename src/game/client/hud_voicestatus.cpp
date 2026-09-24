@@ -15,6 +15,9 @@
 #include "c_playerresource.h"
 #include "voice_common.h"
 #include "vgui_avatarimage.h"
+#ifdef NEO
+#include "in_main.h"
+#endif // NEO
 
 ConVar *sv_alltalk = NULL;
 
@@ -35,6 +38,11 @@ public:
 
 private:
 	CHudTexture *m_pVoiceIcon;
+#ifdef NEO
+	CHudTexture *m_pTeamVoiceIcon;
+	CHudTexture *m_pGlobalVoiceIcon;
+	CHudTexture *m_pNoVoiceIcon;
+#endif // NEO
 
 	Color	m_clrIcon;
 };
@@ -67,22 +75,73 @@ void CHudVoiceSelfStatus::ApplySchemeSettings(vgui::IScheme *pScheme)
 void CHudVoiceSelfStatus::VidInit( void )
 {
 	m_pVoiceIcon = gHUD.GetIcon( "voice_self" );
+#ifdef NEO
+	m_pGlobalVoiceIcon = gHUD.GetIcon("voice_global");
+	m_pTeamVoiceIcon = gHUD.GetIcon("voice_team");
+	m_pNoVoiceIcon = gHUD.GetIcon("voice_mute");
+#endif // NEO
 }
 
 bool CHudVoiceSelfStatus::ShouldDraw()
 {
+#ifdef NEO
+	return IsLocalPlayerHoldingAVoiceTransmitKey();// || GetClientVoiceMgr()->IsLocalPlayerSpeaking();
+#else
 	return GetClientVoiceMgr()->IsLocalPlayerSpeaking();
+#endif // NEO
 }
 
 void CHudVoiceSelfStatus::Paint()
 {
+#ifdef NEO
+	static CHudTexture* icon = m_pVoiceIcon;
+	static ConVarRef sv_neo_proximity_VoIP("sv_neo_proximity_VoIP");
+	switch (GetVoiceTransmitType())
+	{
+		case NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_NONE:
+			if (!IsLocalPlayerHoldingAVoiceTransmitKey())
+			{
+				return;
+			}
+			icon = m_pNoVoiceIcon;
+			break;
+		case NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_GLOBALTEAM:
+			if (sv_alltalk->GetBool())
+			{
+				icon = m_pGlobalVoiceIcon;
+			}
+			else
+			{
+				icon = m_pTeamVoiceIcon;
+			}
+			break;
+		case NeoVoiceTransmitType::NEO_VOICE_TRANSMIT_LOCAL:
+			if (!sv_neo_proximity_VoIP.GetBool())
+			{
+				return;
+			}
+			icon = m_pVoiceIcon;
+			break;
+		default:
+			Assert(false);
+			return;
+	}
+
+	if (!icon)
+		return;
+#else
    if( !m_pVoiceIcon )
 		return;
+#endif // NEO
 	
 	int x, y, w, h;
 	GetBounds( x, y, w, h );
 
+#ifdef NEO
+	icon->DrawSelf( 0, 0, w, h, m_clrIcon );
+#else
 	m_pVoiceIcon->DrawSelf( 0, 0, w, h, m_clrIcon );
+#endif // NEO
 }
 
 
@@ -208,7 +267,11 @@ void CHudVoiceStatus::OnThink( void )
 	for ( int iPlayerIndex=1; iPlayerIndex<=gpGlobals->maxClients; iPlayerIndex++ )
 	{
 		int activeSpeakerIndex = FindActiveSpeaker(iPlayerIndex);
+#ifdef NEO
+		bool bSpeaking = GetClientVoiceMgr()->IsPlayerSpeakingNonProximity(iPlayerIndex);
+#else
 		bool bSpeaking = GetClientVoiceMgr()->IsPlayerSpeaking(iPlayerIndex);
+#endif // NEO
 
 		if (activeSpeakerIndex != m_SpeakingList.InvalidIndex() )
 		{
