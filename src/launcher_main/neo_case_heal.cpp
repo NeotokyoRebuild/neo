@@ -10,7 +10,7 @@
 // Heal hack :: fix poisoned installations
 
 // Binaries the engine loads by exact mixed-case name. 
-// Keep this list in sync with src/devtools/check_depot_casing.sh. 
+// Keep this list in sync with tools/check-depot-casing.sh. 
 // It's hacky but it works, and should be harmless to leave in 
 // clearly marked, use `git blame` to find the commit to revert. 
 static const char *k_pszCanonicalBinaryPaths[] =
