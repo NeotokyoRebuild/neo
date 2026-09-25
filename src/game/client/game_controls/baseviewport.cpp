@@ -237,7 +237,7 @@ void CBaseViewport::OnScreenSizeChanged(int iOldWide, int iOldTall)
 	if (pNeoRules)
 	{
 		iHiddenNeoBits = pNeoRules->GetHiddenHudElements();
-		pNeoRules->SetHiddenHudElements(0, true);
+		pNeoRules->SetHiddenHudElements(0);
 	}
 #endif
 
@@ -253,7 +253,7 @@ void CBaseViewport::OnScreenSizeChanged(int iOldWide, int iOldTall)
 #ifdef NEO
 	if (pNeoRules)
 	{
-		pNeoRules->SetHiddenHudElements(iHiddenNeoBits, true);
+		pNeoRules->SetHiddenHudElements(iHiddenNeoBits);
 	}
 #endif
 }

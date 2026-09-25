@@ -236,11 +236,7 @@ public:
 	virtual int GetGameType(void) OVERRIDE;
 
 	int GetHiddenHudElements() const { return m_iHiddenHudElements; }
-	void SetHiddenHudElements(int bits
-#ifdef CLIENT_DLL
-		, bool network
-#endif
-	);
+	void SetHiddenHudElements(int bits);
 
 	int GetForcedTeam();
 	int GetForcedClass();

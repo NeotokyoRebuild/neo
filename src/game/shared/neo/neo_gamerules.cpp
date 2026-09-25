@@ -4638,18 +4638,9 @@ int CNEORules::GetGameType(void)
 	return m_nGameTypeSelected;
 }
 
-void CNEORules::SetHiddenHudElements(int bits
-#ifdef CLIENT_DLL
-	, bool network
-#endif
-)
+void CNEORules::SetHiddenHudElements(int bits)
 {
-#ifdef CLIENT_DLL
-	if (!network)
-		m_iHiddenHudElements.m_Value = bits;
-	else
-#endif
-		m_iHiddenHudElements = bits;
+	m_iHiddenHudElements = bits;
 }
 
 int CNEORules::GetForcedTeam(void)
