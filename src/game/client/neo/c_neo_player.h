@@ -93,6 +93,7 @@ public:
 
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
+	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
 
 	void Lean(void);
 
