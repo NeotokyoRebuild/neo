@@ -12,6 +12,7 @@
 #include <vgui_controls/Controls.h>
 #include <vgui/ISurface.h>
 #include "vgui/ISystem.h"
+#include "view.h"
 #include "voice_status.h"
 
 #include "neo_ui.h"
@@ -662,7 +663,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
 		pVideo->iFov = cvr->neo_fov.GetInt();
 		pVideo->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
-		pVideo->bSoftwareCursor = cvr->cl_software_cursor.GetBool();
+		pVideo->iSoftwareCursor = cvr->cl_software_cursor.GetInt();
 	}
 	{
 		NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
@@ -933,7 +934,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
 		cvr->neo_fov.SetValue(pVideo->iFov);
 		cvr->neo_viewmodel_fov_offset.SetValue(pVideo->iViewmodelFov);
-		cvr->cl_software_cursor.SetValue(pVideo->bSoftwareCursor);
+		cvr->cl_software_cursor.SetValue(pVideo->iSoftwareCursor);
 	}
 	{
 		const NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
@@ -1353,7 +1354,11 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::Slider(L"Gamma", &pVideo->flGamma, 1.6, 2.6, 2, 0.1f);
 	NeoUI::SliderInt(L"FOV", &pVideo->iFov, MIN_FOV, MAX_FOV);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pVideo->iViewmodelFov, -20, 40);
-	NeoUI::RingBoxBool(L"Software Cursor", &pVideo->bSoftwareCursor);
+#ifndef LINUX // disabled on Linux for now, see bug #2114
+	NeoUI::RingBoxFlag(L"Force software cursor", ESoftwareCursor::EnabledForWindows, &pVideo->iSoftwareCursor);
+	// workaround for Windows bug #1705
+	NeoUI::RingBoxFlag(L"Never auto-enable software cursor", ESoftwareCursor::EnabledForWindowsInvertedMouseOnly, &pVideo->iSoftwareCursor, RINGBOX_BOOL_LABELS_REVERSE);
+#endif
 
 	NeoUI::Divider(L"VISUALS");
 	NeoUI::RingBox(L"Model detail", QUALITY_LABELS, 3, &pVideo->iModelDetail);

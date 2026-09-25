@@ -93,11 +93,9 @@ void CNeoLoading::OnMessage(const KeyValues *params, vgui::VPANEL fromPanel)
 	else if (V_strcmp(pSzMsgName, "deactivate") == 0)
 	{
 		g_pNeoRoot->m_bOnLoadingScreen = false;
-		static ConVarRef cl_software_cursor( "cl_software_cursor" );
 
 		// Revert the software cursor option back to user preference once we exit the loading screen.
-		Assert(cl_software_cursor.IsValid());
-		vgui::surface()->SetSoftwareCursor(cl_software_cursor.GetBool());
+		SwCursorHack_RestoreValue();
 
 		if (engine->IsConnected() && !engine->IsLevelMainMenuBackground())
 		{
