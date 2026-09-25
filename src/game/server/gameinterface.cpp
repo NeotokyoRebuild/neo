@@ -2900,6 +2900,10 @@ void CServerGameClients::ClientPutInServer( edict_t *pEntity, const char *player
 
 void CServerGameClients::ClientCommand( edict_t *pEntity, const CCommand &args )
 {
+#ifdef NEO
+	if (gpGlobals->eLoadType == MapLoad_Background)
+		return;
+#endif
 	CBasePlayer *pPlayer = ToBasePlayer( GetContainingEntity( pEntity ) );
 	::ClientCommand( pPlayer, args );
 }
