@@ -234,7 +234,10 @@ public:
 #endif
 
 	virtual int GetGameType(void) OVERRIDE;
-	int GetHiddenHudElements();
+
+	int GetHiddenHudElements() const { return m_iHiddenHudElements; }
+	void SetHiddenHudElements(int bits);
+
 	int GetForcedTeam();
 	int GetForcedClass();
 	int GetForcedSkin();

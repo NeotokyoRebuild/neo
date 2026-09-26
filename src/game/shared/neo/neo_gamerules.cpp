@@ -4638,9 +4638,9 @@ int CNEORules::GetGameType(void)
 	return m_nGameTypeSelected;
 }
 
-int CNEORules::GetHiddenHudElements(void)
+void CNEORules::SetHiddenHudElements(int bits)
 {
-	return m_iHiddenHudElements;
+	m_iHiddenHudElements = bits;
 }
 
 int CNEORules::GetForcedTeam(void)
