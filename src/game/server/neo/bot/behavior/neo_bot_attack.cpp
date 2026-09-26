@@ -435,6 +435,17 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 
 //---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotAttack::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
+{
+	m_path.Invalidate();
+	m_chasePath.Invalidate();
+	m_attackCoverArea = nullptr;
+
+	return Continue();
+}
+
+
+//---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotAttack::OnStuck( CNEOBot *me )
 {
 	m_path.Invalidate();
