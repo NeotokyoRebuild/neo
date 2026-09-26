@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "fmtstr.h"
+#include "movevars_shared.h"
 
 #include "nav_mesh.h"
 #include "neo_player.h"
@@ -36,11 +37,17 @@ ConVar neo_bot_fire_weapon_allowed( "neo_bot_fire_weapon_allowed", "1", FCVAR_CH
 
 ConVar neo_bot_allow_retreat( "neo_bot_allow_retreat", "1", FCVAR_CHEAT, "If zero, bots will not attempt to retreat if they are are in a bad situation." );
 
-ConVar neo_bot_recon_superjump_min_dist( "neo_bot_recon_superjump_min_dist", "4096", FCVAR_NONE,
-	"Minimum straight-line path distance required for a Recon bot to super jump while moving", true, 0, false, 0 );
+ConVar neo_bot_recon_superjump_travel_min_dist( "neo_bot_recon_superjump_travel_min_dist", "300", FCVAR_NONE,
+	"Minimum length of straight path ahead required for a Recon bot to super jump while traveling", true, 0, false, 0 );
+
+ConVar neo_bot_recon_superjump_danger_min_dist( "neo_bot_recon_superjump_danger_min_dist", "200", FCVAR_NONE,
+	"Minimum straight-line path distance required for a Recon bot to super jump when in danger", true, 0, false, 0 );
 
 ConVar neo_bot_recon_superjump_min_accuracy( "neo_bot_recon_superjump_min_accuracy", "0.96", FCVAR_NONE,
 	"Minimum directional alignment with path required for a Recon bot to super jump while moving", true, 0.1f, false, 1.0f );
+
+ConVar neo_bot_recon_superjump_min_speed( "neo_bot_recon_superjump_min_speed", "0.5", FCVAR_NONE,
+	"Minimum speed in the jump direction, as a fraction of run speed, required for a Recon bot to super jump", true, 0.0f, false, 0.0f );
 
 //---------------------------------------------------------------------------------------------
 Action< CNEOBot > *CNEOBotMainAction::InitialContainedAction( CNEOBot *me )
@@ -363,11 +370,73 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 		return;
 	}
 
+	// A jump button still held down would not register as a new press, so no boost would follow
+	if (me->m_nButtons & IN_JUMP)
+	{
+		return;
+	}
+
+	// Pressing jump lets go of crouch, and game movement refuses a jump while the bot stands back up,
+	// but the boost would still fire and only push the bot along the ground
+	if ((me->GetFlags() & FL_DUCKING) || me->m_Local.m_bDucking)
+	{
+		return;
+	}
+
+	// Compute boost direction
+	const bool bLaunchBackward = (me->m_nButtons & IN_BACK) != 0;
+	Vector vecLaunchDir;
+	me->EyeVectors( &vecLaunchDir );
+	vecLaunchDir.z = 0.0f;
+	vecLaunchDir.NormalizeInPlace();
+	if (bLaunchBackward)
+	{
+		vecLaunchDir = -vecLaunchDir;
+	}
+
+	// The boost adds to the bot's current velocity, so a jump from a standstill or a sideways
+	// shuffle spends the aux on a short hop that goes somewhere other than the launch direction
+	Vector vecVelocity = me->GetAbsVelocity();
+	vecVelocity.z = 0.0f;
+	if (vecVelocity.Dot(vecLaunchDir) < neo_bot_recon_superjump_min_speed.GetFloat() * me->GetPlayerMaxSpeed())
+	{
+		return;
+	}
+
+	// Predict the flight: the boost adds run speed along the launch direction (less when strafing)
+	// to the current velocity, and a Recon jump stays up for 2 * sqrt(2h / g) over flat ground
+	constexpr float flReconJumpHeight = 54.0f; // CGameMovement::CheckJumpButton's Recon jump
+	constexpr float flStrafeBoostScale = 0.70710678f; // CNEO_Player::SuperJump's strafing nerf
+	float flBoost = me->GetPlayerMaxSpeed();
+	if (me->m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
+	{
+		flBoost *= flStrafeBoostScale;
+	}
+
+	Vector vecFlightDir = vecVelocity + vecLaunchDir * flBoost;
+	const float flFlightTime = 2.0f * sqrtf( 2.0f * flReconJumpHeight / GetCurrentGravity() );
+	const float flFlightDist = vecFlightDir.NormalizeInPlace() * flFlightTime;
+	constexpr float flSlideDist = 100.0f;
+
 	bool bImmediateDanger = gpGlobals->curtime - me->GetLastDamageTime() <= 2.0f;
 
-	if (!bImmediateDanger
-		&& (me->m_nButtons & IN_FORWARD)
-		&& (neo_bot_recon_superjump_min_dist.GetFloat() > 1))
+	// Relax eligibility checks if in danger
+	const float flDangerMinDist = neo_bot_recon_superjump_danger_min_dist.GetFloat();
+	if (bImmediateDanger && flDangerMinDist > 1.0f)
+	{
+		const PathFollower *pDangerPath = me->GetCurrentPath();
+		if (pDangerPath && pDangerPath->IsValid())
+		{
+			Vector vecToEnd = pDangerPath->GetEndPosition() - me->GetAbsOrigin();
+			vecToEnd.z = 0.0f;
+			if (vecToEnd.Length() < flDangerMinDist)
+			{
+				return;
+			}
+		}
+	}
+
+	if (!bImmediateDanger && (neo_bot_recon_superjump_travel_min_dist.GetFloat() > 1))
 	{
 		if (!m_reconSuperJumpPathCheckTimer.IsElapsed())
 		{
@@ -391,20 +460,17 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 		Vector vecMovement = me->GetLocomotionInterface()->GetGroundMotionVector();
 		vecMovement.z = 0.0f;
 		vecMovement.NormalizeInPlace();
-
-		// Get the bot's facing direction
-		Vector vecFacing;
-		me->EyeVectors( &vecFacing );
-		vecFacing.z = 0.0f;
-		vecFacing.NormalizeInPlace();
-
-		if (vecMovement.Dot(vecFacing) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+		if (vecMovement.Dot(vecLaunchDir) < neo_bot_recon_superjump_min_accuracy.GetFloat())
 		{
 			return;
 		}
 
-		// Check that upcoming path is in line of a jump
+		// Check that upcoming path is in line of a jump, leg by leg, so that the runway
+		// ends at the first turn instead of the jump and its slide carrying us past it
+		const float flMinRunway = Max( neo_bot_recon_superjump_travel_min_dist.GetFloat(), flFlightDist + flSlideDist );
 		bool bCanJump = false;
+		Vector vecLegStart = me->GetAbsOrigin();
+		float flRunway = 0.0f;
 		while (seg)
 		{
 			constexpr int maskAttributesToStopPathEval = (
@@ -427,25 +493,27 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 				return; // Don't superjump toward areas with potentially problematic attributes
 			}
 
-			// Sanity check that each waypoint is relatively aligned with our jump direction
-			Vector vecToWaypoint = seg->pos - me->GetAbsOrigin();
-			vecToWaypoint.z = 0.0f;
-			
-			float flDist = vecToWaypoint.NormalizeInPlace();
+			Vector vecLeg = seg->pos - vecLegStart;
+			vecLeg.z = 0.0f;
+			vecLegStart = seg->pos;
 
-			if (vecMovement.Dot(vecToWaypoint) < neo_bot_recon_superjump_min_accuracy.GetFloat())
+			const float flLegLength = vecLeg.NormalizeInPlace();
+			if ( !IsFinite( flLegLength ) )
+			{
+				return; // Just in case of a bad value
+			}
+
+			// A purely vertical leg (a drop or a climb) has no heading to compare
+			if (flLegLength > 1.0f && vecLaunchDir.Dot(vecLeg) < neo_bot_recon_superjump_min_accuracy.GetFloat())
 			{
 				return; // Diverges too much from trajectory
 			}
 
-			if (flDist >= neo_bot_recon_superjump_min_dist.GetFloat())
+			flRunway += flLegLength;
+			if (flRunway >= flMinRunway)
 			{
 				bCanJump = true;
 				break;
-			}
-			else if ( !IsFinite( flDist ) || flDist < 0 )
-			{
-				return; // Just in case of a bad value
 			}
 
 			seg = path->NextSegment(seg);
@@ -457,13 +525,50 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 		}
 	}
 
-	// NEO Jank: We allow bots to super jump even if they didn't perform the prerequisite inputs
-	// For example, they don't consistently hold sprint when it's appropriate so we just boost their speed
-	me->GetLocomotionInterface()->Run();
-	me->PressRunButton();
+	// Check for holes in the ground under the flight, where it comes down, where it slides on to, and either side of that line
+	const Vector vecFeet = me->GetAbsOrigin();
+	const Vector vecSide( -vecFlightDir.y, vecFlightDir.x, 0.0f );
+	constexpr float flMaxDrop = 250.0f;
+	constexpr int nNumProbes = 4; // the last one is where the jump comes down
+	constexpr float flProbeSideOffset = 64.0f;
+
+	for (int i = 1; i <= nNumProbes + 1; ++i)
+	{
+		const float flProbeDist = (i <= nNumProbes) ? flFlightDist * i / nNumProbes : flFlightDist + flSlideDist;
+		for (int nSide = -1; nSide <= 1; ++nSide)
+		{
+			const Vector vecProbeStart = vecFeet + vecFlightDir * flProbeDist + vecSide * (flProbeSideOffset * nSide);
+			Vector vecProbeEnd   = vecProbeStart - Vector(0.0f, 0.0f, flMaxDrop);
+
+			trace_t tr;
+			UTIL_TraceLine(vecProbeStart, vecProbeEnd, MASK_SOLID_BRUSHONLY, me, COLLISION_GROUP_NONE, &tr);
+
+			if (!tr.DidHit())
+			{
+				// Abort if the floor at any sample point ahead is missing
+				// or more than flMaxDrop below the bot's feet (e.g. any long fall)
+				return;
+			}
+		}
+	}
+
+	// CNEO_Player boosts a newly pressed jump while run and exactly one of forward or back are held,
+	// so hold the launch direction's key this tick in case path following just pressed the other
+	if (bLaunchBackward)
+	{
+		me->ReleaseForwardButton();
+		me->PressBackwardButton();
+	}
+	else
+	{
+		me->ReleaseBackwardButton();
+		me->PressForwardButton();
+	}
+
+	// Locomotion's Jump() tracks the jump but presses a plain one, which lets go of run, so the super jump buttons go last
 	me->GetLocomotionInterface()->Jump();
-	me->PressJumpButton();
-	me->SuperJump();
+	me->GetLocomotionInterface()->Run();
+	me->PressSuperJumpButtons();
 }
 
 

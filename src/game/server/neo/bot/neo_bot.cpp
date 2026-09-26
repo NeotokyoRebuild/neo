@@ -537,6 +537,43 @@ void CNEOBot::PressSpecialFireButton(float duration)
 
 
 //-----------------------------------------------------------------------------------------------------
+void CNEOBot::PressJumpButton(float duration)
+{
+	BaseClass::PressJumpButton(duration);
+
+	// A Recon jumping while holding run super jumps, which only ReconConsiderSuperJump checks is safe,
+	// so a jump for anything else (a ledge, a gap, getting unstuck) holds off run for the rest of the tick
+	if (GetClass() == NEO_CLASS_RECON)
+	{
+		m_nPlainJumpTick = gpGlobals->tickcount;
+		ReleaseRunButton();
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+void CNEOBot::PressRunButton(float duration)
+{
+	if (m_nPlainJumpTick == gpGlobals->tickcount)
+	{
+		return;
+	}
+
+	BaseClass::PressRunButton(duration);
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+// Jump with run held, which CNEO_Player turns into a super jump for a Recon
+void CNEOBot::PressSuperJumpButtons()
+{
+	m_nPlainJumpTick = -1;
+	BaseClass::PressJumpButton();
+	BaseClass::PressRunButton();
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 CNEOBot::CNEOBot()
 {
 	m_body = new CNEOBotBody(this);

@@ -106,6 +106,9 @@ public:
 	virtual void PressFireButton(float duration = -1.0f) OVERRIDE;
 	virtual void PressAltFireButton(float duration = -1.0f) OVERRIDE;
 	virtual void PressSpecialFireButton(float duration = -1.0f) OVERRIDE;
+	virtual void PressJumpButton(float duration = -1.0f) OVERRIDE;
+	virtual void PressRunButton(float duration = -1.0f) OVERRIDE;
+	void PressSuperJumpButtons();
 
 	// INextBot
 	virtual CNEOBotLocomotion* GetLocomotionInterface(void) const { return m_locomotor; }
@@ -528,6 +531,8 @@ private:
 
 	CountdownTimer m_repathAroundFriendlyTimer;
 	PathFollower m_repathAroundFriendlyFollower;
+
+	int m_nPlainJumpTick = -1;
 
 	float m_flPhyscannonPickupTime = 0.0f;
 
