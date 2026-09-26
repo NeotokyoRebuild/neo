@@ -13,8 +13,13 @@ jobs:
   review-policy:
     name: Review Policy
     runs-on: ubuntu-latest
+    timeout-minutes: 1
+    concurrency:
+      group: review-policy-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     steps:
       - name: Require two team approvals for non-team authors
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
