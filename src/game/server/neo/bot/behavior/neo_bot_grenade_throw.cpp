@@ -7,7 +7,6 @@
 #include "weapon_grenade.h"
 #include "weapon_smokegrenade.h"
 #include "nav_mesh.h"
-#include "nav_pathfind.h"
 #include "bot/neo_bot_path_compute.h"
 
 extern ConVar sv_neo_bot_grenade_frag_safety_range_multiplier;
@@ -43,68 +42,6 @@ CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const C
 		m_vecThreatLastKnownPos = vec3_invalid;
 	}
 }
-
-//---------------------------------------------------------------------------------------------
-// Used to anticipate the emergence point from cover ahead of a path
-// Is calculated in reverse of path to find the farthest point from bot
-// (assuming "familiar" position is closer to the bot than the "obscured" position)
-const Vector& CNEOBotGrenadeThrow::FindEmergencePointAlongPath( const CNEOBot *me, const Vector &familiarPos, const Vector &obscuredPos )
-{
-	CNavArea *familiarArea = TheNavMesh->GetNavArea( familiarPos );
-	if ( !familiarArea )
-	{
-		return vec3_invalid;
-	}
-
-	CNavArea *obscuredArea = TheNavMesh->GetNavArea( obscuredPos );
-	if ( !obscuredArea )
-	{
-		return vec3_invalid;
-	}
-
-	ShortestPathCost cost;
-	const Vector& vecGoal = obscuredPos;
-	if ( NavAreaBuildPath( familiarArea, obscuredArea, &vecGoal, cost ) )
-	{
-		// search backwards from obscured position to find the first point visible to me
-		for ( CNavArea *area = obscuredArea; area; area = area->GetParent() )
-		{
-			// DEBUG: Draw emergence path
-			// Color: Yellow (255, 255, 0) to distinguish path analysis
-			if ( sv_neo_bot_grenade_debug_behavior.GetBool() )
-			{
-				if ( area->GetParent() )
-				{
-					NDebugOverlay::HorzArrow( area->GetCenter(), area->GetParent()->GetCenter(), 2.0f, 255, 255, 0, 255, true, 2.0f );
-				}
-				else
-				{
-					NDebugOverlay::Cross3D( area->GetCenter(), 16.0f, 255, 255, 0, true, 2.0f );
-				}
-			}
-
-			const Vector& vecTest = area->GetCenter();
-
-			if ( me->IsLineOfFireClear( vecTest, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )
-			{
-				// DEBUG: Draw emergence point
-				if ( sv_neo_bot_grenade_debug_behavior.GetBool() )
-				{
-					NDebugOverlay::Box( vecTest, Vector(-16,-16,-16), Vector(16,16,16), 255, 255, 0, 50, 2.0f );
-				}
-				return vecTest;
-			}
-
-			if ( area == familiarArea )
-			{
-				return vec3_invalid;
-			}
-		}
-	}
-
-	return vec3_invalid;
-}
-
 
 //---------------------------------------------------------------------------------------------
 class CFindVantagePointTargetPos : public ISearchSurroundingAreasFunctor
@@ -524,6 +461,8 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 	// and want to bypass the weapon's internal scheduled throw to ensure it happens NOW.
 	if ( bAimOnTarget )
 	{
+		OnThrowReleased( me );
+
 		// Play first person throw animation
 		pWep->SendWeaponAnim( ACT_VM_THROW );
 
