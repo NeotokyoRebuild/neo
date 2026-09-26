@@ -879,6 +879,7 @@ void CNEORules::ResetMapSessionCommon()
 	m_pRestoredInfos.Purge();
 	m_readyAccIDs.Purge();
 	m_bIgnoreOverThreshold = false;
+	ClearSnapshots();
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -2037,39 +2038,55 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		// I'm not touching this right now cuz I don't want to risk breaking the parity behaviour
 
 		Assert(!m_ghostSpawns.IsEmpty());
-		int desiredSpawn; // zero-indexed
+		int desiredSpawn = -1; // zero-indexed
 
-		// If round number is zero, the match hasn't started yet, so the bias is not meaningful.
-		// Parity behaviour is to not spawn a ghost at all, but it's more useful to just spawn it somewhere.
-		if (!sv_neo_ghost_spawn_bias.GetBool() || roundNumber() == 0)
+		if (m_iGhostSpawnEntIdx >= 0)
 		{
-			desiredSpawn = RandomInt(0, m_ghostSpawns.Count()-1);
-		}
-		else
-		{
-			// Round numbers are one-indexed
-			Assert(roundNumber() > 0);
-			bool isFirstRound = (roundNumber() == 1);
-			if (isFirstRound)
+			for (int i = 0; i < m_ghostSpawns.Count(); ++i)
 			{
-				// Plugin parity: we want to shuffle the list of ghost spawns once at match beginning,
-				// and then play through them in round pairs, using the cycling logic right below this if-block.
-				m_ghostSpawns.Shuffle();
+				if (m_ghostSpawns[i]->entindex() == m_iGhostSpawnEntIdx)
+				{
+					desiredSpawn = i;
+					break;
+				}
+			}
+		}
+
+		if (desiredSpawn < 0)
+		{
+			// If round number is zero, the match hasn't started yet, so the bias is not meaningful.
+			// Parity behaviour is to not spawn a ghost at all, but it's more useful to just spawn it somewhere.
+			if (!sv_neo_ghost_spawn_bias.GetBool() || roundNumber() == 0)
+			{
+				desiredSpawn = RandomInt(0, m_ghostSpawns.Count()-1);
+			}
+			else
+			{
+				// Round numbers are one-indexed
+				Assert(roundNumber() > 0);
+				bool isFirstRound = (roundNumber() == 1);
+				if (isFirstRound)
+				{
+					// Plugin parity: we want to shuffle the list of ghost spawns once at match beginning,
+					// and then play through them in round pairs, using the cycling logic right below this if-block.
+					m_ghostSpawns.Shuffle();
+				}
+
+				desiredSpawn = Ceil2Int(roundNumber() / 2.f) % m_ghostSpawns.Count();
 			}
 
-			desiredSpawn = Ceil2Int(roundNumber() / 2.f) % m_ghostSpawns.Count();
-		}
-
-		if (sv_neo_ghost_spawn_force.GetInt() >= 0)
-		{
-			desiredSpawn = sv_neo_ghost_spawn_force.GetInt() % m_ghostSpawns.Count();
-			Msg("sv_neo_ghost_spawn_force: pinned ghost spawn %d of %d for this map\n",
-				desiredSpawn, m_ghostSpawns.Count());
+			if (sv_neo_ghost_spawn_force.GetInt() >= 0)
+			{
+				desiredSpawn = sv_neo_ghost_spawn_force.GetInt() % m_ghostSpawns.Count();
+				Msg("sv_neo_ghost_spawn_force: pinned ghost spawn %d of %d for this map\n",
+					desiredSpawn, m_ghostSpawns.Count());
+			}
 		}
 
 		Assert(desiredSpawn >= 0);
 		Assert(desiredSpawn < m_ghostSpawns.Count());
 
+		m_iGhostSpawnEntIdx = -1;
 		auto *ghostSpawn = m_ghostSpawns[desiredSpawn].Get();
 		if (ghostSpawn)
 		{
@@ -2091,6 +2108,7 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 				m_pGhost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
 				m_pGhost->Drop(vec3_origin);
 				ghostSpawn->m_OnSpawnedHere.FireOutput(m_pGhost, m_pGhost);
+				m_iGhostSpawnEntIdx = ghostSpawn->entindex();
 			}
 		}
 		else
@@ -2874,8 +2892,10 @@ void CNEORules::StartNextRound()
 		pJinrai->SetRoundsWon(0);
 		pNSF->SetScore(0);
 		pNSF->SetRoundsWon(0);
+		ClearSnapshots();
 	}
 
+	m_iGhostSpawnEntIdx = -1;
 	if (m_iNextRestore.flags & NEXT_ROUND_GAMERULE_RESTORE_FLAG_SCORES)
 	{
 		GetGlobalTeam(TEAM_JINRAI)->SetScore(m_iNextRestore.iScoreJinrai);
@@ -2891,6 +2911,10 @@ void CNEORules::StartNextRound()
 	{
 		GetGlobalTeam(TEAM_JINRAI)->SetRoundsWon(m_iNextRestore.iRoundsWonJinrai);
 		GetGlobalTeam(TEAM_NSF)->SetRoundsWon(m_iNextRestore.iRoundsWonNSF);
+	}
+	if (m_iNextRestore.flags & NEXT_ROUND_GAMERULE_RESTORE_FLAG_GHOST)
+	{
+		m_iGhostSpawnEntIdx = m_iNextRestore.iGhostSpawnEntIdx;
 	}
 	m_iNextRestore = {}; // Zero-out
 
@@ -2926,6 +2950,21 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
+		// NEXT_ROUND_PLAYER_RESTORE_FLAG_SPAWN already set by NeoSpawnManager::RequestSpawn
+		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_WEAPON)
+		{
+			pPlayer->m_iLoadoutWepChoice = pPlayer->m_iNextRestore.iLoadoutWepChoice;
+		}
+		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_XP)
+		{
+			pPlayer->m_iXP.Set(pPlayer->m_iNextRestore.iXP);
+		}
+		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_DEATH)
+		{
+			pPlayer->ResetDeathCount();
+			pPlayer->IncrementDeathCount(pPlayer->m_iNextRestore.iDeaths);
+		}
+
 		pPlayer->m_bKilledInflicted = false;
 		if (pPlayer->GetActiveWeapon())
 		{
@@ -2943,16 +2982,6 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bIsPendingTKKick = false;
 
 		pPlayer->SetTestMessageVisible(false);
-
-		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_XP)
-		{
-			pPlayer->m_iXP.Set(pPlayer->m_iNextRestore.iXP);
-		}
-		if (pPlayer->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_DEATH)
-		{
-			pPlayer->ResetDeathCount();
-			pPlayer->IncrementDeathCount(pPlayer->m_iNextRestore.iDeaths);
-		}
 		pPlayer->m_iNextRestore = {}; // Zero-out
 	}
 
@@ -2965,7 +2994,6 @@ void CNEORules::StartNextRound()
 	V_memset(m_arrayiEntPrevCap, 0, sizeof(m_arrayiEntPrevCap));
 	m_iEntPrevCapSize = 0;
 
-	MatchSessionBackup();
 	FireLegacyEvent_NeoRoundEnd();
 
 	char RoundMsg[27];
@@ -2974,6 +3002,7 @@ void CNEORules::StartNextRound()
 	UTIL_CenterPrintAll(RoundMsg);
 
 	SetGameRelatedVars();
+	MatchSessionBackup();
 
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	if (event)
@@ -3418,6 +3447,7 @@ void CNEORules::RestartGame()
 	pJinrai->SetRoundsWon(0);
 	pNSF->SetScore(0);
 	pNSF->SetRoundsWon(0);
+	ClearSnapshots();
 
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0.0;

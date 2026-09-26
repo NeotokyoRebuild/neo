@@ -599,8 +599,10 @@ public:
 		int iRoundNumber;
 		int iRoundsWonJinrai;
 		int iRoundsWonNSF;
+		int iGhostSpawnEntIdx;
 	};
 	NeoRestore m_iNextRestore = {};
+	int m_iGhostSpawnEntIdx = -1;
 #endif
 };
 

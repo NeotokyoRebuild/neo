@@ -22,7 +22,7 @@ class CNEO_SpawnManager : public CGameEventListener
 {
 public:
 	CNEO_SpawnManager();
-	CNEOSpawnPoint* RequestSpawn(int team, CBasePlayer* player);
+	CNEOSpawnPoint* RequestSpawn(int team, CNEO_Player *player);
 	virtual void FireGameEvent(IGameEvent* event) override final;
 
 	CUtlVector<SpawnInfo> m_spawns;
@@ -59,7 +59,7 @@ namespace NeoSpawnManager
 		manager.StopListeningForAllEvents();
 	}
 
-	CNEOSpawnPoint* RequestSpawn(int team, CBasePlayer* player)
+	CNEOSpawnPoint* RequestSpawn(int team, CNEO_Player *player)
 	{
 		// Nothing we can do to salvage this... This will fall back
 		// to spawning at info_player_start or related logic in the caller.
@@ -80,8 +80,11 @@ namespace NeoSpawnManager
 		}
 
 		CNEOSpawnPoint* backup = nullptr;
-		auto idx = manager.m_spawns.FindPredicate(
-			[rules, team, player, &backup](const auto& spawn)->bool
+
+		bool bRestoreSpawn = (player->m_iNextRestore.flags & NEXT_ROUND_PLAYER_RESTORE_FLAG_SPAWN
+				&& player->m_iNextRestore.iSpawnEntIdx >= 0);
+
+		auto FindSpawn = [rules, team, player, &backup, bRestoreSpawn](const auto& spawn)->bool
 			{
 				if (!spawn.handle || !spawn.handle.IsValid())
 				{
@@ -110,8 +113,26 @@ namespace NeoSpawnManager
 				if (!rules->IsSpawnPointValid(spawn.handle, player))
 					return false;
 
-				return true;
-			});
+				if (bRestoreSpawn)
+				{
+					return (spawn.handle->entindex() == player->m_iNextRestore.iSpawnEntIdx);
+				}
+				else
+				{
+					return true;
+				}
+			};
+
+		int idx = manager.m_spawns.FindPredicate(FindSpawn);
+
+		// Try again if it's restoring spawn but cannot find it
+		if (bRestoreSpawn && idx == manager.m_spawns.InvalidIndex())
+		{
+			bRestoreSpawn = false;
+			idx = manager.m_spawns.FindPredicate(FindSpawn);
+		}
+
+		player->m_iSpawnEntIdx = -1;
 
 		if (idx == manager.m_spawns.InvalidIndex())
 		{
@@ -127,7 +148,10 @@ namespace NeoSpawnManager
 			// We only care if it's been used before or not if there are no respawns
 			manager.m_spawns[idx].isUsed = true;
 		}
-		return manager.m_spawns[idx].handle;
+
+		auto handle = manager.m_spawns[idx].handle;
+		player->m_iSpawnEntIdx = handle->entindex();
+		return handle;
 	}
 
 	void Register(CNEOSpawnPoint* spawn)
