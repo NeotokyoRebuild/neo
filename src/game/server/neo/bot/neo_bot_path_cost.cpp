@@ -101,7 +101,7 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 
 		if (deltaZ >= m_stepHeight)
 		{
-			if (deltaZ >= m_maxJumpHeight)
+			if (deltaZ > m_maxJumpHeight)
 			{
 				// too high to reach
 				return -1.0f;
