@@ -41,6 +41,7 @@ CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 	m_maxJumpHeight = me->GetLocomotionInterface()->GetMaxJumpHeight();
 	m_maxDropHeight = me->GetLocomotionInterface()->GetDeathDropHeight();
 	m_bIgnoreReservations = !neo_bot_path_reservation_enable.GetBool();
+	m_bIgnoreHazards = (me->m_hCommandingPlayer.Get() != nullptr);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -61,7 +62,7 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 		return -1.0f;
 	}
 
-	if ( CNEOBotPathReservations()->IsAreaHazardous(area->GetID(), m_me) )
+	if ( !m_bIgnoreHazards && CNEOBotPathReservations()->IsAreaHazardous(area->GetID(), m_me) )
 	{
 		if ( m_routeType == DEFAULT_ROUTE )
 		{

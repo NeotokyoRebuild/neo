@@ -17,6 +17,7 @@ struct HazardInfo
 {
 	float smokeExpireTime;      // when the smoke hazard risk expires
 	float hazardExpireTime;     // when a general deadly hazard risk expires
+	float smokePropagateTime;   // expiry this area has already propagated to its visible set
 };
 
 struct BotReservedAreas_t
