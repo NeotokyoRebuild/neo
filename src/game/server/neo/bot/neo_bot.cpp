@@ -619,6 +619,7 @@ void CNEOBot::Spawn()
 	BaseClass::Spawn();
 
 	m_spawnArea = NULL;
+	m_suppressiveFire.Reset();
 	m_justLostPointTimer.Invalidate();
 	m_squad = NULL;
 	m_didReselectClass = false;
@@ -1144,6 +1145,8 @@ void CNEOBot::OnWeaponFired(CBaseCombatCharacter* whoFired, CBaseCombatWeapon* w
 
 	// notice the gunfire
 	GetVisionInterface()->AddKnownEntity(whoFired);
+	// mark imprecise location for blind fire
+	m_suppressiveFire.OnHeardGunfire(this, whoFired);
 }
 
 
@@ -2131,6 +2134,61 @@ bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to
 		}
 	}
 	return true;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) const
+{
+	if (!NEORules()->IsTeamplay())
+	{
+		return false;
+	}
+
+	// A player hull is 32 u wide, the rest is room for spread and for the teammate moving
+	constexpr float clearance = 48.0f;
+	constexpr float lookAheadTime = 0.1f;
+
+	Vector line = to - from;
+	const float lineLength = line.NormalizeInPlace();
+
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		CBasePlayer* mate = UTIL_PlayerByIndex(i);
+		if (!mate || mate == this || !mate->IsAlive() || !IsFriend(mate))
+		{
+			continue;
+		}
+
+		const Vector matePos = mate->WorldSpaceCenter();
+		for (const Vector& pos : { matePos, matePos + mate->GetAbsVelocity() * lookAheadTime })
+		{
+			const Vector toMate = pos - from;
+			const float along = DotProduct(toMate, line);
+			if (along < clearance)
+			{
+				continue; // behind or beside the muzzle, not in front of it
+			}
+
+			if ((toMate - line * Min(along, lineLength)).IsLengthLessThan(clearance))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::IsFriendlyNearBarrel(float range) const
+{
+	CNEOBot* me = const_cast<CNEOBot*>(this);
+	Vector forward;
+	me->EyeVectors(&forward);
+	const Vector eyes = me->EyePosition();
+	return IsFriendlyNearLineOfFire(eyes, eyes + forward * range);
 }
 
 //-----------------------------------------------------------------------------------------------------

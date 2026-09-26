@@ -5,6 +5,7 @@
 #include "neo_bot_vision.h"
 #include "neo_bot_body.h"
 #include "neo_bot_locomotion.h"
+#include "neo_bot_suppressive_fire.h"
 #include "neo_bot_path_cost.h"
 #include "neo_player.h"
 #include "neo_bot_squad.h"
@@ -228,6 +229,8 @@ public:
 	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given point and entity
 	bool IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const;
 	bool IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to) const;
+	bool IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) const;	// return true if a teammate is near the line between the given points
+	bool IsFriendlyNearBarrel(float range) const;			// return true if a teammate is near where my weapon points
 	void RepathIfFriendlyBlockingLineOfFire();
 
 	Vector FindVisibleThrowPointNear( const Vector &vecPos ) const;
@@ -458,7 +461,11 @@ public:
 	bool m_bWantsRespawn = false;
 	bool m_bRespawnCopyCorpse = false;
 
+	CNEOBotSuppressiveFire *GetSuppressiveFire( void ) { return &m_suppressiveFire; }
+
 private:
+	CNEOBotSuppressiveFire m_suppressiveFire;
+
 	CNEOBotLocomotion *m_locomotor;
 	CNEOBotBody *m_body;
 	CNEOBotVision *m_vision;

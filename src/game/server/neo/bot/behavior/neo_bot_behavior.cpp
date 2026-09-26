@@ -219,6 +219,7 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnInjured( CNEOBot *me, const C
 
 	// notice the gunfire - needed for sentry guns, which don't go through the player OnWeaponFired() system
 	me->GetVisionInterface()->AddKnownEntity( subject );
+	me->GetSuppressiveFire()->OnInjured( me, info );
 
 	return TryContinue();
 }
@@ -794,6 +795,13 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 	// shoot at bad guys
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+
+	// If threat is obscured, shoot at their last known position
+	if ( me->GetSuppressiveFire()->Update( me, threat ) )
+	{
+		return;
+	}
+
 	const bool bIgnoreThreat = (threat == nullptr || !threat->GetEntity() || !threat->IsVisibleRecently());
 
 	// ignore non-visible threats here so we don't force a premature weapon switch if we're doing something else
@@ -929,6 +937,13 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		 me->GetBodyInterface()->IsHeadAimingOnTarget() &&
 		 threatRange < me->GetMaxAttackRange() );
 	me->m_bOnTarget = bOnTarget;
+
+	// hold fire while a teammate is ahead and near where my weapon points
+	if ( ( bOnTarget || ( me->m_nButtons & IN_ATTACK ) ) && me->IsFriendlyNearBarrel( threatRange ) )
+	{
+		me->ReleaseFireButton();
+		return;
+	}
 
 	if (bOnTarget)
 	{
