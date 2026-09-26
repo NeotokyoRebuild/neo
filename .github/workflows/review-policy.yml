@@ -1,0 +1,50 @@
+name: Review Policy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  review-policy:
+    name: Review Policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    concurrency:
+      group: review-policy-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Require two team approvals for non-team authors
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          has_push() {
+            [ "$(gh api "repos/$REPO/collaborators/$1/permission" --jq .user.permissions.push)" = "true" ]
+          }
+
+          if has_push "$AUTHOR"; then
+            echo "$AUTHOR is a team member; rulesets apply."
+            exit 0
+          fi
+
+          # Latest non-comment review per user, counted only if it approves the current head.
+          approvers=$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" \
+            --jq '.[] | select(.state != "COMMENTED") | "\(.user.login) \(.state) \(.commit_id)"' \
+            | awk -v head="$HEAD_SHA" '{ s[$1] = $2; c[$1] = $3 } END { for (u in s) if (s[u] == "APPROVED" && c[u] == head) print u }')
+
+          count=0
+          for u in $approvers; do
+            has_push "$u" && count=$((count + 1))
+          done
+
+          echo "$AUTHOR is not a team member; team approvals on $HEAD_SHA: $count/2"
+          [ "$count" -ge 2 ]
