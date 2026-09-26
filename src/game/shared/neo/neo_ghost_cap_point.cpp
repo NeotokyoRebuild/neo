@@ -13,6 +13,8 @@
 
 #ifdef CLIENT_DLL
 #include "ui/neo_hud_ghost_cap_point.h"
+#include "materialsystem/imaterialsystem.h"
+#include <math.h>
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -75,6 +77,17 @@ BEGIN_DATADESC(CNEOGhostCapturePoint)
 	DEFINE_OUTPUT(m_OnCap, "OnCap"),
 #endif
 END_DATADESC()
+
+enum NeoCapEdgeType
+{
+	NEO_CAP_EDGE_OFF = 0, 		// disabled
+	NEO_CAP_EDGE_LINE,			// show only a line around the capzone
+	NEO_CAP_EDGE_LINE_LOGO,		// show the line + a team logo
+};
+
+#ifdef CLIENT_DLL
+ConVar cl_neo_cap_zone_edge("cl_neo_cap_zone_edge", "2", FCVAR_ARCHIVE, "Cap zone edge rendering", true, 0, true, NEO_CAP_EDGE_LINE_LOGO);
+#endif
 
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 {
@@ -142,6 +155,7 @@ int CNEOGhostCapturePoint::owningTeamAlternate() const
 
 void CNEOGhostCapturePoint::Spawn(void)
 {
+	Precache();
 	BaseClass::Spawn();
 
 	AddEFlags(EFL_FORCE_CHECK_TRANSMIT);
@@ -202,6 +216,10 @@ void CNEOGhostCapturePoint::Spawn(void)
 	SetContextThink(&CNEOGhostCapturePoint::Think_CheckMyRadius,
 		gpGlobals->curtime, "CheckMyRadius");
 #else
+	m_pRingMaterial = materials->FindMaterial("effects/cap_zone_ring", TEXTURE_GROUP_CLIENT_EFFECTS);
+	m_pRingNsfMaterial = materials->FindMaterial("effects/cap_zone_ring_nsf", TEXTURE_GROUP_CLIENT_EFFECTS);
+	m_pRingJinraiMaterial = materials->FindMaterial("effects/cap_zone_ring_jinrai", TEXTURE_GROUP_CLIENT_EFFECTS);
+	AddToLeafSystem(RENDER_GROUP_TRANSLUCENT_ENTITY);
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 #endif
 }
@@ -298,6 +316,174 @@ void CNEOGhostCapturePoint::ClientThink(void)
 
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 }
+
+bool CNEOGhostCapturePoint::ShouldDraw()
+{
+	return m_bIsActive;
+}
+
+RenderGroup_t CNEOGhostCapturePoint::GetRenderGroup()
+{
+	return RENDER_GROUP_TRANSLUCENT_ENTITY;
+}
+
+void CNEOGhostCapturePoint::GetRenderBoundsWorldspace(Vector& mins, Vector& maxs)
+{
+	const Vector& origin = GetAbsOrigin();
+	const float r = m_flCapzoneRadius;
+	mins = origin + Vector(-r, -r, -16.0f);
+	maxs = origin + Vector(r, r, 16.0f);
+}
+
+int CNEOGhostCapturePoint::DrawModel(int flags)
+{
+	int cl_neo_cap_zone_edge_value = cl_neo_cap_zone_edge.GetInt();
+
+	if (!m_bIsActive || !m_pRingMaterial || !m_pRingJinraiMaterial || !m_pRingNsfMaterial || cl_neo_cap_zone_edge_value == NEO_CAP_EDGE_OFF) {
+		return 0;
+	}
+
+	// Mirror the arrow color logic from CNEOHud_GhostCapPoint::DrawNeoHudElement exactly
+	const int capTeam = owningTeamAlternate();
+	Color ringColor = (capTeam == TEAM_ANY) ? COLOR_SPEC : ((capTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF);
+
+	auto *player = C_NEO_Player::GetLocalNEOPlayer();
+
+	const Vector& capOrigin = GetAbsOrigin();
+	int ringOpacity = 128;
+	constexpr float MAX_VISIBILITY_RANGE = 768.0f;
+
+	if (player)
+	{
+		const int playerTeam = player->GetTeamNumber();
+		const bool playerIsPlaying = (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF);
+
+		if (playerIsPlaying && capTeam != TEAM_ANY && playerTeam != capTeam)
+		{
+			ringColor = COLOR_RED;
+		}
+
+		const Vector& playerOrigin = player->GetAbsOrigin();
+		const float distanceToCap = playerOrigin.DistTo(capOrigin);
+
+		if (distanceToCap > MAX_VISIBILITY_RANGE) {
+			return 0; // Don't draw the ring if the player is too far away
+		}
+
+		// smooth fade out of ring opacity based on distance to player
+		const float opacityCoef = distanceToCap / MAX_VISIBILITY_RANGE;
+		ringOpacity = static_cast<int>(128 * (1.0f - opacityCoef));
+	}
+
+	ringColor[3] = ringOpacity;
+
+	// draw bars ring
+	constexpr float SEGMENT_SIZE = 8.0f;
+	constexpr float RING_BOTTOM = 4.0f;
+
+	const int segments = (int)round(M_PI_F * 2.0f * m_flCapzoneRadius / SEGMENT_SIZE);
+	const float zBottom = capOrigin.z + RING_BOTTOM;
+	const float radius = m_flCapzoneRadius;
+
+	CMatRenderContextPtr pRenderContext(materials);
+	pRenderContext->Bind(m_pRingMaterial);
+	IMesh *pMesh = pRenderContext->GetDynamicMesh(true);
+	CMeshBuilder meshBuilder;
+	meshBuilder.Begin(pMesh, MATERIAL_QUADS, segments);
+
+	this->DrawBarRing(meshBuilder, segments, zBottom, SEGMENT_SIZE, radius, capOrigin, ringColor);
+
+	meshBuilder.End(false, true);
+
+	if (cl_neo_cap_zone_edge_value != NEO_CAP_EDGE_LINE_LOGO || capTeam == TEAM_ANY) {
+		return 1;
+	}
+
+	// draw logo ring
+	constexpr float LOGO_SIZE = 16.0f;
+	constexpr float LOGO_BOTTOM = 2.0f;
+	const float logoRadius = m_flCapzoneRadius - 1.0f;
+	// draw logo only 5 times
+	constexpr int LOGO_SEGMENTS = 5;
+	const float zLogoBottom = capOrigin.z + LOGO_BOTTOM;
+
+	pRenderContext->Bind(capTeam == TEAM_JINRAI ? m_pRingJinraiMaterial : m_pRingNsfMaterial);
+	IMesh* pMeshTeam = pRenderContext->GetDynamicMesh(true);
+	CMeshBuilder meshBuilderTeam;
+	meshBuilderTeam.Begin(pMeshTeam, MATERIAL_QUADS, LOGO_SEGMENTS);
+
+	this->DrawLogoRing(meshBuilderTeam, LOGO_SEGMENTS, zLogoBottom, LOGO_SIZE, logoRadius, capOrigin, ringColor);
+
+	meshBuilderTeam.End(false, true);
+
+	return 1;
+}
+
+void CNEOGhostCapturePoint::DrawBarRing(CMeshBuilder& builder, int segments, float zBottom, float segmentSize, float radius, Vector capOrigin, Color ringColor)
+{
+	// for portal effect add currentRotationInRad to angle0, maybe use it for the cap effect?
+	//constexpr float ROTATION_SPEED = 45.0f;
+	//const float currentRotationInRad = ROTATION_SPEED * gpGlobals->curtime * (M_PI_F / 180.0f);
+	constexpr float CIRCLE_LENGTH = M_PI_F * 2.0f;
+
+	for (int i = 0; i < segments; i++)
+	{
+		const float angle0 = ((float)i / segments) * CIRCLE_LENGTH;
+		const float angle1 = ((float)(i + 1) / segments) * CIRCLE_LENGTH;
+		this->DrawSegment(builder, angle0, angle1, zBottom, zBottom + segmentSize, radius, capOrigin, ringColor);
+	}
+}
+
+void CNEOGhostCapturePoint::DrawLogoRing(CMeshBuilder& builder, int segmentsToFill, float zBottom, float segmentSize, float radius, Vector capOrigin, Color ringColor)
+{
+	constexpr float ROTATION_SPEED = 5.0f;
+	constexpr float CIRCLE_LENGTH = M_PI_F * 2.0f;
+	const float currentRotationInRad = ROTATION_SPEED * gpGlobals->curtime * (M_PI_F / 180.0f);
+	// calculate the number of segments to fill based on the segment size and radius
+	const int segmentsCountBySize = (int)round(CIRCLE_LENGTH * radius / segmentSize);
+
+	for (int i = 0; i < segmentsToFill; i++)
+	{
+		const float angle0 = ((float)i / segmentsToFill) * CIRCLE_LENGTH + currentRotationInRad;
+		// we take angle0 and add angle increment based on single segment size to get angle1
+		// that way we are achieving a partial fill of the ring based on the segment size and radius
+		const float angle1 = angle0 + ((float)1 / segmentsCountBySize) * CIRCLE_LENGTH;
+		this->DrawSegment(builder, angle0, angle1, zBottom, zBottom + segmentSize, radius, capOrigin, ringColor);
+	}
+}
+
+void CNEOGhostCapturePoint::DrawSegment(CMeshBuilder& builder, float angle0, float angle1, float zBottom, float zTop, float radius, Vector capOrigin, Color ringColor) {
+	const float cos0 = cosf(angle0), sin0 = sinf(angle0);
+	const float cos1 = cosf(angle1), sin1 = sinf(angle1);
+
+	// Bottom at angle0
+	builder.Position3f(capOrigin.x + cos0 * radius, capOrigin.y + sin0 * radius, zBottom);
+	builder.Normal3f(cos0, sin0, 0.0f);
+	builder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+	builder.TexCoord2f(0, 0.0f, 1.0f);
+	builder.AdvanceVertex();
+
+	// Bottom at angle1
+	builder.Position3f(capOrigin.x + cos1 * radius, capOrigin.y + sin1 * radius, zBottom);
+	builder.Normal3f(cos1, sin1, 0.0f);
+	builder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+	builder.TexCoord2f(0, 1.0f, 1.0f);
+	builder.AdvanceVertex();
+
+	// Top at angle1
+	builder.Position3f(capOrigin.x + cos1 * radius, capOrigin.y + sin1 * radius, zTop);
+	builder.Normal3f(cos1, sin1, 0.0f);
+	builder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+	builder.TexCoord2f(0, 1.0f, 0.0f);
+	builder.AdvanceVertex();
+
+	// Top at angle0
+	builder.Position3f(capOrigin.x + cos0 * radius, capOrigin.y + sin0 * radius, zTop);
+	builder.Normal3f(cos0, sin0, 0.0f);
+	builder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+	builder.TexCoord2f(0, 0.0f, 0.0f);
+	builder.AdvanceVertex();
+}
 #endif
 
 void CNEOGhostCapturePoint::Precache(void)
@@ -305,6 +491,12 @@ void CNEOGhostCapturePoint::Precache(void)
 	BaseClass::Precache();
 
 	AddEFlags(EFL_FORCE_CHECK_TRANSMIT);
+
+	#ifdef CLIENT_DLL
+	PrecacheMaterial("effects/cap_zone_ring");
+	PrecacheMaterial("effects/cap_zone_ring_nsf");
+	PrecacheMaterial("effects/cap_zone_ring_jinrai");
+	#endif
 }
 
 #ifdef GAME_DLL
