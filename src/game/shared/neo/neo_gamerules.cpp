@@ -878,7 +878,7 @@ void CNEORules::ResetMapSessionCommon()
 #ifdef GAME_DLL
 	m_pRestoredInfos.Purge();
 	m_readyAccIDs.Purge();
-	m_bIgnoreOverThreshold = false;
+	m_bForceLive = false;
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -2361,7 +2361,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					"Ready up commands (only available while waiting for players):\n"
 					".ready - Ready up yourself\n"
 					".unready - Unready yourself\n"
-					".start - Override players amount restriction\n"
+					".forcelive - Override players amount restriction and force live match\n"
 					".readylist - List players that are not ready\n");
 			ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szHelpText);
 		}
@@ -2381,7 +2381,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 
 	if (sv_neo_readyup_lobby.GetBool() && (bNonCmdGameType || m_nRoundStatus != NeoRoundStatus::Idle))
 	{
-		for (const auto pSzCheck : {"ready", "unready", "start", "readylist"})
+		for (const auto pSzCheck : {"ready", "unready", "forcelive", "readylist"})
 		{
 			if (V_strcmp(pSzChat, pSzCheck) == 0)
 			{
@@ -2409,18 +2409,10 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 				}
 				ReadyToggle(pNeoCmdPlayer, flags);
 			}
-			else if (V_strcmp(pSzChat, "start") == 0)
+			else if (V_strcmp(pSzChat, "forcelive") == 0)
 			{
-				const auto readyPlayers = FetchReadyPlayers();
-				if (readyPlayers.array[TEAM_JINRAI] > iThres && readyPlayers.array[TEAM_NSF] > iThres)
-				{
-					m_bIgnoreOverThreshold = true;
-					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "Overriding threshold, allowing more players.");
-				}
-				else
-				{
-					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You must go past the threshold in order to set override.");
-				}
+				m_bForceLive = true;
+				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "Overriding threshold, forcing live match now.");
 			}
 			else if (V_strcmp(pSzChat, "readylist") == 0)
 			{
@@ -2711,29 +2703,18 @@ void CNEORules::StartNextRound()
 	// Do not start if: Non-ready-up mode, no players in either teams
 	if ((!bLobby && bTooFewToStart)
 			// If ready-up mode and doesn't exactly match the threshold on ready-up or players
-			|| (bLobby && !m_bIgnoreOverThreshold && (!bEqualThres || (readyPlayers.array[TEAM_JINRAI] != iThres || readyPlayers.array[TEAM_NSF] != iThres)))
-			// If ready-up mode, allows over threshold and is lower than threshold or not equal teams
-			|| (bLobby && m_bIgnoreOverThreshold &&
-				((readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres)
-				 || GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() != GetGlobalTeam(TEAM_NSF)->GetNumPlayers()))
-			)
+			|| (bLobby && !m_bForceLive && (!bEqualThres || (readyPlayers.array[TEAM_JINRAI] != iThres || readyPlayers.array[TEAM_NSF] != iThres))))
 	{
 		if (bLobby)
 		{
 			bool bPrintHelpInfo = (m_iPrintHelpCounter == 0);
-			if (!m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres))
+			if (!m_bForceLive && (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres))
 			{
 				char szPrint[128];
-				V_sprintf_safe(szPrint, "More players than %dv%d! Type \".start\" to allow more players to start!",
+				V_sprintf_safe(szPrint, "More players than %dv%d! Type \".forcelive\" to allow more players to start!",
 							   iThres, iThres);
 				UTIL_ClientPrintAll(HUD_PRINTTALK, szPrint);
 				bPrintHelpInfo = false;
-			}
-
-			// Untoggle the overrider if there's suddenly less players than threshold
-			if (m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres))
-			{
-				m_bIgnoreOverThreshold = false;
 			}
 
 			char szPrint[64];
@@ -2766,6 +2747,7 @@ void CNEORules::StartNextRound()
 		{
 			SetRoundStatus(NeoRoundStatus::Countdown);
 			m_iRoundNumber = 0;
+			m_bForceLive = false;
 			m_flNeoRoundStartTime = gpGlobals->curtime;
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + sv_neo_readyup_countdown.GetFloat();
 			UTIL_CenterPrintAll("- ALL PLAYERS READY: MATCH STARTING SOON... -\n");
