@@ -167,7 +167,7 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 63.4f
 // To ensure bots can safely clear obstacles, we apply a safety buffer (NEO_BOT_JUMP_HEIGHT_BUFFER)
 // when checking traverseability, by subtracting it from these theoretical max heights.
-#define NEO_BOT_JUMP_HEIGHT_BUFFER 7.0f
+#define NEO_BOT_JUMP_HEIGHT_BUFFER 5.0f
 
 // END OF NEO MOVEMENT DEFINITIONS
 //////////////////////////////////////////////////////
