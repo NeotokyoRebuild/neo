@@ -607,7 +607,7 @@ void CNEOBot::Spawn()
 	// so that we get correct loadout choices for the class
 	if (m_iNextSpawnClassChoice == NEO_CLASS_RANDOM) 
 	{
-		m_iNeoClass = ChooseRandomClass();
+		SetClass(ChooseRandomClass()); // also refreshes the team's class counts
 	}
 	else if (m_iNeoClass != m_iNextSpawnClassChoice)
 	{
@@ -2911,13 +2911,19 @@ NeoClass CNEOBot::ChooseRandomClass() const
 		return NEO_CLASS_ASSAULT;
 	}
 
+	// On a respawn the team's count still holds this bot in its current class,
+	// so that class is only full for it when the count is over the limit, not at it
+	const auto isClassFull = [this, team](int neoClass) {
+		return (GetClass() == neoClass) ? team->IsClassOverThreshold(neoClass) : team->IsClassFull(neoClass);
+	};
+
 	bool bValidClasses[NEO_CLASS__ENUM_COUNT] = {};
 	int iClassCounts = 0;
 	for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
 	{
 		bValidClasses[i] = (m_profile.flagClass & (1 << i));
 		// Check class limits
-		if (bValidClasses[i] && team->IsClassFull(i))
+		if (bValidClasses[i] && isClassFull(i))
 		{
 			bValidClasses[i] = false;
 		}
@@ -2932,7 +2938,7 @@ NeoClass CNEOBot::ChooseRandomClass() const
 		// If all profile classes are full/banned, allow any class that isn't full
 		for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
 		{
-			if (!team->IsClassFull(i))
+			if (!isClassFull(i))
 			{
 				bValidClasses[i] = true;
 				++iClassCounts;
