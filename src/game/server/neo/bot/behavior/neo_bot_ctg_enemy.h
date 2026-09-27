@@ -2,28 +2,29 @@
 #define NEO_BOT_CTG_ENEMY_H
 
 #include "bot/neo_bot.h"
-#include "Path/NextBotChasePath.h"
+
+class CNEO_Player;
+class CNavArea;
 
 //--------------------------------------------------------------------------------------------------------
+// Decides whether to cut the enemy ghost carrier off or chase it, hands over, and never stays on the
+// stack. Plans only from what any opponent sees: the ghost marker and the fixed cap zones.
 class CNEOBotCtgEnemy : public Action< CNEOBot >
 {
 public:
-	CNEOBotCtgEnemy( void );
-
-	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval ) override;
-	virtual ActionResult< CNEOBot >	OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
-
-	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me ) override;
-	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path ) override;
-	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason ) override;
-
-	virtual QueryResultType ShouldHurry( const INextBot *me ) const override;
 
 	virtual const char *GetName( void ) const override { return "ctgEnemy"; }
 
-private:
-	ChasePath m_chasePath;
+	// The living enemy player carrying the ghost, or nullptr if there is none
+	static CNEO_Player *EnemyGhostCarrier( const CNEOBot *me );
+
+	// The earliest area on the carrier's predicted route that this bot reaches first; nullptr when
+	// there is none, which means the carrier is ahead of this bot
+	static CNavArea *FindCutOff( CNEOBot *me, CNEO_Player *pGhostCarrier );
+
+	// ShouldHurry for the behaviors this one hands over to
+	static QueryResultType CarrierUrgency( const CNEOBot *me );
 };
 
 #endif // NEO_BOT_CTG_ENEMY_H
