@@ -90,8 +90,8 @@ float PredictMiss( const Vector &vecEye, const QAngle &angEye, const Vector &vec
 }
 
 // Bisect eye pitch until the throw's reach matches what is left of the target distance once
-// the thrower's own velocity has carried the grenade. False if no arc reaches the target's height.
-bool SolveThrowAngles( const Vector &vecEye, const Vector &vecOwnVel, const Vector &vecTarget, QAngle &angOut )
+// the thrower's own velocity has carried the grenade. Returns the predicted miss, FLT_MAX if none lands.
+float SolveThrowAngles( const Vector &vecEye, const Vector &vecOwnVel, const Vector &vecTarget, QAngle &angOut )
 {
 	const Vector2D vecToTarget = vecTarget.AsVector2D() - vecEye.AsVector2D();
 	const float flDrop = vecEye.z - vecTarget.z;
@@ -120,11 +120,12 @@ bool SolveThrowAngles( const Vector &vecEye, const Vector &vecOwnVel, const Vect
 
 	if ( !bLands )
 	{
-		return false;
+		return FLT_MAX;
 	}
 
+	// Yaw puts the landing on the aim line, so only the reach can miss
 	angOut.y = RAD2DEG( atan2( vecAim.y, vecAim.x ) );
-	return true;
+	return fabsf( flReach - vecAim.Length() );
 }
 
 // Predicted miss at which a bot lets go; Hard was measured at 64u, the others are scaled from it
@@ -300,8 +301,7 @@ CNEOBotGrenadeThrow::ThrowAimResult CNEOBotGrenadeThrow::UpdateThrowAim( CNEOBot
 	{
 		// Not worth throwing if even the best arc misses by more than half the blast radius
 		const float flUnreachableMiss = 0.5f * sv_neo_grenade_blast_radius.GetFloat();
-		if ( !SolveThrowAngles( vecEye, vecVel, m_vecTarget, m_angThrowSolved )
-			|| PredictMiss( vecEye, m_angThrowSolved, vecVel, m_vecTarget ) > flUnreachableMiss )
+		if ( SolveThrowAngles( vecEye, vecVel, m_vecTarget, m_angThrowSolved ) > flUnreachableMiss )
 		{
 			m_vecThrowLookAt = vec3_invalid;
 			return THROW_AIM_UNREACHABLE;
