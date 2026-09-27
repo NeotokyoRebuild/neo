@@ -177,7 +177,7 @@ ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED,
 ConVar sv_neo_ghost_spawn_force("sv_neo_ghost_spawn_force", "-1", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Pin the ghost to a fixed neo_ghostspawnpoint every round. -1 uses default random selection.", true, -1, false, 0);
 ConVar sv_neo_jgr_spawn_force("sv_neo_jgr_spawn_force", "-1", FCVAR_REPLICATED | FCVAR_CHEAT,
-	"Pin the juggernaut to a fixed neo_juggernautspawnpoint (in map entity order) every round. -1 uses default selection.", true, -1, false, 0);
+	"Pin the juggernaut to a fixed neo_juggernautspawnpoint every round. -1 uses default random selection.", true, -1, false, 0);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
 #ifdef CLIENT_DLL
@@ -2171,7 +2171,7 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 			// Round numbers are one-indexed
 			Assert(roundNumber() > 0);
 			bool isFirstRound = (roundNumber() == 1);
-			if (isFirstRound)
+			if (isFirstRound && sv_neo_jgr_spawn_force.GetInt() < 0)
 			{
 				m_jgrSpawns.Shuffle();
 			}
@@ -2179,31 +2179,11 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 			desiredSpawn = roundNumber() % m_jgrSpawns.Count();
 		}
 
-		// m_jgrSpawns is shuffled on round 1, so the pin counts spawns in map entity order
-		// (by entity index), which the shuffle cannot change
 		if (sv_neo_jgr_spawn_force.GetInt() >= 0)
 		{
-			const int wantRank = sv_neo_jgr_spawn_force.GetInt() % m_jgrSpawns.Count();
-			for (int i = 0; i < m_jgrSpawns.Count(); ++i)
-			{
-				int rank = 0;
-				for (int j = 0; j < m_jgrSpawns.Count(); ++j)
-				{
-					if (m_jgrSpawns[j].GetEntryIndex() < m_jgrSpawns[i].GetEntryIndex())
-					{
-						++rank;
-					}
-				}
-
-				if (rank == wantRank)
-				{
-					desiredSpawn = i;
-					break;
-				}
-			}
-
+			desiredSpawn = sv_neo_jgr_spawn_force.GetInt() % m_jgrSpawns.Count();
 			Msg("sv_neo_jgr_spawn_force: pinned juggernaut spawn %d of %d for this map\n",
-				wantRank, m_jgrSpawns.Count());
+				desiredSpawn, m_jgrSpawns.Count());
 		}
 
 		Assert(desiredSpawn >= 0);
