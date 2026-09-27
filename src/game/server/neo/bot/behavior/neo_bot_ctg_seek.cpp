@@ -24,6 +24,13 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		return Done( "Round Over: CTG objective no longer relevant" );
 	}
 
+	// Before UpdateCommon's combat suspend, or a defender that sees an escort never gets here and
+	// fights the screen while the ghost is walked in; the chase still fights, anchored to the carrier
+	if ( CNEOBotCtgEnemy::EnemyGhostCarrier( me ) )
+	{
+		return SuspendFor( new CNEOBotCtgEnemy, "Stopping the ghost carrier!" );
+	}
+
 	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
 	if ( result.IsRequestingChange() || result.IsDone() )
 	{
@@ -45,22 +52,18 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one on my team!" );
 	}
 
+	// Our own side's ghost only: the enemy carrier is handled above, and the escort stays below the
+	// combat suspend so the attacking team does not get the same head start
 	if (NEORules()->GhostExists())
 	{
 		int iGhosterPlayer = NEORules()->GetGhosterPlayer();
 		if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
 		{
 			CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
-			if (pGhostCarrier && pGhostCarrier != me)
+			if (pGhostCarrier && pGhostCarrier != me
+				&& pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
 			{
-				if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
-				{
-					return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");
-				}
-				else
-				{
-					return SuspendFor(new CNEOBotCtgEnemy, "Stopping the ghost carrier!");
-				}
+				return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");
 			}
 
 			// If I have the ghost, switch to ghost behavior
