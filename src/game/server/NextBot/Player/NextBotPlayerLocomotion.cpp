@@ -528,14 +528,7 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 	else
 	{
 		const float epsilon = 0.25f;
-		bool bMoveDirect = NextBotPlayerMoveDirect.GetBool();
-#ifdef NEO
-		// The move keys below often lead to the bot drifting off the path a few degrees off the goal
-		// which can lead to fall deaths, so use direct movemenet in precise and cliff areas.
-		const CNavArea *pArea = m_player->GetLastKnownArea();
-		bMoveDirect |= pArea && pArea->HasAttributes( NAV_MESH_PRECISE | NAV_MESH_CLIFF );
-#endif
-		if ( bMoveDirect )
+		if ( NextBotPlayerMoveDirect.GetBool() )
 		{
 			if ( goalDistance > epsilon )
 			{
