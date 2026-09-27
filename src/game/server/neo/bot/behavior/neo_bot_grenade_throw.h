@@ -27,6 +27,8 @@ protected:
 	CNavArea *m_vantageArea;
 	Vector m_vecTarget; // caches target to aim at during throw action in implementation classes
 	Vector m_vecThreatLastKnownPos;
+	Vector m_vecThrowLookAt; // far point in m_angThrowSolved's direction, for AimHeadTowards
+	QAngle m_angThrowSolved; // eye angles predicted to land the grenade on m_vecTarget; x is FLT_MAX until solved
 	CHandle< CNEOBaseCombatWeapon > m_hGrenadeWeapon;
 	CHandle< CBaseEntity > m_hThreatGrenadeTarget;
 	CountdownTimer m_giveUpTimer;
@@ -50,6 +52,14 @@ protected:
 	void BeginThrowFocus( CNEOBot *me );
 	void EndThrowFocus( CNEOBot *me );
 
+	enum ThrowAimResult
+	{
+		THROW_AIM_TURNING,
+		THROW_AIM_READY,
+		THROW_AIM_UNREACHABLE,
+	};
+
+	ThrowAimResult UpdateThrowAim( CNEOBot *me );
 	CNavArea *FindVantageArea( CNEOBot *me );
 
 	virtual ThrowTargetResult UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon ) = 0;
