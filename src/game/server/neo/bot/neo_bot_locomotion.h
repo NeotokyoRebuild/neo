@@ -42,29 +42,31 @@ inline float CNEOBotLocomotion::GetMaxJumpHeight( void ) const
 	Assert( sv_gravity.GetFloat() == 800.0f );
 
 	auto me = (CNEO_Player*)GetBot()->GetEntity();
-	float theoreticalJumpHeight = 0.0f;
+	float crouchJumpHeight = 0.0f;
+	float buffer = NEO_BOT_JUMP_HEIGHT_BUFFER;
 
 	switch (me->GetClass())
 	{
 		case NEO_CLASS_RECON:
-			theoreticalJumpHeight = NEO_RECON_CROUCH_JUMP_HEIGHT;
+			crouchJumpHeight = NEO_RECON_CROUCH_JUMP_HEIGHT;
+			buffer = NEO_BOT_RECON_JUMP_HEIGHT_BUFFER;
 			break;
 		case NEO_CLASS_JUGGERNAUT:
-			theoreticalJumpHeight = NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT;
+			crouchJumpHeight = NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT;
 			break;
 		case NEO_CLASS_SUPPORT:
-			theoreticalJumpHeight = NEO_SUPPORT_CROUCH_JUMP_HEIGHT;
+			crouchJumpHeight = NEO_SUPPORT_CROUCH_JUMP_HEIGHT;
+			buffer = NEO_BOT_SUPPORT_JUMP_HEIGHT_BUFFER;
 			break;
-		case NEO_CLASS_VIP:
-			theoreticalJumpHeight = NEO_ASSAULT_CROUCH_JUMP_HEIGHT; // vip same as assault
-			break;
+		case NEO_CLASS_VIP: // vip moves like assault
 		case NEO_CLASS_ASSAULT:
-			theoreticalJumpHeight = NEO_ASSAULT_CROUCH_JUMP_HEIGHT;
+			crouchJumpHeight = NEO_ASSAULT_CROUCH_JUMP_HEIGHT;
+			buffer = NEO_BOT_ASSAULT_JUMP_HEIGHT_BUFFER;
 			break;
 		default:
 			Assert(false);
 			return 0.f;
 	}
 
-	return theoreticalJumpHeight - NEO_BOT_JUMP_HEIGHT_BUFFER;
+	return crouchJumpHeight - buffer;
 }
