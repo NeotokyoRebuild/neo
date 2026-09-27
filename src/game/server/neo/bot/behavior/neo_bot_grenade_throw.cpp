@@ -19,21 +19,22 @@ extern ConVar sv_neo_grenade_cor;
 
 namespace
 {
-// CWeaponGrenade::ThrowGrenade derives both launch pitch and launch speed from eye pitch
+// CWeaponGrenade::ThrowGrenade derives both launch pitch and launch speed from eye pitch; the
+// slopes stretch eye pitch around the bias so that +-90 degrees stays +-90
 constexpr float kThrowPitchBias = -10.0f;
-constexpr float kThrowSlopeDown = 100.0f / 90.0f;
-constexpr float kThrowSlopeUp = 80.0f / 90.0f;
+constexpr float kThrowSlopeDown = ( 90.0f - kThrowPitchBias ) / 90.0f;
+constexpr float kThrowSlopeUp = ( 90.0f + kThrowPitchBias ) / 90.0f;
 constexpr float kThrowSpeedPerDegree = 6.0f;
 constexpr float kThrowForwardOffset = 16.0f; // CNEOBaseProjectile::GetThrowPos when unobstructed
 constexpr float kMaxElasticity = 0.9f; // CBaseGrenadeProjectile::ResolveFlyCollisionCustom clamp
 
-constexpr float kLongestThrowPitch = -39.0f; // about a 45 degree lob
+constexpr float kSteepestThrowPitch = -39.0f; // about a 45 degree lob, the bisection's upper bound
 constexpr float kShortestThrowPitch = 89.0f; // looking straight down drops it at the feet
 constexpr int kSolveBisections = 8;
-constexpr float kThrowLookAtDist = 4096.0f; // far enough that walking barely turns the view off it
+constexpr float kThrowLookAtDist = 4096.0f; // AimHeadTowards takes a point; this far, walking barely turns the view off it
 
 // How far a throw at this eye pitch carries along its aim before the fuse ends, over flat floor
-// flDrop below the eye. The thrower's velocity adds vecOwnVel * flCarryTime on top.
+// flDrop below the eye. flCarryTime is in seconds at launch speed; own velocity adds vel * it.
 bool PredictThrowReach( float flEyePitch, float flDrop, float flOwnVz, float &flReach, float &flCarryTime )
 {
 	const float flPitch = kThrowPitchBias + flEyePitch * ( ( flEyePitch >= 0.0f ) ? kThrowSlopeDown : kThrowSlopeUp );
@@ -61,12 +62,12 @@ bool PredictThrowReach( float flEyePitch, float flDrop, float flOwnVz, float &fl
 	flCarryTime = flFuse;
 	if ( flFlightTime < flFuse )
 	{
-		// Each bounce keeps e of both speed components, so hop n adds e^2n x 2 vz / g of carry: a
-		// geometric series, capped at the first hop's share of the fuse left
+		// Each bounce keeps e of both speed components, so hop n carries e^2n x 2 vz / g at launch
+		// speed: a geometric series, capped by the fuse left at the first hop's speed, e x launch
 		const float flElasticity = MIN( sv_neo_grenade_cor.GetFloat(), kMaxElasticity );
 		const float flHopShare = flElasticity * flElasticity;
-		const float flBounceTime = 2.0f * flImpactVz / flGravity * flHopShare / ( 1.0f - flHopShare );
-		flCarryTime = flFlightTime + MIN( flBounceTime, flElasticity * ( flFuse - flFlightTime ) );
+		const float flBounceCarry = 2.0f * flImpactVz / flGravity * flHopShare / ( 1.0f - flHopShare );
+		flCarryTime = flFlightTime + MIN( flBounceCarry, flElasticity * ( flFuse - flFlightTime ) );
 	}
 
 	flReach = flCos * ( kThrowForwardOffset + flSpeed * flCarryTime );
@@ -94,10 +95,11 @@ bool SolveThrowAngles( const Vector &vecEye, const Vector &vecOwnVel, const Vect
 {
 	const Vector2D vecToTarget = vecTarget.AsVector2D() - vecEye.AsVector2D();
 	const float flDrop = vecEye.z - vecTarget.z;
-	float flUp = kLongestThrowPitch;
+	float flUp = kSteepestThrowPitch;
 	float flDown = kShortestThrowPitch;
 	float flReach = 0.0f;
 	float flCarryTime = 0.0f;
+	Vector2D vecAim = vecToTarget;
 	bool bLands = false;
 	angOut.Init();
 
@@ -105,7 +107,8 @@ bool SolveThrowAngles( const Vector &vecEye, const Vector &vecOwnVel, const Vect
 	{
 		angOut.x = 0.5f * ( flUp + flDown );
 		bLands = PredictThrowReach( angOut.x, flDrop, vecOwnVel.z, flReach, flCarryTime );
-		if ( !bLands || flReach < ( vecToTarget - vecOwnVel.AsVector2D() * flCarryTime ).Length() )
+		vecAim = vecToTarget - vecOwnVel.AsVector2D() * flCarryTime;
+		if ( !bLands || flReach < vecAim.Length() )
 		{
 			flDown = angOut.x; // short: look further up
 		}
@@ -120,12 +123,11 @@ bool SolveThrowAngles( const Vector &vecEye, const Vector &vecOwnVel, const Vect
 		return false;
 	}
 
-	const Vector2D vecAim = vecToTarget - vecOwnVel.AsVector2D() * flCarryTime;
 	angOut.y = RAD2DEG( atan2( vecAim.y, vecAim.x ) );
 	return true;
 }
 
-// Predicted miss at which a bot lets go
+// Predicted miss at which a bot lets go; Hard was measured at 64u, the others are scaled from it
 float GetThrowTolerance( const CNEOBot *me )
 {
 	switch ( me->GetDifficulty() )
@@ -162,7 +164,7 @@ CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const C
 	m_vantageArea = nullptr;
 	m_vecTarget = vec3_invalid;
 	m_vecThrowLookAt = vec3_invalid;
-	m_angThrowSolved.Init( FLT_MAX, 0.0f, 0.0f );
+	m_angThrowSolved.Init();
 
 	if ( threat )
 	{
@@ -294,14 +296,14 @@ CNEOBotGrenadeThrow::ThrowAimResult CNEOBotGrenadeThrow::UpdateThrowAim( CNEOBot
 	const float flTolerance = GetThrowTolerance( me );
 
 	// Re-solve only once the solution drifts: AimHeadTowards ignores a new point mid-turn
-	if ( m_angThrowSolved.x == FLT_MAX || PredictMiss( vecEye, m_angThrowSolved, vecVel, m_vecTarget ) > 0.5f * flTolerance )
+	if ( m_vecThrowLookAt == vec3_invalid || PredictMiss( vecEye, m_angThrowSolved, vecVel, m_vecTarget ) > 0.5f * flTolerance )
 	{
 		// Not worth throwing if even the best arc misses by more than half the blast radius
 		const float flUnreachableMiss = 0.5f * sv_neo_grenade_blast_radius.GetFloat();
 		if ( !SolveThrowAngles( vecEye, vecVel, m_vecTarget, m_angThrowSolved )
 			|| PredictMiss( vecEye, m_angThrowSolved, vecVel, m_vecTarget ) > flUnreachableMiss )
 		{
-			m_angThrowSolved.x = FLT_MAX;
+			m_vecThrowLookAt = vec3_invalid;
 			return THROW_AIM_UNREACHABLE;
 		}
 

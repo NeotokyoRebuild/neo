@@ -27,8 +27,8 @@ protected:
 	CNavArea *m_vantageArea;
 	Vector m_vecTarget; // caches target to aim at during throw action in implementation classes
 	Vector m_vecThreatLastKnownPos;
-	Vector m_vecThrowLookAt; // far point in m_angThrowSolved's direction, for AimHeadTowards
-	QAngle m_angThrowSolved; // eye angles predicted to land the grenade on m_vecTarget; x is FLT_MAX until solved
+	Vector m_vecThrowLookAt; // far point in m_angThrowSolved's direction, for AimHeadTowards; vec3_invalid until solved
+	QAngle m_angThrowSolved; // eye angles that land the grenade on m_vecTarget; valid while m_vecThrowLookAt is
 	CHandle< CNEOBaseCombatWeapon > m_hGrenadeWeapon;
 	CHandle< CBaseEntity > m_hThreatGrenadeTarget;
 	CountdownTimer m_giveUpTimer;
