@@ -176,6 +176,8 @@ ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATE
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_ghost_spawn_force("sv_neo_ghost_spawn_force", "-1", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Pin the ghost to a fixed neo_ghostspawnpoint every round. -1 uses default random selection.", true, -1, false, 0);
+ConVar sv_neo_jgr_spawn_force("sv_neo_jgr_spawn_force", "-1", FCVAR_REPLICATED | FCVAR_CHEAT,
+	"Pin the juggernaut to a fixed neo_juggernautspawnpoint every round. -1 uses default random selection.", true, -1, false, 0);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_client_autorecord("sv_neo_client_autorecord", "0", FCVAR_REPLICATED | FCVAR_DONTRECORD, "Record demos clientside", true, 0, true, 1);
 #ifdef CLIENT_DLL
@@ -2169,13 +2171,21 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 			// Round numbers are one-indexed
 			Assert(roundNumber() > 0);
 			bool isFirstRound = (roundNumber() == 1);
-			if (isFirstRound)
+			if (isFirstRound && sv_neo_jgr_spawn_force.GetInt() < 0)
 			{
 				m_jgrSpawns.Shuffle();
 			}
 
 			desiredSpawn = roundNumber() % m_jgrSpawns.Count();
 		}
+
+		if (sv_neo_jgr_spawn_force.GetInt() >= 0)
+		{
+			desiredSpawn = sv_neo_jgr_spawn_force.GetInt() % m_jgrSpawns.Count();
+			Msg("sv_neo_jgr_spawn_force: pinned juggernaut spawn %d of %d for this map\n",
+				desiredSpawn, m_jgrSpawns.Count());
+		}
+
 		Assert(desiredSpawn >= 0);
 		Assert(desiredSpawn < m_jgrSpawns.Count());
 
