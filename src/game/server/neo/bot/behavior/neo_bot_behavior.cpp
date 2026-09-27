@@ -420,6 +420,14 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 
 	bool bImmediateDanger = gpGlobals->curtime - me->GetLastDamageTime() <= 2.0f;
 
+	// Never launch from a fall edge or a spot the mesh marks as risky: the path checks below
+	// only look at the areas ahead, not the one the bot is standing on
+	const CNavArea *pMyArea = me->GetLastKnownArea();
+	if (pMyArea && pMyArea->HasAttributes( NAV_MESH_CLIFF | NAV_MESH_PRECISE | NAV_MESH_AVOID ))
+	{
+		return;
+	}
+
 	// Relax eligibility checks if in danger
 	const float flDangerMinDist = neo_bot_recon_superjump_danger_min_dist.GetFloat();
 	if (bImmediateDanger && flDangerMinDist > 1.0f)
@@ -436,13 +444,18 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 		}
 	}
 
-	if (!bImmediateDanger && (neo_bot_recon_superjump_travel_min_dist.GetFloat() > 1))
+	// An escape in danger still has to follow the path, but only for as far as it flies and slides,
+	// and without waiting for the travel check's timer
+	if (neo_bot_recon_superjump_travel_min_dist.GetFloat() > 1)
 	{
-		if (!m_reconSuperJumpPathCheckTimer.IsElapsed())
+		if (!bImmediateDanger)
 		{
-			return;
+			if (!m_reconSuperJumpPathCheckTimer.IsElapsed())
+			{
+				return;
+			}
+			m_reconSuperJumpPathCheckTimer.Start(1.0f);
 		}
-		m_reconSuperJumpPathCheckTimer.Start(1.0f);
 
 		const PathFollower *path = me->GetCurrentPath();
 		if (!path || !path->IsValid())
@@ -467,7 +480,8 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 
 		// Check that upcoming path is in line of a jump, leg by leg, so that the runway
 		// ends at the first turn instead of the jump and its slide carrying us past it
-		const float flMinRunway = Max( neo_bot_recon_superjump_travel_min_dist.GetFloat(), flFlightDist + flSlideDist );
+		const float flMinRunway = bImmediateDanger ? flFlightDist + flSlideDist
+			: Max( neo_bot_recon_superjump_travel_min_dist.GetFloat(), flFlightDist + flSlideDist );
 		bool bCanJump = false;
 		Vector vecLegStart = me->GetAbsOrigin();
 		float flRunway = 0.0f;
