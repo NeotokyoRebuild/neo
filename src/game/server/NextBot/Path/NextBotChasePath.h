@@ -14,6 +14,14 @@
 #include "NextBotPathFollow.h"
 #include "tier0/vprof.h"
 
+#ifdef NEO
+#include "convar.h"
+
+inline ConVar sv_neo_bot_path_partial_chase_enable( "sv_neo_bot_path_partial_chase_enable", "1", FCVAR_CHEAT,
+	"Follow a partial chase path as far as the nav areas it reaches", true, 0.0f, true, 1.0f );
+#endif
+
+
 
 //----------------------------------------------------------------------------------------------
 /**
@@ -45,6 +53,13 @@ public:
 
 private:
 	void RefreshPath( INextBot *bot, CBaseEntity *subject, const IPathCost &cost, Vector *pPredictedSubjectPos );
+#ifdef NEO
+	bool HasReachableArea( void ) const;
+	bool IsLastLegWalkable( INextBot *bot ) const;
+	void BackOff( INextBot *bot, CBaseEntity *subject );
+
+	bool m_isPartialPath = false;						// following a path the search could not complete
+#endif
 
 	CountdownTimer m_failTimer;							// throttle re-pathing if last path attempt failed
 	CountdownTimer m_throttleTimer;						// require a minimum time between re-paths
@@ -103,9 +118,77 @@ inline void ChasePath::Update( INextBot *bot, CBaseEntity *subject, const IPathC
 	// maintain the path to the subject
 	RefreshPath( bot, subject, cost, pPredictedSubjectPos );
 
+#ifdef NEO
+	// A partial path ends in a straight leg from the last area the search reached to the subject,
+	// through whatever stopped the search. Walk it only as far as that area goes, then wait there.
+	const bool onLastLeg = subject && IsValid() && m_isPartialPath && GetCurrentGoal() == LastSegment();
+	if ( onLastLeg && !IsLastLegWalkable( bot ) )
+	{
+		bot->OnMoveToFailure( this, FAIL_NO_PATH_EXISTS );
+		BackOff( bot, subject );
+		Invalidate();
+		return;
+	}
+#endif
+
 	// move along the path towards the subject
 	PathFollower::Update( bot );
+
+#ifdef NEO
+	// the follower dropped the path on the leg (fell off, stuck): wait instead of rebuilding it next tick
+	if ( onLastLeg && !IsValid() )
+	{
+		BackOff( bot, subject );
+	}
+#endif
 }
+
+
+#ifdef NEO
+//----------------------------------------------------------------------------------------------
+/**
+ * True if a partial path crosses an area before its last leg. Without one the bot already stands
+ * in the last area the search reached, and the path is only the unreachable leg.
+ */
+inline bool ChasePath::HasReachableArea( void ) const
+{
+	return PriorSegment( LastSegment() ) != FirstSegment();
+}
+
+
+//----------------------------------------------------------------------------------------------
+/**
+ * True while the bot on the last leg of a partial path still has the last area the search reached
+ * just ahead of it, so it stops at that area's edge instead of walking into what stopped the search
+ */
+inline bool ChasePath::IsLastLegWalkable( INextBot *bot ) const
+{
+	const CNavArea *lastArea = LastSegment()->area;
+	if ( !lastArea || bot->GetLocomotionInterface()->IsStuck() )
+	{
+		return false;
+	}
+
+	// about a hull width, so the bot stops before its body crosses the edge
+	const float edgeLookAhead = 24.0f;
+
+	Vector toEnd = LastSegment()->pos - bot->GetPosition();
+	toEnd.z = 0.0f;
+	toEnd.NormalizeInPlace();
+
+	return lastArea->IsOverlapping( bot->GetPosition() + edgeLookAhead * toEnd );
+}
+
+
+//----------------------------------------------------------------------------------------------
+/**
+ * Throttle the next repath by range to the subject, as a failed path computation does
+ */
+inline void ChasePath::BackOff( INextBot *bot, CBaseEntity *subject )
+{
+	m_failTimer.Start( 0.005f * ( bot->GetRangeTo( subject ) ) );
+}
+#endif
 
 
 //----------------------------------------------------------------------------------------------
@@ -219,24 +302,14 @@ inline void ChasePath::RefreshPath( INextBot *bot, CBaseEntity *subject, const I
 		}
 
 #ifdef NEO
-		// A failed Compute still leaves a valid PARTIAL_PATH, ending in the reachable area closest
-		// to the target. When that end is already most of the way there, the search arrived and
-		// stopped short (the target stands just off the mesh, on a prop, over a ledge) and the bot
-		// can walk it. Calling it FAIL_NO_PATH_EXISTS instead invalidates the path and blocks
-		// repathing for a range-scaled time, so the bot stands still where it could be closing in.
-		// A partial path that ends well short of that still fails, and the throttle keeps guarding
-		// the genuinely unreachable case.
-		if ( !isPath && IsValid() )
+		// Even if the chase path only has a partial path, get as close to the target as possible
+		const bool isCompletePath = isPath;
+		if ( sv_neo_bot_path_partial_chase_enable.GetBool() && !isPath && IsValid() )
 		{
-			// share of the straight-line range to the target the partial path must already cover
-			constexpr float minPartialPathCoverage = 0.9f;
-			const float rangeToTarget = bot->GetPosition().DistTo( pathTarget );
-			if ( rangeToTarget > 0.0f )
-			{
-				const float covered = bot->GetPosition().DistTo( GetEndPosition() );
-				isPath = ( covered / rangeToTarget ) >= minPartialPathCoverage;
-			}
+			isPath = HasReachableArea();
 		}
+
+		m_isPartialPath = isPath && !isCompletePath;
 #endif
 
 		if ( isPath )
