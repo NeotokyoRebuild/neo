@@ -83,7 +83,8 @@ void CNEOBotJgrJuggernaut::RecomputeSeekPath( CNEOBot *me )
 
 
 //---------------------------------------------------------------------------------------------
-// Adds a periodic crouch attempt on top of CNEOBotMainAction::OnStuck for height clearance
+// Adds a periodic crouch attempt on top of CNEOBotMainAction::OnStuck for height clearance,
+// and a new route when crouching does not help
 EventDesiredResult< CNEOBot > CNEOBotJgrJuggernaut::OnStuck( CNEOBot *me )
 {
 	UTIL_LogPrintf( "\"%s<%i><%s>\" stuck (position \"%3.2f %3.2f %3.2f\") (duration \"%3.2f\") ",
@@ -121,6 +122,13 @@ EventDesiredResult< CNEOBot > CNEOBotJgrJuggernaut::OnStuck( CNEOBot *me )
 	else
 	{
 		me->GetLocomotionInterface()->Jump();
+
+		// Crouching did not get us through, so pick a new route as CNEOBotSeekAndDestroy::OnStuck does.
+		// Avoid pathing to gunfire for a short break, as sometimes the attraction to gunfire led to the problematic area.
+		constexpr float flStuckGunfireSearchPause = 10.0f;
+		m_soundSearchTimer.Start( flStuckGunfireSearchPause );
+		m_combatSoundCommitTimer.Invalidate();
+		RecomputeSeekPath( me );
 	}
 
 	if ( RandomInt( 0, 1 ) )
