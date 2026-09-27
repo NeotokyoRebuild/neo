@@ -474,6 +474,13 @@ bool PathFollower::CheckProgress( INextBot *bot )
 		{
 			if ( ( pSkipToGoal->pos - myFeet ).IsLengthLessThan( m_minLookAheadRange ) )
 			{
+#ifdef NEO
+				if ( pSkipToGoal->area && pSkipToGoal->area->HasAttributes( NAV_MESH_PRECISE ) )
+				{
+					// don't skip segments or take shortcuts in a PRECISE area
+					break;
+				}
+#endif
 				// goal is too close - step to next segment
 				const Path::Segment *nextSegment = NextSegment( pSkipToGoal );
 

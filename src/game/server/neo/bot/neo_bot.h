@@ -187,6 +187,7 @@ public:
 	bool IsEnemy(const CBaseEntity* them) const OVERRIDE;
 
 	bool IsBotOnLadder( ) const;
+	bool IsOnPreciseArea() const;	// on a NAV_MESH_PRECISE or NAV_MESH_CLIFF area, where the path must be walked exactly
 
 	CNEOBaseCombatWeapon* GetBludgeonWeapon(void);
 

@@ -220,6 +220,12 @@ void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 		return;
 	}
 
+	// stepping straight away from a teammate can step off a ledge
+	if ( me->IsOnPreciseArea() )
+	{
+		return;
+	}
+
 	CUtlVector< CNEO_Player * > friendVector;
 	CollectPlayers( &friendVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 
