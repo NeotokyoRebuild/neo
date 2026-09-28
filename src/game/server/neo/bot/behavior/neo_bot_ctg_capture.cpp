@@ -18,7 +18,10 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::OnStart( CNEOBot *me, Action<CNEOBot> *
 {
 	m_path.Invalidate();
 	m_repathTimer.Invalidate();
-	m_captureAttemptTimer.Start( 3.0f );
+	m_captureAttemptTimer.Start( CAPTURE_ATTEMPT_TIME );
+	m_useTapTimer.Invalidate();
+	m_dislodgeTimer.Invalidate();
+	m_bTriedDislodge = false;
 	m_previousKnownArea = me->GetLastKnownArea();
 	
 	if ( !m_hObjective )
@@ -57,7 +60,7 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
     CNavArea *pCurrentKnownArea = me->GetLastKnownArea();
     if ( pCurrentKnownArea != m_previousKnownArea )
     {
-        m_captureAttemptTimer.Start( 3.0f );
+        m_captureAttemptTimer.Start( CAPTURE_ATTEMPT_TIME );
         m_previousKnownArea = pCurrentKnownArea;
     }
 
@@ -87,8 +90,72 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 		}
 	}
 	
+	// A ghost that cannot be walked onto can still be picked up the way players do it:
+	// look at it and press use
+	const Vector vecGhostCenter = m_hObjective->WorldSpaceCenter();
+	const bool bGhostInUseRange = ( me->EyePosition().DistToSqr( vecGhostCenter ) < Square( PLAYER_USE_RADIUS ) )
+		&& me->IsLineOfSightClear( m_hObjective, CBaseCombatCharacter::IGNORE_ACTORS );
+
+	if ( bGhostInUseRange && !m_dislodgeTimer.HasStarted() )
+	{
+		me->GetBodyInterface()->AimHeadTowards( vecGhostCenter, IBody::MANDATORY, 0.1f, nullptr, "Looking at the ghost to use it" );
+
+		// Same facing test as CNEOBotJgrCapture, but use only registers on the press, so tap it
+		Vector vecToGhostDir = vecGhostCenter - me->EyePosition();
+		vecToGhostDir.NormalizeInPlace();
+
+		Vector vecEyeDirection;
+		me->EyeVectors( &vecEyeDirection );
+		const bool bIsFacing = vecEyeDirection.Dot( vecToGhostDir ) > USE_FACING_DOT;
+
+		if ( bIsFacing && me->GetBodyInterface()->IsHeadAimingOnTarget() && m_useTapTimer.IsElapsed() )
+		{
+			me->PressUseButton( BUTTON_TAP_HOLD );
+			m_useTapTimer.Start( USE_TAP_INTERVAL );
+		}
+	}
+	else
+	{
+		me->ReleaseUseButton();
+	}
+
+	// Players shoot a lodged ghost so physics moves it: try that once before giving up
+	if ( m_dislodgeTimer.HasStarted() )
+	{
+		if ( m_dislodgeTimer.IsElapsed() )
+		{
+			m_dislodgeTimer.Invalidate();
+			m_captureAttemptTimer.Start( CAPTURE_ATTEMPT_TIME );
+			return Continue();
+		}
+
+		CBaseCombatWeapon *pSidearm = me->Weapon_GetSlot( 1 );
+		if ( pSidearm && me->GetActiveWeapon() != pSidearm )
+		{
+			me->Weapon_Switch( pSidearm );
+		}
+
+		me->GetBodyInterface()->AimHeadTowards( vecGhostCenter, IBody::CRITICAL, 0.2f, nullptr, "Aiming at the lodged ghost" );
+
+		if ( pSidearm && me->GetActiveWeapon() == pSidearm && me->GetBodyInterface()->IsHeadAimingOnTarget()
+			&& me->IsLineOfFireClear( vecGhostCenter, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+		{
+			me->PressFireButton( BUTTON_TAP_HOLD );
+		}
+
+		return Continue();
+	}
+
 	if ( m_captureAttemptTimer.IsElapsed() )
 	{
+		const bool bCanSeeGhost = me->IsLineOfSightClear( m_hObjective, CBaseCombatCharacter::IGNORE_ACTORS );
+		if ( !m_bTriedDislodge && bCanSeeGhost )
+		{
+			m_bTriedDislodge = true;
+			m_dislodgeTimer.Start( DISLODGE_TIME );
+			return Continue();
+		}
+
 		// If the bot fails to capture the ghost, it's sometimes because the ghost is lodged into an awkward position
 		// Have the bot search around the location instead, to avoid cycle of failing to pick up ghost and retrying
 		return ChangeTo( new CNEOBotCtgLoneWolf(), "Failed to pick up ghost in time, searching around nearest areas" );
