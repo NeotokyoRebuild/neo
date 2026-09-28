@@ -153,6 +153,10 @@ public:
 #endif // NEO
 
 	virtual void SetButtonScale( float forward, float right ) = 0;
+#ifdef NEO
+	// Move in this world direction until the next bot update, whichever way the bot turns meanwhile
+	virtual void SetMoveDirection( const Vector2D &direction ) = 0;
+#endif // NEO
 };
 
 
@@ -273,6 +277,9 @@ public:
 #endif // NEO
 
 	virtual void SetButtonScale( float forward, float right );
+#ifdef NEO
+	virtual void SetMoveDirection( const Vector2D &direction );
+#endif // NEO
 
 	//------------------------------------------------------------------------
 	// Event hooks into NextBot system 
@@ -324,6 +331,10 @@ protected:
 	IntervalTimer m_burningTimer;		// how long since we were last burning
 	float m_forwardScale;
 	float m_rightScale;
+#ifdef NEO
+	Vector2D m_moveDirection;
+	int m_moveDirectionTick;		// the bot update that set m_moveDirection
+#endif // NEO
 	CHandle< CBaseEntity > m_spawnPointEntity;
 };
 
@@ -688,6 +699,15 @@ inline void NextBotPlayer< PlayerType >::SetButtonScale( float forward, float ri
 	m_buttonScaleTimer.Start( 0.01 );
 }
 
+#ifdef NEO
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::SetMoveDirection( const Vector2D &direction )
+{
+	m_moveDirection = direction;
+	m_moveDirectionTick = GetTickLastUpdate();
+}
+#endif // NEO
+
 
 
 //-----------------------------------------------------------------------------------------------------
@@ -698,6 +718,10 @@ inline NextBotPlayer< PlayerType >::NextBotPlayer( void )
 	m_inputButtons = 0;
 	m_burningTimer.Invalidate();
 	m_spawnPointEntity = NULL;
+#ifdef NEO
+	m_moveDirection.Init();
+	m_moveDirectionTick = -1;
+#endif // NEO
 }
 
 
@@ -738,6 +762,7 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_thermopticButtonTimer.Invalidate();
 	m_leanLeftButtonTimer.Invalidate();
 	m_leanRightButtonTimer.Invalidate();
+	m_moveDirectionTick = -1;
 #endif // NEO
 
 	// reset first, because Spawn() may access various interfaces
@@ -995,6 +1020,19 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 		forwardSpeed = mover->GetRunSpeed() * m_forwardScale;
 		strafeSpeed = mover->GetRunSpeed() * m_rightScale;
 	}
+
+#ifdef NEO
+	// Held on every tick until the next update, taken against this tick's view so a bot turning to aim keeps its line
+	if ( m_moveDirectionTick == GetTickLastUpdate() )
+	{
+		const float yaw = DEG2RAD( this->EyeAngles()[ YAW ] );
+		const Vector2D forward( cosf( yaw ), sinf( yaw ) );
+		const Vector2D right( forward.y, -forward.x );
+
+		forwardSpeed = mover->GetRunSpeed() * m_moveDirection.Dot( forward );
+		strafeSpeed = mover->GetRunSpeed() * m_moveDirection.Dot( right );
+	}
+#endif // NEO
 
 	if ( !NextBotPlayerMove.GetBool() )
 	{
