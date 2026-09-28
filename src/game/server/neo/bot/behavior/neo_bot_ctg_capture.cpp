@@ -76,8 +76,9 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 	}
 	m_path.Update( me );
 
+	// While dislodging, leave the sidearm out: the primary is dropped afterwards
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
-	if ( pPrimary )
+	if ( pPrimary && !m_dislodgeTimer.HasStarted() )
 	{
 		// Switch to primary weapon to drop it, if not already active
 		if ( me->GetActiveWeapon() != pPrimary )
