@@ -23,7 +23,7 @@ enum
 	AXIS_Z
 };
 
-class BoundBox
+class BoundBox final
 {
 	public:
 
@@ -39,7 +39,7 @@ class BoundBox
 		void GetBoundsCenter(Vector& ptdest);
 		inline void GetBounds(Vector& Mins, Vector& Maxs);
 
-		virtual bool IsIntersectingBox(const Vector& pfMins, const Vector& pfMaxs) const;
+		bool IsIntersectingBox(const Vector& pfMins, const Vector& pfMaxs) const;
 		bool IsInsideBox(const Vector& pfMins, const Vector& pfMaxs) const;
 		bool ContainsPoint(const Vector& pt) const;
 		bool IsValidBox(void) const;

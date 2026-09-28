@@ -11,14 +11,14 @@
 #include "utlvector.h"
 #include "bspfile.h"
 #include "gamebspfile.h"
-#include "VPhysics_Interface.h"
-#include "Studio.h"
+#include "vphysics_interface.h"
+#include "studio.h"
 #include "byteswap.h"
-#include "UtlBuffer.h"
-#include "CollisionUtils.h"
+#include "utlbuffer.h"
+#include "collisionutils.h"
 #include <float.h>
-#include "CModel.h"
-#include "PhysDll.h"
+#include "cmodel.h"
+#include "physdll.h"
 #include "utlsymbol.h"
 #include "tier1/strtools.h"
 #include "KeyValues.h"
@@ -131,7 +131,8 @@ isstaticprop_ret IsStaticProp( studiohdr_t* pHdr )
 static int AddStaticPropDictLump( char const* pModelName )
 {
 	StaticPropDictLump_t dictLump;
-	strncpy( dictLump.m_Name, pModelName, DETAIL_NAME_LENGTH );
+	memset( &dictLump, 0, sizeof( dictLump ) );
+	V_strncpy( dictLump.m_Name, pModelName, sizeof( dictLump.m_Name ) );
 
 	for (int i = s_StaticPropDictLump.Size(); --i >= 0; )
 	{
@@ -181,10 +182,6 @@ bool LoadStudioModel( char const* pModelName, char const* pEntityType, CUtlBuffe
 		}
 		return false;
 	}
-
-	// ensure reset
-	pHdr->SetVertexBase( NULL );
-	pHdr->SetIndexBase( NULL );
 
 	return true;
 }
@@ -247,7 +244,7 @@ static CPhysCollide* GetCollisionModel( char const* pModelName )
 	// Convert to a common string
 	char* pTemp = (char*)_alloca(strlen(pModelName) + 1);
 	strcpy( pTemp, pModelName );
-	_strlwr( pTemp );
+	strlwr( pTemp );
 
 	char* pSlash = strchr( pTemp, '\\' );
 	while( pSlash )
@@ -581,7 +578,7 @@ void EmitStaticProps()
 	int i;
 	for ( i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!Q_strcmp(pEntity, "info_lighting"))
 		{
 			s_LightingInfo.AddToTail(i);
@@ -591,7 +588,7 @@ void EmitStaticProps()
 	// Emit specifically specified static props
 	for ( i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!strcmp(pEntity, "static_prop") || !strcmp(pEntity, "prop_static"))
 		{
 			StaticPropBuild_t build;
@@ -682,20 +679,28 @@ void EmitStaticProps()
 }
 
 static studiohdr_t *g_pActiveStudioHdr;
+
+// The loaded .vvd used to be stashed in the studio header itself, but on 64-bit that
+// field lives in studiohdr2_t, which models compiled before that block existed don't
+// have - the store was dropped for them, so the file was reloaded on every access and
+// never freed. Only one model is active at a time here, so keep it alongside instead.
+static void *g_pActiveStudioVertexData;
+
 static void SetCurrentModel( studiohdr_t *pStudioHdr )
 {
 	// track the correct model
 	g_pActiveStudioHdr = pStudioHdr;
+	g_pActiveStudioVertexData = NULL;
 }
 
 static void FreeCurrentModelVertexes()
 {
 	Assert( g_pActiveStudioHdr );
 
-	if ( g_pActiveStudioHdr->VertexBase() )
+	if ( g_pActiveStudioVertexData )
 	{
-		free( g_pActiveStudioHdr->VertexBase() );
-		g_pActiveStudioHdr->SetVertexBase( NULL );
+		free( g_pActiveStudioVertexData );
+		g_pActiveStudioVertexData = NULL;
 	}
 }
 
@@ -708,9 +713,9 @@ const vertexFileHeader_t * mstudiomodel_t::CacheVertexData( void * pModelData )
 	Assert( pModelData == NULL );
 	Assert( g_pActiveStudioHdr );
 
-	if ( g_pActiveStudioHdr->VertexBase() )
+	if ( g_pActiveStudioVertexData )
 	{
-		return (vertexFileHeader_t *)g_pActiveStudioHdr->VertexBase();
+		return (vertexFileHeader_t *)g_pActiveStudioVertexData;
 	}
 
 	// mandatory callback to make requested data resident
@@ -753,7 +758,7 @@ const vertexFileHeader_t * mstudiomodel_t::CacheVertexData( void * pModelData )
 		Error("Error Vertex File %s checksum %d should be %d\n", fileName, pVvdHdr->checksum, g_pActiveStudioHdr->checksum);
 	}
 
-	g_pActiveStudioHdr->SetVertexBase( (void*)pVvdHdr );
+	g_pActiveStudioVertexData = (void*)pVvdHdr;
 	return pVvdHdr;
 }
 
