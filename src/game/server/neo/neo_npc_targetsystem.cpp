@@ -1,10 +1,18 @@
 #include "neo_npc_targetsystem.h"
 #include "neo_player.h"
 #include "ammodef.h"
+#include "nav_mesh.h"
+#include "NextBotManager.h"
+#include "bot/neo_bot_path_reservation.h"
 
 #include "tier0/memdbgon.h"
 
 #define CLOAKED_VELOCITY_THRESHOLD 32400 // 180 horizontal velocity. Slightly under sprint/wigglerun speed
+
+// Bot hazard timing
+static constexpr float BOT_HAZARD_REACTION_TIME = 0.25f;
+static constexpr float BOT_HAZARD_INTERVAL = BOT_HAZARD_REACTION_TIME;
+static constexpr float BOT_HAZARD_DURATION = 2.0f;
 
 LINK_ENTITY_TO_CLASS(neo_npc_targetsystem, CNEO_NPCTargetSystem);
 
@@ -185,6 +193,7 @@ void CNEO_NPCTargetSystem::Think()
 		{
 			m_OnSpotted.FireOutput(pBestTarget, this);
 			m_bTargetAcquired = true;
+			m_flNextHazardTime = gpGlobals->curtime + BOT_HAZARD_REACTION_TIME;
 		}
 
 		if (bMiddleIgnore && !m_bMiddleIgnoreActive)
@@ -234,6 +243,8 @@ void CNEO_NPCTargetSystem::Think()
 		m_bMiddleIgnoreActive = false;
 	}
 
+	PublishBotHazards(pBestTarget);
+
 	// Optional - damage the target
 	if (m_hDamageSource && pBestTarget && (iNewZone == ZONE_MIDDLE))
 	{
@@ -258,6 +269,88 @@ void CNEO_NPCTargetSystem::Think()
 
 	m_iLastZone = iNewZone;
 	SetNextThink(gpGlobals->curtime + 0.05f);
+}
+
+//-----------------------------------------------------------------------------
+// Bot hazard publishing - Bots cannot fight this entity.
+// Hazards: its own area and all adjacent areas for every team (run-over),
+// and its targeted player's area once acquired.
+//-----------------------------------------------------------------------------
+
+void CNEO_NPCTargetSystem::PublishBotHazards(CBasePlayer *pTarget)
+{
+	if (!TheNavMesh->IsLoaded() || TheNextBots().GetNextBotCount() == 0)
+	{
+		return;
+	}
+
+	if (gpGlobals->curtime < m_flNextHazardTime)
+	{
+		return;
+	}
+
+	m_flNextHazardTime = gpGlobals->curtime + BOT_HAZARD_INTERVAL;
+	const float flExpireTime = gpGlobals->curtime + BOT_HAZARD_DURATION;
+
+	// A team is targeted if a living member passes the filter; on ntre_rogue_ctg
+	// the filter swaps on ghost pickup so the carrier's team is left out
+	bool bTeamTargeted[TEAM__TOTAL] = {};
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CBasePlayer *pPlayer = UTIL_PlayerByIndex(i);
+		if (!pPlayer || !pPlayer->IsAlive() || pPlayer->GetTeamNumber() < FIRST_GAME_TEAM)
+		{
+			continue;
+		}
+
+		if (!m_pFilter || m_pFilter->PassesFilter(this, pPlayer))
+		{
+			bTeamTargeted[pPlayer->GetTeamNumber()] = true;
+		}
+	}
+
+	// Mark areas PVS to the tank as do not hang out in my view
+	CNavArea *pOwnArea = TheNavMesh->GetNearestNavArea(GetAbsOrigin());
+	if (pOwnArea)
+	{
+		for (int iTeam = FIRST_GAME_TEAM; iTeam < TEAM__TOTAL; ++iTeam)
+		{
+			CNEOBotPathReservations()->AddDeadlyHazard(pOwnArea->GetID(), flExpireTime, iTeam);
+
+			if (bTeamTargeted[iTeam])
+			{
+				AddVisibleHazard(pOwnArea, iTeam, flExpireTime);
+			}
+		}
+	}
+
+	if (pTarget)
+	{
+		CNavArea *pTargetArea = TheNavMesh->GetNearestNavArea(pTarget->GetAbsOrigin());
+		if (pTargetArea)
+		{
+			// Don't propagate the PVS for the targeted bot location to avoid marking the areas around the corner
+			AddVisibleHazard(pTargetArea, pTarget->GetTeamNumber(), flExpireTime, false);
+		}
+	}
+}
+
+void CNEO_NPCTargetSystem::AddVisibleHazard(CNavArea *pArea, int iTeam, float flExpireTime, bool bPropagatePVS)
+{
+	const bool bMotionVision = m_bMotionVision;
+	auto addHazard = [flExpireTime, iTeam, bMotionVision, bPropagatePVS](CNavArea *pVisible)
+	{
+		if (bMotionVision)
+		{
+			CNEOBotPathReservations()->AddNpcTurretHazard(pVisible->GetID(), flExpireTime, iTeam, bPropagatePVS);
+		}
+		else
+		{
+			CNEOBotPathReservations()->AddDeadlyHazard(pVisible->GetID(), flExpireTime, iTeam, bPropagatePVS);
+		}
+		return true;
+	};
+	addHazard(pArea);
 }
 
 bool CNEO_NPCTargetSystem::CanSee(CBaseEntity *pEntity)
