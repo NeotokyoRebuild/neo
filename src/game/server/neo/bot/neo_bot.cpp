@@ -2876,6 +2876,14 @@ bool CNEOBot::IsEnemy(const CBaseEntity* them) const
 }
 
 
+// For disabling erratic movements like strafing where one wrong step could move a bot off a cliff
+// Also useful for navigating areas that require precision to navigate like obstructed pathways
+bool CNEOBot::IsOnPreciseArea() const
+{
+	const CNavArea *area = GetLastKnownArea();
+	return area && area->HasAttributes( NAV_MESH_PRECISE | NAV_MESH_CLIFF );
+}
+
 bool CNEOBot::IsBotOnLadder() const
 {
 	ILocomotion* mover = GetLocomotionInterface();

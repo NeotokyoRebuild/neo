@@ -291,14 +291,17 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 	if (!m_attackCoverArea // don't slow movement to cover with strafing
 		&& isUsingCloseRangeWeapon && threat->IsVisibleRecently() && me->IsRangeLessThan( threatLastKnownPos, 1.1f * me->GetDesiredAttackRange() ) )
 	{
-		// circle around our victim
-		if ( me->TransientlyConsistentRandomValue( 3.0f ) < 0.5f )
+		// circle around our victim, unless a sidestep could take us off a ledge
+		if ( !me->IsOnPreciseArea() )
 		{
-			me->PressLeftButton();
-		}
-		else
-		{
-			me->PressRightButton();
+			if ( me->TransientlyConsistentRandomValue( 3.0f ) < 0.5f )
+			{
+				me->PressLeftButton();
+			}
+			else
+			{
+				me->PressRightButton();
+			}
 		}
 	}
 

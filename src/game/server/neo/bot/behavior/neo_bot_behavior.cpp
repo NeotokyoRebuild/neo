@@ -1236,6 +1236,10 @@ void CNEOBotMainAction::Dodge( CNEOBot *me )
 	if ( me->HasAttribute( CNEOBot::DISABLE_DODGE ) )
 		return;
 
+	// a sidestep on a ledge or beside a drop can walk the bot off it
+	if ( me->IsOnPreciseArea() )
+		return;
+
 	// don't waste time doding if we're in a hurry
 	if ( me->GetIntentionInterface()->ShouldHurry( me ) == ANSWER_YES )
 		return;
