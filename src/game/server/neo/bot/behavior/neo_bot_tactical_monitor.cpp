@@ -259,6 +259,12 @@ void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 		me->ReleaseBackwardButton();
 
 		Vector away = me->GetAbsOrigin() - closestFriend->GetAbsOrigin();
+		if ( away.AsVector2D().IsZero() )
+		{
+			// stacked on the same spot (e.g. an overflowed spawn point): "away" has no direction, so pick one at random
+			const QAngle randomYaw( 0.0f, RandomFloat( 0.0f, 360.0f ), 0.0f );
+			AngleVectors( randomYaw, &away );
+		}
 
 		me->GetLocomotionInterface()->Approach( me->GetLocomotionInterface()->GetFeet() + away );
 	}
