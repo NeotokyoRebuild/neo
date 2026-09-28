@@ -20,6 +20,7 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::OnStart( CNEOBot *me, Action<CNEOBot> *
 	m_repathTimer.Invalidate();
 	m_captureAttemptTimer.Start( CAPTURE_ATTEMPT_TIME );
 	m_useTapTimer.Invalidate();
+	m_useJumpTimer.Invalidate();
 	m_dislodgeTimer.Invalidate();
 	m_bTriedDislodge = false;
 	m_previousKnownArea = me->GetLastKnownArea();
@@ -94,8 +95,7 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 	// A ghost that cannot be walked onto can still be picked up the way players do it:
 	// look at it and press use
 	const Vector vecGhostCenter = m_hObjective->WorldSpaceCenter();
-	const bool bGhostInUseRange = ( me->EyePosition().DistToSqr( vecGhostCenter ) < Square( PLAYER_USE_RADIUS ) )
-		&& me->IsLineOfSightClear( m_hObjective, CBaseCombatCharacter::IGNORE_ACTORS );
+	const bool bGhostInUseRange = me->EyePosition().DistToSqr( vecGhostCenter ) < Square( PLAYER_USE_RADIUS );
 
 	if ( bGhostInUseRange && !m_dislodgeTimer.HasStarted() )
 	{
@@ -109,7 +109,17 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 		me->EyeVectors( &vecEyeDirection );
 		const bool bIsFacing = vecEyeDirection.Dot( vecToGhostDir ) > USE_FACING_DOT;
 
-		if ( bIsFacing && me->GetBodyInterface()->IsHeadAimingOnTarget() && m_useTapTimer.IsElapsed() )
+		if ( !me->IsLineOfSightClear( m_hObjective, CBaseCombatCharacter::IGNORE_ACTORS ) )
+		{
+			// At the foot of a crate the ghost rests on, the top edge hides it: jump to see over
+			ILocomotion *pMover = me->GetLocomotionInterface();
+			if ( vecGhostCenter.z > me->EyePosition().z && pMover->IsOnGround() && m_useJumpTimer.IsElapsed() )
+			{
+				pMover->Jump();
+				m_useJumpTimer.Start( USE_JUMP_INTERVAL );
+			}
+		}
+		else if ( bIsFacing && me->GetBodyInterface()->IsHeadAimingOnTarget() && m_useTapTimer.IsElapsed() )
 		{
 			me->PressUseButton( BUTTON_TAP_HOLD );
 			m_useTapTimer.Start( USE_TAP_INTERVAL );
