@@ -103,7 +103,49 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 	// Try to resolve the exit area from the current path early
 	ResolveExitArea( me );
 
+	ClaimLadder( me );
+
 	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+// PlayerLocomotion lets go of a ladder it was never asked to use, and once the contact persists
+// takes it over by the nearer end - at the foot, the bottom. Tell it this climb is wanted.
+void CNEOBotLadderClimb::ClaimLadder( CNEOBot *me ) const
+{
+	ILocomotion *mover = me->GetLocomotionInterface();
+	if ( mover->IsUsingLadder() )
+	{
+		return;
+	}
+
+	const CNavArea *pExitArea = m_pExitArea;
+	if ( !pExitArea )
+	{
+		pExitArea = m_bGoingUp ? m_ladder->m_topForwardArea : m_ladder->m_bottomArea;
+	}
+
+	// The generator fills whichever top slot the landing is in, often not the forward one
+	if ( !pExitArea && m_bGoingUp )
+	{
+		pExitArea = m_ladder->m_topLeftArea ? m_ladder->m_topLeftArea :
+			( m_ladder->m_topRightArea ? m_ladder->m_topRightArea : m_ladder->m_topBehindArea );
+	}
+
+	// The locomotion's dismount walks to this area, so there is nothing to claim with without one
+	if ( !pExitArea )
+	{
+		return;
+	}
+
+	if ( m_bGoingUp )
+	{
+		mover->ClimbLadder( m_ladder, pExitArea );
+	}
+	else
+	{
+		mover->DescendLadder( m_ladder, pExitArea );
+	}
 }
 
 //---------------------------------------------------------------------------------------------

@@ -244,6 +244,13 @@ PlayerLocomotion::LadderState PlayerLocomotion::ApproachAscendingLadder( void )
 		return DISMOUNTING_LADDER_TOP;
 	}
 
+	// NEO: a bot already on the ladder is not too far below it, whatever the nav ladder's bottom says -
+	// on a ladder whose foot hangs above the floor the check below would drop a climb the bot has begun
+	if ( GetBot()->GetEntity()->GetMoveType() == MOVETYPE_LADDER )
+	{
+		return ASCENDING_LADDER;
+	}
+
 	// sanity check - are we too far below this ladder to reach it?
 	if ( GetFeet().z <= m_ladderInfo->m_bottom.z - GetMaxJumpHeight() )
 	{
