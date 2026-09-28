@@ -260,6 +260,12 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 	//------------------------------------------------------------
 	if ( !m_bDismountPhase )
 	{
+		// The locomotion drops its claim whenever the engine lets go of the bot, even for a tick
+		if ( me->GetMoveType() == MOVETYPE_LADDER )
+		{
+			ClaimLadder( me );
+		}
+
 		float currentZ = myPos.z;
 		float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
 
