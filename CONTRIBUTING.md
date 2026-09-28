@@ -12,7 +12,7 @@ Also come [join the Discord channel](https://steamcommunity.com/groups/ANPA/disc
 ## Goal of the project
 The overall goal is to create a reimplementation of Neotokyo for Source 2013 MP engine, with the source code opened for viewing and editing (with certain limitations; see the Source SDK license for legalese). Original NT assets/IP are mounted as dependencies, and aren't part of the repository. It's like a mod of a mod.
 
-The end result should hopefully be a shinier and less error-prone rendition of NT, with the source code and more cvars providing room to fine tune game balance, or come up with completely new modes entirely.
+The end result should hopefully be a shinier and less error-prone rendition of NT, with the source code and more cvars providing room to fine tune game balance, or come up with completely new modes.
 
 ## Table of contents
 To see the Table of Contents, please use the "Outline" feature on GitHub by clicking the button located in the top right of this document.
@@ -134,7 +134,7 @@ Only the x86-64 architecture is supported.
 
 ### Windows
 * MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest)
-* MSVC version used by the latest `windows-2025` [runner image](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md) (Microsoft.VisualStudio.Component.VC.Tools.x86.x64)
+* MSVC version used by the latest `windows-2022` [runner image](https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md) (Microsoft.VisualStudio.Component.VC.Tools.x86.x64)
 
 ### Linux
 * GCC 10 [steamrt3 'sniper'](https://gitlab.steamos.cloud/steamrt/sniper/sdk#toolchains)

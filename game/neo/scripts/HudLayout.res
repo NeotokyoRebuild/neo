@@ -998,14 +998,9 @@
 		"tall"	"200"
 	}
 
-	neo_killer_damage_info
+	neo_killer_info
 	{
-		"fieldName"		"neo_killer_damage_info"
-		"xpos"	"20"
-		"ypos"	"150"
-		"wide"	"640"
-		"tall"	"480"
-		"box_color"		"150 150 150 60"
+		"fieldName"		"neo_killer_info"
 	}
 
 	neo_context_hint
@@ -1017,5 +1012,29 @@
 		"box_y_factor" 	"0.75"
 		"box_color" 	"20 20 20 0"
 		"text_color" 	"255 255 255 255"
+	}
+
+	neo_spectator_overlay
+	{
+		"fieldName" 		"neo_spectator_overlay"
+		"NameFont"			"NHudSpectatorOverlayName"
+		"InfoFont"			"NHudSpectatorOverlayInfo"
+		"ClassFont"			"NHudSpectatorOverlayClass"
+		"RKHPFont"			"NHudSpectatorOverlayRoundKillHPFront"
+		"RKHPBackFont"		"NHudSpectatorOverlayRoundKillHPBack"
+		"GhostFont"			"NHudSpectatorOverlayGhost"
+		"SmallWeaponsFont"	"NHudSpectatorOverlaySmallWeapons"
+		"DeadTexture"		"vgui/hud/kill_kill"
+	}
+	
+	neo_place_name
+	{
+		"fieldName"			"neo_place_name"
+		
+		"textXpos"				"-4"
+		"textYpos"				"4"
+		"textFont"			"NHudOCRSmallNoAdditive"
+		"textColor"			"255 255 255 255"
+		"textXAlignment"	"2"
 	}
 }

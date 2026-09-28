@@ -10,6 +10,7 @@
 #include "NextBotUtil.h"
 #include "NextBotPlayer.h"
 #include "NextBotPlayerLocomotion.h"
+#include "bot/neo_bot.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -575,7 +576,12 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 	}
 
 #ifdef NEO
-	if ( IsRunning() )
+	CNEOBot* me = (CNEOBot*)GetBot()->GetEntity();
+	if ( me->m_nButtons & IN_WALK )
+	{
+		// If walk key was activated this tick, stop pressing run button.
+	}
+	else if ( IsRunning() )
 	{
 		playerButtons->PressRunButton();
 	}

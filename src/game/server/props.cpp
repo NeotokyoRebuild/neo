@@ -2404,7 +2404,9 @@ void COrnamentProp::InputDetach( inputdata_t &inputdata )
 //=============================================================================
 LINK_ENTITY_TO_CLASS( physics_prop, CPhysicsProp );
 LINK_ENTITY_TO_CLASS( prop_physics, CPhysicsProp );	
+#ifndef NEO
 LINK_ENTITY_TO_CLASS( prop_physics_override, CPhysicsProp );	
+#endif
 
 BEGIN_DATADESC( CPhysicsProp )
 
@@ -5709,6 +5711,9 @@ private:
 };
 
 LINK_ENTITY_TO_CLASS( prop_physics_multiplayer, CPhysicsPropMultiplayer );
+#ifdef NEO
+LINK_ENTITY_TO_CLASS( prop_physics_override, CPhysicsPropMultiplayer );
+#endif
 
 BEGIN_DATADESC( CPhysicsPropMultiplayer )
 	DEFINE_KEYFIELD( m_iPhysicsMode, FIELD_INTEGER, "physicsmode" ),

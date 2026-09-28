@@ -34,6 +34,14 @@
 // be retrieved.
 //=============================================================================
 
+#ifdef NEO
+struct AvatarImagePairValue_t
+{
+	int normal;
+	int dead;
+};
+#endif // NEO
+
 struct AvatarImagePair_t
 {
 	AvatarImagePair_t() { m_iAvatar = 0; }
@@ -120,7 +128,7 @@ public:
 	int		GetAvatarWide() { return m_avatarWide; }
 	int		GetAvatarTall() { return m_avatarTall; }
 #ifdef NEO
-	int		getTextureID() { return m_iTextureID; }
+	bool m_bDeadAvatar = false;
 #endif
 
 	//=============================================================================
@@ -153,6 +161,9 @@ private:
 
 	Color m_Color;
 	int m_iTextureID;
+#ifdef NEO
+	int m_iTextureDeadID;
+#endif // NEO
 	int m_nX, m_nY;
 	int m_wide, m_tall;
 	int	m_avatarWide, m_avatarTall;
@@ -180,7 +191,11 @@ private:
 	// HPE_END
 	//=============================================================================
 
+#ifdef NEO
+	static CUtlMap< AvatarImagePair_t, AvatarImagePairValue_t > s_AvatarImageCache;
+#else
 	static CUtlMap< AvatarImagePair_t, int > s_AvatarImageCache;
+#endif
 	static bool m_sbInitializedAvatarCache;
 
 	CCallback<CAvatarImage, PersonaStateChange_t, false> m_sPersonaStateChangedCallback;

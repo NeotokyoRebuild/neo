@@ -42,10 +42,10 @@ ActionResult< CNEOBot >	CNEOBotJgrEnemy::Update( CNEOBot *me, float interval )
 		return Done( "Juggernaut is friendly" );
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
 	if ( threat && !threat->IsObsolete() && me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
-		return SuspendFor( new CNEOBotAttack, "Attacking threat" );
+		return SuspendFor( new CNEOBotAttack( pJuggernaut->GetAbsOrigin() ), "Attacking threat en route to juggernaut" );
 	}
 
 	// Chase the Juggernaut

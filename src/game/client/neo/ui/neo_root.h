@@ -72,12 +72,12 @@ enum RootState
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
 	STATE_CREDITS,
+	STATE_OVERLAY,
 
 	// Those that are not the main states goes under here
 	STATE__SUBSTATES,
 	STATE_MAPLIST = STATE__SUBSTATES,
 	STATE_SERVERDETAILS,
-	STATE_PLAYERLIST,
 	STATE_SPRAYPICKER,
 	STATE_SPRAYDELETER,
 
@@ -100,7 +100,6 @@ enum MainMenuButtons
 	MMBTN_FINDSERVER,
 	MMBTN_CREATESERVER,
 	MMBTN_DISCONNECT,
-	MMBTN_PLAYERLIST,
 	MMBTN_TUTORIAL,
 	MMBTN_FIRINGRANGE,
 	MMBTN_OPTIONS,
@@ -165,9 +164,9 @@ public:
 	void MainLoopNewGame(const MainLoopParam param);
 	void MainLoopServerBrowser(const MainLoopParam param);
 	void MainLoopCredits(const MainLoopParam param);
+	void MainLoopOverlay(const MainLoopParam param);
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
-	void MainLoopPlayerList(const MainLoopParam param);
 	void MainLoopSprayPicker(const MainLoopParam param);
 	void MainLoopPopup(const MainLoopParam param);
 
@@ -223,6 +222,8 @@ public:
 		FILEIODLGMODE_SPRAY = 0,
 		FILEIODLGMODE_BLACKLIST_IMPORT,
 		FILEIODLGMODE_BLACKLIST_EXPORT,
+		FILEIODLGMODE_TEAMLOGO_JINRAI,
+		FILEIODLGMODE_TEAMLOGO_NSF,
 
 		FILEIODLGMODE__TOTAL,
 	};
@@ -277,6 +278,22 @@ public:
 
 	float m_flHtBtnCodeUpdate = 0.0f;
 	CUtlHashtable<int, ERootButtonAction> m_htButtonCodeToAction;
+
+	wchar_t m_wszTeamNameJinrai[MAX_PLAYER_NAME_LENGTH] = {};
+	wchar_t m_wszTeamNameNSF[MAX_PLAYER_NAME_LENGTH] = {};
+	char m_szLogoPathJinrai[MAX_PATH] = {};
+	char m_szLogoPathNSF[MAX_PATH] = {};
+	int m_iMatchesWonJinrai = 0;
+	int m_iMatchesWonNSF = 0;
+	char m_szNextLogoPathStartDir[MAX_PATH] = {};
+
+	struct TeamInfo
+	{
+		wchar_t wszName[MAX_PLAYER_NAME_LENGTH] = {};
+		char szLogoPath[MAX_PATH] = {};
+	};
+	CUtlVector<TeamInfo> m_teamInfos;
+	int m_iSetTeamPreset = 0;
 };
 
 extern CNeoRoot *g_pNeoRoot;

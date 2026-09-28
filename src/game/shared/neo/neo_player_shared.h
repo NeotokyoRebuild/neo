@@ -165,9 +165,12 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define NEO_ASSAULT_CROUCH_JUMP_HEIGHT 53.0f
 #define NEO_SUPPORT_CROUCH_JUMP_HEIGHT 47.0f
 #define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 63.4f
-// To ensure bots can safely clear obstacles, we apply a safety buffer (NEO_BOT_JUMP_HEIGHT_BUFFER)
-// when checking traverseability, by subtracting it from these theoretical max heights.
-#define NEO_BOT_JUMP_HEIGHT_BUFFER 7.0f
+// To ensure bots can safely clear obstacles, we apply a safety buffer when checking traverseability,
+// by subtracting it from these theoretical max heights. Juggernaut uses the default; VIP uses Assault's.
+#define NEO_BOT_JUMP_HEIGHT_BUFFER 4.0f
+#define NEO_BOT_RECON_JUMP_HEIGHT_BUFFER NEO_BOT_JUMP_HEIGHT_BUFFER
+#define NEO_BOT_ASSAULT_JUMP_HEIGHT_BUFFER ( NEO_BOT_JUMP_HEIGHT_BUFFER + 1.0f )
+#define NEO_BOT_SUPPORT_JUMP_HEIGHT_BUFFER NEO_BOT_JUMP_HEIGHT_BUFFER
 
 // END OF NEO MOVEMENT DEFINITIONS
 //////////////////////////////////////////////////////
@@ -292,6 +295,7 @@ inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
 
 int GetRank(const int xp);
 const char *GetRankName(const int xp, const bool shortened = false);
+const wchar_t *GetRankNameW(const int xp, const bool shortened = false);
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
 
@@ -315,19 +319,23 @@ void UpdatePingCommands(CNEO_Player* player, const Vector& pingPos);
 
 struct AttackersTotals
 {
-	int dealtDmgs;
-	int dealtHits;
-	int takenDmgs;
-	int takenHits;
-
-	void operator+=(const AttackersTotals &other)
-	{
-		dealtDmgs += other.dealtDmgs;
-		dealtHits += other.dealtHits;
-		takenDmgs += other.takenDmgs;
-		takenHits += other.takenHits;
-	}
+	int iUserID;
+	int iDealtDmgs;
+	int iDealtHits;
+	int iTakenDmgs;
+	int iTakenHits;
 };
+
+enum ENEOCompactMsgFlag_ : unsigned char
+{
+	NEO_COMPACT_MSG_FLAG_NIL = 0,
+	NEO_COMPACT_MSG_FLAG_DMGS = (1 << 0),
+	NEO_COMPACT_MSG_FLAG_HITS = (1 << 1),
+	NEO_COMPACT_MSG_FLAG_EXTRA = (1 << 2),
+};
+
+typedef unsigned char ENEOCompactMsgFlag;
+
 
 [[deprecated]] void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith = "");
@@ -413,5 +421,7 @@ static constexpr const SZWSZTexts SZWSZ_NEO_TEAM_STRS[TEAM__TOTAL] = {
 };
 
 #define NEO_GAME_NAME "NEOTOKYO;REBUILD"
+
+static constexpr const int WEP_NAME_MAXSTRLEN = 32;
 
 #endif // NEO_PLAYER_SHARED_H

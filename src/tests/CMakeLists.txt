@@ -28,10 +28,23 @@ add_executable(test_neo_serial
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_serial.h
 )
 
+if (OS_LINUX)
+    add_executable(test_neo_case_heal
+        test_neo_case_heal.cpp
+        test_util.h
+        ${CMAKE_SOURCE_DIR}/launcher_main/neo_case_heal.cpp
+        ${CMAKE_SOURCE_DIR}/launcher_main/neo_case_heal.h
+    )
+endif ()
+
 set(TEST_EXE_LIST
     test_neo_crosshair
     test_neo_serial
 )
+
+if (OS_LINUX)
+    list(APPEND TEST_EXE_LIST test_neo_case_heal)
+endif ()
 
 foreach (TEST_EXE ${TEST_EXE_LIST})
     add_test(NAME ${TEST_EXE}

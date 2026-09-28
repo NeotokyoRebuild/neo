@@ -10,6 +10,7 @@
 #include <IGameUIFuncs.h>
 
 #include "neo_misc.h"
+#include "neo_utils.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -529,6 +530,7 @@ void BeginSection(const ISectionFlags iSectionFlags)
 	c->uMultiHighlightFlags = MULTIHIGHLIGHTFLAG_NONE;
 	c->layout.iTableLabelsSize = 0;
 	c->layout.piTableColsWide = nullptr;
+	c->layout.iOverridePanelWide = 0;
 	c->curRowFlags = NEXTTABLEROWFLAG_NONE;
 	c->bBlockSectionMWheel = false;
 
@@ -935,9 +937,9 @@ int CurrentPopup()
 	return c->iCurPopupId;
 }
 
-int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType)
+int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType, const int iForceIdx)
 {
-	const auto *pFontI = &c->fonts[c->eFont];
+	const auto *pFontI = &c->fonts[(iForceIdx >= 0) ? iForceIdx : c->eFont];
 	switch (eWideType)
 	{
 	case SUITABLEWIDE_POPUP:
@@ -995,6 +997,16 @@ void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions)
 	c->layout.iVertParts = iRowProportions;
 	c->iIdxVertParts = -1;
 	c->iVertLayoutY = 0;
+}
+
+void BeginOverridePanelWide(const int iOverridePanelWide)
+{
+	c->layout.iOverridePanelWide = iOverridePanelWide;
+}
+
+void EndOverridePanelWide()
+{
+	c->layout.iOverridePanelWide = 0;
 }
 
 CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag)
@@ -1059,12 +1071,16 @@ CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag)
 			: Max(1, c->layout.iRowPartsTotal);
 	const bool bNextIsLast = (c->iIdxRowParts + 1) >= iRowPartsTotal;
 
+	const int iLayoutWide = (c->layout.iOverridePanelWide > 0)
+			? c->layout.iOverridePanelWide
+			: c->dPanel.wide;
+
 	// NEO NOTE (nullsystem): If very last partition of the row, use what's left
 	// instead so whatever pixels don't get left out
 	int xWide;
 	if (bNextIsLast && !bInTable)
 	{
-		xWide = c->dPanel.wide - c->iLayoutX;
+		xWide = iLayoutWide - c->iLayoutX;
 	}
 	else
 	{
@@ -1076,11 +1092,11 @@ CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag)
 		}
 		else if (c->layout.iRowParts)
 		{
-			xWide = (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide;
+			xWide = (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * iLayoutWide;
 		}
 		else
 		{
-			xWide = (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
+			xWide = (1.0f / static_cast<float>(iRowPartsTotal)) * iLayoutWide;
 		}
 	}
 
@@ -1469,7 +1485,7 @@ void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 
 NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath,
 		const char *szTextureGroup, const EBaseButtonType eType, const bool bVal,
-		const ButtonFlags flags, const float flScrollStart)
+		const ButtonFlags flags, const float flScrollStart, const TextureOptFlags texFlags)
 {
 	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE | WIDGETFLAG_MARKACTIVE);
 
@@ -1563,20 +1579,20 @@ NeoUI::RetButton BaseButton(const wchar_t *wszText, const char *szTexturePath,
 					const int iTexYTall = c->irWidgetTall * 0.75f;
 					Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
 							c->irWidgetWide, iTexYTall,
-							szTextureGroup);
+							szTextureGroup, texFlags);
 
 					const auto *pFontI = &c->fonts[c->eFont];
 					const int x = XPosFromText(wszText, pFontI, TEXTSTYLE_CENTER);
 					vgui::surface()->DrawSetTextPos(
 							c->rWidgetArea.x0 + x,
-							c->rWidgetArea.y0 + iTexYTall - pFontI->iYFontOffset);
+							c->rWidgetArea.y0 + iTexYTall);
 					vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
 				}
 				else
 				{
 					Texture(szTexturePath, c->rWidgetArea.x0, c->rWidgetArea.y0,
 							c->irWidgetWide, c->irWidgetTall,
-							szTextureGroup);
+							szTextureGroup, texFlags);
 				}
 			} break;
 			case BASEBUTTONTYPE_CHECKBOX:
@@ -1665,7 +1681,8 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 	return ret;
 }
 
-void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg, const char *szTextureGroup)
+void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg,
+		const char *szTextureGroup, const TextureOptFlags flags)
 {
 	const auto wdgState = BeginWidget(WIDGETFLAG_SKIPACTIVE);
 	if (wdgState.bInView && c->eMode == MODE_PAINT)
@@ -1673,7 +1690,8 @@ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg, const c
 		const bool bHasTexture = Texture(szTexturePath,
 										 c->rWidgetArea.x0, c->rWidgetArea.y0,
 										 c->irWidgetWide, c->irWidgetTall,
-										 szTextureGroup);
+										 szTextureGroup,
+										 flags);
 		if (!bHasTexture)
 		{
 			Label(wszErrorMsg, true);
@@ -1682,89 +1700,103 @@ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg, const c
 	EndWidget(wdgState);
 }
 
+int TextureFromFile(const char *szTexturePath, const char *szTextureGroup,
+		const TextureOptFlags texFlags)
+{
+	int iTex = -1;
+	if (V_striEndsWith(szTexturePath, ".png") || V_striEndsWith(szTexturePath, ".jpg") ||
+			V_striEndsWith(szTexturePath, ".jpeg"))
+	{
+		// General images decoded via stb_image
+		int width, height, channels;
+		char szFullTexturePath[MAX_PATH] = {};
+#ifdef _WIN32
+		if (V_isalpha(szTexturePath[0])
+				&& szTexturePath[1] == ':'
+				&& (szTexturePath[2] == '\\' || szTexturePath[2] == '/'))
+#else
+		if (szTexturePath[0] == '/')
+#endif
+		{
+			V_strcpy_safe(szFullTexturePath, szTexturePath);
+		}
+		else
+		{
+			filesystem->RelativePathToFullPath_safe(szTexturePath, szTextureGroup, szFullTexturePath);
+		}
+		uint8 *data = stbi_load(szFullTexturePath, &width, &height, &channels, 0);
+		if (data)
+		{
+			if (channels == 3)
+			{
+				uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
+				ImageLoader::ConvertImageFormat(data, IMAGE_FORMAT_RGB888,
+												rgbaData, IMAGE_FORMAT_RGBA8888,
+												width, height);
+				stbi_image_free(data);
+				data = rgbaData;
+				channels = 4;
+			}
+			else if (channels != 4)
+			{
+				Assert(false);
+			}
+			if (texFlags & NeoUI::TEXTUREOPTFLAGS_RESIZETO256)
+			{
+				uint8 *newData = NeoUtils::CropScaleTo256(data, width, height);
+				free(data);
+				data = newData;
+				width = NeoUtils::SPRAY_WH;
+				height = NeoUtils::SPRAY_WH;
+			}
+			iTex = vgui::surface()->CreateNewTextureID(true);
+			vgui::surface()->DrawSetTextureRGBAEx(iTex, data, width, height, IMAGE_FORMAT_RGBA8888);
+			stbi_image_free(data);
+		}
+	}
+	else if (V_striEndsWith(szTexturePath, ".vtf"))
+	{
+		// Direct vtf file
+		CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
+		if (filesystem->ReadFile(szTexturePath, nullptr, buf))
+		{
+			IVTFTexture *pVTFTexture = CreateVTFTexture();
+			if (pVTFTexture)
+			{
+				if (pVTFTexture->Unserialize(buf))
+				{
+					pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
+					iTex = vgui::surface()->CreateNewTextureID(true);
+					vgui::surface()->DrawSetTextureRGBAEx(iTex, pVTFTexture->ImageData(0, 0, 0),
+													pVTFTexture->Width(), pVTFTexture->Height(),
+													IMAGE_FORMAT_RGBA8888);
+				}
+				DestroyVTFTexture(pVTFTexture);
+			}
+		}
+	}
+	else if (!IsErrorMaterial(materials->FindMaterial(szTexturePath, szTextureGroup)))
+	{
+		// Direct texture determined by vmt (without extension)
+		iTex = vgui::surface()->CreateNewTextureID(true);
+		vgui::surface()->DrawSetTextureFile(iTex, szTexturePath, false, true);
+	}
+	return iTex;
+}
+
 bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
 			 const char *szTextureGroup, const TextureOptFlags texFlags)
 {
 	auto hdl = c->htTexMap.Find(szTexturePath);
 	if (hdl == c->htTexMap.InvalidHandle() && c->eMode == MODE_PAINT)
 	{
-		bool bApplied = false;
-		int iTex = -1;
-		if (V_striEndsWith(szTexturePath, ".png") || V_striEndsWith(szTexturePath, ".jpg") ||
-				V_striEndsWith(szTexturePath, ".jpeg"))
+		const int iTex = TextureFromFile(szTexturePath, szTextureGroup, texFlags);
+		if ((vgui::surface()->IsTextureIDValid(iTex) && iTex != -1)
+				|| !(texFlags & TEXTUREOPTFLAGS_DONOTCACHEIFINVALID))
 		{
-			// General images decoded via stb_image
-			int width, height, channels;
-			char szFullTexturePath[MAX_PATH] = {};
-#ifdef _WIN32
-			if (V_isalpha(szTexturePath[0])
-					&& szTexturePath[1] == ':'
-					&& (szTexturePath[2] == '\\' || szTexturePath[2] == '/'))
-#else
-			if (szTexturePath[0] == '/')
-#endif
-			{
-				V_strcpy_safe(szFullTexturePath, szTexturePath);
-			}
-			else
-			{
-				filesystem->RelativePathToFullPath_safe(szTexturePath, szTextureGroup, szFullTexturePath);
-			}
-			uint8 *data = stbi_load(szFullTexturePath, &width, &height, &channels, 0);
-			if (data)
-			{
-				if (channels == 3)
-				{
-					uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
-					ImageLoader::ConvertImageFormat(data, IMAGE_FORMAT_RGB888,
-													rgbaData, IMAGE_FORMAT_RGBA8888,
-													width, height);
-					stbi_image_free(data);
-					data = rgbaData;
-					channels = 4;
-				}
-				else if (channels != 4)
-				{
-					Assert(false);
-				}
-				iTex = vgui::surface()->CreateNewTextureID(true);
-				vgui::surface()->DrawSetTextureRGBAEx(iTex, data, width, height, IMAGE_FORMAT_RGBA8888);
-				stbi_image_free(data);
-				bApplied = true;
-			}
+			hdl = c->htTexMap.Insert(szTexturePath, iTex);
 		}
-		else if (V_striEndsWith(szTexturePath, ".vtf"))
-		{
-			// Direct vtf file
-			CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
-			if (filesystem->ReadFile(szTexturePath, nullptr, buf))
-			{
-				IVTFTexture *pVTFTexture = CreateVTFTexture();
-				if (pVTFTexture)
-				{
-					if (pVTFTexture->Unserialize(buf))
-					{
-						pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
-						iTex = vgui::surface()->CreateNewTextureID(true);
-						vgui::surface()->DrawSetTextureRGBAEx(iTex, pVTFTexture->ImageData(0, 0, 0),
-														pVTFTexture->Width(), pVTFTexture->Height(),
-														IMAGE_FORMAT_RGBA8888);
-						bApplied = true;
-					}
-					DestroyVTFTexture(pVTFTexture);
-				}
-			}
-		}
-		else if (!IsErrorMaterial(materials->FindMaterial(szTexturePath, szTextureGroup)))
-		{
-			// Direct texture determined by vmt (without extension)
-			iTex = vgui::surface()->CreateNewTextureID(true);
-			vgui::surface()->DrawSetTextureFile(iTex, szTexturePath, false, true);
-			bApplied = true;
-		}
-		hdl = c->htTexMap.Insert(szTexturePath, (bApplied) ? iTex : -1);
 	}
-
 	if (hdl != c->htTexMap.InvalidHandle())
 	{
 		const int iTex = c->htTexMap.Element(hdl);
@@ -1835,9 +1867,10 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 }
 
 NeoUI::RetButton ButtonTexture(const char *szTexturePath, const char *szTextureGroup,
-		const wchar_t *wszText)
+		const wchar_t *wszText, const TextureOptFlags flags)
 {
-	return BaseButton(wszText, szTexturePath, szTextureGroup, BASEBUTTONTYPE_IMAGE);
+	return BaseButton(wszText, szTexturePath, szTextureGroup, BASEBUTTONTYPE_IMAGE,
+			false, BUTTONFLAG_NONE, 0.0f, flags);
 }
 
 NeoUI::RetButton ButtonCheckbox(const wchar_t *wszText, const bool bVal)

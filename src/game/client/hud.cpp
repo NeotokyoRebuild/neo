@@ -500,7 +500,7 @@ void CHud::InitFonts()
 
 #ifdef NEO
 	g_hFontKillfeed = pScheme->GetFont("NHudOCRSmallNoAdditive", true);
-	g_hFontKillfeedIcons = pScheme->GetFont("NHudKillFeedIcons", true);
+	g_hFontKillfeedIcons = pScheme->GetFont("NHudKillfeedIcons", true);
 
 	if (g_hFontKillfeed == vgui::INVALID_FONT)
 	{

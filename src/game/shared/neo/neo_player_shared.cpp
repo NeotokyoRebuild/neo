@@ -16,6 +16,7 @@
 #include "c_neo_player.h"
 #include "c_playerresource.h"
 #include "ui/neo_hud_context_hint.h"
+#include "vprof.h"
 #define CNEO_Player C_NEO_Player
 #else
 #include "neo_player.h"
@@ -41,6 +42,8 @@
 #else
 #include "c_te_effect_dispatch.h"
 #endif // GAME_DLL
+
+#include "bone_setup.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -375,22 +378,41 @@ int GetRank(const int xp)
 	return iRank + 1;
 }
 
-const char *GetRankName(const int xp, const bool shortened)
-{
-	static constexpr const char *RANK_NAME_LONG[] = {
-		"Rankless Dog", "Private", "Corporal", "Sergeant", "Lieutenant"
-	};
-	static constexpr const char *RANK_NAME_SHORT[] = {
-		"Dog", "Pvt", "Cpl", "Sgt", "Lt"
-	};
-	static_assert(ARRAYSIZE(RANK_NAME_LONG) == ARRAYSIZE(RANK_NAME_SHORT));
+static constexpr const SZWSZTexts RANK_NAME_LONG[] = {
+	SZWSZ_INIT("Rankless Dog"),
+	SZWSZ_INIT("Private"),
+	SZWSZ_INIT("Corporal"),
+	SZWSZ_INIT("Sergeant"),
+	SZWSZ_INIT("Lieutenant"),
+};
+static constexpr const SZWSZTexts RANK_NAME_SHORT[] = {
+	SZWSZ_INIT("Dog"),
+	SZWSZ_INIT("Pvt"),
+	SZWSZ_INIT("Cpl"),
+	SZWSZ_INIT("Sgt"),
+	SZWSZ_INIT("Lt"),
+};
+static_assert(ARRAYSIZE(RANK_NAME_LONG) == ARRAYSIZE(RANK_NAME_SHORT));
 
+static const SZWSZTexts &GetRankNameBase(const int xp, const bool shortened)
+{
+	static const SZWSZTexts EMPTY{"", L""};
 	const int iRank = GetRank(xp);
 	if (IN_BETWEEN_AR(0, iRank, ARRAYSIZE(RANK_NAME_LONG)))
 	{
 		return (shortened ? RANK_NAME_SHORT : RANK_NAME_LONG)[iRank];
 	}
-	return "";
+	return EMPTY;
+}
+
+const char *GetRankName(const int xp, const bool shortened)
+{
+	return GetRankNameBase(xp, shortened).szStr;
+}
+
+const wchar_t *GetRankNameW(const int xp, const bool shortened)
+{
+	return GetRankNameBase(xp, shortened).wszStr;
 }
 
 void CNEO_Player::CheckAimButtons()
@@ -709,4 +731,156 @@ CBaseEntity *CNEO_Player::FindUseEntity()
 	}
 
 	return pNearest;
+}
+
+void CNEO_Player::CheckVisionButtons()
+{
+	if (m_iNeoClass == NEO_CLASS_VIP)
+	{
+		return;
+	}
+	
+	constexpr float MIN_INTERVAL_BETWEEN_VISION_TOGGLE = 0.1f;
+	if (gpGlobals->curtime - m_flVisionLastTime < MIN_INTERVAL_BETWEEN_VISION_TOGGLE)
+	{
+		return;
+	}
+
+	if (!(m_afButtonPressed & IN_VISION))
+	{
+		return;
+	}
+
+	if (!IsAlive())
+	{
+		return;
+	}
+
+	m_flVisionLastTime = gpGlobals->curtime;
+	m_bInVision = !m_bInVision;
+
+#ifdef CLIENT_DLL
+	CLocalPlayerFilter filter;
+	filter.MakeReliable();
+	filter.UsePredictionRules();
+#else
+	CRecipientFilter filter;
+
+	// NEO TODO/FIXME (Rain): optimise this loop to once per cycle instead of repeating for each client
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		if (edict()->m_EdictIndex == i)
+		{
+			continue;
+		}
+
+		auto player = UTIL_PlayerByIndex(i);
+		if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
+		{
+			continue;
+		}
+
+		if (player->GetObserverTarget() == this)
+		{
+			filter.AddRecipient(player);
+		}
+	}
+
+	if (filter.GetRecipientCount() == 0)
+	{
+		return;
+	}
+#endif // CLIENT_DLL
+
+	EmitSound_t params;
+	params.m_bEmitCloseCaption = false;
+	params.m_pOrigin = &GetAbsOrigin();
+	static int VISION_ON = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+	static int VISION_OFF = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOff");
+	params.m_hSoundScriptHandle = m_bInVision ? VISION_ON : VISION_OFF;
+
+	EmitSound(filter, entindex(), params);
+}
+ConVar sv_neo_hitboxgroup_pen("sv_neo_hitboxgroup_pen", "0", FCVAR_REPLICATED, "When hitting outer limbs, do a second trace against head, chest and stomach", true, 0.f, true, 1.f); // NEO TODO (Adam) remove this and pick one
+bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr)
+{
+#ifdef CLIENT_DLL
+	VPROF( "C_BaseAnimating::TestHitboxes" );
+
+	MDLCACHE_CRITICAL_SECTION();
+#endif // CLIENT_DLL
+
+	CStudioHdr *pStudioHdr = GetModelPtr();
+	if (!pStudioHdr)
+		return false;
+
+	mstudiohitboxset_t *set = pStudioHdr->pHitboxSet( m_nHitboxSet );
+	if ( !set || !set->numhitboxes )
+		return false;
+
+	// Use vcollide for box traces.
+	if ( !ray.m_IsRay )
+		return false;
+
+	// This *has* to be true for the existing code to function correctly.
+	Assert( ray.m_StartOffset == vec3_origin );
+
+#ifdef GAME_DLL
+	CBoneCache *pCache = GetBoneCache( );
+#else
+	CBoneCache *pCache = GetBoneCache( pStudioHdr );
+#endif // GAME_DLL
+	matrix3x4_t *hitboxbones[MAXSTUDIOBONES];
+	pCache->ReadCachedBonePointers( hitboxbones, pStudioHdr->numbones() );
+
+#ifdef GAME_DLL
+	if ( TraceToStudio( physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetAbsOrigin(), GetModelScale(), tr ) )
+#else
+	if ( TraceToStudio( physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetRenderOrigin(), GetModelScale(), tr ) )
+#endif // GAME_DLL
+	{
+		mstudiobbox_t *pbox = set->pHitbox( tr.hitbox );
+		mstudiobone_t *pBone = pStudioHdr->pBone(pbox->bone);
+		tr.surface.name = "**studio**";
+		tr.surface.flags = SURF_HITBOX;
+		tr.surface.surfaceProps = physprops->GetSurfaceIndex( pBone->pszSurfaceProp() );
+		
+		if (fContentsMask & CONTENTS_HITBOX && sv_neo_hitboxgroup_pen.GetBool())
+		{
+			switch (tr.hitgroup)
+			{
+				case HITGROUP_LEFTARM:
+				case HITGROUP_RIGHTARM:
+				case HITGROUP_LEFTLEG:
+				case HITGROUP_RIGHTLEG:
+					trace_t secondTrace;
+					unsigned int fHitboxGroupMask = UINT_MAX & ~((1 << HITGROUP_LEFTARM) | 
+																(1 << HITGROUP_RIGHTARM) | 
+																(1 << HITGROUP_LEFTLEG) | 
+																(1 << HITGROUP_RIGHTLEG));
+	#ifdef GAME_DLL
+					if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetAbsOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
+	#else
+					if (TraceToStudio(physprops, ray, pStudioHdr, set, hitboxbones, fContentsMask, GetRenderOrigin(), GetModelScale(), secondTrace, fHitboxGroupMask))
+	#endif // GAME_DLL
+					{
+						tr.hitgroup = secondTrace.hitgroup;
+					}
+			}
+		}
+
+#ifdef CLIENT_DLL
+		if ( IsRagdoll() )
+		{
+			IPhysicsObject *pReplace = m_pRagdoll->GetElement( tr.physicsbone );
+			if ( pReplace )
+			{
+				VPhysicsSetObject( NULL );
+				VPhysicsSetObject( pReplace );
+			}
+		}
+#endif // CLIENT_DLL
+	}
+
+	return true;
 }

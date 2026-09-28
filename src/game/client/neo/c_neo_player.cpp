@@ -94,19 +94,15 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bCarryingGhost)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
-	RecvPropInt(RECVINFO(m_nVisionLastTick)),
+	RecvPropTime(RECVINFO(m_flVisionLastTime)),
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 	RecvPropTime(RECVINFO(m_flNextPingTime)),
 
-	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
-	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
-	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
 	RecvPropArray(RecvPropVector(RECVINFO(m_vLastPingByStar[0])), m_vLastPingByStar),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
 	RecvPropString(RECVINFO(m_szNeoClantag)),
-	RecvPropString(RECVINFO(m_szNeoCrosshair)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
@@ -117,10 +113,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
-	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS_ARRAY_SAFE, FTYPEDESC_INSENDTABLE),
-
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	
 	DEFINE_PRED_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
@@ -130,7 +122,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
-	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD_TOL(m_flVisionLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD_TOL(m_flNextPingTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
@@ -451,7 +443,6 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
-	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
@@ -465,7 +456,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_flCamoAuxLastTime = 0;
-	m_nVisionLastTick = 0;
+	m_flVisionLastTime = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 
@@ -473,12 +464,12 @@ C_NEO_Player::C_NEO_Player()
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
-	m_bIsAllowedToToggleVision = false;
 	m_bSpecRefreshedStates = false;
 
 	m_flTocFactor = 0.15f;
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	ClearLocalPlayerDmgReports();
 	m_szNameDupePos = 0;
 }
 
@@ -516,44 +507,6 @@ void C_NEO_Player::CheckThermOpticButtons()
 	}
 }
 
-void C_NEO_Player::CheckVisionButtons()
-{
-	if (!m_bIsAllowedToToggleVision)
-	{
-		return;
-	}
-
-	if (m_afButtonPressed & IN_VISION)
-	{
-		if (IsAlive())
-		{
-			m_bIsAllowedToToggleVision = false;
-
-			m_bInVision = !m_bInVision;
-
-			if (m_bInVision)
-			{
-				DevMsg("Playing sound at :%f\n", gpGlobals->curtime);
-
-				C_RecipientFilter filter;
-				filter.AddRecipient(this);
-				filter.MakeReliable();
-				filter.UsePredictionRules();
-
-				EmitSound_t params;
-				params.m_bEmitCloseCaption = false;
-				params.m_pOrigin = &GetAbsOrigin();
-				params.m_nChannel = CHAN_ITEM;
-				params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
-				static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
-				params.m_hSoundScriptHandle = visionToggle;
-
-				EmitSound(filter, entindex(), params);
-			}
-		}
-	}
-}
-
 void C_NEO_Player::CheckLeanButtons()
 {
 	if (!IsAlive() || GetFlags() & FL_FROZEN)
@@ -570,15 +523,6 @@ void C_NEO_Player::CheckLeanButtons()
 	{
 		m_bInLean = NEO_LEAN_RIGHT;
 	}
-}
-
-int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
-{
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		return m_rfAttackersScores.Get(attackerIdx);
-	}
-	return m_rfAttackersScores.Get(attackerIdx);
 }
 
 const char *C_NEO_Player::GetNeoClantag() const
@@ -647,11 +591,6 @@ const char *C_NEO_Player::GetNeoPlayerName() const
 bool C_NEO_Player::ClientWantNeoName() const
 {
 	return m_bClientWantNeoName;
-}
-
-int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
-{
-	return m_rfAttackersHits.Get(attackerIdx);
 }
 
 ConVar cl_neo_hud_health_mode("cl_neo_hud_health_mode", "1", FCVAR_ARCHIVE,
@@ -1207,6 +1146,8 @@ void C_NEO_Player::PreThink( void )
 			CLocalPlayerFilter filter;
 			enginesound->SetPlayerDSP(filter, 0, true);
 
+			ClearLocalPlayerDmgReports();
+
 			// Reset the cache of other players crosshair data on spawning in
 			if (CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair))
 			{
@@ -1613,22 +1554,12 @@ void C_NEO_Player::Spawn( void )
 	m_flCamoAuxLastTime = 0;
 
 	m_bInVision = false;
-	m_nVisionLastTick = 0;
+	m_flVisionLastTime = 0;
 	m_bInLean = NEO_LEAN_NONE;
 
-	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS_ARRAY_SAFE);
-	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS_ARRAY_SAFE);
-	for (int i = 0; i < MAX_PLAYERS_ARRAY_SAFE; ++i)
-	{
-		m_rfAttackersScores.GetForModify(i) = 0;
-		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
-		m_rfAttackersHits.GetForModify(i) = 0;
-	}
-	V_memset(m_rfNeoPlayerIdxsKilledByLocal, 0, sizeof(m_rfNeoPlayerIdxsKilledByLocal));
+	ClearLocalPlayerDmgReports();
 
 	Weapon_SetZoom(false);
-
 
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
@@ -1932,8 +1863,8 @@ void C_NEO_Player::PlayCloakSound(void)
 	params.m_bEmitCloseCaption = false;
 	params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
 	params.m_pOrigin = &GetAbsOrigin();
-	params.m_nChannel = CHAN_VOICE;
-
+	params.m_nChannel = CHAN_VOICE; // NEO TODO (Adam) This doesn't change the channel this sound is played on, set correct channel in sound script
+	
 	EmitSound(filter, entindex(), params);
 }
 
@@ -1951,23 +1882,6 @@ void C_NEO_Player::SetCloakState(bool state)
 			(weapon->*setShadowState)(EF_NOSHADOW);
 		}
 	}
-}
-
-void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
-{
-	if (updateType == DATA_UPDATE_DATATABLE_CHANGED)
-	{
-		if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
-		{
-			return;
-		}
-		else
-		{
-			m_bIsAllowedToToggleVision = true;
-		}
-	}
-
-	BaseClass::PreDataUpdate(updateType);
 }
 
 // NEO NOTE (Rain): doesn't seem to be implemented at all clientside?
@@ -2024,6 +1938,10 @@ void __MsgFunc_CSpectatorTakeoverPlayer(bf_read &msg)
 		// Save for later in C_NEO_Player::OnDataChanged
 		pSpectatorTakingOver->m_hSpectatorTakeoverPlayerTarget = pPlayerTakeoverTarget;
 		pSpectatorTakingOver->m_bCopyOverTakeoverPlayerDetails = true;
+		if (pSpectatorTakingOver->IsLocalPlayer())
+		{
+			NeoAllKDReportsClear();
+		}
 	}
 }
 
@@ -2051,8 +1969,6 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 
 	m_nSkin = pPlayerTakeoverTarget->m_iNeoSkin;
 	m_iNeoClass = pPlayerTakeoverTarget->m_iNeoClass;
-	m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
-	m_iNextSpawnClassChoice = pPlayerTakeoverTarget->m_iNextSpawnClassChoice;
 
 	m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
 	m_bInVision = pPlayerTakeoverTarget->m_bInVision;
@@ -2062,12 +1978,11 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 	m_bInLean = pPlayerTakeoverTarget->m_bInLean;
 
 	m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
-	m_nVisionLastTick = pPlayerTakeoverTarget->m_nVisionLastTick;
+	m_flVisionLastTime = pPlayerTakeoverTarget->m_flVisionLastTime;
 	m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
 	m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
 	m_bPreviouslyReloading = pPlayerTakeoverTarget->m_bPreviouslyReloading;
 	m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
-	m_bIsAllowedToToggleVision = pPlayerTakeoverTarget->m_bIsAllowedToToggleVision;
 	m_flTocFactor = pPlayerTakeoverTarget->m_flTocFactor;
 
 	pPlayerTakeoverTarget->SnatchModelInstance(this);
@@ -2164,5 +2079,13 @@ void C_NEO_Player::PlayerUse()
 			m_afButtonPressed &= ~IN_USE;
 			engine->ExecuteClientCmd(VarArgs("useplayer %i", pTargetPlayer->entindex()));
 		}
+	}
+}
+
+void C_NEO_Player::ClearLocalPlayerDmgReports()
+{
+	if (IsLocalPlayer())
+	{
+		NeoAllKDReportsClear();
 	}
 }

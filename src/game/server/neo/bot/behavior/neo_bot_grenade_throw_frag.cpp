@@ -1,12 +1,12 @@
 #include "cbase.h"
 #include "bot/neo_bot.h"
-#include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_reservation.h"
 #include "bot/behavior/neo_bot_grenade_throw_frag.h"
 #include "neo_gamerules.h"
 #include "neo_player.h"
 #include "weapon_neobasecombatweapon.h"
 
-#include "nav_pathfind.h"
+#include "nav_mesh.h"
 
 extern ConVar sv_neo_grenade_blast_radius;
 extern ConVar sv_neo_grenade_fuse_timer;
@@ -67,11 +67,9 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	{
 		// Last known location in view, but don't see threat
 		// Infer where the threat could have gone
-		// CHEAT: calculate a path from the last known position to the actual threat position
-		// and throw at the furthest visible point along that path
-		if ( me->IsLineOfSightClear( m_vecThreatLastKnownPos ) && m_scanTimer.IsElapsed() )
+		if ( m_scanTimer.IsElapsed() )
 		{
-			const Vector& vecThrowTarget = FindEmergencePointAlongPath( me, m_vecThreatLastKnownPos, m_hThreatGrenadeTarget->GetAbsOrigin() );
+			const Vector vecThrowTarget = me->FindVisibleThrowPointNear( m_vecThreatLastKnownPos );
 
 			if ( vecThrowTarget != vec3_invalid )
 			{
@@ -107,6 +105,18 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 	}
 
 	return THROW_TARGET_READY;
+}
+
+void CNEOBotGrenadeThrowFrag::OnThrowReleased( CNEOBot *me )
+{
+	// Register explosive hazard at the target position
+	// so the throwing bot's team can avoid the trajectory and landing areas
+	CNavArea *area = TheNavMesh->GetNearestNavArea(m_vecTarget);
+	if (area)
+	{
+		int team = me->GetTeamNumber();
+		CNEOBotPathReservations()->AddFragHazard(area->GetID(), gpGlobals->curtime + sv_neo_grenade_fuse_timer.GetFloat(), team);
+	}
 }
 
 float CNEOBotGrenadeThrowFrag::GetFragSafetyRadius()

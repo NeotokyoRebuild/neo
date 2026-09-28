@@ -24,8 +24,10 @@ public:
 	virtual float operator()(CNavArea* baseArea, CNavArea* fromArea, const CNavLadder* ladder, const CFuncElevator* elevator, float length) const override;
 
 	bool m_bIgnoreReservations;
+	bool m_bIgnoreVisibilityExposure;
 
 private:
+	bool m_bIgnoreHazards;
 	CNEOBot* m_me;
 	RouteType m_routeType;
 	float m_stepHeight;

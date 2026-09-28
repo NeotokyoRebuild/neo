@@ -7,7 +7,9 @@
 
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_manager.h"
+#include "bot/neo_bot_path_reservation.h"
 
+#include "bot/behavior/neo_bot_detpack_trigger.h"
 #include "bot/behavior/neo_bot_tactical_monitor.h"
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
@@ -15,6 +17,7 @@
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_retreat_from_hazard_area.h"
 #include "bot/behavior/neo_bot_ladder_approach.h"
 #include "bot/behavior/neo_bot_ladder_climb.h"
 #include "bot/behavior/neo_bot_path_clear_breakable.h"
@@ -26,6 +29,9 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 #include "neo/neo_player_shared.h"
+#include "neo_detpack.h"
+#include "weapon_detpack.h"
+#include "weapon_ghost.h"
 #include "nav_mesh.h"
 
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
@@ -81,76 +87,144 @@ Action< CNEOBot > *CNEOBotTacticalMonitor::InitialContainedAction( CNEOBot *me )
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_pIgnoredWeapons->Reset();
+	m_hazardCheckTimer.Start( 0.5f );
 	return Continue();
 }
 
 
-#ifndef NEO // NEO TODO (Adam) Monitor the remote detpack
 //-----------------------------------------------------------------------------------------
-void CNEOBotTacticalMonitor::MonitorArmedStickyBombs( CNEOBot *me )
+ActionResult< CNEOBot > CNEOBotTacticalMonitor::MonitorArmedDetpack( CNEOBot *me )
 {
-	if ( m_stickyBombCheckTimer.IsElapsed() )
+	if ( !m_detpackCheckTimer.IsElapsed() )
 	{
-		m_stickyBombCheckTimer.Start( RandomFloat( 0.3f, 1.0f ) );
+		return Continue();
+	}
 
-		// are there any enemies on/near my sticky bombs?
-		CWeapon_SLAM *slam = dynamic_cast< CWeapon_SLAM* >( me->Weapon_OwnsThisType( "weapon_slam" ) );
-		if ( slam )
+	CWeaponDetpack *pDetWeapon = assert_cast<CWeaponDetpack*>( me->Weapon_OwnsThisType( "weapon_remotedet" ) );
+	if ( !pDetWeapon || pDetWeapon->m_bRemoteHasBeenTriggered )
+	{
+		// Longer delay assuming that a detpack pickup would be rare
+		// Players usually don't realize they picked up a detpack anyway
+		m_detpackCheckTimer.Start( 10.0f );
+		return Continue();
+	}
+
+	if ( !pDetWeapon->m_bThisDetpackHasBeenThrown )
+	{
+		// Based on GetArmingTime plus need to get away
+		m_detpackCheckTimer.Start( 3.0f );
+		return Continue();
+	}
+	m_detpackCheckTimer.Start( 0.5f );
+
+	CBaseEntity *pDetpackEnt = pDetWeapon->GetDetpackEntity();
+	if ( !pDetpackEnt )
+	{
+		return Continue();
+	}
+
+	const Vector& vecDetpackPos = pDetpackEnt->GetAbsOrigin();
+
+	// Check if I am too close to the detpack
+	if ( me->GetAbsOrigin().DistToSqr( vecDetpackPos ) <= Square( NEO_DETPACK_DAMAGE_RADIUS ) )
+	{
+		return Continue();
+	}
+
+	float flThresholdMultiplier;
+	switch ( me->GetDifficulty() )
+	{
+	case CNEOBot::EASY:
+		flThresholdMultiplier = 1.05f;
+		break;
+	case CNEOBot::NORMAL:
+		flThresholdMultiplier = 0.95f;
+		break;
+	case CNEOBot::HARD:
+		flThresholdMultiplier = 0.85f;
+		break;
+	case CNEOBot::EXPERT:
+		flThresholdMultiplier = 0.75f;
+		break;
+	default:
+		flThresholdMultiplier = 0.95f;
+		break;
+	}
+
+	const float flMaxRadiusSq = Square( NEO_DETPACK_DAMAGE_RADIUS * flThresholdMultiplier );
+	bool bShouldDetonate = false;
+
+	// Check if any known threat or teammate is in range
+	CUtlVector< CKnownEntity > knownVector;
+	me->GetVisionInterface()->CollectKnownEntities( &knownVector );
+	bool bIsTeamplay = NEORules()->IsTeamplay();
+
+	for ( int i = 0; i < knownVector.Count(); ++i )
+	{
+		if ( knownVector[i].IsObsolete() )
 		{
-			const CUtlVector< CBaseEntity* > &satchelVector = slam->GetSatchelVector();
+			continue;
+		}
 
-			if ( satchelVector.Count() > 0 )
+		CBaseEntity *pEntity = knownVector[i].GetEntity();
+		if ( !pEntity )
+		{
+			continue;
+		}
+
+		if ( vecDetpackPos.DistToSqr( knownVector[i].GetLastKnownPosition() ) <= flMaxRadiusSq )
+		{
+			if ( bIsTeamplay && me->InSameTeam( pEntity ) )
 			{
-				CUtlVector< CKnownEntity > knownVector;
-				me->GetVisionInterface()->CollectKnownEntities( &knownVector );
+				// Teammate in blast radius
+				return Continue();
+			}
 
-				for( int p=0; p< satchelVector.Count(); ++p )
+			// Enemy in range.
+			bShouldDetonate = true;
+		}
+	}
+
+	// Check if ghost carrier is in range
+	if ( !bShouldDetonate )
+	{
+		if ( CWeaponGhost *pGhost = NEORules()->m_pGhost )
+		{
+			CBaseCombatCharacter *pGhostOwner = pGhost->GetOwner();
+			if ( pGhostOwner && !me->InSameTeam( pGhostOwner ) )
+			{
+				if ( vecDetpackPos.DistToSqr( pGhostOwner->GetAbsOrigin() ) <= flMaxRadiusSq )
 				{
-					CBaseEntity *satchel = satchelVector[p];
-					if ( !satchel )
-					{
-						continue;
-					}
-
-					for( int k=0; k<knownVector.Count(); ++k )
-					{
-						if ( knownVector[k].IsObsolete() )
-						{
-							continue;
-						}
-
-						if ( knownVector[k].GetEntity()->IsBaseObject() )
-						{
-							// we want to put several stickies on a sentry and det at once
-							continue;
-						}
-
-						if ( satchel->GetTeamNumber() != GetEnemyTeam( knownVector[k].GetEntity()->GetTeamNumber() ) )
-						{
-							// "known" is either a spectator, or on our team
-							continue;
-						}
-
-						const float closeRange = 150.0f;
-						if ( ( knownVector[k].GetLastKnownPosition() - satchel->GetAbsOrigin() ).IsLengthLessThan( closeRange ) )
-						{
-							// they are close - blow it!
-							me->PressFireButton();
-							return;
-						}
-					}
+					bShouldDetonate = true;
 				}
 			}
 		}
 	}
+
+	if ( bShouldDetonate )
+	{
+		return SuspendFor( new CNEOBotDetpackTrigger(), "Triggering detpack!" );
+	}
+
+	return Continue();
 }
 
 
-#endif //NEO
 //-----------------------------------------------------------------------------------------
 void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 {
 	const float avoidRange = 32.0f;
+
+	if ( !NEORules()->IsTeamplay() )
+	{
+		return;
+	}
+
+	// stepping straight away from a teammate can step off a ledge
+	if ( me->IsOnPreciseArea() )
+	{
+		return;
+	}
 
 	CUtlVector< CNEO_Player * > friendVector;
 	CollectPlayers( &friendVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
@@ -287,6 +361,21 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return SuspendFor( new CNEOBotPathClearBreakable( breakable ), "Clearing breakable in path" );
 	}
 
+	// Don't want to interfere with human squad leader's control just to ignore hazards
+	// Might be annoying if bots ignored following or waypoints (e.g. smoke sightlines avoidance)
+	if ( !me->m_hCommandingPlayer.Get() && m_hazardCheckTimer.IsElapsed() )
+	{
+		m_hazardCheckTimer.Start( 0.5f );
+		CNavArea *myArea = me->GetLastKnownArea();
+		if ( myArea )
+		{
+			if ( CNEOBotPathReservations()->IsAreaHazardous( myArea->GetID(), me ) )
+			{
+				return SuspendFor( new CNEOBotRetreatFromHazardArea( ), "Avoiding hazard area" );
+			}
+		}
+	}
+
 	ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
 	if ( scavengeResult.IsRequestingChange() )
 	{
@@ -311,10 +400,11 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	}
 #endif
 
-#if 0 // NEO TODO (Adam) detonate remote detpacks
-	// detonate sticky bomb traps when victims are near
-	MonitorArmedStickyBombs( me );
-#endif
+	ActionResult< CNEOBot > detpackResult = MonitorArmedDetpack( me );
+	if ( detpackResult.IsRequestingChange() )
+	{
+		return detpackResult;
+	}
 
 	if ( !(me->m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_USE)) )
 	{

@@ -46,8 +46,6 @@ public:
 	virtual void AddEntity( void );
 	virtual void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
 
-	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
-
 	// Should this object cast shadows?
 	virtual ShadowType_t		ShadowCastType( void );
 
@@ -61,6 +59,7 @@ public:
 	virtual float GetFOV( void );
 	virtual CStudioHdr *OnNewModel( void );
 	virtual void TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, trace_t *ptr, CDmgAccumulator *pAccumulator );
+	virtual bool TestHitboxes(const Ray_t &ray, unsigned int fContentsMask, trace_t &tr) override;
 	virtual void ItemPreFrame( void );
 	virtual void ItemPostFrame( void );
 	virtual float GetMinFOV()	const;
@@ -172,9 +171,6 @@ public:
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
 
-	int GetAttackersScores(const int attackerIdx) const;
-	int GetAttackerHits(const int attackerIdx) const;
-
 	const char *InternalGetNeoPlayerName() const;
 	const char *GetNeoPlayerName() const;
 	bool ClientWantNeoName() const;
@@ -212,6 +208,8 @@ private:
 
 	bool IsAllowedToSuperJump(void);
 
+	void ClearLocalPlayerDmgReports();
+
 	// Spectator takeover player related functionality
 	bool IsAFK() const;
 	bool IsFakePlayer() const;
@@ -224,15 +222,11 @@ public:
 	CNetworkVar(int, m_iXP);
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
-
-	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS_ARRAY_SAFE);
-	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS_ARRAY_SAFE);
-	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS_ARRAY_SAFE);
 	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
-	CNetworkVar(int, m_nVisionLastTick);
+	CNetworkVar(float, m_flVisionLastTime);
 	CNetworkVar(float, m_flJumpLastTime);
 
 	CNetworkVar(float, m_flNextPingTime);
@@ -256,17 +250,17 @@ public:
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
-	CNetworkString(m_szNeoCrosshair, NEO_XHAIR_SEQMAX);
 	CNetworkVar(int, m_szNameDupePos);
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	unsigned char m_NeoFlags;
 
 private:
+	friend C_HL2MP_Player;
+
 	bool m_bFirstAliveTick;
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
-	bool m_bIsAllowedToToggleVision;
 	bool m_bSpecRefreshedStates;
 
 	float m_flLastAirborneJumpOkTime;
@@ -277,9 +271,6 @@ private:
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
-
-public:
-	bool m_rfNeoPlayerIdxsKilledByLocal[MAX_PLAYERS_ARRAY_SAFE];
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

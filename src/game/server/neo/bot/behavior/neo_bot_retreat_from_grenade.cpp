@@ -5,6 +5,8 @@
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_reservation.h"
+#include "nav_mesh.h"
 #include "sdk/sdk_basegrenade_projectile.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -15,6 +17,42 @@ extern ConVar sv_neo_grenade_fuse_timer;
 ConVar neo_bot_retreat_from_grenade_range( "neo_bot_retreat_from_grenade_range", "2000", FCVAR_CHEAT );
 ConVar neo_bot_debug_retreat_from_grenade( "neo_bot_debug_retreat_from_grenade", "0", FCVAR_CHEAT );
 ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
+
+
+//---------------------------------------------------------------------------------------------
+// In flight a smoke looks like a frag, unless we know who threw it
+static bool IsUnidentifiedSmoke( CNEOBot *me, CBaseEntity *grenade )
+{
+	if ( !FClassnameIs( grenade, "neo_grenade_smoke" ) )
+	{
+		return false;
+	}
+
+	CBaseCombatCharacter *thrower = static_cast< CBaseGrenade * >( grenade )->GetThrower();
+	if ( !thrower )
+	{
+		return true;
+	}
+
+	if ( thrower == me )
+	{
+		return false;
+	}
+
+	if ( NEORules()->IsTeamplay() && thrower->GetTeamNumber() == me->GetTeamNumber() )
+	{
+		return false;
+	}
+
+	const CKnownEntity *known = me->GetVisionInterface()->GetKnown( thrower );
+	if ( !known || !known->WasEverVisible() )
+	{
+		return true;
+	}
+
+	CNEO_Player *pThrower = ToNEOPlayer( thrower );
+	return !pThrower || pThrower->GetClass() != NEO_CLASS_SUPPORT;
+}
 
 
 //---------------------------------------------------------------------------------------------
@@ -39,7 +77,7 @@ CBaseEntity *CNEOBotRetreatFromGrenade::FindDangerousGrenade( CNEOBot *me )
 				CBaseEntity *pOwner = pSound->m_hOwner.Get();
 				// Use FClassnameIs to check if it's a generic base grenade or our specific ones
 				// FClassnameIs is better than dynamic_cast inside a loop when possible
-				if ( pOwner && ( FClassnameIs( pOwner, pszGrenadeClass ) || FClassnameIs( pOwner, "neo_grenade_smoke" ) ) )
+				if ( pOwner && ( FClassnameIs( pOwner, pszGrenadeClass ) || IsUnidentifiedSmoke( me, pOwner ) ) )
 				{
 					// Found a dangerous grenade
 					closestThreat = pOwner;
@@ -72,6 +110,7 @@ public:
 	{
 		m_me = me;
 		m_grenade = grenade;
+		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
 		m_pGrenadeStats = dynamic_cast<CBaseGrenadeProjectile *>( grenade );
 		m_safeRadiusSqr = m_pGrenadeStats ? Square(m_pGrenadeStats->m_DmgRadius * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat()) : 0.0f;
 
@@ -91,6 +130,20 @@ public:
 			return false;  // can't search if there's no threat source
 		}
 
+		// Skip areas that are hazardous or where bots get stuck
+		if ( neo_bot_path_reservation_enable.GetBool() )
+		{
+			int navAreaId = area->GetID();
+			if (CNEOBotPathReservations()->IsAreaHazardous(navAreaId, m_me))
+			{
+				return true;
+			}
+			if (CNEOBotPathReservations()->GetAreaAvoidPenalty(navAreaId) >= m_onStuckPenalty)
+			{
+				return true;
+			}
+		}
+
 		if ( m_pGrenadeStats )
 		{
 			if ( ( area->GetCenter() - m_pGrenadeStats->GetAbsOrigin() ).LengthSqr() < m_safeRadiusSqr * 2 )
@@ -103,7 +156,7 @@ public:
 		const CNavArea *grenadeArea = TheNavMesh->GetNavArea( m_grenade->GetAbsOrigin() );
 		if ( grenadeArea )
 		{
-			if ( area->IsPotentiallyVisible( grenadeArea ) )
+			if ( grenadeArea->IsPotentiallyVisible( area ) )
 			{
 				// area is exposed to grenade line of sight
 				return true;
@@ -138,6 +191,7 @@ public:
 	CNEOBot *m_me;
 	CBaseEntity *m_grenade;
 	CBaseGrenadeProjectile *m_pGrenadeStats;
+	float m_onStuckPenalty;
 	float m_safeRadiusSqr;
 	CUtlVector< CNavArea * > m_coverAreaVector;
 };
@@ -181,6 +235,19 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::OnStart( CNEOBot *me, Action<
 		m_grenade = FindDangerousGrenade( me );
 	}
 
+	if ( !m_grenade ) // not a duplicate, check FindDangerousGrenade result
+	{
+		return Done("No grenade found");
+	}
+
+	// Register explosive hazard for the bot's team at the grenade's initial position
+	CNavArea *grenadeArea = TheNavMesh->GetNearestNavArea( m_grenade->GetAbsOrigin() );
+	if (grenadeArea)
+	{
+		int team = me->GetTeamNumber();
+		CNEOBotPathReservations()->AddFragHazard(grenadeArea->GetID(), gpGlobals->curtime + sv_neo_grenade_fuse_timer.GetFloat(), team);
+	}
+
 	// Sometimes grenades can be in a bad limbo state, so force exit eventually
 	m_expiryTimer.Start( sv_neo_grenade_fuse_timer.GetFloat() );
 
@@ -209,19 +276,19 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 	}
 	
 	const CNavArea *grenadeArea = TheNavMesh->GetNavArea( m_grenade->GetAbsOrigin() );
-	bool bIsExposed = false;
-	if ( grenadeArea && me->GetLastKnownArea() )
-	{
-		if ( me->GetLastKnownArea()->IsPotentiallyVisible( grenadeArea ) )
-		{
-			bIsExposed = true;
-		}
-	}
 
 	// track projectile and relation to escape destination every update
-	if ( !m_coverArea || ( grenadeArea && m_coverArea->IsPotentiallyVisible( grenadeArea ) ) )
+	if ( !m_coverArea || ( grenadeArea && grenadeArea->IsPotentiallyVisible( m_coverArea ) ) )
 	{
+		CNavArea *pPrevCoverArea = m_coverArea;
 		m_coverArea = FindCoverArea( me );
+
+		// cover destination changed, stop following the path to the old spot
+		if ( m_coverArea != pPrevCoverArea )
+		{
+			m_path.Invalidate();
+			m_repathTimer.Invalidate();
+		}
 	}
 
 	if (!m_coverArea)
@@ -229,16 +296,12 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 		return Done("Reacting to contact instead");
 	}
 
-	if ( me->GetLastKnownArea() != m_coverArea || !bIsExposed )
+	if ( m_repathTimer.IsElapsed() || !m_path.IsValid() )
 	{
-		// not in cover yet
-		if (m_repathTimer.IsElapsed())
-		{
-			CNEOBotPathCompute(me, m_path, m_coverArea->GetCenter(), FASTEST_ROUTE);
-			m_repathTimer.Start(0.2f); // Recompute path every 0.2 seconds
-		}
-		m_path.Update( me );
+		CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), FASTEST_ROUTE );
+		m_repathTimer.Start( 1.0f );
 	}
+	m_path.Update( me );
 
 	return Continue();
 }
@@ -247,6 +310,8 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnStuck( CNEOBot *me )
 {
+	m_path.Invalidate();
+	m_repathTimer.Invalidate();
 	return TryContinue();
 }
 
@@ -261,6 +326,8 @@ EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnMoveToSuccess( CNEOBo
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotRetreatFromGrenade::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
+	m_path.Invalidate();
+	m_repathTimer.Invalidate();
 	return TryContinue();
 }
 

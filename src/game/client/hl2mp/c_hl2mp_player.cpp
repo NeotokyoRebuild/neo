@@ -872,6 +872,14 @@ void C_HL2MP_Player::PostDataUpdate( DataUpdateType_t updateType )
 	{
 		MoveToLastReceivedPosition( true );
 		ResetLatched();
+#ifdef NEO
+		// NEO NOTE (nullsystem): Respawning doesn't trigger
+		// C_NEO_Player::Spawn/m_bFirstAliveTick without this
+		if (IsLocalPlayer())
+		{
+			static_cast<C_NEO_Player *>(this)->m_bFirstAliveTick = true;
+		}
+#endif
 		m_iSpawnInterpCounterCache = m_iSpawnInterpCounter;
 	}
 

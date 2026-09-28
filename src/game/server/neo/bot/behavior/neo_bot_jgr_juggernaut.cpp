@@ -55,25 +55,13 @@ void CNEOBotJgrJuggernaut::RecomputeSeekPath( CNEOBot *me )
 	m_bGoingToTargetEntity = false;
 	m_vGoalPos = vec3_origin;
 
-	// Listen for gunfights
-	const Vector& vGunfireLocation = SearchGunfireLocation(me);
-	if (vGunfireLocation != vec3_invalid)
+	// Listen for combat sounds
+	if ( TryPathToCombatSound( me ) )
 	{
-		m_vGoalPos = vGunfireLocation;
-		m_bGoingToTargetEntity = false;
-
-		if (CNEOBotPathCompute(me, m_path, m_vGoalPos, DEFAULT_ROUTE) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
-		{
-			return;
-		}
-		else
-		{
-			// NEO Jank: Sound is unreachable so wait for it clear from the sound list
-			m_soundSearchTimer.Start( 3.0f );
-		}
+		return;
 	}
 
-	// If unaware of gunfights, patrol spawn points
+	// If unaware of combat noises, patrol spawn points
 	if (m_jgrSpawns.Count() > 0)
 	{
 		CBaseEntity* pTargetSpawn = m_jgrSpawns[ RandomInt(0, m_jgrSpawns.Count() - 1) ];
@@ -95,7 +83,8 @@ void CNEOBotJgrJuggernaut::RecomputeSeekPath( CNEOBot *me )
 
 
 //---------------------------------------------------------------------------------------------
-// Adds a periodic crouch attempt on top of CNEOBotMainAction::OnStuck for height clearance
+// Adds a periodic crouch attempt on top of CNEOBotMainAction::OnStuck for height clearance,
+// and a new route when crouching does not help
 EventDesiredResult< CNEOBot > CNEOBotJgrJuggernaut::OnStuck( CNEOBot *me )
 {
 	UTIL_LogPrintf( "\"%s<%i><%s>\" stuck (position \"%3.2f %3.2f %3.2f\") (duration \"%3.2f\") ",
@@ -133,6 +122,13 @@ EventDesiredResult< CNEOBot > CNEOBotJgrJuggernaut::OnStuck( CNEOBot *me )
 	else
 	{
 		me->GetLocomotionInterface()->Jump();
+
+		// Crouching did not get us through, so pick a new route as CNEOBotSeekAndDestroy::OnStuck does.
+		// Avoid pathing to gunfire for a short break, as sometimes the attraction to gunfire led to the problematic area.
+		constexpr float flStuckGunfireSearchPause = 10.0f;
+		m_soundSearchTimer.Start( flStuckGunfireSearchPause );
+		m_combatSoundCommitTimer.Invalidate();
+		RecomputeSeekPath( me );
 	}
 
 	if ( RandomInt( 0, 1 ) )

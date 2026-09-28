@@ -4,7 +4,7 @@ add_library(mathlib::mathlib ALIAS mathlib)
 
 set_target_properties(mathlib PROPERTIES
     PREFIX ""
-    UNITY_BUILD ON
+    UNITY_BUILD ${NEO_UNITY_BUILD_OTHERS}
     UNITY_BUILD_MODE GROUP
 )
 
@@ -18,7 +18,8 @@ target_include_directories(mathlib
 
 target_compile_definitions(mathlib
     PRIVATE
-	MATHLIB_LIB
+        MATHLIB_LIB
+        ${UNITY_BUILD_DEF_OTHERS}
 )
 
 target_link_libraries(mathlib

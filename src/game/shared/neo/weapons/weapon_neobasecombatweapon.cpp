@@ -350,6 +350,19 @@ void CNEOBaseCombatWeapon::Activate(void)
 #endif
 }
 
+void CNEOBaseCombatWeapon::Detach()
+{
+	BaseClass::Detach();
+
+	RemoveEffects(EF_BONEMERGE | EF_BONEMERGE_FASTCULL);
+	SetParent(nullptr);
+	SetOwnerEntity(nullptr);
+	SetAbsAngles(vec3_angle);
+	SetMoveType(MOVETYPE_VPHYSICS);
+	RemoveSolidFlags(FSOLID_NOT_SOLID);
+	SetCollisionGroup(COLLISION_GROUP_WEAPON);
+}
+
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ClientThink()
 {
@@ -865,6 +878,8 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 	return cone;
 }
 
+extern ConVar sv_suppress_viewpunch;
+
 void CNEOBaseCombatWeapon::AddViewKick()
 {
 	auto owner = ToNEOPlayer(GetOwner());
@@ -872,6 +887,13 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	if (!owner)
 	{
 		return;
+	}
+
+	// Reset any existing viewkick so it doesn't accumulate
+	// TODO: Resetting viewpunch here doesn't just affect viewkick, but also aimpunch.
+	// This if-check is a temporary workaround until we can separate the two.
+	if (!sv_suppress_viewpunch.GetBool()) {
+		owner->ViewPunchReset();
 	}
 
 	auto kickInfo = m_weaponHandling.kickInfo;
@@ -1070,7 +1092,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	);
 
 	//Add our view kick in
-	pOwner->ViewPunchReset();
 	AddViewKick();
 }
 
@@ -1398,3 +1419,28 @@ void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 	// Calling BaseClass::Use will pick the weapon up without waiting for the touch cooldown, don't see anything important there that we need to do that we aren't doing here
 }
 #endif
+
+const char *CNEOBaseCombatWeapon::GetDeathIcon(const CNEOBaseCombatWeapon *pNeoWep,
+		const EDeathIconType eType, bool isGrenade, bool isRemoteDetpack)
+{
+	if (eType == DEATHICONTYPE_IDX && pNeoWep)
+	{
+		isGrenade = pNeoWep->WeaponIndex() == NEO_WIDX_FRAG_GRENADE;
+		isRemoteDetpack = pNeoWep->WeaponIndex() == NEO_WIDX_DETPACK;
+	}
+
+	if (isGrenade)
+	{
+		return "2";
+	}
+	else if (isRemoteDetpack)
+	{
+		return "A";
+	}
+	else if (pNeoWep)
+	{
+		return pNeoWep->GetNEOWpnData().szDeathIcon;
+	}
+	return "";
+}
+

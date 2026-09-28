@@ -34,6 +34,7 @@ protected:
 	CountdownTimer m_repathTimer;
 	PathFollower m_PathFollower;
 
+	bool m_bFocusedOnThrow; // indicates if grenade prep behavior needs to be cleaned up by EndThrowFocus
 	bool m_bPinPulled;
 	bool m_bVantagePointBlocked;
 
@@ -44,9 +45,15 @@ protected:
 		THROW_TARGET_WAIT = 1,
 	};
 
-	static const Vector& FindEmergencePointAlongPath( const CNEOBot *me, const Vector &familiarPos, const Vector &obscuredPos );
-	
+	// Matched push/pop pair where BeginThrowFocus pushes the required weapon,
+	// which must be balanced by EndThrowFocus.
+	void BeginThrowFocus( CNEOBot *me );
+	void EndThrowFocus( CNEOBot *me );
+
+	CNavArea *FindVantageArea( CNEOBot *me );
+
 	virtual ThrowTargetResult UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon ) = 0;
+	virtual void OnThrowReleased( CNEOBot *me ) { }
 
 };
 

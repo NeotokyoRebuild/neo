@@ -78,6 +78,15 @@ public:
 
 	virtual int GetAliveMembers( void ) const;
 
+#ifdef NEO
+	// NEO TODO (Adam) the functions above are all virtual, and CSDKTeam exists, maybe make a CNEOTeam?
+	virtual int GetClassCount(int neoClass) const;
+	virtual bool IsClassFull(int neoClass) const;
+	virtual bool IsClassOverThreshold(int neoClass) const;
+	virtual int GetAppropriateClass(int neoClass) const;
+	virtual void UpdateClassCounts();
+#endif // NEO
+
 public:
 	CUtlVector< CTeamSpawnPoint * > m_aSpawnPoints;
 	CUtlVector< CBasePlayer * >		m_aPlayers;
@@ -92,6 +101,13 @@ public:
 	int		m_iLastSpawn;		// Index of the last spawnpoint used
 
 	CNetworkVar( int, m_iTeamNum );			// Which team is this?
+
+#ifdef NEO
+	// Class limits
+	CNetworkVar(int, m_iReconCount);
+	CNetworkVar(int, m_iAssaultCount);
+	CNetworkVar(int, m_iSupportCount);
+#endif // NEO
 };
 
 extern CUtlVector< CTeam * > g_Teams;

@@ -35,6 +35,10 @@
 #include "team.h"
 #include "nav_entities.h"
 
+#ifdef NEO
+#include "nav_shared.h"
+#endif // NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1264,6 +1268,12 @@ bool CNavArea::SplitEdit( bool splitAlongX, float splitEdge, CNavArea **outAlpha
 	// For every ladder that pointed to us, connect that ladder to the closer of alpha and beta
 	SplitNotification notify( this, alpha, beta );
 	TheNavMesh->ForAllLadders( notify );
+
+#ifdef NEO
+	// If the old area had a place name, the new areas will inherit it
+	alpha->SetPlace( m_place );
+	beta->SetPlace( m_place );
+#endif // NEO
 
 	// return new areas
 	if (outAlpha)
@@ -4701,6 +4711,21 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 	int teamIdx = teamID % MAX_NAV_TEAMS;
 	return m_isBlocked[ teamIdx ];
 }
+
+#ifdef NEO
+void CNavArea::SetPlace(Place place)
+{
+	if (m_place == place)
+		return;
+
+	if (this == TheNavMesh->GetNavAreaByID(GetID()))
+	{
+		TheNavMesh->DecrementNumPlaces(m_place, this);
+		TheNavMesh->IncrementNumPlaces(place, this);
+	}
+	m_place = place;
+}
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::MarkAsBlocked( int teamID, CBaseEntity *blocker, bool bGenerateEvent )

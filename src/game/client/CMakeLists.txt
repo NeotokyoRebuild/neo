@@ -2,7 +2,7 @@ add_library(client SHARED)
 
 set_target_properties(client PROPERTIES
     PREFIX ""
-    UNITY_BUILD ON
+    UNITY_BUILD ${NEO_UNITY_BUILD_CLIENT_SERVER}
     UNITY_BUILD_MODE GROUP
 )
 
@@ -49,6 +49,7 @@ target_compile_definitions(client
     VECTOR
     VERSION_SAFE_STEAM_API_INTERFACES
     NEXT_BOT
+    ${UNITY_BUILD_DEF_CLIENT_SERVER}
 )
 
 target_link_libraries(client
@@ -1570,10 +1571,12 @@ target_sources_grouped(
 set(UNITY_SOURCE_NEO_SRC_CLIENT
     neo/c_neo_message.cpp
     neo/c_neo_npc_dummy.cpp
+    neo/c_neo_point_world_text.cpp
     neo/c_neo_player.cpp
     neo/c_neo_te_tocflash.cpp
     neo/neo_fixup_glshaders.cpp
     neo/c_neo_bloom_controller.cpp
+    neo/c_neo_killer_damage_infos.cpp
 )
 
 set_source_files_properties(
@@ -1587,6 +1590,7 @@ target_sources_grouped(
     FILES
     neo/c_neo_message.h
     neo/c_neo_npc_dummy.h
+    neo/c_neo_point_world_text.h
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.h
     neo/neo_fixup_glshaders.h
@@ -1658,18 +1662,22 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_ghost_beacons.cpp
     neo/ui/neo_hud_ghost_cap_point.cpp
     neo/ui/neo_hud_ghost_marker.cpp
-    neo/ui/neo_hud_killer_damage_info.cpp
+    neo/ui/neo_hud_killer_info.cpp
     neo/ui/neo_hud_ghost_uplink_state.cpp
     neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_hint.cpp
     neo/ui/neo_hud_message.cpp
+    neo/ui/neo_hud_place_name.cpp
     neo/ui/neo_hud_player_ping.cpp
     neo/ui/neo_hud_round_state.cpp
+    neo/ui/neo_hud_spectator_overlay.cpp
     neo/ui/neo_hud_startup_sequence.cpp
     neo/ui/neo_hud_worldpos_marker.cpp
     neo/ui/neo_hud_worldpos_marker_generic.cpp
     neo/ui/neo_scoreboard.cpp
     neo/ui/neo_hud_context_hint.cpp
+    neo/ui/neo_spec_player_by_hud.cpp
+    neo/ui/neo_avatar.cpp
 )
 
 set_source_files_properties(
@@ -1692,28 +1700,33 @@ target_sources_grouped(
     neo/ui/neo_hud_ammo.h
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_compass.h
+    neo/ui/neo_hud_deathnotice.h
     neo/ui/neo_hud_friendly_marker.h
     neo/ui/neo_hud_game_event.h
     neo/ui/neo_hud_ghost_beacons.h
     neo/ui/neo_hud_ghost_cap_point.h
     neo/ui/neo_hud_ghost_marker.h
-    neo/ui/neo_hud_killer_damage_info.h
+    neo/ui/neo_hud_killer_info.h
     neo/ui/neo_hud_ghost_uplink_state.h
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_hint.h
     neo/ui/neo_hud_message.h
+    neo/ui/neo_hud_place_name.h
     neo/ui/neo_hud_player_ping.h
     neo/ui/neo_hud_round_state.h
+    neo/ui/neo_hud_spectator_overlay.h
     neo/ui/neo_hud_startup_sequence.h
     neo/ui/neo_hud_worldpos_marker.h
     neo/ui/neo_hud_worldpos_marker_generic.h
     neo/ui/neo_scoreboard.h
     neo/ui/neo_hud_context_hint.h
+    neo/ui/neo_avatar.h
     ${UNITY_SOURCE_NEO_UI}
 )
 
 set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
@@ -1742,6 +1755,8 @@ target_sources_grouped(
     NAME "Source Files\\Shared"
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/nav_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h

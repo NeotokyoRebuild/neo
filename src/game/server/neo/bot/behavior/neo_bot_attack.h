@@ -4,6 +4,7 @@
 #include "Path/NextBotChasePath.h"
 
 class CNEOBot;
+class CKnownEntity;
 
 
 //-------------------------------------------------------------------------------
@@ -11,10 +12,12 @@ class CNEOBotAttack : public Action< CNEOBot >
 {
 public:
 	CNEOBotAttack( void );
+	CNEOBotAttack( const Vector &goalPosition );
 	virtual ~CNEOBotAttack() { }
 
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction );
 
 	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me );
 	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path );
@@ -26,10 +29,13 @@ public:
 	virtual const char *GetName( void ) const	{ return "Attack"; };
 
 private:
+	const CNavArea *FindAttackCover( CNEOBot *me, const CKnownEntity *threat );
+
+	bool m_bSawEnemySinceLastPathCompute; // throttles m_attackCoverArea search
+	const CNavArea *m_attackCoverArea; // attempting to advance towards this cover area
+	const CNavArea *m_goalArea; // if set, engage enemies while moving towards this destination
 	PathFollower m_path;
 	ChasePath m_chasePath;
-	CountdownTimer m_attackCoverTimer;
+	CountdownTimer m_coverSearchTimer;
 	CountdownTimer m_grenadeThrowCooldownTimer;
-	CountdownTimer m_repathTimer;
-	CNavArea *m_attackCoverArea;
 };

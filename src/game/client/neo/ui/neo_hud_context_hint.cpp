@@ -13,6 +13,7 @@
 #include "neo_root_settings.h"
 #include "glow_outline_effect.h"
 #include "smoke_fog_overlay.h"
+#include "c_buttons.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -169,14 +170,14 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				// Ghost pickup hint
 				if (pNeoWeapon->GetNeoWepBits() & NEO_WEP_GHOST)
 				{
-					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pick up the Ghost", szUppercaseKeyBinding);
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Pick up the Ghost", szUppercaseKeyBinding);
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 					bPreviouslyCouldPickupWeapon = true;
 				}
 				// Weapon pickup hint
 				else if (pNeoWeapon->CanBePickedUpByClass(pLocalNeoPlayer->GetClass()))
 				{
-					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] pick up %hs", szUppercaseKeyBinding, pNeoWeapon->GetPrintName());
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Pick up %hs", szUppercaseKeyBinding, pNeoWeapon->GetPrintName());
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 					bPreviouslyCouldPickupWeapon = true;
 				}
@@ -217,13 +218,38 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				}
 				else
 				{
-					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] boot into JGR56", szUppercaseKeyBinding);
+					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] Boot into JGR56", szUppercaseKeyBinding);
+				}
+			}
+			// Buttons
+			else if (C_BaseButton* pButton = dynamic_cast<C_BaseButton*>(pUseEntity))
+			{
+				if (pButton->m_bUseHint)
+				{
+					if (pButton->m_szUseHintText[0] != '\0')
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] %hs", szUppercaseKeyBinding, pButton->m_szUseHintText);
+						m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					}
+					else
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Use", szUppercaseKeyBinding);
+						m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					}
+				}
+				else
+				{
+					m_flDisplayEndTime = gpGlobals->curtime;
+					g_GlowObjectManager.ClearUseItem();
+					m_hUseEntity = INVALID_EHANDLE;
+					ClearUseEntityListEntry();
+					return;
 				}
 			}
 			// Some other useable entity
 			else
 			{
-				V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] use", szUppercaseKeyBinding);
+				V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Use", szUppercaseKeyBinding);
 				m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 			}
 		}
@@ -247,11 +273,11 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 					m_flDisplayEndTime = gpGlobals->curtime + 1.f;
 					if (sv_neo_bot_cmdr_enable.GetBool())
 					{
-						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] %hs %hs", szUppercaseKeyBinding, pTargetPlayer->m_hCommandingPlayer.Get() == pLocalNeoPlayer ? "release" : "command", pTargetPlayer->GetNeoPlayerName());
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] %hs %hs", szUppercaseKeyBinding, pTargetPlayer->m_hCommandingPlayer.Get() == pLocalNeoPlayer ? "Release" : "Command", pTargetPlayer->GetNeoPlayerName());
 					}
 					else
 					{
-						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] request primary weapon", szUppercaseKeyBinding); // NEO TODO (Adam) network primary weapon so can print its name here?
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Request primary weapon", szUppercaseKeyBinding); // NEO TODO (Adam) network primary weapon so can print its name here?
 					}
 				}
 			}

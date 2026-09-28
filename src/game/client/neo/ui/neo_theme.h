@@ -7,6 +7,7 @@
 #define COLOR_ALMOST_BLACK Color(15, 15, 15, 255)
 #define COLOR_BLACK_TRANSPARENT Color(0, 0, 0, 190)
 #define COLOR_DARK_RED Color(180, 32, 32, 255)
+#define COLOR_MUTE_BG Color(140, 20, 20, 25)
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 #define COLOR_NEOPANELACCENTBG Color(40, 0, 0, 255)
 

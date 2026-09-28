@@ -17,7 +17,7 @@ ConVar neo_bot_path_reservation_duration("neo_bot_path_reservation_duration", "3
 ConVar neo_bot_path_reservation_distance("neo_bot_path_reservation_distance", "100000", FCVAR_NONE,
     "How far along the path to reserve, in Hammer units.", true, 0, false, 0);
 
-ConVar neo_bot_path_reservation_penalty("neo_bot_path_reservation_penalty", "10000", FCVAR_NONE,
+ConVar neo_bot_path_reservation_penalty("neo_bot_path_reservation_penalty", "3000", FCVAR_NONE,
     "Pathing cost penalty for a reserved area.", true, 0, false, 0);
 
 ConVar neo_bot_path_reservation_friendly_penalty_enable("neo_bot_path_reservation_friendly_penalty_enable", "1", FCVAR_NONE,
@@ -40,8 +40,37 @@ CNEOBotPathReservationSystem* CNEOBotPathReservations()
     return &g_BotPathReservations;
 }
 
+//-------------------------------------------------------------------------------------------------
+// Check if reservation claim is valid and not expired.
+static bool ClaimIsLive(const AreaClaim_t &claim)
+{
+    return claim.hOwner.Get() != NULL && claim.flExpirationTime >= gpGlobals->curtime;
+}
+
+//-------------------------------------------------------------------------------------------------
+// Count live reservations on a nav area.
+int CNEOBotPathReservationSystem::CountLiveClaims(const AreaReservation_t &res, const CNEOBot *excluding) const
+{
+    int count = 0;
+    for (int i = 0; i < res.claims.Count(); ++i)
+    {
+        const AreaClaim_t &claim = res.claims[i];
+        if (!ClaimIsLive(claim))
+        {
+            continue;
+        }
+        if (excluding != NULL && claim.hOwner.Get() == excluding)
+        {
+            continue;
+        }
+        ++count;
+    }
+    return count;
+}
+
+//-------------------------------------------------------------------------------------------------
 /**
- * Reserve a navigation area for a specific bot for a given duration.
+ * Record (or refresh) this bot's claim on a nav area for the given duration.
  */
 void CNEOBotPathReservationSystem::ReserveArea(CNavArea *area, CNEOBot *bot, float duration)
 {
@@ -61,89 +90,47 @@ void CNEOBotPathReservationSystem::ReserveArea(CNavArea *area, CNEOBot *bot, flo
         return;
     }
 
-    int areaID = area->GetID();
-    int reservationIndex = m_Reservations[team].Find(areaID);
+    const int areaID = area->GetID();
+    const float flExpiration = gpGlobals->curtime + duration;
 
+    int reservationIndex = m_Reservations[team].Find(areaID);
     if (reservationIndex == m_Reservations[team].InvalidIndex())
     {
         reservationIndex = m_Reservations[team].Insert(areaID);
     }
-    else
+
+    // Refresh this bot's existing claim, or add a new one.
+    // For tracking number of teammates routing through here.
+    AreaReservation_t &res = m_Reservations[team][reservationIndex];
+    bool bHadClaim = false;
+    for (int i = 0; i < res.claims.Count(); ++i)
     {
-        // If the area is already reserved by this bot, and the reservation is not expired,
-        // we should decrement the count before updating the reservation to avoid double counting.
-        // This handles cases where a bot re-reserves an area it already owns.
-        const ReservationInfo &existingInfo = m_Reservations[team].Element(reservationIndex);
-        CNEOBot *existingOwner = ToNEOBot(existingInfo.hOwner.Get());
-        if (existingOwner == bot && existingInfo.flExpirationTime >= gpGlobals->curtime)
+        if (res.claims[i].hOwner.Get() == bot)
         {
-             DecrementPredictedFriendlyPathCount(area->GetID(), team);
+            res.claims[i].flExpirationTime = flExpiration;
+            bHadClaim = true;
+            break;
         }
     }
-
-    m_Reservations[team][reservationIndex].hOwner = bot;
-    m_Reservations[team][reservationIndex].flExpirationTime = gpGlobals->curtime + duration;
-    IncrementPredictedFriendlyPathCount(area->GetID(), team);
-
-    // Add to bot's reserved areas list
-    EHANDLE hBot = bot;
-    int botReservedIndex = m_BotReservedAreas.Find(hBot);
-    if (botReservedIndex == m_BotReservedAreas.InvalidIndex())
+    if (!bHadClaim)
     {
-        m_BotReservedAreas.Insert(hBot, BotReservedAreas_t());
-        botReservedIndex = m_BotReservedAreas.Find(hBot);
-    }
-    
-    if (m_BotReservedAreas.Element(botReservedIndex).areas.Find(area) == -1)
-    {
-        m_BotReservedAreas.Element(botReservedIndex).areas.AddToTail(area);
-    }
-}
-
-/**
- * Release a navigation area reservation.
- */
-void CNEOBotPathReservationSystem::ReleaseArea(CNavArea *area, CNEOBot *bot)
-{
-    if (!area || !bot)
-    {
-        return;
+        AreaClaim_t claim;
+        claim.hOwner = bot;
+        claim.flExpirationTime = flExpiration;
+        res.claims.AddToTail(claim);
     }
 
-    int team = bot->GetTeamNumber();
-    if (team < 0 || team >= TEAM__TOTAL)
+    // Reverse index for fast release.
+    int botIndex = m_BotReservedAreas.Find(bot->entindex());
+    if (botIndex == m_BotReservedAreas.InvalidIndex())
     {
-        return;
+        botIndex = m_BotReservedAreas.Insert(bot->entindex());
     }
-
-    int areaID = area->GetID();
-    int reservationIndex = m_Reservations[team].Find(areaID);
-
-    if (reservationIndex == m_Reservations[team].InvalidIndex())
+    if (m_BotReservedAreas[botIndex].areas.Find(area) == -1)
     {
-        return; // No reservation for this area
-    }
-
-    const ReservationInfo &info = m_Reservations[team].Element(reservationIndex);
-    CNEOBot *owner = ToNEOBot(info.hOwner.Get());
-
-    // Only remove if this bot is the current owner and the reservation hasn't expired naturally.
-    // If it has expired, or another bot has taken ownership, we shouldn't decrement the count or remove the entry.
-    if (owner == bot && info.flExpirationTime >= gpGlobals->curtime)
-    {
-        DecrementPredictedFriendlyPathCount(area->GetID(), team);
-        m_Reservations[team].RemoveAt(reservationIndex);
-    }
-
-    // Remove from bot's reserved areas list
-    EHANDLE hBot = bot;
-    int botReservedIndex = m_BotReservedAreas.Find(hBot);
-    if (botReservedIndex != m_BotReservedAreas.InvalidIndex())
-    {
-        m_BotReservedAreas.Element(botReservedIndex).areas.FindAndRemove(area);
+        m_BotReservedAreas[botIndex].areas.AddToTail(area);
     }
 }
-
 
 //-------------------------------------------------------------------------------------------------
 /**
@@ -156,87 +143,46 @@ void CNEOBotPathReservationSystem::ReleaseAllAreas(CNEOBot *bot)
         return;
     }
 
-    int team = bot->GetTeamNumber();
-    if (team < 0 || team >= TEAM__TOTAL)
-    {
-        return;
-    }
-
-    EHANDLE hBot = bot;
-    int botReservedIndex = m_BotReservedAreas.Find(hBot);
-
-    if (botReservedIndex == m_BotReservedAreas.InvalidIndex())
+    int botIndex = m_BotReservedAreas.Find(bot->entindex());
+    if (botIndex == m_BotReservedAreas.InvalidIndex())
     {
         return; // No reservations for this bot
     }
 
-    BotReservedAreas_t &botReservedAreas = m_BotReservedAreas.Element(botReservedIndex);
-    for (int i = 0; i < botReservedAreas.areas.Count(); ++i)
+    const int team = bot->GetTeamNumber();
+    if (team >= 0 && team < TEAM__TOTAL)
     {
-        CNavArea *area = botReservedAreas.areas[i];
-        if (area)
+        const CUtlVector<CNavArea*> &areas = m_BotReservedAreas[botIndex].areas;
+        for (int a = 0; a < areas.Count(); ++a)
         {
-            int areaID = area->GetID();
-            int reservationIndex = m_Reservations[team].Find(areaID);
-            if (reservationIndex != m_Reservations[team].InvalidIndex())
+            CNavArea *area = areas[a];
+            if (!area)
             {
-                const ReservationInfo &info = m_Reservations[team].Element(reservationIndex);
-                if (ToNEOBot(info.hOwner.Get()) == bot)
+                continue;
+            }
+
+            int reservationIndex = m_Reservations[team].Find(area->GetID());
+            if (reservationIndex == m_Reservations[team].InvalidIndex())
+            {
+                continue;
+            }
+
+            AreaReservation_t &res = m_Reservations[team][reservationIndex];
+            for (int i = res.claims.Count() - 1; i >= 0; --i)
+            {
+                if (res.claims[i].hOwner.Get() == bot)
                 {
-                     DecrementPredictedFriendlyPathCount(area->GetID(), team);
-                     m_Reservations[team].RemoveAt(reservationIndex);
+                    res.claims.Remove(i);
                 }
+            }
+            if (res.claims.Count() == 0)
+            {
+                m_Reservations[team].RemoveAt(reservationIndex);
             }
         }
     }
-    m_BotReservedAreas.RemoveAt(botReservedIndex);
-}
 
-//-------------------------------------------------------------------------------------------------
-/**
- * Check if a navigation area is currently reserved by a teammate of the bot avoiding friendlies.
- */
-bool CNEOBotPathReservationSystem::IsAreaReservedByTeammate(CNavArea *area, CNEOBot *avoider) const
-{
-    if (!area || !avoider)
-    {
-        return false;
-    }
-
-    if (!NEORules()->GetTeamPlayEnabled())
-    {
-        return false;
-    }
-
-    int team = avoider->GetTeamNumber();
-    if (team < 0 || team >= TEAM__TOTAL)
-    {
-        return false;
-    }
-
-    int areaID = area->GetID();
-    int reservationIndex = m_Reservations[team].Find(areaID);
-
-    if (reservationIndex == m_Reservations[team].InvalidIndex())
-    {
-        return false;
-    }
-
-    const ReservationInfo &info = m_Reservations[team].Element(reservationIndex);
-
-    if (info.flExpirationTime < gpGlobals->curtime)
-    {
-        return false;
-    }
-
-    CNEOBot *owner = ToNEOBot(info.hOwner.Get());
-
-    if (owner && owner != avoider)
-    {
-        return true;
-    }
-
-    return false;
+    m_BotReservedAreas.RemoveAt(botIndex);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -245,69 +191,45 @@ bool CNEOBotPathReservationSystem::IsAreaReservedByTeammate(CNavArea *area, CNEO
  */
 void CNEOBotPathReservationSystem::Clear()
 {
-    for (int team = 0; team < TEAM__TOTAL; ++team)
-    {
-        m_Reservations[team].RemoveAll();
-        m_AreaPathCounts[team].RemoveAll();
-    }
-    m_BotReservedAreas.RemoveAll();
+    ClearRound();
     m_AreaAvoidPenalties.RemoveAll();
 }
 
-//-------------------------------------------------------------------------------------------------
-void CNEOBotPathReservationSystem::IncrementPredictedFriendlyPathCount( int areaID, int teamID )
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Clear round specific path reservations.
+ */
+void CNEOBotPathReservationSystem::ClearRound()
 {
-    if (teamID < 0 || teamID >= TEAM__TOTAL)
+    for (int team = 0; team < TEAM__TOTAL; ++team)
     {
-        return;
+        m_Reservations[team].RemoveAll();
+        m_HazardAreas[team].RemoveAll();
     }
-
-    int i = m_AreaPathCounts[teamID].Find( areaID );
-    if ( m_AreaPathCounts[teamID].IsValidIndex( i ) )
-    {
-        m_AreaPathCounts[teamID][i]++;
-    }
-    else
-    {
-        m_AreaPathCounts[teamID].Insert( areaID, 1 );
-    }
+    m_BotReservedAreas.RemoveAll();
 }
 
 //-------------------------------------------------------------------------------------------------
-void CNEOBotPathReservationSystem::DecrementPredictedFriendlyPathCount( int areaID, int teamID )
+int CNEOBotPathReservationSystem::GetPredictedFriendlyPathCount( int areaID, int teamID, const CNEOBot *excluding ) const
 {
-    if (teamID < 0 || teamID >= TEAM__TOTAL)
+    if (!NEORules()->GetTeamPlayEnabled())
     {
-        return;
+        return 0;
     }
 
-    int i = m_AreaPathCounts[teamID].Find( areaID );
-    if ( m_AreaPathCounts[teamID].IsValidIndex( i ) )
-    {
-        m_AreaPathCounts[teamID][i]--;
-        if ( m_AreaPathCounts[teamID][i] <= 0 )
-        {
-            m_AreaPathCounts[teamID].RemoveAt( i );
-        }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------
-int CNEOBotPathReservationSystem::GetPredictedFriendlyPathCount( int areaID, int teamID ) const
-{
     if (!neo_bot_path_reservation_friendly_penalty_enable.GetBool()
         || teamID < 0 || teamID >= TEAM__TOTAL)
     {
         return 0;
     }
 
-    int i = m_AreaPathCounts[teamID].Find( areaID );
-    if ( m_AreaPathCounts[teamID].IsValidIndex( i ) )
+    int reservationIndex = m_Reservations[teamID].Find(areaID);
+    if (reservationIndex == m_Reservations[teamID].InvalidIndex())
     {
-        return m_AreaPathCounts[teamID][i];
+        return 0;
     }
 
-    return 0;
+    return CountLiveClaims(m_Reservations[teamID][reservationIndex], excluding);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -341,4 +263,201 @@ float CNEOBotPathReservationSystem::GetAreaAvoidPenalty(unsigned int navAreaID) 
         return m_AreaAvoidPenalties[index];
     }
     return 0.0f;
+}
+
+//-------------------------------------------------------------------------------------------------
+// Functor to propagate deadly hazard to PVS-adjacent areas
+struct CNEOFunctorPropagatePVSDeadlyHazard
+{
+	CNEOFunctorPropagatePVSDeadlyHazard(float expireTime, int teamID)
+		: m_expireTime(expireTime), m_teamID(teamID)
+	{
+	}
+
+	bool operator()(CNavArea *area)
+	{
+		CNEOBotPathReservations()->AddDeadlyHazard(area->GetID(), m_expireTime, m_teamID);
+		return true;
+	}
+
+	float m_expireTime;
+	int m_teamID;
+};
+
+//-------------------------------------------------------------------------------------------------
+// Marks an area temporarily for bots to avoid or escape from
+void CNEOBotPathReservationSystem::AddDeadlyHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS)
+{
+    if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
+    {
+        return;
+    }
+
+	if ( (teamID < 0) || (teamID >= TEAM__TOTAL) )
+	{
+		return;
+	}
+
+	int index = m_HazardAreas[teamID].Find(navAreaID);
+	if ( !m_HazardAreas[teamID].IsValidIndex(index) )
+	{
+        // Initialize blank slate lookup entry
+		HazardInfo blank;
+		blank.hazardExpireTime = expireTime;
+		blank.smokeExpireTime = 0.0f;
+		blank.smokePropagateTime = 0.0f;
+		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
+	}
+    else
+    {
+	    HazardInfo &existing = m_HazardAreas[teamID][index];
+        // Optimizing simplification: assume new time is later to skip comparisons
+        // May also work for resetting an area to be non-hazardous early
+	    existing.hazardExpireTime = expireTime;
+    }
+
+    if ( propagatePVS )
+    {
+        CNavArea *area = TheNavMesh->GetNavAreaByID(navAreaID);
+        if (area)
+        {
+            CNEOFunctorPropagatePVSDeadlyHazard propagate(expireTime, teamID);
+            // CompletelyVisible: fewer areas to iterate through and definitely exposed
+            // vs PotentiallyVisible: for narrow corridors, some areas would count even if only a sliver was exposed
+            area->ForAllCompletelyVisibleAreas(propagate);
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+void CNEOBotPathReservationSystem::AddFragHazard(int navAreaID, float expireTime, int teamID)
+{
+    AddDeadlyHazard(navAreaID, expireTime, teamID, true);
+    // true (propagatePVS) - propagate hazard to all adjacent PVS areas
+    // shorthand for labeling entire trajectory and potential stray angles as hazardous
+    // also intended for grenade thrower to duck behind cover from perspective of target
+}
+
+//-------------------------------------------------------------------------------------------------
+// Functor to propagate a smoke hazard to PVS-adjacent areas
+struct CNEOFunctorPropagatePVSSmokeHazard
+{
+	CNEOFunctorPropagatePVSSmokeHazard(float expireTime, int teamID)
+		: m_expireTime(expireTime), m_teamID(teamID)
+	{
+	}
+
+	bool operator()(CNavArea *area)
+	{
+		CNEOBotPathReservations()->AddSmokeHazard(area->GetID(), m_expireTime, m_teamID, false);
+		return true;
+	}
+
+	float m_expireTime;
+	int m_teamID;
+};
+
+//-------------------------------------------------------------------------------------------------
+// Marks an area temporarily for bots to avoid or escape from
+// Support bots ignore this smoke hazard
+void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS)
+{
+    if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
+    {
+        return;
+    }
+
+	if (teamID < 0 || teamID >= TEAM__TOTAL)
+	{
+		return;
+	}
+
+	int index = m_HazardAreas[teamID].Find(navAreaID);
+	if (!m_HazardAreas[teamID].IsValidIndex(index))
+	{
+        // Initialize blank slate lookup entry
+		HazardInfo blank;
+		blank.hazardExpireTime = 0.0f;
+		blank.smokeExpireTime = expireTime;
+		blank.smokePropagateTime = 0.0f;
+		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
+	}
+    else
+    {
+        HazardInfo &existing = m_HazardAreas[teamID][index];
+        // Optimizing simplification: assume new time is later to skip comparisons
+        // May also work for resetting an area to be non-hazardous early
+        existing.smokeExpireTime = expireTime;
+
+        if (propagatePVS && (existing.smokePropagateTime == expireTime))
+        {
+            return;
+        }
+    }
+
+    if (propagatePVS)
+    {
+        CNavArea *area = TheNavMesh->GetNavAreaByID(navAreaID);
+        if (area)
+        {
+            m_HazardAreas[teamID][index].smokePropagateTime = expireTime;
+
+            CNEOFunctorPropagatePVSSmokeHazard propagate(expireTime, teamID);
+            // CompletelyVisible: fewer areas to iterate through and definitely exposed
+            // vs PotentiallyVisible: for narrow corridors, some areas would count even if only a sliver was exposed
+            area->ForAllCompletelyVisibleAreas(propagate);
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+float CNEOBotPathReservationSystem::GetAreaHazardousTime(int navAreaID, const CNEOBot *me) const
+{
+    if (!neo_bot_path_reservation_avoid_penalty_enable.GetBool())
+    {
+        return 0.0f;
+    }
+
+	if (!me)
+	{
+		return 0.0f;
+	}
+
+	int teamID = me->GetTeamNumber();
+
+	if (teamID < 0 || teamID >= TEAM__TOTAL)
+	{
+		return 0.0f;
+	}
+
+	int index = m_HazardAreas[teamID].Find(navAreaID);
+	if (m_HazardAreas[teamID].IsValidIndex(index))
+	{
+		const HazardInfo &h = m_HazardAreas[teamID][index];
+
+		auto hazardTimeLeft = h.hazardExpireTime - gpGlobals->curtime;
+		if (hazardTimeLeft > 0)
+		{
+	        // All bots avoid explosive hazards
+			return hazardTimeLeft;
+		}
+
+        // Support class can see through smoke
+        if (me->GetClass() != NEO_CLASS_SUPPORT)
+        {
+            auto smokeTimeLeft = h.smokeExpireTime - gpGlobals->curtime;
+            if (smokeTimeLeft > 0)
+            {
+                return smokeTimeLeft;
+            }
+        }
+	}
+
+	return 0.0f;
+}
+
+//-------------------------------------------------------------------------------------------------
+bool CNEOBotPathReservationSystem::IsAreaHazardous(int navAreaID, const CNEOBot *me) const
+{
+   return GetAreaHazardousTime(navAreaID, me) > 0;
 }

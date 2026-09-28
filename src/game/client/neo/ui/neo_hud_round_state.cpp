@@ -18,8 +18,8 @@
 #include "c_neo_player.h"
 #include "c_team.h"
 #include "c_playerresource.h"
-#include "vgui_avatarimage.h"
 #include "neo_scoreboard.h"
+#include "neo_hud_spectator_overlay.h"
 
 #include "hltvcamera.h"
 
@@ -32,10 +32,7 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
-ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0,
-	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldValue, [[maybe_unused]] float flOldValue) {
-		g_pNeoScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
-	});
+ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling", 
 	[](IConVar* pConVar, char const* pOldString, float flOldValue) -> void {
@@ -248,8 +245,6 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetZPos(90);
 }
 
-extern ConVar sv_neo_readyup_lobby;
-
 void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 {
 	float roundTimeLeft = NEORules()->GetRoundRemainingTime();
@@ -261,7 +256,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	m_pWszStatusUnicode = L"";
 	if (roundStatus == NeoRoundStatus::Idle)
 	{
-		m_pWszStatusUnicode = sv_neo_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
+		m_pWszStatusUnicode = NEORules()->IsReadyUpEnabled() ? L"Waiting for players to ready up" : L"Waiting for players";
 	}
 	else if (roundStatus == NeoRoundStatus::Warmup)
 	{
@@ -435,7 +430,36 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	}
 	else
 	{
-		V_sprintf_safe(szPlayersAliveANSI, "%i vs %i", m_iLeftPlayersAlive, m_iRightPlayersAlive);
+		const int localPlayerTeam = GetLocalPlayerTeam();
+		const bool localPlayerSpecOrNoTeam = !NEORules()->IsTeamplay() || !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
+		const bool swapTeamSides = cl_neo_hud_team_swap_sides.GetBool();
+		const int leftTeam = swapTeamSides ? (localPlayerSpecOrNoTeam ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
+
+		int iLeftPlayersAlive = 0;
+		int iRightPlayersAlive = 0;
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			if (!g_PR->IsConnected(i))
+			{
+				continue;
+			}
+			const int playerTeam = g_PR->GetTeam(i);
+			if (playerTeam != leftTeam)
+			{
+				if (g_PR->IsAlive(i))
+				{
+					iRightPlayersAlive++;
+				}
+			}
+			else
+			{
+				if (g_PR->IsAlive(i))
+				{
+					iLeftPlayersAlive++;
+				}
+			}
+		}
+		V_sprintf_safe(szPlayersAliveANSI, "%i vs %i", iLeftPlayersAlive, iRightPlayersAlive);
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(szPlayersAliveANSI, m_wszPlayersAliveUnicode, sizeof(m_wszPlayersAliveUnicode));
 
@@ -558,10 +582,15 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		surface()->DrawPrintText(m_wszRightTeamScore, 2);
 	}
 
-	m_iLeftPlayersAlive = m_iLeftPlayersTotal = m_iRightPlayersAlive = m_iRightPlayersTotal = 0;
+	m_iLeftPlayersTotal = m_iRightPlayersTotal = 0;
 
 	if (!g_PR)
 		return;
+
+	if (localPlayerSpecOrNoTeam && cl_neo_hud_spectator_overlay_enabled.GetBool())
+	{
+		return;
+	}
 
 	if (NEORules()->IsTeamplay() && (!cl_neo_squad_hud_original.GetBool() || localPlayerSpecOrNoTeam))
 	{ // Sort player list even if not drawing new hud so spectators can use commands
@@ -606,14 +635,10 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 
 			if (playerTeam == TEAM__TOTAL - 1 - (leftTeam - FIRST_GAME_TEAM))
 			{
-				if (g_PR->IsAlive(m_nPlayerList[i].playerIndex))
-					m_iLeftPlayersAlive++;
 				m_iLeftPlayersTotal++;
 			}
 			else if (playerTeam == TEAM__TOTAL - 1 - (rightTeam - FIRST_GAME_TEAM))
 			{
-				if (g_PR->IsAlive(m_nPlayerList[i].playerIndex))
-					m_iRightPlayersAlive++;
 				m_iRightPlayersTotal++;
 			}
 		}
@@ -724,7 +749,6 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const int localPlayerTeam = GetLocalPlayerTeam();
 		const int localPlayerIndex = GetLocalPlayerIndex();
 		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
-		const int leftTeam = cl_neo_hud_team_swap_sides.GetBool() ? (localPlayerSpec ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
 
 		int offset = 52;
 		if (cl_neo_squad_hud_star_scale.GetFloat() > 0)
@@ -772,9 +796,6 @@ void CNEOHud_RoundState::DrawPlayerList()
 			}
 		}
 
-		m_iLeftPlayersAlive = 0;
-		m_iRightPlayersAlive = 0;
-
 		// Draw other team mates
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
@@ -783,19 +804,6 @@ void CNEOHud_RoundState::DrawPlayerList()
 				continue;
 			}
 			const int playerTeam = g_PR->GetTeam(i);
-			if (playerTeam != leftTeam)
-			{
-				if (g_PR->IsAlive(i)) 
-				{
-					m_iRightPlayersAlive++;
-				}
-			}
-			else {
-				if (g_PR->IsAlive(i))
-				{
-					m_iLeftPlayersAlive++;
-				}
-			}
 			if (playerTeam != localPlayerTeam)
 			{
 				continue;
@@ -826,7 +834,6 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 	const int localPlayerTeam = GetLocalPlayerTeam();
 	const int localPlayerIndex = GetLocalPlayerIndex();
 	const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
-	const int leftTeam = cl_neo_hud_team_swap_sides.GetBool() ? (localPlayerSpec ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
 
 	int offset = 52;
 	if (cl_neo_squad_hud_star_scale.GetFloat() > 0)
@@ -844,8 +851,6 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 	m_nonSquadList.RemoveAll();
 
 	bool squadMateFound = false;
-	m_iLeftPlayersAlive = 0;
-	m_iRightPlayersAlive = 0;
 	const int localStar = g_PR->GetStar(localPlayerIndex);
 
 	// Single pass to collect and categorize players
@@ -856,19 +861,6 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 			continue;
 		}
 		const int playerTeam = g_PR->GetTeam(i);
-		if (playerTeam != leftTeam)
-		{
-			if (g_PR->IsAlive(i)) 
-			{
-				m_iRightPlayersAlive++;
-			}
-		}
-		else {
-			if (g_PR->IsAlive(i))
-			{
-				m_iLeftPlayersAlive++;
-			}
-		}
 		if (playerTeam != localPlayerTeam)
 		{
 			continue;
@@ -1247,35 +1239,6 @@ void CNEOHud_RoundState::CheckActiveStar()
 	target->SetDrawColor(currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
 }
 
-void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
-{
-	if (!g_pNeoScoreBoard)
-	{
-		return;
-	}
-
-	if (cl_neo_streamermode.GetBool())
-	{
-		return;
-	}
-
-	player_info_t pi;
-	if (!engine->GetPlayerInfo(playerIndex, &pi))
-		return;
-
-	if (!pi.friendsID)
-		return;
-
-	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-	const int mapIndex = g_pNeoScoreBoard->m_mapAvatarsToImageList.Find(steamIDForPlayer);
-	if ((mapIndex == g_pNeoScoreBoard->m_mapAvatarsToImageList.InvalidIndex()))
-		return;
-
-	CAvatarImage* pAvIm = (CAvatarImage*)g_pNeoScoreBoard->m_pImageList->GetImage(g_pNeoScoreBoard->m_mapAvatarsToImageList[mapIndex]);
-	surface()->DrawSetTexture(pAvIm->getTextureID());
-	surface()->DrawSetColor(COLOR_WHITE);
-}
-
 void CNEOHud_RoundState::Paint()
 {
 	BaseClass::Paint();
@@ -1395,153 +1358,3 @@ int CNEOHud_RoundState::GetSelectedPlayerInHud()
 	return -1;
 }
 
-CON_COMMAND_F( spec_player_by_hud_position, "Spectate player by position in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if ( args.ArgC() != 2 )
-	{
-		ConMsg( "Usage: spec_player_by_hud_position { player position in top hud, 0 indexed }\n" );
-		return;
-	}
-
-	int positionInHud = atoi( args[1] );
-	if (positionInHud < 0 || positionInHud > MAX_PLAYERS - 1)
-	{
-		ConMsg( "Usage: spec_player_by_hud_position { player position in top hud, 0 indexed }\n" );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	const int entityIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(positionInHud, true);
-	if (entityIndex)
-	{
-		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(entityIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", entityIndex));
-	}
-}
-
-CON_COMMAND_F( spec_next_entity_in_hud, "Spectate next valid player to the right of the current spectate target", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	int spectateTargetMinusIndexedPositionInHud = 0;
-	C_BaseEntity *pSpectateTarget = pNeoPlayer->GetObserverTarget();
-	if (pSpectateTarget)
-	{
-		spectateTargetMinusIndexedPositionInHud = g_pNeoHudRoundState->GetMinusIndexedPositionOfPlayerInHud(pSpectateTarget->entindex());
-	}
-
-	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(g_pNeoHudRoundState->GetNextAlivePlayerInHud(spectateTargetMinusIndexedPositionInHud, false));
-	if (playerIndex)
-	{
-		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(playerIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
-	}
-}
-
-CON_COMMAND_F( spec_previous_entity_in_hud, "Spectate next valid player to the left of the current spectate target", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-	
-	int spectateTargetMinusIndexedPositionInHud = 0;
-	C_BaseEntity *pSpectateTarget = pNeoPlayer->GetObserverTarget();
-	if (pSpectateTarget)
-	{
-		spectateTargetMinusIndexedPositionInHud = g_pNeoHudRoundState->GetMinusIndexedPositionOfPlayerInHud(pSpectateTarget->entindex());
-	}
-	
-	const int playerIndex = g_pNeoHudRoundState->GetEntityIndexAtPositionInHud(g_pNeoHudRoundState->GetNextAlivePlayerInHud(spectateTargetMinusIndexedPositionInHud, true));
-	if (playerIndex)
-	{
-		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(playerIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", playerIndex));
-	}
-}
-
-CON_COMMAND_F( select_next_alive_player_in_hud, "Select the next alive player in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	g_pNeoHudRoundState->SelectNextAlivePlayerInHud();
-}
-
-CON_COMMAND_F( select_previous_alive_player_in_hud, "Select the previous alive player in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: Selection is used to switch observer target in spectate_player_selected_in_hud, but HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	g_pNeoHudRoundState->SelectPreviousAlivePlayerInHud();
-}
-
-CON_COMMAND_F( spectate_player_selected_in_hud, "Spectate entity selected in the top hud", FCVAR_CLIENTCMD_CAN_EXECUTE )
-{
-	if (engine->IsHLTV() && HLTVCamera()->IsPVSLocked())
-	{
-		ConMsg( "%s: HLTV Camera is PVS locked\n", __FUNCTION__ );
-		return;
-	}
-
-	if (!g_pNeoHudRoundState)
-		return;
-	
-	C_NEO_Player *pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ( !pNeoPlayer || !pNeoPlayer->IsObserver() )
-		return;
-
-	const int entityIndex = g_pNeoHudRoundState->GetSelectedPlayerInHud();
-	if (entityIndex)
-	{
-		engine->IsHLTV() ? HLTVCamera()->SetPrimaryTarget(entityIndex) : engine->ClientCmd(VarArgs("spec_player_entity_number %d", entityIndex));
-	}
-}

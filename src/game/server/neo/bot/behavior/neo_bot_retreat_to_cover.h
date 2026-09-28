@@ -22,7 +22,6 @@ private:
 	Action< CNEOBot > *m_actionToChangeToOnceCoverReached;
 
 	PathFollower m_path;
-	CountdownTimer m_repathTimer;
 
 	CNavArea *m_coverArea;
 	CountdownTimer m_grenadeCheckTimer;

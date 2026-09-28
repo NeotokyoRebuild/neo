@@ -252,14 +252,14 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		}
 
 		// Early jump-off
+		bool bWantsDismount = false;
 		if ( m_pExitArea )
 		{
 			float zDistToExit = currentZ - m_exitAreaCenter.z;
 
 			if ( zDistToExit > 0.0f && zDistToExit <= SAFE_FALL_DIST )
 			{
-				EnterDismountPhase( me );
-				return Continue();
+				bWantsDismount = true;
 			}
 		}
 
@@ -288,6 +288,16 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		// Check if we've reached the target exit height
 		if ( m_bGoingUp ? ( currentZ >= dismountZ ) : ( currentZ <= dismountZ ) )
 		{
+			bWantsDismount = true;
+		}
+
+		// A parapet between the ladder and a roof exit blocks the step off at floor height:
+		// keep climbing until the hull clears it (stuck detection ends it if nothing does)
+		const bool bLipInTheWay = bWantsDismount && m_bGoingUp && onLadder
+			&& IsDismountBlocked( me, m_pExitArea ? toExit : m_ladderForward );
+
+		if ( bWantsDismount && !bLipInTheWay )
+		{
 			EnterDismountPhase( me );
 			return Continue();
 		}
@@ -300,6 +310,11 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			if ( m_pExitArea )
 			{
 				bShouldGoUp = ( currentZ < m_exitAreaCenter.z );
+			}
+
+			if ( bLipInTheWay )
+			{
+				bShouldGoUp = true;
 			}
 
 			if ( bShouldGoUp )
@@ -414,6 +429,18 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 	return Continue();
 }
 
+//---------------------------------------------------------------------------------------------
+bool CNEOBotLadderClimb::IsDismountBlocked( CNEOBot *me, const Vector &toExit ) const
+{
+	const Vector &feet = me->GetLocomotionInterface()->GetFeet();
+	const float hullWidth = me->GetBodyInterface()->GetHullWidth();
+	const Vector traceEnd = feet + toExit * ( DISMOUNT_CLEARANCE_HULLS * hullWidth );
+
+	trace_t tr;
+	UTIL_TraceHull( feet, traceEnd, me->WorldAlignMins(), me->WorldAlignMaxs(), MASK_NPCSOLID, me, COLLISION_GROUP_NONE, &tr );
+
+	return tr.DidHit();
+}
 //---------------------------------------------------------------------------------------------
 void CNEOBotLadderClimb::EnterDismountPhase( CNEOBot *me )
 {

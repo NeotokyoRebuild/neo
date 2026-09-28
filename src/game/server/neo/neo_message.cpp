@@ -87,7 +87,7 @@ void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 		filter.AddAllPlayers();
 
 		EmitSound_t ep;
-		ep.m_nChannel = CHAN_BODY;
+		ep.m_nChannel = CHAN_BODY; // NEO TODO (Adam) This doesn't change the channel this sound is played on, set correct channel in sound script
 		ep.m_pSoundName = (char*)STRING(m_sSound);
 		ep.m_flVolume = m_SoundVolume;
 		ep.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);

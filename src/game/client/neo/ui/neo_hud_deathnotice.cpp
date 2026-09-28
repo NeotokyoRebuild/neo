@@ -24,12 +24,16 @@
 #include "takedamageinfo.h"
 #include "c_neo_killer_damage_infos.h"
 #include "neo_scoreboard.h"
+#include "neo_hud_deathnotice.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 static ConVar hud_deathnotice_time( "hud_deathnotice_time", "20", 0 );
 extern ConVar cl_neo_hud_scoreboard_hide_others;
+
+inline int gRoundKillerUserIDs[MAX_PLAYERS_ARRAY_SAFE];
+inline int gRoundKillerUserIDsSize;
 
 // Player entries in a death notice
 struct DeathNoticePlayer
@@ -144,52 +148,6 @@ void CNEOHud_DeathNotice::UpdateStateForNeoHudElementDraw()
 {
 	
 }
-
-enum NeoHudDeathNoticeIcon : wchar_t
-{
-	NEO_HUD_DEATHNOTICEICON_EXPLODE = '!',
-	NEO_HUD_DEATHNOTICEICON_GUN,
-	NEO_HUD_DEATHNOTICEICON_HEADSHOT,
-	NEO_HUD_DEATHNOTICEICON_KILL,
-	NEO_HUD_DEATHNOTICEICON_MELEE,
-	NEO_HUD_DEATHNOTICEICON_SHORTBUS,
-
-	NEO_HUD_DEATHNOTICEICON_RANKUP = '(',
-	NEO_HUD_DEATHNOTICEICON_RANKDOWN,
-	NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG,
-	NEO_HUD_DEATHNOTICEICON_PVT,
-	NEO_HUD_DEATHNOTICEICON_CPL,
-	NEO_HUD_DEATHNOTICEICON_SGT,
-	NEO_HUD_DEATHNOTICEICON_LT,
-
-	NEO_HUD_DEATHNOTICEICON_AA12 = '0',
-	NEO_HUD_DEATHNOTICEICON_GHOST,
-	NEO_HUD_DEATHNOTICEICON_GRENADE,
-	NEO_HUD_DEATHNOTICEICON_JITTE,
-	NEO_HUD_DEATHNOTICEICON_JITTESCOPED,
-	NEO_HUD_DEATHNOTICEICON_KNIFE,
-	NEO_HUD_DEATHNOTICEICON_KYLA,
-	NEO_HUD_DEATHNOTICEICON_M41,
-	NEO_HUD_DEATHNOTICEICON_M41L,
-	NEO_HUD_DEATHNOTICEICON_M41S,
-	NEO_HUD_DEATHNOTICEICON_MILSO,
-	NEO_HUD_DEATHNOTICEICON_MPN,
-	NEO_HUD_DEATHNOTICEICON_MPN_UNSUPRESSED,
-	NEO_HUD_DEATHNOTICEICON_MX,
-	NEO_HUD_DEATHNOTICEICON_MX_SILENCED,
-	NEO_HUD_DEATHNOTICEICON_PBK56S,
-	NEO_HUD_DEATHNOTICEICON_PZ,
-	NEO_HUD_DEATHNOTICEICON_REMOTEDET,
-	NEO_HUD_DEATHNOTICEICON_SMAC,
-	NEO_HUD_DEATHNOTICEICON_SMOKEGRENADE,
-	NEO_HUD_DEATHNOTICEICON_SRM,
-	NEO_HUD_DEATHNOTICEICON_SRM_S,
-	NEO_HUD_DEATHNOTICEICON_SRS,
-	NEO_HUD_DEATHNOTICEICON_SUPA7,
-	NEO_HUD_DEATHNOTICEICON_ZR68C,
-	NEO_HUD_DEATHNOTICEICON_ZR68L,
-	NEO_HUD_DEATHNOTICEICON_ZR68S,
-};
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -384,35 +342,35 @@ void CNEOHud_DeathNotice::SetDeathNoticeItemDimensions(DeathNoticeItem* deathNot
 	}
 	else
 	{	// Player killed message
-		if (deathNoticeItem->Killer.iEntIndex != 0 && !deathNoticeItem->bSuicide)
+		if (!deathNoticeItem->bSuicide && deathNoticeItem->Killer.iEntIndex != 0)
 		{
 			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Killer.szName, width, height);
 			totalWidth += width;
 		}
-		if (deathNoticeItem->Assist.iEntIndex != 0 && !deathNoticeItem->bSuicide)
+		if (deathNoticeItem->Assist.iEntIndex != 0)
 		{
-			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Assist.szName, width, height);
-			totalWidth += width;
+			if (deathNoticeItem->bSuicide && deathNoticeItem->Victim.iEntIndex != 0)
+			{
+				surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Victim.szName, width, height);
+				totalWidth += width;
+			}
 			surface()->GetTextSize(g_hFontKillfeed, ASSIST_SEPARATOR, width, height);
 			totalWidth += width;
-		}
-		if (deathNoticeItem->Victim.iEntIndex != 0)
-		{
-			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Victim.szName, width, height);
+			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Assist.szName, width, height);
 			totalWidth += width;
-			if (!deathNoticeItem->bSuicide)
-			{
-				totalWidth += spaceLength;
-			}
 		}
 		if (deathNoticeItem->bSuicide)
 		{
+			if (deathNoticeItem->Assist.iEntIndex != 0)
+			{
+				totalWidth += spaceLength;
+			}
 			totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_SHORTBUS) + spaceLength;
 		}
 		else
 		{
 			surface()->GetTextSize(g_hFontKillfeedIcons, deathNoticeItem->szDeathIcon, width, height);
-			totalWidth += width + spaceLength;
+			totalWidth += width + spaceLength + spaceLength;
 			if (deathNoticeItem->bExplosive)
 			{
 				totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_EXPLODE) + spaceLength;
@@ -422,9 +380,14 @@ void CNEOHud_DeathNotice::SetDeathNoticeItemDimensions(DeathNoticeItem* deathNot
 				totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_HEADSHOT) + spaceLength;
 			}
 		}
+		if (deathNoticeItem->Victim.iEntIndex != 0)
+		{
+			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Victim.szName, width, height);
+			totalWidth += width;
+		}
 		if (deathNoticeItem->bWasCarryingGhost)
 		{
-			totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_GHOST) + spaceLength + spaceLength;
+			totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_GHOST) + spaceLength;
 		}
 	}
 	deathNoticeItem->iLength = totalWidth;
@@ -459,27 +422,35 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 {
 	DrawCommon(i);
 
+	// Killer
+	if (!m_DeathNotices[i].bSuicide && m_DeathNotices[i].Killer.iEntIndex != 0)
+	{
+		SetColorForNoticePlayer(m_DeathNotices[i].Killer.iTeam);
+		surface()->DrawSetTextFont(g_hFontKillfeed);
+		surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
+	}
+
+	// Assister
+	if (m_DeathNotices[i].Assist.iEntIndex != 0)
+	{
+		if (m_DeathNotices[i].bSuicide && m_DeathNotices[i].Victim.iEntIndex != 0)
+		{
+			// Victim in killer position if suicide and there's an assister
+			SetColorForNoticePlayer(m_DeathNotices[i].Victim.iTeam);
+			surface()->DrawSetTextFont(g_hFontKillfeed);
+			surface()->DrawPrintText(m_DeathNotices[i].Victim.szName, m_DeathNotices[i].Victim.iNameLength);
+		}
+
+		surface()->DrawSetTextColor(COLOR_NEO_WHITE);
+		surface()->DrawPrintText(ASSIST_SEPARATOR, ASSIST_SEPARATOR_LENGTH - 1);
+
+		SetColorForNoticePlayer(m_DeathNotices[i].Assist.iTeam);
+		surface()->DrawSetTextFont(g_hFontKillfeed);
+		surface()->DrawPrintText(m_DeathNotices[i].Assist.szName, m_DeathNotices[i].Assist.iNameLength);
+	}
+
 	if (!m_DeathNotices[i].bSuicide)
 	{
-		// Killer
-		if (m_DeathNotices[i].Killer.iEntIndex != 0)
-		{
-			SetColorForNoticePlayer(m_DeathNotices[i].Killer.iTeam);
-			surface()->DrawSetTextFont(g_hFontKillfeed);
-			surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
-		}
-
-		// Assister
-		if (m_DeathNotices[i].Assist.iEntIndex != 0)
-		{
-			surface()->DrawSetTextColor(COLOR_NEO_WHITE);
-			surface()->DrawPrintText(ASSIST_SEPARATOR, ASSIST_SEPARATOR_LENGTH - 1);
-
-			SetColorForNoticePlayer(m_DeathNotices[i].Assist.iTeam);
-			surface()->DrawSetTextFont(g_hFontKillfeed);
-			surface()->DrawPrintText(m_DeathNotices[i].Assist.szName, m_DeathNotices[i].Assist.iNameLength);
-		}
-
 		// Icons
 		surface()->DrawSetTextFont(g_hFontKillfeed);
 		surface()->DrawPrintText(L" ", 1);
@@ -503,39 +474,38 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 			surface()->DrawPrintText(&icon, 1);
 		}
 	}
-
-	// Victim
-	if (m_DeathNotices[i].Victim.iEntIndex != 0)
+	else
 	{
-		surface()->DrawSetTextFont(g_hFontKillfeed);
-		if (!m_DeathNotices[i].bSuicide)
+		// Suicide Icon
+		if (m_DeathNotices[i].Assist.iEntIndex != 0)
 		{
+			surface()->DrawSetTextFont(g_hFontKillfeed);
 			surface()->DrawPrintText(L" ", 1);
 		}
-		SetColorForNoticePlayer(m_DeathNotices[i].Victim.iTeam);
-		surface()->DrawPrintText(m_DeathNotices[i].Victim.szName, m_DeathNotices[i].Victim.iNameLength);
-	}
-
-	// Victim Ghoster Icon
-	if (m_DeathNotices[i].bWasCarryingGhost)
-	{
-		surface()->DrawSetTextFont(g_hFontKillfeed);
-		surface()->DrawPrintText(L" ", 1);
-		surface()->DrawSetTextFont(g_hFontKillfeedIcons);
-		surface()->DrawSetTextColor(COLOR_NEO_WHITE);
-		wchar_t icon = NEO_HUD_DEATHNOTICEICON_GHOST;
-		surface()->DrawPrintText(&icon, 1);
-	}
-
-	// Suicide Icon
-	if (m_DeathNotices[i].bSuicide)
-	{
-		surface()->DrawSetTextFont(g_hFontKillfeed);
-		surface()->DrawPrintText(L" ", 1);
 		surface()->DrawSetTextFont(g_hFontKillfeedIcons);
 		surface()->DrawSetTextColor(COLOR_NEO_ORANGE);
 		wchar_t icon = NEO_HUD_DEATHNOTICEICON_SHORTBUS;
 		surface()->DrawPrintText(&icon, 1);
+	}
+
+	// Victim
+	if (m_DeathNotices[i].Victim.iEntIndex != 0)
+	{
+		SetColorForNoticePlayer(m_DeathNotices[i].Victim.iTeam);
+		surface()->DrawSetTextFont(g_hFontKillfeed);
+		surface()->DrawPrintText(L" ", 1);
+		surface()->DrawPrintText(m_DeathNotices[i].Victim.szName, m_DeathNotices[i].Victim.iNameLength);
+
+		// Victim Ghoster Icon
+		if (m_DeathNotices[i].bWasCarryingGhost)
+		{
+			surface()->DrawSetTextFont(g_hFontKillfeed);
+			surface()->DrawPrintText(L" ", 1);
+			surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+			surface()->DrawSetTextColor(COLOR_NEO_WHITE);
+			wchar_t icon = NEO_HUD_DEATHNOTICEICON_GHOST;
+			surface()->DrawPrintText(&icon, 1);
+		}
 	}
 }
 
@@ -753,7 +723,8 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 {
 	// the event should be "player_death"
 	const int killer = engine->GetPlayerForUserID(event->GetInt("attacker"));
-	const int victim = engine->GetPlayerForUserID(event->GetInt("userid"));
+	const int iVictimUserID = event->GetInt("userid");
+	const int victim = engine->GetPlayerForUserID(iVictimUserID);
 	const int assistInt = event->GetInt("assists");
 	const int assist = engine->GetPlayerForUserID(assistInt);
 	const bool hasAssists = assist > 0;
@@ -784,6 +755,11 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	C_NEO_Player* pKiller = ToNEOPlayer(UTIL_PlayerByIndex(killer));
 	C_NEO_Player* pVictim = ToNEOPlayer(UTIL_PlayerByIndex(victim));
 	C_NEO_Player* pAssist = ToNEOPlayer(UTIL_PlayerByIndex(assist));
+
+	if (pKiller && gRoundKillerUserIDsSize < MAX_PLAYERS_ARRAY_SAFE)
+	{
+		gRoundKillerUserIDs[gRoundKillerUserIDsSize++] = pKiller->GetUserID();
+	}
 
 	// Special case: Spectator assisted their own bot-takeover kill
 	// Simplify to "Bot Name + Player Name"
@@ -847,9 +823,24 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	deathMsg.bInvolved = killer == GetLocalPlayerIndex() || victim == GetLocalPlayerIndex() || assist == GetLocalPlayerIndex();
 	Assert(victim >= 0 && victim < (MAX_PLAYERS + 1));
 	C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (localPlayer)
+	if (localPlayer
+			&& killer == localPlayer->entindex()
+			&& g_neoUserIDsLocalKilledSize < MAX_PLAYERS_ARRAY_SAFE)
 	{
-		localPlayer->m_rfNeoPlayerIdxsKilledByLocal[victim] = (killer == localPlayer->entindex());
+		// Sanity check it's not there already just in-case
+		bool bVictimUserIDExists = false;
+		for (int i = 0; i < g_neoUserIDsLocalKilledSize; ++i)
+		{
+			if (iVictimUserID == g_neoUserIDsLocalKilled[i])
+			{
+				bVictimUserIDExists = true;
+				break;
+			}
+		}
+		if (false == bVictimUserIDExists)
+		{
+			g_neoUserIDsLocalKilled[g_neoUserIDsLocalKilledSize++] = iVictimUserID;
+		}
 	}
 
 	SetDeathNoticeItemDimensions(&deathMsg);

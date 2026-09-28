@@ -73,7 +73,7 @@ void CNEOHud_GhostCapPoint::UpdateStateForNeoHudElementDraw()
 	auto *player = C_NEO_Player::GetLocalNEOPlayer();
 	if (!player) return;
 
-	m_flDistance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_vecMyPos);
+	m_flDistance = METERS_PER_INCH * Max(0.0f, (player->GetAbsOrigin().DistTo(m_vecMyPos) - m_flMyRadius));
 	if (cl_neo_hud_worldpos_verbose.GetBool())
 	{
 		V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"RETRIEVAL ZONE DISTANCE: %.0f m", m_flDistance);

@@ -64,6 +64,10 @@ public:
 	virtual void ForgetEntity( CBaseEntity *forgetMe );			// remove the given entity from our awareness (whether we know if it or not)
 	virtual void ForgetAllKnownEntities( void );
 
+#ifdef NEO
+	virtual void UpdateKnownEntityPosition( CBaseEntity *entity );
+#endif // NEO
+
 	//-- physical vision interface follows ------------------------------------------------------
 
 	/**

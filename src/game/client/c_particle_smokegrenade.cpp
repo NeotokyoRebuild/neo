@@ -684,7 +684,7 @@ inline void C_ParticleSmokeGrenade::ApplyDynamicLight( const Vector &vParticlePo
 	}
 }
 
-
+ConVar r_neo_thermal_smoke_alpha("r_neo_thermal_smoke_alpha", "0.03", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Smoke grenade transparency in thermal vision",true, 0.0f, true, 1.0f);
 void C_ParticleSmokeGrenade::RenderParticles( CParticleRenderIterator *pIterator )
 {
 	const SmokeGrenadeParticle* pParticle = (const SmokeGrenadeParticle*)pIterator->GetFirst();
@@ -739,8 +739,7 @@ void C_ParticleSmokeGrenade::RenderParticles( CParticleRenderIterator *pIterator
 
 			if (CanSeeThroughSmokeGrenades())
 			{
-				constexpr float THERMAL_VISION_ALPHA_MULTIPLIER = 0.1f;
-				alpha *= THERMAL_VISION_ALPHA_MULTIPLIER;
+				alpha *= r_neo_thermal_smoke_alpha.GetFloat();
 			}
 
 			// TODO: optimize this whole routine!

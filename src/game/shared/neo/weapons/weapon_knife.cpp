@@ -112,8 +112,24 @@ bool CWeaponKnife::CanBePickedUpByClass(int classId)
 #ifdef CLIENT_DLL
 bool CWeaponKnife::ShouldDraw()
 {
-	auto owner = static_cast<CNEO_Player*>(GetOwner());
-	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
+	const auto owner = static_cast<CNEO_Player*>(GetOwner());
+	const bool draw = (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
+	const bool noShadow = !draw;
+
+	// NEO HACK (Rain): should be moved to some more appropriate location
+	if (!!(GetEffects() & EF_NOSHADOW) != noShadow)
+	{
+		if (draw) // DG: Disable shadows manually because it doesn't do it on its own
+		{
+			RemoveEffects(EF_NOSHADOW);
+		}
+		else
+		{
+			AddEffects(EF_NOSHADOW);
+		}
+	}
+
+	return draw;
 }
 #else
 bool CWeaponKnife::IsViewable()

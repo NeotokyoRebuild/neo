@@ -546,7 +546,7 @@
 		"textAlignment"		"center"
 		"dulltext"		"0"
 		"brighttext"		"0"
-		"font"		"Default"
+		"font"		"CLTDefault"
 		"wrap"		"0"
 		"Command"		"playerstate_reverse"
 		"Default"		"0"

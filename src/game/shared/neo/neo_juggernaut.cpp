@@ -126,24 +126,6 @@ void CNEO_Juggernaut::Spawn(void)
 	UTIL_SetSize(this, VEC_HULL_MIN, VEC_HULL_MAX); // Needs to be equal or smaller than the player's girth to avoid getting stuck
 	SetFriction(100.0);
 	SetSoftCollision(false);
-
-	m_textParms.channel = 0;
-	m_textParms.x = 0.42;
-	m_textParms.y = 0.4;
-	m_textParms.effect = 0;
-	m_textParms.fadeinTime = 0;
-	m_textParms.fadeoutTime = 0;
-	m_textParms.holdTime = USE_DURATION;
-	m_textParms.fxTime = 0;
-
-	m_textParms.r1 = 200;
-	m_textParms.g1 = 200;
-	m_textParms.b1 = 200;
-	m_textParms.a1 = 100;
-	m_textParms.r2 = 200;
-	m_textParms.g2 = 200;
-	m_textParms.b2 = 200;
-	m_textParms.a2 = 100;
 	
 	CBaseEntity *pWeaponModel = CreateEntityByName("prop_dynamic");
 	if (pWeaponModel)
@@ -190,7 +172,6 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 		SetNextThink(gpGlobals->curtime + 0.1f);
 		SetPlaybackRate(m_flWarpedPlaybackRate);
 		pNEOPlayer->AddFlag(FL_FROZEN);
-		UTIL_HudMessage(pNEOPlayer, m_textParms, "BOOTING JGR56"); // TODO localise this text
 		EmitSound("HUD.CPCharge");
 	}
 	else
@@ -221,7 +202,6 @@ void CNEO_Juggernaut::Think(void)
 		SetNextThink(TICK_NEVER_THINK);
 		StopSound("HUD.CPCharge");
 		EmitSound("HUD.CPCaptured");
-		UTIL_HudMessage(pNeoPlayer, m_textParms, ""); // Find a better way of hiding the text. This doesn't remove the old message from the user messages list and thus makes a weird overlapping visual bug
 
 		pNeoPlayer->RemoveFlag(FL_FROZEN);
 		pNeoPlayer->CreateRagdollEntity();
@@ -302,7 +282,6 @@ void CNEO_Juggernaut::HoldCancel(void)
 	if (pNeoPlayer)
 	{
 		pNeoPlayer->RemoveFlag(FL_FROZEN);
-		UTIL_HudMessage(pNeoPlayer, m_textParms, "");
 	}
 	SetNextThink(TICK_NEVER_THINK);
 	SetPlaybackRate(-m_flWarpedPlaybackRate);

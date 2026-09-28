@@ -15,7 +15,7 @@
 #include "KeyValues.h"
 #include "vgui/Cursor.h"
 #include "tier1/utldict.h"
-#ifdef NEO // Unity build
+#ifdef NEO_UNITY // Unity build
 #include "Common.h"
 #endif
 
@@ -25,7 +25,7 @@
 
 using namespace vgui;
 
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 static char *CopyString( const char *in )
 {
 	if ( !in )
@@ -554,7 +554,7 @@ void CKeyBoardEditorPage::GetMappingList( Panel *panel, CUtlVector< PanelKeyBind
 	}
 }
 
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 static bool BindingLessFunc( KeyValues * const & lhs, KeyValues * const &rhs )
 {
 	KeyValues *p1, *p2;

@@ -14,7 +14,7 @@
 #include "filesystem.h"
 #include "p4lib/ip4.h"
 #include "tier2/tier2.h"
-#ifdef NEO // Unity build
+#ifdef NEO_UNITY // Unity build
 #include "Common.h"
 #endif
 
@@ -25,7 +25,7 @@
 using namespace vgui;
 
 
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 static int ListFileNameSortFunc([[maybe_unused]] ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
 	bool dir1 = item1.kv->GetInt("directory") == 1;
@@ -133,7 +133,7 @@ static int ListFileTypeSortFunc(ListPanel *pPanel, const ListPanelItem &item1, c
 //-----------------------------------------------------------------------------
 // Dictionary of start dir contexts 
 //-----------------------------------------------------------------------------
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 struct ColumnInfo_t
 {
 	char const	*columnName;

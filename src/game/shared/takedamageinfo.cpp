@@ -63,6 +63,10 @@ void CTakeDamageInfo::Init( CBaseEntity *pInflictor, CBaseEntity *pAttacker, CBa
 	m_bForceFriendlyFire = false;
 	m_flDamageForForce = 0.f;
 	m_eCritType = CRIT_NONE;
+
+#ifdef NEO
+	m_iNumDamageEvents = 0;
+#endif // NEO
 }
 
 CTakeDamageInfo::CTakeDamageInfo()
@@ -254,6 +258,10 @@ void AddMultiDamage( const CTakeDamageInfo &info, CBaseEntity *pEntity )
 	{
 		g_MultiDamage.SetPlayerPenetrationCount( info.GetPlayerPenetrationCount() );
 	}
+
+#ifdef NEO
+	g_MultiDamage.IncrementNumDamageEvents();
+#endif // NEO
 
 	bool bHasPhysicsForceDamage = !g_pGameRules->Damage_NoPhysicsForce( info.GetDamageType() );
 	if ( bHasPhysicsForceDamage && g_MultiDamage.GetDamageType() != DMG_GENERIC )

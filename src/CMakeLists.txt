@@ -47,10 +47,15 @@ else ()
 endif ()
 option(NEO_INSTALL_LIBRARIES "Install game libraries" OFF)
 option(NEO_INSTALL_RESOURCES "Install game resources" OFF)
+option(NEO_INSTALL_LAUNCHER "Install the Steam mod launcher" OFF)
 option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
 option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
+option(NEO_BUILD_LAUNCHER "Build the Steam mod launcher" ON)
+option(NEO_UNITY_BUILD_CLIENT_SERVER "Enable unity build for client/server libraries" ON)
+option(NEO_UNITY_BUILD_OTHERS "Enable unity build for vgui2, tier1, and mathlib libraries" ON)
+set(NEO_MOD_APPID "3172910" CACHE STRING "Steam appid for the mod launcher's steam_appid.txt")
 
 message(STATUS "Treat compile warnings as errors: ${CMAKE_COMPILE_WARNING_AS_ERROR}")
 message(STATUS "CI build mode: ${NEO_CI_BUILD}")
@@ -72,9 +77,24 @@ message(STATUS "Alternate location to fetch the extra assets: ${NEO_EXTRA_ASSETS
 message(STATUS "Directory for output libraries: ${NEO_OUTPUT_LIBRARY_PATH}")
 message(STATUS "Install game libraries: ${NEO_INSTALL_LIBRARIES}")
 message(STATUS "Install game resources: ${NEO_INSTALL_RESOURCES}")
+message(STATUS "Install the Steam mod launcher: ${NEO_INSTALL_LAUNCHER}")
 message(STATUS "Use separate build info on Linux: ${NEO_USE_SEPARATE_BUILD_INFO}")
 message(STATUS "Enable CPack: ${NEO_ENABLE_CPACK}")
+message(STATUS "Build the Steam mod launcher: ${NEO_BUILD_LAUNCHER}")
+message(STATUS "Mod launcher appid override: ${NEO_MOD_APPID}")
+message(STATUS "Enable unity build for client/server libraries (NEO_UNITY_BUILD_CLIENT_SERVER): ${NEO_UNITY_BUILD_CLIENT_SERVER}")
+message(STATUS "Enable unity build for vgui2, tier1, and mathlib libraries (NEO_UNITY_BUILD_OTHERS): ${NEO_UNITY_BUILD_OTHERS}")
 message("")
+
+set(UNITY_BUILD_DEF_OTHERS)
+if (NEO_UNITY_BUILD_OTHERS)
+    set(UNITY_BUILD_DEF_OTHERS NEO_UNITY)
+endif ()
+
+set(UNITY_BUILD_DEF_CLIENT_SERVER)
+if (NEO_UNITY_BUILD_CLIENT_SERVER)
+    set(UNITY_BUILD_DEF_CLIENT_SERVER NEO_UNITY)
+endif ()
 
 if(NEO_COPY_LIBRARIES)
     file(MAKE_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}")
@@ -211,7 +231,6 @@ if(OS_WINDOWS)
         _ALLOW_RUNTIME_LIBRARY_MISMATCH
         _ALLOW_ITERATOR_DEBUG_LEVEL_MISMATCH
         _ALLOW_MSC_VER_MISMATCH
-        fopen=dont_use_fopen
         _MBCS
     )
 
@@ -452,6 +471,10 @@ endif()
 
 add_subdirectory(game/server)
 
+if(NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
+    add_subdirectory(launcher_main)
+endif()
+
 if(NEO_COPY_LIBRARIES)
     set(COPY_ALL_LIBS_FLAG ALL)
 else()
@@ -582,6 +605,40 @@ if(NEO_INSTALL_LIBRARIES)
             FILES ${SERVER_GAMEDATA_SDKTOOLS_OUTPUT_FILE}
             DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/sdktools.games/custom"
         )
+    endif()
+endif()
+
+if(NEO_INSTALL_LAUNCHER AND NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
+    # The launcher sits at the install root, next to the neo/ game directory.
+    # steam_api ships with the engine binaries in bin/, so only the launcher
+    # itself is staged here.
+    set(LAUNCHER_INSTALL_PATH "${INSTALL_PATH_PREFIX}-launcher-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
+
+    if(NEO_USE_SEPARATE_BUILD_INFO)
+        set(LAUNCHER_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-launcher-debuginfo-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}")
+
+        if(OS_WINDOWS)
+            install(TARGETS launcher_main RUNTIME DESTINATION "${LAUNCHER_INSTALL_PATH}")
+
+            install(
+                FILES "$<TARGET_PDB_FILE:launcher_main>"
+                DESTINATION "${LAUNCHER_DEBUG_INFO_INSTALL_PATH}"
+            )
+        else()
+            get_target_property(LAUNCHER_STRIPPED_FILE launcher_main STRIPPED_FILE)
+            install(
+                PROGRAMS ${LAUNCHER_STRIPPED_FILE}
+                DESTINATION "${LAUNCHER_INSTALL_PATH}"
+            )
+
+            get_target_property(LAUNCHER_SPLIT_DEBUG_INFO_FILE launcher_main SPLIT_DEBUG_INFO_FILE)
+            install(
+                FILES ${LAUNCHER_SPLIT_DEBUG_INFO_FILE}
+                DESTINATION "${LAUNCHER_DEBUG_INFO_INSTALL_PATH}"
+            )
+        endif()
+    else()
+        install(TARGETS launcher_main RUNTIME DESTINATION "${LAUNCHER_INSTALL_PATH}")
     endif()
 endif()
 

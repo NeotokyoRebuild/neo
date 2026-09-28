@@ -15,7 +15,7 @@
 #include "vgui/Cursor.h"
 #include "tier1/utldict.h"
 #include "vgui_controls/KeyBoardEditorDialog.h"
-#ifdef NEO // Unity build
+#ifdef NEO_UNITY // Unity build
 #include "Common.h"
 #endif
 
@@ -28,7 +28,7 @@ using namespace vgui;
 // If the user holds the key bound to help down for this long, then the dialog will stay on automatically
 #define KB_HELP_CONTINUE_SHOWING_TIME		1.0
 
-#ifndef NEO // Unity build
+#ifndef NEO_UNITY // Unity build
 static bool BindingLessFunc( KeyValues * const & lhs, KeyValues * const &rhs )
 {
 	KeyValues *p1, *p2;

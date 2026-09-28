@@ -318,7 +318,7 @@ void CBaseAnimatingTemperature::OnBind(void* pC_BaseEntity)
 	{
 		m_pResult->SetFloatValue(0);
 	}
-	else if (pEntity->IsPlayer())
+	else if (pEntity->IsBaseCombatCharacter())
 	{
 		m_pResult->SetFloatValue(THERMALS_OBJECT_MAX_TEMPERATURE);
 	}

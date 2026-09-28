@@ -22,7 +22,7 @@ void NeoVersionPrint()
 #endif
 
 	Msg("%s\n"
-		"Build version: %s_%s\n"
+		"Build version: %s (%s_%s)\n"
 		"Build date: %s\n"
 		"Git hash: %s\n"
 		"OS: %s\n"
@@ -31,7 +31,7 @@ void NeoVersionPrint()
 		"Renderer: %s\n"
 #endif
 		, HEADER,
-		BUILD_DATE_SHORT, GIT_HASH,
+		GIT_LATESTTAG, BUILD_DATE_SHORT, GIT_HASH,
 		BUILD_DATE_LONG,
 		GIT_LONGHASH,
 		OS_BUILD,
@@ -63,6 +63,15 @@ ConCommand neo_version("neo_version", NeoVersionPrint, "Print out client/server'
 
 #ifdef CLIENT_DLL
 ConVar __cl_neo_git_hash("__cl_neo_git_hash", GIT_LONGHASH,
+						 FCVAR_USERINFO | FCVAR_HIDDEN | FCVAR_DONTRECORD | FCVAR_NOT_CONNECTED
+#ifndef DEBUG
+						 | FCVAR_PRINTABLEONLY
+#endif
+						 );
+#endif
+
+#ifdef CLIENT_DLL
+ConVar __cl_neo_version_tag("__cl_neo_version_tag", GIT_LATESTTAG,
 						 FCVAR_USERINFO | FCVAR_HIDDEN | FCVAR_DONTRECORD | FCVAR_NOT_CONNECTED
 #ifndef DEBUG
 						 | FCVAR_PRINTABLEONLY
@@ -109,7 +118,7 @@ void InitializeNeoClRenderer()
 }
 
 #ifdef DEBUG
-void InitializeDbgNeoClGitHashEdit()
+void InitializeDbgNeoClGitHashTagEdit()
 {
 	static char static_dbgHash[GIT_LONGHASH_SIZE];
 	V_strcpy_safe(static_dbgHash, GIT_LONGHASH);
@@ -117,6 +126,7 @@ void InitializeDbgNeoClGitHashEdit()
 	__cl_neo_git_hash.SetDefault(static_dbgHash);
 	__cl_neo_git_hash.Revert(); // It just sets to the default
 	__cl_neo_git_hash.InstallChangeCallback(NeoConVarEnforceDefault);
+	__cl_neo_version_tag.InstallChangeCallback(NeoConVarEnforceDefault);
 }
 #endif // DEBUG
 #endif // CLIENT_DLL

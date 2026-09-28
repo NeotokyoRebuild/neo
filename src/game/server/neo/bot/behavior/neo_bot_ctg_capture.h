@@ -18,6 +18,7 @@ public:
 
 private:
 	CHandle<CWeaponGhost> m_hObjective;
+	CNavArea *m_previousKnownArea;
 	CountdownTimer m_captureAttemptTimer;
 	CountdownTimer m_repathTimer;
 	PathFollower m_path;

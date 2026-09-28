@@ -137,6 +137,7 @@ extern ConVar tf_mm_servermode;
 #include "neo_version.h"
 #include "neo_player_shared.h"
 #include "bot/neo_bot_profile.h"
+#include "neo/neo_debugoverlay_budget.h"
 #endif
 
 extern IToolFrameworkServer *g_pToolFrameworkServer;
@@ -752,7 +753,13 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	InvalidateQueryCache();
 
 	// try to get debug overlay, may be NULL if on HLDS
+#ifdef NEO
+	// Route every debug overlay through the budgeting proxy (neo/neo_debugoverlay_budget.*)
+	// so a runaway per-tick visualiser such as nb_debug path can't exhaust the renderer.
+	debugoverlay = NEO_InstallDebugOverlayBudget( (IVDebugOverlay *)appSystemFactory( VDEBUG_OVERLAY_INTERFACE_VERSION, NULL ) );
+#else
 	debugoverlay = (IVDebugOverlay *)appSystemFactory( VDEBUG_OVERLAY_INTERFACE_VERSION, NULL );
+#endif
 
 #ifndef _XBOX
 #ifdef USE_NAV_MESH

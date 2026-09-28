@@ -2,23 +2,46 @@
 #include "neo_player.h"
 #include "neo_gamerules.h"
 #include "neo_smokelineofsightblocker.h"
-#include "team_control_point_master.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_grenade_dispatch.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
 
 #include "nav_mesh.h"
+#include "debugoverlay_shared.h"
 
-extern ConVar neo_bot_path_lookahead_range;
-extern ConVar neo_bot_offense_must_push_time;
+ConVar sv_neo_bot_attack_cover_search_interval("sv_neo_bot_attack_cover_search_interval", "1.0", FCVAR_CHEAT,
+	"Timer throttle (in seconds) for attempts between cover searches", true, 0, false, 0);
 
-ConVar neo_bot_aggressive( "neo_bot_aggressive", "0", FCVAR_NONE );
+ConVar sv_neo_bot_attack_debug_cover("sv_neo_bot_attack_debug_cover", "0", FCVAR_CHEAT,
+	"Draw debug overlays for bot attack/cover behavior", true, 0, true, 1);
+
 
 //---------------------------------------------------------------------------------------------
+// Enter the Attack behavior to chase and destroy primary known threat.
 CNEOBotAttack::CNEOBotAttack( void ) : m_chasePath( ChasePath::LEAD_SUBJECT )
 {
+	m_bSawEnemySinceLastPathCompute = true; // force first path calculation
 	m_attackCoverArea = nullptr;
+	m_goalArea = nullptr;
+}
+
+
+//---------------------------------------------------------------------------------------------
+// Enter the Attack behavior with a goal position to move towards while engaging enemies.
+// Bot will disengage from threat when advancement towards the goal is uncontested.
+//
+// When using GetPrimaryKnownThreat(true), the true parameter must be used
+// such that the threat must be visible to the bot before entering attack behavior,
+// because the m_goalArea terminates this behavior when the enemy is out of sight.
+// When GetPrimaryKnownThreat(false) is used, this behavior may redundantly ping pong with prior state,
+// such as in cases where the enemy is not visible, and is known behind a wall, while being unreachable.
+CNEOBotAttack::CNEOBotAttack( const Vector &goalPosition ) : m_chasePath( ChasePath::LEAD_SUBJECT )
+{
+	m_bSawEnemySinceLastPathCompute = true; // force first path calculation
+	m_attackCoverArea = nullptr;
+	m_goalArea = TheNavMesh->GetNearestNavArea( goalPosition );
 }
 
 
@@ -26,46 +49,111 @@ CNEOBotAttack::CNEOBotAttack( void ) : m_chasePath( ChasePath::LEAD_SUBJECT )
 ActionResult< CNEOBot >	CNEOBotAttack::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
-	m_attackCoverTimer.Invalidate();
-
 	return Continue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-// for finding cover closer to our threat
+// for finding cover closer to our attack destination
 class CSearchForAttackCover : public ISearchSurroundingAreasFunctor
 {
 public:
-	CSearchForAttackCover( CNEOBot *me, const CKnownEntity *threat ) : m_me( me ), m_threat( threat )
+	CSearchForAttackCover( CNEOBot *me, const CKnownEntity *threat, const CNavArea *goalArea = nullptr ) : m_me( me ), m_threat( threat )
 	{
 		m_attackCoverArea = nullptr;
+		m_coverAvoidPenalty = FLT_MAX;
+		m_myArea = m_me->GetLastKnownArea();
 		m_threatArea = threat->GetLastKnownArea();
-		m_distToThreatSq = ( threat->GetLastKnownPosition() - me->GetAbsOrigin() ).LengthSqr();
+		m_goalArea = goalArea ? goalArea : m_threatArea; // prioritize movement towards input goal area or threat
+		m_myDistToGoalSq = m_goalArea ? ( m_goalArea->GetCenter() - m_me->GetAbsOrigin() ).LengthSqr() : 0;
+		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
+	}
+
+	bool IsBetterCandidate( CNavArea *area, float avoidPenalty ) const
+	{
+		if ( !m_attackCoverArea || avoidPenalty < m_coverAvoidPenalty )
+		{
+			return true;
+		}
+		if ( avoidPenalty > m_coverAvoidPenalty )
+		{
+			return false;
+		}
+
+		// If we already have a previous candidate cover area,
+		// only consider this new candidate area if it's an improvement
+		// as we assume earlier breadth first search nodes are closer to bot
+		// and thus faster to reach for safety.
+		const int nFriendlyHere = CNEOBotPathReservations()->GetPredictedFriendlyPathCount( area->GetID(), m_me->GetTeamNumber(), m_me );
+		const int nFriendlyBest = CNEOBotPathReservations()->GetPredictedFriendlyPathCount( m_attackCoverArea->GetID(), m_me->GetTeamNumber(), m_me );
+		if ( nFriendlyHere != nFriendlyBest )
+		{
+			// prefer areas that friendly bots have reserved relatively less
+			return nFriendlyHere < nFriendlyBest;
+		}
+		// Tie-break when friendly reservations are equal (or disabled): potentially visible area
+		// count is a rough proxy for how exposed an area is. It ignores whether
+		// the area is actually reachable and does nothing to keep friendlies
+		// from bunching up in the same area.
+		return area->GetPotentiallyVisibleAreaCount() < m_attackCoverArea->GetPotentiallyVisibleAreaCount();
+	}
+
+	// Record area as the current cover candidate. 
+	// Returns whether the search  should keep going
+	bool TakeCandidate( CNavArea *area, float avoidPenalty )
+	{
+		m_attackCoverArea = area;
+		m_coverAvoidPenalty = avoidPenalty;
+		return avoidPenalty != 0.0f; // negative value might indicate overflow
 	}
 
 	virtual bool operator() ( CNavArea *baseArea, CNavArea *priorArea, float travelDistanceSoFar )
 	{
-		// return true to keep searching, false when suitable cover is found
+		// return true to keep searching, false ends search usually implying that suitable cover was found
+
+		if ( !m_goalArea || !m_threatArea || !m_myArea )
+		{
+			return false; // don't have enough context to search
+		}
+
 		CNavArea *area = static_cast<CNavArea *>(baseArea);
-
-		if ( !m_threatArea )
+		if ( area == m_myArea )
 		{
-			return false; // threat area is unknown
+			return true; // skip our starting area
 		}
 
-		constexpr float distanceThresholdRatio = 1.2f;
-		float candidateDistFromMeSq = ( m_me->GetAbsOrigin() - area->GetCenter() ).LengthSqr();
-		if ( candidateDistFromMeSq > m_distToThreatSq * distanceThresholdRatio )
+		// Skip areas that are hazardous or where bots get stuck
+		if ( neo_bot_path_reservation_enable.GetBool() )
 		{
-			return true; // not close enough to justify rerouting
+			int navAreaId = area->GetID();
+			if (CNEOBotPathReservations()->IsAreaHazardous(navAreaId, m_me))
+			{
+				return true;
+			}
+			if (CNEOBotPathReservations()->GetAreaAvoidPenalty(navAreaId) >= m_onStuckPenalty)
+			{
+				return true;
+			}
 		}
 
-		if ( area->IsPotentiallyVisible( m_threatArea ) )
+		float avoidPenalty = CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() );
+		if ( !IsBetterCandidate( area, avoidPenalty ) )
 		{
-			// Even if area does not have hard cover, see if Support can use smoke concealment
+			return true; // the cover candidate we already have is at least as good
+		}
+
+		float goalAreaDistanceSq = ( m_goalArea->GetCenter() - area->GetCenter() ).LengthSqr();
+		if (goalAreaDistanceSq >= m_myDistToGoalSq)
+		{
+			// skip as this candidate area doesn't get us closer to destination
+			return true;
+		}
+
+		if ( m_threatArea->IsPotentiallyVisible( area ) )
+		{
 			if ( m_me->GetClass() == NEO_CLASS_SUPPORT )
 			{
+				// Even if area does not have hard cover, see if Support can use smoke concealment
 				CNEO_Player *pThreatPlayer = ToNEOPlayer( m_threat->GetEntity() );
 				if ( pThreatPlayer && ( pThreatPlayer->GetClass() != NEO_CLASS_SUPPORT ) )
 				{
@@ -74,24 +162,28 @@ public:
 					Vector vecThreatEye = m_threat->GetLastKnownPosition() + pThreatPlayer->GetViewOffset();
 					Vector vecCandidateArea = area->GetCenter() + m_me->GetViewOffset();
 
-					trace_t tr;
 					CTraceFilterSimple filter( m_threat->GetEntity(), COLLISION_GROUP_NONE );
-					UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS, &filter, &tr );
+					trace_t trSmoke;
+					UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS, &filter, &trSmoke );
+					trace_t trNormal;
+					UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_SOLID, &filter, &trNormal );
 
-					if ( tr.fraction < 1.0f )
+					if ( trSmoke.fraction < trNormal.fraction )
 					{
-						m_attackCoverArea = area;
-						return false; // found smoke as concealment
+						return TakeCandidate( area, avoidPenalty ); // found smoke as concealment
 					}
 				}
 			}
+			else if (!m_threatArea->IsCompletelyVisible(area))
+			{
+				TakeCandidate( area, avoidPenalty ); // partial cover, keep looking for something better
+			}
 
-			return true; // not cover
+			return true; // search for potentially better cover
 		}
 
 		// found hard cover
-		m_attackCoverArea = area;
-		return false; // found suitable cover
+		return TakeCandidate( area, avoidPenalty );
 	}
 
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar )
@@ -101,21 +193,28 @@ public:
 			return false;
 		}
 
-		// For considering areas off to the side of current area
-		constexpr float distanceThresholdRatio = 0.9f;
-
-		// The adjacent area to search should not be farther from the threat
-		float adjThreatDistance = ( m_threatArea->GetCenter() - adjArea->GetCenter() ).LengthSqr();
-		float curThreatDistance = ( m_threatArea->GetCenter() - currentArea->GetCenter() ).LengthSqr();
-		if ( adjThreatDistance * distanceThresholdRatio > curThreatDistance )
+		if (!m_goalArea || !adjArea)
 		{
-			return false; // Candidate adjacent area veers farther from threat
+			return false;
 		}
 
-		// The adjacent area to search should not be beyond the threat
-		if ( adjThreatDistance > m_distToThreatSq )
+		// The adjacent area to search should not be farther from the attack goal
+		float adjGoalDistance = ( m_goalArea->GetCenter() - adjArea->GetCenter() ).LengthSqr();
+		if ( adjGoalDistance > m_myDistToGoalSq )
 		{
-			return false; // Candidate adjacent area is beyond threat distance
+			return false; // Candidate adjacent area veers farther from goal
+		}
+
+		// The adjacent area to search should not be beyond the attack goal
+		float adjMeDistance = ( m_me->GetAbsOrigin() - adjArea->GetCenter() ).LengthSqr();
+		if ( adjMeDistance > m_myDistToGoalSq )
+		{
+			return false; // Candidate adjacent area is beyond goal distance
+		}
+
+		if (!currentArea)
+		{
+			return false;
 		}
 
 		// Don't consider areas that require jumping when engaging enemy
@@ -124,10 +223,30 @@ public:
 
 	CNEOBot *m_me;
 	const CKnownEntity *m_threat;
-	CNavArea *m_attackCoverArea;
+	const CNavArea *m_attackCoverArea; // best cover candidate found so far
+	float m_coverAvoidPenalty;         // avoid penalty of m_attackCoverArea; 0 means no navigation hiccups
+	const CNavArea *m_goalArea;   // reference point of the optional goal direction
+	const CNavArea *m_myArea;     // reference point of myself
 	const CNavArea *m_threatArea; // reference point of the threat
-	float m_distToThreatSq; // the bot's current distance to the threat
+	float m_myDistToGoalSq;       // the bot's current distance to the threat
+	float m_onStuckPenalty;       // cache onstuck penalty
 };
+
+
+//---------------------------------------------------------------------------------------------
+// Pick the next cover area to leapfrog towards, or nullptr if no better area found
+const CNavArea *CNEOBotAttack::FindAttackCover( CNEOBot *me, const CKnownEntity *threat )
+{
+	CNavArea *pStartArea = me->GetLastKnownArea();
+	if ( !pStartArea )
+	{
+		return nullptr;
+	}
+
+	CSearchForAttackCover search( me, threat, m_goalArea );
+	SearchSurroundingAreas( pStartArea, search );
+	return search.m_attackCoverArea;
+}
 
 
 //---------------------------------------------------------------------------------------------
@@ -136,152 +255,181 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 
-	if ( threat == NULL || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
+	if ( threat == nullptr || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
 		return Done( "No threat" );
 	}
 
-	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon* >( me->GetActiveWeapon() );
-	bool isUsingCloseRangeWeapon = me->IsCloseRange( myWeapon );
-	if ( isUsingCloseRangeWeapon && threat->IsVisibleRecently() && me->IsRangeLessThan( threat->GetLastKnownPosition(), 1.1f * me->GetDesiredAttackRange() ) )
+	const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
+
+	if ( sv_neo_bot_attack_debug_cover.GetBool() )
 	{
-		// circle around our victim
-		if ( me->TransientlyConsistentRandomValue( 3.0f ) < 0.5f )
+		// red - last known position of the threat
+		NDebugOverlay::HorzArrow( me->GetAbsOrigin(), threatLastKnownPos, 2.0f, 255, 0, 0, 255, true, 0.1f );
+		NDebugOverlay::Box( threatLastKnownPos, Vector( -16, -16, 0 ), Vector( 16, 16, 2 ), 255, 0, 0, 30, 0.1f );
+
+		if ( m_attackCoverArea ) // yellow - cover area that bot has selected to attempt moving towards
 		{
-			me->PressLeftButton();
+			const Vector& coverPos = m_attackCoverArea->GetCenter();
+			NDebugOverlay::HorzArrow( me->GetAbsOrigin(), coverPos, 2.0f, 255, 255, 0, 255, true, 0.1f );
+			m_attackCoverArea->DrawFilled( 255, 255, 0, 30, 0.1f, true );
 		}
-		else
+
+		if (m_goalArea) // green - the goal direction the bot is trying to advance towards
 		{
-			me->PressRightButton();
+			const Vector& goalPos = m_goalArea->GetCenter();
+			NDebugOverlay::HorzArrow( me->GetAbsOrigin(), goalPos, 2.0f, 0, 255, 0, 255, true, 0.1f );
+			m_goalArea->DrawFilled( 0, 255, 0, 30, 0.1f, true );
 		}
 	}
 
-	bool bHasRangedWeapon = me->IsRanged( myWeapon );
+	CNEO_Player *pThreatPlayer = ToNEOPlayer( threat->GetEntity() );
 
-	// Go after them!
-	bool bAggressive = neo_bot_aggressive.GetBool() &&
-					   !bHasRangedWeapon &&
-					   me->GetDifficulty() > CNEOBot::EASY;
+	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon* >( me->GetActiveWeapon() );
+	bool isUsingCloseRangeWeapon = me->IsCloseRange( myWeapon );
 
-	// pursue the threat. if not visible, go to the last known position
-	if ( bAggressive ||
-	     !threat->IsVisibleRecently() || 
-		 me->IsRangeGreaterThan( threat->GetEntity()->GetAbsOrigin(), me->GetDesiredAttackRange() ) || 
-		 !me->IsLineOfFireClear( threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+	if (!m_attackCoverArea // don't slow movement to cover with strafing
+		&& isUsingCloseRangeWeapon && threat->IsVisibleRecently() && me->IsRangeLessThan( threatLastKnownPos, 1.1f * me->GetDesiredAttackRange() ) )
+	{
+		// circle around our victim, unless a sidestep could take us off a ledge
+		if ( !me->IsOnPreciseArea() )
+		{
+			if ( me->TransientlyConsistentRandomValue( 3.0f ) < 0.5f )
+			{
+				me->PressLeftButton();
+			}
+			else
+			{
+				me->PressRightButton();
+			}
+		}
+	}
+
+	if ( !me->IsRanged(myWeapon) || ( pThreatPlayer && pThreatPlayer->IsCarryingGhost() ) )
+	{
+		m_path.Invalidate();
+		CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), FASTEST_ROUTE );
+		return Continue();
+	}
+
+	if ( me->GetVisionInterface()->IsAbleToSee( threat->GetEntity(), CNEOBotVision::DISREGARD_FOV ) )
+	{
+		m_bSawEnemySinceLastPathCompute = true;
+
+		me->EnableCloak(3.0f);
+
+		if ( me->GetLastKnownArea() == m_goalArea )
+		{
+			return ChangeTo( new CNEOBotRetreatToCover(), "Taking cover as enemy is still present at my goal" );
+		}
+		else if ( myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON) && 
+			me->IsRangeLessThan( threatLastKnownPos, me->GetDesiredAttackRange() ) )
+		{
+			return SuspendFor( new CNEOBotRetreatToCover(), "Retreating to cover to prepare next sniper shot" );
+		}
+	}
+	else
 	{
 		// SUPA7 reload can be interrupted so proactively reload
-		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+		if (!m_bSawEnemySinceLastPathCompute // don't interrupt shooting with reloads if seen enemy on this path
+			&& myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
 		{
 			me->ReloadIfLowClip(true);
+		}
+
+		if ( me->GetLastKnownArea() == threat->GetLastKnownArea()
+			|| me->IsRangeLessThan( threatLastKnownPos, 64.0f ) )
+		{
+			me->GetVisionInterface()->ForgetEntity( threat->GetEntity() );
+			return Done( "I lost my target!" );
+		}
+		else if ( m_goalArea && !m_bSawEnemySinceLastPathCompute &&
+			( me->GetLastKnownArea() == m_attackCoverArea
+			|| me->GetLastKnownArea() == m_goalArea ) )
+		{
+			return Done( "Disengaging from threat to pursue goal." );
 		}
 		
 		if ( threat->IsVisibleRecently() )
 		{
-			// pre-cloak needs more thermoptic budget when chasing threats
-			me->EnableCloak(6.0f);
-
+			me->EnableCloak(3.0f);
+			
 			// Consider throwing a grenade
 			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
 			{
+				m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 				Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
 				if ( pGrenadeBehavior )
 				{
-					m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 					return SuspendFor( pGrenadeBehavior, "Throwing grenade before chasing threat!" );
 				}
 			}
 
-			// Look for opportunities to leap frog from cover to cover
-			if ( m_attackCoverTimer.IsElapsed() )
+			// look where we last saw threat as we approach
+			if ( me->IsRangeLessThan( threatLastKnownPos, me->GetMaxAttackRange() ) )
 			{
-				m_attackCoverTimer.Start( 5.0f );
-
-				CSearchForAttackCover search( me, threat );
-				SearchSurroundingAreas( me->GetLastKnownArea(), search );
-
-				if ( search.m_attackCoverArea )
-				{
-					m_attackCoverArea = search.m_attackCoverArea;
-					m_path.Invalidate(); // recompute path
-					m_chasePath.Invalidate();
-				}
-			}
-
-			if ( m_attackCoverArea )
-			{
-				if ( me->GetLastKnownArea() == m_attackCoverArea )
-				{
-					// Immediately look for new cover
-					m_attackCoverArea = nullptr;
-					m_attackCoverTimer.Invalidate();
-				}
-				else
-				{
-					if ( !m_path.IsValid() )
-					{
-						if ( !CNEOBotPathCompute( me, m_path, m_attackCoverArea->GetCenter(), DEFAULT_ROUTE ) )
-						{
-							// If no valid path, fallback to chasing threat
-							m_attackCoverArea = nullptr;
-							m_path.Invalidate();
-						}
-					}
-
-					if ( m_attackCoverArea )
-					{
-						m_path.Update( me );
-						return Continue();
-					}
-				}
-			}
-			else
-			{
-				m_path.Invalidate();
-			}
-
-			// Fallback when there is no advancing cover
-			if ( isUsingCloseRangeWeapon )
-			{
-				CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), FASTEST_ROUTE );
-			}
-			else
-			{
-				CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), DEFAULT_ROUTE );
+				me->GetBodyInterface()->AimHeadTowards( threatLastKnownPos + Vector( 0, 0, HumanEyeHeight ), IBody::IMPORTANT, 0.1f, nullptr, "Looking towards where we lost sight of our victim" );
 			}
 		}
 		else
 		{
-			// if we're at the threat's last known position and he's still not visible, we lost him
+			// pre-cloak needs more thermoptic budget when chasing threats
+			me->EnableCloak(6.0f);
+		}
+	}
+
+	// Consider if there is cover between me and goal to leapfrog to
+	if ( m_bSawEnemySinceLastPathCompute && m_coverSearchTimer.IsElapsed() &&
+		(!m_attackCoverArea || (me->GetLastKnownArea() == m_attackCoverArea)) )
+	{
+		m_coverSearchTimer.Start( sv_neo_bot_attack_cover_search_interval.GetFloat() );
+		m_bSawEnemySinceLastPathCompute = false;
+
+		m_attackCoverArea = FindAttackCover( me, threat );
+		if ( m_attackCoverArea )
+		{
 			m_chasePath.Invalidate();
+		}
+		m_path.Invalidate();
+	}
 
-			if ( me->IsRangeLessThan( threat->GetLastKnownPosition(), 20.0f ) )
-			{
-				me->GetVisionInterface()->ForgetEntity( threat->GetEntity() );
-				return Done( "I lost my target!" );
-			}
+	if ( m_attackCoverArea && !m_path.IsValid() )
+	{
+		if ( CNEOBotPathCompute( me, m_path, m_attackCoverArea->GetCenter(), DEFAULT_ROUTE ) )
+		{
+			// Disable chase follower to move to cover area
+			m_chasePath.Invalidate();
+		}
+		else
+		{
+			// If no valid path, fallback to chasing threat
+			m_attackCoverArea = nullptr;
+			m_path.Invalidate();
+		}
+	}
 
-			// look where we last saw him as we approach
-			if ( me->IsRangeLessThan( threat->GetLastKnownPosition(), me->GetMaxAttackRange() ) )
-			{
-				me->GetBodyInterface()->AimHeadTowards( threat->GetLastKnownPosition() + Vector( 0, 0, HumanEyeHeight ), IBody::IMPORTANT, 0.2f, NULL, "Looking towards where we lost sight of our victim" );
-			}
+	if (m_path.IsValid())
+	{
+		m_path.Update(me);
 
-			m_path.Update( me );
-
-			if ( m_repathTimer.IsElapsed() )
-			{
-				//m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
-				m_repathTimer.Start( RandomFloat( 3.0f, 5.0f ) );
-
-				if ( isUsingCloseRangeWeapon )
-				{
-					CNEOBotPathCompute( me, m_path, threat->GetLastKnownPosition(), FASTEST_ROUTE );
-				}
-				else
-				{
-					CNEOBotPathCompute( me, m_path, threat->GetLastKnownPosition(), DEFAULT_ROUTE );
-				}
-			}
+		if (m_path.GetEndPosition().DistTo(me->GetAbsOrigin()) <= 64.0f)
+		{
+			m_path.Invalidate();
+			m_attackCoverArea = nullptr;
+		}
+	}
+	else
+	{
+		// Directly chase threat if no cover was found or haven't seen enemy since last path compute
+		m_attackCoverArea = nullptr;
+		m_bSawEnemySinceLastPathCompute = false; // delay next cover search
+		if ( isUsingCloseRangeWeapon )
+		{
+			CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), FASTEST_ROUTE );
+		}
+		else
+		{
+			CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), DEFAULT_ROUTE );
 		}
 	}
 
@@ -290,8 +438,21 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 
 //---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotAttack::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
+{
+	m_path.Invalidate();
+	m_chasePath.Invalidate();
+	m_attackCoverArea = nullptr;
+
+	return Continue();
+}
+
+
+//---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotAttack::OnStuck( CNEOBot *me )
 {
+	m_path.Invalidate();
+	m_attackCoverArea = nullptr;
 	return TryContinue();
 }
 
@@ -306,6 +467,8 @@ EventDesiredResult< CNEOBot > CNEOBotAttack::OnMoveToSuccess( CNEOBot *me, const
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotAttack::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
+	m_path.Invalidate();
+	m_attackCoverArea = nullptr;
 	return TryContinue();
 }
 
@@ -313,6 +476,27 @@ EventDesiredResult< CNEOBot > CNEOBotAttack::OnMoveToFailure( CNEOBot *me, const
 //---------------------------------------------------------------------------------------------
 QueryResultType	CNEOBotAttack::ShouldRetreat( const INextBot *me ) const
 {
+
+	const CNEOBot *meNeoBot = static_cast<const CNEOBot *>(me);
+	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon* >( meNeoBot->GetActiveWeapon() );
+	if ( !meNeoBot->IsRanged(myWeapon) )
+	{
+		return ANSWER_NO;
+	}
+
+	if (myWeapon)
+	{
+		if (myWeapon->m_bInReload || (myWeapon->Clip1() <= 1))
+		{
+			return ANSWER_YES;
+		}
+	}
+
+	if (!m_bSawEnemySinceLastPathCompute)
+	{
+		return ANSWER_UNDEFINED;
+	}
+
 	return ANSWER_UNDEFINED;
 }
 
