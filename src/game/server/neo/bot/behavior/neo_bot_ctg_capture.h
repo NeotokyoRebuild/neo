@@ -18,7 +18,6 @@ public:
 
 private:
 	void TryUseGhost( CNEOBot *me, const Vector &vecEye, const Vector &vecGhostCenter );
-	void UpdateDislodge( CNEOBot *me, const Vector &vecEye, const Vector &vecGhostCenter, bool bThreatInView );
 
 	CHandle<CWeaponGhost> m_hObjective;
 	CNavArea *m_previousKnownArea;
@@ -26,8 +25,6 @@ private:
 	CountdownTimer m_repathTimer;
 	CountdownTimer m_useTapTimer;
 	CountdownTimer m_useJumpTimer;
-	CountdownTimer m_dislodgeTimer;
-	bool m_bTriedDislodge;
 	PathFollower m_path;
 };
 

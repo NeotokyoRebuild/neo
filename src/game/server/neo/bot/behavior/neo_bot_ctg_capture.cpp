@@ -11,10 +11,6 @@ constexpr float CTG_CAPTURE_ATTEMPT_TIME = 3.0f;	// Per nav area, before the gho
 constexpr float CTG_CAPTURE_BUTTON_TAP_HOLD = 0.1f;
 constexpr float CTG_CAPTURE_USE_TAP_INTERVAL = 0.3f;
 constexpr float CTG_CAPTURE_USE_JUMP_INTERVAL = 1.0f;
-// How long to shoot a lodged ghost, including the 0.5-2 s it takes to draw and aim the sidearm
-constexpr float CTG_CAPTURE_DISLODGE_TIME = 3.0f;
-// Missed shots fly past the ghost, so keep teammates clear of the line this far beyond it
-constexpr float CTG_CAPTURE_DISLODGE_OVERSHOOT = 256.0f;
 
 bool IsGhostInSight( CNEOBot *me, const Vector &vecEye, CWeaponGhost *pGhost, const Vector &vecGhostCenter )
 {
@@ -22,35 +18,6 @@ bool IsGhostInSight( CNEOBot *me, const Vector &vecEye, CWeaponGhost *pGhost, co
 	NextBotTraceFilterIgnoreActors filter( me, COLLISION_GROUP_NONE );
 	UTIL_TraceLine( vecEye, vecGhostCenter, MASK_PLAYERSOLID, &filter, &trace );
 	return trace.m_pEnt == pGhost || trace.fraction == 1.0f;
-}
-
-// The sidearm while its clip is loaded, then the primary if the bot has not dropped it yet
-CNEOBaseCombatWeapon *GetLoadedDislodgeWeapon( CNEOBot *me )
-{
-	for ( const int iSlot : { 1, 0 } )
-	{
-		auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>( me->Weapon_GetSlot( iSlot ) );
-		if ( pWeapon && pWeapon->Clip1() > 0 )
-		{
-			return pWeapon;
-		}
-	}
-
-	return nullptr;
-}
-
-bool IsDislodgeShotSafe( CNEOBot *me, const Vector &vecEye, CWeaponGhost *pGhost, const Vector &vecGhostCenter )
-{
-	if ( !me->IsLineOfFireClear( vecEye, pGhost, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
-	{
-		return false;
-	}
-
-	Vector vecToGhostDir = vecGhostCenter - vecEye;
-	vecToGhostDir.NormalizeInPlace();
-
-	const Vector vecPastGhost = vecGhostCenter + vecToGhostDir * CTG_CAPTURE_DISLODGE_OVERSHOOT;
-	return !me->IsFriendlyNearLineOfFire( vecEye, vecPastGhost );
 }
 }
 
@@ -70,8 +37,6 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::OnStart( CNEOBot *me, Action<CNEOBot> *
 	m_captureAttemptTimer.Start( CTG_CAPTURE_ATTEMPT_TIME );
 	m_useTapTimer.Invalidate();
 	m_useJumpTimer.Invalidate();
-	m_dislodgeTimer.Invalidate();
-	m_bTriedDislodge = false;
 	m_previousKnownArea = me->GetLastKnownArea();
 	
 	if ( !m_hObjective )
@@ -126,17 +91,6 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 	}
 	m_path.Update( me );
 
-	// The ghost aims below would hold the head away from a visible threat, so fighting comes first
-	const bool bThreatInView = me->GetVisionInterface()->GetPrimaryKnownThreat( true ) != nullptr;
-	const Vector vecEye = me->EyePosition();
-	const Vector vecGhostCenter = m_hObjective->WorldSpaceCenter();
-
-	if ( m_dislodgeTimer.HasStarted() )
-	{
-		UpdateDislodge( me, vecEye, vecGhostCenter, bThreatInView );
-		return Continue();
-	}
-
 	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
 	if ( pPrimary )
 	{
@@ -151,23 +105,18 @@ ActionResult<CNEOBot> CNEOBotCtgCapture::Update( CNEOBot *me, float interval )
 		}
 	}
 	
-	// A ghost that cannot be walked onto can still be picked up the way players do it:
-	// look at it and press use
-	if ( !bThreatInView && vecEye.DistToSqr( vecGhostCenter ) < Square( PLAYER_USE_RADIUS ) )
+	// A ghost that cannot be walked onto can still be picked up the way players do it: look at it
+	// and press use. Not while a threat is in view, as that aim would keep the head off the threat
+	const Vector vecEye = me->EyePosition();
+	const Vector vecGhostCenter = m_hObjective->WorldSpaceCenter();
+	if ( vecEye.DistToSqr( vecGhostCenter ) < Square( PLAYER_USE_RADIUS )
+		&& !me->GetVisionInterface()->GetPrimaryKnownThreat( true ) )
 	{
 		TryUseGhost( me, vecEye, vecGhostCenter );
 	}
 
 	if ( m_captureAttemptTimer.IsElapsed() )
 	{
-		// Players shoot a lodged ghost so physics moves it: give that one go before giving up
-		if ( !m_bTriedDislodge && GetLoadedDislodgeWeapon( me ) && IsGhostInSight( me, vecEye, m_hObjective, vecGhostCenter ) )
-		{
-			m_bTriedDislodge = true;
-			m_dislodgeTimer.Start( CTG_CAPTURE_DISLODGE_TIME );
-			return Continue();
-		}
-
 		// If the bot fails to capture the ghost, it's sometimes because the ghost is lodged into an awkward position
 		// Have the bot search around the location instead, to avoid cycle of failing to pick up ghost and retrying
 		return ChangeTo( new CNEOBotCtgLoneWolf(), "Failed to pick up ghost in time, searching around nearest areas" );
@@ -204,52 +153,5 @@ void CNEOBotCtgCapture::TryUseGhost( CNEOBot *me, const Vector &vecEye, const Ve
 	if ( !IsGhostInSight( me, vecEye, m_hObjective, vecGhostCenter ) )
 	{
 		pMover->Jump();
-	}
-}
-
-
-//---------------------------------------------------------------------------------------------
-// The ghost is heavy, so keep shooting it until the window closes or the loaded clips run dry
-void CNEOBotCtgCapture::UpdateDislodge( CNEOBot *me, const Vector &vecEye, const Vector &vecGhostCenter, bool bThreatInView )
-{
-	CNEOBaseCombatWeapon *pGun = GetLoadedDislodgeWeapon( me );
-	if ( m_dislodgeTimer.IsElapsed() || !pGun )
-	{
-		m_dislodgeTimer.Invalidate();
-		me->ReleaseFireButton();
-		m_captureAttemptTimer.Start( CTG_CAPTURE_ATTEMPT_TIME );
-		return;
-	}
-
-	if ( bThreatInView )
-	{
-		return;
-	}
-
-	if ( me->GetActiveWeapon() != pGun && !me->Weapon_Switch( pGun ) )
-	{
-		me->ReleaseFireButton();
-		return;
-	}
-
-	me->GetBodyInterface()->AimHeadTowards( vecGhostCenter, IBody::CRITICAL, 0.2f, nullptr, "Aiming at the lodged ghost" );
-
-	if ( !me->GetBodyInterface()->IsHeadAimingOnTarget() || !IsDislodgeShotSafe( me, vecEye, m_hObjective, vecGhostCenter ) )
-	{
-		me->ReleaseFireButton();
-		return;
-	}
-
-	if ( me->IsContinuousFireWeapon( pGun ) )
-	{
-		me->PressFireButton( CTG_CAPTURE_BUTTON_TAP_HOLD );
-	}
-	else if ( me->m_nButtons & IN_ATTACK )
-	{
-		me->ReleaseFireButton(); // semi-auto needs the trigger released between shots
-	}
-	else
-	{
-		me->PressFireButton();
 	}
 }
