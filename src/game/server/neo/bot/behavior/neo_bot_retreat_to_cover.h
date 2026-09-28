@@ -1,5 +1,8 @@
 #pragma once
 
+// How many known enemies could see into this area
+int CountThreatsExposingArea( CNEOBot *me, CNavArea *area );
+
 class CNEOBotRetreatToCover : public Action< CNEOBot >
 {
 public:

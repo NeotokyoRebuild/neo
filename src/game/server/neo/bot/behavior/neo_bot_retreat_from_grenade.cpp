@@ -14,9 +14,18 @@
 
 extern ConVar sv_neo_bot_grenade_frag_safety_range_multiplier;
 extern ConVar sv_neo_grenade_fuse_timer;
+extern ConVar sv_neo_grenade_blast_radius;
+extern ConVar sv_neo_grenade_gravity;
+extern ConVar sv_neo_grenade_cor;
 ConVar neo_bot_retreat_from_grenade_range( "neo_bot_retreat_from_grenade_range", "2000", FCVAR_CHEAT );
 ConVar neo_bot_debug_retreat_from_grenade( "neo_bot_debug_retreat_from_grenade", "0", FCVAR_CHEAT );
 ConVar neo_bot_grenade_check_radius( "neo_bot_grenade_check_radius", "500", FCVAR_CHEAT );
+
+// Extra travel charged for each known enemy that could see a cover area: hiding from the
+// grenade comes first, hiding from enemies breaks ties between nearby choices
+static constexpr float kCoverEnemyExposureCost = 300.0f;
+static constexpr float kMaxGrenadeElasticity = 0.9f; // CBaseGrenadeProjectile::ResolveFlyCollisionCustom clamp
+static constexpr float kSqrt2 = 1.41421356f; // M_SQRT2 is not defined by MSVC
 
 
 //---------------------------------------------------------------------------------------------
@@ -52,6 +61,51 @@ static bool IsUnidentifiedSmoke( CNEOBot *me, CBaseEntity *grenade )
 
 	CNEO_Player *pThrower = ToNEOPlayer( thrower );
 	return !pThrower || pThrower->GetClass() != NEO_CLASS_SUPPORT;
+}
+
+
+//---------------------------------------------------------------------------------------------
+// Areas closer than this to where a grenade can go are never used as cover from it
+float CNEOBotRetreatFromGrenade::GetGrenadeCoverDistance()
+{
+	return sv_neo_grenade_blast_radius.GetFloat() * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat() * kSqrt2;
+}
+
+
+//---------------------------------------------------------------------------------------------
+// Where a grenade comes to rest, from what anyone watching it can see: its position and velocity.
+// Flight to the floor below, then each bounce keeps e of both speed components, a geometric
+// series (ResolveFlyCollisionCustom), stopped at the first wall on the way.
+Vector CNEOBotRetreatFromGrenade::PredictGrenadeRest( CBaseEntity *grenade )
+{
+	const Vector vecPos = grenade->GetAbsOrigin();
+	const Vector vecVel = grenade->GetAbsVelocity();
+
+	float flFloorZ;
+	if ( !TheNavMesh->GetGroundHeight( vecPos, &flFloorZ ) )
+	{
+		return vecPos;
+	}
+
+	const float flGravity = GetCurrentGravity() * sv_neo_grenade_gravity.GetFloat();
+	if ( flGravity <= 0.0f )
+	{
+		return vecPos;
+	}
+
+	const float flDrop = Max( 0.0f, vecPos.z - flFloorZ );
+	const float flImpactVz = sqrt( vecVel.z * vecVel.z + 2.0f * flGravity * flDrop );
+	const float flFlightTime = ( vecVel.z + flImpactVz ) / flGravity;
+	const float flElasticity = Min( sv_neo_grenade_cor.GetFloat(), kMaxGrenadeElasticity );
+	const float flHopShare = flElasticity * flElasticity;
+	const float flBounceTime = 2.0f * flImpactVz / flGravity * flHopShare / ( 1.0f - flHopShare );
+
+	Vector vecRest = vecPos + Vector( vecVel.x, vecVel.y, 0.0f ) * ( flFlightTime + flBounceTime );
+	vecRest.z = flFloorZ + 1.0f;
+
+	trace_t tr;
+	UTIL_TraceLine( vecPos, vecRest, MASK_SOLID_BRUSHONLY, grenade, COLLISION_GROUP_NONE, &tr );
+	return tr.endpos;
 }
 
 
@@ -111,11 +165,32 @@ public:
 		m_me = me;
 		m_grenade = grenade;
 		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
-		m_pGrenadeStats = dynamic_cast<CBaseGrenadeProjectile *>( grenade );
-		m_safeRadiusSqr = m_pGrenadeStats ? Square(m_pGrenadeStats->m_DmgRadius * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat()) : 0.0f;
+		m_coverDist = CNEOBotRetreatFromGrenade::GetGrenadeCoverDistance();
+		m_blastRadius = sv_neo_grenade_blast_radius.GetFloat();
+
+		// Judge cover against everywhere the grenade can still go, from here to where it will rest:
+		// an airborne grenade has no nav area, and fleeing its current position runs along its flight
+		m_vecDangerStart = vec3_origin;
+		m_vecDangerEnd = vec3_origin;
+		m_restArea = nullptr;
+		if ( grenade )
+		{
+			m_vecDangerStart = grenade->GetAbsOrigin();
+			m_vecDangerEnd = CNEOBotRetreatFromGrenade::PredictGrenadeRest( grenade );
+			m_restArea = TheNavMesh->GetNavArea( m_vecDangerEnd );
+			if ( !m_restArea )
+			{
+				m_restArea = TheNavMesh->GetNearestNavArea( m_vecDangerEnd );
+			}
+		}
 
 		if ( neo_bot_debug_retreat_from_grenade.GetBool() )
 			TheNavMesh->ClearSelectedSet();
+	}
+
+	float DistToDanger( const CNavArea *area ) const
+	{
+		return CalcDistanceToLineSegment( area->GetCenter(), m_vecDangerStart, m_vecDangerEnd );
 	}
 
 	virtual bool operator() ( CNavArea *baseArea, CNavArea *priorArea, float travelDistanceSoFar )
@@ -144,27 +219,23 @@ public:
 			}
 		}
 
-		if ( m_pGrenadeStats )
+		if ( DistToDanger( area ) < m_coverDist )
 		{
-			if ( ( area->GetCenter() - m_pGrenadeStats->GetAbsOrigin() ).LengthSqr() < m_safeRadiusSqr * 2 )
-			{
-				// using cover that is too near a grenade is prone to errors and it looks oblivious
-				return true;
-			}
+			// using cover that is too near a grenade is prone to errors and it looks oblivious
+			return true;
 		}
 
-		const CNavArea *grenadeArea = TheNavMesh->GetNavArea( m_grenade->GetAbsOrigin() );
-		if ( grenadeArea )
+		if ( m_restArea && m_restArea->IsPotentiallyVisible( area ) )
 		{
-			if ( grenadeArea->IsPotentiallyVisible( area ) )
-			{
-				// area is exposed to grenade line of sight
-				return true;
-			}
+			// area is exposed to grenade line of sight
+			return true;
 		}
 
 		// let's add this area to the candidate of escape destinations
-		m_coverAreaVector.AddToTail( area );
+		CoverCandidate candidate;
+		candidate.area = area;
+		candidate.cost = travelDistanceSoFar + kCoverEnemyExposureCost * CountThreatsExposingArea( m_me, area );
+		m_coverAreaVector.AddToTail( candidate );
 
 		return true;
 	}
@@ -173,6 +244,11 @@ public:
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) 
 	{
 		if ( travelDistanceSoFar > neo_bot_retreat_from_grenade_range.GetFloat() )
+			return false;
+
+		// inside the blast's reach, only ever step away from it
+		const float flAdjDist = DistToDanger( adjArea );
+		if ( flAdjDist < m_blastRadius && flAdjDist < DistToDanger( currentArea ) )
 			return false;
 
 		// allow falling off ledges, but don't jump up - too slow
@@ -184,16 +260,30 @@ public:
 		if ( neo_bot_debug_retreat_from_grenade.GetBool() )
 		{
 			for( int i=0; i<m_coverAreaVector.Count(); ++i )
-				TheNavMesh->AddToSelectedSet( m_coverAreaVector[i] );
+				TheNavMesh->AddToSelectedSet( m_coverAreaVector[i].area );
 		}
+	}
+
+	struct CoverCandidate
+	{
+		CNavArea *area;
+		float cost; // travel distance plus the known-enemy exposure charge
+	};
+
+	static int CompareCost( const CoverCandidate *a, const CoverCandidate *b )
+	{
+		return ( a->cost < b->cost ) ? -1 : ( a->cost > b->cost ) ? 1 : 0;
 	}
 
 	CNEOBot *m_me;
 	CBaseEntity *m_grenade;
-	CBaseGrenadeProjectile *m_pGrenadeStats;
 	float m_onStuckPenalty;
-	float m_safeRadiusSqr;
-	CUtlVector< CNavArea * > m_coverAreaVector;
+	float m_coverDist;
+	float m_blastRadius;
+	Vector m_vecDangerStart;
+	Vector m_vecDangerEnd;
+	const CNavArea *m_restArea;
+	CUtlVector< CoverCandidate > m_coverAreaVector;
 };
 
 
@@ -217,11 +307,11 @@ CNavArea *CNEOBotRetreatFromGrenade::FindCoverArea( CNEOBot *me )
 		return NULL;
 	}
 
-	// first in vector should be closest via travel distance
-	// pick from the closest 10 areas to avoid the whole team bunching up in one spot
+	// pick from the cheapest 10 areas to avoid the whole team bunching up in one spot
+	search.m_coverAreaVector.Sort( CSearchForCoverFromGrenade::CompareCost );
 	int last = Min( 10, search.m_coverAreaVector.Count() );
 	int which = RandomInt( 0, last-1 );
-	return search.m_coverAreaVector[ which ];
+	return search.m_coverAreaVector[ which ].area;
 }
 
 
@@ -256,6 +346,13 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::OnStart( CNEOBot *me, Action<
 	if ( m_coverArea == NULL )
 		return Done( "No grenade cover available!" );
 
+	// Scope out now unless trading fire: MainAction's aim-out delay is there to stop flicker, not for a live grenade
+	if ( !IsTradingFire( me ) )
+	{
+		me->m_qPrevShouldAim = ANSWER_NO;
+		me->m_flLastShouldAimTime = 0.0f;
+	}
+
 	return Continue();
 }
 
@@ -275,10 +372,15 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 		return Done( "Grenade threat is over" );
 	}
 	
-	const CNavArea *grenadeArea = TheNavMesh->GetNavArea( m_grenade->GetAbsOrigin() );
+	// track where the projectile will rest and its relation to the escape destination every update
+	const Vector vecRest = PredictGrenadeRest( m_grenade );
+	const CNavArea *restArea = TheNavMesh->GetNavArea( vecRest );
+	if ( !restArea )
+	{
+		restArea = TheNavMesh->GetNearestNavArea( vecRest );
+	}
 
-	// track projectile and relation to escape destination every update
-	if ( !m_coverArea || ( grenadeArea && grenadeArea->IsPotentiallyVisible( m_coverArea ) ) )
+	if ( !m_coverArea || ( restArea && restArea->IsPotentiallyVisible( m_coverArea ) ) )
 	{
 		CNavArea *pPrevCoverArea = m_coverArea;
 		m_coverArea = FindCoverArea( me );
@@ -301,10 +403,18 @@ ActionResult< CNEOBot >	CNEOBotRetreatFromGrenade::Update( CNEOBot *me, float in
 		CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), FASTEST_ROUTE );
 		m_repathTimer.Start( 1.0f );
 	}
+
+	// Walk() / Run() do not press sprint for player bots, so hold it here
+	if ( me->CanSprint() && !IsTradingFire( me ) )
+	{
+		me->PressRunButton();
+	}
+
 	m_path.Update( me );
 
 	return Continue();
 }
+
 
 
 //---------------------------------------------------------------------------------------------
@@ -342,7 +452,7 @@ QueryResultType CNEOBotRetreatFromGrenade::ShouldHurry( const INextBot *me ) con
 //---------------------------------------------------------------------------------------------
 QueryResultType CNEOBotRetreatFromGrenade::ShouldWalk( const CNEOBot *me, const QueryResultType qShouldAimQuery ) const
 {
-	return ANSWER_NO;
+	return IsTradingFire( me ) ? ANSWER_UNDEFINED : ANSWER_NO;
 }
 
 
@@ -358,5 +468,21 @@ QueryResultType CNEOBotRetreatFromGrenade::ShouldRetreat( const CNEOBot *me ) co
 //---------------------------------------------------------------------------------------------
 QueryResultType CNEOBotRetreatFromGrenade::ShouldAim( const CNEOBot *me, const bool bWepHasClip ) const
 {
-	return ANSWER_NO;
+	return IsTradingFire( me ) ? ANSWER_UNDEFINED : ANSWER_NO;
+}
+
+
+//---------------------------------------------------------------------------------------------
+// While an enemy is in view and the magazine has rounds, keep shooting at it the usual way.
+// Otherwise stop aiming and sprint.
+bool CNEOBotRetreatFromGrenade::IsTradingFire( const CNEOBot *me ) const
+{
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if ( !threat || !threat->IsVisibleInFOVNow() )
+	{
+		return false;
+	}
+
+	CBaseCombatWeapon *weapon = me->GetActiveWeapon();
+	return weapon && weapon->Clip1() > 0;
 }
