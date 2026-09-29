@@ -33,6 +33,8 @@
 	#include "weapon_zr68l.h"
 	//#include "weapon_m41l.h"
 
+	#include "view.h"
+
 	#include <mathlib/mathlib.h>
 #endif
 

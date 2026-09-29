@@ -11,6 +11,7 @@
 #include "vgui_controls/Frame.h"
 #include "vgui_controls/Button.h"
 #include "neo_theme.h"
+#include "view.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
