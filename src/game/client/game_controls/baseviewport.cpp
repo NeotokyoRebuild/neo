@@ -60,6 +60,7 @@
 #include "neo/game_controls/neo_classmenu.h"
 #include "neo/game_controls/neo_teammenu.h"
 #include "neo/game_controls/neo_loadoutmenu.h"
+#include "neo_gamerules.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -230,6 +231,16 @@ void CBaseViewport::OnScreenSizeChanged(int iOldWide, int iOldTall)
 	vgui::ipanel()->MoveToBack( m_pBackGround->GetVPanel() ); // really send it to the back 
 #endif
 
+#ifdef NEO
+	int iHiddenNeoBits = 0;
+	auto pNeoRules = NEORules();
+	if (pNeoRules)
+	{
+		iHiddenNeoBits = pNeoRules->GetHiddenHudElements();
+		pNeoRules->SetHiddenHudElements(0);
+	}
+#endif
+
 	// hide all panels when reconnecting 
 	ShowPanel( PANEL_ALL, false );
 
@@ -238,6 +249,13 @@ void CBaseViewport::OnScreenSizeChanged(int iOldWide, int iOldTall)
 	{
 		ShowPanel( PANEL_SPECGUI, true );
 	}
+
+#ifdef NEO
+	if (pNeoRules)
+	{
+		pNeoRules->SetHiddenHudElements(iHiddenNeoBits);
+	}
+#endif
 }
 
 void CBaseViewport::CreateDefaultPanels( void )
