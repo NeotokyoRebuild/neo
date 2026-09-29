@@ -65,6 +65,7 @@
 #include "c_neo_player.h"
 #include "weapon_tachi.h"
 #include "ivieweffects.h"
+#include "in_main.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1372,6 +1373,10 @@ bool C_BasePlayer::CreateMove( float flInputSampleTime, CUserCmd *pCmd )
 	
 	// Check to see if we're in vgui input mode...
 	DetermineVguiInputMode( pCmd );
+
+#ifdef NEO
+	pCmd->voiceTransmitType = GetVoiceTransmitType();
+#endif // NEO
 
 	return true;
 }
