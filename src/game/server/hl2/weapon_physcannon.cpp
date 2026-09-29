@@ -1344,7 +1344,7 @@ protected:
 	int		m_nChangeState;			//For delayed state change of elements
 	float	m_flCheckSuppressTime;	//Amount of time to suppress the checking for targets
 	bool	m_flLastDenySoundPlayed;	//Debounce for deny sound
-	int		m_nAttack2Debounce;
+	int		m_nAttack2Debounce; // NEO TODO (Adam) change to int64 when building this?
 
 	CNetworkVar( bool, m_bIsCurrentlyUpgrading );
 	CNetworkVar( float, m_flTimeForceView );
@@ -3308,6 +3308,9 @@ void CWeaponPhysCannon::ItemPostFrame()
 	}
 
 	// NOTE: Attack2 will be considered to be pressed until the first item is picked up.
+#ifdef NEO
+	Assert(false); // NEO TODO (Adam) Change nAttack2Mask and m_nAttack2Debounce to int64 when building this?
+#endif // NEO
 	int nAttack2Mask = pOwner->m_nButtons & (~m_nAttack2Debounce);
 	if ( nAttack2Mask & IN_ATTACK2 )
 	{

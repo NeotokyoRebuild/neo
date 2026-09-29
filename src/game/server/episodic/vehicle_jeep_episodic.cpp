@@ -1318,6 +1318,9 @@ static void KillBlockingEnemyNPCs( CBasePlayer *pPlayer, CBaseEntity *pVehicleEn
 
 void CPropJeepEpisodic::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased )
 {
+#ifdef NEO
+	Assert(false); // NEO TODO (Adam) change iButtonsDown and iButtonsReleased to int64 when building this
+#endif // NEO
 	/* The car headlight hurts perf, there's no timer to turn it off automatically,
 	   and we haven't built any gameplay around it.
 

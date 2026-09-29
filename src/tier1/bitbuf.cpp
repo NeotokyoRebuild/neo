@@ -1066,7 +1066,11 @@ int32 bf_read::ReadSignedVarInt32()
 
 int64 bf_read::ReadSignedVarInt64()
 {
+#ifdef NEO
+	uint64 value = ReadVarInt64();
+#else
 	uint32 value = ReadVarInt64();
+#endif // NEO
 	return bitbuf::ZigZagDecode64( value );
 }
 

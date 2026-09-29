@@ -55,7 +55,11 @@ public:
 	float					m_flJumpTime;
 	int						m_nStepside;
 	float					m_flFallVelocity;
+#ifdef NEO
+	int64					m_nOldButtons;
+#else
 	int						m_nOldButtons;
+#endif // NEO
 	float					m_flOldForwardMove;
 	// Base velocity that was passed in to server physics so 
 	//  client can predict conveyors correctly.  Server zeroes it, so we need to store here, too.

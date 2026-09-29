@@ -671,9 +671,17 @@ void CPropVehicleDriveable::DriveVehicle( CBasePlayer *pPlayer, CUserCmd *ucmd )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CPropVehicleDriveable::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int64 iButtonsDown, int64 iButtonsReleased )
+#else
 void CPropVehicleDriveable::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased )
+#endif // NEO
 {
+#ifdef NEO
+	int64 iButtons = ucmd->buttons;
+#else
 	int iButtons = ucmd->buttons;
+#endif // NEO
 
 	m_VehiclePhysics.UpdateDriverControls( ucmd, flFrameTime );
 

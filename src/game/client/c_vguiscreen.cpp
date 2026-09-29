@@ -743,7 +743,11 @@ void ActivateVguiScreen( C_BaseEntity *pVguiScreenEnt )
 	}
 }
 
+#ifdef NEO
+void SetVGuiScreenButtonState( C_BaseEntity *pVguiScreenEnt, int64 nButtonState )
+#else
 void SetVGuiScreenButtonState( C_BaseEntity *pVguiScreenEnt, int nButtonState )
+#endif // NEO
 {
 	if (pVguiScreenEnt)
 	{

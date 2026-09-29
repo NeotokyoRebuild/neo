@@ -176,7 +176,11 @@ void DeactivateVguiScreen( C_BaseEntity *pVguiScreen );
 //-----------------------------------------------------------------------------
 // Updates vgui screen button state
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void SetVGuiScreenButtonState( C_BaseEntity *pVguiScreen, int64 nButtonState );
+#else
 void SetVGuiScreenButtonState( C_BaseEntity *pVguiScreen, int nButtonState );
+#endif // NEO
 
 
 #endif // C_VGUISCREEN_H

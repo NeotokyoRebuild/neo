@@ -83,7 +83,11 @@ public:
 
 	// CPropVehicle
 	virtual void	ProcessMovement( CBasePlayer *pPlayer, CMoveData *pMoveData );
+#ifdef NEO
+	virtual void	DriveVehicle( float flFrameTime, CUserCmd *ucmd, int64 iButtonsDown, int64 iButtonsReleased );
+#else
 	virtual void	DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased );
+#endif // NEO
 	void			DampenEyePosition( Vector &vecVehicleEyePos, QAngle &vecVehicleEyeAngles );
 	bool			ShouldThink() { return true; }
 
@@ -1770,7 +1774,11 @@ void CPropAirboat::UpdateGunState( CUserCmd *ucmd )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+void CPropAirboat::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int64 iButtonsDown, int64 iButtonsReleased )
+#else
 void CPropAirboat::DriveVehicle( float flFrameTime, CUserCmd *ucmd, int iButtonsDown, int iButtonsReleased )
+#endif // NEO
 {
 	if ( ucmd->impulse == 100 )
 	{

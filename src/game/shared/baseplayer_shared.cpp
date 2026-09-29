@@ -809,14 +809,22 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 	OnEmitFootstepSound( params, vecOrigin, fvol );
 }
 
+#ifdef NEO
+void CBasePlayer::UpdateButtonState( int64 nUserCmdButtonMask )
+#else
 void CBasePlayer::UpdateButtonState( int nUserCmdButtonMask )
+#endif // NEO
 {
 	// Track button info so we can detect 'pressed' and 'released' buttons next frame
 	m_afButtonLast = m_nButtons;
 
 	// Get button states
 	m_nButtons = nUserCmdButtonMask;
+#ifdef NEO
+ 	const int64 buttonsChanged = m_afButtonLast ^ m_nButtons;
+#else
  	int buttonsChanged = m_afButtonLast ^ m_nButtons;
+#endif // NEO
 	
 	// Debounced button codes for pressed/released
 	// UNDONE: Do we need auto-repeat?
@@ -1413,7 +1421,11 @@ void CBasePlayer::PlayerUse ( void )
 			else
 			{	// Start controlling the train!
 				CBaseEntity *pTrain = GetGroundEntity();
+#ifdef NEO
+				if ( pTrain && !(m_nButtons & (IN_JUMP | IN_JUMP2)) && (GetFlags() & FL_ONGROUND) && (pTrain->ObjectCaps() & FCAP_DIRECTIONAL_USE) && pTrain->OnControls(this) )
+#else
 				if ( pTrain && !(m_nButtons & IN_JUMP) && (GetFlags() & FL_ONGROUND) && (pTrain->ObjectCaps() & FCAP_DIRECTIONAL_USE) && pTrain->OnControls(this) )
+#endif // NEO
 				{
 					m_afPhysicsFlags |= PFLAG_DIROVERRIDE;
 					m_iTrain = TrainSpeed(pTrain->m_flSpeed, ((CFuncTrackTrain*)pTrain)->GetMaxSpeed());

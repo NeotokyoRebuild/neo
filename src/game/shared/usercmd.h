@@ -149,7 +149,11 @@ public:
 	//  upward velocity.
 	float	upmove;         
 	// Attack button states
+#ifdef NEO
+	int64	buttons;		
+#else
 	int		buttons;		
+#endif // NEO
 	// Impulse command issued.
 	byte    impulse;        
 	// Current weapon id

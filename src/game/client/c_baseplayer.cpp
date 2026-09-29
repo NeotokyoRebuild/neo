@@ -2600,7 +2600,7 @@ void C_BasePlayer::PhysicsSimulate( void )
 		ctx->cmd.sidemove = 0;
 		ctx->cmd.upmove = 0;
 		ctx->cmd.impulse = 0;
-		ctx->cmd.buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
+		ctx->cmd.buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM | IN_JUMP2);
 	}
 	else if (static_cast<C_NEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
 	{
@@ -2609,7 +2609,7 @@ void C_BasePlayer::PhysicsSimulate( void )
 		ctx->cmd.upmove = 0;
 		ctx->cmd.impulse = 0;
 		ctx->cmd.buttons &= ~(IN_ATTACK | IN_JUMP | IN_SPEED |
-			IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN);
+			IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_JUMP2);
 		const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
 		if (!isTachi)
 		{

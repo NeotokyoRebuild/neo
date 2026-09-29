@@ -172,7 +172,11 @@ public:
 
 public:
 
+#ifdef NEO
+	int64						m_iKeyBits;
+#else
 	int							m_iKeyBits;
+#endif // NEO
 #ifndef _XBOX
 	float						m_flMouseSensitivity;
 	float						m_flMouseSensitivityFactor;

@@ -46,7 +46,11 @@ public:
 
 	virtual		void		Init_All( void );
 	virtual		void		Shutdown_All( void );
+#ifdef NEO
+	virtual		int64		GetButtonBits( int64 );
+#else
 	virtual		int			GetButtonBits( int );
+#endif // NEO
 	virtual		void		CreateMove ( int sequence_number, float input_sample_frametime, bool active );
 	virtual		void		ExtraMouseSample( float frametime, bool active );
 	virtual		bool		WriteUsercmdDeltaToBuffer( bf_write *buf, int from, int to, bool isnewcommand );
@@ -83,7 +87,11 @@ public:
 	virtual		float		Joystick_GetSide( void );
 	virtual		float		Joystick_GetPitch( void );
 	virtual		float		Joystick_GetYaw( void );
+#ifdef NEO
+	virtual		void		ClearInputButton( int64 bits );
+#else
 	virtual		void		ClearInputButton( int bits );
+#endif // NEO
 
 	virtual		void		CAM_Think( void );
 	virtual		int			CAM_IsThirdPerson( void );

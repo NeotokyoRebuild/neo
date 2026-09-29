@@ -426,7 +426,11 @@ protected:
 	int		m_nChangeState;				// For delayed state change of elements
 	float	m_flCheckSuppressTime;		// Amount of time to suppress the checking for targets
 	bool	m_flLastDenySoundPlayed;	// Debounce for deny sound
+#ifdef NEO
+	int64		m_nAttack2Debounce;
+#else
 	int		m_nAttack2Debounce;
+#endif // NEO
 
 	CNetworkVar( bool,	m_bActive );
 	CNetworkVar( int,	m_EffectState );		// Current state of the effects on the gun

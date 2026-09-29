@@ -411,8 +411,13 @@ public:
 		if ( pPlayer )
 		{
 			// Has the player pressed down an attack button?
+#ifdef NEO
+			const int64 buttonsChanged = m_afPlayersLastButtons ^ pUserCmds->buttons;
+			const int64 buttonsPressed = buttonsChanged & pUserCmds->buttons;
+#else
 			int buttonsChanged = m_afPlayersLastButtons ^ pUserCmds->buttons;
 			int buttonsPressed = buttonsChanged & pUserCmds->buttons;
+#endif // NEO
 			m_afPlayersLastButtons = pUserCmds->buttons;
 
 			if ( !(pUserCmds->buttons & COMMENTARY_BUTTONS) )
@@ -469,7 +474,11 @@ public:
 
 			if ( GetActiveNode() && GetActiveNode()->PreventsMovement() )
 			{
+#ifdef NEO
+ 				pUserCmds->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_DUCK | IN_JUMP2 );
+#else
  				pUserCmds->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP | IN_DUCK );
+#endif // NEO
 				pUserCmds->upmove = 0;
 				pUserCmds->sidemove = 0;
 				pUserCmds->forwardmove = 0;
@@ -785,10 +794,18 @@ public:
 	}
 
 private:
+#ifdef NEO
+	int64	m_afPlayersLastButtons;
+#else
 	int		m_afPlayersLastButtons;
+#endif // NEO
 	int		m_iCommentaryNodeCount;
 	bool	m_bCommentaryConvarsChanging;
+#ifdef NEO
+	int64		m_iClearPressedButtons;
+#else
 	int		m_iClearPressedButtons;
+#endif // NEO
 	bool	m_bCommentaryEnabledMidGame;
 	float	m_flNextTeleportTime;
 	int		m_iTeleportStage;
