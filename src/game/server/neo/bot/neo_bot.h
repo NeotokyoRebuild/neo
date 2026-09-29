@@ -5,6 +5,7 @@
 #include "neo_bot_vision.h"
 #include "neo_bot_body.h"
 #include "neo_bot_locomotion.h"
+#include "neo_bot_suppressive_fire.h"
 #include "neo_bot_path_cost.h"
 #include "neo_player.h"
 #include "neo_bot_squad.h"
@@ -106,6 +107,9 @@ public:
 	virtual void PressFireButton(float duration = -1.0f) OVERRIDE;
 	virtual void PressAltFireButton(float duration = -1.0f) OVERRIDE;
 	virtual void PressSpecialFireButton(float duration = -1.0f) OVERRIDE;
+	virtual void PressJumpButton(float duration = -1.0f) OVERRIDE;
+	virtual void PressRunButton(float duration = -1.0f) OVERRIDE;
+	void PressSuperJumpButtons();
 
 	// INextBot
 	virtual CNEOBotLocomotion* GetLocomotionInterface(void) const { return m_locomotor; }
@@ -183,6 +187,7 @@ public:
 	bool IsEnemy(const CBaseEntity* them) const OVERRIDE;
 
 	bool IsBotOnLadder( ) const;
+	bool IsOnPreciseArea() const;	// on a NAV_MESH_PRECISE or NAV_MESH_CLIFF area, where the path must be walked exactly
 
 	CNEOBaseCombatWeapon* GetBludgeonWeapon(void);
 
@@ -228,7 +233,13 @@ public:
 	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given point and entity
 	bool IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const;
 	bool IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to) const;
+	bool IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) const;	// return true if a teammate is near the line between the given points
+	bool IsFriendlyNearBarrel(float range) const;			// return true if a teammate is near where my weapon points
 	void RepathIfFriendlyBlockingLineOfFire();
+
+	Vector FindVisibleThrowPointNear( const Vector &vecPos ) const;
+	bool IsThrowLineClear(const Vector& where) const;
+	bool IsThrowLineClear(const Vector& from, const Vector& to) const;
 
 	bool IsEntityBetweenTargetAndSelf(CBaseEntity* other, CBaseEntity* target);	// return true if "other" is positioned inbetween us and "target"
 
@@ -454,7 +465,11 @@ public:
 	bool m_bWantsRespawn = false;
 	bool m_bRespawnCopyCorpse = false;
 
+	CNEOBotSuppressiveFire *GetSuppressiveFire( void ) { return &m_suppressiveFire; }
+
 private:
+	CNEOBotSuppressiveFire m_suppressiveFire;
+
 	CNEOBotLocomotion *m_locomotor;
 	CNEOBotBody *m_body;
 	CNEOBotVision *m_vision;
@@ -524,6 +539,8 @@ private:
 
 	CountdownTimer m_repathAroundFriendlyTimer;
 	PathFollower m_repathAroundFriendlyFollower;
+
+	int m_nPlainJumpTick = -1;
 
 	float m_flPhyscannonPickupTime = 0.0f;
 

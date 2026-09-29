@@ -15,4 +15,7 @@ public:
 
 protected:
 	virtual void RecomputeSeekPath( CNEOBot *me ) override;
+
+	// Only detour to combat sounds that are roughly on the way to the ghost
+	virtual bool IsSeekGoalAnObjective() const override	{ return true; }
 };

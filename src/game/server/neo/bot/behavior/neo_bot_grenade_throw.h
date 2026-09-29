@@ -52,9 +52,8 @@ protected:
 
 	CNavArea *FindVantageArea( CNEOBot *me );
 
-	static const Vector& FindEmergencePointAlongPath( const CNEOBot *me, const Vector &familiarPos, const Vector &obscuredPos );
-	
 	virtual ThrowTargetResult UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon ) = 0;
+	virtual void OnThrowReleased( CNEOBot *me ) { }
 
 };
 

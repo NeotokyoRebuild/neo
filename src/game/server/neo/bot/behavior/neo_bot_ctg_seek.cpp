@@ -94,7 +94,15 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 				}
 				else
 				{
-					return SuspendFor(new CNEOBotCtgLoneWolf, "Capture target is blocked by some other entity, searching around the nearest areas");
+					// Only count the ghost as stuck if we can't see it in the last area of our path
+					// e.g. continue walking around a blocking wall before deciding the ghost is blocked
+					const Path::Segment *pathGoal = m_path.IsValid() ? m_path.GetCurrentGoal() : nullptr;
+					const bool bStillWalkingAround = pathGoal && ( pathGoal != m_path.LastSegment() );
+
+					if ( !bStillWalkingAround )
+					{
+						return SuspendFor(new CNEOBotCtgLoneWolf, "Capture target is blocked by some other entity, searching around the nearest areas");
+					}
 				}
 			}
 		}

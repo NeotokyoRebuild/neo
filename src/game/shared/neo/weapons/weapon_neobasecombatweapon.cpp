@@ -350,6 +350,19 @@ void CNEOBaseCombatWeapon::Activate(void)
 #endif
 }
 
+void CNEOBaseCombatWeapon::Detach()
+{
+	BaseClass::Detach();
+
+	RemoveEffects(EF_BONEMERGE | EF_BONEMERGE_FASTCULL);
+	SetParent(nullptr);
+	SetOwnerEntity(nullptr);
+	SetAbsAngles(vec3_angle);
+	SetMoveType(MOVETYPE_VPHYSICS);
+	RemoveSolidFlags(FSOLID_NOT_SOLID);
+	SetCollisionGroup(COLLISION_GROUP_WEAPON);
+}
+
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ClientThink()
 {

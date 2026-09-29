@@ -56,6 +56,8 @@ ActionResult< CNEOBot >	CNEOBotCtgEnemy::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgEnemy::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	m_chasePath.Invalidate();
+
 	return Continue();
 }
 

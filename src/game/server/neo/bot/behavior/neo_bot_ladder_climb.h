@@ -29,6 +29,7 @@ public:
 private:
 	void EnterDismountPhase( CNEOBot *me );
 	void ResolveExitArea( CNEOBot *me );
+	bool IsDismountBlocked( CNEOBot *me, const Vector &toExit ) const;
 
 	const CNavLadder *m_ladder;
 	const CNavArea *m_pExitArea;
@@ -50,4 +51,5 @@ private:
 	static constexpr float DISMOUNT_TIMEOUT = 3.0f;	// Max time to walk toward exit area after leaving ladder
 	static constexpr float SAFE_FALL_DIST = 200.0f;	// Max height to safely drop off a ladder
 	static constexpr float MAX_DEVIATION_DIST = 100.0f; // Distance from ladder before canceling
+	static constexpr float DISMOUNT_CLEARANCE_HULLS = 1.5f; // Hull widths toward the exit that must be clear to step off
 };

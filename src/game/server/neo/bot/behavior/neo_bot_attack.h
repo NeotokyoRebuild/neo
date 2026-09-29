@@ -17,6 +17,7 @@ public:
 
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction );
 
 	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me );
 	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path );

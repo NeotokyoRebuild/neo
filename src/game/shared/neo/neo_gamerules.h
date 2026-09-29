@@ -234,7 +234,10 @@ public:
 #endif
 
 	virtual int GetGameType(void) OVERRIDE;
-	int GetHiddenHudElements();
+
+	int GetHiddenHudElements() const { return m_iHiddenHudElements; }
+	void SetHiddenHudElements(int bits);
+
 	int GetForcedTeam();
 	int GetForcedClass();
 	int GetForcedSkin();
@@ -599,8 +602,10 @@ public:
 		int iRoundNumber;
 		int iRoundsWonJinrai;
 		int iRoundsWonNSF;
+		int iGhostSpawnEntIdx;
 	};
 	NeoRestore m_iNextRestore = {};
+	int m_iGhostSpawnEntIdx = -1;
 #endif
 };
 

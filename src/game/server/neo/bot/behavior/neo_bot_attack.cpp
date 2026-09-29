@@ -84,13 +84,14 @@ public:
 		// only consider this new candidate area if it's an improvement
 		// as we assume earlier breadth first search nodes are closer to bot
 		// and thus faster to reach for safety.
-		if ( neo_bot_path_reservation_enable.GetBool() )
+		const int nFriendlyHere = CNEOBotPathReservations()->GetPredictedFriendlyPathCount( area->GetID(), m_me->GetTeamNumber(), m_me );
+		const int nFriendlyBest = CNEOBotPathReservations()->GetPredictedFriendlyPathCount( m_attackCoverArea->GetID(), m_me->GetTeamNumber(), m_me );
+		if ( nFriendlyHere != nFriendlyBest )
 		{
 			// prefer areas that friendly bots have reserved relatively less
-			return CNEOBotPathReservations()->GetPredictedFriendlyPathCount( area->GetID(), m_me->GetTeamNumber() )
-				< CNEOBotPathReservations()->GetPredictedFriendlyPathCount( m_attackCoverArea->GetID(), m_me->GetTeamNumber() );
+			return nFriendlyHere < nFriendlyBest;
 		}
-		// Fallback when path reservation is disabled: potentially visible area
+		// Tie-break when friendly reservations are equal (or disabled): potentially visible area
 		// count is a rough proxy for how exposed an area is. It ignores whether
 		// the area is actually reachable and does nothing to keep friendlies
 		// from bunching up in the same area.
@@ -135,9 +136,7 @@ public:
 			}
 		}
 
-		float avoidPenalty = neo_bot_path_reservation_enable.GetBool()
-			? CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() )
-			: 0.0f;
+		float avoidPenalty = CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() );
 		if ( !IsBetterCandidate( area, avoidPenalty ) )
 		{
 			return true; // the cover candidate we already have is at least as good
@@ -292,14 +291,17 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 	if (!m_attackCoverArea // don't slow movement to cover with strafing
 		&& isUsingCloseRangeWeapon && threat->IsVisibleRecently() && me->IsRangeLessThan( threatLastKnownPos, 1.1f * me->GetDesiredAttackRange() ) )
 	{
-		// circle around our victim
-		if ( me->TransientlyConsistentRandomValue( 3.0f ) < 0.5f )
+		// circle around our victim, unless a sidestep could take us off a ledge
+		if ( !me->IsOnPreciseArea() )
 		{
-			me->PressLeftButton();
-		}
-		else
-		{
-			me->PressRightButton();
+			if ( me->TransientlyConsistentRandomValue( 3.0f ) < 0.5f )
+			{
+				me->PressLeftButton();
+			}
+			else
+			{
+				me->PressRightButton();
+			}
 		}
 	}
 
@@ -355,10 +357,10 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			// Consider throwing a grenade
 			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
 			{
+				m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 				Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
 				if ( pGrenadeBehavior )
 				{
-					m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 					return SuspendFor( pGrenadeBehavior, "Throwing grenade before chasing threat!" );
 				}
 			}
@@ -430,6 +432,17 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			CNEOBotPathUpdateChase( me, m_chasePath, threat->GetEntity(), DEFAULT_ROUTE );
 		}
 	}
+
+	return Continue();
+}
+
+
+//---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotAttack::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
+{
+	m_path.Invalidate();
+	m_chasePath.Invalidate();
+	m_attackCoverArea = nullptr;
 
 	return Continue();
 }

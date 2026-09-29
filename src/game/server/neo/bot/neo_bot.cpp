@@ -537,6 +537,43 @@ void CNEOBot::PressSpecialFireButton(float duration)
 
 
 //-----------------------------------------------------------------------------------------------------
+void CNEOBot::PressJumpButton(float duration)
+{
+	BaseClass::PressJumpButton(duration);
+
+	// A Recon jumping while holding run super jumps, which only ReconConsiderSuperJump checks is safe,
+	// so a jump for anything else (a ledge, a gap, getting unstuck) holds off run for the rest of the tick
+	if (GetClass() == NEO_CLASS_RECON)
+	{
+		m_nPlainJumpTick = gpGlobals->tickcount;
+		ReleaseRunButton();
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+void CNEOBot::PressRunButton(float duration)
+{
+	if (m_nPlainJumpTick == gpGlobals->tickcount)
+	{
+		return;
+	}
+
+	BaseClass::PressRunButton(duration);
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+// Jump with run held, which CNEO_Player turns into a super jump for a Recon
+void CNEOBot::PressSuperJumpButtons()
+{
+	m_nPlainJumpTick = -1;
+	BaseClass::PressJumpButton();
+	BaseClass::PressRunButton();
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 CNEOBot::CNEOBot()
 {
 	m_body = new CNEOBotBody(this);
@@ -607,7 +644,7 @@ void CNEOBot::Spawn()
 	// so that we get correct loadout choices for the class
 	if (m_iNextSpawnClassChoice == NEO_CLASS_RANDOM) 
 	{
-		m_iNeoClass = ChooseRandomClass();
+		SetClass(ChooseRandomClass()); // also refreshes the team's class counts
 	}
 	else if (m_iNeoClass != m_iNextSpawnClassChoice)
 	{
@@ -619,6 +656,7 @@ void CNEOBot::Spawn()
 	BaseClass::Spawn();
 
 	m_spawnArea = NULL;
+	m_suppressiveFire.Reset();
 	m_justLostPointTimer.Invalidate();
 	m_squad = NULL;
 	m_didReselectClass = false;
@@ -817,6 +855,7 @@ void CNEOBot::AvoidPlayers(CUserCmd* pCmd)
 void CNEOBot::UpdateOnRemove(void)
 {
 	StopIdleSound();
+	CNEOBotPathReservations()->ReleaseAllAreas(this);
 
 	BaseClass::UpdateOnRemove();
 }
@@ -1144,14 +1183,16 @@ void CNEOBot::OnWeaponFired(CBaseCombatCharacter* whoFired, CBaseCombatWeapon* w
 
 	// notice the gunfire
 	GetVisionInterface()->AddKnownEntity(whoFired);
+	// mark imprecise location for blind fire
+	m_suppressiveFire.OnHeardGunfire(this, whoFired);
 }
 
 
 //-----------------------------------------------------------------------------------------------------
-class CFindClosestPotentiallyVisibleAreaToPos
+class CNEOFindClosestPotentiallyVisibleAreaToPos
 {
 public:
-	CFindClosestPotentiallyVisibleAreaToPos(const Vector& pos)
+	CNEOFindClosestPotentiallyVisibleAreaToPos(const Vector& pos)
 	{
 		m_pos = pos;
 		m_closeArea = NULL;
@@ -1179,6 +1220,34 @@ public:
 	CNavArea* m_closeArea;
 	float m_closeRangeSq;
 };
+
+
+//-----------------------------------------------------------------------------------------------------
+Vector CNEOBot::FindVisibleThrowPointNear( const Vector &vecPos ) const
+{
+	CNavArea *myArea = GetLastKnownArea();
+	if ( !myArea )
+	{
+		return vec3_invalid;
+	}
+
+	CNEOFindClosestPotentiallyVisibleAreaToPos find( vecPos );
+	myArea->ForAllPotentiallyVisibleAreas( find );
+	if ( !find.m_closeArea )
+	{
+		return vec3_invalid;
+	}
+
+	Vector vecPoint;
+	find.m_closeArea->GetClosestPointOnArea( vecPos, &vecPoint );
+	if ( IsThrowLineClear( vecPoint ) )
+	{
+		return vecPoint;
+	}
+
+	const Vector &vecCenter = find.m_closeArea->GetCenter();
+	return IsThrowLineClear( vecCenter ) ? vecCenter : vec3_invalid;
+}
 
 
 //-----------------------------------------------------------------------------------------------------
@@ -1255,7 +1324,7 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 			if (myArea)
 			{
 				const CNavArea* closeArea = NULL;
-				CFindClosestPotentiallyVisibleAreaToPos find(known->GetLastKnownPosition());
+				CNEOFindClosestPotentiallyVisibleAreaToPos find(known->GetLastKnownPosition());
 				myArea->ForAllPotentiallyVisibleAreas(find);
 
 				closeArea = find.m_closeArea;
@@ -2036,6 +2105,24 @@ bool CNEOBot::IsLineOfFireClear(const Vector& where, const LineOfFireFlags flags
 
 
 //-----------------------------------------------------------------------------------------------------
+// Return true if a thrown object (like a grenade) has a completely unobstructed physical line to the target.
+// Unlike IsLineOfFireClear, this requires !trace.DidHit() and will NOT treat breakable entities (like glass) as clear.
+bool CNEOBot::IsThrowLineClear(const Vector& from, const Vector& to) const
+{
+	trace_t trace;
+	NextBotTraceFilterIgnoreActors filter(NULL, COLLISION_GROUP_NONE);
+	UTIL_TraceLine(from, to, MASK_SHOT, &filter, &trace);
+	return !trace.DidHit();
+}
+
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::IsThrowLineClear(const Vector& where) const
+{
+	return IsThrowLineClear(const_cast<CNEOBot*>(this)->EyePosition(), where);
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 // Return whether there is a friendly player blocking the line of fire
 bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const
 {
@@ -2085,6 +2172,61 @@ bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to
 		}
 	}
 	return true;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) const
+{
+	if (!NEORules()->IsTeamplay())
+	{
+		return false;
+	}
+
+	// A player hull is 32 u wide, the rest is room for spread and for the teammate moving
+	constexpr float clearance = 48.0f;
+	constexpr float lookAheadTime = 0.1f;
+
+	Vector line = to - from;
+	const float lineLength = line.NormalizeInPlace();
+
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		CBasePlayer* mate = UTIL_PlayerByIndex(i);
+		if (!mate || mate == this || !mate->IsAlive() || !IsFriend(mate))
+		{
+			continue;
+		}
+
+		const Vector matePos = mate->WorldSpaceCenter();
+		for (const Vector& pos : { matePos, matePos + mate->GetAbsVelocity() * lookAheadTime })
+		{
+			const Vector toMate = pos - from;
+			const float along = DotProduct(toMate, line);
+			if (along < clearance)
+			{
+				continue; // behind or beside the muzzle, not in front of it
+			}
+
+			if ((toMate - line * Min(along, lineLength)).IsLengthLessThan(clearance))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::IsFriendlyNearBarrel(float range) const
+{
+	CNEOBot* me = const_cast<CNEOBot*>(this);
+	Vector forward;
+	me->EyeVectors(&forward);
+	const Vector eyes = me->EyePosition();
+	return IsFriendlyNearLineOfFire(eyes, eyes + forward * range);
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -2734,6 +2876,14 @@ bool CNEOBot::IsEnemy(const CBaseEntity* them) const
 }
 
 
+// For disabling erratic movements like strafing where one wrong step could move a bot off a cliff
+// Also useful for navigating areas that require precision to navigate like obstructed pathways
+bool CNEOBot::IsOnPreciseArea() const
+{
+	const CNavArea *area = GetLastKnownArea();
+	return area && area->HasAttributes( NAV_MESH_PRECISE | NAV_MESH_CLIFF );
+}
+
 bool CNEOBot::IsBotOnLadder() const
 {
 	ILocomotion* mover = GetLocomotionInterface();
@@ -2807,13 +2957,19 @@ NeoClass CNEOBot::ChooseRandomClass() const
 		return NEO_CLASS_ASSAULT;
 	}
 
+	// On a respawn the team's count still holds this bot in its current class,
+	// so that class is only full for it when the count is over the limit, not at it
+	const auto isClassFull = [this, team](int neoClass) {
+		return (GetClass() == neoClass) ? team->IsClassOverThreshold(neoClass) : team->IsClassFull(neoClass);
+	};
+
 	bool bValidClasses[NEO_CLASS__ENUM_COUNT] = {};
 	int iClassCounts = 0;
 	for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
 	{
 		bValidClasses[i] = (m_profile.flagClass & (1 << i));
 		// Check class limits
-		if (bValidClasses[i] && team->IsClassFull(i))
+		if (bValidClasses[i] && isClassFull(i))
 		{
 			bValidClasses[i] = false;
 		}
@@ -2828,7 +2984,7 @@ NeoClass CNEOBot::ChooseRandomClass() const
 		// If all profile classes are full/banned, allow any class that isn't full
 		for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
 		{
-			if (!team->IsClassFull(i))
+			if (!isClassFull(i))
 			{
 				bValidClasses[i] = true;
 				++iClassCounts;
