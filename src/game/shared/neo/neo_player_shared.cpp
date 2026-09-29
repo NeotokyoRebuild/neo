@@ -367,7 +367,6 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	if (!sv_footsteps.GetFloat())
 		return false;
 
-	const Vector& absOrigin = GetAbsOrigin();
 	const Vector& absVel = GetAbsVelocity();
 	const float speed = absVel.Length();
 	if (pSpeed) *pSpeed = speed;
@@ -388,8 +387,6 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	// You must be moving fast enough
 	if (!moving_fast_enough || !(isOnLadder || (onground && movingalongground)))
 		return false;
-
-	const bool bWalking = speed < velrun && !IsSprinting();
 
 	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
 	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
