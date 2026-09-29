@@ -342,7 +342,7 @@ public:
 	void CheckChatCommand(CNEO_Player *pNeoPlayer, const char *pSzChat);
 	ReadyPlayers FetchReadyPlayers() const;
 	CUtlHashtable<AccountID_t> m_readyAccIDs;
-	bool m_bIgnoreOverThreshold = false;
+	bool m_bForceLive = false;
 	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
 
 	void CheckGameType();
