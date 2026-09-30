@@ -3413,12 +3413,6 @@ void CNEORules::RestartGame()
 	}
 	FireLegacyEvent_NeoRoundStart();
 
-	if (!IsFinite(m_flGameStartTime.Get()))
-	{
-		Warning("Trying to set a NaN game start time\n");
-		m_flGameStartTime.GetForModify() = 0.0f;
-	}
-
 	CleanUpMap();
 
 	// now respawn all players
