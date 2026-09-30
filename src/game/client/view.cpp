@@ -162,12 +162,13 @@ void SwCursorHack_RestoreValue()
 	if (!enabled && (enabledBits & ESoftwareCursor::EnabledForWindowsInvertedMouseOnly))
 	{
 		int cursorType;
+		// This can fail if the user has no such accessibility registry entry set,
+		// in which case we assume their OS cursor is standard.
 		if (vgui::system()->GetRegistryInteger(R"(HKEY_CURRENT_USER\Software\Microsoft\Accessibility\CursorType)", cursorType))
 		{
 			constexpr int cursorTypeStandard = 0;
 			enabled = (cursorType != cursorTypeStandard);
 		}
-		else Assert(false);
 	}
 #endif
 	vgui::surface()->SetSoftwareCursor(enabled || UseVR());
