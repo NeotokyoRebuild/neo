@@ -117,7 +117,11 @@ void ClientKill( edict_t *pEdict, const Vector &vecForce, bool bExplode = false 
 	pPlayer->CommitSuicide( vecForce, bExplode );
 }
 
+#ifdef NEO
+char * CheckChatText( CBasePlayer *pPlayer, char *text, bool bStripQuotes = true )
+#else
 char * CheckChatText( CBasePlayer *pPlayer, char *text )
+#endif
 {
 	char *p = text;
 
@@ -128,7 +132,13 @@ char * CheckChatText( CBasePlayer *pPlayer, char *text )
 	int length = Q_strlen( text );
 
 	// remove quotes (leading & trailing) if present
+#ifdef NEO
+	// Only strip the pair the client wraps the message in, so a message that
+	// itself starts with a quote keeps its first and last characters
+	if (bStripQuotes && length >= 2 && p[0] == '"' && p[length - 1] == '"')
+#else
 	if (*p == '"')
+#endif
 	{
 		p++;
 		length -=2;
@@ -241,7 +251,11 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 											// chat text is capped to 127 in CheckChatText above
 
 		// make sure the text has valid content
+#ifdef NEO
+		p = CheckChatText( pPlayer, p, false );
+#else
 		p = CheckChatText( pPlayer, p );
+#endif
 
 		if ( !p )
 			return;
