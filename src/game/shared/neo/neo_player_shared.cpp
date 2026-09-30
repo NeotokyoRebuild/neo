@@ -884,3 +884,62 @@ bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, tra
 
 	return true;
 }
+
+bool CNEO_Player::IsAllowedToSuperJump()
+{
+	// NEOJANK: Bots are exempt from certain checks due to their their erratic input control
+	if (!IsBot())
+	{
+		if (!IsSprinting())
+			return false;
+	}
+
+	if (IsCarryingGhost())
+		return false;
+
+	if (GetMoveParent())
+		return false;
+
+	if (IsAirborne())
+		return false;
+
+	if (GetWaterLevel() > WL_Feet)
+		return false;
+
+	// Only superjump if we have a reasonable jump direction in mind
+	// NEO TODO (Rain): should we support sideways superjumping?
+	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
+	{
+		return false;
+	}
+
+	if (SuitPower_GetCurrentPercentage() < SUPER_JMP_COST)
+		return false;
+
+	return true;
+}
+
+// BaseClass::Spawn sets FL_ONGROUND for us, which is convenient but not guaranteed correct,
+// for example if spawning in/above a body of water. This matters especially for the recon
+// superjump validity check. So let's check if we've actually got a ground or not.
+// Another case that goes out of whack without this fixup is being able to superjump mid-air
+// when spawning into a warmup/non-freezetime'd match, before hitting the floor for the first time.
+void CNEO_Player::FixupOnGroundFlag()
+{
+	// Assert that the client side baseclass doesn't do this (and therefore we need do nothing for it)
+	Assert((GetFlags() & FL_ONGROUND) == IsServer());
+#ifdef GAME_DLL
+	if (GetTeamNumber() < FIRST_GAME_TEAM) // if it's not a player, don't bother
+		return;
+	const Vector& start = GetAbsOrigin();
+	constexpr float offset = -2; // same value as CGameMovement::CategorizePosition flOffset
+	Vector end(start.x, start.y, start.z + offset);
+	Ray_t ray;
+	ray.Init(start, end, GetPlayerMins(), GetPlayerMaxs());
+	trace_t	trace;
+	UTIL_TraceRay(ray, MASK_PLAYERSOLID, this, COLLISION_GROUP_PLAYER_MOVEMENT, &trace);
+	const bool foundGround = trace.DidHit();
+	if (!foundGround)
+		RemoveFlag(FL_ONGROUND); // not actually on ground, remove it!
+#endif
+}
