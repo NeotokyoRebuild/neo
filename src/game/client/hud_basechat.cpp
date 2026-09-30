@@ -1600,11 +1600,7 @@ void CBaseHudChatLine::InsertAndColorizeText( wchar_t *buf, int clientIndex )
 		m_textRanges.AddToTail(range);
 
 		range.start = range.end;
-#ifdef NEO
 		range.end = narrow_cast<decltype(range.end)>(wcslen(m_text));
-#else
-		range.end = wcslen(m_text);
-#endif
 		range.color = pChat->GetTextColorForClient(COLOR_NORMAL, clientIndex);
 		m_textRanges.AddToTail(range);
 	}
