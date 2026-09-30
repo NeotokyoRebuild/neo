@@ -3393,12 +3393,6 @@ void CNEORules::ResetJGR()
 
 void CNEORules::RestartGame()
 {
-	// bounds check
-	if (mp_timelimit.GetInt() < 0)
-	{
-		mp_timelimit.SetValue(0);
-	}
-
 	m_flGameStartTime = gpGlobals->curtime;
 
 	IGameEvent* event = gameeventmanager->CreateEvent("round_start");
