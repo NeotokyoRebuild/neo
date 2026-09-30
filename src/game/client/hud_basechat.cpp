@@ -1592,25 +1592,11 @@ void CBaseHudChatLine::InsertAndColorizeText( wchar_t *buf, int clientIndex )
 		TextRange range;
 		range.start = 0;
 		range.end = m_iNameStart;
-
-		constexpr bool useCustomColor = false;
-		if constexpr (useCustomColor)
-		{
-			if (g_PR)
-			{
-				range.color = pChat->GetTextColorForClient(COLOR_CUSTOM, clientIndex);
-				m_textRanges.AddToTail(range);
-			}
-			else
-			{
-				range.color = pChat->GetTextColorForClient(COLOR_NORMAL, clientIndex);
-				m_textRanges.AddToTail(range);
-			}
-		}
+		range.color = pChat->GetTextColorForClient(COLOR_PLAYERNAME, clientIndex);
+		m_textRanges.AddToTail(range);
 
 		range.start = m_iNameStart;
 		range.end = m_iNameStart + m_iNameLength;
-		range.color = pChat->GetTextColorForClient(COLOR_PLAYERNAME, clientIndex);
 		m_textRanges.AddToTail(range);
 
 		range.start = range.end;
