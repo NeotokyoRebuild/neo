@@ -200,6 +200,7 @@ public:
 
 	virtual void StartWalking(void) OVERRIDE;
 	virtual void StopWalking(void) OVERRIDE;
+	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
 
 	// Cloak Power Interface
 	float CloakPower_Get(void) const ;

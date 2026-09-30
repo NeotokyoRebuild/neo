@@ -184,6 +184,7 @@ public:
 	virtual void InitSprinting( void );
 	virtual bool CanSprint( void );
 	virtual void EnableSprint( bool bEnable);
+	inline bool IsSprinting() const { return m_fIsSprinting; }
 #else
 	void StartAutoSprint( void );
 	void StartSprinting( void );
@@ -191,8 +192,8 @@ public:
 	void InitSprinting( void );
 	bool CanSprint( void );
 	void EnableSprint( bool bEnable);
-#endif
 	bool IsSprinting(void) { return m_fIsSprinting; }
+#endif
 
 
 	bool CanZoom( CBaseEntity *pRequester );
@@ -206,11 +207,12 @@ public:
 #ifdef NEO
 	virtual void StartWalking( void );
 	virtual void StopWalking( void );
+	inline bool IsWalking() const { return m_fIsWalking; }
 #else
 	void StartWalking( void );
 	void StopWalking( void );
-#endif
 	bool IsWalking( void ) { return m_fIsWalking; }
+#endif
 
 	// Aiming heuristics accessors
 	virtual float		GetIdleTime( void ) const { return ( m_flIdleTime - m_flMoveTime ); }

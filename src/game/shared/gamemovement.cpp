@@ -2252,6 +2252,14 @@ void CGameMovement::FullWalkMove( )
 	if  ( ( m_nOldWaterLevel == WL_NotInWater && player->GetWaterLevel() != WL_NotInWater ) ||
 		  ( m_nOldWaterLevel != WL_NotInWater && player->GetWaterLevel() == WL_NotInWater ) )
 	{
+#ifdef NEO
+		// Don't splash if the player is stealthily entering/exiting the water plane
+		if ((player->GetFlags() & FL_ONGROUND) &&
+			!assert_cast<CNEO_Player*>(player)->IsMakingFootstepSounds())
+		{
+			return;
+		}
+#endif
 		PlaySwimSound();
 #ifdef NEO
 		player->Splash();

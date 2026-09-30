@@ -128,11 +128,12 @@ public:
 #ifdef NEO
 	virtual void StartWalking( void );
 	virtual void StopWalking( void );
+	inline bool IsWalking() const { return m_fIsWalking; }
 #else
 	void StartWalking( void );
 	void StopWalking( void );
-#endif
 	bool IsWalking( void ) { return m_fIsWalking; }
+#endif
 
 	virtual void PostThink( void );
 
