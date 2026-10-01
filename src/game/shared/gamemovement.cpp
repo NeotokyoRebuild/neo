@@ -96,7 +96,7 @@ extern IGameMovement *g_pGameMovement;
 // If you ever get stuck walking around, then you can run this code to find the code which would leave the player in a bad spot
 void CMoveData::SetAbsOrigin( const Vector &vec )
 {
-	CGameMovement *gm = dynamic_cast< CGameMovement * >( g_pGameMovement );
+	CGameMovement *gm = dynamic_cast< CGameMovement * >( t );
 	if ( gm && gm->GetMoveData() &&
 		 gm->player &&
 		 gm->player->entindex() == 1 &&
@@ -1648,11 +1648,24 @@ void CGameMovement::StepMove( Vector &vecDestination, trace_t &trace )
 	}
 }
 
+#ifdef NEO
+ConVar sv_neo_slidefriction("sv_neo_slidefriction", "0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Crouch slide friction.", true, 0, false, 0);
+ConVar sv_neo_slidetime_gain("sv_neo_slidetime_gain", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Slide time gain per second.", true, 0, true, 10);
+ConVar sv_neo_slidetime_max("sv_neo_slidetime_max", "2", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max slide time.", true, 0, true, 10);
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
 void CGameMovement::Friction( void )
 {
+#ifdef NEO
+	Friction(gpGlobals->frametime);
+}
+
+void CGameMovement::Friction( float frametime )
+{
+#endif
 	float	speed, newspeed, control;
 	float	friction;
 	float	drop;
@@ -1675,7 +1688,19 @@ void CGameMovement::Friction( void )
 	// apply ground friction
 	if (player->GetGroundEntity() != NULL)  // On an entity that is the ground
 	{
+#ifdef NEO
+       auto neoplayer = ToNEOPlayer(player);
+       if (player->m_Local.m_bDucked && neoplayer->m_HL2Local.m_slideTime > 0.0f)
+       {
+            friction = sv_neo_slidefriction.GetFloat() * player->m_surfaceFriction;
+       }
+       else
+       {
+            friction = sv_friction.GetFloat() * player->m_surfaceFriction;
+       }
+#else
 		friction = sv_friction.GetFloat() * player->m_surfaceFriction;
+#endif
 
 		// Bleed off some speed, but if we have less than the bleed
 		//  threshold, bleed the threshold amount.
@@ -1701,7 +1726,11 @@ void CGameMovement::Friction( void )
 		}
 
 		// Add the amount to the drop amount.
+#ifdef NEO
+		drop += control*friction*frametime;
+#else
 		drop += control*friction*gpGlobals->frametime;
+#endif
 	}
 
 	// scale the velocity
@@ -1721,10 +1750,11 @@ void CGameMovement::Friction( void )
 }
 
 #ifdef NEO
-ConVar	sv_airfriction("sv_neo_airfriction", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Air friction.", true, 0, false, 0);
-ConVar	sv_airfriction_objective("sv_neo_airfriction_objective", "0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Air friction for ghost carrier, VIP and juggernaut.", true, 0, false, 0);
-ConVar	sv_airstopspeed("sv_neo_airstopspeed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum stopping speed when in the air.", true, 0, false, 0);
-ConVar	sv_jumpbuffer("sv_neo_jumpbuffer", "0", FCVAR_NOTIFY | FCVAR_REPLICATED | FCVAR_CHEAT, "Allow Quake style jump buffering.", true, 0, true, 1);
+ConVar sv_neo_airfriction("sv_neo_airfriction", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Air friction.", true, 0, false, 0);
+ConVar sv_neo_airfriction_objective("sv_neo_airfriction_objective", "0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Air friction for ghost carrier, VIP and juggernaut.", true, 0, false, 0);
+ConVar sv_neo_airstopspeed("sv_neo_airstopspeed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum stopping speed when in the air.", true, 0, false, 0);
+ConVar sv_neo_jumpbuffer("sv_neo_jumpbuffer", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allow Quake style jump buffering.", true, 0, true, 1);
+ConVar sv_neo_jumpbuffer_penalty("sv_neo_jumpbuffer_penalty", "0.05", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum penalty for an early buffered jump", true, 0, true, 1);
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -1753,11 +1783,11 @@ void CGameMovement::AirFriction( void )
 	drop = 0;
 
 	// apply air friction
-	friction = neoplayer->IsObjective() ? sv_airfriction_objective.GetFloat() : sv_airfriction.GetFloat();
+	friction = neoplayer->IsObjective() ? sv_neo_airfriction_objective.GetFloat() : sv_neo_airfriction.GetFloat();
 
 	// Bleed off some speed, but if we have less than the bleed
 	// threshold, bleed the threshold amount.
-	control = (overspeed < sv_airstopspeed.GetFloat()) ? sv_airstopspeed.GetFloat() : overspeed;
+	control = (overspeed < sv_neo_airstopspeed.GetFloat()) ? sv_neo_airstopspeed.GetFloat() : overspeed;
 
 	// Add the amount to the drop amount.
 	drop += control*friction*gpGlobals->frametime;
@@ -1802,6 +1832,13 @@ void CGameMovement::FinishGravity( void )
 
 	CheckVelocity();
 }
+
+#ifdef NEO
+ConVar sv_neo_maxairspeed("sv_neo_maxairspeed", "30", FCVAR_NOTIFY | FCVAR_REPLICATED);
+float CGameMovement::GetAirSpeedCap() {
+	return sv_neo_maxairspeed.GetFloat();
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -2196,10 +2233,14 @@ void CGameMovement::FullWalkMove( )
 		// Was jump button pressed?
 		if (mv->m_nButtons & IN_JUMP)
 		{
- 			CheckJumpButton();
+			CheckJumpButton();
 		}
 		else
 		{
+#ifdef NEO
+			auto neoPlayer = static_cast<CNEO_Player*>(player);
+			neoPlayer->m_HL2Local.m_jumpHeldTime = 0;
+#endif
 			mv->m_nOldButtons &= ~IN_JUMP;
 		}
 
@@ -2516,8 +2557,7 @@ void CGameMovement::PlaySwimSound()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CGameMovement::CheckJumpButton( void )
-{
+bool CGameMovement::CheckJumpButton( void ) {
 	if (player->pl.deadflag)
 	{
 		mv->m_nOldButtons |= IN_JUMP ;	// don't jump again until released
@@ -2556,12 +2596,17 @@ bool CGameMovement::CheckJumpButton( void )
 		return false;
 	}
 
+#ifdef NEO
+	auto neoPlayer = static_cast<CNEO_Player*>(player);
+#endif
+
 	// No more effect
- 	if (player->GetGroundEntity() == NULL)
+	if (player->GetGroundEntity() == NULL)
 	{
 #ifdef NEO
-		if (sv_jumpbuffer.GetBool())
+		if (sv_neo_jumpbuffer.GetBool())
 		{
+			neoPlayer->m_HL2Local.m_jumpHeldTime = Min(neoPlayer->m_HL2Local.m_jumpHeldTime + gpGlobals->frametime, sv_neo_jumpbuffer_penalty.GetFloat());
 			if (!(mv->m_nOldButtons & IN_JUMP))
 			{
 				mv->m_nButtons &= ~IN_JUMP;
@@ -2592,6 +2637,12 @@ bool CGameMovement::CheckJumpButton( void )
 	if ( player->m_Local.m_flDuckJumpTime > 0.0f )
 		return false;
 
+#ifdef NEO
+	if (neoPlayer->m_HL2Local.m_jumpHeldTime > 0)
+	{
+		Friction(neoPlayer->m_HL2Local.m_jumpHeldTime);
+	}
+#endif
 
 	// In the air now.
     SetGroundEntity( NULL );
@@ -2624,7 +2675,6 @@ bool CGameMovement::CheckJumpButton( void )
 	}
 #else
 	// NEO JANK: Remember to update NEO_RECON_CROUCH_JUMP_HEIGHT/etc if you change these values.
-	auto neoPlayer = static_cast<CNEO_Player*>(player);
 	if ( g_bMovementOptimizations )
 	{
 		switch (neoPlayer->GetClass())
@@ -2657,6 +2707,7 @@ bool CGameMovement::CheckJumpButton( void )
 	}
 	neoPlayer->DoAnimationEvent(PLAYERANIMEVENT_JUMP);
 	neoPlayer->m_flJumpLastTime = gpGlobals->curtime;
+	neoPlayer->m_HL2Local.m_slideTime = 0.0f;
 #endif
 
 	// Acclerate upward

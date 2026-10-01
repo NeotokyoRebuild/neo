@@ -15,6 +15,8 @@ BEGIN_RECV_TABLE_NOBASE( C_HL2PlayerLocalData, DT_HL2Local )
 	RecvPropFloat( RECVINFO(m_flSuitPower) ),
 #ifdef NEO
 	RecvPropFloat(RECVINFO(m_cloakPower)),
+	RecvPropFloat(RECVINFO(m_slideTime)),
+	RecvPropFloat(RECVINFO(m_jumpHeldTime)),
 #endif
 	RecvPropFloat( RECVINFO(m_flSuitPowerLoad) ),
 	RecvPropFloat( RECVINFO(m_flTimeAllSuitDevicesOff) ),
@@ -59,6 +61,8 @@ C_HL2PlayerLocalData::C_HL2PlayerLocalData()
 	m_flSuitPower = 0.0;
 #ifdef NEO
 	m_cloakPower = 0.0;
+	m_slideTime = 0.0;
+	m_jumpHeldTime = 0.0;
 #endif
 	m_flSuitPowerLoad = 0.0f;
 	m_flTimeAllSuitDevicesOff = 0.0f;
