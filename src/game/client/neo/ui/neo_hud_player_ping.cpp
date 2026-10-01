@@ -134,7 +134,7 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 
 		const Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 		bool ghosterPing = event->GetBool("ghosterping");
-		const char* placeName = event->GetString("place");
+		const char* placeName = event->GetString("placename");
 		SetPos(playerIndex - 1, playerTeam, worldpos, ghosterPing, placeName);
 	}
 	else if (!Q_stricmp(eventName, "round_start"))

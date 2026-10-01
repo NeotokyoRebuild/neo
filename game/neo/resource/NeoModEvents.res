@@ -89,6 +89,7 @@
 		"pingy"			"short"		// ping y position
 		"pingz"			"short"		// ping z position
 		"ghosterping"	"bool"		// the player is carrying the ghost
+		"placename"		"string"	// nav place name of the pinged location (may be empty "" string)
 	}
 	
 	"ghost_enemy_callout"
