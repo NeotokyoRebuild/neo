@@ -854,9 +854,8 @@ CNavArea *CNavMesh::GetNavArea( CBaseEntity *pEntity, int nFlags, float flBeneat
  * @todo Make sure area is not on the other side of the wall from goal.
  */
 #ifdef NEO
-template <typename F>
 CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDist, bool checkLOS, bool checkGround, int team,
-	F&& ignorePredicate ) const
+	std::function<bool(const CNavArea*)> ignorePredicate ) const
 #else
 CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDist, bool checkLOS, bool checkGround, int team ) const
 #endif

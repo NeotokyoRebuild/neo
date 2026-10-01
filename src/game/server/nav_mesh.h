@@ -37,6 +37,10 @@ extern ConVar nav_quicksave;
 extern ConVar nav_show_approach_points;
 extern ConVar nav_show_danger;
 
+#ifdef NEO
+#include <functional>
+#endif
+
 //--------------------------------------------------------------------------------------------------------
 class NavAreaCollector
 {
@@ -335,9 +339,8 @@ public:
 	CNavArea *GetNavArea( CBaseEntity *pEntity, int nGetNavAreaFlags, float flBeneathLimit = 120.0f ) const;
 	CNavArea *GetNavAreaByID( unsigned int id ) const;
 #ifdef NEO
-	template <typename F = bool(*)(const CNavArea*)>
 	CNavArea *GetNearestNavArea( const Vector &pos, bool anyZ = false, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = TEAM_ANY,
-		F&& ignorePredicate = nullptr ) const;
+		std::function<bool(const CNavArea*)> ignorePredicate = nullptr) const;
 #else
 	CNavArea *GetNearestNavArea( const Vector &pos, bool anyZ = false, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = TEAM_ANY ) const;
 #endif
