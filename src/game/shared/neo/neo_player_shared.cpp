@@ -199,14 +199,9 @@ void CheckPingButton(CNEO_Player* player)
 			if (actualNavAreaOfPing && nearestNamedNavAreaOfPing)
 			{
 				const bool pingPlaceNameIsExact = (actualNavAreaOfPing == nearestNamedNavAreaOfPing);
+				event->SetBool("exactplace", pingPlaceNameIsExact);
+
 				const char* placeName = TheNavMesh->PlaceToName(nearestNamedNavAreaOfPing->GetPlace());
-				if (!pingPlaceNameIsExact)
-				{
-					constexpr const char nearPhrase[] = "near ";
-					char placeFmtBuf[ARRAYSIZE(nearPhrase) - 1 + MAX_PLACE_NAME_LENGTH];
-					V_sprintf_safe(placeFmtBuf, "%s%s", nearPhrase, placeName);
-					placeName = &placeFmtBuf[0];
-				}
 				event->SetString("placename", placeName);
 			}
 		}
