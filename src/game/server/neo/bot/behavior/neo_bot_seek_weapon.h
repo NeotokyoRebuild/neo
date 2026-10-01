@@ -46,5 +46,7 @@ private:
 	CountdownTimer m_repathTimer;
 	CountdownTimer m_giveUpTimer;
 
+	bool PathToTargetWeapon( CNEOBot *me );
 	CBaseEntity *FindAndPathToWeapon( CNEOBot *me );
+	void IgnoreTargetWeapon( void );
 };
