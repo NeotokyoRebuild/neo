@@ -307,13 +307,15 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			m_stuckTimer.Start( STUCK_CHECK_INTERVAL );
 		}
 
-		// Early jump-off
+		// Early jump-off. Going down, only once a standing height below the top: from any higher, the
+		// kick towards the exit lands the bot back on the floor the descent started from.
 		bool bWantsDismount = false;
 		if ( m_pExitArea )
 		{
 			float zDistToExit = currentZ - m_exitAreaCenter.z;
+			const bool bBelowTopFloor = m_bGoingUp || currentZ < m_ladder->m_top.z - body->GetStandHullHeight();
 
-			if ( zDistToExit > 0.0f && zDistToExit <= SAFE_FALL_DIST )
+			if ( zDistToExit > 0.0f && zDistToExit <= SAFE_FALL_DIST && bBelowTopFloor )
 			{
 				bWantsDismount = true;
 			}
