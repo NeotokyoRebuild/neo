@@ -173,13 +173,10 @@ void CheckPingButton(CNEO_Player* player)
 		event->SetBool("ghosterping", player->IsCarryingGhost() || player->m_iNeoClass == NEO_CLASS_VIP);
 #ifdef GAME_DLL
 		if (const auto navArea = TheNavMesh ? TheNavMesh->GetNavArea(tr.endpos) : nullptr; navArea)
-			event->SetString("place", TheNavMesh->PlaceToName(navArea->GetPlace()));
-		else
-			event->SetString("place", "");
+			event->SetString("placename", TheNavMesh->PlaceToName(navArea->GetPlace()));
 
 		gameeventmanager->FireEvent(event);
 #else
-		event->SetString("place", "");
 		gameeventmanager->FireEventClientSide(event);
 #endif // GAME_DLL
 		constexpr float NEO_PING_DELAY = 2.f;
