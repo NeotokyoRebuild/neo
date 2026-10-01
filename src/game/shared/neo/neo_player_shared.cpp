@@ -175,38 +175,25 @@ void CheckPingButton(CNEO_Player* player)
 #ifdef GAME_DLL
 		if (TheNavMesh)
 		{
-			const auto fnGetNearbyNavArea = [](const Vector& pingPos, const bool requireAreaBeNamed)->CNavArea* {
+			const auto fnGetNearbyNavArea = [](const Vector& pingPos, const float maxDist, const bool requireAreaBeNamed)->CNavArea* {
 				Assert(TheNavMesh);
 				constexpr bool anyZ = true;
-				constexpr float maxDist = 10000; // lax because outdoor areas can be *big* - we can call it "near <areaname>" to alleviate ambiguity
 				constexpr bool checkLOS = false;
 				constexpr bool checkGround = false;
 				constexpr int team = TEAM_ANY;
 				const auto ignorePredicate = [requireAreaBeNamed](const CNavArea* area)->bool {
-					return requireAreaBeNamed && !area || !TheNavMesh->PlaceToName(area->GetPlace());
+					return requireAreaBeNamed && (!area || !TheNavMesh->PlaceToName(area->GetPlace()));
 					};
 				return TheNavMesh->GetNearestNavArea(pingPos, anyZ, maxDist, checkLOS, checkGround, team, ignorePredicate);
 				};
 
-			const auto actualNavAreaOfPing = fnGetNearbyNavArea(tr.endpos, false);
-			const auto nearestNamedNavAreaOfPing = !actualNavAreaOfPing ? nullptr : fnGetNearbyNavArea(tr.endpos, true);
-			const auto nearestNamedNavAreaOfPinger = !nearestNamedNavAreaOfPing ? nullptr : fnGetNearbyNavArea(eyePosition, true);
+			const auto actualNavAreaOfPing = fnGetNearbyNavArea(tr.endpos, 1024, false);
+			const auto nearestNamedNavAreaOfPing = !actualNavAreaOfPing ? nullptr : fnGetNearbyNavArea(tr.endpos, 1024*10, true);
 
-			if (actualNavAreaOfPing && nearestNamedNavAreaOfPing && nearestNamedNavAreaOfPinger)
+			if (actualNavAreaOfPing && nearestNamedNavAreaOfPing)
 			{
 				const bool pingPlaceNameIsExact = (actualNavAreaOfPing == nearestNamedNavAreaOfPing);
-
-				const char* placeName = nullptr;
-				const auto fun = [&placeName](const CNavArea* area)->void {
-					Assert(area);
-					if (!placeName) // can't bail from the enumeration so just guard this assignment
-					{
-						placeName = TheNavMesh->PlaceToName(area->GetPlace());
-						AssertMsg(!placeName || *placeName, "placename is !null empty string; probably a mistake(?)");
-					}
-					};
-				TheNavMesh->ForAllAreasAlongLine(fun, nearestNamedNavAreaOfPing, nearestNamedNavAreaOfPinger);
-
+				const char* placeName = TheNavMesh->PlaceToName(nearestNamedNavAreaOfPing->GetPlace());
 				if (!pingPlaceNameIsExact)
 				{
 					constexpr const char nearPhrase[] = "near ";
@@ -214,7 +201,6 @@ void CheckPingButton(CNEO_Player* player)
 					V_sprintf_safe(placeFmtBuf, "%s%s", nearPhrase, placeName);
 					placeName = &placeFmtBuf[0];
 				}
-
 				event->SetString("placename", placeName);
 				DevMsg("Place name: %s\n", placeName);
 			}
