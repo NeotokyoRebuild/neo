@@ -853,7 +853,12 @@ CNavArea *CNavMesh::GetNavArea( CBaseEntity *pEntity, int nFlags, float flBeneat
  * Used to find initial area if we start off of the mesh.
  * @todo Make sure area is not on the other side of the wall from goal.
  */
+#ifdef NEO
+CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDist, bool checkLOS, bool checkGround, int team,
+	bool(*ignorePredicate)(const CNavArea*) ) const
+#else
 CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDist, bool checkLOS, bool checkGround, int team ) const
+#endif
 {
 	VPROF_BUDGET( "CNavMesh::GetNearestNavArea", "NextBot" );
 
@@ -869,6 +874,9 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDi
 		close = GetNavArea( pos );
 		if ( close )
 		{
+#ifdef NEO
+			if (!ignorePredicate || !ignorePredicate(close))
+#endif
 			return close;
 		}
 	}
@@ -954,6 +962,11 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDi
 					// mark as visited
 					area->m_nearNavSearchMarker = searchMarker;
 
+#ifdef NEO
+					if (ignorePredicate && ignorePredicate(area))
+						continue;
+#endif
+
 					Vector areaPos;
 					area->GetClosestPointOnArea( source, &areaPos );
 
@@ -1030,7 +1043,9 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDi
 			}
 		}
 	}
-
+#ifdef NEO
+	AssertMsg(!ignorePredicate || !ignorePredicate(close), "Result should be ignored but it wasn't");
+#endif
 	return close;
 }
 

@@ -12,6 +12,7 @@ struct playerPing
 	int team;
 	bool noLineOfSight;
 	bool ghosterPing;
+	const char* placeName;
 };
 
 class CNEOHud_PlayerPing : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
@@ -36,8 +37,9 @@ protected:
 private:
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
 	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex);
-	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing);
-	void NotifyPing(const int playerSlot);
+	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing,
+		const char* placeName, bool placeIsExact);
+	void NotifyPing(const int playerSlot, const char* placeName, bool placeIsExact);
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};
