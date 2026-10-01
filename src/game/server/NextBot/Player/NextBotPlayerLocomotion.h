@@ -61,6 +61,7 @@ public:
 	virtual bool IsUsingLadder( void ) const;
 	virtual bool IsAscendingOrDescendingLadder( void ) const;	// we are actually on the ladder right now, either climbing up or down
 	virtual bool IsAbleToAutoCenterOnLadder( void ) const;
+	bool IsForwardDownLadder( const CNavLadder *ladder ) const;	// NEO: would pressing forward move us down this ladder
 
 	virtual void FaceTowards( const Vector &target );		// rotate body to face towards "target"
 
@@ -132,6 +133,7 @@ private:
 	// the two toggle each other until something breaks the loop. See TraverseLadder().
 	bool HandleUnwantedLadder( void );
 	const CNavLadder *FindTouchedLadder( void ) const;
+	Vector GetIntoLadderFace( const CNavLadder *ladder ) const;	// NEO: into the face of the ladder brush we hold
 	float m_unwantedLadderSince;			// when the current bout of unwanted contact began
 	float m_unwantedLadderLastTouch;		// last tick we were on a ladder we did not ask for
 

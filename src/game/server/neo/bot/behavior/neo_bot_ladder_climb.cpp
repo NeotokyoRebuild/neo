@@ -269,6 +269,14 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		float currentZ = myPos.z;
 		float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
 
+		// Going down, the bot holds still until its view makes forward take it down: not a stall
+		const bool bHoldForView = !m_bGoingUp && !me->GetLocomotionInterface()->IsForwardDownLadder( m_ladder );
+		if ( bHoldForView )
+		{
+			m_flLastZ = currentZ;
+			m_stuckTimer.Start( STUCK_CHECK_INTERVAL );
+		}
+
 		// Stuck detection: if we haven't made vertical progress, bail out gracefully
 		if ( m_stuckTimer.IsElapsed() )
 		{
@@ -377,12 +385,25 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		}
 
 
-		// Look at and move to the dismount height, slightly behind the ladder
-		Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
-		lookTarget -= m_ladder->GetNormal() * 50.0f;
-		body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr,
-			m_bGoingUp ? "Climbing up (looking at dismount position)" : "Climbing down (looking at dismount position)" );
-		me->PressForwardButton(0.1f);
+		// A descent the locomotion has claimed is aimed by its DescendLadder(); a second MANDATORY aim
+		// here would hold the view back from it
+		if ( m_bGoingUp || !mover->IsUsingLadder() )
+		{
+			// Look at and move to the dismount height, slightly behind the ladder
+			Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
+			lookTarget -= m_ladder->GetNormal() * 50.0f;
+			body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr,
+				m_bGoingUp ? "Climbing up (looking at dismount position)" : "Climbing down (looking at dismount position)" );
+		}
+
+		if ( bHoldForView )
+		{
+			me->ReleaseForwardButton();
+		}
+		else
+		{
+			me->PressForwardButton(0.1f);
+		}
 	}
 
 	//------------------------------------------------------------

@@ -37,6 +37,10 @@ static const float LADDER_TOUCH_RANGE = 64.0f;
 // A gap longer than this means the bot walked away and came back, so the bout starts over.
 static const float LADDER_CONTACT_RESET = 1.0f;
 
+// NEO: going down a ladder, forward is pressed only once it moves the bot down at least this
+// fraction of the climb speed. Slower than that, the view is still coming round.
+static const float LADDER_MIN_DESCENT_RATE = 0.25f;
+
 //-----------------------------------------------------------------------------------------------------
 PlayerLocomotion::PlayerLocomotion( INextBot *bot ) : ILocomotion( bot )
 {
@@ -176,6 +180,40 @@ bool PlayerLocomotion::HandleUnwantedLadder( void )
 
 
 //-----------------------------------------------------------------------------------------------------
+// NEO: the horizontal direction into the face of the ladder brush we hold. LadderMove() takes whichever
+// face we touched, so a bot that grabbed the ladder from behind holds its back face.
+Vector PlayerLocomotion::GetIntoLadderFace( const CNavLadder *ladder ) const
+{
+	const Vector &normal = ladder->GetNormal();
+	const bool bBehind = DotProduct( GetFeet() - ladder->m_top, normal ) < 0.0f;
+
+	return bBehind ? normal : -normal;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+// NEO: would pressing forward move us down this ladder? LadderMove() turns a push into the face into
+// climbing up, so forward descends only while the view points further down than into the face.
+bool PlayerLocomotion::IsForwardDownLadder( const CNavLadder *ladder ) const
+{
+	Vector view;
+	m_player->EyeVectors( &view );
+
+	// Facing away from the face is no good either: standing on a floor, LadderMove() pushes us off for it
+	const float intoFace = DotProduct( view, GetIntoLadderFace( ladder ) );
+	if ( intoFace < 0.0f )
+	{
+		return false;
+	}
+
+	// The vertical speed a forward press gives, as a fraction of the climb speed
+	const float climbRate = view.z + intoFace;
+
+	return climbRate < -LADDER_MIN_DESCENT_RATE;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 bool PlayerLocomotion::TraverseLadder( void )
 {
 	switch( m_ladderState )
@@ -283,6 +321,13 @@ PlayerLocomotion::LadderState PlayerLocomotion::ApproachDescendingLadder( void )
 	if ( m_ladderInfo == NULL )
 	{
 		return NO_LADDER;
+	}
+
+	// NEO: a bot already on the ladder climbs down it. Steering on towards the mount point presses forward
+	// with the view still level, which climbs it up and off the top; letting go drops it from there.
+	if ( GetBot()->GetEntity()->GetMoveType() == MOVETYPE_LADDER )
+	{
+		return DESCENDING_LADDER;
 	}
 
 	// sanity check - are we already at the end of this ladder?
@@ -416,8 +461,9 @@ PlayerLocomotion::LadderState PlayerLocomotion::DescendLadder( void )
 		return DISMOUNTING_LADDER_BOTTOM;
 	}
 
-	// climb down this ladder - look down 
-	Vector goal = GetFeet() + 100.0f * ( m_ladderInfo->GetNormal() + Vector( 0, 0, -2 ) );
+	// NEO: climb down this ladder - look down into its face (facing away, a bot still on the top floor is
+	// pushed off the ladder the moment it presses forward)
+	Vector goal = GetFeet() + 100.0f * ( GetIntoLadderFace( m_ladderInfo ) + Vector( 0, 0, -2 ) );
 
 	GetBot()->GetBodyInterface()->AimHeadTowards( goal, IBody::MANDATORY, 0.1f, NULL, "Ladder" );
 
@@ -625,7 +671,12 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 	}
 #endif
 
-	if ( m_player->IsOnLadder() && IsUsingLadder() && ( m_ladderState == ASCENDING_LADDER || m_ladderState == DESCENDING_LADDER ) )
+	if ( m_player->IsOnLadder() && m_ladderState == DESCENDING_LADDER && m_ladderInfo && !IsForwardDownLadder( m_ladderInfo ) )
+	{
+		// NEO: on the way down, press nothing until forward would move us down. With the view still
+		// coming round it climbs us up, and from the top of the ladder, off it.
+	}
+	else if ( m_player->IsOnLadder() && IsUsingLadder() && ( m_ladderState == ASCENDING_LADDER || m_ladderState == DESCENDING_LADDER ) )
 	{
 		// we are on a ladder and WANT to be on a ladder.
 		playerButtons->PressForwardButton();
