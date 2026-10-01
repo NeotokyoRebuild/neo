@@ -131,6 +131,9 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 
 #ifdef CLIENT_DLL
 extern ConVar cl_neo_player_pings;
+#else
+static ConVar sv_neo_player_pings_calc_placename("sv_neo_player_pings_calc_placename", "1", 0,
+	"Whether the server should calculare place names for player pings from the nav mesh (possibly expensive)", true, false, true, true);
 #endif // CLIENT_DLL
 void CheckPingButton(CNEO_Player* player)
 {
@@ -173,7 +176,7 @@ void CheckPingButton(CNEO_Player* player)
 		event->SetInt("pingz", tr.endpos.z);
 		event->SetBool("ghosterping", player->IsCarryingGhost() || player->m_iNeoClass == NEO_CLASS_VIP);
 #ifdef GAME_DLL
-		if (TheNavMesh)
+		if (sv_neo_player_pings_calc_placename.GetBool() && TheNavMesh)
 		{
 			const auto fnGetNearbyNavArea = [](const Vector& pingPos, const float maxDist, const bool requireAreaBeNamed)->CNavArea* {
 				Assert(TheNavMesh);
