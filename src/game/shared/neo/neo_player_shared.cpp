@@ -211,7 +211,6 @@ void CheckPingButton(CNEO_Player* player)
 					placeName = &placeFmtBuf[0];
 				}
 				event->SetString("placename", placeName);
-				DevMsg("Place name: %s\n", placeName);
 			}
 		}
 
