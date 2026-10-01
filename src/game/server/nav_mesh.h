@@ -334,7 +334,13 @@ public:
 	CNavArea *GetNavArea( const Vector &pos, float beneathLimt = 120.0f ) const;	// given a position, return the nav area that IsOverlapping and is *immediately* beneath it
 	CNavArea *GetNavArea( CBaseEntity *pEntity, int nGetNavAreaFlags, float flBeneathLimit = 120.0f ) const;
 	CNavArea *GetNavAreaByID( unsigned int id ) const;
+#ifdef NEO
+	template <typename F = bool(*)(const CNavArea*)>
+	CNavArea *GetNearestNavArea( const Vector &pos, bool anyZ = false, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = TEAM_ANY,
+		F&& ignorePredicate = nullptr ) const;
+#else
 	CNavArea *GetNearestNavArea( const Vector &pos, bool anyZ = false, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = TEAM_ANY ) const;
+#endif
 	CNavArea *GetNearestNavArea( CBaseEntity *pEntity, int nGetNavAreaFlags = GETNAVAREA_CHECK_GROUND, float maxDist = 10000.0f ) const;
 
 	Place GetPlace( const Vector &pos ) const;							// return Place at given coordinate
@@ -870,7 +876,11 @@ public:
 			float yMax = yMin + area->GetSizeY();
 
 			// clip ray to area
+#ifdef NEO
+			Vector exit = vec3_invalid;
+#else
 			Vector exit;
+#endif
 			NavDirType edge = NUM_DIRECTIONS;
 
 			if ( to.x < 0.0f )
