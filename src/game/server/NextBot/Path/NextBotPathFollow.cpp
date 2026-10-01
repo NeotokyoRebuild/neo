@@ -49,6 +49,10 @@ PathFollower::PathFollower( void )
 
 	// was 10.0f for L4D - need a better solution here (MSB 5/15/09)
 	m_goalTolerance = 25.0f;
+
+#ifdef NEO
+	m_wasOnGround = true;
+#endif
 }
 
 
@@ -573,6 +577,52 @@ bool PathFollower::CheckProgress( INextBot *bot )
 }
 
 
+#ifdef NEO
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return true if we stand off the path, more than a step below it:
+ * we walked or were pushed off a ledge the path does not drop from,
+ * and the path cannot be followed from here
+ */
+bool PathFollower::HasFallenBelowPath( INextBot *bot ) const
+{
+	// a planned drop, gap jump, climb or ladder moves us off the path line on purpose
+	if ( m_goal->type != ON_GROUND )
+	{
+		return false;
+	}
+
+	ILocomotion *mover = bot->GetLocomotionInterface();
+	if ( mover->IsClimbingOrJumping() || mover->IsUsingLadder() )
+	{
+		return false;
+	}
+
+	const CNavArea *area = bot->GetEntity()->GetLastKnownArea();
+	if ( !area )
+	{
+		return false;
+	}
+
+	// standing on an area of the path is on the path, whatever height its line runs at
+	const Vector &feet = mover->GetFeet();
+	if ( area->GetZ( feet ) - feet.z <= mover->GetStepHeight() )
+	{
+		for ( const Segment *s = FirstSegment(); s; s = NextSegment( s ) )
+		{
+			if ( s->area == area )
+			{
+				return false;
+			}
+		}
+	}
+
+	MoveCursorToClosestPosition( feet );
+	return GetCursorData().pos.z - feet.z > mover->GetStepHeight();
+}
+#endif
+
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Move mover along path
@@ -692,6 +742,33 @@ void PathFollower::Update( INextBot *bot )
 		return;
 	}
 	
+#ifdef NEO
+	// a bot that walks or is pushed off a ledge keeps a path it cannot follow from below,
+	// so re-path on landing instead of pressing on until the stuck monitor fires
+	const bool isOnGround = mover->IsOnGround();
+	const bool hasJustLanded = isOnGround && !m_wasOnGround;
+	m_wasOnGround = isOnGround;
+
+	if ( hasJustLanded && HasFallenBelowPath( bot ) )
+	{
+		mover->GetBot()->OnMoveToFailure( this, FAIL_FELL_OFF );
+
+		// don't invalidate if OnMoveToFailure just recomputed a new path
+		if ( GetAge() > 0.0f )
+		{
+			Invalidate();
+		}
+
+		if ( bot->IsDebugging( NEXTBOT_PATH ) )
+		{
+			DevMsg( "PathFollower: OnMoveToFailure( FAIL_FELL_OFF ) because we landed below the path\n" );
+		}
+
+		mover->ClearStuckStatus( "Landed below path" );
+		return;
+	}
+#endif
+
 	// if our movement goal is high above us, we must have fallen
 	CNavArea *myArea = bot->GetEntity()->GetLastKnownArea();
 	bool isOnStairs = ( myArea && myArea->HasAttributes( NAV_MESH_STAIRS ) );
