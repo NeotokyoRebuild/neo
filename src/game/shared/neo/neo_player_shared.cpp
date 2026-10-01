@@ -178,16 +178,19 @@ void CheckPingButton(CNEO_Player* player)
 #ifdef GAME_DLL
 		if (sv_neo_player_pings_calc_placename.GetBool() && TheNavMesh)
 		{
-			const auto fnGetNearbyNavArea = [](const Vector& pingPos, const float maxDist, const bool requireAreaBeNamed)->CNavArea* {
-				Assert(TheNavMesh);
-				constexpr bool anyZ = true;
-				constexpr bool checkLOS = false;
-				constexpr bool checkGround = false;
-				constexpr int team = TEAM_ANY;
-				const auto ignorePredicate = [requireAreaBeNamed](const CNavArea* area)->bool {
-					return requireAreaBeNamed && (!area || !TheNavMesh->PlaceToName(area->GetPlace()));
-					};
-				return TheNavMesh->GetNearestNavArea(pingPos, anyZ, maxDist, checkLOS, checkGround, team, ignorePredicate);
+			constexpr auto fnGetNearbyNavArea =
+				[](const Vector& pingPos, const float maxDist, const bool requireAreaBeNamed)->CNavArea* {
+					Assert(TheNavMesh);
+					constexpr auto ignoreNamelessPlaces = [](const CNavArea* area)->bool {
+						return !area || !TheNavMesh->PlaceToName(area->GetPlace());
+						};
+					constexpr auto ignoreNothing = [](const CNavArea*)->bool {
+						return false;
+						};
+					return TheNavMesh->GetNearestNavArea(pingPos, true, maxDist, false, false, TEAM_ANY,
+						[requireAreaBeNamed, ignoreNamelessPlaces, ignoreNothing]() {
+							return requireAreaBeNamed ? ignoreNamelessPlaces : ignoreNothing;
+						}());
 				};
 
 			const auto actualNavAreaOfPing = fnGetNearbyNavArea(tr.endpos, 1024, false);
