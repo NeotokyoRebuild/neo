@@ -86,6 +86,12 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	// Are we climbing up or down the ladder?
 	Vector targetPos = m_bGoingUp ? m_ladder->m_bottom : m_ladder->m_top;
 
+	// Going down, head for where the bot will hang on the ladder: in front of its face, over the drop
+	if ( !m_bGoingUp )
+	{
+		targetPos += m_ladder->GetNormal() * ( body->GetHullWidth() * 0.5f + HANG_CLEARANCE );
+	}
+
 	// Calculate 2D vector from bot to ladder mount point
 	Vector2D to = ( targetPos - myPos ).AsVector2D();
 	float range = to.NormalizeInPlace();
@@ -99,6 +105,14 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	// If bot was looking up or down, sometimes the fast climb movement causes a detachment
 	Vector lookTarget = m_ladderCenter;
 	lookTarget.z = me->EyePosition().z;
+
+	// Going down, look down the ladder instead: the forward press that grabs it stays held for a few
+	// ticks, and with a level view it climbs the bot up and off the top
+	if ( !m_bGoingUp )
+	{
+		lookTarget = m_ladder->m_bottom;
+	}
+
 	body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr, "Stare at ladder center" );
 
 	if ( me->IsDebugging( NEXTBOT_PATH ) )
@@ -107,8 +121,33 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 		NDebugOverlay::Line( myPos, targetPos, 255, 255, 0, true, 0.1f );
 	}
 
-	// Are we aligned and close enough to mount the ladder?
-	if ( range >= MOUNT_RANGE )
+	// Going down, mount only once off the top: grabbed while still up there, on the landing or on the
+	// ladder's own top, the bot cannot press its way down, so it keeps walking out over the drop
+	const float flTopZ = m_ladder->m_top.z;
+	const bool bOnTop = !m_bGoingUp
+		&& ( myPos.z >= flTopZ || ( mover->IsOnGround() && myPos.z > flTopZ - mover->GetStepHeight() ) );
+
+	// Within mount range and on the ladder: start climbing
+	if ( range < MOUNT_RANGE && me->IsOnLadder() && !bOnTop )
+	{
+		if ( me->IsDebugging( NEXTBOT_PATH ) )
+		{
+			DevMsg( "%s: Starting ladder climb\n", me->GetDebugIdentifier() );
+		}
+
+		// Stop the bot before behavior transition to prevent falling off the ladder
+		// there can be a delay in the state change, so momentum can cause a fall
+		me->SetAbsVelocity( vec3_origin );
+		// ChangeTo: if something goes wrong during climb, reevaluate situation
+		return ChangeTo( new CNEOBotLadderClimb( m_ladder, m_bGoingUp ), "Mounting ladder" );
+	}
+
+	// Are we aligned and close enough to mount the ladder? Going down, line up only from in front of the
+	// face (at an angle the bot ends up on the floor beside the drop); from elsewhere walk straight on
+	const bool bAligned = dot < ALIGN_DOT_THRESHOLD;
+	const bool bLineUp = m_bGoingUp ? range >= MOUNT_RANGE
+		: ( dot < 0.0f && ( range >= MOUNT_RANGE || !bAligned ) );
+	if ( bLineUp )
 	{
 		// Perpendicular alignment line
 		Vector2D alignNormal = ladderNormal2D;
@@ -132,34 +171,16 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 			NDebugOverlay::Cross3D( goal, 5.0f, 255, 0, 255, true, 0.1f );
 		}
 	}
+	else if ( m_bGoingUp ? bAligned : !bOnTop )
+	{
+		// Aligned (or going down and off the top), push forward to attach to the ladder
+		me->PressForwardButton();
+		mover->Approach( targetPos );
+	}
 	else
 	{
-		// Within mount range - check if aligned to start climbing
-		bool onLadder = me->IsOnLadder();
-		if ( onLadder )
-		{
-			if ( me->IsDebugging( NEXTBOT_PATH ) )
-			{
-				DevMsg( "%s: Starting ladder climb\n", me->GetDebugIdentifier() );
-			}
-
-			// Stop the bot before behavior transition to prevent falling off the ladder
-			// there can be a delay in the state change, so momentum can cause a fall
-			me->SetAbsVelocity( vec3_origin );
-			// ChangeTo: if something goes wrong during climb, reevaluate situation
-			return ChangeTo( new CNEOBotLadderClimb( m_ladder, m_bGoingUp ), "Mounting ladder" );
-		}
-		else if ( !m_bGoingUp || dot < ALIGN_DOT_THRESHOLD )
-		{
-			// Aligned (or going down), push forward to attach to the ladder
-			me->PressForwardButton();
-			mover->Approach( targetPos );
-		}
-		else
-		{
-			// Close but not aligned - continue approaching to align
-			mover->Approach( targetPos );
-		}
+		// Close but not aligned (or going down and still on the top) - continue approaching
+		mover->Approach( targetPos );
 	}
 
 	return Continue();

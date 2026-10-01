@@ -35,5 +35,6 @@ private:
 	CountdownTimer m_timeoutTimer;
 
 	static constexpr float MOUNT_RANGE = 25.0f;         // Distance to start climbing
+	static constexpr float HANG_CLEARANCE = 2.0f;       // Gap between the face and a descending bot's hull as it mounts
 	static constexpr float ALIGN_DOT_THRESHOLD = -0.9f;	// cos(~25 degrees) alignment tolerance
 };
