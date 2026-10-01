@@ -37,8 +37,9 @@ protected:
 private:
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
 	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex);
-	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing, const char* placeName);
-	void NotifyPing(const int playerSlot, const char* placeName);
+	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing,
+		const char* placeName, bool placeIsExact);
+	void NotifyPing(const int playerSlot, const char* placeName, bool placeIsExact);
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};

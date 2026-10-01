@@ -135,7 +135,8 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 		const Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 		bool ghosterPing = event->GetBool("ghosterping");
 		const char* placeName = event->GetString("placename");
-		SetPos(playerIndex - 1, playerTeam, worldpos, ghosterPing, placeName);
+		bool placeIsExact = event->GetBool("exactplace");
+		SetPos(playerIndex - 1, playerTeam, worldpos, ghosterPing, placeName, placeIsExact);
 	}
 	else if (!Q_stricmp(eventName, "round_start"))
 	{
@@ -317,7 +318,8 @@ void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, const int 
 	m_iPlayerPings[playerSlot].noLineOfSight = tr.fraction < 0.999;
 }
 
-void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, const Vector& pos, bool ghosterPing, const char* placeName)
+void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, const Vector& pos, bool ghosterPing,
+	const char* placeName, bool placeIsExact)
 {
 	constexpr float PLAYER_PING_LIFETIME = 8;
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
@@ -352,13 +354,13 @@ void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, cons
 			return;
 		}
 	}
-	NotifyPing(playerSlot, m_iPlayerPings[playerSlot].placeName);
+	NotifyPing(playerSlot, m_iPlayerPings[playerSlot].placeName, placeIsExact);
 }
 
 ConVar snd_ping_volume("snd_ping_volume", "0.33", FCVAR_ARCHIVE, "Player ping volume", true, 0.f, true, 1.f);
 ConVar cl_neo_player_pings_chat_message("cl_neo_player_pings_chat_message", "1", FCVAR_ARCHIVE, "Show message in chat for player pings.", true, 0, true, 1); // NEO TODO (Adam) custom chat filter instead?
 ConVar cl_neo_player_pings_time_between_sounds("cl_neo_player_pings_time_between_sounds", "0", FCVAR_ARCHIVE, "Minimum time between two ping sounds", true, 0, false, 0);
-void CNEOHud_PlayerPing::NotifyPing(const int playerSlot, const char* placeName)
+void CNEOHud_PlayerPing::NotifyPing(const int playerSlot, const char* placeName, bool placeIsExact)
 {
 	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerSlot + 1));
 	if (!pPlayer || pPlayer->IsLocalPlayer())
@@ -374,9 +376,10 @@ void CNEOHud_PlayerPing::NotifyPing(const int playerSlot, const char* placeName)
 			CBaseHudChat* hudChat = (CBaseHudChat*)GET_HUDELEMENT(CHudChat);
 			if (hudChat)
 			{
-				hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged %s\n",
+				hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged %s%s\n",
 					pPlayer->GetNeoPlayerName(),
-					placeName && *placeName ? placeName : "a location");
+					(placeIsExact || !placeName || !*placeName) ? "" : "near ", // only specify "near" for concrete callouts
+					(placeName && *placeName) ? placeName : "a location");
 			}
 		}
 	}
