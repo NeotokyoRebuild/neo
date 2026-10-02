@@ -9,6 +9,7 @@
 #include "filesystem.h"
 #include "studio.h"
 #include "bone_setup.h"
+#include "vguicenterprint.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -136,6 +137,18 @@ CON_COMMAND_F(cl_neo_ads_save, "Append the tuned pose for the active weapon to a
 	g_pFullFileSystem->Write(line, V_strlen(line), file);
 	g_pFullFileSystem->Close(file);
 	Msg("Saved: %s", line);
+}
+
+// Bindable in Settings > Keys (kb_act.lst), unbound by default. Client-side only, so no usercmd button bit.
+CON_COMMAND(cl_neo_ads_toggle, "Switch between aiming down the sights and the traditional NT aim.")
+{
+	cl_neo_ads.SetValue(!cl_neo_ads.GetBool());
+	if (internalCenterPrint)
+	{
+		char text[16];
+		V_strncpy(text, cl_neo_ads.GetBool() ? "ADS" : "Standard aim", sizeof(text));
+		internalCenterPrint->Print(text);
+	}
 }
 #endif // CLIENT_DLL
 
