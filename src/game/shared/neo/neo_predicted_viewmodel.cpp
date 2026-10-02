@@ -1,5 +1,7 @@
 #include "cbase.h"
 #include "neo_predicted_viewmodel.h"
+#include "neo_ads.h"
+#include "bone_setup.h"
 
 #include "in_buttons.h"
 #include "neo_gamerules.h"
@@ -18,6 +20,8 @@
 #include "r_efx.h"
 #include "dlight.h"
 #include "in_main.h"
+#include "neo/neo_ads_optic.h"
+#include "neo/neo_ads_optic_disc.h"
 #else
 #include "neo_player.h"
 #include "bot/neo_bot.h"
@@ -219,6 +223,66 @@ void CNEOPredictedViewModel::PostDataUpdate(DataUpdateType_t updateType)
 	BaseClass::PostDataUpdate(updateType);
 }
 
+void CNEOPredictedViewModel::StandardBlendingRules(CStudioHdr *hdr, Vector pos[], Quaternion q[], float currentTime, int boneMask)
+{
+	BaseClass::StandardBlendingRules(hdr, pos, q, currentTime, boneMask);
+
+	// On the sights, the idle sway and the fire animation's kick are damped against the idle rest
+	// pose, so the sight picture holds. Other sequences (reload, draw) play untouched.
+	if (!hdr || m_flAdsBlend <= 0.0f)
+	{
+		return;
+	}
+	const int activity = GetSequenceActivity(GetSequence());
+	const bool bIdle = (activity == ACT_VM_IDLE || activity == ACT_VM_IDLE_EMPTY);
+	if (!bIdle && !NeoAdsIsRecoilActivity(activity))
+	{
+		return;
+	}
+
+	float poseparam[MAXSTUDIOPOSEPARAM];
+	GetPoseParameters(hdr, poseparam);
+
+	if (!bIdle)
+	{
+		// The gun is whatever bone carries the first attachment (the muzzle on NT viewmodels).
+		// Bones outside boneMask are not set up this pass and hold garbage, and the muzzle bone often
+		// exists only for its attachment, so walk up to the nearest bone that was set up (the gun body).
+		int gunBone = (hdr->GetNumAttachments() > 0) ? hdr->pAttachment(0).localbone : hdr->numbones() - 1;
+		while (gunBone >= 0 && !(hdr->boneFlags(gunBone) & boneMask))
+		{
+			gunBone = hdr->pBone(gunBone)->parent;
+		}
+		const auto *pWeapon = assert_cast<CNEOBaseCombatWeapon *>(GetOwningWeapon());
+		if (gunBone >= 0 && pWeapon)
+		{
+			// The fire animation's last frame is where it settles; the kick is measured from there.
+			m_adsSettled.Update(hdr, GetSequence(), 1.0f, poseparam);
+			NeoAdsDampRecoil(hdr, pos, q, m_adsSettled.pos, m_adsSettled.q,
+				gunBone, pWeapon->GetNEOWpnData(), m_flAdsBlend);
+		}
+		return;
+	}
+
+	// Rest pose: the idle animation's first frame, which is the pose the sights are tuned in.
+	m_adsRest.Update(hdr, GetSequence(), 0.0f, poseparam);
+	const Vector *restPos = m_adsRest.pos;
+	const Quaternion *restQ = m_adsRest.q;
+
+	const float liveWeight = NeoAdsIdleScale(m_flAdsBlend);
+	for (int i = 0; i < hdr->numbones(); ++i)
+	{
+		if (!(hdr->boneFlags(i) & boneMask))
+		{
+			continue;
+		}
+		pos[i] = Lerp(liveWeight, restPos[i], pos[i]);
+		Quaternion blended;
+		QuaternionSlerp(restQ[i], q[i], liveWeight, blended);
+		q[i] = blended;
+	}
+}
+
 void CNEOPredictedViewModel::ClientThink()
 {
 	SetNextClientThink(CLIENT_THINK_ALWAYS);
@@ -227,6 +291,56 @@ void CNEOPredictedViewModel::ClientThink()
 
 extern ConVar glow_outline_effect_enable;
 int CNEOPredictedViewModel::DrawModel(int flags)
+{
+	const auto *pWeapon = assert_cast<CNEOBaseCombatWeapon *>(GetOwningWeapon());
+	const CNEOWeaponInfo *pWeaponData = pWeapon ? &pWeapon->GetNEOWpnData() : nullptr;
+	// Hide the glass whose art we draw (one pane).
+	const NeoAdsHiddenMaterials hiddenMaterials(pWeaponData);
+
+	auto pPlayer = assert_cast<C_NEO_Player*>(GetOwner());
+	const bool bDrawn = pWeaponData && pPlayer && (flags & STUDIO_RENDER);
+	// A model with translucent materials (any sight glass) is drawn twice a frame, its opaque parts and then
+	// its translucent ones; the glass's art goes on once, with the last.
+	const bool bOverlays = bDrawn && (!IsTwoPass() || (flags & STUDIO_TRANSPARENCY));
+	const bool bCloaked = pPlayer && pPlayer->IsCloaked();
+	const bool bThermal = NeoAdsInThermals(pPlayer);
+
+	// See-through glass (drawn over by the cloak or thermals, or a scope on the sights): its outline into depth
+	// before the gun, so the world already on screen shows through it (see NeoAdsGlassClear).
+	NeoAdsGlassClear clear;
+	const bool bClear = bDrawn && NeoAdsBeginGlassClear(this, *pWeaponData, bCloaked, bThermal, m_flAdsBlend, clear);
+	CMatRenderContextPtr pRenderContext(materials);
+	int ret = 0;
+	if (bClear && clear.bFarFirst)
+	{
+		pRenderContext->PushCustomClipPlane(clear.farPlane);
+		ret = DrawGun(flags);
+		pRenderContext->PopCustomClipPlane();
+	}
+	if (bClear)
+	{
+		NeoAdsDrawGlassClearDepth(*pWeaponData);
+	}
+	if (bClear && clear.bFarFirst)
+	{
+		pRenderContext->PushCustomClipPlane(clear.nearPlane);
+	}
+	ret = Max(ret, DrawGun(flags));
+	if (bClear && clear.bFarFirst)
+	{
+		pRenderContext->PopCustomClipPlane();
+	}
+
+	// On top of the gun, pinned to it: the glass's art where the gun's own glass doesn't show it (hidden, or left
+	// out by the clear glass).
+	if (ret && bOverlays)
+	{
+		NeoAdsDrawGlassArt(this, *pWeaponData, bCloaked, bThermal, m_flAdsBlend);
+	}
+	return ret;
+}
+
+int CNEOPredictedViewModel::DrawGun(int flags)
 {
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
 
@@ -519,19 +633,24 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 				m_flStartAimingChange = currentTime;
 				m_bViewAim = true;
 			}
-			const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
+			const NeoAimPose aimPose = NeoGetAimPose(data);
+			const float aimChangeTime = NeoAimTransitionTime(data);
+			const float endAimingChange = m_flStartAimingChange + aimChangeTime;
 			const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
 			if (inAimingChange)
 			{
-				float percentage = clamp((currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED, 0.0f, 1.0f);
+				float percentage = clamp((currentTime - m_flStartAimingChange) / aimChangeTime, 0.0f, 1.0f);
 				if (playerAiming) percentage = 1.0f - percentage;
-				vOffset = Lerp(percentage, data.m_vecVMAimPosOffset, data.m_vecVMPosOffset);
-				angOffset = Lerp(percentage, data.m_angVMAimAngOffset, data.m_angVMAngOffset);
+				percentage = NeoAimTransitionCurve(data, percentage);
+				vOffset = Lerp(percentage, aimPose.pos, data.m_vecVMPosOffset);
+				angOffset = Lerp(percentage, aimPose.ang, data.m_angVMAngOffset);
+				m_flAdsBlend = NeoAdsActive(data) ? (1.0f - percentage) : 0.0f;
 			}
 			else
 			{
-				vOffset = (playerAiming) ? data.m_vecVMAimPosOffset : data.m_vecVMPosOffset;
-				angOffset = (playerAiming) ? data.m_angVMAimAngOffset : data.m_angVMAngOffset;
+				vOffset = (playerAiming) ? aimPose.pos : data.m_vecVMPosOffset;
+				angOffset = (playerAiming) ? aimPose.ang : data.m_angVMAngOffset;
+				m_flAdsBlend = (playerAiming && NeoAdsActive(data)) ? 1.0f : 0.0f;
 			}
 
 #ifdef CLIENT_DLL
@@ -541,7 +660,8 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 				const bool rightHand = cl_righthand.GetBool();
 				if ((rightHand && percent < 0) || (!rightHand && percent > 0))
 				{
-					percent = abs(percent);
+					// Not on the sights, where the gun rolls around the sight line instead (below).
+					percent = abs(percent) * (1.0f - m_flAdsBlend);
 					constexpr float FINAL_Y_EXTRA_OFFSET = 3;
 					constexpr float FINAL_Z_EXTRA_OFFSET = 1;
 					vOffset.y += FINAL_Y_EXTRA_OFFSET * percent;
@@ -582,12 +702,22 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 				}
 
 			}
-			finalGunPush = vForward * ((1 - m_flGunPush) * VIEWMODEL_MOVE_DISTANCE);
+			// Not on the sights: the gun stays where the sight line needs it.
+			finalGunPush = vForward * ((1 - m_flGunPush) * VIEWMODEL_MOVE_DISTANCE) * (1.0f - m_flAdsBlend);
 		}
 
 		newPos += (vForward * vOffset.x) - finalGunPush;
 #else
 		newPos += vForward * vOffset.x;
+#endif
+#ifdef CLIENT_DLL
+		if (cl_neo_lean_viewmodel_only.GetBool() && m_flAdsBlend > 0.0f)
+		{
+			// On the sights, the lean rolls the gun around the sight line (the eye's forward axis) rather
+			// than around its own origin, so the sights stay on the centre of the screen and the gun cants.
+			const float roll = cl_righthand.GetBool() ? pOwner->EyeAngles().z : -pOwner->EyeAngles().z;
+			AngleVectors(QAngle(eyeAngles.x, eyeAngles.y, eyeAngles.z + roll * m_flAdsBlend), nullptr, &vRight, &vUp);
+		}
 #endif
 		newPos += vRight * vOffset.y;
 		newPos += vUp * vOffset.z;

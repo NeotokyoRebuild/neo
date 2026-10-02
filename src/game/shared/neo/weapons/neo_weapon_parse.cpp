@@ -25,9 +25,12 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 	m_bDropOnDeath = true;
 	iAimFOV = 0;
 
-	m_flVMFov = m_flVMAimFov = 0.f;
-	m_vecVMPosOffset = m_vecVMAimPosOffset = vec3_origin;
-	m_angVMAngOffset = m_angVMAimAngOffset = vec3_angle;
+	m_flVMFov = m_flVMAimFov = m_flVMAdsFov = 0.f;
+	m_bHasAds = false;
+	m_flAdsRecoilVertical = m_flAdsRecoilSide = m_flAdsRecoilBack = 1.f;
+	m_flAdsRecoilMaxDist = m_flAdsRecoilMaxAngle = 0.f;
+	m_vecVMPosOffset = m_vecVMAimPosOffset = m_vecVMAdsPosOffset = vec3_origin;
+	m_angVMAngOffset = m_angVMAimAngOffset = m_angVMAdsAngOffset = vec3_angle;
 }
 
 
@@ -68,28 +71,47 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 		m_angVMAngOffset[ROLL] = pViewModel->GetFloat("roll", 0);
 	}
 
-	// NEO TODO (Rain): add optional ironsight offsets
-	// in addition to "traditional" NT aim
-
-	// AimOffset = Ironsight ADS offset (Disabled)
-	// ZoomOffset = Traditional ADS offset
-#if 0
-	KeyValues *pAimOffset = pKeyValuesData->FindKey("AimOffset");
-#else
-	KeyValues* pAimOffset = pKeyValuesData->FindKey("ZoomOffset");
-#endif
-	if (pAimOffset)
+	// ZoomOffset = Traditional NT aim offset
+	// AimOffset = ADS offset, used instead when cl_neo_ads is enabled (see neo_ads.h). Many scripts carry an
+	// untuned AimOffset, so a weapon only takes part when its block says "enabled" "1".
+	if (KeyValues* pZoomOffset = pKeyValuesData->FindKey("ZoomOffset"))
 	{
-		m_flVMAimFov = pAimOffset->GetFloat("fov", 55);
+		m_flVMAimFov = pZoomOffset->GetFloat("fov", 55);
 
-		m_vecVMAimPosOffset.x = pAimOffset->GetFloat("forward", 0);
-		m_vecVMAimPosOffset.y = pAimOffset->GetFloat("right", 0);
-		m_vecVMAimPosOffset.z = pAimOffset->GetFloat("up", 0);
+		m_vecVMAimPosOffset.x = pZoomOffset->GetFloat("forward", 0);
+		m_vecVMAimPosOffset.y = pZoomOffset->GetFloat("right", 0);
+		m_vecVMAimPosOffset.z = pZoomOffset->GetFloat("up", 0);
 
-		m_angVMAimAngOffset[PITCH] = pAimOffset->GetFloat("pitch", 0);
-		m_angVMAimAngOffset[YAW] = pAimOffset->GetFloat("yaw", 0);
-		m_angVMAimAngOffset[ROLL] = pAimOffset->GetFloat("roll", 0);
+		m_angVMAimAngOffset[PITCH] = pZoomOffset->GetFloat("pitch", 0);
+		m_angVMAimAngOffset[YAW] = pZoomOffset->GetFloat("yaw", 0);
+		m_angVMAimAngOffset[ROLL] = pZoomOffset->GetFloat("roll", 0);
 	}
+
+	m_bHasAds = false;
+	if (KeyValues* pAdsOffset = pKeyValuesData->FindKey("AimOffset"))
+	{
+		m_bHasAds = pAdsOffset->GetBool("enabled", false);
+		m_flVMAdsFov = pAdsOffset->GetFloat("fov", 55);
+
+		m_vecVMAdsPosOffset.x = pAdsOffset->GetFloat("forward", 0);
+		m_vecVMAdsPosOffset.y = pAdsOffset->GetFloat("right", 0);
+		m_vecVMAdsPosOffset.z = pAdsOffset->GetFloat("up", 0);
+
+		m_angVMAdsAngOffset[PITCH] = pAdsOffset->GetFloat("pitch", 0);
+		m_angVMAdsAngOffset[YAW] = pAdsOffset->GetFloat("yaw", 0);
+		m_angVMAdsAngOffset[ROLL] = pAdsOffset->GetFloat("roll", 0);
+	}
+
+	// Optional per-weapon multipliers for the fire animation's kick while on the sights.
+	KeyValues* pAdsRecoil = pKeyValuesData->FindKey("AdsRecoil");
+	m_flAdsRecoilVertical = pAdsRecoil ? pAdsRecoil->GetFloat("vertical", 1) : 1.f;
+	m_flAdsRecoilSide = pAdsRecoil ? pAdsRecoil->GetFloat("side", 1) : 1.f;
+	m_flAdsRecoilBack = pAdsRecoil ? pAdsRecoil->GetFloat("back", 1) : 1.f;
+	m_flAdsRecoilMaxDist = pAdsRecoil ? pAdsRecoil->GetFloat("max_dist", 0) : 0.f;
+	m_flAdsRecoilMaxAngle = pAdsRecoil ? pAdsRecoil->GetFloat("max_angle", 0) : 0.f;
+
+	// Optional glass on the sights (the "AdsOptic" block, neo_ads_optic_info.h).
+	ParseAdsOptic(pKeyValuesData);
 }
 
 
