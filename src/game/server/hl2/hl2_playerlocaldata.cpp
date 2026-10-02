@@ -23,6 +23,7 @@ BEGIN_SEND_TABLE_NOBASE( CHL2PlayerLocalData, DT_HL2Local )
 	SendPropFloat(SENDINFO(m_cloakPower), 10, SPROP_UNSIGNED | SPROP_ROUNDUP, 0.0, 100.0),
 	SendPropFloat(SENDINFO(m_slideTime), 10, SPROP_UNSIGNED | SPROP_ROUNDUP, 0.0, 10.0),
 	SendPropFloat(SENDINFO(m_jumpHeldTime), 10, SPROP_UNSIGNED | SPROP_ROUNDUP, 0.0, 1.0),
+	SendPropTime(SENDINFO(m_jumpCooldown)),
 #endif
 	SendPropFloat( SENDINFO(m_flSuitPowerLoad), -1, SPROP_NOSCALE, 0.0, 100.0 ),
 	SendPropFloat( SENDINFO(m_flTimeAllSuitDevicesOff), -1, SPROP_NOSCALE ),
@@ -52,6 +53,9 @@ BEGIN_SIMPLE_DATADESC( CHL2PlayerLocalData )
 	DEFINE_FIELD( m_flSuitPower, FIELD_FLOAT ),
 #ifdef NEO
 	DEFINE_FIELD( m_cloakPower, FIELD_FLOAT ),
+	DEFINE_FIELD( m_slideTime, FIELD_FLOAT ),
+	DEFINE_FIELD( m_jumpHeldTime, FIELD_FLOAT ),
+	DEFINE_FIELD( m_jumpCooldown, FIELD_TIME ),
 #endif
 	DEFINE_FIELD( m_flSuitPowerLoad, FIELD_FLOAT ),
 	DEFINE_FIELD( m_flTimeAllSuitDevicesOff, FIELD_FLOAT ),
@@ -80,7 +84,9 @@ CHL2PlayerLocalData::CHL2PlayerLocalData()
 	m_flSuitPower = 0.0f;
 #ifdef NEO
 	m_cloakPower = 0.0;
+	m_slideTime = 0.0;
 	m_jumpHeldTime = 0.0;
+	m_jumpCooldown = 0.0;
 #endif
 	m_flSuitPowerLoad = 0.0f;
 	m_flTimeAllSuitDevicesOff = 0.0f;

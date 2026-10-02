@@ -1737,11 +1737,6 @@ int CInput::GetButtonBits( int bResetState )
 		// Cancel walk toggle if sprinting
 		KeyUp(&in_walk, nullptr);
 	}
-	// Require jump to be held for a full frame
-	if (!KeyState(&in_jump))
-	{
-		bits &= ~IN_JUMP;
-	}
 #endif
 
 	if ( KeyState(&in_ducktoggle) )

@@ -1165,6 +1165,17 @@ void CGameMovement::ReduceTimers( void )
 			player->m_flSwimSoundTime = 0;
 		}
 	}
+#ifdef NEO
+	auto neoPlayer = static_cast<CNEO_Player*>(player);
+	if ( neoPlayer->m_HL2Local.m_jumpCooldown > 0 )
+	{
+		neoPlayer->m_HL2Local.m_jumpCooldown -= frame_msec;
+		if ( neoPlayer->m_HL2Local.m_jumpCooldown < 0 )
+		{
+			neoPlayer->m_HL2Local.m_jumpCooldown = 0;
+		}
+	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -1755,6 +1766,7 @@ ConVar sv_neo_airfriction_objective("sv_neo_airfriction_objective", "0.5", FCVAR
 ConVar sv_neo_airstopspeed("sv_neo_airstopspeed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum stopping speed when in the air.", true, 0, false, 0);
 ConVar sv_neo_jumpbuffer("sv_neo_jumpbuffer", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allow Quake style jump buffering.", true, 0, true, 1);
 ConVar sv_neo_jumpbuffer_penalty("sv_neo_jumpbuffer_penalty", "0.05", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum penalty for an early buffered jump", true, 0, true, 1);
+ConVar sv_neo_jump_cooldown("sv_neo_jump_cooldown", "0.05", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum time between releasing jump and jumping again", true, 0, true, 1 );
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -2240,6 +2252,10 @@ void CGameMovement::FullWalkMove( )
 #ifdef NEO
 			auto neoPlayer = static_cast<CNEO_Player*>(player);
 			neoPlayer->m_HL2Local.m_jumpHeldTime = 0;
+			if (mv->m_nOldButtons & IN_JUMP && !neoPlayer->m_HL2Local.m_jumpCooldown)
+			{
+				neoPlayer->m_HL2Local.m_jumpCooldown = sv_neo_jump_cooldown.GetFloat();
+			}
 #endif
 			mv->m_nOldButtons &= ~IN_JUMP;
 		}
@@ -2598,6 +2614,15 @@ bool CGameMovement::CheckJumpButton( void ) {
 
 #ifdef NEO
 	auto neoPlayer = static_cast<CNEO_Player*>(player);
+
+	if (neoPlayer->m_HL2Local.m_jumpCooldown > 0)
+	{
+		if (!(mv->m_nOldButtons & IN_JUMP))
+		{
+			mv->m_nButtons &= ~IN_JUMP;
+		}
+		return false;
+	}
 #endif
 
 	// No more effect

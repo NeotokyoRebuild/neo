@@ -35,6 +35,7 @@ public:
 	float	m_cloakPower;
 	float	m_slideTime;
 	float	m_jumpHeldTime;
+	float	m_jumpCooldown;
 #endif
 	float	m_flSuitPowerLoad;
 	float	m_flTimeAllSuitDevicesOff;
