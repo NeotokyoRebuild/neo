@@ -25,6 +25,7 @@
 "+attack2"				"Special"
 "+aim"	 	            "Aim"
 "+toggle_aim"	 	    "Aim (toggle)"
+"cl_neo_ads_toggle"	"Aim down sights (toggle)"
 "+reload"				"#Valve_Reload_Weapon"
 "+use"					"#Valve_Use_Items"
 "slot1"					"Primary Weapon"
