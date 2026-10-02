@@ -43,6 +43,7 @@ public:
 	virtual void StandardBlendingRules(CStudioHdr *hdr, Vector pos[], Quaternion q[], float currentTime, int boneMask) override;
 
 	virtual int DrawModel(int flags);
+	int DrawGun(int flags);
 	virtual void ProcessMuzzleFlashEvent() final override;
 
 	virtual RenderGroup_t GetRenderGroup() override;

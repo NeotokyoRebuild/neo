@@ -11,9 +11,10 @@
 #endif
 
 #include "hl2mp_weapon_parse.h"
+#include "neo_ads_optic_info.h"
 
 //--------------------------------------------------------------------------------------------------------
-class CNEOWeaponInfo : public CHL2MPSWeaponInfo
+class CNEOWeaponInfo : public CHL2MPSWeaponInfo, public CNEOAdsOpticInfo
 {
 public:
 	DECLARE_CLASS_GAMEROOT( CNEOWeaponInfo, CHL2MPSWeaponInfo );

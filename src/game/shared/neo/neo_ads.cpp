@@ -347,6 +347,28 @@ void NeoAdsDampRecoil(CStudioHdr *hdr, Vector pos[], Quaternion q[],
 
 bool NeoAdsHideCrosshair(const CNEOWeaponInfo &data, bool bAiming, bool bCloaked)
 {
-	return NeoAdsActive(data) && bAiming && !cl_neo_ads_crosshair.GetBool() && !bCloaked;
+	return NeoAdsActive(data) && bAiming && !cl_neo_ads_crosshair.GetBool() && !(bCloaked && !data.m_bHasAdsOptic);
+}
+
+NeoAdsHiddenMaterials::NeoAdsHiddenMaterials(const CNEOWeaponInfo *pData)
+{
+	if (!pData || !pData->m_bAdsOpticOnePane || !NeoAdsActive(*pData))
+	{
+		return;
+	}
+	IMaterial *pLens = materials->FindMaterial(pData->m_szAdsOpticLens, TEXTURE_GROUP_MODEL, false);
+	if (pLens && !pLens->IsErrorMaterial() && !pLens->GetMaterialVarFlag(MATERIAL_VAR_NO_DRAW))
+	{
+		pLens->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, true);
+		m_pLens = pLens;
+	}
+}
+
+NeoAdsHiddenMaterials::~NeoAdsHiddenMaterials()
+{
+	if (m_pLens)
+	{
+		m_pLens->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, false);
+	}
 }
 #endif // CLIENT_DLL
