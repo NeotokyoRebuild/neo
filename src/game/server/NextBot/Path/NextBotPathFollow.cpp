@@ -31,6 +31,11 @@ ConVar NextBotAllowGapJumping( "nb_allow_gap_jumping", "1", FCVAR_CHEAT );
 
 ConVar NextBotDebugClimbing( "nb_debug_climbing", "0", FCVAR_CHEAT );
 
+#ifdef NEO
+// How far from its feet a bot that landed looks for a nav area, the range UpdateLastKnownArea() searches
+static const float LANDING_NAV_AREA_RANGE = 50.0f;
+#endif
+
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -620,6 +625,17 @@ bool PathFollower::HasFallenBelowPath( INextBot *bot ) const
 	MoveCursorToClosestPosition( feet );
 	return GetCursorData().pos.z - feet.z > mover->GetStepHeight();
 }
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return true if a nav area lies near the bot's feet. Off the mesh its last known area is still
+ * the one it fell from, and a path from there is the one it cannot follow
+ */
+static bool IsNearNavMesh( INextBot *bot )
+{
+	return TheNavMesh->GetNearestNavArea( bot->GetEntity(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, LANDING_NAV_AREA_RANGE ) != NULL;
+}
 #endif
 
 
@@ -749,7 +765,7 @@ void PathFollower::Update( INextBot *bot )
 	const bool hasJustLanded = isOnGround && !m_wasOnGround;
 	m_wasOnGround = isOnGround;
 
-	if ( hasJustLanded && HasFallenBelowPath( bot ) )
+	if ( hasJustLanded && HasFallenBelowPath( bot ) && IsNearNavMesh( bot ) )
 	{
 		mover->GetBot()->OnMoveToFailure( this, FAIL_FELL_OFF );
 
