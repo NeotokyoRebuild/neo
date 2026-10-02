@@ -66,10 +66,26 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"40"
-		"forward"	"10"
-		"right"		"1.16"
-		"up"		"2.59"
+		"forward"		"10"
+		"right"		"1.18"
+		"up"		"2.61"
+		"pitch"		"0"
+		"yaw"		"0"
+		"roll"		"0"
+	}
+
+	"AdsOptic"
+	{
+		"window"	"1"
+		"reticle"	"vgui/hud/optics/pz_reticle"
+		"lens_bone"	"PZ"
+		"lens_map"	"5.195 -1.034 12.81  -10.93 0 0  0 0 -10.96"
+		"window_glass"	"0.427 0.121  0.427 0.286  0.428 0.112  0.433 0.102  0.438 0.094  0.445 0.087  0.453 0.082  0.463 0.077  0.472 0.076  0.733 0.076  0.743 0.077  0.753 0.082  0.761 0.087  0.768 0.094  0.773 0.102  0.777 0.112  0.779 0.121  0.779 0.286"
+		// Hide the gun this deep behind the glass while drawn over: the sight's own parts sit there. The front of the gun beyond shows through.
+		"window_skip"	"0.7"
+		"lens"		"models/weapons/pz_sight2"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)

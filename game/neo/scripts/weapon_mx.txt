@@ -65,10 +65,31 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"32"
-		"forward"	"0.0"
+		"forward"		"-4.5"
 		"right"		"0.77"
 		"up"		"2.65"
+		"pitch"		"0"
+		"yaw"		"0"
+		"roll"		"0"
+	}
+
+	// Scope eyepiece: at the hip the lens shows as it is; on the sights it and the housing behind it are left
+	// out and the eyepiece art is drawn over the clear view. The lens material is shared with the ZR68L, so it
+	// is left untouched.
+	"AdsOptic"
+	{
+		"lens"		"models/weapons/lenseCompleteMap"
+		"window"	"1"
+		"scope"		"1"
+		// A scope's eyepiece: seen through only on the sights.
+		"eyepiece"	"1"
+		"reticle"	"vgui/hud/optics/mx_reticle"
+		"lens_bone"	"Box01"
+		"lens_map"	"0.846 0.1934 12.63  -1.6943 0 0  0 0 -1.6943"
+		// The eyepiece's outline in its UVs.
+		"window_glass"	"0.500 0.000  0.629 0.017  0.750 0.067  0.853 0.147  0.933 0.250  0.983 0.371  1.000 0.500  0.983 0.629  0.933 0.750  0.853 0.853  0.750 0.933  0.629 0.983  0.500 1.000  0.371 0.983  0.250 0.933  0.147 0.853  0.067 0.750  0.017 0.629  0.000 0.500  0.017 0.371  0.067 0.250  0.147 0.147  0.250 0.067  0.371 0.017"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
