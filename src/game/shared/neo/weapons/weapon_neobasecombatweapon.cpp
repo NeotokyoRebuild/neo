@@ -20,6 +20,8 @@ extern ConVar weaponstay;
 #include "model_types.h"
 #include "c_neo_player.h"
 #include "in_main.h"
+#include "neo_ads.h"
+#include "neo_predicted_viewmodel.h"
 #else
 #include "items.h"
 #include "neo_gamerules.h"
@@ -1444,3 +1446,16 @@ const char *CNEOBaseCombatWeapon::GetDeathIcon(const CNEOBaseCombatWeapon *pNeoW
 	return "";
 }
 
+#ifdef CLIENT_DLL
+void CNEOBaseCombatWeapon::AddViewmodelBob(CBaseViewModel *viewmodel, Vector &origin, QAngle &angles)
+{
+	const Vector hipOrigin = origin;
+	const QAngle hipAngles = angles;
+	BaseClass::AddViewmodelBob(viewmodel, origin, angles);
+
+	const auto *pNeoViewModel = dynamic_cast<CNEOPredictedViewModel *>(viewmodel);
+	const float scale = NeoAdsBobScale(pNeoViewModel ? pNeoViewModel->GetAdsBlend() : 0.0f);
+	origin = hipOrigin + (origin - hipOrigin) * scale;
+	angles = hipAngles + (angles - hipAngles) * scale;
+}
+#endif
