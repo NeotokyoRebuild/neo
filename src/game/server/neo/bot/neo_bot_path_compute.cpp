@@ -61,6 +61,21 @@ bool CNEOBotPathCompute(CNEOBot* bot, PathFollower& path, const Vector& goal, Ro
 	return false;
 }
 
+// When no route reaches the goal and the search got no nearer to it than the bot's own area,
+// Path::Compute falls back to a straight line labeled COMPLETE_PATH: two segments in two areas
+bool CNEOBotPathReachesGoal(const PathFollower& path)
+{
+	if (!path.IsValid() || path.GetResult() != Path::COMPLETE_PATH)
+	{
+		return false;
+	}
+
+	const Path::Segment* pFirst = path.FirstSegment();
+	const Path::Segment* pLast = path.LastSegment();
+	const bool bStraightLineFallback = (path.NextSegment(pFirst) == pLast) && (pFirst->area != pLast->area);
+	return !bStraightLineFallback;
+}
+
 bool CNEOBotPathUpdateChase(CNEOBot* bot, ChasePath& path, CBaseEntity* subject, RouteType route, Vector* pPredictedSubjectPos)
 {
 	CNEOBotPathCost cost_with_reservations(bot, route);

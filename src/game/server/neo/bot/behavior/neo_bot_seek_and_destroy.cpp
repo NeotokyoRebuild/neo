@@ -128,23 +128,11 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 
 
 //---------------------------------------------------------------------------------------------
-// When no route reaches the goal and the search got no nearer to it than the bot's own area, Path::Compute
-// falls back to a straight line, labeled COMPLETE_PATH: two segments in two areas. A real route has three or more.
-static bool IsStraightLineFallback( const Path &path )
-{
-	const Path::Segment *pFirst = path.FirstSegment();
-	const Path::Segment *pLast = path.LastSegment();
-	return pFirst && path.NextSegment( pFirst ) == pLast && pFirst->area != pLast->area;
-}
-
-
-//---------------------------------------------------------------------------------------------
 // Roam goals are picked at random, so skip one that no route reaches instead of walking at it. A refused
 // attempt stays in m_path: the wander loop's last resort keeps it.
 bool CNEOBotSeekAndDestroy::TryPathToRoamGoal( CNEOBot *me, const Vector &vGoal )
 {
-	return CNEOBotPathCompute( me, m_path, vGoal, DEFAULT_ROUTE )
-		&& m_path.GetResult() == Path::COMPLETE_PATH && !IsStraightLineFallback( m_path );
+	return CNEOBotPathCompute( me, m_path, vGoal, DEFAULT_ROUTE ) && CNEOBotPathReachesGoal( m_path );
 }
 
 
