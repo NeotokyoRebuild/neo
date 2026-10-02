@@ -36,6 +36,7 @@ protected:
 	virtual void RecomputeSeekPath( CNEOBot *me );
 
 	bool TryPathToCombatSound( CNEOBot *me );
+	bool TryPathToRoamGoal( CNEOBot *me, const Vector &vGoal );
 	virtual bool IsSeekGoalAnObjective() const	{ return false; }
 
 	PathFollower m_path;
