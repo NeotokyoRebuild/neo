@@ -101,6 +101,9 @@ protected:
 
 	// Handles both ground friction and water friction
 	void			Friction( void );
+#ifdef NEO
+	void			Friction( float frametime );
+#endif
 
 #ifdef NEO
 	void			AirFriction( void );
@@ -109,7 +112,11 @@ protected:
 	virtual void	AirAccelerate( Vector& wishdir, float wishspeed, float accel );
 
 	virtual void	AirMove( void );
+#ifdef NEO
+	virtual float	GetAirSpeedCap( void );
+#else
 	virtual float	GetAirSpeedCap( void ) { return 30.f; }
+#endif
 	
 	virtual bool	CanAccelerate();
 	virtual void	Accelerate( Vector& wishdir, float wishspeed, float accel);

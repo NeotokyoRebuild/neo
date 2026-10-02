@@ -15,6 +15,9 @@ BEGIN_RECV_TABLE_NOBASE( C_HL2PlayerLocalData, DT_HL2Local )
 	RecvPropFloat( RECVINFO(m_flSuitPower) ),
 #ifdef NEO
 	RecvPropFloat(RECVINFO(m_cloakPower)),
+	RecvPropFloat(RECVINFO(m_slideTime)),
+	RecvPropFloat(RECVINFO(m_jumpHeldTime)),
+	RecvPropTime(RECVINFO(m_jumpCooldown)),
 #endif
 	RecvPropFloat( RECVINFO(m_flSuitPowerLoad) ),
 	RecvPropFloat( RECVINFO(m_flTimeAllSuitDevicesOff) ),
@@ -46,6 +49,11 @@ BEGIN_PREDICTION_DATA_NO_BASE( C_HL2PlayerLocalData )
 	DEFINE_PRED_FIELD( m_flSuitPower, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_flSuitPowerLoad, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_flTimeAllSuitDevicesOff, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
+#ifdef NEO
+	DEFINE_PRED_FIELD( m_slideTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
+	DEFINE_PRED_FIELD( m_jumpHeldTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
+	DEFINE_PRED_FIELD( m_jumpCooldown, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
+#endif
 #ifndef NEO
 	DEFINE_PRED_FIELD( m_bNewSprinting, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 #endif
@@ -59,6 +67,9 @@ C_HL2PlayerLocalData::C_HL2PlayerLocalData()
 	m_flSuitPower = 0.0;
 #ifdef NEO
 	m_cloakPower = 0.0;
+	m_slideTime = 0.0;
+	m_jumpHeldTime = 0.0;
+	m_jumpCooldown = 0.0;
 #endif
 	m_flSuitPowerLoad = 0.0f;
 	m_flTimeAllSuitDevicesOff = 0.0f;
