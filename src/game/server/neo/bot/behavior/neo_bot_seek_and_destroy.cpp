@@ -106,8 +106,7 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 		m_combatSoundCommitTimer.Start( sv_neo_bot_seek_and_destroy_combat_sound_commit_time.GetFloat() );
 	}
 
-	if ( CNEOBotPathCompute( me, m_path, m_vCombatSoundSpot, DEFAULT_ROUTE )
-			&& m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+	if ( TryPathToRoamGoal( me, m_vCombatSoundSpot ) )
 	{
 		m_vGoalPos = m_vCombatSoundSpot;
 		m_bGoingToTargetEntity = false;
@@ -125,6 +124,15 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 	}
 
 	return false;
+}
+
+
+//---------------------------------------------------------------------------------------------
+// Roam goals are picked at random, so skip one that no route reaches instead of walking at it. A refused
+// attempt stays in m_path: the wander loop's last resort keeps it.
+bool CNEOBotSeekAndDestroy::TryPathToRoamGoal( CNEOBot *me, const Vector &vGoal )
+{
+	return CNEOBotPathCompute( me, m_path, vGoal, DEFAULT_ROUTE ) && CNEOBotPathReachesGoal( m_path );
 }
 
 
@@ -592,7 +600,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 				m_hTargetEntity = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
 				m_bGoingToTargetEntity = true;
 				m_vGoalPos = m_hTargetEntity->WorldSpaceCenter();
-				if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, DEFAULT_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+				if ( TryPathToRoamGoal( me, m_vGoalPos ) )
 					return;
 			}
 		}
@@ -604,11 +612,12 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 
 		Vector vWanderPoint = TheNavAreas[RandomInt( 0, TheNavAreas.Size() - 1 )]->GetCenter();
 		m_vGoalPos = vWanderPoint;
-		if ( CNEOBotPathCompute( me, m_path, vWanderPoint, DEFAULT_ROUTE ) )
+		if ( TryPathToRoamGoal( me, vWanderPoint ) )
 			return;
 	}
 
-	m_path.Invalidate();
+	// No wander point has a route either (a pocket, or hazards all round): keep the last one's partial or
+	// straight-line path rather than stand still
 }
 
 
