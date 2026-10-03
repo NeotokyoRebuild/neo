@@ -8,9 +8,143 @@
 #include "weapon_smokegrenade.h"
 #include "nav_mesh.h"
 #include "bot/neo_bot_path_compute.h"
+#include "movevars_shared.h"
 
 extern ConVar sv_neo_bot_grenade_frag_safety_range_multiplier;
 extern ConVar sv_neo_grenade_blast_radius;
+extern ConVar sv_neo_grenade_gravity;
+extern ConVar sv_neo_grenade_throw_intensity;
+extern ConVar sv_neo_grenade_fuse_timer;
+extern ConVar sv_neo_grenade_cor;
+
+namespace
+{
+// CWeaponGrenade::ThrowGrenade derives both launch pitch and launch speed from eye pitch; the
+// slopes stretch eye pitch around the bias so that +-90 degrees stays +-90
+constexpr float kThrowPitchBias = -10.0f;
+constexpr float kThrowSlopeDown = ( 90.0f - kThrowPitchBias ) / 90.0f;
+constexpr float kThrowSlopeUp = ( 90.0f + kThrowPitchBias ) / 90.0f;
+constexpr float kThrowSpeedPerDegree = 6.0f;
+constexpr float kThrowForwardOffset = 16.0f; // CNEOBaseProjectile::GetThrowPos when unobstructed
+constexpr float kMaxElasticity = 0.9f; // CBaseGrenadeProjectile::ResolveFlyCollisionCustom clamp
+
+constexpr float kSteepestThrowPitch = -39.0f; // about a 45 degree lob, the bisection's upper bound
+constexpr float kShortestThrowPitch = 89.0f; // looking straight down drops it at the feet
+constexpr int kSolveBisections = 8;
+constexpr float kThrowLookAtDist = 4096.0f; // AimHeadTowards takes a point; this far, walking barely turns the view off it
+
+// How far a throw at this eye pitch carries along its aim before the fuse ends, over flat floor
+// flDrop below the eye. flCarryTime is in seconds at launch speed; own velocity adds vel * it.
+bool PredictThrowReach( float flEyePitch, float flDrop, float flOwnVz, float &flReach, float &flCarryTime )
+{
+	const float flPitch = kThrowPitchBias + flEyePitch * ( ( flEyePitch >= 0.0f ) ? kThrowSlopeDown : kThrowSlopeUp );
+	const float flSpeed = MIN( ( 90.0f - flPitch ) * kThrowSpeedPerDegree, sv_neo_grenade_throw_intensity.GetFloat() );
+	float flSin, flCos;
+	SinCos( DEG2RAD( flPitch ), &flSin, &flCos );
+
+	// Flight to the first floor impact; positive pitch looks down
+	const float flGravity = GetCurrentGravity() * sv_neo_grenade_gravity.GetFloat();
+	const float flVz = flOwnVz - flSin * flSpeed;
+	const float flDiscriminant = flVz * flVz + 2.0f * flGravity * ( flDrop - flSin * kThrowForwardOffset );
+	if ( flGravity <= 0.0f || flDiscriminant < 0.0f )
+	{
+		return false;
+	}
+
+	const float flImpactVz = sqrt( flDiscriminant );
+	const float flFlightTime = ( flVz + flImpactVz ) / flGravity;
+	if ( flFlightTime <= 0.0f )
+	{
+		return false;
+	}
+
+	const float flFuse = sv_neo_grenade_fuse_timer.GetFloat();
+	flCarryTime = flFuse;
+	if ( flFlightTime < flFuse )
+	{
+		// Each bounce keeps e of both speed components, so hop n carries e^2n x 2 vz / g at launch
+		// speed: a geometric series, capped by the fuse left at the first hop's speed, e x launch
+		const float flElasticity = MIN( sv_neo_grenade_cor.GetFloat(), kMaxElasticity );
+		const float flHopShare = flElasticity * flElasticity;
+		const float flBounceCarry = 2.0f * flImpactVz / flGravity * flHopShare / ( 1.0f - flHopShare );
+		flCarryTime = flFlightTime + MIN( flBounceCarry, flElasticity * ( flFuse - flFlightTime ) );
+	}
+
+	flReach = flCos * ( kThrowForwardOffset + flSpeed * flCarryTime );
+	return true;
+}
+
+// Distance from vecTarget to where a grenade thrown with these eye angles detonates
+float PredictMiss( const Vector &vecEye, const QAngle &angEye, const Vector &vecOwnVel, const Vector &vecTarget )
+{
+	float flReach, flCarryTime;
+	if ( !PredictThrowReach( angEye.x, vecEye.z - vecTarget.z, vecOwnVel.z, flReach, flCarryTime ) )
+	{
+		return FLT_MAX;
+	}
+
+	float flSin, flCos;
+	SinCos( DEG2RAD( angEye.y ), &flSin, &flCos );
+	const Vector2D vecLanding = vecEye.AsVector2D() + Vector2D( flCos, flSin ) * flReach + vecOwnVel.AsVector2D() * flCarryTime;
+	return ( vecLanding - vecTarget.AsVector2D() ).Length();
+}
+
+// Bisect eye pitch until the throw's reach matches what is left of the target distance once
+// the thrower's own velocity has carried the grenade. Returns the predicted miss, FLT_MAX if none lands.
+float SolveThrowAngles( const Vector &vecEye, const Vector &vecOwnVel, const Vector &vecTarget, QAngle &angOut )
+{
+	const Vector2D vecToTarget = vecTarget.AsVector2D() - vecEye.AsVector2D();
+	const float flDrop = vecEye.z - vecTarget.z;
+	float flUp = kSteepestThrowPitch;
+	float flDown = kShortestThrowPitch;
+	float flReach = 0.0f;
+	float flCarryTime = 0.0f;
+	Vector2D vecAim = vecToTarget;
+	bool bLands = false;
+	angOut.Init();
+
+	for ( int i = 0; i < kSolveBisections; ++i )
+	{
+		angOut.x = 0.5f * ( flUp + flDown );
+		bLands = PredictThrowReach( angOut.x, flDrop, vecOwnVel.z, flReach, flCarryTime );
+		vecAim = vecToTarget - vecOwnVel.AsVector2D() * flCarryTime;
+		if ( !bLands || flReach < vecAim.Length() )
+		{
+			flDown = angOut.x; // short: look further up
+		}
+		else
+		{
+			flUp = angOut.x;
+		}
+	}
+
+	if ( !bLands )
+	{
+		return FLT_MAX;
+	}
+
+	// Yaw puts the landing on the aim line, so only the reach can miss
+	angOut.y = RAD2DEG( atan2( vecAim.y, vecAim.x ) );
+	return fabsf( flReach - vecAim.Length() );
+}
+
+// Predicted miss at which a bot lets go; Hard was measured at 64u, the others are scaled from it
+float GetThrowTolerance( const CNEOBot *me )
+{
+	switch ( me->GetDifficulty() )
+	{
+	case CNEOBot::EXPERT:
+		return 48.0f;
+	case CNEOBot::HARD:
+		return 64.0f;
+	case CNEOBot::NORMAL:
+		return 96.0f;
+	case CNEOBot::EASY:
+	default:
+		return 128.0f;
+	}
+}
+} // namespace
 
 ConVar sv_neo_bot_grenade_debug_behavior("sv_neo_bot_grenade_debug_behavior", "0", FCVAR_CHEAT,
 	"Draw debug overlays for bot grenade behavior", true, 0, true, 1);
@@ -30,6 +164,8 @@ CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const C
 	m_bVantagePointBlocked = false;
 	m_vantageArea = nullptr;
 	m_vecTarget = vec3_invalid;
+	m_vecThrowLookAt = vec3_invalid;
+	m_angThrowSolved.Init();
 
 	if ( threat )
 	{
@@ -149,6 +285,37 @@ CNavArea *CNEOBotGrenadeThrow::FindVantageArea( CNEOBot *me )
 
 	SearchSurroundingAreas( me->GetLastKnownArea(), find, find.m_flSearchRange );
 	return find.m_vantageArea;
+}
+
+//---------------------------------------------------------------------------------------------
+// Aim so the grenade detonates near m_vecTarget, allowing for the launch coupling, own velocity,
+// bounces and the fuse
+CNEOBotGrenadeThrow::ThrowAimResult CNEOBotGrenadeThrow::UpdateThrowAim( CNEOBot *me )
+{
+	const Vector vecEye = me->EyePosition();
+	const Vector vecVel = me->GetAbsVelocity();
+	const float flTolerance = GetThrowTolerance( me );
+
+	// Re-solve only once the solution drifts: AimHeadTowards ignores a new point mid-turn
+	if ( m_vecThrowLookAt == vec3_invalid || PredictMiss( vecEye, m_angThrowSolved, vecVel, m_vecTarget ) > 0.5f * flTolerance )
+	{
+		// Not worth throwing if even the best arc misses by more than half the blast radius
+		const float flUnreachableMiss = 0.5f * sv_neo_grenade_blast_radius.GetFloat();
+		if ( SolveThrowAngles( vecEye, vecVel, m_vecTarget, m_angThrowSolved ) > flUnreachableMiss )
+		{
+			m_vecThrowLookAt = vec3_invalid;
+			return THROW_AIM_UNREACHABLE;
+		}
+
+		Vector vecDir;
+		AngleVectors( m_angThrowSolved, &vecDir );
+		m_vecThrowLookAt = vecEye + vecDir * kThrowLookAtDist;
+	}
+
+	me->GetBodyInterface()->AimHeadTowards( m_vecThrowLookAt, IBody::MANDATORY, 0.2f, nullptr, "Aiming grenade" );
+
+	// Release on where the current eye angles and velocity would put the grenade, not on angle error
+	return ( PredictMiss( vecEye, me->LocalEyeAngles(), vecVel, m_vecTarget ) <= flTolerance ) ? THROW_AIM_READY : THROW_AIM_TURNING;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -336,33 +503,14 @@ ActionResult< CNEOBot >	CNEOBotGrenadeThrow::Update( CNEOBot *me, float interval
 		{
 			return Done( "Invalid target coordinate" );
 		}
-		
-		me->GetBodyInterface()->AimHeadTowards( m_vecTarget, IBody::MANDATORY, 0.2f, nullptr, "Aiming grenade" );
 
-		Vector vecForward;
-		me->EyeVectors( &vecForward );
-		Vector vecToTarget = m_vecTarget - me->EyePosition();
-		vecToTarget.NormalizeInPlace();
-		
-		float flAimThreshold;
-		switch( me->GetDifficulty() )
+		const ThrowAimResult aim = UpdateThrowAim( me );
+		if ( aim == THROW_AIM_UNREACHABLE )
 		{
-		case CNEOBot::EXPERT:
-			flAimThreshold = 0.98f;
-			break;
-		case CNEOBot::HARD:
-			flAimThreshold = 0.97f;
-			break;
-		case CNEOBot::NORMAL:
-			flAimThreshold = 0.96f;
-			break;
-		case CNEOBot::EASY:
-		default:
-			flAimThreshold = 0.95f;
-			break;
+			return Done( "Grenade target out of throwing range" );
 		}
 
-		if ( vecForward.Dot( vecToTarget ) >= flAimThreshold )
+		if ( aim == THROW_AIM_READY )
 		{
 			if ( me->IsLineOfFireClear( m_vecTarget, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )
 			{
