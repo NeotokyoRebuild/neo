@@ -80,6 +80,11 @@ private:
 	bool LadderUpdate( INextBot *bot );				// move bot along ladder
 	CBaseEntity *FindBlocker( INextBot *bot );		// if entity is returned, it is blocking us from continuing along our path
 
+#ifdef NEO
+	bool HasFallenBelowPath( INextBot *bot ) const;	// return true if we stand off the path, more than a step below it
+	bool m_wasOnGround;
+#endif
+
 	float m_goalTolerance;
 };
 
