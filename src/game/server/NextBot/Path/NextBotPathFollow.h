@@ -9,6 +9,9 @@
 #include "nav_mesh.h"
 #include "nav_pathfind.h"
 #include "NextBotPath.h"
+#ifdef NEO
+#include "neo/bot/neo_bot_prop_detour.h"
+#endif
 
 class INextBot;
 class ILocomotion;
@@ -83,6 +86,7 @@ private:
 #ifdef NEO
 	bool HasFallenBelowPath( INextBot *bot ) const;	// return true if we stand off the path, more than a step below it
 	bool m_wasOnGround;
+	CNEOBotPropDetour m_propDetour;					// steers around props the nav mesh does not know about
 #endif
 
 	float m_goalTolerance;
