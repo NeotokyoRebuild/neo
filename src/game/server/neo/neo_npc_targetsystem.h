@@ -2,6 +2,8 @@
 #include "cbase.h"
 #include "filters.h"
 
+class CNavArea;
+
 class CNEO_NPCTargetSystem : public CBaseEntity
 {
 public:
@@ -45,6 +47,9 @@ public:
 	bool CanSee(CBaseEntity *pEntity);
 
 private:
+	void PublishBotHazards(CBasePlayer *pTarget);
+	void AddVisibleHazard(CNavArea *pArea, int iTeam, float flExpireTime, bool bPropagatePVS = true);
+
 	enum TargetZone_e
 	{
 		ZONE_NONE = 0,
@@ -58,4 +63,5 @@ private:
 	bool m_bMiddleIgnoreActive = false;
 	float m_flNextFireTime = 0;
 	CBasePlayer *m_pLastBestTarget = nullptr;
+	float m_flNextHazardTime = 0;
 };
