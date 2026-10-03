@@ -15,6 +15,12 @@ ConVar neo_bot_path_penalty_jump_multiplier("neo_bot_path_penalty_jump_multiplie
 ConVar neo_bot_path_penalty_ladder_multiplier("neo_bot_path_penalty_ladder_multiplier", "3.0", FCVAR_CHEAT,
 	"Penalty multiplier for ladder traversal in pathfinding", true, 0.1f, false, 0.0f);
 
+// A mesh author marks an area NAV_MESH_AVOID where bots come to grief: the pit below a ladder they fall off,
+// a shaft top they pile up on. A step into one costs this many times its length, so bots route around it
+// wherever a reasonable alternative exists. The cost stays finite, so an AVOID area that is the only way
+// through is still used.
+static constexpr float NEO_BOT_PATH_AVOID_MULTIPLIER = 20.0f;
+
 ConVar neo_bot_path_penalty_exposure_base("neo_bot_path_penalty_exposure_base", "5.0", FCVAR_CHEAT,
 	"General additional penalty per visible area for bots to avoid exposed areas", true, 0.0f, false, 0.0f);
 
@@ -93,6 +99,13 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 	else
 	{
 		dist = (area->GetCenter() - fromArea->GetCenter()).Length();
+	}
+
+	// A ladder crossing pays for either end, so a ladder climbed up out of an AVOID area is as
+	// expensive as one that ends in one
+	if (area->HasAttributes(NAV_MESH_AVOID) || (ladder && fromArea->HasAttributes(NAV_MESH_AVOID)))
+	{
+		dist *= NEO_BOT_PATH_AVOID_MULTIPLIER;
 	}
 
 	// Only apply height restrictions for non-ladder jump paths
