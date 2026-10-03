@@ -12,6 +12,13 @@
 #define CNEOSpawnPoint C_NEOSpawnPoint
 #endif
 
+enum class E_TeamSide
+{
+	Unspecified,
+	Attacker,
+	Defender
+};
+
 class CNEOSpawnPoint : public CBaseEntity
 {
 	DECLARE_CLASS(CNEOSpawnPoint, CBaseEntity);
@@ -29,6 +36,7 @@ public:
 
 	virtual void Spawn() override;
 	int GetOwningTeam() const;
+	E_TeamSide GetSide() const;
 
 #ifdef GAME_DLL
 	bool m_bDisabled;
@@ -40,7 +48,7 @@ public:
 #endif
 
 protected:
-	int m_iOwningTeam;
+	E_TeamSide m_eSide;
 
 private:
 	CNEOSpawnPoint(const CNEOSpawnPoint &other);

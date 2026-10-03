@@ -55,7 +55,7 @@ public:
 
 	CBaseDMStart() : CNEOSpawnPoint()
 	{
-		m_iOwningTeam = TEAM_ANY;
+		m_eSide = E_TeamSide::Unspecified;
 	}
 #else
 	DECLARE_CLASS( CBaseDMStart, CPointEntity );
