@@ -41,6 +41,15 @@ static const float LADDER_CONTACT_RESET = 1.0f;
 // Going down a ladder, forward is pressed only once it moves the bot down at least this
 // fraction of the climb speed. Slower than that, the view is still coming round.
 static const float LADDER_MIN_DESCENT_RATE = 0.25f;
+
+// A catch over a ladder's top edge lapses this long after the descent last asked for it.
+static const float LADDER_CATCH_TIME = 0.5f;
+// How long the move down is held from a catch: past the grab, until the climb takes the ladder over.
+static const float LADDER_CATCH_DESCENT_TIME = 0.2f;
+// How far the hull may still reach back over the ladder's top: closer in, it could be standing on it.
+static const float LADDER_CATCH_OVERLAP = 4.0f;
+// The view must point at least this much into the face (cos 45 degrees) for forward to reach it.
+static const float LADDER_CATCH_FACING = 0.707f;
 #endif // NEO
 
 //-----------------------------------------------------------------------------------------------------
@@ -74,6 +83,8 @@ void PlayerLocomotion::Reset( void )
 #ifdef NEO
 	m_unwantedLadderSince = 0.0f;
 	m_unwantedLadderLastTouch = 0.0f;
+	m_ladderToCatch = NULL;
+	m_ladderCatchTimer.Invalidate();
 #endif
 
 	m_minSpeedLimit = 0.0f;
@@ -215,6 +226,85 @@ bool PlayerLocomotion::IsForwardDownLadder( const CNavLadder *ladder ) const
 	const float climbRate = view.z + intoFace;
 
 	return climbRate < -LADDER_MIN_DESCENT_RATE;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+/**
+ * A descent backing out over the ladder's top edge asks for this every update: Upkeep() presses into
+ * the face on the tick the bot drops past the top.
+ */
+void PlayerLocomotion::CatchLadderBelowTop( const CNavLadder *ladder )
+{
+	m_ladderToCatch = ladder;
+	m_ladderCatchTimer.Start( LADDER_CATCH_TIME );
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+void PlayerLocomotion::StopCatchingLadder( void )
+{
+	m_ladderToCatch = NULL;
+	m_ladderCatchTimer.Invalidate();
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+/**
+ * Bot updates come ten times a second, and a bot backing off the top is out of LadderMove()'s 2 u reach
+ * of the face within a tick or two: so the press into the face is made here, every tick, until it grabs.
+ */
+void PlayerLocomotion::Upkeep( void )
+{
+	BaseClass::Upkeep();
+
+	const CNavLadder *ladder = m_ladderToCatch;
+	if ( ladder == NULL )
+	{
+		return;
+	}
+
+	if ( m_ladderCatchTimer.IsElapsed() || m_player->GetMoveType() == MOVETYPE_LADDER )
+	{
+		StopCatchingLadder();
+		return;
+	}
+
+	INextBotPlayerInput *playerButtons = dynamic_cast< INextBotPlayerInput * >( GetBot() );
+	if ( playerButtons == NULL )
+	{
+		return;
+	}
+
+	// Forward has to point into the face, or pressing it reaches nothing
+	const Vector &normal = ladder->GetNormal();
+	Vector view;
+	m_player->EyeVectors( &view );
+	if ( -DotProduct2D( view.AsVector2D(), normal.AsVector2D() ) < LADDER_CATCH_FACING )
+	{
+		return;
+	}
+
+	// In the air below the top, in front of the face with the hull clear of the ladder's own top, and not
+	// beside the ladder
+	const Vector &feet = GetFeet();
+	if ( IsOnGround() || feet.z >= ladder->m_top.z )
+	{
+		return;
+	}
+
+	const Vector toFeet = feet - ladder->GetPosAtHeight( feet.z );
+	const float side = toFeet.x * normal.y - toFeet.y * normal.x;
+	const float halfHull = GetBot()->GetBodyInterface()->GetHullWidth() * 0.5f;
+	if ( DotProduct( toFeet, normal ) < halfHull - LADDER_CATCH_OVERLAP || fabsf( side ) > ladder->m_width * 0.5f + halfHull )
+	{
+		return;
+	}
+
+	// LadderMove() grabs on the tick the hull is within reach, and the move down makes that first
+	// ladder move a descent whatever the view
+	playerButtons->PressForwardButton();
+	playerButtons->PressMoveDownButton( LADDER_CATCH_DESCENT_TIME );
 }
 #endif // NEO
 

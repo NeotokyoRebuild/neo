@@ -63,6 +63,9 @@ public:
 	virtual bool IsAbleToAutoCenterOnLadder( void ) const;
 #ifdef NEO
 	bool IsForwardDownLadder( const CNavLadder *ladder ) const;	// would pressing forward move us down this ladder
+	void CatchLadderBelowTop( const CNavLadder *ladder );	// press into this ladder's face the tick we drop past its top
+	void StopCatchingLadder( void );
+	virtual void Upkeep( void ) override;
 #endif
 
 	virtual void FaceTowards( const Vector &target );		// rotate body to face towards "target"
@@ -139,6 +142,10 @@ private:
 	Vector GetIntoLadderFace( const CNavLadder *ladder ) const;	// into the face of the ladder brush we hold
 	float m_unwantedLadderSince;			// when the current bout of unwanted contact began
 	float m_unwantedLadderLastTouch;		// last tick we were on a ladder we did not ask for
+
+	// a descent backing out over the ladder's top edge: Upkeep() presses into the face the tick we drop past the top
+	const CNavLadder *m_ladderToCatch;
+	CountdownTimer m_ladderCatchTimer;
 #endif
 
 	bool IsClimbPossible( INextBot *me, const CBaseEntity *obstacle ) const;
