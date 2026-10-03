@@ -97,6 +97,15 @@ public:
 };
 
 
+//---------------------------------------------------------------------------------------------
+int CountThreatsExposingArea( CNEOBot *me, CNavArea *area )
+{
+	CTestAreaAgainstThreats test( me, area );
+	me->GetVisionInterface()->ForEachKnownEntity( test );
+	return test.m_exposedThreatCount;
+}
+
+
 // collect nearby areas that provide cover from our known threats
 class CSearchForCover : public ISearchSurroundingAreasFunctor
 {
