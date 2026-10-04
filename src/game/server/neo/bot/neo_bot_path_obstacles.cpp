@@ -85,8 +85,9 @@ static void GetLineBounds( const CUtlVector< Vector > &line, float range, Vector
 
 
 //----------------------------------------------------------------------------------------------------------------
-// The breakable the body meets first walking the line, within PATH_OBSTACLE_BREAKABLE_RANGE
-static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector< Vector > &line, const CUtlVector< CBaseEntity * > &breakables )
+// The breakable the body meets first walking the line, within PATH_OBSTACLE_BREAKABLE_RANGE,
+// when nothing else stands in front of it
+static CBaseEntity *FindBreakableInWay( INextBot *bot, const BodyBox_t &body, const CUtlVector< Vector > &line, const CUtlVector< CBaseEntity * > &breakables )
 {
 	// a breakable away from the body's way over the range cannot be met, so it costs no sweep
 	Vector reachLo, reachHi;
@@ -95,6 +96,7 @@ static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector<
 	reachHi += body.maxs;
 
 	CBaseEntity *nearest = NULL;
+	int nearestLeg = -1;
 	float nearestDistance = PATH_OBSTACLE_BREAKABLE_RANGE;
 	FOR_EACH_VEC( breakables, i )
 	{
@@ -113,6 +115,7 @@ static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector<
 			if ( BodyMeetsEntity( body, line[ leg ], line[ leg + 1 ], breakables[ i ], &fraction ) && legStart + fraction * legLength < nearestDistance )
 			{
 				nearest = breakables[ i ];
+				nearestLeg = leg;
 				nearestDistance = legStart + fraction * legLength;
 				break;
 			}
@@ -121,7 +124,24 @@ static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector<
 		}
 	}
 
-	return nearest;
+	if ( !nearest )
+	{
+		return NULL;
+	}
+
+	// what the body meets first on the way may not be the breakable: a crate, a door or a wall in front of it,
+	// so walk the legs up to it with the body and keep the breakable only if it is the first thing met
+	for ( int leg = 0; leg <= nearestLeg; ++leg )
+	{
+		trace_t result;
+		UTIL_TraceHull( line[ leg ], line[ leg + 1 ], body.mins, body.maxs, MASK_PLAYERSOLID, bot->GetEntity(), COLLISION_GROUP_NONE, &result );
+		if ( result.DidHit() )
+		{
+			return ( result.m_pEnt == nearest ) ? nearest : NULL;
+		}
+	}
+
+	return NULL;
 }
 
 //----------------------------------------------------------------------------------------------------------------
@@ -258,7 +278,7 @@ void CNEOBotPathObstacles::Plan( INextBot *bot, const PathFollower &path )
 	CollectProps( bot, lineLo, lineHi, &obstacles, &breakables );
 
 	const BodyBox_t body = GetBodyBox( bot );
-	m_breakable = FindBreakableInWay( body, line, breakables );
+	m_breakable = FindBreakableInWay( bot, body, line, breakables );
 	m_breakableTimer.Start( PATH_OBSTACLE_LOOK_INTERVAL );
 
 	if ( obstacles.Count() == 0 )
@@ -348,5 +368,5 @@ void CNEOBotPathObstacles::LookForBreakable( INextBot *bot, const PathFollower &
 
 	CUtlVector< CBaseEntity * > breakables;
 	FindBreakables( bot, lineLo, lineHi, &breakables );
-	m_breakable = FindBreakableInWay( GetBodyBox( bot ), line, breakables );
+	m_breakable = FindBreakableInWay( bot, GetBodyBox( bot ), line, breakables );
 }
