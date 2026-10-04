@@ -31,6 +31,10 @@ constexpr float PROP_DETOUR_OFF_ROUTE_RANGE = 16.0f;
 constexpr float PROP_DETOUR_LOOK_AHEAD_RANGE = 256.0f;
 constexpr float PROP_DETOUR_REJOIN_EXTRA_RANGE = 128.0f;
 
+// A breakable is in the way when the body meets it this far along the path:
+// beyond a look's walk at a run, so it is found before the bot reaches it, and near enough to melee it on arrival
+constexpr float PROP_DETOUR_BREAKABLE_RANGE = 128.0f;
+
 // The detour rejoins the path this far past the last prop in the way
 constexpr float PROP_DETOUR_REJOIN_PAST_PROP = 32.0f;
 
@@ -306,12 +310,11 @@ static bool BodyMeetsEntity( const BodyBox_t &body, const Vector &from, const Ve
 
 
 //----------------------------------------------------------------------------------------------------------------
-// The breakable the body meets first walking the line, within the range props are looked for in:
-// about as far as the next path goal usually lies, which is where a hull trace for breakables used to end
+// The breakable the body meets first walking the line, within PROP_DETOUR_BREAKABLE_RANGE
 static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector< Vector > &line, const CUtlVector< CBaseEntity * > &breakables )
 {
 	CBaseEntity *nearest = NULL;
-	float nearestDistance = PROP_DETOUR_LOOK_AHEAD_RANGE;
+	float nearestDistance = PROP_DETOUR_BREAKABLE_RANGE;
 	FOR_EACH_VEC( breakables, i )
 	{
 		float legStart = 0.0f;
@@ -1290,7 +1293,7 @@ void CNEOBotPropDetour::LookForBreakable( INextBot *bot, const PathFollower &pat
 
 	CUtlVector< Vector > line;
 	CUtlVector< const Path::Segment * > segments;
-	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PROP_DETOUR_LOOK_AHEAD_RANGE, &line, &segments );
+	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PROP_DETOUR_BREAKABLE_RANGE, &line, &segments );
 	if ( line.Count() < 2 )
 	{
 		return;
