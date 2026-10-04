@@ -14,7 +14,8 @@
 namespace
 {
 // How often the path ahead is checked, so a prop that is pushed or animates is followed
-constexpr float PROP_DETOUR_REPLAN_INTERVAL = 0.25f;
+// and a breakable in the way is seen before the bot walks into it
+constexpr float PROP_DETOUR_REPLAN_INTERVAL = 0.3f;
 // While every prop in a wide detour's region rests where the last search saw it, the detour is searched again only this often:
 // the bot may since have come to see props that were out of its sight
 constexpr float PROP_DETOUR_AT_REST_REPLAN_INTERVAL = 1.0f;
@@ -174,18 +175,30 @@ static bool IsSolidToPlayers( CBaseEntity *entity )
 namespace
 {
 	// The movable props solid to players a spatial partition query meets, however much else lies there:
-	// a box query into a fixed-size list fills up with everything it finds, cans, weapons and triggers alike
+	// a box query into a fixed-size list fills up with everything it finds, cans, weapons and triggers alike.
+	// Given a list for them, it also keeps the solid entities the bot can break, such as glass
 	class CMovablePropEnum : public IPartitionEnumerator
 	{
 	public:
-		explicit CMovablePropEnum( CUtlVector< CBaseEntity * > *props ) : m_props( props ) {}
+		CMovablePropEnum( CUtlVector< CBaseEntity * > *props, INextBot *bot, CUtlVector< CBaseEntity * > *breakables )
+			: m_props( props ), m_bot( bot ), m_breakables( breakables ) {}
 
 		virtual IterationRetval_t EnumElement( IHandleEntity *handleEntity )
 		{
 			CBaseEntity *entity = gEntList.GetBaseEntity( handleEntity->GetRefEHandle() );
-			if ( entity && IsMovableProp( entity ) && IsSolidToPlayers( entity ) )
+			if ( !entity || !IsSolidToPlayers( entity ) )
+			{
+				return ITERATION_CONTINUE;
+			}
+
+			if ( IsMovableProp( entity ) )
 			{
 				m_props->AddToTail( entity );
+			}
+
+			if ( m_breakables && m_bot->IsAbleToBreak( entity ) && entity->GetHealth() > 0 )
+			{
+				m_breakables->AddToTail( entity );
 			}
 
 			return ITERATION_CONTINUE;
@@ -193,6 +206,8 @@ namespace
 
 	private:
 		CUtlVector< CBaseEntity * > *m_props;
+		INextBot *m_bot;
+		CUtlVector< CBaseEntity * > *m_breakables;
 	};
 }
 
@@ -277,6 +292,49 @@ static bool BodyMeetsProp( const BodyBox_t &body, const Vector &from, const Vect
 
 
 //----------------------------------------------------------------------------------------------------------------
+// Return true if a body moving from 'from' to 'to' touches the entity where it stands
+static bool BodyMeetsEntity( const BodyBox_t &body, const Vector &from, const Vector &to, CBaseEntity *entity, float *fraction )
+{
+	Ray_t ray;
+	ray.Init( from, to, body.mins, body.maxs );
+
+	trace_t result;
+	enginetrace->ClipRayToEntity( ray, MASK_PLAYERSOLID, entity, &result );
+	*fraction = result.startsolid ? 0.0f : result.fraction;
+	return result.startsolid || result.fraction < 1.0f;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------
+// The breakable the body meets first walking the line, within the range props are looked for in:
+// about as far as the next path goal usually lies, which is where a hull trace for breakables used to end
+static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector< Vector > &line, const CUtlVector< CBaseEntity * > &breakables )
+{
+	CBaseEntity *nearest = NULL;
+	float nearestDistance = PROP_DETOUR_LOOK_AHEAD_RANGE;
+	FOR_EACH_VEC( breakables, i )
+	{
+		float legStart = 0.0f;
+		for ( int leg = 0; leg + 1 < line.Count() && legStart < nearestDistance; ++leg )
+		{
+			const float legLength = ( line[ leg + 1 ] - line[ leg ] ).Length2D();
+			float fraction;
+			if ( BodyMeetsEntity( body, line[ leg ], line[ leg + 1 ], breakables[ i ], &fraction ) && legStart + fraction * legLength < nearestDistance )
+			{
+				nearest = breakables[ i ];
+				nearestDistance = legStart + fraction * legLength;
+				break;
+			}
+
+			legStart += legLength;
+		}
+	}
+
+	return nearest;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------
 // The path ahead as a line from the bot's feet, over walked segments only, up to the range,
 // with the segment each point of the line belongs to
 static void GetPathAhead( const PathFollower &path, const Vector &feet, float range, CUtlVector< Vector > *line, CUtlVector< const Path::Segment * > *segments )
@@ -330,25 +388,28 @@ static Vector GetPointAlong( const CUtlVector< Vector > &line, float distance, i
 
 //----------------------------------------------------------------------------------------------------------------
 // Every movable prop solid to players around the floor in the box, from below it up to the headroom above it
-static void FindMovableProps( const Vector &floorLo, const Vector &floorHi, CUtlVector< CBaseEntity * > *props )
+static void FindMovableProps( const Vector &floorLo, const Vector &floorHi, CUtlVector< CBaseEntity * > *props,
+	INextBot *bot = NULL, CUtlVector< CBaseEntity * > *breakables = NULL )
 {
 	const Vector queryLo = floorLo - Vector( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_FLOOR_HEIGHT_TOLERANCE );
 	const Vector queryHi = floorHi + Vector( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_PROP_QUERY_HEADROOM );
 
-	CMovablePropEnum propEnum( props );
+	CMovablePropEnum propEnum( props, bot, breakables );
 	partition->EnumerateElementsInBox( PARTITION_ENGINE_NON_STATIC_EDICTS, queryLo, queryHi, false, &propEnum );
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
 // Movable props the bot can see that stand, or will soon stand, in its body space over the floor in the box
-static void CollectProps( INextBot *bot, const Vector &floorLo, const Vector &floorHi, CUtlVector< PropObstacle_t > *obstacles )
+// and, given a list for them, the breakables there
+static void CollectProps( INextBot *bot, const Vector &floorLo, const Vector &floorHi, CUtlVector< PropObstacle_t > *obstacles,
+	CUtlVector< CBaseEntity * > *breakables = NULL )
 {
 	const BodyBox_t body = GetBodyBox( bot );
 	const float halfWidth = 0.5f * bot->GetBodyInterface()->GetHullWidth();
 
 	CUtlVector< CBaseEntity * > props;
-	FindMovableProps( floorLo, floorHi, &props );
+	FindMovableProps( floorLo, floorHi, &props, bot, breakables );
 	FOR_EACH_VEC( props, i )
 	{
 		CBaseEntity *entity = props[ i ];
@@ -1022,6 +1083,8 @@ CNEOBotPropDetour::CNEOBotPropDetour()
 void CNEOBotPropDetour::Reset()
 {
 	m_replanTimer.Invalidate();
+	m_breakableTimer.Invalidate();
+	m_breakable = NULL;
 	m_waypoints.RemoveAll();
 	m_pathGoal = NULL;
 	m_rejoinGoal = NULL;
@@ -1062,6 +1125,12 @@ void CNEOBotPropDetour::Update( INextBot *bot, const PathFollower &path )
 			m_waypoints.RemoveAll();
 			m_pathGoal = m_resumeGoal;
 		}
+	}
+
+	// a plan looks for breakables with the props; while none does (detouring, or waiting to retry), they are looked for alone
+	if ( m_breakableTimer.IsElapsed() )
+	{
+		LookForBreakable( bot, path );
 	}
 
 	const Vector &feet = bot->GetLocomotionInterface()->GetFeet();
@@ -1106,14 +1175,19 @@ void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
 	}
 
 	CUtlVector< PropObstacle_t > obstacles;
-	CollectProps( bot, lineLo, lineHi, &obstacles );
+	CUtlVector< CBaseEntity * > breakables;
+	CollectProps( bot, lineLo, lineHi, &obstacles, &breakables );
+
+	const BodyBox_t body = GetBodyBox( bot );
+	m_breakable = FindBreakableInWay( body, line, breakables );
+	m_breakableTimer.Start( PROP_DETOUR_REPLAN_INTERVAL );
+
 	if ( obstacles.Count() == 0 )
 	{
 		return;
 	}
 
 	// which props the body would meet along the path, and where it would be past all of them
-	const BodyBox_t body = GetBodyBox( bot );
 	float rejoinDistance = -1.0f;
 	bool isPathPushable = true;
 	Vector2D regionLo = line[ 0 ].AsVector2D();
@@ -1204,6 +1278,36 @@ void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
 	m_isWide = isWide;
 	m_isPathPushable = isPathPushable;
 	NoteSearch( mover->GetFeet() );
+}
+
+
+//----------------------------------------------------------------------------------------------------------------
+// Look along the path ahead for a breakable in the way, without the props
+void CNEOBotPropDetour::LookForBreakable( INextBot *bot, const PathFollower &path )
+{
+	m_breakableTimer.Start( PROP_DETOUR_REPLAN_INTERVAL );
+	m_breakable = NULL;
+
+	CUtlVector< Vector > line;
+	CUtlVector< const Path::Segment * > segments;
+	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PROP_DETOUR_LOOK_AHEAD_RANGE, &line, &segments );
+	if ( line.Count() < 2 )
+	{
+		return;
+	}
+
+	Vector lineLo = line[ 0 ];
+	Vector lineHi = line[ 0 ];
+	for ( int i = 1; i < line.Count(); ++i )
+	{
+		VectorMin( lineLo, line[ i ], lineLo );
+		VectorMax( lineHi, line[ i ], lineHi );
+	}
+
+	CUtlVector< CBaseEntity * > props;
+	CUtlVector< CBaseEntity * > breakables;
+	FindMovableProps( lineLo, lineHi, &props, bot, &breakables );
+	m_breakable = FindBreakableInWay( GetBodyBox( bot ), line, breakables );
 }
 
 

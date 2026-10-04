@@ -45,6 +45,10 @@ public:
 
 	Path::ResultType GetResult() const { return m_result;  }
 
+#ifdef NEO
+	CBaseEntity *GetBreakableInWay() const { return m_propDetour.GetBreakableInWay(); }	// a breakable the last look ahead met on the path
+#endif
+
 private:
 	const Path::Segment *m_goal;					// our current goal along the path
 	float m_minLookAheadRange;

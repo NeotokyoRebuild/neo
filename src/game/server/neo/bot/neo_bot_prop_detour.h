@@ -24,13 +24,19 @@ public:
 	// and the one it had before the detour when the detour is given up
 	const Path::Segment *GetPathGoal() const { return m_pathGoal; }
 
+	// The nearest breakable the bot's body would meet on the path ahead, as of the last look
+	CBaseEntity *GetBreakableInWay() const { return m_breakable.Get(); }
+
 private:
 	void Plan( INextBot *bot, const PathFollower &path );
+	void LookForBreakable( INextBot *bot, const PathFollower &path );
 	bool Replan( INextBot *bot );
 	void NoteSearch( const Vector &feet );
 	bool IsLastSearchValid( INextBot *bot ) const;
 
 	CountdownTimer m_replanTimer;
+	CountdownTimer m_breakableTimer;		// the look for breakables, when no plan this often looks for them too
+	CHandle< CBaseEntity > m_breakable;
 	CUtlVector< Vector > m_waypoints;
 	const Path::Segment *m_pathGoal;
 
