@@ -129,12 +129,13 @@ static CBaseEntity *FindBreakableInWay( INextBot *bot, const BodyBox_t &body, co
 		return NULL;
 	}
 
-	// what the body meets first on the way may not be the breakable: a crate, a door or a wall in front of it,
-	// so walk the legs up to it with the body and keep the breakable only if it is the first thing met
+	// what the body meets first on the way may be a crate, a door or a wall in front of the breakable:
+	// keep the breakable only if the body reaches it first, passing through players, who move
+	CTraceFilterNoNPCsOrPlayer filter( bot->GetEntity(), COLLISION_GROUP_NONE );
 	for ( int leg = 0; leg <= nearestLeg; ++leg )
 	{
 		trace_t result;
-		UTIL_TraceHull( line[ leg ], line[ leg + 1 ], body.mins, body.maxs, MASK_PLAYERSOLID, bot->GetEntity(), COLLISION_GROUP_NONE, &result );
+		UTIL_TraceHull( line[ leg ], line[ leg + 1 ], body.mins, body.maxs, MASK_PLAYERSOLID, &filter, &result );
 		if ( result.DidHit() )
 		{
 			return ( result.m_pEnt == nearest ) ? nearest : NULL;
