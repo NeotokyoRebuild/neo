@@ -21,7 +21,10 @@ constexpr float PROP_DETOUR_WAYPOINT_REACHED_RANGE = 12.0f;
 // and a bot this far off the straight line to its next waypoint has left the route the search checked
 constexpr float PROP_DETOUR_OFF_ROUTE_RANGE = 16.0f;
 
-// Cells of the grid laid over the floor a detour may use
+// The grid laid over the floor a detour may use reaches as far past the path and the props as the prop query does,
+constexpr float PROP_DETOUR_GRID_MARGIN = OBSTACLE_PROP_QUERY_MARGIN;
+// and as far up or down from them
+constexpr float PROP_DETOUR_FLOOR_HEIGHT_TOLERANCE = OBSTACLE_PROP_FLOOR_TOLERANCE;
 constexpr float PROP_DETOUR_GRID_CELL_SIZE = 16.0f;
 constexpr int PROP_DETOUR_GRID_MAX_CELLS_PER_SIDE = 96;
 
@@ -685,7 +688,7 @@ void CNEOBotPropDetour::Reset()
 	m_isWide = false;
 	m_isPathPushable = false;
 	m_legStart = vec3_origin;
-	m_restingPropCount = PROP_DETOUR_PROPS_MOVING;
+	m_restingPropCount = OBSTACLE_PROPS_MOVING;
 	m_searchAgeTimer.Invalidate();
 }
 
@@ -693,8 +696,9 @@ void CNEOBotPropDetour::Reset()
 //----------------------------------------------------------------------------------------------------------------
 float CNEOBotPropDetour::Plan( INextBot *bot, const PropDetourRequest_t &request, float lookInterval )
 {
-	Vector2D regionLo = request.regionLo;
-	Vector2D regionHi = request.regionHi;
+	const Vector2D margin( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN );
+	Vector2D regionLo = request.regionLo - margin;
+	Vector2D regionHi = request.regionHi + margin;
 
 	// the region reaches past the props looked for around the path, by the footprints of those it crosses,
 	// so the search looks for every prop on it again, as a replan does
@@ -832,7 +836,7 @@ void CNEOBotPropDetour::NoteSearch( const Vector &feet )
 // The last search still holds: the props in the region rest where it saw them, and the bot keeps to its route
 bool CNEOBotPropDetour::IsLastSearchValid( INextBot *bot ) const
 {
-	if ( m_restingPropCount == PROP_DETOUR_PROPS_MOVING || m_searchAgeTimer.IsElapsed() )
+	if ( m_restingPropCount == OBSTACLE_PROPS_MOVING || m_searchAgeTimer.IsElapsed() )
 	{
 		return false;
 	}
@@ -845,4 +849,3 @@ bool CNEOBotPropDetour::IsLastSearchValid( INextBot *bot ) const
 
 	return CountRestingProps( Vector( m_regionLo.x, m_regionLo.y, m_floorLo ), Vector( m_regionHi.x, m_regionHi.y, m_floorHi ) ) == m_restingPropCount;
 }
-

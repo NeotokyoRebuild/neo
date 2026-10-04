@@ -8,8 +8,7 @@ class PathFollower;
 
 //----------------------------------------------------------------------------------------------------------------
 // Looks along a bot's path for what the nav mesh cannot know about:
-// props that physics or an animation moves, which it steers around with a detour,
-// and breakables in the way, which it reports for the bot to clear
+// props that move, which it detours around, and breakables in the way, which it reports for the bot to clear
 class CNEOBotPathObstacles
 {
 public:
@@ -34,7 +33,7 @@ private:
 	void LookForBreakable( INextBot *bot, const PathFollower &path );
 
 	CountdownTimer m_lookTimer;				// the look ahead, or the detour's search again while detouring
-	CountdownTimer m_breakableTimer;		// the look for breakables, when no plan this often looks for them too
+	CountdownTimer m_breakableTimer;		// the look for breakables alone, while no plan is looking for them
 	CHandle< CBaseEntity > m_breakable;
 	CNEOBotPropDetour m_detour;
 };

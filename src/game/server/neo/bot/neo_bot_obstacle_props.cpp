@@ -11,20 +11,20 @@
 namespace
 {
 // A moving prop is kept clear of where it will be within this time, at its current velocity
-constexpr float PROP_DETOUR_MOTION_PREDICT_TIME = 1.0f;
-constexpr float PROP_DETOUR_MOVING_PROP_MIN_SPEED = 10.0f;
+constexpr float OBSTACLE_PROP_MOTION_PREDICT_TIME = 1.0f;
+constexpr float OBSTACLE_PROP_MOVING_MIN_SPEED = 10.0f;
 
 // A prop this light that physics moves is shoved out of the way, as a player does
-constexpr float PROP_DETOUR_PUSHABLE_PROP_MAX_MASS = 200.0f;
+constexpr float OBSTACLE_PROP_PUSHABLE_MAX_MASS = 200.0f;
 
 // Props are looked for up to this high above the path, so one coming down is seen in time
-constexpr float PATH_OBSTACLE_QUERY_HEADROOM = 512.0f;
+constexpr float OBSTACLE_PROP_QUERY_HEADROOM = 512.0f;
 
 // A prop smaller than this in every direction (a can, a bottle) is pushed aside, not walked around
-const Vector PROP_DETOUR_SMALL_PROP_SIZE( 16.0f, 16.0f, 40.0f );
+const Vector OBSTACLE_PROP_SMALL_SIZE( 16.0f, 16.0f, 40.0f );
 
 // The body box is this much narrower than the hull, so a prop the bot only brushes is not in its way
-constexpr float PATH_OBSTACLE_BODY_CLEARANCE = 1.0f;
+constexpr float OBSTACLE_PROP_BODY_CLEARANCE = 1.0f;
 }
 
 //----------------------------------------------------------------------------------------------------------------
@@ -51,14 +51,16 @@ static bool IsSolidToPlayers( CBaseEntity *entity )
 //----------------------------------------------------------------------------------------------------------------
 namespace
 {
-	// The movable props solid to players a spatial partition query meets, however much else lies there:
-	// a box query into a fixed-size list fills up with everything it finds, cans, weapons and triggers alike.
-	// Given a list for them, it also keeps the solid entities the bot can break, such as glass
-	class CMovablePropEnum : public IPartitionEnumerator
+	// The movable props and the breakables solid to players that a spatial partition query meets, into the lists given:
+	// a box query into a fixed-size list fills up with everything it finds, cans, weapons and triggers alike
+	class CObstacleEntityEnum : public IPartitionEnumerator
 	{
 	public:
-		CMovablePropEnum( CUtlVector< CBaseEntity * > *props, INextBot *bot, CUtlVector< CBaseEntity * > *breakables )
-			: m_props( props ), m_bot( bot ), m_breakables( breakables ) {}
+		CObstacleEntityEnum( CUtlVector< CBaseEntity * > *props, INextBot *breaker, CUtlVector< CBaseEntity * > *breakables )
+			: m_props( props ), m_breaker( breaker ), m_breakables( breakables )
+		{
+			Assert( !m_breakables || m_breaker );
+		}
 
 		virtual IterationRetval_t EnumElement( IHandleEntity *handleEntity )
 		{
@@ -68,12 +70,12 @@ namespace
 				return ITERATION_CONTINUE;
 			}
 
-			if ( IsMovableProp( entity ) )
+			if ( m_props && IsMovableProp( entity ) )
 			{
 				m_props->AddToTail( entity );
 			}
 
-			if ( m_breakables && m_bot->IsAbleToBreak( entity ) && entity->GetHealth() > 0 )
+			if ( m_breakables && entity->GetHealth() > 0 && m_breaker->IsAbleToBreak( entity ) )
 			{
 				m_breakables->AddToTail( entity );
 			}
@@ -83,7 +85,7 @@ namespace
 
 	private:
 		CUtlVector< CBaseEntity * > *m_props;
-		INextBot *m_bot;
+		INextBot *m_breaker;
 		CUtlVector< CBaseEntity * > *m_breakables;
 	};
 }
@@ -100,7 +102,7 @@ static Vector GetPropVelocity( CBaseEntity *entity )
 
 	Vector velocity;
 	physics->GetVelocity( &velocity, NULL );
-	return velocity.IsLengthGreaterThan( PROP_DETOUR_MOVING_PROP_MIN_SPEED ) ? velocity : vec3_origin;
+	return velocity.IsLengthGreaterThan( OBSTACLE_PROP_MOVING_MIN_SPEED ) ? velocity : vec3_origin;
 }
 
 
@@ -110,7 +112,7 @@ static Vector GetPropVelocity( CBaseEntity *entity )
 static bool IsPushable( CBaseEntity *entity )
 {
 	IPhysicsObject *physics = entity->VPhysicsGetObject();
-	return physics && physics->IsMoveable() && physics->GetMass() <= PROP_DETOUR_PUSHABLE_PROP_MAX_MASS
+	return physics && physics->IsMoveable() && physics->GetMass() <= OBSTACLE_PROP_PUSHABLE_MAX_MASS
 		&& !physics->IsAttachedToConstraint( false ) && !FClassnameIs( entity, "phys_bone_follower" );
 }
 
@@ -129,7 +131,7 @@ static bool IsInSight( INextBot *bot, CBaseEntity *entity )
 //----------------------------------------------------------------------------------------------------------------
 BodyBox_t GetBodyBox( INextBot *bot )
 {
-	const float halfWidth = 0.5f * bot->GetBodyInterface()->GetHullWidth() - PATH_OBSTACLE_BODY_CLEARANCE;
+	const float halfWidth = 0.5f * bot->GetBodyInterface()->GetHullWidth() - OBSTACLE_PROP_BODY_CLEARANCE;
 
 	BodyBox_t box;
 	box.mins.Init( -halfWidth, -halfWidth, bot->GetLocomotionInterface()->GetStepHeight() );
@@ -137,43 +139,67 @@ BodyBox_t GetBodyBox( INextBot *bot )
 	return box;
 }
 
+
+//----------------------------------------------------------------------------------------------------------------
+bool BodyMeetsEntity( const BodyBox_t &body, const Vector &from, const Vector &to, CBaseEntity *entity, float *fraction )
+{
+	Ray_t ray;
+	ray.Init( from, to, body.mins, body.maxs );
+
+	trace_t result;
+	enginetrace->ClipRayToEntity( ray, MASK_PLAYERSOLID, entity, &result );
+	*fraction = result.startsolid ? 0.0f : result.fraction;
+	return result.startsolid || result.fraction < 1.0f;
+}
+
+
 //----------------------------------------------------------------------------------------------------------------
 bool BodyMeetsProp( const BodyBox_t &body, const Vector &from, const Vector &to, const PropObstacle_t &obstacle, float *fraction )
 {
-	*fraction = 1.0f;
+	if ( !BodyMeetsEntity( body, from, to, obstacle.entity, fraction ) )
+	{
+		*fraction = 1.0f;
+	}
+
+	if ( *fraction == 0.0f || obstacle.sweep.IsZero() )
+	{
+		return *fraction < 1.0f;
+	}
 
 	// moving the body back along the prop's motion is the same as moving the prop forward
-	const int tests = obstacle.sweep.IsZero() ? 1 : 2;
-	for ( int i = 0; i < tests; ++i )
+	float movedFraction;
+	if ( BodyMeetsEntity( body, from - obstacle.sweep, to - obstacle.sweep, obstacle.entity, &movedFraction ) )
 	{
-		const Vector shift = ( i == 0 ) ? vec3_origin : -obstacle.sweep;
-
-		Ray_t ray;
-		ray.Init( from + shift, to + shift, body.mins, body.maxs );
-
-		trace_t result;
-		enginetrace->ClipRayToEntity( ray, MASK_PLAYERSOLID, obstacle.entity, &result );
-		if ( result.startsolid )
-		{
-			*fraction = 0.0f;
-			return true;
-		}
-
-		*fraction = MIN( *fraction, result.fraction );
+		*fraction = MIN( *fraction, movedFraction );
 	}
 
 	return *fraction < 1.0f;
 }
 
 //----------------------------------------------------------------------------------------------------------------
-void FindMovableProps( const Vector &floorLo, const Vector &floorHi, CUtlVector< CBaseEntity * > *props,
-	INextBot *bot, CUtlVector< CBaseEntity * > *breakables )
+// The movable props and the breakables around the floor in the box, in one partition query, into the lists given
+static void QueryObstacleEntities( const Vector &floorLo, const Vector &floorHi, CUtlVector< CBaseEntity * > *props,
+	INextBot *breaker, CUtlVector< CBaseEntity * > *breakables )
 {
-	const Vector queryLo = floorLo - Vector( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_FLOOR_HEIGHT_TOLERANCE );
-	const Vector queryHi = floorHi + Vector( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN, PATH_OBSTACLE_QUERY_HEADROOM );
+	const Vector queryLo = floorLo - Vector( OBSTACLE_PROP_QUERY_MARGIN, OBSTACLE_PROP_QUERY_MARGIN, OBSTACLE_PROP_FLOOR_TOLERANCE );
+	const Vector queryHi = floorHi + Vector( OBSTACLE_PROP_QUERY_MARGIN, OBSTACLE_PROP_QUERY_MARGIN, OBSTACLE_PROP_QUERY_HEADROOM );
 
-	CMovablePropEnum propEnum( props, bot, breakables );
-	partition->EnumerateElementsInBox( PARTITION_ENGINE_NON_STATIC_EDICTS, queryLo, queryHi, false, &propEnum );
+	CObstacleEntityEnum entityEnum( props, breaker, breakables );
+	partition->EnumerateElementsInBox( PARTITION_ENGINE_NON_STATIC_EDICTS, queryLo, queryHi, false, &entityEnum );
+}
+
+
+//----------------------------------------------------------------------------------------------------------------
+void FindMovableProps( const Vector &floorLo, const Vector &floorHi, CUtlVector< CBaseEntity * > *props )
+{
+	QueryObstacleEntities( floorLo, floorHi, props, NULL, NULL );
+}
+
+
+//----------------------------------------------------------------------------------------------------------------
+void FindBreakables( INextBot *bot, const Vector &floorLo, const Vector &floorHi, CUtlVector< CBaseEntity * > *breakables )
+{
+	QueryObstacleEntities( floorLo, floorHi, NULL, bot, breakables );
 }
 
 
@@ -185,7 +211,7 @@ void CollectProps( INextBot *bot, const Vector &floorLo, const Vector &floorHi, 
 	const float halfWidth = 0.5f * bot->GetBodyInterface()->GetHullWidth();
 
 	CUtlVector< CBaseEntity * > props;
-	FindMovableProps( floorLo, floorHi, &props, bot, breakables );
+	QueryObstacleEntities( floorLo, floorHi, &props, breakables ? bot : NULL, breakables );
 	FOR_EACH_VEC( props, i )
 	{
 		CBaseEntity *entity = props[ i ];
@@ -193,12 +219,12 @@ void CollectProps( INextBot *bot, const Vector &floorLo, const Vector &floorHi, 
 		entity->CollisionProp()->WorldSpaceAABB( &propLo, &propHi );
 
 		const Vector size = propHi - propLo;
-		if ( size.x < PROP_DETOUR_SMALL_PROP_SIZE.x && size.y < PROP_DETOUR_SMALL_PROP_SIZE.y && size.z < PROP_DETOUR_SMALL_PROP_SIZE.z )
+		if ( size.x < OBSTACLE_PROP_SMALL_SIZE.x && size.y < OBSTACLE_PROP_SMALL_SIZE.y && size.z < OBSTACLE_PROP_SMALL_SIZE.z )
 		{
 			continue;
 		}
 
-		const Vector sweep = GetPropVelocity( entity ) * PROP_DETOUR_MOTION_PREDICT_TIME;
+		const Vector sweep = GetPropVelocity( entity ) * OBSTACLE_PROP_MOTION_PREDICT_TIME;
 		Vector sweptLo = propLo;
 		Vector sweptHi = propHi;
 		VectorMin( sweptLo, propLo + sweep, sweptLo );
@@ -236,7 +262,7 @@ int CountRestingProps( const Vector &floorLo, const Vector &floorHi )
 		IPhysicsObject *physics = props[ i ]->VPhysicsGetObject();
 		if ( physics && !physics->IsAsleep() )
 		{
-			return PROP_DETOUR_PROPS_MOVING;
+			return OBSTACLE_PROPS_MOVING;
 		}
 	}
 

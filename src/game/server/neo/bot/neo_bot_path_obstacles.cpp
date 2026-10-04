@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "collisionutils.h"
 #include "NextBot.h"
 #include "NextBot/Path/NextBotPathFollow.h"
 #include "NextBotLocomotionInterface.h"
@@ -24,63 +25,62 @@ constexpr float PATH_OBSTACLE_REJOIN_EXTRA_RANGE = 128.0f;
 constexpr float PATH_OBSTACLE_BREAKABLE_RANGE = 128.0f;
 
 // The detour rejoins the path this far past the last prop in the way
-constexpr float PROP_DETOUR_REJOIN_PAST_PROP = 32.0f;
+constexpr float PATH_OBSTACLE_REJOIN_PAST_PROP = 32.0f;
 }
 
 //----------------------------------------------------------------------------------------------------------------
-namespace
+// Return true if the line from a to b crosses the box, with the entry and exit fractions
+static bool SegmentCrossesBox( const Vector2D &a, const Vector2D &b, const Vector2D &lo, const Vector2D &hi, float *enter, float *exit )
 {
-	// Return true if the line from a to b crosses the box, with the entry and exit fractions
-	bool SegmentCrossesBox( const Vector2D &a, const Vector2D &b, const Vector2D &lo, const Vector2D &hi, float *enter, float *exit )
+	float t0 = 0.0f;
+	float t1 = 1.0f;
+	const Vector2D delta = b - a;
+	for ( int axis = 0; axis < 2; ++axis )
 	{
-		float t0 = 0.0f;
-		float t1 = 1.0f;
-		const Vector2D delta = b - a;
-		for ( int axis = 0; axis < 2; ++axis )
+		if ( fabsf( delta[ axis ] ) < 1e-4f )
 		{
-			if ( fabsf( delta[ axis ] ) < 1e-4f )
-			{
-				if ( a[ axis ] < lo[ axis ] || a[ axis ] > hi[ axis ] )
-				{
-					return false;
-				}
-
-				continue;
-			}
-
-			float ta = ( lo[ axis ] - a[ axis ] ) / delta[ axis ];
-			float tb = ( hi[ axis ] - a[ axis ] ) / delta[ axis ];
-			if ( ta > tb )
-			{
-				V_swap( ta, tb );
-			}
-
-			t0 = MAX( t0, ta );
-			t1 = MIN( t1, tb );
-			if ( t0 > t1 )
+			if ( a[ axis ] < lo[ axis ] || a[ axis ] > hi[ axis ] )
 			{
 				return false;
 			}
+
+			continue;
 		}
 
-		*enter = t0;
-		*exit = t1;
-		return true;
+		float ta = ( lo[ axis ] - a[ axis ] ) / delta[ axis ];
+		float tb = ( hi[ axis ] - a[ axis ] ) / delta[ axis ];
+		if ( ta > tb )
+		{
+			V_swap( ta, tb );
+		}
+
+		t0 = MAX( t0, ta );
+		t1 = MIN( t1, tb );
+		if ( t0 > t1 )
+		{
+			return false;
+		}
 	}
+
+	*enter = t0;
+	*exit = t1;
+	return true;
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
-// Return true if a body moving from 'from' to 'to' touches the entity where it stands
-static bool BodyMeetsEntity( const BodyBox_t &body, const Vector &from, const Vector &to, CBaseEntity *entity, float *fraction )
+// The box around the line's points, over its first 'range' along it
+static void GetLineBounds( const CUtlVector< Vector > &line, float range, Vector *lo, Vector *hi )
 {
-	Ray_t ray;
-	ray.Init( from, to, body.mins, body.maxs );
-
-	trace_t result;
-	enginetrace->ClipRayToEntity( ray, MASK_PLAYERSOLID, entity, &result );
-	*fraction = result.startsolid ? 0.0f : result.fraction;
-	return result.startsolid || result.fraction < 1.0f;
+	*lo = line[ 0 ];
+	*hi = line[ 0 ];
+	float length = 0.0f;
+	for ( int i = 1; i < line.Count() && length < range; ++i )
+	{
+		length += ( line[ i ] - line[ i - 1 ] ).Length2D();
+		VectorMin( *lo, line[ i ], *lo );
+		VectorMax( *hi, line[ i ], *hi );
+	}
 }
 
 
@@ -88,10 +88,23 @@ static bool BodyMeetsEntity( const BodyBox_t &body, const Vector &from, const Ve
 // The breakable the body meets first walking the line, within PATH_OBSTACLE_BREAKABLE_RANGE
 static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector< Vector > &line, const CUtlVector< CBaseEntity * > &breakables )
 {
+	// a breakable away from the body's way over the range cannot be met, so it costs no sweep
+	Vector reachLo, reachHi;
+	GetLineBounds( line, PATH_OBSTACLE_BREAKABLE_RANGE, &reachLo, &reachHi );
+	reachLo += body.mins;
+	reachHi += body.maxs;
+
 	CBaseEntity *nearest = NULL;
 	float nearestDistance = PATH_OBSTACLE_BREAKABLE_RANGE;
 	FOR_EACH_VEC( breakables, i )
 	{
+		Vector entityLo, entityHi;
+		breakables[ i ]->CollisionProp()->WorldSpaceAABB( &entityLo, &entityHi );
+		if ( !IsBoxIntersectingBox( reachLo, reachHi, entityLo, entityHi ) )
+		{
+			continue;
+		}
+
 		float legStart = 0.0f;
 		for ( int leg = 0; leg + 1 < line.Count() && legStart < nearestDistance; ++leg )
 		{
@@ -113,11 +126,14 @@ static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector<
 
 //----------------------------------------------------------------------------------------------------------------
 // The path ahead as a line from the bot's feet, over walked segments only, up to the range,
-// with the segment each point of the line belongs to
-static void GetPathAhead( const PathFollower &path, const Vector &feet, float range, CUtlVector< Vector > *line, CUtlVector< const Path::Segment * > *segments )
+// and, given a list for them, the segment each point of the line belongs to
+static void GetPathAhead( const PathFollower &path, const Vector &feet, float range, CUtlVector< Vector > *line, CUtlVector< const Path::Segment * > *segments = NULL )
 {
 	line->AddToTail( feet );
-	segments->AddToTail( path.GetCurrentGoal() );
+	if ( segments )
+	{
+		segments->AddToTail( path.GetCurrentGoal() );
+	}
 
 	float length = 0.0f;
 	for ( const Path::Segment *seg = path.GetCurrentGoal(); seg && length < range; seg = path.NextSegment( seg ) )
@@ -129,7 +145,11 @@ static void GetPathAhead( const PathFollower &path, const Vector &feet, float ra
 
 		const Vector leg = seg->pos - line->Tail();
 		const float legLength = leg.Length2D();
-		segments->AddToTail( seg );
+		if ( segments )
+		{
+			segments->AddToTail( seg );
+		}
+
 		if ( length + legLength > range )
 		{
 			line->AddToTail( line->Tail() + leg * ( ( range - length ) / legLength ) );
@@ -230,13 +250,8 @@ void CNEOBotPathObstacles::Plan( INextBot *bot, const PathFollower &path )
 		return;
 	}
 
-	Vector lineLo = line[ 0 ];
-	Vector lineHi = line[ 0 ];
-	for ( int i = 1; i < line.Count(); ++i )
-	{
-		VectorMin( lineLo, line[ i ], lineLo );
-		VectorMax( lineHi, line[ i ], lineHi );
-	}
+	Vector lineLo, lineHi;
+	GetLineBounds( line, FLT_MAX, &lineLo, &lineHi );
 
 	CUtlVector< PropObstacle_t > obstacles;
 	CUtlVector< CBaseEntity * > breakables;
@@ -267,7 +282,7 @@ void CNEOBotPathObstacles::Plan( INextBot *bot, const PathFollower &path )
 				&& legStart + fraction * legLength < PATH_OBSTACLE_LOOK_AHEAD_RANGE
 				&& SegmentCrossesBox( line[ leg ].AsVector2D(), line[ leg + 1 ].AsVector2D(), obstacles[ i ].lo, obstacles[ i ].hi, &enter, &exit ) )
 			{
-				rejoinDistance = MAX( rejoinDistance, legStart + exit * legLength + PROP_DETOUR_REJOIN_PAST_PROP );
+				rejoinDistance = MAX( rejoinDistance, legStart + exit * legLength + PATH_OBSTACLE_REJOIN_PAST_PROP );
 				isPathPushable = isPathPushable && obstacles[ i ].isPushable;
 				regionLo = regionLo.Min( obstacles[ i ].lo );
 				regionHi = regionHi.Max( obstacles[ i ].hi );
@@ -300,8 +315,8 @@ void CNEOBotPathObstacles::Plan( INextBot *bot, const PathFollower &path )
 	request.rejoin = rejoin;
 	request.rejoinGoal = segments[ rejoinLegEnd ];
 	request.resumeGoal = goal;
-	request.regionLo = regionLo.Min( rejoin.AsVector2D() ) - Vector2D( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN );
-	request.regionHi = regionHi.Max( rejoin.AsVector2D() ) + Vector2D( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN );
+	request.regionLo = regionLo.Min( rejoin.AsVector2D() );
+	request.regionHi = regionHi.Max( rejoin.AsVector2D() );
 	request.floorLo = floorLo;
 	request.floorHi = floorHi;
 	request.isPathPushable = isPathPushable;
@@ -322,23 +337,16 @@ void CNEOBotPathObstacles::LookForBreakable( INextBot *bot, const PathFollower &
 	m_breakable = NULL;
 
 	CUtlVector< Vector > line;
-	CUtlVector< const Path::Segment * > segments;
-	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PATH_OBSTACLE_BREAKABLE_RANGE, &line, &segments );
+	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PATH_OBSTACLE_BREAKABLE_RANGE, &line );
 	if ( line.Count() < 2 )
 	{
 		return;
 	}
 
-	Vector lineLo = line[ 0 ];
-	Vector lineHi = line[ 0 ];
-	for ( int i = 1; i < line.Count(); ++i )
-	{
-		VectorMin( lineLo, line[ i ], lineLo );
-		VectorMax( lineHi, line[ i ], lineHi );
-	}
+	Vector lineLo, lineHi;
+	GetLineBounds( line, FLT_MAX, &lineLo, &lineHi );
 
-	CUtlVector< CBaseEntity * > props;
 	CUtlVector< CBaseEntity * > breakables;
-	FindMovableProps( lineLo, lineHi, &props, bot, &breakables );
+	FindBreakables( bot, lineLo, lineHi, &breakables );
 	m_breakable = FindBreakableInWay( GetBodyBox( bot ), line, breakables );
 }

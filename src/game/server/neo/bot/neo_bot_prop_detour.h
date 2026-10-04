@@ -6,7 +6,7 @@ class INextBot;
 
 //----------------------------------------------------------------------------------------------------------------
 // What a look ahead hands a detour to plan: where past the props in the way it takes up the path again,
-// the path goals there and before the props, the floor it may use, and whether only light props were in the way
+// the path goals there and before the props, the floor box from the bot past them, and whether only light props were in the way
 struct PropDetourRequest_t
 {
 	Vector rejoin;
@@ -65,7 +65,7 @@ private:
 	bool m_isPathPushable;		// every prop in the way on the path was light, so a route through light props is no detour
 
 	// what the last search saw, so the detour is searched again only when that changes or the search grows old:
-	// where the bot set out for its next waypoint, and how many props in the region rested (PROP_DETOUR_PROPS_MOVING if any was awake)
+	// where the bot set out for its next waypoint, and how many props in the region rested (OBSTACLE_PROPS_MOVING if any was awake)
 	Vector m_legStart;
 	int m_restingPropCount;
 	CountdownTimer m_searchAgeTimer;
