@@ -96,7 +96,7 @@ extern IGameMovement *g_pGameMovement;
 // If you ever get stuck walking around, then you can run this code to find the code which would leave the player in a bad spot
 void CMoveData::SetAbsOrigin( const Vector &vec )
 {
-	CGameMovement *gm = dynamic_cast< CGameMovement * >( t );
+	CGameMovement *gm = dynamic_cast< CGameMovement * >( g_pGameMovement );
 	if ( gm && gm->GetMoveData() &&
 		 gm->player &&
 		 gm->player->entindex() == 1 &&
@@ -1129,6 +1129,15 @@ void CGameMovement::CheckParameters( void )
 	}
 }
 
+#ifdef NEO
+ConVar sv_neo_slidefriction("sv_neo_slidefriction", "0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Crouch slide friction.", true, 0, false, 0);
+ConVar sv_neo_slidetime_gain("sv_neo_slidetime_gain", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Slide time gain per second.", true, 0, true, 10);
+ConVar sv_neo_slidetime_max("sv_neo_slidetime_max", "2", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max slide time.", true, 0, true, 10);
+ConVar sv_neo_jumpbuffer_penalty("sv_neo_jumpbuffer_penalty", "0.06", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum penalty for an early buffered jump", true, 0, true, 1);
+ConVar sv_neo_jump_cooldown("sv_neo_jump_cooldown", "0.03", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum time between releasing jump and jumping again", true, 0, true, 1 );
+
+#endif
+
 void CGameMovement::ReduceTimers( void )
 {
 	float frame_msec = 1000.0f * gpGlobals->frametime;
@@ -1167,13 +1176,41 @@ void CGameMovement::ReduceTimers( void )
 	}
 #ifdef NEO
 	auto neoPlayer = static_cast<CNEO_Player*>(player);
-	if ( neoPlayer->m_HL2Local.m_jumpCooldown > 0 )
+
+	if (!(neoPlayer->GetFlags() & FL_ONGROUND) && neoPlayer->GetAbsVelocity().z < 0)
 	{
-		neoPlayer->m_HL2Local.m_jumpCooldown -= frame_msec;
-		if ( neoPlayer->m_HL2Local.m_jumpCooldown < 0 )
+		neoPlayer->m_HL2Local.m_slideTime = Min(neoPlayer->m_HL2Local.m_slideTime + sv_neo_slidetime_gain.GetFloat() * gpGlobals->frametime, sv_neo_slidetime_max.GetFloat());
+	}
+	else
+	{
+		if (neoPlayer->m_Local.m_bDucked && neoPlayer->m_HL2Local.m_slideTime > 0)
 		{
-			neoPlayer->m_HL2Local.m_jumpCooldown = 0;
+			neoPlayer->m_HL2Local.m_slideTime = Max(neoPlayer->m_HL2Local.m_slideTime - gpGlobals->frametime, 0.0f);
 		}
+		else
+		{
+			neoPlayer->m_HL2Local.m_slideTime = 0.0f;
+		}
+	}
+
+	bool justAppliedCooldown = false;
+	if (mv->m_nButtons & IN_JUMP)
+	{
+		neoPlayer->m_HL2Local.m_jumpHeldTime = Min(neoPlayer->m_HL2Local.m_jumpHeldTime + gpGlobals->frametime, sv_neo_jumpbuffer_penalty.GetFloat());
+	}
+	else
+	{
+		if (neoPlayer->m_HL2Local.m_jumpHeldTime > 0 && !(neoPlayer->m_HL2Local.m_jumpCooldown > 0))
+		{
+			neoPlayer->m_HL2Local.m_jumpCooldown = sv_neo_jump_cooldown.GetFloat();
+			justAppliedCooldown = true;
+		}
+		neoPlayer->m_HL2Local.m_jumpHeldTime = 0.0f;
+	}
+
+	if ( neoPlayer->m_HL2Local.m_jumpCooldown > 0 && !justAppliedCooldown)
+	{
+		neoPlayer->m_HL2Local.m_jumpCooldown = Max(neoPlayer->m_HL2Local.m_jumpCooldown - gpGlobals->frametime, 0.0f);
 	}
 #endif
 }
@@ -1659,12 +1696,6 @@ void CGameMovement::StepMove( Vector &vecDestination, trace_t &trace )
 	}
 }
 
-#ifdef NEO
-ConVar sv_neo_slidefriction("sv_neo_slidefriction", "0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Crouch slide friction.", true, 0, false, 0);
-ConVar sv_neo_slidetime_gain("sv_neo_slidetime_gain", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Slide time gain per second.", true, 0, true, 10);
-ConVar sv_neo_slidetime_max("sv_neo_slidetime_max", "2", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max slide time.", true, 0, true, 10);
-#endif
-
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -1765,8 +1796,6 @@ ConVar sv_neo_airfriction("sv_neo_airfriction", "0", FCVAR_NOTIFY | FCVAR_REPLIC
 ConVar sv_neo_airfriction_objective("sv_neo_airfriction_objective", "0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Air friction for ghost carrier, VIP and juggernaut.", true, 0, false, 0);
 ConVar sv_neo_airstopspeed("sv_neo_airstopspeed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum stopping speed when in the air.", true, 0, false, 0);
 ConVar sv_neo_jumpbuffer("sv_neo_jumpbuffer", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allow Quake style jump buffering.", true, 0, true, 1);
-ConVar sv_neo_jumpbuffer_penalty("sv_neo_jumpbuffer_penalty", "0.05", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum penalty for an early buffered jump", true, 0, true, 1);
-ConVar sv_neo_jump_cooldown("sv_neo_jump_cooldown", "0.05", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum time between releasing jump and jumping again", true, 0, true, 1 );
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -2249,14 +2278,6 @@ void CGameMovement::FullWalkMove( )
 		}
 		else
 		{
-#ifdef NEO
-			auto neoPlayer = static_cast<CNEO_Player*>(player);
-			neoPlayer->m_HL2Local.m_jumpHeldTime = 0;
-			if (mv->m_nOldButtons & IN_JUMP && !neoPlayer->m_HL2Local.m_jumpCooldown)
-			{
-				neoPlayer->m_HL2Local.m_jumpCooldown = sv_neo_jump_cooldown.GetFloat();
-			}
-#endif
 			mv->m_nOldButtons &= ~IN_JUMP;
 		}
 
@@ -2631,7 +2652,6 @@ bool CGameMovement::CheckJumpButton( void ) {
 #ifdef NEO
 		if (sv_neo_jumpbuffer.GetBool())
 		{
-			neoPlayer->m_HL2Local.m_jumpHeldTime = Min(neoPlayer->m_HL2Local.m_jumpHeldTime + gpGlobals->frametime, sv_neo_jumpbuffer_penalty.GetFloat());
 			if (!(mv->m_nOldButtons & IN_JUMP))
 			{
 				mv->m_nButtons &= ~IN_JUMP;

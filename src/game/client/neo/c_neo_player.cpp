@@ -1044,8 +1044,6 @@ void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 #endif
 
 extern ConVar sv_infinite_aux_power;
-extern ConVar sv_neo_slidetime_gain;
-extern ConVar sv_neo_slidetime_max;
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
@@ -1175,22 +1173,6 @@ void C_NEO_Player::PreThink( void )
 		if (forward xor backward)
 		{
 			SuperJump();
-		}
-	}
-
-	if (!(GetFlags() & FL_ONGROUND) && GetAbsVelocity().z < 0)
-	{
-		m_HL2Local.m_slideTime = Min(m_HL2Local.m_slideTime + sv_neo_slidetime_gain.GetFloat() * gpGlobals->frametime, sv_neo_slidetime_max.GetFloat());
-	}
-	else
-	{
-		if (m_Local.m_bDucked && m_HL2Local.m_slideTime > 0)
-		{
-			m_HL2Local.m_slideTime = Max(m_HL2Local.m_slideTime - gpGlobals->frametime, 0.0f);
-		}
-		else
-		{
-			m_HL2Local.m_slideTime = 0.0f;
 		}
 	}
 

@@ -21,8 +21,8 @@ BEGIN_SEND_TABLE_NOBASE( CHL2PlayerLocalData, DT_HL2Local )
 	SendPropFloat( SENDINFO(m_flSuitPower), -1, SPROP_NOSCALE, 0.0, 100.0 ),
 #ifdef NEO
 	SendPropFloat(SENDINFO(m_cloakPower), 10, SPROP_UNSIGNED | SPROP_ROUNDUP, 0.0, 100.0),
-	SendPropFloat(SENDINFO(m_slideTime), 10, SPROP_UNSIGNED | SPROP_ROUNDUP, 0.0, 10.0),
-	SendPropFloat(SENDINFO(m_jumpHeldTime), 10, SPROP_UNSIGNED | SPROP_ROUNDUP, 0.0, 1.0),
+	SendPropTime(SENDINFO(m_slideTime)),
+	SendPropTime(SENDINFO(m_jumpHeldTime)),
 	SendPropTime(SENDINFO(m_jumpCooldown)),
 #endif
 	SendPropFloat( SENDINFO(m_flSuitPowerLoad), -1, SPROP_NOSCALE, 0.0, 100.0 ),
