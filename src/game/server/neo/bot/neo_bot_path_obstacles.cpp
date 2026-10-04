@@ -4,7 +4,7 @@
 #include "NextBot/Path/NextBotPathFollow.h"
 #include "NextBotLocomotionInterface.h"
 #include "NextBotBodyInterface.h"
-#include "neo_bot_prop_detour.h"
+#include "neo_bot_path_obstacles.h"
 #include "tier1/utlpriorityqueue.h"
 #include "vphysics_interface.h"
 
@@ -15,7 +15,7 @@ namespace
 {
 // How often the path ahead is checked, so a prop that is pushed or animates is followed
 // and a breakable in the way is seen before the bot walks into it
-constexpr float PROP_DETOUR_REPLAN_INTERVAL = 0.3f;
+constexpr float PATH_OBSTACLE_LOOK_INTERVAL = 0.3f;
 // While every prop in a wide detour's region rests where the last search saw it, the detour is searched again only this often:
 // the bot may since have come to see props that were out of its sight
 constexpr float PROP_DETOUR_AT_REST_REPLAN_INTERVAL = 1.0f;
@@ -28,12 +28,12 @@ constexpr float PROP_DETOUR_WAYPOINT_REACHED_RANGE = 12.0f;
 constexpr float PROP_DETOUR_OFF_ROUTE_RANGE = 16.0f;
 
 // How far along the path props are looked for, and how much further the detour may rejoin it
-constexpr float PROP_DETOUR_LOOK_AHEAD_RANGE = 256.0f;
-constexpr float PROP_DETOUR_REJOIN_EXTRA_RANGE = 128.0f;
+constexpr float PATH_OBSTACLE_LOOK_AHEAD_RANGE = 256.0f;
+constexpr float PATH_OBSTACLE_REJOIN_EXTRA_RANGE = 128.0f;
 
 // A breakable is in the way when the body meets it this far along the path:
 // beyond a look's walk at a run, so it is found before the bot reaches it, and near enough to melee it on arrival
-constexpr float PROP_DETOUR_BREAKABLE_RANGE = 128.0f;
+constexpr float PATH_OBSTACLE_BREAKABLE_RANGE = 128.0f;
 
 // The detour rejoins the path this far past the last prop in the way
 constexpr float PROP_DETOUR_REJOIN_PAST_PROP = 32.0f;
@@ -71,7 +71,7 @@ constexpr float PROP_DETOUR_MOTION_PREDICT_TIME = 1.0f;
 constexpr float PROP_DETOUR_MOVING_PROP_MIN_SPEED = 10.0f;
 
 // Props are looked for up to this high above the path, so one coming down is seen in time
-constexpr float PROP_DETOUR_PROP_QUERY_HEADROOM = 512.0f;
+constexpr float PATH_OBSTACLE_QUERY_HEADROOM = 512.0f;
 
 // A prop smaller than this in every direction (a can, a bottle) is pushed aside, not walked around
 const Vector PROP_DETOUR_SMALL_PROP_SIZE( 16.0f, 16.0f, 40.0f );
@@ -79,7 +79,7 @@ const Vector PROP_DETOUR_SMALL_PROP_SIZE( 16.0f, 16.0f, 40.0f );
 constexpr float PROP_DETOUR_DIAGONAL_STEP_LENGTH = 1.41421356f;
 
 // The body box is this much narrower than the hull, so a prop the bot only brushes is not in its way
-constexpr float PROP_DETOUR_BODY_CLEARANCE = 1.0f;
+constexpr float PATH_OBSTACLE_BODY_CLEARANCE = 1.0f;
 }
 
 //----------------------------------------------------------------------------------------------------------------
@@ -256,7 +256,7 @@ static bool IsInSight( INextBot *bot, CBaseEntity *entity )
 //----------------------------------------------------------------------------------------------------------------
 static BodyBox_t GetBodyBox( INextBot *bot )
 {
-	const float halfWidth = 0.5f * bot->GetBodyInterface()->GetHullWidth() - PROP_DETOUR_BODY_CLEARANCE;
+	const float halfWidth = 0.5f * bot->GetBodyInterface()->GetHullWidth() - PATH_OBSTACLE_BODY_CLEARANCE;
 
 	BodyBox_t box;
 	box.mins.Init( -halfWidth, -halfWidth, bot->GetLocomotionInterface()->GetStepHeight() );
@@ -310,11 +310,11 @@ static bool BodyMeetsEntity( const BodyBox_t &body, const Vector &from, const Ve
 
 
 //----------------------------------------------------------------------------------------------------------------
-// The breakable the body meets first walking the line, within PROP_DETOUR_BREAKABLE_RANGE
+// The breakable the body meets first walking the line, within PATH_OBSTACLE_BREAKABLE_RANGE
 static CBaseEntity *FindBreakableInWay( const BodyBox_t &body, const CUtlVector< Vector > &line, const CUtlVector< CBaseEntity * > &breakables )
 {
 	CBaseEntity *nearest = NULL;
-	float nearestDistance = PROP_DETOUR_BREAKABLE_RANGE;
+	float nearestDistance = PATH_OBSTACLE_BREAKABLE_RANGE;
 	FOR_EACH_VEC( breakables, i )
 	{
 		float legStart = 0.0f;
@@ -395,7 +395,7 @@ static void FindMovableProps( const Vector &floorLo, const Vector &floorHi, CUtl
 	INextBot *bot = NULL, CUtlVector< CBaseEntity * > *breakables = NULL )
 {
 	const Vector queryLo = floorLo - Vector( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_FLOOR_HEIGHT_TOLERANCE );
-	const Vector queryHi = floorHi + Vector( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_PROP_QUERY_HEADROOM );
+	const Vector queryHi = floorHi + Vector( PROP_DETOUR_GRID_MARGIN, PROP_DETOUR_GRID_MARGIN, PATH_OBSTACLE_QUERY_HEADROOM );
 
 	CMovablePropEnum propEnum( props, bot, breakables );
 	partition->EnumerateElementsInBox( PARTITION_ENGINE_NON_STATIC_EDICTS, queryLo, queryHi, false, &propEnum );
@@ -1076,16 +1076,16 @@ static bool FindWideDetour( INextBot *bot, float floorLo, float floorHi, const V
 
 
 //----------------------------------------------------------------------------------------------------------------
-CNEOBotPropDetour::CNEOBotPropDetour()
+CNEOBotPathObstacles::CNEOBotPathObstacles()
 {
 	Reset();
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
-void CNEOBotPropDetour::Reset()
+void CNEOBotPathObstacles::Reset()
 {
-	m_replanTimer.Invalidate();
+	m_lookTimer.Invalidate();
 	m_breakableTimer.Invalidate();
 	m_breakable = NULL;
 	m_waypoints.RemoveAll();
@@ -1101,13 +1101,13 @@ void CNEOBotPropDetour::Reset()
 
 
 //----------------------------------------------------------------------------------------------------------------
-void CNEOBotPropDetour::Update( INextBot *bot, const PathFollower &path )
+void CNEOBotPathObstacles::Update( INextBot *bot, const PathFollower &path )
 {
 	m_pathGoal = NULL;
 
-	if ( m_replanTimer.IsElapsed() )
+	if ( m_lookTimer.IsElapsed() )
 	{
-		m_replanTimer.Start( PROP_DETOUR_REPLAN_INTERVAL );
+		m_lookTimer.Start( PATH_OBSTACLE_LOOK_INTERVAL );
 
 		if ( !IsDetouring() )
 		{
@@ -1120,7 +1120,7 @@ void CNEOBotPropDetour::Update( INextBot *bot, const PathFollower &path )
 		else if ( m_isWide && !ClaimWideSearch() )
 		{
 			// a detour the wide search found searches its whole region again: wait for a free tick
-			m_replanTimer.Invalidate();
+			m_lookTimer.Invalidate();
 		}
 		else if ( !Replan( bot ) )
 		{
@@ -1152,7 +1152,7 @@ void CNEOBotPropDetour::Update( INextBot *bot, const PathFollower &path )
 
 //----------------------------------------------------------------------------------------------------------------
 // Look for props in the way on the path ahead, and when there are, a way past them on the mesh
-void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
+void CNEOBotPathObstacles::Plan( INextBot *bot, const PathFollower &path )
 {
 	ILocomotion *mover = bot->GetLocomotionInterface();
 	const Path::Segment *goal = path.GetCurrentGoal();
@@ -1163,7 +1163,7 @@ void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
 
 	CUtlVector< Vector > line;
 	CUtlVector< const Path::Segment * > segments;
-	GetPathAhead( path, mover->GetFeet(), PROP_DETOUR_LOOK_AHEAD_RANGE + PROP_DETOUR_REJOIN_EXTRA_RANGE, &line, &segments );
+	GetPathAhead( path, mover->GetFeet(), PATH_OBSTACLE_LOOK_AHEAD_RANGE + PATH_OBSTACLE_REJOIN_EXTRA_RANGE, &line, &segments );
 	if ( line.Count() < 2 )
 	{
 		return;
@@ -1183,7 +1183,7 @@ void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
 
 	const BodyBox_t body = GetBodyBox( bot );
 	m_breakable = FindBreakableInWay( body, line, breakables );
-	m_breakableTimer.Start( PROP_DETOUR_REPLAN_INTERVAL );
+	m_breakableTimer.Start( PATH_OBSTACLE_LOOK_INTERVAL );
 
 	if ( obstacles.Count() == 0 )
 	{
@@ -1198,12 +1198,12 @@ void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
 	FOR_EACH_VEC( obstacles, i )
 	{
 		float legStart = 0.0f;
-		for ( int leg = 0; leg + 1 < line.Count() && legStart < PROP_DETOUR_LOOK_AHEAD_RANGE; ++leg )
+		for ( int leg = 0; leg + 1 < line.Count() && legStart < PATH_OBSTACLE_LOOK_AHEAD_RANGE; ++leg )
 		{
 			const float legLength = ( line[ leg + 1 ] - line[ leg ] ).Length2D();
 			float fraction, enter, exit;
 			if ( BodyMeetsProp( body, line[ leg ], line[ leg + 1 ], obstacles[ i ], &fraction )
-				&& legStart + fraction * legLength < PROP_DETOUR_LOOK_AHEAD_RANGE
+				&& legStart + fraction * legLength < PATH_OBSTACLE_LOOK_AHEAD_RANGE
 				&& SegmentCrossesBox( line[ leg ].AsVector2D(), line[ leg + 1 ].AsVector2D(), obstacles[ i ].lo, obstacles[ i ].hi, &enter, &exit ) )
 			{
 				rejoinDistance = MAX( rejoinDistance, legStart + exit * legLength + PROP_DETOUR_REJOIN_PAST_PROP );
@@ -1246,7 +1246,7 @@ void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
 	if ( result == DETOUR_THROUGH_PUSHABLE )
 	{
 		// the bot keeps its path through props it can shove, so no wide search for a way around them
-		m_replanTimer.Start( PROP_DETOUR_PUSH_THROUGH_RETRY_INTERVAL );
+		m_lookTimer.Start( PROP_DETOUR_PUSH_THROUGH_RETRY_INTERVAL );
 		return;
 	}
 
@@ -1256,14 +1256,14 @@ void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
 		// at a random tick so blocked bots take turns instead of all planning again at the next one
 		if ( !ClaimWideSearch() )
 		{
-			m_replanTimer.Start( RandomFloat( gpGlobals->interval_per_tick, PROP_DETOUR_REPLAN_INTERVAL ) );
+			m_lookTimer.Start( RandomFloat( gpGlobals->interval_per_tick, PATH_OBSTACLE_LOOK_INTERVAL ) );
 			return;
 		}
 
 		if ( !FindWideDetour( bot, floorLo, floorHi, rejoin, pushableRoute, &regionLo, &regionHi, &m_waypoints ) )
 		{
 			// a bot pushing a prop with no way around looks again less often: nothing changes quickly
-			m_replanTimer.Start( PROP_DETOUR_WIDE_SEARCH_RETRY_INTERVAL );
+			m_lookTimer.Start( PROP_DETOUR_WIDE_SEARCH_RETRY_INTERVAL );
 			return;
 		}
 
@@ -1286,14 +1286,14 @@ void CNEOBotPropDetour::Plan( INextBot *bot, const PathFollower &path )
 
 //----------------------------------------------------------------------------------------------------------------
 // Look along the path ahead for a breakable in the way, without the props
-void CNEOBotPropDetour::LookForBreakable( INextBot *bot, const PathFollower &path )
+void CNEOBotPathObstacles::LookForBreakable( INextBot *bot, const PathFollower &path )
 {
-	m_breakableTimer.Start( PROP_DETOUR_REPLAN_INTERVAL );
+	m_breakableTimer.Start( PATH_OBSTACLE_LOOK_INTERVAL );
 	m_breakable = NULL;
 
 	CUtlVector< Vector > line;
 	CUtlVector< const Path::Segment * > segments;
-	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PROP_DETOUR_BREAKABLE_RANGE, &line, &segments );
+	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PATH_OBSTACLE_BREAKABLE_RANGE, &line, &segments );
 	if ( line.Count() < 2 )
 	{
 		return;
@@ -1316,7 +1316,7 @@ void CNEOBotPropDetour::LookForBreakable( INextBot *bot, const PathFollower &pat
 
 //----------------------------------------------------------------------------------------------------------------
 // Search again for a way to the same rejoin point, from where the bot is and around the props where they are now
-bool CNEOBotPropDetour::Replan( INextBot *bot )
+bool CNEOBotPathObstacles::Replan( INextBot *bot )
 {
 	// in the air, the bot keeps its detour until it lands
 	ILocomotion *mover = bot->GetLocomotionInterface();
@@ -1347,7 +1347,7 @@ bool CNEOBotPropDetour::Replan( INextBot *bot )
 
 //----------------------------------------------------------------------------------------------------------------
 // After a search that found a detour: note where the bot sets out from, and whether the props in the region rest
-void CNEOBotPropDetour::NoteSearch( const Vector &feet )
+void CNEOBotPathObstacles::NoteSearch( const Vector &feet )
 {
 	// only a wide detour's replans are skipped while its props rest
 	if ( !m_isWide )
@@ -1363,7 +1363,7 @@ void CNEOBotPropDetour::NoteSearch( const Vector &feet )
 
 //----------------------------------------------------------------------------------------------------------------
 // The last search still holds: the props in the region rest where it saw them, and the bot keeps to its route
-bool CNEOBotPropDetour::IsLastSearchValid( INextBot *bot ) const
+bool CNEOBotPathObstacles::IsLastSearchValid( INextBot *bot ) const
 {
 	if ( m_restingPropCount == PROP_DETOUR_PROPS_MOVING || m_searchAgeTimer.IsElapsed() )
 	{

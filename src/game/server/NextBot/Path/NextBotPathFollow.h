@@ -10,7 +10,7 @@
 #include "nav_pathfind.h"
 #include "NextBotPath.h"
 #ifdef NEO
-#include "neo/bot/neo_bot_prop_detour.h"
+#include "neo/bot/neo_bot_path_obstacles.h"
 #endif
 
 class INextBot;
@@ -46,7 +46,7 @@ public:
 	Path::ResultType GetResult() const { return m_result;  }
 
 #ifdef NEO
-	CBaseEntity *GetBreakableInWay() const { return m_propDetour.GetBreakableInWay(); }	// a breakable the last look ahead met on the path
+	CBaseEntity *GetBreakableInWay() const { return m_pathObstacles.GetBreakableInWay(); }	// a breakable the last look ahead met on the path
 #endif
 
 private:
@@ -90,7 +90,7 @@ private:
 #ifdef NEO
 	bool HasFallenBelowPath( INextBot *bot ) const;	// return true if we stand off the path, more than a step below it
 	bool m_wasOnGround;
-	CNEOBotPropDetour m_propDetour;					// steers around props the nav mesh does not know about
+	CNEOBotPathObstacles m_pathObstacles;			// looks ahead for props to steer around and breakables in the way
 #endif
 
 	float m_goalTolerance;

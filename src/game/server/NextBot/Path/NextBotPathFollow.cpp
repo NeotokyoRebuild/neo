@@ -104,7 +104,7 @@ void PathFollower::Invalidate( void )
 	m_hindrance = NULL;
 
 #ifdef NEO
-	m_propDetour.Reset();
+	m_pathObstacles.Reset();
 #endif
 }
 
@@ -120,7 +120,7 @@ void PathFollower::OnPathChanged( INextBot *bot, Path::ResultType result )
 	m_result = result;
 
 #ifdef NEO
-	m_propDetour.Reset();
+	m_pathObstacles.Reset();
 #endif
 }
 
@@ -693,16 +693,16 @@ void PathFollower::Update( INextBot *bot )
 	}
 
 #ifdef NEO
-	// walk around props in the way, which the nav mesh does not know about,
+	// look ahead for breakables and walk around props in the way, which the nav mesh does not know about,
 	// heading for the path segment past them rather than turning back for a goal the detour went around
-	m_propDetour.Update( bot, *this );
-	const Path::Segment *detourPathGoal = m_propDetour.GetPathGoal();
+	m_pathObstacles.Update( bot, *this );
+	const Path::Segment *detourPathGoal = m_pathObstacles.GetPathGoal();
 	if ( detourPathGoal )
 	{
 		m_goal = detourPathGoal;
 	}
 
-	const bool isDetouring = m_propDetour.IsDetouring();
+	const bool isDetouring = m_pathObstacles.IsDetouring();
 #endif
 
 	// use the direction towards the goal as 'forward' direction
@@ -860,7 +860,7 @@ void PathFollower::Update( INextBot *bot )
 #ifdef NEO
 	if ( isDetouring )
 	{
-		goalPos = m_propDetour.GetMoveGoal();
+		goalPos = m_pathObstacles.GetMoveGoal();
 	}
 #endif
 

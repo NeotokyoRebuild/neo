@@ -6,12 +6,13 @@ class INextBot;
 class PathFollower;
 
 //----------------------------------------------------------------------------------------------------------------
-// Steers a bot around props the nav mesh cannot know about, which physics or an animation moves,
-// by searching a grid laid over the mesh on the path ahead for a way past the ones it sees
-class CNEOBotPropDetour
+// Looks along a bot's path for what the nav mesh cannot know about:
+// props that physics or an animation moves, which it steers around by searching a grid laid over the mesh for a way past,
+// and breakables in the way, which it reports for the bot to clear
+class CNEOBotPathObstacles
 {
 public:
-	CNEOBotPropDetour();
+	CNEOBotPathObstacles();
 
 	void Reset();
 
@@ -34,7 +35,7 @@ private:
 	void NoteSearch( const Vector &feet );
 	bool IsLastSearchValid( INextBot *bot ) const;
 
-	CountdownTimer m_replanTimer;
+	CountdownTimer m_lookTimer;				// the look ahead, or the detour's search again while detouring
 	CountdownTimer m_breakableTimer;		// the look for breakables, when no plan this often looks for them too
 	CHandle< CBaseEntity > m_breakable;
 	CUtlVector< Vector > m_waypoints;
