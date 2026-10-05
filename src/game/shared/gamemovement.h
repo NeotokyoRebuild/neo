@@ -221,6 +221,10 @@ protected:
 
 	virtual	void	ReduceTimers( void );
 
+#ifdef NEO
+	virtual void	IncreaseTimers( void );
+#endif
+
 	virtual void	CheckFalling( void );
 
 	virtual void	PlayerRoughLandingEffects( float fvol );

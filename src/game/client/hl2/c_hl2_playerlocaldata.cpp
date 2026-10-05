@@ -17,7 +17,7 @@ BEGIN_RECV_TABLE_NOBASE( C_HL2PlayerLocalData, DT_HL2Local )
 	RecvPropFloat(RECVINFO(m_cloakPower)),
 	RecvPropFloat(RECVINFO(m_slideTime)),
 	RecvPropFloat(RECVINFO(m_jumpHeldTime)),
-	RecvPropTime(RECVINFO(m_jumpCooldown)),
+	RecvPropFloat(RECVINFO(m_jumpCooldown)),
 #endif
 	RecvPropFloat( RECVINFO(m_flSuitPowerLoad) ),
 	RecvPropFloat( RECVINFO(m_flTimeAllSuitDevicesOff) ),

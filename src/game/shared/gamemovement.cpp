@@ -1177,11 +1177,7 @@ void CGameMovement::ReduceTimers( void )
 #ifdef NEO
 	auto neoPlayer = static_cast<CNEO_Player*>(player);
 
-	if (!(neoPlayer->GetFlags() & FL_ONGROUND) && neoPlayer->GetAbsVelocity().z < 0)
-	{
-		neoPlayer->m_HL2Local.m_slideTime = Min(neoPlayer->m_HL2Local.m_slideTime + sv_neo_slidetime_gain.GetFloat() * gpGlobals->frametime, sv_neo_slidetime_max.GetFloat());
-	}
-	else
+	if (player->GetFlags() & FL_ONGROUND)
 	{
 		if (neoPlayer->m_Local.m_bDucked && neoPlayer->m_HL2Local.m_slideTime > 0)
 		{
@@ -1193,27 +1189,39 @@ void CGameMovement::ReduceTimers( void )
 		}
 	}
 
-	bool justAppliedCooldown = false;
-	if (mv->m_nButtons & IN_JUMP)
-	{
-		neoPlayer->m_HL2Local.m_jumpHeldTime = Min(neoPlayer->m_HL2Local.m_jumpHeldTime + gpGlobals->frametime, sv_neo_jumpbuffer_penalty.GetFloat());
-	}
-	else
+	if (!(mv->m_nButtons & IN_JUMP))
 	{
 		if (neoPlayer->m_HL2Local.m_jumpHeldTime > 0 && !(neoPlayer->m_HL2Local.m_jumpCooldown > 0))
 		{
-			neoPlayer->m_HL2Local.m_jumpCooldown = sv_neo_jump_cooldown.GetFloat();
-			justAppliedCooldown = true;
+			neoPlayer->m_HL2Local.m_jumpCooldown = sv_neo_jump_cooldown.GetFloat() + gpGlobals->frametime;
 		}
 		neoPlayer->m_HL2Local.m_jumpHeldTime = 0.0f;
 	}
 
-	if ( neoPlayer->m_HL2Local.m_jumpCooldown > 0 && !justAppliedCooldown)
+	if ( neoPlayer->m_HL2Local.m_jumpCooldown > 0)
 	{
 		neoPlayer->m_HL2Local.m_jumpCooldown = Max(neoPlayer->m_HL2Local.m_jumpCooldown - gpGlobals->frametime, 0.0f);
 	}
 #endif
 }
+
+#ifdef NEO
+void CGameMovement::IncreaseTimers( void )
+{
+	auto neoPlayer = static_cast<CNEO_Player*>(player);
+
+	if (!(neoPlayer->GetFlags() & FL_ONGROUND) && neoPlayer->GetAbsVelocity().z < 0)
+	{
+		neoPlayer->m_HL2Local.m_slideTime = Min(neoPlayer->m_HL2Local.m_slideTime + sv_neo_slidetime_gain.GetFloat() * gpGlobals->frametime, sv_neo_slidetime_max.GetFloat());
+	}
+
+	// Earlier code may have fiddled with mv->m_nButtons so use the player's original here
+	if (player->m_nButtons & IN_JUMP)
+	{
+		neoPlayer->m_HL2Local.m_jumpHeldTime = Min(neoPlayer->m_HL2Local.m_jumpHeldTime + gpGlobals->frametime, sv_neo_jumpbuffer_penalty.GetFloat());
+	}
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -5154,6 +5162,10 @@ void CGameMovement::PlayerMove( void )
 			DevMsg( 1, "Bogus pmove player movetype %i on (%i) 0=cl 1=sv\n", player->GetMoveType(), player->IsServer());
 			break;
 	}
+
+#ifdef NEO
+	IncreaseTimers();
+#endif
 }
 
 
