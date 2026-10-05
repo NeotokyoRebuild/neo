@@ -544,8 +544,8 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 		{
 			Vector2D moveDirection = to;
 
-			// In the air, input only adds speed along the move direction, so a jump or drop onto a narrow ledge
-			// would carry its sideways speed past the edge: steer the velocity onto the goal line instead
+			// In the air, input only adds speed along the move direction,
+			// so steer the velocity onto the goal line before a jump's sideways speed carries the bot past a narrow ledge
 			if ( !IsOnGround() )
 			{
 				moveDirection = GetRunSpeed() * to - m_player->GetAbsVelocity().AsVector2D();
