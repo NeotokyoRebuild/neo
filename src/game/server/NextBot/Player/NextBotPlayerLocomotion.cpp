@@ -542,7 +542,17 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 		const CNavArea *pArea = m_player->GetLastKnownArea();
 		if ( goalDistance > epsilon && pArea && pArea->HasAttributes( NAV_MESH_PRECISE | NAV_MESH_CLIFF ) )
 		{
-			playerButtons->SetMoveDirection( to );
+			Vector2D moveDirection = to;
+
+			// In the air, input only adds speed along the move direction, so a jump or drop onto a narrow ledge
+			// would carry its sideways speed past the edge: steer the velocity onto the goal line instead
+			if ( !IsOnGround() )
+			{
+				moveDirection = GetRunSpeed() * to - m_player->GetAbsVelocity().AsVector2D();
+				moveDirection.NormalizeInPlace();
+			}
+
+			playerButtons->SetMoveDirection( moveDirection );
 		}
 #endif
 
