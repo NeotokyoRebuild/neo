@@ -34,6 +34,16 @@ ConVar NextBotDebugClimbing( "nb_debug_climbing", "0", FCVAR_CHEAT );
 #ifdef NEO
 // How far from its feet a bot that landed looks for a nav area, the range UpdateLastKnownArea() searches
 static const float LANDING_NAV_AREA_RANGE = 50.0f;
+
+// A bot part way down a drop stands within this range of the drop's column (its top and landing share x and y)
+static const float DROP_COLUMN_RANGE = 50.0f;
+
+// Fell-off re-paths this many times in a row,
+static const int FELL_OFF_LOOP_REPEATS = 3;
+// each within this many seconds of the last,
+static const float FELL_OFF_LOOP_TIME = 2.0f;
+// with the feet moved less than this, are a loop the stuck monitor has to see
+static const float FELL_OFF_LOOP_RANGE = 8.0f;
 #endif
 
 
@@ -57,6 +67,10 @@ PathFollower::PathFollower( void )
 
 #ifdef NEO
 	m_wasOnGround = true;
+
+	m_fellOffFeet = vec3_invalid;
+	m_fellOffTime = 0.0f;
+	m_fellOffCount = 0;
 #endif
 }
 
@@ -636,6 +650,59 @@ static bool IsNearNavMesh( INextBot *bot )
 {
 	return TheNavMesh->GetNearestNavArea( bot->GetEntity(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, LANDING_NAV_AREA_RANGE ) != NULL;
 }
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return true if our goal is the top of a drop more than a jump above us, with its landing below us:
+ * we are falling down the drop, or stopped on a ledge part way down it.
+ * The stock check traces from the feet to the landing on a diagonal that hits a ledge's rim, so trace level instead
+ */
+bool PathFollower::IsPartWayDownDrop( INextBot *bot ) const
+{
+	const Segment *landing = NextSegment( m_goal );
+	if ( m_goal->type != DROP_DOWN || !landing )
+	{
+		return false;
+	}
+
+	ILocomotion *mover = bot->GetLocomotionInterface();
+	const Vector &feet = mover->GetFeet();
+	if ( feet.z < landing->pos.z + mover->GetStepHeight() )
+	{
+		return false;
+	}
+
+	if ( !( landing->pos - feet ).AsVector2D().IsLengthLessThan( DROP_COLUMN_RANGE ) )
+	{
+		return false;
+	}
+
+	const Vector landingLevel( landing->pos.x, landing->pos.y, feet.z );
+	return mover->IsPotentiallyTraversable( feet, landingLevel );
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return true if this fell-off re-path is one of a run that left us where we were,
+ * because each re-path handed back a path we cannot follow from here
+ */
+bool PathFollower::IsFellOffLoop( INextBot *bot )
+{
+	const Vector &feet = bot->GetLocomotionInterface()->GetFeet();
+	const bool isRepeat = ( feet - m_fellOffFeet ).IsLengthLessThan( FELL_OFF_LOOP_RANGE ) &&
+		gpGlobals->curtime - m_fellOffTime < FELL_OFF_LOOP_TIME;
+
+	m_fellOffCount = isRepeat ? m_fellOffCount + 1 : 1;
+	m_fellOffTime = gpGlobals->curtime;
+	if ( !isRepeat )
+	{
+		m_fellOffFeet = feet;
+	}
+
+	return m_fellOffCount >= FELL_OFF_LOOP_REPEATS;
+}
 #endif
 
 
@@ -802,6 +869,13 @@ void PathFollower::Update( INextBot *bot )
 
 			// check if we can reach the next segment, in case this was a "jump down" situation
 			const Path::Segment *next = NextSegment( m_goal );
+#ifdef NEO
+			if ( IsPartWayDownDrop( bot ) )
+			{
+				// keep the drop's top as the goal and steer at it, which walks us off the ledge over the landing
+			}
+			else
+#endif
 			if ( mover->IsStuck() || !next || ( next->pos.z - mover->GetFeet().z > mover->GetMaxJumpHeight() ) || !mover->IsPotentiallyTraversable( mover->GetFeet(), next->pos ) )
 			{
 				// the next node is too high, too - we really did fall off the path
@@ -819,7 +893,15 @@ void PathFollower::Update( INextBot *bot )
 				}
 
 				// reset stuck status since we're (likely) repathing anyways. otherwise, we could be stuck in a loop here and not move
+#ifdef NEO
+				// unless the re-paths keep handing back the same path and we have not moved, so let the stuck monitor see it
+				if ( !IsFellOffLoop( bot ) )
+				{
+					mover->ClearStuckStatus( "Fell off path" );
+				}
+#else
 				mover->ClearStuckStatus( "Fell off path" );
+#endif
 
 				return;
 			}

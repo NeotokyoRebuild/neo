@@ -83,6 +83,13 @@ private:
 #ifdef NEO
 	bool HasFallenBelowPath( INextBot *bot ) const;	// return true if we stand off the path, more than a step below it
 	bool m_wasOnGround;
+
+	bool IsPartWayDownDrop( INextBot *bot ) const;	// return true if we are falling or stopped part way down a drop, the landing level ahead
+	bool IsFellOffLoop( INextBot *bot );				// return true if fell-off re-paths keep leaving us where we were
+
+	Vector m_fellOffFeet;							// where the latest run of fell-off re-paths started,
+	float m_fellOffTime;							// when the latest one was,
+	int m_fellOffCount;							// and how many there were
 #endif
 
 	float m_goalTolerance;
