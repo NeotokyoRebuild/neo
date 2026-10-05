@@ -25,7 +25,11 @@ struct OverlayLine_t
 	bool			draw;
 };
 
+#ifdef NEO
+extern void	UTIL_AddDebugLine( const Vector &startPos, const Vector &endPos, bool noDepthTest, bool testLOS, const Color& color={255,255,255,255});
+#else
 extern void	UTIL_AddDebugLine( const Vector &startPos, const Vector &endPos, bool noDepthTest, bool testLOS );
+#endif
 extern void	UTIL_DrawPositioningOverlay( float flCrossDistance );
 extern void UTIL_DrawOverlayLines( void );
 
