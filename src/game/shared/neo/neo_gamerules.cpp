@@ -176,6 +176,8 @@ ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATE
 ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 ConVar sv_neo_ghost_spawn_force("sv_neo_ghost_spawn_force", "-1", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Pin the ghost to a fixed neo_ghostspawnpoint every round. -1 uses default random selection.", true, -1, false, 0);
+ConVar sv_neo_ghost_spawn_pos("sv_neo_ghost_spawn_pos", "", FCVAR_REPLICATED | FCVAR_CHEAT,
+	"Spawn the ghost at \"x y z\" every round instead of at a neo_ghostspawnpoint. Overrides sv_neo_ghost_spawn_force. Empty uses the spawn points.");
 ConVar sv_neo_jgr_spawn_force("sv_neo_jgr_spawn_force", "-1", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Pin the juggernaut to a fixed neo_juggernautspawnpoint every round. -1 uses default random selection.", true, -1, false, 0);
 ConVar sv_neo_teamdamage_assists("sv_neo_teamdamage_assists", "0", FCVAR_REPLICATED, "Whether to drain XP when assisting the death of a teammate.", true, 0.0f, true, 1.0f);
@@ -1970,6 +1972,26 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 }
 
 #ifdef GAME_DLL
+// Replaces vecSpawn with the position in sv_neo_ghost_spawn_pos, if it holds a valid one
+static void ApplyGhostSpawnPosOverride(Vector &vecSpawn)
+{
+	const char *pszPos = sv_neo_ghost_spawn_pos.GetString();
+	if (!pszPos || !*pszPos)
+	{
+		return;
+	}
+
+	Vector vecPos;
+	if (sscanf(pszPos, "%f %f %f", &vecPos.x, &vecPos.y, &vecPos.z) != 3 || !vecPos.IsValid())
+	{
+		Warning("sv_neo_ghost_spawn_pos: ignoring \"%s\", expected \"x y z\"\n", pszPos);
+		return;
+	}
+
+	vecSpawn = vecPos;
+	Msg("sv_neo_ghost_spawn_pos: spawning ghost at %.1f %.1f %.1f\n", vecPos.x, vecPos.y, vecPos.z);
+}
+
 // Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
 void CNEORules::SpawnTheGhost(const Vector *origin)
 {
@@ -2107,7 +2129,12 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 			}
 			else
 			{
-				m_pGhost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+				// The override replaces the spawn point's position before the drop, not after it:
+				// a second Drop() on the already dropped ghost trips a physics shadow assert
+				Vector vecSpawn = ghostSpawn->GetAbsOrigin();
+				ApplyGhostSpawnPosOverride(vecSpawn);
+
+				m_pGhost->SetAbsOrigin(vecSpawn);
 				m_pGhost->Drop(vec3_origin);
 				ghostSpawn->m_OnSpawnedHere.FireOutput(m_pGhost, m_pGhost);
 				m_iGhostSpawnEntIdx = ghostSpawn->entindex();
