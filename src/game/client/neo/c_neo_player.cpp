@@ -167,7 +167,8 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
+		if (!engine->IsInGame() || engine->IsLevelMainMenuBackground() ||
+			engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
 		}
@@ -258,7 +259,8 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
+		if (!engine->IsInGame() || engine->IsLevelMainMenuBackground() ||
+			engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
 		{
 			return;
 		}
@@ -344,7 +346,8 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		if (engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
+		if (!engine->IsInGame() || engine->IsLevelMainMenuBackground() ||
+			engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
 		{
 			return;
 		}
