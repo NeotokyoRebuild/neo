@@ -172,16 +172,7 @@ bool PlayerLocomotion::HandleUnwantedLadder( void )
 	// come back from, and costs captures even though it reads better on the ladder numbers.
 	const bool bGoUp = ( GetFeet().z - ladder->m_bottom.z ) > ( ladder->m_top.z - GetFeet().z );
 
-	// A ladder's top is recorded in whichever of the three slots the generator filled, and plenty
-	// of them leave m_topForwardArea empty - reading only that slot silently skips those ladders.
-	const CNavArea *dismount = ladder->m_bottomArea;
-
-	if ( bGoUp )
-	{
-		dismount = ladder->m_topForwardArea ? ladder->m_topForwardArea :
-			( ladder->m_topLeftArea ? ladder->m_topLeftArea : ladder->m_topRightArea );
-	}
-
+	const CNavArea *dismount = bGoUp ? ladder->GetTopArea() : ladder->m_bottomArea;
 	if ( dismount == NULL )
 	{
 		return false;
