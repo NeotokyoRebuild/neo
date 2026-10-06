@@ -12,7 +12,6 @@
 // inside miniaudio.h just to expose the ma_dr_mp3_...
 // APIs
 #define MA_NO_FLAC
-#define MA_NO_WAV
 #define MA_NO_ENCODING
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
