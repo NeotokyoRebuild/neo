@@ -8,6 +8,7 @@
 #include "bot/neo_bot_path_reservation.h"
 #include "nav_mesh.h"
 #include "sdk/sdk_basegrenade_projectile.h"
+#include "movevars_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
