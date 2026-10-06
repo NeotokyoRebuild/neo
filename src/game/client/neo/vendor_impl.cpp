@@ -12,6 +12,9 @@
 // inside miniaudio.h just to expose the ma_dr_mp3_...
 // APIs
 #define MA_NO_FLAC
+#ifndef NEO_STEAMAUDIO // NEO HRTF: the HRTF system decodes game .wav sounds
+#define MA_NO_WAV
+#endif
 #define MA_NO_ENCODING
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"

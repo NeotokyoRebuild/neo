@@ -130,7 +130,6 @@ struct NeoSettings
 		float flVolPing;
 		int iSoundSetup;
 		int iSoundQuality;
-		bool bHrtfEnabled;
 		bool bMuteAudioUnFocus;
 		bool bPauseMusicInGame;
 		int iMusicStartupType;
@@ -314,7 +313,6 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_ping_volume);
 		CONVARREF_DEF(snd_surround_speakers);
-		CONVARREF_DEF(cl_neo_hrtf);
 		CONVARREF_DEF(voice_modenable);
 		CONVARREF_DEF(voice_scale);
 		CONVARREF_DEF(snd_mute_losefocus);
