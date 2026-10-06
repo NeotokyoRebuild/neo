@@ -6,7 +6,6 @@
 #include "weapon_ghost.h"
 #include "NextBotUtil.h"
 
-
 namespace
 {
 constexpr float CTG_CAPTURE_ATTEMPT_TIME = 3.0f;	// Per nav area, before the ghost counts as lodged
