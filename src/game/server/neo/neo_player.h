@@ -164,8 +164,6 @@ public:
 
 	void Weapon_SetZoom(const bool bZoomIn);
 
-	void SuperJump(void);
-
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
 	bool RequestSetLoadout(int loadoutNumber);

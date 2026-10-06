@@ -954,19 +954,6 @@ bool CNEO_Player::IsAllowedToSuperJump()
 	if (GetMoveParent())
 		return false;
 
-	if (IsAirborne())
-		return false;
-
-	if (GetWaterLevel() > WL_Feet)
-		return false;
-
-	// Only superjump if we have a reasonable jump direction in mind
-	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
-	{
-		return false;
-	}
-
 	if (SuitPower_GetCurrentPercentage() < SUPER_JMP_COST)
 		return false;
 

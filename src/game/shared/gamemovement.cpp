@@ -2761,6 +2761,18 @@ bool CGameMovement::CheckJumpButton( void ) {
 	neoPlayer->DoAnimationEvent(PLAYERANIMEVENT_JUMP);
 	neoPlayer->m_flJumpLastTime = gpGlobals->curtime;
 	neoPlayer->m_HL2Local.m_slideTime = 0.0f;
+
+	// Super jump
+	if (neoPlayer->GetClass() == NEO_CLASS_RECON && neoPlayer->IsAllowedToSuperJump())
+	{
+		neoPlayer->SuitPower_Drain(SUPER_JMP_COST);
+		Vector vecForward;
+		AngleVectors(mv->m_vecViewAngles, &vecForward);
+		vecForward.z = 0;
+		VectorNormalize(vecForward);
+		vecForward *= mv->m_flForwardMove;
+		VectorAdd(vecForward, mv->m_vecVelocity, mv->m_vecVelocity);
+	}
 #endif
 
 	// Acclerate upward
