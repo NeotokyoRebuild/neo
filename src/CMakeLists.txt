@@ -18,6 +18,7 @@ set(FETCHCONTENT_QUIET FALSE CACHE BOOL "Hide all FetchContent population output
 
 include(cmake/utils.cmake)
 include(cmake/build_info.cmake)
+include(CMakeDependentOption)
 
 if(NOT OS_WINDOWS AND NOT OS_LINUX AND NOT OS_MACOS)
     message(FATAL_ERROR "Unknown OS")
@@ -30,6 +31,8 @@ option(NEO_STAGING_ONLY "Staging mode (STAGING_ONLY)" OFF)
 option(NEO_RELEASE_ASSERTS "Release asserts (RELEASEASSERTS)" OFF)
 option(NEO_RETAIL "Retail mode" OFF)
 option(NEO_DEDICATED "Dedicated server mode" OFF)
+cmake_dependent_option(NEO_STEAMAUDIO "Build the client Steam Audio HRTF backend" ON "NOT NEO_DEDICATED" OFF)
+set(NEO_STEAMAUDIO_SDK_PATH "" CACHE PATH "Local Steam Audio SDK root (include/, lib/); empty downloads the release")
 option(NEO_RAD_TELEMETRY_DISABLED "Telemetry disabled" ON)
 option(NEO_QUICKTIME_VIDEO "Use Quicktime video on Windows" OFF)
 option(NEO_BUILD_REPLAY "Build replay system" OFF) # NOTE not implemented for neo
@@ -64,6 +67,8 @@ message(STATUS "Staging (STAGING_ONLY): ${NEO_STAGING_ONLY}")
 message(STATUS "Release asserts (RELEASEASSERTS): ${NEO_RELEASE_ASSERTS}")
 message(STATUS "Retail mode (RETAIL): ${NEO_RETAIL}")
 message(STATUS "Dedicated server mode (DEDICATED): ${NEO_DEDICATED}")
+message(STATUS "Build the client Steam Audio HRTF backend: ${NEO_STEAMAUDIO}")
+message(STATUS "Local Steam Audio SDK root: ${NEO_STEAMAUDIO_SDK_PATH}")
 message(STATUS "Telemetry disabled (RAD_TELEMETRY_DISABLED): ${NEO_RAD_TELEMETRY_DISABLED}")
 message(STATUS "Use Quicktime video on Windows (QUICKTIME_VIDEO): ${NEO_QUICKTIME_VIDEO}")
 message(STATUS "Build replay system (BUILD_REPLAY): ${NEO_BUILD_REPLAY}")
@@ -464,6 +469,10 @@ if(NEO_GENERATE_GAMEDATA)
     set(GAMEDATA_GEN_PATH "${gamedata-gen_SOURCE_DIR}/gamedata-gen")
 endif()
 
+if(NEO_STEAMAUDIO)
+    include(cmake/steamaudio.cmake)
+endif()
+
 if(NOT NEO_DEDICATED)
     add_subdirectory(game/client)
     add_subdirectory(materialsystem/stdshaders)
@@ -487,6 +496,10 @@ if(NOT NEO_DEDICATED)
         DEPENDS client_copy_lib server_copy_lib game_shader_dx9_copy_lib
         VERBATIM
     )
+
+    if(NEO_STEAMAUDIO)
+        add_dependencies(copy_all_libs steamaudio_copy_lib)
+    endif()
 endif()
 
 if(NEO_CI_BUILD AND "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
