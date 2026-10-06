@@ -414,7 +414,7 @@ void CNeoHrtfSystem::ReleaseAllVoices()
 	// Hand still-playing sounds back to the engine; a no-op for guids that already ended.
 	for (const Voice &voice : m_voices)
 	{
-		if (voice.m_bInUse)
+		if (voice.m_bInUse && enginesound->IsSoundStillPlaying(voice.m_guid))
 		{
 			enginesound->SetVolumeByGuid(voice.m_guid, voice.m_sourceVolume);
 		}
