@@ -564,7 +564,6 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 #endif
 		break; default: break;
 		}
-		pAudio->bHrtfEnabled = cvr->cl_neo_hrtf.GetBool();
 		pAudio->bMuteAudioUnFocus = cvr->snd_mute_losefocus.GetBool();
 		pAudio->bPauseMusicInGame = cvr->cl_neo_radio_pause_ingame.GetBool();
 		pAudio->iMusicStartupType = cvr->cl_neo_radio_startup.GetInt();
@@ -884,7 +883,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->snd_victory_volume.SetValue(pAudio->flVolVictory);
 		cvr->snd_ping_volume.SetValue(pAudio->flVolPing);
 		cvr->snd_surround_speakers.SetValue(SURROUND_RE_MAP[pAudio->iSoundSetup]);
-		cvr->cl_neo_hrtf.SetValue(pAudio->bHrtfEnabled);
 		cvr->snd_mute_losefocus.SetValue(pAudio->bMuteAudioUnFocus);
 		cvr->cl_neo_radio_pause_ingame.SetValue(pAudio->bPauseMusicInGame);
 		cvr->cl_neo_radio_startup.SetValue(pAudio->iMusicStartupType);
@@ -1292,8 +1290,6 @@ void NeoSettings_Audio(NeoSettings *ns)
 	NeoUI::Divider(L"SOUND");
 	NeoUI::RingBox(L"Sound Setup", SPEAKER_CFG_LABELS, ARRAYSIZE(SPEAKER_CFG_LABELS), &pAudio->iSoundSetup);
 	NeoUI::RingBox(L"Sound Quality", QUALITY_LABELS, 3, &pAudio->iSoundQuality);
-	// NEO HRTF: binaural rendering of positional sounds (Steam Audio), meant for headphones
-	NeoUI::RingBoxBool(L"HRTF (headphones)", &pAudio->bHrtfEnabled);
 	NeoUI::RingBoxBool(L"Mute Audio on un-focus", &pAudio->bMuteAudioUnFocus);
 	NeoUI::RingBoxBool(L"Pause Music on entering in game", &pAudio->bPauseMusicInGame);
 	NeoUI::RingBox(L"First song on startup", STARTUP_TYPE_LABELS, NeoMP3::STARTUP_TYPE__TOTAL, &pAudio->iMusicStartupType);

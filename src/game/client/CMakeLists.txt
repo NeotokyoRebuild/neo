@@ -886,6 +886,8 @@ target_sources_grouped(
 )
 
 if(NEO_STEAMAUDIO)
+    target_compile_definitions(client PRIVATE NEO_STEAMAUDIO)
+
     target_sources_grouped(
         TARGET client
         NAME "HRTF"
