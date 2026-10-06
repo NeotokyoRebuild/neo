@@ -1175,7 +1175,7 @@ void CGameMovement::ReduceTimers( void )
 		}
 	}
 #ifdef NEO
-	auto neoPlayer = static_cast<CNEO_Player*>(player);
+	auto neoPlayer = assert_cast<CNEO_Player*>(player);
 
 	if (player->GetFlags() & FL_ONGROUND)
 	{
@@ -1208,7 +1208,7 @@ void CGameMovement::ReduceTimers( void )
 #ifdef NEO
 void CGameMovement::IncreaseTimers( void )
 {
-	auto neoPlayer = static_cast<CNEO_Player*>(player);
+	auto neoPlayer = assert_cast<CNEO_Player*>(player);
 
 	if (!(neoPlayer->GetFlags() & FL_ONGROUND) && neoPlayer->GetAbsVelocity().z < 0)
 	{
@@ -1883,7 +1883,7 @@ void CGameMovement::FinishGravity( void )
 }
 
 #ifdef NEO
-ConVar sv_neo_maxairspeed("sv_neo_maxairspeed", "30", FCVAR_NOTIFY | FCVAR_REPLICATED);
+ConVar sv_neo_maxairspeed("sv_neo_maxairspeed", "30", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max speed used in air acceleration formula", true, 0, false, 0);
 float CGameMovement::GetAirSpeedCap() {
 	return sv_neo_maxairspeed.GetFloat();
 }
@@ -2642,7 +2642,7 @@ bool CGameMovement::CheckJumpButton( void ) {
 	}
 
 #ifdef NEO
-	auto neoPlayer = static_cast<CNEO_Player*>(player);
+	auto neoPlayer = assert_cast<CNEO_Player*>(player);
 
 	if (neoPlayer->m_HL2Local.m_jumpCooldown > 0)
 	{
