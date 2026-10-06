@@ -122,14 +122,7 @@ void CNEOBotLadderClimb::ClaimLadder( CNEOBot *me ) const
 	const CNavArea *pExitArea = m_pExitArea;
 	if ( !pExitArea )
 	{
-		pExitArea = m_bGoingUp ? m_ladder->m_topForwardArea : m_ladder->m_bottomArea;
-	}
-
-	// The generator fills whichever top slot the landing is in, often not the forward one
-	if ( !pExitArea && m_bGoingUp )
-	{
-		pExitArea = m_ladder->m_topLeftArea ? m_ladder->m_topLeftArea :
-			( m_ladder->m_topRightArea ? m_ladder->m_topRightArea : m_ladder->m_topBehindArea );
+		pExitArea = m_bGoingUp ? m_ladder->GetTopArea() : m_ladder->m_bottomArea;
 	}
 
 	// The locomotion's dismount walks to this area, so there is nothing to claim with without one
