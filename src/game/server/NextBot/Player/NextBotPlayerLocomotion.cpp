@@ -259,9 +259,9 @@ void PlayerLocomotion::Upkeep( void )
 	}
 
 	// In the air below the top, in front of the face with the hull clear of the ladder's own top, and not
-	// beside the ladder
+	// beside the ladder. Below the top by a step's margin: a ladder brush often stands above its nav ladder's top
 	const Vector &feet = GetFeet();
-	if ( IsOnGround() || feet.z >= ladder->m_top.z )
+	if ( IsOnGround() || feet.z >= ladder->m_top.z + GetStepHeight() )
 	{
 		return;
 	}
