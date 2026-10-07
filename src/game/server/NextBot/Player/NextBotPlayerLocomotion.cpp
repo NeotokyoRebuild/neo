@@ -1050,6 +1050,12 @@ void PlayerLocomotion::ClimbLadder( const CNavLadder *ladder, const CNavArea *di
 // 	Approach( goal );
 // 	FaceTowards( goal );
 	
+#ifdef NEO
+	// A climb asked for ends any bout of unwanted contact, so the next one waits LADDER_ADOPT_TIME afresh
+	m_unwantedLadderSince = 0.0f;
+	m_unwantedLadderLastTouch = 0.0f;
+#endif
+
 	m_ladderState = APPROACHING_ASCENDING_LADDER;
 	m_ladderInfo = ladder;
 	m_ladderDismountGoal = dismountGoal;
@@ -1066,6 +1072,12 @@ void PlayerLocomotion::DescendLadder( const CNavLadder *ladder, const CNavArea *
 // 	Vector goal =  GetBot()->GetPosition() + 100.0f * ( Vector( 0, 0, -1.0f ) - ladder->GetNormal() );
 // 	Approach( goal );
 // 	FaceTowards( goal );
+
+#ifdef NEO
+	// A climb asked for ends any bout of unwanted contact, so the next one waits LADDER_ADOPT_TIME afresh
+	m_unwantedLadderSince = 0.0f;
+	m_unwantedLadderLastTouch = 0.0f;
+#endif
 
 	m_ladderState = APPROACHING_DESCENDING_LADDER;
 	m_ladderInfo = ladder;
