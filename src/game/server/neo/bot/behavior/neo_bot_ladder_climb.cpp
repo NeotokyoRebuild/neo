@@ -104,6 +104,8 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 			// Teleport the bot
 			me->SetAbsOrigin( idealPos );
 			me->SetAbsAngles( idealAngles );
+			// the view too: a forward press with the view off the face's normal slides the bot off the side of a narrow ladder
+			me->SnapEyeAngles( idealAngles );
 
 			// Update mover feet to new teleported position for stuck checking
 			m_flLastZ = idealPos.z;
