@@ -9,7 +9,9 @@
 
 // The engine grabs a ladder within this distance of its face (CGameMovement::LadderDistance())
 static constexpr float LADDER_GRAB_DIST = 2.0f;
-// and a hull placed off a ladder is slid at most this far towards the face to find it.
+// A hull placed off a ladder starts this far clear of the face,
+static constexpr float LADDER_PLACE_GAP = 2.0f;
+// and is slid at most this far towards the face to find it.
 static constexpr float LADDER_PLACE_SEEK = 16.0f;
 
 //---------------------------------------------------------------------------------------------
@@ -83,7 +85,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 			// so clear the corners first, then slide in until the hull touches the face
 			const Vector &normal = m_ladder->GetNormal();
 			const float flReach = me->CollisionProp()->OBBSize().x / 2.0f * ( fabsf( normal.x ) + fabsf( normal.y ) );
-			Vector clearPos = m_ladder->GetPosAtHeight( m_flLastZ ) + normal * ( flReach + 2.0f );
+			Vector clearPos = m_ladder->GetPosAtHeight( m_flLastZ ) + normal * ( flReach + LADDER_PLACE_GAP );
 			clearPos.z = m_flLastZ;
 
 			trace_t trFace;
