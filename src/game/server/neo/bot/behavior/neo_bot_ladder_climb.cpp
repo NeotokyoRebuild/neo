@@ -7,6 +7,11 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+// The engine grabs a ladder within this distance of its face (CGameMovement::LadderDistance())
+static constexpr float LADDER_GRAB_DIST = 2.0f;
+// and a hull placed off a ladder is slid at most this far towards the face to find it.
+static constexpr float LADDER_PLACE_SEEK = 16.0f;
+
 //---------------------------------------------------------------------------------------------
 CNEOBotLadderClimb::CNEOBotLadderClimb( const CNavLadder *ladder, bool goingUp )
 	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_flLastZ( 0.0f ),
@@ -73,6 +78,21 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 			float offsetDist = me->CollisionProp()->OBBSize().x / 2.0f + 2.0f;
 			idealPos += m_ladder->GetNormal() * offsetDist;
 			idealPos.z = m_flLastZ;
+
+			// On a ladder turned off the world axes, half a hull width off the face leaves the hull's corner in the brush,
+			// so clear the corners first, then slide in until the hull touches the face
+			const Vector &normal = m_ladder->GetNormal();
+			const float flReach = me->CollisionProp()->OBBSize().x / 2.0f * ( fabsf( normal.x ) + fabsf( normal.y ) );
+			Vector clearPos = m_ladder->GetPosAtHeight( m_flLastZ ) + normal * ( flReach + 2.0f );
+			clearPos.z = m_flLastZ;
+
+			trace_t trFace;
+			UTIL_TraceHull( clearPos, clearPos - normal * LADDER_PLACE_SEEK, me->WorldAlignMins(), me->WorldAlignMaxs(),
+				MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trFace );
+			if ( !trFace.startsolid )
+			{
+				idealPos = trFace.DidHit() ? trFace.endpos + normal * ( LADDER_GRAB_DIST * 0.5f ) : clearPos;
+			}
 
 			// Face perpendicularly straight on to the ladder (-normal)
 			Vector idealLookDir = -m_ladder->GetNormal();
