@@ -18,38 +18,26 @@
 ConVar NextBotPlayerMoveDirect( "nb_player_move_direct", "0" );
 
 #ifdef NEO
-// CGameMovement::LadderMove() puts a player on any ladder their wish direction points at,
-// while TraverseLadder()'s NO_LADDER branch drops the move type straight back to walking whenever
-// the bot's own state machine did not ask for a climb. A path that merely brushes past a ladder
-// leaves the two toggling every tick: the bot hangs on the ladder making no progress, and because
-// it never stops moving, no stuck event fires either.
-//
-// Letting go harder does not fix it - the wish direction still points at the brush. What does is
-// giving up the argument and riding the ladder out by its nearer end, but only for the contacts
-// that actually persist; most sort themselves out within a second and adopting those buys a lot of
-// climbing nobody asked for.
-
-// How long a bot must be held against a ladder it did not ask for before taking it over. Short
-// enough that a real snag is caught within half a second, long enough that the ordinary release
-// still handles the many contacts that clear themselves immediately.
-static const float LADDER_ADOPT_TIME = 0.5f;
+// How long a bot must be held against a ladder it did not ask for before HandleUnwantedLadder() takes it over:
+// a real snag is caught within half a second, and contacts that clear themselves are left to the ordinary release
+static constexpr float LADDER_ADOPT_TIME = 0.5f;
 // A ladder further than this from the bot is not the one it is stuck on.
-static const float LADDER_TOUCH_RANGE = 64.0f;
+static constexpr float LADDER_TOUCH_RANGE = 64.0f;
 // A gap longer than this means the bot walked away and came back, so the bout starts over.
-static const float LADDER_CONTACT_RESET = 1.0f;
+static constexpr float LADDER_CONTACT_RESET = 1.0f;
 
 // Going down a ladder, forward is pressed only once it moves the bot down at least this
 // fraction of the climb speed. Slower than that, the view is still coming round.
-static const float LADDER_MIN_DESCENT_RATE = 0.25f;
+static constexpr float LADDER_MIN_DESCENT_RATE = 0.25f;
 
 // A catch over a ladder's top edge lapses this long after the descent last asked for it.
-static const float LADDER_CATCH_TIME = 0.5f;
+static constexpr float LADDER_CATCH_TIME = 0.5f;
 // How long the move down is held from a catch: past the grab, until the climb takes the ladder over.
-static const float LADDER_CATCH_DESCENT_TIME = 0.2f;
+static constexpr float LADDER_CATCH_DESCENT_TIME = 0.2f;
 // How far the hull may still reach back over the ladder's top: closer in, it could be standing on it.
-static const float LADDER_CATCH_OVERLAP = 4.0f;
+static constexpr float LADDER_CATCH_OVERLAP = 4.0f;
 // The view must point at least this much into the face (cos 45 degrees) for forward to reach it.
-static const float LADDER_CATCH_FACING = 0.707f;
+static constexpr float LADDER_CATCH_FACING = 0.707f;
 #endif // NEO
 
 //-----------------------------------------------------------------------------------------------------
@@ -107,9 +95,8 @@ const CNavLadder *PlayerLocomotion::FindTouchedLadder( void ) const
 	const CNavLadder *best = NULL;
 	float bestRangeSq = LADDER_TOUCH_RANGE * LADDER_TOUCH_RANGE;
 
-	// The hull reaches a standing height above the feet, and the grab only needs the hull to touch
-	// the brush - so a bot standing on the floor well *below* a ladder whose foot hangs over a
-	// walkway is exactly the case to catch here, not one to filter out.
+	// The grab only needs the hull to touch the brush, so a bot standing well below
+	// a ladder whose foot hangs over a walkway is a case to catch, not to filter out
 	const float below = GetBot()->GetBodyInterface()->GetStandHullHeight();
 
 	for ( int i = 0; i < TheNavMesh->GetLadders().Count(); ++i )
@@ -147,9 +134,8 @@ bool PlayerLocomotion::HandleUnwantedLadder( void )
 		return false;
 	}
 
-	// Most grabs sort themselves out within a second, and adopting every one of them buys a lot of
-	// climbing nobody asked for. Only take the ladder over once the bot has actually been held
-	// against it.
+	// Most grabs clear themselves within a second, and adopting them buys climbing nobody asked for,
+	// so only take the ladder over once the bot has been held against it
 	const float now = gpGlobals->curtime;
 
 	if ( now - m_unwantedLadderLastTouch > LADDER_CONTACT_RESET )
@@ -164,12 +150,8 @@ bool PlayerLocomotion::HandleUnwantedLadder( void )
 		return false;
 	}
 
-	// Leave by the nearer end rather than argue about being here at all. Whichever end the bot is
-	// closer to is the one it can reach soonest, and the dismount goal has to be a real area or
-	// DismountLadderTop/Bottom has nothing to walk to.
-	//
-	// Climbing out upward only was measured and is worse: it sends the bot somewhere it then has to
-	// come back from, and costs captures even though it reads better on the ladder numbers.
+	// Leave by the nearer end, the one the bot reaches soonest
+	// (always climbing out upward was measured: it sends bots where they must come back from, and costs captures)
 	const bool bGoUp = ( GetFeet().z - ladder->m_bottom.z ) > ( ladder->m_top.z - GetFeet().z );
 
 	const CNavArea *dismount = bGoUp ? ladder->GetTopArea() : ladder->m_bottomArea;
@@ -287,7 +269,8 @@ void PlayerLocomotion::Upkeep( void )
 	const Vector toFeet = feet - ladder->GetPosAtHeight( feet.z );
 	const float side = toFeet.x * normal.y - toFeet.y * normal.x;
 	const float halfHull = GetBot()->GetBodyInterface()->GetHullWidth() * 0.5f;
-	if ( DotProduct( toFeet, normal ) < halfHull - LADDER_CATCH_OVERLAP || fabsf( side ) > ladder->m_width * 0.5f + halfHull )
+	if ( DotProduct( toFeet, normal ) < halfHull - LADDER_CATCH_OVERLAP
+		|| fabsf( side ) > ladder->m_width * 0.5f + halfHull )
 	{
 		return;
 	}
@@ -769,13 +752,18 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 #endif
 
 #ifdef NEO
-	if ( m_player->IsOnLadder() && m_ladderState == DESCENDING_LADDER && m_ladderInfo && !IsForwardDownLadder( m_ladderInfo ) )
+	// On the way down, press nothing until forward would move us down:
+	// with the view still coming round it climbs us up, and from the top of the ladder, off it
+	const bool bHoldForView = m_player->IsOnLadder() && m_ladderState == DESCENDING_LADDER
+		&& m_ladderInfo && !IsForwardDownLadder( m_ladderInfo );
+#else
+	const bool bHoldForView = false;
+#endif
+	if ( bHoldForView )
 	{
-		// On the way down, press nothing until forward would move us down. With the view still
-		// coming round it climbs us up, and from the top of the ladder, off it.
+		// hold still
 	}
 	else
-#endif
 	if ( m_player->IsOnLadder() && IsUsingLadder() && ( m_ladderState == ASCENDING_LADDER || m_ladderState == DESCENDING_LADDER ) )
 	{
 		// we are on a ladder and WANT to be on a ladder.
