@@ -9,7 +9,7 @@
 
 //---------------------------------------------------------------------------------------------
 CNEOBotLadderApproach::CNEOBotLadderApproach( const CNavLadder *ladder, bool goingUp )
-	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_bOverTop( false )
+	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_bOverTop( false ), m_bFlushTop( false ), m_vecLastProgressPos( vec3_origin )
 {
 	m_ladderCenter = ladder ? ( ladder->m_top + ladder->m_bottom ) * 0.5f : vec3_origin;
 }
@@ -25,8 +25,9 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 	// Timeout for approach phase
 	m_timeoutTimer.Start( 3.0f );
 
-	// Going down from behind the ladder's plane to a top more than a step above the floor,
-	// such as over a parapet, a handrail or a wall cap, mount over the top edge
+	// Going down from behind the ladder's plane, mount over the top edge:
+	// over a top more than a step above the floor, such as a parapet, a handrail or a wall cap,
+	// and over a top level with it, since walking off that forward falls past the face moving away from it
 	if ( !m_bGoingUp )
 	{
 		ILocomotion *mover = me->GetLocomotionInterface();
@@ -36,12 +37,16 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 		const Vector2D toFeet = ( feet - m_ladder->m_top ).AsVector2D();
 		const bool bBehind = DotProduct2D( toFeet, m_ladder->GetNormal().AsVector2D() ) < 0.0f;
 
-		m_bOverTop = bBehind && floorZ < m_ladder->m_top.z - mover->GetStepHeight();
+		m_bOverTop = bBehind && floorZ < m_ladder->m_top.z + mover->GetStepHeight();
+		m_bFlushTop = m_bOverTop && floorZ >= m_ladder->m_top.z - mover->GetStepHeight();
 		if ( m_bOverTop )
 		{
 			m_timeoutTimer.Start( OVER_TOP_TIMEOUT );
 		}
 	}
+
+	m_vecLastProgressPos = me->GetLocomotionInterface()->GetFeet();
+	m_progressTimer.Start();
 
 	if ( me->IsDebugging( NEXTBOT_PATH ) )
 	{
@@ -71,6 +76,13 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	if ( m_timeoutTimer.IsElapsed() )
 	{
 		return Done( "Ladder approach timeout" );
+	}
+
+	const Vector &feetNow = me->GetLocomotionInterface()->GetFeet();
+	if ( ( feetNow - m_vecLastProgressPos ).AsVector2D().IsLengthGreaterThan( PROGRESS_STEP ) )
+	{
+		m_vecLastProgressPos = feetNow;
+		m_progressTimer.Start();
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
@@ -253,6 +265,17 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::UpdateOverTop( CNEOBot *me, const V
 	const Vector2D toFeet = ( feet - m_ladder->m_top ).AsVector2D();
 	const float side = toFeet.x * intoFace.y - toFeet.y * intoFace.x;
 	const float out = -DotProduct2D( toFeet, intoFace.AsVector2D() );
+
+	// A level top can still have something the bot cannot cross between the floor and the face,
+	// so a bot held behind the face goes back to the ordinary approach
+	if ( m_bFlushTop && out < 0.0f && m_progressTimer.IsGreaterThen( STALL_TIME ) )
+	{
+		m_bOverTop = false;
+		mover->StopCatchingLadder();
+		m_progressTimer.Start();
+		return Continue();
+	}
+
 	const float halfHull = me->GetBodyInterface()->GetHullWidth() * 0.5f;
 	const float rise = m_ladder->m_top.z - feet.z;
 	const bool bOnTop = rise <= mover->GetStepHeight();
@@ -302,6 +325,13 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::UpdateOverTop( CNEOBot *me, const V
 	else
 	{
 		me->PressBackwardButton();
+
+		// Backing out over a level top can wedge the bot on the ladder brush's top in front of the face,
+		// so hop back off it
+		if ( m_bFlushTop && !mover->IsClimbingOrJumping() && m_progressTimer.IsGreaterThen( STALL_TIME ) )
+		{
+			mover->Jump();
+		}
 	}
 
 	return Continue();
