@@ -1142,6 +1142,9 @@ bool CBasePlayer::ShouldTakeDamageInCommentaryMode( const CTakeDamageInfo &input
 	return true;
 }
 
+#ifdef NEO
+ConVar sv_neo_clientside_aimpunch("sv_neo_clientside_aimpunch", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Apply aim punch client-side instead of on the server.", true, 0, true, 1);
+#endif
 int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 {
 	// have suit diagnose the problem - ie: report damage type
@@ -1443,8 +1446,23 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		else
 			flPunch = RandomFloat( -5, -7 );
 	}
-
+#ifndef NEO
 	m_Local.m_vecPunchAngle.SetX( flPunch );
+#else
+	if (!sv_neo_clientside_aimpunch.GetBool())
+	{
+		m_Local.m_vecPunchAngle.SetX( flPunch );
+	}
+	else
+	{
+		CSingleUserRecipientFilter user( this );
+		user.MakeReliable();
+
+		UserMessageBegin( user, "AimPunch" );
+			WRITE_FLOAT( flPunch );
+		MessageEnd();
+	}
+#endif
 
 	if (fTookDamage && !ftrivial && fmajor && flHealthPrev >= 75) 
 	{
