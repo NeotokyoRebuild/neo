@@ -31,6 +31,9 @@ public:
 	CNetworkVar( float, m_flSuitPower );
 #if NEO
 	CNetworkVar( float, m_cloakPower );
+	CNetworkVar( float, m_slideTime );
+	CNetworkVar( float, m_jumpHeldTime );
+	CNetworkVar( float, m_jumpCooldown );
 #endif
 	CNetworkVar( float, m_flSuitPowerLoad );
 	CNetworkVar( float, m_flTimeAllSuitDevicesOff );

@@ -1141,19 +1141,6 @@ void CNEO_Player::PreThink(void)
 		Lean();
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON &&
-		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) &&
-		IsAllowedToSuperJump())
-	{
-		SuitPower_Drain(SUPER_JMP_COST);
-		bool forward = m_nButtons & IN_FORWARD;
-		bool backward = m_nButtons & IN_BACK;
-		if (forward xor backward)
-		{
-			SuperJump();
-		}
-	}
-
 	if (TheNavMesh)
 	{
 		// NEO TODO (Adam) do this in OnNavAreaChanged instead
@@ -1560,67 +1547,6 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	float obscuredRatio = obscuredNumerator / obscuredDenominator;
 	obscuredRatio = Clamp(obscuredRatio, 0.0f, 1.0f);
 	return obscuredRatio;
-}
-
-void CNEO_Player::SuperJump(void)
-{
-	Vector forward;
-	AngleVectors(EyeAngles(), &forward);
-
-	// We don't give an upwards boost aside from regular jump
-	forward.z = 0;
-	
-	// Flip direction if jumping backwards
-	if (m_nButtons & IN_BACK)
-	{
-		forward = -forward;
-	}
-
-	float boostIntensity = GetPlayerMaxSpeed();
-	if (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
-	{
-		constexpr float sideWaysNerf = 0.70710678118; // 1 / sqrt(2);
-		boostIntensity *= sideWaysNerf;
-	}
-
-	// NEO TODO (Rain): handle underwater case
-	// NEO TODO (Rain): handle ladder mounted case
-	// NEO TODO (Rain): handle "mounted" use key context case
-
-	// NEO TODO (Rain): this disabled block below is taken from trigger_push implementation.
-	// Probably wanna do some of this so we handle lag compensation accordingly; needs testing.
-#if(0)
-#if defined( HL2_DLL )
-	// HACK HACK  HL2 players on ladders will only be disengaged if the sf is set, otherwise no push occurs.
-	if ( pOther->IsPlayer() && 
-		pOther->GetMoveType() == MOVETYPE_LADDER )
-	{
-		if ( !HasSpawnFlags(SF_TRIG_PUSH_AFFECT_PLAYER_ON_LADDER) )
-		{
-			// Ignore the push
-			return;
-		}
-	}
-#endif
-
-	Vector vecPush = (m_flPushSpeed * vecAbsDir);
-	if ((pOther->GetFlags() & FL_BASEVELOCITY) && !lagcompensation->IsCurrentlyDoingLagCompensation())
-	{
-		vecPush = vecPush + pOther->GetBaseVelocity();
-	}
-	if (vecPush.z > 0 && (pOther->GetFlags() & FL_ONGROUND))
-	{
-		pOther->SetGroundEntity(NULL);
-		Vector origin = pOther->GetAbsOrigin();
-		origin.z += 1.0f;
-		pOther->SetAbsOrigin(origin);
-	}
-
-	pOther->SetBaseVelocity(vecPush);
-	pOther->AddFlag(FL_BASEVELOCITY);
-#endif
-
-	ApplyAbsVelocityImpulse(forward * boostIntensity);
 }
 
 void CNEO_Player::PostThink(void)
