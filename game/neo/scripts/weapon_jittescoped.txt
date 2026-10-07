@@ -67,10 +67,24 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"32"
 		"forward"	"0.0"
 		"right"		"1.31"
 		"up"		"2.53"
+	}
+
+	// Sight glass, seen through on the sights: the housing behind the glass is left out there, so the view
+	// through it is clear.
+	"AdsOptic"
+	{
+		"lens"		"models/weapons/jitte_mat3"
+		"window"	"1"
+		"scope"		"1"
+		"reticle"	"vgui/hud/optics/jitte_reticle"
+		"lens_bone"	"Torus01"
+		"lens_map"	"-1.798 1.773 1.506  3.611 0 0  0 0 -3.611"
+		"lens_circle"	"0.494 0.455 0.40"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
