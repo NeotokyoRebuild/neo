@@ -134,9 +134,8 @@ private:
 	CountdownTimer m_ladderTimer;			// a "give up" timer if things go awry
 
 #ifdef NEO
-	// a ladder the engine put us on that our own path never asked for. Releasing it is not
-	// enough on its own - CGameMovement::LadderMove() re-grabs from the bot's wish direction, so
-	// the two toggle each other until something breaks the loop. See TraverseLadder().
+	// a ladder the engine put us on that our own path never asked for: releasing it is not enough,
+	// since CGameMovement::LadderMove() re-grabs from the bot's wish direction (see TraverseLadder())
 	bool HandleUnwantedLadder( void );
 	const CNavLadder *FindTouchedLadder( void ) const;
 	Vector GetIntoLadderFace( const CNavLadder *ladder ) const;	// into the face of the ladder brush we hold

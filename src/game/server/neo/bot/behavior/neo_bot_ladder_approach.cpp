@@ -25,15 +25,16 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 	// Timeout for approach phase
 	m_timeoutTimer.Start( 3.0f );
 
-	// Going down from behind the ladder's plane to a top more than a step over the floor the descent starts from
-	// (a parapet, a handrail or a wall cap between): mount over the top edge. The floor, since the bot may be on the barrier
+	// Going down from behind the ladder's plane to a top more than a step above the floor,
+	// such as over a parapet, a handrail or a wall cap, mount over the top edge
 	if ( !m_bGoingUp )
 	{
 		ILocomotion *mover = me->GetLocomotionInterface();
 		const Vector &feet = mover->GetFeet();
 		const CNavArea *area = me->GetLastKnownArea();
 		const float floorZ = area ? MIN( feet.z, area->GetZ( feet.x, feet.y ) ) : feet.z;
-		const bool bBehind = DotProduct2D( ( feet - m_ladder->m_top ).AsVector2D(), m_ladder->GetNormal().AsVector2D() ) < 0.0f;
+		const Vector2D toFeet = ( feet - m_ladder->m_top ).AsVector2D();
+		const bool bBehind = DotProduct2D( toFeet, m_ladder->GetNormal().AsVector2D() ) < 0.0f;
 
 		m_bOverTop = bBehind && floorZ < m_ladder->m_top.z - mover->GetStepHeight();
 		if ( m_bOverTop )
