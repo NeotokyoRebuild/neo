@@ -136,20 +136,18 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 		}
 
 		const Vector worldpos(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
-		bool ghosterPing = event->GetBool("ghosterping");
-		const char* placeName = event->GetString("placename");
-		bool placeIsExact = event->GetBool("exactplace");
-		SetPos(playerSlot, playerTeam, worldpos, ghosterPing, placeName, placeIsExact);
+		const bool ghosterPing = event->GetBool("ghosterping");
+		SetPos(playerSlot, playerTeam, worldpos, ghosterPing);
 
-#ifdef _DEBUG
-		ConVarRef cl_neo_player_pings_debug("cl_neo_player_pings_debug");
-		Assert(cl_neo_player_pings_debug.IsValid());
-		if (cl_neo_player_pings_debug.GetBool() &&
-			event->GetBool("print", false)) // don't print predicted bogus placenames (only wanna predict the in-world visuals)
-#else
-		if (GetLocalPlayerIndex() != playerIndex) // release: don't print own ping placenames because it's not useful to the pinger
-#endif
-		NotifyPing(playerSlot, m_iPlayerPings[playerSlot].placeName, placeIsExact);
+		static ConVarRef cl_neo_player_pings_print_own("cl_neo_player_pings_print_own");
+		Assert(cl_neo_player_pings_print_own.IsValid());
+		if (cl_neo_player_pings_print_own.GetBool() &&
+			event->GetBool("server", false)) // don't print predicted bogus placenames (only wanna predict the in-world visuals)
+		{
+			const bool placeIsExact = event->GetBool("place_exact");
+			const char* placeName = event->GetString("place_name");
+			NotifyPing(playerSlot, placeName, placeIsExact);
+		}
 	}
 	else if (!Q_stricmp(eventName, "round_start"))
 	{
@@ -331,8 +329,7 @@ void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, const int 
 	m_iPlayerPings[playerSlot].noLineOfSight = tr.fraction < 0.999;
 }
 
-void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, const Vector& pos, bool ghosterPing,
-	const char* placeName, bool placeIsExact)
+void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, const Vector& pos, bool ghosterPing)
 {
 	constexpr float PLAYER_PING_LIFETIME = 8;
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
@@ -342,7 +339,6 @@ void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, cons
 	m_iPlayerPings[playerSlot].deathTime = gpGlobals->curtime + PLAYER_PING_LIFETIME;
 	m_iPlayerPings[playerSlot].team = playerTeam;
 	m_iPlayerPings[playerSlot].ghosterPing = ghosterPing;
-	m_iPlayerPings[playerSlot].placeName = AllocPooledString(placeName);
 
 	UpdateDistanceToPlayer(localPlayer, playerSlot);
 	const int playerPingsInSpectate = cl_neo_player_pings_in_spectate.GetInt();
