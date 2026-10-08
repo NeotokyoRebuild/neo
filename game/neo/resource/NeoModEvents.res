@@ -89,9 +89,9 @@
 		"pingy"			"short"		// ping y position
 		"pingz"			"short"		// ping z position
 		"ghosterping"	"bool"		// the player is carrying the ghost
-		"print"		"bool"		// debug only: used to filter client-predicted placename print msgs
-		"placename"		"string"	// nav place name of the pinged location (may be empty "" string)
-		"exactplace"	"bool"		// whether the place ping is pinpoint precise on the place name (else we consider the ping to be "near" it)
+		"server"		"bool"		// whether this was fired server side (else it's predicted)
+		"place_exact"	"bool"		// whether the place ping is pinpoint precise on the place name (else we consider the ping to be "near" it)
+		"place_name"		"string"	// nav place name of the pinged location (may be empty "" string)
 	}
 	
 	"ghost_enemy_callout"

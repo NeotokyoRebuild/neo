@@ -132,7 +132,8 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 #ifdef CLIENT_DLL
 extern ConVar cl_neo_player_pings;
 #ifdef _DEBUG
-static ConVar cl_neo_player_pings_debug("cl_neo_player_pings_debug", "0", FCVAR_CHEAT|FCVAR_DEVELOPMENTONLY);
+static ConVar cl_neo_player_pings_print_own("cl_neo_player_pings_print_own", "0", FCVAR_ARCHIVE,
+	"Whether to print the place names of your own pings to chat.", true, false, true, true);
 #endif
 #else
 static ConVar sv_neo_player_pings_calc_placename("sv_neo_player_pings_calc_placename", "1", 0,
@@ -178,6 +179,7 @@ void CheckPingButton(CNEO_Player* player)
 		event->SetInt("pingy", tr.endpos.y);
 		event->SetInt("pingz", tr.endpos.z);
 		event->SetBool("ghosterping", player->IsCarryingGhost() || player->m_iNeoClass == NEO_CLASS_VIP);
+		event->SetBool("server", player->IsServer());
 #ifdef GAME_DLL
 		if (sv_neo_player_pings_calc_placename.GetBool() && TheNavMesh)
 		{
@@ -202,15 +204,12 @@ void CheckPingButton(CNEO_Player* player)
 			if (actualNavAreaOfPing && nearestNamedNavAreaOfPing)
 			{
 				const bool pingPlaceNameIsExact = (actualNavAreaOfPing == nearestNamedNavAreaOfPing);
-				event->SetBool("exactplace", pingPlaceNameIsExact);
+				event->SetBool("place_exact", pingPlaceNameIsExact);
 
 				const char* placeName = TheNavMesh->PlaceToName(nearestNamedNavAreaOfPing->GetPlace());
-				event->SetString("placename", placeName);
-#ifdef _DEBUG
-				// It's useful to be able to see your own pings for debug; this lets us filter predicted dupes /w bad placename info.
-				// For release builds, this is unused by client+server (because release client will never print self-pinged placenames).
-				event->SetBool("print", true);
-#endif
+				event->SetString("place_name", placeName);
+
+				AssertMsg(!pingPlaceNameIsExact || *placeName, "Exact named place but place name is empty");
 			}
 		}
 		gameeventmanager->FireEvent(event);
