@@ -14,13 +14,13 @@ ConVar neo_bot_fire_at_breakable_weapon_min_time( "neo_bot_fire_at_breakable_wea
 // but a ghost carrier does not fight, so waiting for the threat to leave keeps it stuck at the breakable
 static bool IsHeldBackByThreat( CNEOBot *me )
 {
-	if ( me->IsCarryingGhost() )
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if ( !threat || !threat->GetEntity() || !threat->IsVisibleRecently() )
 	{
 		return false;
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	return threat && threat->GetEntity() && threat->IsVisibleRecently();
+	return !me->IsCarryingGhost();
 }
 
 //--------------------------------------------------------------------------------------------------------
