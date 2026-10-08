@@ -120,10 +120,13 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 
 		const int userID = event->GetInt("userid");
 		const int playerIndex = engine->GetPlayerForUserID(userID);
-		if (GetClientVoiceMgr()->IsPlayerBlocked(playerIndex) || (!NEORules()->IsTeamplay() && playerIndex != GetLocalPlayerIndex()))
+		Assert(playerIndex >= 0);
+		if (playerIndex == 0 || GetClientVoiceMgr()->IsPlayerBlocked(playerIndex))
 		{
 			return;
 		}
+		const int playerSlot = playerIndex - 1;
+		Assert(playerSlot >= 0);
 
 		const int localTeam = GetLocalPlayerTeam();
 		const int playerTeam = event->GetInt("playerteam");
@@ -132,11 +135,21 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 			return;
 		}
 
-		const Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
+		const Vector worldpos(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 		bool ghosterPing = event->GetBool("ghosterping");
 		const char* placeName = event->GetString("placename");
 		bool placeIsExact = event->GetBool("exactplace");
-		SetPos(playerIndex - 1, playerTeam, worldpos, ghosterPing, placeName, placeIsExact);
+		SetPos(playerSlot, playerTeam, worldpos, ghosterPing, placeName, placeIsExact);
+
+#ifdef _DEBUG
+		ConVarRef cl_neo_player_pings_debug("cl_neo_player_pings_debug");
+		Assert(cl_neo_player_pings_debug.IsValid());
+		if (cl_neo_player_pings_debug.GetBool() &&
+			event->GetBool("print", false)) // don't print predicted bogus placenames (only wanna predict the in-world visuals)
+#else
+		if (GetLocalPlayerIndex() != playerIndex) // release: don't print own ping placenames because it's not useful to the pinger
+#endif
+		NotifyPing(playerSlot, m_iPlayerPings[playerSlot].placeName, placeIsExact);
 	}
 	else if (!Q_stricmp(eventName, "round_start"))
 	{
@@ -354,7 +367,6 @@ void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, cons
 			return;
 		}
 	}
-	NotifyPing(playerSlot, m_iPlayerPings[playerSlot].placeName, placeIsExact);
 }
 
 ConVar snd_ping_volume("snd_ping_volume", "0.33", FCVAR_ARCHIVE, "Player ping volume", true, 0.f, true, 1.f);
@@ -363,7 +375,7 @@ ConVar cl_neo_player_pings_time_between_sounds("cl_neo_player_pings_time_between
 void CNEOHud_PlayerPing::NotifyPing(const int playerSlot, const char* placeName, bool placeIsExact)
 {
 	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerSlot + 1));
-	if (!pPlayer || pPlayer->IsLocalPlayer())
+	if (!pPlayer)
 	{
 		return;
 	}
