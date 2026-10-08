@@ -131,6 +131,9 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 
 #ifdef CLIENT_DLL
 extern ConVar cl_neo_player_pings;
+#ifdef _DEBUG
+static ConVar cl_neo_player_pings_debug("cl_neo_player_pings_debug", "0", FCVAR_CHEAT|FCVAR_DEVELOPMENTONLY);
+#endif
 #else
 static ConVar sv_neo_player_pings_calc_placename("sv_neo_player_pings_calc_placename", "1", 0,
 	"Whether the server should calculare place names for player pings from the nav mesh (possibly expensive)", true, false, true, true);
@@ -203,9 +206,13 @@ void CheckPingButton(CNEO_Player* player)
 
 				const char* placeName = TheNavMesh->PlaceToName(nearestNamedNavAreaOfPing->GetPlace());
 				event->SetString("placename", placeName);
+#ifdef _DEBUG
+				// It's useful to be able to see your own pings for debug; this lets us filter predicted dupes /w bad placename info.
+				// For release builds, this is unused by client+server (because release client will never print self-pinged placenames).
+				event->SetBool("print", true);
+#endif
 			}
 		}
-
 		gameeventmanager->FireEvent(event);
 #else
 		gameeventmanager->FireEventClientSide(event);
