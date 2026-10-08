@@ -10,6 +10,14 @@ ConVar neo_bot_fire_at_breakable_weapon_min_time( "neo_bot_fire_at_breakable_wea
 	"Minimum time to fire at breakables", true, 0.0f, true, 60.0f );
 
 //--------------------------------------------------------------------------------------------------------
+// A prop never counts as alive (CBaseProp::IsAlive),
+// so the action ends on its first update for a breakable prop
+static bool IsBreakableIntact( CBaseEntity *breakable )
+{
+	return breakable && breakable->IsAlive() && breakable->GetHealth() > 0;
+}
+
+//--------------------------------------------------------------------------------------------------------
 CBaseEntity *CNEOBotPathClearBreakable::GetBreakableInPath( CNEOBot *me )
 {
 	if ( !me || !me->IsAlive() )
@@ -60,7 +68,8 @@ CBaseEntity *CNEOBotPathClearBreakable::GetBreakableInPath( CNEOBot *me )
 
 	if ( tr.DidHit() && tr.m_pEnt )
 	{
-		if ( me->IsAbleToBreak( tr.m_pEnt ) )
+		// Only start on a breakable the action would not end on at once
+		if ( me->IsAbleToBreak( tr.m_pEnt ) && IsBreakableIntact( tr.m_pEnt ) )
 		{
 			return tr.m_pEnt;
 		}
@@ -123,7 +132,7 @@ ActionResult< CNEOBot > CNEOBotPathClearBreakable::Update( CNEOBot *me, float in
 	CBaseEntity *breakable = m_hBreakable.Get();
 
 	// If the breakable is destroyed or invalid, we're done
-	if ( !breakable || !breakable->IsAlive() || breakable->GetHealth() <= 0 )
+	if ( !IsBreakableIntact( breakable ) )
 	{
 		return Done( "Path is clear" );
 	}
