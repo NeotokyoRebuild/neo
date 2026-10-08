@@ -2034,14 +2034,14 @@ void C_NEO_Player::ClearLocalPlayerDmgReports()
 }
 
 // Formula borrowed from CGameMovement::DecayPunchAngle
-ConVar cl_neo_aimpunch_damping("cl_neo_aimpunch_damping", "18", FCVAR_CHEAT, "Aim punch damping");
-ConVar cl_neo_aimpunch_spring_constant("cl_neo_aimpunch_spring_constant", "130", FCVAR_CHEAT, "Aim punch spring constant");
-ConVar cl_neo_aimpunch_force("cl_neo_aimpunch_force", "40", FCVAR_CHEAT, "Aim punch force");
-ConVar cl_neo_aimpunch_max("cl_neo_aimpunch_max", "2", FCVAR_CHEAT, "Aim punch max deflection");
+extern ConVar sv_neo_aimpunch_damping;
+extern ConVar sv_neo_aimpunch_spring_constant;
+extern ConVar sv_neo_aimpunch_force;
+extern ConVar sv_neo_aimpunch_max;
 
 void C_NEO_Player::AimPunch(float amount)
 {
-	m_flAimPunchVel = amount * cl_neo_aimpunch_force.GetFloat();
+	m_flAimPunchVel = amount * sv_neo_aimpunch_force.GetFloat();
 }
 
 void C_NEO_Player::ApplyAimPunch()
@@ -2051,21 +2051,27 @@ void C_NEO_Player::ApplyAimPunch()
 		return;
 	}
 
-	if (abs(m_flAimPunchVel) < 0.001f && abs(m_flAimPunchCurrent) < 0.001f) {
+	if (abs(m_flAimPunchVel) < 0.001f && abs(m_flAimPunchCurrent) < 0.001f)
+	{
 		m_flAimPunchVel = 0.0f;
 		m_flAimPunchCurrent = 0.0f;
 		return;
 	}
 
 	const float oldAimPunch = m_flAimPunchCurrent;
-	m_flAimPunchCurrent = clamp(m_flAimPunchCurrent + m_flAimPunchVel * gpGlobals->frametime, -cl_neo_aimpunch_max.GetFloat(), cl_neo_aimpunch_max.GetFloat());
+	m_flAimPunchCurrent += m_flAimPunchVel * gpGlobals->frametime;
+	if (abs(m_flAimPunchCurrent) > sv_neo_aimpunch_max.GetFloat())
+	{
+		m_flAimPunchCurrent = clamp(m_flAimPunchCurrent, -sv_neo_aimpunch_max.GetFloat(), sv_neo_aimpunch_max.GetFloat());
+		m_flAimPunchVel = 0.0f;
+	}
 
 	QAngle viewAngles;
 	engine->GetViewAngles(viewAngles);
 	viewAngles.x += m_flAimPunchCurrent - oldAimPunch;
 	engine->SetViewAngles(viewAngles);
 
-	float damping = 1 - (cl_neo_aimpunch_damping.GetFloat() * gpGlobals->frametime);
+	float damping = 1 - (sv_neo_aimpunch_damping.GetFloat() * gpGlobals->frametime);
 
 	if ( damping < 0 )
 	{
@@ -2074,7 +2080,7 @@ void C_NEO_Player::ApplyAimPunch()
 	m_flAimPunchVel *= damping;
 
 	// torsional spring
-	float springForceMagnitude = cl_neo_aimpunch_spring_constant.GetFloat() * gpGlobals->frametime;
+	float springForceMagnitude = sv_neo_aimpunch_spring_constant.GetFloat() * gpGlobals->frametime;
 	springForceMagnitude = clamp(springForceMagnitude, 0.f, 2.f );
 	m_flAimPunchVel -= m_flAimPunchCurrent * springForceMagnitude;
 }
