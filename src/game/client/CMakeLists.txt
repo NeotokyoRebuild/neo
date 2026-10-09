@@ -890,6 +890,10 @@ if(NEO_STEAMAUDIO)
         TARGET client
         NAME "HRTF"
         FILES
+        neo/audio/neo_audio_geometry.cpp
+        neo/audio/neo_audio_geometry.h
+        neo/audio/neo_audio_probes.cpp
+        neo/audio/neo_audio_probes.h
         neo/audio/neo_hrtf_system.cpp
         neo/audio/neo_hrtf_system.h
         neo/audio/neo_spatializer.h
@@ -904,6 +908,21 @@ if(NEO_STEAMAUDIO)
             SKIP_UNITY_BUILD_INCLUSION ON
             SKIP_PRECOMPILE_HEADERS ON
             INCLUDE_DIRECTORIES ${STEAMAUDIO_INCLUDE_DIR}
+    )
+
+    # Probe placement is plain C++ too, so it also builds into the offline tests.
+    set_source_files_properties(
+        neo/audio/neo_audio_probes.cpp
+        PROPERTIES
+            SKIP_UNITY_BUILD_INCLUSION ON
+            SKIP_PRECOMPILE_HEADERS ON
+    )
+
+    # Both use the standard library (containers, std::thread for the bake), whose MSVC headers
+    # need unwind semantics; the rest of the client keeps exceptions off.
+    set_property(
+        SOURCE neo/audio/neo_spatializer_steamaudio.cpp neo/audio/neo_audio_probes.cpp
+        APPEND PROPERTY COMPILE_OPTIONS $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
     )
 endif()
 

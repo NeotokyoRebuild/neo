@@ -14,8 +14,10 @@
 #include "utlstring.h"
 #include "utlvector.h"
 
+#include "neo_audio_probes.h"
 #include "neo_spatializer.h"
 
+class CNeoAudioGeometry;
 struct ma_device;
 
 class CNeoHrtfSystem : public CAutoGameSystemPerFrame
@@ -29,6 +31,7 @@ public:
 	CNeoHrtfSystem() : CAutoGameSystemPerFrame("CNeoHrtfSystem") {}
 
 	void Shutdown() override;
+	void LevelInitPreEntity() override;
 	void LevelInitPostEntity() override;
 	void LevelShutdownPreEntity() override;
 	void LevelShutdownPostEntity() override;
@@ -36,6 +39,13 @@ public:
 
 	// Audio thread entry point (miniaudio data callback).
 	void Render(float *pOutInterleaved, int frameCount);
+
+	// Debug: writes the acoustic scene as <game dir>/hrtf_scene_<map>.obj.
+	void SaveSceneObj() const;
+
+	// (Re)bakes the current map's probes in the background, replacing any cached bake.
+	void StartBake();
+	void CancelBake();
 
 private:
 	// Decoded once per file, immutable afterwards, so the audio thread may read it
@@ -54,6 +64,8 @@ private:
 		NeoSpatial::Vec3 m_origin; // metres
 		float m_gain;
 		float m_rate; // playback rate relative to kSampleRate, from the engine pitch
+		float m_distanceGain; // the straight-line distance part of m_gain
+		float m_falloffPerMetre; // the engine's distance law for this sound, for paths
 	};
 
 	struct Voice
@@ -68,6 +80,11 @@ private:
 		const CachedSound *m_pSound = nullptr;
 		NeoSpatial::VoiceHandle m_hSpatial = NeoSpatial::INVALID_VOICE;
 		VoiceParams m_params = {};
+		// Published after each simulation; a new voice is not rendered until its first path
+		// arrives, so a sound behind a wall never starts with one unoccluded block.
+		NeoSpatial::DirectPath m_path;
+		NeoSpatial::PathParams m_paths; // around obstacles, through baked probes
+		bool m_bHasPath = false;
 
 		// Audio thread only (reset under m_mutex when the voice is created).
 		double m_cursor = 0.0;
@@ -85,6 +102,14 @@ private:
 	void StopDevice();
 	void ReleaseAllVoices();
 	void PollEngineSounds();
+	void SimulatePaths();
+	void BuildScene();
+	void ReleaseScene();
+	void SetupProbes(const CNeoAudioGeometry &geometry);
+	bool LoadProbeCache();
+	void UpdateBake();
+	void SaveProbeCache();
+	void DrawProbes() const;
 
 	const CachedSound *FindOrLoadSound(const SndInfo_t &info);
 	void LoadSound(CachedSound &sound);
@@ -102,6 +127,12 @@ private:
 	ma_device *m_pDevice = nullptr;
 	NeoSpatial::ISpatializer *m_pSpatializer = nullptr;
 	char m_szStartError[kMaxErrorLen] = ""; // why the last start failed; non-empty blocks retries until re-enabled
+	bool m_bSceneStale = false; // the spatializer has no scene for the current map yet
+	int m_sceneTriangles = 0; // 0 = no scene
+	NeoSpatial::ProbeSet m_probes; // the current map's probes, also what the backend's batches hold
+	uint32 m_probeCacheKey = 0; // geometry + probe layout + format; a cached bake must match it
+	char m_szProbeCachePath[MAX_PATH] = "";
+	NeoSpatial::BakeState m_lastBakeState = NeoSpatial::BakeState::Idle;
 	CUtlVector<SndInfo_t> m_activeSounds;
 	CUtlVector<int> m_ignoredGuids; // sounds deliberately left to the engine, rechecked by guid only
 	CUtlVector<int> m_ignoredGuidsNext;
@@ -109,14 +140,26 @@ private:
 	CUtlDict<soundlevel_t, int> m_soundLevels; // normalised wave name → loudest scripted level
 	VoiceParams m_stagedParams[kMaxVoices];
 	PendingVoice m_pending[kMaxVoices];
+	NeoSpatial::VoiceHandle m_simHandles[kMaxVoices];
+	NeoSpatial::Vec3 m_simOrigins[kMaxVoices];
+	NeoSpatial::DirectPath m_simPaths[kMaxVoices];
+	NeoSpatial::PathingVoice m_simPathingVoices[kMaxVoices];
+	NeoSpatial::PathParams m_simPathing[kMaxVoices];
+	NeoSpatial::BspTree m_bspTree; // the current map's, to find the listener's area (its probe batch)
+	NeoSpatial::ProbeCoverage m_probeCoverage; // where Steam Audio's paths are actually recomputed
+	int m_simVoiceIndices[kMaxVoices];
+	float m_simMilliseconds = 0.0f; // last SimulatePaths, for the debug overlay
 	Vector m_listenerOrigin;
 	Vector m_listenerForward;
 	Vector m_listenerRight;
+	Vector m_listenerUp;
 
 	// Shared between threads, guarded by m_mutex.
 	mutable CThreadMutex m_mutex;
 	Voice m_voices[kMaxVoices];
 	NeoSpatial::Listener m_listener = {};
+	NeoSpatial::ReverbParams m_reverbParams; // the room around the listener, from baked probes
+	float m_reverbGain = 0.0f; // wet level on top of each voice's own gain
 
 	// Audio thread only.
 	float m_carry[kFrameSize * 2]; // interleaved stereo block not yet handed to miniaudio

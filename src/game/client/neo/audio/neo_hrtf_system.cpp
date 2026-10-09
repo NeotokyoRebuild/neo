@@ -1,7 +1,10 @@
 #include "cbase.h"
 #include "neo_hrtf_system.h"
+#include "neo_audio_geometry.h"
 
+#include "checksum_crc.h"
 #include "engine/IEngineSound.h"
+#include "engine/ivdebugoverlay.h"
 #include "filesystem.h"
 #include "soundchars.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
@@ -31,6 +34,43 @@ constexpr float kHrtfEngineRefDb = 60.0f;
 constexpr float kHrtfEngineRefDistUnits = 36.0f;
 constexpr float kHrtfEngineGainMax = 1.0f;
 constexpr float kHrtfEngineGainMin = 0.01f;
+
+// Entity sounds play from the entity origin, which for players is on the floor; occlusion is
+// traced from slightly above it so the floor itself does not hide half the source.
+constexpr float kHrtfOcclusionLiftUnits = 8.0f;
+
+// A path's omnidirectional coefficient for a source at unit gain: the order-0 spherical harmonic,
+// 1 / (2 sqrt(pi)), which is what Steam Audio returns for a source in plain view.
+constexpr float kHrtfFirstOrderOmniGain = 0.28209479f;
+
+// How far a sound (or the listener) may be from the nearest probe and still be pathed, from a point
+// pulled into that probe's sphere. Covers ambient emitters hung a few metres up and a jumping or
+// ledge-standing listener; beyond it the nearest probe likely describes another space.
+constexpr float kHrtfPathReachMetres = 8.0f;
+
+// Probes for baked acoustics: Steam Audio's own defaults, about a stride apart at roughly ear
+// height (a standing player's eyes are ~1.6 m up).
+constexpr NeoSpatial::ProbeSettings kHrtfProbeSettings = { 2.0f, 1.5f };
+
+// Baked probes are cached per map under the mod directory, keyed by geometry and probe layout.
+// Bump the version whenever the bake parameters in the backend or the file layout change.
+constexpr char kHrtfProbeCacheDir[] = "hrtf";
+constexpr uint32 kHrtfProbeCacheMagic = 0x4350484e; // "NHPC"
+constexpr uint32 kHrtfProbeCacheVersion = 2; // 2: pathing baked alongside reverb
+
+struct HrtfProbeCacheHeader
+{
+	uint32 magic;
+	uint32 version;
+	uint32 key;
+	uint32 reserved;
+};
+
+// Leave most cores to the game while a bake runs in the background.
+constexpr int kHrtfBakeCoresPerThread = 4;
+
+constexpr float kHrtfProbeDrawRangeUnits = 1024.0f;
+constexpr float kHrtfProbeDrawSizeUnits = 4.0f;
 
 #ifdef _WIN32
 constexpr char kHrtfPhononLibrary[] = "bin/x64/phonon.dll";
@@ -154,15 +194,53 @@ ConVar cl_neo_hrtf("cl_neo_hrtf", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 ConVar cl_neo_hrtf_volume("cl_neo_hrtf_volume", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Volume of the HRTF output, on top of the master volume", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_debug("cl_neo_hrtf_debug", "0", FCVAR_CLIENTDLL,
-	"Overlay the HRTF status and one line per voice: file, distance, gain, azimuth", true, 0.0f, true, 1.0f);
+	"Overlay the HRTF status and one line per voice: file, distance, gain, azimuth, occlusion", true, 0.0f, true, 1.0f);
+ConVar cl_neo_hrtf_occlusion("cl_neo_hrtf_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+	"Muffle HRTF sounds by the map geometry between them and the listener", true, 0.0f, true, 1.0f);
+ConVar cl_neo_hrtf_pathing("cl_neo_hrtf_pathing", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+	"Let occluded HRTF sounds reach the listener around obstacles, along paths baked into the map's probes", true, 0.0f, true, 1.0f);
+ConVar cl_neo_hrtf_reverb("cl_neo_hrtf_reverb", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+	"Level of the room reverb baked into the map's acoustic probes, 0 = off", true, 0.0f, true, 2.0f);
+ConVar cl_neo_hrtf_bake_auto("cl_neo_hrtf_bake_auto", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+	"Bake the map's acoustic probes in the background when there is no cached bake for it", true, 0.0f, true, 1.0f);
+ConVar cl_neo_hrtf_bake_threads("cl_neo_hrtf_bake_threads", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+	"Threads for baking acoustic probes, 0 = a quarter of the logical cores", true, 0.0f, true, 64.0f);
+ConVar cl_neo_hrtf_debug_probes("cl_neo_hrtf_debug_probes", "0", FCVAR_CLIENTDLL,
+	"Draw the acoustic probes near the view, coloured by batch (BSP area)", true, 0.0f, true, 1.0f);
 
 static CNeoHrtfSystem s_neoHrtfSystem;
+
+CON_COMMAND(cl_neo_hrtf_scene_obj, "Write the HRTF acoustic scene (the map's world geometry) to <game dir>/hrtf_scene_<map>.obj")
+{
+	s_neoHrtfSystem.SaveSceneObj();
+}
+
+CON_COMMAND(cl_neo_hrtf_bake, "Bake the current map's acoustic probes in the background, replacing its cached bake")
+{
+	s_neoHrtfSystem.StartBake();
+}
+
+CON_COMMAND(cl_neo_hrtf_bake_cancel, "Stop baking the current map's acoustic probes")
+{
+	s_neoHrtfSystem.CancelBake();
+}
 
 void CNeoHrtfSystem::Shutdown()
 {
 	StopDevice();
 	m_cache.PurgeAndDeleteElements();
 	m_soundLevels.Purge();
+}
+
+void CNeoHrtfSystem::LevelInitPreEntity()
+{
+	// Built while the map loads when HRTF is already on; otherwise on the first in-game Update
+	// after it is enabled, so players without HRTF never read the BSP.
+	m_bSceneStale = true;
+	if (m_pSpatializer)
+	{
+		BuildScene();
+	}
 }
 
 void CNeoHrtfSystem::LevelInitPostEntity()
@@ -187,6 +265,8 @@ void CNeoHrtfSystem::LevelShutdownPostEntity()
 	}
 #endif
 	m_cache.PurgeAndDeleteElements();
+	ReleaseScene();
+	m_bSceneStale = false;
 }
 
 void CNeoHrtfSystem::Update(float)
@@ -208,7 +288,16 @@ void CNeoHrtfSystem::Update(float)
 	{
 		if (engine->IsInGame())
 		{
+			if (m_bSceneStale)
+			{
+				BuildScene();
+			}
 			PollEngineSounds();
+			UpdateBake();
+			if (cl_neo_hrtf_debug_probes.GetBool())
+			{
+				DrawProbes();
+			}
 		}
 		else
 		{
@@ -229,9 +318,8 @@ void CNeoHrtfSystem::PollEngineSounds()
 	// Our device bypasses the engine mixer, so the master volume has to be applied here.
 	const float outputScale = cl_neo_hrtf_volume.GetFloat() * s_masterVolume.GetFloat();
 
-	Vector listenerUp;
 	m_listenerOrigin = MainViewOrigin();
-	AngleVectors(MainViewAngles(), &m_listenerForward, &m_listenerRight, &listenerUp);
+	AngleVectors(MainViewAngles(), &m_listenerForward, &m_listenerRight, &m_listenerUp);
 
 	m_activeSounds.RemoveAll();
 	enginesound->GetActiveSounds(m_activeSounds);
@@ -285,7 +373,7 @@ void CNeoHrtfSystem::PollEngineSounds()
 	{
 		AUTO_LOCK(m_mutex);
 		m_listener = { HrtfToVec3(m_listenerOrigin, kHrtfMetresPerUnit), HrtfToVec3(m_listenerForward),
-					   HrtfToVec3(m_listenerRight), HrtfToVec3(listenerUp) };
+					   HrtfToVec3(m_listenerRight), HrtfToVec3(m_listenerUp) };
 
 		for (int v = 0; v < kMaxVoices; ++v)
 		{
@@ -334,6 +422,8 @@ void CNeoHrtfSystem::PollEngineSounds()
 		}
 	}
 
+	SimulatePaths();
+
 	// Muting is an engine call, so it stays out of the audio thread's lock.
 	for (int p = 0; p < pendingCount; ++p)
 	{
@@ -349,6 +439,101 @@ void CNeoHrtfSystem::PollEngineSounds()
 		}
 	}
 	m_ignoredGuids.Swap(m_ignoredGuidsNext);
+}
+
+void CNeoHrtfSystem::SimulatePaths()
+{
+	// The game thread is the only writer of the voice table, so it can be read without the lock;
+	// the simulation itself shares nothing with the audio thread (neo_spatializer.h).
+	const double startTime = Plat_FloatTime();
+	int count = 0;
+	for (int v = 0; v < kMaxVoices; ++v)
+	{
+		const Voice &voice = m_voices[v];
+		if (voice.m_bInUse)
+		{
+			NeoSpatial::Vec3 origin = voice.m_params.m_origin;
+			origin.z += kHrtfOcclusionLiftUnits * kHrtfMetresPerUnit;
+			m_simHandles[count] = voice.m_hSpatial;
+			m_simOrigins[count] = origin;
+			m_simVoiceIndices[count] = v;
+			++count;
+		}
+	}
+
+	if (cl_neo_hrtf_occlusion.GetBool())
+	{
+		m_pSpatializer->SimulateDirect(m_listener, m_simHandles, m_simOrigins, m_simPaths, count);
+	}
+	else
+	{
+		std::fill_n(m_simPaths, count, NeoSpatial::DirectPath());
+	}
+	// Paths run through the probe batch of the listener's BSP area; a sound in another area (behind
+	// an areaportal) has no path to the listener.
+	// Steam Audio only recomputes a voice's paths while both it and the listener are inside some
+	// probe's sphere of influence; otherwise it hands back the last ones unchanged (measured on
+	// ntre_oilstain_ctg: two of its three skylines.wav emitters hang 2-4.5 m from the nearest probe,
+	// and their paths froze at the last line-of-sight value). Played with the distance compensation
+	// below, a frozen path stayed at one level however far the listener went. So both ends are
+	// pulled just inside the nearest probe's sphere when they are outside every sphere, and paths
+	// are dropped when no probe is within reach at all.
+	std::fill_n(m_simPathing, count, NeoSpatial::PathParams());
+	const int listenerLeaf = m_bspTree.leaves.empty() ? -1 : m_bspTree.FindLeaf(m_listener.origin);
+	NeoSpatial::Listener pathListener = m_listener;
+	if (cl_neo_hrtf_pathing.GetBool() && count > 0 && listenerLeaf >= 0
+		&& m_probeCoverage.PullInside(m_listener.origin, kHrtfPathReachMetres, pathListener.origin))
+	{
+		for (int i = 0; i < count; ++i)
+		{
+			// Traced from the same raised origin as occlusion, which also keeps floor-level entity
+			// sounds within reach of the probes 1.5 m up.
+			const Voice &voice = m_voices[m_simVoiceIndices[i]];
+			NeoSpatial::Vec3 pathOrigin;
+			const bool bReachable = m_probeCoverage.PullInside(m_simOrigins[i], kHrtfPathReachMetres, pathOrigin);
+			m_simPathingVoices[i] = { bReachable ? voice.m_hSpatial : NeoSpatial::INVALID_VOICE, pathOrigin,
+									  voice.m_params.m_falloffPerMetre };
+		}
+		m_pSpatializer->SimulatePathing(pathListener, m_bspTree.leaves[listenerLeaf].area, kHrtfEngineGainMin,
+										m_simPathingVoices, m_simPathing, count);
+
+		// A path is never shorter than the straight line, so it can never be louder than the voice
+		// would be in plain view. Capping at that level means no path can stay audible as the
+		// listener walks away, whatever the simulation returned.
+		for (int i = 0; i < count; ++i)
+		{
+			NeoSpatial::PathParams &paths = m_simPathing[i];
+			const float maxLevel = kHrtfFirstOrderOmniGain * m_voices[m_simVoiceIndices[i]].m_params.m_distanceGain;
+			if (paths.valid && paths.sh[0] > maxLevel)
+			{
+				const float scale = (paths.sh[0] > 0.0f) ? maxLevel / paths.sh[0] : 0.0f;
+				for (float &coeff : paths.sh)
+				{
+					coeff *= scale;
+				}
+			}
+		}
+	}
+
+	// A lookup in the baked probes around the listener, no rays.
+	NeoSpatial::ReverbParams reverb;
+	const float reverbGain = cl_neo_hrtf_reverb.GetFloat();
+	if (reverbGain > 0.0f)
+	{
+		m_pSpatializer->SimulateReverb(m_listener, &reverb);
+	}
+	m_simMilliseconds = static_cast<float>((Plat_FloatTime() - startTime) * 1000.0);
+
+	AUTO_LOCK(m_mutex);
+	for (int i = 0; i < count; ++i)
+	{
+		Voice &voice = m_voices[m_simVoiceIndices[i]];
+		voice.m_path = m_simPaths[i];
+		voice.m_paths = m_simPathing[i];
+		voice.m_bHasPath = true;
+	}
+	m_reverbParams = reverb;
+	m_reverbGain = reverbGain;
 }
 
 void CNeoHrtfSystem::StartDevice()
@@ -368,6 +553,8 @@ void CNeoHrtfSystem::StartDevice()
 		config.dataCallback = HrtfDataCallback;
 		config.pUserData = this;
 
+		// A new spatializer starts without a scene; Update builds it once in game.
+		m_bSceneStale = true;
 		m_carryRead = 0;
 		m_carryAvailable = 0;
 		m_pDevice = new ma_device;
@@ -406,6 +593,260 @@ void CNeoHrtfSystem::StopDevice()
 		ReleaseAllVoices();
 		delete m_pSpatializer;
 		m_pSpatializer = nullptr;
+		m_sceneTriangles = 0;
+	}
+}
+
+void CNeoHrtfSystem::BuildScene()
+{
+	Assert(m_pSpatializer);
+	m_bSceneStale = false;
+	const char *pszMapName = MapName();
+	if (!pszMapName || !pszMapName[0])
+	{
+		return;
+	}
+
+	// Scene calls share no state with Process (neo_spatializer.h), so the audio thread keeps
+	// rendering while the BSP is read and the scene committed.
+	const double startTime = Plat_FloatTime();
+	char path[MAX_PATH];
+	V_snprintf(path, sizeof(path), "maps/%s.bsp", pszMapName);
+	char error[kMaxErrorLen];
+	CNeoAudioGeometry geometry;
+	if (!geometry.LoadFromBsp(path, error, sizeof(error))
+		|| !m_pSpatializer->SetSceneGeometry(geometry.GetSceneGeometry(), error, sizeof(error)))
+	{
+		// Without a scene sounds are simply unoccluded, as they were before scenes existed.
+		Warning("NEO HRTF: no acoustic scene for %s, %s\n", pszMapName, error);
+		ReleaseScene();
+		return;
+	}
+
+	m_sceneTriangles = geometry.NumTriangles();
+	DevMsg("NEO HRTF: acoustic scene for %s, %d triangles, built in %.0f ms\n", pszMapName, m_sceneTriangles,
+		   (Plat_FloatTime() - startTime) * 1000.0);
+
+	V_snprintf(m_szProbeCachePath, sizeof(m_szProbeCachePath), "%s/%s.probes", kHrtfProbeCacheDir, pszMapName);
+	SetupProbes(geometry);
+}
+
+void CNeoHrtfSystem::ReleaseScene()
+{
+	// The backend drops probe batches (cancelling any bake) together with the scene.
+	if (m_pSpatializer)
+	{
+		char error[kMaxErrorLen];
+		m_pSpatializer->SetSceneGeometry(NeoSpatial::SceneGeometry(), error, sizeof(error));
+	}
+	m_sceneTriangles = 0;
+	{
+		// The room was this map's.
+		AUTO_LOCK(m_mutex);
+		m_reverbParams = NeoSpatial::ReverbParams();
+	}
+	m_probes = NeoSpatial::ProbeSet();
+	m_bspTree = NeoSpatial::BspTree();
+	m_probeCoverage = NeoSpatial::ProbeCoverage();
+	m_probeCacheKey = 0;
+	m_szProbeCachePath[0] = '\0';
+	m_lastBakeState = NeoSpatial::BakeState::Idle;
+}
+
+void CNeoHrtfSystem::SetupProbes(const CNeoAudioGeometry &geometry)
+{
+	// Generation is quick and deterministic, so it always runs: the cache only has to hold the
+	// baked data, and the probes are known here for the debug view either way.
+	const double startTime = Plat_FloatTime();
+	NeoSpatial::BuildLeafProbes(*m_pSpatializer, geometry.GetBspTree(), kHrtfProbeSettings, m_probes);
+	m_bspTree = geometry.GetBspTree();
+	m_probeCoverage.Build(m_probes);
+	const double generateMs = (Plat_FloatTime() - startTime) * 1000.0;
+
+	CRC32_t key;
+	CRC32_Init(&key);
+	const uint32 geometryCrc = geometry.GetGeometryCrc();
+	CRC32_ProcessBuffer(&key, &geometryCrc, sizeof(geometryCrc));
+	CRC32_ProcessBuffer(&key, &kHrtfProbeCacheVersion, sizeof(kHrtfProbeCacheVersion));
+	CRC32_ProcessBuffer(&key, m_probes.centres.data(), static_cast<int>(m_probes.centres.size() * sizeof(NeoSpatial::Vec3)));
+	CRC32_ProcessBuffer(&key, m_probes.batchStarts.data(), static_cast<int>(m_probes.batchStarts.size() * sizeof(int32_t)));
+	CRC32_ProcessBuffer(&key, m_probes.batchAreas.data(), static_cast<int>(m_probes.batchAreas.size() * sizeof(int32_t)));
+	CRC32_ProcessBuffer(&key, &m_probes.radius, sizeof(m_probes.radius));
+	CRC32_Final(&key);
+	m_probeCacheKey = key;
+
+	DevMsg("NEO HRTF: %d acoustic probes in %d batches, generated in %.0f ms\n",
+		   static_cast<int>(m_probes.centres.size()), m_probes.NumBatches(), generateMs);
+	if (m_probes.centres.empty() || LoadProbeCache())
+	{
+		return;
+	}
+
+	char error[kMaxErrorLen];
+	if (!m_pSpatializer->SetProbeBatches(m_probes.Layout(), error, sizeof(error)))
+	{
+		Warning("NEO HRTF: no acoustic probes, %s\n", error);
+		return;
+	}
+	if (cl_neo_hrtf_bake_auto.GetBool())
+	{
+		StartBake();
+	}
+}
+
+bool CNeoHrtfSystem::LoadProbeCache()
+{
+	CUtlBuffer file;
+	if (!filesystem->ReadFile(m_szProbeCachePath, "MOD", file))
+	{
+		return false;
+	}
+
+	HrtfProbeCacheHeader header;
+	if (file.TellPut() < static_cast<int>(sizeof(header)))
+	{
+		return false;
+	}
+	V_memcpy(&header, file.Base(), sizeof(header));
+	if (header.magic != kHrtfProbeCacheMagic || header.version != kHrtfProbeCacheVersion || header.key != m_probeCacheKey)
+	{
+		DevMsg("NEO HRTF: %s is for a different map build or bake version, rebaking\n", m_szProbeCachePath);
+		return false;
+	}
+
+	char error[kMaxErrorLen];
+	const uint8 *pBlob = static_cast<const uint8 *>(file.Base()) + sizeof(header);
+	if (!m_pSpatializer->LoadProbeBatches(pBlob, file.TellPut() - sizeof(header), error, sizeof(error))
+		|| m_pSpatializer->GetBakeState(nullptr) != NeoSpatial::BakeState::Done)
+	{
+		DevWarning("NEO HRTF: cannot use %s (%s), rebaking\n", m_szProbeCachePath, error[0] ? error : "incomplete bake");
+		return false;
+	}
+	m_lastBakeState = NeoSpatial::BakeState::Done;
+	DevMsg("NEO HRTF: loaded baked probes from %s\n", m_szProbeCachePath);
+	return true;
+}
+
+void CNeoHrtfSystem::StartBake()
+{
+	if (!m_pSpatializer || m_probes.centres.empty())
+	{
+		Msg("NEO HRTF: no acoustic probes to bake (needs cl_neo_hrtf 1 and a loaded map)\n");
+		return;
+	}
+
+	// A cached bake may be loaded, so the batches are rebuilt from the generated probes first.
+	char error[kMaxErrorLen];
+	if (m_pSpatializer->GetBakeState(nullptr) != NeoSpatial::BakeState::Idle
+		&& !m_pSpatializer->SetProbeBatches(m_probes.Layout(), error, sizeof(error)))
+	{
+		Warning("NEO HRTF: cannot bake, %s\n", error);
+		return;
+	}
+
+	int threads = cl_neo_hrtf_bake_threads.GetInt();
+	if (threads <= 0)
+	{
+		threads = Max(1, GetCPUInformation()->m_nLogicalProcessors / kHrtfBakeCoresPerThread);
+	}
+	if (m_pSpatializer->StartBake(threads))
+	{
+		m_lastBakeState = NeoSpatial::BakeState::Running;
+		DevMsg("NEO HRTF: baking %d acoustic probes on %d threads\n", static_cast<int>(m_probes.centres.size()), threads);
+	}
+}
+
+void CNeoHrtfSystem::CancelBake()
+{
+	if (m_pSpatializer)
+	{
+		m_pSpatializer->CancelBake();
+	}
+}
+
+void CNeoHrtfSystem::UpdateBake()
+{
+	const NeoSpatial::BakeState state = m_pSpatializer->GetBakeState(nullptr);
+	if (state == m_lastBakeState)
+	{
+		return;
+	}
+	m_lastBakeState = state;
+	if (state == NeoSpatial::BakeState::Done)
+	{
+		SaveProbeCache();
+	}
+	else if (state == NeoSpatial::BakeState::Failed)
+	{
+		DevMsg("NEO HRTF: acoustic probe bake stopped before finishing; cl_neo_hrtf_bake restarts it\n");
+	}
+}
+
+void CNeoHrtfSystem::SaveProbeCache()
+{
+	int64_t size = 0;
+	const uint8_t *pBlob = m_pSpatializer->SerializeProbeBatches(&size);
+	if (!pBlob || !m_szProbeCachePath[0])
+	{
+		return;
+	}
+
+	const HrtfProbeCacheHeader header = { kHrtfProbeCacheMagic, kHrtfProbeCacheVersion, m_probeCacheKey, 0 };
+	CUtlBuffer file;
+	file.Put(&header, sizeof(header));
+	file.Put(pBlob, static_cast<int>(size));
+	filesystem->CreateDirHierarchy(kHrtfProbeCacheDir, "MOD");
+	if (filesystem->WriteFile(m_szProbeCachePath, "MOD", file))
+	{
+		DevMsg("NEO HRTF: baked acoustic probes saved to %s (%lld bytes)\n", m_szProbeCachePath, static_cast<long long>(size));
+	}
+	else
+	{
+		Warning("NEO HRTF: could not write %s\n", m_szProbeCachePath);
+	}
+}
+
+void CNeoHrtfSystem::DrawProbes() const
+{
+	const Vector boxMins(-kHrtfProbeDrawSizeUnits, -kHrtfProbeDrawSizeUnits, -kHrtfProbeDrawSizeUnits);
+	const Vector boxMaxs = -boxMins;
+	for (int b = 0; b < m_probes.NumBatches(); ++b)
+	{
+		// Neighbouring batches get visibly different colours.
+		const uint32 hash = static_cast<uint32>(m_probes.batchAreas[b]) * 2654435761u;
+		const int r = 128 + (hash & 127), g = 128 + ((hash >> 8) & 127), blue = (hash >> 16) & 255;
+		for (int p = m_probes.batchStarts[b]; p < m_probes.batchStarts[b + 1]; ++p)
+		{
+			const NeoSpatial::Vec3 &centre = m_probes.centres[p];
+			const Vector position(centre.x, centre.y, centre.z);
+			const Vector origin = position / kHrtfMetresPerUnit;
+			if (origin.DistToSqr(m_listenerOrigin) < kHrtfProbeDrawRangeUnits * kHrtfProbeDrawRangeUnits)
+			{
+				debugoverlay->AddBoxOverlay(origin, boxMins, boxMaxs, vec3_angle, r, g, blue, 160, 0.0f);
+			}
+		}
+	}
+}
+
+void CNeoHrtfSystem::SaveSceneObj() const
+{
+	const char *pszMapName = MapName();
+	if (!m_pSpatializer || !pszMapName)
+	{
+		Msg("NEO HRTF: no acoustic scene (needs cl_neo_hrtf 1 and a loaded map)\n");
+		return;
+	}
+
+	char fileBaseName[MAX_PATH];
+	V_snprintf(fileBaseName, sizeof(fileBaseName), "%s/hrtf_scene_%s", engine->GetGameDirectory(), pszMapName);
+	V_FixSlashes(fileBaseName);
+	if (m_pSpatializer->SaveSceneObj(fileBaseName))
+	{
+		Msg("NEO HRTF: wrote %s.obj\n", fileBaseName);
+	}
+	else
+	{
+		Msg("NEO HRTF: no acoustic scene for %s\n", pszMapName);
 	}
 }
 
@@ -559,8 +1000,10 @@ CNeoHrtfSystem::VoiceParams CNeoHrtfSystem::ComputeParams(const SndInfo_t &info,
 	}
 
 	Assert(info.m_nPitch > 0);
+	// The same law per metre, for the pathing simulation to evaluate along paths around obstacles.
+	const float falloffPerMetre = sound.m_distMult / kHrtfMetresPerUnit;
 	return { HrtfToVec3(position, kHrtfMetresPerUnit), sourceVolume * distanceGain * outputScale,
-			 static_cast<float>(Max(info.m_nPitch, 1)) / PITCH_NORM };
+			 static_cast<float>(Max(info.m_nPitch, 1)) / PITCH_NORM, distanceGain, falloffPerMetre };
 }
 
 int CNeoHrtfSystem::FindVoice(int guid) const
@@ -596,11 +1039,34 @@ void CNeoHrtfSystem::PrintDebug() const
 		const NeoSpatial::Vec3 &origin = voice.m_params.m_origin;
 		const Vector toSource = Vector(origin.x, origin.y, origin.z) - listenerMetres;
 		const float azimuthDeg = RAD2DEG(atan2f(DotProduct(toSource, m_listenerRight), DotProduct(toSource, m_listenerForward)));
-		engine->Con_NPrintf(v + 1, "hrtf %s  %.1f m  gain %.2f  az %+.0f", voice.m_pSound->m_name.Get(),
-			toSource.Length(), voice.m_params.m_gain, azimuthDeg);
+		const NeoSpatial::DirectPath &path = voice.m_path;
+		// The paths' omnidirectional component is their overall level along the path.
+		char pathText[32] = "paths -";
+		if (voice.m_paths.valid)
+		{
+			V_snprintf(pathText, sizeof(pathText), "paths %.2f", voice.m_paths.sh[0]);
+		}
+		engine->Con_NPrintf(v + 1, "hrtf %s  %.1f m  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s",
+			voice.m_pSound->m_name.Get(), toSource.Length(), voice.m_params.m_gain, azimuthDeg, path.occlusion,
+			path.transmission[0], path.transmission[1], path.transmission[2], pathText);
 	}
-	engine->Con_NPrintf(0, "hrtf: Steam Audio, voices %d/%d, cached sounds %d, scripted wave levels %d",
-		liveVoices, kMaxVoices, m_cache.Count(), m_soundLevels.Count());
+	engine->Con_NPrintf(0, "hrtf: Steam Audio, voices %d/%d, cached sounds %d, scripted wave levels %d, scene triangles %d, sim %.2f ms",
+		liveVoices, kMaxVoices, m_cache.Count(), m_soundLevels.Count(), m_sceneTriangles, m_simMilliseconds);
+
+	static const char *const s_pszBakeStates[] = { "not baked", "baking", "baked", "bake stopped" };
+	float bakeProgress = 0.0f;
+	const NeoSpatial::BakeState bakeState = m_pSpatializer->GetBakeState(&bakeProgress);
+	engine->Con_NPrintf(kMaxVoices + 1, "hrtf probes: %d in %d batches, %s %.0f%%", static_cast<int>(m_probes.centres.size()),
+		m_probes.NumBatches(), s_pszBakeStates[static_cast<int>(bakeState)], bakeProgress * 100.0f);
+	if (m_reverbParams.valid)
+	{
+		engine->Con_NPrintf(kMaxVoices + 2, "hrtf reverb: RT60 %.2f / %.2f / %.2f s (low / mid / high), level %.2f",
+			m_reverbParams.reverbTimes[0], m_reverbParams.reverbTimes[1], m_reverbParams.reverbTimes[2], m_reverbGain);
+	}
+	else
+	{
+		engine->Con_NPrintf(kMaxVoices + 2, "hrtf reverb: none (probes not baked, or not near one yet)");
+	}
 }
 
 void CNeoHrtfSystem::Render(float *pOutInterleaved, int frameCount)
@@ -632,7 +1098,7 @@ void CNeoHrtfSystem::RenderBlock()
 		m_pSpatializer->SetListener(m_listener);
 		for (Voice &voice : m_voices)
 		{
-			if (!voice.m_bInUse || voice.m_bFinished)
+			if (!voice.m_bInUse || voice.m_bFinished || !voice.m_bHasPath)
 			{
 				continue;
 			}
@@ -640,8 +1106,19 @@ void CNeoHrtfSystem::RenderBlock()
 
 			// Process even inaudible voices: skipping would freeze the backend's filter
 			// history and click when the voice becomes audible again.
-			m_pSpatializer->Process(voice.m_hSpatial, voice.m_params.m_origin, m_scratchMono, m_scratchLeft, m_scratchRight);
+			// The voice's own gain is also its reverb send, so a far sound excites the room as
+			// faintly as it is heard directly.
 			const float gain = voice.m_params.m_gain;
+			NeoSpatial::VoiceRender render;
+			render.direct = voice.m_path;
+			render.paths = voice.m_paths;
+			render.reverbSend = gain;
+			// Paths carry the distance law along their own length, so the straight-line part of
+			// gain (applied to the whole output below) is divided back out of them.
+			const float distanceGain = voice.m_params.m_distanceGain;
+			render.pathGain = (distanceGain > 0.0f) ? 1.0f / distanceGain : 0.0f;
+			m_pSpatializer->Process(voice.m_hSpatial, voice.m_params.m_origin, render, m_scratchMono, m_scratchLeft,
+									m_scratchRight);
 			if (gain <= 0.0f)
 			{
 				continue;
@@ -650,6 +1127,17 @@ void CNeoHrtfSystem::RenderBlock()
 			{
 				m_carry[f * kHrtfOutputChannels] += gain * m_scratchLeft[f];
 				m_carry[f * kHrtfOutputChannels + 1] += gain * m_scratchRight[f];
+			}
+		}
+
+		// Every block, voices or not, so tails ring out after the sounds that started them.
+		m_pSpatializer->ProcessReverb(m_reverbParams, m_scratchLeft, m_scratchRight);
+		if (m_reverbParams.valid && m_reverbGain > 0.0f)
+		{
+			for (int f = 0; f < kFrameSize; ++f)
+			{
+				m_carry[f * kHrtfOutputChannels] += m_reverbGain * m_scratchLeft[f];
+				m_carry[f * kHrtfOutputChannels + 1] += m_reverbGain * m_scratchRight[f];
 			}
 		}
 	}
