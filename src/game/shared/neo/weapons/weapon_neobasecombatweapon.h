@@ -182,6 +182,10 @@ public:
 
 	virtual void ItemPreFrame(void) override;
 	virtual void ItemPostFrame(void) override;
+#ifdef CLIENT_DLL
+	// Movement bob, scaled down while looking down the sights.
+	virtual void AddViewmodelBob(CBaseViewModel *viewmodel, Vector &origin, QAngle &angles) override;
+#endif
 	virtual void ItemBusyFrame(void) override;
 
 	virtual void PrimaryAttack(void) override;
