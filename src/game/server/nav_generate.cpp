@@ -52,6 +52,10 @@ bool FindGroundForNode( Vector *pos, Vector *normal );	// find a ground Z for po
 const float MaxTraversableHeight = StepHeight;		// max internal obstacle height that can occur between nav nodes and safely disregarded
 const float MinObstacleAreaWidth = 10.0f;			// min width of a nav area we will generate on top of an obstacle
 
+// the visibility pass runs no earlier than this game time after map load, when the map's opening motion has usually ended,
+// such as a dropship landing (idle by about 10 s on ntre_rise_ctg) or a juggernaut spawned by a round restart
+static constexpr float NAV_VIS_SETTLE_SECONDS = 15.0f;
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Shortest path cost, paying attention to "blocked" areas
@@ -3797,6 +3801,15 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			m_generationIndex = 0;
 			BeginVisibilityComputations();
 			Msg( "Computing mesh visibility...\n" );
+
+			bool isPassWaiting = gpGlobals->curtime < NAV_VIS_SETTLE_SECONDS;
+#ifdef NEO
+			isPassWaiting = isPassWaiting && !nav_neo_skip_visibility_calculation.GetBool();
+#endif // NEO
+			if ( isPassWaiting )
+			{
+				Msg( "Waiting until %.0f s after map load, for the map's entities to settle...\n", NAV_VIS_SETTLE_SECONDS );
+			}
 		
 			return true;
 		}
@@ -3813,20 +3826,14 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 				return true;
 			}
 #endif // NEO
-			while( m_generationIndex < TheNavAreas.Count() )
+			// visibility traces hit entities in their state at the time of the trace, so the whole pass runs in one frame once they have settled
+			// (game time restarts at map load): the analysis is a snapshot of that instant, not a mix of hundreds of frames
+			if ( gpGlobals->curtime < NAV_VIS_SETTLE_SECONDS )
 			{
-				CNavArea *area = TheNavAreas[ m_generationIndex ];
-				++m_generationIndex;
-
-				area->ComputeVisibilityToMesh();
-
-				// don't go over our time allotment
-				if ( Plat_FloatTime() - startTime > maxTime )
-				{
-					AnalysisProgress( "Computing mesh visibility...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
-					return true;
-				}
+				return true;
 			}
+
+			CNavArea::ComputeMeshVisibility();
 
 			Msg( "Optimizing mesh visibility...\n" );
 
