@@ -345,6 +345,19 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		if ( !m_path.IsValid() )
 		{
 			CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
+
+			// Cover is chosen where the retreat starts; after a drop off a ledge no route
+			// may reach it any more, so choose again from here
+			if ( !CNEOBotPathReachesGoal( m_path ) )
+			{
+				m_coverArea = FindCoverArea( me );
+				if ( m_coverArea == NULL )
+				{
+					return Done( "My cover is out of reach, and there is no other cover available!" );
+				}
+
+				CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
+			}
 		}
 
 		m_path.Update( me );
