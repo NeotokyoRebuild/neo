@@ -1610,6 +1610,7 @@ target_sources_grouped(
 )
 
 set(UNITY_SOURCE_NEO_SRC_CLIENT
+    neo/c_neo_ambient_generic.cpp
     neo/c_neo_message.cpp
     neo/c_neo_npc_dummy.cpp
     neo/c_neo_point_world_text.cpp
@@ -1629,6 +1630,7 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO"
     FILES
+    neo/c_neo_ambient_generic.h
     neo/c_neo_message.h
     neo/c_neo_npc_dummy.h
     neo/c_neo_point_world_text.h

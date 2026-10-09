@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "neo_hrtf_system.h"
 #include "neo_audio_geometry.h"
+#include "c_neo_ambient_generic.h"
 
 #include "checksum_crc.h"
 #include "engine/IEngineSound.h"
@@ -148,6 +149,17 @@ int HrtfParseWavLoopStart(const uint8 *pData, int size)
 
 // Soundscripts and engine channels both reduce to this form: sound chars stripped,
 // lower case, forward slashes, relative to sound/.
+// The engine's dist_mult for a sound level (see kHrtfEngineRefDb); SNDLVL_NONE means "heard
+// everywhere": no distance falloff at all.
+float HrtfDistMultForLevel(soundlevel_t level)
+{
+	if (level == SNDLVL_NONE)
+	{
+		return 0.0f;
+	}
+	return powf(10.0f, (kHrtfEngineRefDb - static_cast<float>(level)) / 20.0f) / kHrtfEngineRefDistUnits;
+}
+
 void HrtfNormaliseSoundName(const char *pszName, char *pszOut, int outSize)
 {
 	V_strncpy(pszOut, PSkipSoundChars(pszName), outSize);
@@ -355,7 +367,7 @@ void CNeoHrtfSystem::PollEngineSounds()
 			Voice &voice = m_voices[voiceIndex];
 			voice.m_bSeenThisPoll = true;
 			MuteEngineCopy(voice, info, engineFloor);
-			m_stagedParams[voiceIndex] = ComputeParams(info, voice.m_sourceVolume, *voice.m_pSound, outputScale);
+			m_stagedParams[voiceIndex] = ComputeParams(info, voice.m_sourceVolume, voice.m_distMult, outputScale);
 			continue;
 		}
 
@@ -429,7 +441,8 @@ void CNeoHrtfSystem::PollEngineSounds()
 			voice.m_bSeenThisPoll = true;
 			voice.m_pSound = pending.m_pSound;
 			voice.m_hSpatial = hSpatial;
-			voice.m_params = ComputeParams(info, info.m_flVolume, *pending.m_pSound, outputScale);
+			ResolveSoundLevel(voice, info, *pending.m_pSound);
+			voice.m_params = ComputeParams(info, info.m_flVolume, voice.m_distMult, outputScale);
 			pending.m_voiceIndex = freeSearch;
 		}
 	}
@@ -995,10 +1008,36 @@ void CNeoHrtfSystem::LoadSound(CachedSound &sound)
 		const int loopStart = HrtfParseWavLoopStart(static_cast<const uint8 *>(file.Base()), file.TellPut());
 		sound.m_loopStart = (loopStart < sound.m_samples.Count()) ? loopStart : -1;
 	}
-	sound.m_distMult = LookupDistMult(sound.m_name.Get());
+	sound.m_scriptLevel = LookupScriptLevel(sound.m_name.Get());
 }
 
-float CNeoHrtfSystem::LookupDistMult(const char *pszNormalisedName)
+void CNeoHrtfSystem::ResolveSoundLevel(Voice &voice, const SndInfo_t &info, const CachedSound &sound) const
+{
+	// An ambient_generic playing a raw file emits it at the level its radius gives, which no script
+	// knows about; the server networks it with the entity index the channel is emitted from. Several
+	// emitters can share a source entity (SourceEntityName), so the file has to match as well.
+	voice.m_soundLevel = sound.m_scriptLevel;
+	voice.m_bLevelFromEmitter = false;
+	char name[MAX_PATH];
+	for (int i = 0; i < C_AmbientGeneric::Count(); ++i)
+	{
+		const C_AmbientGeneric *pAmbient = C_AmbientGeneric::Get(i);
+		if (pAmbient->GetEmitterIndex() != info.m_nSoundSource || pAmbient->GetNetSoundLevel() < 0)
+		{
+			continue;
+		}
+		HrtfNormaliseSoundName(pAmbient->GetSoundFile(), name, sizeof(name));
+		if (V_strcmp(name, sound.m_name.Get()) == 0)
+		{
+			voice.m_soundLevel = static_cast<soundlevel_t>(pAmbient->GetNetSoundLevel());
+			voice.m_bLevelFromEmitter = true;
+			break;
+		}
+	}
+	voice.m_distMult = HrtfDistMultForLevel(voice.m_soundLevel);
+}
+
+soundlevel_t CNeoHrtfSystem::LookupScriptLevel(const char *pszNormalisedName)
 {
 	// Built on first use rather than at level load, so players without HRTF never pay for it.
 	// Channels only carry the wave file, so map every scripted wave back to its loudest level.
@@ -1032,17 +1071,11 @@ float CNeoHrtfSystem::LookupDistMult(const char *pszNormalisedName)
 	}
 
 	const int index = m_soundLevels.Find(pszNormalisedName);
-	const soundlevel_t level = (index != m_soundLevels.InvalidIndex()) ? m_soundLevels[index] : SNDLVL_NORM;
-	// SNDLVL_NONE means "heard everywhere": no distance falloff at all.
-	if (level == SNDLVL_NONE)
-	{
-		return 0.0f;
-	}
-	return powf(10.0f, (kHrtfEngineRefDb - static_cast<float>(level)) / 20.0f) / kHrtfEngineRefDistUnits;
+	return (index != m_soundLevels.InvalidIndex()) ? m_soundLevels[index] : SNDLVL_NORM;
 }
 
-CNeoHrtfSystem::VoiceParams CNeoHrtfSystem::ComputeParams(const SndInfo_t &info, float sourceVolume,
-														  const CachedSound &sound, float outputScale) const
+CNeoHrtfSystem::VoiceParams CNeoHrtfSystem::ComputeParams(const SndInfo_t &info, float sourceVolume, float distMult,
+														  float outputScale) const
 {
 	// The engine refreshes this every frame for channels that follow their entity
 	// (GetSoundSpatialization), so it already tracks moving players.
@@ -1051,7 +1084,7 @@ CNeoHrtfSystem::VoiceParams CNeoHrtfSystem::ComputeParams(const SndInfo_t &info,
 
 	// The engine's inverse-distance model (see kHrtfEngineRefDb), so audible ranges match
 	// the engine's own copy. Below snd_gain_min the engine stops mixing the channel.
-	const float relativeDistance = position.DistTo(m_listenerOrigin) * sound.m_distMult;
+	const float relativeDistance = position.DistTo(m_listenerOrigin) * distMult;
 	float distanceGain = (relativeDistance > 1.0f) ? (1.0f / relativeDistance) : kHrtfEngineGainMax;
 	if (distanceGain < kHrtfEngineGainMin)
 	{
@@ -1060,7 +1093,7 @@ CNeoHrtfSystem::VoiceParams CNeoHrtfSystem::ComputeParams(const SndInfo_t &info,
 
 	Assert(info.m_nPitch > 0);
 	// The same law per metre, for the pathing simulation to evaluate along paths around obstacles.
-	const float falloffPerMetre = sound.m_distMult / kHrtfMetresPerUnit;
+	const float falloffPerMetre = distMult / kHrtfMetresPerUnit;
 	return { HrtfToVec3(position, kHrtfMetresPerUnit), sourceVolume * distanceGain * outputScale,
 			 static_cast<float>(Max(info.m_nPitch, 1)) / PITCH_NORM, distanceGain, falloffPerMetre };
 }
@@ -1105,8 +1138,10 @@ void CNeoHrtfSystem::PrintDebug() const
 		{
 			V_snprintf(pathText, sizeof(pathText), "paths %.2f", voice.m_paths.sh[0]);
 		}
-		engine->Con_NPrintf(v + 1, "hrtf %s  %.1f m  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s  engine vol %.4f spat %.4f gain %.3f",
-			voice.m_pSound->m_name.Get(), toSource.Length(), voice.m_params.m_gain, azimuthDeg, path.occlusion,
+		// "map" when the level came from the networked ambient_generic, "script" otherwise.
+		engine->Con_NPrintf(v + 1, "hrtf %s  %.1f m  %d dB %s  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s  engine vol %.4f spat %.4f gain %.3f",
+			voice.m_pSound->m_name.Get(), toSource.Length(), static_cast<int>(voice.m_soundLevel),
+			voice.m_bLevelFromEmitter ? "map" : "script", voice.m_params.m_gain, azimuthDeg, path.occlusion,
 			path.transmission[0], path.transmission[1], path.transmission[2], pathText, voice.m_lastReportedVolume,
 			voice.m_lastSpatializedVolume, voice.m_engineGain);
 	}

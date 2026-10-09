@@ -55,7 +55,7 @@ private:
 		CUtlString m_name;
 		CUtlVector<float> m_samples; // mono, kSampleRate; empty = unplayable, left to the engine
 		int m_loopStart = -1; // sample index to loop back to, -1 for one-shots
-		float m_distMult = 0.0f; // engine dist_mult of the sound's scripted level, 0 = no falloff
+		soundlevel_t m_scriptLevel = SNDLVL_NORM; // loudest scripted level of the file, the voice default
 	};
 
 	// Written by the game thread under m_mutex, read by the audio thread under m_mutex.
@@ -80,6 +80,11 @@ private:
 		bool m_bSeenThisPoll = false;
 		float m_lastReportedVolume = 0.0f; // the engine's last reports for the channel, for the debug overlay
 		float m_lastSpatializedVolume = 0.0f;
+		// What the engine attenuates the channel by: per voice, since one file can be played at
+		// different levels (e.g. ambient_generics with different radii).
+		soundlevel_t m_soundLevel = SNDLVL_NORM;
+		float m_distMult = 0.0f; // engine dist_mult for m_soundLevel, 0 = no falloff
+		bool m_bLevelFromEmitter = false; // from a networked ambient_generic rather than the scripts
 
 		// Set by the game thread under m_mutex while the voice is created or released.
 		const CachedSound *m_pSound = nullptr;
@@ -118,10 +123,10 @@ private:
 
 	const CachedSound *FindOrLoadSound(const SndInfo_t &info);
 	void LoadSound(CachedSound &sound);
-	float LookupDistMult(const char *pszNormalisedName);
+	soundlevel_t LookupScriptLevel(const char *pszNormalisedName);
+	void ResolveSoundLevel(Voice &voice, const SndInfo_t &info, const CachedSound &sound) const;
 
-	VoiceParams ComputeParams(const SndInfo_t &info, float sourceVolume, const CachedSound &sound,
-							  float outputScale) const;
+	VoiceParams ComputeParams(const SndInfo_t &info, float sourceVolume, float distMult, float outputScale) const;
 	int FindVoice(int guid) const;
 	void MuteEngineCopy(Voice &voice, const SndInfo_t &info, float spatializedTarget);
 	void PrintDebug() const;
