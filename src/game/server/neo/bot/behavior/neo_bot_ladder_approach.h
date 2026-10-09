@@ -54,5 +54,5 @@ private:
 	static constexpr float EDGE_ZONE = 8.0f;			// beyond the hull's half width behind the face: over the ladder's own top
 	static constexpr float CROUCH_HOLD = 0.3f;			// crouch held from each update while backing out on the top
 	static constexpr float PROGRESS_STEP = 4.0f;		// a move this far counts as progress
-	static constexpr float STALL_TIME = 0.6f;			// and none for this long, over a level top, means blocked
+	static constexpr float STALL_TIME = 0.6f;			// and none for this long, over a level top, means blocked (measured on ridgeline L1)
 };
