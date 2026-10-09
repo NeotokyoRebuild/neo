@@ -101,6 +101,11 @@ constexpr int kWavFmtSampleRateOffset = 4;
 constexpr int kWavCueCountSize = 4;
 constexpr int kWavCuePointSize = 24;
 constexpr int kWavCueSampleOffsetOffset = 20;
+constexpr int kWavSmplHeaderSize = 36;
+constexpr int kWavSmplLoopCountOffset = 28;
+constexpr int kWavSmplLoopSize = 24;
+constexpr int kWavSmplLoopStartOffset = 8;
+constexpr int kWavSmplLoopEndOffset = 12;
 
 uint32 HrtfReadLE32(const uint8 *pData)
 {
@@ -108,16 +113,22 @@ uint32 HrtfReadLE32(const uint8 *pData)
 }
 
 // Source loops a wav from the sample offset of its first cue point (CAudioSourceWave::
-// ParseCueChunk), so do the same. Returns the loop start in output-rate frames, or -1.
-int HrtfParseWavLoopStart(const uint8 *pData, int size)
+// ParseCueChunk) or the start of its first sampler loop (ParseSamplerChunk), whichever chunk
+// comes last, so do the same. A sampler loop also ends the sound after its last sample.
+// Outputs are in output-rate frames: loopStart is -1 for one-shots, loopEnd (exclusive) is -1
+// when the sound plays to the end of its data.
+void HrtfParseWavLoop(const uint8 *pData, int size, int &loopStart, int &loopEnd)
 {
+	loopStart = -1;
+	loopEnd = -1;
 	if (size < kRiffHeaderSize || V_memcmp(pData, "RIFF", 4) != 0 || V_memcmp(pData + 8, "WAVE", 4) != 0)
 	{
-		return -1;
+		return;
 	}
 
 	uint32 sourceRate = 0;
-	int64 cueSampleOffset = -1;
+	int64 loopSampleOffset = -1;
+	int64 loopEndSampleOffset = -1;
 	for (int64 pos = kRiffHeaderSize; pos + kRiffChunkHeaderSize <= size;)
 	{
 		const uint8 *pChunk = pData + pos;
@@ -135,16 +146,27 @@ int HrtfParseWavLoopStart(const uint8 *pData, int size)
 		else if (V_memcmp(pChunk, "cue ", 4) == 0 && chunkSize >= kWavCueCountSize + kWavCuePointSize
 				 && HrtfReadLE32(pBody) > 0)
 		{
-			cueSampleOffset = HrtfReadLE32(pBody + kWavCueCountSize + kWavCueSampleOffsetOffset);
+			loopSampleOffset = HrtfReadLE32(pBody + kWavCueCountSize + kWavCueSampleOffsetOffset);
+		}
+		else if (V_memcmp(pChunk, "smpl", 4) == 0 && chunkSize >= kWavSmplHeaderSize + kWavSmplLoopSize
+				 && HrtfReadLE32(pBody + kWavSmplLoopCountOffset) > 0)
+		{
+			loopSampleOffset = HrtfReadLE32(pBody + kWavSmplHeaderSize + kWavSmplLoopStartOffset);
+			// The stored end is the loop's last sample, so one past it is the exclusive end.
+			loopEndSampleOffset = int64(HrtfReadLE32(pBody + kWavSmplHeaderSize + kWavSmplLoopEndOffset)) + 1;
 		}
 		pos += kRiffChunkHeaderSize + chunkSize + (chunkSize & 1);
 	}
 
-	if (sourceRate == 0 || cueSampleOffset < 0)
+	if (sourceRate == 0 || loopSampleOffset < 0)
 	{
-		return -1;
+		return;
 	}
-	return static_cast<int>(cueSampleOffset * CNeoHrtfSystem::kSampleRate / sourceRate);
+	loopStart = static_cast<int>(loopSampleOffset * CNeoHrtfSystem::kSampleRate / sourceRate);
+	if (loopEndSampleOffset > loopSampleOffset)
+	{
+		loopEnd = static_cast<int>(loopEndSampleOffset * CNeoHrtfSystem::kSampleRate / sourceRate);
+	}
 }
 
 // Soundscripts and engine channels both reduce to this form: sound chars stripped,
@@ -1048,8 +1070,15 @@ void CNeoHrtfSystem::LoadSound(CachedSound &sound)
 
 	if (V_strcmp(V_GetFileExtension(path), "wav") == 0)
 	{
-		const int loopStart = HrtfParseWavLoopStart(static_cast<const uint8 *>(file.Base()), file.TellPut());
+		int loopStart;
+		int loopEnd;
+		HrtfParseWavLoop(static_cast<const uint8 *>(file.Base()), file.TellPut(), loopStart, loopEnd);
 		sound.m_loopStart = (loopStart < sound.m_samples.Count()) ? loopStart : -1;
+		// Nothing past the loop end is ever heard while looping, so drop it rather than teach playback a second end.
+		if (sound.m_loopStart >= 0 && loopEnd > sound.m_loopStart && loopEnd < sound.m_samples.Count())
+		{
+			sound.m_samples.SetCountNonDestructively(loopEnd);
+		}
 	}
 	sound.m_scriptLevel = LookupScriptLevel(sound.m_name.Get());
 }
