@@ -165,6 +165,20 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 		NDebugOverlay::Line( myPos, targetPos, 255, 255, 0, true, 0.1f );
 	}
 
+	// Going up a ladder whose foot hangs above the floor, a crouched bot fits under the ladder and never touches it,
+	// so stand up, and step out from under it first (a bot drops onto the floor there crouched, from a climb down)
+	if ( m_bGoingUp && m_ladder->m_bottom.z > myPos.z + mover->GetStepHeight() )
+	{
+		me->ReleaseCrouchButton();
+		if ( me->GetFlags() & FL_DUCKING )
+		{
+			Vector clear = m_ladder->m_bottom + m_ladder->GetNormal() * ( body->GetHullWidth() * 0.5f + HANG_CLEARANCE );
+			clear.z = myPos.z;
+			mover->Approach( clear );
+			return Continue();
+		}
+	}
+
 	// Going down, mount only once off the top: grabbed while still up there, on the landing or on the
 	// ladder's own top, the bot cannot press its way down, so it keeps walking out over the drop
 	const float flTopZ = m_ladder->m_top.z;
