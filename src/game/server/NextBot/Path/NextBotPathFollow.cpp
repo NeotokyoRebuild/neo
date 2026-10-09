@@ -34,6 +34,9 @@ ConVar NextBotDebugClimbing( "nb_debug_climbing", "0", FCVAR_CHEAT );
 #ifdef NEO
 // How far from its feet a bot that landed looks for a nav area, the range UpdateLastKnownArea() searches
 static const float LANDING_NAV_AREA_RANGE = 50.0f;
+// A climb onto a ladder's wall cap takes the mesh's link at most this many times a path segment,
+// then is left to the ledge search: a bot that lands back at the launch point would otherwise jump on every landing
+static const int LADDER_CAP_LAUNCHES = 3;
 #endif
 
 
@@ -57,6 +60,8 @@ PathFollower::PathFollower( void )
 
 #ifdef NEO
 	m_wasOnGround = true;
+	m_capClimbGoal = NULL;
+	m_capLaunches = 0;
 #endif
 }
 
@@ -114,6 +119,12 @@ void PathFollower::OnPathChanged( INextBot *bot, Path::ResultType result )
 	// start from the beginning
 	m_goal = FirstSegment();
 	m_result = result;
+
+#ifdef NEO
+	// a new path reuses the segments' storage, so a launch count kept by segment starts over
+	m_capClimbGoal = NULL;
+	m_capLaunches = 0;
+#endif
 }
 
 
@@ -1326,7 +1337,14 @@ bool PathFollower::Climbing( INextBot *bot, const Path::Segment *goal, const Vec
 	// The ledge search below looks for a ledge's floor a full look-ahead past its wall and misses a wall cap,
 	// so at the launch point of a climb onto one, take the mesh's climb link as the authoritative branch does
 	const CNavArea *cap = ( m_goal->type == CLIMB_UP ) ? LadderCapAhead( bot ) : NULL;
-	if ( cap && ( m_goal->pos - mover->GetFeet() ).AsVector2D().IsLengthLessThan( body->GetHullWidth() ) )
+	if ( cap && m_goal != m_capClimbGoal )
+	{
+		m_capClimbGoal = m_goal;
+		m_capLaunches = 0;
+	}
+
+	if ( cap && m_capLaunches < LADDER_CAP_LAUNCHES
+		&& ( m_goal->pos - mover->GetFeet() ).AsVector2D().IsLengthLessThan( body->GetHullWidth() ) )
 	{
 		// the authoritative branch's lines, repeated to leave that branch untouched
 		Vector nearClimbGoal;
@@ -1338,6 +1356,7 @@ bool PathFollower::Climbing( INextBot *bot, const Path::Segment *goal, const Vec
 
 		if ( mover->ClimbUpToLedge( nearClimbGoal, climbDirection, NULL ) )
 		{
+			++m_capLaunches;
 			return true;
 		}
 	}
