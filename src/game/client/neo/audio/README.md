@@ -21,7 +21,7 @@ Non-positional sounds (UI, music, sentences, the local player's own weapon) stay
 ```
 engine mixer ──GetActiveSounds()──► CNeoHrtfSystem (game thread, once per frame)
      ▲                                  │ new guid: resolve file, decode + cache, mute engine copy
-     └──── SetVolumeByGuid(guid, 0) ────┤ every frame: origin → metres, gain, pitch, listener,
+     └─ SetVolumeByGuid(guid, floor) ───┤ every frame: origin → metres, gain, pitch, listener,
                                         │ then SimulateDirect → occlusion + transmission per voice
                                         ▼ (one mutex-guarded voice table)
                          miniaudio device callback (audio thread), per 512-frame block per voice
@@ -37,6 +37,28 @@ engine mixer ──GetActiveSounds()──► CNeoHrtfSystem (game thread, once 
 | Contract | `neo_spatializer.h` | plain C++ only (metres, Source axes, float blocks) |
 | Backend | `neo_spatializer_steamaudio.cpp` | `phonon.h`; loads `libphonon.so` / `phonon.dll` at runtime |
 | Dependency | `src/cmake/steamaudio.cmake` | fetches the pinned SDK zip: headers + runtime library |
+
+### Keeping the engine's copy alive
+
+The engine frees a non-looping channel once its spatialized volume falls below a small threshold,
+the same check that lets one-shots die out of earshot. A copy muted to 0 is freed within a frame or
+two, and a channel that disappears looks the same in `GetActiveSounds()` whether the engine culled
+it or the game stopped it (`StopSound`, a sound patch's `SoundDestroy`), so a fully muted voice
+could not be released at the right time. Instead the copy is held just above the threshold:
+
+- the engine stores channel volume in 1/255 steps, rounding down, so set volumes are rounded up
+  to a whole step;
+- `SndInfo_t::m_flLastSpatializedVolume` is the channel volume times the engine's own distance and
+  pan gain, so each poll measures that gain (spatialized ÷ volume; not on the poll right after a
+  set, whose report may predate it) and sets the lowest volume that keeps the spatialized level at
+  `cl_neo_hrtf_engine_floor`; it is raised at once and lowered only below 0.7× the current volume;
+- a sound too quiet to reach the floor at its own volume is left unmuted, since the engine would
+  cull it anyway.
+
+In testing the threshold sat between 0.0082 and 0.0136 spatialized (about 3/255); the default
+0.016 leaves headroom for a gain falling between polls. The cost is an unspatialized copy around
+-36 dB, inaudible under the HRTF copy in testing. Any voice whose channel disappears is released
+at once. `cl_neo_hrtf_debug 1` shows each voice's engine volume, spatialized volume and gain.
 
 The backend has no Source SDK dependency, so it is built outside the unity build and PCH, and the
 same file builds into an offline demo (`ntre/harness/hrtf/`). Steam Audio is never linked: if the
@@ -222,7 +244,8 @@ then `cmake --build ... --target install`) and configure neo with
 ## Known limitations of the proof of concept
 
 - The engine's copy plays for up to one frame before it is muted, briefly doubling the attack.
-  Muting at emission would need engine code.
+  Muting at emission would need engine code. After that it keeps playing at the engine floor
+  (see above), unspatialized but about -36 dB down.
 - Distance attenuation re-implements the engine's model from the sound script's `soundlevel`
   (raw filenames use `SNDLVL_NORM`); engine DSP, ducking and room reverb do not apply.
 - Reverb is one listener-centric room, not per-source reflections. A sound in another room

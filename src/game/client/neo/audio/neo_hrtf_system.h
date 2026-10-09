@@ -74,7 +74,12 @@ private:
 		bool m_bInUse = false;
 		int m_guid = 0;
 		float m_sourceVolume = 0.0f; // engine channel volume before we muted it, restored on release
+		float m_engineVolume = -1.0f; // what the engine copy was last set to, -1 = not yet
+		float m_engineGain = 0.0f; // the engine's distance and pan gain for the channel, 0 = unknown
+		bool m_bEngineVolumeJustSet = false; // set last poll, so the spatialized report may predate it
 		bool m_bSeenThisPoll = false;
+		float m_lastReportedVolume = 0.0f; // the engine's last reports for the channel, for the debug overlay
+		float m_lastSpatializedVolume = 0.0f;
 
 		// Set by the game thread under m_mutex while the voice is created or released.
 		const CachedSound *m_pSound = nullptr;
@@ -118,6 +123,7 @@ private:
 	VoiceParams ComputeParams(const SndInfo_t &info, float sourceVolume, const CachedSound &sound,
 							  float outputScale) const;
 	int FindVoice(int guid) const;
+	void MuteEngineCopy(Voice &voice, const SndInfo_t &info, float spatializedTarget);
 	void PrintDebug() const;
 
 	void RenderBlock();

@@ -66,6 +66,18 @@ struct HrtfProbeCacheHeader
 	uint32 reserved;
 };
 
+// A reported engine volume this close to the one we set is taken to be ours read back, allowing
+// for the engine storing it as 0-255.
+constexpr float kHrtfVolumeReadbackTolerance = 1.0f / 255.0f;
+
+// The engine keeps channel volume in steps of 1/255, rounding down, so a volume we set is rounded
+// up to a whole step to stay at least as loud as asked.
+constexpr float kHrtfEngineVolumeStep = 1.0f / 255.0f;
+
+// The engine copy's volume is raised as soon as its gain calls for it, but lowered only once the
+// target falls well below it, so it is not reset every poll while the gain drifts.
+constexpr float kHrtfMuteLowerRatio = 0.7f;
+
 // Leave most cores to the game while a bake runs in the background.
 constexpr int kHrtfBakeCoresPerThread = 4;
 
@@ -170,17 +182,6 @@ NeoSpatial::Vec3 HrtfToVec3(const Vector &v, float scale = 1.0f)
 	return { v.x * scale, v.y * scale, v.z * scale };
 }
 
-// Once the engine copy is muted its reported volume is our 0, not the sound's, so only a
-// non-zero report is a genuine (server) volume change worth remembering.
-void HrtfMuteEngineCopy(float &sourceVolume, const SndInfo_t &info)
-{
-	if (info.m_flVolume > 0.0f)
-	{
-		sourceVolume = info.m_flVolume;
-		enginesound->SetVolumeByGuid(info.m_nGuid, 0.0f);
-	}
-}
-
 void HrtfDataCallback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount)
 {
 	(void)pInput;
@@ -209,9 +210,11 @@ ConVar cl_neo_hrtf_bake_threads("cl_neo_hrtf_bake_threads", "0", FCVAR_CLIENTDLL
 	"Threads for baking acoustic probes, 0 = a quarter of the logical cores", true, 0.0f, true, 64.0f);
 ConVar cl_neo_hrtf_debug_probes("cl_neo_hrtf_debug_probes", "0", FCVAR_CLIENTDLL,
 	"Draw the acoustic probes near the view, coloured by batch (BSP area)", true, 0.0f, true, 1.0f);
-// TEMP workaround: muted dynamic sounds can be stopped by the engine early, cutting them off.
-ConVar cl_neo_hrtf_play_to_end("cl_neo_hrtf_play_to_end", "1", FCVAR_CLIENTDLL,
-	"Keep playing a non-looping HRTF voice to its end after the engine stops its channel (temporary workaround)", true, 0.0f, true, 1.0f);
+// The engine frees a one-shot channel once its spatialized volume falls below about 3/255 (measured
+// between 0.0082 and 0.0136), so the engine's copy of an HRTF sound is held just above that instead
+// of silenced, with some headroom for its gain dropping between polls.
+ConVar cl_neo_hrtf_engine_floor("cl_neo_hrtf_engine_floor", "0.016", FCVAR_CLIENTDLL,
+	"Spatialized level the engine's copy of an HRTF sound is held at so the engine does not cut it off early, 0 = silent", true, 0.0f, true, 0.1f);
 
 static CNeoHrtfSystem s_neoHrtfSystem;
 
@@ -323,6 +326,8 @@ void CNeoHrtfSystem::PollEngineSounds()
 	// Our device bypasses the engine mixer, so the master volume has to be applied here.
 	const float outputScale = cl_neo_hrtf_volume.GetFloat() * s_masterVolume.GetFloat();
 
+	const float engineFloor = cl_neo_hrtf_engine_floor.GetFloat();
+
 	m_listenerOrigin = MainViewOrigin();
 	AngleVectors(MainViewAngles(), &m_listenerForward, &m_listenerRight, &m_listenerUp);
 
@@ -349,7 +354,7 @@ void CNeoHrtfSystem::PollEngineSounds()
 		{
 			Voice &voice = m_voices[voiceIndex];
 			voice.m_bSeenThisPoll = true;
-			HrtfMuteEngineCopy(voice.m_sourceVolume, info);
+			MuteEngineCopy(voice, info, engineFloor);
 			m_stagedParams[voiceIndex] = ComputeParams(info, voice.m_sourceVolume, *voice.m_pSound, outputScale);
 			continue;
 		}
@@ -391,14 +396,10 @@ void CNeoHrtfSystem::PollEngineSounds()
 			{
 				voice.m_params = m_stagedParams[v];
 			}
-			else if (cl_neo_hrtf_play_to_end.GetBool() && !voice.m_bFinished && voice.m_pSound->m_loopStart < 0)
-			{
-				// TEMP: the engine may drop a channel we muted before the sound ends, so a
-				// one-shot plays out with its last parameters. Loops still stop with the engine.
-				continue;
-			}
 			else
 			{
+				// The engine copy is held above its cull level, so a channel that is gone has
+				// finished or been stopped by the game.
 				m_pSpatializer->ReleaseVoice(voice.m_hSpatial);
 				voice = Voice();
 			}
@@ -442,7 +443,7 @@ void CNeoHrtfSystem::PollEngineSounds()
 		const SndInfo_t &info = m_activeSounds[pending.m_soundIndex];
 		if (pending.m_voiceIndex >= 0)
 		{
-			HrtfMuteEngineCopy(m_voices[pending.m_voiceIndex].m_sourceVolume, info);
+			MuteEngineCopy(m_voices[pending.m_voiceIndex], info, engineFloor);
 		}
 		else
 		{
@@ -450,6 +451,52 @@ void CNeoHrtfSystem::PollEngineSounds()
 		}
 	}
 	m_ignoredGuids.Swap(m_ignoredGuidsNext);
+}
+
+// Our device bypasses the engine, so its copy of the sound has to be muted, but the engine frees a
+// one-shot channel that falls silent. The copy is held at spatializedTarget instead: the lowest
+// volume that, times the engine's own gain for the channel, stays at that level.
+void CNeoHrtfSystem::MuteEngineCopy(Voice &voice, const SndInfo_t &info, float spatializedTarget)
+{
+	voice.m_lastReportedVolume = info.m_flVolume;
+	voice.m_lastSpatializedVolume = info.m_flLastSpatializedVolume;
+
+	// Once muted the engine reports our level back, not the sound's, so only a report that differs
+	// from what was set is a genuine (server) volume change worth remembering.
+	const bool bFirstSight = voice.m_engineVolume < 0.0f;
+	const bool bReadsBackOurs = !bFirstSight && fabsf(info.m_flVolume - voice.m_engineVolume) <= kHrtfVolumeReadbackTolerance;
+	if (!bReadsBackOurs)
+	{
+		voice.m_sourceVolume = info.m_flVolume;
+	}
+
+	// The spatialized volume is the channel volume times the engine's distance and pan gain, but it
+	// may have been computed before a volume set last poll, so the gain is only measured while the
+	// volume held.
+	if (!voice.m_bEngineVolumeJustSet && (bFirstSight || bReadsBackOurs) && info.m_flVolume >= kHrtfEngineVolumeStep
+		&& info.m_flLastSpatializedVolume > 0.0f)
+	{
+		voice.m_engineGain = info.m_flLastSpatializedVolume / info.m_flVolume;
+	}
+
+	// The lowest whole step that keeps the spatialized level at the target. A sound whose own
+	// volume cannot reach it is left as it is: the engine would cull it unmuted too.
+	float target = 0.0f;
+	if (spatializedTarget > 0.0f)
+	{
+		const float gain = (voice.m_engineGain > 0.0f) ? voice.m_engineGain : 1.0f;
+		const float steps = Max(ceilf(spatializedTarget / (gain * kHrtfEngineVolumeStep)), 1.0f);
+		target = Min(steps * kHrtfEngineVolumeStep, voice.m_sourceVolume);
+	}
+
+	const bool bRaise = target > voice.m_engineVolume;
+	const bool bLower = target < voice.m_engineVolume * kHrtfMuteLowerRatio || (target == 0.0f && voice.m_engineVolume > 0.0f);
+	voice.m_bEngineVolumeJustSet = bFirstSight || !bReadsBackOurs || bRaise || bLower;
+	if (voice.m_bEngineVolumeJustSet)
+	{
+		enginesound->SetVolumeByGuid(info.m_nGuid, target);
+		voice.m_engineVolume = target;
+	}
 }
 
 void CNeoHrtfSystem::SimulatePaths()
@@ -1058,9 +1105,10 @@ void CNeoHrtfSystem::PrintDebug() const
 		{
 			V_snprintf(pathText, sizeof(pathText), "paths %.2f", voice.m_paths.sh[0]);
 		}
-		engine->Con_NPrintf(v + 1, "hrtf %s  %.1f m  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s",
+		engine->Con_NPrintf(v + 1, "hrtf %s  %.1f m  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s  engine vol %.4f spat %.4f gain %.3f",
 			voice.m_pSound->m_name.Get(), toSource.Length(), voice.m_params.m_gain, azimuthDeg, path.occlusion,
-			path.transmission[0], path.transmission[1], path.transmission[2], pathText);
+			path.transmission[0], path.transmission[1], path.transmission[2], pathText, voice.m_lastReportedVolume,
+			voice.m_lastSpatializedVolume, voice.m_engineGain);
 	}
 	engine->Con_NPrintf(0, "hrtf: Steam Audio, voices %d/%d, cached sounds %d, scripted wave levels %d, scene triangles %d, sim %.2f ms",
 		liveVoices, kMaxVoices, m_cache.Count(), m_soundLevels.Count(), m_sceneTriangles, m_simMilliseconds);
