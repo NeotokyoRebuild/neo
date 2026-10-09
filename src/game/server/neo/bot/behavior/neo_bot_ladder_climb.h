@@ -4,6 +4,7 @@
 #include "bot/neo_bot.h"
 
 class CNavLadder;
+class PathFollower;
 
 //----------------------------------------------------------------------------------------------------------------
 /**
@@ -29,6 +30,9 @@ public:
 private:
 	void EnterDismountPhase( CNEOBot *me );
 	void ResolveExitArea( CNEOBot *me );
+	const CNavArea *FindLanding( const PathFollower *path, const CNavArea *pathExit ) const;
+	bool IsNarrowLanding( CNEOBot *me ) const;
+	Vector GetDismountPos( CNEOBot *me ) const;
 	bool IsDismountBlocked( CNEOBot *me, const Vector &toExit ) const;
 	void ClaimLadder( CNEOBot *me ) const;
 
@@ -53,4 +57,6 @@ private:
 	static constexpr float SAFE_FALL_DIST = 200.0f;	// Max height to safely drop off a ladder
 	static constexpr float MAX_DEVIATION_DIST = 100.0f; // Distance from ladder before canceling
 	static constexpr float DISMOUNT_CLEARANCE_HULLS = 1.5f; // Hull widths toward the exit that must be clear to step off
+	static constexpr float NARROW_LANDING_HULLS = 0.5f; // Hull widths a landing must be deep to be stood on (dawn's 7 u wall cap is not)
+	static constexpr float LANDING_INSET = 16.0f; // How far inside a landing's near edge the dismount aims
 };
