@@ -24,6 +24,7 @@
 
 #ifdef GAME_DLL
 #include "basetypes.h"
+#include "nav_mesh.h"
 #endif
 
 #include "convar.h"
@@ -130,6 +131,13 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 
 #ifdef CLIENT_DLL
 extern ConVar cl_neo_player_pings;
+#ifdef _DEBUG
+static ConVar cl_neo_player_pings_print_own("cl_neo_player_pings_print_own", "0", FCVAR_ARCHIVE,
+	"Whether to print the place names of your own pings to chat.", true, false, true, true);
+#endif
+#else
+static ConVar sv_neo_player_pings_calc_placename("sv_neo_player_pings_calc_placename", "1", 0,
+	"Whether the server should calculare place names for player pings from the nav mesh (possibly expensive)", true, false, true, true);
 #endif // CLIENT_DLL
 void CheckPingButton(CNEO_Player* player)
 {
@@ -171,7 +179,39 @@ void CheckPingButton(CNEO_Player* player)
 		event->SetInt("pingy", tr.endpos.y);
 		event->SetInt("pingz", tr.endpos.z);
 		event->SetBool("ghosterping", player->IsCarryingGhost() || player->m_iNeoClass == NEO_CLASS_VIP);
+		event->SetBool("server", player->IsServer());
 #ifdef GAME_DLL
+		if (sv_neo_player_pings_calc_placename.GetBool() && TheNavMesh)
+		{
+			constexpr auto fnGetNearbyNavArea =
+				[](const Vector& pingPos, const float maxDist, const bool requireAreaBeNamed)->CNavArea* {
+					Assert(TheNavMesh);
+					constexpr auto ignoreNamelessPlaces = [](const CNavArea* area)->bool {
+						return !area || !TheNavMesh->PlaceToName(area->GetPlace());
+						};
+					constexpr auto ignoreNothing = [](const CNavArea*)->bool {
+						return false;
+						};
+					return TheNavMesh->GetNearestNavArea(pingPos, true, maxDist, false, false, TEAM_ANY,
+						[requireAreaBeNamed, ignoreNamelessPlaces, ignoreNothing]() {
+							return requireAreaBeNamed ? ignoreNamelessPlaces : ignoreNothing;
+						}());
+				};
+
+			const auto actualNavAreaOfPing = fnGetNearbyNavArea(tr.endpos, 1024, false);
+			const auto nearestNamedNavAreaOfPing = !actualNavAreaOfPing ? nullptr : fnGetNearbyNavArea(tr.endpos, 1024*10, true);
+
+			if (actualNavAreaOfPing && nearestNamedNavAreaOfPing)
+			{
+				const bool pingPlaceNameIsExact = (actualNavAreaOfPing == nearestNamedNavAreaOfPing);
+				event->SetBool("place_exact", pingPlaceNameIsExact);
+
+				const char* placeName = TheNavMesh->PlaceToName(nearestNamedNavAreaOfPing->GetPlace());
+				event->SetString("place_name", placeName);
+
+				AssertMsg(!pingPlaceNameIsExact || *placeName, "Exact named place but place name is empty");
+			}
+		}
 		gameeventmanager->FireEvent(event);
 #else
 		gameeventmanager->FireEventClientSide(event);
