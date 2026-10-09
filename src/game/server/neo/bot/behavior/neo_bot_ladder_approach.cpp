@@ -2,6 +2,7 @@
 #include "bot/behavior/neo_bot_ladder_approach.h"
 #include "bot/behavior/neo_bot_ladder_climb.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "neo_gamerules.h"
 #include "nav_ladder.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -71,6 +72,15 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	if ( !m_ladder )
 	{
 		return Done( "Ladder is invalid" );
+	}
+
+	// The pre-round freeze holds the bot in place, so wait it out: counted as a stall,
+	// it drops a descent over a level top back to the ordinary approach, which walks off the top
+	if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
+	{
+		m_timeoutTimer.Reset();
+		m_progressTimer.Start();
+		return Continue();
 	}
 
 	if ( m_timeoutTimer.IsElapsed() )
