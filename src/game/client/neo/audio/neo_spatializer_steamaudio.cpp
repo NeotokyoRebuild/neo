@@ -610,7 +610,7 @@ public:
 		// The simulator lives and dies with the scene, so releasing the scene at level shutdown
 		// really frees it instead of leaving it referenced by an idle simulator.
 		IPLSimulationSettings simulationSettings = {};
-		simulationSettings.flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS | IPL_SIMULATIONFLAGS_PATHING);
+		simulationSettings.flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | /*IPL_SIMULATIONFLAGS_REFLECTIONS |*/ IPL_SIMULATIONFLAGS_PATHING);
 		simulationSettings.numVisSamples = PATH_VIS_SAMPLES;
 		simulationSettings.sceneType = IPL_SCENETYPE_DEFAULT;
 		simulationSettings.reflectionType = IPL_REFLECTIONEFFECTTYPE_PARAMETRIC;

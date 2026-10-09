@@ -1,8 +1,9 @@
-// NEO HRTF: probe placement for baked acoustics. Probes come from the spatializer's own floor
-// generator, run once per BSP leaf, and are batched by the BSP area of the leaf that contains
-// them: one batch per region sealed off by areaportals, usually one or two per map, which is also
-// the scope pathing needs (paths only join probes in the same batch). Plain C++ with no Source SDK
-// dependency (like the backend), so it can be exercised on map data offline.
+// NEO HRTF: probe placement for baked acoustics. Probes are placed from the acoustic mesh itself
+// (floors found by vertical rays on a world-aligned grid, plus crest probes along the top edges of
+// tall walls), and the BSP tree is only used to reject probes outside playable space and to batch
+// them by BSP area: one batch per region sealed off by areaportals, usually one or two per map,
+// which is also the scope pathing needs (paths only join probes in the same batch). Plain C++ with
+// no Source SDK dependency (like the backend), so it can be exercised on map data offline.
 #pragma once
 
 #include <cstdint>
@@ -82,11 +83,17 @@ private:
 	std::unordered_map<int64_t, std::vector<Vec3>> m_cells; // cells one radius wide
 };
 
-// Generates floor probes in every open leaf and batches each probe by the BSP area of the open
-// leaf it ends up in.
-// The generator centres its grid in each box, so neighbouring leaves can place probes almost on
-// top of each other; any probe closer than 3/4 of the spacing to one already kept is dropped,
-// which keeps the spacing close to even across leaf boundaries.
-void BuildLeafProbes(ISpatializer &spatializer, const BspTree &tree, const ProbeSettings &settings, ProbeSet &out);
+// Places probes over the acoustic mesh:
+// - Floor probes: a vertical ray down every column of a world-aligned grid, `spacing` apart, finds
+//   each upward-facing surface in the column (every storey, ledge and wall top), and puts a probe
+//   `height` above it, or halfway to whatever is above when there is less room than that.
+// - Crest probes: just beyond and above the top edge of every wall (or prop) that stands well
+//   above the floor in front of it and is too wide for sound to just go around, every `spacing`
+//   along the edge. Floor probes on top of a wall are too
+//   far from the ones beside it for paths to go over it, and a thin wall or one with a nodraw top
+//   gets no floor probes at all; probes at its crest let sound pass over the top.
+// A probe is kept only in open, playable space (by the BSP tree), and only if it is at least half
+// of the spacing from every probe already kept (crest probes first).
+void BuildProbes(const SceneGeometry &geometry, const BspTree &tree, const ProbeSettings &settings, ProbeSet &out);
 
 } // namespace NeoSpatial

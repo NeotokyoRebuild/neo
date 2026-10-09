@@ -205,6 +205,7 @@ bool HrtfIsEngineOnlyName(const char *pszRawName)
 
 bool HrtfIsSpatialCandidate(const SndInfo_t &info, int localPlayerIndex)
 {
+	return true;
 	// Sentences, dry-mix and speaker sounds are not positional; the local player's own weapon and
 	// viewmodel sounds are non-positional by design; UI sounds have no source entity or position.
 	return !info.m_bIsSentence && !info.m_bDryMix && !info.m_bSpeaker && info.m_pOrigin
@@ -761,7 +762,7 @@ void CNeoHrtfSystem::SetupProbes(const CNeoAudioGeometry &geometry)
 	// Generation is quick and deterministic, so it always runs: the cache only has to hold the
 	// baked data, and the probes are known here for the debug view either way.
 	const double startTime = Plat_FloatTime();
-	NeoSpatial::BuildLeafProbes(*m_pSpatializer, geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, m_probes);
+	NeoSpatial::BuildProbes(geometry.GetSceneGeometry(), geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, m_probes);
 	m_probeCoverage.Build(m_probes);
 	const double generateMs = (Plat_FloatTime() - startTime) * 1000.0;
 

@@ -121,28 +121,43 @@ voice's occlusion and per-band transmission, plus the simulation time.
 Baked reflections are looked up from probes: points where the acoustics are precomputed. Each
 map gets them automatically when its scene is built (`neo_audio_probes.{h,cpp}`, plain C++):
 
-- Steam Audio's own generator (`IPL_PROBEGENERATIONTYPE_UNIFORMFLOOR`) runs once per open BSP
-  leaf (lump 10: not solid, inside the map, not in the 3D skybox's area), on the leaf's box pulled
-  in 0.25 m from its walls. It places probes 2 m apart, 1.5 m above floors it finds by casting rays
-  down, so displacement terrain counts as floor.
-- That generator looks for floors up to `height` below the box, so a probe can land in a
-  neighbouring leaf. Each probe is batched by the BSP area of the leaf that actually contains it
-  (a BSP walk). A leaf hovering higher than that above the floor gets no probes.
-- Each box gets its own centred grid, so probes from neighbouring leaves can nearly coincide.
-  Any probe within 3/4 of the spacing of one already kept is dropped. Over real maps the mean
-  nearest-neighbour distance comes out at 1.87–1.91 m for the 2 m spacing.
+Placement reads the acoustic mesh itself (brushes, displacements and static prop hulls). The BSP
+tree only filters and batches.
+
+- **Floor probes:** a vertical ray goes down every column of a world-aligned 2 m grid and finds
+  each surface it crosses (a hash grid of the triangles by column keeps this cheap). Each
+  upward-facing surface no steeper than 45° is a floor: every storey, ledge, wall top and prop top.
+  The probe goes 1.5 m above it, or halfway to the next surface up when there's less room than
+  3 m. A floor with under 0.5 m of room, or with a downward face at its own height (something
+  resting on it), gets none.
+- **Crest probes:** floor probes on top of a tall wall are too far from those beside it for paths
+  to go over it, so sound went around or not at all. A thin wall or one with a nodraw top has no
+  floor probes on top at all. So the top edges of steep faces get probes 0.4 m out and 0.4 m up,
+  every 4 m along the edge. A top edge is one where the face hangs down from it, and nothing
+  sharing it carries on upwards. That covers a wall top, the far side of a thin wall, or nothing
+  for a nodraw top, and rules out the diagonals inside a face.
+  - **Merging:** collinear pieces are merged first, since brush faces are cut at every brush and
+    leaf boundary.
+  - **Filters:** an edge needs a 2 m run (sound goes around posts and signs) and a 2 m drop to
+    the floor in front of it (lower walls are covered by floor probes). The space just above the
+    edge must be open: in the BSP, and not under an upward face, which would mean it's inside a
+    prop's hull.
+  - **Measured:** on `testingaudio` (a 6.5 m wall), sound from the far side now arrives over the
+    top at 0.85–0.97 of the level for that route. With floor probes alone it went around the end,
+    at 0.65–0.80.
+- **Validity:** every probe must be in an open BSP leaf (lump 10: not solid, inside the map, not in
+  the 3D skybox's area). Any probe within 1 m (half the spacing) of one already kept is dropped,
+  with crest probes kept first.
 - One `IPLProbeBatch` per BSP area that ends up with probes: a region sealed off by
   areaportals, so usually one or two per map. Steam Audio indexes the probes inside a batch, so
   large batches cost nothing at lookup. Leaves and vis clusters were tried first, but on NT;RE
-  maps every open leaf is its own cluster, which meant 200–450 tiny batches. Generation takes a
-  few milliseconds.
+  maps every open leaf is its own cluster, which meant 200–450 tiny batches. Placement takes
+  10–150 ms.
 
 Batches are baked with listener-centric parametric reverb (`IPL_BAKEDDATAVARIATION_REVERB`,
 three decay times per probe) on a background thread. Convolution IRs would cost hundreds of KB
-per probe. Pathing data (below) is baked into the same batches straight after. Full bakes
-measured on 4 threads: oilstain (860 probes) 35 s, dawn (2,478) 44 s, ghost (3,938) 166 s, of which
-pathing is 3–20 s. Pathing data grows with the number of probe pairs, so the cache is 2.9 MB,
-23 MB and 35 MB respectively. By default (`cl_neo_hrtf_bake_auto 1`) a map
+per probe. Pathing data (below) is baked into the same batches straight after. It grows with
+the number of probe pairs, so it dominates the size (see the compile-time numbers below). By default (`cl_neo_hrtf_bake_auto 1`) a map
 without a cached bake starts baking on load with a quarter of the logical cores
 (`cl_neo_hrtf_bake_threads`). The cache is written only when the whole bake finishes, so leaving
 the map mid-bake starts it over next time.
@@ -175,8 +190,15 @@ runs after VRAD. It places the probes and bakes them with the same code as the c
 - **Verification:** before reporting success, the tool reloads the written map through the game's
   own loading path.
 
-Measured with 16 threads: oilstain 890 probes in 18 s, 0.4 MB in the map (3.2 MB uncompressed); dawn
-2,527 probes in 26 s, 3.2 MB (23.5 MB uncompressed). Valve's `vbspinfo` reads the result normally.
+Measured with 16 threads:
+
+| Map | Probes | Bake | In the map | Uncompressed |
+|---|---|---|---|---|
+| oilstain | 911 | 13 s | 0.5 MB | 3.7 MB |
+| dawn | 2,620 | 22 s | 3.7 MB | 25.6 MB |
+| ghost | 5,038 | 91 s | 8.3 MB | 59.8 MB |
+
+Valve's `vbspinfo` reads the result normally.
 
 It has to live in the engine's `bin/x64` or `bin/linux64`, beside `filesystem_stdio` and `vphysics`,
 like VBSP; it says so if it doesn't. On Linux it finds the engine's `libtier0.so` and `libvstdlib.so`

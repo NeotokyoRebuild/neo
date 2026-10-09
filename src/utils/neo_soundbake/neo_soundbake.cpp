@@ -612,7 +612,7 @@ int Run(const char *pszBspArg)
 	}
 	else
 	{
-		NeoSpatial::BuildLeafProbes(*pSpatializer, geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, probes);
+		NeoSpatial::BuildProbes(geometry.GetSceneGeometry(), geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, probes);
 		if (probes.centres.empty())
 		{
 			Fail("the map has no open space to place probes in");
