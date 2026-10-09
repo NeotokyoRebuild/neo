@@ -44,7 +44,7 @@ private:
 	bool m_bJumpedOffLadder;
 
 	float m_flLastZ;
-	Vector m_exitAreaCenter;
+	Vector m_dismountPos;
 	Vector m_ladderForward;
 
 	CountdownTimer m_timeoutTimer;

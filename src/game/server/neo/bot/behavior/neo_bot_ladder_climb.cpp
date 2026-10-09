@@ -19,7 +19,7 @@ CNEOBotLadderClimb::CNEOBotLadderClimb( const CNavLadder *ladder, bool goingUp )
 	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_flLastZ( 0.0f ),
 	m_bDismountPhase( false ), m_bJumpedOffLadder( false ), m_pExitArea( nullptr )
 {
-	m_exitAreaCenter = vec3_origin;
+	m_dismountPos = vec3_origin;
 	m_ladderForward = ladder ? -ladder->GetNormal() : vec3_origin;
 }
 
@@ -228,7 +228,7 @@ void CNEOBotLadderClimb::ResolveExitArea( CNEOBot *me )
 		if ( seg && !seg->ladder && seg->area )
 		{
 			m_pExitArea = FindLanding( path, seg->area );
-			m_exitAreaCenter = GetDismountPos( me );
+			m_dismountPos = GetDismountPos( me );
 		}
 	}
 }
@@ -323,7 +323,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 
 	if ( m_pExitArea )
 	{
-		toExit = m_exitAreaCenter - myPos;
+		toExit = m_dismountPos - myPos;
 		toExit.z = 0.0f;
 		if ( toExit.Length2DSqr() > 0.01f )
 		{
@@ -425,7 +425,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		bool bWantsDismount = false;
 		if ( m_pExitArea )
 		{
-			float zDistToExit = currentZ - m_exitAreaCenter.z;
+			float zDistToExit = currentZ - m_dismountPos.z;
 			const bool bBelowTopFloor = m_bGoingUp || currentZ < m_ladder->m_top.z - body->GetStandHullHeight();
 
 			if ( zDistToExit > 0.0f && zDistToExit <= SAFE_FALL_DIST && bBelowTopFloor )
@@ -446,13 +446,13 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			{
 				if ( bExitIsBehind )
 				{
-					dismountZ = Min( m_exitAreaCenter.z, targetZ );
+					dismountZ = Min( m_dismountPos.z, targetZ );
 				}
 			}
 			else
 			{
 				// Allow early drop-off at intermediate floors
-				dismountZ = Max( m_exitAreaCenter.z, targetZ );
+				dismountZ = Max( m_dismountPos.z, targetZ );
 			}
 		}
 
@@ -480,7 +480,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			bool bShouldGoUp = m_bGoingUp;
 			if ( m_pExitArea )
 			{
-				bShouldGoUp = ( currentZ < m_exitAreaCenter.z );
+				bShouldGoUp = ( currentZ < m_dismountPos.z );
 			}
 
 			if ( bLipInTheWay )
@@ -555,11 +555,11 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		// Build look target toward exit area center with vertical bias preserved
 		if ( m_pExitArea )
 		{
-			bool bDroppingEarly = ( myPos.z >= m_exitAreaCenter.z ); 
+			bool bDroppingEarly = ( myPos.z >= m_dismountPos.z ); 
 			// Maintain Z-height while on the ladder in the dismount phase
 			if ( onLadder )
 			{
-				if ( myPos.z < m_exitAreaCenter.z )
+				if ( myPos.z < m_dismountPos.z )
 				{
 					me->PressMoveUpButton();
 				}
@@ -573,7 +573,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 				bDroppingEarly = true;
 			}
 
-			body->AimHeadTowards( m_exitAreaCenter, IBody::MANDATORY, 0.1f, nullptr, "Walking to exit area" );
+			body->AimHeadTowards( m_dismountPos, IBody::MANDATORY, 0.1f, nullptr, "Walking to exit area" );
 
 			// Jump to detach from ladder if exit is not straight ahead, or if we have reached the exit height
 			float dot = DotProduct( toExit, m_ladderForward );
@@ -606,7 +606,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 
 			if ( me->IsDebugging( NEXTBOT_PATH ) )
 			{
-				NDebugOverlay::Line( myPos, m_exitAreaCenter, 0, 255, 255, true, 0.1f );
+				NDebugOverlay::Line( myPos, m_dismountPos, 0, 255, 255, true, 0.1f );
 			}
 		}
 		else
