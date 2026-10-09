@@ -50,6 +50,8 @@ private:
 	CountdownTimer m_timeoutTimer;
 	CountdownTimer m_stuckTimer;
 	CountdownTimer m_dismountTimer;
+	CountdownTimer m_nudgeTimer;	// shimmying sideways past a snag
+	int m_nNudges = 0;
 
 	static constexpr float STUCK_CHECK_INTERVAL = 0.4f;
 	static constexpr float STUCK_Z_TOLERANCE = 2.0f;
@@ -59,4 +61,6 @@ private:
 	static constexpr float DISMOUNT_CLEARANCE_HULLS = 1.5f; // Hull widths toward the exit that must be clear to step off
 	static constexpr float NARROW_LANDING_HULLS = 0.5f; // Hull widths a landing must be deep to be stood on (dawn's 7 u wall cap is not)
 	static constexpr float LANDING_INSET = 16.0f; // How far inside a landing's near edge the dismount aims
+	static constexpr int STALL_NUDGES = 3; // Sideways shimmies before a stalled climb jumps off (subsurface L1 up 34 -> 72 %, saitama L2 rim snags 21 -> 0)
+	static constexpr float STALL_NUDGE_TIME = 0.3f; // Length of the first shimmy, and the step each later one adds
 };

@@ -379,6 +379,13 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 					EnterDismountPhase( me );
 					return Continue();
 				}
+				else if ( m_nNudges < STALL_NUDGES )
+				{
+					// Usually snagged on something at the ladder's edge, not blocked outright:
+					// shimmy sideways, right then left, for longer each time, before giving up
+					++m_nNudges;
+					m_nudgeTimer.Start( STALL_NUDGE_TIME * m_nNudges );
+				}
 				else
 				{
 					// We are stuck mid-climb. Reset scenario by jumping backwards and ending condition
@@ -494,6 +501,18 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		else
 		{
 			me->PressForwardButton(0.1f);
+		}
+
+		if ( onLadder && m_nudgeTimer.HasStarted() && !m_nudgeTimer.IsElapsed() )
+		{
+			if ( m_nNudges % 2 )
+			{
+				me->PressRightButton( 0.1f );
+			}
+			else
+			{
+				me->PressLeftButton( 0.1f );
+			}
 		}
 	}
 
