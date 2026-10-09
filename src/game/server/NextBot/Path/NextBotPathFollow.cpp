@@ -1236,6 +1236,23 @@ bool PathFollower::FindClimbLedge( INextBot *bot, Vector startTracePos, Vector l
 #endif // _DEBUG
 
 
+#ifdef NEO
+//--------------------------------------------------------------------------------------------------------------
+// A climb onto a ladder's top area shallower than a hull, such as the wall cap a ladder rises over
+bool PathFollower::IsLadderCapClimb( INextBot *bot ) const
+{
+	const Segment *afterClimb = NextSegment( m_goal );
+	if ( !afterClimb || !afterClimb->area || afterClimb->area->GetLadders( CNavLadder::LADDER_DOWN )->Count() == 0 )
+	{
+		return false;
+	}
+
+	const Vector toLedge = afterClimb->area->GetCenter() - bot->GetLocomotionInterface()->GetFeet();
+	const float flDepth = ( fabs( toLedge.x ) > fabs( toLedge.y ) ) ? afterClimb->area->GetSizeX() : afterClimb->area->GetSizeY();
+	return flDepth < bot->GetBodyInterface()->GetHullWidth();
+}
+#endif
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Climb up ledges
@@ -1301,6 +1318,25 @@ bool PathFollower::Climbing( INextBot *bot, const Path::Segment *goal, const Vec
 		return false;
 	}
 
+#ifdef NEO
+	// The ledge search below looks for a ledge's floor a full look-ahead past its wall and misses a wall cap,
+	// so at the launch point of a climb onto one, take the mesh's climb link as the authoritative branch does
+	if ( m_goal->type == CLIMB_UP && IsLadderCapClimb( bot )
+		&& ( m_goal->pos - mover->GetFeet() ).AsVector2D().IsLengthLessThan( body->GetHullWidth() ) )
+	{
+		Vector nearClimbGoal;
+		NextSegment( m_goal )->area->GetClosestPointOnArea( mover->GetFeet(), &nearClimbGoal );
+
+		climbDirection = nearClimbGoal - mover->GetFeet();
+		climbDirection.z = 0.0f;
+		climbDirection.NormalizeInPlace();
+
+		if ( mover->ClimbUpToLedge( nearClimbGoal, climbDirection, NULL ) )
+		{
+			return true;
+		}
+	}
+#endif
 
 	// If we're approaching a CLIMB_UP link, save off the height delta for it, and trust the nav *just* enough
 	// to climb up to that ledge and only that ledge.  We keep as large a tolerance as possible, to trust
