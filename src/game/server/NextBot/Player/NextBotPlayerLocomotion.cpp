@@ -536,6 +536,26 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 			}
 		}
 
+#ifdef NEO
+		// The move keys below give the nearest of eight directions, which can drift the bot off the path
+		// and over a ledge, so on precise and cliff areas move straight at the goal instead.
+		const CNavArea *pArea = m_player->GetLastKnownArea();
+		if ( goalDistance > epsilon && pArea && pArea->HasAttributes( NAV_MESH_PRECISE | NAV_MESH_CLIFF ) )
+		{
+			Vector2D moveDirection = to;
+
+			// In the air, input only adds speed along the move direction,
+			// so steer the velocity onto the goal line before a jump's sideways speed carries the bot past a narrow ledge
+			if ( !IsOnGround() )
+			{
+				moveDirection = GetRunSpeed() * to - m_player->GetAbsVelocity().AsVector2D();
+				moveDirection.NormalizeInPlace();
+			}
+
+			playerButtons->SetMoveDirection( moveDirection );
+		}
+#endif
+
 		if ( ahead > epsilon )
 		{
 			playerButtons->PressForwardButton();
