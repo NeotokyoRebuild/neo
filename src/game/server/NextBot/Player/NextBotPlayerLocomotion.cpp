@@ -128,12 +128,6 @@ const CNavLadder *PlayerLocomotion::FindTouchedLadder( void ) const
  */
 bool PlayerLocomotion::HandleUnwantedLadder( void )
 {
-	const CNavLadder *ladder = FindTouchedLadder();
-	if ( ladder == NULL )
-	{
-		return false;
-	}
-
 	// Most grabs clear themselves within a second, and adopting them buys climbing nobody asked for,
 	// so only take the ladder over once the bot has been held against it
 	const float now = gpGlobals->curtime;
@@ -146,6 +140,13 @@ bool PlayerLocomotion::HandleUnwantedLadder( void )
 	m_unwantedLadderLastTouch = now;
 
 	if ( now - m_unwantedLadderSince < LADDER_ADOPT_TIME )
+	{
+		return false;
+	}
+
+	// The scan over every nav ladder is needed only to take one over, so it waits for the bout
+	const CNavLadder *ladder = FindTouchedLadder();
+	if ( ladder == NULL )
 	{
 		return false;
 	}
