@@ -5,14 +5,21 @@
 #include "checksum_crc.h"
 #include "decals.h"
 #include "filesystem.h"
+#include "gamebspfile.h"
 #include "KeyValues.h"
+#include "phyfile.h"
+#include "studio.h"
 #include "tier1/lzmaDecoder.h"
+#include "tier1/utlbuffer.h"
+#include "vcollide.h"
+#include "vcollide_parse.h"
 #include "vphysics_interface.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 extern IPhysicsSurfaceProps *physprops;
+extern IPhysicsCollision *physcollision;
 
 namespace
 {
@@ -43,6 +50,20 @@ COMPILE_TIME_ASSERT(sizeof(dplane_t) == 20);
 COMPILE_TIME_ASSERT(sizeof(dnode_t) == 32);
 COMPILE_TIME_ASSERT(sizeof(dleaf_t) == 32);
 COMPILE_TIME_ASSERT(sizeof(dleaf_version_0_t) == 56);
+
+COMPILE_TIME_ASSERT(sizeof(dgamelumpheader_t) == 4);
+COMPILE_TIME_ASSERT(sizeof(dgamelump_t) == 16);
+COMPILE_TIME_ASSERT(sizeof(StaticPropDictLump_t) == STATIC_PROP_NAME_LENGTH);
+COMPILE_TIME_ASSERT(sizeof(StaticPropLeafLump_t) == 2);
+COMPILE_TIME_ASSERT(sizeof(StaticPropLumpV4_t) == 56);
+COMPILE_TIME_ASSERT(sizeof(phyheader_t) == 16);
+
+// Every static prop lump version starts with the version 4 record's fields up to m_Solid, which is
+// all that is read here; later versions append (or rearrange after it). Version 11 appends a
+// uniform scale as the record's last field.
+constexpr int kGeometryMinStaticPropVersion = 4;
+constexpr int kGeometryStaticPropScaleVersion = 11;
+constexpr int kGeometryStudioId = ('T' << 24) + ('S' << 16) + ('D' << 8) + 'I'; // "IDST", as studiomdl writes it
 
 constexpr char kGeometrySkyCameraClass[] = "sky_camera";
 constexpr int kGeometryMaxEntityBlock = 4096;
@@ -147,21 +168,58 @@ void GeometryFindSurfaceProp(const char *pszVmtPath, char *pszOut, int outSize, 
 	}
 }
 
-AcousticPreset GeometryPresetForTexture(const char *pszTexture)
+// An empty or unknown surfaceprop is "default", as it is to the game.
+AcousticPreset GeometryPresetForSurfaceProp(const char *pszSurfaceProp)
 {
-	char vmtPath[MAX_PATH];
-	V_snprintf(vmtPath, sizeof(vmtPath), "materials/%s.vmt", pszTexture);
-	char surfaceProp[128];
-	GeometryFindSurfaceProp(vmtPath, surfaceProp, sizeof(surfaceProp));
-
 	Assert(physprops);
-	int surfaceIndex = physprops->GetSurfaceIndex(surfaceProp[0] ? surfaceProp : "default");
+	int surfaceIndex = physprops->GetSurfaceIndex(pszSurfaceProp[0] ? pszSurfaceProp : "default");
 	if (surfaceIndex < 0)
 	{
 		surfaceIndex = physprops->GetSurfaceIndex("default");
 	}
 	const surfacedata_t *pSurface = (surfaceIndex >= 0) ? physprops->GetSurfaceData(surfaceIndex) : nullptr;
 	return pSurface ? GeometryPresetForGameMaterial(pSurface->game.material) : ACOUSTIC_GENERIC;
+}
+
+AcousticPreset GeometryPresetForTexture(const char *pszTexture)
+{
+	char vmtPath[MAX_PATH];
+	V_snprintf(vmtPath, sizeof(vmtPath), "materials/%s.vmt", pszTexture);
+	char surfaceProp[128];
+	GeometryFindSurfaceProp(vmtPath, surfaceProp, sizeof(surfaceProp));
+	return GeometryPresetForSurfaceProp(surfaceProp);
+}
+
+// Reads `size` bytes stored at [offset, offset + diskLen) into pOut, LZMA-decoding them if
+// bCompressed. False if the block lies outside the file or does not come out exactly `size` long.
+bool GeometryReadBlock(FileHandle_t file, int fileSize, int offset, int diskLen, bool bCompressed, int size, void *pOut)
+{
+	if (offset < 0 || diskLen < 0 || offset > fileSize - diskLen)
+	{
+		return false;
+	}
+
+	filesystem->Seek(file, offset, FILESYSTEM_SEEK_HEAD);
+	if (!bCompressed)
+	{
+		return diskLen == size && filesystem->Read(pOut, size, file) == size;
+	}
+
+	CUtlVector<uint8> compressed;
+	compressed.SetCount(diskLen);
+	if (filesystem->Read(compressed.Base(), diskLen, file) != diskLen
+		|| diskLen < static_cast<int>(sizeof(lzma_header_t)) || !CLZMA::IsCompressed(compressed.Base()))
+	{
+		return false;
+	}
+	// The decoder trusts the header, so check it describes this block before decoding into pOut.
+	const lzma_header_t *pLzma = reinterpret_cast<const lzma_header_t *>(compressed.Base());
+	if (pLzma->actualSize != static_cast<unsigned int>(size)
+		|| pLzma->lzmaSize > static_cast<unsigned int>(diskLen) - sizeof(lzma_header_t))
+	{
+		return false;
+	}
+	return CLZMA::Uncompress(compressed.Base(), static_cast<unsigned char *>(pOut)) == static_cast<unsigned int>(size);
 }
 
 // Reads one lump as an array of T, decompressing it if needed. False if the lump is malformed;
@@ -175,10 +233,6 @@ bool GeometryReadLump(FileHandle_t file, int fileSize, const dheader_t &header, 
 	{
 		return true;
 	}
-	if (lump.fileofs < 0 || lump.filelen < 0 || lump.fileofs > fileSize - lump.filelen)
-	{
-		return false;
-	}
 
 	// A non-zero uncompressedSize marks an LZMA-compressed lump.
 	const bool bCompressed = lump.uncompressedSize != 0;
@@ -188,28 +242,74 @@ bool GeometryReadLump(FileHandle_t file, int fileSize, const dheader_t &header, 
 		return false;
 	}
 	out.SetCount(size / sizeof(T));
+	return GeometryReadBlock(file, fileSize, lump.fileofs, lump.filelen, bCompressed, size, out.Base());
+}
 
-	filesystem->Seek(file, lump.fileofs, FILESYSTEM_SEEK_HEAD);
-	if (!bCompressed)
+// Reads one game lump out of LUMP_GAME_LUMP, whose directory holds absolute file offsets. Game lumps
+// are compressed one by one: a compressed one keeps its uncompressed filelen and ends where the next
+// directory entry starts (compression appends a terminal entry for the last one). False if the
+// directory or the game lump is malformed; an absent game lump is valid and empty.
+bool GeometryReadGameLump(FileHandle_t file, int fileSize, const dheader_t &header, GameLumpId_t id,
+						  CUtlVector<uint8> &out, int &version)
+{
+	out.RemoveAll();
+	version = 0;
+	const lump_t &lump = header.lumps[LUMP_GAME_LUMP];
+	if (lump.filelen == 0)
 	{
-		return filesystem->Read(out.Base(), size, file) == size;
+		return true;
 	}
 
-	CUtlVector<uint8> compressed;
-	compressed.SetCount(lump.filelen);
-	if (filesystem->Read(compressed.Base(), lump.filelen, file) != lump.filelen
-		|| lump.filelen < static_cast<int>(sizeof(lzma_header_t)) || !CLZMA::IsCompressed(compressed.Base()))
+	// The directory itself is never compressed as a block.
+	dgamelumpheader_t directory;
+	if (lump.uncompressedSize != 0 || lump.filelen < static_cast<int>(sizeof(directory))
+		|| !GeometryReadBlock(file, fileSize, lump.fileofs, sizeof(directory), false, sizeof(directory), &directory))
 	{
 		return false;
 	}
-	// The decoder trusts the header, so check it describes this lump before decoding into `out`.
-	const lzma_header_t *pLzma = reinterpret_cast<const lzma_header_t *>(compressed.Base());
-	if (pLzma->actualSize != static_cast<unsigned int>(size)
-		|| pLzma->lzmaSize > static_cast<unsigned int>(lump.filelen) - sizeof(lzma_header_t))
+	const int maxEntries = (lump.filelen - static_cast<int>(sizeof(directory))) / static_cast<int>(sizeof(dgamelump_t));
+	if (directory.lumpCount < 0 || directory.lumpCount > maxEntries)
 	{
 		return false;
 	}
-	return CLZMA::Uncompress(compressed.Base(), reinterpret_cast<unsigned char *>(out.Base())) == static_cast<unsigned int>(size);
+	CUtlVector<dgamelump_t> entries;
+	entries.SetCount(directory.lumpCount);
+	const int entriesSize = entries.Count() * sizeof(dgamelump_t);
+	if (entriesSize > 0
+		&& !GeometryReadBlock(file, fileSize, lump.fileofs + sizeof(directory), entriesSize, false, entriesSize, entries.Base()))
+	{
+		return false;
+	}
+
+	for (int i = 0; i < entries.Count(); ++i)
+	{
+		const dgamelump_t &entry = entries[i];
+		if (entry.id != id)
+		{
+			continue;
+		}
+		version = entry.version;
+		if (entry.filelen == 0)
+		{
+			return true;
+		}
+		if (entry.filelen < 0 || entry.filelen > kGeometryMaxLumpBytes)
+		{
+			return false;
+		}
+
+		const bool bCompressed = (entry.flags & GAMELUMPFLAG_COMPRESSED) != 0;
+		const int diskLen = !bCompressed ? entry.filelen
+			: (i + 1 < entries.Count()) ? entries[i + 1].fileofs - entry.fileofs : -1;
+		out.SetCount(entry.filelen);
+		if (!GeometryReadBlock(file, fileSize, entry.fileofs, diskLen, bCompressed, entry.filelen, out.Base()))
+		{
+			out.RemoveAll();
+			return false;
+		}
+		return true;
+	}
+	return true;
 }
 
 NeoSpatial::Vec3 GeometryToMetres(const Vector &v)
@@ -278,7 +378,197 @@ struct BspLumps
 	CUtlVector<dnode_t> nodes;
 	CUtlVector<uint8> leafBytes; // dleaf_t or dleaf_version_0_t, by the lump's version
 	CUtlVector<char> entities;
+	CUtlVector<uint8> staticProps; // GAMELUMP_STATIC_PROPS
+	int staticPropsVersion = 0;
 };
+
+// One static prop model's collision in model space, as an unindexed triangle list wound
+// counter-clockwise seen from outside, with an AcousticPreset per triangle. Empty if the model has
+// no collision of that kind.
+struct PropCollisionMesh
+{
+	bool bLoaded = false; // whether loading was tried, not whether it found anything
+	CUtlVector<Vector> vertices;
+	CUtlVector<int32> presets;
+};
+
+// A model is loaded once however many props use it; a prop's solid type picks which mesh.
+struct PropModel
+{
+	PropCollisionMesh vphysics; // SOLID_VPHYSICS: the .phy collision model
+	PropCollisionMesh bbox;		// SOLID_BBOX: the .mdl's hull box
+};
+
+// The solid's other keys (mass, damping...) are of no use here.
+class CGeometryIgnoreKeys : public IVPhysicsKeyHandler
+{
+public:
+	void ParseKeyValue(void *, const char *, const char *) override {}
+	void SetDefaults(void *) override {}
+};
+
+// Adds the triangles of one convex hull, orienting each away from the hull's centroid: the
+// collision query does not document its winding, but on a convex hull outward is always that way.
+void GeometryAddConvexTriangles(const Vector *pVertices, int numTriangles, int32 preset, PropCollisionMesh &mesh)
+{
+	if (numTriangles <= 0)
+	{
+		return;
+	}
+	Vector centroid(0.0f, 0.0f, 0.0f);
+	for (int v = 0; v < numTriangles * 3; ++v)
+	{
+		centroid += pVertices[v];
+	}
+	centroid /= static_cast<float>(numTriangles * 3);
+
+	for (int t = 0; t < numTriangles; ++t)
+	{
+		const Vector &a = pVertices[t * 3];
+		const Vector *pB = &pVertices[t * 3 + 1];
+		const Vector *pC = &pVertices[t * 3 + 2];
+		const Vector normal = CrossProduct(*pB - a, *pC - a);
+		if (normal.LengthSqr() <= 0.0f)
+		{
+			continue;
+		}
+		// Counter-clockwise seen from outside puts the right-handed normal outwards.
+		if (DotProduct(normal, a - centroid) < 0.0f)
+		{
+			V_swap(pB, pC);
+		}
+		mesh.vertices.AddToTail(a);
+		mesh.vertices.AddToTail(*pB);
+		mesh.vertices.AddToTail(*pC);
+		mesh.presets.AddToTail(preset);
+	}
+}
+
+void GeometryModelPath(const char *pszModel, const char *pszExtension, char *pszOut, int outSize)
+{
+	V_strncpy(pszOut, pszModel, outSize);
+	V_SetExtension(pszOut, pszExtension, outSize);
+	V_FixSlashes(pszOut, '/');
+	V_strlower(pszOut);
+}
+
+// The .phy next to the .mdl, which the engine collides SOLID_VPHYSICS static props with. Only
+// solid 0 is used, as the engine does for static props: $staticprop models compile to one solid.
+void GeometryLoadPropVPhysics(const char *pszModel, PropCollisionMesh &mesh)
+{
+	char path[MAX_PATH];
+	GeometryModelPath(pszModel, ".phy", path, sizeof(path));
+	CUtlBuffer file;
+	phyheader_t header;
+	if (!filesystem->ReadFile(path, "GAME", file) || file.TellPut() < static_cast<int>(sizeof(header)))
+	{
+		return;
+	}
+	V_memcpy(&header, file.Base(), sizeof(header));
+	if (header.size != sizeof(header) || header.solidCount <= 0 || header.solidCount > MAXSTUDIOBONES)
+	{
+		return;
+	}
+
+	Assert(physcollision);
+	vcollide_t collide;
+	V_memset(&collide, 0, sizeof(collide));
+	physcollision->VCollideLoad(&collide, header.solidCount, static_cast<const char *>(file.Base()) + header.size,
+								file.TellPut() - header.size);
+	if (collide.solidCount <= 0 || !collide.solids || !collide.solids[0])
+	{
+		physcollision->VCollideUnload(&collide);
+		return;
+	}
+
+	char surfaceProp[sizeof(solid_t::surfaceprop)] = "";
+	if (collide.pKeyValues)
+	{
+		CGeometryIgnoreKeys ignoreKeys;
+		IVPhysicsKeyParser *pParse = physcollision->VPhysicsKeyParserCreate(collide.pKeyValues);
+		while (!pParse->Finished())
+		{
+			if (V_stricmp(pParse->GetCurrentBlockName(), "solid") != 0)
+			{
+				pParse->SkipBlock();
+				continue;
+			}
+			solid_t solid;
+			ZeroSolid(solid);
+			pParse->ParseSolid(&solid, &ignoreKeys);
+			if (solid.index == 0)
+			{
+				V_strncpy(surfaceProp, solid.surfaceprop, sizeof(surfaceProp));
+				break;
+			}
+		}
+		physcollision->VPhysicsKeyParserDestroy(pParse);
+	}
+	const int32 preset = GeometryPresetForSurfaceProp(surfaceProp);
+
+	CUtlVector<Vector> convexVertices;
+	ICollisionQuery *pQuery = physcollision->CreateQueryModel(collide.solids[0]);
+	for (int c = 0; c < pQuery->ConvexCount(); ++c)
+	{
+		const int numTriangles = Max(pQuery->TriangleCount(c), 0);
+		convexVertices.SetCount(numTriangles * 3);
+		for (int t = 0; t < numTriangles; ++t)
+		{
+			pQuery->GetTriangleVerts(c, t, &convexVertices[t * 3]);
+		}
+		GeometryAddConvexTriangles(convexVertices.Base(), numTriangles, preset, mesh);
+	}
+	physcollision->DestroyQueryModel(pQuery);
+	physcollision->VCollideUnload(&collide);
+}
+
+// The .mdl's hull box, which the engine collides SOLID_BBOX static props with, turned with the prop.
+void GeometryLoadPropBBox(const char *pszModel, PropCollisionMesh &mesh)
+{
+	char path[MAX_PATH];
+	GeometryModelPath(pszModel, ".mdl", path, sizeof(path));
+	CUtlBuffer file;
+	if (!filesystem->ReadFile(path, "GAME", file) || file.TellPut() < static_cast<int>(sizeof(studiohdr_t)))
+	{
+		return;
+	}
+	const studiohdr_t *pStudio = static_cast<const studiohdr_t *>(file.Base());
+	const Vector &mins = pStudio->hull_min;
+	const Vector &maxs = pStudio->hull_max;
+	if (pStudio->id != kGeometryStudioId ||!mins.IsValid() || !maxs.IsValid()
+		|| mins.x > maxs.x || mins.y > maxs.y || mins.z > maxs.z)
+	{
+		return;
+	}
+
+	const int surfacePropIndex = pStudio->surfacepropindex;
+	const bool bSurfaceProp = surfacePropIndex > 0 && surfacePropIndex < file.TellPut()
+		&& memchr(pStudio->pszSurfaceProp(), '\0', file.TellPut() - surfacePropIndex);
+	const int32 preset = GeometryPresetForSurfaceProp(bSurfaceProp ? pStudio->pszSurfaceProp() : "");
+
+	// Corner bit 0 picks max x, bit 1 max y, bit 2 max z; each face lists its corners in order.
+	static const int s_faceCorners[6][4] = {
+		{ 0, 2, 6, 4 }, { 1, 3, 7, 5 }, { 0, 1, 5, 4 }, { 2, 3, 7, 6 }, { 0, 1, 3, 2 }, { 4, 5, 7, 6 },
+	};
+	Vector triangles[6 * 2 * 3];
+	for (int f = 0; f < 6; ++f)
+	{
+		Vector corners[4];
+		for (int c = 0; c < 4; ++c)
+		{
+			const int corner = s_faceCorners[f][c];
+			corners[c].Init((corner & 1) ? maxs.x : mins.x, (corner & 2) ? maxs.y : mins.y, (corner & 4) ? maxs.z : mins.z);
+		}
+		Vector *pFace = &triangles[f * 6];
+		pFace[0] = corners[0];
+		pFace[1] = corners[1];
+		pFace[2] = corners[2];
+		pFace[3] = corners[0];
+		pFace[4] = corners[2];
+		pFace[5] = corners[3];
+	}
+	GeometryAddConvexTriangles(triangles, 6 * 2, preset, mesh);
+}
 
 } // namespace
 
@@ -322,6 +612,9 @@ bool CNeoAudioGeometry::LoadFromBsp(const char *pszBspPath, char *pszErrorOut, i
 		&& GeometryReadLump(file, fileSize, header, LUMP_NODES, lumps.nodes)
 		&& GeometryReadLump(file, fileSize, header, LUMP_LEAFS, lumps.leafBytes)
 		&& GeometryReadLump(file, fileSize, header, LUMP_ENTITIES, lumps.entities);
+	// Static props are an extra: a malformed game lump only leaves them out.
+	const bool bPropsRead = GeometryReadGameLump(file, fileSize, header, GAMELUMP_STATIC_PROPS, lumps.staticProps,
+												 lumps.staticPropsVersion);
 	filesystem->Close(file);
 	if (!bRead || lumps.models.Count() <= kGeometryWorldModel)
 	{
@@ -507,12 +800,145 @@ bool CNeoAudioGeometry::LoadFromBsp(const char *pszBspPath, char *pszErrorOut, i
 		return false;
 	}
 
+	if (bPropsRead)
+	{
+		LoadStaticProps(pszBspPath, lumps.staticProps, lumps.staticPropsVersion);
+	}
+	else
+	{
+		DevWarning("NEO HRTF: %s has a malformed static prop lump, so no static props\n", pszBspPath);
+	}
+
 	// Without a usable tree there are just no probes; the scene itself is still good.
 	if (!LoadBspTree(pszBspPath, lumps.planes, lumps.nodes, lumps.leafBytes, header.lumps[LUMP_LEAFS].version, lumps.entities))
 	{
 		m_tree = NeoSpatial::BspTree();
 	}
 	return true;
+}
+
+void CNeoAudioGeometry::LoadStaticProps(const char *pszBspPath, const CUtlVector<uint8> &lump, int version)
+{
+	if (lump.IsEmpty())
+	{
+		return;
+	}
+	if (version < kGeometryMinStaticPropVersion)
+	{
+		DevWarning("NEO HRTF: %s has static prop lump version %d, so no static props\n", pszBspPath, version);
+		return;
+	}
+
+	// The lump is three count-prefixed arrays: model names, leaves (not needed here), then props.
+	int offset = 0;
+	auto readCount = [&](int elementSize, int &count) -> bool
+	{
+		if (offset > lump.Count() - static_cast<int>(sizeof(int)))
+		{
+			return false;
+		}
+		V_memcpy(&count, lump.Base() + offset, sizeof(int));
+		offset += sizeof(int);
+		return count >= 0 && count <= (lump.Count() - offset) / elementSize;
+	};
+	int numModels = 0;
+	int numLeaves = 0;
+	int numProps = 0;
+	bool bValid = readCount(sizeof(StaticPropDictLump_t), numModels);
+	const char *pModelNames = reinterpret_cast<const char *>(lump.Base() + offset);
+	offset += numModels * sizeof(StaticPropDictLump_t);
+	bValid = bValid && readCount(sizeof(StaticPropLeafLump_t), numLeaves);
+	offset += numLeaves * sizeof(StaticPropLeafLump_t);
+	bValid = bValid && readCount(1, numProps);
+
+	// The record size differs between versions, and between branches sharing a version number, so
+	// it is taken from the lump itself.
+	const int propBytes = lump.Count() - offset;
+	const int stride = (numProps > 0) ? propBytes / numProps : 0;
+	if (!bValid || (numProps > 0 && (propBytes % numProps != 0 || stride < static_cast<int>(sizeof(StaticPropLumpV4_t)))))
+	{
+		DevWarning("NEO HRTF: %s has a malformed static prop lump, so no static props\n", pszBspPath);
+		return;
+	}
+
+	CUtlVector<PropModel> models;
+	models.SetCount(numModels);
+	const int firstTriangle = m_materialIndices.Count();
+	int numAdded = 0;
+	int numNoCollision = 0;
+	int numMalformed = 0;
+	for (int i = 0; i < numProps; ++i)
+	{
+		const uint8 *pRecord = lump.Base() + offset + i * stride;
+		StaticPropLumpV4_t prop;
+		V_memcpy(&prop, pRecord, sizeof(prop));
+
+		// Props the game lets everything pass through are left out too.
+		if (prop.m_Solid != SOLID_VPHYSICS && prop.m_Solid != SOLID_BBOX)
+		{
+			continue;
+		}
+		if (prop.m_PropType >= numModels || !prop.m_Origin.IsValid() || !prop.m_Angles.IsValid())
+		{
+			++numMalformed;
+			continue;
+		}
+
+		float scale = 1.0f;
+		if (version >= kGeometryStaticPropScaleVersion)
+		{
+			V_memcpy(&scale, pRecord + stride - sizeof(float), sizeof(float));
+			if (!IsFinite(scale) || scale <= 0.0f)
+			{
+				scale = 1.0f;
+			}
+		}
+
+		PropModel &model = models[prop.m_PropType];
+		PropCollisionMesh &mesh = (prop.m_Solid == SOLID_BBOX) ? model.bbox : model.vphysics;
+		if (!mesh.bLoaded)
+		{
+			mesh.bLoaded = true;
+			char name[STATIC_PROP_NAME_LENGTH + 1];
+			V_strncpy(name, pModelNames + prop.m_PropType * sizeof(StaticPropDictLump_t), sizeof(name));
+			if (prop.m_Solid == SOLID_BBOX)
+			{
+				GeometryLoadPropBBox(name, mesh);
+			}
+			else
+			{
+				GeometryLoadPropVPhysics(name, mesh);
+			}
+		}
+		if (mesh.presets.IsEmpty())
+		{
+			++numNoCollision;
+			continue;
+		}
+
+		// A rotation and a positive uniform scale both keep the winding.
+		matrix3x4_t toWorld;
+		AngleMatrix(prop.m_Angles, prop.m_Origin, toWorld);
+		for (const Vector &vertex : mesh.vertices)
+		{
+			Vector world;
+			VectorTransform(vertex * scale, toWorld, world);
+			m_triangles.AddToTail(m_vertices.AddToTail(GeometryToMetres(world)));
+		}
+		m_materialIndices.AddMultipleToTail(mesh.presets.Count(), mesh.presets.Base());
+		++numAdded;
+	}
+
+	if (numMalformed > 0)
+	{
+		DevWarning("NEO HRTF: skipped %d malformed static props in %s\n", numMalformed, pszBspPath);
+	}
+	if (numNoCollision > 0)
+	{
+		DevMsg("NEO HRTF: %d solid static props in %s have no collision model\n", numNoCollision, pszBspPath);
+	}
+	DevMsg("NEO HRTF: %d static props in %s, %d triangles\n", numAdded, pszBspPath,
+		   m_materialIndices.Count() - firstTriangle);
 }
 
 bool CNeoAudioGeometry::LoadBspTree(const char *pszBspPath, const CUtlVector<dplane_t> &planes, const CUtlVector<dnode_t> &nodes,

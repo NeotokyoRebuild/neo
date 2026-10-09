@@ -153,8 +153,10 @@ public:
 
 	// Once per block, after Process for every voice: renders the reverb of everything sent this
 	// block (and the tail of earlier ones) as a stereo pair, overwriting the outputs, and clears
-	// the reverb input. Silent while params are invalid.
-	virtual void ProcessReverb(const ReverbParams &params, float *outLeft, float *outRight) = 0;
+	// the reverb input. Silent while params are invalid. bDecorrelate gives each ear its own take
+	// on the tail so it surrounds the listener; without it both ears hear the same tail, inside
+	// the head.
+	virtual void ProcessReverb(const ReverbParams &params, bool bDecorrelate, float *outLeft, float *outRight) = 0;
 
 	// Replaces the static scene; geometry without triangles just removes the current one.
 	// On failure there is no scene, and errorOut says why.

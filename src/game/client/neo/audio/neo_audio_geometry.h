@@ -1,6 +1,7 @@
 // NEO HRTF: acoustic scene geometry read straight from a map's .bsp, for occlusion and
 // propagation. Only the static world is extracted: model 0's brush faces and displacements, each
-// with an acoustic material derived from its texture's $surfaceprop.
+// with an acoustic material derived from its texture's $surfaceprop, and the collision models of
+// solid static props, with the material of their collision model's surfaceprop.
 #pragma once
 
 #include "utlvector.h"
@@ -31,6 +32,7 @@ public:
 
 private:
 	void Clear();
+	void LoadStaticProps(const char *pszBspPath, const CUtlVector<uint8> &lump, int version);
 	bool LoadBspTree(const char *pszBspPath, const CUtlVector<dplane_t> &planes, const CUtlVector<dnode_t> &nodes,
 					 const CUtlVector<uint8> &leafBytes, int leafVersion, const CUtlVector<char> &entities);
 

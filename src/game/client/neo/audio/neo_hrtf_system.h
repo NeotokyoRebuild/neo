@@ -160,6 +160,7 @@ private:
 	NeoSpatial::Listener m_listener = {};
 	NeoSpatial::ReverbParams m_reverbParams; // the room around the listener, from baked probes
 	float m_reverbGain = 0.0f; // wet level on top of each voice's own gain
+	bool m_bReverbDecorrelate = true; // false: both ears get the same tail, inside the head
 
 	// Audio thread only.
 	float m_carry[kFrameSize * 2]; // interleaved stereo block not yet handed to miniaudio

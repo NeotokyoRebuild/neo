@@ -201,12 +201,17 @@ ConVar cl_neo_hrtf_pathing("cl_neo_hrtf_pathing", "1", FCVAR_CLIENTDLL | FCVAR_A
 	"Let occluded HRTF sounds reach the listener around obstacles, along paths baked into the map's probes", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_reverb("cl_neo_hrtf_reverb", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Level of the room reverb baked into the map's acoustic probes, 0 = off", true, 0.0f, true, 2.0f);
+ConVar cl_neo_hrtf_reverb_inhead("cl_neo_hrtf_reverb_inhead", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+	"Play the room reverb identically in both ears (inside the head) instead of decorrelated around the listener", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_bake_auto("cl_neo_hrtf_bake_auto", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Bake the map's acoustic probes in the background when there is no cached bake for it", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_bake_threads("cl_neo_hrtf_bake_threads", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Threads for baking acoustic probes, 0 = a quarter of the logical cores", true, 0.0f, true, 64.0f);
 ConVar cl_neo_hrtf_debug_probes("cl_neo_hrtf_debug_probes", "0", FCVAR_CLIENTDLL,
 	"Draw the acoustic probes near the view, coloured by batch (BSP area)", true, 0.0f, true, 1.0f);
+// TEMP workaround: muted dynamic sounds can be stopped by the engine early, cutting them off.
+ConVar cl_neo_hrtf_play_to_end("cl_neo_hrtf_play_to_end", "1", FCVAR_CLIENTDLL,
+	"Keep playing a non-looping HRTF voice to its end after the engine stops its channel (temporary workaround)", true, 0.0f, true, 1.0f);
 
 static CNeoHrtfSystem s_neoHrtfSystem;
 
@@ -386,6 +391,12 @@ void CNeoHrtfSystem::PollEngineSounds()
 			{
 				voice.m_params = m_stagedParams[v];
 			}
+			else if (cl_neo_hrtf_play_to_end.GetBool() && !voice.m_bFinished && voice.m_pSound->m_loopStart < 0)
+			{
+				// TEMP: the engine may drop a channel we muted before the sound ends, so a
+				// one-shot plays out with its last parameters. Loops still stop with the engine.
+				continue;
+			}
 			else
 			{
 				m_pSpatializer->ReleaseVoice(voice.m_hSpatial);
@@ -534,6 +545,7 @@ void CNeoHrtfSystem::SimulatePaths()
 	}
 	m_reverbParams = reverb;
 	m_reverbGain = reverbGain;
+	m_bReverbDecorrelate = !cl_neo_hrtf_reverb_inhead.GetBool();
 }
 
 void CNeoHrtfSystem::StartDevice()
@@ -1131,7 +1143,7 @@ void CNeoHrtfSystem::RenderBlock()
 		}
 
 		// Every block, voices or not, so tails ring out after the sounds that started them.
-		m_pSpatializer->ProcessReverb(m_reverbParams, m_scratchLeft, m_scratchRight);
+		m_pSpatializer->ProcessReverb(m_reverbParams, m_bReverbDecorrelate, m_scratchLeft, m_scratchRight);
 		if (m_reverbParams.valid && m_reverbGain > 0.0f)
 		{
 			for (int f = 0; f < kFrameSize; ++f)

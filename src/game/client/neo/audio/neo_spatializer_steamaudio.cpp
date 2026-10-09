@@ -508,7 +508,7 @@ public:
 		ProcessPaths(*voice, render, monoIn, outLeft, outRight);
 	}
 
-	void ProcessReverb(const ReverbParams &params, float *outLeft, float *outRight) override
+	void ProcessReverb(const ReverbParams &params, bool bDecorrelate, float *outLeft, float *outRight)
 	{
 		const int frames = m_audioSettings.frameSize;
 		if (!params.valid)
@@ -541,6 +541,21 @@ public:
 		m_api.iplReflectionEffectApply(m_reflectionEffect, &reflectionParams, &inBuffer, &outBuffer, nullptr);
 		std::fill(m_reverbIn.begin(), m_reverbIn.end(), 0.0f);
 
+		if (!bDecorrelate)
+		{
+			// The all-passes are flat in magnitude, so the tail is as loud either way. Their
+			// history is dropped so turning them back on starts clean.
+			if (m_bDecorrelatorsActive)
+			{
+				m_decorrelators[0].Reset();
+				m_decorrelators[1].Reset();
+				m_bDecorrelatorsActive = false;
+			}
+			std::copy_n(m_reverbOut.data(), frames, outLeft);
+			std::copy_n(m_reverbOut.data(), frames, outRight);
+			return;
+		}
+		m_bDecorrelatorsActive = true;
 		m_decorrelators[0].Process(m_reverbOut.data(), outLeft, frames);
 		m_decorrelators[1].Process(m_reverbOut.data(), outRight, frames);
 	}
@@ -1424,6 +1439,7 @@ private:
 	std::vector<float> m_pathOutRight;
 	CAllpassChain m_decorrelators[2];
 	bool m_bReverbActive = false;
+	bool m_bDecorrelatorsActive = false; // whether the all-passes hold history from the last block
 	bool m_bSimulatorDirty = false; // sources added or removed since the last commit
 	IPLAudioSettings m_audioSettings = {};
 	Listener m_listener = {};

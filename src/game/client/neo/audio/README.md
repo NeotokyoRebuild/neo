@@ -56,7 +56,12 @@ Audio scene (`IPLScene` holding one `IPLStaticMesh`). `CNeoAudioGeometry` reads 
 - faces flagged sky, nodraw, trigger, hint or skip are left out (sound escapes through the sky);
 - each texture's `$surfaceprop` (following patch materials) resolves to a physics surface and its
   `CHAR_TEX_*` game material, which picks one of Steam Audio's reference acoustic materials;
-- LZMA-compressed lumps are decompressed; every index is bounds-checked, so a malformed map only
+- solid static props from the `sprp` game lump (`LUMP_GAME_LUMP`): `SOLID_VPHYSICS` props use
+  solid 0 of the model's `.phy` (loaded through `IPhysicsCollision`, one load per model, each
+  convex re-wound outward), `SOLID_BBOX` props the `.mdl`'s hull box, both placed by the prop's
+  origin, angles and (lump version 11+) uniform scale; the material comes from the solid's (or
+  the `.mdl`'s) surfaceprop, and non-solid props are left out;
+- LZMA-compressed lumps and game lumps are decompressed; every index is bounds-checked, so a malformed map only
   means no scene.
 
 The scene is built at `LevelInitPreEntity` when HRTF is on, otherwise on the first in-game frame
@@ -150,7 +155,8 @@ The baked probes drive one room reverb around the listener:
   ears came out decorrelated (correlation 0.02) at equal energy, so the room surrounds the listener
   instead of sitting inside the head.
 
-`cl_neo_hrtf_reverb` sets the level (default 1, 0 turns it off). Until a map's bake finishes
+`cl_neo_hrtf_reverb` sets the level (default 1, 0 turns it off). `cl_neo_hrtf_reverb_inhead 1`
+skips the all-passes and sends the same tail to both ears, inside the head, at the same level. Until a map's bake finishes
 there is no reverb, and the debug overlay says so. `cl_neo_hrtf_debug 1` shows the current RT60s.
 
 ## Pathing
@@ -222,9 +228,8 @@ then `cmake --build ... --target install`) and configure neo with
 - Reverb is one listener-centric room, not per-source reflections. A sound in another room
   reverberates in the listener's room only as much as it gets through the wall (pathed sound does
   not feed the reverb). Paths
-  stop at areaportals and at 100 m. The scene has no static props or brush entities
-  (doors, func_brush), so cover made of props does not occlude until their collision models are
-  added.
+  stop at areaportals and at 100 m. The scene has no brush entities (doors, func_brush) or
+  dynamic props, so cover made of those does not occlude.
 - The first play of each file decodes on the game thread (a small hitch per new sound per map).
 - One mutex guards the voice table for both threads, so a frame can wait on a block render and
   vice versa; POD double-buffering of voice parameters is the clean fix.
