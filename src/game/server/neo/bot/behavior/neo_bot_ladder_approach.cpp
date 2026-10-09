@@ -362,7 +362,8 @@ bool CNEOBotLadderApproach::IsBarrierAhead( CNEOBot *me, const Vector &hangPos )
 	const Vector end = start + BARRIER_PROBE * toHang;
 
 	trace_t tr;
-	UTIL_TraceHull( start, end, me->WorldAlignMins(), me->WorldAlignMaxs(), MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
+	UTIL_TraceHull( start, end, me->WorldAlignMins(), me->WorldAlignMaxs(),
+		MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
 
 	return tr.DidHit();
 }

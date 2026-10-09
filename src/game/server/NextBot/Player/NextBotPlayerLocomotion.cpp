@@ -26,15 +26,15 @@ static constexpr float LADDER_TOUCH_RANGE = 64.0f;
 // A gap longer than this means the bot walked away and came back, so the bout starts over.
 static constexpr float LADDER_CONTACT_RESET = 1.0f;
 
-// Going down a ladder, forward is pressed only once it moves the bot down at least this
-// fraction of the climb speed. Slower than that, the view is still coming round.
+// Going down a ladder, forward is pressed only once it moves the bot down at least this fraction of the climb speed
+// (facing the face square on, a view more than 55 degrees below level): slower than that, the view is still coming round.
 static constexpr float LADDER_MIN_DESCENT_RATE = 0.25f;
 
 // A catch over a ladder's top edge lapses this long after the descent last asked for it.
 static constexpr float LADDER_CATCH_TIME = 0.5f;
 // How long the move down is held from a catch: past the grab, until the climb takes the ladder over.
 static constexpr float LADDER_CATCH_DESCENT_TIME = 0.2f;
-// How far the hull may still reach back over the ladder's top: closer in, it could be standing on it.
+// How far the hull may still reach back over the ladder's top, twice LadderMove()'s 2 u reach: closer in, it could be standing on it.
 static constexpr float LADDER_CATCH_OVERLAP = 4.0f;
 // The view must point at least this much into the face (cos 45 degrees) for forward to reach it.
 static constexpr float LADDER_CATCH_FACING = 0.707f;
@@ -196,7 +196,8 @@ bool PlayerLocomotion::IsForwardDownLadder( const CNavLadder *ladder ) const
 		return false;
 	}
 
-	// The vertical speed a forward press gives, as a fraction of the climb speed
+	// As CGameMovement::LadderMove() turns a move on an upright ladder: the part into the face climbs,
+	// and the view's own vertical part adds to it, so this is a forward press's vertical speed as a fraction of the climb speed
 	const float climbRate = view.z + intoFace;
 
 	return climbRate < -LADDER_MIN_DESCENT_RATE;
@@ -760,12 +761,7 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 #else
 	const bool bHoldForView = false;
 #endif
-	if ( bHoldForView )
-	{
-		// hold still
-	}
-	else
-	if ( m_player->IsOnLadder() && IsUsingLadder() && ( m_ladderState == ASCENDING_LADDER || m_ladderState == DESCENDING_LADDER ) )
+	if ( !bHoldForView && m_player->IsOnLadder() && IsUsingLadder() && ( m_ladderState == ASCENDING_LADDER || m_ladderState == DESCENDING_LADDER ) )
 	{
 		// we are on a ladder and WANT to be on a ladder.
 		playerButtons->PressForwardButton();
@@ -801,7 +797,7 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 			}
 		}
 	}
-	else
+	else if ( !bHoldForView )
 	{
 		const float epsilon = 0.25f;
 		if ( NextBotPlayerMoveDirect.GetBool() )

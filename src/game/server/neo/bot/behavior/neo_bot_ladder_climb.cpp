@@ -17,7 +17,7 @@ static constexpr float LADDER_PLACE_SEEK = 16.0f;
 //---------------------------------------------------------------------------------------------
 CNEOBotLadderClimb::CNEOBotLadderClimb( const CNavLadder *ladder, bool goingUp )
 	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_flLastZ( 0.0f ),
-	m_bDismountPhase( false ), m_bJumpedOffLadder( false ), m_pExitArea( nullptr )
+	m_bDismountPhase( false ), m_bJumpedOffLadder( false ), m_pExitArea( nullptr ), m_nNudges( 0 )
 {
 	m_dismountPos = vec3_origin;
 	m_ladderForward = ladder ? -ladder->GetNormal() : vec3_origin;
@@ -75,9 +75,10 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 			mover->Reset(); // clear velocity cache in locomotion interface
 			me->SetAbsVelocity( vec3_origin );
 
+			// Half a hull off the nav line, unchecked: the fallback spot when the clear spot below starts in solid
 			Vector idealPos = m_ladder->GetPosAtHeight( m_flLastZ );
 			// Offset slightly from the ladder surface based on the bot's collision box
-			float offsetDist = me->CollisionProp()->OBBSize().x / 2.0f + 2.0f;
+			float offsetDist = me->CollisionProp()->OBBSize().x / 2.0f + LADDER_PLACE_GAP;
 			idealPos += m_ladder->GetNormal() * offsetDist;
 			idealPos.z = m_flLastZ;
 
@@ -96,8 +97,8 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 				idealPos = trFace.DidHit() ? trFace.endpos + normal * ( LADDER_GRAB_DIST * 0.5f ) : clearPos;
 			}
 
-			// The floor there can stand higher than the feet were, and a hull sunk in a displacement does not start solid,
-			// so stand the hull on that floor: unducking on the ladder lowers the feet, and from inside the floor wedges the bot
+			// The floor at the spot can stand higher than the feet were, and a hull sunk into a displacement does not start solid,
+			// so stand the hull on that floor: unducking later on the ladder lowers the feet by the crouch's lift, into the floor
 			trace_t trFloor;
 			UTIL_TraceHull( idealPos + Vector( 0.0f, 0.0f, mover->GetStepHeight() ), idealPos, me->WorldAlignMins(), me->WorldAlignMaxs(),
 				MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trFloor );
@@ -114,7 +115,8 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 			// A spot still in solid, such as inside a ladder brush that stands in front of its nav line, would hold the bot
 			// there for good, so the bot climbs from where it is instead
 			trace_t trSpot;
-			UTIL_TraceHull( idealPos, idealPos, me->WorldAlignMins(), me->WorldAlignMaxs(), MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trSpot );
+			UTIL_TraceHull( idealPos, idealPos, me->WorldAlignMins(), me->WorldAlignMaxs(),
+				MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trSpot );
 			if ( !trSpot.startsolid )
 			{
 				// Teleport the bot
@@ -163,7 +165,7 @@ void CNEOBotLadderClimb::ClaimLadder( CNEOBot *me ) const
 	const CNavArea *pExitArea = m_pExitArea;
 	if ( !pExitArea )
 	{
-		pExitArea = m_bGoingUp ? m_ladder->GetTopArea() : m_ladder->m_bottomArea;
+		pExitArea = LadderEndArea();
 	}
 
 	// The locomotion's dismount walks to this area, so there is nothing to claim with without one
@@ -235,7 +237,7 @@ void CNEOBotLadderClimb::ResolveExitArea( CNEOBot *me )
 
 //---------------------------------------------------------------------------------------------
 // By the dismount the path's goal can already be past the area this ladder lands on,
-// so take a landing the path passes through, or else the ladder's own end area
+// so take a landing the path passes through, or else the ladder's own end area, or, with no end area, the path's
 const CNavArea *CNEOBotLadderClimb::FindLanding( const PathFollower *path, const CNavArea *pathExit ) const
 {
 	const CNavLadder::LadderDirectionType dir = m_bGoingUp ? CNavLadder::LADDER_UP : CNavLadder::LADDER_DOWN;
@@ -252,12 +254,20 @@ const CNavArea *CNEOBotLadderClimb::FindLanding( const PathFollower *path, const
 		}
 	}
 
-	const CNavArea *ladderEnd = m_bGoingUp ? m_ladder->GetTopArea() : m_ladder->m_bottomArea;
+	const CNavArea *ladderEnd = LadderEndArea();
 	return ladderEnd ? ladderEnd : pathExit;
 }
 
 //---------------------------------------------------------------------------------------------
-// A landing shallower than half a hull is a wall cap the climb crosses, not a floor to stand on
+// The area at the end this climb leaves the ladder by
+const CNavArea *CNEOBotLadderClimb::LadderEndArea() const
+{
+	return m_bGoingUp ? m_ladder->GetTopArea() : m_ladder->m_bottomArea;
+}
+
+//---------------------------------------------------------------------------------------------
+// A landing whose short side is under half a hull is a wall cap the climb crosses, not a floor to stand on,
+// and a deeper one holds the bot's center even where the path follower's LadderCapAhead() needs the mesh link to climb onto it
 bool CNEOBotLadderClimb::IsNarrowLanding( CNEOBot *me ) const
 {
 	const float flMinDepth = me->GetBodyInterface()->GetHullWidth() * NARROW_LANDING_HULLS;
