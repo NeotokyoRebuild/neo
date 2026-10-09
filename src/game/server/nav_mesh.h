@@ -169,56 +169,6 @@ enum GetNavAreaFlags_t
 };
 
 
-//--------------------------------------------------------------------------------------------------------
-// for nav mesh visibilty computation
-struct NavVisPair_t
-{
-	void SetPair( CNavArea *pArea1, CNavArea *pArea2 )
-	{
-		int iArea1 = (int)( pArea1 > pArea2 );
-		int iArea2 = ( iArea1 + 1 ) % 2;
-		pAreas[iArea1] = pArea1;
-		pAreas[iArea2] = pArea2;
-	}
-
-	CNavArea *pAreas[2];
-};
-
-#if defined(NEO) && defined(LINUX)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnarrowing"
-#endif
-
-// for nav mesh visibilty computation
-class CVisPairHashFuncs
-{
-public:
-	CVisPairHashFuncs( int ) {}
-
-	bool operator()( const NavVisPair_t &lhs, const NavVisPair_t &rhs ) const
-	{
-		return ( lhs.pAreas[0] == rhs.pAreas[0] && lhs.pAreas[1] == rhs.pAreas[1] );
-	}
-
-	unsigned int operator()( const NavVisPair_t &item ) const
-	{
-		COMPILE_TIME_ASSERT( sizeof(CNavArea *) == sizeof( intp ) );
-		intp key[2] = { (intp) ( (intp)item.pAreas[0] + item.pAreas[1]->GetID() ), (intp)( (intp)item.pAreas[1] + item.pAreas[0]->GetID() ) };
-		if ( sizeof( key ) >= 16 )
-		{
-			return Hash16( key );
-		}
-		else
-		{
-			return Hash8( key );
-		}
-	}
-};
-
-#if defined(NEO) && defined(LINUX)
-#pragma GCC diagnostic pop
-#endif
-
 //--------------------------------------------------------------------------------------------------------------
 //
 // The 'place directory' is used to save and load places from
