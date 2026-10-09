@@ -131,7 +131,9 @@ struct VoiceRender
 	// caller multiplies the whole output by its own (straight-line) distance gain, which the paths,
 	// carrying their own attenuation, must not get twice.
 	float pathGain = 0.0f;
-	float reverbSend = 0.0f; // the direct-filtered block times this goes to the reverb
+	// The direct-filtered block times this goes to the reverb, and so does the pathed sound at the
+	// level the paths deliver it, so a source out of sight still excites the listener's room.
+	float reverbSend = 0.0f;
 };
 
 class ISpatializer

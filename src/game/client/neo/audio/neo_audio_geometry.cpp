@@ -92,6 +92,7 @@ enum AcousticPreset
 	ACOUSTIC_PLASTER,
 	ACOUSTIC_WOOD,
 	ACOUSTIC_METAL,
+	ACOUSTIC_GRATE,
 
 	ACOUSTIC_PRESET_COUNT
 };
@@ -106,6 +107,7 @@ const NeoSpatial::AcousticMaterial kAcousticPresets[ACOUSTIC_PRESET_COUNT] = {
 	{ { 0.12f, 0.06f, 0.04f }, 0.05f, { 0.056f, 0.056f, 0.004f } }, // plaster
 	{ { 0.11f, 0.07f, 0.06f }, 0.05f, { 0.070f, 0.014f, 0.005f } }, // wood
 	{ { 0.20f, 0.07f, 0.06f }, 0.05f, { 0.200f, 0.025f, 0.010f } }, // metal
+	{ { 0.00f, 0.00f, 0.00f }, 0.00f, { 1.000f, 1.000f, 1.000f } }, // grate
 };
 
 // The surfaceprop's game material (CHAR_TEX_*) is the coarse class the game itself uses for
@@ -118,9 +120,10 @@ AcousticPreset GeometryPresetForGameMaterial(int gameMaterial)
 		return ACOUSTIC_CONCRETE;
 	case CHAR_TEX_METAL:
 	case CHAR_TEX_VENT:
-	case CHAR_TEX_GRATE:
 	case CHAR_TEX_COMPUTER:
 		return ACOUSTIC_METAL;
+	case CHAR_TEX_GRATE:
+		return ACOUSTIC_GRATE;
 	case CHAR_TEX_WOOD:
 		return ACOUSTIC_WOOD;
 	case CHAR_TEX_GLASS:

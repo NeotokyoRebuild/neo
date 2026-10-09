@@ -238,6 +238,9 @@ constexpr float PATH_VIS_THRESHOLD = 0.1f;
 constexpr float PATH_VIS_RANGE_METRES = 20.0f;
 constexpr float PATH_RANGE_METRES = 100.0f;
 constexpr int PATHING_ORDER = 1; // PATHING_AMBISONIC_COEFFS = (order + 1)^2
+// A path's omnidirectional coefficient for a source at unit gain: the order-0 spherical harmonic,
+// 1 / (2 sqrt(pi)).
+constexpr float PATHING_OMNI_UNIT_GAIN = 0.28209479f;
 
 static_assert((PATHING_ORDER + 1) * (PATHING_ORDER + 1) == PATHING_AMBISONIC_COEFFS, "PathParams::sh holds one order");
 
@@ -486,7 +489,7 @@ public:
 		m_api.iplDirectEffectApply(voice->directEffect, &directParams, &monoBuffer, &directBuffer);
 
 		// The send is taken after occlusion, so a source behind a wall excites the room only as
-		// much as it is heard in it.
+		// much as it is heard in it: through the wall here, and around it in ProcessPaths.
 		if (render.reverbSend > 0.0f)
 		{
 			for (int f = 0; f < frames; ++f)
@@ -1299,6 +1302,24 @@ private:
 		{
 			outLeft[f] += m_pathOutLeft[f];
 			outRight[f] += m_pathOutRight[f];
+		}
+
+		// What arrives around the obstacle excites the listener's room too; with the send taken only
+		// after occlusion, a source out of sight left the room silent. Its level is the paths' omni
+		// coefficient (the distance law along them) times their mean spectral loss.
+		float eqMean = 0.0f;
+		for (const float band : render.paths.eq)
+		{
+			eqMean += band;
+		}
+		eqMean /= NUM_ACOUSTIC_BANDS;
+		const float pathSend = render.reverbSend * std::max(render.paths.sh[0], 0.0f) / PATHING_OMNI_UNIT_GAIN * eqMean;
+		if (pathSend > 0.0f)
+		{
+			for (int f = 0; f < frames; ++f)
+			{
+				m_reverbIn[f] += pathSend * m_pathIn[f];
+			}
 		}
 	}
 

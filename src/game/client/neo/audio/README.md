@@ -243,8 +243,11 @@ The baked probes drive one room reverb around the listener:
   at 3 s: the bake simulates only 1 s of decay, so longer fits are extrapolations. On dawn one
   probe reported 10 s, while the median across the map is 0.6–0.7 s.
 - **Send:** each voice's block after occlusion and transmission, times the voice's gain, is summed
-  into one bus. A distant or walled-off sound excites the room only as much as it is heard. Steam
-  Audio's own listener reverb is fed the same way.
+  into one bus, plus the share sent along its baked paths at the level they deliver it (their omni
+  coefficient times their mean EQ). A distant or walled-off sound excites the room only as much as it
+  is heard, through the wall or around it. Without the pathed share a source just out of sight left
+  the room silent, since occlusion took the whole send with it. Steam Audio's own listener reverb is
+  fed the same way.
 - **Render (audio thread):** one parametric `IPLReflectionEffect` (a feedback delay network) per
   block, even with no voices, so tails ring out. It has a single output; Steam Audio itself decodes
   that as omnidirectional, the same in both ears. Instead each ear gets the tail through its own
