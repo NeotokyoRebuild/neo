@@ -896,6 +896,7 @@ if(NEO_STEAMAUDIO)
         neo/audio/neo_audio_probe_lump.h
         neo/audio/neo_audio_probes.cpp
         neo/audio/neo_audio_probes.h
+        neo/audio/neo_hrtf_local_sound.h
         neo/audio/neo_hrtf_system.cpp
         neo/audio/neo_hrtf_system.h
         neo/audio/neo_spatializer.h

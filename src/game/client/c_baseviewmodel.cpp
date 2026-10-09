@@ -31,6 +31,10 @@
 // NVNT haptics system interface
 #include "haptics/ihaptics.h"
 
+#ifdef NEO
+#include "neo/audio/neo_hrtf_local_sound.h"
+#endif
+
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -125,6 +129,10 @@ void C_BaseViewModel::FireEvent( const Vector& origin, const QAngle& angles, int
 		if ( GetOwner() != NULL )
 		{
 			CLocalPlayerFilter filter;
+#ifdef NEO
+			// Reload and other handling sounds of the local player's own weapon are heard in HRTF from it
+			CNeoHrtfLocalSoundScope hrtfScope( ( GetOwner() == C_BasePlayer::GetLocalPlayer() ) ? NeoHrtfLocalSound::Weapon : NeoHrtfLocalSound::None );
+#endif
 			EmitSound( filter, GetOwner()->GetSoundSourceIndex(), options, &GetAbsOrigin() );
 			return;
 		}

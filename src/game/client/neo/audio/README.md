@@ -16,7 +16,17 @@ so `client.dll` never sees an audio buffer. Through public interfaces the client
 
 So positional sounds are re-rendered in parallel: poll the channel list, mute the engine's copy,
 decode the same file and play it through a second output device with HRTF applied.
-Non-positional sounds (UI, music, sentences, the local player's own weapon) stay with the engine.
+Non-positional sounds (UI, music, sentences) stay with the engine.
+
+The local player's own sounds stay with the engine too, unless the client marks them as it plays
+them: `CNeoHrtfLocalSoundScope` (`neo_hrtf_local_sound.h`) records the guid of the sound played
+inside it (`IEngineSound::GetGuidForLastSoundEmitted()`), since a channel carries no flag of our own.
+Marked are footsteps (`C_NEO_Player::PlayStepSound`, heard from the feet), the weapon's sounds
+(`CBaseCombatWeapon::WeaponSound` and viewmodel sound events: shots, dry fire, reloads, pump and
+bolt, heard from just ahead of and below the eyes) and the thermoptic camo on and off (heard from the
+chest), because the engine puts all of the local player's sounds at their feet. Everything else (the
+vision toggle, the use key, weapon pickups, and any sound the server plays on the local player)
+stays non-positional.
 
 ```
 engine mixer ──GetActiveSounds()──► CNeoHrtfSystem (game thread, once per frame)

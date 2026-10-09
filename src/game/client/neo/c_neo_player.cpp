@@ -39,6 +39,7 @@
 
 #include "neo/weapons/weapon_ghost.h"
 #include "neo/weapons/weapon_supa7.h"
+#include "neo/audio/neo_hrtf_local_sound.h"
 
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
@@ -830,6 +831,7 @@ void C_NEO_Player::PostDataUpdate( DataUpdateType_t updateType )
 void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	surfacedata_t *psurface, float fvol, bool force )
 {
+	CNeoHrtfLocalSoundScope hrtfScope(IsLocalPlayer() ? NeoHrtfLocalSound::Feet : NeoHrtfLocalSound::None);
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
@@ -1800,7 +1802,8 @@ void C_NEO_Player::PlayCloakSound(void)
 	params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
 	params.m_pOrigin = &GetAbsOrigin();
 	params.m_nChannel = CHAN_VOICE; // NEO TODO (Adam) This doesn't change the channel this sound is played on, set correct channel in sound script
-	
+
+	CNeoHrtfLocalSoundScope hrtfScope(NeoHrtfLocalSound::Body);
 	EmitSound(filter, entindex(), params);
 }
 

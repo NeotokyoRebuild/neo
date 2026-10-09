@@ -43,6 +43,18 @@ constexpr float kHrtfEngineGainMin = 0.01f;
 // traced from slightly above it so the floor itself does not hide half the source.
 constexpr float kHrtfOcclusionLiftUnits = 8.0f;
 
+// Where the local player's own marked sounds play from (NeoHrtfLocalSound), relative to the eyes.
+// The weapon point stays well inside the player's hull (16 units either side of the eyes), so it is
+// never through a wall the player is pressed against.
+constexpr float kHrtfLocalWeaponForwardUnits = 10.0f;
+constexpr float kHrtfLocalWeaponSideUnits = 5.0f;
+constexpr float kHrtfLocalWeaponDownUnits = 5.0f;
+constexpr float kHrtfLocalBodyDownUnits = 20.0f;
+
+// A mark whose sound never shows up in the engine's channel list (it failed to start) is dropped
+// after this long.
+constexpr double kHrtfLocalMarkSeconds = 1.0;
+
 // A path's omnidirectional coefficient for a source at unit gain: the order-0 spherical harmonic,
 // 1 / (2 sqrt(pi)), which is what Steam Audio returns for a source in plain view.
 constexpr float kHrtfFirstOrderOmniGain = 0.28209479f;
@@ -199,17 +211,17 @@ void HrtfNormaliseSoundName(const char *pszName, char *pszOut, int outSize)
 bool HrtfIsEngineOnlyName(const char *pszRawName)
 {
 	return TestSoundChar(pszRawName, CHAR_STREAM) || TestSoundChar(pszRawName, CHAR_OMNI)
-		|| TestSoundChar(pszRawName, CHAR_DOPPLER) || TestSoundChar(pszRawName, CHAR_DIRECTIONAL)
-		|| TestSoundChar(pszRawName, CHAR_DISTVARIANT);
+		|| TestSoundChar(pszRawName, CHAR_DOPPLER) || TestSoundChar(pszRawName, CHAR_DIRECTIONAL);
 }
 
-bool HrtfIsSpatialCandidate(const SndInfo_t &info, int localPlayerIndex)
+bool HrtfIsSpatialCandidate(const SndInfo_t &info, int localPlayerIndex, bool bMarkedLocal)
 {
-	return true;
-	// Sentences, dry-mix and speaker sounds are not positional; the local player's own weapon and
-	// viewmodel sounds are non-positional by design; UI sounds have no source entity or position.
+	// Sentences, dry-mix and speaker sounds are not positional; the local player's own sounds are
+	// non-positional unless the client marked them (neo_hrtf_local_sound.h); UI sounds have no
+	// source entity or position.
 	return !info.m_bIsSentence && !info.m_bDryMix && !info.m_bSpeaker && info.m_pOrigin
-		&& info.m_nSoundSource != localPlayerIndex && (info.m_nSoundSource > 0 || *info.m_pOrigin != vec3_origin);
+		&& (info.m_nSoundSource != localPlayerIndex || bMarkedLocal)
+		&& (info.m_nSoundSource > 0 || *info.m_pOrigin != vec3_origin);
 }
 
 NeoSpatial::Vec3 HrtfToVec3(const Vector &v, float scale = 1.0f)
@@ -252,6 +264,30 @@ ConVar cl_neo_hrtf_engine_floor("cl_neo_hrtf_engine_floor", "0.016", FCVAR_CLIEN
 	"Spatialized level the engine's copy of an HRTF sound is held at so the engine does not cut it off early, 0 = silent", true, 0.0f, true, 0.1f);
 
 static CNeoHrtfSystem s_neoHrtfSystem;
+
+CNeoHrtfLocalSoundScope::CNeoHrtfLocalSoundScope(NeoHrtfLocalSound place)
+	: m_place(cl_neo_hrtf.GetBool() ? place : NeoHrtfLocalSound::None)
+	, m_guidBefore(0)
+{
+	if (m_place != NeoHrtfLocalSound::None)
+	{
+		m_guidBefore = enginesound->GetGuidForLastSoundEmitted();
+	}
+}
+
+CNeoHrtfLocalSoundScope::~CNeoHrtfLocalSoundScope()
+{
+	if (m_place == NeoHrtfLocalSound::None)
+	{
+		return;
+	}
+	// Unchanged if nothing played: a predicted sound is only played the first time its command runs.
+	const int guid = enginesound->GetGuidForLastSoundEmitted();
+	if (guid != m_guidBefore)
+	{
+		s_neoHrtfSystem.MarkLocalSound(guid, m_place);
+	}
+}
 
 CON_COMMAND(cl_neo_hrtf_scene_obj, "Write the HRTF acoustic scene (the map's world geometry) to <game dir>/hrtf_scene_<map>.obj")
 {
@@ -296,6 +332,7 @@ void CNeoHrtfSystem::LevelShutdownPreEntity()
 {
 	ReleaseAllVoices();
 	m_ignoredGuids.RemoveAll();
+	m_localSoundMarks.RemoveAll();
 }
 
 void CNeoHrtfSystem::LevelShutdownPostEntity()
@@ -390,7 +427,7 @@ void CNeoHrtfSystem::PollEngineSounds()
 			Voice &voice = m_voices[voiceIndex];
 			voice.m_bSeenThisPoll = true;
 			MuteEngineCopy(voice, info, engineFloor);
-			m_stagedParams[voiceIndex] = ComputeParams(info, voice.m_sourceVolume, voice.m_distMult, outputScale);
+			m_stagedParams[voiceIndex] = ComputeParams(info, voice.m_localSound, voice.m_sourceVolume, voice.m_distMult, outputScale);
 			continue;
 		}
 
@@ -400,7 +437,8 @@ void CNeoHrtfSystem::PollEngineSounds()
 			continue;
 		}
 
-		if (!HrtfIsSpatialCandidate(info, localPlayerIndex))
+		const NeoHrtfLocalSound localSound = TakeLocalSoundMark(info.m_nGuid);
+		if (!HrtfIsSpatialCandidate(info, localPlayerIndex, localSound != NeoHrtfLocalSound::None))
 		{
 			continue;
 		}
@@ -412,7 +450,7 @@ void CNeoHrtfSystem::PollEngineSounds()
 			m_ignoredGuidsNext.AddToTail(info.m_nGuid);
 			continue;
 		}
-		m_pending[pendingCount++] = { i, pSound, -1 };
+		m_pending[pendingCount++] = { i, pSound, -1, localSound };
 	}
 
 	{
@@ -464,8 +502,9 @@ void CNeoHrtfSystem::PollEngineSounds()
 			voice.m_bSeenThisPoll = true;
 			voice.m_pSound = pending.m_pSound;
 			voice.m_hSpatial = hSpatial;
+			voice.m_localSound = pending.m_localSound;
 			ResolveSoundLevel(voice, info, *pending.m_pSound);
-			voice.m_params = ComputeParams(info, info.m_flVolume, voice.m_distMult, outputScale);
+			voice.m_params = ComputeParams(info, voice.m_localSound, info.m_flVolume, voice.m_distMult, outputScale);
 			pending.m_voiceIndex = freeSearch;
 		}
 	}
@@ -1147,13 +1186,60 @@ soundlevel_t CNeoHrtfSystem::LookupScriptLevel(const char *pszNormalisedName)
 	return (index != m_soundLevels.InvalidIndex()) ? m_soundLevels[index] : SNDLVL_NORM;
 }
 
-CNeoHrtfSystem::VoiceParams CNeoHrtfSystem::ComputeParams(const SndInfo_t &info, float sourceVolume, float distMult,
-														  float outputScale) const
+void CNeoHrtfSystem::MarkLocalSound(int guid, NeoHrtfLocalSound place)
 {
-	// The engine refreshes this every frame for channels that follow their entity
-	// (GetSoundSpatialization), so it already tracks moving players.
-	Assert(info.m_pOrigin);
-	const Vector &position = *info.m_pOrigin;
+	const double now = Plat_FloatTime();
+	for (int i = m_localSoundMarks.Count() - 1; i >= 0; --i)
+	{
+		if (now - m_localSoundMarks[i].m_time > kHrtfLocalMarkSeconds)
+		{
+			m_localSoundMarks.FastRemove(i);
+		}
+	}
+	m_localSoundMarks.AddToTail({ guid, place, now });
+}
+
+NeoHrtfLocalSound CNeoHrtfSystem::TakeLocalSoundMark(int guid)
+{
+	for (int i = 0; i < m_localSoundMarks.Count(); ++i)
+	{
+		if (m_localSoundMarks[i].m_guid == guid)
+		{
+			const NeoHrtfLocalSound place = m_localSoundMarks[i].m_place;
+			m_localSoundMarks.FastRemove(i);
+			return place;
+		}
+	}
+	return NeoHrtfLocalSound::None;
+}
+
+Vector CNeoHrtfSystem::SoundPosition(const SndInfo_t &info, NeoHrtfLocalSound localSound) const
+{
+	// The engine plays all of the local player's sounds from their origin on the floor, whatever
+	// made them, so sounds made with the hands or the body are placed from the view instead.
+	switch (localSound)
+	{
+	case NeoHrtfLocalSound::Weapon:
+	{
+		static ConVarRef s_rightHand("cl_righthand");
+		const float side = (!s_rightHand.IsValid() || s_rightHand.GetBool()) ? kHrtfLocalWeaponSideUnits : -kHrtfLocalWeaponSideUnits;
+		return m_listenerOrigin + m_listenerForward * kHrtfLocalWeaponForwardUnits + m_listenerRight * side
+			   - m_listenerUp * kHrtfLocalWeaponDownUnits;
+	}
+	case NeoHrtfLocalSound::Body:
+		return m_listenerOrigin - Vector(0.0f, 0.0f, kHrtfLocalBodyDownUnits);
+	default:
+		// The engine refreshes this every frame for channels that follow their entity
+		// (GetSoundSpatialization), so it already tracks moving players.
+		Assert(info.m_pOrigin);
+		return *info.m_pOrigin;
+	}
+}
+
+CNeoHrtfSystem::VoiceParams CNeoHrtfSystem::ComputeParams(const SndInfo_t &info, NeoHrtfLocalSound localSound,
+														  float sourceVolume, float distMult, float outputScale) const
+{
+	const Vector position = SoundPosition(info, localSound);
 
 	// The engine's inverse-distance model (see kHrtfEngineRefDb), so audible ranges match
 	// the engine's own copy. Below snd_gain_min the engine stops mixing the channel.
@@ -1212,8 +1298,10 @@ void CNeoHrtfSystem::PrintDebug() const
 			V_snprintf(pathText, sizeof(pathText), "paths %.2f", voice.m_paths.sh[0]);
 		}
 		// "map" when the level came from the networked ambient_generic, "script" otherwise.
-		engine->Con_NPrintf(v + 1, "hrtf %s  %.1f m  %d dB %s  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s  engine vol %.4f spat %.4f gain %.3f",
-			voice.m_pSound->m_name.Get(), toSource.Length(), static_cast<int>(voice.m_soundLevel),
+		// The local player's own sounds are tagged with where they play from.
+		static const char *const s_localSoundTags[] = { "", " (own, feet)", " (own, weapon)", " (own, body)" };
+		engine->Con_NPrintf(v + 1, "hrtf %s%s  %.1f m  %d dB %s  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s  engine vol %.4f spat %.4f gain %.3f",
+			voice.m_pSound->m_name.Get(), s_localSoundTags[static_cast<int>(voice.m_localSound)], toSource.Length(), static_cast<int>(voice.m_soundLevel),
 			voice.m_bLevelFromEmitter ? "map" : "script", voice.m_params.m_gain, azimuthDeg, path.occlusion,
 			path.transmission[0], path.transmission[1], path.transmission[2], pathText, voice.m_lastReportedVolume,
 			voice.m_lastSpatializedVolume, voice.m_engineGain);

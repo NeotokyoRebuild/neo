@@ -15,6 +15,7 @@
 #include "utlvector.h"
 
 #include "neo_audio_probes.h"
+#include "neo_hrtf_local_sound.h"
 #include "neo_spatializer.h"
 
 class CNeoAudioGeometry;
@@ -46,6 +47,10 @@ public:
 	// (Re)bakes the current map's probes in the background, replacing any cached bake.
 	void StartBake();
 	void CancelBake();
+
+	// The local player's sound `guid`, just played, is to be re-rendered from `place`
+	// (CNeoHrtfLocalSoundScope).
+	void MarkLocalSound(int guid, NeoHrtfLocalSound place);
 
 private:
 	// Decoded once per file, immutable afterwards, so the audio thread may read it
@@ -85,6 +90,7 @@ private:
 		soundlevel_t m_soundLevel = SNDLVL_NORM;
 		float m_distMult = 0.0f; // engine dist_mult for m_soundLevel, 0 = no falloff
 		bool m_bLevelFromEmitter = false; // from a networked ambient_generic rather than the scripts
+		NeoHrtfLocalSound m_localSound = NeoHrtfLocalSound::None; // the local player's own, and where from
 
 		// Set by the game thread under m_mutex while the voice is created or released.
 		const CachedSound *m_pSound = nullptr;
@@ -106,6 +112,14 @@ private:
 		int m_soundIndex; // into m_activeSounds
 		const CachedSound *m_pSound;
 		int m_voiceIndex; // slot it was given, -1 if the backend refused a voice
+		NeoHrtfLocalSound m_localSound;
+	};
+
+	struct LocalSoundMark
+	{
+		int m_guid;
+		NeoHrtfLocalSound m_place;
+		double m_time; // Plat_FloatTime when marked
 	};
 
 	void StartDevice();
@@ -127,7 +141,10 @@ private:
 	soundlevel_t LookupScriptLevel(const char *pszNormalisedName);
 	void ResolveSoundLevel(Voice &voice, const SndInfo_t &info, const CachedSound &sound) const;
 
-	VoiceParams ComputeParams(const SndInfo_t &info, float sourceVolume, float distMult, float outputScale) const;
+	Vector SoundPosition(const SndInfo_t &info, NeoHrtfLocalSound localSound) const;
+	VoiceParams ComputeParams(const SndInfo_t &info, NeoHrtfLocalSound localSound, float sourceVolume, float distMult,
+							  float outputScale) const;
+	NeoHrtfLocalSound TakeLocalSoundMark(int guid);
 	int FindVoice(int guid) const;
 	void MuteEngineCopy(Voice &voice, const SndInfo_t &info, float spatializedTarget);
 	void PrintDebug() const;
@@ -148,6 +165,7 @@ private:
 	CUtlVector<SndInfo_t> m_activeSounds;
 	CUtlVector<int> m_ignoredGuids; // sounds deliberately left to the engine, rechecked by guid only
 	CUtlVector<int> m_ignoredGuidsNext;
+	CUtlVector<LocalSoundMark> m_localSoundMarks; // marked but not yet seen in the engine's channel list
 	CUtlDict<CachedSound *, int> m_cache;
 	CUtlDict<soundlevel_t, int> m_soundLevels; // normalised wave name → loudest scripted level
 	VoiceParams m_stagedParams[kMaxVoices];
