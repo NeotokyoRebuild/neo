@@ -96,19 +96,36 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 				idealPos = trFace.DidHit() ? trFace.endpos + normal * ( LADDER_GRAB_DIST * 0.5f ) : clearPos;
 			}
 
+			// The floor there can stand higher than the feet were, and a hull sunk in a displacement does not start solid,
+			// so stand the hull on that floor: unducking on the ladder lowers the feet, and from inside the floor wedges the bot
+			trace_t trFloor;
+			UTIL_TraceHull( idealPos + Vector( 0.0f, 0.0f, mover->GetStepHeight() ), idealPos, me->WorldAlignMins(), me->WorldAlignMaxs(),
+				MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trFloor );
+			if ( !trFloor.startsolid && trFloor.DidHit() )
+			{
+				idealPos.z = trFloor.endpos.z;
+			}
+
 			// Face perpendicularly straight on to the ladder (-normal)
 			Vector idealLookDir = -m_ladder->GetNormal();
 			QAngle idealAngles;
 			VectorAngles( idealLookDir, idealAngles );
 
-			// Teleport the bot
-			me->SetAbsOrigin( idealPos );
-			me->SetAbsAngles( idealAngles );
-			// the view too: a forward press with the view off the face's normal slides the bot off the side of a narrow ladder
-			me->SnapEyeAngles( idealAngles );
+			// A spot still in solid, such as inside a ladder brush that stands in front of its nav line, would hold the bot
+			// there for good, so the bot climbs from where it is instead
+			trace_t trSpot;
+			UTIL_TraceHull( idealPos, idealPos, me->WorldAlignMins(), me->WorldAlignMaxs(), MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trSpot );
+			if ( !trSpot.startsolid )
+			{
+				// Teleport the bot
+				me->SetAbsOrigin( idealPos );
+				me->SetAbsAngles( idealAngles );
+				// the view too: a forward press with the view off the face's normal slides the bot off the side of a narrow ladder
+				me->SnapEyeAngles( idealAngles );
 
-			// Update mover feet to new teleported position for stuck checking
-			m_flLastZ = idealPos.z;
+				// Update mover feet to new teleported position for stuck checking
+				m_flLastZ = idealPos.z;
+			}
 		}
 		else if ( me->IsDebugging( NEXTBOT_PATH ) )
 		{
