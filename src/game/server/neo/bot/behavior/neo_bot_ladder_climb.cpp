@@ -210,10 +210,68 @@ void CNEOBotLadderClimb::ResolveExitArea( CNEOBot *me )
 
 		if ( seg && !seg->ladder && seg->area )
 		{
-			m_pExitArea = seg->area;
-			m_exitAreaCenter = m_pExitArea->GetCenter();
+			m_pExitArea = FindLanding( path, seg->area );
+			m_exitAreaCenter = GetDismountPos( me );
 		}
 	}
+}
+
+//---------------------------------------------------------------------------------------------
+// By the dismount the path's goal can already be past the area this ladder lands on,
+// so take a landing the path passes through, or else the ladder's own end area
+const CNavArea *CNEOBotLadderClimb::FindLanding( const PathFollower *path, const CNavArea *pathExit ) const
+{
+	const CNavLadder::LadderDirectionType dir = m_bGoingUp ? CNavLadder::LADDER_UP : CNavLadder::LADDER_DOWN;
+	if ( m_ladder->IsConnected( pathExit, dir ) )
+	{
+		return pathExit;
+	}
+
+	for ( const Path::Segment *seg = path->FirstSegment(); seg; seg = path->NextSegment( seg ) )
+	{
+		if ( seg->area && m_ladder->IsConnected( seg->area, dir ) )
+		{
+			return seg->area;
+		}
+	}
+
+	const CNavArea *ladderEnd = m_bGoingUp ? m_ladder->GetTopArea() : m_ladder->m_bottomArea;
+	return ladderEnd ? ladderEnd : pathExit;
+}
+
+//---------------------------------------------------------------------------------------------
+// A landing shallower than half a hull is a wall cap the climb crosses, not a floor to stand on
+bool CNEOBotLadderClimb::IsNarrowLanding( CNEOBot *me ) const
+{
+	const float flMinDepth = me->GetBodyInterface()->GetHullWidth() * NARROW_LANDING_HULLS;
+	return Min( m_pExitArea->GetSizeX(), m_pExitArea->GetSizeY() ) < flMinDepth;
+}
+
+//---------------------------------------------------------------------------------------------
+// Step off toward where the landing meets this end of the ladder: a long, narrow landing's center
+// can lie off to one side, and the dismount kick toward it carries the bot past the landing's edge
+Vector CNEOBotLadderClimb::GetDismountPos( CNEOBot *me ) const
+{
+	if ( IsNarrowLanding( me ) )
+	{
+		return m_pExitArea->GetCenter();
+	}
+
+	const Vector &ladderEnd = m_bGoingUp ? m_ladder->m_top : m_ladder->m_bottom;
+	Vector nearPoint;
+	m_pExitArea->GetClosestPointOnArea( ladderEnd, &nearPoint );
+
+	// into the wall at the top, where the landing is, and away from it at the bottom
+	Vector inward = m_bGoingUp ? m_ladderForward : -m_ladderForward;
+	inward.z = 0.0f;
+	if ( inward.NormalizeInPlace() > 0.0f )
+	{
+		nearPoint += inward * LANDING_INSET;
+	}
+
+	Vector dismountPos;
+	m_pExitArea->GetClosestPointOnArea( nearPoint, &dismountPos );
+	return dismountPos;
 }
 
 
@@ -444,8 +502,10 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 	//------------------------------------------------------------
 	if ( m_bDismountPhase )
 	{
-		// Reached the target NavArea after the ladder
-		if ( m_pExitArea && me->GetLastKnownArea() == m_pExitArea )
+		// The last known area becomes the landing while the bot is still in the air beside it,
+		// so finish once the bot stands on the landing, or enters a narrow one it crosses
+		if ( m_pExitArea && me->GetLastKnownArea() == m_pExitArea
+			&& ( IsNarrowLanding( me ) || ( mover->IsOnGround() && m_pExitArea->IsOverlapping( myPos ) ) ) )
 		{
 			return Done( "Reached next NavArea after dismount" );
 		}
