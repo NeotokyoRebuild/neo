@@ -9,6 +9,9 @@
 ConVar neo_bot_path_around_friendly_cooldown("neo_bot_path_around_friendly_cooldown", "2.0", FCVAR_CHEAT,
 	"How often to check for friendly path dispersion", true, 0, true, 60);
 
+ConVar neo_bot_path_penalty_avoid_multiplier("neo_bot_path_penalty_avoid_multiplier", "20.0", FCVAR_CHEAT,
+	"Penalty multiplier for navmesh avoid areas in pathfinding", true, 1.0f, false, 0.0f);
+
 ConVar neo_bot_path_penalty_jump_multiplier("neo_bot_path_penalty_jump_multiplier", "100000.0", FCVAR_CHEAT,
 	"Maximum penalty multiplier for jump height changes in pathfinding", true, 0.01f, false, 0.0f);
 
@@ -224,6 +227,11 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 				}
 			}
 		}
+	}
+
+	if (area->HasAttributes(NAV_MESH_AVOID) || (ladder && fromArea->HasAttributes(NAV_MESH_AVOID)))
+	{
+		cost *= neo_bot_path_penalty_avoid_multiplier.GetFloat();
 	}
 	// ------------------------------------------------------------------------------------------------
 
