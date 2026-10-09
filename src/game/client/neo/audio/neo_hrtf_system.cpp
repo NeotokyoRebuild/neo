@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "neo_hrtf_system.h"
 #include "neo_audio_geometry.h"
+#include "neo_audio_probe_lump.h"
 #include "c_neo_ambient_generic.h"
 
 #include "checksum_crc.h"
@@ -18,6 +19,8 @@
 #include "tier0/memdbgon.h"
 
 extern ISoundEmitterSystemBase *soundemitterbase;
+extern IPhysicsSurfaceProps *physprops;
+extern IPhysicsCollision *physcollision;
 
 namespace
 {
@@ -49,9 +52,6 @@ constexpr float kHrtfFirstOrderOmniGain = 0.28209479f;
 // ledge-standing listener; beyond it the nearest probe likely describes another space.
 constexpr float kHrtfPathReachMetres = 8.0f;
 
-// Probes for baked acoustics: Steam Audio's own defaults, about a stride apart at roughly ear
-// height (a standing player's eyes are ~1.6 m up).
-constexpr NeoSpatial::ProbeSettings kHrtfProbeSettings = { 2.0f, 1.5f };
 
 // Baked probes are cached per map under the mod directory, keyed by geometry and probe layout.
 // Bump the version whenever the bake parameters in the backend or the file layout change.
@@ -686,7 +686,8 @@ void CNeoHrtfSystem::BuildScene()
 	V_snprintf(path, sizeof(path), "maps/%s.bsp", pszMapName);
 	char error[kMaxErrorLen];
 	CNeoAudioGeometry geometry;
-	if (!geometry.LoadFromBsp(path, error, sizeof(error))
+	const CNeoAudioGeometry::Services services = { filesystem, physprops, physcollision };
+	if (!geometry.LoadFromBsp(services, path, error, sizeof(error))
 		|| !m_pSpatializer->SetSceneGeometry(geometry.GetSceneGeometry(), error, sizeof(error)))
 	{
 		// Without a scene sounds are simply unoccluded, as they were before scenes existed.
@@ -727,11 +728,18 @@ void CNeoHrtfSystem::ReleaseScene()
 
 void CNeoHrtfSystem::SetupProbes(const CNeoAudioGeometry &geometry)
 {
+	m_bspTree = geometry.GetBspTree();
+
+	// A map compiled with utils/neo_soundbake carries its probes baked; nothing to do at runtime.
+	if (LoadBakedProbeLump(geometry))
+	{
+		return;
+	}
+
 	// Generation is quick and deterministic, so it always runs: the cache only has to hold the
 	// baked data, and the probes are known here for the debug view either way.
 	const double startTime = Plat_FloatTime();
-	NeoSpatial::BuildLeafProbes(*m_pSpatializer, geometry.GetBspTree(), kHrtfProbeSettings, m_probes);
-	m_bspTree = geometry.GetBspTree();
+	NeoSpatial::BuildLeafProbes(*m_pSpatializer, geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, m_probes);
 	m_probeCoverage.Build(m_probes);
 	const double generateMs = (Plat_FloatTime() - startTime) * 1000.0;
 
@@ -764,6 +772,41 @@ void CNeoHrtfSystem::SetupProbes(const CNeoAudioGeometry &geometry)
 	{
 		StartBake();
 	}
+}
+
+bool CNeoHrtfSystem::LoadBakedProbeLump(const CNeoAudioGeometry &geometry)
+{
+	char error[kMaxErrorLen];
+	NeoSpatial::ProbeLumpHeader header;
+	NeoSpatial::ProbeSet probes;
+	CUtlVector<uint8> storage;
+	const uint8 *pBatches = nullptr;
+	if (!geometry.ReadBakedProbes(header, probes, storage, pBatches, error, sizeof(error)))
+	{
+		// No message for a map simply compiled without the baker.
+		if (error[0])
+		{
+			Warning("NEO HRTF: %s; baking at runtime\n", error);
+		}
+		return false;
+	}
+
+	if (!m_pSpatializer->LoadProbeBatches(pBatches, header.batchesSize, error, sizeof(error))
+		|| m_pSpatializer->GetBakeState(nullptr) != NeoSpatial::BakeState::Done)
+	{
+		// E.g. baked with a Steam Audio whose format this one cannot read.
+		DevWarning("NEO HRTF: cannot use the map's baked probes (%s, baked with Steam Audio %u.%u.%u); baking at runtime\n",
+				   error[0] ? error : "incomplete bake", (header.libraryVersion >> 16) & 0xff, (header.libraryVersion >> 8) & 0xff,
+				   header.libraryVersion & 0xff);
+		return false;
+	}
+
+	m_probes = std::move(probes);
+	m_probeCoverage.Build(m_probes);
+	m_lastBakeState = NeoSpatial::BakeState::Done;
+	DevMsg("NEO HRTF: loaded %d acoustic probes in %d batches baked into the map\n", static_cast<int>(m_probes.centres.size()),
+		   m_probes.NumBatches());
+	return true;
 }
 
 bool CNeoHrtfSystem::LoadProbeCache()

@@ -892,6 +892,8 @@ if(NEO_STEAMAUDIO)
         FILES
         neo/audio/neo_audio_geometry.cpp
         neo/audio/neo_audio_geometry.h
+        neo/audio/neo_audio_probe_lump.cpp
+        neo/audio/neo_audio_probe_lump.h
         neo/audio/neo_audio_probes.cpp
         neo/audio/neo_audio_probes.h
         neo/audio/neo_hrtf_system.cpp
@@ -910,18 +912,20 @@ if(NEO_STEAMAUDIO)
             INCLUDE_DIRECTORIES ${STEAMAUDIO_INCLUDE_DIR}
     )
 
-    # Probe placement is plain C++ too, so it also builds into the offline tests.
+    # Probe placement and the baked probe lump format are plain C++ too, so they also build into
+    # the offline tests and the compile-time baker (utils/neo_soundbake).
     set_source_files_properties(
         neo/audio/neo_audio_probes.cpp
+        neo/audio/neo_audio_probe_lump.cpp
         PROPERTIES
             SKIP_UNITY_BUILD_INCLUSION ON
             SKIP_PRECOMPILE_HEADERS ON
     )
 
-    # Both use the standard library (containers, std::thread for the bake), whose MSVC headers
+    # These use the standard library (containers, std::thread for the bake), whose MSVC headers
     # need unwind semantics; the rest of the client keeps exceptions off.
     set_property(
-        SOURCE neo/audio/neo_spatializer_steamaudio.cpp neo/audio/neo_audio_probes.cpp
+        SOURCE neo/audio/neo_spatializer_steamaudio.cpp neo/audio/neo_audio_probes.cpp neo/audio/neo_audio_probe_lump.cpp
         APPEND PROPERTY COMPILE_OPTIONS $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
     )
 endif()

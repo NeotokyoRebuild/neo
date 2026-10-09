@@ -205,6 +205,9 @@ public:
 
 	virtual int NumProbeBatches() const = 0;
 	virtual int NumProbes() const = 0;
+
+	// The backend library's version, recorded with baked data for diagnostics.
+	virtual uint32_t GetLibraryVersion() const = 0;
 };
 
 // Loads phonon.dll / libphonon.so from `phononLibraryPath` at runtime (it is never linked) and

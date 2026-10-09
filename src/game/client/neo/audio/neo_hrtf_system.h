@@ -116,6 +116,7 @@ private:
 	void BuildScene();
 	void ReleaseScene();
 	void SetupProbes(const CNeoAudioGeometry &geometry);
+	bool LoadBakedProbeLump(const CNeoAudioGeometry &geometry);
 	bool LoadProbeCache();
 	void UpdateBake();
 	void SaveProbeCache();

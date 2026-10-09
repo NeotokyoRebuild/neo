@@ -1099,6 +1099,11 @@ public:
 		return m_numProbes;
 	}
 
+	uint32_t GetLibraryVersion() const override
+	{
+		return STEAMAUDIO_VERSION;
+	}
+
 private:
 	struct Batch
 	{
@@ -1359,7 +1364,7 @@ private:
 			return;
 		}
 		IPLSourceSettings sourceSettings = {};
-		sourceSettings.flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_PATHING);
+		sourceSettings.flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS | IPL_SIMULATIONFLAGS_PATHING);
 		if (m_api.iplSourceCreate(m_simulator, &sourceSettings, &voice.source) != IPL_STATUS_SUCCESS)
 		{
 			voice.source = nullptr;

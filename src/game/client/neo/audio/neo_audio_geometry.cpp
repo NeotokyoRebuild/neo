@@ -1,28 +1,39 @@
-#include "cbase.h"
+// No cbase.h: the compile-time baker builds this file too. In the client the PCH still comes first.
 #include "neo_audio_geometry.h"
 
 #include "bspfile.h"
 #include "checksum_crc.h"
+#include "const.h"
 #include "decals.h"
 #include "filesystem.h"
 #include "gamebspfile.h"
 #include "KeyValues.h"
+#include "mathlib/mathlib.h"
 #include "phyfile.h"
 #include "studio.h"
+#include "tier0/dbg.h"
 #include "tier1/lzmaDecoder.h"
+#include "tier1/strtools.h"
 #include "tier1/utlbuffer.h"
 #include "vcollide.h"
 #include "vcollide_parse.h"
 #include "vphysics_interface.h"
 
+#include "neo_audio_probe_lump.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern IPhysicsSurfaceProps *physprops;
-extern IPhysicsCollision *physcollision;
-
 namespace
 {
+
+// What LoadFromBsp reads through, set for its duration (the helpers below are free functions).
+IFileSystem *s_pFileSystem = nullptr;
+IPhysicsSurfaceProps *s_pSurfaceProps = nullptr;
+IPhysicsCollision *s_pCollision = nullptr;
+
+// GetShapeCrc's resolution: coarse enough that two builds' float rounding cannot differ by a step.
+constexpr float kGeometryShapeStepsPerMetre = 1000.0f;
 
 constexpr float kGeometryMetresPerUnit = 0.0254f; // 1 Source unit = 1 inch
 
@@ -139,7 +150,7 @@ void GeometryFindSurfaceProp(const char *pszVmtPath, char *pszOut, int outSize, 
 	V_strlower(path);
 
 	KeyValues::AutoDelete pVmt("vmt");
-	if (!pVmt->LoadFromFile(filesystem, path, "GAME"))
+	if (!pVmt->LoadFromFile(s_pFileSystem, path, "GAME"))
 	{
 		return;
 	}
@@ -171,13 +182,13 @@ void GeometryFindSurfaceProp(const char *pszVmtPath, char *pszOut, int outSize, 
 // An empty or unknown surfaceprop is "default", as it is to the game.
 AcousticPreset GeometryPresetForSurfaceProp(const char *pszSurfaceProp)
 {
-	Assert(physprops);
-	int surfaceIndex = physprops->GetSurfaceIndex(pszSurfaceProp[0] ? pszSurfaceProp : "default");
+	Assert(s_pSurfaceProps);
+	int surfaceIndex = s_pSurfaceProps->GetSurfaceIndex(pszSurfaceProp[0] ? pszSurfaceProp : "default");
 	if (surfaceIndex < 0)
 	{
-		surfaceIndex = physprops->GetSurfaceIndex("default");
+		surfaceIndex = s_pSurfaceProps->GetSurfaceIndex("default");
 	}
-	const surfacedata_t *pSurface = (surfaceIndex >= 0) ? physprops->GetSurfaceData(surfaceIndex) : nullptr;
+	const surfacedata_t *pSurface = (surfaceIndex >= 0) ? s_pSurfaceProps->GetSurfaceData(surfaceIndex) : nullptr;
 	return pSurface ? GeometryPresetForGameMaterial(pSurface->game.material) : ACOUSTIC_GENERIC;
 }
 
@@ -199,15 +210,15 @@ bool GeometryReadBlock(FileHandle_t file, int fileSize, int offset, int diskLen,
 		return false;
 	}
 
-	filesystem->Seek(file, offset, FILESYSTEM_SEEK_HEAD);
+	s_pFileSystem->Seek(file, offset, FILESYSTEM_SEEK_HEAD);
 	if (!bCompressed)
 	{
-		return diskLen == size && filesystem->Read(pOut, size, file) == size;
+		return diskLen == size && s_pFileSystem->Read(pOut, size, file) == size;
 	}
 
 	CUtlVector<uint8> compressed;
 	compressed.SetCount(diskLen);
-	if (filesystem->Read(compressed.Base(), diskLen, file) != diskLen
+	if (s_pFileSystem->Read(compressed.Base(), diskLen, file) != diskLen
 		|| diskLen < static_cast<int>(sizeof(lzma_header_t)) || !CLZMA::IsCompressed(compressed.Base()))
 	{
 		return false;
@@ -460,7 +471,7 @@ void GeometryLoadPropVPhysics(const char *pszModel, PropCollisionMesh &mesh)
 	GeometryModelPath(pszModel, ".phy", path, sizeof(path));
 	CUtlBuffer file;
 	phyheader_t header;
-	if (!filesystem->ReadFile(path, "GAME", file) || file.TellPut() < static_cast<int>(sizeof(header)))
+	if (!s_pFileSystem->ReadFile(path, "GAME", file) || file.TellPut() < static_cast<int>(sizeof(header)))
 	{
 		return;
 	}
@@ -470,14 +481,14 @@ void GeometryLoadPropVPhysics(const char *pszModel, PropCollisionMesh &mesh)
 		return;
 	}
 
-	Assert(physcollision);
+	Assert(s_pCollision);
 	vcollide_t collide;
 	V_memset(&collide, 0, sizeof(collide));
-	physcollision->VCollideLoad(&collide, header.solidCount, static_cast<const char *>(file.Base()) + header.size,
+	s_pCollision->VCollideLoad(&collide, header.solidCount, static_cast<const char *>(file.Base()) + header.size,
 								file.TellPut() - header.size);
 	if (collide.solidCount <= 0 || !collide.solids || !collide.solids[0])
 	{
-		physcollision->VCollideUnload(&collide);
+		s_pCollision->VCollideUnload(&collide);
 		return;
 	}
 
@@ -485,7 +496,7 @@ void GeometryLoadPropVPhysics(const char *pszModel, PropCollisionMesh &mesh)
 	if (collide.pKeyValues)
 	{
 		CGeometryIgnoreKeys ignoreKeys;
-		IVPhysicsKeyParser *pParse = physcollision->VPhysicsKeyParserCreate(collide.pKeyValues);
+		IVPhysicsKeyParser *pParse = s_pCollision->VPhysicsKeyParserCreate(collide.pKeyValues);
 		while (!pParse->Finished())
 		{
 			if (V_stricmp(pParse->GetCurrentBlockName(), "solid") != 0)
@@ -502,12 +513,12 @@ void GeometryLoadPropVPhysics(const char *pszModel, PropCollisionMesh &mesh)
 				break;
 			}
 		}
-		physcollision->VPhysicsKeyParserDestroy(pParse);
+		s_pCollision->VPhysicsKeyParserDestroy(pParse);
 	}
 	const int32 preset = GeometryPresetForSurfaceProp(surfaceProp);
 
 	CUtlVector<Vector> convexVertices;
-	ICollisionQuery *pQuery = physcollision->CreateQueryModel(collide.solids[0]);
+	ICollisionQuery *pQuery = s_pCollision->CreateQueryModel(collide.solids[0]);
 	for (int c = 0; c < pQuery->ConvexCount(); ++c)
 	{
 		const int numTriangles = Max(pQuery->TriangleCount(c), 0);
@@ -518,8 +529,8 @@ void GeometryLoadPropVPhysics(const char *pszModel, PropCollisionMesh &mesh)
 		}
 		GeometryAddConvexTriangles(convexVertices.Base(), numTriangles, preset, mesh);
 	}
-	physcollision->DestroyQueryModel(pQuery);
-	physcollision->VCollideUnload(&collide);
+	s_pCollision->DestroyQueryModel(pQuery);
+	s_pCollision->VCollideUnload(&collide);
 }
 
 // The .mdl's hull box, which the engine collides SOLID_BBOX static props with, turned with the prop.
@@ -528,7 +539,7 @@ void GeometryLoadPropBBox(const char *pszModel, PropCollisionMesh &mesh)
 	char path[MAX_PATH];
 	GeometryModelPath(pszModel, ".mdl", path, sizeof(path));
 	CUtlBuffer file;
-	if (!filesystem->ReadFile(path, "GAME", file) || file.TellPut() < static_cast<int>(sizeof(studiohdr_t)))
+	if (!s_pFileSystem->ReadFile(path, "GAME", file) || file.TellPut() < static_cast<int>(sizeof(studiohdr_t)))
 	{
 		return;
 	}
@@ -572,12 +583,16 @@ void GeometryLoadPropBBox(const char *pszModel, PropCollisionMesh &mesh)
 
 } // namespace
 
-bool CNeoAudioGeometry::LoadFromBsp(const char *pszBspPath, char *pszErrorOut, int errorLen)
+bool CNeoAudioGeometry::LoadFromBsp(const Services &services, const char *pszBspPath, char *pszErrorOut, int errorLen)
 {
 	Clear();
 	pszErrorOut[0] = '\0';
+	s_pFileSystem = services.pFileSystem;
+	s_pSurfaceProps = services.pSurfaceProps;
+	s_pCollision = services.pCollision;
+	Assert(s_pFileSystem && s_pSurfaceProps && s_pCollision);
 
-	FileHandle_t file = filesystem->Open(pszBspPath, "rb", "GAME");
+	FileHandle_t file = s_pFileSystem->Open(pszBspPath, "rb", "GAME");
 	if (!file)
 	{
 		V_snprintf(pszErrorOut, errorLen, "cannot open %s", pszBspPath);
@@ -586,11 +601,11 @@ bool CNeoAudioGeometry::LoadFromBsp(const char *pszBspPath, char *pszErrorOut, i
 
 	BspLumps lumps;
 	dheader_t header;
-	const int fileSize = static_cast<int>(filesystem->Size(file));
-	bool bRead = filesystem->Read(&header, sizeof(header), file) == sizeof(header);
+	const int fileSize = static_cast<int>(s_pFileSystem->Size(file));
+	bool bRead = s_pFileSystem->Read(&header, sizeof(header), file) == sizeof(header);
 	if (!bRead || header.ident != IDBSPHEADER || header.version < MINBSPVERSION || header.version > BSPVERSION)
 	{
-		filesystem->Close(file);
+		s_pFileSystem->Close(file);
 		V_snprintf(pszErrorOut, errorLen, "%s is not a version %d-%d BSP", pszBspPath, MINBSPVERSION, BSPVERSION);
 		return false;
 	}
@@ -615,7 +630,13 @@ bool CNeoAudioGeometry::LoadFromBsp(const char *pszBspPath, char *pszErrorOut, i
 	// Static props are an extra: a malformed game lump only leaves them out.
 	const bool bPropsRead = GeometryReadGameLump(file, fileSize, header, GAMELUMP_STATIC_PROPS, lumps.staticProps,
 												 lumps.staticPropsVersion);
-	filesystem->Close(file);
+	// So are the probes baked at compile time: without them the game bakes its own.
+	if (!GeometryReadGameLump(file, fileSize, header, NeoSpatial::PROBE_GAME_LUMP_ID, m_probeLump, m_probeLumpVersion))
+	{
+		m_probeLump.RemoveAll();
+		DevWarning("NEO HRTF: %s has a malformed baked probe lump, ignoring it\n", pszBspPath);
+	}
+	s_pFileSystem->Close(file);
 	if (!bRead || lumps.models.Count() <= kGeometryWorldModel)
 	{
 		V_snprintf(pszErrorOut, errorLen, "%s has a malformed lump", pszBspPath);
@@ -1014,6 +1035,90 @@ uint32 CNeoAudioGeometry::GetGeometryCrc() const
 	return crc;
 }
 
+bool CNeoAudioGeometry::ReadBakedProbes(NeoSpatial::ProbeLumpHeader &header, NeoSpatial::ProbeSet &probes,
+										CUtlVector<uint8> &storage, const uint8 *&batches, char *pszErrorOut, int errorLen) const
+{
+	pszErrorOut[0] = '\0';
+	if (m_probeLump.IsEmpty())
+	{
+		return false;
+	}
+	if (m_probeLumpVersion != NeoSpatial::PROBE_GAME_LUMP_VERSION)
+	{
+		V_snprintf(pszErrorOut, errorLen, "the baked probes are game lump version %d, this build reads %d", m_probeLumpVersion,
+				   NeoSpatial::PROBE_GAME_LUMP_VERSION);
+		return false;
+	}
+
+	// The baker stores the payload LZMA-compressed; the decoder trusts the header, so check it first.
+	const uint8 *pPayload = m_probeLump.Base();
+	int64 payloadSize = m_probeLump.Count();
+	unsigned char *pStored = const_cast<unsigned char *>(m_probeLump.Base());
+	if (m_probeLump.Count() >= static_cast<int>(sizeof(lzma_header_t)) && CLZMA::IsCompressed(pStored))
+	{
+		const lzma_header_t *pLzma = reinterpret_cast<const lzma_header_t *>(pStored);
+		if (pLzma->actualSize == 0 || pLzma->actualSize > static_cast<unsigned int>(kGeometryMaxLumpBytes)
+			|| pLzma->lzmaSize > static_cast<unsigned int>(m_probeLump.Count()) - sizeof(lzma_header_t))
+		{
+			V_snprintf(pszErrorOut, errorLen, "the baked probe lump is malformed");
+			return false;
+		}
+		storage.SetCount(static_cast<int>(pLzma->actualSize));
+		if (CLZMA::Uncompress(pStored, storage.Base()) != pLzma->actualSize)
+		{
+			V_snprintf(pszErrorOut, errorLen, "the baked probe lump does not decompress");
+			return false;
+		}
+		pPayload = storage.Base();
+		payloadSize = storage.Count();
+	}
+	else
+	{
+		storage.CopyArray(m_probeLump.Base(), m_probeLump.Count());
+		pPayload = storage.Base();
+	}
+
+	if (!NeoSpatial::ReadProbeLump(pPayload, payloadSize, header, probes, batches, pszErrorOut, errorLen))
+	{
+		return false;
+	}
+
+	// Baked against other geometry: the map was recompiled without running the baker again.
+	if (header.shapeCrc != GetShapeCrc())
+	{
+		V_snprintf(pszErrorOut, errorLen, "the baked probes are out of date (map recompiled without neo_soundbake?)");
+		return false;
+	}
+	return true;
+}
+
+uint32 CNeoAudioGeometry::GetShapeCrc() const
+{
+	CRC32_t crc;
+	CRC32_Init(&crc);
+	auto processQuantised = [&crc](const NeoSpatial::Vec3 &v)
+	{
+		const int32 steps[3] = { static_cast<int32>(roundf(v.x * kGeometryShapeStepsPerMetre)),
+								 static_cast<int32>(roundf(v.y * kGeometryShapeStepsPerMetre)),
+								 static_cast<int32>(roundf(v.z * kGeometryShapeStepsPerMetre)) };
+		CRC32_ProcessBuffer(&crc, steps, sizeof(steps));
+	};
+	for (const NeoSpatial::Vec3 &vertex : m_vertices)
+	{
+		processQuantised(vertex);
+	}
+	CRC32_ProcessBuffer(&crc, m_triangles.Base(), m_triangles.Count() * sizeof(int32));
+	for (const NeoSpatial::BspTree::Leaf &leaf : m_tree.leaves)
+	{
+		const int32 areaAndOpen[2] = { leaf.area, leaf.open ? 1 : 0 };
+		processQuantised(leaf.mins);
+		processQuantised(leaf.maxs);
+		CRC32_ProcessBuffer(&crc, areaAndOpen, sizeof(areaAndOpen));
+	}
+	CRC32_Final(&crc);
+	return crc;
+}
+
 NeoSpatial::SceneGeometry CNeoAudioGeometry::GetSceneGeometry() const
 {
 	NeoSpatial::SceneGeometry geometry;
@@ -1034,4 +1139,6 @@ void CNeoAudioGeometry::Clear()
 	m_materialIndices.Purge();
 	m_materials.Purge();
 	m_tree = NeoSpatial::BspTree();
+	m_probeLump.Purge();
+	m_probeLumpVersion = 0;
 }

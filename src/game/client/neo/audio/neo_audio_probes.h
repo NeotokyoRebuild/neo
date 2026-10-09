@@ -49,6 +49,10 @@ struct ProbeSettings
 	float height; // above the floor
 };
 
+// Steam Audio's own defaults, about a stride apart at roughly ear height (a standing player's eyes
+// are ~1.6 m up). Shared by the game and the compile-time baker, so both place the same probes.
+static constexpr ProbeSettings DEFAULT_PROBE_SETTINGS = { 2.0f, 1.5f };
+
 struct ProbeSet
 {
 	std::vector<Vec3> centres; // grouped by batch

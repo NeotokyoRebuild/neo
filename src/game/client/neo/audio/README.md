@@ -34,6 +34,8 @@ engine mixer ──GetActiveSounds()──► CNeoHrtfSystem (game thread, once 
 | Game integration | `neo_hrtf_system.{h,cpp}` | Source SDK, miniaudio decode/output |
 | Scene geometry | `neo_audio_geometry.{h,cpp}` | BSP lumps, VMT `$surfaceprop`, physics surface props |
 | Probe placement | `neo_audio_probes.{h,cpp}` | plain C++: BSP tree in metres, the contract |
+| Baked probe lump | `neo_audio_probe_lump.{h,cpp}` | plain C++: the `nsap` game lump format |
+| Compile-time baker | `src/utils/neo_soundbake` | engine file system, vphysics, the above |
 | Contract | `neo_spatializer.h` | plain C++ only (metres, Source axes, float blocks) |
 | Backend | `neo_spatializer_steamaudio.cpp` | `phonon.h`; loads `libphonon.so` / `phonon.dll` at runtime |
 | Dependency | `src/cmake/steamaudio.cmake` | fetches the pinned SDK zip: headers + runtime library |
@@ -153,6 +155,47 @@ coloured by batch, and `cl_neo_hrtf_debug 1` shows the probe count and bake prog
 
 The same batches carry pathing: Steam Audio only finds paths between probes in the same batch,
 and an area batch spans everything connected short of an areaportal.
+
+## Baking at compile time
+
+A map can carry its bake, so players never bake at runtime. `neo_soundbake` (`src/utils/neo_soundbake`,
+built on Windows and Linux with `NEO_STEAMAUDIO`, copied to `game/bin/x64` or `game/bin/linux64`)
+runs after VRAD. It places the probes and bakes them with the same code as the client:
+
+- **Same content as the game:** the engine's file system with the mod's `gameinfo.txt` search paths,
+  plus the map's own pakfile for patch materials, and `vphysics` for surface properties and static
+  prop collision.
+- **Appid mounts:** the SDK's tool file-system init rejects `|appid_N|` paths, so the tool resolves
+  them itself. It finds Steam through the registry on Windows, or on Linux through `~/.steam/steam`,
+  `~/.steam/root`, `~/.local/share/Steam` or the Flatpak's data directory. Then it reads
+  `libraryfolders.vdf` and the app manifest. Pass `-appid_dir_<appid> <dir>` to override.
+- **Threads:** it bakes on every logical core by default (`-threads <n>`).
+- **Storage:** the result is LZMA-compressed into game lump `nsap` (version 1) in lump 35. Every
+  other game lump is copied byte for byte.
+- **Verification:** before reporting success, the tool reloads the written map through the game's
+  own loading path.
+
+Measured with 16 threads: oilstain 890 probes in 18 s, 0.4 MB in the map (3.2 MB uncompressed); dawn
+2,527 probes in 26 s, 3.2 MB (23.5 MB uncompressed). Valve's `vbspinfo` reads the result normally.
+
+It has to live in the engine's `bin/x64` or `bin/linux64`, beside `filesystem_stdio` and `vphysics`,
+like VBSP; it says so if it doesn't. On Linux it finds the engine's `libtier0.so` and `libvstdlib.so`
+there through an `$ORIGIN` rpath, so it runs directly:
+`./neo_soundbake -game <mod dir> <map.bsp>`. In Hammer++'s expert compile mode, add a step after
+`$light_exe` and before the copy into the game's `maps` directory:
+
+```
+$bindir\neo_soundbake.exe    -game $gamedir $path\$file.bsp
+```
+
+Compress the map (e.g. `bspzip -repack -compress`) after baking, not before: the tool refuses
+compressed game lumps.
+
+At load, `CNeoAudioGeometry::ReadBakedProbes` decompresses and checks the lump. It's used only if
+its shape checksum matches the map: positions to the millimetre, triangles and BSP leaves, but not
+materials or lighting, so rerunning VRAD doesn't invalidate it. A map recompiled without the baker,
+or baked with a Steam Audio the game can't read, falls back to the runtime bake with a warning.
+`cl_neo_hrtf_bake` still rebakes locally.
 
 ## Reverb
 
