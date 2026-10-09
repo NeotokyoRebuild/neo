@@ -473,6 +473,19 @@ bool PathFollower::CheckProgress( INextBot *bot )
 {
 	ILocomotion *mover = bot->GetLocomotionInterface();
 
+#ifdef NEO
+	// a path recomputed in mid-air starts from the area the bot jumped from, so its goal is the take-off behind it:
+	// while the bot is still jumping the gap, or once it stands on the landing's area, head for the landing instead
+	if ( m_goal->type == JUMP_OVER_GAP )
+	{
+		const Path::Segment *landing = NextSegment( m_goal );
+		if ( landing && ( mover->IsJumpingAcrossGap() || bot->GetEntity()->GetLastKnownArea() == landing->area ) )
+		{
+			m_goal = landing;
+		}
+	}
+#endif
+
 	// skip nearby goal points that are redundant to smooth path following motion
 	const Path::Segment *pSkipToGoal = NULL;
 	if ( m_minLookAheadRange > 0.0f )
