@@ -123,8 +123,8 @@ bool Path::ComputePathDetails( INextBot *bot, const Vector &start )
 			float expectedHeightDrop = -DotProduct( alongPath, groundNormal );
 
 #ifdef NEO
-			// a drop marked on a link across a gap would send the bot straight off the edge into the gap,
-			// so the link stays on the ground: the bot heads for the landing, with a running jump when the gap-jump pass below adds one
+			// a drop on a link across a gap would send the bot into the gap, so leave the link on the ground:
+			// the gap-jump pass below adds a jump, or where the drop is more than twice the gap the bot walks off toward the landing
 			if ( expectedHeightDrop > mover->GetStepHeight() && !IsLinkAcrossGap( from->area, from->pos, to->area ) )
 #else
 			if ( expectedHeightDrop > mover->GetStepHeight() )
