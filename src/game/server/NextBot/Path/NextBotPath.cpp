@@ -24,12 +24,14 @@ ConVar NextBotPathDrawSegmentCount( "nb_path_draw_segment_count", "100", FCVAR_C
 ConVar NextBotPathSegmentInfluenceRadius( "nb_path_segment_influence_radius", "100", FCVAR_CHEAT );
 
 #ifdef NEO
-// areas farther apart than this in 2D do not touch, so a link between them crosses a gap
+// areas farther apart than this in 2D (38 u with NEO's 20 u generation step) do not touch, so a link between them crosses a gap:
+// the gap-jump pass's own separation test, unchanged from stock, now shared with the drop test
 static const float GapSeparationTolerance = 1.9f * GenerationStepSize;
 
 //--------------------------------------------------------------------------------------------------------------
 /**
- * Return true if the link from one area to the next crosses a gap, measured as the gap-jump pass measures it
+ * Return true if the link from one area to the next crosses a gap, measured as the gap-jump pass measures it.
+ * The pass repeats this measure for its landing geometry, from a path position it may have moved, so the two agree by constant, not by point
  */
 static bool IsLinkAcrossGap( const CNavArea *from, const Vector &fromPos, const CNavArea *to )
 {
