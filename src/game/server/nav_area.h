@@ -765,6 +765,7 @@ private:
 	AreaBindInfo m_inheritVisibilityFrom;						// if non-NULL, m_potentiallyVisibleAreas becomes a list of additions and deletions (NOT_VISIBLE) to the list of this area
 	CAreaBindInfoArray m_potentiallyVisibleAreas;				// list of areas potentially visible from inside this area (after PostLoad(), use area portion of union)
 	bool m_isInheritedFrom;										// latch used during visibility inheritance computation
+	bool m_isVisibilityComputed;								// set once this area's visibility pairs are computed, so later areas skip them
 
 	const CAreaBindInfoArray &ComputeVisibilityDelta( const CNavArea *other ) const;	// return a list of the delta between our visibility list and the given adjacent area
 

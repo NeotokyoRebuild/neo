@@ -258,6 +258,7 @@ CNavArea::CNavArea( void )
 
 	m_inheritVisibilityFrom.area = NULL;
 	m_isInheritedFrom = false;
+	m_isVisibilityComputed = false;
 
 	m_funcNavCostVector.RemoveAll();
 
@@ -5328,8 +5329,6 @@ static ConCommand nav_select_overlapping( "nav_select_overlapping", CommandNavSe
 static byte m_PVS[PAD_NUMBER( MAX_MAP_CLUSTERS,8 ) / 8];
 static int m_nPVSSize;		// PVS size in bytes
 
-CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs > *g_pNavVisPairHash;
-
 #define MASK_NAV_VISION				(MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE)
 
 
@@ -5680,16 +5679,11 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	collector.m_area.EnsureCapacity( 1000 );
 	TheNavMesh->ForAllAreasInRadius( collector, GetCenter(), radius );
 
-	NavVisPair_t visPair;
-	UtlHashHandle_t hHash;
-
-	// First eliminate the ones already calculated
+	// First eliminate the ones already calculated: an area's collector holds this area exactly when this area's holds it,
+	// so every pair with an area computed earlier is done
 	for ( int i = collector.m_area.Count() - 1; i >= 0; --i )
 	{
-		visPair.SetPair( this, collector.m_area[i] );
-
-		hHash = g_pNavVisPairHash->Find( visPair );
-		if ( hHash != g_pNavVisPairHash->InvalidHandle() )
+		if ( collector.m_area[i]->m_isVisibilityComputed )
 		{
 			collector.m_area.FastRemove( i );
 		}
@@ -5706,12 +5700,7 @@ void CNavArea::ComputeVisibilityToMesh( void )
 		g_ComputedVis.PopItem( &m_potentiallyVisibleAreas[ m_potentiallyVisibleAreas.AddToTail() ] );
 	}
 
-	FOR_EACH_VEC( collector.m_area, it )
-	{
-		visPair.SetPair( this, (CNavArea *)collector.m_area[it] );
-		Assert( g_pNavVisPairHash->Find( visPair ) == g_pNavVisPairHash->InvalidHandle() );
-		g_pNavVisPairHash->Insert( visPair );
-	}
+	m_isVisibilityComputed = true;
 }
 
 
