@@ -3669,24 +3669,14 @@ void CNavMesh::UpdateAvoidanceObstacleAreas( void )
 
 
 
-extern CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs > *g_pNavVisPairHash;
-
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::BeginVisibilityComputations( void )
 {
-	if ( !g_pNavVisPairHash )
-	{
-		g_pNavVisPairHash = new CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs >( 16*1024 );
-	}
-	else
-	{
-		g_pNavVisPairHash->RemoveAll();
-	}
-
 	FOR_EACH_VEC( TheNavAreas, it )
 	{
 		CNavArea *area = TheNavAreas[ it ];
 		area->ResetPotentiallyVisibleAreas();
+		area->m_isVisibilityComputed = false;
 	}
 }
 
@@ -3697,8 +3687,6 @@ void CNavMesh::BeginVisibilityComputations( void )
  */
 void CNavMesh::EndVisibilityComputations( void )
 {
-	g_pNavVisPairHash->RemoveAll();
-
 	int avgVisLength = 0;
 	int maxVisLength = 0;
 	int minVisLength = 999999999;
