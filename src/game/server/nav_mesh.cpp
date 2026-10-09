@@ -3669,6 +3669,8 @@ void CNavMesh::UpdateAvoidanceObstacleAreas( void )
 
 
 
+extern void ReleaseVisDeltaStamps( void );
+
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::BeginVisibilityComputations( void )
 {
@@ -3769,4 +3771,6 @@ void CNavMesh::EndVisibilityComputations( void )
 	}
 
 	Msg( "NavMesh Visibility List Lengths:  min = %d, avg = %d, max = %d\n", minVisLength, avgVisLength, maxVisLength );
+
+	ReleaseVisDeltaStamps();
 }
