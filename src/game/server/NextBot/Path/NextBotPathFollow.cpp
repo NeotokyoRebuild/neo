@@ -1238,18 +1238,22 @@ bool PathFollower::FindClimbLedge( INextBot *bot, Vector startTracePos, Vector l
 
 #ifdef NEO
 //--------------------------------------------------------------------------------------------------------------
-// A climb onto a ladder's top area shallower than a hull, such as the wall cap a ladder rises over
-bool PathFollower::IsLadderCapClimb( INextBot *bot ) const
+// The area after the goal when it is a ladder top less than a hull deep along the approach, else NULL:
+// the ledge search cannot find such an area (not the dismount's IsNarrowLanding(), which asks whether a bot can stand on it)
+const CNavArea *PathFollower::LadderCapAhead( INextBot *bot ) const
 {
+	// an area a ladder goes down from is that ladder's top
 	const Segment *afterClimb = NextSegment( m_goal );
 	if ( !afterClimb || !afterClimb->area || afterClimb->area->GetLadders( CNavLadder::LADDER_DOWN )->Count() == 0 )
 	{
-		return false;
+		return NULL;
 	}
 
-	const Vector toLedge = afterClimb->area->GetCenter() - bot->GetLocomotionInterface()->GetFeet();
-	const float flDepth = ( fabs( toLedge.x ) > fabs( toLedge.y ) ) ? afterClimb->area->GetSizeX() : afterClimb->area->GetSizeY();
-	return flDepth < bot->GetBodyInterface()->GetHullWidth();
+	// the depth is the area's axis-aligned size along the approach's dominant axis
+	const CNavArea *cap = afterClimb->area;
+	const Vector toLedge = cap->GetCenter() - bot->GetLocomotionInterface()->GetFeet();
+	const float flDepth = ( fabsf( toLedge.x ) > fabsf( toLedge.y ) ) ? cap->GetSizeX() : cap->GetSizeY();
+	return ( flDepth < bot->GetBodyInterface()->GetHullWidth() ) ? cap : NULL;
 }
 #endif
 
@@ -1321,11 +1325,12 @@ bool PathFollower::Climbing( INextBot *bot, const Path::Segment *goal, const Vec
 #ifdef NEO
 	// The ledge search below looks for a ledge's floor a full look-ahead past its wall and misses a wall cap,
 	// so at the launch point of a climb onto one, take the mesh's climb link as the authoritative branch does
-	if ( m_goal->type == CLIMB_UP && IsLadderCapClimb( bot )
-		&& ( m_goal->pos - mover->GetFeet() ).AsVector2D().IsLengthLessThan( body->GetHullWidth() ) )
+	const CNavArea *cap = ( m_goal->type == CLIMB_UP ) ? LadderCapAhead( bot ) : NULL;
+	if ( cap && ( m_goal->pos - mover->GetFeet() ).AsVector2D().IsLengthLessThan( body->GetHullWidth() ) )
 	{
+		// the authoritative branch's lines, repeated to leave that branch untouched
 		Vector nearClimbGoal;
-		NextSegment( m_goal )->area->GetClosestPointOnArea( mover->GetFeet(), &nearClimbGoal );
+		cap->GetClosestPointOnArea( mover->GetFeet(), &nearClimbGoal );
 
 		climbDirection = nearClimbGoal - mover->GetFeet();
 		climbDirection.z = 0.0f;

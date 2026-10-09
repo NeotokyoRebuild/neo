@@ -82,7 +82,7 @@ private:
 
 #ifdef NEO
 	bool HasFallenBelowPath( INextBot *bot ) const;	// return true if we stand off the path, more than a step below it
-	bool IsLadderCapClimb( INextBot *bot ) const;	// return true if the climb ahead is onto a ladder top shallower than a hull
+	const CNavArea *LadderCapAhead( INextBot *bot ) const;	// return the ladder top shallower than a hull the climb ahead is onto, or NULL
 	bool m_wasOnGround;
 #endif
 
