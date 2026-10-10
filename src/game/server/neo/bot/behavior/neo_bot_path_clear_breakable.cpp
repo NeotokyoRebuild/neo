@@ -10,6 +10,20 @@ ConVar neo_bot_fire_at_breakable_weapon_min_time( "neo_bot_fire_at_breakable_wea
 	"Minimum time to fire at breakables", true, 0.0f, true, 60.0f );
 
 //--------------------------------------------------------------------------------------------------------
+// A bot fights a threat in sight before it clears a breakable,
+// but a ghost carrier does not fight, so waiting for the threat to leave keeps it stuck at the breakable
+static bool IsHeldBackByThreat( CNEOBot *me )
+{
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	if ( !threat || !threat->GetEntity() || !threat->IsVisibleRecently() )
+	{
+		return false;
+	}
+
+	return !me->IsCarryingGhost();
+}
+
+//--------------------------------------------------------------------------------------------------------
 CBaseEntity *CNEOBotPathClearBreakable::GetBreakableInPath( CNEOBot *me )
 {
 	if ( !me || !me->IsAlive() )
@@ -28,8 +42,7 @@ CBaseEntity *CNEOBotPathClearBreakable::GetBreakableInPath( CNEOBot *me )
 	}
 
 	// Only enter this behavior if there is no visible threat
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	if ( threat && threat->GetEntity() && threat->IsVisibleRecently() )
+	if ( IsHeldBackByThreat( me ) )
 	{
 		return nullptr;
 	}
@@ -146,8 +159,7 @@ ActionResult< CNEOBot > CNEOBotPathClearBreakable::Update( CNEOBot *me, float in
 	}
 
 	// If a visible threat appeared, bail out and let the normal combat system handle it
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	if ( threat && threat->GetEntity() && threat->IsVisibleRecently() )
+	if ( IsHeldBackByThreat( me ) )
 	{
 		return Done( "Threat appeared" );
 	}
