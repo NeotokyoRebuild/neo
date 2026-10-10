@@ -102,6 +102,10 @@ void PathFollower::Invalidate( void )
 	m_avoidTimer.Invalidate();
 	m_waitTimer.Invalidate();
 	m_hindrance = NULL;
+
+#ifdef NEO
+	m_pathObstacles.Reset();
+#endif
 }
 
 
@@ -114,6 +118,10 @@ void PathFollower::OnPathChanged( INextBot *bot, Path::ResultType result )
 	// start from the beginning
 	m_goal = FirstSegment();
 	m_result = result;
+
+#ifdef NEO
+	m_pathObstacles.Reset();
+#endif
 }
 
 
@@ -684,6 +692,19 @@ void PathFollower::Update( INextBot *bot )
 		return;
 	}
 
+#ifdef NEO
+	// look ahead for breakables and walk around props in the way, which the nav mesh does not know about,
+	// heading for the path segment past them rather than turning back for a goal the detour went around
+	m_pathObstacles.Update( bot, *this );
+	const Path::Segment *detourPathGoal = m_pathObstacles.GetPathGoal();
+	if ( detourPathGoal )
+	{
+		m_goal = detourPathGoal;
+	}
+
+	const bool isDetouring = m_pathObstacles.IsDetouring();
+#endif
+
 	// use the direction towards the goal as 'forward' direction
 	Vector forward = m_goal->pos - mover->GetFeet();
 
@@ -739,8 +760,15 @@ void PathFollower::Update( INextBot *bot )
 		NDebugOverlay::Line( mover->GetFeet(), mover->GetFeet() + axisSize * left, 0, 0, 255, true, 0.1f );
 	}
 
+#ifdef NEO
+	// a detour crosses only walkable floor, and the prop it goes around is no ledge to climb
+	const bool shouldClimb = !isDetouring;
+#else
+	const bool shouldClimb = true;
+#endif
+
 	// climb up ledges
-	if ( !Climbing( bot, m_goal, forward, left, goalRange ) )
+	if ( shouldClimb && !Climbing( bot, m_goal, forward, left, goalRange ) )
 	{
 		// a failed climb could mean an invalid path
 		if ( !IsValid() )
@@ -828,6 +856,13 @@ void PathFollower::Update( INextBot *bot )
 
 
 	Vector goalPos = m_goal->pos;
+
+#ifdef NEO
+	if ( isDetouring )
+	{
+		goalPos = m_pathObstacles.GetMoveGoal();
+	}
+#endif
 
 	// avoid small obstacles
 	forward = goalPos - mover->GetFeet();
