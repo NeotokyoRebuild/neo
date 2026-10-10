@@ -1638,6 +1638,7 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO\\Material Proxies"
     FILES
+    neo/material_proxies/neo_matproxy_ghost_beacon_rotation.cpp
     neo/material_proxies/neo_matproxy_thermoptic.cpp
     neo/material_proxies/neo_matproxy_thermoptic.h
     neo/material_proxies/neo_matproxy_teamnum.cpp
