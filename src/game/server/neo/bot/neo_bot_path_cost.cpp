@@ -154,8 +154,7 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 	// New path reservation related cost adjustments
 	if ( !m_bIgnoreReservations && (m_routeType != FASTEST_ROUTE) )
 	{
-		cost += CNEOBotPathReservations()->GetAreaAvoidPenalty(area->GetID());
-		cost += CNEOBotPathReservations()->GetAreaDeathPenalty(area->GetID());
+		cost += CNEOBotPathReservations()->GetAreaPenalty(area->GetID()).GetPathCost();
 
 		if ( NEORules()->IsTeamplay() )
 		{

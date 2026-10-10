@@ -18,6 +18,7 @@ public:
     virtual bool operator()(CNavArea *baseArea, CNavArea *priorArea, float travelDistanceSoFar)
     {
         int id = baseArea->GetID();
+        const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty(id);
         float candidateHazardTime = CNEOBotPathReservations()->GetAreaHazardousTime(id, m_me);
         if (candidateHazardTime > 0)
         {
@@ -26,11 +27,11 @@ public:
                 baseArea->DrawFilled(255, 0, 0, MIN(255, candidateHazardTime), candidateHazardTime);
             }
         }
-        else if (CNEOBotPathReservations()->GetAreaAvoidPenalty(id) <= 0.0f)
+        else if (penalty.flStuck <= 0.0f)
         {
             m_safeAreas.AddToTail(baseArea);
         }
-        else if (!CNEOBotPathReservations()->IsAreaStuckProne(id))
+        else if (!penalty.IsStuckProne())
         {
             m_stuckOnceAreas.AddToTail(baseArea); // a fallback when no area free of stucks is found
         }

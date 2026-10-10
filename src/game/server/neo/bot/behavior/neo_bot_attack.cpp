@@ -125,6 +125,7 @@ public:
 		}
 
 		// Skip areas that are hazardous or where bots get stuck
+		const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty( area->GetID() );
 		if ( neo_bot_path_reservation_enable.GetBool() )
 		{
 			int navAreaId = area->GetID();
@@ -132,13 +133,13 @@ public:
 			{
 				return true;
 			}
-			if (CNEOBotPathReservations()->IsAreaStuckProne(navAreaId))
+			if (penalty.IsStuckProne())
 			{
 				return true;
 			}
 		}
 
-		float avoidPenalty = CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() );
+		float avoidPenalty = penalty.flStuck;
 		if ( !IsBetterCandidate( area, avoidPenalty ) )
 		{
 			return true; // the cover candidate we already have is at least as good

@@ -206,6 +206,7 @@ public:
 		}
 
 		// Skip areas that are hazardous or where bots get stuck
+		const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty( area->GetID() );
 		if ( neo_bot_path_reservation_enable.GetBool() )
 		{
 			int navAreaId = area->GetID();
@@ -213,7 +214,7 @@ public:
 			{
 				return true;
 			}
-			if (CNEOBotPathReservations()->IsAreaStuckProne(navAreaId))
+			if (penalty.IsStuckProne())
 			{
 				return true;
 			}
@@ -235,7 +236,7 @@ public:
 		CoverCandidate candidate;
 		candidate.area = area;
 		candidate.cost = travelDistanceSoFar + kCoverEnemyExposureCost * CountThreatsExposingArea( m_me, area );
-		candidate.cost += CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() ); // where bots got stuck, as in path cost
+		candidate.cost += penalty.flStuck; // where bots got stuck, as in path cost
 		m_coverAreaVector.AddToTail( candidate );
 
 		return true;

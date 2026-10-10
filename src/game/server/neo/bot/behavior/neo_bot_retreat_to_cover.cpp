@@ -129,6 +129,7 @@ public:
 		CNavArea *area = (CNavArea *)baseArea;
 
 		// Skip areas that are hazardous or where bots get stuck
+		const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty( area->GetID() );
 		if ( neo_bot_path_reservation_enable.GetBool() )
 		{
 			int navAreaId = area->GetID();
@@ -136,7 +137,7 @@ public:
 			{
 				return true;
 			}
-			if (CNEOBotPathReservations()->IsAreaStuckProne(navAreaId))
+			if (penalty.IsStuckProne())
 			{
 				return true;
 			}
@@ -147,7 +148,7 @@ public:
 
 		// an area where a bot got stuck this round counts as exposed to one more threat
 		int exposure = test.m_exposedThreatCount;
-		if ( CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() ) > 0.0f )
+		if ( penalty.flStuck > 0.0f )
 		{
 			exposure += NEO_BOT_STUCK_AREA_EXPOSURE;
 		}
