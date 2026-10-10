@@ -10,6 +10,10 @@
 #include "weapon_ghost.h"
 
 ConVar neo_debug_ghost_carrier( "neo_debug_ghost_carrier", "0", FCVAR_CHEAT );
+extern ConVar sv_neo_bot_ghost_callout_interval;
+
+// Time a carrier takes to turn onto a new focus enemy before its teammates can read its aim
+static constexpr float GHOST_FOCUS_TURN_TIME = 0.5f;
 
 
 //---------------------------------------------------------------------------------------------
@@ -166,20 +170,22 @@ bool CNEOBotGhostEquipmentHandler::IsValidFocusEnemy( CNEOBot *me, CBaseEntity *
 		return false;
 	}
 
-	return me->GetVisionInterface()->IsAbleToSee( pFocus, IVision::DISREGARD_FOV );
+	return me->IsRevealedByMyGhost( pFocus );
 }
 
 float CNEOBotGhostEquipmentHandler::GetUpdateInterval( CNEOBot *me ) const
 {
+	float flInterval = 3.0f;
 	switch ( me->GetDifficulty() )
 	{
-	case CNEOBot::EASY:		return 2.5f;
-	case CNEOBot::NORMAL:	return 2.0f;
-	case CNEOBot::HARD:		return 1.5f;
-	case CNEOBot::EXPERT:	return 1.0f;
+	case CNEOBot::EASY:		flInterval = 2.5f; break;
+	case CNEOBot::NORMAL:	flInterval = 2.0f; break;
+	case CNEOBot::HARD:		flInterval = 1.5f; break;
+	case CNEOBot::EXPERT:	flInterval = 1.0f; break;
 	}
 
-	return 3.0f;
+	// Look at each focus enemy long enough for at least one callout to read the carrier's aim
+	return Max( flInterval, sv_neo_bot_ghost_callout_interval.GetFloat() + GHOST_FOCUS_TURN_TIME );
 }
 
 void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const CUtlVector<CNEO_Player*> &enemies )
@@ -188,9 +194,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 	float flBestCalloutMoved = -1.0f;
 	float flBestCalloutDistSq = FLT_MAX;
 	bool bBestCalloutIsNew = false;
-	
-	bool bConsideringOnlyLoSEnemies = false;
-	
+
 	const Vector& vecMyPos = me->GetAbsOrigin();
 
 	for ( int i = 0; i < enemies.Count(); ++i )
@@ -208,8 +212,8 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 			continue;
 		}
 
-		// IsAbleToSee already checks if ghost is booted up to see enemies behind walls
-		if ( !me->GetVisionInterface()->IsAbleToSee( pPlayer, IVision::DISREGARD_FOV ) )
+		// Only the enemies the ghost shows, as a human carrier calls out the beacons on their screen
+		if ( !me->IsRevealedByMyGhost( pPlayer ) )
 		{
 			continue;
 		}
@@ -224,36 +228,6 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 		if ( !bIsNew )
 		{
 			flMoved = ( pPlayer->GetAbsOrigin() - vecLast ).Length();
-		}
-
-		// Any enemies in line of sight have the top priority
-		if ( me->GetVisionInterface()->IsLineOfSightClear( pPlayer->WorldSpaceCenter() ) )
-		{
-			if ( !bConsideringOnlyLoSEnemies )
-			{
-				bConsideringOnlyLoSEnemies = true;
-				pBestCallout = pPlayer;
-				bBestCalloutIsNew = bIsNew;
-				flBestCalloutMoved = flMoved;
-				flBestCalloutDistSq = flDistToMeSq;
-			}
-			else
-			{
-				if ( flDistToMeSq < flBestCalloutDistSq )
-				{
-					pBestCallout = pPlayer;
-					bBestCalloutIsNew = bIsNew;
-					flBestCalloutMoved = flMoved;
-					flBestCalloutDistSq = flDistToMeSq;
-				}
-			}
-			continue;
-		}
-
-		if ( bConsideringOnlyLoSEnemies )
-		{
-			// we don't need to consider other criteria anymore if we are only considering LoS enemies
-			continue;
 		}
 
 		if ( !pBestCallout )
@@ -319,8 +293,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 
 	if ( pBestCallout )
 	{
-		// NEO Jank: Ideally we could detect the enemy in the middle of the bot's screen, but they tend to look erratically
-		// It's easier to just set an enemy handle to appromimate a human focusing on calling out one enemy
+		// The carrier looks at its focus enemy, and NEOBotGhostCallout reads that aim as the callout
 		m_hCurrentFocusEnemy = pBestCallout;
 		
 		// Update cache for this enemy so we know how much they moved next time
@@ -332,7 +305,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 	}
 	else
 	{
-		// Nobody is in beacon range or in sight
+		// Nobody is in beacon range
 		m_hCurrentFocusEnemy = nullptr;
 	}
 }
