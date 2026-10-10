@@ -629,6 +629,54 @@ bool PathFollower::HasFallenBelowPath( INextBot *bot ) const
 
 //--------------------------------------------------------------------------------------------------------------
 /**
+ * Return true if we stand off the path, more than a step above it:
+ * we walked onto a floor over the path, such as a grate or a door frame's top,
+ * and walking on along the path's line does not lead down to it
+ */
+bool PathFollower::HasRisenAbovePath( INextBot *bot ) const
+{
+	// a planned drop, gap jump, climb or ladder moves us off the path line on purpose
+	const Segment *prior = PriorSegment( m_goal );
+	if ( m_goal->type != ON_GROUND || ( prior && prior->type != ON_GROUND ) )
+	{
+		return false;
+	}
+
+	ILocomotion *mover = bot->GetLocomotionInterface();
+	if ( mover->IsClimbingOrJumping() || mover->IsUsingLadder() )
+	{
+		return false;
+	}
+
+	// standing on an area of the path is on the path, the leg being walked checked first as it is the usual case
+	const CNavArea *area = bot->GetEntity()->GetLastKnownArea();
+	if ( !area || area == m_goal->area || ( prior && area == prior->area ) )
+	{
+		return false;
+	}
+
+	// an area that leads onto the leg is beside it, not above it: walking on still reaches the leg
+	if ( area->IsConnected( m_goal->area, NUM_DIRECTIONS ) || ( prior && area->IsConnected( prior->area, NUM_DIRECTIONS ) ) )
+	{
+		return false;
+	}
+
+	for ( const Segment *s = FirstSegment(); s; s = NextSegment( s ) )
+	{
+		if ( s->area == area )
+		{
+			return false;
+		}
+	}
+
+	const Vector &feet = mover->GetFeet();
+	MoveCursorToClosestPosition( feet );
+	return feet.z - GetCursorData().pos.z > mover->GetStepHeight();
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
  * Return true if a nav area lies near the bot's feet. Off the mesh its last known area is still
  * the one it fell from, and a path from there is the one it cannot follow
  */
@@ -760,12 +808,14 @@ void PathFollower::Update( INextBot *bot )
 	
 #ifdef NEO
 	// a bot that walks or is pushed off a ledge keeps a path it cannot follow from below,
-	// so re-path on landing instead of pressing on until the stuck monitor fires
+	// so re-path on landing instead of pressing on until the stuck monitor fires,
+	// and a bot that walks onto a floor above its path re-paths the same way
 	const bool isOnGround = mover->IsOnGround();
 	const bool hasJustLanded = isOnGround && !m_wasOnGround;
 	m_wasOnGround = isOnGround;
 
-	if ( hasJustLanded && HasFallenBelowPath( bot ) && IsNearNavMesh( bot ) )
+	const bool hasLeftPathHeight = ( hasJustLanded && HasFallenBelowPath( bot ) ) || ( isOnGround && HasRisenAbovePath( bot ) );
+	if ( hasLeftPathHeight && IsNearNavMesh( bot ) )
 	{
 		mover->GetBot()->OnMoveToFailure( this, FAIL_FELL_OFF );
 
@@ -777,10 +827,10 @@ void PathFollower::Update( INextBot *bot )
 
 		if ( bot->IsDebugging( NEXTBOT_PATH ) )
 		{
-			DevMsg( "PathFollower: OnMoveToFailure( FAIL_FELL_OFF ) because we landed below the path\n" );
+			DevMsg( "PathFollower: OnMoveToFailure( FAIL_FELL_OFF ) because we stand off the path's height\n" );
 		}
 
-		mover->ClearStuckStatus( "Landed below path" );
+		mover->ClearStuckStatus( "Off the path's height" );
 		return;
 	}
 #endif

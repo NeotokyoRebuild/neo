@@ -82,6 +82,7 @@ private:
 
 #ifdef NEO
 	bool HasFallenBelowPath( INextBot *bot ) const;	// return true if we stand off the path, more than a step below it
+	bool HasRisenAbovePath( INextBot *bot ) const;	// return true if we stand off the path, more than a step above it
 	bool m_wasOnGround;
 #endif
 
