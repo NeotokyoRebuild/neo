@@ -468,6 +468,8 @@ public:
 	CNEOBotSuppressiveFire *GetSuppressiveFire( void ) { return &m_suppressiveFire; }
 
 private:
+	void ToggleCloak(void);
+
 	CNEOBotSuppressiveFire m_suppressiveFire;
 
 	CNEOBotLocomotion *m_locomotor;
