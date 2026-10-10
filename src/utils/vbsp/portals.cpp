@@ -745,7 +745,6 @@ qboolean FloodEntities (tree_t *tree)
 {
 	int		i;
 	Vector	origin;
-	char	*cl;
 	qboolean	inside;
 	node_t *headnode;
 
@@ -760,7 +759,7 @@ qboolean FloodEntities (tree_t *tree)
 		if (VectorCompare(origin, vec3_origin))
 			continue;
 
-		cl = ValueForKey (&entities[i], "classname");
+        auto cl = ValueForKey (&entities[i], "classname");
 
 		origin[2] += 1;	// so objects on floor are ok
 
@@ -1178,8 +1177,8 @@ void FindPortalsLeadingToArea_R(
 		if( !p->nodes[0]->occupied || !p->nodes[1]->occupied )
 			continue;
 	
-		if( p->nodes[1]->area == iDestArea && p->nodes[0]->area == iSrcArea ||
-			p->nodes[0]->area == iDestArea && p->nodes[1]->area == iSrcArea )
+		if( (p->nodes[1]->area == iDestArea && p->nodes[0]->area == iSrcArea) ||
+			(p->nodes[0]->area == iDestArea && p->nodes[1]->area == iSrcArea) )
 		{
 			// Make sure the plane normals point the same way.
 			plane_t *pMapPlane = &g_MainMap->mapplanes[p->onnode->planenum];

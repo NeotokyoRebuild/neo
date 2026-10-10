@@ -1567,7 +1567,7 @@ void CZipFile::SaveDirectory( IWriteStream& stream )
 				free( e->m_pData );
 
 				// temp hackery for the logic below to succeed
-				e->m_pData = (void*)0xFFFFFFFF;
+				e->m_pData = (void*)(uintp)0xFFFFFFFF;
 			}
 		}
 	}

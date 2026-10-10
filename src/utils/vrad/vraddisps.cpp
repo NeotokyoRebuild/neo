@@ -8,12 +8,12 @@
 #include "vrad.h"
 #include "utlvector.h"
 #include "cmodel.h"
-#include "BSPTreeData.h"
-#include "VRAD_DispColl.h"
-#include "CollisionUtils.h"
+#include "bsptreedata.h"
+#include "vrad_dispcoll.h"
+#include "collisionutils.h"
 #include "lightmap.h"
-#include "Radial.h"
-#include "CollisionUtils.h"
+#include "radial.h"
+#include "collisionutils.h"
 #include "mathlib/bumpvects.h"
 #include "utlrbtree.h"
 #include "tier0/fasttimer.h"
@@ -127,8 +127,8 @@ public:
 	//
 	// Enumeration Methods
 	//
-	bool DispRay_EnumerateLeaf( int ndxLeaf, int context );
-	bool DispRay_EnumerateElement( int userId, int context );
+	bool DispRay_EnumerateLeaf( int ndxLeaf, intp context );
+	bool DispRay_EnumerateElement( int userId, intp context );
 	bool DispRayDistance_EnumerateElement( int userId, CBSPDispRayDistanceEnumerator* pEnum );
 
 	bool DispFaceList_EnumerateLeaf( int ndxLeaf, int context );
@@ -562,7 +562,7 @@ bool CVRadDispMgr::ClipRayToDisp( DispTested_t &dispTested, Ray_t const &ray )
 	ctx.m_pDispTested = &dispTested;
 
 	// If it got through without a hit, it returns true
-	return !m_pBSPTreeData->EnumerateLeavesAlongRay( ray, &m_EnumDispRay, ( int )&ctx );
+	return !m_pBSPTreeData->EnumerateLeavesAlongRay( ray, &m_EnumDispRay, ( intp )&ctx );
 }
 
 
@@ -575,7 +575,7 @@ bool CVRadDispMgr::ClipRayToDispInLeaf( DispTested_t &dispTested, Ray_t const &r
 	ctx.m_pRay = &ray;
 	ctx.m_pDispTested = &dispTested;
 
-	return !m_pBSPTreeData->EnumerateElementsInLeaf( ndxLeaf, &m_EnumDispRay, ( int )&ctx );
+	return !m_pBSPTreeData->EnumerateElementsInLeaf( ndxLeaf, &m_EnumDispRay, ( intp )&ctx );
 }
 
 //-----------------------------------------------------------------------------
@@ -669,7 +669,7 @@ void CVRadDispMgr::GetDispSurf( int ndxFace, CVRADDispColl **ppDispTree )
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool CVRadDispMgr::DispRay_EnumerateLeaf( int ndxLeaf, int context )
+bool CVRadDispMgr::DispRay_EnumerateLeaf( int ndxLeaf, intp context )
 {
 	return m_pBSPTreeData->EnumerateElementsInLeaf( ndxLeaf, &m_EnumDispRay, context );
 }
@@ -677,7 +677,7 @@ bool CVRadDispMgr::DispRay_EnumerateLeaf( int ndxLeaf, int context )
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool CVRadDispMgr::DispRay_EnumerateElement( int userId, int context )
+bool CVRadDispMgr::DispRay_EnumerateElement( int userId, intp context )
 {
 	DispCollTree_t &dispTree = m_DispTrees[userId];
 	EnumContext_t *pCtx = ( EnumContext_t* )context;
@@ -1537,7 +1537,7 @@ void CVRadDispMgr::InsertPatchSampleDataIntoHashTable( void )
 //-----------------------------------------------------------------------------
 void CVRadDispMgr::StartTimer( const char *name )
 {
-	Msg( name );
+	Msg( "%s", name );
 	m_Timer.Start();
 }
 
@@ -1658,7 +1658,7 @@ bool CVRadDispMgr::BuildDispSamples( lightinfo_t *pLightInfo, facelight_t *pFace
 	// statistics - warning?!
 	if( pFaceLight->numsamples == 0 )
 	{
-		Msg( "BuildDispSamples: WARNING - no samples %d\n", pLightInfo->face - g_pFaces );
+		Msg( "BuildDispSamples: WARNING - no samples %d\n", (int)(pLightInfo->face - g_pFaces) );
 	}
 
 	return true;
