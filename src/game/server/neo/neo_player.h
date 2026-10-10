@@ -6,6 +6,7 @@
 
 class CNEO_Player;
 class INEOPlayerAnimState;
+class CWeaponGhost;
 
 #include "basemultiplayerplayer.h"
 #include "simtimer.h"
@@ -143,6 +144,7 @@ public:
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer) OVERRIDE;
 
 	bool IsCarryingGhost(void) const;
+	CWeaponGhost *GetBeaconingGhost(void) const;
 	bool IsObjective(void) const;
 
 	void Weapon_AimToggle(CNEOBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
