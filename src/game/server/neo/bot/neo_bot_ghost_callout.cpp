@@ -64,9 +64,9 @@ namespace NEOBotGhostCallout
 		}
 
 		CNEO_Player *pCarrier = ToNEOPlayer( UTIL_PlayerByIndex( NEORules()->GetGhosterPlayer() ) );
-		if ( !pCarrier || !pCarrier->IsAlive() || pCarrier->IsBot() )
+		if ( !pCarrier || !pCarrier->IsAlive() )
 		{
-			return; // a bot carrier calls out through CNEOBotGhostEquipmentHandler
+			return;
 		}
 
 		// a carrier sees enemy positions only while the ghost is out and booted

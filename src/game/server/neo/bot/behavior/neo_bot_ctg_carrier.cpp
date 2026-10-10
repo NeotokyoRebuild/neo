@@ -110,28 +110,7 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 			}
 		}
 
-		// Notify teammates to look at the enemy
-		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CNEO_Player *pTeammate = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-			if ( !pTeammate || !pTeammate->IsAlive() || pTeammate == me || pTeammate->GetTeamNumber() != me->GetTeamNumber() )
-			{
-				continue;
-			}
-
-			CNEOBot *pBot = ToNEOBot( pTeammate );
-			if ( pBot )
-			{
-				if ( pBot->IsLineOfFireClear( pFocus, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
-				{
-					// NEO Jank: Urge relevant teammate bots look at the enemy
-					pBot->GetBodyInterface()->AimHeadTowards( pFocus, IBody::IMPORTANT, 0.5f, nullptr, "Ghost carrier teammate look override" );
-				}
-
-				pBot->GetVisionInterface()->UpdateKnownEntityPosition( pFocus );
-			}
-		}
-
+		// NEOBotGhostCallout tells teammate bots about the enemy the carrier looks at
 		me->GetBodyInterface()->AimHeadTowards( pFocus->WorldSpaceCenter(), IBody::IMPORTANT, 1.0f, nullptr, "Ghost carrier focus look" );
 	}
 }
