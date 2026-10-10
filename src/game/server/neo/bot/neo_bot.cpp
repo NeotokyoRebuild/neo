@@ -1087,10 +1087,22 @@ float CNEOBot::GetCloakPower(void) const
 
 void CNEOBot::EnableCloak(float threshold)
 {
+	// cloak in freeze time only drains the charge the bot needs when the round goes live
+	if ( GetNeoFlags() & NEO_FL_FREEZETIME )
+	{
+		return;
+	}
+
+	// the ghost beacon shows a carrier anyway, so leave the charge to recharge
+	if ( IsCarryingGhost() )
+	{
+		return;
+	}
+
 	if ( (GetCloakPower() >= threshold)
 		&& !IsCloakEnabled() )
 	{
-		PressThermopticButton();
+		ToggleCloak();
 	}
 }
 
@@ -1098,8 +1110,20 @@ void CNEOBot::DisableCloak(void)
 {
 	if ( IsCloakEnabled() )
 	{
-		PressThermopticButton();
+		ToggleCloak();
 	}
+}
+
+void CNEOBot::ToggleCloak(void)
+{
+	// the player toggles cloak only on a fresh press, and a press is held until the next bot update,
+	// so after a press last update leave the button up for one update, or the press only extends the hold
+	if ( m_prevInputButtons & IN_THERMOPTIC )
+	{
+		return;
+	}
+
+	PressThermopticButton();
 }
 
 

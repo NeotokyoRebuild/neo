@@ -107,8 +107,7 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 
 	if (me->IsCarryingGhost())
 	{
-		// Don't waste cloak power
-		// Incidentally flashing cloak is fine, everyone can see you anyway
+		// decloak a bot that picks up the ghost while cloaked, everyone can see a carrier anyway
 		me->DisableCloak();
 	}
 
