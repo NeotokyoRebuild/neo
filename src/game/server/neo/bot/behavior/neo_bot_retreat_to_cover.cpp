@@ -342,9 +342,18 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 
 		m_waitInCoverTimer.Reset();
 
-		if ( !m_path.IsValid() )
+		if ( !m_path.IsValid() && !CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE ) )
 		{
-			CNEOBotPathCompute( me, m_path, m_coverArea->GetCenter(), RETREAT_ROUTE );
+			// cover we have no path to is no cover: pick another spot, or stop retreating when the pick repeats
+			CNavArea *pUnreachableArea = m_coverArea;
+			m_coverArea = FindCoverArea( me );
+
+			if ( m_coverArea == NULL || m_coverArea == pUnreachableArea )
+			{
+				return Done( "No path to my cover" );
+			}
+
+			return Continue();
 		}
 
 		m_path.Update( me );
