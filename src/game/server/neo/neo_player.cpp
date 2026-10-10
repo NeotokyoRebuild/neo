@@ -145,6 +145,7 @@ extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
 extern ConVar sv_neo_dev_loadout;
 extern ConVar neo_bot_difficulty;
+extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
@@ -2939,6 +2940,29 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 bool CNEO_Player::IsCarryingGhost(void) const
 {
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
+}
+
+// Return the ghost if it is beaconing for this player, by the same rule as the carrier's beacon HUD:
+// the ghost is the active weapon (or carried, with sv_neo_ctg_ghost_beacons_when_inactive) and booted
+CWeaponGhost *CNEO_Player::GetBeaconingGhost(void) const
+{
+	if ( !IsCarryingGhost() )
+	{
+		return nullptr;
+	}
+
+	CBaseCombatWeapon *pCandidate = sv_neo_ctg_ghost_beacons_when_inactive.GetBool()
+		? Weapon_GetSlot( 0 )
+		: GetActiveWeapon();
+
+	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>( pCandidate );
+	if ( !pNeoWeapon || !pNeoWeapon->IsGhost() )
+	{
+		return nullptr;
+	}
+
+	CWeaponGhost *pGhost = assert_cast<CWeaponGhost *>( pNeoWeapon );
+	return pGhost->IsBootupCompleted() ? pGhost : nullptr;
 }
 
 bool CNEO_Player::IsObjective(void) const
