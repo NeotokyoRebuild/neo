@@ -34,6 +34,16 @@ ConVar NextBotDebugClimbing( "nb_debug_climbing", "0", FCVAR_CHEAT );
 #ifdef NEO
 // How far from its feet a bot that landed looks for a nav area, the range UpdateLastKnownArea() searches
 static const float LANDING_NAV_AREA_RANGE = 50.0f;
+
+// A re-path from the goal recheck can lead back into the same prop, so once the recheck has acted,
+// a goal within this range of the one it acted on,
+static constexpr float RECHECK_SAME_GOAL_RANGE = 16.0f;
+// or feet within this range of where the bot stood (a re-path can alternate between waypoints a few units apart),
+static constexpr float RECHECK_SAME_FEET_RANGE = 32.0f;
+// is left alone this long after each action,
+static constexpr float RECHECK_HOLD_TIME = 3.0f;
+// and after this many actions is left to the stuck monitor
+static constexpr int RECHECK_MAX_ACTIONS = 2;
 #endif
 
 
@@ -57,6 +67,11 @@ PathFollower::PathFollower( void )
 
 #ifdef NEO
 	m_wasOnGround = true;
+
+	m_recheckGoalPos = vec3_invalid;
+	m_recheckFeetPos = vec3_invalid;
+	m_recheckCount = 0;
+	m_recheckHoldTimer.Invalidate();
 #endif
 }
 
@@ -636,6 +651,88 @@ static bool IsNearNavMesh( INextBot *bot )
 {
 	return TheNavMesh->GetNearestNavArea( bot->GetEntity(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, LANDING_NAV_AREA_RANGE ) != NULL;
 }
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return the goal an off-path bot should steer at, or NULL to re-path. The path may have skipped ahead
+ * to a goal that was clear from where the bot was then, but a bot pushed off its path keeps steering at it
+ * from wherever it ends up, and the straight line from there can run into a wall or a prop
+ */
+static const Path::Segment *FindWalkableGoal( INextBot *bot, const Path *path, const Path::Segment *goal, float goalTolerance )
+{
+	ILocomotion *mover = bot->GetLocomotionInterface();
+	if ( goal->type != Path::ON_GROUND || goal->ladder || !mover->IsOnGround() || mover->IsClimbingOrJumping() )
+	{
+		return goal;
+	}
+
+	// on the goal's area or the one before it, the bot is still on the line the path planned
+	const CNavArea *myArea = bot->GetEntity()->GetLastKnownArea();
+	const Path::Segment *prior = path->PriorSegment( goal );
+	if ( !myArea || myArea == goal->area || ( prior && myArea == prior->area ) )
+	{
+		return goal;
+	}
+
+	const Vector &feet = mover->GetFeet();
+	if ( mover->IsPotentiallyTraversable( feet, goal->pos ) )
+	{
+		return goal;
+	}
+
+	// back up to the nearest earlier waypoint still walkable from here, but not back over a ladder, climb or drop
+	for ( const Path::Segment *seg = prior; seg && seg->type == Path::ON_GROUND && !seg->ladder; seg = path->PriorSegment( seg ) )
+	{
+		if ( !mover->IsPotentiallyTraversable( feet, seg->pos ) )
+		{
+			continue;
+		}
+
+		// a waypoint the bot already stands at would hand it straight back the blocked goal, so re-path instead
+		const Vector2D toSeg = ( seg->pos - feet ).AsVector2D();
+		return toSeg.IsLengthLessThan( goalTolerance ) ? NULL : seg;
+	}
+
+	return NULL;
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Check that an off-path bot can still walk to its goal, and back the goal up or re-path when it cannot.
+ * Return false if the path was invalidated for a re-path
+ */
+bool PathFollower::RecheckGoal( INextBot *bot )
+{
+	const Vector &feet = bot->GetLocomotionInterface()->GetFeet();
+	const bool isRepeat = ( m_goal->pos - m_recheckGoalPos ).IsLengthLessThan( RECHECK_SAME_GOAL_RANGE ) ||
+		( feet - m_recheckFeetPos ).IsLengthLessThan( RECHECK_SAME_FEET_RANGE );
+	if ( isRepeat && ( m_recheckCount >= RECHECK_MAX_ACTIONS || !m_recheckHoldTimer.IsElapsed() ) )
+	{
+		return true;
+	}
+
+	const Segment *walkableGoal = FindWalkableGoal( bot, this, m_goal, m_goalTolerance );
+	if ( walkableGoal == m_goal )
+	{
+		return true;
+	}
+
+	m_recheckCount = isRepeat ? m_recheckCount + 1 : 1;
+	m_recheckGoalPos = m_goal->pos;
+	m_recheckFeetPos = feet;
+	m_recheckHoldTimer.Start( RECHECK_HOLD_TIME );
+
+	if ( !walkableGoal )
+	{
+		Invalidate();
+		return false;
+	}
+
+	m_goal = walkableGoal;
+	return true;
+}
 #endif
 
 
@@ -825,6 +922,14 @@ void PathFollower::Update( INextBot *bot )
 			}
 		}
 	}
+
+#ifdef NEO
+	// on Avoid()'s cadence, an off-path bot whose goal is blocked backs it up or re-paths
+	if ( m_avoidTimer.IsElapsed() && !RecheckGoal( bot ) )
+	{
+		return;
+	}
+#endif
 
 
 	Vector goalPos = m_goal->pos;
