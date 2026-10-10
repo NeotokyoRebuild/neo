@@ -542,6 +542,20 @@ private:
 
 	int m_nPlainJumpTick = -1;
 
+	// Line of fire answers from my eye during this tick,
+	// since each threat comparison in a think asks them again
+	struct LineOfFireMemo
+	{
+		EHANDLE hWho;
+		LineOfFireFlags flags;
+		bool bClear;
+	};
+	// enough for the threats a bot compares in a fight
+	static constexpr int LINE_OF_FIRE_MEMO_SIZE = 4;
+	mutable LineOfFireMemo m_lineOfFireMemo[ LINE_OF_FIRE_MEMO_SIZE ];
+	mutable int m_nLineOfFireMemoCount = 0;
+	mutable int m_nLineOfFireMemoTick = -1;
+
 	float m_flPhyscannonPickupTime = 0.0f;
 
 	CUtlVector< const EventChangeAttributes_t* > m_eventChangeAttributes;

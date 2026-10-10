@@ -2275,7 +2275,29 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const Line
 // Return true if a weapon has no obstructions along the line from our eye to the given entity
 bool CNEOBot::IsLineOfFireClear(CBaseEntity* who, const LineOfFireFlags flags) const
 {
-	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), who, flags);
+	// A bot's think runs within one tick, so its eye and its threats stay put between these calls
+	if (m_nLineOfFireMemoTick != gpGlobals->tickcount)
+	{
+		m_nLineOfFireMemoTick = gpGlobals->tickcount;
+		m_nLineOfFireMemoCount = 0;
+	}
+
+	for (int i = 0; i < m_nLineOfFireMemoCount; ++i)
+	{
+		const LineOfFireMemo& memo = m_lineOfFireMemo[i];
+		if (memo.hWho == who && memo.flags == flags)
+		{
+			return memo.bClear;
+		}
+	}
+
+	const bool bClear = IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), who, flags);
+	if (m_nLineOfFireMemoCount < LINE_OF_FIRE_MEMO_SIZE)
+	{
+		m_lineOfFireMemo[m_nLineOfFireMemoCount++] = { who, flags, bClear };
+	}
+
+	return bClear;
 }
 
 
