@@ -3062,7 +3062,7 @@ CNEOBotIntention::~CNEOBotIntention()
 
 static void CNEOBotApplyOnStuckAreaPenalty( CNEOBot *me )
 {
-	// NEO Jank: For the current match, all bots share where they get stuck.
+	// NEO Jank: For the current round, all bots share where they get stuck.
 	// The reasoning is that bots on either team will get stuck in their respective half of the map
 	// so the overall fairness may balance out for both teams sharing common sticking points.
 	if ( const CNavArea *navArea = me->GetLastKnownArea() )

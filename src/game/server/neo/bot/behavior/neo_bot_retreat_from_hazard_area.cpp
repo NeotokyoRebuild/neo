@@ -12,7 +12,6 @@ class CSearchForSafeArea : public ISearchSurroundingAreasFunctor
 public:
     CSearchForSafeArea(CNEOBot *me)
         : m_me(me)
-        , m_onStuckPenalty(neo_bot_path_reservation_onstuck_penalty.GetFloat())
     {
     }
 
@@ -27,9 +26,13 @@ public:
                 baseArea->DrawFilled(255, 0, 0, MIN(255, candidateHazardTime), candidateHazardTime);
             }
         }
-        else if (CNEOBotPathReservations()->GetAreaAvoidPenalty(id) < m_onStuckPenalty)
+        else if (CNEOBotPathReservations()->GetAreaAvoidPenalty(id) <= 0.0f)
         {
             m_safeAreas.AddToTail(baseArea);
+        }
+        else if (!CNEOBotPathReservations()->IsAreaStuckProne(id))
+        {
+            m_stuckOnceAreas.AddToTail(baseArea); // a fallback when no area free of stucks is found
         }
 
         if (m_safeAreas.Count() >= MAX_NON_HAZARD_AREA_CANDIDATES)
@@ -47,10 +50,10 @@ public:
     }
 
     CUtlVector<CNavArea *> m_safeAreas;
+    CUtlVector<CNavArea *> m_stuckOnceAreas;
 
 private:
     CNEOBot *m_me;
-    float m_onStuckPenalty;
 };
 
 CNEOBotRetreatFromHazardArea::CNEOBotRetreatFromHazardArea()
@@ -68,14 +71,15 @@ CNavArea *CNEOBotRetreatFromHazardArea::FindSafeArea(CNEOBot *me)
     CSearchForSafeArea search(me);
     SearchSurroundingAreas(start, search);
 
-    if (search.m_safeAreas.Count() == 0)
+    const CUtlVector<CNavArea *> &candidates = search.m_safeAreas.Count() ? search.m_safeAreas : search.m_stuckOnceAreas;
+    if (candidates.Count() == 0)
     {
         return nullptr;
     }
 
-    int last = MIN(MAX_NON_HAZARD_AREA_CANDIDATES, search.m_safeAreas.Count());
+    int last = MIN(MAX_NON_HAZARD_AREA_CANDIDATES, candidates.Count());
     int which = RandomInt(0, last - 1);
-    return search.m_safeAreas[which];
+    return candidates[which];
 }
 
 ActionResult<CNEOBot> CNEOBotRetreatFromHazardArea::OnStart(CNEOBot *me, Action<CNEOBot> *priorAction)

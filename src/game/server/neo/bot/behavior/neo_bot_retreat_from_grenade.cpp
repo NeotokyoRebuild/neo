@@ -165,7 +165,6 @@ public:
 	{
 		m_me = me;
 		m_grenade = grenade;
-		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
 		m_coverDist = CNEOBotRetreatFromGrenade::GetGrenadeCoverDistance();
 		m_blastRadius = sv_neo_grenade_blast_radius.GetFloat();
 
@@ -214,7 +213,7 @@ public:
 			{
 				return true;
 			}
-			if (CNEOBotPathReservations()->GetAreaAvoidPenalty(navAreaId) >= m_onStuckPenalty)
+			if (CNEOBotPathReservations()->IsAreaStuckProne(navAreaId))
 			{
 				return true;
 			}
@@ -236,6 +235,7 @@ public:
 		CoverCandidate candidate;
 		candidate.area = area;
 		candidate.cost = travelDistanceSoFar + kCoverEnemyExposureCost * CountThreatsExposingArea( m_me, area );
+		candidate.cost += CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() ); // where bots got stuck, as in path cost
 		m_coverAreaVector.AddToTail( candidate );
 
 		return true;
@@ -278,7 +278,6 @@ public:
 
 	CNEOBot *m_me;
 	CBaseEntity *m_grenade;
-	float m_onStuckPenalty;
 	float m_coverDist;
 	float m_blastRadius;
 	Vector m_vecDangerStart;
