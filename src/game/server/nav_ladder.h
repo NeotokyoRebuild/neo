@@ -65,6 +65,9 @@ public:
 	CNavArea *m_topRightArea;
 	CNavArea *m_topBehindArea;						///< area at top of ladder "behind" it - only useful for descending
 	CNavArea *m_bottomArea;							///< the area at the bottom of the ladder
+#ifdef NEO
+	const CNavArea *GetTopArea( void ) const;		///< the first top area set, trying the one behind last
+#endif
 
 	bool IsConnected( const CNavArea *area, LadderDirectionType dir ) const;	///< returns true if given area is connected in given direction
 
@@ -150,6 +153,18 @@ inline const Vector &CNavLadder::GetNormal( void ) const
 	return m_normal;
 }
 #ifdef NEO
+
+//--------------------------------------------------------------------------------------------------------------
+// nav_generate puts a ladder's top area in whichever slot its landing is in, often not the forward one,
+// and some ladders only have the area behind their plane (such as one up a shaft)
+inline const CNavArea *CNavLadder::GetTopArea( void ) const
+{
+	return m_topForwardArea ? m_topForwardArea
+		: m_topLeftArea ? m_topLeftArea
+		: m_topRightArea ? m_topRightArea
+		: m_topBehindArea;
+}
+
 class CInfoLadder : public CBaseEntity
 {
 public:

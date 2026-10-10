@@ -34,6 +34,9 @@ ConVar NextBotDebugClimbing( "nb_debug_climbing", "0", FCVAR_CHEAT );
 #ifdef NEO
 // How far from its feet a bot that landed looks for a nav area, the range UpdateLastKnownArea() searches
 static const float LANDING_NAV_AREA_RANGE = 50.0f;
+// A climb onto a ladder's wall cap takes the mesh's link at most this many times a path segment,
+// then is left to the ledge search: a bot that lands back at the launch point would otherwise jump on every landing
+static const int LADDER_CAP_LAUNCHES = 3;
 #endif
 
 
@@ -57,6 +60,8 @@ PathFollower::PathFollower( void )
 
 #ifdef NEO
 	m_wasOnGround = true;
+	m_capClimbGoal = NULL;
+	m_capLaunches = 0;
 #endif
 }
 
@@ -114,6 +119,12 @@ void PathFollower::OnPathChanged( INextBot *bot, Path::ResultType result )
 	// start from the beginning
 	m_goal = FirstSegment();
 	m_result = result;
+
+#ifdef NEO
+	// a new path reuses the segments' storage, so a launch count kept by segment starts over
+	m_capClimbGoal = NULL;
+	m_capLaunches = 0;
+#endif
 }
 
 
@@ -1236,6 +1247,27 @@ bool PathFollower::FindClimbLedge( INextBot *bot, Vector startTracePos, Vector l
 #endif // _DEBUG
 
 
+#ifdef NEO
+//--------------------------------------------------------------------------------------------------------------
+// The area after the goal when it is a ladder top less than a hull deep along the approach, else NULL:
+// the ledge search cannot find such an area (not the dismount's IsNarrowLanding(), which asks whether a bot can stand on it)
+const CNavArea *PathFollower::LadderCapAhead( INextBot *bot ) const
+{
+	// an area a ladder goes down from is that ladder's top
+	const Segment *afterClimb = NextSegment( m_goal );
+	if ( !afterClimb || !afterClimb->area || afterClimb->area->GetLadders( CNavLadder::LADDER_DOWN )->Count() == 0 )
+	{
+		return NULL;
+	}
+
+	// the depth is the area's axis-aligned size along the approach's dominant axis
+	const CNavArea *cap = afterClimb->area;
+	const Vector toLedge = cap->GetCenter() - bot->GetLocomotionInterface()->GetFeet();
+	const float flDepth = ( fabsf( toLedge.x ) > fabsf( toLedge.y ) ) ? cap->GetSizeX() : cap->GetSizeY();
+	return ( flDepth < bot->GetBodyInterface()->GetHullWidth() ) ? cap : NULL;
+}
+#endif
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Climb up ledges
@@ -1301,6 +1333,34 @@ bool PathFollower::Climbing( INextBot *bot, const Path::Segment *goal, const Vec
 		return false;
 	}
 
+#ifdef NEO
+	// The ledge search below looks for a ledge's floor a full look-ahead past its wall and misses a wall cap,
+	// so at the launch point of a climb onto one, take the mesh's climb link as the authoritative branch does
+	const CNavArea *cap = ( m_goal->type == CLIMB_UP ) ? LadderCapAhead( bot ) : NULL;
+	if ( cap && m_goal != m_capClimbGoal )
+	{
+		m_capClimbGoal = m_goal;
+		m_capLaunches = 0;
+	}
+
+	if ( cap && m_capLaunches < LADDER_CAP_LAUNCHES
+		&& ( m_goal->pos - mover->GetFeet() ).AsVector2D().IsLengthLessThan( body->GetHullWidth() ) )
+	{
+		// the authoritative branch's lines, repeated to leave that branch untouched
+		Vector nearClimbGoal;
+		cap->GetClosestPointOnArea( mover->GetFeet(), &nearClimbGoal );
+
+		climbDirection = nearClimbGoal - mover->GetFeet();
+		climbDirection.z = 0.0f;
+		climbDirection.NormalizeInPlace();
+
+		if ( mover->ClimbUpToLedge( nearClimbGoal, climbDirection, NULL ) )
+		{
+			++m_capLaunches;
+			return true;
+		}
+	}
+#endif
 
 	// If we're approaching a CLIMB_UP link, save off the height delta for it, and trust the nav *just* enough
 	// to climb up to that ledge and only that ledge.  We keep as large a tolerance as possible, to trust

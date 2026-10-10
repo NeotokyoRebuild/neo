@@ -4,6 +4,7 @@
 #include "bot/neo_bot.h"
 
 class CNavLadder;
+class PathFollower;
 
 //----------------------------------------------------------------------------------------------------------------
 /**
@@ -29,7 +30,12 @@ public:
 private:
 	void EnterDismountPhase( CNEOBot *me );
 	void ResolveExitArea( CNEOBot *me );
+	const CNavArea *FindLanding( const PathFollower *path, const CNavArea *pathExit ) const;
+	const CNavArea *LadderEndArea() const;
+	bool IsNarrowLanding( CNEOBot *me ) const;
+	Vector GetDismountPos( CNEOBot *me ) const;
 	bool IsDismountBlocked( CNEOBot *me, const Vector &toExit ) const;
+	void ClaimLadder( CNEOBot *me ) const;
 
 	const CNavLadder *m_ladder;
 	const CNavArea *m_pExitArea;
@@ -39,12 +45,14 @@ private:
 	bool m_bJumpedOffLadder;
 
 	float m_flLastZ;
-	Vector m_exitAreaCenter;
+	Vector m_dismountPos;
 	Vector m_ladderForward;
 
 	CountdownTimer m_timeoutTimer;
 	CountdownTimer m_stuckTimer;
 	CountdownTimer m_dismountTimer;
+	CountdownTimer m_nudgeTimer;	// shimmying sideways past a snag
+	int m_nNudges;
 
 	static constexpr float STUCK_CHECK_INTERVAL = 0.4f;
 	static constexpr float STUCK_Z_TOLERANCE = 2.0f;
@@ -52,4 +60,8 @@ private:
 	static constexpr float SAFE_FALL_DIST = 200.0f;	// Max height to safely drop off a ladder
 	static constexpr float MAX_DEVIATION_DIST = 100.0f; // Distance from ladder before canceling
 	static constexpr float DISMOUNT_CLEARANCE_HULLS = 1.5f; // Hull widths toward the exit that must be clear to step off
+	static constexpr float NARROW_LANDING_HULLS = 0.5f; // Hull widths deep a landing must be to stand on (measured on dawn and dusk L1's 7 u wall cap)
+	static constexpr float LANDING_INSET = 16.0f; // How far inside a landing's near edge the dismount aims: half a hull, so the whole hull lands
+	static constexpr int STALL_NUDGES = 3; // Sideways shimmies before a stalled climb jumps off (measured on subsurface L1 and saitama L2)
+	static constexpr float STALL_NUDGE_TIME = 0.3f; // Length of the first shimmy, and the step each later one adds
 };
