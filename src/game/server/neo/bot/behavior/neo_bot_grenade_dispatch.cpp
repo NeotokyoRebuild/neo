@@ -20,7 +20,6 @@ extern ConVar neo_bot_fire_weapon_allowed;
 //---------------------------------------------------------------------------------------------
 Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNEOBot *me, const CKnownEntity *threat )
 {
-	// a grenade throw skips the trigger, so check the no-firing cvar here
 	if ( !neo_bot_fire_weapon_allowed.GetBool() )
 	{
 		return nullptr;
