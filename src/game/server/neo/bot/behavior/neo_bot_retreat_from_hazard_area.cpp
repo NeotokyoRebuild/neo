@@ -130,6 +130,14 @@ ActionResult<CNEOBot> CNEOBotRetreatFromHazardArea::Update(CNEOBot *me, float in
         CNEOBotPathCompute(me, m_path, m_safeArea->GetCenter(), RETREAT_ROUTE);
     }
 
+    // Possibly don't want to cloak with grenade/smoke hazards yet
+    // because in such situations either the threat noticed you already
+    // or because they didn't notice you yet, you shouldn't announce your position
+    if (CNEOBotPathReservations()->IsAreaNpcTurretHazard(myArea->GetID(), me))
+    {
+        me->EnableCloak(3.0f);
+    }
+
     m_path.Update(me);
     return Continue();
 }
