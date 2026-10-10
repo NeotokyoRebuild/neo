@@ -198,6 +198,8 @@ public:
 	
 	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
+	void AimPunch(float amount);
+
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
 	void CheckAimButtons();
@@ -215,6 +217,8 @@ private:
 	// Spectator takeover player related functionality
 	bool IsAFK() const;
 	bool IsFakePlayer() const;
+
+	void ApplyAimPunch();
 
 public:
 	CNetworkVar(bool, m_bShowTestMessage);
@@ -268,6 +272,9 @@ private:
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
+
+	float m_flAimPunchVel;
+	float m_flAimPunchCurrent;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
