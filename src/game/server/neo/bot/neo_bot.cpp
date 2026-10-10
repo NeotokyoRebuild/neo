@@ -1087,6 +1087,18 @@ float CNEOBot::GetCloakPower(void) const
 
 void CNEOBot::EnableCloak(float threshold)
 {
+	// cloak in freeze time only drains the charge the bot needs when the round goes live
+	if ( GetNeoFlags() & NEO_FL_FREEZETIME )
+	{
+		return;
+	}
+
+	// the ghost beacon shows a carrier anyway, so leave the charge to recharge
+	if ( IsCarryingGhost() )
+	{
+		return;
+	}
+
 	if ( (GetCloakPower() >= threshold)
 		&& !IsCloakEnabled() )
 	{
