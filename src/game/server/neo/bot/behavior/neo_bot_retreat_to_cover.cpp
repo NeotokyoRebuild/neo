@@ -106,6 +106,9 @@ int CountThreatsExposingArea( CNEOBot *me, CNavArea *area )
 }
 
 
+// A cover area where a bot got stuck this round counts as exposed to this many more threats
+static constexpr int NEO_BOT_STUCK_AREA_EXPOSURE = 1;
+
 // collect nearby areas that provide cover from our known threats
 class CSearchForCover : public ISearchSurroundingAreasFunctor
 {
@@ -113,7 +116,6 @@ public:
 	CSearchForCover( CNEOBot *me )
 	{
 		m_me = me;
-		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
 		m_minExposureCount = 9999;
 
 		if ( neo_bot_debug_retreat_to_cover.GetBool() )
@@ -127,6 +129,7 @@ public:
 		CNavArea *area = (CNavArea *)baseArea;
 
 		// Skip areas that are hazardous or where bots get stuck
+		const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty( area->GetID() );
 		if ( neo_bot_path_reservation_enable.GetBool() )
 		{
 			int navAreaId = area->GetID();
@@ -134,7 +137,7 @@ public:
 			{
 				return true;
 			}
-			if (CNEOBotPathReservations()->GetAreaAvoidPenalty(navAreaId) >= m_onStuckPenalty)
+			if (penalty.IsStuckProne())
 			{
 				return true;
 			}
@@ -143,14 +146,21 @@ public:
 		CTestAreaAgainstThreats test( m_me, area );
 		m_me->GetVisionInterface()->ForEachKnownEntity( test );
 
-		if ( test.m_exposedThreatCount <= m_minExposureCount )
+		// an area where a bot got stuck this round counts as exposed to one more threat
+		int exposure = test.m_exposedThreatCount;
+		if ( penalty.flStuck > 0.0f )
+		{
+			exposure += NEO_BOT_STUCK_AREA_EXPOSURE;
+		}
+
+		if ( exposure <= m_minExposureCount )
 		{
 			// this area is at least as good as already found cover
-			if ( test.m_exposedThreatCount < m_minExposureCount )
+			if ( exposure < m_minExposureCount )
 			{
 				// this area is better than already found cover - throw out list and start over
 				m_coverAreaVector.RemoveAll();
-				m_minExposureCount = test.m_exposedThreatCount;
+				m_minExposureCount = exposure;
 			}
 
 			m_coverAreaVector.AddToTail( area );
@@ -181,7 +191,6 @@ public:
 	CNEOBot *m_me;
 	CUtlVector< CNavArea * > m_coverAreaVector;
 	int m_minExposureCount;
-	float m_onStuckPenalty;
 };
 
 
