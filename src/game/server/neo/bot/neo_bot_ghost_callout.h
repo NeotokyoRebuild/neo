@@ -7,6 +7,6 @@ namespace NEOBotGhostCallout
 	// Checks the carrier's aim once per callout interval
 	void Update();
 
-	// Forget the callout time, e.g. on a map change where curtime restarts
+	// Forget the callout time and booted carry, e.g. on a map change where curtime restarts
 	void Reset();
 }
