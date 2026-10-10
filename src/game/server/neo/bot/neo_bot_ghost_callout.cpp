@@ -70,6 +70,39 @@ namespace NEOBotGhostCallout
 		return pBest;
 	}
 
+	// The enemy a bot carrier is fighting, when it is within the ghost's reveal range
+	static CNEO_Player *FindFoughtEnemy( CNEOBot *pBot, const CWeaponGhost *pGhost )
+	{
+		const CKnownEntity *pThreat = pBot->GetVisionInterface()->GetPrimaryKnownThreat( true );
+		if ( !pThreat )
+		{
+			return nullptr;
+		}
+
+		CNEO_Player *pEnemy = ToNEOPlayer( pThreat->GetEntity() );
+		float flDistIgnored;
+		if ( !pEnemy || !pGhost->BeaconRange( pEnemy, flDistIgnored ) )
+		{
+			return nullptr;
+		}
+
+		return pEnemy;
+	}
+
+	static CNEO_Player *FindCalloutTarget( CNEO_Player *pCarrier, const CWeaponGhost *pGhost )
+	{
+		// With the ghost out and booted, the carrier calls out the beacon at the center of their view
+		if ( pCarrier->GetActiveWeapon() == pGhost )
+		{
+			return pCarrier->GetBeaconingGhost() ? FindAimedEnemy( pCarrier, pGhost ) : nullptr;
+		}
+
+		// With another weapon out, a human's aim may rest on a wall with an unrelated beacon behind it,
+		// so only a bot carrier calls out then, and only the enemy it is fighting
+		CNEOBot *pBot = ToNEOBot( pCarrier );
+		return pBot ? FindFoughtEnemy( pBot, pGhost ) : nullptr;
+	}
+
 	void Update()
 	{
 		if ( !NEORules()->IsTeamplay() )
@@ -84,8 +117,7 @@ namespace NEOBotGhostCallout
 			return;
 		}
 
-		// Once the ghost has booted during this carry, the carrier calls out with any weapon out,
-		// as a human shouts the position of the enemy they are fighting
+		// A carrier knows where enemies are once the ghost has shown beacons during this carry
 		if ( !IsCarryBooted( pCarrier ) || gpGlobals->curtime < s_flNextCalloutTime )
 		{
 			return;
@@ -99,7 +131,7 @@ namespace NEOBotGhostCallout
 
 		s_flNextCalloutTime = gpGlobals->curtime + sv_neo_bot_ghost_callout_interval.GetFloat();
 
-		CNEO_Player *pTarget = FindAimedEnemy( pCarrier, pGhost );
+		CNEO_Player *pTarget = FindCalloutTarget( pCarrier, pGhost );
 		if ( !pTarget )
 		{
 			return;
