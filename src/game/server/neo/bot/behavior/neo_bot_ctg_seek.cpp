@@ -14,9 +14,9 @@
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 {
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG)
+	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK)
 	{
-		return Done( "Game mode is no longer CTG" );
+		return Done( "Game mode is no longer CTG or ATK" );
 	}
 
 	if (NEORules()->IsRoundOver())
@@ -114,7 +114,7 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 void CNEOBotCtgSeek::RecomputeSeekPath( CNEOBot *me )
 {
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG)
+	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK)
 	{
 		// Wait until next tick to exit behavior
 		return;
