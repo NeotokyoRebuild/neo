@@ -18,7 +18,21 @@ namespace NEOBotGhostCallout
 
 	static float s_flNextCalloutTime = 0.0f;
 
-	// The enemy revealed by the ghost that is closest to the center of the carrier's view.
+	// The carrier whose ghost has shown beacons during this carry, so they know where enemies are
+	static int s_iBootedCarrier = 0;
+
+	// Track whether the current carry has booted the ghost, by the beacon HUD's rule
+	static bool IsCarryBooted( CNEO_Player *pCarrier )
+	{
+		if ( s_iBootedCarrier != pCarrier->entindex() )
+		{
+			s_iBootedCarrier = pCarrier->GetBeaconingGhost() ? pCarrier->entindex() : 0;
+		}
+
+		return s_iBootedCarrier == pCarrier->entindex();
+	}
+
+	// The enemy within the ghost's reveal range that is closest to the center of the carrier's view.
 	// No line of sight test: the ghost reveals enemies through walls.
 	static CNEO_Player *FindAimedEnemy( CNEO_Player *pCarrier, const CWeaponGhost *pGhost )
 	{
@@ -58,7 +72,7 @@ namespace NEOBotGhostCallout
 
 	void Update()
 	{
-		if ( !NEORules()->IsTeamplay() || gpGlobals->curtime < s_flNextCalloutTime )
+		if ( !NEORules()->IsTeamplay() )
 		{
 			return;
 		}
@@ -66,11 +80,18 @@ namespace NEOBotGhostCallout
 		CNEO_Player *pCarrier = ToNEOPlayer( UTIL_PlayerByIndex( NEORules()->GetGhosterPlayer() ) );
 		if ( !pCarrier || !pCarrier->IsAlive() )
 		{
+			s_iBootedCarrier = 0;
 			return;
 		}
 
-		// a carrier sees enemy positions only while the ghost is out and booted
-		const CWeaponGhost *pGhost = pCarrier->GetBeaconingGhost();
+		// Once the ghost has booted during this carry, the carrier calls out with any weapon out,
+		// as a human shouts the position of the enemy they are fighting
+		if ( !IsCarryBooted( pCarrier ) || gpGlobals->curtime < s_flNextCalloutTime )
+		{
+			return;
+		}
+
+		const CWeaponGhost *pGhost = assert_cast<const CWeaponGhost *>( GetNeoWepWithBits( pCarrier, NEO_WEP_GHOST ) );
 		if ( !pGhost )
 		{
 			return;
@@ -100,5 +121,6 @@ namespace NEOBotGhostCallout
 	void Reset()
 	{
 		s_flNextCalloutTime = 0.0f;
+		s_iBootedCarrier = 0;
 	}
 }
