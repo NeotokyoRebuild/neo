@@ -17,6 +17,9 @@
 #include "haptics/haptic_utils.h"
 #ifdef CLIENT_DLL
 	#include "prediction.h"
+#ifdef NEO
+	#include "neo/audio/neo_hrtf_local_sound.h"
+#endif
 #endif
 // NVNT end extra includes
 
@@ -1932,6 +1935,11 @@ void CBaseCombatWeapon::WeaponSound( WeaponSound_t sound_type, float soundtime /
 	
 	if ( !GetParametersForSound( shootsound, params, NULL ) )
 		return;
+
+#if defined( CLIENT_DLL ) && defined( NEO )
+	// The local player's own weapon is heard in HRTF from the viewmodel
+	CNeoHrtfLocalSoundScope hrtfScope( ( GetOwner() && GetOwner() == C_BasePlayer::GetLocalPlayer() ) ? NeoHrtfLocalSound::Weapon : NeoHrtfLocalSound::None );
+#endif
 
 	if ( params.play_to_owner_only )
 	{

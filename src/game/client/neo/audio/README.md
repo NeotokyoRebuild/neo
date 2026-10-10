@@ -1,0 +1,337 @@
+# NEO HRTF — client-side spatial audio (proof of concept)
+
+Binaural (HRTF) rendering of positional in-game sounds — other players' weapons, footsteps,
+world sounds — without touching the closed-source Source engine mixer.
+
+## Why it is built this way
+
+The engine owns the mixer and plays most sounds itself, including every sound the server starts,
+so `client.dll` never sees an audio buffer. Through public interfaces the client can:
+
+- see every active engine channel each frame (`IEngineSound::GetActiveSounds()`: guid, file,
+  source entity, origin, volume, pitch, flags), including server-started sounds;
+- silence any one of them (`IEngineSound::SetVolumeByGuid()`);
+- read the same `sound/` files through `IFileSystem`, and output audio through the vendored
+  `miniaudio`.
+
+So positional sounds are re-rendered in parallel: poll the channel list, mute the engine's copy,
+decode the same file and play it through a second output device with HRTF applied.
+Non-positional sounds (UI, music, sentences) stay with the engine.
+
+The local player's own sounds stay with the engine too, unless the client marks them as it plays
+them: `CNeoHrtfLocalSoundScope` (`neo_hrtf_local_sound.h`) records the guid of the sound played
+inside it (`IEngineSound::GetGuidForLastSoundEmitted()`), since a channel carries no flag of our own.
+Marked are footsteps (`C_NEO_Player::PlayStepSound`, heard from the feet), the weapon's sounds
+(`CBaseCombatWeapon::WeaponSound` and viewmodel sound events: shots, dry fire, reloads, pump and
+bolt, heard from just ahead of and below the eyes) and the thermoptic camo on and off (heard from the
+chest), because the engine puts all of the local player's sounds at their feet. Everything else (the
+vision toggle, the use key, weapon pickups, and any sound the server plays on the local player)
+stays non-positional.
+
+```
+engine mixer ──GetActiveSounds()──► CNeoHrtfSystem (game thread, once per frame)
+     ▲                                  │ new guid: resolve file, decode + cache, mute engine copy
+     └─ SetVolumeByGuid(guid, floor) ───┤ every frame: origin → metres, gain, pitch, listener,
+                                        │ then SimulateDirect → occlusion + transmission per voice
+                                        ▼ (one mutex-guarded voice table)
+                         miniaudio device callback (audio thread), per 512-frame block per voice
+                                        ▼
+                  NeoSpatial::ISpatializer (neo_spatializer.h) ── neo_spatializer_steamaudio.cpp
+```
+
+| Layer | Files | Knows about |
+| --- | --- | --- |
+| Game integration | `neo_hrtf_system.{h,cpp}` | Source SDK, miniaudio decode/output |
+| Scene geometry | `neo_audio_geometry.{h,cpp}` | BSP lumps, VMT `$surfaceprop`, physics surface props |
+| Probe placement | `neo_audio_probes.{h,cpp}` | plain C++: BSP tree in metres, the contract |
+| Baked probe lump | `neo_audio_probe_lump.{h,cpp}` | plain C++: the `nsap` game lump format |
+| Compile-time baker | `src/utils/neo_soundbake` | engine file system, vphysics, the above |
+| Contract | `neo_spatializer.h` | plain C++ only (metres, Source axes, float blocks) |
+| Backend | `neo_spatializer_steamaudio.cpp` | `phonon.h`; loads `libphonon.so` / `phonon.dll` at runtime |
+| Dependency | `src/cmake/steamaudio.cmake` | fetches the pinned SDK zip: headers + runtime library |
+
+### Keeping the engine's copy alive
+
+The engine frees a non-looping channel once its spatialized volume falls below a small threshold,
+the same check that lets one-shots die out of earshot. A copy muted to 0 is freed within a frame or
+two, and a channel that disappears looks the same in `GetActiveSounds()` whether the engine culled
+it or the game stopped it (`StopSound`, a sound patch's `SoundDestroy`), so a fully muted voice
+could not be released at the right time. Instead the copy is held just above the threshold:
+
+- the engine stores channel volume in 1/255 steps, rounding down, so set volumes are rounded up
+  to a whole step;
+- `SndInfo_t::m_flLastSpatializedVolume` is the channel volume times the engine's own distance and
+  pan gain, so each poll measures that gain (spatialized ÷ volume; not on the poll right after a
+  set, whose report may predate it) and sets the lowest volume that keeps the spatialized level at
+  `cl_neo_hrtf_engine_floor`; it is raised at once and lowered only below 0.7× the current volume;
+- a sound too quiet to reach the floor at its own volume is left unmuted, since the engine would
+  cull it anyway.
+
+In testing the threshold sat between 0.0082 and 0.0136 spatialized (about 3/255); the default
+0.016 leaves headroom for a gain falling between polls. The cost is an unspatialized copy around
+-36 dB, inaudible under the HRTF copy in testing. Any voice whose channel disappears is released
+at once. `cl_neo_hrtf_debug 1` shows each voice's engine volume, spatialized volume and gain.
+
+The backend has no Source SDK dependency, so it is built outside the unity build and PCH, and the
+same file builds into an offline demo (`ntre/harness/hrtf/`). Steam Audio is never linked: if the
+library is missing or fails to initialise, HRTF stays off with one warning (also shown by
+`cl_neo_hrtf_debug 1`) and engine audio is untouched.
+
+## Acoustic scene
+
+Occlusion, reflections and pathing all trace rays against the map, so each level gets a Steam
+Audio scene (`IPLScene` holding one `IPLStaticMesh`). `CNeoAudioGeometry` reads it straight from
+`maps/<map>.bsp` through `IFileSystem`:
+
+- only the world model (model 0): brush entities can move, so they would need instanced meshes;
+- brush faces (`LUMP_FACES`, or `LUMP_FACES_HDR` for HDR-only compiles) walked through surfedges,
+  edges and vertices, fan-triangulated and re-wound counter-clockwise for Steam Audio;
+- displacements tessellated from `LUMP_DISPINFO` / `LUMP_DISP_VERTS` the way the engine does;
+- faces flagged sky, nodraw, trigger, hint or skip are left out (sound escapes through the sky);
+- each texture's `$surfaceprop` (following patch materials) resolves to a physics surface and its
+  `CHAR_TEX_*` game material, which picks one of Steam Audio's reference acoustic materials;
+- solid static props from the `sprp` game lump (`LUMP_GAME_LUMP`): `SOLID_VPHYSICS` props use
+  solid 0 of the model's `.phy` (loaded through `IPhysicsCollision`, one load per model, each
+  convex re-wound outward), `SOLID_BBOX` props the `.mdl`'s hull box, both placed by the prop's
+  origin, angles and (lump version 11+) uniform scale; the material comes from the solid's (or
+  the `.mdl`'s) surfaceprop, and non-solid props are left out;
+- LZMA-compressed lumps and game lumps are decompressed; every index is bounds-checked, so a malformed map only
+  means no scene.
+
+The scene is built at `LevelInitPreEntity` when HRTF is on, otherwise on the first in-game frame
+after enabling it, so players without HRTF never read the BSP. It is released at level shutdown.
+`cl_neo_hrtf_scene_obj` writes it to `<game dir>/hrtf_scene_<map>.obj` for inspection in any
+model viewer.
+
+## Occlusion
+
+A direct-only `IPLSimulator` is created with each scene, with an `IPLSource` per live voice.
+Once per frame, after the voice table is updated, the game thread runs `SimulateDirect`:
+
+- volumetric occlusion: each source is a 0.3 m sphere sampled with 16 rays, so a sound fades in
+  as its source rounds a corner instead of switching on;
+- frequency-dependent transmission through up to 3 surfaces, from the materials above, so a sound
+  through a wall is quieter and duller rather than silent;
+- traced from 8 units above the sound's origin, since entity sounds (footsteps) play from the
+  floor and would otherwise be half hidden by it;
+- distance attenuation, air absorption and directivity stay with our engine-matching model.
+
+The result reaches the audio thread as a POD `DirectPath` in the voice table, and `Process` runs
+an `IPLDirectEffect` on the block before the binaural effect. A new voice is not rendered until
+its first path is published (the same frame), so a shot behind a wall never starts unoccluded.
+Simulating never shares state with `Process`, so the audio thread keeps rendering while it runs.
+
+Measured cost: about 0.2 ms per frame for 32 voices against a 97k-triangle scene, which is why it
+runs on the game thread. Scene build is roughly 80 ms for the same size, during map load.
+`cl_neo_hrtf_occlusion 0` turns it off for A/B listening; `cl_neo_hrtf_debug 1` shows each
+voice's occlusion and per-band transmission, plus the simulation time.
+
+## Probes and baking
+
+Baked reflections are looked up from probes: points where the acoustics are precomputed. Each
+map gets them automatically when its scene is built (`neo_audio_probes.{h,cpp}`, plain C++):
+
+Placement reads the acoustic mesh itself (brushes, displacements and static prop hulls). The BSP
+tree only filters and batches.
+
+- **Floor probes:** a vertical ray goes down every column of a world-aligned 2 m grid and finds
+  each surface it crosses (a hash grid of the triangles by column keeps this cheap). Each
+  upward-facing surface no steeper than 45° is a floor: every storey, ledge, wall top and prop top.
+  The probe goes 1.5 m above it, or halfway to the next surface up when there's less room than
+  3 m. A floor with under 0.5 m of room, or with a downward face at its own height (something
+  resting on it), gets none.
+- **Crest probes:** floor probes on top of a tall wall are too far from those beside it for paths
+  to go over it, so sound went around or not at all. A thin wall or one with a nodraw top has no
+  floor probes on top at all. So the top edges of steep faces get probes 0.4 m out and 0.4 m up,
+  every 4 m along the edge. A top edge is one where the face hangs down from it, and nothing
+  sharing it carries on upwards. That covers a wall top, the far side of a thin wall, or nothing
+  for a nodraw top, and rules out the diagonals inside a face.
+  - **Merging:** collinear pieces are merged first, since brush faces are cut at every brush and
+    leaf boundary.
+  - **Filters:** an edge needs a 2 m run (sound goes around posts and signs) and a 2 m drop to
+    the floor in front of it (lower walls are covered by floor probes). The space just above the
+    edge must be open: in the BSP, and not under an upward face, which would mean it's inside a
+    prop's hull.
+  - **Measured:** on `testingaudio` (a 6.5 m wall), sound from the far side now arrives over the
+    top at 0.85–0.97 of the level for that route. With floor probes alone it went around the end,
+    at 0.65–0.80.
+- **Validity:** every probe must be in an open BSP leaf (lump 10: not solid, inside the map, not in
+  the 3D skybox's area). Any probe within 1 m (half the spacing) of one already kept is dropped,
+  with crest probes kept first.
+- One `IPLProbeBatch` per BSP area that ends up with probes: a region sealed off by
+  areaportals, so usually one or two per map. Steam Audio indexes the probes inside a batch, so
+  large batches cost nothing at lookup. Leaves and vis clusters were tried first, but on NT;RE
+  maps every open leaf is its own cluster, which meant 200–450 tiny batches. Placement takes
+  10–150 ms.
+
+Batches are baked with listener-centric parametric reverb (`IPL_BAKEDDATAVARIATION_REVERB`,
+three decay times per probe) on a background thread. Convolution IRs would cost hundreds of KB
+per probe. Pathing data (below) is baked into the same batches straight after. It grows with
+the number of probe pairs, so it dominates the size (see the compile-time numbers below). By default (`cl_neo_hrtf_bake_auto 1`) a map
+without a cached bake starts baking on load with a quarter of the logical cores
+(`cl_neo_hrtf_bake_threads`). The cache is written only when the whole bake finishes, so leaving
+the map mid-bake starts it over next time.
+
+The result is saved to `hrtf/<map>.probes` under the mod directory. Its key covers the
+geometry, materials, BSP leaves and probe layout, so a changed map rebakes; bump
+`kHrtfProbeCacheVersion` whenever the bake parameters change. `cl_neo_hrtf_bake` rebakes,
+`cl_neo_hrtf_bake_cancel` stops a bake, `cl_neo_hrtf_debug_probes 1` draws nearby probes
+coloured by batch, and `cl_neo_hrtf_debug 1` shows the probe count and bake progress.
+
+The same batches carry pathing: Steam Audio only finds paths between probes in the same batch,
+and an area batch spans everything connected short of an areaportal.
+
+## Baking at compile time
+
+A map can carry its bake, so players never bake at runtime. `neo_soundbake` (`src/utils/neo_soundbake`,
+built on Windows and Linux with `NEO_STEAMAUDIO`, copied to `game/bin/x64` or `game/bin/linux64`)
+runs after VRAD. It places the probes and bakes them with the same code as the client:
+
+- **Same content as the game:** the engine's file system with the mod's `gameinfo.txt` search paths,
+  plus the map's own pakfile for patch materials, and `vphysics` for surface properties and static
+  prop collision.
+- **Appid mounts:** the SDK's tool file-system init rejects `|appid_N|` paths, so the tool resolves
+  them itself. It finds Steam through the registry on Windows, or on Linux through `~/.steam/steam`,
+  `~/.steam/root`, `~/.local/share/Steam` or the Flatpak's data directory. Then it reads
+  `libraryfolders.vdf` and the app manifest. Pass `-appid_dir_<appid> <dir>` to override.
+- **Threads:** it bakes on every logical core by default (`-threads <n>`).
+- **Storage:** the result is LZMA-compressed into game lump `nsap` (version 1) in lump 35. Every
+  other game lump is copied byte for byte.
+- **Verification:** before reporting success, the tool reloads the written map through the game's
+  own loading path.
+
+Measured with 16 threads:
+
+| Map | Probes | Bake | In the map | Uncompressed |
+|---|---|---|---|---|
+| oilstain | 911 | 13 s | 0.5 MB | 3.7 MB |
+| dawn | 2,620 | 22 s | 3.7 MB | 25.6 MB |
+| ghost | 5,038 | 91 s | 8.3 MB | 59.8 MB |
+
+Valve's `vbspinfo` reads the result normally.
+
+It has to live in the engine's `bin/x64` or `bin/linux64`, beside `filesystem_stdio` and `vphysics`,
+like VBSP; it says so if it doesn't. On Linux it finds the engine's `libtier0.so` and `libvstdlib.so`
+there through an `$ORIGIN` rpath, so it runs directly:
+`./neo_soundbake -game <mod dir> <map.bsp>`. In Hammer++'s expert compile mode, add a step after
+`$light_exe` and before the copy into the game's `maps` directory:
+
+```
+$bindir\neo_soundbake.exe    -game $gamedir $path\$file.bsp
+```
+
+Compress the map (e.g. `bspzip -repack -compress`) after baking, not before: the tool refuses
+compressed game lumps.
+
+At load, `CNeoAudioGeometry::ReadBakedProbes` decompresses and checks the lump. It's used only if
+its shape checksum matches the map: positions to the millimetre, triangles and BSP leaves, but not
+materials or lighting, so rerunning VRAD doesn't invalidate it. A map recompiled without the baker,
+or baked with a Steam Audio the game can't read, falls back to the runtime bake with a warning.
+`cl_neo_hrtf_bake` still rebakes locally.
+
+## Reverb
+
+The baked probes drive one room reverb around the listener:
+
+- **Lookup (game thread, ~2 µs a frame):** the simulator also has `IPL_SIMULATIONFLAGS_REFLECTIONS`
+  and a single baked source. Steam Audio looks reverb up at the listener's position by blending
+  nearby probes, tracing no rays, and returns decay times (RT60) for three bands. Batches join the
+  simulator only once fully baked (finished or loaded from the cache). A rebake detaches them first,
+  so the simulator never reads a batch the bake thread is writing.
+- **Away from probes:** mid-jump, say, the lookup finds nothing. The last room is held, because the
+  effect would otherwise fall back to its 0.1 s minimum, a small fake room. Decay times are capped
+  at 3 s: the bake simulates only 1 s of decay, so longer fits are extrapolations. On dawn one
+  probe reported 10 s, while the median across the map is 0.6–0.7 s.
+- **Send:** each voice's block after occlusion and transmission, times the voice's gain, is summed
+  into one bus, plus the share sent along its baked paths at the level they deliver it (their omni
+  coefficient times their mean EQ). A distant or walled-off sound excites the room only as much as it
+  is heard, through the wall or around it. Without the pathed share a source just out of sight left
+  the room silent, since occlusion took the whole send with it. Steam Audio's own listener reverb is
+  fed the same way.
+- **Render (audio thread):** one parametric `IPLReflectionEffect` (a feedback delay network) per
+  block, even with no voices, so tails ring out. It has a single output; Steam Audio itself decodes
+  that as omnidirectional, the same in both ears. Instead each ear gets the tail through its own
+  chain of three Schroeder all-pass filters: flat in magnitude, different in phase. In testing the
+  ears came out decorrelated (correlation 0.02) at equal energy, so the room surrounds the listener
+  instead of sitting inside the head.
+
+`cl_neo_hrtf_reverb` sets the level (default 1, 0 turns it off). `cl_neo_hrtf_reverb_inhead 1`
+skips the all-passes and sends the same tail to both ears, inside the head, at the same level. Until a map's bake finishes
+there is no reverb, and the debug overlay says so. `cl_neo_hrtf_debug 1` shows the current RT60s.
+
+## Pathing
+
+Occlusion alone makes a sound behind a wall quieter and duller. Pathing makes it come around the
+wall instead, from the doorway it actually reaches the listener through.
+
+- **Bake:** after the reverb, each batch gets `IPL_BAKEDDATATYPE_PATHING`. That records probe
+  pairs that see each other (more than 10% of 4×4 rays between 0.5 m spheres get through), at most
+  20 m apart, with shortest paths through them up to 100 m long.
+- **Simulation (game thread, ~0.1–0.2 ms for 32 voices):** each voice's source also runs pathing
+  against the batch of the listener's BSP area. A voice in another area, behind an areaportal, has
+  no path. Paths aren't re-validated per frame, since the world they were baked against is static.
+  Each voice's distance law is passed in as a callback, so a path is attenuated by the engine-matching
+  law at its own length: around a corner is quieter than in view at the same straight-line distance.
+- **Render (audio thread):** only the share the direct path does not carry, `1 - occlusion`, goes
+  along the paths, ramped across each block. A visible source is never doubled, and stepping
+  behind cover crossfades from direct to pathed. Each voice's `IPLPathEffect` rotates the paths'
+  first-order sound field to the listener and renders it binaurally, so the sound arrives from the
+  opening. Its deviation EQ is not normalised, so bending around an obstacle costs level
+  (Steam Audio's default model: roughly -5/-13/-18 dB low/mid/high around a wall's end).
+  Normalising it made occluded sounds on open maps such as oilstain nearly as loud as in view.
+- **Only while covered.** Steam Audio recomputes a voice's paths only while both the voice and the
+  listener are inside some probe's 2 m sphere of influence. Otherwise it silently returns the last
+  ones, and those stayed audible at a constant level however far the listener walked. On oilstain,
+  two of the three `skylines.wav` emitters hang 2.1 and 4.5 m from the nearest probe (probes are
+  1.5 m above floors; the emitters 4–7 m up), so their paths froze at the last line-of-sight value.
+  Now any end outside every sphere is pulled just inside the nearest probe's sphere within 8 m
+  (`ProbeCoverage::PullInside`, a hash grid over the probes). Pathing is skipped when no probe is
+  that close. Paths start from the raised occlusion origin.
+- **Capped.** A path's level is capped at the voice's straight-line level (a path is never shorter),
+  so no simulation result can be louder than the sound in plain view.
+- **Steam Audio's own Unity spatializer adds pathing on top of the direct sound.** Its paths include
+  the direct line whenever the source is visible, which would double a visible source; hence the
+  `1 - occlusion` split.
+
+Known gaps: from a fixed source on oilstain, 4–6% of occluded listener positions within 40 m get
+no path at all, while their neighbours do, so a pathed sound can drop out briefly while walking.
+
+`cl_neo_hrtf_pathing 0` turns it off for A/B listening. `cl_neo_hrtf_debug 1` shows each voice's
+path level.
+
+Not done: real-time reflections (discrete echoes, and reverb that follows moving sources).
+
+## Trying it
+
+1. Build normally. CMake fetches the Steam Audio 4.8.1 SDK once and copies its library next to
+   `client` (`NEO_STEAMAUDIO=OFF` builds without HRTF; `NEO_STEAMAUDIO_SDK_PATH` uses a local SDK).
+2. In game, with headphones: `cl_neo_hrtf 1`; A/B against the engine's own panning with
+   `cl_neo_hrtf 0`. `cl_neo_hrtf_debug 1` overlays the status and a line per voice. Player pings
+   and bots firing are easy sources; walk behind a wall and toggle `cl_neo_hrtf_occlusion`.
+
+## Updating Steam Audio
+
+The `steam-audio` repo is kept as an untouched sibling mirror of `ValveSoftware/steam-audio`
+(fast-forward it to take upstream). neo consumes only the release artefacts: bump the URL and
+SHA256 in `src/cmake/steamaudio.cmake` and rebuild. A renamed phonon function shows up as a named
+missing symbol in the load error, not as a compile break in game code. To debug inside Steam
+Audio, build it from that checkout (`core/doc/build-instructions.rst`: `get_dependencies.py`,
+then `cmake --build ... --target install`) and configure neo with
+`-DNEO_STEAMAUDIO_SDK_PATH=<tree with include/ and lib/<plat>/>`.
+
+## Known limitations of the proof of concept
+
+- The engine's copy plays for up to one frame before it is muted, briefly doubling the attack.
+  Muting at emission would need engine code. After that it keeps playing at the engine floor
+  (see above), unspatialized but about -36 dB down.
+- Distance attenuation re-implements the engine's model from the sound script's `soundlevel`
+  (raw filenames use `SNDLVL_NORM`); engine DSP, ducking and room reverb do not apply.
+- Reverb is one listener-centric room, not per-source reflections. A sound in another room
+  reverberates in the listener's room only as much as it gets through the wall (pathed sound does
+  not feed the reverb). Paths
+  stop at areaportals and at 100 m. The scene has no brush entities (doors, func_brush) or
+  dynamic props, so cover made of those does not occlude.
+- The first play of each file decodes on the game thread (a small hitch per new sound per map).
+- One mutex guards the voice table for both threads, so a frame can wait on a block render and
+  vice versa; POD double-buffering of voice parameters is the clean fix.
+- MP3 player music is out of scope by design.
