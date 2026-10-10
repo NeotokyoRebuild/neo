@@ -193,6 +193,7 @@ void CNEOBotPathReservationSystem::Clear()
 {
     ClearRound();
     m_AreaAvoidPenalties.RemoveAll();
+    m_AreaDeathPenalties.RemoveAll();
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -233,36 +234,60 @@ int CNEOBotPathReservationSystem::GetPredictedFriendlyPathCount( int areaID, int
 }
 
 //-------------------------------------------------------------------------------------------------
-void CNEOBotPathReservationSystem::IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount)
+static void IncrementAreaPenalty(CUtlMap<unsigned int, float> &penalties, unsigned int navAreaID, float penaltyAmount)
 {
     if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
     {
         return;
     }
 
-    unsigned short index = m_AreaAvoidPenalties.Find(navAreaID);
-    if (index == m_AreaAvoidPenalties.InvalidIndex())
+    unsigned short index = penalties.Find(navAreaID);
+    if (index == penalties.InvalidIndex())
     {
-        index = m_AreaAvoidPenalties.Insert(navAreaID, 0.0f);
+        index = penalties.Insert(navAreaID, 0.0f);
     }
 
-    m_AreaAvoidPenalties[index] += penaltyAmount;
+    penalties[index] += penaltyAmount;
 }
 
 //-------------------------------------------------------------------------------------------------
-float CNEOBotPathReservationSystem::GetAreaAvoidPenalty(unsigned int navAreaID) const
+static float GetAreaPenalty(const CUtlMap<unsigned int, float> &penalties, unsigned int navAreaID)
 {
     if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
     {
         return 0.0f;
     }
 
-    unsigned short index = m_AreaAvoidPenalties.Find(navAreaID);
-    if (index != m_AreaAvoidPenalties.InvalidIndex())
+    unsigned short index = penalties.Find(navAreaID);
+    if (index != penalties.InvalidIndex())
     {
-        return m_AreaAvoidPenalties[index];
+        return penalties[index];
     }
     return 0.0f;
+}
+
+//-------------------------------------------------------------------------------------------------
+void CNEOBotPathReservationSystem::IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount)
+{
+    IncrementAreaPenalty(m_AreaAvoidPenalties, navAreaID, penaltyAmount);
+}
+
+//-------------------------------------------------------------------------------------------------
+float CNEOBotPathReservationSystem::GetAreaAvoidPenalty(unsigned int navAreaID) const
+{
+    return GetAreaPenalty(m_AreaAvoidPenalties, navAreaID);
+}
+
+//-------------------------------------------------------------------------------------------------
+void CNEOBotPathReservationSystem::IncrementAreaDeathPenalty(unsigned int navAreaID, float penaltyAmount)
+{
+    IncrementAreaPenalty(m_AreaDeathPenalties, navAreaID, penaltyAmount);
+}
+
+//-------------------------------------------------------------------------------------------------
+float CNEOBotPathReservationSystem::GetAreaDeathPenalty(unsigned int navAreaID) const
+{
+    return GetAreaPenalty(m_AreaDeathPenalties, navAreaID);
 }
 
 //-------------------------------------------------------------------------------------------------

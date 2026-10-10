@@ -55,6 +55,7 @@ public:
     CNEOBotPathReservationSystem()
         : m_BotReservedAreas(DefLessFunc(int))
         , m_AreaAvoidPenalties(DefLessFunc(unsigned int))
+        , m_AreaDeathPenalties(DefLessFunc(unsigned int))
     {
         for (int i = 0; i < TEAM__TOTAL; ++i)
         {
@@ -72,6 +73,8 @@ public:
 
     void IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount);
     float GetAreaAvoidPenalty(unsigned int navAreaID) const;
+    void IncrementAreaDeathPenalty(unsigned int navAreaID, float penaltyAmount);
+    float GetAreaDeathPenalty(unsigned int navAreaID) const;
 
     void AddDeadlyHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS = false);
     void AddFragHazard(int navAreaID, float expireTime, int teamID);
@@ -84,7 +87,8 @@ private:
 
     CUtlMap<int, AreaReservation_t> m_Reservations[TEAM__TOTAL];   // keyed by nav area ID
     CUtlMap<int, BotReservedAreas_t> m_BotReservedAreas;           // keyed by bot entindex
-    CUtlMap<unsigned int, float> m_AreaAvoidPenalties;
+    CUtlMap<unsigned int, float> m_AreaAvoidPenalties;  // where bots got stuck: cover and retreat searches skip these areas
+    CUtlMap<unsigned int, float> m_AreaDeathPenalties;  // where bots died: only a path cost, an area can still be good cover
     CUtlMap<int, HazardInfo> m_HazardAreas[TEAM__TOTAL];
 };
 
