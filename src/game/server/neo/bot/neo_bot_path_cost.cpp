@@ -6,9 +6,6 @@
 #include "nav_mesh.h"
 #include "neo_bot_path_reservation.h"
 
-ConVar neo_bot_path_around_friendly_cooldown("neo_bot_path_around_friendly_cooldown", "2.0", FCVAR_CHEAT,
-	"How often to check for friendly path dispersion", true, 0, true, 60);
-
 ConVar neo_bot_path_penalty_avoid_multiplier("neo_bot_path_penalty_avoid_multiplier", "20.0", FCVAR_CHEAT,
 	"Penalty multiplier for navmesh avoid areas in pathfinding", true, 1.0f, false, 0.0f);
 
