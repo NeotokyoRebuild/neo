@@ -40,7 +40,8 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	if ( team_members == 1 )
+	// In ATK the clock runs for the defenders, so the last attacker still goes for the ghost
+	if ( team_members == 1 && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK )
 	{
 		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one on my team!" );
 	}
