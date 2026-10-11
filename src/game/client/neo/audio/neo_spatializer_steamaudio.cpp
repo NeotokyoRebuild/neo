@@ -127,7 +127,7 @@ void CloseLibrary(LibraryHandle library) { dlclose(library); }
 void FormatLoaderError(char *out, int len) { const char *error = dlerror(); snprintf(out, len, "%s", error ? error : "unknown dlerror"); }
 #endif
 
-constexpr int MAX_VOICES = 64;
+constexpr int MAX_VOICES = 128;
 constexpr int LOADER_ERROR_LEN = 256;
 
 // Below this the source is effectively inside the listener's head and has no direction.

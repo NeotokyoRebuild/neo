@@ -96,6 +96,8 @@ constexpr int kHrtfBakeCoresPerThread = 4;
 
 constexpr float kHrtfProbeDrawRangeUnits = 1024.0f;
 constexpr float kHrtfProbeDrawSizeUnits = 4.0f;
+// Debug overlay: status, probes and reverb take the first lines, then one line per live voice.
+constexpr int kHrtfDebugFirstVoiceLine = 3;
 
 #ifdef _WIN32
 constexpr char kHrtfPhononLibrary[] = "bin/x64/phonon.dll";
@@ -1315,7 +1317,9 @@ void CNeoHrtfSystem::PrintDebug() const
 		// "map" when the level came from the networked ambient_generic, "script" otherwise.
 		// The local player's own sounds are tagged with where they play from.
 		static const char *const s_localSoundTags[] = { "", " (own, feet)", " (own, weapon)", " (own, body)" };
-		engine->Con_NPrintf(v + 1, "hrtf %s%s  %.1f m  %d dB %s  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s  engine vol %.4f spat %.4f gain %.3f",
+		// Voices are listed packed below the status lines; the engine drops lines past its last
+		// notify slot, so with many voices the tail of the list is not shown.
+		engine->Con_NPrintf(kHrtfDebugFirstVoiceLine + liveVoices - 1, "hrtf %s%s  %.1f m  %d dB %s  gain %.2f  az %+.0f  occ %.2f  trans %.2f/%.2f/%.2f  %s  engine vol %.4f spat %.4f gain %.3f",
 			voice.m_pSound->m_name.Get(), s_localSoundTags[static_cast<int>(voice.m_localSound)], toSource.Length(), static_cast<int>(voice.m_soundLevel),
 			voice.m_bLevelFromEmitter ? "map" : "script", voice.m_params.m_gain, azimuthDeg, path.occlusion,
 			path.transmission[0], path.transmission[1], path.transmission[2], pathText, voice.m_lastReportedVolume,
@@ -1327,16 +1331,16 @@ void CNeoHrtfSystem::PrintDebug() const
 	static const char *const s_pszBakeStates[] = { "not baked", "baking", "baked", "bake stopped" };
 	float bakeProgress = 0.0f;
 	const NeoSpatial::BakeState bakeState = m_pSpatializer->GetBakeState(&bakeProgress);
-	engine->Con_NPrintf(kMaxVoices + 1, "hrtf probes: %d in %d batches, %s %.0f%%", static_cast<int>(m_probes.centres.size()),
+	engine->Con_NPrintf(1, "hrtf probes: %d in %d batches, %s %.0f%%", static_cast<int>(m_probes.centres.size()),
 		m_probes.NumBatches(), s_pszBakeStates[static_cast<int>(bakeState)], bakeProgress * 100.0f);
 	if (m_reverbParams.valid)
 	{
-		engine->Con_NPrintf(kMaxVoices + 2, "hrtf reverb: RT60 %.2f / %.2f / %.2f s (low / mid / high), level %.2f",
+		engine->Con_NPrintf(2, "hrtf reverb: RT60 %.2f / %.2f / %.2f s (low / mid / high), level %.2f",
 			m_reverbParams.reverbTimes[0], m_reverbParams.reverbTimes[1], m_reverbParams.reverbTimes[2], m_reverbGain);
 	}
 	else
 	{
-		engine->Con_NPrintf(kMaxVoices + 2, "hrtf reverb: none (probes not baked, or not near one yet)");
+		engine->Con_NPrintf(2, "hrtf reverb: none (probes not baked, or not near one yet)");
 	}
 }
 

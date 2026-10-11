@@ -27,7 +27,7 @@ class CNeoHrtfSystem : public CAutoGameSystemPerFrame
 public:
 	static constexpr int kSampleRate = 48000;
 	static constexpr int kFrameSize = 512;
-	static constexpr int kMaxVoices = 32;
+	static constexpr int kMaxVoices = 128;
 	static constexpr int kMaxErrorLen = 256;
 
 	CNeoHrtfSystem() : CAutoGameSystemPerFrame("CNeoHrtfSystem") {}
