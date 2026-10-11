@@ -26,9 +26,6 @@ ConVar sv_neo_bot_seek_and_destroy_combat_sound_detour_ratio( "sv_neo_bot_seek_a
 ConVar sv_neo_bot_seek_and_destroy_combat_sound_arrive_range( "sv_neo_bot_seek_and_destroy_combat_sound_arrive_range", "200.0", FCVAR_CHEAT,
 	"Combat sound close enough to count as investigated.", true, 0, false, 0 );
 
-// ATK defenders answer combat sounds only this close to the ghost, so they hold the objective
-static constexpr float BOT_ATK_DEFENDER_GUARD_RANGE = 1500.0f;
-
 
 //---------------------------------------------------------------------------------------------
 static bool IsGhostGameType()
@@ -41,7 +38,7 @@ static bool IsGhostGameType()
 //---------------------------------------------------------------------------------------------
 static bool IsAtkDefender( CNEOBot *me )
 {
-	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && me->GetTeamNumber() == NEORules()->GetDefendingTeam();
+	return IsAtkDefendingTeam( me->GetTeamNumber() );
 }
 
 
@@ -267,7 +264,10 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 		// This will just go to the ghoster RecomputeSeekPath logics instead of
 		// only going after it
 		const bool bDontSuspendForGhoster = (neoThreat && neoThreat->IsCarryingGhost());
-		if (!bDontSuspendForGhoster)
+		// ATK defenders shoot at threats past the guard range but do not leave the ghost for them
+		const bool bBeyondGuard = IsAtkDefender( me )
+			&& NEORules()->GetGhostPos().DistToSqr( threat->GetLastKnownPosition() ) > Square( BOT_ATK_DEFENDER_GUARD_RANGE );
+		if (!bDontSuspendForGhoster && !bBeyondGuard)
 		{
 			const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
 			// fall back to nearest teammate for backup if I am the closest contact to enemy
