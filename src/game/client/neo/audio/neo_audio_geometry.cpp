@@ -374,6 +374,43 @@ bool GeometryFindSkyCamera(const CUtlVector<char> &entities, Vector &origin)
 	return false;
 }
 
+// The classname of the entity using each brush model ("model" "*N"), empty where none does.
+void GeometryBrushModelClassnames(const CUtlVector<char> &entities, int numModels, CUtlVector<CUtlString> &out)
+{
+	out.SetCount(numModels);
+	CUtlVector<char> text;
+	text.CopyArray(entities.Base(), entities.Count());
+	text.AddToTail('\0');
+
+	char block[kGeometryMaxEntityBlock];
+	char value[kGeometryMaxEntityValue];
+	for (const char *pszOpen = strchr(text.Base(), '{'); pszOpen; pszOpen = strchr(pszOpen + 1, '{'))
+	{
+		const char *pszClose = strchr(pszOpen, '}');
+		if (!pszClose)
+		{
+			break;
+		}
+		V_strncpy(block, pszOpen, Min(static_cast<int>(sizeof(block)), static_cast<int>(pszClose - pszOpen) + 1));
+		int model = 0;
+		if (GeometryEntityValue(block, "model", value, sizeof(value)) && sscanf(value, "*%d", &model) == 1 && model > 0
+			&& model < numModels && GeometryEntityValue(block, "classname", value, sizeof(value)))
+		{
+			out[model] = value;
+		}
+	}
+}
+
+void GeometryMeshBounds(const CUtlVector<NeoSpatial::Vec3> &vertices, NeoSpatial::Vec3 &mins, NeoSpatial::Vec3 &maxs)
+{
+	mins = maxs = vertices.IsEmpty() ? NeoSpatial::Vec3{ 0.0f, 0.0f, 0.0f } : vertices[0];
+	for (const NeoSpatial::Vec3 &v : vertices)
+	{
+		mins = { Min(mins.x, v.x), Min(mins.y, v.y), Min(mins.z, v.z) };
+		maxs = { Max(maxs.x, v.x), Max(maxs.y, v.y), Max(maxs.z, v.z) };
+	}
+}
+
 // The lumps the static world is built from, read whole and validated as they are indexed.
 struct BspLumps
 {
@@ -584,6 +621,163 @@ void GeometryLoadPropBBox(const char *pszModel, PropCollisionMesh &mesh)
 	GeometryAddConvexTriangles(triangles, 6 * 2, preset, mesh);
 }
 
+// Appends a model's brush faces and displacements to the mesh arrays, each triangle with the
+// AcousticPreset of its texture's surfaceprop, and returns how many faces were malformed. Brush faces
+// share the vertex lump, so vertexRemap (one entry per lump vertex, -1 = not added) keeps only the
+// vertices they use; texDataPreset caches each texdata's preset (-1 = not resolved yet).
+int GeometryAddModelFaces(const BspLumps &lumps, const dmodel_t &model, CUtlVector<int> &texDataPreset,
+						  CUtlVector<int> &vertexRemap, CUtlVector<NeoSpatial::Vec3> &vertices, CUtlVector<int32> &triangles,
+						  CUtlVector<int32> &materialIndices)
+{
+	CUtlVector<int> faceVertices;
+	int skippedFaces = 0;
+	for (int f = model.firstface; f < model.firstface + model.numfaces; ++f)
+	{
+		const dface_t &face = lumps.faces[f];
+		if (face.texinfo < 0 || face.texinfo >= lumps.texInfos.Count() || face.numedges < 3
+			|| face.firstedge < 0 || face.firstedge > lumps.surfEdges.Count() - face.numedges)
+		{
+			++skippedFaces;
+			continue;
+		}
+		const texinfo_t &texInfo = lumps.texInfos[face.texinfo];
+		if (texInfo.flags & kGeometryIgnoredSurfFlags)
+		{
+			continue;
+		}
+
+		int preset = ACOUSTIC_GENERIC;
+		if (texInfo.texdata >= 0 && texInfo.texdata < lumps.texData.Count())
+		{
+			int &cachedPreset = texDataPreset[texInfo.texdata];
+			if (cachedPreset < 0)
+			{
+				cachedPreset = ACOUSTIC_GENERIC;
+				const int stringIndex = lumps.texData[texInfo.texdata].nameStringTableID;
+				if (stringIndex >= 0 && stringIndex < lumps.texDataStringTable.Count())
+				{
+					const int offset = lumps.texDataStringTable[stringIndex];
+					const int maxLen = lumps.texDataStringData.Count() - offset;
+					if (offset >= 0 && maxLen > 0 && memchr(&lumps.texDataStringData[offset], '\0', maxLen))
+					{
+						cachedPreset = GeometryPresetForTexture(&lumps.texDataStringData[offset]);
+					}
+				}
+			}
+			preset = cachedPreset;
+		}
+
+		// A surfedge's sign picks which end of the edge comes first in the face's winding.
+		faceVertices.RemoveAll();
+		bool bValid = true;
+		for (int e = 0; e < face.numedges && bValid; ++e)
+		{
+			const int surfEdge = lumps.surfEdges[face.firstedge + e];
+			bValid = surfEdge > -lumps.edges.Count() && surfEdge < lumps.edges.Count();
+			if (bValid)
+			{
+				const int vertex = lumps.edges[abs(surfEdge)].v[(surfEdge >= 0) ? 0 : 1];
+				bValid = vertex < lumps.vertices.Count();
+				faceVertices.AddToTail(vertex);
+			}
+		}
+		if (!bValid)
+		{
+			++skippedFaces;
+			continue;
+		}
+
+		if (face.dispinfo < 0)
+		{
+			for (int &vertex : faceVertices)
+			{
+				int &remapped = vertexRemap[vertex];
+				if (remapped < 0)
+				{
+					remapped = vertices.AddToTail(GeometryToMetres(lumps.vertices[vertex].point));
+				}
+				vertex = remapped;
+			}
+
+			// Brush faces are convex and wound clockwise seen from the front (the Quake/Source
+			// convention), so each fan triangle is emitted reversed to come out counter-clockwise.
+			for (int i = 1; i + 1 < faceVertices.Count(); ++i)
+			{
+				const int32 triangle[3] = { faceVertices[0], faceVertices[i + 1], faceVertices[i] };
+				if (triangle[0] != triangle[1] && triangle[1] != triangle[2] && triangle[0] != triangle[2])
+				{
+					triangles.AddMultipleToTail(3, triangle);
+					materialIndices.AddToTail(preset);
+				}
+			}
+			continue;
+		}
+
+		// A displacement replaces its 4-sided base face with a (2^power + 1)^2 vertex grid.
+		const ddispinfo_t *pDisp = (face.dispinfo < lumps.dispInfos.Count()) ? &lumps.dispInfos[face.dispinfo] : nullptr;
+		if (!pDisp || faceVertices.Count() != 4 || pDisp->power < kGeometryMinDispPower || pDisp->power > kGeometryMaxDispPower
+			|| pDisp->m_iDispVertStart < 0 || pDisp->m_iDispVertStart > lumps.dispVerts.Count() - pDisp->NumVerts())
+		{
+			++skippedFaces;
+			continue;
+		}
+
+		// The grid starts at the base corner nearest startPosition and keeps the face's winding,
+		// as the engine builds it (CCoreDispInfo::GenerateDispSurf).
+		int startCorner = 0;
+		float bestDistSqr = FLT_MAX;
+		for (int c = 0; c < 4; ++c)
+		{
+			const float distSqr = lumps.vertices[faceVertices[c]].point.DistToSqr(pDisp->startPosition);
+			if (distSqr < bestDistSqr)
+			{
+				bestDistSqr = distSqr;
+				startCorner = c;
+			}
+		}
+		Vector corners[4];
+		for (int c = 0; c < 4; ++c)
+		{
+			corners[c] = lumps.vertices[faceVertices[(startCorner + c) % 4]].point;
+		}
+
+		// Rows run from corner 0 towards corner 1, columns from the 0-1 edge towards the 3-2 edge.
+		const int size = (1 << pDisp->power) + 1;
+		const float step = 1.0f / (size - 1);
+		const int firstVertex = vertices.Count();
+		const CDispVert *pDispVerts = &lumps.dispVerts[pDisp->m_iDispVertStart];
+		for (int row = 0; row < size; ++row)
+		{
+			const Vector rowStart = Lerp(row * step, corners[0], corners[1]);
+			const Vector rowEnd = Lerp(row * step, corners[3], corners[2]);
+			for (int col = 0; col < size; ++col)
+			{
+				const CDispVert &dispVert = pDispVerts[row * size + col];
+				const Vector position = Lerp(col * step, rowStart, rowEnd) + dispVert.m_vVector * dispVert.m_flDist;
+				vertices.AddToTail(GeometryToMetres(position));
+			}
+		}
+
+		// (row, col) -> (row + 1, col) -> (row + 1, col + 1) follows the base face's clockwise
+		// winding, so each cell's two triangles are emitted reversed, as for brush faces.
+		for (int row = 0; row + 1 < size; ++row)
+		{
+			for (int col = 0; col + 1 < size; ++col)
+			{
+				const int32 v00 = firstVertex + row * size + col;
+				const int32 v10 = v00 + size;
+				const int32 v11 = v10 + 1;
+				const int32 v01 = v00 + 1;
+				const int32 cell[6] = { v00, v11, v10, v00, v01, v11 };
+				triangles.AddMultipleToTail(6, cell);
+				materialIndices.AddToTail(preset);
+				materialIndices.AddToTail(preset);
+			}
+		}
+	}
+	return skippedFaces;
+}
+
 } // namespace
 
 bool CNeoAudioGeometry::LoadFromBsp(const Services &services, const char *pszBspPath, char *pszErrorOut, int errorLen)
@@ -658,159 +852,33 @@ bool CNeoAudioGeometry::LoadFromBsp(const Services &services, const char *pszBsp
 	// Material indices are AcousticPreset values; unused presets cost nothing.
 	m_materials.AddMultipleToTail(ACOUSTIC_PRESET_COUNT, kAcousticPresets);
 
-	// Brush faces share the vertex lump; only the vertices they use are kept.
 	CUtlVector<int> vertexRemap;
 	vertexRemap.SetCount(lumps.vertices.Count());
 	vertexRemap.FillWithValue(-1);
 	CUtlVector<int> texDataPreset; // resolved lazily, -1 = not yet
 	texDataPreset.SetCount(lumps.texData.Count());
 	texDataPreset.FillWithValue(-1);
-	CUtlVector<int> faceVertices;
-	int skippedFaces = 0;
+	int skippedFaces = GeometryAddModelFaces(lumps, world, texDataPreset, vertexRemap, m_vertices, m_triangles, m_materialIndices);
 
-	for (int f = world.firstface; f < world.firstface + world.numfaces; ++f)
+	// Every brush entity's model, each in its own mesh.
+	CUtlVector<CUtlString> classnames;
+	GeometryBrushModelClassnames(lumps.entities, lumps.models.Count(), classnames);
+	m_brushModels.AddToTail(new BrushModel()); // the world, which is in the static mesh
+	for (int m = kGeometryWorldModel + 1; m < lumps.models.Count(); ++m)
 	{
-		const dface_t &face = lumps.faces[f];
-		if (face.texinfo < 0 || face.texinfo >= lumps.texInfos.Count() || face.numedges < 3
-			|| face.firstedge < 0 || face.firstedge > lumps.surfEdges.Count() - face.numedges)
+		BrushModel *const pModel = new BrushModel();
+		m_brushModels.AddToTail(pModel);
+		const dmodel_t &model = lumps.models[m];
+		if (model.firstface < 0 || model.numfaces < 0 || model.firstface > lumps.faces.Count() - model.numfaces)
 		{
 			++skippedFaces;
 			continue;
 		}
-		const texinfo_t &texInfo = lumps.texInfos[face.texinfo];
-		if (texInfo.flags & kGeometryIgnoredSurfFlags)
-		{
-			continue;
-		}
-
-		int preset = ACOUSTIC_GENERIC;
-		if (texInfo.texdata >= 0 && texInfo.texdata < lumps.texData.Count())
-		{
-			int &cachedPreset = texDataPreset[texInfo.texdata];
-			if (cachedPreset < 0)
-			{
-				cachedPreset = ACOUSTIC_GENERIC;
-				const int stringIndex = lumps.texData[texInfo.texdata].nameStringTableID;
-				if (stringIndex >= 0 && stringIndex < lumps.texDataStringTable.Count())
-				{
-					const int offset = lumps.texDataStringTable[stringIndex];
-					const int maxLen = lumps.texDataStringData.Count() - offset;
-					if (offset >= 0 && maxLen > 0 && memchr(&lumps.texDataStringData[offset], '\0', maxLen))
-					{
-						cachedPreset = GeometryPresetForTexture(&lumps.texDataStringData[offset]);
-					}
-				}
-			}
-			preset = cachedPreset;
-		}
-
-		// A surfedge's sign picks which end of the edge comes first in the face's winding.
-		faceVertices.RemoveAll();
-		bool bValid = true;
-		for (int e = 0; e < face.numedges && bValid; ++e)
-		{
-			const int surfEdge = lumps.surfEdges[face.firstedge + e];
-			bValid = surfEdge > -lumps.edges.Count() && surfEdge < lumps.edges.Count();
-			if (bValid)
-			{
-				const int vertex = lumps.edges[abs(surfEdge)].v[(surfEdge >= 0) ? 0 : 1];
-				bValid = vertex < lumps.vertices.Count();
-				faceVertices.AddToTail(vertex);
-			}
-		}
-		if (!bValid)
-		{
-			++skippedFaces;
-			continue;
-		}
-
-		if (face.dispinfo < 0)
-		{
-			for (int &vertex : faceVertices)
-			{
-				int &remapped = vertexRemap[vertex];
-				if (remapped < 0)
-				{
-					remapped = m_vertices.AddToTail(GeometryToMetres(lumps.vertices[vertex].point));
-				}
-				vertex = remapped;
-			}
-
-			// Brush faces are convex and wound clockwise seen from the front (the Quake/Source
-			// convention), so each fan triangle is emitted reversed to come out counter-clockwise.
-			for (int i = 1; i + 1 < faceVertices.Count(); ++i)
-			{
-				const int32 triangle[3] = { faceVertices[0], faceVertices[i + 1], faceVertices[i] };
-				if (triangle[0] != triangle[1] && triangle[1] != triangle[2] && triangle[0] != triangle[2])
-				{
-					m_triangles.AddMultipleToTail(3, triangle);
-					m_materialIndices.AddToTail(preset);
-				}
-			}
-			continue;
-		}
-
-		// A displacement replaces its 4-sided base face with a (2^power + 1)^2 vertex grid.
-		const ddispinfo_t *pDisp = (face.dispinfo < lumps.dispInfos.Count()) ? &lumps.dispInfos[face.dispinfo] : nullptr;
-		if (!pDisp || faceVertices.Count() != 4 || pDisp->power < kGeometryMinDispPower || pDisp->power > kGeometryMaxDispPower
-			|| pDisp->m_iDispVertStart < 0 || pDisp->m_iDispVertStart > lumps.dispVerts.Count() - pDisp->NumVerts())
-		{
-			++skippedFaces;
-			continue;
-		}
-
-		// The grid starts at the base corner nearest startPosition and keeps the face's winding,
-		// as the engine builds it (CCoreDispInfo::GenerateDispSurf).
-		int startCorner = 0;
-		float bestDistSqr = FLT_MAX;
-		for (int c = 0; c < 4; ++c)
-		{
-			const float distSqr = lumps.vertices[faceVertices[c]].point.DistToSqr(pDisp->startPosition);
-			if (distSqr < bestDistSqr)
-			{
-				bestDistSqr = distSqr;
-				startCorner = c;
-			}
-		}
-		Vector corners[4];
-		for (int c = 0; c < 4; ++c)
-		{
-			corners[c] = lumps.vertices[faceVertices[(startCorner + c) % 4]].point;
-		}
-
-		// Rows run from corner 0 towards corner 1, columns from the 0-1 edge towards the 3-2 edge.
-		const int size = (1 << pDisp->power) + 1;
-		const float step = 1.0f / (size - 1);
-		const int firstVertex = m_vertices.Count();
-		const CDispVert *pDispVerts = &lumps.dispVerts[pDisp->m_iDispVertStart];
-		for (int row = 0; row < size; ++row)
-		{
-			const Vector rowStart = Lerp(row * step, corners[0], corners[1]);
-			const Vector rowEnd = Lerp(row * step, corners[3], corners[2]);
-			for (int col = 0; col < size; ++col)
-			{
-				const CDispVert &dispVert = pDispVerts[row * size + col];
-				const Vector position = Lerp(col * step, rowStart, rowEnd) + dispVert.m_vVector * dispVert.m_flDist;
-				m_vertices.AddToTail(GeometryToMetres(position));
-			}
-		}
-
-		// (row, col) -> (row + 1, col) -> (row + 1, col + 1) follows the base face's clockwise
-		// winding, so each cell's two triangles are emitted reversed, as for brush faces.
-		for (int row = 0; row + 1 < size; ++row)
-		{
-			for (int col = 0; col + 1 < size; ++col)
-			{
-				const int32 v00 = firstVertex + row * size + col;
-				const int32 v10 = v00 + size;
-				const int32 v11 = v10 + 1;
-				const int32 v01 = v00 + 1;
-				const int32 triangles[6] = { v00, v11, v10, v00, v01, v11 };
-				m_triangles.AddMultipleToTail(6, triangles);
-				m_materialIndices.AddToTail(preset);
-				m_materialIndices.AddToTail(preset);
-			}
-		}
+		pModel->classname = classnames[m];
+		vertexRemap.FillWithValue(-1);
+		Mesh &mesh = pModel->mesh;
+		skippedFaces += GeometryAddModelFaces(lumps, model, texDataPreset, vertexRemap, mesh.vertices, mesh.triangles, mesh.materialIndices);
+		GeometryMeshBounds(mesh.vertices, mesh.mins, mesh.maxs);
 	}
 
 	if (skippedFaces > 0)
@@ -1122,6 +1190,40 @@ uint32 CNeoAudioGeometry::GetShapeCrc() const
 	return crc;
 }
 
+bool CNeoAudioGeometry::LoadModelCollision(const Services &services, const char *pszModel, Mesh &out)
+{
+	out.vertices.RemoveAll();
+	out.triangles.RemoveAll();
+	out.materialIndices.RemoveAll();
+	s_pFileSystem = services.pFileSystem;
+	s_pSurfaceProps = services.pSurfaceProps;
+	s_pCollision = services.pCollision;
+	Assert(s_pFileSystem && s_pSurfaceProps && s_pCollision);
+
+	PropCollisionMesh collision;
+	GeometryLoadPropVPhysics(pszModel, collision);
+	for (int v = 0; v < collision.vertices.Count(); ++v)
+	{
+		out.triangles.AddToTail(out.vertices.AddToTail(GeometryToMetres(collision.vertices[v])));
+	}
+	out.materialIndices.AddVectorToTail(collision.presets);
+	GeometryMeshBounds(out.vertices, out.mins, out.maxs);
+	return !out.materialIndices.IsEmpty();
+}
+
+NeoSpatial::SceneGeometry CNeoAudioGeometry::Mesh::Geometry() const
+{
+	NeoSpatial::SceneGeometry geometry;
+	geometry.vertices = vertices.Base();
+	geometry.numVertices = vertices.Count();
+	geometry.triangles = triangles.Base();
+	geometry.materialIndices = materialIndices.Base();
+	geometry.numTriangles = materialIndices.Count();
+	geometry.materials = kAcousticPresets;
+	geometry.numMaterials = ACOUSTIC_PRESET_COUNT;
+	return geometry;
+}
+
 NeoSpatial::SceneGeometry CNeoAudioGeometry::GetSceneGeometry() const
 {
 	NeoSpatial::SceneGeometry geometry;
@@ -1141,6 +1243,7 @@ void CNeoAudioGeometry::Clear()
 	m_triangles.Purge();
 	m_materialIndices.Purge();
 	m_materials.Purge();
+	m_brushModels.PurgeAndDeleteElements();
 	m_tree = NeoSpatial::BspTree();
 	m_probeLump.Purge();
 	m_probeLumpVersion = 0;

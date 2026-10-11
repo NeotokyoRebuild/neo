@@ -1,12 +1,14 @@
 // NEO HRTF: acoustic scene geometry read straight from a map's .bsp, for occlusion and
-// propagation. Only the static world is extracted: model 0's brush faces and displacements, each
-// with an acoustic material derived from its texture's $surfaceprop, and the collision models of
-// solid static props, with the material of their collision model's surfaceprop.
+// propagation. The static world is model 0's brush faces and displacements, each with an acoustic
+// material derived from its texture's $surfaceprop, and the collision models of solid static props,
+// with the material of their collision model's surfaceprop. Brush entities' models (doors, trains,
+// func_brush...) are extracted alongside, each on its own, for dynamic geometry.
 //
 // Shared by the client and the compile-time baker (utils/neo_soundbake), so it depends on no game
 // DLL globals: the file system and physics interfaces it reads through are passed in.
 #pragma once
 
+#include "utlstring.h"
 #include "utlvector.h"
 
 #include "neo_audio_probe_lump.h"
@@ -29,14 +31,46 @@ public:
 		IPhysicsCollision *pCollision; // static prop collision models
 	};
 
+	// A mesh of its own, in metres in its own frame, with AcousticPreset material indices.
+	struct Mesh
+	{
+		CUtlVector<NeoSpatial::Vec3> vertices;
+		CUtlVector<int32> triangles; // 3 vertex indices per triangle, counter-clockwise from the front
+		CUtlVector<int32> materialIndices;
+		NeoSpatial::Vec3 mins = { 0.0f, 0.0f, 0.0f }; // bounds of the vertices
+		NeoSpatial::Vec3 maxs = { 0.0f, 0.0f, 0.0f };
+
+		// Valid until the mesh changes; the materials are the shared AcousticPreset table.
+		NeoSpatial::SceneGeometry Geometry() const;
+	};
+
+	// A brush entity's model (*1, *2...), in the entity's own frame: brush entity vertices are stored
+	// relative to the entity's origin, so its transform places them. Its own entity's classname
+	// (from the entity lump) says what it is, e.g. a func_door.
+	struct BrushModel
+	{
+		CUtlString classname; // empty if no entity in the map uses the model
+		Mesh mesh;
+	};
+
 	// pszBspPath is relative to the GAME search path, e.g. "maps/nt_rise_ctg.bsp", or absolute. On
 	// failure the geometry is empty and pszErrorOut says why.
 	bool LoadFromBsp(const Services &services, const char *pszBspPath, char *pszErrorOut, int errorLen);
+
+	// The collision model of a studio model (its .phy, solid 0), in model space: what a dynamic prop
+	// collides with, as static props do. False (and an empty mesh) if it has none.
+	static bool LoadModelCollision(const Services &services, const char *pszModel, Mesh &out);
 
 	// Valid until the next LoadFromBsp or destruction.
 	NeoSpatial::SceneGeometry GetSceneGeometry() const;
 	int NumTriangles() const { return m_materialIndices.Count(); }
 	int NumMaterials() const { return m_materials.Count(); }
+
+	// Indexed by model number; model 0 (the world) is in the static scene instead, so it is empty here.
+	int NumBrushModels() const { return m_brushModels.Count(); }
+	const BrushModel &GetBrushModel(int model) const { return *m_brushModels[model]; }
+	// Hands the brush models over, leaving none here, for dynamic geometry that outlives this object.
+	void TakeBrushModels(CUtlVector<BrushModel *> &out) { out.Swap(m_brushModels); }
 
 	// The map's BSP tree. Leaves in the 3D skybox's area are not open: nobody listens from there.
 	const NeoSpatial::BspTree &GetBspTree() const { return m_tree; }
@@ -67,6 +101,8 @@ private:
 	CUtlVector<int32> m_triangles;
 	CUtlVector<int32> m_materialIndices;
 	CUtlVector<NeoSpatial::AcousticMaterial> m_materials;
+
+	CUtlVectorAutoPurge<BrushModel *> m_brushModels;
 
 	CUtlVector<uint8> m_probeLump;
 	int m_probeLumpVersion = 0;

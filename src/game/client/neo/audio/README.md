@@ -83,7 +83,9 @@ Occlusion, reflections and pathing all trace rays against the map, so each level
 Audio scene (`IPLScene` holding one `IPLStaticMesh`). `CNeoAudioGeometry` reads it straight from
 `maps/<map>.bsp` through `IFileSystem`:
 
-- only the world model (model 0): brush entities can move, so they would need instanced meshes;
+- the world model (model 0) is the static mesh. Brush entities can move, so their models (`*1`,
+  `*2`...) are extracted one by one, each with its entity's classname from the entity lump, for
+  dynamic geometry (below);
 - brush faces (`LUMP_FACES`, or `LUMP_FACES_HDR` for HDR-only compiles) walked through surfedges,
   edges and vertices, fan-triangulated and re-wound counter-clockwise for Steam Audio;
 - displacements tessellated from `LUMP_DISPINFO` / `LUMP_DISP_VERTS` the way the engine does;
@@ -269,7 +271,8 @@ wall instead, from the doorway it actually reaches the listener through.
   20 m apart, with shortest paths through them up to 100 m long.
 - **Simulation (game thread, ~0.1–0.2 ms for 32 voices):** each voice's source also runs pathing
   against the batch of the listener's BSP area. A voice in another area, behind an areaportal, has
-  no path. Paths aren't re-validated per frame, since the world they were baked against is static.
+  no path. Paths aren't re-validated per frame: they are used as baked, against the static world
+  (dynamic geometry only occludes, see below).
   Each voice's distance law is passed in as a callback, so a path is attenuated by the engine-matching
   law at its own length: around a corner is quieter than in view at the same straight-line distance.
 - **Render (audio thread):** only the share the direct path does not carry, `1 - occlusion`, goes
@@ -301,6 +304,44 @@ path level.
 
 Not done: real-time reflections (discrete echoes, and reverb that follows moving sources).
 
+## Dynamic geometry
+
+Doors, lifts and trains move, so they stay out of the static mesh, and so out of probe placement
+and every bake. Baked data stays valid whatever state the doors were in, and paths are baked as if
+every door stood open. `CNeoAudioDynamicGeometry` (`neo_audio_dynamic.cpp`) puts them back at
+runtime as Steam Audio instanced meshes that follow their entities:
+
+- **What:** `cl_neo_hrtf_dynamic_geometry` 1 (the default) takes `func_door`, `func_door_rotating`,
+  `func_movelinear` and `func_tracktrain` (by the classname of the brush model's entity in the
+  entity lump: on the client, `func_movelinear` is a plain entity with a brush model), plus
+  `prop_door_rotating` (network class `CBasePropDoor`). It also takes every brush entity and prop
+  parented to any of them, at any depth, such as the APC riding rogue's invisible train. Players
+  and weapons never count. 2 adds every other solid brush entity, and every solid dynamic,
+  physics or breakable prop. 0 turns it off.
+- **Geometry:** a brush entity's model is its own BSP faces, stored relative to the entity's origin.
+  A prop's is its `.phy` solid 0, as for static props. Each model goes to the backend once, on
+  first use, as a sub-scene. Models under 0.5 m every way are left out: the smallest movers in the
+  maps are invisible trains carrying butterflies and fish.
+- **Every frame**, before the simulation, the client's entities are matched against that list. Each
+  match is one instance, placed by `EntityToWorldTransform()` and moved only when that changes.
+  Dormant entities keep their last place.
+- **Backend:** instances can't share the static scene, because a bake reads it on another thread
+  while instances move. So the first dynamic model gives the simulator a scene of its own: a second
+  copy of the static mesh, plus the instances. It is committed before each simulation run whenever
+  something moved. Maps without dynamic geometry never pay for the copy.
+- **Occlusion and transmission** come out of that scene as they do for walls: a closed door
+  muffles by its material.
+- **Paths ignore it:** pathing uses the baked paths as they are. The sound going around through a
+  doorway is the same with its door open or shut.
+
+Why paths ignore it: Steam Audio can re-validate baked paths against dynamic geometry
+(`enableValidation`), but that alone does not drop a path a closed door blocks. Only adding an on-the-spot
+search for another way round (`findAlternatePaths`) does. In a synthetic test room, that search
+cost 2.3–7.8 ms per blocked voice per run (0.11–0.4 ms with one visibility ray between probes
+instead of 4×4), and on ntre_rogue_ctg it added up to far too much per frame. So dynamic geometry
+only occludes. In that same test room against phonon 4.8.1, a closed door in a doorway occludes
+fully, with its material's transmission, and moving or releasing it restores the straight line.
+
 ## Trying it
 
 1. Build normally. CMake fetches the Steam Audio 4.8.1 SDK once and copies its library next to
@@ -327,10 +368,10 @@ then `cmake --build ... --target install`) and configure neo with
 - Distance attenuation re-implements the engine's model from the sound script's `soundlevel`
   (raw filenames use `SNDLVL_NORM`); engine DSP, ducking and room reverb do not apply.
 - Reverb is one listener-centric room, not per-source reflections. A sound in another room
-  reverberates in the listener's room only as much as it gets through the wall (pathed sound does
-  not feed the reverb). Paths
-  stop at areaportals and at 100 m. The scene has no brush entities (doors, func_brush) or
-  dynamic props, so cover made of those does not occlude.
+  reverberates in the listener's room only as much as reaches it, through the wall or along paths.
+  Paths stop at areaportals and at 100 m. By default, the only brush entities and props in the scene
+  are doors, lifts, trains and what rides on them (`cl_neo_hrtf_dynamic_geometry 2` adds the rest).
+  The bake ignores all of them, so the baked reverb never has a door shut.
 - The first play of each file decodes on the game thread (a small hitch per new sound per map).
 - One mutex guards the voice table for both threads, so a frame can wait on a block render and
   vice versa; POD double-buffering of voice parameters is the clean fix.

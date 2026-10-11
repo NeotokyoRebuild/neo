@@ -890,6 +890,8 @@ if(NEO_STEAMAUDIO)
         TARGET client
         NAME "HRTF"
         FILES
+        neo/audio/neo_audio_dynamic.cpp
+        neo/audio/neo_audio_dynamic.h
         neo/audio/neo_audio_geometry.cpp
         neo/audio/neo_audio_geometry.h
         neo/audio/neo_audio_probe_lump.cpp

@@ -49,6 +49,11 @@ namespace
 	X(iplStaticMeshCreate) \
 	X(iplStaticMeshRelease) \
 	X(iplStaticMeshAdd) \
+	X(iplInstancedMeshCreate) \
+	X(iplInstancedMeshRelease) \
+	X(iplInstancedMeshAdd) \
+	X(iplInstancedMeshRemove) \
+	X(iplInstancedMeshUpdateTransform) \
 	X(iplSimulatorCreate) \
 	X(iplSimulatorRelease) \
 	X(iplSimulatorSetScene) \
@@ -297,6 +302,76 @@ IPLCoordinateSpace3 ToSteamAudioListener(const Listener &listener)
 	space.ahead = ToSteamAudioPosition(listener.forward);
 	space.origin = ToSteamAudioPosition(listener.origin);
 	return space;
+}
+
+IPLMaterial ToSteamAudioMaterial(const AcousticMaterial &material);
+
+// A mesh converted to Steam Audio's frame, in the arrays iplStaticMeshCreate reads (and copies).
+struct MeshData
+{
+	std::vector<IPLVector3> vertices;
+	std::vector<IPLTriangle> triangles;
+	std::vector<IPLint32> materialIndices;
+	std::vector<IPLMaterial> materials;
+
+	MeshData() = default;
+	explicit MeshData(const SceneGeometry &geometry)
+		: vertices(geometry.numVertices)
+		, triangles(geometry.numTriangles)
+		, materialIndices(geometry.materialIndices, geometry.materialIndices + geometry.numTriangles)
+		, materials(geometry.numMaterials)
+	{
+		std::transform(geometry.vertices, geometry.vertices + geometry.numVertices, vertices.begin(), ToSteamAudioPosition);
+		for (int t = 0; t < geometry.numTriangles; ++t)
+		{
+			std::copy_n(geometry.triangles + t * 3, 3, triangles[t].indices);
+		}
+		std::transform(geometry.materials, geometry.materials + geometry.numMaterials, materials.begin(), ToSteamAudioMaterial);
+	}
+
+	// Points into the arrays, so it is only good until they change.
+	IPLStaticMeshSettings Settings()
+	{
+		IPLStaticMeshSettings settings = {};
+		settings.numVertices = static_cast<IPLint32>(vertices.size());
+		settings.numTriangles = static_cast<IPLint32>(triangles.size());
+		settings.numMaterials = static_cast<IPLint32>(materials.size());
+		settings.vertices = vertices.data();
+		settings.triangles = triangles.data();
+		settings.materialIndices = materialIndices.data();
+		settings.materials = materials.data();
+		return settings;
+	}
+};
+
+// The same transform in Steam Audio's frame: with C the axis change of ToSteamAudioPosition, the
+// rotation becomes C R C^T and the translation C t. Steam Audio transforms column vectors, so the
+// translation is the last column.
+IPLMatrix4x4 ToSteamAudioTransform(const Transform &transform)
+{
+	static constexpr float C[3][3] = { { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, -1.0f, 0.0f } };
+	IPLMatrix4x4 out = {};
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int j = 0; j < 3; ++j)
+		{
+			float sum = 0.0f;
+			for (int k = 0; k < 3; ++k)
+			{
+				for (int l = 0; l < 3; ++l)
+				{
+					sum += C[i][k] * transform.rotation[k][l] * C[j][l];
+				}
+			}
+			out.elements[i][j] = sum;
+		}
+	}
+	const IPLVector3 translation = ToSteamAudioPosition(transform.translation);
+	out.elements[0][3] = translation.x;
+	out.elements[1][3] = translation.y;
+	out.elements[2][3] = translation.z;
+	out.elements[3][3] = 1.0f;
+	return out;
 }
 
 IPLMaterial ToSteamAudioMaterial(const AcousticMaterial &material)
@@ -583,21 +658,10 @@ public:
 			return false;
 		}
 
-		// iplStaticMeshCreate copies everything, so these only live for this call.
-		std::vector<IPLVector3> vertices(geometry.numVertices);
-		std::transform(geometry.vertices, geometry.vertices + geometry.numVertices, vertices.begin(), ToSteamAudioPosition);
-		std::vector<IPLMaterial> materials(geometry.numMaterials);
-		std::transform(geometry.materials, geometry.materials + geometry.numMaterials, materials.begin(), ToSteamAudioMaterial);
-
-		// The C API takes non-const arrays but only reads them.
-		IPLStaticMeshSettings meshSettings = {};
-		meshSettings.numVertices = geometry.numVertices;
-		meshSettings.numTriangles = geometry.numTriangles;
-		meshSettings.numMaterials = geometry.numMaterials;
-		meshSettings.vertices = vertices.data();
-		meshSettings.triangles = reinterpret_cast<IPLTriangle *>(const_cast<int32_t *>(geometry.triangles));
-		meshSettings.materialIndices = const_cast<IPLint32 *>(geometry.materialIndices);
-		meshSettings.materials = materials.data();
+		// iplStaticMeshCreate copies everything; the converted mesh is kept in case dynamic geometry
+		// needs a second copy of it (EnsureDynamicScene).
+		m_staticGeometry = MeshData(geometry);
+		IPLStaticMeshSettings meshSettings = m_staticGeometry.Settings();
 		status = m_api.iplStaticMeshCreate(m_scene, &meshSettings, &m_staticMesh);
 		if (status != IPL_STATUS_SUCCESS)
 		{
@@ -663,6 +727,99 @@ public:
 		return true;
 	}
 
+	DynamicModel CreateDynamicModel(const SceneGeometry &geometry) override
+	{
+		if (geometry.numTriangles <= 0 || !EnsureDynamicScene())
+		{
+			return INVALID_DYNAMIC_MODEL;
+		}
+
+		DynamicModelSlot model;
+		IPLSceneSettings sceneSettings = {};
+		sceneSettings.type = IPL_SCENETYPE_DEFAULT;
+		if (m_api.iplSceneCreate(m_context, &sceneSettings, &model.scene) != IPL_STATUS_SUCCESS)
+		{
+			return INVALID_DYNAMIC_MODEL;
+		}
+		MeshData mesh(geometry);
+		IPLStaticMeshSettings meshSettings = mesh.Settings();
+		if (m_api.iplStaticMeshCreate(model.scene, &meshSettings, &model.mesh) != IPL_STATUS_SUCCESS)
+		{
+			m_api.iplSceneRelease(&model.scene);
+			return INVALID_DYNAMIC_MODEL;
+		}
+		m_api.iplStaticMeshAdd(model.mesh, model.scene);
+		m_api.iplSceneCommit(model.scene);
+		return static_cast<DynamicModel>(AddToSlots(m_dynamicModels, model) + 1);
+	}
+
+	void ReleaseDynamicModel(DynamicModel handle) override
+	{
+		DynamicModelSlot *const model = FindSlot(m_dynamicModels, handle);
+		if (!model)
+		{
+			return;
+		}
+		for (size_t i = 0; i < m_dynamicInstances.size(); ++i)
+		{
+			if (m_dynamicInstances[i].mesh && m_dynamicInstances[i].model == handle)
+			{
+				ReleaseDynamicInstance(static_cast<DynamicInstance>(i + 1));
+			}
+		}
+		m_api.iplStaticMeshRelease(&model->mesh);
+		m_api.iplSceneRelease(&model->scene);
+		*model = DynamicModelSlot();
+	}
+
+	DynamicInstance CreateDynamicInstance(DynamicModel handle, const Transform &transform) override
+	{
+		const DynamicModelSlot *const model = FindSlot(m_dynamicModels, handle);
+		if (!model || !m_dynamicScene)
+		{
+			return INVALID_DYNAMIC_INSTANCE;
+		}
+		DynamicInstanceSlot instance;
+		instance.model = handle;
+		IPLInstancedMeshSettings settings = {};
+		settings.subScene = model->scene;
+		settings.transform = ToSteamAudioTransform(transform);
+		if (m_api.iplInstancedMeshCreate(m_dynamicScene, &settings, &instance.mesh) != IPL_STATUS_SUCCESS)
+		{
+			return INVALID_DYNAMIC_INSTANCE;
+		}
+		m_api.iplInstancedMeshAdd(instance.mesh, m_dynamicScene);
+		m_bDynamicSceneDirty = true;
+		++m_numDynamicInstances;
+		return static_cast<DynamicInstance>(AddToSlots(m_dynamicInstances, instance) + 1);
+	}
+
+	void MoveDynamicInstance(DynamicInstance handle, const Transform &transform) override
+	{
+		if (DynamicInstanceSlot *const instance = FindSlot(m_dynamicInstances, handle))
+		{
+			m_api.iplInstancedMeshUpdateTransform(instance->mesh, m_dynamicScene, ToSteamAudioTransform(transform));
+			m_bDynamicSceneDirty = true;
+		}
+	}
+
+	void ReleaseDynamicInstance(DynamicInstance handle) override
+	{
+		if (DynamicInstanceSlot *const instance = FindSlot(m_dynamicInstances, handle))
+		{
+			m_api.iplInstancedMeshRemove(instance->mesh, m_dynamicScene);
+			m_api.iplInstancedMeshRelease(&instance->mesh);
+			*instance = DynamicInstanceSlot();
+			m_bDynamicSceneDirty = true;
+			--m_numDynamicInstances;
+		}
+	}
+
+	int NumDynamicInstances() const override
+	{
+		return m_numDynamicInstances;
+	}
+
 	void SimulateDirect(const Listener &listener, const VoiceHandle *voices, const Vec3 *origins,
 						DirectPath *pathsOut, int count) override
 	{
@@ -672,12 +829,7 @@ public:
 			return;
 		}
 
-		// Sources added or removed since the last run only take part after a commit.
-		if (m_bSimulatorDirty)
-		{
-			m_api.iplSimulatorCommit(m_simulator);
-			m_bSimulatorDirty = false;
-		}
+		CommitSimulation();
 
 		// Distance attenuation, air absorption and directivity stay with the caller's model, so only
 		// what the geometry does is simulated.
@@ -744,11 +896,7 @@ public:
 		{
 			return;
 		}
-		if (m_bSimulatorDirty)
-		{
-			m_api.iplSimulatorCommit(m_simulator);
-			m_bSimulatorDirty = false;
-		}
+		CommitSimulation();
 
 		IPLSimulationInputs inputs = {};
 		inputs.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
@@ -813,14 +961,12 @@ public:
 		{
 			return;
 		}
-		if (m_bSimulatorDirty)
-		{
-			m_api.iplSimulatorCommit(m_simulator);
-			m_bSimulatorDirty = false;
-		}
+		CommitSimulation();
 
-		// The world is static and the paths were baked against it, so they need no re-validation;
-		// that would cost real-time visibility rays every frame.
+		// Paths are used as baked, against the static world alone: dynamic geometry only occludes.
+		// Re-validating them would make a closed door block its doorway's paths, but Steam Audio only
+		// drops a blocked path when it also searches for another way round on the spot, which cost
+		// several milliseconds a frame on ntre_rogue_ctg.
 		static IPLDeviationModel s_deviationModel = { IPL_DEVIATIONTYPE_DEFAULT, nullptr, nullptr };
 		IPLSimulationInputs inputs = {};
 		inputs.flags = IPL_SIMULATIONFLAGS_PATHING;
@@ -1405,6 +1551,118 @@ private:
 		}
 	}
 
+	struct DynamicModelSlot
+	{
+		IPLScene scene = nullptr; // null = free slot
+		IPLStaticMesh mesh = nullptr;
+	};
+
+	struct DynamicInstanceSlot
+	{
+		IPLInstancedMesh mesh = nullptr; // null = free slot
+		DynamicModel model = INVALID_DYNAMIC_MODEL;
+	};
+
+	// Handles are slot index + 1, and freed slots are reused.
+	template <typename Slot>
+	static size_t AddToSlots(std::vector<Slot> &slots, const Slot &slot)
+	{
+		for (size_t i = 0; i < slots.size(); ++i)
+		{
+			if (!IsUsed(slots[i]))
+			{
+				slots[i] = slot;
+				return i;
+			}
+		}
+		slots.push_back(slot);
+		return slots.size() - 1;
+	}
+
+	template <typename Slot>
+	static Slot *FindSlot(std::vector<Slot> &slots, uint32_t handle)
+	{
+		if (handle == 0 || handle > slots.size() || !IsUsed(slots[handle - 1]))
+		{
+			return nullptr;
+		}
+		return &slots[handle - 1];
+	}
+
+	static bool IsUsed(const DynamicModelSlot &slot) { return slot.scene != nullptr; }
+	static bool IsUsed(const DynamicInstanceSlot &slot) { return slot.mesh != nullptr; }
+
+	// The simulator moves to a scene of its own once there is dynamic geometry: a second copy of the
+	// static mesh with the instances alongside. Instances move every frame, and each move needs a
+	// commit, which must never touch the static scene while a bake on another thread reads it.
+	bool EnsureDynamicScene()
+	{
+		if (m_dynamicScene)
+		{
+			return true;
+		}
+		if (!m_scene || !m_simulator)
+		{
+			return false;
+		}
+		IPLSceneSettings sceneSettings = {};
+		sceneSettings.type = IPL_SCENETYPE_DEFAULT;
+		if (m_api.iplSceneCreate(m_context, &sceneSettings, &m_dynamicScene) != IPL_STATUS_SUCCESS)
+		{
+			m_dynamicScene = nullptr;
+			return false;
+		}
+		IPLStaticMeshSettings meshSettings = m_staticGeometry.Settings();
+		if (m_api.iplStaticMeshCreate(m_dynamicScene, &meshSettings, &m_dynamicSceneStaticMesh) != IPL_STATUS_SUCCESS)
+		{
+			m_dynamicSceneStaticMesh = nullptr;
+			m_api.iplSceneRelease(&m_dynamicScene);
+			return false;
+		}
+		m_api.iplStaticMeshAdd(m_dynamicSceneStaticMesh, m_dynamicScene);
+		m_api.iplSceneCommit(m_dynamicScene);
+		m_api.iplSimulatorSetScene(m_simulator, m_dynamicScene);
+		m_api.iplSimulatorCommit(m_simulator);
+		m_bSimulatorDirty = false;
+		return true;
+	}
+
+	// Brings the simulator up to date before a run: instances where they are now, and the sources
+	// added or removed since the last run.
+	void CommitSimulation()
+	{
+		if (m_bDynamicSceneDirty)
+		{
+			m_api.iplSceneCommit(m_dynamicScene);
+			m_bDynamicSceneDirty = false;
+		}
+		if (m_bSimulatorDirty)
+		{
+			m_api.iplSimulatorCommit(m_simulator);
+			m_bSimulatorDirty = false;
+		}
+	}
+
+	void ReleaseDynamicGeometry()
+	{
+		for (size_t i = 0; i < m_dynamicModels.size(); ++i)
+		{
+			ReleaseDynamicModel(static_cast<DynamicModel>(i + 1));
+		}
+		m_dynamicModels.clear();
+		m_dynamicInstances.clear();
+		m_numDynamicInstances = 0;
+		m_bDynamicSceneDirty = false;
+		if (m_dynamicSceneStaticMesh)
+		{
+			m_api.iplStaticMeshRelease(&m_dynamicSceneStaticMesh);
+		}
+		if (m_dynamicScene)
+		{
+			m_api.iplSceneRelease(&m_dynamicScene);
+		}
+	}
+
 	void ReleaseScene()
 	{
 		// Probes and their baked data describe this scene, so they go with it.
@@ -1424,6 +1682,7 @@ private:
 			m_api.iplSimulatorRelease(&m_simulator);
 		}
 		m_bSimulatorDirty = false;
+		ReleaseDynamicGeometry();
 		if (m_staticMesh)
 		{
 			m_api.iplStaticMeshRelease(&m_staticMesh);
@@ -1432,6 +1691,7 @@ private:
 		{
 			m_api.iplSceneRelease(&m_scene);
 		}
+		m_staticGeometry = MeshData();
 	}
 
 	Voice *FindVoice(VoiceHandle handle)
@@ -1449,9 +1709,17 @@ private:
 
 	IPLContext m_context = nullptr;
 	IPLHRTF m_hrtf = nullptr;
-	IPLScene m_scene = nullptr;
+	IPLScene m_scene = nullptr; // the static world: what probes are placed in and baked against
 	IPLStaticMesh m_staticMesh = nullptr;
-	IPLSimulator m_simulator = nullptr;
+	MeshData m_staticGeometry; // m_staticMesh's source, for the dynamic scene's copy of it
+	IPLSimulator m_simulator = nullptr; // simulates m_dynamicScene once there is one, else m_scene
+	// Dynamic geometry: a scene of the static world and the instances, and the models they place.
+	IPLScene m_dynamicScene = nullptr;
+	IPLStaticMesh m_dynamicSceneStaticMesh = nullptr;
+	std::vector<DynamicModelSlot> m_dynamicModels;
+	std::vector<DynamicInstanceSlot> m_dynamicInstances;
+	int m_numDynamicInstances = 0;
+	bool m_bDynamicSceneDirty = false; // instances added, moved or removed since the last commit
 	IPLSource m_reverbSource = nullptr; // baked listener reverb, only while there is a simulator
 	bool m_bBatchesAttached = false; // probe batches are in the simulator (only while fully baked)
 	ReverbParams m_lastReverb; // held while the listener is away from probes

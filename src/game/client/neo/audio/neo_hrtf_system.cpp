@@ -245,6 +245,9 @@ ConVar cl_neo_hrtf_debug("cl_neo_hrtf_debug", "0", FCVAR_CLIENTDLL,
 	"Overlay the HRTF status and one line per voice: file, distance, gain, azimuth, occlusion", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_occlusion("cl_neo_hrtf_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Muffle HRTF sounds by the map geometry between them and the listener", true, 0.0f, true, 1.0f);
+ConVar cl_neo_hrtf_dynamic_geometry("cl_neo_hrtf_dynamic_geometry", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+	"Moving geometry in the acoustic scene: 0 = none, 1 = doors, func_movelinear and func_tracktrain and what is parented to them, 2 = also every other solid brush entity and prop",
+	true, 0.0f, true, 2.0f);
 ConVar cl_neo_hrtf_pathing("cl_neo_hrtf_pathing", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Let occluded HRTF sounds reach the listener around obstacles, along paths baked into the map's probes", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_reverb("cl_neo_hrtf_reverb", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
@@ -509,6 +512,11 @@ void CNeoHrtfSystem::PollEngineSounds()
 		}
 	}
 
+	if (m_sceneTriangles > 0)
+	{
+		m_dynamicGeometry.Update(m_pSpatializer,
+								 static_cast<CNeoAudioDynamicGeometry::Scope>(cl_neo_hrtf_dynamic_geometry.GetInt()));
+	}
 	SimulatePaths();
 
 	// Muting is an engine call, so it stays out of the audio thread's lock.
@@ -727,6 +735,7 @@ void CNeoHrtfSystem::StopDevice()
 		ReleaseAllVoices();
 		delete m_pSpatializer;
 		m_pSpatializer = nullptr;
+		m_dynamicGeometry.Clear();
 		m_sceneTriangles = 0;
 	}
 }
@@ -764,6 +773,7 @@ void CNeoHrtfSystem::BuildScene()
 
 	V_snprintf(m_szProbeCachePath, sizeof(m_szProbeCachePath), "%s/%s.probes", kHrtfProbeCacheDir, pszMapName);
 	SetupProbes(geometry);
+	m_dynamicGeometry.Init(geometry, services);
 }
 
 void CNeoHrtfSystem::ReleaseScene()
@@ -774,6 +784,7 @@ void CNeoHrtfSystem::ReleaseScene()
 		char error[kMaxErrorLen];
 		m_pSpatializer->SetSceneGeometry(NeoSpatial::SceneGeometry(), error, sizeof(error));
 	}
+	m_dynamicGeometry.Clear(); // the backend dropped its models and instances with the scene
 	m_sceneTriangles = 0;
 	{
 		// The room was this map's.
@@ -1306,8 +1317,8 @@ void CNeoHrtfSystem::PrintDebug() const
 			path.transmission[0], path.transmission[1], path.transmission[2], pathText, voice.m_lastReportedVolume,
 			voice.m_lastSpatializedVolume, voice.m_engineGain);
 	}
-	engine->Con_NPrintf(0, "hrtf: Steam Audio, voices %d/%d, cached sounds %d, scripted wave levels %d, scene triangles %d, sim %.2f ms",
-		liveVoices, kMaxVoices, m_cache.Count(), m_soundLevels.Count(), m_sceneTriangles, m_simMilliseconds);
+	engine->Con_NPrintf(0, "hrtf: Steam Audio, voices %d/%d, cached sounds %d, scripted wave levels %d, scene triangles %d, dynamic objects %d, sim %.2f ms",
+		liveVoices, kMaxVoices, m_cache.Count(), m_soundLevels.Count(), m_sceneTriangles, m_dynamicGeometry.NumInstances(), m_simMilliseconds);
 
 	static const char *const s_pszBakeStates[] = { "not baked", "baking", "baked", "bake stopped" };
 	float bakeProgress = 0.0f;

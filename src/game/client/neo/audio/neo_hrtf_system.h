@@ -14,6 +14,7 @@
 #include "utlstring.h"
 #include "utlvector.h"
 
+#include "neo_audio_dynamic.h"
 #include "neo_audio_probes.h"
 #include "neo_hrtf_local_sound.h"
 #include "neo_spatializer.h"
@@ -159,6 +160,7 @@ private:
 	bool m_bSceneStale = false; // the spatializer has no scene for the current map yet
 	int m_sceneTriangles = 0; // 0 = no scene
 	NeoSpatial::ProbeSet m_probes; // the current map's probes, also what the backend's batches hold
+	CNeoAudioDynamicGeometry m_dynamicGeometry; // doors and the like, kept in the backend's scene
 	uint32 m_probeCacheKey = 0; // geometry + probe layout + format; a cached bake must match it
 	char m_szProbeCachePath[MAX_PATH] = "";
 	NeoSpatial::BakeState m_lastBakeState = NeoSpatial::BakeState::Idle;

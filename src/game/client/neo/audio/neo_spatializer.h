@@ -10,8 +10,8 @@
 //    Process on the audio thread. The caller guarantees they never overlap.
 //  - Process() OVERWRITES the outputs at unity gain: distance attenuation and volume are the
 //    caller's, so the distance model can change without touching a backend.
-//  - Scene, probes and simulation (SetSceneGeometry, the probe calls, SimulateDirect, SaveSceneObj)
-//    are game-thread state that Process never reads, so those calls need not be serialised with the
+//  - Scene, probes and simulation (SetSceneGeometry, the dynamic geometry calls, the probe calls,
+//    SimulateDirect, SaveSceneObj) are game-thread state that Process never reads, so those calls need not be serialised with the
 //    audio thread. Their results reach Process only as the DirectPath the caller passes it.
 //  - A bake runs on the backend's own thread; every other call that touches the scene or probe
 //    batches cancels and joins it first, so the caller never has to.
@@ -61,6 +61,20 @@ struct SceneGeometry
 	const AcousticMaterial *materials = nullptr;
 	int numMaterials = 0;
 };
+
+// Places a dynamic model in the world, in the same frame and units as positions:
+// world = rotation * local + translation, with rotation a 3x3 rotation matrix (row-major).
+struct Transform
+{
+	float rotation[3][3];
+	Vec3 translation;
+};
+
+// Dynamic geometry (see ISpatializer::CreateDynamicModel).
+typedef uint32_t DynamicModel;
+typedef uint32_t DynamicInstance;
+static constexpr DynamicModel INVALID_DYNAMIC_MODEL = 0;
+static constexpr DynamicInstance INVALID_DYNAMIC_INSTANCE = 0;
 
 // Probes laid out as consecutive batches: batch b holds probes [batchStarts[b], batchStarts[b + 1]).
 // Each batch carries a caller-chosen id (e.g. the BSP area it covers) that survives serialisation.
@@ -161,8 +175,21 @@ public:
 	virtual void ProcessReverb(const ReverbParams &params, bool bDecorrelate, float *outLeft, float *outRight) = 0;
 
 	// Replaces the static scene; geometry without triangles just removes the current one.
-	// On failure there is no scene, and errorOut says why.
+	// On failure there is no scene, and errorOut says why. Drops every dynamic model and instance.
 	virtual bool SetSceneGeometry(const SceneGeometry &geometry, char *errorOut, int errorLen) = 0;
+
+	// Dynamic geometry: things that move or come and go (doors, trains). A model is a mesh in its
+	// own frame (geometry as for SetSceneGeometry), placed in the scene by any number of instances.
+	// Dynamic geometry occludes from the next simulation on (pathing ignores it), but is never baked:
+	// probes and their bake only see the static scene, so baked data stays valid however it moves.
+	// Models need a scene; INVALID_DYNAMIC_MODEL if there is none or the model could not be made.
+	virtual DynamicModel CreateDynamicModel(const SceneGeometry &geometry) = 0;
+	// Releases the model along with any instances of it still in the scene.
+	virtual void ReleaseDynamicModel(DynamicModel model) = 0;
+	virtual DynamicInstance CreateDynamicInstance(DynamicModel model, const Transform &transform) = 0;
+	virtual void MoveDynamicInstance(DynamicInstance instance, const Transform &transform) = 0;
+	virtual void ReleaseDynamicInstance(DynamicInstance instance) = 0;
+	virtual int NumDynamicInstances() const = 0;
 
 	// Traces each voice's origin (world positions, as for Process) to the listener through the scene
 	// and writes one path per voice. Invalid handles, and every voice while there is no scene, get
@@ -176,7 +203,8 @@ public:
 
 	// Finds the paths from each voice to the listener through the baked batch with id batchId (the
 	// one covering the listener). Writes one result per voice; all invalid until that batch's bake is
-	// complete. A voice the listener can see gets its direct line as its path.
+	// complete. A voice the listener can see gets its direct line as its path. Paths are used as
+	// baked: dynamic geometry does not block them.
 	virtual void SimulatePathing(const Listener &listener, int32_t batchId, float minGain, const PathingVoice *voices,
 								 PathParams *out, int count) = 0;
 
