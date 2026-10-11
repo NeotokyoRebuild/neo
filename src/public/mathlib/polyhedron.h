@@ -26,8 +26,8 @@ struct BasicVector
 	{
 		BasicVector res;
 		res.x = x + v.x;
-		res.x = y + v.y;
-		res.x = z + v.z;
+		res.y = y + v.y;
+		res.z = z + v.z;
 		return res;
 	}
 
@@ -35,8 +35,8 @@ struct BasicVector
 	{
 		BasicVector res;
 		res.x = x - v.x;
-		res.x = y - v.y;
-		res.x = z - v.z;
+		res.y = y - v.y;
+		res.z = z - v.z;
 		return res;
 	}
 
@@ -44,8 +44,8 @@ struct BasicVector
 	{
 		BasicVector res;
 		res.x = x * v;
-		res.x = y * v;
-		res.x = z * v;
+		res.y = y * v;
+		res.z = z * v;
 		return res;
 	}
 
