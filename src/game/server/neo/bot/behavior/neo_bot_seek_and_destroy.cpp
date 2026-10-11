@@ -90,7 +90,7 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 			return false; // no fight, out of PAS, or already there
 		}
 
-		if ( IsAtkDefendingTeam( me->GetTeamNumber() ) && NEORules()->GetGhostPos().DistToSqr( vFight ) > Square( BOT_ATK_DEFENDER_GUARD_RANGE ) )
+		if ( IsAtkDefendingTeam( me->GetTeamNumber() ) && !IsInAtkGhostView( vFight ) )
 		{
 			return false;
 		}
@@ -250,9 +250,8 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 		// This will just go to the ghoster RecomputeSeekPath logics instead of
 		// only going after it
 		const bool bDontSuspendForGhoster = (neoThreat && neoThreat->IsCarryingGhost());
-		// ATK defenders shoot at threats past the guard range but do not leave the ghost for them
-		const bool bBeyondGuard = IsAtkDefendingTeam( me->GetTeamNumber() )
-			&& NEORules()->GetGhostPos().DistToSqr( threat->GetLastKnownPosition() ) > Square( BOT_ATK_DEFENDER_GUARD_RANGE );
+		// ATK defenders shoot at threats out of the ghost's view but do not leave the ghost for them
+		const bool bBeyondGuard = IsAtkDefendingTeam( me->GetTeamNumber() ) && !IsInAtkGhostView( threat->GetLastKnownPosition() );
 		if (!bDontSuspendForGhoster && !bBeyondGuard)
 		{
 			const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
