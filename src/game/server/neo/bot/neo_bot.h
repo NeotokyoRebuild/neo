@@ -43,6 +43,14 @@ inline int GetEnemyTeam(int team)
 	return team;
 }
 
+// ATK defenders chase a threat only this close to the ghost
+static constexpr float BOT_ATK_DEFENDER_GUARD_RANGE = 1000.0f;
+
+inline bool IsAtkDefendingTeam(int team)
+{
+	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetDefendingTeam();
+}
+
 class CNEOBotBehavior;
 
 // Not split off from neo_bot.h/cpp unless you want to deal with includes hell
