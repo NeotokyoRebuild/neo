@@ -43,9 +43,6 @@ inline int GetEnemyTeam(int team)
 	return team;
 }
 
-// ATK defenders chase threats and combat sounds only this close to the ghost
-static constexpr float BOT_ATK_DEFENDER_GUARD_RANGE = 1000.0f;
-
 inline bool IsAtkAttackingTeam(int team)
 {
 	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetAttackingTeam();
@@ -55,6 +52,9 @@ inline bool IsAtkDefendingTeam(int team)
 {
 	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetDefendingTeam();
 }
+
+// ATK defenders chase threats and combat sounds only where the ghost's nav area could see them
+bool IsInAtkGhostView( const Vector &vecPos );
 
 class CNEOBotBehavior;
 

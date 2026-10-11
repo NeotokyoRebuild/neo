@@ -266,11 +266,11 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	if ( IsAtkDefendingTeam( me->GetTeamNumber() ) && !threat->IsVisibleRecently() )
 	{
-		// An ATK defender drops a chase it lost sight of when it leads away from the ghost,
+		// An ATK defender drops a chase it lost sight of when it leads out of the ghost's view,
 		// or when an attacker has the ghost, so it collapses on the carrier
-		if ( NEORules()->GetGhostPos().DistToSqr( threatLastKnownPos ) > Square( BOT_ATK_DEFENDER_GUARD_RANGE ) )
+		if ( !IsInAtkGhostView( threatLastKnownPos ) )
 		{
-			return Done( "Threat is beyond the ghost's guard range" );
+			return Done( "Threat is out of the ghost's view" );
 		}
 
 		const int iGhoster = NEORules()->GetGhosterPlayer();
