@@ -407,8 +407,9 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 	m_teammates.RemoveAll();
 	CollectPlayers( me, &m_teammates );
 
-	// Check if bot should transition into lone wolf behavior
-	if ( m_teammates.Count() == 0 )
+	// Check if bot should transition into lone wolf behavior,
+	// except in ATK, where waiting runs the clock out for the defenders
+	if ( m_teammates.Count() == 0 && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK )
 	{
 		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 		if ( threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
@@ -535,6 +536,20 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 				return;
 			}
 		}
+	}
+
+	// In ATK the clock runs for the defenders, so head for the zone and let the escorts keep up
+	if ( NEORules()->GetGameType() == NEO_GAME_TYPE_ATK )
+	{
+		m_chasePath.Invalidate();
+
+		if ( !m_path.IsValid() )
+		{
+			CNEOBotPathCompute( me, m_path, vecGoalPos, SAFEST_ROUTE );
+		}
+
+		m_path.Update( me );
+		return;
 	}
 
 	// Choose which teammate to follow

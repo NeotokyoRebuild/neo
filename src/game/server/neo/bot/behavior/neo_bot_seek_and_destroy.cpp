@@ -46,6 +46,13 @@ static bool IsAtkDefender( CNEOBot *me )
 
 
 //---------------------------------------------------------------------------------------------
+static bool IsAtkAttacker( CNEOBot *me )
+{
+	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && me->GetTeamNumber() == NEORules()->GetAttackingTeam();
+}
+
+
+//---------------------------------------------------------------------------------------------
 // Is the bot inside the potentially-audible set of a sound at vSoundPos?
 static bool BotInSoundPAS( CNEOBot *me, const Vector &vSoundPos )
 {
@@ -205,6 +212,12 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		}
 
 		return Continue();
+	}
+
+	// ATK attackers return to the objective after a fight, and carry a ghost picked up outside of CtgSeek
+	if ( IsAtkAttacker( me ) )
+	{
+		return SuspendFor( new CNEOBotCtgSeek, "Attacking the ghost" );
 	}
 
 	if (IsGhostGameType())
