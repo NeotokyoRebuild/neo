@@ -102,20 +102,22 @@ void CNeoAudioDynamicGeometry::Update(NeoSpatial::ISpatializer *pSpatializer, Sc
 			// that went out of view is still there.
 			const matrix3x4_t &transform = pEntity->EntityToWorldTransform();
 			const unsigned long key = pEntity->GetRefEHandle().ToInt();
+			const uint32 group = HierarchyGroup(pEntity);
 			unsigned short index = m_instances.Find(key);
-			if (index != m_instances.InvalidIndex() && m_instances[index].model != model)
+			if (index != m_instances.InvalidIndex() && (m_instances[index].model != model || m_instances[index].group != group))
 			{
-				// The entity changed model.
+				// The entity changed model, or was parented to something else.
 				pSpatializer->ReleaseDynamicInstance(m_instances[index].handle);
 				m_instances.RemoveAt(index);
 				index = m_instances.InvalidIndex();
 			}
 			if (index == m_instances.InvalidIndex())
 			{
-				const NeoSpatial::DynamicInstance handle = pSpatializer->CreateDynamicInstance(model, DynamicToTransform(transform));
+				const NeoSpatial::DynamicInstance handle =
+					pSpatializer->CreateDynamicInstance(model, DynamicToTransform(transform), group);
 				if (handle != NeoSpatial::INVALID_DYNAMIC_INSTANCE)
 				{
-					m_instances.Insert(key, { handle, model, transform, true });
+					m_instances.Insert(key, { handle, model, group, transform, true });
 				}
 				continue;
 			}
@@ -205,6 +207,23 @@ NeoSpatial::DynamicModel CNeoAudioDynamicGeometry::ModelFor(NeoSpatial::ISpatial
 		index = m_props.Insert(pModel, handle);
 	}
 	return m_props[index];
+}
+
+uint32 CNeoAudioDynamicGeometry::SoundGroup(int entIndex)
+{
+	C_BaseEntity *pEntity = (entIndex > 0) ? ClientEntityList().GetBaseEntity(entIndex) : nullptr;
+	return pEntity ? HierarchyGroup(pEntity) : NeoSpatial::NO_DYNAMIC_GROUP;
+}
+
+uint32 CNeoAudioDynamicGeometry::HierarchyGroup(C_BaseEntity *pEntity)
+{
+	C_BaseEntity *pRoot = pEntity;
+	while (C_BaseEntity *pParent = pRoot->GetMoveParent())
+	{
+		pRoot = pParent;
+	}
+	// The handle holds the entity index in its low bits, so only the world's can be 0 (no group).
+	return static_cast<uint32>(pRoot->GetRefEHandle().ToInt());
 }
 
 bool CNeoAudioDynamicGeometry::IsMover(C_BaseEntity *pEntity) const

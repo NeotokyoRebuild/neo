@@ -92,6 +92,7 @@ private:
 		float m_distMult = 0.0f; // engine dist_mult for m_soundLevel, 0 = no falloff
 		bool m_bLevelFromEmitter = false; // from a networked ambient_generic rather than the scripts
 		NeoHrtfLocalSound m_localSound = NeoHrtfLocalSound::None; // the local player's own, and where from
+		int m_soundSource = 0; // the entity playing it (SndInfo_t::m_nSoundSource)
 
 		// Set by the game thread under m_mutex while the voice is created or released.
 		const CachedSound *m_pSound = nullptr;
@@ -174,6 +175,7 @@ private:
 	PendingVoice m_pending[kMaxVoices];
 	NeoSpatial::VoiceHandle m_simHandles[kMaxVoices];
 	NeoSpatial::Vec3 m_simOrigins[kMaxVoices];
+	uint32 m_simIgnoreGroups[kMaxVoices]; // the dynamic geometry each voice is part of, not occluded by
 	NeoSpatial::DirectPath m_simPaths[kMaxVoices];
 	NeoSpatial::PathingVoice m_simPathingVoices[kMaxVoices];
 	NeoSpatial::PathParams m_simPathing[kMaxVoices];

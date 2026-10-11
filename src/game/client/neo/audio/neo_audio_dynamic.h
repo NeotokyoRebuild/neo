@@ -42,7 +42,15 @@ public:
 
 	int NumInstances() const { return m_instances.Count(); }
 
+	// The group of dynamic geometry a sound played by entity `entIndex` belongs to, and so is not
+	// occluded by: its whole parent hierarchy, named by the topmost entity. A door's own sounds,
+	// and those of anything riding a train, ignore the door or the train and everything on it.
+	// NO_DYNAMIC_GROUP for a sound with no entity.
+	static uint32 SoundGroup(int entIndex);
+
 private:
+	static uint32 HierarchyGroup(C_BaseEntity *pEntity);
+
 	struct BrushEntry
 	{
 		NeoSpatial::DynamicModel handle = NeoSpatial::INVALID_DYNAMIC_MODEL;
@@ -54,6 +62,7 @@ private:
 	{
 		NeoSpatial::DynamicInstance handle;
 		NeoSpatial::DynamicModel model;
+		uint32 group; // HierarchyGroup when created
 		matrix3x4_t transform; // as last sent to the backend
 		bool bSeen; // still wanted this update
 	};

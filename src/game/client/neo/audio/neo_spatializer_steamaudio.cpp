@@ -772,7 +772,7 @@ public:
 		*model = DynamicModelSlot();
 	}
 
-	DynamicInstance CreateDynamicInstance(DynamicModel handle, const Transform &transform) override
+	DynamicInstance CreateDynamicInstance(DynamicModel handle, const Transform &transform, uint32_t group) override
 	{
 		const DynamicModelSlot *const model = FindSlot(m_dynamicModels, handle);
 		if (!model || !m_dynamicScene)
@@ -781,6 +781,7 @@ public:
 		}
 		DynamicInstanceSlot instance;
 		instance.model = handle;
+		instance.group = group;
 		IPLInstancedMeshSettings settings = {};
 		settings.subScene = model->scene;
 		settings.transform = ToSteamAudioTransform(transform);
@@ -820,7 +821,7 @@ public:
 		return m_numDynamicInstances;
 	}
 
-	void SimulateDirect(const Listener &listener, const VoiceHandle *voices, const Vec3 *origins,
+	void SimulateDirect(const Listener &listener, const VoiceHandle *voices, const Vec3 *origins, const uint32_t *ignoreGroups,
 						DirectPath *pathsOut, int count) override
 	{
 		std::fill_n(pathsOut, count, DirectPath());
@@ -831,50 +832,35 @@ public:
 
 		CommitSimulation();
 
-		// Distance attenuation, air absorption and directivity stay with the caller's model, so only
-		// what the geometry does is simulated.
-		IPLSimulationInputs inputs = {};
-		inputs.flags = IPL_SIMULATIONFLAGS_DIRECT;
-		inputs.directFlags = static_cast<IPLDirectSimulationFlags>(IPL_DIRECTSIMULATIONFLAGS_OCCLUSION | IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION);
-		inputs.source.right = { 1.0f, 0.0f, 0.0f };
-		inputs.source.up = { 0.0f, 1.0f, 0.0f };
-		inputs.source.ahead = STEAMAUDIO_AHEAD;
-		inputs.occlusionType = IPL_OCCLUSIONTYPE_VOLUMETRIC;
-		inputs.occlusionRadius = OCCLUSION_RADIUS_METRES;
-		inputs.numOcclusionSamples = OCCLUSION_SAMPLES;
-		inputs.numTransmissionRays = TRANSMISSION_RAYS;
-
-		bool bAnySource = false;
-		for (int i = 0; i < count; ++i)
+		// Steam Audio traces every source against the same scene, so a voice that ignores a group is
+		// simulated in a run of its own with that group's instances out of the scene: one run for the
+		// voices that ignore nothing, then one per group that some voice ignores and that is in the
+		// scene. Usually that is nothing, or one moving door or train playing its own sound.
+		m_directVoiceGroups.assign(count, NO_DYNAMIC_GROUP);
+		m_directExtraGroups.clear();
+		for (int i = 0; ignoreGroups && i < count; ++i)
 		{
-			const Voice *const voice = FindVoice(voices[i]);
-			if (voice && voice->source)
+			const uint32_t group = ignoreGroups[i];
+			if (group != NO_DYNAMIC_GROUP && HasDynamicGroup(group))
 			{
-				inputs.source.origin = ToSteamAudioPosition(origins[i]);
-				m_api.iplSourceSetInputs(voice->source, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
-				bAnySource = true;
+				m_directVoiceGroups[i] = group;
+				if (std::find(m_directExtraGroups.begin(), m_directExtraGroups.end(), group) == m_directExtraGroups.end())
+				{
+					m_directExtraGroups.push_back(group);
+				}
 			}
-		}
-		if (!bAnySource)
-		{
-			return;
 		}
 
 		IPLSimulationSharedInputs sharedInputs = {};
 		sharedInputs.listener = ToSteamAudioListener(listener);
 		m_api.iplSimulatorSetSharedInputs(m_simulator, IPL_SIMULATIONFLAGS_DIRECT, &sharedInputs);
-		m_api.iplSimulatorRunDirect(m_simulator);
 
-		for (int i = 0; i < count; ++i)
+		RunDirectPass(NO_DYNAMIC_GROUP, voices, origins, pathsOut, count);
+		for (const uint32_t group : m_directExtraGroups)
 		{
-			const Voice *const voice = FindVoice(voices[i]);
-			if (voice && voice->source)
-			{
-				IPLSimulationOutputs outputs = {};
-				m_api.iplSourceGetOutputs(voice->source, IPL_SIMULATIONFLAGS_DIRECT, &outputs);
-				pathsOut[i].occlusion = outputs.direct.occlusion;
-				std::copy_n(outputs.direct.transmission, IPL_NUM_BANDS, pathsOut[i].transmission);
-			}
+			SetDynamicGroupInScene(group, false);
+			RunDirectPass(group, voices, origins, pathsOut, count);
+			SetDynamicGroupInScene(group, true);
 		}
 	}
 
@@ -1561,6 +1547,7 @@ private:
 	{
 		IPLInstancedMesh mesh = nullptr; // null = free slot
 		DynamicModel model = INVALID_DYNAMIC_MODEL;
+		uint32_t group = NO_DYNAMIC_GROUP;
 	};
 
 	// Handles are slot index + 1, and freed slots are reused.
@@ -1625,6 +1612,84 @@ private:
 		m_api.iplSimulatorCommit(m_simulator);
 		m_bSimulatorDirty = false;
 		return true;
+	}
+
+	bool HasDynamicGroup(uint32_t group) const
+	{
+		return std::any_of(m_dynamicInstances.begin(), m_dynamicInstances.end(),
+						   [group](const DynamicInstanceSlot &instance) { return instance.mesh && instance.group == group; });
+	}
+
+	// Takes a group's instances out of the dynamic scene, or puts them back, and commits it.
+	void SetDynamicGroupInScene(uint32_t group, bool bInScene)
+	{
+		for (const DynamicInstanceSlot &instance : m_dynamicInstances)
+		{
+			if (instance.mesh && instance.group == group)
+			{
+				if (bInScene)
+				{
+					m_api.iplInstancedMeshAdd(instance.mesh, m_dynamicScene);
+				}
+				else
+				{
+					m_api.iplInstancedMeshRemove(instance.mesh, m_dynamicScene);
+				}
+			}
+		}
+		m_api.iplSceneCommit(m_dynamicScene);
+	}
+
+	// Runs direct simulation for the voices whose ignored group is `group`, and writes their paths.
+	// The other voices' sources sit the run out.
+	void RunDirectPass(uint32_t group, const VoiceHandle *voices, const Vec3 *origins, DirectPath *pathsOut, int count)
+	{
+		// Distance attenuation, air absorption and directivity stay with the caller's model, so only
+		// what the geometry does is simulated.
+		IPLSimulationInputs inputs = {};
+		inputs.flags = IPL_SIMULATIONFLAGS_DIRECT;
+		inputs.source.right = { 1.0f, 0.0f, 0.0f };
+		inputs.source.up = { 0.0f, 1.0f, 0.0f };
+		inputs.source.ahead = STEAMAUDIO_AHEAD;
+		inputs.occlusionType = IPL_OCCLUSIONTYPE_VOLUMETRIC;
+		inputs.occlusionRadius = OCCLUSION_RADIUS_METRES;
+		inputs.numOcclusionSamples = OCCLUSION_SAMPLES;
+		inputs.numTransmissionRays = TRANSMISSION_RAYS;
+
+		bool bAnySource = false;
+		for (int i = 0; i < count; ++i)
+		{
+			const Voice *const voice = FindVoice(voices[i]);
+			if (voice && voice->source)
+			{
+				// A run simulates every source in the simulator whatever its inputs.flags (measured), so
+				// the voices sitting it out are given nothing to trace instead.
+				const bool bInPass = m_directVoiceGroups[i] == group;
+				inputs.directFlags = bInPass ? static_cast<IPLDirectSimulationFlags>(IPL_DIRECTSIMULATIONFLAGS_OCCLUSION | IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION)
+											 : static_cast<IPLDirectSimulationFlags>(0);
+				inputs.source.origin = ToSteamAudioPosition(origins[i]);
+				m_api.iplSourceSetInputs(voice->source, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
+				bAnySource |= bInPass;
+			}
+		}
+		if (!bAnySource)
+		{
+			return;
+		}
+
+		m_api.iplSimulatorRunDirect(m_simulator);
+
+		for (int i = 0; i < count; ++i)
+		{
+			const Voice *const voice = FindVoice(voices[i]);
+			if (voice && voice->source && m_directVoiceGroups[i] == group)
+			{
+				IPLSimulationOutputs outputs = {};
+				m_api.iplSourceGetOutputs(voice->source, IPL_SIMULATIONFLAGS_DIRECT, &outputs);
+				pathsOut[i].occlusion = outputs.direct.occlusion;
+				std::copy_n(outputs.direct.transmission, IPL_NUM_BANDS, pathsOut[i].transmission);
+			}
+		}
 	}
 
 	// Brings the simulator up to date before a run: instances where they are now, and the sources
@@ -1720,6 +1785,8 @@ private:
 	std::vector<DynamicInstanceSlot> m_dynamicInstances;
 	int m_numDynamicInstances = 0;
 	bool m_bDynamicSceneDirty = false; // instances added, moved or removed since the last commit
+	std::vector<uint32_t> m_directVoiceGroups; // SimulateDirect: the group each voice ignores, if in the scene
+	std::vector<uint32_t> m_directExtraGroups; // SimulateDirect: the groups needing a run of their own
 	IPLSource m_reverbSource = nullptr; // baked listener reverb, only while there is a simulator
 	bool m_bBatchesAttached = false; // probe batches are in the simulator (only while fully baked)
 	ReverbParams m_lastReverb; // held while the listener is away from probes

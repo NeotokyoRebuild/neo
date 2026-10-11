@@ -506,6 +506,7 @@ void CNeoHrtfSystem::PollEngineSounds()
 			voice.m_pSound = pending.m_pSound;
 			voice.m_hSpatial = hSpatial;
 			voice.m_localSound = pending.m_localSound;
+			voice.m_soundSource = info.m_nSoundSource;
 			ResolveSoundLevel(voice, info, *pending.m_pSound);
 			voice.m_params = ComputeParams(info, voice.m_localSound, info.m_flVolume, voice.m_distMult, outputScale);
 			pending.m_voiceIndex = freeSearch;
@@ -597,6 +598,9 @@ void CNeoHrtfSystem::SimulatePaths()
 			origin.z += kHrtfOcclusionLiftUnits * kHrtfMetresPerUnit;
 			m_simHandles[count] = voice.m_hSpatial;
 			m_simOrigins[count] = origin;
+			// A door's own sounds come from inside it, and a train's from inside the train, so a voice
+			// is never occluded by the dynamic geometry of the entity playing it.
+			m_simIgnoreGroups[count] = CNeoAudioDynamicGeometry::SoundGroup(voice.m_soundSource);
 			m_simVoiceIndices[count] = v;
 			++count;
 		}
@@ -604,7 +608,7 @@ void CNeoHrtfSystem::SimulatePaths()
 
 	if (cl_neo_hrtf_occlusion.GetBool())
 	{
-		m_pSpatializer->SimulateDirect(m_listener, m_simHandles, m_simOrigins, m_simPaths, count);
+		m_pSpatializer->SimulateDirect(m_listener, m_simHandles, m_simOrigins, m_simIgnoreGroups, m_simPaths, count);
 	}
 	else
 	{

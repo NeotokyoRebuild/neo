@@ -75,6 +75,9 @@ typedef uint32_t DynamicModel;
 typedef uint32_t DynamicInstance;
 static constexpr DynamicModel INVALID_DYNAMIC_MODEL = 0;
 static constexpr DynamicInstance INVALID_DYNAMIC_INSTANCE = 0;
+// Instances belong to a caller-chosen group (e.g. a train and everything riding on it), which a
+// voice can ignore for occlusion; this group is none.
+static constexpr uint32_t NO_DYNAMIC_GROUP = 0;
 
 // Probes laid out as consecutive batches: batch b holds probes [batchStarts[b], batchStarts[b + 1]).
 // Each batch carries a caller-chosen id (e.g. the BSP area it covers) that survives serialisation.
@@ -186,16 +189,18 @@ public:
 	virtual DynamicModel CreateDynamicModel(const SceneGeometry &geometry) = 0;
 	// Releases the model along with any instances of it still in the scene.
 	virtual void ReleaseDynamicModel(DynamicModel model) = 0;
-	virtual DynamicInstance CreateDynamicInstance(DynamicModel model, const Transform &transform) = 0;
+	virtual DynamicInstance CreateDynamicInstance(DynamicModel model, const Transform &transform, uint32_t group) = 0;
 	virtual void MoveDynamicInstance(DynamicInstance instance, const Transform &transform) = 0;
 	virtual void ReleaseDynamicInstance(DynamicInstance instance) = 0;
 	virtual int NumDynamicInstances() const = 0;
 
 	// Traces each voice's origin (world positions, as for Process) to the listener through the scene
 	// and writes one path per voice. Invalid handles, and every voice while there is no scene, get
-	// the default unobstructed path.
+	// the default unobstructed path. ignoreGroups (optional, one per voice) names a group of dynamic
+	// instances each voice is traced as if they were not there, e.g. the door it is the sound of; each
+	// group ignored costs a simulation run of its own.
 	virtual void SimulateDirect(const Listener &listener, const VoiceHandle *voices, const Vec3 *origins,
-								DirectPath *pathsOut, int count) = 0;
+								const uint32_t *ignoreGroups, DirectPath *pathsOut, int count) = 0;
 
 	// Looks up the baked reverb at the listener. Probe batches only take part once their bake is
 	// complete (finished or loaded); until then the result stays invalid.

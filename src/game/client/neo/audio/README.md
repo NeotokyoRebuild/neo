@@ -331,6 +331,16 @@ runtime as Steam Audio instanced meshes that follow their entities:
   something moved. Maps without dynamic geometry never pay for the copy.
 - **Occlusion and transmission** come out of that scene as they do for walls: a closed door
   muffles by its material.
+- **A sound is not occluded by its own entity's geometry.** A door's own sounds come from inside
+  the door, and a train's from inside the train. Each instance belongs to the parent hierarchy of
+  its entity, named by the topmost entity (the group). Each voice ignores the group of the entity
+  playing it (`SndInfo_t::m_nSoundSource`). So a door's sounds ignore the door and its parts, and
+  anything riding a train (or an ambient_generic parented to it) ignores the train and everything
+  on it. Other doors and trains still occlude it. Steam Audio traces all sources against one
+  scene, so each ignored group gets a run of its own with that group's instances taken out. A run
+  simulates every source whatever its `inputs.flags`, so the voices sitting a run out get no
+  occlusion or transmission flags instead. One extra group then costs about 0.01 ms on 32 voices,
+  instead of a second full run.
 - **Paths ignore it:** pathing uses the baked paths as they are. The sound going around through a
   doorway is the same with its door open or shut.
 
