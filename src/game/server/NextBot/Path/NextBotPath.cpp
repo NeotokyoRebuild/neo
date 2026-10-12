@@ -23,6 +23,26 @@ ConVar NextBotPathDrawIncrement( "nb_path_draw_inc", "100", FCVAR_CHEAT );
 ConVar NextBotPathDrawSegmentCount( "nb_path_draw_segment_count", "100", FCVAR_CHEAT );
 ConVar NextBotPathSegmentInfluenceRadius( "nb_path_segment_influence_radius", "100", FCVAR_CHEAT );
 
+#ifdef NEO
+// areas farther apart than this in 2D (38 u with NEO's 20 u generation step) do not touch, so a link between them crosses a gap:
+// the gap-jump pass's own separation test, unchanged from stock, now shared with the drop test
+static const float GapSeparationTolerance = 1.9f * GenerationStepSize;
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return true if the link from one area to the next crosses a gap, measured as the gap-jump pass measures it.
+ * The pass repeats this measure for its landing geometry, from a path position it may have moved, so the two agree by constant, not by point
+ */
+static bool IsLinkAcrossGap( const CNavArea *from, const Vector &fromPos, const CNavArea *to )
+{
+	Vector closeTo, closeFrom;
+	to->GetClosestPointOnArea( fromPos, &closeTo );
+	from->GetClosestPointOnArea( closeTo, &closeFrom );
+
+	return ( closeFrom - closeTo ).AsVector2D().IsLengthGreaterThan( GapSeparationTolerance );
+}
+#endif
+
 //--------------------------------------------------------------------------------------------------------------
 Path::Path( void )
 {
@@ -104,7 +124,13 @@ bool Path::ComputePathDetails( INextBot *bot, const Vector &start )
 
 			float expectedHeightDrop = -DotProduct( alongPath, groundNormal );
 
+#ifdef NEO
+			// a drop on a link across a gap would send the bot into the gap, so leave the link on the ground:
+			// the gap-jump pass below adds a jump, or where the drop is more than twice the gap the bot walks off toward the landing
+			if ( expectedHeightDrop > mover->GetStepHeight() && !IsLinkAcrossGap( from->area, from->pos, to->area ) )
+#else
 			if ( expectedHeightDrop > mover->GetStepHeight() )
+#endif
 			{
 				// NOTE: We can't know this is a drop-down yet, because of subtle interactions
 				// between nav area links and "portals" and "area crossings"
@@ -281,7 +307,11 @@ bool Path::ComputePathDetails( INextBot *bot, const Vector &start )
 		}
 
 
+#ifdef NEO
+		const float separationTolerance = GapSeparationTolerance;
+#else
 		const float separationTolerance = 1.9f * GenerationStepSize;
+#endif
 		if ( (closeFrom - closeTo).AsVector2D().IsLengthGreaterThan( separationTolerance ) && ( closeTo - closeFrom ).AsVector2D().IsLengthGreaterThan( 0.5f * fabs( closeTo.z - closeFrom.z ) ) )
 		{
 			// areas are disjoint and mostly level - add gap jump target
