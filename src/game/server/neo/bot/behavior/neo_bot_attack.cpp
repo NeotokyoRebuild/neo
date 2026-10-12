@@ -69,7 +69,6 @@ public:
 		m_threatArea = threat->GetLastKnownArea();
 		m_goalArea = goalArea ? goalArea : m_threatArea; // prioritize movement towards input goal area or threat
 		m_myDistToGoalSq = m_goalArea ? ( m_goalArea->GetCenter() - m_me->GetAbsOrigin() ).LengthSqr() : 0;
-		m_onStuckPenalty = neo_bot_path_reservation_onstuck_penalty.GetFloat();
 	}
 
 	bool IsBetterCandidate( CNavArea *area, float avoidPenalty ) const
@@ -126,6 +125,7 @@ public:
 		}
 
 		// Skip areas that are hazardous or where bots get stuck
+		const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty( area->GetID() );
 		if ( neo_bot_path_reservation_enable.GetBool() )
 		{
 			int navAreaId = area->GetID();
@@ -133,13 +133,13 @@ public:
 			{
 				return true;
 			}
-			if (CNEOBotPathReservations()->GetAreaAvoidPenalty(navAreaId) >= m_onStuckPenalty)
+			if (penalty.IsStuckProne())
 			{
 				return true;
 			}
 		}
 
-		float avoidPenalty = CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() );
+		float avoidPenalty = penalty.flStuck;
 		if ( !IsBetterCandidate( area, avoidPenalty ) )
 		{
 			return true; // the cover candidate we already have is at least as good
@@ -232,7 +232,6 @@ public:
 	const CNavArea *m_myArea;     // reference point of myself
 	const CNavArea *m_threatArea; // reference point of the threat
 	float m_myDistToGoalSq;       // the bot's current distance to the threat
-	float m_onStuckPenalty;       // cache onstuck penalty
 };
 
 

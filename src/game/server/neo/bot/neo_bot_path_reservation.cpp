@@ -192,7 +192,7 @@ void CNEOBotPathReservationSystem::ReleaseAllAreas(CNEOBot *bot)
 void CNEOBotPathReservationSystem::Clear()
 {
     ClearRound();
-    m_AreaAvoidPenalties.RemoveAll();
+    m_AreaPenalties.RemoveAll();
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -207,6 +207,12 @@ void CNEOBotPathReservationSystem::ClearRound()
         m_HazardAreas[team].RemoveAll();
     }
     m_BotReservedAreas.RemoveAll();
+
+    // a new round respawns everyone, so where bots got stuck starts over
+    FOR_EACH_MAP_FAST( m_AreaPenalties, i )
+    {
+        m_AreaPenalties[i].flStuck = 0.0f;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -233,36 +239,64 @@ int CNEOBotPathReservationSystem::GetPredictedFriendlyPathCount( int areaID, int
 }
 
 //-------------------------------------------------------------------------------------------------
-void CNEOBotPathReservationSystem::IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount)
+AreaPenalty_t *CNEOBotPathReservationSystem::FindOrAddAreaPenalty(unsigned int navAreaID)
 {
     if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
     {
-        return;
+        return nullptr;
     }
 
-    unsigned short index = m_AreaAvoidPenalties.Find(navAreaID);
-    if (index == m_AreaAvoidPenalties.InvalidIndex())
+    unsigned short index = m_AreaPenalties.Find(navAreaID);
+    if (index == m_AreaPenalties.InvalidIndex())
     {
-        index = m_AreaAvoidPenalties.Insert(navAreaID, 0.0f);
+        index = m_AreaPenalties.Insert(navAreaID, AreaPenalty_t());
     }
-
-    m_AreaAvoidPenalties[index] += penaltyAmount;
+    return &m_AreaPenalties[index];
 }
 
 //-------------------------------------------------------------------------------------------------
-float CNEOBotPathReservationSystem::GetAreaAvoidPenalty(unsigned int navAreaID) const
+void CNEOBotPathReservationSystem::IncrementAreaAvoidPenalty(unsigned int navAreaID, float penaltyAmount)
+{
+    if ( AreaPenalty_t *pPenalty = FindOrAddAreaPenalty(navAreaID) )
+    {
+        pPenalty->flStuck += penaltyAmount;
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+void CNEOBotPathReservationSystem::IncrementAreaDeathPenalty(unsigned int navAreaID, float penaltyAmount)
+{
+    if ( AreaPenalty_t *pPenalty = FindOrAddAreaPenalty(navAreaID) )
+    {
+        pPenalty->flDeath += penaltyAmount;
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+AreaPenalty_t CNEOBotPathReservationSystem::GetAreaPenalty(unsigned int navAreaID) const
 {
     if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
     {
-        return 0.0f;
+        return AreaPenalty_t();
     }
 
-    unsigned short index = m_AreaAvoidPenalties.Find(navAreaID);
-    if (index != m_AreaAvoidPenalties.InvalidIndex())
+    unsigned short index = m_AreaPenalties.Find(navAreaID);
+    if (index != m_AreaPenalties.InvalidIndex())
     {
-        return m_AreaAvoidPenalties[index];
+        return m_AreaPenalties[index];
     }
-    return 0.0f;
+    return AreaPenalty_t();
+}
+
+// Cover and retreat searches skip an area once bots got stuck in it this many times in the round;
+// an area with fewer stucks is only a cost to them, since one stuck can be a crowd or a pushed prop
+static constexpr int NEO_BOT_STUCK_PRONE_AREA_COUNT = 2;
+
+//-------------------------------------------------------------------------------------------------
+bool AreaPenalty_t::IsStuckProne() const
+{
+    const float flStuckPronePenalty = NEO_BOT_STUCK_PRONE_AREA_COUNT * neo_bot_path_reservation_onstuck_penalty.GetFloat();
+    return flStuck >= flStuckPronePenalty;
 }
 
 //-------------------------------------------------------------------------------------------------
