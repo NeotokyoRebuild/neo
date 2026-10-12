@@ -63,5 +63,4 @@ private:
 	static constexpr float NARROW_LANDING_HULLS = 0.5f; // Hull widths deep a landing must be to stand on (measured on dawn and dusk L1's 7 u wall cap)
 	static constexpr float LANDING_INSET = 16.0f; // How far inside a landing's near edge the dismount aims: half a hull, so the whole hull lands
 	static constexpr int STALL_NUDGES = 3; // Sideways shimmies before a stalled climb jumps off (measured on subsurface L1 and saitama L2)
-	static constexpr float STALL_NUDGE_TIME = 0.3f; // Length of the first shimmy, and the step each later one adds
 };

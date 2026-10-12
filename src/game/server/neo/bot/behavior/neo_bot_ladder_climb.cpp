@@ -409,9 +409,9 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 				else if ( m_nNudges < STALL_NUDGES )
 				{
 					// Usually snagged on something at the ladder's edge, not blocked outright:
-					// shimmy sideways, right then left, for longer each time, before giving up
+					// shimmy sideways, right then left, until the next progress check, before giving up
 					++m_nNudges;
-					m_nudgeTimer.Start( STALL_NUDGE_TIME * m_nNudges );
+					m_nudgeTimer.Start( STUCK_CHECK_INTERVAL );
 				}
 				else
 				{
