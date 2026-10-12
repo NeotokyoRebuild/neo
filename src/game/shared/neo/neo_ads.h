@@ -14,7 +14,7 @@ struct NeoAimPose
 	float fov;
 };
 
-// Always false on the server.
+// Always false on the server, and while sv_neo_ads is 0.
 bool NeoAdsActive(const CNEOWeaponInfo &data);
 
 NeoAimPose NeoGetAimPose(const CNEOWeaponInfo &data);
