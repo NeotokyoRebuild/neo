@@ -142,23 +142,7 @@ static const wchar_t *STARTUP_TYPE_LABELS[NeoMP3::STARTUP_TYPE__TOTAL] = {
 	L"First song or random shuffle",
 };
 
-static const int FPS_MAX_PRESETS[] = { 60, 75, 100, 120, 144, 165, 180, 200, 240, 280, 300, 360, 480, 500, 540, 600, 610, 720, 0 };
-static const wchar_t *FPS_MAX_LABELS[] = { L"60", L"75", L"100", L"120", L"144", L"165", L"180", L"200", L"240", L"280", L"300", L"360", L"480", L"500", L"540", L"600", L"610", L"720", L"Unlimited" };
-static_assert(ARRAYSIZE(FPS_MAX_PRESETS) == ARRAYSIZE(FPS_MAX_LABELS));
-static const int FPS_MAX_PRESETS_TOTAL = ARRAYSIZE(FPS_MAX_PRESETS);
-static const int FPS_MAX_CUSTOM = FPS_MAX_PRESETS_TOTAL;
-
-static int FpsMaxPresetIndex(const int iFpsMax)
-{
-	for (int i = 0; i < FPS_MAX_PRESETS_TOTAL; ++i)
-	{
-		if (FPS_MAX_PRESETS[i] == iFpsMax)
-		{
-			return i;
-		}
-	}
-	return FPS_MAX_CUSTOM;
-}
+static const int MAX_FPS_LIMIT = 1000;
 
 static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
 
@@ -676,8 +660,13 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		}
 		pVideo->iFilteringMode = filterIdx;
 		pVideo->bVSync = cvr->mat_vsync.GetBool();
-		pVideo->iFpsMaxLoaded = cvr->fps_max.GetInt();
-		pVideo->iFpsMax = FpsMaxPresetIndex(pVideo->iFpsMaxLoaded);
+		pVideo->iFpsMax = cvr->fps_max.GetInt();
+		pVideo->bFpsMaxLimit = (pVideo->iFpsMax > 0);
+		if (!pVideo->bFpsMaxLimit)
+		{
+			pVideo->iFpsMax = atoi(cvr->fps_max.GetDefault());
+		}
+		pVideo->iFpsMax = Min(pVideo->iFpsMax, MAX_FPS_LIMIT);
 		pVideo->bMotionBlur = cvr->mat_motion_blur_enabled.GetBool();
 		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
@@ -949,7 +938,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		};
 		cvr->mat_forceaniso.SetValue(ANISO_MAP[pVideo->iFilteringMode]);
 		cvr->mat_vsync.SetValue(pVideo->bVSync);
-		cvr->fps_max.SetValue((pVideo->iFpsMax == FPS_MAX_CUSTOM) ? pVideo->iFpsMaxLoaded : FPS_MAX_PRESETS[pVideo->iFpsMax]);
+		cvr->fps_max.SetValue(pVideo->bFpsMaxLimit ? pVideo->iFpsMax : 0);
 		cvr->mat_motion_blur_enabled.SetValue(pVideo->bMotionBlur);
 		cvr->mat_hdr_level.SetValue(pVideo->iHDR);
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
@@ -1371,14 +1360,10 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::RingBox(L"Resolution", const_cast<const wchar_t **>(pVideo->p2WszVmDispList), pVideo->iVMListSize, &pVideo->iResolution);
 	NeoUI::RingBox(L"Window", WINDOW_MODE, WINDOWMODE__TOTAL, &pVideo->iWindow);
 	NeoUI::RingBoxBool(L"V-Sync", &pVideo->bVSync);
+	NeoUI::RingBoxBool(L"Limit Max FPS", &pVideo->bFpsMaxLimit);
+	if (pVideo->bFpsMaxLimit)
 	{
-		wchar_t wszFpsMaxCustom[32];
-		V_swprintf_safe(wszFpsMaxCustom, L"Custom (%d)", pVideo->iFpsMaxLoaded);
-		const wchar_t *wszFpsMaxLabels[FPS_MAX_PRESETS_TOTAL + 1];
-		V_memcpy(wszFpsMaxLabels, FPS_MAX_LABELS, sizeof(FPS_MAX_LABELS));
-		wszFpsMaxLabels[FPS_MAX_CUSTOM] = wszFpsMaxCustom;
-		const bool bHasCustom = (FpsMaxPresetIndex(pVideo->iFpsMaxLoaded) == FPS_MAX_CUSTOM);
-		NeoUI::RingBox(L"Max FPS", wszFpsMaxLabels, FPS_MAX_PRESETS_TOTAL + bHasCustom, &pVideo->iFpsMax);
+		NeoUI::SliderInt(L"Max FPS", &pVideo->iFpsMax, 0, MAX_FPS_LIMIT);
 	}
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
 	NeoUI::Slider(L"Gamma", &pVideo->flGamma, 1.6, 2.6, 2, 0.1f);
