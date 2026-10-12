@@ -12,7 +12,7 @@ ConVar neo_bot_path_around_friendly_cooldown("neo_bot_path_around_friendly_coold
 ConVar neo_bot_path_penalty_avoid_multiplier("neo_bot_path_penalty_avoid_multiplier", "20.0", FCVAR_CHEAT,
 	"Penalty multiplier for navmesh avoid areas in pathfinding", true, 1.0f, false, 0.0f);
 
-ConVar neo_bot_path_penalty_jump_multiplier("neo_bot_path_penalty_jump_multiplier", "100000.0", FCVAR_CHEAT,
+ConVar neo_bot_path_penalty_jump_multiplier("neo_bot_path_penalty_jump_multiplier", "1000.0", FCVAR_CHEAT,
 	"Maximum penalty multiplier for jump height changes in pathfinding", true, 0.01f, false, 0.0f);
 
 ConVar neo_bot_path_penalty_ladder_multiplier("neo_bot_path_penalty_ladder_multiplier", "3.0", FCVAR_CHEAT,
