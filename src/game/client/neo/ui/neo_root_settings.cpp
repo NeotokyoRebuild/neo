@@ -142,7 +142,6 @@ static const wchar_t *STARTUP_TYPE_LABELS[NeoMP3::STARTUP_TYPE__TOTAL] = {
 	L"First song or random shuffle",
 };
 
-static const int INITIAL_FPS_LIMIT = 60;
 static const int MAX_FPS_LIMIT = 1000;
 
 static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
@@ -661,8 +660,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		}
 		pVideo->iFilteringMode = filterIdx;
 		pVideo->bVSync = cvr->mat_vsync.GetBool();
-		pVideo->bFpsMaxLimit = (cvr->fps_max.GetInt() != atoi(cvr->fps_max.GetDefault()));
-		pVideo->iFpsMax = pVideo->bFpsMaxLimit ? Min(cvr->fps_max.GetInt(), MAX_FPS_LIMIT) : INITIAL_FPS_LIMIT;
+		pVideo->iFpsMax = Min(cvr->fps_max.GetInt(), MAX_FPS_LIMIT);
 		pVideo->bMotionBlur = cvr->mat_motion_blur_enabled.GetBool();
 		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
@@ -934,14 +932,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		};
 		cvr->mat_forceaniso.SetValue(ANISO_MAP[pVideo->iFilteringMode]);
 		cvr->mat_vsync.SetValue(pVideo->bVSync);
-		if (pVideo->bFpsMaxLimit)
-		{
-			cvr->fps_max.SetValue(pVideo->iFpsMax);
-		}
-		else
-		{
-			cvr->fps_max.SetValue(cvr->fps_max.GetDefault());
-		}
+		cvr->fps_max.SetValue(pVideo->iFpsMax);
 		cvr->mat_motion_blur_enabled.SetValue(pVideo->bMotionBlur);
 		cvr->mat_hdr_level.SetValue(pVideo->iHDR);
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
@@ -1363,11 +1354,7 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::RingBox(L"Resolution", const_cast<const wchar_t **>(pVideo->p2WszVmDispList), pVideo->iVMListSize, &pVideo->iResolution);
 	NeoUI::RingBox(L"Window", WINDOW_MODE, WINDOWMODE__TOTAL, &pVideo->iWindow);
 	NeoUI::RingBoxBool(L"V-Sync", &pVideo->bVSync);
-	NeoUI::RingBoxBool(L"Limit Max FPS", &pVideo->bFpsMaxLimit);
-	if (pVideo->bFpsMaxLimit)
-	{
-		NeoUI::SliderInt(L"Max FPS", &pVideo->iFpsMax, 0, MAX_FPS_LIMIT);
-	}
+	NeoUI::SliderInt(L"Max FPS", &pVideo->iFpsMax, 0, MAX_FPS_LIMIT, 1, L"Unlimited");
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
 	NeoUI::Slider(L"Gamma", &pVideo->flGamma, 1.6, 2.6, 2, 0.1f);
 	NeoUI::SliderInt(L"FOV", &pVideo->iFov, MIN_FOV, MAX_FOV);

@@ -156,7 +156,6 @@ struct NeoSettings
 		int iAntiAliasing;
 		int iFilteringMode;
 		bool bVSync;
-		bool bFpsMaxLimit;
 		int iFpsMax;
 		bool bMotionBlur;
 		int iHDR;
