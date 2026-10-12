@@ -1459,6 +1459,8 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(NeoMP3::MusicVolCallback);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 		RestrictNeoClientCheats();
+		// The Max FPS video setting writes fps_max, which the engine would not save to config.cfg
+		g_pCVar->FindVar("fps_max")->AddFlags(FCVAR_ARCHIVE);
 
 		FixupNeoCrosshair();
 
