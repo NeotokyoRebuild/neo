@@ -155,6 +155,37 @@ after enabling it, so players without HRTF never read the BSP. It is released at
 `cl_neo_hrtf_scene_obj` writes it to `<game dir>/hrtf_scene_<map>.obj` for inspection in any
 model viewer.
 
+### Audio blockers
+
+`func_audio_blocker` is a brush entity that only blocks sound, after CS2's audio blocker: for
+example a sheet under a floor with gaps left at the stairs, so a sound downstairs is heard through
+the stairwell rather than through the floor. Mappers texture the brushes with
+`tools/toolsaudioblocker` (teal stripes) and tie them to the entity in Hammer++.
+
+- **Compile:** VBSP never writes nodraw faces, but it does write every brush entity's brushes, since
+  the engine needs them for collision. Brush entities never affect visibility.
+- **Server:** the entity (`server/neo/neo_audio_blocker.cpp`) never sets its model and removes itself
+  on spawn, so nothing collides with the brushes. It exists so the engine does not warn about an
+  unknown entity.
+- **Scene:** the reader finds each blocker's brushes by walking its model's tree to its leaves'
+  brushes, turns each brush side into a face by clipping its plane by the other sides (bevels
+  skipped), and places them by the entity's origin. They go into the static scene, so occlusion,
+  the reverb bake and the baked paths all see them: paths go around through the gaps.
+- **Material:** transmission 0 (nothing passes) and absorption 1 (nothing reflects): a blocker
+  usually stands in what looks like open space, so it should not add a wall to the room's reverb.
+  It is added to the material table only on maps that have blockers, so every other map's geometry
+  and bake are unchanged.
+- **Probes:** blocker faces are not floors or ceilings for probe placement (they are added after
+  everything else, and probes are placed on what comes before), and no probe is kept inside a
+  blocker's volume.
+- **Texture:** left solid (not `%compileNonsolid`), since only solid brushes are certain to be
+  listed in their leaves. On world brushes, not tied to the entity, it is an invisible wall like
+  nodraw and blocks no sound.
+
+Tested on a compiled room with a 6.5 x 19.5 x 4.9 m blocker: its 12 faces came out where they
+belong and facing out, and the 40 probes inside it were dropped. The scene's developer message
+counts the blocker brushes.
+
 ## Occlusion
 
 A direct-only `IPLSimulator` is created with each scene, with an `IPLSource` per live voice.
@@ -248,6 +279,8 @@ runs after VRAD. It places the probes and bakes them with the same code as the c
   `~/.steam/root`, `~/.local/share/Steam` or the Flatpak's data directory. Then it reads
   `libraryfolders.vdf` and the app manifest. Pass `-appid_dir_<appid> <dir>` to override.
 - **Threads:** it bakes on every logical core by default (`-threads <n>`).
+- **Checking the scene:** `-obj` writes the acoustic scene as `<map>_scene.obj` (and `.mtl`) beside
+  the map, audio blockers included, for any model viewer.
 - **Storage:** the result is LZMA-compressed into game lump `nsap` (version 1) in lump 35. Every
   other game lump is copied byte for byte.
 - **Verification:** before reporting success, the tool reloads the written map through the game's

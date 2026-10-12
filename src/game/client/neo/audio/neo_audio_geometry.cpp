@@ -1,6 +1,8 @@
 // No cbase.h: the compile-time baker builds this file too. In the client the PCH still comes first.
 #include "neo_audio_geometry.h"
 
+#include <algorithm>
+
 #include "bspfile.h"
 #include "checksum_crc.h"
 #include "const.h"
@@ -79,6 +81,16 @@ constexpr int kGeometryStudioId = ('T' << 24) + ('S' << 16) + ('D' << 8) + 'I'; 
 constexpr char kGeometrySkyCameraClass[] = "sky_camera";
 constexpr int kGeometryMaxEntityBlock = 4096;
 constexpr int kGeometryMaxEntityValue = 256;
+
+// Brush entities that only block sound (see the header).
+constexpr char kGeometryAudioBlockerClass[] = "func_audio_blocker";
+// Passes nothing and reflects nothing: an invisible blocker usually stands in what looks like open
+// space (a gap, or under a floor), so it should not add a wall to the room's reverb either.
+const NeoSpatial::AcousticMaterial kGeometryAudioBlockerMaterial = { { 1.0f, 1.0f, 1.0f }, 0.0f, { 0.0f, 0.0f, 0.0f } };
+// Half the side of the square a brush side's face is clipped from: larger than any map, in units.
+constexpr double kGeometryBrushWindingSize = 65536.0;
+// How far behind a plane a point may be and still count as on it, in units.
+constexpr double kGeometryBrushClipEpsilon = 0.01;
 
 // Steam Audio's reference materials (phonon.h, IPLMaterial), indexed by AcousticPreset.
 enum AcousticPreset
@@ -375,7 +387,7 @@ bool GeometryFindSkyCamera(const CUtlVector<char> &entities, Vector &origin)
 }
 
 // The classname of the entity using each brush model ("model" "*N"), empty where none does.
-void GeometryBrushModelClassnames(const CUtlVector<char> &entities, int numModels, CUtlVector<CUtlString> &out)
+void GeometryBrushModelValues(const CUtlVector<char> &entities, int numModels, const char *pszKey, CUtlVector<CUtlString> &out)
 {
 	out.SetCount(numModels);
 	CUtlVector<char> text;
@@ -394,7 +406,7 @@ void GeometryBrushModelClassnames(const CUtlVector<char> &entities, int numModel
 		V_strncpy(block, pszOpen, Min(static_cast<int>(sizeof(block)), static_cast<int>(pszClose - pszOpen) + 1));
 		int model = 0;
 		if (GeometryEntityValue(block, "model", value, sizeof(value)) && sscanf(value, "*%d", &model) == 1 && model > 0
-			&& model < numModels && GeometryEntityValue(block, "classname", value, sizeof(value)))
+			&& model < numModels && GeometryEntityValue(block, pszKey, value, sizeof(value)))
 		{
 			out[model] = value;
 		}
@@ -429,9 +441,216 @@ struct BspLumps
 	CUtlVector<dnode_t> nodes;
 	CUtlVector<uint8> leafBytes; // dleaf_t or dleaf_version_0_t, by the lump's version
 	CUtlVector<char> entities;
+	CUtlVector<unsigned short> leafBrushes; // only read for audio blockers
+	CUtlVector<dbrush_t> brushes;
+	CUtlVector<dbrushside_t> brushSides;
 	CUtlVector<uint8> staticProps; // GAMELUMP_STATIC_PROPS
 	int staticPropsVersion = 0;
 };
+
+// A double-precision point for clipping brush sides, in map units.
+struct BrushPoint
+{
+	double x, y, z;
+};
+
+// The face of a brush side: a square larger than any map on the side's plane, clipped by every
+// other side to what lies behind it (the brush's inside). Wound in no particular order.
+void GeometryBrushSideWinding(const CUtlVector<NeoSpatial::BspTree::Plane> &planes, int side, std::vector<BrushPoint> &winding)
+{
+	const NeoSpatial::BspTree::Plane &plane = planes[side];
+	const BrushPoint normal = { plane.normal.x, plane.normal.y, plane.normal.z };
+
+	// Two axes in the plane, from whichever world axis is least like its normal.
+	BrushPoint up = (fabs(normal.z) > fabs(normal.x) && fabs(normal.z) > fabs(normal.y)) ? BrushPoint{ 1.0, 0.0, 0.0 } : BrushPoint{ 0.0, 0.0, 1.0 };
+	const double upDot = up.x * normal.x + up.y * normal.y + up.z * normal.z;
+	up = { up.x - normal.x * upDot, up.y - normal.y * upDot, up.z - normal.z * upDot };
+	const double upLength = sqrt(up.x * up.x + up.y * up.y + up.z * up.z);
+	up = { up.x / upLength * kGeometryBrushWindingSize, up.y / upLength * kGeometryBrushWindingSize, up.z / upLength * kGeometryBrushWindingSize };
+	const BrushPoint right = { up.y * normal.z - up.z * normal.y, up.z * normal.x - up.x * normal.z, up.x * normal.y - up.y * normal.x };
+	const BrushPoint centre = { normal.x * plane.dist, normal.y * plane.dist, normal.z * plane.dist };
+	winding = {
+		{ centre.x - right.x + up.x, centre.y - right.y + up.y, centre.z - right.z + up.z },
+		{ centre.x + right.x + up.x, centre.y + right.y + up.y, centre.z + right.z + up.z },
+		{ centre.x + right.x - up.x, centre.y + right.y - up.y, centre.z + right.z - up.z },
+		{ centre.x - right.x - up.x, centre.y - right.y - up.y, centre.z - right.z - up.z },
+	};
+
+	std::vector<BrushPoint> clipped;
+	for (int other = 0; other < planes.Count() && winding.size() >= 3; ++other)
+	{
+		if (other == side)
+		{
+			continue;
+		}
+		const NeoSpatial::BspTree::Plane &clip = planes[other];
+		const auto distance = [&](const BrushPoint &p) { return p.x * clip.normal.x + p.y * clip.normal.y + p.z * clip.normal.z - clip.dist; };
+		clipped.clear();
+		for (size_t i = 0; i < winding.size(); ++i)
+		{
+			const BrushPoint &a = winding[i];
+			const BrushPoint &b = winding[(i + 1) % winding.size()];
+			const double da = distance(a);
+			const double db = distance(b);
+			if (da <= kGeometryBrushClipEpsilon)
+			{
+				clipped.push_back(a);
+			}
+			if ((da < -kGeometryBrushClipEpsilon && db > kGeometryBrushClipEpsilon) || (da > kGeometryBrushClipEpsilon && db < -kGeometryBrushClipEpsilon))
+			{
+				const double t = da / (da - db);
+				clipped.push_back({ a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t });
+			}
+		}
+		winding.swap(clipped);
+	}
+}
+
+// The brushes of a brush model, found by walking its BSP tree: models list no brushes of their own.
+void GeometryModelBrushes(const BspLumps &lumps, int leafStride, const dmodel_t &model, CUtlVector<int> &brushesOut)
+{
+	brushesOut.RemoveAll();
+	const int numLeaves = lumps.leafBytes.Count() / leafStride;
+	CUtlVector<bool> seen;
+	seen.SetCount(lumps.brushes.Count());
+	seen.FillWithValue(false);
+	CUtlVector<int> stack;
+	stack.AddToTail(model.headnode);
+	// A well-formed tree visits each node and leaf once; this also stops a malformed one looping.
+	for (int steps = 0; !stack.IsEmpty() && steps <= 2 * lumps.nodes.Count() + 1; ++steps)
+	{
+		const int node = stack.Tail();
+		stack.RemoveMultipleFromTail(1);
+		if (node >= 0)
+		{
+			if (node < lumps.nodes.Count())
+			{
+				stack.AddToTail(lumps.nodes[node].children[0]);
+				stack.AddToTail(lumps.nodes[node].children[1]);
+			}
+			continue;
+		}
+		const int leafIndex = -1 - node;
+		if (leafIndex >= numLeaves)
+		{
+			continue;
+		}
+		// Both leaf versions start with the fields used here (see LoadBspTree).
+		dleaf_t leaf;
+		V_memcpy(&leaf, lumps.leafBytes.Base() + leafIndex * leafStride, sizeof(dleaf_t));
+		for (int i = leaf.firstleafbrush; i < leaf.firstleafbrush + leaf.numleafbrushes && i < lumps.leafBrushes.Count(); ++i)
+		{
+			const int brush = lumps.leafBrushes[i];
+			if (brush < lumps.brushes.Count() && !seen[brush])
+			{
+				seen[brush] = true;
+				brushesOut.AddToTail(brush);
+			}
+		}
+	}
+}
+
+// Every func_audio_blocker's brushes as faces of material `material`, wound counter-clockwise from
+// outside and placed by the entity's origin, and as volumes. Returns how many brushes were malformed.
+int GeometryAddAudioBlockers(const BspLumps &lumps, int leafVersion, int material, CUtlVector<NeoSpatial::Vec3> &vertices,
+							 CUtlVector<int32> &triangles, CUtlVector<int32> &materialIndices, std::vector<NeoSpatial::ConvexVolume> &volumes)
+{
+	CUtlVector<CUtlString> classnames;
+	CUtlVector<CUtlString> origins;
+	GeometryBrushModelValues(lumps.entities, lumps.models.Count(), "classname", classnames);
+	GeometryBrushModelValues(lumps.entities, lumps.models.Count(), "origin", origins);
+	const int leafStride = (leafVersion == 0) ? sizeof(dleaf_version_0_t) : sizeof(dleaf_t);
+
+	int malformed = 0;
+	CUtlVector<int> brushes;
+	CUtlVector<NeoSpatial::BspTree::Plane> planes;
+	std::vector<BrushPoint> winding;
+	for (int m = kGeometryWorldModel + 1; m < lumps.models.Count(); ++m)
+	{
+		if (V_stricmp(classnames[m].Get(), kGeometryAudioBlockerClass) != 0)
+		{
+			continue;
+		}
+		// Brush entity brushes are stored relative to the entity's origin.
+		Vector origin(0.0f, 0.0f, 0.0f);
+		if (!origins[m].IsEmpty() && sscanf(origins[m].Get(), "%f %f %f", &origin.x, &origin.y, &origin.z) != 3)
+		{
+			origin.Init();
+		}
+
+		GeometryModelBrushes(lumps, leafStride, lumps.models[m], brushes);
+		for (const int b : brushes)
+		{
+			const dbrush_t &brush = lumps.brushes[b];
+			if (brush.firstside < 0 || brush.numsides < 0 || brush.firstside > lumps.brushSides.Count() - brush.numsides)
+			{
+				++malformed;
+				continue;
+			}
+			// Bevels are extra planes for collision, not faces. Older compilers write the field as a
+			// byte followed by another, so only its low byte counts.
+			planes.RemoveAll();
+			bool bValid = true;
+			for (int s = brush.firstside; s < brush.firstside + brush.numsides; ++s)
+			{
+				const dbrushside_t &side = lumps.brushSides[s];
+				if ((side.bevel & 0xff) != 0)
+				{
+					continue;
+				}
+				if (side.planenum >= lumps.planes.Count())
+				{
+					bValid = false;
+					break;
+				}
+				const dplane_t &plane = lumps.planes[side.planenum];
+				planes.AddToTail({ { plane.normal.x, plane.normal.y, plane.normal.z }, plane.dist + DotProduct(plane.normal, origin) });
+			}
+			if (!bValid || planes.Count() < 4)
+			{
+				++malformed;
+				continue;
+			}
+
+			NeoSpatial::ConvexVolume volume;
+			for (int s = 0; s < planes.Count(); ++s)
+			{
+				volume.planes.push_back({ planes[s].normal, planes[s].dist * kGeometryMetresPerUnit });
+				GeometryBrushSideWinding(planes, s, winding);
+				if (winding.size() < 3)
+				{
+					continue;
+				}
+				// Counter-clockwise seen from outside: the winding's normal along the side's.
+				const BrushPoint &a = winding[0];
+				const BrushPoint &b = winding[1];
+				const BrushPoint &c = winding[2];
+				const BrushPoint u = { b.x - a.x, b.y - a.y, b.z - a.z };
+				const BrushPoint w = { c.x - a.x, c.y - a.y, c.z - a.z };
+				const double facing = (u.y * w.z - u.z * w.y) * planes[s].normal.x + (u.z * w.x - u.x * w.z) * planes[s].normal.y
+					+ (u.x * w.y - u.y * w.x) * planes[s].normal.z;
+				if (facing < 0.0)
+				{
+					std::reverse(winding.begin(), winding.end());
+				}
+				const int first = vertices.Count();
+				for (const BrushPoint &point : winding)
+				{
+					vertices.AddToTail(GeometryToMetres(Vector(static_cast<float>(point.x), static_cast<float>(point.y), static_cast<float>(point.z))));
+				}
+				for (int i = 1; i + 1 < static_cast<int>(winding.size()); ++i)
+				{
+					triangles.AddToTail(first);
+					triangles.AddToTail(first + i);
+					triangles.AddToTail(first + i + 1);
+					materialIndices.AddToTail(material);
+				}
+			}
+			volumes.push_back(std::move(volume));
+		}
+	}
+	return malformed;
+}
 
 // One static prop model's collision in model space, as an unindexed triangle list wound
 // counter-clockwise seen from outside, with an AcousticPreset per triangle. Empty if the model has
@@ -824,6 +1043,10 @@ bool CNeoAudioGeometry::LoadFromBsp(const Services &services, const char *pszBsp
 		&& GeometryReadLump(file, fileSize, header, LUMP_NODES, lumps.nodes)
 		&& GeometryReadLump(file, fileSize, header, LUMP_LEAFS, lumps.leafBytes)
 		&& GeometryReadLump(file, fileSize, header, LUMP_ENTITIES, lumps.entities);
+	// Brushes are only needed for audio blockers, so malformed brush lumps only leave those out.
+	const bool bBrushesRead = GeometryReadLump(file, fileSize, header, LUMP_LEAFBRUSHES, lumps.leafBrushes)
+		&& GeometryReadLump(file, fileSize, header, LUMP_BRUSHES, lumps.brushes)
+		&& GeometryReadLump(file, fileSize, header, LUMP_BRUSHSIDES, lumps.brushSides);
 	// Static props are an extra: a malformed game lump only leaves them out.
 	const bool bPropsRead = GeometryReadGameLump(file, fileSize, header, GAMELUMP_STATIC_PROPS, lumps.staticProps,
 												 lumps.staticPropsVersion);
@@ -862,7 +1085,7 @@ bool CNeoAudioGeometry::LoadFromBsp(const Services &services, const char *pszBsp
 
 	// Every brush entity's model, each in its own mesh.
 	CUtlVector<CUtlString> classnames;
-	GeometryBrushModelClassnames(lumps.entities, lumps.models.Count(), classnames);
+	GeometryBrushModelValues(lumps.entities, lumps.models.Count(), "classname", classnames);
 	m_brushModels.AddToTail(new BrushModel()); // the world, which is in the static mesh
 	for (int m = kGeometryWorldModel + 1; m < lumps.models.Count(); ++m)
 	{
@@ -899,6 +1122,27 @@ bool CNeoAudioGeometry::LoadFromBsp(const Services &services, const char *pszBsp
 	else
 	{
 		DevWarning("NEO HRTF: %s has a malformed static prop lump, so no static props\n", pszBspPath);
+	}
+
+	// Audio blockers go last, so the probes' geometry is everything before them. Their material is
+	// only added on maps that have some, leaving every other map's geometry (and bake) unchanged.
+	m_numProbeTriangles = m_materialIndices.Count();
+	if (bBrushesRead)
+	{
+		const int malformed = GeometryAddAudioBlockers(lumps, header.lumps[LUMP_LEAFS].version, m_materials.Count(), m_vertices,
+													   m_triangles, m_materialIndices, m_blockerVolumes);
+		if (!m_blockerVolumes.empty())
+		{
+			m_materials.AddToTail(kGeometryAudioBlockerMaterial);
+		}
+		if (malformed > 0)
+		{
+			DevWarning("NEO HRTF: skipped %d malformed audio blocker brushes in %s\n", malformed, pszBspPath);
+		}
+	}
+	else
+	{
+		DevWarning("NEO HRTF: %s has malformed brush lumps, so no audio blockers\n", pszBspPath);
 	}
 
 	// Without a usable tree there are just no probes; the scene itself is still good.
@@ -1224,6 +1468,13 @@ NeoSpatial::SceneGeometry CNeoAudioGeometry::Mesh::Geometry() const
 	return geometry;
 }
 
+NeoSpatial::SceneGeometry CNeoAudioGeometry::GetProbeGeometry() const
+{
+	NeoSpatial::SceneGeometry geometry = GetSceneGeometry();
+	geometry.numTriangles = m_numProbeTriangles;
+	return geometry;
+}
+
 NeoSpatial::SceneGeometry CNeoAudioGeometry::GetSceneGeometry() const
 {
 	NeoSpatial::SceneGeometry geometry;
@@ -1243,6 +1494,8 @@ void CNeoAudioGeometry::Clear()
 	m_triangles.Purge();
 	m_materialIndices.Purge();
 	m_materials.Purge();
+	m_numProbeTriangles = 0;
+	m_blockerVolumes.clear();
 	m_brushModels.PurgeAndDeleteElements();
 	m_tree = NeoSpatial::BspTree();
 	m_probeLump.Purge();

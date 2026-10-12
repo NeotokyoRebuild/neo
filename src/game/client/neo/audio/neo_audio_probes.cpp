@@ -534,7 +534,20 @@ ProbeLayout ProbeSet::Layout() const
 	return layout;
 }
 
-void BuildProbes(const SceneGeometry &geometry, const BspTree &tree, const ProbeSettings &settings, ProbeSet &out)
+bool ConvexVolume::Contains(const Vec3 &point) const
+{
+	for (const BspTree::Plane &plane : planes)
+	{
+		if (Dot(plane.normal, point) - plane.dist > 0.0f)
+		{
+			return false;
+		}
+	}
+	return !planes.empty();
+}
+
+void BuildProbes(const SceneGeometry &geometry, const BspTree &tree, const ProbeSettings &settings, ProbeSet &out,
+				 const std::vector<ConvexVolume> &excluded)
 {
 	out = ProbeSet();
 	out.radius = settings.spacing;
@@ -559,7 +572,9 @@ void BuildProbes(const SceneGeometry &geometry, const BspTree &tree, const Probe
 	};
 	const auto tryPlace = [&](const Vec3 &centre) {
 		const int leaf = openLeaf(centre);
-		if (leaf >= 0 && spacing.TryAdd(centre))
+		if (leaf >= 0
+			&& std::none_of(excluded.begin(), excluded.end(), [&](const ConvexVolume &volume) { return volume.Contains(centre); })
+			&& spacing.TryAdd(centre))
 		{
 			placed.push_back({ tree.leaves[leaf].area, centre });
 		}

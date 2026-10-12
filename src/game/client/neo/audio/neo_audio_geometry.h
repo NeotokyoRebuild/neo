@@ -4,6 +4,10 @@
 // with the material of their collision model's surfaceprop. Brush entities' models (doors, trains,
 // func_brush...) are extracted alongside, each on its own, for dynamic geometry.
 //
+// Audio blockers (func_audio_blocker) are brush entities that only block sound: their brushes are
+// turned into faces of their own (their nodraw faces never reach the BSP), with a material that
+// passes and reflects nothing, and added to the static scene after everything else.
+//
 // Shared by the client and the compile-time baker (utils/neo_soundbake), so it depends on no game
 // DLL globals: the file system and physics interfaces it reads through are passed in.
 #pragma once
@@ -63,8 +67,13 @@ public:
 
 	// Valid until the next LoadFromBsp or destruction.
 	NeoSpatial::SceneGeometry GetSceneGeometry() const;
+	// The scene without the audio blockers, which are not surfaces anyone stands on or under: what
+	// probes are placed on. Probes are also kept out of the blockers' volumes.
+	NeoSpatial::SceneGeometry GetProbeGeometry() const;
+	const std::vector<NeoSpatial::ConvexVolume> &GetBlockerVolumes() const { return m_blockerVolumes; }
 	int NumTriangles() const { return m_materialIndices.Count(); }
 	int NumMaterials() const { return m_materials.Count(); }
+	int NumAudioBlockerBrushes() const { return static_cast<int>(m_blockerVolumes.size()); }
 
 	// Indexed by model number; model 0 (the world) is in the static scene instead, so it is empty here.
 	int NumBrushModels() const { return m_brushModels.Count(); }
@@ -101,6 +110,8 @@ private:
 	CUtlVector<int32> m_triangles;
 	CUtlVector<int32> m_materialIndices;
 	CUtlVector<NeoSpatial::AcousticMaterial> m_materials;
+	int m_numProbeTriangles = 0; // the triangles before the audio blockers'
+	std::vector<NeoSpatial::ConvexVolume> m_blockerVolumes; // in metres
 
 	CUtlVectorAutoPurge<BrushModel *> m_brushModels;
 

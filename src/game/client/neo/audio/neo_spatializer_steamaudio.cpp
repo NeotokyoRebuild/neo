@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -1056,6 +1057,11 @@ public:
 			return false;
 		}
 		m_api.iplSceneSaveOBJ(m_scene, fileBaseName);
+		// Steam Audio names the .mtl after the base name but writes the mesh to the base name itself,
+		// with no extension (measured with 4.8.1); give it the .obj its own mtllib line expects beside it.
+		const std::string objName = std::string(fileBaseName) + ".obj";
+		std::remove(objName.c_str());
+		std::rename(fileBaseName, objName.c_str());
 		return true;
 	}
 

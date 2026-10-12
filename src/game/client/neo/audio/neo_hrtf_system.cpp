@@ -1033,8 +1033,8 @@ void CNeoHrtfSystem::BuildScene()
 	}
 
 	m_sceneTriangles = geometry.NumTriangles();
-	DevMsg("NEO HRTF: acoustic scene for %s, %d triangles, built in %.0f ms\n", pszMapName, m_sceneTriangles,
-		   (Plat_FloatTime() - startTime) * 1000.0);
+	DevMsg("NEO HRTF: acoustic scene for %s, %d triangles (%d audio blocker brushes), built in %.0f ms\n", pszMapName,
+		   m_sceneTriangles, geometry.NumAudioBlockerBrushes(), (Plat_FloatTime() - startTime) * 1000.0);
 
 	V_snprintf(m_szProbeCachePath, sizeof(m_szProbeCachePath), "%s/%s.probes", kHrtfProbeCacheDir, pszMapName);
 	SetupProbes(geometry);
@@ -1075,7 +1075,8 @@ void CNeoHrtfSystem::SetupProbes(const CNeoAudioGeometry &geometry)
 	// Generation is quick and deterministic, so it always runs: the cache only has to hold the
 	// baked data, and the probes are known here for the debug view either way.
 	const double startTime = Plat_FloatTime();
-	NeoSpatial::BuildProbes(geometry.GetSceneGeometry(), geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, m_probes);
+	NeoSpatial::BuildProbes(geometry.GetProbeGeometry(), geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, m_probes,
+							geometry.GetBlockerVolumes());
 	m_probeCoverage.Build(m_probes, kHrtfPathReachMetres);
 	const double generateMs = (Plat_FloatTime() - startTime) * 1000.0;
 

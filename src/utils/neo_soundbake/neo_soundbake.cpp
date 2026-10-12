@@ -4,7 +4,7 @@
 // and stores them in the BSP as a game lump, so the game loads them instead of baking at runtime.
 //
 // Run after VRAD, on the BSP it wrote:
-//     neo_soundbake -game <mod dir> [-threads <n>] [-phonon <library>] [-appid_dir_<appid> <dir>] <map.bsp>
+//     neo_soundbake -game <mod dir> [-threads <n>] [-phonon <library>] [-obj] [-appid_dir_<appid> <dir>] <map.bsp>
 // In Hammer++'s expert compile configuration: $bindir\neo_soundbake.exe, parameters
 //     -game $gamedir $path\$file.bsp
 // after the VRAD step and before the copy into the game's maps directory.
@@ -583,7 +583,8 @@ int Run(const char *pszBspArg)
 		Fail("%s", error);
 		return 1;
 	}
-	Msg("neo_soundbake: %s: %d triangles\n", bspPath, geometry.NumTriangles());
+	Msg("neo_soundbake: %s: %d triangles, %d audio blocker brushes\n", bspPath, geometry.NumTriangles(),
+		geometry.NumAudioBlockerBrushes());
 
 	// The phonon the game ships, unless told otherwise.
 	char phononPath[MAX_PATH];
@@ -612,7 +613,17 @@ int Run(const char *pszBspArg)
 	}
 	else
 	{
-		NeoSpatial::BuildProbes(geometry.GetSceneGeometry(), geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, probes);
+		// For checking what sound sees, audio blockers included: <map>_scene.obj (and .mtl) beside the map.
+		if (CommandLine()->FindParm("-obj"))
+		{
+			char objBase[MAX_PATH];
+			V_StripExtension(bspPath, objBase, sizeof(objBase));
+			V_strncat(objBase, "_scene", sizeof(objBase));
+			pSpatializer->SaveSceneObj(objBase);
+			Msg("neo_soundbake: wrote %s.obj\n", objBase);
+		}
+		NeoSpatial::BuildProbes(geometry.GetProbeGeometry(), geometry.GetBspTree(), NeoSpatial::DEFAULT_PROBE_SETTINGS, probes,
+								geometry.GetBlockerVolumes());
 		if (probes.centres.empty())
 		{
 			Fail("the map has no open space to place probes in");
@@ -691,7 +702,7 @@ int main(int argc, char **argv)
 	CommandLine()->CreateCmdLine(argc, argv);
 	if (argc < 2 || CommandLine()->FindParm("-help") || argv[argc - 1][0] == '-')
 	{
-		Msg("usage: neo_soundbake -game <mod dir> [-threads <n>] [-phonon <library>] [-appid_dir_<appid> <dir>] <map.bsp>\n");
+		Msg("usage: neo_soundbake -game <mod dir> [-threads <n>] [-phonon <library>] [-obj] [-appid_dir_<appid> <dir>] <map.bsp>\n");
 		return 1;
 	}
 	const int result = Run(argv[argc - 1]);

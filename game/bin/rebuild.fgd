@@ -329,6 +329,10 @@
 [
 ]
 
+@SolidClass = func_audio_blocker: "Blocks sound and nothing else: no collision, never drawn. Sound through it is cut off, and reaches the other side only around it, through any gaps. Use the tools/toolsaudioblocker texture. Like CS2's audio blocker, e.g. a sheet under a floor with gaps left at the stairs."
+[
+]
+
 @PointClass base(Targetname, Angles) studio("models/player/jgr.mdl") = neo_juggernaut : "Juggernaut"
 [
 	StartLocked(choices) : "Start Locked?" : 0 : "If locked, players can't use the juggernaut" =

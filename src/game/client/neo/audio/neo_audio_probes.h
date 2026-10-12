@@ -44,6 +44,14 @@ struct BspTree
 	int FindLeaf(const Vec3 &point) const;
 };
 
+// A convex region: the points behind every plane (normal . p - dist <= 0), e.g. a brush.
+struct ConvexVolume
+{
+	std::vector<BspTree::Plane> planes;
+
+	bool Contains(const Vec3 &point) const;
+};
+
 struct ProbeSettings
 {
 	float spacing; // between neighbouring probes
@@ -99,8 +107,9 @@ private:
 //   along the edge. Floor probes on top of a wall are too
 //   far from the ones beside it for paths to go over it, and a thin wall or one with a nodraw top
 //   gets no floor probes at all; probes at its crest let sound pass over the top.
-// A probe is kept only in open, playable space (by the BSP tree), and only if it is at least half
-// of the spacing from every probe already kept (crest probes first).
-void BuildProbes(const SceneGeometry &geometry, const BspTree &tree, const ProbeSettings &settings, ProbeSet &out);
+// A probe is kept only in open, playable space (by the BSP tree), outside every excluded volume, and
+// only if it is at least half of the spacing from every probe already kept (crest probes first).
+void BuildProbes(const SceneGeometry &geometry, const BspTree &tree, const ProbeSettings &settings, ProbeSet &out,
+				 const std::vector<ConvexVolume> &excluded = {});
 
 } // namespace NeoSpatial
