@@ -147,6 +147,10 @@ static IMaterial *ReticleMaterial(const CNEOWeaponInfo &data)
 		{
 			s_pReticle = nullptr;
 		}
+		if (s_pReticle && !s_pReticle->IsPrecached())
+		{
+			PrecacheMaterial(s_pReticle->GetName());
+		}
 	}
 	return s_pReticle;
 }
@@ -155,7 +159,8 @@ static LensState GetLensState(const CNEOWeaponInfo &data, bool bCloaked, bool bT
 {
 	LensState state;
 	state.pReticle = ReticleMaterial(data);
-	const bool bActive = NeoAdsActive(data);
+	// Without art to draw back (no reticle material, no lens map) the glass is left as the gun draws it.
+	const bool bActive = NeoAdsActive(data) && state.pReticle && data.m_bHasAdsOpticLensMap;
 	state.bOverridden = (bCloaked || bThermal) && data.m_bAdsOpticWindow && bActive
 		&& (!data.m_bAdsOpticEyepiece || adsBlend >= NEO_ADS_ON_SIGHTS);
 	state.bScopeOnSights = data.m_bAdsOpticScope && !state.bOverridden && adsBlend >= NEO_ADS_ON_SIGHTS
