@@ -63,10 +63,22 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"50"
 		"forward"	"0"
 		"right"		"1.275"
 		"up"		"0.5"
+	}
+
+	"AdsOptic"
+	{
+		"window"	"1"
+		"reticle"	"vgui/hud/optics/srm_reticle"
+		"lens_bone"	"body"
+		"lens_map"	"1.149 -1.191 12.36  -2.292 0 0  0.001166 0 1.745"
+		"lens_map2"	"-1.149 -0.32 12.36  2.292 0 0.000887  -0.001165 0 1.744"
+		"window_glass"	"0.008 0.005  0.008 0.987  0.010 0.003  0.010 0.988  0.993 0.003  0.994 0.005  0.994 0.987  0.993 0.988"
+		"lens"		"models/weapons/x_holopoint2"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
