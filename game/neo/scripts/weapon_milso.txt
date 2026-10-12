@@ -67,10 +67,14 @@ WeaponData
 
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"40"
 		"forward"	"-8"
 		"right"		"-3.425"
-		"up"		"6.6"
+		"up"		"8.44"
+		"pitch"		"0.6"
+		"yaw"		"0"
+		"roll"		"0"
 	}
 	
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
