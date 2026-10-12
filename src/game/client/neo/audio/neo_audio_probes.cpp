@@ -415,10 +415,12 @@ int BspTree::FindLeaf(const Vec3 &point) const
 	return -1;
 }
 
-void ProbeCoverage::Build(const ProbeSet &probes)
+void ProbeCoverage::Build(const ProbeSet &probes, float pullReach)
 {
 	m_radius = probes.radius;
+	m_pullCellSize = std::max(pullReach, m_radius);
 	m_cells.clear();
+	m_pullCells.clear();
 	if (m_radius <= 0.0f)
 	{
 		return;
@@ -427,6 +429,8 @@ void ProbeCoverage::Build(const ProbeSet &probes)
 	{
 		m_cells[CellKey(static_cast<int64_t>(floorf(centre.x / m_radius)), static_cast<int64_t>(floorf(centre.y / m_radius)),
 						static_cast<int64_t>(floorf(centre.z / m_radius)))].push_back(centre);
+		m_pullCells[CellKey(static_cast<int64_t>(floorf(centre.x / m_pullCellSize)), static_cast<int64_t>(floorf(centre.y / m_pullCellSize)),
+							static_cast<int64_t>(floorf(centre.z / m_pullCellSize)))].push_back(centre);
 	}
 }
 
@@ -476,10 +480,10 @@ bool ProbeCoverage::PullInside(const Vec3 &point, float maxDistance, Vec3 &out) 
 		return false;
 	}
 
-	const int64_t reach = static_cast<int64_t>(ceilf(maxDistance / m_radius));
-	const int64_t cx = static_cast<int64_t>(floorf(point.x / m_radius));
-	const int64_t cy = static_cast<int64_t>(floorf(point.y / m_radius));
-	const int64_t cz = static_cast<int64_t>(floorf(point.z / m_radius));
+	const int64_t reach = static_cast<int64_t>(ceilf(maxDistance / m_pullCellSize));
+	const int64_t cx = static_cast<int64_t>(floorf(point.x / m_pullCellSize));
+	const int64_t cy = static_cast<int64_t>(floorf(point.y / m_pullCellSize));
+	const int64_t cz = static_cast<int64_t>(floorf(point.z / m_pullCellSize));
 	float bestSqr = maxDistance * maxDistance;
 	const Vec3 *pBest = nullptr;
 	for (int64_t x = cx - reach; x <= cx + reach; ++x)
@@ -488,8 +492,8 @@ bool ProbeCoverage::PullInside(const Vec3 &point, float maxDistance, Vec3 &out) 
 		{
 			for (int64_t z = cz - reach; z <= cz + reach; ++z)
 			{
-				const auto it = m_cells.find(CellKey(x, y, z));
-				if (it == m_cells.end())
+				const auto it = m_pullCells.find(CellKey(x, y, z));
+				if (it == m_pullCells.end())
 				{
 					continue;
 				}

@@ -6,13 +6,18 @@
 //  - Positions are in Source's world frame (+Z up) scaled to METRES; the backend converts axes.
 //  - Audio is mono-in, stereo-out, 32-bit float, non-interleaved, in blocks of the frame size
 //    the backend was created with.
-//  - Creation, destruction, CreateVoice and ReleaseVoice run on the game thread; SetListener and
-//    Process on the audio thread. The caller guarantees they never overlap.
+//  - Three roles, each of which may be its own thread:
+//     - Voices: CreateVoice and ReleaseVoice. The caller guarantees Process never runs on a voice
+//       while it is being created or released.
+//     - Audio: SetListener, Process and ProcessReverb, one block at a time.
+//     - Simulation: sources, the dynamic geometry calls and the Simulate calls, one at a time.
+//       It shares nothing with voices or the audio role: its results reach Process only as the
+//       DirectPath and PathParams the caller passes it.
+//    Creation, destruction, and the scene, probe and bake calls (SetSceneGeometry, the probe calls,
+//    GenerateFloorProbes, SaveSceneObj) change what the simulation reads, so the caller never runs
+//    them alongside a simulation call. They need not be serialised with voices or audio.
 //  - Process() OVERWRITES the outputs at unity gain: distance attenuation and volume are the
 //    caller's, so the distance model can change without touching a backend.
-//  - Scene, probes and simulation (SetSceneGeometry, the dynamic geometry calls, the probe calls,
-//    SimulateDirect, SaveSceneObj) are game-thread state that Process never reads, so those calls need not be serialised with the
-//    audio thread. Their results reach Process only as the DirectPath the caller passes it.
 //  - A bake runs on the backend's own thread; every other call that touches the scene or probe
 //    batches cancels and joins it first, so the caller never has to.
 #pragma once
@@ -37,6 +42,11 @@ struct Listener
 
 typedef uint32_t VoiceHandle;
 static constexpr VoiceHandle INVALID_VOICE = 0;
+
+// What the simulation traces for a voice; kept apart from the voice so the two can live on
+// different threads (see the conventions above).
+typedef uint32_t SourceHandle;
+static constexpr SourceHandle INVALID_SOURCE = 0;
 
 static constexpr int NUM_ACOUSTIC_BANDS = 3; // centred on 400 Hz, 2.5 kHz and 15 kHz
 
@@ -133,7 +143,7 @@ struct PathParams
 // than the straight line, so this is what makes a sound heard around a corner quieter.
 struct PathingVoice
 {
-	VoiceHandle voice;
+	SourceHandle source;
 	Vec3 origin;
 	float falloffPerMetre;
 };
@@ -164,6 +174,11 @@ public:
 	virtual VoiceHandle CreateVoice() = 0;
 	virtual void ReleaseVoice(VoiceHandle voice) = 0;
 
+	// Simulation: one source per voice to simulate. Sources need a scene; INVALID_SOURCE while there
+	// is none. Replacing or removing the scene releases every source.
+	virtual SourceHandle CreateSource() = 0;
+	virtual void ReleaseSource(SourceHandle source) = 0;
+
 	// Spatialise one block: the direct path, filtered by render.direct, from `origin` (world
 	// position); plus the occluded share along render.paths, from the directions the paths arrive
 	// from. The direct-filtered block, times render.reverbSend, is added to this block's reverb input.
@@ -178,7 +193,8 @@ public:
 	virtual void ProcessReverb(const ReverbParams &params, bool bDecorrelate, float *outLeft, float *outRight) = 0;
 
 	// Replaces the static scene; geometry without triangles just removes the current one.
-	// On failure there is no scene, and errorOut says why. Drops every dynamic model and instance.
+	// On failure there is no scene, and errorOut says why. Drops every source, dynamic model and
+	// instance.
 	virtual bool SetSceneGeometry(const SceneGeometry &geometry, char *errorOut, int errorLen) = 0;
 
 	// Dynamic geometry: things that move or come and go (doors, trains). A model is a mesh in its
@@ -194,23 +210,23 @@ public:
 	virtual void ReleaseDynamicInstance(DynamicInstance instance) = 0;
 	virtual int NumDynamicInstances() const = 0;
 
-	// Traces each voice's origin (world positions, as for Process) to the listener through the scene
-	// and writes one path per voice. Invalid handles, and every voice while there is no scene, get
-	// the default unobstructed path. ignoreGroups (optional, one per voice) names a group of dynamic
-	// instances each voice is traced as if they were not there, e.g. the door it is the sound of; each
-	// group ignored costs a simulation run of its own.
-	virtual void SimulateDirect(const Listener &listener, const VoiceHandle *voices, const Vec3 *origins,
+	// Traces each source's origin (world positions, as for Process) to the listener through the scene
+	// and writes one path per source. Invalid handles, and every source while there is no scene, get
+	// the default unobstructed path. ignoreGroups (optional, one per source) names a group of dynamic
+	// instances each source is traced as if they were not there, e.g. the door it is the sound of;
+	// each group ignored costs a simulation run of its own.
+	virtual void SimulateDirect(const Listener &listener, const SourceHandle *sources, const Vec3 *origins,
 								const uint32_t *ignoreGroups, DirectPath *pathsOut, int count) = 0;
 
 	// Looks up the baked reverb at the listener. Probe batches only take part once their bake is
 	// complete (finished or loaded); until then the result stays invalid.
 	virtual void SimulateReverb(const Listener &listener, ReverbParams *out) = 0;
 
-	// Finds the paths from each voice to the listener through the baked batch with id batchId (the
-	// one covering the listener). Writes one result per voice; all invalid until that batch's bake is
-	// complete. A voice the listener can see gets its direct line as its path. Paths are used as
+	// Finds the paths from each source to the listener through the baked batch with id batchId (the
+	// one covering the listener). Writes one result per source; all invalid until that batch's bake
+	// is complete. A source the listener can see gets its direct line as its path. Paths are used as
 	// baked: dynamic geometry does not block them.
-	virtual void SimulatePathing(const Listener &listener, int32_t batchId, float minGain, const PathingVoice *voices,
+	virtual void SimulatePathing(const Listener &listener, int32_t batchId, float minGain, const PathingVoice *sources,
 								 PathParams *out, int count) = 0;
 
 	// Debug: writes the scene as <fileBaseName>.obj and .mtl. False if there is no scene.

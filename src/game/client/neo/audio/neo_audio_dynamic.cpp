@@ -54,6 +54,7 @@ NeoSpatial::Transform DynamicToTransform(const matrix3x4_t &matrix)
 
 CNeoAudioDynamicGeometry::CNeoAudioDynamicGeometry()
 	: m_props(DefLessFunc(const model_t *))
+	, m_models(DefLessFunc(const CNeoAudioGeometry::Mesh *))
 	, m_instances(DefLessFunc(unsigned long))
 {
 }
@@ -66,6 +67,7 @@ void CNeoAudioDynamicGeometry::Init(CNeoAudioGeometry &geometry, const CNeoAudio
 	m_brushes.SetCount(m_brushModels.Count());
 	for (int m = 0; m < m_brushModels.Count(); ++m)
 	{
+		m_brushes[m].bUsable = DynamicLargeEnough(m_brushModels[m]->mesh);
 		for (const char *pszClassname : kDynamicMoverClassnames)
 		{
 			m_brushes[m].bMover |= V_stricmp(m_brushModels[m]->classname.Get(), pszClassname) == 0;
@@ -78,57 +80,78 @@ void CNeoAudioDynamicGeometry::Clear()
 	m_brushModels.PurgeAndDeleteElements();
 	m_brushes.Purge();
 	m_props.Purge();
+	m_propMeshes.PurgeAndDeleteElements();
+	m_models.Purge();
 	m_instances.Purge();
 }
 
-void CNeoAudioDynamicGeometry::Update(NeoSpatial::ISpatializer *pSpatializer, Scope scope)
+void CNeoAudioDynamicGeometry::Gather(Scope scope, CUtlVector<Placement> &placementsOut)
+{
+	placementsOut.RemoveAll();
+	if (scope == Scope::Off)
+	{
+		return;
+	}
+
+	for (C_BaseEntity *pEntity = ClientEntityList().FirstBaseEntity(); pEntity; pEntity = ClientEntityList().NextBaseEntity(pEntity))
+	{
+		const CNeoAudioGeometry::Mesh *pMesh = MeshFor(pEntity, scope);
+		if (pMesh)
+		{
+			// Dormant entities keep their last known place: the server stops sending them, but a door
+			// that went out of view is still there.
+			placementsOut.AddToTail({ static_cast<unsigned long>(pEntity->GetRefEHandle().ToInt()), HierarchyGroup(pEntity), pMesh,
+									  pEntity->EntityToWorldTransform() });
+		}
+	}
+}
+
+void CNeoAudioDynamicGeometry::Apply(NeoSpatial::ISpatializer *pSpatializer, const CUtlVector<Placement> &placements)
 {
 	FOR_EACH_MAP_FAST(m_instances, i)
 	{
 		m_instances[i].bSeen = false;
 	}
 
-	if (scope != Scope::Off)
+	for (const Placement &placement : placements)
 	{
-		for (C_BaseEntity *pEntity = ClientEntityList().FirstBaseEntity(); pEntity; pEntity = ClientEntityList().NextBaseEntity(pEntity))
+		unsigned short modelIndex = m_models.Find(placement.pMesh);
+		if (modelIndex == m_models.InvalidIndex())
 		{
-			const NeoSpatial::DynamicModel model = ModelFor(pSpatializer, pEntity, scope);
-			if (model == NeoSpatial::INVALID_DYNAMIC_MODEL)
-			{
-				continue;
-			}
+			modelIndex = m_models.Insert(placement.pMesh, pSpatializer->CreateDynamicModel(placement.pMesh->Geometry()));
+		}
+		const NeoSpatial::DynamicModel model = m_models[modelIndex];
+		if (model == NeoSpatial::INVALID_DYNAMIC_MODEL)
+		{
+			continue;
+		}
 
-			// Dormant entities keep their last known place: the server stops sending them, but a door
-			// that went out of view is still there.
-			const matrix3x4_t &transform = pEntity->EntityToWorldTransform();
-			const unsigned long key = pEntity->GetRefEHandle().ToInt();
-			const uint32 group = HierarchyGroup(pEntity);
-			unsigned short index = m_instances.Find(key);
-			if (index != m_instances.InvalidIndex() && (m_instances[index].model != model || m_instances[index].group != group))
+		unsigned short index = m_instances.Find(placement.key);
+		if (index != m_instances.InvalidIndex()
+			&& (m_instances[index].pMesh != placement.pMesh || m_instances[index].group != placement.group))
+		{
+			// The entity changed model, or was parented to something else.
+			pSpatializer->ReleaseDynamicInstance(m_instances[index].handle);
+			m_instances.RemoveAt(index);
+			index = m_instances.InvalidIndex();
+		}
+		if (index == m_instances.InvalidIndex())
+		{
+			const NeoSpatial::DynamicInstance handle =
+				pSpatializer->CreateDynamicInstance(model, DynamicToTransform(placement.transform), placement.group);
+			if (handle != NeoSpatial::INVALID_DYNAMIC_INSTANCE)
 			{
-				// The entity changed model, or was parented to something else.
-				pSpatializer->ReleaseDynamicInstance(m_instances[index].handle);
-				m_instances.RemoveAt(index);
-				index = m_instances.InvalidIndex();
+				m_instances.Insert(placement.key, { handle, placement.pMesh, placement.group, placement.transform, true });
 			}
-			if (index == m_instances.InvalidIndex())
-			{
-				const NeoSpatial::DynamicInstance handle =
-					pSpatializer->CreateDynamicInstance(model, DynamicToTransform(transform), group);
-				if (handle != NeoSpatial::INVALID_DYNAMIC_INSTANCE)
-				{
-					m_instances.Insert(key, { handle, model, group, transform, true });
-				}
-				continue;
-			}
+			continue;
+		}
 
-			Instance &instance = m_instances[index];
-			instance.bSeen = true;
-			if (V_memcmp(&instance.transform, &transform, sizeof(transform)) != 0)
-			{
-				pSpatializer->MoveDynamicInstance(instance.handle, DynamicToTransform(transform));
-				instance.transform = transform;
-			}
+		Instance &instance = m_instances[index];
+		instance.bSeen = true;
+		if (V_memcmp(&instance.transform, &placement.transform, sizeof(placement.transform)) != 0)
+		{
+			pSpatializer->MoveDynamicInstance(instance.handle, DynamicToTransform(placement.transform));
+			instance.transform = placement.transform;
 		}
 	}
 
@@ -145,14 +168,13 @@ void CNeoAudioDynamicGeometry::Update(NeoSpatial::ISpatializer *pSpatializer, Sc
 	}
 }
 
-NeoSpatial::DynamicModel CNeoAudioDynamicGeometry::ModelFor(NeoSpatial::ISpatializer *pSpatializer, C_BaseEntity *pEntity,
-															 Scope scope)
+const CNeoAudioGeometry::Mesh *CNeoAudioDynamicGeometry::MeshFor(C_BaseEntity *pEntity, Scope scope)
 {
 	const model_t *pModel = pEntity->GetModel();
 	if (!pModel || pEntity->IsPlayer() || pEntity->IsBaseCombatWeapon()
 		|| (pEntity->IsEffectActive(EF_NODRAW) && !pEntity->IsSolid()))
 	{
-		return NeoSpatial::INVALID_DYNAMIC_MODEL;
+		return nullptr;
 	}
 
 	// Movers count whether solid or not (a door can be set passable, and still blocks sound), and so
@@ -173,38 +195,32 @@ NeoSpatial::DynamicModel CNeoAudioDynamicGeometry::ModelFor(NeoSpatial::ISpatial
 	}
 	if (!bWanted)
 	{
-		return NeoSpatial::INVALID_DYNAMIC_MODEL;
+		return nullptr;
 	}
 
 	if (brush >= 0)
 	{
-		BrushEntry &entry = m_brushes[brush];
-		if (!entry.bTried)
-		{
-			entry.bTried = true;
-			const CNeoAudioGeometry::Mesh &mesh = m_brushModels[brush]->mesh;
-			if (DynamicLargeEnough(mesh))
-			{
-				entry.handle = pSpatializer->CreateDynamicModel(mesh.Geometry());
-			}
-		}
-		return entry.handle;
+		return m_brushes[brush].bUsable ? &m_brushModels[brush]->mesh : nullptr;
 	}
 
 	if (modelinfo->GetModelType(pModel) != mod_studio)
 	{
-		return NeoSpatial::INVALID_DYNAMIC_MODEL;
+		return nullptr;
 	}
 	unsigned short index = m_props.Find(pModel);
 	if (index == m_props.InvalidIndex())
 	{
-		NeoSpatial::DynamicModel handle = NeoSpatial::INVALID_DYNAMIC_MODEL;
-		CNeoAudioGeometry::Mesh mesh;
-		if (CNeoAudioGeometry::LoadModelCollision(m_services, modelinfo->GetModelName(pModel), mesh) && DynamicLargeEnough(mesh))
+		CNeoAudioGeometry::Mesh *pMesh = new CNeoAudioGeometry::Mesh;
+		if (CNeoAudioGeometry::LoadModelCollision(m_services, modelinfo->GetModelName(pModel), *pMesh) && DynamicLargeEnough(*pMesh))
 		{
-			handle = pSpatializer->CreateDynamicModel(mesh.Geometry());
+			m_propMeshes.AddToTail(pMesh);
 		}
-		index = m_props.Insert(pModel, handle);
+		else
+		{
+			delete pMesh;
+			pMesh = nullptr;
+		}
+		index = m_props.Insert(pModel, pMesh);
 	}
 	return m_props[index];
 }

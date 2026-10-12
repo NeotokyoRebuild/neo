@@ -127,7 +127,9 @@ void CloseLibrary(LibraryHandle library) { dlclose(library); }
 void FormatLoaderError(char *out, int len) { const char *error = dlerror(); snprintf(out, len, "%s", error ? error : "unknown dlerror"); }
 #endif
 
-constexpr int MAX_VOICES = 128;
+// 128 playing voices, plus room for voices a caller has finished with but cannot release until the
+// audio thread has moved past them.
+constexpr int MAX_VOICES = 160;
 constexpr int LOADER_ERROR_LEN = 256;
 
 // Below this the source is effectively inside the listener's head and has no direction.
@@ -518,9 +520,7 @@ public:
 				return INVALID_VOICE;
 			}
 
-			// A voice without a source just stays unoccluded; the sound itself still plays.
 			voice.inUse = true;
-			CreateSource(voice);
 			return static_cast<VoiceHandle>(i + 1);
 		}
 		return INVALID_VOICE;
@@ -530,8 +530,42 @@ public:
 	{
 		if (Voice *const voice = FindVoice(handle))
 		{
-			ReleaseSource(*voice);
 			voice->inUse = false;
+		}
+	}
+
+	SourceHandle CreateSource() override
+	{
+		if (!m_simulator)
+		{
+			return INVALID_SOURCE;
+		}
+		for (int i = 0; i < MAX_VOICES; ++i)
+		{
+			SourceSlot &slot = m_sources[i];
+			if (slot.source)
+			{
+				continue;
+			}
+			IPLSourceSettings sourceSettings = {};
+			sourceSettings.flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_PATHING);
+			if (m_api.iplSourceCreate(m_simulator, &sourceSettings, &slot.source) != IPL_STATUS_SUCCESS)
+			{
+				slot.source = nullptr;
+				return INVALID_SOURCE;
+			}
+			m_api.iplSourceAdd(slot.source, m_simulator);
+			m_bSimulatorDirty = true;
+			return static_cast<SourceHandle>(i + 1);
+		}
+		return INVALID_SOURCE;
+	}
+
+	void ReleaseSource(SourceHandle handle) override
+	{
+		if (SourceSlot *const slot = FindSource(handle))
+		{
+			ReleaseSourceSlot(*slot);
 		}
 	}
 
@@ -714,14 +748,6 @@ public:
 			m_reverbSource = nullptr;
 		}
 
-		// Voices already playing join the new simulator.
-		for (Voice &voice : m_voices)
-		{
-			if (voice.inUse)
-			{
-				CreateSource(voice);
-			}
-		}
 		m_api.iplSimulatorCommit(m_simulator);
 		m_bSimulatorDirty = false;
 		return true;
@@ -821,7 +847,7 @@ public:
 		return m_numDynamicInstances;
 	}
 
-	void SimulateDirect(const Listener &listener, const VoiceHandle *voices, const Vec3 *origins, const uint32_t *ignoreGroups,
+	void SimulateDirect(const Listener &listener, const SourceHandle *sources, const Vec3 *origins, const uint32_t *ignoreGroups,
 						DirectPath *pathsOut, int count) override
 	{
 		std::fill_n(pathsOut, count, DirectPath());
@@ -832,9 +858,9 @@ public:
 
 		CommitSimulation();
 
-		// Steam Audio traces every source against the same scene, so a voice that ignores a group is
+		// Steam Audio traces every source against the same scene, so a source that ignores a group is
 		// simulated in a run of its own with that group's instances out of the scene: one run for the
-		// voices that ignore nothing, then one per group that some voice ignores and that is in the
+		// sources that ignore nothing, then one per group that some source ignores and that is in the
 		// scene. Usually that is nothing, or one moving door or train playing its own sound.
 		m_directVoiceGroups.assign(count, NO_DYNAMIC_GROUP);
 		m_directExtraGroups.clear();
@@ -855,11 +881,11 @@ public:
 		sharedInputs.listener = ToSteamAudioListener(listener);
 		m_api.iplSimulatorSetSharedInputs(m_simulator, IPL_SIMULATIONFLAGS_DIRECT, &sharedInputs);
 
-		RunDirectPass(NO_DYNAMIC_GROUP, voices, origins, pathsOut, count);
+		RunDirectPass(NO_DYNAMIC_GROUP, sources, origins, pathsOut, count);
 		for (const uint32_t group : m_directExtraGroups)
 		{
 			SetDynamicGroupInScene(group, false);
-			RunDirectPass(group, voices, origins, pathsOut, count);
+			RunDirectPass(group, sources, origins, pathsOut, count);
 			SetDynamicGroupInScene(group, true);
 		}
 	}
@@ -926,7 +952,7 @@ public:
 		*out = m_lastReverb;
 	}
 
-	void SimulatePathing(const Listener &listener, int32_t batchId, float minGain, const PathingVoice *voices,
+	void SimulatePathing(const Listener &listener, int32_t batchId, float minGain, const PathingVoice *sources,
 						 PathParams *out, int count) override
 	{
 		std::fill_n(out, count, PathParams());
@@ -973,13 +999,12 @@ public:
 		bool bAnySource = false;
 		for (int i = 0; i < count; ++i)
 		{
-			Voice *const voice = FindVoice(voices[i].voice);
-			if (voice && voice->source)
+			if (SourceSlot *const slot = FindSource(sources[i].source))
 			{
-				voice->distanceLaw = { voices[i].falloffPerMetre, minGain };
-				inputs.source.origin = ToSteamAudioPosition(voices[i].origin);
-				inputs.distanceAttenuationModel.userData = &voice->distanceLaw;
-				m_api.iplSourceSetInputs(voice->source, IPL_SIMULATIONFLAGS_PATHING, &inputs);
+				slot->distanceLaw = { sources[i].falloffPerMetre, minGain };
+				inputs.source.origin = ToSteamAudioPosition(sources[i].origin);
+				inputs.distanceAttenuationModel.userData = &slot->distanceLaw;
+				m_api.iplSourceSetInputs(slot->source, IPL_SIMULATIONFLAGS_PATHING, &inputs);
 				bAnySource = true;
 			}
 		}
@@ -995,13 +1020,13 @@ public:
 
 		for (int i = 0; i < count; ++i)
 		{
-			const Voice *const voice = FindVoice(voices[i].voice);
-			if (!voice || !voice->source)
+			const SourceSlot *const slot = FindSource(sources[i].source);
+			if (!slot)
 			{
 				continue;
 			}
 			IPLSimulationOutputs outputs = {};
-			m_api.iplSourceGetOutputs(voice->source, IPL_SIMULATIONFLAGS_PATHING, &outputs);
+			m_api.iplSourceGetOutputs(slot->source, IPL_SIMULATIONFLAGS_PATHING, &outputs);
 			if (!outputs.pathing.shCoeffs)
 			{
 				continue;
@@ -1376,11 +1401,15 @@ private:
 		IPLBinauralEffect effect = nullptr;
 		IPLDirectEffect directEffect = nullptr;
 		IPLPathEffect pathEffect = nullptr;
-		IPLSource source = nullptr; // only while there is a simulator
 		bool inUse = false;
-		DistanceLaw distanceLaw; // game thread: read by the pathing simulation through the source
 		float pathMix = 0.0f; // audio thread: the occluded share at the end of the last block
 		bool bPathsActive = false; // audio thread
+	};
+
+	struct SourceSlot
+	{
+		IPLSource source = nullptr; // null = free slot
+		DistanceLaw distanceLaw; // read by the pathing simulation through the source
 	};
 
 	// Audio thread: adds the occluded share of the block, rendered along the voice's paths, to the
@@ -1510,31 +1539,15 @@ private:
 		return true;
 	}
 
-	void CreateSource(Voice &voice)
+	void ReleaseSourceSlot(SourceSlot &slot)
 	{
-		if (!m_simulator || voice.source)
+		if (slot.source)
 		{
-			return;
-		}
-		IPLSourceSettings sourceSettings = {};
-		sourceSettings.flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS | IPL_SIMULATIONFLAGS_PATHING);
-		if (m_api.iplSourceCreate(m_simulator, &sourceSettings, &voice.source) != IPL_STATUS_SUCCESS)
-		{
-			voice.source = nullptr;
-			return;
-		}
-		m_api.iplSourceAdd(voice.source, m_simulator);
-		m_bSimulatorDirty = true;
-	}
-
-	void ReleaseSource(Voice &voice)
-	{
-		if (voice.source)
-		{
-			m_api.iplSourceRemove(voice.source, m_simulator);
-			m_api.iplSourceRelease(&voice.source);
+			m_api.iplSourceRemove(slot.source, m_simulator);
+			m_api.iplSourceRelease(&slot.source);
 			m_bSimulatorDirty = true;
 		}
+		slot = SourceSlot();
 	}
 
 	struct DynamicModelSlot
@@ -1640,9 +1653,9 @@ private:
 		m_api.iplSceneCommit(m_dynamicScene);
 	}
 
-	// Runs direct simulation for the voices whose ignored group is `group`, and writes their paths.
-	// The other voices' sources sit the run out.
-	void RunDirectPass(uint32_t group, const VoiceHandle *voices, const Vec3 *origins, DirectPath *pathsOut, int count)
+	// Runs direct simulation for the sources whose ignored group is `group`, and writes their paths.
+	// The other sources sit the run out.
+	void RunDirectPass(uint32_t group, const SourceHandle *sources, const Vec3 *origins, DirectPath *pathsOut, int count)
 	{
 		// Distance attenuation, air absorption and directivity stay with the caller's model, so only
 		// what the geometry does is simulated.
@@ -1659,16 +1672,15 @@ private:
 		bool bAnySource = false;
 		for (int i = 0; i < count; ++i)
 		{
-			const Voice *const voice = FindVoice(voices[i]);
-			if (voice && voice->source)
+			if (const SourceSlot *const slot = FindSource(sources[i]))
 			{
 				// A run simulates every source in the simulator whatever its inputs.flags (measured), so
-				// the voices sitting it out are given nothing to trace instead.
+				// the sources sitting it out are given nothing to trace instead.
 				const bool bInPass = m_directVoiceGroups[i] == group;
 				inputs.directFlags = bInPass ? static_cast<IPLDirectSimulationFlags>(IPL_DIRECTSIMULATIONFLAGS_OCCLUSION | IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION)
 											 : static_cast<IPLDirectSimulationFlags>(0);
 				inputs.source.origin = ToSteamAudioPosition(origins[i]);
-				m_api.iplSourceSetInputs(voice->source, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
+				m_api.iplSourceSetInputs(slot->source, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
 				bAnySource |= bInPass;
 			}
 		}
@@ -1681,11 +1693,11 @@ private:
 
 		for (int i = 0; i < count; ++i)
 		{
-			const Voice *const voice = FindVoice(voices[i]);
-			if (voice && voice->source && m_directVoiceGroups[i] == group)
+			const SourceSlot *const slot = FindSource(sources[i]);
+			if (slot && m_directVoiceGroups[i] == group)
 			{
 				IPLSimulationOutputs outputs = {};
-				m_api.iplSourceGetOutputs(voice->source, IPL_SIMULATIONFLAGS_DIRECT, &outputs);
+				m_api.iplSourceGetOutputs(slot->source, IPL_SIMULATIONFLAGS_DIRECT, &outputs);
 				pathsOut[i].occlusion = outputs.direct.occlusion;
 				std::copy_n(outputs.direct.transmission, IPL_NUM_BANDS, pathsOut[i].transmission);
 			}
@@ -1733,9 +1745,9 @@ private:
 		// Probes and their baked data describe this scene, so they go with it.
 		StopBake();
 		ReleaseProbeBatches();
-		for (Voice &voice : m_voices)
+		for (SourceSlot &slot : m_sources)
 		{
-			ReleaseSource(voice);
+			ReleaseSourceSlot(slot);
 		}
 		if (m_reverbSource)
 		{
@@ -1769,11 +1781,23 @@ private:
 		return voice.inUse ? &voice : nullptr;
 	}
 
+	SourceSlot *FindSource(SourceHandle handle)
+	{
+		if (handle == INVALID_SOURCE || handle > static_cast<SourceHandle>(MAX_VOICES))
+		{
+			return nullptr;
+		}
+		SourceSlot &slot = m_sources[handle - 1];
+		return slot.source ? &slot : nullptr;
+	}
+
 	const LibraryHandle m_library;
 	const PhononApi m_api;
 
 	IPLContext m_context = nullptr;
 	IPLHRTF m_hrtf = nullptr;
+
+	// Simulation, and the scene and probe calls (which never run alongside it).
 	IPLScene m_scene = nullptr; // the static world: what probes are placed in and baked against
 	IPLStaticMesh m_staticMesh = nullptr;
 	MeshData m_staticGeometry; // m_staticMesh's source, for the dynamic scene's copy of it
@@ -1785,11 +1809,13 @@ private:
 	std::vector<DynamicInstanceSlot> m_dynamicInstances;
 	int m_numDynamicInstances = 0;
 	bool m_bDynamicSceneDirty = false; // instances added, moved or removed since the last commit
-	std::vector<uint32_t> m_directVoiceGroups; // SimulateDirect: the group each voice ignores, if in the scene
+	SourceSlot m_sources[MAX_VOICES];
+	std::vector<uint32_t> m_directVoiceGroups; // SimulateDirect: the group each source ignores, if in the scene
 	std::vector<uint32_t> m_directExtraGroups; // SimulateDirect: the groups needing a run of their own
 	IPLSource m_reverbSource = nullptr; // baked listener reverb, only while there is a simulator
 	bool m_bBatchesAttached = false; // probe batches are in the simulator (only while fully baked)
 	ReverbParams m_lastReverb; // held while the listener is away from probes
+	bool m_bSimulatorDirty = false; // sources added or removed since the last commit
 
 	// Audio thread.
 	IPLReflectionEffect m_reflectionEffect = nullptr;
@@ -1801,14 +1827,15 @@ private:
 	CAllpassChain m_decorrelators[2];
 	bool m_bReverbActive = false;
 	bool m_bDecorrelatorsActive = false; // whether the all-passes hold history from the last block
-	bool m_bSimulatorDirty = false; // sources added or removed since the last commit
 	IPLAudioSettings m_audioSettings = {};
 	Listener m_listener = {};
-	Voice m_voices[MAX_VOICES];
-	std::vector<float> m_directOut; // audio thread: one voice's block after the direct effect
+	std::vector<float> m_directOut; // one voice's block after the direct effect
 
-	// Game thread, except that the bake thread reads m_batches and m_scene while it runs; every
-	// game-thread change to either stops the bake first.
+	// Created and released by the voices role, processed by the audio thread.
+	Voice m_voices[MAX_VOICES];
+
+	// Probe calls, except that the bake thread reads m_batches and m_scene while it runs; every
+	// other change to either stops the bake first.
 	std::vector<Batch> m_batches;
 	int m_numProbes = 0;
 	std::vector<uint8_t> m_serialized;

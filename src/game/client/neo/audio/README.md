@@ -31,13 +31,45 @@ stays non-positional.
 ```
 engine mixer ──GetActiveSounds()──► CNeoHrtfSystem (game thread, once per frame)
      ▲                                  │ new guid: resolve file, decode + cache, mute engine copy
-     └─ SetVolumeByGuid(guid, floor) ───┤ every frame: origin → metres, gain, pitch, listener,
-                                        │ then SimulateDirect → occlusion + transmission per voice
-                                        ▼ (one mutex-guarded voice table)
+     └─ SetVolumeByGuid(guid, floor) ───┤ every frame: origin → metres, gain, pitch, listener
+                                        │
+              SimFrame (voices, listener, door placements)     RenderFrame (voices, gains, listener)
+                                        ▼                                   │
+          simulation thread: dynamic geometry, occlusion,                   │
+          paths, reverb lookup ── SimResults (by voice) ──┐                 │
+                                                          ▼                 ▼
                          miniaudio device callback (audio thread), per 512-frame block per voice
                                         ▼
                   NeoSpatial::ISpatializer (neo_spatializer.h) ── neo_spatializer_steamaudio.cpp
 ```
+
+### Threads
+
+The three threads never wait on each other in the normal course of a frame:
+
+- **Game thread:** polls the engine and owns the voice table. Each frame it hands the simulation
+  thread a `SimFrame` (each voice's raised origin, ignored group and path reach, the listener, and
+  the dynamic geometry's placements), and the audio thread a `RenderFrame` (each voice's sound,
+  gain, pitch and position).
+- **Simulation thread:** runs whenever a new `SimFrame` is waiting, taking only the newest, so it
+  never falls behind. It owns the Steam Audio sources (one per voice, made and released as voices
+  come and go) and the dynamic geometry's instances. Each run's results go straight to the audio
+  thread as `SimResults`, by voice slot.
+- **Audio thread:** renders from its latest copy of each. A voice is identified by its slot and a
+  generation that changes with every new sound in the slot, so results for a slot's previous sound
+  are never applied to its next one.
+
+Each handoff is a copy of a few KB under its own mutex. The audio thread only ever tries those
+mutexes: if a writer is mid-copy, the last frame serves another block. A finished voice's backend
+voice is only released once the audio thread has taken a frame without it. The game thread waits
+only for structural changes: for the simulation's current run before the scene, probes or bake
+change, and for the audio thread's current block before the voices' sounds are freed (level
+change, or disabling HRTF). Simulation inputs carry a scene epoch, so a frame built before a
+scene change is dropped rather than run against the new scene.
+
+A new voice is not rendered until the simulation has run for it, so a shot behind a wall never
+starts unoccluded. That is usually within a frame; under heavy load it is one simulation run plus
+whatever is left of the run in progress.
 
 | Layer | Files | Knows about |
 | --- | --- | --- |
@@ -108,7 +140,7 @@ model viewer.
 ## Occlusion
 
 A direct-only `IPLSimulator` is created with each scene, with an `IPLSource` per live voice.
-Once per frame, after the voice table is updated, the game thread runs `SimulateDirect`:
+Each run of the simulation thread starts with `SimulateDirect`:
 
 - volumetric occlusion: each source is a 0.3 m sphere sampled with 16 rays, so a sound fades in
   as its source rounds a corner instead of switching on;
@@ -118,15 +150,16 @@ Once per frame, after the voice table is updated, the game thread runs `Simulate
   floor and would otherwise be half hidden by it;
 - distance attenuation, air absorption and directivity stay with our engine-matching model.
 
-The result reaches the audio thread as a POD `DirectPath` in the voice table, and `Process` runs
-an `IPLDirectEffect` on the block before the binaural effect. A new voice is not rendered until
-its first path is published (the same frame), so a shot behind a wall never starts unoccluded.
-Simulating never shares state with `Process`, so the audio thread keeps rendering while it runs.
+The result reaches the audio thread as a POD `DirectPath` in `SimResults`, and `Process` runs
+an `IPLDirectEffect` on the block before the binaural effect. Simulating never shares state with
+`Process`, so the audio thread keeps rendering while it runs.
 
-Measured cost: about 0.2 ms per frame for 32 voices against a 97k-triangle scene, which is why it
-runs on the game thread. Scene build is roughly 80 ms for the same size, during map load.
-`cl_neo_hrtf_occlusion 0` turns it off for A/B listening; `cl_neo_hrtf_debug 1` shows each
-voice's occlusion and per-band transmission, plus the simulation time.
+Measured cost: about 0.2 ms per run for 32 voices against a 97k-triangle scene, 0.7 ms for 128.
+It ran on the game thread until a map with 128 ambient_generics showed 4–5 ms of simulation in an
+8 ms frame; it now has its own thread. Scene build is roughly 80 ms for the same size, during map
+load. `cl_neo_hrtf_occlusion 0` turns it off for A/B listening; `cl_neo_hrtf_debug 1` shows each
+voice's occlusion and per-band transmission, plus the simulation thread's time per run, split into
+dynamic geometry, occlusion, paths and reverb, and its runs per second.
 
 ## Probes and baking
 
@@ -235,7 +268,7 @@ or baked with a Steam Audio the game can't read, falls back to the runtime bake 
 
 The baked probes drive one room reverb around the listener:
 
-- **Lookup (game thread, ~2 µs a frame):** the simulator also has `IPL_SIMULATIONFLAGS_REFLECTIONS`
+- **Lookup (simulation thread, ~3 µs a run):** the simulator also has `IPL_SIMULATIONFLAGS_REFLECTIONS`
   and a single baked source. Steam Audio looks reverb up at the listener's position by blending
   nearby probes, tracing no rays, and returns decay times (RT60) for three bands. Batches join the
   simulator only once fully baked (finished or loaded from the cache). A rebake detaches them first,
@@ -269,7 +302,7 @@ wall instead, from the doorway it actually reaches the listener through.
 - **Bake:** after the reverb, each batch gets `IPL_BAKEDDATATYPE_PATHING`. That records probe
   pairs that see each other (more than 10% of 4×4 rays between 0.5 m spheres get through), at most
   20 m apart, with shortest paths through them up to 100 m long.
-- **Simulation (game thread, ~0.1–0.2 ms for 32 voices):** each voice's source also runs pathing
+- **Simulation (simulation thread, ~0.05 ms for 32 voices, 0.17 ms for 128):** each voice's source also runs pathing
   against the batch of the listener's BSP area. A voice in another area, behind an areaportal, has
   no path. Paths aren't re-validated per frame: they are used as baked, against the static world
   (dynamic geometry only occludes, see below).
@@ -288,8 +321,11 @@ wall instead, from the doorway it actually reaches the listener through.
   two of the three `skylines.wav` emitters hang 2.1 and 4.5 m from the nearest probe (probes are
   1.5 m above floors; the emitters 4–7 m up), so their paths froze at the last line-of-sight value.
   Now any end outside every sphere is pulled just inside the nearest probe's sphere within 8 m
-  (`ProbeCoverage::PullInside`, a hash grid over the probes). Pathing is skipped when no probe is
-  that close. Paths start from the raised occlusion origin.
+  (`ProbeCoverage::PullInside`). Pathing is skipped when no probe is that close. Paths start from
+  the raised occlusion origin. The lookup runs on the game thread, and only again when a sound
+  moves. It searches a grid with cells 8 m wide, so a probe within reach is always in the 27 cells
+  around the point. With the earlier 2 m cells an uncovered point searched 729 cells: on a test map
+  with 64 ambient_generics out of reach, that cost about 4 ms a frame.
 - **Capped.** A path's level is capped at the voice's straight-line level (a path is never shorter),
   so no simulation result can be louder than the sound in plain view.
 - **Steam Audio's own Unity spatializer adds pathing on top of the direct sound.** Its paths include
@@ -322,9 +358,10 @@ runtime as Steam Audio instanced meshes that follow their entities:
   A prop's is its `.phy` solid 0, as for static props. Each model goes to the backend once, on
   first use, as a sub-scene. Models under 0.5 m every way are left out: the smallest movers in the
   maps are invisible trains carrying butterflies and fish.
-- **Every frame**, before the simulation, the client's entities are matched against that list. Each
-  match is one instance, placed by `EntityToWorldTransform()` and moved only when that changes.
-  Dormant entities keep their last place.
+- **Every frame** the game thread matches the client's entities against that list and hands the
+  matches to the simulation thread as placements (`Gather`), which keeps one instance per match,
+  placed by `EntityToWorldTransform()` and moved only when that changes (`Apply`). Dormant entities
+  keep their last place.
 - **Backend:** instances can't share the static scene, because a bake reads it on another thread
   while instances move. So the first dynamic model gives the simulator a scene of its own: a second
   copy of the static mesh, plus the instances. It is committed before each simulation run whenever
@@ -383,6 +420,6 @@ then `cmake --build ... --target install`) and configure neo with
   are doors, lifts, trains and what rides on them (`cl_neo_hrtf_dynamic_geometry 2` adds the rest).
   The bake ignores all of them, so the baked reverb never has a door shut.
 - The first play of each file decodes on the game thread (a small hitch per new sound per map).
-- One mutex guards the voice table for both threads, so a frame can wait on a block render and
-  vice versa; POD double-buffering of voice parameters is the clean fix.
+- The simulation thread runs once per game frame at most, so a high frame rate means more runs.
+  There is no rate cap yet.
 - MP3 player music is out of scope by design.

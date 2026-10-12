@@ -71,16 +71,23 @@ struct ProbeSet
 class ProbeCoverage
 {
 public:
-	void Build(const ProbeSet &probes);
+	// pullReach: the furthest PullInside will be asked to look.
+	void Build(const ProbeSet &probes, float pullReach);
 	bool Covers(const Vec3 &point) const;
 
 	// `point` itself if covered; otherwise the point just inside the sphere of the nearest probe
-	// within maxDistance, on the way from that probe towards `point`. False if no probe is that close.
+	// within maxDistance (at most the pullReach it was built with), on the way from that probe
+	// towards `point`. False if no probe is that close.
 	bool PullInside(const Vec3 &point, float maxDistance, Vec3 &out) const;
 
 private:
 	float m_radius = 0.0f;
 	std::unordered_map<int64_t, std::vector<Vec3>> m_cells; // cells one radius wide
+	// Cells pullReach wide, so a probe within reach is always in the 27 cells around a point. With
+	// the radius-wide cells, every point outside coverage searched 729 of them (measured: about 4 ms
+	// a frame for 64 ambient_generics out of reach).
+	float m_pullCellSize = 0.0f;
+	std::unordered_map<int64_t, std::vector<Vec3>> m_pullCells;
 };
 
 // Places probes over the acoustic mesh:
