@@ -33,6 +33,11 @@ float NeoAdsIdleScale(float adsBlend);
 
 bool NeoAdsIsRecoilActivity(int activity);
 
+#ifdef GAME_DLL
+// Every loadout weapon's sight glass art, at level start, so clients load it with the level.
+void NeoAdsPrecacheReticles();
+#endif
+
 #ifdef CLIENT_DLL
 #include "studio.h"
 

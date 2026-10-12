@@ -2,6 +2,11 @@
 #include "neo_ads.h"
 #include "neo_player_shared.h"
 #include "neo_weapon_parse.h"
+#include "neo_weapon_loadout.h"
+
+#ifdef GAME_DLL
+#include "filesystem.h"
+#endif
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
@@ -162,6 +167,30 @@ CON_COMMAND(cl_neo_ads_toggle, "Switch between aiming down the sights and the tr
 	}
 }
 #endif // CLIENT_DLL
+
+#ifdef GAME_DLL
+void NeoAdsPrecacheReticles()
+{
+	// Weapon scripts are otherwise read when a weapon first spawns, too late for the level's precache.
+	for (const auto &loadout : CNEOWeaponLoadout::s_LoadoutWeapons)
+	{
+		for (const CLoadoutWeapon &weapon : loadout)
+		{
+			WEAPON_FILE_INFO_HANDLE handle;
+			if (weapon.m_iWeaponPrice == XP_EMPTY || !ReadWeaponDataFromFileForSlot(filesystem,
+				weapon.info.m_szWeaponEntityName, &handle, g_pGameRules->GetEncryptionKey()))
+			{
+				continue;
+			}
+			const auto *pData = assert_cast<const CNEOWeaponInfo *>(GetFileWeaponInfoFromHandle(handle));
+			if (pData->m_szAdsOpticReticle[0])
+			{
+				PrecacheMaterial(pData->m_szAdsOpticReticle);
+			}
+		}
+	}
+}
+#endif // GAME_DLL
 
 bool NeoAdsActive(const CNEOWeaponInfo &data)
 {

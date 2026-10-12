@@ -4,6 +4,7 @@
 #include "c_neo_player.h"
 #include "weapon_neobasecombatweapon.h"
 #include "view.h"
+#include "igamesystem.h"
 #include "materialsystem/imaterialsystem.h"
 #include "materialsystem/imesh.h"
 #include "materialsystem/MaterialSystemUtil.h"
@@ -146,11 +147,6 @@ static IMaterial *ReticleMaterial(const CNEOWeaponInfo &data)
 			s_pReticle = nullptr;
 		}
 	}
-	// A level change uncaches materials nothing else holds.
-	if (s_pReticle && !s_pReticle->IsPrecached())
-	{
-		PrecacheMaterial(s_pReticle->GetName());
-	}
 	return s_pReticle;
 }
 
@@ -208,6 +204,15 @@ static IMaterial *GlassDepthMaterial()
 	}
 	return s_material;
 }
+
+// Made before the level loads, so it is cached with the level instead of at its first draw.
+class CNeoAdsOpticGameSystem : public CAutoGameSystem
+{
+	void LevelInitPreEntity() override
+	{
+		GlassDepthMaterial();
+	}
+} g_NeoAdsOpticGameSystem;
 
 static void DrawDepthOnly(const NeoLensPane &pane, const LensArea &area)
 {
