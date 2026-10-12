@@ -660,13 +660,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		}
 		pVideo->iFilteringMode = filterIdx;
 		pVideo->bVSync = cvr->mat_vsync.GetBool();
-		pVideo->iFpsMax = cvr->fps_max.GetInt();
-		pVideo->bFpsMaxLimit = (pVideo->iFpsMax > 0);
-		if (!pVideo->bFpsMaxLimit)
-		{
-			pVideo->iFpsMax = atoi(cvr->fps_max.GetDefault());
-		}
-		pVideo->iFpsMax = Min(pVideo->iFpsMax, MAX_FPS_LIMIT);
+		pVideo->bFpsMaxLimit = (cvr->fps_max.GetInt() != atoi(cvr->fps_max.GetDefault()));
+		pVideo->iFpsMax = Min(cvr->fps_max.GetInt(), MAX_FPS_LIMIT);
 		pVideo->bMotionBlur = cvr->mat_motion_blur_enabled.GetBool();
 		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
@@ -938,7 +933,14 @@ void NeoSettingsSave(const NeoSettings *ns)
 		};
 		cvr->mat_forceaniso.SetValue(ANISO_MAP[pVideo->iFilteringMode]);
 		cvr->mat_vsync.SetValue(pVideo->bVSync);
-		cvr->fps_max.SetValue(pVideo->bFpsMaxLimit ? pVideo->iFpsMax : 0);
+		if (pVideo->bFpsMaxLimit)
+		{
+			cvr->fps_max.SetValue(pVideo->iFpsMax);
+		}
+		else
+		{
+			cvr->fps_max.SetValue(cvr->fps_max.GetDefault());
+		}
 		cvr->mat_motion_blur_enabled.SetValue(pVideo->bMotionBlur);
 		cvr->mat_hdr_level.SetValue(pVideo->iHDR);
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
