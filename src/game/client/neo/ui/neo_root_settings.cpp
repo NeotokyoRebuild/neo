@@ -142,6 +142,7 @@ static const wchar_t *STARTUP_TYPE_LABELS[NeoMP3::STARTUP_TYPE__TOTAL] = {
 	L"First song or random shuffle",
 };
 
+static const int INITIAL_FPS_LIMIT = 60;
 static const int MAX_FPS_LIMIT = 1000;
 
 static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
@@ -661,7 +662,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pVideo->iFilteringMode = filterIdx;
 		pVideo->bVSync = cvr->mat_vsync.GetBool();
 		pVideo->bFpsMaxLimit = (cvr->fps_max.GetInt() != atoi(cvr->fps_max.GetDefault()));
-		pVideo->iFpsMax = Min(cvr->fps_max.GetInt(), MAX_FPS_LIMIT);
+		pVideo->iFpsMax = pVideo->bFpsMaxLimit ? Min(cvr->fps_max.GetInt(), MAX_FPS_LIMIT) : INITIAL_FPS_LIMIT;
 		pVideo->bMotionBlur = cvr->mat_motion_blur_enabled.GetBool();
 		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
