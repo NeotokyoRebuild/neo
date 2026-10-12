@@ -72,8 +72,7 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 	}
 
 	// ZoomOffset = Traditional NT aim offset
-	// AimOffset = ADS offset, used instead when cl_neo_ads is enabled (see neo_ads.h). Many scripts carry an
-	// untuned AimOffset, so a weapon only takes part when its block says "enabled" "1".
+	// AimOffset = ADS offset. Many scripts carry an untuned one, so it counts only with "enabled" "1".
 	if (KeyValues* pZoomOffset = pKeyValuesData->FindKey("ZoomOffset"))
 	{
 		m_flVMAimFov = pZoomOffset->GetFloat("fov", 55);

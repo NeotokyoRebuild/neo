@@ -34,13 +34,13 @@
 	//#include "weapon_m41l.h"
 
 	#include "view.h"
+	#include "neo_ads.h"
 
 	#include <mathlib/mathlib.h>
 #endif
 
 #include "hl2mptextwindow.h"
 #include "ienginevgui.h"
-#include "neo_ads.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"

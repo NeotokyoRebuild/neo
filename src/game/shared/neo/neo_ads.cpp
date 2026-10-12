@@ -50,14 +50,13 @@ ConVar cl_neo_ads_yaw("cl_neo_ads_yaw", "0", FCVAR_CHEAT | FCVAR_HIDDEN, "Tuning
 ConVar cl_neo_ads_roll("cl_neo_ads_roll", "0", FCVAR_CHEAT | FCVAR_HIDDEN, "Tuning: ADS roll offset.");
 ConVar cl_neo_ads_fov("cl_neo_ads_fov", "45", FCVAR_CHEAT | FCVAR_HIDDEN, "Tuning: ADS viewmodel FOV.");
 
-// Which weapon the tuning cvars were loaded from. Compared by class name, since callers
-// may pass a copy of the weapon info.
+// Which weapon the tuning cvars were loaded from, by class name.
 static char s_szTunedWeapon[MAX_WEAPON_STRING] = "";
 
 static CNEOBaseCombatWeapon *LocalActiveWeapon()
 {
 	C_NEO_Player *pPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	return pPlayer ? dynamic_cast<CNEOBaseCombatWeapon *>(pPlayer->GetActiveWeapon()) : nullptr;
+	return pPlayer ? assert_cast<CNEOBaseCombatWeapon *>(pPlayer->GetActiveWeapon()) : nullptr;
 }
 
 static void LoadTuningFrom(const CNEOWeaponInfo &data)
@@ -263,28 +262,26 @@ void NeoAdsDampRecoil(CStudioHdr *hdr, Vector pos[], Quaternion q[],
 	const float sideScale = onSights(cl_neo_ads_recoil_side.GetFloat(), data.m_flAdsRecoilSide);
 	const float backScale = onSights(cl_neo_ads_recoil_back.GetFloat(), data.m_flAdsRecoilBack);
 
-	// Gun (refBone) transforms in viewmodel space (x forward, y left, z up): live, and the fire
-	// animation's settled last frame. Only the kick relative to the settled frame is damped; the
-	// settled pose itself is left as animated. Some fire animations settle well off the idle pose and the
-	// engine already compensates for that later, so correcting toward idle would double it.
+	// Only the kick away from the fire animation's settled last frame is damped. Some settle well off the idle
+	// pose and the engine already corrects for that, so damping toward idle would double it.
 	matrix3x4_t live, settled, settledInv, kick;
 	BoneToModel(hdr, refBone, pos, q, live);
 	BoneToModel(hdr, refBone, settledPos, settledQ, settled);
 	MatrixInvert(settled, settledInv);
 	ConcatTransforms(live, settledInv, kick);
 
-	Vector liveOrigin, settledOrigin, unused;
+	Vector liveOrigin, settledOrigin;
 	MatrixGetColumn(live, 3, liveOrigin);
 	MatrixGetColumn(settled, 3, settledOrigin);
 	QAngle kickAngles;
-	MatrixAngles(kick, kickAngles, unused);
+	MatrixAngles(kick, kickAngles);
 
 	// The kick with each axis scaled: pushback (x), sideways (y, yaw, roll), vertical (z, pitch).
 	const Vector travel = liveOrigin - settledOrigin;
 	Vector dampedTravel(travel.x * backScale, travel.y * sideScale, travel.z * vertScale);
 	QAngle dampedAngles(kickAngles[PITCH] * vertScale, kickAngles[YAW] * sideScale, kickAngles[ROLL] * sideScale);
 
-	// Leash: on the sights the gun never strays far from its settled pose, whatever the animation does.
+	// Leash: on the sights the gun never strays far from its settled pose.
 	const float maxDist = ((data.m_flAdsRecoilMaxDist > 0.0f) ? data.m_flAdsRecoilMaxDist : cl_neo_ads_recoil_max_dist.GetFloat()) / blend;
 	const float dist = dampedTravel.Length();
 	if (dist > maxDist)
@@ -297,7 +294,6 @@ void NeoAdsDampRecoil(CStudioHdr *hdr, Vector pos[], Quaternion q[],
 		dampedAngles[axis] = clamp(dampedAngles[axis], -maxAngle, maxAngle);
 	}
 
-	// Where the gun should be: the settled pose plus the damped kick.
 	matrix3x4_t kickRot, target;
 	AngleMatrix(dampedAngles, kickRot);
 	ConcatTransforms(kickRot, settled, target);

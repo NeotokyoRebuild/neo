@@ -225,8 +225,8 @@ void CNEOPredictedViewModel::StandardBlendingRules(CStudioHdr *hdr, Vector pos[]
 {
 	BaseClass::StandardBlendingRules(hdr, pos, q, currentTime, boneMask);
 
-	// On the sights, the idle sway and the fire animation's kick are damped against the idle rest
-	// pose, so the sight picture holds. Other sequences (reload, draw) play untouched.
+	// On the sights the idle sway and the fire kick are damped so the sight picture holds. Reloads and draws play
+	// untouched.
 	if (!hdr || m_flAdsBlend <= 0.0f)
 	{
 		return;
@@ -243,9 +243,8 @@ void CNEOPredictedViewModel::StandardBlendingRules(CStudioHdr *hdr, Vector pos[]
 
 	if (!bIdle)
 	{
-		// The gun is whatever bone carries the first attachment (the muzzle on NT viewmodels).
-		// Bones outside boneMask are not set up this pass and hold garbage, and the muzzle bone often
-		// exists only for its attachment, so walk up to the nearest bone that was set up (the gun body).
+		// The gun is the bone carrying the first attachment (the muzzle). It often isn't in boneMask and holds
+		// garbage this pass, so walk up to the nearest bone that was set up.
 		int gunBone = (hdr->GetNumAttachments() > 0) ? hdr->pAttachment(0).localbone : hdr->numbones() - 1;
 		while (gunBone >= 0 && !(hdr->boneFlags(gunBone) & boneMask))
 		{
@@ -254,7 +253,6 @@ void CNEOPredictedViewModel::StandardBlendingRules(CStudioHdr *hdr, Vector pos[]
 		const auto *pWeapon = assert_cast<CNEOBaseCombatWeapon *>(GetOwningWeapon());
 		if (gunBone >= 0 && pWeapon)
 		{
-			// The fire animation's last frame is where it settles; the kick is measured from there.
 			m_adsSettled.Update(hdr, GetSequence(), 1.0f, poseparam);
 			NeoAdsDampRecoil(hdr, pos, q, m_adsSettled.pos, m_adsSettled.q,
 				gunBone, pWeapon->GetNEOWpnData(), m_flAdsBlend);
@@ -262,7 +260,7 @@ void CNEOPredictedViewModel::StandardBlendingRules(CStudioHdr *hdr, Vector pos[]
 		return;
 	}
 
-	// Rest pose: the idle animation's first frame, which is the pose the sights are tuned in.
+	// The idle's first frame is the pose the sights are tuned in.
 	m_adsRest.Update(hdr, GetSequence(), 0.0f, poseparam);
 	const Vector *restPos = m_adsRest.pos;
 	const Quaternion *restQ = m_adsRest.q;
@@ -549,7 +547,7 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 		return;
 	}
 
-	CNEOWeaponInfo data = weapon->GetNEOWpnData();
+	const CNEOWeaponInfo &data = weapon->GetNEOWpnData();
 
 	Vector vForward, vRight, vUp, newPos, vOffset;
 	QAngle newAng, angOffset;
