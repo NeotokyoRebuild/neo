@@ -109,6 +109,24 @@ same file builds into an offline demo (`ntre/harness/hrtf/`). Steam Audio is nev
 library is missing or fails to initialise, HRTF stays off with one warning (also shown by
 `cl_neo_hrtf_debug 1`) and engine audio is untouched.
 
+### Sound cache
+
+Each file is decoded once per map, to mono 16-bit at its own sample rate. The audio thread
+resamples it to the output's 48 kHz as it steps through it, together with the engine's pitch, by
+linear interpolation as the engine's own mixer does. A 22 kHz file then takes 44 KB a second,
+a quarter of 48 kHz float. Files over 30 s stay with the engine.
+
+So that no sound decodes on the game thread when it first plays, a loader thread decodes the map's
+sounds in the background (`cl_neo_hrtf_precache`, default 1). The list is the engine's sound
+precache table (`soundprecache`): every wave the server precaches is in it, script sounds' waves
+(`PrecacheScriptSound`) and map sounds (ambient_generics) alike, and the server can only play
+precached sounds. It is read during the level load and again every frame, so anything precached
+later is picked up too. Whichever thread claims a sound first decodes it. A sound that plays
+before the loader has reached it is decoded on the spot as before, and one the loader is decoding
+at that moment is waited for. The sound levels from the sound scripts are also mapped during the
+load rather than on the first sound. `cl_neo_hrtf_precache 0` goes back to decoding each sound on
+first play. `cl_neo_hrtf_debug 1` shows the cache's size and how many sounds are waiting to decode.
+
 ## Acoustic scene
 
 Occlusion, reflections and pathing all trace rays against the map, so each level gets a Steam
@@ -419,7 +437,8 @@ then `cmake --build ... --target install`) and configure neo with
   Paths stop at areaportals and at 100 m. By default, the only brush entities and props in the scene
   are doors, lifts, trains and what rides on them (`cl_neo_hrtf_dynamic_geometry 2` adds the rest).
   The bake ignores all of them, so the baked reverb never has a door shut.
-- The first play of each file decodes on the game thread (a small hitch per new sound per map).
+- With `cl_neo_hrtf_precache 0`, or for a sound played before the loader reaches it, the first
+  play of each file decodes on the game thread (a small hitch per new sound per map).
 - The simulation thread runs once per game frame at most, so a high frame rate means more runs.
   There is no rate cap yet.
 - MP3 player music is out of scope by design.

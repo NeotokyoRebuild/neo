@@ -3,6 +3,7 @@
 #include "neo_audio_geometry.h"
 #include "neo_audio_probe_lump.h"
 #include "c_neo_ambient_generic.h"
+#include "networkstringtable_clientdll.h"
 
 #include "checksum_crc.h"
 #include "engine/IEngineSound.h"
@@ -28,7 +29,7 @@ namespace
 constexpr int kHrtfOutputChannels = 2;
 constexpr float kHrtfMetresPerUnit = 0.0254f; // 1 Source unit = 1 inch
 constexpr int kHrtfMaxCachedSeconds = 30; // longer sounds (music-like loops) stay with the engine
-constexpr int kHrtfMaxCachedFrames = kHrtfMaxCachedSeconds * CNeoHrtfSystem::kSampleRate;
+constexpr float kHrtfInt16ToFloat = 1.0f / 32768.0f;
 
 // The engine mixer (snd_dma.cpp) attenuates with an inverse-distance law normalised so a
 // sound at its scripted soundlevel is at unity gain snd_refdist units away:
@@ -106,6 +107,8 @@ constexpr char kHrtfPhononLibrary[] = "bin/linux64/libphonon.so";
 #endif
 
 constexpr char kHrtfSoundDir[] = "sound/";
+// The engine's network string table of precached sounds (engine/precache.h, SOUND_PRECACHE_TABLENAME).
+constexpr char kHrtfSoundPrecacheTable[] = "soundprecache";
 
 // RIFF layout (little endian): "RIFF" size "WAVE", then chunks of id(4) size(4) body, each
 // body padded to an even length.
@@ -129,7 +132,7 @@ uint32 HrtfReadLE32(const uint8 *pData)
 // Source loops a wav from the sample offset of its first cue point (CAudioSourceWave::
 // ParseCueChunk) or the start of its first sampler loop (ParseSamplerChunk), whichever chunk
 // comes last, so do the same. A sampler loop also ends the sound after its last sample.
-// Outputs are in output-rate frames: loopStart is -1 for one-shots, loopEnd (exclusive) is -1
+// Outputs are in the file's own frames: loopStart is -1 for one-shots, loopEnd (exclusive) is -1
 // when the sound plays to the end of its data.
 void HrtfParseWavLoop(const uint8 *pData, int size, int &loopStart, int &loopEnd)
 {
@@ -176,10 +179,10 @@ void HrtfParseWavLoop(const uint8 *pData, int size, int &loopStart, int &loopEnd
 	{
 		return;
 	}
-	loopStart = static_cast<int>(loopSampleOffset * CNeoHrtfSystem::kSampleRate / sourceRate);
+	loopStart = static_cast<int>(loopSampleOffset);
 	if (loopEndSampleOffset > loopSampleOffset)
 	{
-		loopEnd = static_cast<int>(loopEndSampleOffset * CNeoHrtfSystem::kSampleRate / sourceRate);
+		loopEnd = static_cast<int>(loopEndSampleOffset);
 	}
 }
 
@@ -214,6 +217,18 @@ bool HrtfIsEngineOnlyName(const char *pszRawName)
 {
 	return TestSoundChar(pszRawName, CHAR_STREAM) || TestSoundChar(pszRawName, CHAR_OMNI)
 		|| TestSoundChar(pszRawName, CHAR_DOPPLER) || TestSoundChar(pszRawName, CHAR_DIRECTIONAL);
+}
+
+// The cache name of a sound as the engine names it, or false if it is one we leave to the engine.
+bool HrtfCacheName(const char *pszRawName, char *pszOut, int outSize)
+{
+	if (HrtfIsEngineOnlyName(pszRawName))
+	{
+		return false;
+	}
+	HrtfNormaliseSoundName(pszRawName, pszOut, outSize);
+	const char *pszExt = V_GetFileExtension(pszOut);
+	return pszExt && (V_strcmp(pszExt, "wav") == 0 || V_strcmp(pszExt, "mp3") == 0);
 }
 
 bool HrtfIsSpatialCandidate(const SndInfo_t &info, int localPlayerIndex, bool bMarkedLocal)
@@ -260,6 +275,8 @@ ConVar cl_neo_hrtf_bake_auto("cl_neo_hrtf_bake_auto", "1", FCVAR_CLIENTDLL | FCV
 	"Bake the map's acoustic probes in the background when there is no cached bake for it", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_bake_threads("cl_neo_hrtf_bake_threads", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Threads for baking acoustic probes, 0 = a quarter of the logical cores", true, 0.0f, true, 64.0f);
+ConVar cl_neo_hrtf_precache("cl_neo_hrtf_precache", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+	"Decode the map's precached sounds for HRTF in the background, rather than each on its first play", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_debug_probes("cl_neo_hrtf_debug_probes", "0", FCVAR_CLIENTDLL,
 	"Draw the acoustic probes near the view, coloured by batch (BSP area)", true, 0.0f, true, 1.0f);
 // The engine frees a one-shot channel once its spatialized volume falls below about 3/255 (measured
@@ -313,6 +330,7 @@ void CNeoHrtfSystem::Shutdown()
 {
 	StopDevice();
 	m_cache.PurgeAndDeleteElements();
+	m_cachedBytes = 0;
 	m_soundLevels.Purge();
 }
 
@@ -331,6 +349,12 @@ void CNeoHrtfSystem::LevelInitPostEntity()
 {
 	// Maps can add level_sounds scripts, so the level map is rebuilt against this map's scripts.
 	m_soundLevels.Purge();
+	if (m_pDevice)
+	{
+		// Both during the load rather than on the first sounds: the level map walks every script.
+		LookupScriptLevel("");
+		PrecacheNewSounds();
+	}
 }
 
 void CNeoHrtfSystem::LevelShutdownPreEntity()
@@ -349,7 +373,11 @@ void CNeoHrtfSystem::LevelShutdownPostEntity()
 		Assert(!voice.m_bInUse);
 	}
 #endif
+	DrainLoader();
 	m_cache.PurgeAndDeleteElements();
+	m_cachedBytes = 0;
+	m_pSoundPrecacheTable = nullptr;
+	m_precacheTableCount = 0;
 	ReleaseScene();
 	m_bSceneStale = false;
 }
@@ -377,6 +405,7 @@ void CNeoHrtfSystem::Update(float)
 			{
 				BuildScene();
 			}
+			PrecacheNewSounds();
 			PollEngineSounds();
 			UpdateBake();
 			if (cl_neo_hrtf_debug_probes.GetBool())
@@ -928,6 +957,7 @@ void CNeoHrtfSystem::StartDevice()
 		m_renderSim = SimResults();
 		m_simResultsShared = SimResults();
 		StartSimulationThread();
+		StartLoaderThread();
 		m_pDevice = new ma_device;
 		if (ma_device_init(nullptr, &config, m_pDevice) != MA_SUCCESS)
 		{
@@ -960,6 +990,7 @@ void CNeoHrtfSystem::StopDevice()
 		m_pDevice = nullptr;
 	}
 	StopSimulationThread();
+	StopLoaderThread();
 	if (m_pSpatializer)
 	{
 		ReleaseAllVoices();
@@ -1307,40 +1338,57 @@ void CNeoHrtfSystem::ReleaseAllVoices()
 const CNeoHrtfSystem::CachedSound *CNeoHrtfSystem::FindOrLoadSound(const SndInfo_t &info)
 {
 	char rawName[MAX_PATH];
-	if (!filesystem->String(info.m_filenameHandle, rawName, sizeof(rawName)) || HrtfIsEngineOnlyName(rawName))
-	{
-		return nullptr;
-	}
-
 	char name[MAX_PATH];
-	HrtfNormaliseSoundName(rawName, name, sizeof(name));
-	const char *pszExt = V_GetFileExtension(name);
-	if (!pszExt || (V_strcmp(pszExt, "wav") != 0 && V_strcmp(pszExt, "mp3") != 0))
+	if (!filesystem->String(info.m_filenameHandle, rawName, sizeof(rawName)) || !HrtfCacheName(rawName, name, sizeof(name)))
 	{
 		return nullptr;
 	}
 
-	int index = m_cache.Find(name);
-	if (index == m_cache.InvalidIndex())
-	{
-		// Failures are cached too (empty samples), so a bad file is only read once per level.
-		CachedSound *pSound = new CachedSound;
-		pSound->m_name = name;
-		LoadSound(*pSound);
-		index = m_cache.Insert(name, pSound);
-	}
-
-	const CachedSound *pSound = m_cache[index];
+	// Failures are cached too (no samples), so a bad file is only read once per level.
+	CachedSound *pSound = GetCachedSound(name);
+	EnsureDecoded(*pSound);
 	return pSound->m_samples.IsEmpty() ? nullptr : pSound;
 }
 
-void CNeoHrtfSystem::LoadSound(CachedSound &sound)
+CNeoHrtfSystem::CachedSound *CNeoHrtfSystem::GetCachedSound(const char *pszNormalisedName)
+{
+	const int index = m_cache.Find(pszNormalisedName);
+	if (index != m_cache.InvalidIndex())
+	{
+		return m_cache[index];
+	}
+	CachedSound *pSound = new CachedSound;
+	pSound->m_name = pszNormalisedName;
+	pSound->m_scriptLevel = LookupScriptLevel(pszNormalisedName);
+	m_cache.Insert(pszNormalisedName, pSound);
+	return pSound;
+}
+
+void CNeoHrtfSystem::EnsureDecoded(CachedSound &sound)
+{
+	int expected = CachedSound::Queued;
+	if (sound.m_state.compare_exchange_strong(expected, CachedSound::Loading))
+	{
+		DecodeSound(sound);
+		m_cachedBytes += sound.m_samples.Count() * static_cast<int64>(sizeof(int16));
+		sound.m_state = CachedSound::Ready;
+		return;
+	}
+	// The loader thread is decoding it right now: one file, no longer than decoding it here.
+	while (sound.m_state.load() == CachedSound::Loading)
+	{
+		ThreadSleep(0);
+	}
+}
+
+void CNeoHrtfSystem::DecodeSound(CachedSound &sound)
 {
 	char path[MAX_PATH];
 	V_snprintf(path, sizeof(path), "%s%s", kHrtfSoundDir, sound.m_name.Get());
 	CUtlBuffer file;
 	ma_decoder decoder;
-	const ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 1, kSampleRate);
+	// Mono 16-bit at the file's own rate (0); playback steps through it at that rate.
+	const ma_decoder_config config = ma_decoder_config_init(ma_format_s16, 1, 0);
 	if (!filesystem->ReadFile(path, "GAME", file) || file.TellPut() <= 0
 		|| ma_decoder_init_memory(file.Base(), file.TellPut(), &config, &decoder) != MA_SUCCESS)
 	{
@@ -1349,9 +1397,11 @@ void CNeoHrtfSystem::LoadSound(CachedSound &sound)
 	}
 
 	ma_uint64 length = 0;
-	if (ma_decoder_get_length_in_pcm_frames(&decoder, &length) == MA_SUCCESS
-		&& length > 0 && length <= static_cast<ma_uint64>(kHrtfMaxCachedFrames))
+	const ma_uint32 sampleRate = decoder.outputSampleRate;
+	if (sampleRate > 0 && ma_decoder_get_length_in_pcm_frames(&decoder, &length) == MA_SUCCESS && length > 0
+		&& length <= static_cast<ma_uint64>(kHrtfMaxCachedSeconds) * sampleRate)
 	{
+		sound.m_sampleRate = static_cast<int>(sampleRate);
 		sound.m_samples.SetCount(static_cast<int>(length));
 		ma_uint64 framesRead = 0;
 		ma_decoder_read_pcm_frames(&decoder, sound.m_samples.Base(), length, &framesRead);
@@ -1375,7 +1425,140 @@ void CNeoHrtfSystem::LoadSound(CachedSound &sound)
 			sound.m_samples.SetCountNonDestructively(loopEnd);
 		}
 	}
-	sound.m_scriptLevel = LookupScriptLevel(sound.m_name.Get());
+}
+
+void CNeoHrtfSystem::PrecacheNewSounds()
+{
+	const bool bPrecache = cl_neo_hrtf_precache.GetBool();
+	if (bPrecache != m_bPrecaching)
+	{
+		// Turned on: everything precached so far is queued. Turned off: what is still queued is
+		// dropped, to decode on first play.
+		m_bPrecaching = bPrecache;
+		m_precacheTableCount = 0;
+		if (!bPrecache)
+		{
+			AUTO_LOCK(m_loadQueueMutex);
+			m_loadQueue.RemoveAll();
+			m_loadQueueHead = 0;
+		}
+	}
+	if (!bPrecache)
+	{
+		return;
+	}
+
+	// Every sound the server precaches, script sounds' waves and map sounds alike, is in this table,
+	// and the server can only ask the client to play precached sounds. Read every frame, since the
+	// server may precache more after the map has loaded.
+	if (!m_pSoundPrecacheTable)
+	{
+		m_pSoundPrecacheTable = networkstringtable->FindTable(kHrtfSoundPrecacheTable);
+		if (!m_pSoundPrecacheTable)
+		{
+			return;
+		}
+	}
+	const int count = m_pSoundPrecacheTable->GetNumStrings();
+	if (count <= m_precacheTableCount)
+	{
+		return;
+	}
+
+	CUtlVector<CachedSound *> queued;
+	char name[MAX_PATH];
+	for (int i = m_precacheTableCount; i < count; ++i)
+	{
+		const char *pszRawName = m_pSoundPrecacheTable->GetString(i);
+		if (pszRawName && HrtfCacheName(pszRawName, name, sizeof(name)))
+		{
+			CachedSound *pSound = GetCachedSound(name);
+			if (pSound->m_state.load() == CachedSound::Queued)
+			{
+				queued.AddToTail(pSound);
+			}
+		}
+	}
+	m_precacheTableCount = count;
+	if (!queued.IsEmpty())
+	{
+		AUTO_LOCK(m_loadQueueMutex);
+		m_loadQueue.AddVectorToTail(queued);
+	}
+	m_loadWake.Set();
+}
+
+void CNeoHrtfSystem::StartLoaderThread()
+{
+	Assert(!m_loadThread.joinable());
+	m_bLoadQuit = false;
+	m_loadThread = std::thread(&CNeoHrtfSystem::LoaderThreadMain, this);
+}
+
+void CNeoHrtfSystem::StopLoaderThread()
+{
+	DrainLoader();
+	if (m_loadThread.joinable())
+	{
+		m_bLoadQuit = true;
+		m_loadWake.Set();
+		m_loadThread.join();
+	}
+	// A sound queued again later is precached again.
+	m_precacheTableCount = 0;
+}
+
+void CNeoHrtfSystem::DrainLoader()
+{
+	{
+		AUTO_LOCK(m_loadQueueMutex);
+		m_loadQueue.RemoveAll();
+		m_loadQueueHead = 0;
+	}
+	// The loader takes this before it takes a sound off the queue, so once it is ours no sound is
+	// being decoded, and the queue is empty for when it is released.
+	AUTO_LOCK(m_loadRunMutex);
+}
+
+void CNeoHrtfSystem::LoaderThreadMain()
+{
+	for (;;)
+	{
+		m_loadWake.Wait();
+		for (;;)
+		{
+			if (m_bLoadQuit)
+			{
+				return;
+			}
+			AUTO_LOCK(m_loadRunMutex);
+			CachedSound *pSound = nullptr;
+			{
+				AUTO_LOCK(m_loadQueueMutex);
+				if (m_loadQueueHead < m_loadQueue.Count())
+				{
+					pSound = m_loadQueue[m_loadQueueHead++];
+				}
+				if (m_loadQueueHead >= m_loadQueue.Count())
+				{
+					m_loadQueue.RemoveAll();
+					m_loadQueueHead = 0;
+				}
+			}
+			if (!pSound)
+			{
+				break;
+			}
+			// The game thread may have claimed it for a first play since it was queued.
+			int expected = CachedSound::Queued;
+			if (pSound->m_state.compare_exchange_strong(expected, CachedSound::Loading))
+			{
+				DecodeSound(*pSound);
+				m_cachedBytes += pSound->m_samples.Count() * static_cast<int64>(sizeof(int16));
+				pSound->m_state = CachedSound::Ready;
+			}
+		}
+	}
 }
 
 void CNeoHrtfSystem::ResolveSoundLevel(Voice &voice, const SndInfo_t &info, const CachedSound &sound) const
@@ -1577,10 +1760,16 @@ void CNeoHrtfSystem::PrintDebug()
 	}
 	// The simulation runs on its own thread, so its time is no longer part of the frame.
 	const SimTimings &timings = m_debugResults.m_timings;
-	engine->Con_NPrintf(0, "hrtf: Steam Audio, voices %d/%d, cached sounds %d, scripted wave levels %d, scene triangles %d, dynamic objects %d, "
-		"sim thread %.2f ms (dynamic %.2f, occlusion %.2f, paths %.2f, reverb %.2f), %.0f runs/s",
-		liveVoices, kMaxVoices, m_cache.Count(), m_soundLevels.Count(), m_sceneTriangles, m_debugResults.m_dynamicInstances,
-		timings.m_totalMs, timings.m_dynamicMs, timings.m_directMs, timings.m_pathingMs, timings.m_reverbMs, timings.m_runsPerSecond);
+	int waitingToDecode = 0;
+	{
+		AUTO_LOCK(m_loadQueueMutex);
+		waitingToDecode = m_loadQueue.Count() - m_loadQueueHead;
+	}
+	engine->Con_NPrintf(0, "hrtf: Steam Audio, voices %d/%d, cached sounds %d (%.1f MB, %d waiting to decode), scripted wave levels %d, scene triangles %d, "
+		"dynamic objects %d, sim thread %.2f ms (dynamic %.2f, occlusion %.2f, paths %.2f, reverb %.2f), %.0f runs/s",
+		liveVoices, kMaxVoices, m_cache.Count(), m_cachedBytes.load() / (1024.0 * 1024.0), waitingToDecode, m_soundLevels.Count(),
+		m_sceneTriangles, m_debugResults.m_dynamicInstances, timings.m_totalMs, timings.m_dynamicMs, timings.m_directMs,
+		timings.m_pathingMs, timings.m_reverbMs, timings.m_runsPerSecond);
 	// Not counting this overlay itself.
 	const GameTimings &game = m_gameTimings;
 	engine->Con_NPrintf(3, "hrtf game thread: %.2f ms a frame (GetActiveSounds %.2f, SetVolumeByGuid %.2f, new voices %.2f, dynamic geometry %.2f, "
@@ -1726,10 +1915,11 @@ void CNeoHrtfSystem::RenderBlock()
 bool CNeoHrtfSystem::ReadVoiceSamples(int slot, const RenderVoice &voice)
 {
 	const CachedSound &sound = *voice.m_pSound;
-	const float *pSamples = sound.m_samples.Base();
+	const int16 *pSamples = sound.m_samples.Base();
 	const int count = sound.m_samples.Count();
 	const int loopStart = sound.m_loopStart;
-	const double rate = voice.m_params.m_rate;
+	// Sounds are stored at their own rate, so this also resamples them to the output's.
+	const double rate = static_cast<double>(voice.m_params.m_rate) * sound.m_sampleRate / kSampleRate;
 	double cursor = m_cursors[slot];
 
 	for (int f = 0; f < kFrameSize; ++f)
@@ -1745,7 +1935,7 @@ bool CNeoHrtfSystem::ReadVoiceSamples(int slot, const RenderVoice &voice)
 			cursor = loopStart + fmod(cursor - loopStart, static_cast<double>(count - loopStart));
 		}
 
-		// Linear interpolation is enough for engine pitch shifts, which stay within an octave or so.
+		// Linear interpolation, as the engine's own mixer resamples and pitch shifts.
 		const int index = static_cast<int>(cursor);
 		int nextIndex = index + 1;
 		if (nextIndex >= count)
@@ -1753,7 +1943,8 @@ bool CNeoHrtfSystem::ReadVoiceSamples(int slot, const RenderVoice &voice)
 			nextIndex = (loopStart >= 0) ? loopStart : index;
 		}
 		const float frac = static_cast<float>(cursor - index);
-		m_scratchMono[f] = pSamples[index] + (pSamples[nextIndex] - pSamples[index]) * frac;
+		const float sample = pSamples[index] + (pSamples[nextIndex] - pSamples[index]) * frac;
+		m_scratchMono[f] = sample * kHrtfInt16ToFloat;
 		cursor += rate;
 	}
 	m_cursors[slot] = cursor;

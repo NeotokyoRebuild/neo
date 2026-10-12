@@ -10,6 +10,8 @@
 //  - The simulation thread traces occlusion and paths, looks up reverb and keeps dynamic
 //    geometry in the scene, and hands the audio thread its SimResults after every run.
 //  - The audio thread (miniaudio's callback) renders from its latest copy of each.
+// A fourth, the loader thread, decodes the map's precached sounds in the background so their
+// first play does not decode on the game thread.
 // Every handoff is a short copy under its own mutex, which the audio thread only ever tries
 // to take. The game thread waits only on rare structural changes: for the simulation thread
 // to finish its run (PauseSimulation) or the audio thread its block (FenceAudio).
@@ -33,6 +35,7 @@
 #include "neo_spatializer.h"
 
 class CNeoAudioGeometry;
+class INetworkStringTable;
 struct ma_device;
 
 class CNeoHrtfSystem : public CAutoGameSystemPerFrame
@@ -67,14 +70,27 @@ public:
 	void MarkLocalSound(int guid, NeoHrtfLocalSound place);
 
 private:
-	// Decoded once per file, immutable afterwards, so the audio thread may read it
-	// without locking for as long as a voice references it.
+	// Decoded once per file, by the loader thread when precached or by the game thread on first
+	// play, whichever claims it first. Immutable once ready, so the audio thread may read it without
+	// locking for as long as a voice references it.
 	struct CachedSound
 	{
+		enum State
+		{
+			Queued, // not decoded; whoever moves it to Loading decodes it
+			Loading,
+			Ready, // decoded, or failed with no samples
+		};
+
+		// Set by the game thread before anyone can decode it.
 		CUtlString m_name;
-		CUtlVector<float> m_samples; // mono, kSampleRate; empty = unplayable, left to the engine
-		int m_loopStart = -1; // sample index to loop back to, -1 for one-shots
 		soundlevel_t m_scriptLevel = SNDLVL_NORM; // loudest scripted level of the file, the voice default
+		std::atomic<int> m_state{ Queued };
+		// Written while Loading. Stored at the file's own rate as 16-bit: a quarter of the memory of
+		// 48 kHz float for the common 22 kHz files.
+		CUtlVector<int16> m_samples; // mono at m_sampleRate; empty = unplayable, left to the engine
+		int m_sampleRate = 0;
+		int m_loopStart = -1; // sample index to loop back to, -1 for one-shots
 	};
 
 	// How the audio thread is to play a voice this frame.
@@ -245,7 +261,14 @@ private:
 	void DrawProbes() const;
 
 	const CachedSound *FindOrLoadSound(const SndInfo_t &info);
-	void LoadSound(CachedSound &sound);
+	// The cache entry for a sound, made (queued, not decoded) if there is none yet. Game thread.
+	CachedSound *GetCachedSound(const char *pszNormalisedName);
+	// Decodes `sound` unless someone else has, waiting for it if the loader thread has it now.
+	void EnsureDecoded(CachedSound &sound);
+	// Fills a Loading sound's samples and loop. Any thread.
+	static void DecodeSound(CachedSound &sound);
+	// Queues the sounds added to the engine's precache table since the last call. Game thread.
+	void PrecacheNewSounds();
 	soundlevel_t LookupScriptLevel(const char *pszNormalisedName);
 	void ResolveSoundLevel(Voice &voice, const SndInfo_t &info, const CachedSound &sound) const;
 
@@ -260,6 +283,13 @@ private:
 	// Waits for the audio thread to finish its block, then stops it rendering anything and releases
 	// every retired voice: for before the voices' sounds are freed or the backend goes.
 	void FenceAudio();
+
+	// Loader thread.
+	void StartLoaderThread();
+	void StopLoaderThread();
+	void LoaderThreadMain();
+	// Empties the queue and waits for the decode in progress: before cached sounds are freed.
+	void DrainLoader();
 
 	// Simulation thread.
 	void StartSimulationThread();
@@ -291,6 +321,10 @@ private:
 	CUtlVector<int> m_ignoredGuidsNext;
 	CUtlVector<LocalSoundMark> m_localSoundMarks; // marked but not yet seen in the engine's channel list
 	CUtlDict<CachedSound *, int> m_cache;
+	std::atomic<int64> m_cachedBytes{ 0 }; // samples of every decoded sound, for the debug overlay
+	INetworkStringTable *m_pSoundPrecacheTable = nullptr; // this map's, once found
+	int m_precacheTableCount = 0; // its entries queued so far
+	bool m_bPrecaching = false; // cl_neo_hrtf_precache when last checked
 	CUtlDict<soundlevel_t, int> m_soundLevels; // normalised wave name → loudest scripted level
 	Voice m_voices[kMaxVoices];
 	uint32 m_nextGeneration = 1;
@@ -345,6 +379,17 @@ private:
 	double m_simRateWindowStart = 0.0;
 	int m_simRateRuns = 0;
 	float m_simRunsPerSecond = 0.0f;
+
+	// Loader thread, and the game thread through the queue.
+	CThreadMutex m_loadQueueMutex;
+	CUtlVector<CachedSound *> m_loadQueue; // first in, first out from m_loadQueueHead
+	int m_loadQueueHead = 0;
+	// Held by the loader thread from taking a sound off the queue until it is decoded, so DrainLoader
+	// can wait for it.
+	CThreadMutex m_loadRunMutex;
+	CThreadEvent m_loadWake;
+	std::atomic<bool> m_bLoadQuit{ false };
+	std::thread m_loadThread;
 
 	// Audio thread only.
 	RenderFrame m_render; // the latest render frame taken
