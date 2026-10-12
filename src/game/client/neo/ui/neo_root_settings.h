@@ -156,8 +156,8 @@ struct NeoSettings
 		int iAntiAliasing;
 		int iFilteringMode;
 		bool bVSync;
-		int iFpsMax; // Index into the Max FPS presets
-		int iFpsMaxLoaded; // fps_max when the settings were loaded, kept if it is not a preset
+		int iFpsMax;
+		int iFpsMaxLoaded;
 		bool bMotionBlur;
 		int iHDR;
 		float flGamma;
