@@ -1,6 +1,15 @@
 #include <KeyValues.h>
 #include "neo_ads_optic_info.h"
 
+CNEOAdsOpticInfo::CNEOAdsOpticInfo()
+{
+	// Every point set, even past the count, so none is left as NaN.
+	for (Vector2D &point : m_vecAdsOpticWindowGlass)
+	{
+		point.Init();
+	}
+}
+
 void CNEOAdsOpticInfo::ParseAdsOptic(KeyValues *pKeyValuesData)
 {
 	KeyValues* pOptic = pKeyValuesData->FindKey("AdsOptic");

@@ -21,7 +21,6 @@
 #include "dlight.h"
 #include "in_main.h"
 #include "neo/neo_ads_optic.h"
-#include "neo/neo_ads_optic_disc.h"
 #else
 #include "neo_player.h"
 #include "bot/neo_bot.h"
@@ -292,21 +291,15 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 {
 	const auto *pWeapon = assert_cast<CNEOBaseCombatWeapon *>(GetOwningWeapon());
 	const CNEOWeaponInfo *pWeaponData = pWeapon ? &pWeapon->GetNEOWpnData() : nullptr;
-	// Hide the glass whose art we draw (one pane).
 	const NeoAdsHiddenMaterials hiddenMaterials(pWeaponData);
 
 	auto pPlayer = assert_cast<C_NEO_Player*>(GetOwner());
 	const bool bDrawn = pWeaponData && pPlayer && (flags & STUDIO_RENDER);
-	// A model with translucent materials (any sight glass) is drawn twice a frame, its opaque parts and then
-	// its translucent ones; the glass's art goes on once, with the last.
-	const bool bOverlays = bDrawn && (!IsTwoPass() || (flags & STUDIO_TRANSPARENCY));
 	const bool bCloaked = pPlayer && pPlayer->IsCloaked();
 	const bool bThermal = NeoAdsInThermals(pPlayer);
 
-	// See-through glass (drawn over by the cloak or thermals, or a scope on the sights): its outline into depth
-	// before the gun, so the world already on screen shows through it (see NeoAdsGlassClear).
 	NeoAdsGlassClear clear;
-	const bool bClear = bDrawn && NeoAdsBeginGlassClear(this, *pWeaponData, bCloaked, bThermal, m_flAdsBlend, clear);
+	const bool bClear = bDrawn && NeoAdsGetGlassClear(this, *pWeaponData, bCloaked, bThermal, m_flAdsBlend, clear);
 	CMatRenderContextPtr pRenderContext(materials);
 	int ret = 0;
 	if (bClear && clear.bFarFirst)
@@ -317,7 +310,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 	}
 	if (bClear)
 	{
-		NeoAdsDrawGlassClearDepth(*pWeaponData);
+		NeoAdsDrawGlassClearDepth(*pWeaponData, clear);
 	}
 	if (bClear && clear.bFarFirst)
 	{
@@ -329,9 +322,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 		pRenderContext->PopCustomClipPlane();
 	}
 
-	// On top of the gun, pinned to it: the glass's art where the gun's own glass doesn't show it (hidden, or left
-	// out by the clear glass).
-	if (ret && bOverlays)
+	if (ret && bDrawn)
 	{
 		NeoAdsDrawGlassArt(this, *pWeaponData, bCloaked, bThermal, m_flAdsBlend);
 	}

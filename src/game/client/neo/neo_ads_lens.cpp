@@ -10,7 +10,7 @@ Vector NeoLensPane::Centre(const CNEOWeaponInfo &data) const
 	return At(data.m_vecAdsOpticWindowCentre.x, data.m_vecAdsOpticWindowCentre.y);
 }
 
-// The lens bone's index on the viewmodel, looked up by name only when the model or the weapon changes.
+// Looked up by name only when the model or the weapon changes.
 static int LensBone(C_BaseAnimating *pViewModel, const CNEOWeaponInfo &data)
 {
 	static const studiohdr_t *s_pModel = nullptr;
@@ -40,15 +40,18 @@ bool NeoAdsLensPane(C_BaseAnimating *pViewModel, const CNEOWeaponInfo &data, con
 		return false;
 	}
 	matrix3x4_t lensToWorld;
-	// From the drawn pose, not GetBoneTransform: its cache holds only hitbox bones, so a lens bone that is not one
-	// would come back as the viewmodel's origin.
+	// Not GetBoneTransform: its cache holds only hitbox bones, and returns the origin for any other bone.
 	MatrixCopy(pViewModel->GetBone(bone), lensToWorld);
-	const auto toWorld = [&](const Vector &origin, const Vector &u, const Vector &v, NeoLensPane &out) {
+	const auto toWorld = [&lensToWorld](const Vector &origin, const Vector &u, const Vector &v, NeoLensPane &out) {
 		VectorTransform(origin, lensToWorld, out.origin);
 		VectorRotate(u, lensToWorld, out.u);
 		VectorRotate(v, lensToWorld, out.v);
 	};
 	toWorld(data.m_vecAdsOpticLensOrigin, data.m_vecAdsOpticLensU, data.m_vecAdsOpticLensV, pane);
+	if (pFarPane)
+	{
+		*pFarPane = pane;
+	}
 	if (data.m_bHasAdsOpticLensMap2)
 	{
 		NeoLensPane second;

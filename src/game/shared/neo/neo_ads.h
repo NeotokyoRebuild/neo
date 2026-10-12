@@ -52,18 +52,17 @@ struct NeoAdsRestPose
 void NeoAdsDampRecoil(CStudioHdr *hdr, Vector pos[], Quaternion q[],
 	const Vector settledPos[], const Quaternion settledQ[], int refBone, const CNEOWeaponInfo &data, float adsBlend);
 
-// Hidden only while aiming down an ADS weapon's sights, and not while cloaked (the cloaked sights are hard to see).
+// Hidden only while aiming down an ADS weapon's sights. Cloaked it stays, since the cloaked sights are hard to see,
+// unless the weapon's glass stays see-through.
 bool NeoAdsHideCrosshair(const CNEOWeaponInfo &data, bool bAiming, bool bCloaked);
 
 class IMaterial;
 
-// How far onto the sights (the viewmodel's ADS blend) the gun counts as on them: a scope's housing behind the
-// glass stops drawing from here.
+// The ADS blend from which the gun counts as on the sights.
 constexpr float NEO_ADS_ON_SIGHTS = 0.5f;
 
-// Hides an optic's glass ("one_pane" in its "AdsOptic" block) for its lifetime, since the optic draws that
-// glass's art itself (neo_ads_optic.h). Wrap the viewmodel draw in one; the material is restored when it goes
-// out of scope.
+// Hides a "one_pane" optic's glass while ADS is on, since neo_ads_optic.cpp draws its art instead. Wrap the
+// viewmodel draw in one; the glass comes back when it goes out of scope.
 class NeoAdsHiddenMaterials
 {
 public:

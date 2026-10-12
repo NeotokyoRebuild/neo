@@ -10,6 +10,7 @@
 #include "studio.h"
 #include "bone_setup.h"
 #include "vguicenterprint.h"
+#include "neo/neo_ads_optic.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -343,20 +344,21 @@ void NeoAdsDampRecoil(CStudioHdr *hdr, Vector pos[], Quaternion q[],
 
 bool NeoAdsHideCrosshair(const CNEOWeaponInfo &data, bool bAiming, bool bCloaked)
 {
-	return NeoAdsActive(data) && bAiming && !cl_neo_ads_crosshair.GetBool() && !(bCloaked && !data.m_bAdsOpticWindow);
+	if (!NeoAdsActive(data) || !bAiming || cl_neo_ads_crosshair.GetBool())
+	{
+		return false;
+	}
+	return !bCloaked || (data.m_bAdsOpticWindow && NeoAdsHasGlassArt(data));
 }
 
 NeoAdsHiddenMaterials::NeoAdsHiddenMaterials(const CNEOWeaponInfo *pData)
 {
-	if (!pData || !pData->m_bAdsOpticOnePane || !NeoAdsActive(*pData))
+	// Only when the art that replaces the glass can be drawn: the glass is invisible without it.
+	if (!pData || !pData->m_bAdsOpticOnePane || !NeoAdsActive(*pData) || !NeoAdsHasGlassArt(*pData))
 	{
 		return;
 	}
-	// Only when the art that replaces the glass can be drawn: the glass is invisible without it.
-	IMaterial *pReticle = pData->m_bHasAdsOpticLensMap && pData->m_szAdsOpticReticle[0]
-		? materials->FindMaterial(pData->m_szAdsOpticReticle, TEXTURE_GROUP_VGUI, false) : nullptr;
-	IMaterial *pLens = (pReticle && !pReticle->IsErrorMaterial())
-		? materials->FindMaterial(pData->m_szAdsOpticLens, TEXTURE_GROUP_MODEL, false) : nullptr;
+	IMaterial *pLens = materials->FindMaterial(pData->m_szAdsOpticLens, TEXTURE_GROUP_MODEL, false);
 	if (pLens && !pLens->IsErrorMaterial() && !pLens->GetMaterialVarFlag(MATERIAL_VAR_NO_DRAW))
 	{
 		pLens->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, true);

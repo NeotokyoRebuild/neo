@@ -1579,7 +1579,6 @@ set(UNITY_SOURCE_NEO_SRC_CLIENT
     neo/c_neo_killer_damage_infos.cpp
     neo/neo_ads_lens.cpp
     neo/neo_ads_optic.cpp
-    neo/neo_ads_optic_disc.cpp
 )
 
 set_source_files_properties(
@@ -1600,7 +1599,6 @@ target_sources_grouped(
     neo/c_neo_killer_damage_infos.h
     neo/neo_ads_lens.h
     neo/neo_ads_optic.h
-    neo/neo_ads_optic_disc.h
     ${UNITY_SOURCE_NEO_SRC_CLIENT}
 )
 
