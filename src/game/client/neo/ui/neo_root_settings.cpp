@@ -142,8 +142,8 @@ static const wchar_t *STARTUP_TYPE_LABELS[NeoMP3::STARTUP_TYPE__TOTAL] = {
 	L"First song or random shuffle",
 };
 
-static const int FPS_MAX_PRESETS[] = { 30, 60, 75, 120, 144, 165, 240, 300, 360, 400, 0 };
-static const wchar_t *FPS_MAX_LABELS[] = { L"30", L"60", L"75", L"120", L"144", L"165", L"240", L"300", L"360", L"400", L"Unlimited" };
+static const int FPS_MAX_PRESETS[] = { 60, 75, 100, 120, 144, 165, 180, 200, 240, 280, 300, 360, 480, 500, 540, 600, 610, 720, 0 };
+static const wchar_t *FPS_MAX_LABELS[] = { L"60", L"75", L"100", L"120", L"144", L"165", L"180", L"200", L"240", L"280", L"300", L"360", L"480", L"500", L"540", L"600", L"610", L"720", L"Unlimited" };
 static_assert(ARRAYSIZE(FPS_MAX_PRESETS) == ARRAYSIZE(FPS_MAX_LABELS));
 static const int FPS_MAX_PRESETS_TOTAL = ARRAYSIZE(FPS_MAX_PRESETS);
 static const int FPS_MAX_CUSTOM = FPS_MAX_PRESETS_TOTAL;
