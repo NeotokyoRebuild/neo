@@ -16,6 +16,7 @@
 #include "voice_status.h"
 
 #include "neo_ui.h"
+#include "neo_ui_fpsslider.h"
 #include "neo_root.h"
 #include "neo/ui/neo_utils.h"
 #include "neo_theme.h"
@@ -141,8 +142,6 @@ static const wchar_t *STARTUP_TYPE_LABELS[NeoMP3::STARTUP_TYPE__TOTAL] = {
 	L"Always random",
 	L"First song or random shuffle",
 };
-
-static const int MAX_FPS_LIMIT = 1000;
 
 static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
 
@@ -660,7 +659,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		}
 		pVideo->iFilteringMode = filterIdx;
 		pVideo->bVSync = cvr->mat_vsync.GetBool();
-		pVideo->iFpsMax = Min(cvr->fps_max.GetInt(), MAX_FPS_LIMIT);
+		pVideo->iFpsMax = cvr->fps_max.GetInt();
 		pVideo->bMotionBlur = cvr->mat_motion_blur_enabled.GetBool();
 		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
@@ -1354,7 +1353,7 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::RingBox(L"Resolution", const_cast<const wchar_t **>(pVideo->p2WszVmDispList), pVideo->iVMListSize, &pVideo->iResolution);
 	NeoUI::RingBox(L"Window", WINDOW_MODE, WINDOWMODE__TOTAL, &pVideo->iWindow);
 	NeoUI::RingBoxBool(L"V-Sync", &pVideo->bVSync);
-	NeoUI::SliderInt(L"Max FPS", &pVideo->iFpsMax, 0, MAX_FPS_LIMIT, 1, L"Unlimited");
+	NeoUI::SliderFpsMax(L"Max FPS", &pVideo->iFpsMax);
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
 	NeoUI::Slider(L"Gamma", &pVideo->flGamma, 1.6, 2.6, 2, 0.1f);
 	NeoUI::SliderInt(L"FOV", &pVideo->iFov, MIN_FOV, MAX_FOV);

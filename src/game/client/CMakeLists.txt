@@ -1649,6 +1649,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_root_settings.cpp
     neo/ui/neo_loading.cpp
     neo/ui/neo_ui.cpp
+    neo/ui/neo_ui_fpsslider.cpp
     neo/ui/neo_theme.cpp
     neo/ui/neo_utils.cpp
     neo/ui/OverrideInterface.cpp
@@ -1694,6 +1695,7 @@ target_sources_grouped(
     neo/ui/neo_root_settings.h
     neo/ui/neo_loading.h
     neo/ui/neo_ui.h
+    neo/ui/neo_ui_fpsslider.h
     neo/ui/neo_theme.h
     neo/ui/neo_utils.h
     neo/ui/IOverrideInterface.h
