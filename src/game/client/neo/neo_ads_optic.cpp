@@ -14,10 +14,10 @@
 
 static constexpr int LENS_SEGMENTS = 32;
 static constexpr int LENS_RINGS = 6;	// enough for the rim fade
-// How far the glass's depth and art sit in front of it, toward the eye. Out at the map's edge the gun's own depth
-// is only good to about 0.06 units, and a smaller lift lets the gun behind the glass flicker through. The gun
-// less than this in front of the glass, inside the outline, is hidden too.
-static constexpr float LENS_LIFT = 0.1f;
+// How far the glass's depth and art sit in front of it, toward the eye. Near the coord limits (MAX_COORD_FLOAT) the
+// gun's own depth gets coarse, and a smaller lift lets the gun behind the glass flicker through there. The gun less
+// than this in front of the glass, inside the outline, is hidden too.
+static constexpr float LENS_LIFT = 0.3f;
 // "reticle_in_lens" art fades out from this fraction of the lens circle to its edge.
 static constexpr float RETICLE_IN_LENS_FADE = 0.85f;
 
