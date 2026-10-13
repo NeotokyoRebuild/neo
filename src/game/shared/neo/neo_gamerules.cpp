@@ -2803,6 +2803,10 @@ void CNEORules::StartNextRound()
 			m_flNeoRoundStartTime = gpGlobals->curtime;
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + sv_neo_readyup_countdown.GetFloat();
 			UTIL_CenterPrintAll("- ALL PLAYERS READY: MATCH STARTING SOON... -\n");
+
+			auto* event = gameeventmanager->CreateEvent("lobby_all_players_ready");
+			if (event)gameeventmanager->FireEvent(event);
+
 			return;
 		}
 		else
@@ -3032,6 +3036,27 @@ void CNEORules::StartNextRound()
 
 	SetGameRelatedVars();
 	MatchSessionBackup();
+
+	gameeventmanager->CreateEvent("noexist");
+
+	event = gameeventmanager->CreateEvent("round_start");
+	Assert(event);
+	if (event)
+	{
+		event->SetInt("fraglimit", 0);
+		event->SetInt("priority", 6); // HLTV event priority, not transmitted
+		event->SetString("objective", "DEATHMATCH");
+		gameeventmanager->FireEvent(event);
+	}
+
+	if (m_iRoundNumber == 1)
+	{
+		event = gameeventmanager->CreateEvent("match_start");
+		Assert(event);
+		if (event) gameeventmanager->FireEvent(event);
+	}
+
+	FireLegacyEvent_NeoRoundStart();
 
 	DevMsg("New round start here!\n");
 }
@@ -3624,6 +3649,21 @@ void CNEORules::RestartGame()
 	}
 
 	SetGameRelatedVars();
+
+	event = gameeventmanager->CreateEvent("match_start");
+	Assert(event);
+	if (event)
+		gameeventmanager->FireEvent(event);
+
+	if (GetActiveGameConfig() && sv_neo_comp.GetBool())
+	{
+		event = gameeventmanager->CreateEvent("comp_match_start");
+		Assert(event);
+		if (event)
+			gameeventmanager->FireEvent(event);
+	}
+
+	FireLegacyEvent_NeoRoundStart();
 }
 #endif
 
@@ -3949,13 +3989,27 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		return;
 	}
 
-	if (auto pEntGameCfg = GetActiveGameConfig())
+	auto* pEntGameCfg = GetActiveGameConfig();
+	if (pEntGameCfg)
 	{
 		pEntGameCfg->m_OnRoundEnd.Set(team, nullptr, pEntGameCfg);
 	}
 
 	if (bForceMapReset)
 	{
+		auto* event = gameeventmanager->CreateEvent("match_end");
+		Assert(event);
+		if (event)
+			gameeventmanager->FireEvent(event);
+
+		if (pEntGameCfg && sv_neo_comp.GetBool())
+		{
+			event = gameeventmanager->CreateEvent("comp_match_start");
+			Assert(event);
+			if (event)
+				gameeventmanager->FireEvent(event);
+		}
+
 		RestartGame();
 	}
 	else
