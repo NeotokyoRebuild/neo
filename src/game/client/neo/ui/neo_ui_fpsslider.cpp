@@ -19,8 +19,12 @@ static const int FPSSLIDER_MIN = 30;
 static const int FPSSLIDER_MAX = 400;
 static const int FPSSLIDER_UNLIMITED = 0;
 static const int FPSSLIDER_UNLIMITED_POS = FPSSLIDER_MAX + 1;
-static const int FPSSLIDER_MAX_TYPED_DIGITS = 4;
+static const int FPSSLIDER_MAX_TYPED = 9999;
+static const int FPSSLIDER_MAX_TYPED_DIGITS = 5;
 static const wchar_t FPSSLIDER_UNLIMITED_TEXT[] = L"Unlimited";
+static const wchar_t FPSSLIDER_INVALID_TEXT[] = L"Invalid Setting";
+
+static inline int g_iFpsMaxBeforeTyping = FPSSLIDER_UNLIMITED;
 
 static int FpsSliderPos(const int iFpsMax)
 {
@@ -37,9 +41,9 @@ static int FpsFromSliderPos(const int iPos)
 	return (iClampedPos == FPSSLIDER_UNLIMITED_POS) ? FPSSLIDER_UNLIMITED : iClampedPos;
 }
 
-static bool FpsTypedValid(const int iTyped)
+static bool FpsValid(const int iFpsMax)
 {
-	return iTyped == FPSSLIDER_UNLIMITED || iTyped >= FPSSLIDER_MIN;
+	return iFpsMax == FPSSLIDER_UNLIMITED || IN_BETWEEN_EQ(FPSSLIDER_MIN, iFpsMax, FPSSLIDER_MAX_TYPED);
 }
 
 static int FpsFromText(const SliderInfo *pSInfo)
@@ -47,6 +51,19 @@ static int FpsFromText(const SliderInfo *pSInfo)
 	char szText[ARRAYSIZE(pSInfo->wszText)];
 	g_pVGuiLocalize->ConvertUnicodeToANSI(pSInfo->wszText, szText, sizeof(szText));
 	return atoi(szText);
+}
+
+static void FpsApplyText(SliderInfo *pSInfo, int *iFpsMax)
+{
+	const int iFromText = FpsFromText(pSInfo);
+	const bool bValid = (pSInfo->wszText[0] != L'\0' && FpsValid(iFromText));
+	const int iNewFpsMax = bValid ? iFromText : g_iFpsMaxBeforeTyping;
+	if (iNewFpsMax != *iFpsMax)
+	{
+		*iFpsMax = iNewFpsMax;
+		pSInfo->flCachedValue = *iFpsMax;
+		CurrentContext()->bValueEdited = true;
+	}
 }
 
 void SliderFpsMax(const wchar_t *wszLeftLabel, int *iFpsMax)
@@ -62,6 +79,9 @@ void SliderFpsMax(const wchar_t *wszLeftLabel, int *iFpsMax)
 		if (hdl == -1 || pCtx->htSliders.Element(hdl).flCachedValue != *iFpsMax ||
 				pCtx->htSliders.Element(hdl).bActive != wdgState.bActive)
 		{
+			const bool bLeftInvalid = (hdl != -1 && pCtx->htSliders.Element(hdl).bActive && !wdgState.bActive &&
+					pCtx->htSliders.Element(hdl).wszText[0] != L'\0' &&
+					!FpsValid(FpsFromText(&pCtx->htSliders.Element(hdl))));
 			if (hdl == -1)
 			{
 				SliderInfo sInfoNew = {};
@@ -69,7 +89,11 @@ void SliderFpsMax(const wchar_t *wszLeftLabel, int *iFpsMax)
 			}
 			SliderInfo *pSInfo = &pCtx->htSliders.Element(hdl);
 
-			if (*iFpsMax == FPSSLIDER_UNLIMITED && !wdgState.bActive)
+			if (bLeftInvalid || (!wdgState.bActive && !FpsValid(*iFpsMax)))
+			{
+				V_wcsncpy(pSInfo->wszText, FPSSLIDER_INVALID_TEXT, sizeof(pSInfo->wszText));
+			}
+			else if (*iFpsMax == FPSSLIDER_UNLIMITED && !wdgState.bActive)
 			{
 				V_wcsncpy(pSInfo->wszText, FPSSLIDER_UNLIMITED_TEXT, sizeof(pSInfo->wszText));
 			}
@@ -80,6 +104,10 @@ void SliderFpsMax(const wchar_t *wszLeftLabel, int *iFpsMax)
 			pSInfo->flCachedValue = *iFpsMax;
 			pSInfo->iMaxStrSize = FPSSLIDER_MAX_TYPED_DIGITS;
 			pSInfo->bActive = wdgState.bActive;
+			if (wdgState.bActive)
+			{
+				g_iFpsMaxBeforeTyping = *iFpsMax;
+			}
 		}
 		SliderInfo *pSInfo = &pCtx->htSliders.Element(hdl);
 		const int iPos = FpsSliderPos(*iFpsMax);
@@ -199,13 +227,7 @@ void SliderFpsMax(const wchar_t *wszLeftLabel, int *iFpsMax)
 					if (iTextSize > 0)
 					{
 						pSInfo->wszText[iTextSize - 1] = L'\0';
-						const int iFromText = FpsFromText(pSInfo);
-						if (iTextSize > 1 && FpsTypedValid(iFromText))
-						{
-							*iFpsMax = iFromText;
-							pSInfo->flCachedValue = *iFpsMax;
-							pCtx->bValueEdited = true;
-						}
+						FpsApplyText(pSInfo, iFpsMax);
 					}
 				}
 			}
@@ -240,13 +262,7 @@ void SliderFpsMax(const wchar_t *wszLeftLabel, int *iFpsMax)
 				{
 					pSInfo->wszText[iTextSize] = uc;
 					pSInfo->wszText[iTextSize + 1] = L'\0';
-					const int iFromText = FpsFromText(pSInfo);
-					if (FpsTypedValid(iFromText))
-					{
-						*iFpsMax = iFromText;
-						pSInfo->flCachedValue = *iFpsMax;
-						pCtx->bValueEdited = true;
-					}
+					FpsApplyText(pSInfo, iFpsMax);
 				}
 			}
 		}
