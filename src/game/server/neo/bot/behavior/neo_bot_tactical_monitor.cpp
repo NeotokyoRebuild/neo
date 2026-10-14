@@ -348,8 +348,10 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 
 	if ( !bInAHurry )
 	{
-		// check if we need to get to cover
-		QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
+		// check if we need to get to cover,
+		// but not from the ghost carrier, since RetreatToCover would end at once and the next check would start it again
+		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
+		QueryResultType shouldRetreat = IsThreatGhostCarrier( threat ) ? ANSWER_NO : me->GetIntentionInterface()->ShouldRetreat( me );
 
 		if ( shouldRetreat == ANSWER_YES )
 		{

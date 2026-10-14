@@ -106,6 +106,19 @@ int CountThreatsExposingArea( CNEOBot *me, CNavArea *area )
 }
 
 
+//---------------------------------------------------------------------------------------------
+bool IsThreatGhostCarrier( const CKnownEntity *threat )
+{
+	if ( !threat || !threat->GetEntity() || !threat->GetEntity()->IsPlayer() )
+	{
+		return false;
+	}
+
+	CNEO_Player *pThreatPlayer = ToNEOPlayer( threat->GetEntity() );
+	return pThreatPlayer && pThreatPlayer->IsCarryingGhost();
+}
+
+
 // A cover area where a bot got stuck this round counts as exposed to this many more threats
 static constexpr int NEO_BOT_STUCK_AREA_EXPOSURE = 1;
 
@@ -257,13 +270,9 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	{
 		me->ReloadIfLowClip();
 	}
-	else if ( threat->GetEntity() && threat->GetEntity()->IsPlayer() )
+	else if ( IsThreatGhostCarrier( threat ) )
 	{
-		CNEO_Player *pThreatPlayer = ToNEOPlayer( threat->GetEntity() );
-		if ( pThreatPlayer && pThreatPlayer->IsCarryingGhost() )
-		{
-			return Done( "Stopping retreat because my threat is the ghost carrier" );
-		}
+		return Done( "Stopping retreat because my threat is the ghost carrier" );
 	}
 
 	if ( ShouldRetreat( me ) == ANSWER_NO )
