@@ -1424,8 +1424,40 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 #ifdef NEO
 	if (m_pRagdoll)
 	{
-		m_pRagdoll->SetInitialVelocity(GetInitialRagdollVelocity());
 		m_pRagdoll->SetLastOrigin(GetInitialRagdollOrigin());
+
+		// The bone history often misses the player's own movement, so the ragdoll dropped in place:
+		// shift every element equally so the mass-weighted velocity is the player's velocity at death.
+		ragdoll_t *pRagdollData = m_pRagdoll->GetRagdoll();
+		Vector vecAnimMomentum = vec3_origin;
+		float flTotalMass = 0.f;
+		for (int i = 0; i < pRagdollData->listCount; ++i)
+		{
+			IPhysicsObject *pObject = pRagdollData->list[i].pObject;
+			if (!pObject)
+			{
+				continue;
+			}
+
+			Vector vecVelocity;
+			AngularImpulse angVelocity;
+			const int iBone = pRagdollData->boneIndex[i];
+			CalcBoneDerivatives(vecVelocity, angVelocity, boneDelta0[iBone], boneDelta1[iBone], boneDt);
+			vecAnimMomentum += vecVelocity * pObject->GetMass();
+			flTotalMass += pObject->GetMass();
+		}
+
+		if (flTotalMass > 0.f)
+		{
+			Vector vecVelocityCorrection = GetInitialRagdollVelocity() - (vecAnimMomentum / flTotalMass);
+			for (int i = 0; i < pRagdollData->listCount; ++i)
+			{
+				if (IPhysicsObject *pObject = pRagdollData->list[i].pObject)
+				{
+					pObject->AddVelocity(&vecVelocityCorrection, nullptr);
+				}
+			}
+		}
 	}
 #endif // NEO
 }
