@@ -205,6 +205,15 @@ bool PathFollower::IsAtGoal( INextBot *bot ) const
 				// reached goal
 				return true;
 			}
+
+#ifdef NEO
+			// a bot that walked off past the top of the drop has started its fall,
+			// so steer for the landing instead of back toward the edge behind it
+			if ( !mover->IsOnGround() && DotProduct2D( toGoal.AsVector2D(), current->forward.AsVector2D() ) < 0.0f )
+			{
+				return true;
+			}
+#endif
 		}
 				
 		/// @todo: it is possible to fall into a bad place and get stuck - should move back onto the path
@@ -572,6 +581,14 @@ bool PathFollower::CheckProgress( INextBot *bot )
 	{
 		// iterate to next segment of the path
 		const Path::Segment *nextSegment = pSkipToGoal ? pSkipToGoal : NextSegment( m_goal );
+
+#ifdef NEO
+		// a drop's landing lies straight below its top, so it is behind a bot already falling past the top
+		if ( !pSkipToGoal && m_goal->type == DROP_DOWN && !mover->IsOnGround() && nextSegment && NextSegment( nextSegment ) )
+		{
+			nextSegment = NextSegment( nextSegment );
+		}
+#endif
 
 		if ( nextSegment == NULL )
 		{
