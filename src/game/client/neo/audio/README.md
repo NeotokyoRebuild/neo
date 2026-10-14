@@ -442,7 +442,7 @@ fully, with its material's transmission, and moving or releasing it restores the
 
 ## Trying it
 
-1. Configure with `-DNEO_STEAMAUDIO=ON` (off by default). CMake then fetches the Steam Audio 4.8.1 SDK
+1. Configure with `-NEO_STEAMAUDIO=ON` (off by default). CMake then fetches the Steam Audio 4.8.1 SDK
    once and copies its library next to `client` (`NEO_STEAMAUDIO_SDK_PATH` uses a local SDK).
 2. In game, with headphones: `cl_neo_hrtf 1`; A/B against the engine's own panning with
    `cl_neo_hrtf 0`. `cl_neo_hrtf_debug 1` overlays the status and a line per voice. Player pings
@@ -456,7 +456,7 @@ SHA256 in `src/cmake/steamaudio.cmake` and rebuild. A renamed phonon function sh
 missing symbol in the load error, not as a compile break in game code. To debug inside Steam
 Audio, build it from that checkout (`core/doc/build-instructions.rst`: `get_dependencies.py`,
 then `cmake --build ... --target install`) and configure neo with
-`-DNEO_STEAMAUDIO_SDK_PATH=<tree with include/ and lib/<plat>/>`.
+`-NEO_STEAMAUDIO_SDK_PATH=<tree with include/ and lib/<plat>/>`.
 
 ## Known limitations of the proof of concept
 

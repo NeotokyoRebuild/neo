@@ -129,10 +129,10 @@ void C_BaseViewModel::FireEvent( const Vector& origin, const QAngle& angles, int
 		if ( GetOwner() != NULL )
 		{
 			CLocalPlayerFilter filter;
-#ifdef NEO
+#if defined NEO && defined NEO_STEAMAUDIO
 			// Reload and other handling sounds of the local player's own weapon are heard in HRTF from it
 			CNeoHrtfLocalSoundScope hrtfScope( ( GetOwner() == C_BasePlayer::GetLocalPlayer() ) ? NeoHrtfLocalSound::Weapon : NeoHrtfLocalSound::None );
-#endif
+#endif // NEO && NEO_STEAMAUDIO
 			EmitSound( filter, GetOwner()->GetSoundSourceIndex(), options, &GetAbsOrigin() );
 			return;
 		}

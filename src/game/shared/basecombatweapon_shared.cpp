@@ -1936,10 +1936,10 @@ void CBaseCombatWeapon::WeaponSound( WeaponSound_t sound_type, float soundtime /
 	if ( !GetParametersForSound( shootsound, params, NULL ) )
 		return;
 
-#if defined( CLIENT_DLL ) && defined( NEO )
+#if defined( CLIENT_DLL ) && defined( NEO ) && defined( NEO_STEAMAUDIO )
 	// The local player's own weapon is heard in HRTF from the viewmodel
 	CNeoHrtfLocalSoundScope hrtfScope( ( GetOwner() && GetOwner() == C_BasePlayer::GetLocalPlayer() ) ? NeoHrtfLocalSound::Weapon : NeoHrtfLocalSound::None );
-#endif
+#endif // CLIENT_DLL && NEO && NEO_STEAMAUDIO
 
 	if ( params.play_to_owner_only )
 	{
