@@ -258,6 +258,7 @@ CNavArea::CNavArea( void )
 
 	m_inheritVisibilityFrom.area = NULL;
 	m_isInheritedFrom = false;
+	m_isVisibilityComputed = false;
 
 	m_funcNavCostVector.RemoveAll();
 
@@ -5328,8 +5329,6 @@ static ConCommand nav_select_overlapping( "nav_select_overlapping", CommandNavSe
 static byte m_PVS[PAD_NUMBER( MAX_MAP_CLUSTERS,8 ) / 8];
 static int m_nPVSSize;		// PVS size in bytes
 
-CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs > *g_pNavVisPairHash;
-
 #define MASK_NAV_VISION				(MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE)
 
 
@@ -5390,7 +5389,7 @@ bool CNavArea::IsInPVS( void ) const
 /**
  * Do actual line-of-sight traces to determine if any part of given area is visible from this area
  */
-CNavArea::VisibilityType CNavArea::ComputeVisibility( const CNavArea *area, bool isPVSValid, bool bCheckPVS, bool *pOutsidePVS ) const
+CNavArea::VisibilityType CNavArea::ComputeVisibility( const CNavArea *area, bool isPVSValid, bool bCheckPVS, bool *pOutsidePVS, const byte *pPVS ) const
 {
 	float distanceSq = area->GetCenter().DistToSqr( GetCenter() );
 
@@ -5419,7 +5418,7 @@ CNavArea::VisibilityType CNavArea::ComputeVisibility( const CNavArea *area, bool
 		areaExtent.Encompass( area->GetCorner( NORTH_EAST ) + eye );
 		areaExtent.Encompass( area->GetCorner( SOUTH_WEST ) + eye );
 		areaExtent.Encompass( area->GetCorner( SOUTH_EAST ) + eye );
-		if ( !engine->CheckBoxInPVS( areaExtent.lo, areaExtent.hi, m_PVS, m_nPVSSize ) )
+		if ( !engine->CheckBoxInPVS( areaExtent.lo, areaExtent.hi, pPVS ? pPVS : m_PVS, m_nPVSSize ) )
 		{
 			if ( pOutsidePVS )
 				*pOutsidePVS = true;
@@ -5526,6 +5525,141 @@ CNavArea::VisibilityType CNavArea::ComputeVisibility( const CNavArea *area, bool
 
 
 //--------------------------------------------------------------------------------------------------------
+// attribute values below this each get a bit in a stamp's mask (visibility attributes are 0 to 3)
+static constexpr unsigned int VIS_DELTA_ATTRIBUTE_BITS = 32;
+
+// One slot per nav area id, saying which areas the two lists being compared hold.
+// A slot counts only when its generation is the current one, so no slot is cleared between list pairs.
+struct VisDeltaStamp_t
+{
+	unsigned int otherGeneration;
+	unsigned int otherAttributeMask;	// bit n set: the other list holds this area with attributes n
+	unsigned int myGeneration;
+};
+
+static CUtlVector< VisDeltaStamp_t > s_visDeltaStamps;
+static unsigned int s_visDeltaGeneration = 0;
+
+static VisDeltaStamp_t &VisDeltaStampFor( const CNavArea *area )
+{
+	// the stamp table is indexed by the id as an int, so an id above INT_MAX would index outside it
+	const unsigned int id = area->GetID();
+	Assert( id < (unsigned int)INT_MAX );
+
+	if ( id >= (unsigned int)s_visDeltaStamps.Count() )
+	{
+		const VisDeltaStamp_t unused = { 0, 0, 0 };
+		while ( (unsigned int)s_visDeltaStamps.Count() <= id )
+		{
+			s_visDeltaStamps.AddToTail( unused );
+		}
+	}
+
+	return s_visDeltaStamps[ (int)id ];
+}
+
+static void BeginVisDeltaGeneration( void )
+{
+	++s_visDeltaGeneration;
+	if ( s_visDeltaGeneration != 0 )
+	{
+		return;
+	}
+
+	// the counter wrapped, so clear every slot once to keep an old stamp from looking current
+	FOR_EACH_VEC( s_visDeltaStamps, it )
+	{
+		s_visDeltaStamps[ it ].otherGeneration = 0;
+		s_visDeltaStamps[ it ].myGeneration = 0;
+	}
+	s_visDeltaGeneration = 1;
+}
+
+// free the stamp table once every delta of the mesh is encoded
+void ReleaseVisDeltaStamps( void )
+{
+	s_visDeltaStamps.Purge();
+	s_visDeltaGeneration = 0;
+}
+
+// The delta of two visibility lists, in linear time from stamps by area id and in the order a scan of every entry pair gives:
+// my entries the other list lacks with equal attributes, then NOT_VISIBLE entries for areas only the other list holds
+template < typename BindInfoArray >
+static void ComputeVisDeltaLinear( const BindInfoArray &mine, const BindInfoArray &other, BindInfoArray &delta )
+{
+	BeginVisDeltaGeneration();
+	const unsigned int generation = s_visDeltaGeneration;
+
+	// stamp every (area, attributes) the other list holds; a repeated area adds its attributes to the mask
+	for ( int j = 0; j < other.Count(); ++j )
+	{
+		if ( !other[ j ].area )
+		{
+			continue;
+		}
+
+		const unsigned int attributes = other[ j ].attributes;
+		Assert( attributes < VIS_DELTA_ATTRIBUTE_BITS );
+
+		VisDeltaStamp_t &stamp = VisDeltaStampFor( other[ j ].area );
+		if ( stamp.otherGeneration != generation )
+		{
+			stamp.otherGeneration = generation;
+			stamp.otherAttributeMask = 0;
+		}
+
+		stamp.otherAttributeMask |= 1u << attributes;
+	}
+
+	// and every area my list holds
+	for ( int i = 0; i < mine.Count(); ++i )
+	{
+		if ( mine[ i ].area )
+		{
+			VisDeltaStampFor( mine[ i ].area ).myGeneration = generation;
+		}
+	}
+
+	// add any visible areas in my list that are not in the other list with the same attributes
+	for ( int i = 0; i < mine.Count(); ++i )
+	{
+		if ( !mine[ i ].area )
+		{
+			continue;
+		}
+
+		const unsigned int attributes = mine[ i ].attributes;
+		Assert( attributes < VIS_DELTA_ATTRIBUTE_BITS );
+
+		const VisDeltaStamp_t &stamp = VisDeltaStampFor( mine[ i ].area );
+		const bool isInOther = ( stamp.otherGeneration == generation ) && ( stamp.otherAttributeMask & ( 1u << attributes ) );
+		if ( !isInOther )
+		{
+			delta.AddToTail( mine[ i ] );
+		}
+	}
+
+	// add explicit NOT_VISIBLE references to areas in the other list that are not in mine
+	for ( int j = 0; j < other.Count(); ++j )
+	{
+		if ( !other[ j ].area )
+		{
+			continue;
+		}
+
+		if ( VisDeltaStampFor( other[ j ].area ).myGeneration != generation )
+		{
+			CNavArea::AreaBindInfo info;
+			info.area = other[ j ].area;
+			info.attributes = CNavArea::NOT_VISIBLE;
+
+			delta.AddToTail( info );
+		}
+	}
+}
+
+
+//--------------------------------------------------------------------------------------------------------
 /**
  * Return a list of the delta between our visibility list and the given adjacent area
  */
@@ -5544,56 +5678,7 @@ const CNavArea::CAreaBindInfoArray &CNavArea::ComputeVisibilityDelta( const CNav
 		return delta;
 	}
 
-	// add any visible areas in my list that are not in 'others' list into the delta
-	int i, j;
-	for( i=0; i<m_potentiallyVisibleAreas.Count(); ++i )
-	{
-		if ( m_potentiallyVisibleAreas[i].area )
-		{
-			// is my visible area also in adjacent area's vis list
-			for( j=0; j<other->m_potentiallyVisibleAreas.Count(); ++j )
-			{
-				if ( m_potentiallyVisibleAreas[i].area == other->m_potentiallyVisibleAreas[j].area &&
-					 m_potentiallyVisibleAreas[i].attributes == other->m_potentiallyVisibleAreas[j].attributes )
-				{
-					// mutually identically visible
-					break;
-				}
-			}
-
-			if ( j == other->m_potentiallyVisibleAreas.Count() )
-			{
-				// my vis area not in adjacent area's vis list or has different visibility attributes - add to delta
-				delta.AddToTail( m_potentiallyVisibleAreas[i] );
-			}
-		}
-	}
-
-	// add explicit NOT_VISIBLE references to areas in 'others' list that are NOT in mine
-	for( j=0; j<other->m_potentiallyVisibleAreas.Count(); ++j )
-	{
-		if ( other->m_potentiallyVisibleAreas[j].area )
-		{
-			for( i=0; i<m_potentiallyVisibleAreas.Count(); ++i )
-			{
-				if ( m_potentiallyVisibleAreas[i].area == other->m_potentiallyVisibleAreas[j].area )
-				{
-					// area in both lists - already handled in delta above
-					break;
-				}
-			}
-
-			if ( i == m_potentiallyVisibleAreas.Count() )
-			{
-				// 'other' has area in their list that we don't - mark it explicitly NOT_VISIBLE
-				AreaBindInfo info;
-				info.area = other->m_potentiallyVisibleAreas[j].area;
-				info.attributes = NOT_VISIBLE;
-
-				delta.AddToTail( info );
-			}
-		}
-	}
+	ComputeVisDeltaLinear( m_potentiallyVisibleAreas, other->m_potentiallyVisibleAreas, delta );
 
 	return delta;
 }
@@ -5613,24 +5698,40 @@ void CNavArea::ResetPotentiallyVisibleAreas()
  * in the PostCustomAnalysis() step.
  */
 
-CNavArea *g_pCurVisArea;
-CTSListWithFreeList< CNavArea::AreaBindInfo > g_ComputedVis;
+// threads that run the visibility pass, the calling thread included:
+// every trace takes one of the engine's 4 model cache frame locks, so a 5th thread is no faster, and 3 are slower than 4
+static constexpr int NAV_VIS_THREADS = 4;
 
-void CNavArea::ComputeVisToArea( CNavArea *&pOtherArea )
+// one area pair of the pass, with the results kept here,
+// so the lists can be built afterwards in an order that does not depend on which thread ran which pair
+struct CNavArea::VisPair_t
 {
-	CNavArea *area = assert_cast< CNavArea * >( pOtherArea );
-	VisibilityType visThisToOther = ( area == g_pCurVisArea ) ? COMPLETELY_VISIBLE : NOT_VISIBLE;
+	CNavArea *other;
+	int source;							// index in TheNavAreas of the area whose collector holds 'other'
+	unsigned char visSourceToOther;		// goes into the source area's list
+	unsigned char visOtherToSource;		// goes into the other area's list
+};
+
+// each source area's PVS, in TheNavAreas order, since SetupPVS fills one shared buffer
+static const byte *s_pVisPassPVS;
+
+void CNavArea::ComputeVisPair( VisPair_t &pair )
+{
+	CNavArea *source = TheNavAreas[ pair.source ];
+	CNavArea *area = pair.other;
+	VisibilityType visThisToOther = ( area == source ) ? COMPLETELY_VISIBLE : NOT_VISIBLE;
 	VisibilityType visOtherToThis = NOT_VISIBLE;
 
-	if ( area != g_pCurVisArea )
+	if ( area != source )
 	{
-		bool bOutsidePVS;
+		const byte *pvs = s_pVisPassPVS + pair.source * sizeof( m_PVS );
+		bool bOutsidePVS = false;
 
-		visOtherToThis = g_pCurVisArea->ComputeVisibility( area, true, true, &bOutsidePVS ); // TODO: Hacky right now. Compute visibility for the "complete" case actually returns how completely visible the area is to the other. Should fix it to be more clear [1/30/2009 tom]
+		visOtherToThis = source->ComputeVisibility( area, true, true, &bOutsidePVS, pvs ); // TODO: Hacky right now. Compute visibility for the "complete" case actually returns how completely visible the area is to the other. Should fix it to be more clear [1/30/2009 tom]
 
-		if ( !bOutsidePVS && ( visOtherToThis || ( g_pCurVisArea->GetCenter() - area->GetCenter() ).LengthSqr() < Sqr( nav_max_view_distance.GetFloat() ) ) )
+		if ( !bOutsidePVS && ( visOtherToThis || ( source->GetCenter() - area->GetCenter() ).LengthSqr() < Sqr( nav_max_view_distance.GetFloat() ) ) )
 		{
-			visThisToOther = area->ComputeVisibility( g_pCurVisArea, true, false );
+			visThisToOther = area->ComputeVisibility( source, true, false );
 		}
 
 		if ( !visOtherToThis && visThisToOther )
@@ -5644,73 +5745,130 @@ void CNavArea::ComputeVisToArea( CNavArea *&pOtherArea )
 		}
 	}
 
-	CNavArea::AreaBindInfo info;
-	if ( visThisToOther != NOT_VISIBLE )
-	{
-		info.area = area;
-		info.attributes = visThisToOther;
-		g_ComputedVis.PushItem( info );
-	}
-
-	if ( visOtherToThis != NOT_VISIBLE )
-	{
-		info.area = g_pCurVisArea;
-		info.attributes = visOtherToThis;
-		area->m_potentiallyVisibleAreas.AddToTail( info );
-	}
+	pair.visSourceToOther = visThisToOther;
+	pair.visOtherToSource = visOtherToThis;
 }
 
 
 //--------------------------------------------------------------------------------------------------------
 /**
- * Determine visibility from this area to all potentially/completely visible areas in the mesh
+ * Compute the visibility of every area of the mesh in one pass:
+ * the pairs of all areas are collected first and traced in one ParallelProcess call,
+ * so the pool threads stay busy for the whole pass instead of one short batch per area.
+ * The lists are then built in the order one thread visiting the areas one by one produced:
+ *
+ *   for each area A in TheNavAreas order:
+ *     append ( A, vis ) to each other area B of A's pairs, in collector order
+ *     append ( B, vis ) to A, in reverse collector order (the order a last in, first out stack gave)
  */
-void CNavArea::ComputeVisibilityToMesh( void )
+void CNavArea::ComputeMeshVisibility( void )
 {
-	m_inheritVisibilityFrom.area = NULL;
-	m_isInheritedFrom = false;
-
-	// collect all possible nav areas that could be visible from this area
-	NavAreaCollector collector;
+	const int areaCount = TheNavAreas.Count();
 	float radius = nav_max_view_distance.GetFloat();
 	if ( radius == 0.0f )
 	{
 		radius = DEF_NAV_VIEW_DISTANCE;
 	}
+
+	// an area's pairs: all possible nav areas that could be visible from it, less the ones already calculated,
+	// since an area's collector holds this area exactly when this area's holds it (the same center distance test)
+	NavAreaCollector collector;
 	collector.m_area.EnsureCapacity( 1000 );
-	TheNavMesh->ForAllAreasInRadius( collector, GetCenter(), radius );
-
-	NavVisPair_t visPair;
-	UtlHashHandle_t hHash;
-
-	// First eliminate the ones already calculated
-	for ( int i = collector.m_area.Count() - 1; i >= 0; --i )
+	auto collectPairs = [&]( CNavArea *source )
 	{
-		visPair.SetPair( this, collector.m_area[i] );
+		collector.m_area.RemoveAll();
+		TheNavMesh->ForAllAreasInRadius( collector, source->GetCenter(), radius );
 
-		hHash = g_pNavVisPairHash->Find( visPair );
-		if ( hHash != g_pNavVisPairHash->InvalidHandle() )
+		for ( int i = collector.m_area.Count() - 1; i >= 0; --i )
 		{
-			collector.m_area.FastRemove( i );
+			if ( collector.m_area[ i ]->m_isVisibilityComputed )
+			{
+				collector.m_area.FastRemove( i );
+			}
 		}
+
+		source->m_isVisibilityComputed = true;
+	};
+
+	// count the pairs first, so the pair list is allocated once instead of doubling as it grows
+	int pairCount = 0;
+	FOR_EACH_VEC( TheNavAreas, it )
+	{
+		collectPairs( TheNavAreas[ it ] );
+		pairCount += collector.m_area.Count();
 	}
 
-	SetupPVS();
-
-	g_pCurVisArea = this;
-	ParallelProcess( "CNavArea::ComputeVisibilityToMesh", collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea );
-
-	m_potentiallyVisibleAreas.EnsureCapacity( g_ComputedVis.Count() );
-	while ( g_ComputedVis.Count() )
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		g_ComputedVis.PopItem( &m_potentiallyVisibleAreas[ m_potentiallyVisibleAreas.AddToTail() ] );
+		TheNavAreas[ it ]->m_isVisibilityComputed = false;
 	}
 
-	FOR_EACH_VEC( collector.m_area, it )
+	CUtlVector< VisPair_t > pairs;
+	pairs.EnsureCapacity( pairCount );
+	CUtlVector< int > firstPair;
+	firstPair.SetCount( areaCount + 1 );
+	CUtlVector< byte > pvs;
+	pvs.SetCount( areaCount * sizeof( m_PVS ) );
+
+	for ( int a = 0; a < areaCount; ++a )
 	{
-		visPair.SetPair( this, (CNavArea *)collector.m_area[it] );
-		Assert( g_pNavVisPairHash->Find( visPair ) == g_pNavVisPairHash->InvalidHandle() );
-		g_pNavVisPairHash->Insert( visPair );
+		CNavArea *source = TheNavAreas[ a ];
+		source->m_inheritVisibilityFrom.area = NULL;
+		source->m_isInheritedFrom = false;
+
+		collectPairs( source );
+
+		firstPair[ a ] = pairs.Count();
+		FOR_EACH_VEC( collector.m_area, it )
+		{
+			VisPair_t &pair = pairs[ pairs.AddToTail() ];
+			pair.other = collector.m_area[ it ];
+			pair.source = a;
+			pair.visSourceToOther = NOT_VISIBLE;
+			pair.visOtherToSource = NOT_VISIBLE;
+		}
+
+		source->SetupPVS();
+		V_memcpy( pvs.Base() + a * sizeof( m_PVS ), m_PVS, sizeof( m_PVS ) );
+	}
+	firstPair[ areaCount ] = pairs.Count();
+
+	// ParallelProcess runs one job per pool thread besides the caller
+	IThreadPool *pool = CreateThreadPool();
+	ThreadPoolStartParams_t params( false, NAV_VIS_THREADS - 1 );
+	pool->Start( params );
+
+	s_pVisPassPVS = pvs.Base();
+	ParallelProcess( "CNavArea::ComputeMeshVisibility", pool, pairs.Base(), pairs.Count(), &ComputeVisPair );
+	s_pVisPassPVS = NULL;
+
+	pool->Stop();
+	DestroyThreadPool( pool );
+
+	for ( int a = 0; a < areaCount; ++a )
+	{
+		CNavArea *source = TheNavAreas[ a ];
+		AreaBindInfo info;
+
+		for ( int i = firstPair[ a ]; i < firstPair[ a + 1 ]; ++i )
+		{
+			if ( pairs[ i ].visOtherToSource != NOT_VISIBLE )
+			{
+				info.area = source;
+				info.attributes = pairs[ i ].visOtherToSource;
+				pairs[ i ].other->m_potentiallyVisibleAreas.AddToTail( info );
+			}
+		}
+
+		for ( int i = firstPair[ a + 1 ] - 1; i >= firstPair[ a ]; --i )
+		{
+			if ( pairs[ i ].visSourceToOther != NOT_VISIBLE )
+			{
+				info.area = pairs[ i ].other;
+				info.attributes = pairs[ i ].visSourceToOther;
+				source->m_potentiallyVisibleAreas.AddToTail( info );
+			}
+		}
 	}
 }
 

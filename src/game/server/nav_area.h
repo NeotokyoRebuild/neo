@@ -504,7 +504,7 @@ public:
 		COMPLETELY_VISIBLE		= 0x02,
 	};
 
-	VisibilityType ComputeVisibility( const CNavArea *area, bool isPVSValid, bool bCheckPVS = true, bool *pOutsidePVS = NULL ) const;	// do actual line-of-sight traces to determine if any part of given area is visible from this area
+	VisibilityType ComputeVisibility( const CNavArea *area, bool isPVSValid, bool bCheckPVS = true, bool *pOutsidePVS = NULL, const byte *pPVS = NULL ) const;	// do actual line-of-sight traces to determine if any part of given area is visible from this area; pPVS replaces the current PVS when given
 	void SetupPVS( void ) const;
 	bool IsInPVS( void ) const;					// return true if this area is within the current PVS
 
@@ -752,9 +752,10 @@ private:
 
 
 	//- visibility --------------------------------------------------------------------------------------
-	void ComputeVisibilityToMesh( void );						// compute visibility to surrounding mesh
+	static void ComputeMeshVisibility( void );					// compute visibility between all areas of the mesh in one pass
 	void ResetPotentiallyVisibleAreas();
-	static void ComputeVisToArea( CNavArea *&pOtherArea );
+	struct VisPair_t;
+	static void ComputeVisPair( VisPair_t &pair );
 
 #ifndef _X360
 	typedef CUtlVectorConservative<AreaBindInfo> CAreaBindInfoArray; // shaves 8 bytes off structure caused by need to support editing
@@ -765,6 +766,7 @@ private:
 	AreaBindInfo m_inheritVisibilityFrom;						// if non-NULL, m_potentiallyVisibleAreas becomes a list of additions and deletions (NOT_VISIBLE) to the list of this area
 	CAreaBindInfoArray m_potentiallyVisibleAreas;				// list of areas potentially visible from inside this area (after PostLoad(), use area portion of union)
 	bool m_isInheritedFrom;										// latch used during visibility inheritance computation
+	bool m_isVisibilityComputed;								// set once this area's visibility pairs are computed, so later areas skip them
 
 	const CAreaBindInfoArray &ComputeVisibilityDelta( const CNavArea *other ) const;	// return a list of the delta between our visibility list and the given adjacent area
 
