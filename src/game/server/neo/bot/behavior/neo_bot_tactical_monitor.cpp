@@ -317,6 +317,113 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForLadders( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
+// How often a bot looks for a deployed detpack it can see
+static constexpr float ENEMY_DETPACK_CHECK_INTERVAL = 0.5f;
+// A detpack is small: a bot notices one only within this range
+static constexpr float DETPACK_NOTICE_RANGE = 1000.0f;
+
+//-----------------------------------------------------------------------------------------
+// Whether I know the plan behind a detpack: my own, or a teammate's, who would have told me
+static bool IsFriendlyDetpack( const CNEOBot *me, CBaseEntity *pDetpack )
+{
+	const CBaseEntity *pOwner = static_cast< CBaseGrenade* >( pDetpack )->GetThrower();
+	if ( !pOwner )
+	{
+		return false;
+	}
+
+	if ( pOwner == me )
+	{
+		return true;
+	}
+
+	return NEORules()->IsTeamplay() && ( pOwner->GetTeamNumber() == me->GetTeamNumber() );
+}
+
+//-----------------------------------------------------------------------------------------
+// When I see a detpack that is not my team's, mark its blast radius as deadly for my team
+void CNEOBotTacticalMonitor::MonitorEnemyDetpack( CNEOBot *me )
+{
+	if ( !m_enemyDetpackTimer.IsElapsed() )
+	{
+		return;
+	}
+
+	m_enemyDetpackTimer.Start( ENEMY_DETPACK_CHECK_INTERVAL );
+
+	// one entity search every half second, shared by every bot, while no detpack is deployed
+	const CUtlVector< DeployedDetpack_t > &detpacks = CNEOBotPathReservations()->GetDeployedDetpacks();
+	if ( detpacks.Count() == 0 )
+	{
+		return;
+	}
+
+	const int iTeam = me->GetTeamNumber();
+	const CNavArea *myArea = me->GetLastKnownArea();
+	for ( int i = 0; i < detpacks.Count(); ++i )
+	{
+		CBaseEntity *pDetpack = detpacks[i].hDetpack.Get();
+		if ( !pDetpack || IsFriendlyDetpack( me, pDetpack ) )
+		{
+			continue;
+		}
+
+		if ( CNEOBotPathReservations()->IsDetpackMarkFresh( pDetpack, iTeam ) )
+		{
+			continue;
+		}
+
+		if ( me->GetAbsOrigin().DistToSqr( pDetpack->GetAbsOrigin() ) > Square( DETPACK_NOTICE_RANGE ) )
+		{
+			continue;
+		}
+
+		// the nav visibility lists rule out most detpacks before any trace
+		if ( myArea && detpacks[i].pArea && !myArea->IsPotentiallyVisible( detpacks[i].pArea ) )
+		{
+			continue;
+		}
+
+		if ( me->GetVisionInterface()->IsAbleToSee( pDetpack, IVision::USE_FOV ) )
+		{
+			CNEOBotPathReservations()->MarkDetpackBlast( pDetpack, iTeam );
+		}
+	}
+
+	RepathAroundNewDetpackMark( me );
+}
+
+//-----------------------------------------------------------------------------------------
+// A path computed before my team marked a detpack may run through its blast radius: drop it so my behavior re-paths
+void CNEOBotTacticalMonitor::RepathAroundNewDetpackMark( CNEOBot *me )
+{
+	const int iTeam = me->GetTeamNumber();
+	const float flMarkTime = CNEOBotPathReservations()->GetLastDetpackMarkTime( iTeam );
+	const PathFollower *path = me->GetCurrentPath();
+	if ( ( flMarkTime < 0.0f ) || !path || !path->IsValid() )
+	{
+		return;
+	}
+
+	const float flPathBuiltTime = gpGlobals->curtime - path->GetAge();
+	if ( flPathBuiltTime >= flMarkTime )
+	{
+		return;
+	}
+
+	for ( const Path::Segment *seg = path->GetCurrentGoal(); seg; seg = path->NextSegment( seg ) )
+	{
+		if ( seg->area && CNEOBotPathReservations()->IsAreaDetpackHazard( seg->area->GetID(), iTeam ) )
+		{
+			// the follower is owned by the active behavior, which recomputes an invalid path on its next update
+			const_cast< PathFollower* >( path )->Invalidate();
+			return;
+		}
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
 	if ( neo_bot_force_jump.GetBool() )
@@ -343,6 +450,9 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	{
 		return SuspendFor( new CNEOBotPathClearBreakable( breakable ), "Clearing breakable in path" );
 	}
+
+	// before the hazard check below, so a bot reacts to a new mark on this update even when hurrying
+	MonitorEnemyDetpack( me );
 
 	const bool bInAHurry = ( me->GetIntentionInterface()->ShouldHurry( me ) == ANSWER_YES );
 

@@ -3,6 +3,7 @@
 #include "neo/bot/neo_bot.h"
 #include "nav_mesh.h"
 #include "neo_gamerules.h"
+#include "neo/neo_detpack.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -205,6 +206,7 @@ void CNEOBotPathReservationSystem::ClearRound()
     {
         m_Reservations[team].RemoveAll();
         m_HazardAreas[team].RemoveAll();
+        m_DetpackMarks[team].RemoveAll();
     }
     m_BotReservedAreas.RemoveAll();
 
@@ -340,6 +342,7 @@ void CNEOBotPathReservationSystem::AddDeadlyHazard(int navAreaID, float expireTi
 		blank.hazardExpireTime = expireTime;
 		blank.smokeExpireTime = 0.0f;
 		blank.smokePropagateTime = 0.0f;
+		blank.detpackExpireTime = 0.0f;
 		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
 	}
     else
@@ -414,6 +417,7 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
 		blank.hazardExpireTime = 0.0f;
 		blank.smokeExpireTime = expireTime;
 		blank.smokePropagateTime = 0.0f;
+		blank.detpackExpireTime = 0.0f;
 		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
 	}
     else
@@ -494,4 +498,236 @@ float CNEOBotPathReservationSystem::GetAreaHazardousTime(int navAreaID, const CN
 bool CNEOBotPathReservationSystem::IsAreaHazardous(int navAreaID, const CNEOBot *me) const
 {
    return GetAreaHazardousTime(navAreaID, me) > 0;
+}
+
+// How often the server looks for any deployed detpack, so bots skip the sight check when there is none
+static constexpr float DETPACK_SCAN_INTERVAL = 0.5f;
+// How long the areas in a seen detpack's blast radius stay blocked after the last sighting
+static constexpr float DETPACK_HAZARD_DURATION = 15.0f;
+// and how long a team waits before refreshing that mark, so many bots seeing one detpack mark it once
+static constexpr float DETPACK_REMARK_INTERVAL = 5.0f;
+// The area search reaches this far past the blast,
+// since a large nav area's center can lie outside it while its floor is inside
+static constexpr float DETPACK_AREA_SEARCH_MARGIN = 256.0f;
+
+//-------------------------------------------------------------------------------------------------
+// The detpacks lying in the world, refreshed at most every half second for all bots
+const CUtlVector<DeployedDetpack_t> &CNEOBotPathReservationSystem::GetDeployedDetpacks()
+{
+	// a map change resets curtime, so a scan time far in the future is stale
+	const bool bScanDue = ( gpGlobals->curtime >= m_flNextDetpackScan )
+		|| ( m_flNextDetpackScan > gpGlobals->curtime + DETPACK_SCAN_INTERVAL );
+	if ( !bScanDue )
+	{
+		return m_DeployedDetpacks;
+	}
+
+	m_flNextDetpackScan = gpGlobals->curtime + DETPACK_SCAN_INTERVAL;
+	m_DeployedDetpacks.RemoveAll();
+	for ( CBaseEntity *pEnt = gEntList.FindEntityByClassname( nullptr, "neo_deployed_detpack" ); pEnt;
+		pEnt = gEntList.FindEntityByClassname( pEnt, "neo_deployed_detpack" ) )
+	{
+		DeployedDetpack_t &det = m_DeployedDetpacks[m_DeployedDetpacks.AddToTail()];
+		det.hDetpack = pEnt;
+		det.pArea = TheNavMesh->GetNearestNavArea( pEnt->GetAbsOrigin() );
+	}
+
+	if ( m_DeployedDetpacks.Count() == 0 )
+	{
+		ClearDetpackMarks();
+	}
+
+	return m_DeployedDetpacks;
+}
+
+//-------------------------------------------------------------------------------------------------
+// Whether my team marked this detpack recently enough that seeing it again changes nothing
+bool CNEOBotPathReservationSystem::IsDetpackMarkFresh( const CBaseEntity *pDetpack, int teamID ) const
+{
+	if ( ( teamID < 0 ) || ( teamID >= TEAM__TOTAL ) )
+	{
+		return false;
+	}
+
+	const CUtlVector<DetpackMark_t> &marks = m_DetpackMarks[teamID];
+	for ( int i = 0; i < marks.Count(); ++i )
+	{
+		if ( ( marks[i].hDetpack.Get() == pDetpack ) && ( gpGlobals->curtime < marks[i].flMarkTime + DETPACK_REMARK_INTERVAL ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//-------------------------------------------------------------------------------------------------
+// Marks every nav area whose floor reaches into the blast, not only those whose center does
+struct CNEOFunctorMarkDetpackHazard
+{
+	CNEOFunctorMarkDetpackHazard( const Vector &vecBlast, float expireTime, int teamID )
+		: m_vecBlast( vecBlast ), m_expireTime( expireTime ), m_teamID( teamID )
+	{
+	}
+
+	bool operator()( CNavArea *area )
+	{
+		if ( area->GetDistanceSquaredToPoint( m_vecBlast ) <= Square( NEO_DETPACK_DAMAGE_RADIUS ) )
+		{
+			CNEOBotPathReservations()->AddDetpackHazard( area->GetID(), m_expireTime, m_teamID );
+		}
+		return true;
+	}
+
+	Vector m_vecBlast;
+	float m_expireTime;
+	int m_teamID;
+};
+
+//-------------------------------------------------------------------------------------------------
+// Marks the nav areas within a detpack's blast radius as deadly on every route for a team.
+// Returns true when this is the first mark of that detpack, so bots with a path through it re-path.
+bool CNEOBotPathReservationSystem::MarkDetpackBlast( CBaseEntity *pDetpack, int teamID )
+{
+	if ( !pDetpack || ( teamID < 0 ) || ( teamID >= TEAM__TOTAL ) )
+	{
+		return false;
+	}
+
+	if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
+	{
+		return false;
+	}
+
+	CUtlVector<DetpackMark_t> &marks = m_DetpackMarks[teamID];
+	DetpackMark_t *pMark = nullptr;
+	for ( int i = marks.Count() - 1; i >= 0; --i )
+	{
+		if ( !marks[i].hDetpack.Get() )
+		{
+			marks.FastRemove( i );
+			continue;
+		}
+
+		if ( marks[i].hDetpack.Get() == pDetpack )
+		{
+			pMark = &marks[i];
+		}
+	}
+
+	if ( pMark && ( gpGlobals->curtime < pMark->flMarkTime + DETPACK_REMARK_INTERVAL ) )
+	{
+		return false;
+	}
+
+	const bool bFirstMark = ( pMark == nullptr );
+	if ( bFirstMark )
+	{
+		pMark = &marks[marks.AddToTail()];
+		pMark->hDetpack = pDetpack;
+		pMark->flFirstMarkTime = gpGlobals->curtime;
+	}
+
+	pMark->flMarkTime = gpGlobals->curtime;
+
+	const Vector &vecBlast = pDetpack->GetAbsOrigin();
+	CNEOFunctorMarkDetpackHazard mark( vecBlast, gpGlobals->curtime + DETPACK_HAZARD_DURATION, teamID );
+	TheNavMesh->ForAllAreasInRadius( mark, vecBlast, NEO_DETPACK_DAMAGE_RADIUS + DETPACK_AREA_SEARCH_MARGIN );
+	return bFirstMark;
+}
+
+//-------------------------------------------------------------------------------------------------
+// A detpack mark is also a general deadly hazard, so default routes, cover searches and the hazard escape see it
+void CNEOBotPathReservationSystem::AddDetpackHazard( int navAreaID, float expireTime, int teamID )
+{
+	AddDeadlyHazard( navAreaID, expireTime, teamID );
+
+	const int index = m_HazardAreas[teamID].Find( navAreaID );
+	if ( m_HazardAreas[teamID].IsValidIndex( index ) )
+	{
+		m_HazardAreas[teamID][index].detpackExpireTime = expireTime;
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+bool CNEOBotPathReservationSystem::IsAreaDetpackHazard( int navAreaID, int teamID ) const
+{
+	if ( ( teamID < 0 ) || ( teamID >= TEAM__TOTAL ) || ( m_DetpackMarks[teamID].Count() == 0 ) )
+	{
+		return false;
+	}
+
+	const int index = m_HazardAreas[teamID].Find( navAreaID );
+	if ( !m_HazardAreas[teamID].IsValidIndex( index ) )
+	{
+		return false;
+	}
+
+	return m_HazardAreas[teamID][index].detpackExpireTime > gpGlobals->curtime;
+}
+
+//-------------------------------------------------------------------------------------------------
+// Once every detpack has blown or been removed, its blast radius no longer blocks anything
+void CNEOBotPathReservationSystem::ClearDetpackMarks()
+{
+	for ( int team = 0; team < TEAM__TOTAL; ++team )
+	{
+		if ( m_DetpackMarks[team].Count() == 0 )
+		{
+			continue;
+		}
+
+		m_DetpackMarks[team].RemoveAll();
+		FOR_EACH_MAP_FAST( m_HazardAreas[team], i )
+		{
+			HazardInfo &h = m_HazardAreas[team][i];
+			if ( h.detpackExpireTime > gpGlobals->curtime )
+			{
+				h.detpackExpireTime = 0.0f;
+				h.hazardExpireTime = 0.0f;
+			}
+		}
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+bool CNEOBotPathReservationSystem::HasDetpackMark( int teamID ) const
+{
+	if ( ( teamID < 0 ) || ( teamID >= TEAM__TOTAL ) )
+	{
+		return false;
+	}
+
+	const CUtlVector<DetpackMark_t> &marks = m_DetpackMarks[teamID];
+	for ( int i = 0; i < marks.Count(); ++i )
+	{
+		if ( marks[i].hDetpack.Get() && ( marks[i].flMarkTime + DETPACK_HAZARD_DURATION > gpGlobals->curtime ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//-------------------------------------------------------------------------------------------------
+// When the team last saw a detpack it had not marked yet, or -1 when it has no mark
+float CNEOBotPathReservationSystem::GetLastDetpackMarkTime( int teamID ) const
+{
+	if ( ( teamID < 0 ) || ( teamID >= TEAM__TOTAL ) )
+	{
+		return -1.0f;
+	}
+
+	float flLast = -1.0f;
+	const CUtlVector<DetpackMark_t> &marks = m_DetpackMarks[teamID];
+	for ( int i = 0; i < marks.Count(); ++i )
+	{
+		if ( marks[i].hDetpack.Get() )
+		{
+			flLast = MAX( flLast, marks[i].flFirstMarkTime );
+		}
+	}
+
+	return flLast;
 }
