@@ -68,11 +68,27 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"25"
-		"forward"	"8"
+		"forward"		"8"
 		"right"		"1.305"
-		"up"		"4.1"
-		//"pitch"     "-1.8"
+		"up"		"5.5"
+		"pitch"		"0"
+		"yaw"		"0"
+		"roll"		"0"
+	}
+
+	"AdsOptic"
+	{
+		"window"	"1"
+		"reticle"	"vgui/hud/optics/m41_reticle"
+		// Both panes carry the glass art: hide it and draw it once.
+		"lens"		"models/weapons/mosok41_mat3"
+		"one_pane"	"1"
+		"lens_bone"	"Mosok41"
+		"lens_map"	"0.756 -15.976 10.134  -3.266 0 0  0 0 -3.266"
+		"lens_map2"	"0.756 -16.245 10.139  -3.266 0 0  0 0 -3.266"
+		"window_glass"	"0.078 0.229  0.078 0.972  0.249 0.030  0.775 0.030  0.947 0.229  0.947 0.972"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)

@@ -1601,6 +1601,8 @@ set(UNITY_SOURCE_NEO_SRC_CLIENT
     neo/neo_fixup_glshaders.cpp
     neo/c_neo_bloom_controller.cpp
     neo/c_neo_killer_damage_infos.cpp
+    neo/neo_ads_lens.cpp
+    neo/neo_ads_optic.cpp
 )
 
 set_source_files_properties(
@@ -1619,6 +1621,8 @@ target_sources_grouped(
     neo/c_neo_te_tocflash.h
     neo/neo_fixup_glshaders.h
     neo/c_neo_killer_damage_infos.h
+    neo/neo_ads_lens.h
+    neo/neo_ads_optic.h
     ${UNITY_SOURCE_NEO_SRC_CLIENT}
 )
 
@@ -1750,6 +1754,7 @@ target_sources_grouped(
 
 set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ads.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
@@ -1780,6 +1785,7 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/nav_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ads.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
@@ -1842,6 +1848,7 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\Shared\\Weapons"
     FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_ads_optic_info.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
@@ -1877,6 +1884,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_types.h
     ${UNITY_SOURCE_NEO_WEAPONS}
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_ads_optic_info.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/neo_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobaseprojectile.cpp
