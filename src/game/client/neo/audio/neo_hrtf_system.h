@@ -91,6 +91,7 @@ private:
 		CUtlVector<int16> m_samples; // mono at m_sampleRate; empty = unplayable, left to the engine
 		int m_sampleRate = 0;
 		int m_loopStart = -1; // sample index to loop back to, -1 for one-shots
+		float m_distMult = 0.0f; // engine dist_mult of the sound's scripted level, 0 = no falloff
 	};
 
 	// How the audio thread is to play a voice this frame.
@@ -106,6 +107,7 @@ private:
 	// Game thread only.
 	struct Voice
 	{
+		// Game thread only.
 		bool m_bInUse = false;
 		int m_guid = 0;
 		// A new one for every sound the slot plays, so the other threads can tell a slot's new sound

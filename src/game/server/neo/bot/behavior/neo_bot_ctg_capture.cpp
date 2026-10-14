@@ -4,6 +4,7 @@
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/neo_bot_path_compute.h"
 #include "weapon_ghost.h"
+#include "NextBotUtil.h"
 
 namespace
 {

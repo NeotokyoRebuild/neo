@@ -442,8 +442,8 @@ fully, with its material's transmission, and moving or releasing it restores the
 
 ## Trying it
 
-1. Build normally. CMake fetches the Steam Audio 4.8.1 SDK once and copies its library next to
-   `client` (`NEO_STEAMAUDIO=OFF` builds without HRTF; `NEO_STEAMAUDIO_SDK_PATH` uses a local SDK).
+1. Configure with `-DNEO_STEAMAUDIO=ON` (off by default). CMake then fetches the Steam Audio 4.8.1 SDK
+   once and copies its library next to `client` (`NEO_STEAMAUDIO_SDK_PATH` uses a local SDK).
 2. In game, with headphones: `cl_neo_hrtf 1`; A/B against the engine's own panning with
    `cl_neo_hrtf 0`. `cl_neo_hrtf_debug 1` overlays the status and a line per voice. Player pings
    and bots firing are easy sources; walk behind a wall and toggle `cl_neo_hrtf_occlusion`.

@@ -10,25 +10,25 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-class CNEOSpawnPoint_Jinrai : public CNEOSpawnPoint
+class CNEOSpawnPoint_Attacker : public CNEOSpawnPoint
 {
 public:
-	CNEOSpawnPoint_Jinrai() : CNEOSpawnPoint()
+	CNEOSpawnPoint_Attacker() : CNEOSpawnPoint()
 	{
-		m_iOwningTeam = TEAM_JINRAI;
+		m_eSide = E_TeamSide::Attacker;
 	}
 };
-LINK_ENTITY_TO_CLASS(info_player_attacker, CNEOSpawnPoint_Jinrai);
+LINK_ENTITY_TO_CLASS(info_player_attacker, CNEOSpawnPoint_Attacker);
 
-class CNEOSpawnPoint_NSF : public CNEOSpawnPoint
+class CNEOSpawnPoint_Defender : public CNEOSpawnPoint
 {
 public:
-	CNEOSpawnPoint_NSF() : CNEOSpawnPoint()
+	CNEOSpawnPoint_Defender() : CNEOSpawnPoint()
 	{
-		m_iOwningTeam = TEAM_NSF;
+		m_eSide = E_TeamSide::Defender;
 	}
 };
-LINK_ENTITY_TO_CLASS(info_player_defender, CNEOSpawnPoint_NSF);
+LINK_ENTITY_TO_CLASS(info_player_defender, CNEOSpawnPoint_Defender);
 
 #ifdef GAME_DLL
 IMPLEMENT_SERVERCLASS_ST(CNEOSpawnPoint, DT_NEOSpawnPoint)
@@ -55,7 +55,7 @@ END_DATADESC()
 
 CNEOSpawnPoint::CNEOSpawnPoint()
 {
-	m_iOwningTeam = TEAM_UNASSIGNED;
+	m_eSide = E_TeamSide::Unspecified;
 }
 
 CNEOSpawnPoint::~CNEOSpawnPoint()
@@ -69,7 +69,7 @@ void CNEOSpawnPoint::Spawn()
 {
 	BaseClass::Spawn();
 
-	AssertMsg(m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF || m_iOwningTeam == TEAM_ANY,
+	AssertMsg(m_eSide == E_TeamSide::Unspecified || m_eSide == E_TeamSide::Attacker || m_eSide == E_TeamSide::Defender,
 		"CNEOSpawnPoint shouldn't be instantiated directly; use info_player_attacker/defender instead!\n");
 
 #if(0)
@@ -85,13 +85,20 @@ void CNEOSpawnPoint::Spawn()
 
 int CNEOSpawnPoint::GetOwningTeam() const
 {
-	const bool alternate = NEORules()->roundNumberIsEven();
-	int owningTeam = m_iOwningTeam;
-	if (!alternate && owningTeam != TEAM_ANY)
+	switch (m_eSide)
 	{
-		owningTeam = (owningTeam == TEAM_JINRAI) ? TEAM_NSF : (owningTeam == TEAM_NSF) ? TEAM_JINRAI : owningTeam;
+	case E_TeamSide::Attacker:
+		return NEORules()->GetAttackingTeam();
+	case E_TeamSide::Defender:
+		return NEORules()->GetDefendingTeam();
+	default: 
+		return TEAM_ANY;
 	}
-	return owningTeam;
+}
+
+E_TeamSide CNEOSpawnPoint::GetSide() const
+{
+	return m_eSide;
 }
 
 #ifdef GAME_DLL

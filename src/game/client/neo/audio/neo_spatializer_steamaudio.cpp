@@ -424,7 +424,7 @@ public:
 			if (voice.directEffect)
 			{
 				m_api.iplDirectEffectRelease(&voice.directEffect);
-			}
+		}
 			if (voice.pathEffect)
 			{
 				m_api.iplPathEffectRelease(&voice.pathEffect);
@@ -518,8 +518,8 @@ public:
 			// reallocating filter state for every new sound.
 			if (!PrepareEffects(voice))
 			{
-				return INVALID_VOICE;
-			}
+					return INVALID_VOICE;
+				}
 
 			voice.inUse = true;
 			return static_cast<VoiceHandle>(i + 1);

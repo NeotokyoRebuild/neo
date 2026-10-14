@@ -107,8 +107,7 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 
 	if (me->IsCarryingGhost())
 	{
-		// Don't waste cloak power
-		// Incidentally flashing cloak is fine, everyone can see you anyway
+		// decloak a bot that picks up the ghost while cloaked, everyone can see a carrier anyway
 		me->DisableCloak();
 	}
 
@@ -202,7 +201,7 @@ EventDesiredResult<CNEOBot> CNEOBotMainAction::OnKilled( CNEOBot *me, const CTak
 	// Intended to add some variance to pathing for similar starting scenarios
 	if ( const CNavArea *navArea = me->GetLastKnownArea() )
 	{
-		CNEOBotPathReservations()->IncrementAreaAvoidPenalty( navArea->GetID(), neo_bot_path_reservation_killed_penalty.GetFloat() );
+		CNEOBotPathReservations()->IncrementAreaDeathPenalty( navArea->GetID(), neo_bot_path_reservation_killed_penalty.GetFloat() );
 	}
 	else
 	{
@@ -210,7 +209,7 @@ EventDesiredResult<CNEOBot> CNEOBotMainAction::OnKilled( CNEOBot *me, const CTak
 		CNavArea *nearestArea = TheNavMesh->GetNearestNavArea( me->GetAbsOrigin() );
 		if ( nearestArea )
 		{
-			CNEOBotPathReservations()->IncrementAreaAvoidPenalty( nearestArea->GetID(), neo_bot_path_reservation_killed_penalty.GetFloat() );
+			CNEOBotPathReservations()->IncrementAreaDeathPenalty( nearestArea->GetID(), neo_bot_path_reservation_killed_penalty.GetFloat() );
 		}
 	}
 

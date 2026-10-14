@@ -915,7 +915,7 @@ SOFTWARE.
 Steam Audio
 ************************************************************************************
 
-Copyright 2017-2023 Valve Corporation.
+Copyright 2017-2026 Valve Corporation.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

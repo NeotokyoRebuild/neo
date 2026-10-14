@@ -9,6 +9,9 @@
 #include "nav_mesh.h"
 #include "nav_pathfind.h"
 #include "NextBotPath.h"
+#ifdef NEO
+#include "neo/bot/neo_bot_path_obstacles.h"
+#endif
 
 class INextBot;
 class ILocomotion;
@@ -41,6 +44,10 @@ public:
 	void SetGoalTolerance( float range );			// set tolerance within at which we're considered to be at our goal
 
 	Path::ResultType GetResult() const { return m_result;  }
+
+#ifdef NEO
+	CBaseEntity *GetBreakableInWay() const { return m_pathObstacles.GetBreakableInWay(); }	// a breakable the last look ahead met on the path
+#endif
 
 private:
 	const Path::Segment *m_goal;					// our current goal along the path
@@ -82,7 +89,11 @@ private:
 
 #ifdef NEO
 	bool HasFallenBelowPath( INextBot *bot ) const;	// return true if we stand off the path, more than a step below it
+	const CNavArea *LadderCapAhead( INextBot *bot ) const;	// return the ladder top shallower than a hull the climb ahead is onto, or NULL
 	bool m_wasOnGround;
+	CNEOBotPathObstacles m_pathObstacles;			// looks ahead for props to steer around and breakables in the way
+	const Path::Segment *m_capClimbGoal;			// the climb onto a ladder's wall cap m_capLaunches counts
+	int m_capLaunches;
 #endif
 
 	float m_goalTolerance;

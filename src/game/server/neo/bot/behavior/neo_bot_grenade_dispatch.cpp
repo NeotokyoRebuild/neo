@@ -15,9 +15,16 @@ ConVar sv_neo_bot_grenade_use_frag("sv_neo_bot_grenade_use_frag", "1", FCVAR_NON
 ConVar sv_neo_bot_grenade_use_smoke("sv_neo_bot_grenade_use_smoke", "1", FCVAR_NONE, "Allow bots to use smoke grenades", true, 0, true, 1);
 ConVar sv_neo_bot_grenade_throw_cooldown("sv_neo_bot_grenade_throw_cooldown", "10", FCVAR_NONE, "Cooldown in seconds between grenade throws for bots");
 
+extern ConVar neo_bot_fire_weapon_allowed;
+
 //---------------------------------------------------------------------------------------------
 Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNEOBot *me, const CKnownEntity *threat )
 {
+	if ( !neo_bot_fire_weapon_allowed.GetBool() )
+	{
+		return nullptr;
+	}
+
 	if (!sv_neo_bot_grenade_use_frag.GetBool() && !sv_neo_bot_grenade_use_smoke.GetBool())
 	{
 		return nullptr;
