@@ -38,6 +38,8 @@
 #ifdef NEO
 #include "nav_shared.h"
 #include "modelentities.h"
+#include "props.h"
+#include "BasePropDoor.h"
 #endif // NEO
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -5366,8 +5368,14 @@ static bool IsNavVisionStatic( CBaseEntity *pEntity )
 		return false;
 	}
 
-	// a brush entity that is only a wall, the one kind of pusher that never moves unless it is named or parented
+	// brush walls and model props are pushers too, but unless named or parented they never move,
+	// and their collision does not follow their animation
 	if ( dynamic_cast< CFuncBrush * >( pEntity ) )
+	{
+		return true;
+	}
+
+	if ( dynamic_cast< CDynamicProp * >( pEntity ) && !dynamic_cast< CBasePropDoor * >( pEntity ) )
 	{
 		return true;
 	}
