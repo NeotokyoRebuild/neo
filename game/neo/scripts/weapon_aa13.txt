@@ -6,6 +6,8 @@ WeaponData
 	"Damage"				"25"
 	"Bullets"				"5"
 	"CycleTime"				"0.333"
+	"ReloadReadyTime"	"4.200"		// reload is done at the last reload click, the animation plays on to its end;
+								// the charging handle is home at 4.333, the alternative value
 	
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"				"AA13"
