@@ -832,6 +832,16 @@ void PathFollower::Update( INextBot *bot )
 	const bool hasJustLanded = isOnGround && !m_wasOnGround;
 	m_wasOnGround = isOnGround;
 
+	// a bot that skipped a drop's landing in the air can come down on a ledge part way down,
+	// so aim for the top of the drop again instead of the path past the landing it missed
+	const Path::Segment *landing = hasJustLanded ? PriorSegment( m_goal ) : NULL;
+	const Path::Segment *dropTop = landing ? PriorSegment( landing ) : NULL;
+	const float feetZ = mover->GetFeet().z;
+	if ( dropTop && dropTop->type == DROP_DOWN && feetZ > landing->pos.z + mover->GetStepHeight() && feetZ < dropTop->pos.z - mover->GetStepHeight() )
+	{
+		m_goal = dropTop;
+	}
+
 	if ( hasJustLanded && HasFallenBelowPath( bot ) && IsNearNavMesh( bot ) )
 	{
 		mover->GetBot()->OnMoveToFailure( this, FAIL_FELL_OFF );
