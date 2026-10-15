@@ -498,6 +498,16 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 		AddEffects(EF_BONEMERGE);
 		m_bTriggerReset = true;
 
+		// An empty weapon draws with its slide held back where the model has that draw,
+		// which carries no activity, so it is picked by name
+		static constexpr const char *VM_SEQ_DRAW_EMPTY = "drawempty";
+		const int iDrawEmpty = (UsesClipsForAmmo1() && m_iClip1 <= 0) ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
+		if (iDrawEmpty != ACTIVITY_NOT_AVAILABLE)
+		{
+			SetSequence(iDrawEmpty);
+			SendViewModelAnim(iDrawEmpty);
+		}
+
 #ifdef DEBUG
 		CNEO_Player* pOwner = NULL;
 		if (GetOwner())
