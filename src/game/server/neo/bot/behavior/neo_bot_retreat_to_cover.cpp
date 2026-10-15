@@ -359,8 +359,9 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 			// may reach it any more, so choose again from here
 			if ( !CNEOBotPathReachesGoal( m_path ) )
 			{
+				CNavArea *pUnreachableArea = m_coverArea;
 				m_coverArea = FindCoverArea( me );
-				if ( m_coverArea == NULL )
+				if ( m_coverArea == NULL || m_coverArea == pUnreachableArea )
 				{
 					return Done( "My cover is out of reach, and there is no other cover available!" );
 				}
