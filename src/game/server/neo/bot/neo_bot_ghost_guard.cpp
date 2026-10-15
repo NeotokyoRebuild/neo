@@ -12,7 +12,7 @@
 extern ConVar sv_neo_grenade_blast_radius;
 
 // A guard searches for its spot at most this far from the carrier by travel distance, so it can still cover the carrier
-static constexpr float GUARD_MAX_TRAVEL = 700.0f;
+static constexpr float GUARD_MAX_TRAVEL = 1000.0f;
 
 // The carrier looks for a less exposed area among the areas its own area can see within this distance,
 static constexpr float CARRIER_CLIMB_STEP_DIST = 600.0f;
