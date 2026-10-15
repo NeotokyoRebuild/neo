@@ -53,21 +53,21 @@ CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 }
 
 //-------------------------------------------------------------------------------------------------
-// A crouch area promises HumanCrouchHeight (55 u) of room, but Support ducks to 59 u and the
-// Juggernaut to 75 u, so some crouch gaps in the mesh are ones they cannot get through.
+// A crouch area promises HumanCrouchHeight (55 u) of room, but Support ducks to 59 u and the Juggernaut to 75 u,
+// so some crouch gaps in the mesh are ones they cannot get through
 
 static constexpr float NEO_DUCK_LANE_SPACING = 4.0f;	// one lane per this much portal width, edge to edge
 static constexpr float NEO_DUCK_LANE_REACH = 2.0f;	// how far a lane runs into each area
 static constexpr float NEO_DUCK_LANE_INSET = 0.5f;	// lane ends keep this far inside their area
 
 // A crouch portal and a ducked hull height: the key of one lane verdict
-struct NeoDuckLaneKey
+struct NeoDuckLaneKey_t
 {
 	unsigned int m_fromId;
 	unsigned int m_toId;
 	int m_height;
 
-	bool operator<( const NeoDuckLaneKey &other ) const
+	bool operator<( const NeoDuckLaneKey_t &other ) const
 	{
 		if ( m_fromId != other.m_fromId )
 		{
@@ -84,7 +84,7 @@ struct NeoDuckLaneKey
 };
 
 // The lane traces see only the world and static props, so a verdict holds while the navmesh does
-static CUtlMap<NeoDuckLaneKey, bool> s_duckLaneVerdicts( DefLessFunc( NeoDuckLaneKey ) );
+static CUtlMap<NeoDuckLaneKey_t, bool> s_duckLaneVerdicts( DefLessFunc( NeoDuckLaneKey_t ) );
 
 // nav_load and nav editing commands renumber areas without a level change,
 // so the verdicts are dropped when the area count they were made on changes
@@ -105,8 +105,8 @@ public:
 
 static CNeoDuckLaneReset s_duckLaneReset;
 
-// The point of the area nearest (x, y), on the floor under the hull's footprint, which can lie
-// a few units off the nav plane
+// The point of the area nearest (x, y), on the floor under the hull's footprint,
+// which can lie a few units off the nav plane
 static Vector NeoLaneEnd( const CNavArea *area, float x, float y, const Vector &vecMins, const Vector &vecMaxs )
 {
 	const Vector nw = area->GetCorner( NORTH_WEST );
@@ -129,8 +129,8 @@ static Vector NeoLaneEnd( const CNavArea *area, float x, float y, const Vector &
 	return pos;
 }
 
-// Can the hull get from a to b? It is swept with its underside a step above the floor, the way
-// CGameMovement steps, so a lip or slope lower than a step does not block it
+// Can the hull get from a to b? It is swept with its underside a step above the floor,
+// so it ignores a lip or slope lower than a step, as the bot steps over it
 static bool NeoLaneClear( const Vector &a, const Vector &b, const Vector &vecMins, const Vector &vecMaxs )
 {
 	const Vector mins( vecMins.x, vecMins.y, StepHeight );
@@ -153,8 +153,8 @@ static bool NeoLaneClear( const Vector &a, const Vector &b, const Vector &vecMin
 	return true;
 }
 
-// Does the hull fit through the portal from 'from' into 'to' on at least one lane? Lanes run
-// across the portal, each from just inside one area to just inside the other
+// Does the hull fit through the portal from 'from' into 'to' on at least one lane?
+// Lanes run across the portal, each from just inside one area to just inside the other
 static bool NeoDuckLaneFits( const CNavArea *from, const CNavArea *to, const Vector &vecMins, const Vector &vecMaxs )
 {
 	NavDirType dir = NUM_DIRECTIONS;
@@ -220,7 +220,7 @@ static bool NeoDuckLaneOpen( const CNavArea *from, const CNavArea *to, const Vec
 	}
 
 	const float flHeight = vecMaxs.z - vecMins.z;
-	const NeoDuckLaneKey key = { from->GetID(), to->GetID(), (int)flHeight };
+	const NeoDuckLaneKey_t key = { from->GetID(), to->GetID(), (int)flHeight };
 	const auto idx = s_duckLaneVerdicts.Find( key );
 	if ( idx != s_duckLaneVerdicts.InvalidIndex() )
 	{
