@@ -70,8 +70,10 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 
 	EquipBestWeaponForGhoster( me );
 
-	bool bUpdateCallout = m_enemyUpdateTimer.IsElapsed();
-	if ( bUpdateCallout )
+	// Pick a focus enemy on the timer, or at once when the ghost stops showing the current one
+	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
+	const bool bFocusLost = pFocus && !IsValidFocusEnemy( me, pFocus );
+	if ( m_enemyUpdateTimer.IsElapsed() || bFocusLost )
 	{
 		m_enemies.RemoveAll();
 		CollectPlayers( me, nullptr, &m_enemies );
@@ -80,7 +82,7 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 	}
 
 	// Check if currently focused enemy has disappeared from beacon range
-	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
+	pFocus = m_hCurrentFocusEnemy.Get();
 	if ( !IsValidFocusEnemy( me, pFocus ) )
 	{
 		m_hCurrentFocusEnemy = nullptr;
