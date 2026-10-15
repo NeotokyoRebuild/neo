@@ -98,7 +98,7 @@ private:
 	bool RecheckGoal( INextBot *bot );				// an off-path bot whose goal is blocked backs it up or re-paths
 	Vector m_recheckGoalPos;						// the goal the recheck last acted on,
 	Vector m_recheckFeetPos;						// where the bot stood then,
-	int m_recheckCount;							// how many times in a row it acted there,
+	int m_recheckCount;								// how many times in a row it acted there,
 	CountdownTimer m_recheckHoldTimer;				// and when it may act there again
 #endif
 
