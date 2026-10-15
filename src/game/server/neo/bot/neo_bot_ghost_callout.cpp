@@ -24,15 +24,13 @@ namespace NEOBotGhostCallout
 	// The carrier whose ghost has shown beacons during this carry, so they know where enemies are
 	static int s_iBootedCarrier = 0;
 
-	// Track whether the current carry has booted the ghost, by the beacon HUD's rule
-	static bool IsCarryBooted( CNEO_Player *pCarrier )
+	// Remember the carrier once their ghost shows beacons, by the beacon HUD's rule
+	static void UpdateBootedCarrier( CNEO_Player *pCarrier )
 	{
 		if ( s_iBootedCarrier != pCarrier->entindex() )
 		{
 			s_iBootedCarrier = pCarrier->GetBeaconingGhost() ? pCarrier->entindex() : 0;
 		}
-
-		return s_iBootedCarrier == pCarrier->entindex();
 	}
 
 	// The enemy within the ghost's reveal range that is closest to the center of the carrier's view.
@@ -48,7 +46,7 @@ namespace NEOBotGhostCallout
 		for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 		{
 			CNEO_Player *pEnemy = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-			if ( !pEnemy || pEnemy->GetTeamNumber() == pCarrier->GetTeamNumber() )
+			if ( !pEnemy || pCarrier->InSameTeam( pEnemy ) )
 			{
 				continue;
 			}
@@ -118,6 +116,7 @@ namespace NEOBotGhostCallout
 		gameeventmanager->FireEvent( event );
 	}
 
+	// The enemy the carrier calls out now, by the weapon they hold
 	static CNEO_Player *FindCalloutTarget( CNEO_Player *pCarrier, const CWeaponGhost *pGhost )
 	{
 		// With the ghost out and booted, the carrier calls out the beacon at the center of their view
@@ -147,7 +146,8 @@ namespace NEOBotGhostCallout
 		}
 
 		// A carrier knows where enemies are once the ghost has shown beacons during this carry
-		if ( !IsCarryBooted( pCarrier ) || gpGlobals->curtime < s_flNextCalloutTime )
+		UpdateBootedCarrier( pCarrier );
+		if ( s_iBootedCarrier != pCarrier->entindex() || gpGlobals->curtime < s_flNextCalloutTime )
 		{
 			return;
 		}
@@ -175,12 +175,12 @@ namespace NEOBotGhostCallout
 		for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 		{
 			CNEOBot *pMate = ToNEOBot( UTIL_PlayerByIndex( i ) );
-			if ( !pMate || !pMate->IsAlive() || pMate == pCarrier || pMate->GetTeamNumber() != pCarrier->GetTeamNumber() )
+			if ( !pMate || !pMate->IsAlive() || pMate == pCarrier || !pMate->InSameTeam( pCarrier ) )
 			{
 				continue;
 			}
 
-			// a position snapshot, as a callout gives
+			// A position snapshot, as a voice callout gives
 			pMate->GetVisionInterface()->UpdateKnownEntityPosition( pTarget );
 		}
 	}
