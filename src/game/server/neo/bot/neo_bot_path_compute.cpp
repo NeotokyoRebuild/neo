@@ -80,6 +80,9 @@ bool CNEOBotPathReachesGoal(const PathFollower& path)
 
 	const Path::Segment* pFirst = path.FirstSegment();
 	const Path::Segment* pLast = path.LastSegment();
+
+	// A goal inside the bot's own area also gives a two-segment path,
+	// so where the areas nearest the bot and the goal differ (stacked or overlapping areas) it reads as the fallback
 	const bool bStraightLineFallback = (path.NextSegment(pFirst) == pLast) && (pFirst->area != pLast->area);
 	return !bStraightLineFallback;
 }
