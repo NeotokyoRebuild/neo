@@ -417,14 +417,9 @@ bool CHL2MPPlayerAnimState::HandleMoving( Activity &idealActivity )
 	{
 		idealActivity = ACT_RUN;
 	}
-	else
+	else if (GetMovingSpeed() > 0.5)
 	{
-		Vector vecVelocity;
-		GetOuterAbsVelocity(vecVelocity);
-		if (vecVelocity.Length() > 0.5)
-		{
-			idealActivity = ACT_WALK;
-		}
+		idealActivity = ACT_WALK;
 	}
 
 	return true;
@@ -432,6 +427,24 @@ bool CHL2MPPlayerAnimState::HandleMoving( Activity &idealActivity )
 	return BaseClass::HandleMoving( idealActivity );
 #endif
 }
+
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: The speed that counts as moving for the legs and feet: rising or falling is not walking,
+//			as in classic NEOTOKYO, but climbing a ladder keeps the walk animation it has always had.
+//-----------------------------------------------------------------------------
+float CHL2MPPlayerAnimState::GetMovingSpeed()
+{
+	if ( m_pHL2MPPlayer->GetMoveType() == MOVETYPE_LADDER )
+	{
+		Vector vecVelocity;
+		GetOuterAbsVelocity( vecVelocity );
+		return vecVelocity.Length();
+	}
+
+	return GetOuterXYSpeed();
+}
+#endif // NEO
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -745,12 +758,17 @@ void CHL2MPPlayerAnimState::ComputePoseParam_AimPitch( CStudioHdr *pStudioHdr )
 //-----------------------------------------------------------------------------
 void CHL2MPPlayerAnimState::ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr )
 {
+#ifdef NEO
+	// Check to see if we are moving.
+	bool bMoving = GetMovingSpeed() > 1.0f;
+#else
 	// Get the movement velocity.
 	Vector vecVelocity;
 	GetOuterAbsVelocity( vecVelocity );
 
 	// Check to see if we are moving.
 	bool bMoving = ( vecVelocity.Length() > 1.0f ) ? true : false;
+#endif
 
 #ifdef NEO
 	// If we are moving or leaning or are prone and undeployed.

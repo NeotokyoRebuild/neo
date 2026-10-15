@@ -64,6 +64,7 @@ private:
 	
 #ifdef NEO
 	bool	IsLeaning(CStudioHdr *pStudioHdr);
+	float	GetMovingSpeed();
 #endif // NEO
 	
 	CHL2MP_Player   *m_pHL2MPPlayer;
