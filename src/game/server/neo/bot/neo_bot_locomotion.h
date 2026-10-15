@@ -31,7 +31,10 @@ public:
 	virtual bool IsEntityTraversable( CBaseEntity *obstacle, TraverseWhenType when = EVENTUALLY ) const;
 
 protected:
-	virtual void AdjustPosture( const Vector &moveGoal ) { }	// never crouch to navigate
+	virtual void AdjustPosture( const Vector &moveGoal );	// duck when only a crouched hull fits ahead
+
+private:
+	bool IsOnlyCrouchClearAhead( const Vector &moveGoal ) const;
 };
 
 inline float CNEOBotLocomotion::GetMaxJumpHeight( void ) const

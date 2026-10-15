@@ -6,6 +6,10 @@
 
 extern ConVar falldamage;
 
+// How far towards its move goal a bot checks its headroom: about a hull width, so it ducks at the
+// obstacle rather than a long way before it
+static const float NEO_BOT_HEADROOM_LOOKAHEAD = 32.0f;
+
 //-----------------------------------------------------------------------------------------
 void CNEOBotLocomotion::Update( void )
 {
@@ -53,6 +57,65 @@ void CNEOBotLocomotion::Update( void )
 void CNEOBotLocomotion::Approach( const Vector& pos, float goalWeight )
 {
 	BaseClass::Approach( pos, goalWeight );
+}
+
+
+//-----------------------------------------------------------------------------------------
+// Duck when a standing hull would hit something just ahead but a crouched one would not: a beam,
+// light fitting or lintel at head height. The bot template this came from never crouched to navigate
+void CNEOBotLocomotion::AdjustPosture( const Vector &moveGoal )
+{
+	if ( !IsOnGround() )
+	{
+		return;
+	}
+
+	CNEOBot *me = ToNEOBot( GetBot()->GetEntity() );
+	if ( !me || me->IsBotOnLadder() )
+	{
+		return;
+	}
+
+	if ( IsOnlyCrouchClearAhead( moveGoal ) )
+	{
+		me->PressCrouchButton( 0.3f );
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------
+bool CNEOBotLocomotion::IsOnlyCrouchClearAhead( const Vector &moveGoal ) const
+{
+	const Vector &feet = GetFeet();
+	Vector toGoal = moveGoal - feet;
+	toGoal.z = 0.0f;
+	const float flGoalDist = toGoal.NormalizeInPlace();
+	if ( flGoalDist < 1.0f )
+	{
+		return false;
+	}
+
+	// Sweep from step height up, so a step the bot can walk onto does not count as blocking
+	const IBody *body = GetBot()->GetBodyInterface();
+	const float flStep = GetStepHeight();
+	const float flHalfWidth = 0.5f * body->GetHullWidth();
+	const Vector mins( -flHalfWidth, -flHalfWidth, 0.0f );
+	const Vector standMaxs( flHalfWidth, flHalfWidth, body->GetStandHullHeight() - flStep );
+	const Vector crouchMaxs( flHalfWidth, flHalfWidth, body->GetCrouchHullHeight() - flStep );
+	const Vector from = feet + Vector( 0.0f, 0.0f, flStep );
+	const Vector to = from + toGoal * Min( flGoalDist, NEO_BOT_HEADROOM_LOOKAHEAD );
+
+	// Players move out of the way, so only the world and props count
+	NextBotTraceFilterIgnoreActors filter( GetBot()->GetEntity(), COLLISION_GROUP_NONE );
+	trace_t trace;
+	TraceHull( from, to, mins, standMaxs, body->GetSolidMask(), &filter, &trace );
+	if ( trace.fraction >= 1.0f && !trace.startsolid )
+	{
+		return false;
+	}
+
+	TraceHull( from, to, mins, crouchMaxs, body->GetSolidMask(), &filter, &trace );
+	return trace.fraction >= 1.0f && !trace.startsolid;
 }
 
 
