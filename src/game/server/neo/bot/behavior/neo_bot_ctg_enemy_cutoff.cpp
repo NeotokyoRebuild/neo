@@ -15,7 +15,7 @@ static constexpr float CTG_ENEMY_CUTOFF_REPLAN_SECONDS = 5.0f;
 // A partial path would walk the bot to wherever the pathfinder gave up, short of the cut-off
 bool CNEOBotCtgEnemyCutOff::RepathToCutOff( CNEOBot *me )
 {
-	return CNEOBotPathCompute( me, m_path, m_pCutOff->GetCenter(), FASTEST_ROUTE, PATH_NO_LENGTH_LIMIT, false );
+	return CNEOBotPathCompute( me, m_path, m_pCutOff->GetCenter(), FASTEST_ROUTE, PATH_NO_LENGTH_LIMIT, PATH_TRUNCATE_INCOMPLETE_PATH );
 }
 
 //---------------------------------------------------------------------------------------------
