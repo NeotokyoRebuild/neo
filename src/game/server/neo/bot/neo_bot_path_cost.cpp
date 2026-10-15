@@ -83,8 +83,12 @@ struct NeoDuckLaneKey
 	}
 };
 
-// The lane traces see only the world and static props, so a verdict holds until the level changes
+// The lane traces see only the world and static props, so a verdict holds while the navmesh does
 static CUtlMap<NeoDuckLaneKey, bool> s_duckLaneVerdicts( DefLessFunc( NeoDuckLaneKey ) );
+
+// nav_load and nav editing commands renumber areas without a level change,
+// so the verdicts are dropped when the area count they were made on changes
+static unsigned int s_nDuckLaneAreaCount = 0;
 
 class CNeoDuckLaneReset : public CAutoGameSystem
 {
@@ -207,6 +211,12 @@ static bool NeoDuckLaneOpen( const CNavArea *from, const CNavArea *to, const Vec
 	if ( fabs( from->ComputeAdjacentConnectionHeightChange( to ) ) > flStepHeight )
 	{
 		return true;
+	}
+
+	if ( TheNavMesh->GetNavAreaCount() != s_nDuckLaneAreaCount )
+	{
+		s_duckLaneVerdicts.RemoveAll();
+		s_nDuckLaneAreaCount = TheNavMesh->GetNavAreaCount();
 	}
 
 	const float flHeight = vecMaxs.z - vecMins.z;
