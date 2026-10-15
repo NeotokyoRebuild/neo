@@ -1305,6 +1305,14 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 	{
 		if (known->IsVisibleInFOVNow())
 		{
+			// A threat only the ghost shows through a wall is not one to aim at,
+			// so the ghost carrier behavior chooses which beacon to look at
+			CBaseEntity *pThreat = known->GetEntity();
+			if (IsRevealedByMyGhost(pThreat) && !GetVisionInterface()->IsLineOfSightClear(pThreat->WorldSpaceCenter()))
+			{
+				return;
+			}
+
 			// I see you!
 			GetBodyInterface()->AimHeadTowards(known->GetEntity(), IBody::CRITICAL, 1.0f, NULL, "Aiming at a visible threat");
 			return;
