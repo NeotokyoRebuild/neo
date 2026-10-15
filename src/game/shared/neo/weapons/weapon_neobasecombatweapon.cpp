@@ -41,6 +41,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
+	RecvPropTime(RECVINFO(m_flReloadReadyTime)),
 	RecvPropInt(RECVINFO(m_spawnflags)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
@@ -48,6 +49,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
+	SendPropTime(SENDINFO(m_flReloadReadyTime)),
 	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
@@ -60,6 +62,7 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flReloadReadyTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -72,6 +75,7 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_flReloadReadyTime, FIELD_TIME),
 END_DATADESC()
 #endif
 
@@ -421,15 +425,9 @@ bool CNEOBaseCombatWeapon::Reload( void )
 		return false;
 	}
 
-	// The magazine is loaded at the gun's last reload click,
-	// and the rest of the reload animation plays on as before
-	const float flReadyTime = GetNEOWpnData().m_flReloadReadyTime;
-	if (flReadyTime > 0.0f)
-	{
-		const float flReady = gpGlobals->curtime + flReadyTime;
-		GetOwner()->SetNextAttack(flReady);
-		m_flNextPrimaryAttack = m_flNextSecondaryAttack = flReady;
-	}
+	// The magazine loads at the gun's last reload click, which the script gives as a time before the reload animation ends;
+	// the animation and the wait to fire still run to the end
+	m_flReloadReadyTime = Max(gpGlobals->curtime, m_flNextPrimaryAttack - GetNEOWpnData().m_flReloadReadyBeforeEnd);
 
 	return true;
 
@@ -467,6 +465,13 @@ bool CNEOBaseCombatWeapon::Reload( void )
 //-----------------------------------------------------------------------------
 void CNEOBaseCombatWeapon::FinishReload(void)
 {
+	// The magazine was already loaded at the reload's ready time
+	if (m_flReloadReadyTime == 0.0f)
+	{
+		return;
+	}
+	m_flReloadReadyTime = 0.0f;
+
 	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner)
@@ -627,6 +632,12 @@ void CNEOBaseCombatWeapon::ItemBusyFrame(void)
 {
 	BaseClass::ItemBusyFrame();
 	UpdateInaccuracy();
+
+	// The owner stays busy until the reload animation ends, but the magazine loads at the reload's ready time
+	if (m_bInReload && m_flReloadReadyTime > 0.0f && gpGlobals->curtime >= m_flReloadReadyTime)
+	{
+		FinishReload();
+	}
 }
 
 void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
