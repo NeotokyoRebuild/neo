@@ -5355,8 +5355,8 @@ static bool IsNavVisionStatic( CBaseEntity *pEntity )
 		return false;
 	}
 
-	// breaks open during play
-	if ( pEntity->m_takedamage != DAMAGE_NO )
+	// breaks open during play (props that cannot break take DAMAGE_EVENTS_ONLY)
+	if ( pEntity->m_takedamage == DAMAGE_YES )
 	{
 		return false;
 	}
