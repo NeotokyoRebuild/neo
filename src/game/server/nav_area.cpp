@@ -37,6 +37,7 @@
 
 #ifdef NEO
 #include "nav_shared.h"
+#include "modelentities.h"
 #endif // NEO
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -5332,6 +5333,71 @@ CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs > *g_pNavVisPairHas
 
 #define MASK_NAV_VISION				(MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE)
 
+#ifdef NEO
+// The stored visibility sets only gate a bot's live line of sight trace, so they must hold for every state a door or prop can be in:
+// an entity blocks the analysis only if nothing in play can move, open, break, pick up or remove it.
+static bool IsNavVisionStatic( CBaseEntity *pEntity )
+{
+	if ( pEntity->IsWorld() )
+	{
+		return true;
+	}
+
+	// rides a door, train or other mover
+	if ( pEntity->GetMoveParent() )
+	{
+		return false;
+	}
+
+	// map logic can move, toggle, animate or kill it, such as a gate or a prop only some game modes have
+	if ( pEntity->GetEntityName() != NULL_STRING )
+	{
+		return false;
+	}
+
+	// breaks open during play
+	if ( pEntity->m_takedamage != DAMAGE_NO )
+	{
+		return false;
+	}
+
+	if ( pEntity->IsBaseCombatWeapon() )
+	{
+		return false;
+	}
+
+	// a brush entity that is only a wall, the one kind of pusher that never moves unless it is named or parented
+	if ( dynamic_cast< CFuncBrush * >( pEntity ) )
+	{
+		return true;
+	}
+
+	// doors, buttons, trains, rotators, physics props and the juggernaut all have a move type
+	return pEntity->GetMoveType() == MOVETYPE_NONE;
+}
+
+// Nav visibility traces: the stock filter, minus every entity that may be out of the way during play
+class CTraceFilterNavVision : public CTraceFilterNoNPCsOrPlayer
+{
+public:
+	CTraceFilterNavVision( const IHandleEntity *passEntity )
+		: CTraceFilterNoNPCsOrPlayer( passEntity, COLLISION_GROUP_NONE )
+	{
+	}
+
+	virtual bool ShouldHitEntity( IHandleEntity *pHandleEntity, int contentsMask )
+	{
+		if ( !CTraceFilterNoNPCsOrPlayer::ShouldHitEntity( pHandleEntity, contentsMask ) )
+		{
+			return false;
+		}
+
+		CBaseEntity *pEntity = EntityFromEntityHandle( pHandleEntity );
+		return pEntity && IsNavVisionStatic( pEntity );
+	}
+};
+#endif // NEO
+
 
 //--------------------------------------------------------------------------------------------------------
 /**
@@ -5454,7 +5520,11 @@ CNavArea::VisibilityType CNavArea::ComputeVisibility( const CNavArea *area, bool
 	vTarget.z = area->GetZ( vTarget ) + eye.z;
 
 	trace_t tr;
+#ifdef NEO
+	CTraceFilterNavVision traceFilter( NULL );
+#else
 	CTraceFilterNoNPCsOrPlayer traceFilter( NULL, COLLISION_GROUP_NONE );
+#endif // NEO
 
 	UTIL_TraceHull( vThisCenter, vTarget, vTraceMins, vTraceMaxs, MASK_NAV_VISION, &traceFilter, &tr );
 
@@ -5723,7 +5793,11 @@ bool CNavArea::IsEntirelyVisible( const Vector &eye, const CBaseEntity *ignore )
 {
 	Vector corner;
 	trace_t result;
+#ifdef NEO
+	CTraceFilterNavVision traceFilter( ignore );
+#else
 	CTraceFilterNoNPCsOrPlayer traceFilter( ignore, COLLISION_GROUP_NONE );
+#endif // NEO
 	const float offset = 0.75f * HumanHeight;
 
 	// check center
@@ -5756,7 +5830,11 @@ bool CNavArea::IsPartiallyVisible( const Vector &eye, const CBaseEntity *ignore 
 {
 	Vector corner;
 	trace_t result;
+#ifdef NEO
+	CTraceFilterNavVision traceFilter( ignore );
+#else
 	CTraceFilterNoNPCsOrPlayer traceFilter( ignore, COLLISION_GROUP_NONE );
+#endif // NEO
 	const float offset = 0.75f * HumanHeight;
 
 	// check center
