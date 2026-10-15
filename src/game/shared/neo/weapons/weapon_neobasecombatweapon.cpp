@@ -941,6 +941,22 @@ void CNEOBaseCombatWeapon::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
 
+// An empty weapon idles on its empty sequence where the model has one, such as a pistol with its slide held back
+bool CNEOBaseCombatWeapon::SendWeaponAnim(int iActivity)
+{
+	if (iActivity == ACT_VM_IDLE && UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle())
+	{
+		iActivity = ACT_VM_IDLE_EMPTY;
+	}
+
+	return BaseClass::SendWeaponAnim(iActivity);
+}
+
+bool CNEOBaseCombatWeapon::HasEmptyIdle()
+{
+	return SelectWeightedSequence(ACT_VM_IDLE_EMPTY) != ACTIVITY_NOT_AVAILABLE;
+}
+
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -1062,6 +1078,12 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	{
 		info.m_iShots = MIN(info.m_iShots, m_iPrimaryAmmoCount);
 		m_iPrimaryAmmoCount -= info.m_iShots;
+	}
+
+	// the last round's shot goes straight on to the empty idle when it ends
+	if (UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle())
+	{
+		SetWeaponIdleTime(gpGlobals->curtime + SequenceDuration());
 	}
 
 	info.m_flDistance = MAX_TRACE_LENGTH;

@@ -191,6 +191,7 @@ public:
 #endif
 
 	virtual void DryFire(void);
+	virtual bool SendWeaponAnim(int iActivity) override;
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
 #ifdef CLIENT_DLL
@@ -292,6 +293,7 @@ protected:
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
+	bool HasEmptyIdle();
 
 };
 
