@@ -653,7 +653,9 @@ void CHL2MPPlayerAnimState::EstimateYaw( void )
 // Input  : dt - 
 //-----------------------------------------------------------------------------
 float SnapYawTo( float flValue );
+#ifdef NEO
 extern ConVar mp_slammoveyaw;
+#endif
 void CHL2MPPlayerAnimState::ComputePoseParam_MoveYaw( CStudioHdr *pStudioHdr )
 {
 #ifdef NEO
@@ -663,6 +665,10 @@ void CHL2MPPlayerAnimState::ComputePoseParam_MoveYaw( CStudioHdr *pStudioHdr )
 	EstimateYaw();
 
 #if 1 // 9way
+#ifndef NEO
+	ConVarRef mp_slammoveyaw("mp_slammoveyaw");
+#endif
+
 	// Get the view yaw.
 	float flAngle = AngleNormalize( m_flEyeYaw );
 
