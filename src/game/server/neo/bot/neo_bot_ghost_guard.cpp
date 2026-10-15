@@ -52,6 +52,14 @@ bool IsGhostGuardRound( int team )
 
 
 //-----------------------------------------------------------------------------------------------------
+void ClearGhostGuardPlans()
+{
+	V_memset( s_iHoldAreaID, 0, sizeof( s_iHoldAreaID ) );
+	V_memset( s_iGuardSpotAreaID, 0, sizeof( s_iGuardSpotAreaID ) );
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 void SetGuardSpot( CNEOBot *me, CNavArea *pArea )
 {
 	s_iGuardSpotAreaID[me->entindex()] = pArea ? pArea->GetID() : 0;

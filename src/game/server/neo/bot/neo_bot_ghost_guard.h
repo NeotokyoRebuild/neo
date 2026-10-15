@@ -22,3 +22,6 @@ CNavArea *FindLeastExposedArea( CNEOBot *me, CNavArea *pStartArea );
 // The carrier tells its guards where it will hold, so they pick spots around it and not along its way
 void SetGhostHoldArea( CNEOBot *pCarrier, CNavArea *pArea );
 CNavArea *GetGhostHoldArea( const CNEO_Player *pCarrier );
+
+// Forget every carrier's hold area and guard's spot, on a new round or map
+void ClearGhostGuardPlans();
