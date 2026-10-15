@@ -96,6 +96,25 @@ namespace NEOBotGhostCallout
 		return pEnemy;
 	}
 
+	// Mark the called-out enemy on the compass of the carrier's human teammates
+	static void FireCompassCallout( CNEO_Player *pCarrier, CNEO_Player *pTarget )
+	{
+		IGameEvent *event = gameeventmanager->CreateEvent( "ghost_enemy_callout" );
+		if ( !event )
+		{
+			return;
+		}
+
+		event->SetInt( "userid", pCarrier->GetUserID() );
+		event->SetInt( "team", pCarrier->GetTeamNumber() );
+		event->SetInt( "targetid", pTarget->entindex() );
+		const Vector &vecPos = pTarget->GetAbsOrigin();
+		event->SetInt( "targetx", vecPos.x );
+		event->SetInt( "targety", vecPos.y );
+		event->SetInt( "targetz", vecPos.z );
+		gameeventmanager->FireEvent( event );
+	}
+
 	static CNEO_Player *FindCalloutTarget( CNEO_Player *pCarrier, const CWeaponGhost *pGhost )
 	{
 		// With the ghost out and booted, the carrier calls out the beacon at the center of their view
@@ -142,6 +161,12 @@ namespace NEOBotGhostCallout
 		if ( !pTarget )
 		{
 			return;
+		}
+
+		// A human carrier speaks for themselves, so only a bot carrier's callouts reach the compass
+		if ( pCarrier->IsBot() )
+		{
+			FireCompassCallout( pCarrier, pTarget );
 		}
 
 		for ( int i = 1; i <= gpGlobals->maxClients; ++i )

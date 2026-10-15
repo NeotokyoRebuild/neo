@@ -98,23 +98,7 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 
 	if ( pFocus )
 	{
-		if ( bUpdateCallout )
-		{
-			IGameEvent *event = gameeventmanager->CreateEvent( "ghost_enemy_callout" );
-			if ( event )
-			{
-				event->SetInt( "userid", me->GetUserID() );
-				event->SetInt( "team", me->GetTeamNumber() );
-				event->SetInt( "targetid", pFocus->entindex() );
-				const Vector& pos = pFocus->GetAbsOrigin();
-				event->SetInt( "targetx", pos.x );
-				event->SetInt( "targety", pos.y );
-				event->SetInt( "targetz", pos.z );
-				gameeventmanager->FireEvent( event );
-			}
-		}
-
-		// NEOBotGhostCallout tells teammate bots about the enemy the carrier looks at
+		// NEOBotGhostCallout tells teammates about the enemy the carrier looks at
 		me->GetBodyInterface()->AimHeadTowards( pFocus->WorldSpaceCenter(), IBody::IMPORTANT, 1.0f, nullptr, "Ghost carrier focus look" );
 	}
 }
