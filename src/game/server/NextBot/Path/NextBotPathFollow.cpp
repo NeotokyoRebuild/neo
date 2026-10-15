@@ -974,8 +974,9 @@ void PathFollower::Update( INextBot *bot )
 	}
 
 #ifdef NEO
-	// on Avoid()'s cadence, an off-path bot whose goal is blocked backs it up or re-paths
-	if ( m_avoidTimer.IsElapsed() && !RecheckGoal( bot ) )
+	// on Avoid()'s cadence, an off-path bot whose goal is blocked backs it up or re-paths,
+	// except while it detours around a prop: the detour's goal lies past the prop on purpose
+	if ( !isDetouring && m_avoidTimer.IsElapsed() && !RecheckGoal( bot ) )
 	{
 		return;
 	}
