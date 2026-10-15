@@ -16,6 +16,9 @@ namespace NEOBotGhostCallout
 	// A carrier calls out an enemy within this angle of the center of their view
 	static constexpr float CALLOUT_MAX_ANGLE_DEG = 30.0f;
 
+	// Time a carrier takes to turn onto a new enemy before a callout can read its aim
+	static constexpr float AIM_TURN_TIME = 0.5f;
+
 	static float s_flNextCalloutTime = 0.0f;
 
 	// The carrier whose ghost has shown beacons during this carry, so they know where enemies are
@@ -180,6 +183,11 @@ namespace NEOBotGhostCallout
 			// a position snapshot, as a callout gives
 			pMate->GetVisionInterface()->UpdateKnownEntityPosition( pTarget );
 		}
+	}
+
+	float GetMinAimHoldTime()
+	{
+		return sv_neo_bot_ghost_callout_interval.GetFloat() + AIM_TURN_TIME;
 	}
 
 	void Reset()
