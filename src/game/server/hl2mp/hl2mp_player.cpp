@@ -193,7 +193,7 @@ CHL2MP_Player::CHL2MP_Player() : m_PlayerAnimState( this )
 {
 #ifdef NEO
 	//Tony; create our player animation state.
-	m_PlayerAnimState = CreateHL2MPPlayerAnimState( this );
+	m_PlayerAnimState = CreateNEOPlayerAnimState( this );
 #endif
 	UseClientSideAnimation();
 

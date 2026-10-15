@@ -16,7 +16,7 @@ class CHL2MP_Player;
 #include "hl2_player.h"
 #include "simtimer.h"
 #include "soundenvelope.h"
-#include "hl2mp_playeranimstate.h"
+#include "neo_playeranimstate.h"
 #include "hl2mp_player_shared.h"
 #include "hl2mp_gamerules.h"
 #include "utldict.h"
@@ -177,7 +177,7 @@ public:
 private:
 
 #ifdef NEO
-	CHL2MPPlayerAnimState *m_PlayerAnimState;
+	CNEOPlayerAnimState *m_PlayerAnimState;
 #else
 	CPlayerAnimState m_PlayerAnimState;
 #endif

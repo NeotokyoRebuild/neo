@@ -9,7 +9,7 @@
 #define HL2MP_PLAYER_H
 #pragma once
 
-#include "hl2mp_playeranimstate.h"
+#include "neo_playeranimstate.h"
 #include "c_basehlplayer.h"
 #include "hl2mp_player_shared.h"
 #include "beamdraw.h"
@@ -145,7 +145,7 @@ private:
 	
 	C_HL2MP_Player( const C_HL2MP_Player & );
 #ifdef NEO
-	CHL2MPPlayerAnimState *m_PlayerAnimState;
+	CNEOPlayerAnimState *m_PlayerAnimState;
 #else
 	CPlayerAnimState m_PlayerAnimState;
 #endif
