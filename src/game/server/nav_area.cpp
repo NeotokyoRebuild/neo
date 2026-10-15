@@ -5369,7 +5369,7 @@ static bool IsNavVisionStatic( CBaseEntity *pEntity )
 	}
 
 	// brush walls and model props are pushers too, but unless named or parented they never move,
-	// and their collision does not follow their animation
+	// and a prop's own collision stays put while it animates (its bone followers move, and are skipped below)
 	if ( dynamic_cast< CFuncBrush * >( pEntity ) )
 	{
 		return true;
@@ -5380,7 +5380,7 @@ static bool IsNavVisionStatic( CBaseEntity *pEntity )
 		return true;
 	}
 
-	// doors, buttons, trains, rotators, physics props and the juggernaut all have a move type
+	// doors, buttons, trains, rotators, bone followers, physics props and the juggernaut all have a move type
 	return pEntity->GetMoveType() == MOVETYPE_NONE;
 }
 
