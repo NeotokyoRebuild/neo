@@ -3,6 +3,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
+#include "bot/neo_bot_ghost_callout.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "neo_gamerules.h"
@@ -10,10 +11,6 @@
 #include "weapon_ghost.h"
 
 ConVar neo_debug_ghost_carrier( "neo_debug_ghost_carrier", "0", FCVAR_CHEAT );
-extern ConVar sv_neo_bot_ghost_callout_interval;
-
-// Time a carrier takes to turn onto a new focus enemy before its teammates can read its aim
-static constexpr float GHOST_FOCUS_TURN_TIME = 0.5f;
 
 
 //---------------------------------------------------------------------------------------------
@@ -169,7 +166,7 @@ float CNEOBotGhostEquipmentHandler::GetUpdateInterval( CNEOBot *me ) const
 	}
 
 	// Look at each focus enemy long enough for at least one callout to read the carrier's aim
-	return Max( flInterval, sv_neo_bot_ghost_callout_interval.GetFloat() + GHOST_FOCUS_TURN_TIME );
+	return Max( flInterval, NEOBotGhostCallout::GetMinAimHoldTime() );
 }
 
 void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const CUtlVector<CNEO_Player*> &enemies )
