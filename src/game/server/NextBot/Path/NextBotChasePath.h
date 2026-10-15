@@ -161,7 +161,7 @@ inline bool ChasePath::IsLastLegWalkable( INextBot *bot ) const
 		return false;
 	}
 
-	// about a hull width, so the bot stops before its body crosses the edge
+	// three quarters of a hull width, so the bot stops before its body crosses the edge
 	const float edgeLookAhead = 24.0f;
 
 	Vector toEnd = LastSegment()->pos - bot->GetPosition();
