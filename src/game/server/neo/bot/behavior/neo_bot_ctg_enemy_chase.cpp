@@ -7,15 +7,15 @@
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 
-ConVar sv_neo_bot_ctg_enemy_chase_replan_seconds( "sv_neo_bot_ctg_enemy_chase_replan_seconds", "20", FCVAR_CHEAT,
-	"CTG: seconds between a chasing bot re-checking whether to take the fastest or the default route to the enemy ghost carrier.",
-	true, 1.0f, false, 0.0f );
+// Seconds between a chasing bot re-checking whether it is ahead of the carrier,
+// which picks the fastest or the default route
+static constexpr float CTG_ENEMY_CHASE_REPLAN_SECONDS = 20.0f;
 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgEnemyChase::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_chasePath.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
-	m_routeTypeTimer.Start( sv_neo_bot_ctg_enemy_chase_replan_seconds.GetFloat() );
+	m_routeTypeTimer.Start( CTG_ENEMY_CHASE_REPLAN_SECONDS );
 
 	return Continue();
 }
@@ -32,7 +32,7 @@ ActionResult< CNEOBot > CNEOBotCtgEnemyChase::Update( CNEOBot *me, float interva
 	// We are ahead of the carrier exactly when a cut-off still exists
 	if ( m_routeTypeTimer.IsElapsed() )
 	{
-		m_routeTypeTimer.Start( sv_neo_bot_ctg_enemy_chase_replan_seconds.GetFloat() );
+		m_routeTypeTimer.Start( CTG_ENEMY_CHASE_REPLAN_SECONDS );
 		m_routeType = CNEOBotCtgEnemy::FindCutOff( me, pGhostCarrier ) ? DEFAULT_ROUTE : FASTEST_ROUTE;
 	}
 

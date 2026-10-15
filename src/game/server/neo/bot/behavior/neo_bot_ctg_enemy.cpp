@@ -8,11 +8,6 @@
 #include "nav_mesh.h"
 #include "nav_pathfind.h"
 
-ConVar sv_neo_bot_ctg_enemy_cutoff_lead( "sv_neo_bot_ctg_enemy_cutoff_lead", "1.0", FCVAR_CHEAT,
-	"CTG: a bot claims a point on the enemy ghost carrier's route only when its own travel there is at "
-	"most this fraction of the carrier's. Below 1 it needs a head start; above 1 it will try marginal cut-offs.",
-	true, 0.1f, true, 2.0f );
-
 //---------------------------------------------------------------------------------------------
 // A route start-first with the travel distance to each area, summed between area centers: only
 // comparable with the same measure, not with a PathFollower's length
@@ -133,15 +128,14 @@ CNavArea *CNEOBotCtgEnemy::FindCutOff( CNEOBot *me, CNEO_Player *pGhostCarrier )
 
 	// One flood prices every area of the route by our own travel. It must come after the route is
 	// copied out: both searches use the nav areas' shared search state.
-	const float flLead = sv_neo_bot_ctg_enemy_cutoff_lead.GetFloat();
 	CNEOBotTraversableFlood flood( me );
-	SearchSurroundingAreas( pMyArea, flood, carrierRoute.travel.Tail() * flLead );
+	SearchSurroundingAreas( pMyArea, flood, carrierRoute.travel.Tail() );
 
-	// The earliest area we beat the carrier to is the furthest from its cap we can stand in its way
+	// The earliest area we reach no later than the carrier is the furthest from its cap we can stand in its way
 	for ( int i = 0; i < carrierRoute.areas.Count(); ++i )
 	{
 		CNavArea *pArea = carrierRoute.areas[i];
-		if ( pArea->IsMarked() && pArea->GetCostSoFar() <= carrierRoute.travel[i] * flLead )
+		if ( pArea->IsMarked() && pArea->GetCostSoFar() <= carrierRoute.travel[i] )
 		{
 			return pArea;
 		}
