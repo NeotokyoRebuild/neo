@@ -7,9 +7,9 @@
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 
-ConVar sv_neo_bot_ctg_enemy_cutoff_replan_seconds( "sv_neo_bot_ctg_enemy_cutoff_replan_seconds", "5", FCVAR_CHEAT,
-	"CTG: seconds between a bot heading for a cut-off re-picking it on the enemy ghost carrier's route, to catch the carrier taking a line it did not predict.",
-	true, 0.5f, false, 0.0f );
+// Seconds between a bot heading for a cut-off re-picking it,
+// since the carrier may take a line other than the predicted one
+static constexpr float CTG_ENEMY_CUTOFF_REPLAN_SECONDS = 5.0f;
 
 //---------------------------------------------------------------------------------------------
 // A partial path would walk the bot to wherever the pathfinder gave up, short of the cut-off
@@ -48,7 +48,7 @@ ActionResult< CNEOBot > CNEOBotCtgEnemyCutOff::OnStart( CNEOBot *me, Action< CNE
 		return ChangeTo( new CNEOBotCtgEnemyChase( FASTEST_ROUTE ), "No path to the cut-off - chasing" );
 	}
 
-	m_replanTimer.Start( sv_neo_bot_ctg_enemy_cutoff_replan_seconds.GetFloat() );
+	m_replanTimer.Start( CTG_ENEMY_CUTOFF_REPLAN_SECONDS );
 
 	return Continue();
 }
@@ -64,7 +64,7 @@ ActionResult< CNEOBot > CNEOBotCtgEnemyCutOff::Update( CNEOBot *me, float interv
 
 	if ( m_replanTimer.IsElapsed() )
 	{
-		m_replanTimer.Start( sv_neo_bot_ctg_enemy_cutoff_replan_seconds.GetFloat() );
+		m_replanTimer.Start( CTG_ENEMY_CUTOFF_REPLAN_SECONDS );
 
 		if ( !Replan( me, pGhostCarrier ) )
 		{
