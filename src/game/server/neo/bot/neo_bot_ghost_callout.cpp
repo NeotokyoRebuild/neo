@@ -70,11 +70,12 @@ namespace NEOBotGhostCallout
 		return pBest;
 	}
 
-	// The enemy a bot carrier is fighting, when it is within the ghost's reveal range
+	// The enemy a bot carrier is fighting and sees now, when it is within the ghost's reveal range
 	static CNEO_Player *FindFoughtEnemy( CNEOBot *pBot, const CWeaponGhost *pGhost )
 	{
+		// In sight now, not seen moments ago: the carrier does not know where that enemy is now
 		const CKnownEntity *pThreat = pBot->GetVisionInterface()->GetPrimaryKnownThreat( true );
-		if ( !pThreat )
+		if ( !pThreat || !pThreat->IsVisibleInFOVNow() )
 		{
 			return nullptr;
 		}
@@ -82,6 +83,12 @@ namespace NEOBotGhostCallout
 		CNEO_Player *pEnemy = ToNEOPlayer( pThreat->GetEntity() );
 		float flDistIgnored;
 		if ( !pEnemy || !pGhost->BeaconRange( pEnemy, flDistIgnored ) )
+		{
+			return nullptr;
+		}
+
+		// and not a beacon through a wall, which counts as seen with sv_neo_ctg_ghost_beacons_when_inactive
+		if ( !pBot->GetVisionInterface()->IsLineOfSightClear( pEnemy->WorldSpaceCenter() ) )
 		{
 			return nullptr;
 		}
