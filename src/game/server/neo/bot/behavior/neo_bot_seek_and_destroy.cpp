@@ -181,9 +181,10 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 	{
 		if (IsGhostGameType())
 		{
-			// Only switch to CTG behavior if there are available capture zones this round
+			// Only switch to CTG behavior if there are available capture zones this round,
+			// or the bot defends the ghost in ATK
 			const Vector vecCapPoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
-			if ( vecCapPoint != CNEO_Player::VECTOR_INVALID_WAYPOINT )
+			if ( vecCapPoint != CNEO_Player::VECTOR_INVALID_WAYPOINT || IsAtkDefendingTeam( me->GetTeamNumber() ) )
 			{
 				return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
 			}
@@ -197,10 +198,11 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		return Continue();
 	}
 
-	// ATK attackers return to the objective after a fight, and carry a ghost picked up outside of CtgSeek
-	if ( IsAtkAttackingTeam( me->GetTeamNumber() ) )
+	// ATK bots return to the ghost after a fight, attackers to take it and defenders to carry or guard it,
+	// and carry a ghost picked up outside of CtgSeek
+	if ( NEORules()->GetGameType() == NEO_GAME_TYPE_ATK )
 	{
-		return SuspendFor( new CNEOBotCtgSeek, "Attacking the ghost" );
+		return SuspendFor( new CNEOBotCtgSeek, "Going for the ghost" );
 	}
 
 	if (IsGhostGameType())
