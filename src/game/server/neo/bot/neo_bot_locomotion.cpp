@@ -6,9 +6,12 @@
 
 extern ConVar falldamage;
 
-// How far towards its move goal a bot checks its headroom: about a hull width, so it ducks at the
-// obstacle rather than a long way before it
+// How far towards its move goal a bot checks its headroom: at least about a hull width, so it ducks at the
+// obstacle rather than a long way before it,
 static const float NEO_BOT_HEADROOM_LOOKAHEAD = 32.0f;
+// and how often, while the crouch press of one check lasts until the next
+static const float NEO_BOT_HEADROOM_CHECK_INTERVAL = 0.2f;
+static const float NEO_BOT_HEADROOM_CROUCH_HOLD = 0.3f;
 
 //-----------------------------------------------------------------------------------------
 void CNEOBotLocomotion::Update( void )
@@ -76,15 +79,40 @@ void CNEOBotLocomotion::AdjustPosture( const Vector &moveGoal )
 		return;
 	}
 
-	if ( IsOnlyCrouchClearAhead( moveGoal ) )
+	// A crouch area already holds the duck, and a bot at a ladder's foot or top lines up with the ladder standing
+	const CNavArea *area = me->GetLastKnownArea();
+	if ( area && ( area->HasAttributes( NAV_MESH_CROUCH ) || IsLadderEnd( area ) ) )
 	{
-		me->PressCrouchButton( 0.3f );
+		return;
+	}
+
+	if ( !m_headroomTimer.IsElapsed() )
+	{
+		return;
+	}
+
+	m_headroomTimer.Start( NEO_BOT_HEADROOM_CHECK_INTERVAL );
+
+	// look as far as the bot moves before the next check, plus a hull width
+	const float flReach = MAX( NEO_BOT_HEADROOM_LOOKAHEAD,
+		GetGroundSpeed() * NEO_BOT_HEADROOM_CHECK_INTERVAL + GetBot()->GetBodyInterface()->GetHullWidth() );
+	if ( IsOnlyCrouchClearAhead( moveGoal, flReach ) )
+	{
+		me->PressCrouchButton( NEO_BOT_HEADROOM_CROUCH_HOLD );
 	}
 }
 
 
 //-----------------------------------------------------------------------------------------
-bool CNEOBotLocomotion::IsOnlyCrouchClearAhead( const Vector &moveGoal ) const
+bool CNEOBotLocomotion::IsLadderEnd( const CNavArea *area )
+{
+	return area->GetLadders( CNavLadder::LADDER_UP )->Count() > 0
+		|| area->GetLadders( CNavLadder::LADDER_DOWN )->Count() > 0;
+}
+
+
+//-----------------------------------------------------------------------------------------
+bool CNEOBotLocomotion::IsOnlyCrouchClearAhead( const Vector &moveGoal, float flReach ) const
 {
 	const Vector &feet = GetFeet();
 	Vector toGoal = moveGoal - feet;
@@ -103,7 +131,7 @@ bool CNEOBotLocomotion::IsOnlyCrouchClearAhead( const Vector &moveGoal ) const
 	const Vector standMaxs( flHalfWidth, flHalfWidth, body->GetStandHullHeight() - flStep );
 	const Vector crouchMaxs( flHalfWidth, flHalfWidth, body->GetCrouchHullHeight() - flStep );
 	const Vector from = feet + Vector( 0.0f, 0.0f, flStep );
-	const Vector to = from + toGoal * Min( flGoalDist, NEO_BOT_HEADROOM_LOOKAHEAD );
+	const Vector to = from + toGoal * Min( flGoalDist, flReach );
 
 	// Players move out of the way, so only the world and props count
 	NextBotTraceFilterIgnoreActors filter( GetBot()->GetEntity(), COLLISION_GROUP_NONE );

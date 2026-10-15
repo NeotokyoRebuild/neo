@@ -34,7 +34,10 @@ protected:
 	virtual void AdjustPosture( const Vector &moveGoal );	// duck when only a crouched hull fits ahead
 
 private:
-	bool IsOnlyCrouchClearAhead( const Vector &moveGoal ) const;
+	bool IsOnlyCrouchClearAhead( const Vector &moveGoal, float flReach ) const;
+	static bool IsLadderEnd( const CNavArea *area );
+
+	CountdownTimer m_headroomTimer;
 };
 
 inline float CNEOBotLocomotion::GetMaxJumpHeight( void ) const
