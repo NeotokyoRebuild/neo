@@ -173,12 +173,16 @@ inline bool ChasePath::IsLastLegWalkable( INextBot *bot ) const
 
 
 //----------------------------------------------------------------------------------------------
+// Seconds of re-path back-off per unit of range to the subject,
+// the rate RefreshPath's failure branch uses
+static constexpr float CHASE_RETRY_SECONDS_PER_UNIT = 0.005f;
+
 /**
  * Throttle the next repath by range to the subject, as a failed path computation does
  */
 inline void ChasePath::BackOff( INextBot *bot, CBaseEntity *subject )
 {
-	m_failTimer.Start( 0.005f * ( bot->GetRangeTo( subject ) ) );
+	m_failTimer.Start( CHASE_RETRY_SECONDS_PER_UNIT * ( bot->GetRangeTo( subject ) ) );
 }
 #endif
 
