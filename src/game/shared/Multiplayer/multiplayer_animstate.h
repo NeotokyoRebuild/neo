@@ -367,6 +367,7 @@ protected:
 	// This gives us smooth transitions between aim anim sequences on the client.
 	CSequenceTransitioner	m_IdleSequenceTransitioner;
 	CSequenceTransitioner	m_MoveSequenceTransitioner;
+	float	m_flAimMoveWeight = 0.0f;
 #endif
 };
 

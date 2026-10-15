@@ -145,6 +145,9 @@ void CMultiPlayerAnimState::ClearAnimationState()
 	m_bCurrentFeetYawInitialized = false;
 	m_flLastAnimationStateClearTime = gpGlobals->curtime;
 	m_nSpecificMainSequence = -1;
+#ifdef NEO
+	m_flAimMoveWeight = 0.0f;
+#endif
 
 	ResetGestureSlots();
 }
@@ -1235,6 +1238,9 @@ static constexpr float AIM_MOVE_FULL_SPEED_WALK = 100.0f;
 static constexpr float AIM_MOVE_FULL_SPEED_RUN = 250.0f;
 // and the crouch walking upper body from this speed (the 2006 SDK player anim state's ANIM_TOPSPEED_* values)
 static constexpr float AIM_MOVE_FULL_SPEED_CROUCH = 85.0f;
+// A player who stops dead (a wall, or releasing walk) fades the moving upper body out over the aim crossfade time,
+// so the torso does not snap to idle in one frame
+static constexpr float AIM_MOVE_FADE_OUT_TIME = 0.2f;
 
 int CMultiPlayerAnimState::CalcSequenceIndex(const char* pBaseName, ...)
 {
@@ -1446,19 +1452,31 @@ void CMultiPlayerAnimState::UpdateAimMoveLayers(float flCycle)
 	CAnimationLayer* pMove0 = m_aGestureSlots[GESTURE_SLOT_AIM_MOVE].m_pAnimLayer;
 	CAnimationLayer* pMove1 = m_aGestureSlots[GESTURE_SLOT_AIM_MOVE2].m_pAnimLayer;
 
-	const float flMoveWeight = CalcAimMoveWeight();
-	if (flMoveWeight <= 0.0f)
+	const float flLastWeight = m_flAimMoveWeight;
+	const float flTargetWeight = CalcAimMoveWeight();
+	m_flAimMoveWeight = MAX(flTargetWeight, flLastWeight - gpGlobals->frametime / AIM_MOVE_FADE_OUT_TIME);
+	if (m_flAimMoveWeight <= 0.0f)
 	{
+		m_flAimMoveWeight = 0.0f;
 		pMove0->m_flWeight = 0.0f;
 		pMove1->m_flWeight = 0.0f;
 		return;
 	}
 
-	UpdateAimSequenceLayers(flCycle, GESTURE_SLOT_AIM_MOVE, false, &m_MoveSequenceTransitioner, flMoveWeight);
+	if (flTargetWeight > 0.0f)
+	{
+		UpdateAimSequenceLayers(flCycle, GESTURE_SLOT_AIM_MOVE, false, &m_MoveSequenceTransitioner, m_flAimMoveWeight);
+	}
+	else
+	{
+		// stopped: hold the last moving pose and fade it out
+		pMove0->m_flWeight *= m_flAimMoveWeight / flLastWeight;
+		pMove1->m_flWeight *= m_flAimMoveWeight / flLastWeight;
+	}
 
 	// the idle upper body keeps the weight the moving one leaves
-	m_aGestureSlots[GESTURE_SLOT_AIM].m_pAnimLayer->m_flWeight *= 1.0f - flMoveWeight;
-	m_aGestureSlots[GESTURE_SLOT_AIM2].m_pAnimLayer->m_flWeight *= 1.0f - flMoveWeight;
+	m_aGestureSlots[GESTURE_SLOT_AIM].m_pAnimLayer->m_flWeight *= 1.0f - m_flAimMoveWeight;
+	m_aGestureSlots[GESTURE_SLOT_AIM2].m_pAnimLayer->m_flWeight *= 1.0f - m_flAimMoveWeight;
 }
 
 float CMultiPlayerAnimState::CalcAimMoveWeight()
