@@ -23,6 +23,15 @@ static constexpr float CARRIER_CLIMB_MAX_DETOUR = 2.0f;
 // and tests the walk to at most this many of the best candidates a step
 static constexpr int CARRIER_CLIMB_MAX_PATH_TESTS = 8;
 
+// A guard or carrier holds only an area at least a player wide each way:
+// nav_generate leaves narrow strips along walls, where a bot often cannot reach the center
+static constexpr float HOLD_AREA_MIN_WIDTH = 2.0f * HalfHumanWidth;
+
+static bool IsWideEnoughToHold( const CNavArea *area )
+{
+	return area->GetSizeX() >= HOLD_AREA_MIN_WIDTH && area->GetSizeY() >= HOLD_AREA_MIN_WIDTH;
+}
+
 // The nav area each carrier holds, by player index
 static int s_iHoldAreaID[MAX_PLAYERS + 1];
 
@@ -140,7 +149,7 @@ private:
 		}
 
 		// a guard stands upright, where it can see and move freely
-		if ( area->GetAttributes() & ( NAV_MESH_CROUCH | NAV_MESH_JUMP | NAV_MESH_AVOID ) )
+		if ( !IsWideEnoughToHold( area ) || ( area->GetAttributes() & ( NAV_MESH_CROUCH | NAV_MESH_JUMP | NAV_MESH_AVOID ) ) )
 		{
 			return false;
 		}
@@ -238,7 +247,7 @@ public:
 		}
 
 		// the carrier stands upright, where it can move freely
-		if ( area->GetAttributes() & ( NAV_MESH_CROUCH | NAV_MESH_JUMP | NAV_MESH_AVOID ) )
+		if ( !IsWideEnoughToHold( area ) || ( area->GetAttributes() & ( NAV_MESH_CROUCH | NAV_MESH_JUMP | NAV_MESH_AVOID ) ) )
 		{
 			return true;
 		}
