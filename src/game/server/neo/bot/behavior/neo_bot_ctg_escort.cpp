@@ -72,7 +72,10 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	if ( const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true) )
+	// ATK defenders fight a threat in sight but only turn toward a remembered or called-out one,
+	// so they stay with the ghost instead of running to it
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
+	if ( threat && ( !IsAtkDefendingTeam( me->GetTeamNumber() ) || threat->IsVisibleRecently() ) )
 	{
 		const Vector& ghosterPos = pGhostCarrier->GetAbsOrigin();
 		const Vector& threatPos = threat->GetLastKnownPosition();
