@@ -416,7 +416,22 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 
 bool CNEOBaseCombatWeapon::Reload( void )
 {
-	return BaseClass::Reload();
+	if (!BaseClass::Reload())
+	{
+		return false;
+	}
+
+	// The magazine is loaded at the gun's last reload click,
+	// and the rest of the reload animation plays on as before
+	const float flReadyTime = GetNEOWpnData().m_flReloadReadyTime;
+	if (flReadyTime > 0.0f)
+	{
+		const float flReady = gpGlobals->curtime + flReadyTime;
+		GetOwner()->SetNextAttack(flReady);
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = flReady;
+	}
+
+	return true;
 
 #if(0)
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );

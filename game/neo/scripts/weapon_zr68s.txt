@@ -17,6 +17,7 @@ WeaponData
 	"Damage"		"22"
 	"Penetration"		"18.0"
 	"CycleTime"		"0.106060"		// time between shots
+	"ReloadReadyTime"	"2.267"		// reload is done here, the animation plays on to its end
 	
 	"TPMuzzleFlashScale"	"0.5"
 

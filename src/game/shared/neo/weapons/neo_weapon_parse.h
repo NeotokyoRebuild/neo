@@ -24,6 +24,7 @@ public:
 
 	int		m_iBullets;
 	float	m_flCycleTime;
+	float	m_flReloadReadyTime;
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
 	char	szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
 	char	szDeathIcon[MAX_BULLET_CHARACTER];

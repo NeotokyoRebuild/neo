@@ -15,6 +15,8 @@ WeaponData
 	"Damage"		"20"
 	"Penetration"		"28.0"
 	"CycleTime"		"0.090909"		// time between shots
+	"ReloadReadyTime"	"5.133"		// reload is done at the last reload click, the animation plays on to its end;
+								// the charging handle is home at 5.367, the alternative value
 	
 	"TPMuzzleFlashScale"	"0.3"
 
