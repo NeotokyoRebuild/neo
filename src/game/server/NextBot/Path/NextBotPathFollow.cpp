@@ -685,7 +685,7 @@ static bool IsNearNavMesh( INextBot *bot )
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Return true if our goal is the top of a drop more than a jump above us, with its landing below us:
- * we are falling down the drop, or stopped on a ledge part way down it.
+ * we are falling down the drop, or stopped on a ledge part way down it with no nav area.
  * The stock check traces from the feet to the landing on a diagonal that hits a ledge's rim, so trace level instead
  */
 bool PathFollower::IsPartWayDownDrop( INextBot *bot ) const
@@ -704,6 +704,12 @@ bool PathFollower::IsPartWayDownDrop( INextBot *bot ) const
 	}
 
 	if ( !( landing->pos - feet ).AsVector2D().IsLengthLessThan( DROP_COLUMN_RANGE ) )
+	{
+		return false;
+	}
+
+	// a bot on a nav area part way down stands on a ledge wide enough to plan from, so it re-paths from there
+	if ( TheNavMesh->GetNavArea( feet, mover->GetStepHeight() ) )
 	{
 		return false;
 	}
