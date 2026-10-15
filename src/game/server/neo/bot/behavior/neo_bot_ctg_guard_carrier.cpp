@@ -11,7 +11,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-// A guard keeps its spot until the carrier has moved this far from where the spot was chosen
+// A guard keeps its spot until the carrier has moved this far from where the spot was chosen,
+// unless the carrier named the area it will hold
 static constexpr float GUARD_RESELECT_DIST = 300.0f;
 // and retries this often when it found no spot
 static constexpr float GUARD_RETRY_INTERVAL = 2.0f;
@@ -28,6 +29,7 @@ CNEOBotCtgGuardCarrier::CNEOBotCtgGuardCarrier( void )
 {
 	m_spot = nullptr;
 	m_vecSpotCarrierPos = vec3_origin;
+	m_iCenterAreaID = 0;
 	m_bArrived = false;
 }
 
@@ -55,12 +57,33 @@ CNEO_Player *CNEOBotCtgGuardCarrier::GetCarrier( CNEOBot *me ) const
 }
 
 //---------------------------------------------------------------------------------------------
-void CNEOBotCtgGuardCarrier::SelectSpot( CNEOBot *me, CNEO_Player *pCarrier )
+// Guards hold around the area the carrier said it will hold, else around the carrier
+static CNavArea *GetGuardCenter( CNEO_Player *pCarrier )
+{
+	CNavArea *pHoldArea = GetGhostHoldArea( pCarrier );
+	return pHoldArea ? pHoldArea : pCarrier->GetLastKnownArea();
+}
+
+//---------------------------------------------------------------------------------------------
+bool CNEOBotCtgGuardCarrier::HasCenterMoved( CNEO_Player *pCarrier, const CNavArea *pCenterArea ) const
+{
+	// a carrier that named its hold area moves only when it names another
+	if ( GetGhostHoldArea( pCarrier ) )
+	{
+		return pCenterArea->GetID() != m_iCenterAreaID;
+	}
+
+	return pCarrier->GetAbsOrigin().DistToSqr( m_vecSpotCarrierPos ) > Square( GUARD_RESELECT_DIST );
+}
+
+//---------------------------------------------------------------------------------------------
+void CNEOBotCtgGuardCarrier::SelectSpot( CNEOBot *me, CNEO_Player *pCarrier, CNavArea *pCenterArea )
 {
 	m_path.Invalidate();
 	m_bArrived = false;
 	m_vecSpotCarrierPos = pCarrier->GetAbsOrigin();
-	m_spot = FindGuardArea( me, pCarrier->GetLastKnownArea() );
+	m_iCenterAreaID = pCenterArea->GetID();
+	m_spot = FindGuardArea( me, pCenterArea );
 	SetGuardSpot( me, m_spot );
 
 	if ( !m_spot )
@@ -98,10 +121,10 @@ ActionResult< CNEOBot >	CNEOBotCtgGuardCarrier::Update( CNEOBot *me, float inter
 		}
 	}
 
-	const bool bCarrierMoved = pCarrier->GetAbsOrigin().DistToSqr( m_vecSpotCarrierPos ) > Square( GUARD_RESELECT_DIST );
-	if ( ( !m_spot && m_reselectTimer.IsElapsed() ) || ( m_spot && bCarrierMoved ) )
+	CNavArea *pCenterArea = GetGuardCenter( pCarrier );
+	if ( pCenterArea && ( ( !m_spot && m_reselectTimer.IsElapsed() ) || ( m_spot && HasCenterMoved( pCarrier, pCenterArea ) ) ) )
 	{
-		SelectSpot( me, pCarrier );
+		SelectSpot( me, pCarrier, pCenterArea );
 	}
 
 	if ( m_spot )

@@ -3,11 +3,15 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
+#include "bot/neo_bot_ghost_guard.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "neo_gamerules.h"
 #include "debugoverlay_shared.h"
 #include "weapon_ghost.h"
+
+// A carrier with no capture zone counts as arrived at its hold area this close to the area's center
+static constexpr float CARRIER_HOLD_ARRIVE_RANGE = 48.0f;
 
 ConVar neo_debug_ghost_carrier( "neo_debug_ghost_carrier", "0", FCVAR_CHEAT );
 
@@ -367,6 +371,8 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 CNEOBotCtgCarrier::CNEOBotCtgCarrier( void )
 {
 	m_closestCapturePoint = CNEO_Player::VECTOR_INVALID_WAYPOINT;
+	m_holdArea = nullptr;
+	m_bHoldAreaChosen = false;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -492,9 +498,10 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 
 	if ( !bFoundGoal )
 	{
-		// If we have no goal (defending team on asymmetric map), we should just stay put and call out targets.
+		// If we have no goal (defending team on asymmetric map), we should just stay put and call out targets,
+		// after carrying the ghost to a less exposed area in ATK
 		m_chasePath.Invalidate();
-		m_path.Invalidate();
+		UpdateHoldPath( me );
 		return;
 	}
 
@@ -736,6 +743,48 @@ ActionResult< CNEOBot > CNEOBotCtgCarrier::OnResume( CNEOBot *me, Action< CNEOBo
 }
 
 //---------------------------------------------------------------------------------------------
+void CNEOBotCtgCarrier::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
+{
+	SetGhostHoldArea( me, nullptr );
+}
+
+//---------------------------------------------------------------------------------------------
+// A guard round's carrier walks quietly to a less exposed area and holds there
+void CNEOBotCtgCarrier::UpdateHoldPath( CNEOBot *me )
+{
+	if ( !IsGhostGuardRound( me->GetTeamNumber() ) )
+	{
+		m_path.Invalidate();
+		return;
+	}
+
+	if ( !m_bHoldAreaChosen )
+	{
+		m_bHoldAreaChosen = true;
+		m_holdArea = FindLeastExposedArea( me, me->GetLastKnownArea() );
+		SetGhostHoldArea( me, m_holdArea );
+	}
+
+	const bool bArrived = !m_holdArea || me->GetLastKnownArea() == m_holdArea
+		|| me->GetAbsOrigin().AsVector2D().DistToSqr( m_holdArea->GetCenter().AsVector2D() ) < Square( CARRIER_HOLD_ARRIVE_RANGE );
+	if ( bArrived )
+	{
+		m_path.Invalidate();
+		return;
+	}
+
+	if ( !m_path.IsValid() )
+	{
+		CNEOBotPathCompute( me, m_path, m_holdArea->GetCenter(), SAFEST_ROUTE );
+	}
+
+	// Walk quietly, so attackers cannot hear where the ghost goes
+	me->ReleaseRunButton();
+	me->PressSneakButton( 0.3f );
+	m_path.Update( me );
+}
+
+//---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotCtgCarrier::OnStuck( CNEOBot *me )
 {
 	m_path.Invalidate();
@@ -755,5 +804,13 @@ EventDesiredResult< CNEOBot > CNEOBotCtgCarrier::OnMoveToSuccess( CNEOBot *me, c
 EventDesiredResult< CNEOBot > CNEOBotCtgCarrier::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
 	m_path.Invalidate();
+
+	// Hold where I am when the way to the hold area fails
+	if ( m_holdArea )
+	{
+		m_holdArea = nullptr;
+		SetGhostHoldArea( me, me->GetLastKnownArea() );
+	}
+
 	return TryContinue();
 }

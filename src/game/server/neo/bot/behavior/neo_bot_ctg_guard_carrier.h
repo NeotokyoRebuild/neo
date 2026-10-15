@@ -22,13 +22,15 @@ public:
 	virtual const char *GetName( void ) const override { return "ctgGuardCarrier"; }
 
 private:
-	void SelectSpot( CNEOBot *me, CNEO_Player *pCarrier );
+	void SelectSpot( CNEOBot *me, CNEO_Player *pCarrier, CNavArea *pCenterArea );
+	bool HasCenterMoved( CNEO_Player *pCarrier, const CNavArea *pCenterArea ) const;
 	void LookForEnemies( CNEOBot *me, CNEO_Player *pCarrier );
 	CNEO_Player *GetCarrier( CNEOBot *me ) const;
 
 	PathFollower m_path;
 	CNavArea *m_spot;
 	Vector m_vecSpotCarrierPos;
+	unsigned int m_iCenterAreaID;
 	CountdownTimer m_reselectTimer;
 	CountdownTimer m_claimTimer;
 	bool m_bArrived;
