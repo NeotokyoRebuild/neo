@@ -1,6 +1,6 @@
 #pragma once
 
-// A ghost carrier's teammate bots learn where the enemy the carrier is looking at is,
+// A ghost carrier's teammates learn the position of the enemy the carrier is looking at,
 // as a human carrier's voice callout would tell them
 namespace NEOBotGhostCallout
 {
