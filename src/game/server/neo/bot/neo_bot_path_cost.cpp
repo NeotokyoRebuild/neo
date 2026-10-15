@@ -47,6 +47,9 @@ CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 	m_bIgnoreReservations = !neo_bot_path_reservation_enable.GetBool();
 	m_bIgnoreHazards = (me->m_hCommandingPlayer.Get() != nullptr);
 	m_bIgnoreVisibilityExposure = !neo_bot_path_visibility_exposure_enable.GetBool();
+	m_vecDuckHullMins = VEC_DUCK_HULL_MIN_SCALED( me );
+	m_vecDuckHullMaxs = VEC_DUCK_HULL_MAX_SCALED( me );
+	m_bDucksAboveCrouchHeight = ( m_vecDuckHullMaxs.z - m_vecDuckHullMins.z ) > HumanCrouchHeight;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -192,28 +195,21 @@ static bool NeoDuckLaneFits( const CNavArea *from, const CNavArea *to, const Vec
 	return false;
 }
 
-// Is a level step into or out of a crouch area open to this bot's ducked hull? Climbs and drops,
-// and classes that duck within HumanCrouchHeight, are not tested
-static bool NeoDuckLaneOpen( CNEOBot *me, const CNavArea *from, const CNavArea *to )
+// Is a level step into or out of a crouch area open to this ducked hull? Climbs and drops are not tested
+static bool NeoDuckLaneOpen( const CNavArea *from, const CNavArea *to, const Vector &vecMins, const Vector &vecMaxs,
+	float flStepHeight )
 {
 	if ( !from->HasAttributes( NAV_MESH_CROUCH ) && !to->HasAttributes( NAV_MESH_CROUCH ) )
 	{
 		return true;
 	}
 
-	const Vector vecMins = VEC_DUCK_HULL_MIN_SCALED( me );
-	const Vector vecMaxs = VEC_DUCK_HULL_MAX_SCALED( me );
+	if ( fabs( from->ComputeAdjacentConnectionHeightChange( to ) ) > flStepHeight )
+	{
+		return true;
+	}
+
 	const float flHeight = vecMaxs.z - vecMins.z;
-	if ( flHeight <= HumanCrouchHeight )
-	{
-		return true;
-	}
-
-	if ( fabs( from->ComputeAdjacentConnectionHeightChange( to ) ) > StepHeight )
-	{
-		return true;
-	}
-
 	const NeoDuckLaneKey key = { from->GetID(), to->GetID(), (int)flHeight };
 	const auto idx = s_duckLaneVerdicts.Find( key );
 	if ( idx != s_duckLaneVerdicts.InvalidIndex() )
@@ -245,7 +241,8 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 	}
 
 	// Support and Juggernaut duck too tall for some crouch gaps
-	if ( !ladder && !elevator && !NeoDuckLaneOpen( m_me, fromArea, area ) )
+	if ( m_bDucksAboveCrouchHeight && !ladder && !elevator
+		&& !NeoDuckLaneOpen( fromArea, area, m_vecDuckHullMins, m_vecDuckHullMaxs, m_stepHeight ) )
 	{
 		return -1.0f;
 	}
