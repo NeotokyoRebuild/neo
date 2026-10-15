@@ -65,9 +65,13 @@ private:
 #ifdef NEO
 	bool	IsLeaning(CStudioHdr *pStudioHdr);
 	float	GetMovingSpeed();
+	bool	HasLandedFromJump();
 #endif // NEO
 	
 	CHL2MP_Player   *m_pHL2MPPlayer;
+#if defined( NEO ) && defined( CLIENT_DLL )
+	float		m_flJumpGroundFlagTime; // when the client first saw the ground flag during a jump, 0 while in the air
+#endif
 #ifndef NEO
 	bool		m_bInAirWalk;
 	float		m_flHoldDeployedPoseUntilTime;

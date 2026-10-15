@@ -112,6 +112,9 @@ CHL2MPPlayerAnimState::~CHL2MPPlayerAnimState()
 void CHL2MPPlayerAnimState::InitHL2MPAnimState( CHL2MP_Player *pPlayer )
 {
 	m_pHL2MPPlayer = pPlayer;
+#if defined( NEO ) && defined( CLIENT_DLL )
+	m_flJumpGroundFlagTime = 0.0f;
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -493,6 +496,9 @@ bool CHL2MPPlayerAnimState::HandleJumping( Activity &idealActivity )
 		{
 			m_bFirstJumpFrame = false;
 			RestartMainSequence();	// Reset the animation.
+#if defined( NEO ) && defined( CLIENT_DLL )
+			m_flJumpGroundFlagTime = 0.0f;
+#endif
 		}
 
 		// Reset if we hit water and start swimming.
@@ -505,7 +511,11 @@ bool CHL2MPPlayerAnimState::HandleJumping( Activity &idealActivity )
 		// on-ground flag set right when the message comes in.
 		else if ( gpGlobals->curtime - m_flJumpStartTime > 0.2f )
 		{
+#ifdef NEO
+			if ( HasLandedFromJump() )
+#else
 			if ( m_pHL2MPPlayer->GetFlags() & FL_ONGROUND )
+#endif
 			{
 				m_bJumping = false;
 				RestartMainSequence();
@@ -551,6 +561,52 @@ bool CHL2MPPlayerAnimState::HandleJumping( Activity &idealActivity )
 
 	return false;
 }
+
+#ifdef NEO
+#ifdef CLIENT_DLL
+// A jump has landed when the drawn body is this close above the ground (the ground check of player movement),
+static constexpr float JUMP_LAND_GROUND_DIST = 2.0f;
+// or when the ground flag has been set this long and the trace still finds no ground under the drawn body
+static constexpr float JUMP_LAND_MAX_FLAG_LEAD = 0.5f;
+#endif
+
+//-----------------------------------------------------------------------------
+// Purpose: Whether a jumping player has landed. The client draws other players a few tenths of a second behind
+//			their networked ground flag, so there the jump lasts until the drawn body reaches the ground.
+//-----------------------------------------------------------------------------
+bool CHL2MPPlayerAnimState::HasLandedFromJump()
+{
+	if ( !( m_pHL2MPPlayer->GetFlags() & FL_ONGROUND ) )
+	{
+#ifdef CLIENT_DLL
+		m_flJumpGroundFlagTime = 0.0f;
+#endif
+		return false;
+	}
+
+#ifdef CLIENT_DLL
+	if ( m_flJumpGroundFlagTime <= 0.0f )
+	{
+		m_flJumpGroundFlagTime = gpGlobals->curtime;
+	}
+
+	if ( gpGlobals->curtime - m_flJumpGroundFlagTime > JUMP_LAND_MAX_FLAG_LEAD )
+	{
+		return true;
+	}
+
+	const Vector &vecOrigin = m_pHL2MPPlayer->GetAbsOrigin();
+	trace_t tr;
+	UTIL_TraceHull( vecOrigin, vecOrigin - Vector( 0, 0, JUMP_LAND_GROUND_DIST ),
+		m_pHL2MPPlayer->GetPlayerMins(), m_pHL2MPPlayer->GetPlayerMaxs(),
+		MASK_PLAYERSOLID, m_pHL2MPPlayer, COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
+
+	return tr.fraction < 1.0f || tr.startsolid;
+#else
+	return true;
+#endif // CLIENT_DLL
+}
+#endif // NEO
 
 bool CHL2MPPlayerAnimState::SetupPoseParameters( CStudioHdr *pStudioHdr )
 {
