@@ -4925,7 +4925,14 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 	const float sizeY = MAX( 1, MIN( GetSizeY()/2 - 5, HalfHumanWidth ) );
 	Extent bounds;
 	bounds.lo.Init( -sizeX, -sizeY, 0 );
+#ifdef NEO
+	// A crouched Recon is the smallest player hull, so an area it can crawl through is not blocked,
+	// and a crawl space under a lower ceiling than the base duck hull keeps its nav area
+	const float flSmallestDuckHeight = VEC_DUCK_HULL_MAX.z + NEO_RECON_DUCK_MAXHULL_OFFSET.z;
+	bounds.hi.Init( sizeX, sizeY, flSmallestDuckHeight - HalfHumanHeight );
+#else
 	bounds.hi.Init( sizeX, sizeY, VEC_DUCK_HULL_MAX.z - HalfHumanHeight );
+#endif // NEO
 
 	bool wasBlocked = IsBlocked( TEAM_ANY );
 
