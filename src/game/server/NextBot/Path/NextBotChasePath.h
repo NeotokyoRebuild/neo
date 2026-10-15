@@ -14,14 +14,6 @@
 #include "NextBotPathFollow.h"
 #include "tier0/vprof.h"
 
-#ifdef NEO
-#include "convar.h"
-
-inline ConVar sv_neo_bot_path_partial_chase_enable( "sv_neo_bot_path_partial_chase_enable", "1", FCVAR_CHEAT,
-	"Follow a partial chase path as far as the nav areas it reaches", true, 0.0f, true, 1.0f );
-#endif
-
-
 
 //----------------------------------------------------------------------------------------------
 /**
@@ -304,7 +296,7 @@ inline void ChasePath::RefreshPath( INextBot *bot, CBaseEntity *subject, const I
 #ifdef NEO
 		// Even if the chase path only has a partial path, get as close to the target as possible
 		const bool isCompletePath = isPath;
-		if ( sv_neo_bot_path_partial_chase_enable.GetBool() && !isPath && IsValid() )
+		if ( !isPath && IsValid() )
 		{
 			isPath = HasReachableArea();
 		}
