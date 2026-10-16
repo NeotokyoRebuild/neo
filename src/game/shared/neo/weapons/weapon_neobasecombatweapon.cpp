@@ -61,7 +61,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropBool(SENDINFO(m_bReloadDry)),
 	SendPropInt(SENDINFO(m_nReloadTable), 4),
 	SendPropTime(SENDINFO(m_flReloadStart)),
-	SendPropInt(SENDINFO(m_nReloadSoundsDone), RELOAD_PHASE_ROWS_MAX, SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_nReloadSoundsDone), RELOAD_PHASE_ROWS_MAX * RELOAD_SOUNDS_PER_ROW, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
@@ -632,10 +632,15 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 		}
 
 		// a phase's sound piece may start before the phase is credited, such as the grab before the magazine drops
-		if (row.szSound[0] && !(m_nReloadSoundsDone & (1 << i)) && flElapsed >= row.flSoundAt - RELOAD_SOUND_LEAD)
+		for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
 		{
-			m_nReloadSoundsDone |= (1 << i);
-			EmitReloadSoundPiece(row.szSound);
+			const ReloadSoundPiece_t &piece = row.sounds[j];
+			const int iBit = 1 << (i * RELOAD_SOUNDS_PER_ROW + j);
+			if (piece.szName[0] && !(m_nReloadSoundsDone & iBit) && flElapsed >= piece.flAt - RELOAD_SOUND_LEAD)
+			{
+				m_nReloadSoundsDone |= iBit;
+				EmitReloadSoundPiece(piece.szName);
+			}
 		}
 
 		if (flElapsed < row.flCredit)
@@ -716,7 +721,7 @@ bool CNEOBaseCombatWeapon::HasReloadSoundPieces() const
 	{
 		for (int i = 0; i < info.m_reloadTables[t].iNumRows; ++i)
 		{
-			if (info.m_reloadTables[t].rows[i].szSound[0])
+			if (info.m_reloadTables[t].rows[i].sounds[0].szName[0])
 			{
 				return true;
 			}
@@ -762,9 +767,13 @@ void CNEOBaseCombatWeapon::StopReloadSoundPieces()
 	{
 		for (int i = 0; i < info.m_reloadTables[t].iNumRows; ++i)
 		{
-			if (info.m_reloadTables[t].rows[i].szSound[0])
+			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
 			{
-				StopSound(pOwner->entindex(), info.m_reloadTables[t].rows[i].szSound);
+				const char *pszName = info.m_reloadTables[t].rows[i].sounds[j].szName;
+				if (pszName[0])
+				{
+					StopSound(pOwner->entindex(), pszName);
+				}
 			}
 		}
 	}

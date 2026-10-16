@@ -28,14 +28,22 @@ static constexpr int RELOAD_PHASE_TABLES_MAX = 12;
 static constexpr int RELOAD_PHASE_ROWS_MAX = RELOAD_PHASE_COUNT - 1;
 static constexpr int RELOAD_SOUND_NAME_MAX = 64;
 static constexpr int RELOAD_SEQUENCE_NAME_MAX = 32;
+// a phase may need two sound pieces timed apart, such as the M41's tap rattle and tap clicks
+static constexpr int RELOAD_SOUNDS_PER_ROW = 2;
 
-// One phase of a reload sequence: when it is credited, and the sound piece that goes with it
+// A sound piece of a phase
+struct ReloadSoundPiece_t
+{
+	float flAt;	// when the piece's first transient plays, seconds from the sequence start
+	char szName[RELOAD_SOUND_NAME_MAX];
+};
+
+// One phase of a reload sequence: when it is credited, and the sound pieces that go with it
 struct ReloadPhaseRow_t
 {
 	ReloadPhase_t phase;
 	float flCredit;	// seconds from the sequence start
-	float flSoundAt;	// when the sound piece's first transient plays, seconds from the sequence start
-	char szSound[RELOAD_SOUND_NAME_MAX];
+	ReloadSoundPiece_t sounds[RELOAD_SOUNDS_PER_ROW];
 };
 
 // The phases one reload sequence carries, in order
