@@ -38,27 +38,27 @@ WeaponData
 		}
 		"reload_from_drop_dry"
 		{
-			"seat" { "credit" "0.733" "sound" "weapon_zr68.reload_seat" "at" "0.694" }
-			"slap" { "credit" "1.100" "sound" "weapon_zr68.reload_slap" "at" "1.129" }
-			"bolt" { "credit" "1.667" "sound" "weapon_zr68.reload_bolt" "at" "1.429" }
+			"seat" { "credit" "1.233" "sound" "weapon_zr68.reload_seat" "at" "1.194" }
+			"slap" { "credit" "1.600" "sound" "weapon_zr68.reload_slap" "at" "1.629" }
+			"bolt" { "credit" "2.167" "sound" "weapon_zr68.reload_bolt" "at" "1.929" }
 		}
 		"reload_from_drop_partial"
 		{
-			"seat" { "credit" "0.733" "sound" "weapon_zr68.reload_seat" "at" "0.694" }
-			"slap" { "credit" "1.100" "sound" "weapon_zr68.reload_slap" "at" "1.129" }
+			"seat" { "credit" "1.233" "sound" "weapon_zr68.reload_seat" "at" "1.194" }
+			"slap" { "credit" "1.600" "sound" "weapon_zr68.reload_slap" "at" "1.629" }
 		}
 		"reload_from_seat_dry"
 		{
-			"slap" { "credit" "0.300" "sound" "weapon_zr68.reload_slap" "at" "0.329" }
-			"bolt" { "credit" "0.867" "sound" "weapon_zr68.reload_bolt" "at" "0.629" }
+			"slap" { "credit" "0.767" "sound" "weapon_zr68.reload_slap" "at" "0.796" }
+			"bolt" { "credit" "1.333" "sound" "weapon_zr68.reload_bolt" "at" "1.096" }
 		}
 		"reload_from_seat_partial"
 		{
-			"slap" { "credit" "0.300" "sound" "weapon_zr68.reload_slap" "at" "0.329" }
+			"slap" { "credit" "0.767" "sound" "weapon_zr68.reload_slap" "at" "0.796" }
 		}
 		"reload_from_slap_dry"
 		{
-			"bolt" { "credit" "0.767" "sound" "weapon_zr68.reload_bolt" "at" "0.529" }
+			"bolt" { "credit" "1.233" "sound" "weapon_zr68.reload_bolt" "at" "0.996" }
 		}
 	}
 	
