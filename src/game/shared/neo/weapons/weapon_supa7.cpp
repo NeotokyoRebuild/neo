@@ -515,6 +515,12 @@ void CWeaponSupa7::ItemPostFrame(void)
 		{
 			DryFire();
 		}
+		// a reload cut off before its rack leaves rounds in the tube and none in the chamber,
+		// so the trigger racks one up instead of firing a round the chamber does not hold
+		else if (!IsChamberLive())
+		{
+			StartRack();
+		}
 		// Fire underwater?
 		else if (pOwner->GetWaterLevel() == WL_Eyes && !m_bFiresUnderwater)
 		{
