@@ -203,6 +203,35 @@
         "wave"			        ")weapons/aa13/aa13_reload.wav"
 }
 
+// weapon_aa13 reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_aa13.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/aa13/aa13_reload_drop.wav"
+}
+
+"weapon_aa13.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/aa13/aa13_reload_seat.wav"
+}
+
+"weapon_aa13.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/aa13/aa13_reload_bolt.wav"
+}
+
 //------------------
 
 "weapon_aa13.empty"
@@ -1242,6 +1271,53 @@
 	"volume"			"1.0"
 	"pitch"				"PITCH_NORM"
 	"wave"			        ")weapons/pz/pz_reload.wav"
+}
+
+// weapon_pz reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_pz.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_drop.wav"
+}
+
+"weapon_pz.reload_drop2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_drop2.wav"
+}
+
+"weapon_pz.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_seat.wav"
+}
+
+"weapon_pz.reload_slap"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_slap.wav"
+}
+
+"weapon_pz.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_bolt.wav"
 }
 
 //-------------------

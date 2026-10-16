@@ -6,7 +6,6 @@ WeaponData
 	"Damage"				"25"
 	"Bullets"				"5"
 	"CycleTime"				"0.333"
-	"ReloadReadyBeforeEnd"	"0.467"	// the reload is done at the last reload click, this long before its animation ends
 								// the charging handle is home 0.333 before the end, the alternative value
 	
 	// Weapon data is loaded by both the Game and Client DLLs.
@@ -21,6 +20,46 @@ WeaponData
 	"bucket"				"0"
 	"bucket_position"		"3"
 
+	// Reload phases, generated from segments.csv by segments_build.py (ntre proposals/0057):
+	// credit = when the phase counts, at = when its sound piece's first transient plays, both from the sequence start
+	"ReloadPhases"
+	{
+		"ChamberedRound"	"1"
+		"reload"
+		{
+			"drop" { "credit" "1.033" "sound" "weapon_aa13.reload_drop" "at" "0.374" }
+			"seat" { "credit" "3.367" "sound" "weapon_aa13.reload_seat" "at" "2.905" }
+			"bolt" { "credit" "4.333" "sound" "weapon_aa13.reload_bolt" "at" "3.764" }
+		}
+		"reload_partial"
+		{
+			"drop" { "credit" "1.033" "sound" "weapon_aa13.reload_drop" "at" "0.374" }
+			"seat" { "credit" "3.367" "sound" "weapon_aa13.reload_seat" "at" "2.905" }
+		}
+		"reload_from_drop_dry"
+		{
+			"seat" { "credit" "2.600" "sound" "weapon_aa13.reload_seat" "at" "2.138" }
+			"bolt" { "credit" "3.567" "sound" "weapon_aa13.reload_bolt" "at" "2.997" }
+		}
+		"reload_from_drop_partial"
+		{
+			"seat" { "credit" "2.600" "sound" "weapon_aa13.reload_seat" "at" "2.138" }
+		}
+		"reload_from_seat_dry"
+		{
+			"bolt" { "credit" "1.067" "sound" "weapon_aa13.reload_bolt" "at" "0.497" }
+		}
+		"draw_resume_drop_dry"
+		{
+			"seat" { "credit" "2.467" "sound" "weapon_aa13.reload_seat" "at" "2.005" }
+			"bolt" { "credit" "3.433" "sound" "weapon_aa13.reload_bolt" "at" "2.864" }
+		}
+		"draw_resume_drop_partial"
+		{
+			"seat" { "credit" "2.467" "sound" "weapon_aa13.reload_seat" "at" "2.005" }
+		}
+	}
+	
 	"clip_size"				"16"
 	"default_clip"			"48"
 	"autoswitchfrom"        "0"
