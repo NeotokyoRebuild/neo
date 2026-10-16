@@ -518,6 +518,16 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 		AddEffects(EF_BONEMERGE);
 		m_bTriggerReset = true;
 
+		// An empty weapon draws with its slide held back where the model has that draw,
+		// which carries no activity, so it is picked by name
+		static constexpr const char *VM_SEQ_DRAW_EMPTY = "drawempty";
+		const int iDrawEmpty = (UsesClipsForAmmo1() && m_iClip1 <= 0) ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
+		if (iDrawEmpty != ACTIVITY_NOT_AVAILABLE)
+		{
+			SetSequence(iDrawEmpty);
+			SendViewModelAnim(iDrawEmpty);
+		}
+
 #ifdef DEBUG
 		CNEO_Player* pOwner = NULL;
 		if (GetOwner())
@@ -967,6 +977,22 @@ void CNEOBaseCombatWeapon::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
 
+// An empty weapon idles on its empty sequence where the model has one, such as a pistol with its slide held back
+bool CNEOBaseCombatWeapon::SendWeaponAnim(int iActivity)
+{
+	if (iActivity == ACT_VM_IDLE && UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle())
+	{
+		iActivity = ACT_VM_IDLE_EMPTY;
+	}
+
+	return BaseClass::SendWeaponAnim(iActivity);
+}
+
+bool CNEOBaseCombatWeapon::HasEmptyIdle()
+{
+	return SelectWeightedSequence(ACT_VM_IDLE_EMPTY) != ACTIVITY_NOT_AVAILABLE;
+}
+
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -1088,6 +1114,12 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	{
 		info.m_iShots = MIN(info.m_iShots, m_iPrimaryAmmoCount);
 		m_iPrimaryAmmoCount -= info.m_iShots;
+	}
+
+	// the last round's shot goes straight on to the empty idle when it ends
+	if (UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle())
+	{
+		SetWeaponIdleTime(gpGlobals->curtime + SequenceDuration());
 	}
 
 	info.m_flDistance = MAX_TRACE_LENGTH;
