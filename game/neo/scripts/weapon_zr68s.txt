@@ -25,14 +25,14 @@ WeaponData
 		"ChamberedRound"	"1"
 		"reload"
 		{
-			"drop" { "credit" "0.700" "sound" "weapon_zr68.reload_drop" "at" "0.306" }
+			"drop" { "credit" "0.700" "sound" "weapon_zr68.reload_drop" "at" "0.146" }
 			"seat" { "credit" "1.333" "sound" "weapon_zr68.reload_seat" "at" "1.294" }
 			"slap" { "credit" "1.700" "sound" "weapon_zr68.reload_slap" "at" "1.729" }
 			"bolt" { "credit" "2.267" "sound" "weapon_zr68.reload_bolt" "at" "2.029" }
 		}
 		"reload_partial"
 		{
-			"drop" { "credit" "0.700" "sound" "weapon_zr68.reload_drop" "at" "0.306" }
+			"drop" { "credit" "0.700" "sound" "weapon_zr68.reload_drop" "at" "0.146" }
 			"seat" { "credit" "1.333" "sound" "weapon_zr68.reload_seat" "at" "1.294" }
 			"slap" { "credit" "1.700" "sound" "weapon_zr68.reload_slap" "at" "1.729" }
 		}
