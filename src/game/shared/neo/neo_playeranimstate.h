@@ -23,8 +23,6 @@ enum PlayerAnimEvent_t
 	PLAYERANIMEVENT_COUNT
 };
 
-// The player animation of classic NEOTOKYO: the 2006 SDK base (9-way legs, upper body aim layers blended by speed)
-// plus one gesture layer for firing, reloading and throwing.
 class CNEOPlayerAnimState : public CBasePlayerAnimState
 {
 public:
