@@ -1606,8 +1606,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 #endif // GAME_DLL
 	}
 
-	SendWeaponAnim(GetPrimaryAttackActivity());
-	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
 	if (IsSemiAuto())
 	{
 		m_bTriggerReset = false;
@@ -1664,11 +1662,21 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		}
 	}
 
-	// the last round's shot goes straight on to the empty idle when it ends
-	if (UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle())
+	// the last round's shot locks a pistol's slide back:
+	// the pistols' dry fire sequence is a shot's kick with the slide held back,
+	static constexpr NEO_WEP_BITS_UNDERLYING_TYPE NEO_WEP_SLIDE_LOCK = NEO_WEP_MILSO | NEO_WEP_TACHI;
+	if (UsesClipsForAmmo1() && m_iClip1 <= 0 && (GetNeoWepBits() & NEO_WEP_SLIDE_LOCK))
 	{
-		SetWeaponIdleTime(gpGlobals->curtime + SequenceDuration());
+		SendWeaponAnim(ACT_VM_DRYFIRE);
 	}
+	else
+	{
+		SendWeaponAnim(GetPrimaryAttackActivity());
+	}
+
+	// and goes straight on to the empty idle when it ends
+	const bool bEmptyIdleNext = UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle();
+	SetWeaponIdleTime(gpGlobals->curtime + (bEmptyIdleNext ? SequenceDuration() : 2.0));
 
 	info.m_flDistance = MAX_TRACE_LENGTH;
 	info.m_iAmmoType = m_iPrimaryAmmoType;
@@ -2049,4 +2057,3 @@ const char *CNEOBaseCombatWeapon::GetDeathIcon(const CNEOBaseCombatWeapon *pNeoW
 	}
 	return "";
 }
-
