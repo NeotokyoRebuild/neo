@@ -248,7 +248,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		if (magSizeMax > 0)
 			bullets[magSizeMax - 1] = '+';
 
-		if(maxClip == magSizeCurrent)
+		if(activeWep->GetMaxRoundsInGun() == magSizeCurrent)
 		{
 			magAmountToDrawFilled = magSizeMax;
 		} else if(magSizeMax - 1 < magSizeCurrent)
