@@ -597,6 +597,53 @@
         "wave"			        ")weapons/m41/m41_reload.wav"
 }
 
+// weapon_m41 reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_m41.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_drop.wav"
+}
+
+"weapon_m41.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_seat.wav"
+}
+
+"weapon_m41.reload_seat2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_seat2.wav"
+}
+
+"weapon_m41.reload_slap"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_slap.wav"
+}
+
+"weapon_m41.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_bolt.wav"
+}
+
 //-------------------
 
 "weapon_m41.empty"
