@@ -326,7 +326,9 @@ private:
 	void StopReloadSoundPieces();
 	void EmitReloadSoundPiece(const char *pszSound);
 	int SelectReloadTable(bool bFromDraw, int *pSequence) const;
-	void StartReloadSequence(int iTable, int iSequence);
+	void StartReloadSequence(int iTable, int iSequence, float flGestureStartCycle);
+	float ResumeGestureCycle() const;
+	void EndReloadGesture();
 
 };
 

@@ -617,7 +617,7 @@ bool CNEOBaseCombatWeapon::ReloadWithPhases()
 		return false;
 	}
 
-	StartReloadSequence(iTable, iSequence);
+	StartReloadSequence(iTable, iSequence, ResumeGestureCycle());
 	return true;
 }
 
@@ -690,7 +690,46 @@ int CNEOBaseCombatWeapon::SelectReloadTable(bool bFromDraw, int *pSequence) cons
 }
 
 // Play a reload sequence from its start; its phase table credits the phases left from now on
-void CNEOBaseCombatWeapon::StartReloadSequence(int iTable, int iSequence)
+// Where the full reload's gesture should start for a reload resumed after a switch: the time the last completed phase
+// counts in the full reload, as a fraction of it (0 for a fresh reload)
+float CNEOBaseCombatWeapon::ResumeGestureCycle() const
+{
+	if (m_nReloadPhase == RELOAD_PHASE_NONE)
+	{
+		return 0.0f;
+	}
+
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	const int iTable = info.FindReloadTable(VM_SEQ_RELOAD);
+	const int iSequence = const_cast<CNEOBaseCombatWeapon *>(this)->LookupSequence(VM_SEQ_RELOAD);
+	if (iTable < 0 || iSequence < 0)
+	{
+		return 0.0f;
+	}
+
+	const float flDuration = const_cast<CNEOBaseCombatWeapon *>(this)->SequenceDuration(iSequence);
+	const ReloadPhaseTable_t &table = info.m_reloadTables[iTable];
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		if (table.rows[i].phase == m_nReloadPhase && flDuration > 0.0f)
+		{
+			return Clamp(table.rows[i].flCredit / flDuration, 0.0f, 1.0f);
+		}
+	}
+	return 0.0f;
+}
+
+// Stop the reload gesture others see, for a reload that ended or was cut short
+void CNEOBaseCombatWeapon::EndReloadGesture()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (pOwner && pOwner->IsPlayer())
+	{
+		static_cast<CNEO_Player *>(pOwner)->DoAnimationEvent(PLAYERANIMEVENT_RELOAD_END);
+	}
+}
+
+void CNEOBaseCombatWeapon::StartReloadSequence(int iTable, int iSequence, float flGestureStartCycle)
 {
 	CBaseCombatCharacter *pOwner = GetOwner();
 	m_nReloadTable = iTable;
@@ -724,7 +763,8 @@ void CNEOBaseCombatWeapon::StartReloadSequence(int iTable, int iSequence)
 	// the reload gesture other players see (SetAnimation(PLAYER_RELOAD) does nothing under NEO)
 	if (pOwner && pOwner->IsPlayer())
 	{
-		static_cast<CNEO_Player *>(pOwner)->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
+		// the gesture's start cycle travels in the event's spare data, in thousandths
+		static_cast<CNEO_Player *>(pOwner)->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, static_cast<int>(flGestureStartCycle * 1000.0f));
 	}
 
 	// the wait to fire is never shorter than the animation that plays
@@ -784,6 +824,10 @@ void CNEOBaseCombatWeapon::StopReloadOnDrop()
 	if (HasReloadPhases())
 	{
 		StopReloadSoundPieces();
+		if (m_bInReload)
+		{
+			EndReloadGesture();
+		}
 	}
 }
 
@@ -861,6 +905,7 @@ void CNEOBaseCombatWeapon::CheckReloadWithPhases()
 
 		// the sequence has ended
 		m_bInReload = false;
+		EndReloadGesture();
 		m_nReloadTable = -1;
 		if (!IsReloadPending())
 		{
@@ -959,7 +1004,8 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 			const int iTable = SelectReloadTable(true, &iSequence);
 			if (iTable >= 0)
 			{
-				StartReloadSequence(iTable, iSequence);
+				// the draw is part of the motion: the full gesture fits the draw-resume
+				StartReloadSequence(iTable, iSequence, 0.0f);
 			}
 		}
 
@@ -1026,6 +1072,10 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 	// The phases credited so far stay; a reload with nothing left to do is over
 	if (HasReloadPhases())
 	{
+		if (m_bInReload)
+		{
+			EndReloadGesture();
+		}
 		if (!IsReloadPending())
 		{
 			m_nReloadPhase = RELOAD_PHASE_NONE;
