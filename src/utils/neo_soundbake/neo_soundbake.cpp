@@ -575,6 +575,8 @@ int Run(const char *pszBspArg)
 		return 1;
 	}
 
+	MathLib_Init();
+
 	char error[512];
 	CNeoAudioGeometry geometry;
 	const CNeoAudioGeometry::Services services = { g_pBakeFileSystem, pSurfaceProps, pCollision };
