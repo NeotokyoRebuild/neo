@@ -674,7 +674,7 @@ int CNEOBaseCombatWeapon::SelectReloadTable(bool bFromDraw, int *pSequence) cons
 	if (pszName && V_strcmp(pszName, VM_SEQ_RELOAD) != 0)
 	{
 		const int iTable = info.FindReloadTable(pszName);
-		const int iSequence = (iTable >= 0) ? const_cast<CNEOBaseCombatWeapon *>(this)->LookupSequence(pszName) : -1;
+		const int iSequence = (iTable >= 0) ? LookupReloadSequence(pszName) : -1;
 		if (iSequence >= 0)
 		{
 			*pSequence = iSequence;
@@ -701,13 +701,13 @@ float CNEOBaseCombatWeapon::ResumeGestureCycle() const
 
 	const CNEOWeaponInfo &info = GetNEOWpnData();
 	const int iTable = info.FindReloadTable(VM_SEQ_RELOAD);
-	const int iSequence = const_cast<CNEOBaseCombatWeapon *>(this)->LookupSequence(VM_SEQ_RELOAD);
+	const int iSequence = LookupReloadSequence(VM_SEQ_RELOAD);
 	if (iTable < 0 || iSequence < 0)
 	{
 		return 0.0f;
 	}
 
-	const float flDuration = const_cast<CNEOBaseCombatWeapon *>(this)->SequenceDuration(iSequence);
+	const float flDuration = ReloadSequenceDuration(iSequence);
 	const ReloadPhaseTable_t &table = info.m_reloadTables[iTable];
 	for (int i = 0; i < table.iNumRows; ++i)
 	{
@@ -717,6 +717,26 @@ float CNEOBaseCombatWeapon::ResumeGestureCycle() const
 		}
 	}
 	return 0.0f;
+}
+
+// Reload sequences are looked up on the owner's viewmodel: on the client the weapon entity carries the world model,
+// so a lookup there would fail and the client would predict a different sequence than the server plays
+CBaseViewModel *CNEOBaseCombatWeapon::ReloadViewModel() const
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	return pOwner ? pOwner->GetViewModel(m_nViewModelIndex) : nullptr;
+}
+
+int CNEOBaseCombatWeapon::LookupReloadSequence(const char *pszName) const
+{
+	CBaseViewModel *pVM = ReloadViewModel();
+	return pVM ? pVM->LookupSequence(pszName) : -1;
+}
+
+float CNEOBaseCombatWeapon::ReloadSequenceDuration(int iSequence) const
+{
+	CBaseViewModel *pVM = ReloadViewModel();
+	return pVM ? pVM->SequenceDuration(iSequence) : 0.0f;
 }
 
 // Stop the reload gesture others see, for a reload that ended or was cut short
@@ -768,7 +788,7 @@ void CNEOBaseCombatWeapon::StartReloadSequence(int iTable, int iSequence, float 
 	}
 
 	// the wait to fire is never shorter than the animation that plays
-	const float flEnd = gpGlobals->curtime + SequenceDuration();
+	const float flEnd = gpGlobals->curtime + ((iSequence >= 0) ? ReloadSequenceDuration(iSequence) : SequenceDuration());
 	if (pOwner)
 	{
 		pOwner->SetNextAttack(flEnd);
