@@ -64,6 +64,18 @@ public:
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 
+	// What sits in the chamber: a live shell or slug, the hull of a fired one, or nothing
+	enum Supa7Chamber_t
+	{
+		SUPA7_CHAMBER_EMPTY = 0,
+		SUPA7_CHAMBER_SHELL,
+		SUPA7_CHAMBER_SLUG,
+		SUPA7_CHAMBER_HULL,
+	};
+	int TubeCount() const { return m_nTubeCount; }
+	bool IsTubeSlug(int iPosition) const { return (m_nTubeSlugs & (1 << iPosition)) != 0; }
+	Supa7Chamber_t Chamber() const { return static_cast<Supa7Chamber_t>(m_nChamber.Get()); }
+
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
@@ -76,6 +88,13 @@ private:
 			m_flNextPrimaryAttack = flNextAttackProposal;
 		}
 	}
+
+	bool IsChamberLive() const { return m_nChamber == SUPA7_CHAMBER_SHELL || m_nChamber == SUPA7_CHAMBER_SLUG; }
+	int TubeCapacity() const;
+	void SyncTube();
+	void TubePush(bool bSlug);
+	void Rack();
+	void UpdateClipFromTube();
 
 	void SetShotgunShellVisible(bool is_visible)
 	{
@@ -90,6 +109,12 @@ private:
 	CNetworkVar(bool, m_bWeaponRaised); // Slug currently loaded in chamber
 	CNetworkVar(bool, m_bShellInChamber); // Slug currently loaded in chamber
 	CNetworkVar(float, m_flNextReload); // Time to load the next shell
+
+	// The tube is a stack, the last item loaded is the first fed; m_iClip1 stays the live rounds in the gun
+	CNetworkVar(int, m_nTubeCount); // items in the tube
+	CNetworkVar(int, m_nTubeSlugs); // bit i: the item at tube position i (0 = loaded first) is a slug
+	CNetworkVar(int, m_nChamber); // Supa7Chamber_t
+	CNetworkVar(bool, m_bRackPending); // a slug was loaded to be fired next: the reload ends with a rack
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);
