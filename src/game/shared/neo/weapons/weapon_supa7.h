@@ -63,6 +63,8 @@ public:
 	void ClearDelayedInputs(void);
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
+	// the tube plus the round in the chamber
+	int GetMaxRoundsInGun() const OVERRIDE;
 	bool Holster(CBaseCombatWeapon *pSwitchingTo) OVERRIDE;
 
 	// What sits in the chamber: a live shell or slug, the hull of a fired one, or nothing
@@ -73,6 +75,8 @@ public:
 		SUPA7_CHAMBER_SLUG,
 		SUPA7_CHAMBER_HULL,
 	};
+	// the chamber holds one round, outside the tube
+	static constexpr int SUPA7_CHAMBER_ROUNDS = 1;
 	int TubeCount() const { return m_nTubeCount; }
 	bool IsTubeSlug(int iPosition) const { return (m_nTubeSlugs & (1 << iPosition)) != 0; }
 	Supa7Chamber_t Chamber() const { return static_cast<Supa7Chamber_t>(m_nChamber.Get()); }

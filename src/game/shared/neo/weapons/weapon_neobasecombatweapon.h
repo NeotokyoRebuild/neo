@@ -265,7 +265,7 @@ public:
 	virtual float GetFireRate() override final;
 	float GetPenetration() const;
 	// the magazine plus the round a partial reload keeps in the chamber
-	int GetMaxRoundsInGun() const;
+	virtual int GetMaxRoundsInGun() const;
 	void StopReloadOnDrop();
 #ifdef CLIENT_DLL
 	float m_flTemperature;
