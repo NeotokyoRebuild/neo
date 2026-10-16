@@ -271,6 +271,11 @@ void sndVictoryVolumeChangeCallback(IConVar* cvar [[maybe_unused]], const char* 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0, sndVictoryVolumeChangeCallback);
 #endif // CLIENT_DLL
 
+#ifdef NEO_STEAMAUDIO
+ConVar sv_neo_hrtf("sv_neo_hrtf", "1", FCVAR_REPLICATED,
+	"Re-render positional sounds with HRTF (proof of concept)", true, 0.0f, true, 1.0f);
+#endif // NEO_STEAMAUDIO
+
 #ifdef CLIENT_DLL
 void CNEOGameRulesProxy::OnDataChanged(DataUpdateType_t updateType)
 {

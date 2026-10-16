@@ -892,6 +892,15 @@ if(NEO_STEAMAUDIO)
         TARGET client
         NAME "HRTF"
         FILES
+        neo/audio/neo_audio_dynamic.cpp
+        neo/audio/neo_audio_dynamic.h
+        neo/audio/neo_audio_geometry.cpp
+        neo/audio/neo_audio_geometry.h
+        neo/audio/neo_audio_probe_lump.cpp
+        neo/audio/neo_audio_probe_lump.h
+        neo/audio/neo_audio_probes.cpp
+        neo/audio/neo_audio_probes.h
+        neo/audio/neo_hrtf_local_sound.h
         neo/audio/neo_hrtf_system.cpp
         neo/audio/neo_hrtf_system.h
         neo/audio/neo_spatializer.h
@@ -906,6 +915,23 @@ if(NEO_STEAMAUDIO)
             SKIP_UNITY_BUILD_INCLUSION ON
             SKIP_PRECOMPILE_HEADERS ON
             INCLUDE_DIRECTORIES ${STEAMAUDIO_INCLUDE_DIR}
+    )
+
+    # Probe placement and the baked probe lump format are plain C++ too, so they also build into
+    # the offline tests and the compile-time baker (utils/neo_soundbake).
+    set_source_files_properties(
+        neo/audio/neo_audio_probes.cpp
+        neo/audio/neo_audio_probe_lump.cpp
+        PROPERTIES
+            SKIP_UNITY_BUILD_INCLUSION ON
+            SKIP_PRECOMPILE_HEADERS ON
+    )
+
+    # These use the standard library (containers, std::thread for the bake), whose MSVC headers
+    # need unwind semantics; the rest of the client keeps exceptions off.
+    set_property(
+        SOURCE neo/audio/neo_spatializer_steamaudio.cpp neo/audio/neo_audio_probes.cpp neo/audio/neo_audio_probe_lump.cpp
+        APPEND PROPERTY COMPILE_OPTIONS $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
     )
 endif()
 
@@ -1593,6 +1619,7 @@ target_sources_grouped(
 )
 
 set(UNITY_SOURCE_NEO_SRC_CLIENT
+    neo/c_neo_ambient_generic.cpp
     neo/c_neo_message.cpp
     neo/c_neo_npc_dummy.cpp
     neo/c_neo_point_world_text.cpp
@@ -1612,6 +1639,7 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO"
     FILES
+    neo/c_neo_ambient_generic.h
     neo/c_neo_message.h
     neo/c_neo_npc_dummy.h
     neo/c_neo_point_world_text.h
@@ -1757,6 +1785,7 @@ set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
@@ -1787,6 +1816,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
@@ -1896,14 +1926,11 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\Shared\\Multiplayer"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.h
 )
 
 set(UNITY_SOURCE_HL2MP
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     hl2mp/c_hl2mp_player.cpp
     hl2mp/c_te_hl2mp_shotgun_shot.cpp
@@ -1921,7 +1948,6 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
     hl2mp/c_hl2mp_player.h
     hl2mp/clientmode_hl2mpnormal.h

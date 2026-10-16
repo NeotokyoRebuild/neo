@@ -64,6 +64,7 @@ struct NeoSettings
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
 		int iLeanAutomatic;
+		int iCapZoneEdge;
 		int iEquipUtilityPriority;
 		bool bWeaponFastSwitch;
 		bool bShowPlayerSprays;
@@ -130,6 +131,7 @@ struct NeoSettings
 		float flVolPing;
 		int iSoundSetup;
 		int iSoundQuality;
+		bool bHrtfEnabled;
 		bool bMuteAudioUnFocus;
 		bool bPauseMusicInGame;
 		int iMusicStartupType;
@@ -260,6 +262,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_neo_lean_automatic);
+		CONVARREF_DEF(cl_neo_cap_zone_edge);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
 		CONVARREF_DEF(cl_neo_hud_health_mode);
 		CONVARREF_DEF(cl_neo_hud_worldpos_verbose);
@@ -313,6 +316,7 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_ping_volume);
 		CONVARREF_DEF(snd_surround_speakers);
+		CONVARREF_DEF(cl_neo_hrtf);
 		CONVARREF_DEF(voice_modenable);
 		CONVARREF_DEF(voice_scale);
 		CONVARREF_DEF(snd_mute_losefocus);

@@ -1423,6 +1423,7 @@ set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
@@ -1436,6 +1437,7 @@ set(UNITY_SOURCE_NEO_SHARED
 )
 
 set(UNITY_SOURCE_NEO_SRC_SERVER
+    neo/neo_audio_blocker.cpp
     neo/neo_bloom_controller.cpp
     neo/neo_client.cpp
     neo/neo_detpack.cpp
@@ -1480,6 +1482,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
@@ -1740,14 +1743,11 @@ target_sources_grouped(
     TARGET server
     NAME "Source Files\\Shared\\Multiplayer"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.h
 )
 
 set(UNITY_SOURCE_HL2MP
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     hl2mp/hl2mp_client.cpp
     hl2mp/hl2mp_cvars.cpp
@@ -1766,7 +1766,6 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.h
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
     hl2mp/hl2mp_gameinterface.h
     hl2mp/hl2mp_player.h

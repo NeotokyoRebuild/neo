@@ -22,6 +22,7 @@
 
 #ifdef NEO
 #include "c_neo_player.h"
+#include "neo_smoke_visual_state.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -169,6 +170,12 @@ private:
 
 // State variables from server.
 public:
+#ifdef NEO
+	// See NeoGetSmokeGrenadeVisualState().
+	float						GetExpandRadius() const { return m_ExpandRadius; }
+	float						GetMaxExpandRadius() const { return m_SpacingRadius * 2; }
+#endif
+
 	
 	unsigned char		m_CurrentStage;
 	Vector				m_SmokeBasePos;
@@ -213,6 +220,33 @@ private:
 	C_SmokeTrail		m_SmokeTrail;
 };
 
+
+#ifdef NEO
+bool NeoGetSmokeGrenadeVisualState(C_BaseEntity *pEnt, NeoSmokeGrenadeVisualState_t &outState)
+{
+	C_ParticleSmokeGrenade *pSmoke = dynamic_cast<C_ParticleSmokeGrenade*>(pEnt);
+	if (!pSmoke || pSmoke->m_CurrentStage != 1)
+	{
+		return false;
+	}
+
+	const float maxRadius = pSmoke->GetMaxExpandRadius();
+	if (maxRadius <= 0.0f)
+	{
+		return false;
+	}
+
+	const float expandRadius = pSmoke->GetExpandRadius();
+	const float expandFraction = expandRadius / maxRadius;
+
+	outState.center = pSmoke->m_SmokeBasePos;
+	outState.expandRadius = expandRadius;
+	// m_FadeAlpha is the time fade already multiplied by expandFraction
+	// (see Update()); undo that to get the pure fade.
+	outState.fade = (expandFraction > 0.01f) ? clamp(pSmoke->m_FadeAlpha / expandFraction, 0.0f, 1.0f) : 1.0f;
+	return true;
+}
+#endif
 
 // Expose to the particle app.
 EXPOSE_PROTOTYPE_EFFECT(SmokeGrenade, C_ParticleSmokeGrenade);

@@ -699,3 +699,6 @@ FodyWeavers.xsd
 
 # Selected Background
 /game/neo/scripts/[Cc]hapter[Bb]ackgrounds.txt
+
+# Client generated sound probes
+*.probes
