@@ -860,6 +860,44 @@
         "wave"			        ")weapons/srs/srs_reload.wav"
 }
 
+// weapon_srs reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_srs.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srs/srs_reload_drop.wav"
+}
+
+"weapon_srs.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srs/srs_reload_seat.wav"
+}
+
+"weapon_srs.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srs/srs_reload_bolt.wav"
+}
+
+"weapon_srs.reload_bolt2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srs/srs_reload_bolt2.wav"
+}
+
 //-------------------
 
 "weapon_srs.charge"
