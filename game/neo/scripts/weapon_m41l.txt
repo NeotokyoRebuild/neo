@@ -15,6 +15,7 @@ WeaponData
 	"Damage"		"45"
 	"Penetration"		"32.0"
 	"CycleTime"		"0.5"		 // time between shots
+	"ReloadReadyBeforeEnd"	"0.333"	// the reload is done at the last reload click, this long before its animation ends
 	
 	"TPMuzzleFlashScale"	"0.25"
 
