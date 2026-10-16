@@ -95,6 +95,7 @@ private:
 	void TubePush(bool bSlug);
 	void Rack();
 	void UpdateClipFromTube();
+	void PlayInsertAtShellPace();
 
 	void SetShotgunShellVisible(bool is_visible)
 	{
