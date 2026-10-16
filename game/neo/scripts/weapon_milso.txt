@@ -28,7 +28,7 @@ WeaponData
 		{
 			"drop" { "credit" "0.467" "sound" "weapon_milso.reload_drop" "at" "0.292" }
 			"seat" { "credit" "1.167" "sound" "weapon_milso.reload_seat" "at" "1.243" }
-			"bolt" { "credit" "2.067" }
+			"bolt" { "credit" "2.067" "sound" "weapon_milso.reload_bolt" "at" "2.060" }
 		}
 		"reload_from_drop_partial"
 		{
@@ -37,11 +37,11 @@ WeaponData
 		"reload_from_drop_dry"
 		{
 			"seat" { "credit" "1.167" "sound" "weapon_milso.reload_seat" "at" "1.243" }
-			"bolt" { "credit" "2.067" }
+			"bolt" { "credit" "2.067" "sound" "weapon_milso.reload_bolt" "at" "2.060" }
 		}
 		"reload_from_seat_dry"
 		{
-			"bolt" { "credit" "0.267" }
+			"bolt" { "credit" "0.267" "sound" "weapon_milso.reload_bolt" "at" "0.260" }
 		}
 		"draw_resume_drop_partial"
 		{
@@ -50,7 +50,7 @@ WeaponData
 		"draw_resume_drop_dry"
 		{
 			"seat" { "credit" "1.500" "sound" "weapon_milso.reload_seat" "at" "1.576" }
-			"bolt" { "credit" "2.400" }
+			"bolt" { "credit" "2.400" "sound" "weapon_milso.reload_bolt" "at" "2.393" }
 		}
 	}
 	
