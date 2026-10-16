@@ -184,6 +184,35 @@
         "wave"			        ")weapons/kyla/kyla_reload.wav"
 }
 
+// weapon_kyla reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_kyla.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/kyla/kyla_reload_drop.wav"
+}
+
+"weapon_kyla.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/kyla/kyla_reload_seat.wav"
+}
+
+"weapon_kyla.reload_seat2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/kyla/kyla_reload_seat2.wav"
+}
+
 //------------------
 
 "weapon_kyla.empty"
