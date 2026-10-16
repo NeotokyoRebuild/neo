@@ -294,9 +294,29 @@ protected:
 	// When the reload in progress loads the magazine, 0 once it is loaded
 	CNetworkVar(float, m_flReloadReadyTime);
 
+	// Reload phases (weapons whose script has a ReloadPhases block): the last phase credited, kept across a switch
+	CNetworkVar(int, m_nReloadPhase);
+	// no round in the chamber: the gun cannot fire, and the next reload needs the bolt
+	CNetworkVar(bool, m_bChamberEmpty);
+	// the reload in progress needs the bolt
+	CNetworkVar(bool, m_bReloadDry);
+	// the phase table of the sequence playing, -1 none
+	CNetworkVar(int, m_nReloadTable);
+	// when the reload sequence started; phase credits are offsets from it
+	CNetworkVar(float, m_flReloadStart);
+
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
 	bool HasEmptyIdle();
+
+	bool HasReloadPhases() const;
+	bool IsReloadDry() const;
+	ReloadPhase_t LastReloadPhase(bool bDry) const;
+	bool IsReloadPending() const;
+	bool ReloadWithPhases();
+	void RunReloadPhases();
+	void CreditReloadPhase(ReloadPhase_t phase);
+	void CheckReloadWithPhases();
 
 };
 
