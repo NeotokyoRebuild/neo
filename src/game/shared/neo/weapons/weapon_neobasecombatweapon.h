@@ -328,6 +328,9 @@ private:
 	int SelectReloadTable(bool bFromDraw, int *pSequence) const;
 	void StartReloadSequence(int iTable, int iSequence, float flGestureStartCycle);
 	float ResumeGestureCycle() const;
+	CBaseViewModel *ReloadViewModel() const;
+	int LookupReloadSequence(const char *pszName) const;
+	float ReloadSequenceDuration(int iSequence) const;
 	void EndReloadGesture();
 
 };
