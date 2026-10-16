@@ -63,6 +63,7 @@ public:
 	void ClearDelayedInputs(void);
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
+	bool Holster(CBaseCombatWeapon *pSwitchingTo) OVERRIDE;
 
 	// What sits in the chamber: a live shell or slug, the hull of a fired one, or nothing
 	enum Supa7Chamber_t
@@ -96,6 +97,8 @@ private:
 	void Rack();
 	void UpdateClipFromTube();
 	void PlayInsertAtShellPace();
+	void StartRack();
+	void RunRack();
 
 	void SetShotgunShellVisible(bool is_visible)
 	{
@@ -116,6 +119,8 @@ private:
 	CNetworkVar(int, m_nTubeSlugs); // bit i: the item at tube position i (0 = loaded first) is a slug
 	CNetworkVar(int, m_nChamber); // Supa7Chamber_t
 	CNetworkVar(bool, m_bRackPending); // a slug was loaded to be fired next: the reload ends with a rack
+	CNetworkVar(float, m_flRackTime); // a standalone rack's back stroke: the chamber is ejected and fed then
+	CNetworkVar(float, m_flRackSoundTime); // when its pump sound starts
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);
