@@ -458,7 +458,14 @@ bool CNEOBaseCombatWeapon::Reload( void )
 	// an empty weapon reloads with its slide held back until the release, where the model has that reload
 	if (UsesClipsForAmmo1() && m_iClip1 <= 0 && SelectWeightedSequence(ACT_VM_RELOAD_EMPTY) != ACTIVITY_NOT_AVAILABLE)
 	{
-		return DefaultReload(GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD_EMPTY);
+		if (!DefaultReload(GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD_EMPTY))
+		{
+			return false;
+		}
+
+		// others see the reload, as for a reload with rounds left
+		ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
+		return true;
 	}
 
 	if (!BaseClass::Reload())
