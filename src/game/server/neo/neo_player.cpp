@@ -2996,9 +2996,9 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 		return; // Return early to not drop weapon
 	}
 
+	neoWeapon->StopReloadOnDrop();
 	pWeapon->m_bInReload = false;
 	pWeapon->StopWeaponSound(RELOAD_NPC);
-	neoWeapon->StopReloadOnDrop();
 
 
 	Vector vecVel = BodyDirection3D();
