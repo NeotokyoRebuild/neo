@@ -75,8 +75,12 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 			ReloadPhaseRow_t &row = table.rows[table.iNumRows++];
 			row.phase = phase;
 			row.flCredit = pRow->GetFloat("credit");
-			row.flSoundAt = pRow->GetFloat("at");
-			V_strncpy(row.szSound, pRow->GetString("sound"), sizeof(row.szSound));
+			static constexpr const char *SOUND_KEYS[RELOAD_SOUNDS_PER_ROW][2] = { { "sound", "at" }, { "sound2", "at2" } };
+			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
+			{
+				row.sounds[j].flAt = pRow->GetFloat(SOUND_KEYS[j][1]);
+				V_strncpy(row.sounds[j].szName, pRow->GetString(SOUND_KEYS[j][0]), sizeof(row.sounds[j].szName));
+			}
 		}
 	}
 }
