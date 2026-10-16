@@ -266,8 +266,8 @@ bool CWeaponSupa7::ReloadSlug(void)
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
 	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
-	PlayInsertAtShellPace();
 
+	// a slug insert waits for its whole animation, so it plays at its own pace
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	// ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
 	m_flNextReload = gpGlobals->curtime + SequenceDuration();
