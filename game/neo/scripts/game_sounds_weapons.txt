@@ -24,6 +24,17 @@
 
 // weapon_milso reload in per-phase pieces (research): each file starts 0.02 s before its first transient
 
+"weapon_milso.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/milso/milso_reload_bolt.wav"
+}
+
+// weapon_milso reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
 "weapon_milso.reload_drop"
 {
 	"channel"		"CHAN_ITEM"
@@ -96,6 +107,17 @@
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        ")weapons/tachi/tachi_reload.wav"
+}
+
+// weapon_tachi reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_tachi.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/tachi/tachi_reload_bolt.wav"
 }
 
 // weapon_tachi reload in per-phase pieces (research): each file starts 0.02 s before its first transient
