@@ -25,6 +25,9 @@ enum ReloadPhase_t
 };
 
 static constexpr int RELOAD_PHASE_TABLES_MAX = 12;
+// bits to network a table index, signed so that -1 (no table) fits
+static constexpr int RELOAD_PHASE_TABLE_BITS = 5;
+static_assert((1 << (RELOAD_PHASE_TABLE_BITS - 1)) >= RELOAD_PHASE_TABLES_MAX, "RELOAD_PHASE_TABLE_BITS cannot hold every table index");
 static constexpr int RELOAD_PHASE_ROWS_MAX = RELOAD_PHASE_COUNT - 1;
 static constexpr int RELOAD_SOUND_NAME_MAX = 64;
 static constexpr int RELOAD_SEQUENCE_NAME_MAX = 32;
