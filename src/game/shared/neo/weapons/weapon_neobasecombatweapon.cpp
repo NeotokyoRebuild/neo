@@ -47,6 +47,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropBool(RECVINFO(m_bReloadDry)),
 	RecvPropInt(RECVINFO(m_nReloadTable)),
 	RecvPropTime(RECVINFO(m_flReloadStart)),
+	RecvPropInt(RECVINFO(m_nReloadSoundsDone)),
 	RecvPropInt(RECVINFO(m_spawnflags)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
@@ -60,6 +61,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropBool(SENDINFO(m_bReloadDry)),
 	SendPropInt(SENDINFO(m_nReloadTable), 4),
 	SendPropTime(SENDINFO(m_flReloadStart)),
+	SendPropInt(SENDINFO(m_nReloadSoundsDone), RELOAD_PHASE_ROWS_MAX, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
@@ -78,6 +80,7 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_bReloadDry, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nReloadTable, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flReloadStart, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nReloadSoundsDone, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -96,6 +99,7 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_bReloadDry, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_nReloadTable, FIELD_INTEGER),
 	DEFINE_FIELD(m_flReloadStart, FIELD_TIME),
+	DEFINE_FIELD(m_nReloadSoundsDone, FIELD_INTEGER),
 END_DATADESC()
 #endif
 
@@ -258,6 +262,7 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 	m_bReloadDry = false;
 	m_nReloadTable = -1;
 	m_flReloadStart = 0.0f;
+	m_nReloadSoundsDone = 0;
 }
 
 const CNEOWeaponInfo &CNEOBaseCombatWeapon::GetNEOWpnData() const
@@ -489,6 +494,9 @@ bool CNEOBaseCombatWeapon::Reload( void )
 #endif
 }
 
+// Each reload sound piece's file starts this long before its first transient
+static constexpr float RELOAD_SOUND_LEAD = 0.02f;
+
 // The shipped reload sequence, the dry reload with every phase
 static constexpr const char *VM_SEQ_RELOAD = "reload";
 
@@ -578,7 +586,11 @@ bool CNEOBaseCombatWeapon::ReloadWithPhases()
 	// The shipped reload plays whatever phases are left; the phases credited before a switch are not credited again
 	m_bReloadDry = IsReloadDry();
 	m_nReloadTable = iTable;
-	WeaponSound(RELOAD_NPC);
+	m_nReloadSoundsDone = 0;
+	if (!HasReloadSoundPieces())
+	{
+		WeaponSound(RELOAD_NPC);
+	}
 	SendWeaponAnim(ACT_VM_RELOAD);
 	if (pOwner->IsPlayer())
 	{
@@ -611,12 +623,86 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 		{
 			continue;
 		}
+
+		// a phase's sound piece may start before the phase is credited, such as the grab before the magazine drops
+		if (row.szSound[0] && !(m_nReloadSoundsDone & (1 << i)) && flElapsed >= row.flSoundAt - RELOAD_SOUND_LEAD)
+		{
+			m_nReloadSoundsDone |= (1 << i);
+			EmitReloadSoundPiece(row.szSound);
+		}
+
 		if (flElapsed < row.flCredit)
 		{
 			break;
 		}
 		CreditReloadPhase(row.phase);
 	}
+}
+
+bool CNEOBaseCombatWeapon::HasReloadSoundPieces() const
+{
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	for (int t = 0; t < info.m_iNumReloadTables; ++t)
+	{
+		for (int i = 0; i < info.m_reloadTables[t].iNumRows; ++i)
+		{
+			if (info.m_reloadTables[t].rows[i].szSound[0])
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+// Play a reload sound piece from the owner, as WeaponSound does: predicted for the owner, from the server for the rest
+void CNEOBaseCombatWeapon::EmitReloadSoundPiece(const char *pszSound)
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+	{
+		return;
+	}
+
+	CSoundParameters params;
+	if (!GetParametersForSound(pszSound, params, NULL))
+	{
+		return;
+	}
+
+	CPASAttenuationFilter filter(pOwner, params.soundlevel);
+	if (IsPredicted() && CBaseEntity::GetPredictionPlayer())
+	{
+		filter.UsePredictionRules();
+	}
+	EmitSound(filter, pOwner->entindex(), pszSound);
+}
+
+// A switch cuts the reload sound pieces off
+void CNEOBaseCombatWeapon::StopReloadSoundPieces()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+	{
+		return;
+	}
+
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	for (int t = 0; t < info.m_iNumReloadTables; ++t)
+	{
+		for (int i = 0; i < info.m_reloadTables[t].iNumRows; ++i)
+		{
+			if (info.m_reloadTables[t].rows[i].szSound[0])
+			{
+				StopSound(pOwner->entindex(), info.m_reloadTables[t].rows[i].szSound);
+			}
+		}
+	}
+}
+
+int CNEOBaseCombatWeapon::GetMaxRoundsInGun() const
+{
+	return GetMaxClip1() + ((HasReloadPhases() && GetNEOWpnData().m_bChamberedRound) ? 1 : 0);
 }
 
 void CNEOBaseCombatWeapon::CreditReloadPhase(ReloadPhase_t phase)
@@ -814,6 +900,7 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 			m_nReloadPhase = RELOAD_PHASE_NONE;
 		}
 		m_nReloadTable = -1;
+		StopReloadSoundPieces();
 	}
 
 	return BaseClass::Holster(pSwitchingTo);
