@@ -981,6 +981,44 @@
 	"wave"			        ")weapons/mx/mx_reload.wav"
 }
 
+// weapon_mx reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_mx.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mx/mx_reload_drop.wav"
+}
+
+"weapon_mx.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mx/mx_reload_seat.wav"
+}
+
+"weapon_mx.reload_slap"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mx/mx_reload_slap.wav"
+}
+
+"weapon_mx.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mx/mx_reload_bolt.wav"
+}
+
 //-------------------
 
 "weapon_mx.empty"
