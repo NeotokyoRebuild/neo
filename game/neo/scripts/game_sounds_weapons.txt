@@ -353,6 +353,35 @@
         "wave"			        ")weapons/mpn45/mpn45_reload.wav"
 }
 
+// weapon_mpn45 reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_mpn45.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mpn45/mpn45_reload_drop.wav"
+}
+
+"weapon_mpn45.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mpn45/mpn45_reload_seat.wav"
+}
+
+"weapon_mpn45.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mpn45/mpn45_reload_bolt.wav"
+}
+
 //-------------------
 
 "weapon_mpn45.empty"
@@ -427,6 +456,35 @@
         "CompatibilityAttenuation"	"1.0"
 	"pitch"                         "PITCH_NORM"
         "wave"			        ")weapons/srm/srm_reload.wav"
+}
+
+// weapon_srm reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_srm.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srm/srm_reload_drop.wav"
+}
+
+"weapon_srm.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srm/srm_reload_seat.wav"
+}
+
+"weapon_srm.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srm/srm_reload_bolt.wav"
 }
 
 //-------------------
