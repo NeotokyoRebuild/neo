@@ -266,7 +266,7 @@ void HrtfDataCallback(ma_device *pDevice, void *pOutput, const void *pInput, ma_
 
 } // namespace
 
-ConVar cl_neo_hrtf("cl_neo_hrtf", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
+ConVar cl_neo_hrtf("cl_neo_hrtf", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Re-render positional sounds with HRTF (proof of concept)", true, 0.0f, true, 1.0f);
 ConVar cl_neo_hrtf_volume("cl_neo_hrtf_volume", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE,
 	"Volume of the HRTF output, on top of the master volume", true, 0.0f, true, 1.0f);

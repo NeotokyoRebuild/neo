@@ -272,7 +272,7 @@ ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DO
 #endif // CLIENT_DLL
 
 #ifdef NEO_STEAMAUDIO
-ConVar sv_neo_hrtf("sv_neo_hrtf", "0", FCVAR_REPLICATED,
+ConVar sv_neo_hrtf("sv_neo_hrtf", "1", FCVAR_REPLICATED,
 	"Re-render positional sounds with HRTF (proof of concept)", true, 0.0f, true, 1.0f);
 #endif // NEO_STEAMAUDIO
 
