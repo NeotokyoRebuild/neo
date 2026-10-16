@@ -147,7 +147,7 @@ bool CWeaponSupa7::StartReload(void)
 		return false;
 
 	SyncTube();
-	if (m_iClip1 >= GetMaxClip1() || m_nTubeCount >= TubeCapacity())
+	if (m_nTubeCount >= TubeCapacity())
 		return false;
 
 	SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
@@ -179,7 +179,7 @@ bool CWeaponSupa7::StartReloadSlug(void)
 	}
 
 	SyncTube();
-	if (m_iClip1 >= GetMaxClip1() || m_nTubeCount >= TubeCapacity())
+	if (m_nTubeCount >= TubeCapacity())
 		return false;
 
 	if (!m_bInReload)
@@ -217,7 +217,7 @@ bool CWeaponSupa7::Reload(void)
 	if (m_iPrimaryAmmoCount <= 0)
 		return false;
 
-	if (m_iClip1 >= GetMaxClip1() || m_nTubeCount >= TubeCapacity())
+	if (m_nTubeCount >= TubeCapacity())
 		return false;
 
 	// Play reload on different channel as otherwise steals channel away from fire sound
@@ -255,7 +255,7 @@ bool CWeaponSupa7::ReloadSlug(void)
 	if (m_iSecondaryAmmoCount <= 0)
 		return false;
 
-	if (m_iClip1 >= GetMaxClip1() || m_nTubeCount >= TubeCapacity())
+	if (m_nTubeCount >= TubeCapacity())
 		return false;
 
 	// the slug goes on top of the tube and is racked into the chamber when the reload ends
@@ -474,9 +474,9 @@ void CWeaponSupa7::ItemPostFrame(void)
 			}
 			else
 			{
-				// If out of ammo end reload
+				// If out of ammo or the tube is full end reload
 				// (a slug loaded to be fired next is racked up before anything goes on top of it)
-				if ((m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_bRackPending || m_iClip1 >= GetMaxClip1()))
+				if ((m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_bRackPending || m_nTubeCount >= TubeCapacity()))
 				{
 					FinishReload();
 				}
@@ -644,10 +644,16 @@ bool CWeaponSupa7::Holster(CBaseCombatWeapon *pSwitchingTo)
 	return BaseClass::Holster(pSwitchingTo);
 }
 
-// The tube holds what the gun's capacity leaves beside a live round in the chamber
+// The script's clip size is the tube, and the chamber holds one more round beside it:
+// a dry reload fills the tube and racks one up, leaving room in the tube for a top-off
 int CWeaponSupa7::TubeCapacity() const
 {
-	return GetMaxClip1() - (IsChamberLive() ? 1 : 0);
+	return GetMaxClip1();
+}
+
+int CWeaponSupa7::GetMaxRoundsInGun() const
+{
+	return TubeCapacity() + SUPA7_CHAMBER_ROUNDS;
 }
 
 // Rebuild the tube from the clip count when something set the count directly (a new or picked-up gun, a harness give):
@@ -660,9 +666,9 @@ void CWeaponSupa7::SyncTube()
 		return;
 	}
 
-	const int iClip = Max(0, m_iClip1.Get());
+	const int iClip = Clamp(m_iClip1.Get(), 0, GetMaxRoundsInGun());
 	m_nChamber = (iClip > 0) ? (m_bSlugLoaded ? SUPA7_CHAMBER_SLUG : SUPA7_CHAMBER_SHELL) : SUPA7_CHAMBER_EMPTY;
-	m_nTubeCount = Max(0, iClip - 1);
+	m_nTubeCount = Max(0, iClip - SUPA7_CHAMBER_ROUNDS);
 	m_nTubeSlugs = 0;
 	UpdateClipFromTube();
 }
