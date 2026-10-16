@@ -514,6 +514,44 @@
         "wave"			        ")weapons/jitte/jitte_reload.wav"
 }
 
+// weapon_jitte reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_jitte.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/jitte/jitte_reload_drop.wav"
+}
+
+"weapon_jitte.reload_drop2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/jitte/jitte_reload_drop2.wav"
+}
+
+"weapon_jitte.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/jitte/jitte_reload_seat.wav"
+}
+
+"weapon_jitte.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/jitte/jitte_reload_bolt.wav"
+}
+
 //-------------------
 
 "weapon_jitte.empty"
