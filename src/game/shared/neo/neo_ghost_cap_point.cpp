@@ -512,7 +512,7 @@ int CNEOGhostCapturePoint::DrawModel(int flags)
 	auto *player = C_NEO_Player::GetLocalNEOPlayer();
 
 	const Vector& capOrigin = GetAbsOrigin();
-	int ringOpacity = 128;
+	int ringOpacity = 172;
 	constexpr float MAX_VISIBILITY_RANGE = 768.0f;
 
 	if (player)
@@ -526,7 +526,7 @@ int CNEOGhostCapturePoint::DrawModel(int flags)
 		}
 
 		const Vector& playerOrigin = player->GetAbsOrigin();
-		const float distanceToCap = playerOrigin.DistTo(capOrigin);
+		const float distanceToCap = max(0.f, playerOrigin.DistTo(capOrigin) - m_flCapzoneRadius);
 
 		if (distanceToCap > MAX_VISIBILITY_RANGE) {
 			return 0; // Don't draw the ring if the player is too far away
@@ -534,7 +534,7 @@ int CNEOGhostCapturePoint::DrawModel(int flags)
 
 		// smooth fade out of ring opacity based on distance to player
 		const float opacityCoef = distanceToCap / MAX_VISIBILITY_RANGE;
-		ringOpacity = static_cast<int>(128 * (1.0f - opacityCoef));
+		ringOpacity = static_cast<int>(172 * (1.0f - opacityCoef));
 	}
 
 	ringColor[3] = ringOpacity;
