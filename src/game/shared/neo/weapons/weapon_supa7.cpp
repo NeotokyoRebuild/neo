@@ -81,6 +81,9 @@ IMPLEMENT_ACTTABLE(CWeaponSupa7);
 #endif
 #endif
 
+// One shell or slug goes into the tube every this many seconds
+static constexpr float TIME_BETWEEN_SHELLS_LOADED = 0.5f;
+
 CWeaponSupa7::CWeaponSupa7(void)
 {
 	m_bReloadsSingly = true;
@@ -212,8 +215,9 @@ bool CWeaponSupa7::Reload(void)
 	SendWeaponAnim(ACT_VM_RELOAD);
 	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
 
+	PlayInsertAtShellPace();
+
 	pOwner->m_flNextAttack = gpGlobals->curtime;
-	constexpr float TIME_BETWEEN_SHELLS_LOADED = 0.5f;
 	// ProposeNextAttack(gpGlobals->curtime + TIME_BETWEEN_SHELLS_LOADED);
 	m_flNextReload = gpGlobals->curtime + TIME_BETWEEN_SHELLS_LOADED;
 
@@ -252,6 +256,7 @@ bool CWeaponSupa7::ReloadSlug(void)
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
 	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
+	PlayInsertAtShellPace();
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	// ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -546,6 +551,24 @@ void CWeaponSupa7::ItemPostFrame(void)
 		{
 			WeaponIdle();
 		}
+	}
+}
+
+// The insert animation is longer than the interval between shells, so it was cut and restarted
+// with the hand snapping back to the pouch; play it fast enough to finish each shell within the interval
+void CWeaponSupa7::PlayInsertAtShellPace()
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	CBaseViewModel *pVM = pOwner ? pOwner->GetViewModel(m_nViewModelIndex) : nullptr;
+	if (!pVM)
+	{
+		return;
+	}
+
+	const float flDuration = pVM->SequenceDuration();
+	if (flDuration > TIME_BETWEEN_SHELLS_LOADED)
+	{
+		pVM->SetPlaybackRate(flDuration / TIME_BETWEEN_SHELLS_LOADED);
 	}
 }
 
