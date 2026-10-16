@@ -264,6 +264,8 @@ public:
 
 	virtual float GetFireRate() override final;
 	float GetPenetration() const;
+	// the magazine plus the round a partial reload keeps in the chamber
+	int GetMaxRoundsInGun() const;
 #ifdef CLIENT_DLL
 	float m_flTemperature;
 	int m_spawnflags;
@@ -304,6 +306,8 @@ protected:
 	CNetworkVar(int, m_nReloadTable);
 	// when the reload sequence started; phase credits are offsets from it
 	CNetworkVar(float, m_flReloadStart);
+	// the sound pieces of the playing sequence already started, one bit per phase row
+	CNetworkVar(int, m_nReloadSoundsDone);
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
@@ -317,6 +321,9 @@ private:
 	void RunReloadPhases();
 	void CreditReloadPhase(ReloadPhase_t phase);
 	void CheckReloadWithPhases();
+	bool HasReloadSoundPieces() const;
+	void StopReloadSoundPieces();
+	void EmitReloadSoundPiece(const char *pszSound);
 
 };
 
