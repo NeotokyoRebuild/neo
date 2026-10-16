@@ -89,24 +89,6 @@ enum NeoCapEdgeType
 
 #ifdef CLIENT_DLL
 ConVar cl_neo_cap_zone_edge("cl_neo_cap_zone_edge", "2", FCVAR_ARCHIVE, "Cap zone edge rendering", true, 0, true, NEO_CAP_EDGE_LINE_LOGO);
-
-// The ring is a translucent renderable drawn in the engine's last translucent
-// pass (IgnoresZBuffer()), after all smoke has been blended. Smoke writes no
-// depth, so to hide the ring behind it we lay down an invisible, depth-only
-// sphere per nearby smoke cloud right before drawing the ring and let the ring's
-// normal depth test do the rest. See NeoCapRing_DrawSmokeProxies().
-ConVar cl_neo_cap_ring_smoke_proxy("cl_neo_cap_ring_smoke_proxy", "1", FCVAR_ARCHIVE,
-	"Hide cap zone ring segments behind nearby smoke using invisible depth-only proxy spheres.");
-// The proxy follows the smoke's real expanding sphere (radius 0 -> ~330 over
-// SMOKESPHERE_EXPAND_TIME). The visibly opaque core is smaller than that radius
-// (density falls off towards the edge), so this scales it down.
-ConVar cl_neo_cap_ring_smoke_proxy_scale("cl_neo_cap_ring_smoke_proxy_scale", "0.575", FCVAR_ARCHIVE,
-	"Smoke proxy sphere radius as a fraction of the smoke's current expanding radius.", true, 0.05f, true, 1.5f);
-// While the smoke dissipates its alpha fades 1 -> 0; the proxy radius is
-// multiplied by fade^power so it shrinks (and the ring reappears) sooner than
-// the smoke visually thins out. 1 = shrinks in step with the fade.
-ConVar cl_neo_cap_ring_smoke_proxy_fade_power("cl_neo_cap_ring_smoke_proxy_fade_power", "0.2", FCVAR_ARCHIVE,
-	"How much faster the smoke proxy shrinks than the smoke fades while dissipating.", true, 1.0f, true, 8.0f);
 ConVar cl_neo_cap_ring_smoke_proxy_debug("cl_neo_cap_ring_smoke_proxy_debug", "0", FCVAR_CHEAT,
 	"Draw the smoke proxy spheres as opaque magenta (instead of depth-only) for tuning.");
 #endif
@@ -365,6 +347,14 @@ struct NeoCapSmokeProxy_t
 
 static constexpr float SMOKE_PROXY_MIN_RADIUS = 8.0f;
 static constexpr int SMOKE_PROXY_MAX_COUNT = 16;
+// While the smoke dissipates its alpha fades 1 -> 0; the proxy radius is
+// multiplied by fade^power so it shrinks (and the ring reappears) sooner than
+// the smoke visually thins out. 1 = shrinks in step with the fade.
+static constexpr float SMOKE_PROXY_FADE_POWER = 1.0f;
+// The proxy follows the smoke's real expanding sphere (radius 0 -> ~330 over
+// SMOKESPHERE_EXPAND_TIME). The visibly opaque core is smaller than that radius
+// (density falls off towards the edge), so this scales it down.
+static constexpr float SMOKE_PROXY_SCALE = 0.575f;
 
 // Finds active smoke grenades whose proxy sphere overlaps this cap zone's
 // circle in the XY plane. The proxy follows the smoke's real state: it grows
@@ -372,8 +362,6 @@ static constexpr int SMOKE_PROXY_MAX_COUNT = 16;
 // fades while it dissipates, so the ring doesn't pop out/in.
 static void NeoCapRing_FindSmokeProxies(const Vector& capOrigin, float capRadius, CUtlVector<NeoCapSmokeProxy_t>& outProxies)
 {
-	const float scale = cl_neo_cap_ring_smoke_proxy_scale.GetFloat();
-	const float fadePower = cl_neo_cap_ring_smoke_proxy_fade_power.GetFloat();
 	const Vector2D capOrigin2D = capOrigin.AsVector2D();
 
 	C_BaseEntityIterator iterator;
@@ -393,7 +381,7 @@ static void NeoCapRing_FindSmokeProxies(const Vector& capOrigin, float capRadius
 			continue;
 		}
 
-		const float radius = state.expandRadius * scale * powf(state.fade, fadePower);
+		const float radius = state.expandRadius * SMOKE_PROXY_SCALE * powf(state.fade, SMOKE_PROXY_FADE_POWER);
 		if (radius < SMOKE_PROXY_MIN_RADIUS)
 		{
 			continue;
@@ -542,14 +530,11 @@ int CNEOGhostCapturePoint::DrawModel(int flags)
 	// Smoke writes no depth, so lay down invisible depth-only proxies for any
 	// nearby smoke first; the ring below then fails its depth test where smoke
 	// is in front of it and passes where it is in front of the smoke.
-	if (cl_neo_cap_ring_smoke_proxy.GetBool())
+	CUtlVector<NeoCapSmokeProxy_t> smokeProxies;
+	NeoCapRing_FindSmokeProxies(capOrigin, m_flCapzoneRadius, smokeProxies);
+	if (!smokeProxies.IsEmpty())
 	{
-		CUtlVector<NeoCapSmokeProxy_t> smokeProxies;
-		NeoCapRing_FindSmokeProxies(capOrigin, m_flCapzoneRadius, smokeProxies);
-		if (!smokeProxies.IsEmpty())
-		{
-			NeoCapRing_DrawSmokeProxies(smokeProxies);
-		}
+		NeoCapRing_DrawSmokeProxies(smokeProxies);
 	}
 
 	// draw bars ring
