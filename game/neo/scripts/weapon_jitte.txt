@@ -46,12 +46,12 @@ WeaponData
 		}
 		"draw_resume_drop_dry"
 		{
-			"seat" { "credit" "1.467" "sound" "weapon_jitte.reload_seat" "at" "1.100" }
-			"bolt" { "credit" "2.267" "sound" "weapon_jitte.reload_bolt" "at" "1.758" }
+			"seat" { "credit" "1.567" "sound" "weapon_jitte.reload_seat" "at" "1.200" }
+			"bolt" { "credit" "2.367" "sound" "weapon_jitte.reload_bolt" "at" "1.858" }
 		}
 		"draw_resume_drop_partial"
 		{
-			"seat" { "credit" "1.467" "sound" "weapon_jitte.reload_seat" "at" "1.100" }
+			"seat" { "credit" "1.567" "sound" "weapon_jitte.reload_seat" "at" "1.200" }
 		}
 	}
 	

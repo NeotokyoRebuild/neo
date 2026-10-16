@@ -51,12 +51,12 @@ WeaponData
 		}
 		"draw_resume_drop_dry"
 		{
-			"seat" { "credit" "2.467" "sound" "weapon_aa13.reload_seat" "at" "2.005" }
-			"bolt" { "credit" "3.433" "sound" "weapon_aa13.reload_bolt" "at" "2.864" }
+			"seat" { "credit" "2.567" "sound" "weapon_aa13.reload_seat" "at" "2.105" }
+			"bolt" { "credit" "3.533" "sound" "weapon_aa13.reload_bolt" "at" "2.964" }
 		}
 		"draw_resume_drop_partial"
 		{
-			"seat" { "credit" "2.467" "sound" "weapon_aa13.reload_seat" "at" "2.005" }
+			"seat" { "credit" "2.567" "sound" "weapon_aa13.reload_seat" "at" "2.105" }
 		}
 	}
 	
