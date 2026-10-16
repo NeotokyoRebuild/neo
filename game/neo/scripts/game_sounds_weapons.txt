@@ -832,6 +832,44 @@
         "wave"			        ")weapons/zr68/zr68l_reload.wav"
 }
 
+// ZR68L reload in per-phase pieces (research): each file starts 0.02 s before its first transient
+
+"weapon_zr68l.reload_drop"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68l_reload_drop.wav"
+}
+
+"weapon_zr68l.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68l_reload_seat.wav"
+}
+
+"weapon_zr68l.reload_slap"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68l_reload_slap.wav"
+}
+
+"weapon_zr68l.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68l_reload_bolt.wav"
+}
+
 //-------------------
 
 "weapon_zr68.empty"
