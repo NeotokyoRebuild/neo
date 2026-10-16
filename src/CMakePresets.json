@@ -30,9 +30,7 @@
     "displayName": "Windows Debug",
     "inherits": "windows",
     "cacheVariables": {
-      "CMAKE_BUILD_TYPE": "Debug",
-      "NEO_UNITY_BUILD_CLIENT_SERVER": "OFF",
-      "NEO_STEAMAUDIO":  "ON"
+      "CMAKE_BUILD_TYPE": "Debug"
     }
   },
   {
