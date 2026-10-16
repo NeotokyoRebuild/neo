@@ -623,18 +623,14 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 
 	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[m_nReloadTable];
 	const float flElapsed = gpGlobals->curtime - m_flReloadStart;
+
+	// Sound pieces play on their own times, before or after their phase's credit
+	// (the pieces of phases credited before this sequence started are marked done when it starts)
 	for (int i = 0; i < table.iNumRows; ++i)
 	{
-		const ReloadPhaseRow_t &row = table.rows[i];
-		if (row.phase <= m_nReloadPhase || (row.phase == RELOAD_PHASE_BOLTED && !m_bReloadDry))
-		{
-			continue;
-		}
-
-		// a phase's sound piece may start before the phase is credited, such as the grab before the magazine drops
 		for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
 		{
-			const ReloadSoundPiece_t &piece = row.sounds[j];
+			const ReloadSoundPiece_t &piece = table.rows[i].sounds[j];
 			const int iBit = 1 << (i * RELOAD_SOUNDS_PER_ROW + j);
 			if (piece.szName[0] && !(m_nReloadSoundsDone & iBit) && flElapsed >= piece.flAt - RELOAD_SOUND_LEAD)
 			{
@@ -642,7 +638,15 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 				EmitReloadSoundPiece(piece.szName);
 			}
 		}
+	}
 
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		const ReloadPhaseRow_t &row = table.rows[i];
+		if (row.phase <= m_nReloadPhase || (row.phase == RELOAD_PHASE_BOLTED && !m_bReloadDry))
+		{
+			continue;
+		}
 		if (flElapsed < row.flCredit)
 		{
 			break;
@@ -682,7 +686,19 @@ void CNEOBaseCombatWeapon::StartReloadSequence(int iTable, int iSequence)
 {
 	CBaseCombatCharacter *pOwner = GetOwner();
 	m_nReloadTable = iTable;
-	m_nReloadSoundsDone = 0;
+
+	// the phases already credited, and a partial reload's bolt, play no sound
+	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[iTable];
+	int iSoundsDone = 0;
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		const ReloadPhase_t phase = table.rows[i].phase;
+		if (phase <= m_nReloadPhase || (phase == RELOAD_PHASE_BOLTED && !m_bReloadDry))
+		{
+			iSoundsDone |= ((1 << RELOAD_SOUNDS_PER_ROW) - 1) << (i * RELOAD_SOUNDS_PER_ROW);
+		}
+	}
+	m_nReloadSoundsDone = iSoundsDone;
 	if (!HasReloadSoundPieces())
 	{
 		WeaponSound(RELOAD_NPC);
