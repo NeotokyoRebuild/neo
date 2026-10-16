@@ -24,7 +24,7 @@ enum ReloadPhase_t
 	RELOAD_PHASE_COUNT
 };
 
-static constexpr int RELOAD_PHASE_TABLES_MAX = 8;
+static constexpr int RELOAD_PHASE_TABLES_MAX = 12;
 static constexpr int RELOAD_PHASE_ROWS_MAX = RELOAD_PHASE_COUNT - 1;
 static constexpr int RELOAD_SOUND_NAME_MAX = 64;
 static constexpr int RELOAD_SEQUENCE_NAME_MAX = 32;

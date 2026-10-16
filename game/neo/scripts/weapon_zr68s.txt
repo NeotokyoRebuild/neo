@@ -60,6 +60,17 @@ WeaponData
 		{
 			"bolt" { "credit" "1.233" "sound" "weapon_zr68.reload_bolt" "at" "0.996" }
 		}
+		"draw_resume_drop_dry"
+		{
+			"seat" { "credit" "1.433" "sound" "weapon_zr68.reload_seat" "at" "1.394" }
+			"slap" { "credit" "1.800" "sound" "weapon_zr68.reload_slap" "at" "1.829" }
+			"bolt" { "credit" "2.367" "sound" "weapon_zr68.reload_bolt" "at" "2.129" }
+		}
+		"draw_resume_drop_partial"
+		{
+			"seat" { "credit" "1.433" "sound" "weapon_zr68.reload_seat" "at" "1.394" }
+			"slap" { "credit" "1.800" "sound" "weapon_zr68.reload_slap" "at" "1.829" }
+		}
 	}
 	
 	"TPMuzzleFlashScale"	"0.5"
