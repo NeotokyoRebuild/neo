@@ -16,6 +16,8 @@ BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 	RecvPropInt(RECVINFO(m_nTubeSlugs)),
 	RecvPropInt(RECVINFO(m_nChamber)),
 	RecvPropBool(RECVINFO(m_bRackPending)),
+	RecvPropTime(RECVINFO(m_flRackTime)),
+	RecvPropTime(RECVINFO(m_flRackSoundTime)),
 #else
 	SendPropBool(SENDINFO(m_bSlugDelayed)),
 	SendPropBool(SENDINFO(m_bSlugLoaded)),
@@ -26,6 +28,8 @@ BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 	SendPropInt(SENDINFO(m_nTubeSlugs), 8, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nChamber), 2, SPROP_UNSIGNED),
 	SendPropBool(SENDINFO(m_bRackPending)),
+	SendPropTime(SENDINFO(m_flRackTime)),
+	SendPropTime(SENDINFO(m_flRackSoundTime)),
 #endif
 END_NETWORK_TABLE()
 
@@ -40,6 +44,8 @@ BEGIN_PREDICTION_DATA(CWeaponSupa7)
 	DEFINE_PRED_FIELD(m_nTubeSlugs, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nChamber, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bRackPending, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flRackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flRackSoundTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -58,6 +64,8 @@ BEGIN_DATADESC(CWeaponSupa7)
 	DEFINE_FIELD(m_nTubeSlugs, FIELD_INTEGER),
 	DEFINE_FIELD(m_nChamber, FIELD_INTEGER),
 	DEFINE_FIELD(m_bRackPending, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_flRackTime, FIELD_TIME),
+	DEFINE_FIELD(m_flRackSoundTime, FIELD_TIME),
 END_DATADESC()
 #endif
 
@@ -96,6 +104,8 @@ CWeaponSupa7::CWeaponSupa7(void)
 	m_nTubeSlugs = 0;
 	m_nChamber = SUPA7_CHAMBER_EMPTY;
 	m_bRackPending = false;
+	m_flRackTime = 0.0f;
+	m_flRackSoundTime = 0.0f;
 
 	m_fMinRange1 = 0.0;
 	m_fMaxRange1 = 500;
@@ -441,6 +451,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 	}
 	ProcessAnimationEvents();
 	SyncTube();
+	RunRack();
 
 	if (m_bInReload)
 	{
@@ -525,8 +536,12 @@ void CWeaponSupa7::ItemPostFrame(void)
 
 	if (!(pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime && pOwner->m_nButtons & IN_RELOAD && UsesClipsForAmmo1() && !m_bInReload)
 	{
-		// reload when reload is pressed, or if no buttons are down and weapon is empty.
-		StartReload();
+		// reload when reload is pressed, or if no buttons are down and weapon is empty;
+		// a press with the tube full racks the pump once instead
+		if (!StartReload() && (pOwner->m_afButtonPressed & IN_RELOAD) && m_nTubeCount > 0 && m_nTubeCount >= TubeCapacity())
+		{
+			StartRack();
+		}
 	}
 	else if (!(pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime && pOwner->m_nButtons & IN_ATTACK2 && UsesClipsForAmmo1() && !m_bInReload)
 	{
@@ -570,6 +585,63 @@ void CWeaponSupa7::PlayInsertAtShellPace()
 	{
 		pVM->SetPlaybackRate(flDuration / TIME_BETWEEN_SHELLS_LOADED);
 	}
+}
+
+// The standalone rack: the support hand reaches for the pump and racks it once (the "rack" sequence where the model
+// has it, else the reload's finishing rack); the chamber empties at the pump's back stroke, the pump wav timed to it
+static constexpr const char *VM_SEQ_RACK = "rack";
+// the pump reaches the back of its stroke this long before either sequence ends (reloadend f12 of f30)
+static constexpr float RACK_BACK_BEFORE_END = 0.6f;
+// murata_pump.wav's back click comes this far into the file
+static constexpr float PUMP_WAV_BACK_CLICK = 0.419f;
+
+void CWeaponSupa7::StartRack()
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	if (!pOwner)
+	{
+		return;
+	}
+
+	const int iSeq = LookupSequence(VM_SEQ_RACK);
+	if (iSeq >= 0)
+	{
+		SetSequence(iSeq);
+		SendViewModelAnim(iSeq);
+	}
+	else
+	{
+		SendWeaponAnim(ACT_SHOTGUN_PUMP);
+	}
+
+	const float flDuration = SequenceDuration();
+	m_flRackTime = gpGlobals->curtime + Max(0.0f, flDuration - RACK_BACK_BEFORE_END);
+	m_flRackSoundTime = Max(gpGlobals->curtime, m_flRackTime - PUMP_WAV_BACK_CLICK);
+	pOwner->m_flNextAttack = gpGlobals->curtime;
+	ProposeNextAttack(gpGlobals->curtime + flDuration);
+	SetWeaponIdleTime(gpGlobals->curtime + flDuration);
+}
+
+void CWeaponSupa7::RunRack()
+{
+	if (m_flRackSoundTime > 0.0f && gpGlobals->curtime >= m_flRackSoundTime)
+	{
+		m_flRackSoundTime = 0.0f;
+		WeaponSound(SPECIAL2);
+	}
+	if (m_flRackTime > 0.0f && gpGlobals->curtime >= m_flRackTime)
+	{
+		m_flRackTime = 0.0f;
+		Rack();
+	}
+}
+
+bool CWeaponSupa7::Holster(CBaseCombatWeapon *pSwitchingTo)
+{
+	// a rack cut off before the back stroke does nothing
+	m_flRackTime = 0.0f;
+	m_flRackSoundTime = 0.0f;
+	return BaseClass::Holster(pSwitchingTo);
 }
 
 // The tube holds what the gun's capacity leaves beside a live round in the chamber
