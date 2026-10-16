@@ -156,7 +156,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		char fireModeText[2]{ '\0' };
 
 		ammoChar = activeWep->GetNEOWpnData().szBulletCharacter;
-		magSizeMax = activeWep->GetMaxClip1();
+		magSizeMax = activeWep->GetMaxRoundsInGun();
 		magSizeCurrent = activeWep->Clip1();
 			
 		if(activeWep)
