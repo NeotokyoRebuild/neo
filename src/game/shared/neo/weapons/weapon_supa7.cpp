@@ -121,11 +121,9 @@ CWeaponSupa7::CWeaponSupa7(void)
 }
 
 // Purpose: Override so only reload one shell at a time
+// (a chambered slug stays where it is while shells go into the tube behind it)
 bool CWeaponSupa7::StartReload(void)
 {
-	if (m_bSlugLoaded)
-		return false;
-
 	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
@@ -476,7 +474,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 			{
 				// If out of ammo or the tube is full end reload
 				// (a slug loaded to be fired next is racked up before anything goes on top of it)
-				if ((m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_bRackPending || m_nTubeCount >= TubeCapacity()))
+				if ((m_iPrimaryAmmoCount <= 0 || m_bRackPending || m_nTubeCount >= TubeCapacity()))
 				{
 					FinishReload();
 				}
