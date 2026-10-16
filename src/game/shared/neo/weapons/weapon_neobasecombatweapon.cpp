@@ -813,12 +813,18 @@ void CNEOBaseCombatWeapon::CreditReloadPhase(ReloadPhase_t phase)
 	switch (phase)
 	{
 	case RELOAD_PHASE_DROPPED:
-		// the old magazine and its rounds are gone, a chambered round stays
-		m_iClip1 = (m_iClip1 > 0 && !IsReloadDry()) ? 1 : 0;
+		// the old magazine and its rounds are gone, a chambered round stays;
+		// a revolver's cylinder (no chamber) keeps its live rounds and drops only the empty cases
+		if (GetNEOWpnData().m_bChamberedRound)
+		{
+			m_iClip1 = (m_iClip1 > 0 && !IsReloadDry()) ? 1 : 0;
+		}
 		break;
 	case RELOAD_PHASE_SEATED:
 	{
-		const int iLoad = Min(GetMaxClip1(), m_iPrimaryAmmoCount.Get());
+		// a fresh magazine, or the rounds that fill a cylinder's empty slots
+		const int iRoom = GetNEOWpnData().m_bChamberedRound ? GetMaxClip1() : GetMaxClip1() - m_iClip1;
+		const int iLoad = Min(iRoom, m_iPrimaryAmmoCount.Get());
 		m_iClip1 += iLoad;
 		m_iPrimaryAmmoCount -= iLoad;
 		break;
