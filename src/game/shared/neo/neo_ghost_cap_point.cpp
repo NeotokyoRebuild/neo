@@ -105,8 +105,8 @@ ConVar cl_neo_cap_ring_smoke_proxy_scale("cl_neo_cap_ring_smoke_proxy_scale", "0
 // While the smoke dissipates its alpha fades 1 -> 0; the proxy radius is
 // multiplied by fade^power so it shrinks (and the ring reappears) sooner than
 // the smoke visually thins out. 1 = shrinks in step with the fade.
-ConVar cl_neo_cap_ring_smoke_proxy_fade_power("cl_neo_cap_ring_smoke_proxy_fade_power", "0", FCVAR_DEVELOPMENTONLY,
-	"How much faster the smoke proxy shrinks than the smoke fades while dissipating.", true, 0.0f, true, 8.0f);
+ConVar cl_neo_cap_ring_smoke_proxy_fade_power("cl_neo_cap_ring_smoke_proxy_fade_power", "1", FCVAR_DEVELOPMENTONLY,
+	"How much faster the smoke proxy shrinks than the smoke fades while dissipating.", true, 1.0f, true, 8.0f);
 ConVar cl_neo_cap_ring_smoke_proxy_debug("cl_neo_cap_ring_smoke_proxy_debug", "0", FCVAR_DEVELOPMENTONLY,
 	"Draw the smoke proxy spheres as opaque magenta (instead of depth-only) for tuning.");
 #endif
