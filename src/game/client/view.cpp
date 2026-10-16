@@ -147,15 +147,39 @@ static ConVar r_farz( "r_farz", "-1", FCVAR_CHEAT, "Override the far clipping pl
 static ConVar cl_demoviewoverride( "cl_demoviewoverride", "0", 0, "Override view during demo playback" );
 
 
+#ifdef NEO
+static ConVar cl_software_cursor( "cl_software_cursor", "4", FCVAR_ARCHIVE,
+	"Switches the game to use a larger software cursor instead of the normal OS cursor. "
+	"Set as bitflags. 1: enabled for Windows, 2: enabled for Linux,"
+	"4: enabled for Windows, but only for inverted-colored OS mouse",
+	true, ESoftwareCursor::Disabled, true, ESoftwareCursor::Maximum,
+	[](IConVar*, const char*, float) { SwCursorHack_RestoreValue(); });
+void SwCursorHack_RestoreValue()
+{
+	int enabledBits = cl_software_cursor.GetInt();
+	bool enabled = (enabledBits & ESoftwareCursor::EnabledForPlatform);
+#ifdef _WIN32
+	if (!enabled && (enabledBits & ESoftwareCursor::EnabledForWindowsInvertedMouseOnly))
+	{
+		int cursorType;
+		// This can fail if the user has no such accessibility registry entry set,
+		// in which case we assume their OS cursor is standard.
+		if (vgui::system()->GetRegistryInteger(R"(HKEY_CURRENT_USER\Software\Microsoft\Accessibility\CursorType)", cursorType))
+		{
+			constexpr int cursorTypeStandard = 0;
+			enabled = (cursorType != cursorTypeStandard);
+		}
+	}
+#endif
+	vgui::surface()->SetSoftwareCursor(enabled || UseVR());
+}
+#else
+static ConVar cl_software_cursor ( "cl_software_cursor", "0", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
 void SoftwareCursorChangedCB( IConVar *pVar, const char *pOldValue, float fOldValue )
 {
 	ConVar *pConVar = (ConVar *)pVar;
 	vgui::surface()->SetSoftwareCursor( pConVar->GetBool() || UseVR() );
 }
-#ifdef NEO
-static ConVar cl_software_cursor ( "cl_software_cursor", "1", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
-#else
-static ConVar cl_software_cursor ( "cl_software_cursor", "0", FCVAR_ARCHIVE, "Switches the game to use a larger software cursor instead of the normal OS cursor", SoftwareCursorChangedCB );
 #endif
 
 
@@ -343,6 +367,8 @@ void CViewRender::Init( void )
 #endif
 
 #ifdef NEO
+	SwCursorHack_RestoreValue();
+
 	ITexture *pDepthOld = materials->FindTexture("_rt_FullFrameDepth", TEXTURE_GROUP_RENDER_TARGET);
 	const bool bDepthTexOk = ((pDepthOld != NULL) && (!pDepthOld->IsError()));
 	const int flags = (bDepthTexOk ? pDepthOld->GetFlags() : TEXTUREFLAGS_NOMIP |
@@ -724,7 +750,11 @@ float CViewRender::GetZFar()
 
 
 #ifdef NEO
-ConVar cl_neo_background_pan("cl_neo_background_pan", "1", FCVAR_ARCHIVE, "Pan the camera with the cursor in the main menu background maps");
+// The max pan scale value is arbitrary, chosen to prevent turning so much to see unmapped areas of the 3D background.
+ConVar cl_neo_background_pan("cl_neo_background_pan", "1", FCVAR_ARCHIVE,
+	"Scale by which to pan the camera with the cursor in the main menu background maps", true, -10, true, 10);
+ConVar cl_neo_background_lerp("cl_neo_background_lerp", "1", FCVAR_ARCHIVE,
+	"Scale by which to lerp the camera pan, or 0 to use frametime.", true, 0, true, 1);
 #endif // NEO
 //-----------------------------------------------------------------------------
 // Sets up the view parameters
@@ -776,7 +806,8 @@ void CViewRender::SetUpViews()
 	}
 #endif
 #if defined NEO
-	else if (engine->IsLevelMainMenuBackground() && cl_neo_background_pan.GetBool())
+	// float compare because background pan can be scalar, and .GetBool() casts via int which would round down for values 0-1
+	else if (engine->IsLevelMainMenuBackground() && cl_neo_background_pan.GetFloat() != 0)
 	{
 		if (pPlayer)
 		{
@@ -794,12 +825,25 @@ void CViewRender::SetUpViews()
 				flX = (1 / (1 + pow(2, -CURVE_STEEPNESS * flX))) - 0.5;
 				flY = (1 / (1 + pow(2, -CURVE_STEEPNESS * flY))) - 0.5;
 
-				constexpr int CAMERA_MOVEMENT_MULTIPIER = 3;
+				// Originally, the multiplier was 3 and cl_neo_background_pan was a bool (instead of scale),
+				// so doing it this way instead of defaulting the cvar to 3 keeps user configs compatible.
+				const float CAMERA_MOVEMENT_MULTIPIER = 3 * cl_neo_background_pan.GetFloat();
+
 				flX *= CAMERA_MOVEMENT_MULTIPIER;
 				flY *= CAMERA_MOVEMENT_MULTIPIER;
 
-				viewEye.angles.y += flX;
-				viewEye.angles.x -= flY;
+				static Vector2D lerpedOffs(0, 0);
+				viewEye.angles.x -= lerpedOffs.y;
+				viewEye.angles.y += lerpedOffs.x;
+
+				float lerpScale = cl_neo_background_lerp.GetFloat();
+				if (!lerpScale)
+					lerpScale = Min(gpGlobals->frametime, 1.f);
+				Assert(IN_BETWEEN_EQ(0, lerpScale, 1));
+				// if lerpScale==1, then this is just an unlerped assignment
+				lerpedOffs.x = Lerp(lerpScale, lerpedOffs.x, flX);
+				lerpedOffs.y = Lerp(lerpScale, lerpedOffs.y, flY);
+				Assert(lerpedOffs.IsValid());
 			}
 		}
 		else

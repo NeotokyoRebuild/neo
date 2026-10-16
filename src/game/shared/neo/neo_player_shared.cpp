@@ -352,6 +352,60 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
 }
 
+bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLadder) const
+{
+	if (GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
+		return false;
+
+	if (GetNeoFlags() & NEO_FL_FREEZETIME)
+		return false;
+
+	if (GetMoveType() == MOVETYPE_NOCLIP || GetMoveType() == MOVETYPE_OBSERVER)
+		return false;
+
+	extern ConVar sv_footsteps;
+	if (!sv_footsteps.GetFloat())
+		return false;
+
+	const Vector& absVel = GetAbsVelocity();
+	const float speed = absVel.Length();
+	if (pSpeed) *pSpeed = speed;
+	const float groundspeed = absVel.AsVector2D().Length();
+	const bool isOnLadder = (GetMoveType() == MOVETYPE_LADDER);
+	if (pLadder) *pLadder = isOnLadder;
+
+	float velwalk, velrun;
+	GetStepSoundVelocities(&velwalk, &velrun);
+	if (pVelRun) *pVelRun = velrun;
+
+	bool onground = (GetFlags() & FL_ONGROUND);
+	bool movingalongground = (groundspeed > 0.0001f);
+	// Support crouched with a supa7 aimed in has a speed of 55.f
+	const bool moving_fast_enough = speed >= 50.f;
+
+	// To hear step sounds you must be either on a ladder or moving along the ground AND
+	// You must be moving fast enough
+	if (!moving_fast_enough || !(isOnLadder || (onground && movingalongground)))
+		return false;
+
+	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
+	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
+
+	if (GetFlags() & FL_DUCKING)
+	{
+		if ((IsInAim() || IsWalking()) && speed <= (GetCrouchSpeed() * SILENT_THRESHOLD_GRACE))
+		{
+			return false;
+		}
+	}
+	else if ((IsInAim() || IsWalking()) && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 int GetRank(const int xp)
 {
 	int iRank = NEO_RANK_RANKLESS_DOG;
@@ -883,4 +937,63 @@ bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, tra
 	}
 
 	return true;
+}
+
+bool CNEO_Player::IsAllowedToSuperJump()
+{
+	// NEOJANK: Bots are exempt from certain checks due to their their erratic input control
+	if (!IsBot())
+	{
+		if (!IsSprinting())
+			return false;
+	}
+
+	if (IsCarryingGhost())
+		return false;
+
+	if (GetMoveParent())
+		return false;
+
+	if (IsAirborne())
+		return false;
+
+	if (GetWaterLevel() > WL_Feet)
+		return false;
+
+	// Only superjump if we have a reasonable jump direction in mind
+	// NEO TODO (Rain): should we support sideways superjumping?
+	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
+	{
+		return false;
+	}
+
+	if (SuitPower_GetCurrentPercentage() < SUPER_JMP_COST)
+		return false;
+
+	return true;
+}
+
+// BaseClass::Spawn sets FL_ONGROUND for us, which is convenient but not guaranteed correct,
+// for example if spawning in/above a body of water. This matters especially for the recon
+// superjump validity check. So let's check if we've actually got a ground or not.
+// Another case that goes out of whack without this fixup is being able to superjump mid-air
+// when spawning into a warmup/non-freezetime'd match, before hitting the floor for the first time.
+void CNEO_Player::FixupOnGroundFlag()
+{
+	// Assert that the client side baseclass doesn't do this (and therefore we need do nothing for it)
+	Assert((GetFlags() & FL_ONGROUND) == IsServer());
+#ifdef GAME_DLL
+	if (GetTeamNumber() < FIRST_GAME_TEAM) // if it's not a player, don't bother
+		return;
+	const Vector& start = GetAbsOrigin();
+	constexpr float offset = -2; // same value as CGameMovement::CategorizePosition flOffset
+	Vector end(start.x, start.y, start.z + offset);
+	Ray_t ray;
+	ray.Init(start, end, GetPlayerMins(), GetPlayerMaxs());
+	trace_t	trace;
+	UTIL_TraceRay(ray, MASK_PLAYERSOLID, this, COLLISION_GROUP_PLAYER_MOVEMENT, &trace);
+	const bool foundGround = trace.DidHit();
+	if (!foundGround)
+		RemoveFlag(FL_ONGROUND); // not actually on ground, remove it!
+#endif
 }

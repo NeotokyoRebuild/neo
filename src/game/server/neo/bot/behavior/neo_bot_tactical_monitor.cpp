@@ -7,6 +7,7 @@
 
 #include "bot/neo_bot.h"
 #include "bot/neo_bot_manager.h"
+#include "bot/neo_bot_path_reservation.h"
 
 #include "bot/behavior/neo_bot_detpack_trigger.h"
 #include "bot/behavior/neo_bot_tactical_monitor.h"
@@ -16,6 +17,7 @@
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
+#include "bot/behavior/neo_bot_retreat_from_hazard_area.h"
 #include "bot/behavior/neo_bot_ladder_approach.h"
 #include "bot/behavior/neo_bot_ladder_climb.h"
 #include "bot/behavior/neo_bot_path_clear_breakable.h"
@@ -85,6 +87,7 @@ Action< CNEOBot > *CNEOBotTacticalMonitor::InitialContainedAction( CNEOBot *me )
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_pIgnoredWeapons->Reset();
+	m_hazardCheckTimer.Start( 0.5f );
 	return Continue();
 }
 
@@ -217,6 +220,12 @@ void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 		return;
 	}
 
+	// stepping straight away from a teammate can step off a ledge
+	if ( me->IsOnPreciseArea() )
+	{
+		return;
+	}
+
 	CUtlVector< CNEO_Player * > friendVector;
 	CollectPlayers( &friendVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 
@@ -250,6 +259,12 @@ void CNEOBotTacticalMonitor::AvoidBumpingFriends( CNEOBot *me )
 		me->ReleaseBackwardButton();
 
 		Vector away = me->GetAbsOrigin() - closestFriend->GetAbsOrigin();
+		if ( away.AsVector2D().IsZero() )
+		{
+			// stacked on the same spot (e.g. an overflowed spawn point): "away" has no direction, so pick one at random
+			const QAngle randomYaw( 0.0f, RandomFloat( 0.0f, 360.0f ), 0.0f );
+			AngleVectors( randomYaw, &away );
+		}
 
 		me->GetLocomotionInterface()->Approach( me->GetLocomotionInterface()->GetFeet() + away );
 	}
@@ -324,38 +339,58 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return result;
 	}
 
-	// check if we need to get to cover
-	QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
-
-	if ( shouldRetreat == ANSWER_YES )
-	{
-		return SuspendFor( new CNEOBotRetreatToCover, "Backing off" );
-	}
-	else if ( shouldRetreat != ANSWER_NO )
-	{
-		// retreat if we need to do a full reload
-		if ( me->IsDifficulty( CNEOBot::HARD ) || me->IsDifficulty( CNEOBot::EXPERT ) )
-		{
-			CNEOBaseCombatWeapon *weapon = (CNEOBaseCombatWeapon*) me->GetActiveWeapon();
-			if ( weapon && weapon->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(weapon))
-			{
-				if ( weapon->Clip1() <= 1 )
-				{
-					return SuspendFor( new CNEOBotRetreatToCover, "Moving to cover to reload" );
-				}
-			}
-		}
-	}
-
 	if ( CBaseEntity *breakable = CNEOBotPathClearBreakable::GetBreakableInPath( me ) )
 	{
 		return SuspendFor( new CNEOBotPathClearBreakable( breakable ), "Clearing breakable in path" );
 	}
 
-	ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
-	if ( scavengeResult.IsRequestingChange() )
+	const bool bInAHurry = ( me->GetIntentionInterface()->ShouldHurry( me ) == ANSWER_YES );
+
+	if ( !bInAHurry )
 	{
-		return scavengeResult;
+		// check if we need to get to cover
+		QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
+
+		if ( shouldRetreat == ANSWER_YES )
+		{
+			return SuspendFor( new CNEOBotRetreatToCover, "Backing off" );
+		}
+		else if ( shouldRetreat != ANSWER_NO )
+		{
+			// retreat if we need to do a full reload
+			if ( me->IsDifficulty( CNEOBot::HARD ) || me->IsDifficulty( CNEOBot::EXPERT ) )
+			{
+				CNEOBaseCombatWeapon *weapon = (CNEOBaseCombatWeapon*) me->GetActiveWeapon();
+				if ( weapon && weapon->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(weapon))
+				{
+					if ( weapon->Clip1() <= 1 )
+					{
+						return SuspendFor( new CNEOBotRetreatToCover, "Moving to cover to reload" );
+					}
+				}
+			}
+		}
+
+		// Don't want to interfere with human squad leader's control just to ignore hazards
+		// Might be annoying if bots ignored following or waypoints (e.g. smoke sightlines avoidance)
+		if ( !me->m_hCommandingPlayer.Get() && m_hazardCheckTimer.IsElapsed() )
+		{
+			m_hazardCheckTimer.Start( 0.5f );
+			CNavArea *myArea = me->GetLastKnownArea();
+			if ( myArea )
+			{
+				if ( CNEOBotPathReservations()->IsAreaHazardous( myArea->GetID(), me ) )
+				{
+					return SuspendFor( new CNEOBotRetreatFromHazardArea( ), "Avoiding hazard area" );
+				}
+			}
+		}
+
+		ActionResult< CNEOBot > scavengeResult = ScavengeForPrimaryWeapon( me );
+		if ( scavengeResult.IsRequestingChange() )
+		{
+			return scavengeResult;
+		}
 	}
 
 #if 0 // NEO TODO (Adam) search for dropped weapons to resupply ammunition

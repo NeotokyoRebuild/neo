@@ -17,10 +17,14 @@ public:
 	virtual ActionResult<CNEOBot> Update( CNEOBot *me, float interval ) override;
 
 private:
+	void TryUseGhost( CNEOBot *me, const Vector &vecEye, const Vector &vecGhostCenter );
+
 	CHandle<CWeaponGhost> m_hObjective;
 	CNavArea *m_previousKnownArea;
 	CountdownTimer m_captureAttemptTimer;
 	CountdownTimer m_repathTimer;
+	CountdownTimer m_useTapTimer;
+	CountdownTimer m_useJumpTimer;
 	PathFollower m_path;
 };
 

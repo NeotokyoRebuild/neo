@@ -12,6 +12,7 @@
 #include "ienginevgui.h"
 
 #include "neo_gamerules.h"
+#include "neo_serial.h"
 #include "c_neo_player.h"
 
 #include "c_team.h"
@@ -22,6 +23,8 @@
 DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, NHudFriendlyMarker);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(FriendlyMarker, 0.01)
+
+constexpr auto NEO_MARKER_DELIMITER = NeoSerial::V7::SEGEND;
 
 void iffMarkerChangeCallback( IConVar *pConVar, char const* pOldString, float flOldValue [[maybe_unused]])
 {
@@ -403,33 +406,16 @@ bool ImportMarker(FriendlyMarkerInfo *crh, const char *pszSequence)
 		return false;
 	}
 
+	if (!NagBadSegEnd(__func__, pszSequence, NEO_IFFMARKER_SEQMAX, NEOXHAIR_SERIAL_CURRENT))
+	{
+		return false;
+	}
+
 	char szMutSequence[NEO_IFFMARKER_SEQMAX];
 	V_memcpy(szMutSequence, pszSequence, sizeof(char) * iPszSequenceLength);
 	for (int i = 0; i < iPszSequenceLength && iSegmentIdx < NEOIFFMARKER_SEGMENT__TOTAL; ++i)
 	{
 		const char ch = szMutSequence[i];
-
-		// NEO NOTE (Rain): I am changing the delimiter away from ';' because the Source cmd tokenizer
-		// does not have a sensible character escape syntax, and ';' is already used as command end token,
-		// which causes issues when trying to chain commands with an inner semicolon.
-		// NEO TODO (Rain): we should probably also update the xhair syntax and any other such serializations
-		// to ideally use the same, non-semicolon token, and declare that in a global header somewhere.
-		constexpr char deprecated_delimiter = ';';
-		static_assert(deprecated_delimiter != NEO_MARKER_DELIMITER);
-		if (ch == deprecated_delimiter)
-		{
-			char point_to[NEO_IFFMARKER_SEQMAX];
-			V_memset(point_to, ' ', i);
-			point_to[i] = '^';
-			point_to[i+1] = '\0';
-			Warning("Please replace the \"%c\" characters with \"%c\" in your marker syntax.\n"
-				"Failed for input at pos %d:\n\t%s\n\t%s\n",
-				deprecated_delimiter, NEO_MARKER_DELIMITER,
-				i, pszSequence,
-				point_to);
-			return false;
-		}
-
 		if (ch == NEO_MARKER_DELIMITER)
 		{
 			szMutSequence[i] = '\0';

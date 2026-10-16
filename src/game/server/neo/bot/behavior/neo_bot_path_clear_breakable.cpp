@@ -40,30 +40,11 @@ CBaseEntity *CNEOBotPathClearBreakable::GetBreakableInPath( CNEOBot *me )
 		return nullptr;
 	}
 
-	const Path::Segment *goal = path->GetCurrentGoal();
-	if ( !goal )
+	// the path follower's look ahead for props also finds breakables in the way
+	CBaseEntity *breakable = path->GetBreakableInWay();
+	if ( breakable && breakable->IsAlive() && breakable->GetHealth() > 0 )
 	{
-		return nullptr;
-	}
-
-	// Trace forward along the path to look for breakables
-	// We use a hull trace to match the bot's collision size
-	trace_t tr;
-	UTIL_TraceHull( me->GetAbsOrigin() + Vector( 0, 0, 10 ),
-					goal->pos + Vector( 0, 0, 10 ),
-					me->GetBodyInterface()->GetHullMins(),
-					me->GetBodyInterface()->GetHullMaxs(),
-					MASK_NPCSOLID,
-					me->GetEntity(),
-					COLLISION_GROUP_NONE,
-					&tr );
-
-	if ( tr.DidHit() && tr.m_pEnt )
-	{
-		if ( me->IsAbleToBreak( tr.m_pEnt ) )
-		{
-			return tr.m_pEnt;
-		}
+		return breakable;
 	}
 
 	return nullptr;

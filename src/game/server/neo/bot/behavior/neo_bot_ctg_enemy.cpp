@@ -56,6 +56,8 @@ ActionResult< CNEOBot >	CNEOBotCtgEnemy::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgEnemy::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	m_chasePath.Invalidate();
+
 	return Continue();
 }
 
@@ -75,4 +77,27 @@ EventDesiredResult< CNEOBot > CNEOBotCtgEnemy::OnMoveToSuccess( CNEOBot *me, con
 EventDesiredResult< CNEOBot > CNEOBotCtgEnemy::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
 	return TryContinue();
+}
+
+//---------------------------------------------------------------------------------------------
+QueryResultType CNEOBotCtgEnemy::ShouldHurry( const INextBot *me ) const
+{
+	const CNEOBot *meBot = static_cast<const CNEOBot *>( me );
+
+	CNEO_Player *pCarrier = ToNEOPlayer( UTIL_PlayerByIndex( NEORules()->GetGhosterPlayer() ) );
+	if ( !pCarrier || !pCarrier->IsAlive() || pCarrier->GetTeamNumber() == meBot->GetTeamNumber() )
+	{
+		return ANSWER_UNDEFINED;
+	}
+
+	const Vector vecCarrierGoal = NEORules()->GetNearestGhostCapPoint( pCarrier->GetTeamNumber(), pCarrier->GetAbsOrigin() );
+	if ( vecCarrierGoal == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+	{
+		return ANSWER_UNDEFINED;
+	}
+
+	const float flCarrierToGoalSq = pCarrier->GetAbsOrigin().DistToSqr( vecCarrierGoal );
+	const float flMeToGoalSq = meBot->GetAbsOrigin().DistToSqr( vecCarrierGoal );
+
+	return ( flMeToGoalSq > flCarrierToGoalSq ) ? ANSWER_YES : ANSWER_UNDEFINED;
 }

@@ -93,6 +93,7 @@ public:
 
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
+	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
 
 	void Lean(void);
 
@@ -205,6 +206,7 @@ private:
 	void CheckLeanButtons();
 	void PlayCloakSound();
 	void SetCloakState(bool state);
+	void FixupOnGroundFlag();
 
 	bool IsAllowedToSuperJump(void);
 
@@ -222,8 +224,6 @@ public:
 	CNetworkVar(int, m_iXP);
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
-	
-	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(float, m_flVisionLastTime);
@@ -250,7 +250,6 @@ public:
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
-	CNetworkString(m_szNeoCrosshair, NEO_XHAIR_SEQMAX);
 	CNetworkVar(int, m_szNameDupePos);
 	CNetworkVar(bool, m_bClientWantNeoName);
 
@@ -263,9 +262,6 @@ private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 	bool m_bSpecRefreshedStates;
-
-	float m_flLastAirborneJumpOkTime;
-	float m_flLastSuperJumpTime;
 
 	float m_flTocFactor; // Cloak strength, controls tint, refraction amount. Lower values make player more difficult to spot
 

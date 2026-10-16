@@ -87,7 +87,6 @@ class CWeaponGhost;
 class CNEOBotCtgLoneWolf;
 class CNEOBotCtgLoneWolfAmbush;
 class CNEOBotCtgLoneWolfSeek;
-class CNEOBotSeekAndDestroy;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
@@ -108,6 +107,7 @@ enum NeoGameType {
 	NEO_GAME_TYPE_EMT,
 	NEO_GAME_TYPE_TUT,
 	NEO_GAME_TYPE_JGR,
+	NEO_GAME_TYPE_ATK,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -143,6 +143,7 @@ enum NeoWinReason {
 	NEO_VICTORY_VIP_ELIMINATION,
 	NEO_VICTORY_TEAM_ELIMINATION,
 	NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
+	NEO_VICTORY_ATK_TIMEOUT,
 	NEO_VICTORY_POINTS,
 	NEO_VICTORY_FORFEIT,
 	NEO_VICTORY_STALEMATE, // Not actually a victory
@@ -234,7 +235,10 @@ public:
 #endif
 
 	virtual int GetGameType(void) OVERRIDE;
-	int GetHiddenHudElements();
+
+	int GetHiddenHudElements() const { return m_iHiddenHudElements; }
+	void SetHiddenHudElements(int bits);
+
 	int GetForcedTeam();
 	int GetForcedClass();
 	int GetForcedSkin();
@@ -284,6 +288,11 @@ public:
 
 	void ResetGhostCapPoints();
 
+#ifdef GAME_DLL
+	// Nearest active capture zone that iTeam can deliver the ghost to, or VECTOR_INVALID_WAYPOINT if none
+	Vector GetNearestGhostCapPoint(const int iTeam, const Vector &vecFrom) const;
+#endif
+
 	void SetGameRelatedVars();
 	void ResetTDM();
 	void ResetGhost();
@@ -301,8 +310,10 @@ public:
 
 	virtual bool CheckGameOver(void) OVERRIDE;
 
+	void CheckOvertime();
+
 	float GetRoundRemainingTime() const;
-	float GetCTGOverTime() const;
+	float GetOverTime(NeoGameType eGameType) const;
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
 	float MirrorDamageMultiplier() const;
@@ -339,12 +350,17 @@ public:
 	void CheckChatCommand(CNEO_Player *pNeoPlayer, const char *pSzChat);
 	ReadyPlayers FetchReadyPlayers() const;
 	CUtlHashtable<AccountID_t> m_readyAccIDs;
-	bool m_bIgnoreOverThreshold = false;
+	bool m_bForceLive = false;
 	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
 
 	void CheckGameType();
 	void CheckGameConfig();
 	void StartNextRound();
+	void RoundTimeout();
+	bool RoundTimeoutTDM();
+	bool RoundTimeoutDM();
+	bool RoundTimeoutJGR();
+	bool RoundTimeoutATK();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
 	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return ""; } // handled by GetChatFormat
@@ -397,6 +413,8 @@ public:
 	inline void SetRoundNumber(const int iNewVal) { m_iRoundNumber.Set(iNewVal); }
     inline int roundNumber() const { return m_iRoundNumber; }
     inline bool roundNumberIsEven() const { return (roundNumber() % 2 == 0); }
+	int GetAttackingTeam() const;
+	int GetDefendingTeam() const;
 
 #ifdef GLOWS_ENABLE
 	void GetTeamGlowColor(int teamNumber, float &r, float &g, float &b)
@@ -500,15 +518,12 @@ private:
 	float m_flJuggernautDeathTime = 0.0f;
 	int m_iLastJuggernautTeam = TEAM_INVALID;
 	
-	// For looking up capture zone locations
-	friend class CNEOBotCtgCarrier;
-	friend class CNEOBotCtgEscort;
+	// For looking up the ghost
 	friend class CNEOBotCtgLoneWolf;
 	friend class CNEOBotCtgLoneWolfAmbush;
 	friend class CNEOBotCtgLoneWolfSeek;
 	friend class CNEOBotTacticalMonitor;
 
-	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
@@ -599,8 +614,10 @@ public:
 		int iRoundNumber;
 		int iRoundsWonJinrai;
 		int iRoundsWonNSF;
+		int iGhostSpawnEntIdx;
 	};
 	NeoRestore m_iNextRestore = {};
+	int m_iGhostSpawnEntIdx = -1;
 #endif
 };
 

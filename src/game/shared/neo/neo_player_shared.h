@@ -165,9 +165,12 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define NEO_ASSAULT_CROUCH_JUMP_HEIGHT 53.0f
 #define NEO_SUPPORT_CROUCH_JUMP_HEIGHT 47.0f
 #define NEO_JUGGERNAUT_CROUCH_JUMP_HEIGHT 63.4f
-// To ensure bots can safely clear obstacles, we apply a safety buffer (NEO_BOT_JUMP_HEIGHT_BUFFER)
-// when checking traverseability, by subtracting it from these theoretical max heights.
-#define NEO_BOT_JUMP_HEIGHT_BUFFER 7.0f
+// To ensure bots can safely clear obstacles, we apply a safety buffer when checking traverseability,
+// by subtracting it from these theoretical max heights. Juggernaut uses the default; VIP uses Assault's.
+#define NEO_BOT_JUMP_HEIGHT_BUFFER 4.0f
+#define NEO_BOT_RECON_JUMP_HEIGHT_BUFFER NEO_BOT_JUMP_HEIGHT_BUFFER
+#define NEO_BOT_ASSAULT_JUMP_HEIGHT_BUFFER ( NEO_BOT_JUMP_HEIGHT_BUFFER + 1.0f )
+#define NEO_BOT_SUPPORT_JUMP_HEIGHT_BUFFER NEO_BOT_JUMP_HEIGHT_BUFFER
 
 // END OF NEO MOVEMENT DEFINITIONS
 //////////////////////////////////////////////////////
@@ -176,10 +179,6 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define CLOAK_AUX_COST 1.0f
 #define MIN_CLOAK_AUX 0.1f
 #define SPRINT_START_MIN (2.0f)
-
-// Original NT allows chaining superjumps up ramps,
-// so leaving this zeroed for enabling movement tricks.
-#define SUPER_JMP_DELAY_BETWEEN_JUMPS 0
 
 // NEO Activities
 #define ACT_NEO_ATTACK ACT_RANGE_ATTACK1

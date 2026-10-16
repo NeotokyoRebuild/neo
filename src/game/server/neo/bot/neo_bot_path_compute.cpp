@@ -8,11 +8,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar neo_bot_path_reservation_enable;
-extern ConVar neo_bot_path_reservation_penalty;
-extern ConVar neo_bot_path_reservation_duration;
-extern ConVar neo_bot_path_reservation_distance;
-
 static void CNEOBotReservePath(CNEOBot* me, PathFollower& path)
 {
 	if (!neo_bot_path_reservation_enable.GetBool() || !path.IsValid())
@@ -39,25 +34,38 @@ static void CNEOBotReservePath(CNEOBot* me, PathFollower& path)
 	}
 }
 
+// A path that stops short of the goal is only wanted if the caller asked for partial paths
+static bool IsPathUsable(const PathFollower& path, bool reachedGoal, bool includeGoalIfPathFails)
+{
+	return path.IsValid() && (reachedGoal || includeGoalIfPathFails);
+}
+
+// By default, assumes that we would prefer to have partial paths even if we can't make a full path
+// to accomodate scenarios like getting as close as possible to a hazard area but not into it
+// Set includeGoalIfPathFails to false if you need to get the full path (or nothing on failure)
 bool CNEOBotPathCompute(CNEOBot* bot, PathFollower& path, const Vector& goal, RouteType route, float maxPathLength, bool includeGoalIfPathFails, bool requireGoalArea)
 {
 	Assert(goal.IsValid());
 
 	CNEOBotPathCost cost_with_reservations(bot, route);
-	if (path.Compute(bot, goal, cost_with_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea) && path.IsValid())
+	bool reachedGoal = path.Compute(bot, goal, cost_with_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea);
+	if (IsPathUsable(path, reachedGoal, includeGoalIfPathFails))
 	{
 		CNEOBotReservePath(bot, path);
 		return true;
 	}
 
-	CNEOBotPathCost cost_without_reservations(bot, route);
+	CNEOBotPathCost cost_without_reservations(bot, FASTEST_ROUTE);
 	cost_without_reservations.m_bIgnoreReservations = true;
-	if (path.Compute(bot, goal, cost_without_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea) && path.IsValid())
+	reachedGoal = path.Compute(bot, goal, cost_without_reservations, maxPathLength, includeGoalIfPathFails, requireGoalArea);
+	if (IsPathUsable(path, reachedGoal, includeGoalIfPathFails))
 	{
 		CNEOBotReservePath(bot, path);
 		return true;
 	}
 
+	// Path::Compute leaves a partial path valid even when told not to append the goal
+	path.Invalidate();
 	return false;
 }
 

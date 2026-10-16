@@ -17,6 +17,9 @@ ConVar sv_neo_bot_attack_cover_search_interval("sv_neo_bot_attack_cover_search_i
 ConVar sv_neo_bot_attack_debug_cover("sv_neo_bot_attack_debug_cover", "0", FCVAR_CHEAT,
 	"Draw debug overlays for bot attack/cover behavior", true, 0, true, 1);
 
+ConVar sv_neo_bot_attack_too_close_retreat_ratio("sv_neo_bot_attack_too_close_retreat_ratio", "0.33", FCVAR_CHEAT,
+	"Ratio of current weapon's optimal range that bots back away from threat", true, 0.0f, true, 1.0f);
+
 
 //---------------------------------------------------------------------------------------------
 // Enter the Attack behavior to chase and destroy primary known threat.
@@ -83,13 +86,14 @@ public:
 		// only consider this new candidate area if it's an improvement
 		// as we assume earlier breadth first search nodes are closer to bot
 		// and thus faster to reach for safety.
-		if ( neo_bot_path_reservation_enable.GetBool() )
+		const int nFriendlyHere = CNEOBotPathReservations()->GetPredictedFriendlyPathCount( area->GetID(), m_me->GetTeamNumber(), m_me );
+		const int nFriendlyBest = CNEOBotPathReservations()->GetPredictedFriendlyPathCount( m_attackCoverArea->GetID(), m_me->GetTeamNumber(), m_me );
+		if ( nFriendlyHere != nFriendlyBest )
 		{
 			// prefer areas that friendly bots have reserved relatively less
-			return CNEOBotPathReservations()->GetPredictedFriendlyPathCount( area->GetID(), m_me->GetTeamNumber() )
-				< CNEOBotPathReservations()->GetPredictedFriendlyPathCount( m_attackCoverArea->GetID(), m_me->GetTeamNumber() );
+			return nFriendlyHere < nFriendlyBest;
 		}
-		// Fallback when path reservation is disabled: potentially visible area
+		// Tie-break when friendly reservations are equal (or disabled): potentially visible area
 		// count is a rough proxy for how exposed an area is. It ignores whether
 		// the area is actually reachable and does nothing to keep friendlies
 		// from bunching up in the same area.
@@ -120,9 +124,22 @@ public:
 			return true; // skip our starting area
 		}
 
-		float avoidPenalty = neo_bot_path_reservation_enable.GetBool()
-			? CNEOBotPathReservations()->GetAreaAvoidPenalty( area->GetID() )
-			: 0.0f;
+		// Skip areas that are hazardous or where bots get stuck
+		const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty( area->GetID() );
+		if ( neo_bot_path_reservation_enable.GetBool() )
+		{
+			int navAreaId = area->GetID();
+			if (CNEOBotPathReservations()->IsAreaHazardous(navAreaId, m_me))
+			{
+				return true;
+			}
+			if (penalty.IsStuckProne())
+			{
+				return true;
+			}
+		}
+
+		float avoidPenalty = penalty.flStuck;
 		if ( !IsBetterCandidate( area, avoidPenalty ) )
 		{
 			return true; // the cover candidate we already have is at least as good
@@ -276,14 +293,17 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 	if (!m_attackCoverArea // don't slow movement to cover with strafing
 		&& isUsingCloseRangeWeapon && threat->IsVisibleRecently() && me->IsRangeLessThan( threatLastKnownPos, 1.1f * me->GetDesiredAttackRange() ) )
 	{
-		// circle around our victim
-		if ( me->TransientlyConsistentRandomValue( 3.0f ) < 0.5f )
+		// circle around our victim, unless a sidestep could take us off a ledge
+		if ( !me->IsOnPreciseArea() )
 		{
-			me->PressLeftButton();
-		}
-		else
-		{
-			me->PressRightButton();
+			if ( me->TransientlyConsistentRandomValue( 3.0f ) < 0.5f )
+			{
+				me->PressLeftButton();
+			}
+			else
+			{
+				me->PressRightButton();
+			}
 		}
 	}
 
@@ -300,7 +320,13 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 		me->EnableCloak(3.0f);
 
-		if ( me->GetLastKnownArea() == m_goalArea )
+		if (!m_attackCoverArea
+			&& me->IsRanged( myWeapon )
+			&& me->IsRangeLessThan( threatLastKnownPos, sv_neo_bot_attack_too_close_retreat_ratio.GetFloat() * me->GetDesiredAttackRange() ) )
+		{
+			return SuspendFor( new CNEOBotRetreatToCover(), "Retreating from excessively close enemy" );
+		}
+		else if ( me->GetLastKnownArea() == m_goalArea )
 		{
 			return ChangeTo( new CNEOBotRetreatToCover(), "Taking cover as enemy is still present at my goal" );
 		}
@@ -339,10 +365,10 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 			// Consider throwing a grenade
 			if ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() )
 			{
+				m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 				Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
 				if ( pGrenadeBehavior )
 				{
-					m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 					return SuspendFor( pGrenadeBehavior, "Throwing grenade before chasing threat!" );
 				}
 			}
@@ -420,6 +446,17 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 
 //---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotAttack::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
+{
+	m_path.Invalidate();
+	m_chasePath.Invalidate();
+	m_attackCoverArea = nullptr;
+
+	return Continue();
+}
+
+
+//---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotAttack::OnStuck( CNEOBot *me )
 {
 	m_path.Invalidate();
@@ -466,11 +503,6 @@ QueryResultType	CNEOBotAttack::ShouldRetreat( const INextBot *me ) const
 	if (!m_bSawEnemySinceLastPathCompute)
 	{
 		return ANSWER_UNDEFINED;
-	}
-
-	if ( m_goalArea && m_attackCoverArea )
-	{
-		return ANSWER_NO;
 	}
 
 	return ANSWER_UNDEFINED;

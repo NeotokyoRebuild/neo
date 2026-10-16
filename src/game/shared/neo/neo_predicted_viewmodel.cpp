@@ -10,7 +10,6 @@
 #include "weapon_neobasecombatweapon.h"
 
 #include "engine/ivdebugoverlay.h"
-#include "iinput.h"
 #include "inetchannelinfo.h"
 #include "model_types.h"
 #include "prediction.h"
@@ -310,9 +309,6 @@ ConVar cl_neo_lean_automatic_debug("cl_neo_lean_automatic_debug", "0", FCVAR_ARC
 
 float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	Assert(player);
-#ifdef CLIENT_DLL
-	input->ExtraMouseSample(gpGlobals->frametime, 1);
-#endif
 	QAngle viewAng = player->LocalEyeAngles();
 	float leanRatio = 0;
 

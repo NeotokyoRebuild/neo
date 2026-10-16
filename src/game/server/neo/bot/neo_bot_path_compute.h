@@ -14,7 +14,7 @@ bool CNEOBotPathCompute
 	const Vector& goal,
 	RouteType route,
 	float maxPathLength = PATH_NO_LENGTH_LIMIT,
-	bool includeGoalIfPathFails = PATH_TRUNCATE_INCOMPLETE_PATH,
+	bool includeGoalIfPathFails = true, // return incomplete path if full path not found by default
 	bool requireGoalArea = false
 );
 

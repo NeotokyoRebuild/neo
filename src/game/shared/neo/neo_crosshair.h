@@ -138,6 +138,8 @@ extern const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS;
 
 struct CrosshairWepInfo
 {
+	bool operator==(const CrosshairWepInfo&) const = default;
+
 	int iStyle;
 	Color color;
 	NeoCrosshairFlags flags;
@@ -158,6 +160,8 @@ struct CrosshairWepInfo
 
 struct CrosshairInfo
 {
+	bool operator==(const CrosshairInfo&) const = default;
+
 	NeoCrosshairWepFlags wepFlags;
 	NeoCrosshairHipfireCustomFlags hipfireFlags;
 	CrosshairWepInfo wep[CROSSHAIR_WEP__TOTAL];
@@ -175,9 +179,12 @@ enum NeoXHairSerial
 	NEOXHAIR_SERIAL_ALPHA_V22,
 	NEOXHAIR_SERIAL_ALPHA_V28,
 	NEOXHAIR_SERIAL_ALPHA_V29,
+	NEOXHAIR_SERIAL_ALPHA_V35,
 
 	NEOXHAIR_SERIAL__LATESTPLUSONE,
 	NEOXHAIR_SERIAL_CURRENT = NEOXHAIR_SERIAL__LATESTPLUSONE - 1,
+	// handle anything < NEOXHAIR_SERIAL_ALPHA_V17 as invalid (see TestDeserial_V1_PREALPHA_V8_2)
+	NEOXHAIR_SERIAL_INVALID = NEOXHAIR_SERIAL_PREALPHA_V8_2
 };
 
 #ifdef CLIENT_DLL
@@ -187,7 +194,7 @@ int HalfInaccuracyConeInScreenPixels(C_NEOBaseCombatWeapon *pWeapon, int halfScr
 void InitializeClNeoCrosshair();
 
 class IConVar;
-void NeoConVarCrosshairChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal);
+void NeoConVarCrosshairChangeCallback(IConVar *icvar, const char *pOldVal, float flOldVal);
 
 #endif // CLIENT_DLL
 
@@ -197,7 +204,7 @@ void DefaultCrosshairSerial(char (&szSequence)[NEO_XHAIR_SEQMAX]);
 
 int UseCrosshairIndexFor(const CrosshairInfo *xhairInfo, const int iXHairWep, bool *pbHide = nullptr);
 
-bool ValidateCrosshairSerial(const char *pszSequence);
+bool ValidateCrosshairSerial(const char* pszSequence, const int ver = NEOXHAIR_SERIAL_CURRENT);
 
 // NEO NOTE (nullsystem): (*&)[NUM] enforces array size
 // paeHipfireOpts - Maps NeoUI RingBox int <-> NeoCrosshairWepFlags + NeoCrosshairHipfireCustomFlags

@@ -8,6 +8,7 @@
 #include "bot/behavior/neo_bot_retreat_from_grenade.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_reservation.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 ConVar neo_bot_retreat_to_cover_range( "neo_bot_retreat_to_cover_range", "1000", FCVAR_CHEAT );
@@ -96,6 +97,18 @@ public:
 };
 
 
+//---------------------------------------------------------------------------------------------
+int CountThreatsExposingArea( CNEOBot *me, CNavArea *area )
+{
+	CTestAreaAgainstThreats test( me, area );
+	me->GetVisionInterface()->ForEachKnownEntity( test );
+	return test.m_exposedThreatCount;
+}
+
+
+// A cover area where a bot got stuck this round counts as exposed to this many more threats
+static constexpr int NEO_BOT_STUCK_AREA_EXPOSURE = 1;
+
 // collect nearby areas that provide cover from our known threats
 class CSearchForCover : public ISearchSurroundingAreasFunctor
 {
@@ -115,17 +128,39 @@ public:
 
 		CNavArea *area = (CNavArea *)baseArea;
 
+		// Skip areas that are hazardous or where bots get stuck
+		const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty( area->GetID() );
+		if ( neo_bot_path_reservation_enable.GetBool() )
+		{
+			int navAreaId = area->GetID();
+			if (CNEOBotPathReservations()->IsAreaHazardous(navAreaId, m_me))
+			{
+				return true;
+			}
+			if (penalty.IsStuckProne())
+			{
+				return true;
+			}
+		}
+
 		CTestAreaAgainstThreats test( m_me, area );
 		m_me->GetVisionInterface()->ForEachKnownEntity( test );
 
-		if ( test.m_exposedThreatCount <= m_minExposureCount )
+		// an area where a bot got stuck this round counts as exposed to one more threat
+		int exposure = test.m_exposedThreatCount;
+		if ( penalty.flStuck > 0.0f )
+		{
+			exposure += NEO_BOT_STUCK_AREA_EXPOSURE;
+		}
+
+		if ( exposure <= m_minExposureCount )
 		{
 			// this area is at least as good as already found cover
-			if ( test.m_exposedThreatCount < m_minExposureCount )
+			if ( exposure < m_minExposureCount )
 			{
 				// this area is better than already found cover - throw out list and start over
 				m_coverAreaVector.RemoveAll();
-				m_minExposureCount = test.m_exposedThreatCount;
+				m_minExposureCount = exposure;
 			}
 
 			m_coverAreaVector.AddToTail( area );
@@ -257,10 +292,10 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 	if ( ( !m_grenadeThrowCooldownTimer.HasStarted() || m_grenadeThrowCooldownTimer.IsElapsed() ) &&
 	     threat && threat->GetEntity() && !me->IsLineOfFireClear( threat->GetEntity()->EyePosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 	{
+		m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 		Action<CNEOBot> *pGrenadeBehavior = CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( me, threat );
 		if ( pGrenadeBehavior )
 		{
-			m_grenadeThrowCooldownTimer.Start( sv_neo_bot_grenade_throw_cooldown.GetFloat() );
 			return SuspendFor( pGrenadeBehavior, "Throwing grenade while taking cover!" );
 		}
 	}

@@ -885,6 +885,30 @@ target_sources_grouped(
     neo/neo_mp3player.h
 )
 
+if(NEO_STEAMAUDIO)
+    target_compile_definitions(client PRIVATE NEO_STEAMAUDIO)
+
+    target_sources_grouped(
+        TARGET client
+        NAME "HRTF"
+        FILES
+        neo/audio/neo_hrtf_system.cpp
+        neo/audio/neo_hrtf_system.h
+        neo/audio/neo_spatializer.h
+        neo/audio/neo_spatializer_steamaudio.cpp
+    )
+
+    # NEO HRTF: The Steam Audio backend is plain C++ with no Source SDK headers, so it stays out
+    # of the cbase.h PCH and unity groups, and is the only file that sees phonon.h.
+    set_source_files_properties(
+        neo/audio/neo_spatializer_steamaudio.cpp
+        PROPERTIES
+            SKIP_UNITY_BUILD_INCLUSION ON
+            SKIP_PRECOMPILE_HEADERS ON
+            INCLUDE_DIRECTORIES ${STEAMAUDIO_INCLUDE_DIR}
+    )
+endif()
+
 target_sources_grouped(
     TARGET client
     NAME "Tool Framework"
@@ -1726,6 +1750,7 @@ target_sources_grouped(
 
 set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
@@ -1755,6 +1780,7 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/nav_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h

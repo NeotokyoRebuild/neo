@@ -6,7 +6,6 @@
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "neo_gamerules.h"
-#include "neo_ghost_cap_point.h"
 #include "debugoverlay_shared.h"
 #include "weapon_ghost.h"
 
@@ -79,18 +78,21 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 		m_enemyUpdateTimer.Start( GetUpdateInterval( me ) );
 	}
 
-	// Debug: Highlight the location of the enemy a bot ghost carrier is calling out
-	if ( neo_debug_ghost_carrier.GetBool() )
+	// Check if currently focused enemy has disappeared from beacon range
+	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
+	if ( !IsValidFocusEnemy( me, pFocus ) )
 	{
-		CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
-		if ( pFocus && pFocus->IsPlayer() && pFocus->IsAlive() )
-		{
-			NDebugOverlay::Cross3D( pFocus->GetAbsOrigin(), 20.0f, 255, 0, 0, true, 0.1f );
-		}
+		m_hCurrentFocusEnemy = nullptr;
+		pFocus = nullptr;
 	}
 
-	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
-	if ( pFocus && pFocus->IsAlive() )
+	// Debug: Highlight the location of the enemy a bot ghost carrier is calling out
+	if ( neo_debug_ghost_carrier.GetBool() && pFocus && pFocus->IsPlayer() )
+	{
+		NDebugOverlay::Cross3D( pFocus->GetAbsOrigin(), 20.0f, 255, 0, 0, true, 0.1f );
+	}
+
+	if ( pFocus )
 	{
 		if ( bUpdateCallout )
 		{
@@ -125,12 +127,8 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 					// NEO Jank: Urge relevant teammate bots look at the enemy
 					pBot->GetBodyInterface()->AimHeadTowards( pFocus, IBody::IMPORTANT, 0.5f, nullptr, "Ghost carrier teammate look override" );
 				}
-				else
-				{
-					// Force updates to known but not visible entity by forgetting them first
-					pBot->GetVisionInterface()->ForgetEntity( pFocus );
-				}
-				pBot->GetVisionInterface()->AddKnownEntity( pFocus ); // keep after ForgetEntity
+
+				pBot->GetVisionInterface()->UpdateKnownEntityPosition( pFocus );
 			}
 		}
 
@@ -175,6 +173,21 @@ void CNEOBotGhostEquipmentHandler::EquipBestWeaponForGhoster( CNEOBot *me )
 	{
 		me->Weapon_Switch( pGhost );
 	}
+}
+
+bool CNEOBotGhostEquipmentHandler::IsValidFocusEnemy( CNEOBot *me, CBaseEntity *pFocus ) const
+{
+	if ( !pFocus || !pFocus->IsAlive() || pFocus->IsEffectActive( EF_NODRAW ) )
+	{
+		return false;
+	}
+
+	if ( !me->IsEnemy( pFocus ) )
+	{
+		return false;
+	}
+
+	return me->GetVisionInterface()->IsAbleToSee( pFocus, IVision::DISREGARD_FOV );
 }
 
 float CNEOBotGhostEquipmentHandler::GetUpdateInterval( CNEOBot *me ) const
@@ -338,6 +351,11 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 			m_enemyLastPos[ idx ] = pBestCallout->GetAbsOrigin();
 		}
 	}
+	else
+	{
+		// Nobody is in beacon range or in sight
+		m_hCurrentFocusEnemy = nullptr;
+	}
 }
 
 
@@ -361,7 +379,7 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::OnStart( CNEOBot *me, Action< CNEOBot
 	m_teammates.RemoveAll();
 	CollectPlayers( me, &m_teammates );
 
-	m_closestCapturePoint = GetNearestCapPoint( me );
+	m_closestCapturePoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
 
 	UpdateFollowPath( me, m_teammates );
 	return Continue();
@@ -416,44 +434,6 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 	m_ghostEquipmentHandler.Update( me );
 
 	return Continue();
-}
-
-
-//---------------------------------------------------------------------------------------------
-Vector CNEOBotCtgCarrier::GetNearestCapPoint( const CNEOBot *me ) const
-{
-	if ( !me )
-		return CNEO_Player::VECTOR_INVALID_WAYPOINT;
-
-	const int iMyTeam = me->GetTeamNumber();
-
-	if ( NEORules()->m_pGhostCaps.Count() > 0 )
-	{
-		Vector bestPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
-		float flNearestCapDistSq = FLT_MAX;
-		for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
-		{
-			CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
-			if (!pCapPoint || !pCapPoint->GetActive())
-			{
-				continue;
-			}
-
-			int iCapTeam = pCapPoint->owningTeamAlternate();
-			if ( iCapTeam == iMyTeam )
-			{
-				float distanceToCap = me->GetAbsOrigin().DistToSqr( pCapPoint->GetAbsOrigin() );
-				if ( distanceToCap < flNearestCapDistSq )
-				{
-					flNearestCapDistSq = distanceToCap;
-					bestPos = pCapPoint->GetAbsOrigin();
-				}
-			}
-		}
-		return bestPos;
-	}
-
-	return CNEO_Player::VECTOR_INVALID_WAYPOINT;
 }
 
 
@@ -521,8 +501,7 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 	if ( bFoundGoal )
 	{
 		// We need to know where enemies are to determine if we are safe to cap
-		CWeaponGhost *pGhost = dynamic_cast<CWeaponGhost*>( me->Weapon_GetSlot( 0 ) );
-		if ( pGhost && pGhost->IsGhost() && pGhost->IsBootupCompleted() )
+		if ( me->GetBeaconingGhost() )
 		{
 			float flDistMeToGoalSq = me->GetAbsOrigin().DistToSqr( vecGoalPos );
 			
@@ -531,7 +510,8 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 			for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 			{
 				CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-				if ( pPlayer && pPlayer->IsAlive() && pPlayer->GetTeamNumber() != me->GetTeamNumber() )
+				if ( pPlayer && pPlayer->IsAlive() && pPlayer->GetTeamNumber() != me->GetTeamNumber()
+					&& me->GetVisionInterface()->IsAbleToSee( pPlayer, IVision::DISREGARD_FOV ) )
 				{
 					float dSq = pPlayer->GetAbsOrigin().DistToSqr( vecGoalPos );
 					if ( dSq <= flDistMeToGoalSq )
@@ -650,13 +630,91 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 }
 
 //---------------------------------------------------------------------------------------------
+bool CNEOBotCtgCarrier::HasCleanRunToCap( const CNEOBot *me ) const
+{
+	if ( !me->IsCarryingGhost() )
+	{
+		return false;
+	}
+
+	if ( m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+	{
+		return false;
+	}
+
+	const float flMyDistToGoalSq = me->GetAbsOrigin().DistToSqr( m_closestCapturePoint );
+
+	CUtlVector< CKnownEntity > knownVector;
+	me->GetVisionInterface()->CollectKnownEntities( &knownVector );
+
+	for ( int i = 0; i < knownVector.Count(); ++i )
+	{
+		CBaseEntity *pKnown = knownVector[i].GetEntity();
+		if ( !pKnown || !pKnown->IsPlayer() || !pKnown->IsAlive() )
+		{
+			continue;
+		}
+
+		if ( pKnown->GetTeamNumber() == me->GetTeamNumber() )
+		{
+			continue;
+		}
+
+		if ( pKnown->GetAbsOrigin().DistToSqr( m_closestCapturePoint ) <= flMyDistToGoalSq )
+		{
+			// A known enemy is at least as close to the cap as we are.
+			return false;
+		}
+	}
+
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------
+bool CNEOBotCtgCarrier::IsCapPotentiallyVisible( const CNEOBot *me ) const
+{
+	if ( !me->IsCarryingGhost() )
+	{
+		return false;
+	}
+
+	if ( m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+	{
+		return false;
+	}
+
+	const CNavArea *capArea = TheNavMesh->GetNearestNavArea( m_closestCapturePoint );
+	const CNavArea *myArea = me->GetLastKnownArea();
+	if ( !capArea || !myArea )
+	{
+		return false;
+	}
+
+	return capArea->IsPotentiallyVisible( myArea );
+}
+
+//---------------------------------------------------------------------------------------------
+QueryResultType CNEOBotCtgCarrier::ShouldHurry( const INextBot *me ) const
+{
+	const CNEOBot *meBot = static_cast<const CNEOBot *>( me );
+
+	// Within sight of the cap zone, run for it regardless of who is closing in
+	if ( IsCapPotentiallyVisible( meBot ) || HasCleanRunToCap( meBot ) )
+	{
+		return ANSWER_YES;
+	}
+
+	return ANSWER_UNDEFINED;
+}
+
+//---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgCarrier::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
 	m_teammates.RemoveAll();
 	CollectPlayers( me, &m_teammates );
 
 	// Re-evaluate nearest cap point on resume (in case we moved significantly while interrupted)
-	m_closestCapturePoint = GetNearestCapPoint( me );
+	m_closestCapturePoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
 
 	UpdateFollowPath( me, m_teammates );
 	return Continue();

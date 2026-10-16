@@ -2,11 +2,11 @@
 
 #include "neo_player_spawnpoint.h"
 
-class CBasePlayer;
+class CNEO_Player;
 class CNEOSpawnPoint;
 namespace NeoSpawnManager
 {
-	CNEOSpawnPoint* RequestSpawn(int team, CBasePlayer* player);
+	CNEOSpawnPoint* RequestSpawn(int team, CNEO_Player *player);
 
 	void Init();
 	void Deinit();
