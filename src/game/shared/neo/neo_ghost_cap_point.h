@@ -24,6 +24,8 @@
 #include "vphysics_interface.h"
 #include "c_neo_player.h"
 #include "ienginevgui.h"
+#include "materialsystem/imaterial.h"
+#include "materialsystem/imesh.h"
 #endif
 
 #ifdef CLIENT_DLL
@@ -94,6 +96,26 @@ private:
 	bool m_bIsActive;
 
 	CNEOHud_GhostCapPoint *m_pHUDCapPoint = nullptr;
+	IMaterial *m_pRingMaterial = nullptr;
+	IMaterial* m_pRingNsfMaterial = nullptr;
+	IMaterial* m_pRingJinraiMaterial = nullptr;
+
+public:
+	virtual bool ShouldDraw() override;
+	virtual RenderGroup_t GetRenderGroup() override;
+	// Draw in the engine's final "no Z buffer" translucent pass, i.e. after
+	// every other translucent renderable (smoke included), instead of sorted
+	// among them: the engine sorts translucents by one key per renderable, which
+	// can't order a thin ring against a huge smoke cloud. This does NOT disable
+	// depth testing -- the ring materials keep it -- so the ring is still hidden
+	// by whatever has written depth in front of it (the world, and smoke via
+	// Neo_UnlitGenericZ on its particle material).
+	virtual bool IgnoresZBuffer(void) const override { return true; }
+	virtual void GetRenderBoundsWorldspace(Vector& mins, Vector& maxs) override;
+	virtual int DrawModel(int flags) override;
+	virtual void DrawBarRing(CMeshBuilder& builder, int segments, float zBottom, float segmentSize, float radius, Vector capOrigin, Color ringColor);
+	virtual void DrawLogoRing(CMeshBuilder& builder, int segments, float zBottom, float segmentSize, float radius, Vector capOrigin, Color ringColor);
+	virtual void DrawSegment(CMeshBuilder& builder, float angle0, float angle1, float zBottom, float zTop, float radius, Vector capOrigin, Color ringColor);
 #endif
 };
 
