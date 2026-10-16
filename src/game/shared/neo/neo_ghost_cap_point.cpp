@@ -14,6 +14,8 @@
 #ifdef CLIENT_DLL
 #include "ui/neo_hud_ghost_cap_point.h"
 #include "materialsystem/imaterialsystem.h"
+#include "cliententitylist.h"
+#include "neo_smoke_visual_state.h"
 #include <math.h>
 #endif
 
@@ -87,6 +89,26 @@ enum NeoCapEdgeType
 
 #ifdef CLIENT_DLL
 ConVar cl_neo_cap_zone_edge("cl_neo_cap_zone_edge", "2", FCVAR_ARCHIVE, "Cap zone edge rendering", true, 0, true, NEO_CAP_EDGE_LINE_LOGO);
+
+// The ring is a translucent renderable drawn in the engine's last translucent
+// pass (IgnoresZBuffer()), after all smoke has been blended. Smoke writes no
+// depth, so to hide the ring behind it we lay down an invisible, depth-only
+// sphere per nearby smoke cloud right before drawing the ring and let the ring's
+// normal depth test do the rest. See NeoCapRing_DrawSmokeProxies().
+ConVar cl_neo_cap_ring_smoke_proxy("cl_neo_cap_ring_smoke_proxy", "1", FCVAR_ARCHIVE,
+	"Hide cap zone ring segments behind nearby smoke using invisible depth-only proxy spheres.");
+// The proxy follows the smoke's real expanding sphere (radius 0 -> ~330 over
+// SMOKESPHERE_EXPAND_TIME). The visibly opaque core is smaller than that radius
+// (density falls off towards the edge), so this scales it down.
+ConVar cl_neo_cap_ring_smoke_proxy_scale("cl_neo_cap_ring_smoke_proxy_scale", "0.575", FCVAR_ARCHIVE,
+	"Smoke proxy sphere radius as a fraction of the smoke's current expanding radius.", true, 0.05f, true, 1.5f);
+// While the smoke dissipates its alpha fades 1 -> 0; the proxy radius is
+// multiplied by fade^power so it shrinks (and the ring reappears) sooner than
+// the smoke visually thins out. 1 = shrinks in step with the fade.
+ConVar cl_neo_cap_ring_smoke_proxy_fade_power("cl_neo_cap_ring_smoke_proxy_fade_power", "0.2", FCVAR_ARCHIVE,
+	"How much faster the smoke proxy shrinks than the smoke fades while dissipating.", true, 1.0f, true, 8.0f);
+ConVar cl_neo_cap_ring_smoke_proxy_debug("cl_neo_cap_ring_smoke_proxy_debug", "0", FCVAR_CHEAT,
+	"Draw the smoke proxy spheres as opaque magenta (instead of depth-only) for tuning.");
 #endif
 
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
@@ -335,6 +357,146 @@ void CNEOGhostCapturePoint::GetRenderBoundsWorldspace(Vector& mins, Vector& maxs
 	maxs = origin + Vector(r, r, 16.0f);
 }
 
+struct NeoCapSmokeProxy_t
+{
+	Vector center;
+	float radius;
+};
+
+static constexpr float SMOKE_PROXY_MIN_RADIUS = 8.0f;
+static constexpr int SMOKE_PROXY_MAX_COUNT = 16;
+
+// Finds active smoke grenades whose proxy sphere overlaps this cap zone's
+// circle in the XY plane. The proxy follows the smoke's real state: it grows
+// with the expanding sphere after detonation and shrinks faster than the smoke
+// fades while it dissipates, so the ring doesn't pop out/in.
+static void NeoCapRing_FindSmokeProxies(const Vector& capOrigin, float capRadius, CUtlVector<NeoCapSmokeProxy_t>& outProxies)
+{
+	const float scale = cl_neo_cap_ring_smoke_proxy_scale.GetFloat();
+	const float fadePower = cl_neo_cap_ring_smoke_proxy_fade_power.GetFloat();
+	const Vector2D capOrigin2D = capOrigin.AsVector2D();
+
+	C_BaseEntityIterator iterator;
+	C_BaseEntity *pEnt;
+	while ((pEnt = iterator.Next()) != NULL && outProxies.Count() < SMOKE_PROXY_MAX_COUNT)
+	{
+		IClientNetworkable *pNet = pEnt->GetClientNetworkable();
+		if (!pNet || !pNet->GetClientClass() ||
+			Q_stricmp(pNet->GetClientClass()->m_pNetworkName, "ParticleSmokeGrenade") != 0)
+		{
+			continue;
+		}
+
+		NeoSmokeGrenadeVisualState_t state;
+		if (!NeoGetSmokeGrenadeVisualState(pEnt, state))
+		{
+			continue;
+		}
+
+		const float radius = state.expandRadius * scale * powf(state.fade, fadePower);
+		if (radius < SMOKE_PROXY_MIN_RADIUS)
+		{
+			continue;
+		}
+
+		// The ring is a low, flat circle but the proxy extends as far in Z as in
+		// XY, so test overlap in the XY plane only.
+		if (capOrigin2D.DistTo(state.center.AsVector2D()) > capRadius + radius)
+		{
+			continue;
+		}
+
+		NeoCapSmokeProxy_t& proxy = outProxies[outProxies.AddToTail()];
+		proxy.center = state.center;
+		proxy.radius = radius;
+	}
+}
+
+// Draws one UV sphere per proxy. Each quad is emitted with both windings so
+// the result doesn't depend on the bound material's cull mode (otherwise only
+// the far hemisphere might write depth and the ring would show through).
+static void NeoCapRing_DrawSmokeProxies(const CUtlVector<NeoCapSmokeProxy_t>& proxies)
+{
+	// The sphere is split into LATITUDE_BANDS rings from pole to pole, each ring
+	// into LONGITUDE_SEGMENTS quads around the vertical axis.
+	constexpr int LATITUDE_BANDS = 8;
+	constexpr int LONGITUDE_SEGMENTS = 12;
+
+	const bool debug = cl_neo_cap_ring_smoke_proxy_debug.GetBool();
+
+	IMaterial *pMaterial = materials->FindMaterial("debug/debugvertexcolor", TEXTURE_GROUP_OTHER);
+	if (!pMaterial || pMaterial->IsErrorMaterial())
+	{
+		return;
+	}
+
+	CMatRenderContextPtr pRenderContext(materials);
+	if (!debug)
+	{
+		// Depth only: the proxies must stay invisible.
+		pRenderContext->OverrideColorWriteEnable(true, false);
+		pRenderContext->OverrideAlphaWriteEnable(true, false);
+	}
+
+	pRenderContext->Bind(pMaterial);
+	IMesh *pMesh = pRenderContext->GetDynamicMesh(true);
+	CMeshBuilder meshBuilder;
+	meshBuilder.Begin(pMesh, MATERIAL_QUADS, proxies.Count() * LATITUDE_BANDS * LONGITUDE_SEGMENTS * 2);
+
+	auto emitSphereVertex = [&](const Vector& sphereCenter, float sphereRadius, int latitudeLine, int longitudeLine)
+	{
+		const float polarAngle = M_PI_F * ((float)latitudeLine / LATITUDE_BANDS);
+		const float azimuthAngle = 2.0f * M_PI_F * ((float)longitudeLine / LONGITUDE_SEGMENTS);
+
+		const Vector surfaceNormal(
+			sinf(polarAngle) * cosf(azimuthAngle),
+			sinf(polarAngle) * sinf(azimuthAngle),
+			cosf(polarAngle));
+		const Vector surfacePosition = sphereCenter + surfaceNormal * sphereRadius;
+
+		meshBuilder.Position3f(surfacePosition.x, surfacePosition.y, surfacePosition.z);
+		meshBuilder.Normal3f(surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
+		meshBuilder.Color4ub(255, 0, 255, 255);
+		meshBuilder.TexCoord2f(0, 0.0f, 0.0f);
+		meshBuilder.AdvanceVertex();
+	};
+
+	FOR_EACH_VEC(proxies, proxyIndex)
+	{
+		const Vector& sphereCenter = proxies[proxyIndex].center;
+		const float sphereRadius = proxies[proxyIndex].radius;
+
+		for (int band = 0; band < LATITUDE_BANDS; band++)
+		{
+			for (int segment = 0; segment < LONGITUDE_SEGMENTS; segment++)
+			{
+				const int northLine = band;
+				const int southLine = band + 1;
+				const int westLine = segment;
+				const int eastLine = segment + 1;
+
+				emitSphereVertex(sphereCenter, sphereRadius, northLine, westLine);
+				emitSphereVertex(sphereCenter, sphereRadius, northLine, eastLine);
+				emitSphereVertex(sphereCenter, sphereRadius, southLine, eastLine);
+				emitSphereVertex(sphereCenter, sphereRadius, southLine, westLine);
+
+				emitSphereVertex(sphereCenter, sphereRadius, southLine, westLine);
+				emitSphereVertex(sphereCenter, sphereRadius, southLine, eastLine);
+				emitSphereVertex(sphereCenter, sphereRadius, northLine, eastLine);
+				emitSphereVertex(sphereCenter, sphereRadius, northLine, westLine);
+			}
+		}
+	}
+
+	meshBuilder.End(false, true);
+
+	if (!debug)
+	{
+		pRenderContext->OverrideAlphaWriteEnable(false, true);
+		pRenderContext->OverrideColorWriteEnable(false, true);
+	}
+}
+
 int CNEOGhostCapturePoint::DrawModel(int flags)
 {
 	int cl_neo_cap_zone_edge_value = cl_neo_cap_zone_edge.GetInt();
@@ -376,6 +538,19 @@ int CNEOGhostCapturePoint::DrawModel(int flags)
 	}
 
 	ringColor[3] = ringOpacity;
+
+	// Smoke writes no depth, so lay down invisible depth-only proxies for any
+	// nearby smoke first; the ring below then fails its depth test where smoke
+	// is in front of it and passes where it is in front of the smoke.
+	if (cl_neo_cap_ring_smoke_proxy.GetBool())
+	{
+		CUtlVector<NeoCapSmokeProxy_t> smokeProxies;
+		NeoCapRing_FindSmokeProxies(capOrigin, m_flCapzoneRadius, smokeProxies);
+		if (!smokeProxies.IsEmpty())
+		{
+			NeoCapRing_DrawSmokeProxies(smokeProxies);
+		}
+	}
 
 	// draw bars ring
 	constexpr float SEGMENT_SIZE = 8.0f;
