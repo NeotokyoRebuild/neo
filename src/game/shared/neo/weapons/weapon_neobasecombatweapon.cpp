@@ -59,7 +59,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropInt(SENDINFO(m_nReloadPhase), 3, SPROP_UNSIGNED),
 	SendPropBool(SENDINFO(m_bChamberEmpty)),
 	SendPropBool(SENDINFO(m_bReloadDry)),
-	SendPropInt(SENDINFO(m_nReloadTable), 4),
+	SendPropInt(SENDINFO(m_nReloadTable), RELOAD_PHASE_TABLE_BITS),
 	SendPropTime(SENDINFO(m_flReloadStart)),
 	SendPropInt(SENDINFO(m_nReloadSoundsDone), RELOAD_PHASE_ROWS_MAX * RELOAD_SOUNDS_PER_ROW, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_spawnflags)),
