@@ -499,6 +499,8 @@ static constexpr float RELOAD_SOUND_LEAD = 0.02f;
 
 // The shipped reload sequence, the dry reload with every phase
 static constexpr const char *VM_SEQ_RELOAD = "reload";
+// A pistol's dry reload (the Milso ships it, the Tachi's is built)
+static constexpr const char *VM_SEQ_RELOAD_EMPTY = "reloadempty";
 
 // The reload sequence for the phase credited last, dry or partial; nullptr: nothing left to play
 // (sequences other than the shipped reload carry no activity, so they are picked by name)
@@ -507,7 +509,8 @@ static const char *ReloadSequenceName(int iPhaseDone, bool bDry, bool bFromDraw)
 	switch (iPhaseDone)
 	{
 	case RELOAD_PHASE_NONE:
-		return bDry ? VM_SEQ_RELOAD : "reload_partial";
+		// a pistol's dry reload ends with the slide release; magazine guns have no reloadempty and play the reload
+		return bDry ? VM_SEQ_RELOAD_EMPTY : "reload_partial";
 	case RELOAD_PHASE_DROPPED:
 		// after a switch the magazine is out: the draw itself brings the fresh one up out of view
 		if (bFromDraw)
@@ -538,8 +541,13 @@ bool CNEOBaseCombatWeapon::IsReloadDry() const
 // The phase that completes a reload: the bolt on a dry one, the last magazine phase otherwise
 ReloadPhase_t CNEOBaseCombatWeapon::LastReloadPhase(bool bDry) const
 {
+	// the full reload of that kind lists every phase it needs (a pistol's slide release is only in reloadempty)
 	const CNEOWeaponInfo &info = GetNEOWpnData();
-	const int iTable = info.FindReloadTable(VM_SEQ_RELOAD);
+	int iTable = bDry ? info.FindReloadTable(VM_SEQ_RELOAD_EMPTY) : -1;
+	if (iTable < 0)
+	{
+		iTable = info.FindReloadTable(VM_SEQ_RELOAD);
+	}
 	if (iTable < 0)
 	{
 		return RELOAD_PHASE_NONE;
