@@ -95,19 +95,19 @@ ConVar cl_neo_cap_zone_edge("cl_neo_cap_zone_edge", "2", FCVAR_ARCHIVE, "Cap zon
 // depth, so to hide the ring behind it we lay down an invisible, depth-only
 // sphere per nearby smoke cloud right before drawing the ring and let the ring's
 // normal depth test do the rest. See NeoCapRing_DrawSmokeProxies().
-ConVar cl_neo_cap_ring_smoke_proxy("cl_neo_cap_ring_smoke_proxy", "1", FCVAR_ARCHIVE,
+ConVar cl_neo_cap_ring_smoke_proxy("cl_neo_cap_ring_smoke_proxy", "1", FCVAR_DEVELOPMENTONLY,
 	"Hide cap zone ring segments behind nearby smoke using invisible depth-only proxy spheres.");
 // The proxy follows the smoke's real expanding sphere (radius 0 -> ~330 over
 // SMOKESPHERE_EXPAND_TIME). The visibly opaque core is smaller than that radius
 // (density falls off towards the edge), so this scales it down.
-ConVar cl_neo_cap_ring_smoke_proxy_scale("cl_neo_cap_ring_smoke_proxy_scale", "0.575", FCVAR_ARCHIVE,
+ConVar cl_neo_cap_ring_smoke_proxy_scale("cl_neo_cap_ring_smoke_proxy_scale", "0.575", FCVAR_DEVELOPMENTONLY,
 	"Smoke proxy sphere radius as a fraction of the smoke's current expanding radius.", true, 0.05f, true, 1.5f);
 // While the smoke dissipates its alpha fades 1 -> 0; the proxy radius is
 // multiplied by fade^power so it shrinks (and the ring reappears) sooner than
 // the smoke visually thins out. 1 = shrinks in step with the fade.
-ConVar cl_neo_cap_ring_smoke_proxy_fade_power("cl_neo_cap_ring_smoke_proxy_fade_power", "0.2", FCVAR_ARCHIVE,
-	"How much faster the smoke proxy shrinks than the smoke fades while dissipating.", true, 1.0f, true, 8.0f);
-ConVar cl_neo_cap_ring_smoke_proxy_debug("cl_neo_cap_ring_smoke_proxy_debug", "0", FCVAR_CHEAT,
+ConVar cl_neo_cap_ring_smoke_proxy_fade_power("cl_neo_cap_ring_smoke_proxy_fade_power", "0", FCVAR_DEVELOPMENTONLY,
+	"How much faster the smoke proxy shrinks than the smoke fades while dissipating.", true, 0.0f, true, 8.0f);
+ConVar cl_neo_cap_ring_smoke_proxy_debug("cl_neo_cap_ring_smoke_proxy_debug", "0", FCVAR_DEVELOPMENTONLY,
 	"Draw the smoke proxy spheres as opaque magenta (instead of depth-only) for tuning.");
 #endif
 
