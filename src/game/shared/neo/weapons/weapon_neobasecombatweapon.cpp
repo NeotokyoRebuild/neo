@@ -721,9 +721,10 @@ void CNEOBaseCombatWeapon::StartReloadSequence(int iTable, int iSequence)
 	{
 		SendWeaponAnim(ACT_VM_RELOAD);
 	}
+	// the reload gesture other players see (SetAnimation(PLAYER_RELOAD) does nothing under NEO)
 	if (pOwner && pOwner->IsPlayer())
 	{
-		static_cast<CBasePlayer *>(pOwner)->SetAnimation(PLAYER_RELOAD);
+		static_cast<CNEO_Player *>(pOwner)->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
 	}
 
 	// the wait to fire is never shorter than the animation that plays
@@ -775,6 +776,15 @@ void CNEOBaseCombatWeapon::EmitReloadSoundPiece(const char *pszSound)
 		filter.UsePredictionRules();
 	}
 	EmitSound(filter, pOwner->entindex(), pszSound);
+}
+
+// A dropped weapon (a throw, or its owner's death) cuts the reload short: its sound pieces stop
+void CNEOBaseCombatWeapon::StopReloadOnDrop()
+{
+	if (HasReloadPhases())
+	{
+		StopReloadSoundPieces();
+	}
 }
 
 // A switch cuts the reload sound pieces off
