@@ -24,12 +24,74 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 	m_flPenetration = 0.f;
 	m_bDropOnDeath = true;
 	iAimFOV = 0;
+	m_flReloadReadyBeforeEnd = 0.0f;
+	m_bChamberedRound = false;
+	m_iNumReloadTables = 0;
 
 	m_flVMFov = m_flVMAimFov = 0.f;
 	m_vecVMPosOffset = m_vecVMAimPosOffset = vec3_origin;
 	m_angVMAngOffset = m_angVMAimAngOffset = vec3_angle;
 }
 
+
+static ReloadPhase_t ReloadPhaseFromName(const char *pszName)
+{
+	static constexpr const char *PHASE_NAMES[RELOAD_PHASE_COUNT] = { "", "drop", "seat", "slap", "bolt" };
+	for (int i = RELOAD_PHASE_DROPPED; i < RELOAD_PHASE_COUNT; ++i)
+	{
+		if (V_stricmp(pszName, PHASE_NAMES[i]) == 0)
+		{
+			return static_cast<ReloadPhase_t>(i);
+		}
+	}
+	return RELOAD_PHASE_NONE;
+}
+
+// "ReloadPhases" { "ChamberedRound" "1"  "<sequence>" { "<phase>" { "credit" "s" "sound" "name" "at" "s" } ... } ... }
+void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
+{
+	m_iNumReloadTables = 0;
+	if (!pBlock)
+	{
+		return;
+	}
+
+	m_bChamberedRound = pBlock->GetBool("ChamberedRound", true);
+	for (KeyValues *pSeq = pBlock->GetFirstTrueSubKey(); pSeq && m_iNumReloadTables < RELOAD_PHASE_TABLES_MAX; pSeq = pSeq->GetNextTrueSubKey())
+	{
+		ReloadPhaseTable_t &table = m_reloadTables[m_iNumReloadTables++];
+		V_strncpy(table.szSequence, pSeq->GetName(), sizeof(table.szSequence));
+		table.iNumRows = 0;
+
+		for (KeyValues *pRow = pSeq->GetFirstTrueSubKey(); pRow && table.iNumRows < RELOAD_PHASE_ROWS_MAX; pRow = pRow->GetNextTrueSubKey())
+		{
+			const ReloadPhase_t phase = ReloadPhaseFromName(pRow->GetName());
+			if (phase == RELOAD_PHASE_NONE)
+			{
+				Warning("%s: unknown reload phase \"%s\" in \"%s\"\n", szClassName, pRow->GetName(), table.szSequence);
+				continue;
+			}
+
+			ReloadPhaseRow_t &row = table.rows[table.iNumRows++];
+			row.phase = phase;
+			row.flCredit = pRow->GetFloat("credit");
+			row.flSoundAt = pRow->GetFloat("at");
+			V_strncpy(row.szSound, pRow->GetString("sound"), sizeof(row.szSound));
+		}
+	}
+}
+
+int CNEOWeaponInfo::FindReloadTable(const char *pszSequence) const
+{
+	for (int i = 0; i < m_iNumReloadTables; ++i)
+	{
+		if (V_stricmp(m_reloadTables[i].szSequence, pszSequence) == 0)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
 
 void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName )
 {
@@ -39,6 +101,7 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 	m_iBullets = pKeyValuesData->GetInt( "Bullets", 1 );
 	m_flCycleTime = pKeyValuesData->GetFloat( "CycleTime", 0.15 );
 	m_flReloadReadyBeforeEnd = pKeyValuesData->GetFloat( "ReloadReadyBeforeEnd", 0.0f );
+	ParseReloadPhases(pKeyValuesData->FindKey("ReloadPhases"));
 
 	const char *notFoundStr = "notfound";
 	Q_strncpy(szViewModel2, pKeyValuesData->GetString("team2viewmodel", notFoundStr), MAX_WEAPON_STRING);
