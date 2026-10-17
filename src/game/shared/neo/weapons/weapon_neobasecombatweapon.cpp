@@ -448,6 +448,9 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 }
 
 
+// The pistols whose slide locks back on the last shot, until a reload releases it
+static constexpr NEO_WEP_BITS_UNDERLYING_TYPE NEO_WEP_SLIDE_LOCK = NEO_WEP_MILSO | NEO_WEP_TACHI;
+
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	if (HasReloadPhases())
@@ -1022,7 +1025,7 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 		// An empty weapon draws with its slide held back where the model has that draw,
 		// which carries no activity, so it is picked by name
 		static constexpr const char *VM_SEQ_DRAW_EMPTY = "drawempty";
-		const int iDrawEmpty = (UsesClipsForAmmo1() && m_iClip1 <= 0) ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
+		const int iDrawEmpty = IsSlideLockedBack() ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
 		if (iDrawEmpty != ACTIVITY_NOT_AVAILABLE)
 		{
 			SetSequence(iDrawEmpty);
@@ -1521,12 +1524,29 @@ void CNEOBaseCombatWeapon::DryFire()
 // An empty weapon idles on its empty sequence where the model has one, such as a pistol with its slide held back
 bool CNEOBaseCombatWeapon::SendWeaponAnim(int iActivity)
 {
-	if (iActivity == ACT_VM_IDLE && UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle())
+	if (iActivity == ACT_VM_IDLE && IsSlideLockedBack() && HasEmptyIdle())
 	{
 		iActivity = ACT_VM_IDLE_EMPTY;
 	}
 
 	return BaseClass::SendWeaponAnim(iActivity);
+}
+
+// An empty weapon shows its empty sequences, and so does a pistol whose dry reload seated a magazine
+// but has not released the slide yet
+bool CNEOBaseCombatWeapon::IsSlideLockedBack() const
+{
+	if (!UsesClipsForAmmo1())
+	{
+		return false;
+	}
+
+	if (m_iClip1 <= 0)
+	{
+		return true;
+	}
+
+	return HasReloadPhases() && m_bChamberEmpty && (GetNeoWepBits() & NEO_WEP_SLIDE_LOCK);
 }
 
 bool CNEOBaseCombatWeapon::HasEmptyIdle()
@@ -1677,7 +1697,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	// the last round's shot locks a pistol's slide back:
 	// the pistols' dry fire sequence is a shot's kick with the slide held back,
-	static constexpr NEO_WEP_BITS_UNDERLYING_TYPE NEO_WEP_SLIDE_LOCK = NEO_WEP_MILSO | NEO_WEP_TACHI;
 	if (UsesClipsForAmmo1() && m_iClip1 <= 0 && (GetNeoWepBits() & NEO_WEP_SLIDE_LOCK))
 	{
 		SendWeaponAnim(ACT_VM_DRYFIRE);
