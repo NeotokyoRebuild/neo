@@ -273,8 +273,8 @@ void CNEO_NPCTargetSystem::Think()
 
 //-----------------------------------------------------------------------------
 // Bot hazard publishing - Bots cannot fight this entity.
-// Hazards: its own area and all adjacent areas for every team (run-over),
-// and its targeted player's area once acquired.
+// Hazards: its own area for every team (run-over), the areas it can see
+// for targeted teams, and its targeted player's area once acquired.
 //-----------------------------------------------------------------------------
 
 void CNEO_NPCTargetSystem::PublishBotHazards(CBasePlayer *pTarget)
@@ -315,11 +315,13 @@ void CNEO_NPCTargetSystem::PublishBotHazards(CBasePlayer *pTarget)
 	{
 		for (int iTeam = FIRST_GAME_TEAM; iTeam < TEAM__TOTAL; ++iTeam)
 		{
-			CNEOBotPathReservations()->AddDeadlyHazard(pOwnArea->GetID(), flExpireTime, iTeam);
-
 			if (bTeamTargeted[iTeam])
 			{
 				AddVisibleHazard(pOwnArea, iTeam, flExpireTime);
+			}
+			else
+			{
+				CNEOBotPathReservations()->AddDeadlyHazard(pOwnArea->GetID(), flExpireTime, iTeam);
 			}
 		}
 	}
@@ -337,20 +339,14 @@ void CNEO_NPCTargetSystem::PublishBotHazards(CBasePlayer *pTarget)
 
 void CNEO_NPCTargetSystem::AddVisibleHazard(CNavArea *pArea, int iTeam, float flExpireTime, bool bPropagatePVS)
 {
-	const bool bMotionVision = m_bMotionVision;
-	auto addHazard = [flExpireTime, iTeam, bMotionVision, bPropagatePVS](CNavArea *pVisible)
+	if (m_bMotionVision)
 	{
-		if (bMotionVision)
-		{
-			CNEOBotPathReservations()->AddNpcTurretHazard(pVisible->GetID(), flExpireTime, iTeam, bPropagatePVS);
-		}
-		else
-		{
-			CNEOBotPathReservations()->AddDeadlyHazard(pVisible->GetID(), flExpireTime, iTeam, bPropagatePVS);
-		}
-		return true;
-	};
-	addHazard(pArea);
+		CNEOBotPathReservations()->AddNpcTurretHazard(pArea->GetID(), flExpireTime, iTeam, bPropagatePVS);
+	}
+	else
+	{
+		CNEOBotPathReservations()->AddDeadlyHazard(pArea->GetID(), flExpireTime, iTeam, bPropagatePVS);
+	}
 }
 
 bool CNEO_NPCTargetSystem::CanSee(CBaseEntity *pEntity)
