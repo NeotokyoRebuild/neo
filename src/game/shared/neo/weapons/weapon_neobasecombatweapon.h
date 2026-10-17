@@ -313,6 +313,7 @@ protected:
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
 	bool HasEmptyIdle();
+	bool IsSlideLockedBack() const;
 
 	bool HasReloadPhases() const;
 	bool IsReloadDry() const;
