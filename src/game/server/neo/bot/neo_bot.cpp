@@ -1322,10 +1322,18 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 
 		// known but not currently visible (I know you're around here somewhere)
 
+		// Turn toward where the threat was last seen, heard or called out,
+		// but an enemy ghost carrier's live position shows on every HUD
+		const CNEO_Player *pThreatPlayer = ToNEOPlayer(known->GetEntity());
+		const bool bLivePosition = pThreatPlayer && pThreatPlayer->IsCarryingGhost();
+		const Vector vecThreatSpot = bLivePosition
+			? known->GetEntity()->WorldSpaceCenter()
+			: known->GetLastKnownPosition() + Vector(0, 0, HalfHumanHeight);
+
 		// if there is unobstructed space between us, turn around
-		if (IsLineOfSightClear(known->GetEntity(), IGNORE_ACTORS))
+		if (bLivePosition || IsLineOfSightClear(vecThreatSpot, IGNORE_ACTORS))
 		{
-			Vector toThreat = known->GetEntity()->GetAbsOrigin() - GetAbsOrigin();
+			Vector toThreat = vecThreatSpot - GetAbsOrigin();
 			float threatRange = toThreat.NormalizeInPlace();
 
 			float aimError = M_PI / 6.0f;
@@ -1334,7 +1342,7 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 			FastSinCos(aimError, &s, &c);
 
 			float error = threatRange * s;
-			Vector imperfectAimSpot = known->GetEntity()->WorldSpaceCenter();
+			Vector imperfectAimSpot = vecThreatSpot;
 			imperfectAimSpot.x += RandomFloat(-error, error);
 			imperfectAimSpot.y += RandomFloat(-error, error);
 
