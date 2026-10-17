@@ -29,6 +29,10 @@ static constexpr const char *FIRE_RUN_NAME = "run_shoot_";
 static constexpr int GESTURE_LAYER = AIMSEQUENCE_LAYER + NUM_AIMSEQUENCE_LAYERS;
 static constexpr int NUM_LAYERS = GESTURE_LAYER + 1;
 
+// A reload cut short fades its gesture out over this long instead of snapping to the aim pose,
+// as the gesture slots of the HL2MP anim state did
+static constexpr float GESTURE_FADE_OUT_TIME = 0.2f;
+
 // The legs play at the rate of the player's speed over the speed the walk, run and crouch walk sequences cover,
 // which is constant as in classic NEOTOKYO: two of the original models' forward walk and run animations carry no movement
 static constexpr float ANIM_TOPSPEED_WALK = 100.0f;
@@ -73,6 +77,7 @@ CNEOPlayerAnimState::CNEOPlayerAnimState( CHL2MP_Player *pPlayer )
 #endif
 	m_iGestureSequence = 0;
 	m_flGestureCycle = 0.0f;
+	m_flGestureFadeStart = 0.0f;
 
 	CModAnimConfig config;
 	config.m_flMaxBodyYawDegrees = NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES;
@@ -124,10 +129,10 @@ void CNEOPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 		break;
 
 	case PLAYERANIMEVENT_RELOAD_END:
-		// the reload ended or was cut short: stop its gesture, if the layer still plays it
-		if ( m_iGestureSequence > 0 && m_iGestureSequence == CalcReloadSequence() )
+		// the reload ended or was cut short: fade its gesture out, if the layer still plays it
+		if ( m_iGestureSequence > 0 && m_iGestureSequence == CalcReloadSequence() && m_flGestureFadeStart <= 0.0f )
 		{
-			m_iGestureSequence = 0;
+			m_flGestureFadeStart = gpGlobals->curtime;
 		}
 		break;
 
@@ -161,6 +166,7 @@ void CNEOPlayerAnimState::StartGesture( int iSequence )
 
 	m_iGestureSequence = iSequence;
 	m_flGestureCycle = 0.0f;
+	m_flGestureFadeStart = 0.0f;
 	m_hGestureWeapon = m_pPlayer->GetActiveWeapon();
 }
 
@@ -185,11 +191,22 @@ void CNEOPlayerAnimState::ComputeGestureSequence( CStudioHdr *pStudioHdr )
 		return;
 	}
 
+	float flWeight = 1.0f;
+	if ( m_flGestureFadeStart > 0.0f )
+	{
+		flWeight = 1.0f - ( gpGlobals->curtime - m_flGestureFadeStart ) / GESTURE_FADE_OUT_TIME;
+		if ( flWeight <= 0.0f )
+		{
+			m_iGestureSequence = 0;
+			return;
+		}
+	}
+
 	CAnimationLayer *pLayer = m_pOuter->GetAnimOverlay( GESTURE_LAYER );
 	pLayer->m_nSequence = m_iGestureSequence;
 	pLayer->m_flCycle = m_flGestureCycle;
 	pLayer->m_flPlaybackRate = 1.0f;
-	pLayer->m_flWeight = 1.0f;
+	pLayer->m_flWeight = flWeight;
 	pLayer->m_nOrder = GESTURE_LAYER;
 #ifndef CLIENT_DLL
 	pLayer->m_fFlags |= ANIM_LAYER_ACTIVE;

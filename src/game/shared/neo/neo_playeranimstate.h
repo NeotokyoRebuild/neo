@@ -70,6 +70,8 @@ private:
 	int m_iGestureSequence;
 	float m_flGestureCycle;
 	EHANDLE m_hGestureWeapon;
+	// a reload cut short fades its gesture out from this time, 0 while it plays in full
+	float m_flGestureFadeStart;
 };
 
 CNEOPlayerAnimState *CreateNEOPlayerAnimState( CHL2MP_Player *pPlayer );
