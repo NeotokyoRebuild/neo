@@ -53,6 +53,12 @@ WeaponData
 		{
 			"seat" { "credit" "1.600" "sound" "weapon_srm.reload_seat" "at" "1.501" }
 		}
+		"fire_chamber_onehand"
+		{
+			"fire_at"	"0.133"
+			"seat" { "credit" "1.333" "sound" "weapon_srm.reload_seat" "at" "1.234" }
+			"bolt" { "credit" "2.500" "sound" "weapon_srm.reload_bolt" "at" "2.137" }
+		}
 	}
 	
 	"TPMuzzleFlashScale"	"0.5"

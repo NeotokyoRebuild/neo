@@ -61,6 +61,7 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 	{
 		ReloadPhaseTable_t &table = m_reloadTables[m_iNumReloadTables++];
 		V_strncpy(table.szSequence, pSeq->GetName(), sizeof(table.szSequence));
+		table.flFireAt = pSeq->GetFloat("fire_at");
 		table.iNumRows = 0;
 
 		for (KeyValues *pRow = pSeq->GetFirstTrueSubKey(); pRow && table.iNumRows < RELOAD_PHASE_ROWS_MAX; pRow = pRow->GetNextTrueSubKey())

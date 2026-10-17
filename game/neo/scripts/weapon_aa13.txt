@@ -58,6 +58,12 @@ WeaponData
 		{
 			"seat" { "credit" "2.567" "sound" "weapon_aa13.reload_seat" "at" "2.105" }
 		}
+		"fire_chamber_onehand"
+		{
+			"fire_at"	"0.133"
+			"seat" { "credit" "2.200" "sound" "weapon_aa13.reload_seat" "at" "1.738" }
+			"bolt" { "credit" "3.167" "sound" "weapon_aa13.reload_bolt" "at" "2.597" }
+		}
 	}
 	
 	"clip_size"				"16"

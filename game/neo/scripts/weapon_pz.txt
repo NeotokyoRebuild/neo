@@ -70,6 +70,13 @@ WeaponData
 			"seat" { "credit" "2.767" "sound" "weapon_pz.reload_seat" "at" "2.349" }
 			"slap" { "credit" "3.633" "sound" "weapon_pz.reload_slap" "at" "3.428" }
 		}
+		"fire_chamber_onehand"
+		{
+			"fire_at"	"0.133"
+			"seat" { "credit" "2.500" "sound" "weapon_pz.reload_seat" "at" "2.082" }
+			"slap" { "credit" "3.367" "sound" "weapon_pz.reload_slap" "at" "3.161" }
+			"bolt" { "credit" "4.067" "sound" "weapon_pz.reload_bolt" "at" "3.502" }
+		}
 	}
 	
 	"TPMuzzleFlashScale"	"0.3"

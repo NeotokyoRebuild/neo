@@ -52,6 +52,12 @@ WeaponData
 			"seat" { "credit" "1.500" "sound" "weapon_milso.reload_seat" "at" "1.576" }
 			"bolt" { "credit" "2.400" "sound" "weapon_milso.reload_bolt" "at" "2.393" }
 		}
+		"fire_chamber_onehand"
+		{
+			"fire_at"	"0.133"
+			"seat" { "credit" "1.233" "sound" "weapon_milso.reload_seat" "at" "1.310" }
+			"bolt" { "credit" "2.133" "sound" "weapon_milso.reload_bolt" "at" "2.127" }
+		}
 	}
 	
 	"TPMuzzleFlashScale"	"0.5"
