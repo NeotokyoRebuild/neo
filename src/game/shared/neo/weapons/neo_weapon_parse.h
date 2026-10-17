@@ -53,6 +53,7 @@ struct ReloadPhaseRow_t
 struct ReloadPhaseTable_t
 {
 	char szSequence[RELOAD_SEQUENCE_NAME_MAX];
+	float flFireAt;	// a chambered-round shot's sequence: when the bullet fires, seconds from its start; 0 otherwise
 	int iNumRows;
 	ReloadPhaseRow_t rows[RELOAD_PHASE_ROWS_MAX];
 };

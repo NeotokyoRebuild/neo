@@ -55,6 +55,12 @@ WeaponData
 			"seat" { "credit" "1.633" "sound" "weapon_tachi.reload_seat" "at" "1.880" }
 			"bolt" { "credit" "2.533" "sound" "weapon_tachi.reload_bolt" "at" "2.527" }
 		}
+		"fire_chamber_onehand"
+		{
+			"fire_at"	"0.133"
+			"seat" { "credit" "1.367" "sound" "weapon_tachi.reload_seat" "at" "1.613" }
+			"bolt" { "credit" "2.267" "sound" "weapon_tachi.reload_bolt" "at" "2.260" }
+		}
 	}
 	
 	"clip_size"			"15"

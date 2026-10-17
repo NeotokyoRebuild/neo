@@ -69,6 +69,13 @@ WeaponData
 			"seat" { "credit" "1.533" "sound" "weapon_zr68l.reload_seat" "at" "1.535" }
 			"slap" { "credit" "1.900" "sound" "weapon_zr68l.reload_slap" "at" "1.891" }
 		}
+		"fire_chamber_onehand"
+		{
+			"fire_at"	"0.133"
+			"seat" { "credit" "1.267" "sound" "weapon_zr68l.reload_seat" "at" "1.268" }
+			"slap" { "credit" "1.633" "sound" "weapon_zr68l.reload_slap" "at" "1.624" }
+			"bolt" { "credit" "2.200" "sound" "weapon_zr68l.reload_bolt" "at" "1.929" }
+		}
 	}
 	
 	"TPMuzzleFlashScale"	"0.5"
