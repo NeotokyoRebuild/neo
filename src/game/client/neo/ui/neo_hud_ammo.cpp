@@ -6,6 +6,9 @@
 #include "iclientmode.h"
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
+#include <vgui/IPanel.h>
+#include "VGuiMatSurface/IMatSystemSurface.h"
+#include "cdll_client_int.h"
 #include <vgui_controls/Controls.h>
 #include <vgui_controls/ImagePanel.h>
 #include <vgui/IScheme.h>
@@ -75,11 +78,6 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	m_hSmallTextFont = pScheme->GetFont("NHudOCRSmall");
 	m_hBulletFont = pScheme->GetFont("NHudBullets");
-	m_hChamberFont = pScheme->GetFont("NHudBulletsChamber");
-	if (!m_hChamberFont)
-	{
-		m_hChamberFont = m_hBulletFont;
-	}
 	m_hTextFont = pScheme->GetFont("NHudOCR");
 
 	surface()->GetScreenSize(m_resX, m_resY);
@@ -155,7 +153,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	int fireModeWidth = 0, fireModeHeight = 0;
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
-	// a gun with a chamber draws the magazine row and, at its right end, the chambered round as its own glyph
+	// a gun with a chamber counts the magazine in the row, and the round icon of the fire-mode glyph shows the chamber
 	const bool hasChamber = activeWep->HasChamberSlot();
 		
 	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || (activeWep->GetNeoWepBits() & NEO_WEP_BALC))
@@ -183,10 +181,16 @@ void CNEOHud_Ammo::DrawAmmo() const
 			g_pVGuiLocalize->ConvertANSIToUnicode(fireModeText, unicodeFireModeText, sizeof(unicodeFireModeText));
 
 			surface()->DrawSetTextFont(m_hBulletFont);
-			surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
-			surface()->DrawPrintText(unicodeFireModeText, V_wcslen(unicodeFireModeText));
-
 			surface()->GetTextSize(m_hBulletFont, unicodeFireModeText, fireModeWidth, fireModeHeight);
+			if (hasChamber)
+			{
+				DrawFireModeWithChamber(unicodeFireModeText, fireModeHeight, activeWep->IsRoundChambered());
+			}
+			else
+			{
+				surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
+				surface()->DrawPrintText(unicodeFireModeText, V_wcslen(unicodeFireModeText));
+			}
 		}
 	} else 
 	{
@@ -228,11 +232,8 @@ void CNEOHud_Ammo::DrawAmmo() const
 	if (ammoChar == nullptr)
 		return;
 
+	const int maxSpaceAvailableForBullets = digit_max_width;
 	const int bulletWidth = surface()->GetCharacterWidth(m_hBulletFont, *ammoChar);
-	// the chamber glyph sits half a glyph to the right of the magazine row, inside the same width
-	const int chamberGap = hasChamber ? bulletWidth / 2 : 0;
-	const int chamberWidth = hasChamber ? surface()->GetCharacterWidth(m_hChamberFont, *ammoChar) : 0;
-	const int maxSpaceAvailableForBullets = digit_max_width - chamberGap - chamberWidth;
 	const int plusWidth = surface()->GetCharacterWidth(m_hBulletFont, '+');
 	const int maxBulletsWeCanDisplay = bulletWidth == 0 ? 0 : (maxSpaceAvailableForBullets / bulletWidth);
 
@@ -296,17 +297,36 @@ void CNEOHud_Ammo::DrawAmmo() const
 			surface()->DrawPrintText(&unicodeBullets[magAmountToDrawFilled], magSizeMax - magAmountToDrawFilled);
 		}
 	}
+}
 
-	if (hasChamber)
-	{
-		// bottom-aligned with the row, lit while a live round is chambered
-		wchar_t chamberGlyph[2]{ static_cast<wchar_t>(*ammoChar), L'\0' };
-		const int chamberY = digit_ypos + ypos + surface()->GetFontTall(m_hBulletFont) - surface()->GetFontTall(m_hChamberFont);
-		surface()->DrawSetTextFont(m_hChamberFont);
-		surface()->DrawSetTextColor(activeWep->IsRoundChambered() ? ammo_color : emptied_ammo_color);
-		surface()->DrawSetTextPos(digit_xpos + xpos + bulletWidth * magSizeMax + chamberGap, chamberY);
-		surface()->DrawPrintText(chamberGlyph, 1);
-	}
+// The fire-mode glyph's top rows are a round icon (bullet or shell), its letter sits below them
+static constexpr float FIRE_MODE_ROUND_ICON_HEIGHT = 0.184f;
+
+// Draw the fire-mode glyph with its round icon lit while a round is chambered, in the empty color otherwise;
+// the letter keeps the text color. Two passes, each clipped to its part of the glyph
+void CNEOHud_Ammo::DrawFireModeWithChamber(const wchar_t *pszGlyph, int iGlyphTall, bool bChambered) const
+{
+	const int iX = icon_xpos + xpos;
+	const int iY = icon_ypos + ypos;
+	int iScreenX = 0, iScreenY = 0;
+	vgui::ipanel()->GetAbsPos(GetVPanel(), iScreenX, iScreenY);
+	const int iSplitY = iScreenY + iY + static_cast<int>(iGlyphTall * FIRE_MODE_ROUND_ICON_HEIGHT + 0.5f);
+
+	int iLeft, iTop, iRight, iBottom;
+	bool bClippingDisabled;
+	g_pMatSystemSurface->GetClippingRect(iLeft, iTop, iRight, iBottom, bClippingDisabled);
+
+	g_pMatSystemSurface->SetClippingRect(iLeft, iTop, iRight, Min(iBottom, iSplitY));
+	surface()->DrawSetTextColor(bChambered ? ammo_color : emptied_ammo_color);
+	surface()->DrawSetTextPos(iX, iY);
+	surface()->DrawPrintText(pszGlyph, V_wcslen(pszGlyph));
+
+	g_pMatSystemSurface->SetClippingRect(iLeft, Max(iTop, iSplitY), iRight, iBottom);
+	surface()->DrawSetTextColor(ammo_text_color);
+	surface()->DrawSetTextPos(iX, iY);
+	surface()->DrawPrintText(pszGlyph, V_wcslen(pszGlyph));
+
+	g_pMatSystemSurface->SetClippingRect(iLeft, iTop, iRight, iBottom);
 }
 
 void CNEOHud_Ammo::DrawNeoHudElement()
