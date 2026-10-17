@@ -34,6 +34,8 @@ private:
 	vgui::HFont m_hTextFont = 0;
 	vgui::HFont m_hBulletFont = 0;
 	vgui::HFont m_hFireModeFont = 0;
+	// the chambered round's glyph, a size up from the magazine's
+	vgui::HFont m_hChamberFont = 0;
 
 	int m_resX, m_resY;
 
