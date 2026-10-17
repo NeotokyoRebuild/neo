@@ -901,6 +901,27 @@ int CNEOBaseCombatWeapon::GetMaxRoundsInGun() const
 	return GetMaxClip1() + ((HasReloadPhases() && GetNEOWpnData().m_bChamberedRound) ? 1 : 0);
 }
 
+bool CNEOBaseCombatWeapon::HasChamberSlot() const
+{
+	return HasReloadPhases() && GetNEOWpnData().m_bChamberedRound;
+}
+
+// The clip counts the chambered round, and the chamber is empty after the last shot until a dry reload's bolt
+bool CNEOBaseCombatWeapon::IsRoundChambered() const
+{
+	return HasChamberSlot() && m_iClip1 > 0 && !m_bChamberEmpty;
+}
+
+int CNEOBaseCombatWeapon::RoundsInMagazine() const
+{
+	return m_iClip1 - (IsRoundChambered() ? 1 : 0);
+}
+
+int CNEOBaseCombatWeapon::MagazineCapacity() const
+{
+	return GetMaxClip1();
+}
+
 void CNEOBaseCombatWeapon::CreditReloadPhase(ReloadPhase_t phase)
 {
 	switch (phase)

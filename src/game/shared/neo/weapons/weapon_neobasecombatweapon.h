@@ -266,6 +266,14 @@ public:
 	float GetPenetration() const;
 	// the magazine plus the round a partial reload keeps in the chamber
 	virtual int GetMaxRoundsInGun() const;
+	// the gun has a chamber that holds one round apart from the magazine (every gun with reload phases but the Kyla)
+	virtual bool HasChamberSlot() const;
+	// a live round is in the chamber
+	virtual bool IsRoundChambered() const;
+	// the rounds in the magazine (or tube), the chambered round not counted
+	virtual int RoundsInMagazine() const;
+	// how many rounds the magazine (or tube) holds
+	virtual int MagazineCapacity() const;
 	void StopReloadOnDrop();
 #ifdef CLIENT_DLL
 	float m_flTemperature;

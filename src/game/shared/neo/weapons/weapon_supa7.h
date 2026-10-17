@@ -65,6 +65,10 @@ public:
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 	// the tube plus the round in the chamber
 	int GetMaxRoundsInGun() const OVERRIDE;
+	bool HasChamberSlot() const OVERRIDE { return true; }
+	bool IsRoundChambered() const OVERRIDE { return IsChamberLive(); }
+	int RoundsInMagazine() const OVERRIDE { return m_nTubeCount; }
+	int MagazineCapacity() const OVERRIDE { return TubeCapacity(); }
 	bool Holster(CBaseCombatWeapon *pSwitchingTo) OVERRIDE;
 
 	// What sits in the chamber: a live shell or slug, the hull of a fired one, or nothing
