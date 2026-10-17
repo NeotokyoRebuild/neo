@@ -340,6 +340,7 @@ void CNEOBotPathReservationSystem::AddDeadlyHazard(int navAreaID, float expireTi
 		blank.hazardExpireTime = expireTime;
 		blank.smokeExpireTime = 0.0f;
 		blank.smokePropagateTime = 0.0f;
+		blank.npcTurretExpireTime = 0.0f;
 		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
 	}
     else
@@ -414,6 +415,7 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
 		blank.hazardExpireTime = 0.0f;
 		blank.smokeExpireTime = expireTime;
 		blank.smokePropagateTime = 0.0f;
+		blank.npcTurretExpireTime = 0.0f;
 		index = m_HazardAreas[teamID].Insert(navAreaID, blank);
 	}
     else
@@ -442,6 +444,90 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
             area->ForAllCompletelyVisibleAreas(propagate);
         }
     }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Functor to propagate a neo_npc_targetsystem turret hazard to PVS-adjacent areas
+struct CNEOFunctorPropagatePVSNpcTurretHazard
+{
+	CNEOFunctorPropagatePVSNpcTurretHazard(float expireTime, int teamID)
+		: m_expireTime(expireTime), m_teamID(teamID)
+	{
+	}
+
+	bool operator()(CNavArea *area)
+	{
+		CNEOBotPathReservations()->AddNpcTurretHazard(area->GetID(), m_expireTime, m_teamID, false);
+		return true;
+	}
+
+	float m_expireTime;
+	int m_teamID;
+};
+
+//-------------------------------------------------------------------------------------------------
+// Area tagged by neo_npc_targetsystem turret, whose motion vision
+// cannot see slow cloaked players, so bots escaping it should cloak
+void CNEOBotPathReservationSystem::AddNpcTurretHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS)
+{
+    if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
+    {
+        return;
+    }
+
+    if ( (teamID < 0) || (teamID >= TEAM__TOTAL) )
+    {
+        return;
+    }
+
+    // Kept apart from deadly hazards, so a bot in a hurry can accept the turret's risk
+    int index = m_HazardAreas[teamID].Find(navAreaID);
+    if ( !m_HazardAreas[teamID].IsValidIndex(index) )
+    {
+        HazardInfo blank;
+        blank.hazardExpireTime = 0.0f;
+        blank.smokeExpireTime = 0.0f;
+        blank.smokePropagateTime = 0.0f;
+        blank.npcTurretExpireTime = 0.0f;
+        index = m_HazardAreas[teamID].Insert(navAreaID, blank);
+    }
+
+    // Inform the bots in every area the turret can see to turn on cloak
+    m_HazardAreas[teamID][index].npcTurretExpireTime = expireTime;
+
+    if ( propagatePVS )
+    {
+        CNavArea *area = TheNavMesh->GetNavAreaByID(navAreaID);
+        if (area)
+        {
+            // Same visible set as a propagated deadly hazard
+            CNEOFunctorPropagatePVSNpcTurretHazard propagate(expireTime, teamID);
+            area->ForAllCompletelyVisibleAreas(propagate);
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+bool CNEOBotPathReservationSystem::IsAreaNpcTurretHazard(int navAreaID, const CNEOBot *me) const
+{
+    if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() || !me )
+    {
+        return false;
+    }
+
+    int teamID = me->GetTeamNumber();
+    if ( (teamID < 0) || (teamID >= TEAM__TOTAL) )
+    {
+        return false;
+    }
+
+    int index = m_HazardAreas[teamID].Find(navAreaID);
+    if ( !m_HazardAreas[teamID].IsValidIndex(index) )
+    {
+        return false;
+    }
+
+    return m_HazardAreas[teamID][index].npcTurretExpireTime > gpGlobals->curtime;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -476,6 +562,12 @@ float CNEOBotPathReservationSystem::GetAreaHazardousTime(int navAreaID, const CN
 			return hazardTimeLeft;
 		}
 
+		auto npcTurretTimeLeft = h.npcTurretExpireTime - gpGlobals->curtime;
+		if (npcTurretTimeLeft > 0)
+		{
+			return npcTurretTimeLeft;
+		}
+
         // Support class can see through smoke
         if (me->GetClass() != NEO_CLASS_SUPPORT)
         {
@@ -497,7 +589,7 @@ bool CNEOBotPathReservationSystem::IsAreaHazardous(int navAreaID, const CNEOBot 
 }
 
 //-------------------------------------------------------------------------------------------------
-// Unlike IsAreaHazardous, smoke does not count: only marks that can kill, such as a frag grenade's blast area
+// Unlike IsAreaHazardous, smoke and the turret's sightline do not count: only marks that can kill, such as a frag grenade's blast area
 bool CNEOBotPathReservationSystem::IsAreaDeadlyHazard(int navAreaID, const CNEOBot *me) const
 {
 	if (!neo_bot_path_reservation_avoid_penalty_enable.GetBool())
