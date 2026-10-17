@@ -5,6 +5,9 @@ WeaponData
 	// Weapon characteristics:
 	"Damage"			"18"
 	"Bullets"			"8"
+	// when the fire animation's pump is home with the next round (Pump bone: altfire f18, fire f30)
+	"ChamberAfterShot"	"0.600"
+	"ChamberAfterSlugShot"	"1.000"
 	"CycleTime"			"0.8"
 	
 	// Weapon data is loaded by both the Game and Client DLLs.

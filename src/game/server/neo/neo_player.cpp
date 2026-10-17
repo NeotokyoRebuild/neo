@@ -2386,6 +2386,12 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePla
 ConVar cl_neo_spec_auto_observe_killer_if_observing_victim("cl_neo_spec_auto_observe_killer_if_observing_victim", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_USERINFO, "If the current observer target is killed when in eye or following, switch observer target to the killer", true, 0, true, 1);
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	// a death cuts a reload short, whether or not the weapon drops
+	if (auto *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
+	{
+		pNeoWeapon->StopReloadOnDrop();
+	}
+
 	CBaseEntity* pAttacker = info.GetAttacker();
 	if (pAttacker && pAttacker->IsPlayer()) // we can only have players as a spectate target atm
 	{
@@ -2990,6 +2996,7 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 		return; // Return early to not drop weapon
 	}
 
+	neoWeapon->StopReloadOnDrop();
 	pWeapon->m_bInReload = false;
 	pWeapon->StopWeaponSound(RELOAD_NPC);
 
