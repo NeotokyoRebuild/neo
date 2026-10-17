@@ -447,11 +447,30 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
 }
 
 //-------------------------------------------------------------------------------------------------
+// Functor to propagate a neo_npc_targetsystem turret hazard to PVS-adjacent areas
+struct CNEOFunctorPropagatePVSNpcTurretHazard
+{
+	CNEOFunctorPropagatePVSNpcTurretHazard(float expireTime, int teamID)
+		: m_expireTime(expireTime), m_teamID(teamID)
+	{
+	}
+
+	bool operator()(CNavArea *area)
+	{
+		CNEOBotPathReservations()->AddNpcTurretHazard(area->GetID(), m_expireTime, m_teamID, false);
+		return true;
+	}
+
+	float m_expireTime;
+	int m_teamID;
+};
+
+//-------------------------------------------------------------------------------------------------
 // Area tagged by neo_npc_targetsystem turret, whose motion vision
 // cannot see slow cloaked players, so bots escaping it should cloak
 void CNEOBotPathReservationSystem::AddNpcTurretHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS)
 {
-    AddDeadlyHazard(navAreaID, expireTime, teamID, propagatePVS);
+    AddDeadlyHazard(navAreaID, expireTime, teamID);
 
     if ( (teamID < 0) || (teamID >= TEAM__TOTAL) )
     {
@@ -461,8 +480,19 @@ void CNEOBotPathReservationSystem::AddNpcTurretHazard(int navAreaID, float expir
     int index = m_HazardAreas[teamID].Find(navAreaID);
     if ( m_HazardAreas[teamID].IsValidIndex(index) )
     {
-        // Inform the bots in the specific target area to turn on cloak
+        // Inform the bots in every area the turret can see to turn on cloak
         m_HazardAreas[teamID][index].npcTurretExpireTime = expireTime;
+    }
+
+    if ( propagatePVS )
+    {
+        CNavArea *area = TheNavMesh->GetNavAreaByID(navAreaID);
+        if (area)
+        {
+            // Same visible set as a propagated deadly hazard
+            CNEOFunctorPropagatePVSNpcTurretHazard propagate(expireTime, teamID);
+            area->ForAllCompletelyVisibleAreas(propagate);
+        }
     }
 }
 
