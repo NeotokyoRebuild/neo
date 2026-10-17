@@ -91,6 +91,7 @@ public:
     void AddSmokeHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS = true);
     float GetAreaHazardousTime(int navAreaID, const CNEOBot *me) const;
     bool IsAreaHazardous(int navAreaID, const CNEOBot *me) const;
+    bool IsAreaDeadlyHazard(int navAreaID, const CNEOBot *me) const;
 
 private:
     int CountLiveClaims(const AreaReservation_t &res, const CNEOBot *excluding) const;

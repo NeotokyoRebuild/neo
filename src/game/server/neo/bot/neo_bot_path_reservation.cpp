@@ -495,3 +495,32 @@ bool CNEOBotPathReservationSystem::IsAreaHazardous(int navAreaID, const CNEOBot 
 {
    return GetAreaHazardousTime(navAreaID, me) > 0;
 }
+
+//-------------------------------------------------------------------------------------------------
+// Unlike IsAreaHazardous, smoke does not count: only marks that can kill, such as a frag grenade's blast area
+bool CNEOBotPathReservationSystem::IsAreaDeadlyHazard(int navAreaID, const CNEOBot *me) const
+{
+	if (!neo_bot_path_reservation_avoid_penalty_enable.GetBool())
+	{
+		return false;
+	}
+
+	if (!me)
+	{
+		return false;
+	}
+
+	const int teamID = me->GetTeamNumber();
+	if (teamID < 0 || teamID >= TEAM__TOTAL)
+	{
+		return false;
+	}
+
+	const int index = m_HazardAreas[teamID].Find(navAreaID);
+	if (!m_HazardAreas[teamID].IsValidIndex(index))
+	{
+		return false;
+	}
+
+	return m_HazardAreas[teamID][index].hazardExpireTime > gpGlobals->curtime;
+}
