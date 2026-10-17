@@ -54,6 +54,11 @@ WeaponData
 		{
 			"seat" { "credit" "1.567" "sound" "weapon_srs.reload_seat" "at" "1.411" }
 		}
+		// the bolt cycle after a shot: "bolt" is when the bolt is home with the next round (Bolt bone, charge f25)
+		"charge"
+		{
+			"bolt" { "credit" "0.833" }
+		}
 	}
 	
 	"TPMuzzleFlashScale"	"0.25"
