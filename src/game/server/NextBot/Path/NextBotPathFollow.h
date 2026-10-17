@@ -94,6 +94,13 @@ private:
 	CNEOBotPathObstacles m_pathObstacles;			// looks ahead for props to steer around and breakables in the way
 	const Path::Segment *m_capClimbGoal;			// the climb onto a ladder's wall cap m_capLaunches counts
 	int m_capLaunches;
+
+	bool IsPartWayDownDrop( INextBot *bot, const Segment *landing ) const;	// return true if we are falling or stopped part way down a drop, the landing level ahead
+	bool CountFellOffRepath( INextBot *bot );			// count a fell-off re-path, return true if they keep leaving us where we were
+
+	Vector m_fellOffFeet;							// where the latest run of fell-off re-paths started,
+	float m_fellOffTime;							// when the latest one was,
+	int m_fellOffCount;								// and how many there were
 #endif
 
 	float m_goalTolerance;
