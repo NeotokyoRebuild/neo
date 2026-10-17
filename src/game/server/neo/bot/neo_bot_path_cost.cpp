@@ -33,9 +33,8 @@ ConVar neo_bot_path_penalty_exposure_inverse_base_scoped("neo_bot_path_penalty_e
 ConVar neo_bot_path_visibility_exposure_enable("neo_bot_path_visibility_exposure_enable", "1", FCVAR_NONE,
 	"Enable visibility-exposure pathing penalties", true, 0, true, 1);
 
-// A hurrying bot crosses a smoke hazard area only when no detour shorter than this many times its cost exists,
-// like a navmesh avoid area
-static constexpr float BOT_HURRY_SMOKE_PENALTY_MULTIPLIER = 20.0f;
+ConVar neo_bot_path_penalty_hurry_smoke_multiplier("neo_bot_path_penalty_hurry_smoke_multiplier", "20.0", FCVAR_CHEAT,
+	"Cost multiplier for a hurrying bot crossing a smoke hazard area, which it takes only when no shorter detour exists", true, 1.0f, false, 0.0f);
 
 //-------------------------------------------------------------------------------------------------
 CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
@@ -76,7 +75,7 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 		// but deadly hazards such as frag grenades stay impassable
 		if ( m_bInAHurry && !CNEOBotPathReservations()->IsAreaDeadlyHazard(area->GetID(), m_me) )
 		{
-			hazardMultiplier = BOT_HURRY_SMOKE_PENALTY_MULTIPLIER;
+			hazardMultiplier = neo_bot_path_penalty_hurry_smoke_multiplier.GetFloat();
 		}
 		else
 		{
