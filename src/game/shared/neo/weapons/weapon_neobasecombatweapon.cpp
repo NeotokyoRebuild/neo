@@ -648,8 +648,8 @@ bool CNEOBaseCombatWeapon::ReloadWithPhases()
 // A trigger press can end a reload; turn this off and the trigger waits for the reload to end, as before
 static constexpr bool RELOAD_FIRE_INTERRUPTS = true;
 // A trigger press while the magazine is out fires the chambered round with the one-handed fire_chamber_onehand
-// sequence; off by default until every gun's model has that sequence (a model without it refuses the shot)
-ConVar sv_neo_reload_chamber_shot("sv_neo_reload_chamber_shot", "0", FCVAR_REPLICATED,
+// sequence (a model without it refuses the shot)
+ConVar sv_neo_reload_chamber_shot("sv_neo_reload_chamber_shot", "1", FCVAR_REPLICATED,
 	"A trigger press while the magazine is out of a reloading gun fires the chambered round");
 static constexpr const char *VM_SEQ_FIRE_CHAMBER_ONEHAND = "fire_chamber_onehand";
 // The first shot after a cancelled reload, the shipped fire blended in from the reload pose instead of snapped
