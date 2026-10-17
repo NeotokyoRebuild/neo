@@ -25,6 +25,8 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 	m_bDropOnDeath = true;
 	iAimFOV = 0;
 	m_flReloadReadyBeforeEnd = 0.0f;
+	m_flChamberAfterShot = 0.0f;
+	m_flChamberAfterSlugShot = 0.0f;
 	m_bChamberedRound = false;
 	m_iNumReloadTables = 0;
 
@@ -106,6 +108,8 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 	m_iBullets = pKeyValuesData->GetInt( "Bullets", 1 );
 	m_flCycleTime = pKeyValuesData->GetFloat( "CycleTime", 0.15 );
 	m_flReloadReadyBeforeEnd = pKeyValuesData->GetFloat( "ReloadReadyBeforeEnd", 0.0f );
+	m_flChamberAfterShot = pKeyValuesData->GetFloat("ChamberAfterShot", 0.0f);
+	m_flChamberAfterSlugShot = pKeyValuesData->GetFloat("ChamberAfterSlugShot", 0.0f);
 	ParseReloadPhases(pKeyValuesData->FindKey("ReloadPhases"));
 
 	const char *notFoundStr = "notfound";

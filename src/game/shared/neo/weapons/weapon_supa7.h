@@ -66,8 +66,9 @@ public:
 	// the tube plus the round in the chamber
 	int GetMaxRoundsInGun() const OVERRIDE;
 	bool HasChamberSlot() const OVERRIDE { return true; }
-	bool IsRoundChambered() const OVERRIDE { return IsChamberLive(); }
-	int RoundsInMagazine() const OVERRIDE { return m_nTubeCount; }
+	bool IsRoundChambered() const OVERRIDE { return IsChamberLive() && !IsPumpCycling(); }
+	// while the shot's pump cycles, the round it feeds still shows in the tube
+	int RoundsInMagazine() const OVERRIDE { return m_nTubeCount + ((IsChamberLive() && IsPumpCycling()) ? 1 : 0); }
 	int MagazineCapacity() const OVERRIDE { return TubeCapacity(); }
 	bool Holster(CBaseCombatWeapon *pSwitchingTo) OVERRIDE;
 
@@ -100,6 +101,7 @@ private:
 
 	bool IsChamberLive() const { return m_nChamber == SUPA7_CHAMBER_SHELL || m_nChamber == SUPA7_CHAMBER_SLUG; }
 	int TubeCapacity() const;
+	bool IsPumpCycling() const { return gpGlobals->curtime < m_flPumpHomeTime; }
 	void SyncTube();
 	void TubePush(bool bSlug);
 	void Rack();
@@ -129,6 +131,7 @@ private:
 	CNetworkVar(bool, m_bRackPending); // a slug was loaded to be fired next: the reload ends with a rack
 	CNetworkVar(float, m_flRackTime); // a standalone rack's back stroke: the chamber is ejected and fed then
 	CNetworkVar(float, m_flRackSoundTime); // when its pump sound starts
+	CNetworkVar(float, m_flPumpHomeTime); // when the shot's pump is home with the next round, for the HUD
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);
