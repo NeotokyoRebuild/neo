@@ -141,6 +141,12 @@ ActionResult<CNEOBot> CNEOBotRetreatFromHazardArea::Update(CNEOBot *me, float in
     if (CNEOBotPathReservations()->IsAreaNpcTurretHazard(myArea->GetID(), me))
     {
         me->EnableCloak(3.0f);
+        if (me->IsCloakEnabled())
+        {
+            // The tank's motion vision only ignores cloaked players under 180 u/s
+            me->ReleaseRunButton();
+            me->PressSneakButton(0.3f);
+        }
     }
 
     m_path.Update(me);
