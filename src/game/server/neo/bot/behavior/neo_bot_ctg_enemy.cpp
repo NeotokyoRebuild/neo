@@ -54,7 +54,7 @@ static bool PredictRoute( CNavArea *pStartArea, const Vector &vecGoal, CNEOBotPr
 
 //---------------------------------------------------------------------------------------------
 // Floods outward over the areas this bot can traverse, leaving each reached area marked with its
-// travel distance (IsMarked, GetCostSoFar) until the next nav search. Ladders are not followed.
+// shortest travel distance (IsMarked, GetCostSoFar) until the next nav search. Ladders are not followed.
 class CNEOBotTraversableFlood : public ISearchSurroundingAreasFunctor
 {
 public:
@@ -68,6 +68,41 @@ public:
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) override
 	{
 		return m_me->GetLocomotionInterface()->IsAreaTraversable( adjArea );
+	}
+
+	// Dijkstra in place of the base breadth-first flood: the open list is ordered by distance and an
+	// area's distance drops when a shorter way in turns up, so GetCostSoFar is the shortest travel
+	virtual void IterateAdjacentAreas( CNavArea *area, CNavArea *priorArea, float travelDistanceSoFar ) override
+	{
+		for ( int dir = 0; dir < NUM_DIRECTIONS; ++dir )
+		{
+			const int count = area->GetAdjacentCount( (NavDirType)dir );
+			for ( int i = 0; i < count; ++i )
+			{
+				CNavArea *adjArea = area->GetAdjacentArea( (NavDirType)dir, i );
+				if ( !ShouldSearch( adjArea, area, travelDistanceSoFar ) )
+				{
+					continue;
+				}
+
+				const float flCost = travelDistanceSoFar + ( adjArea->GetCenter() - area->GetCenter() ).Length();
+				if ( !adjArea->IsMarked() )
+				{
+					adjArea->Mark();
+					adjArea->SetParent( area );
+					adjArea->SetCostSoFar( flCost );
+					adjArea->SetTotalCost( flCost );
+					adjArea->AddToOpenList();
+				}
+				else if ( adjArea->IsOpen() && flCost < adjArea->GetCostSoFar() )
+				{
+					adjArea->SetParent( area );
+					adjArea->SetCostSoFar( flCost );
+					adjArea->SetTotalCost( flCost );
+					adjArea->UpdateOnOpenList();
+				}
+			}
+		}
 	}
 
 private:
