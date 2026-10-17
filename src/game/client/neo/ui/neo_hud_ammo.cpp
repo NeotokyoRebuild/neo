@@ -75,6 +75,11 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	m_hSmallTextFont = pScheme->GetFont("NHudOCRSmall");
 	m_hBulletFont = pScheme->GetFont("NHudBullets");
+	m_hChamberFont = pScheme->GetFont("NHudBulletsChamber");
+	if (!m_hChamberFont)
+	{
+		m_hChamberFont = m_hBulletFont;
+	}
 	m_hTextFont = pScheme->GetFont("NHudOCR");
 
 	surface()->GetScreenSize(m_resX, m_resY);
@@ -150,14 +155,16 @@ void CNEOHud_Ammo::DrawAmmo() const
 	int fireModeWidth = 0, fireModeHeight = 0;
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
+	// a gun with a chamber draws the magazine row and, at its right end, the chambered round as its own glyph
+	const bool hasChamber = activeWep->HasChamberSlot();
 		
 	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || (activeWep->GetNeoWepBits() & NEO_WEP_BALC))
 	{
 		char fireModeText[2]{ '\0' };
 
 		ammoChar = activeWep->GetNEOWpnData().szBulletCharacter;
-		magSizeMax = activeWep->GetMaxRoundsInGun();
-		magSizeCurrent = activeWep->Clip1();
+		magSizeMax = hasChamber ? activeWep->MagazineCapacity() : activeWep->GetMaxRoundsInGun();
+		magSizeCurrent = hasChamber ? activeWep->RoundsInMagazine() : activeWep->Clip1();
 			
 		if(activeWep)
 		{			
@@ -206,16 +213,26 @@ void CNEOHud_Ammo::DrawAmmo() const
 		surface()->DrawSetTextFont(m_hBulletFont);
 		surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
 		wchar_t bullets[22];
-		V_swprintf_safe(bullets, L"%i/%i", magSizeCurrent, magSizeMax);
-		surface()->DrawPrintText(bullets, (int)(magSizeCurrent == 0 ? 1 : log10(magSizeCurrent) + 1) + (int)(log10(magSizeMax) + 1) + 1);
+		if (hasChamber && activeWep->IsRoundChambered())
+		{
+			V_swprintf_safe(bullets, L"%i+1/%i", magSizeCurrent, magSizeMax);
+		}
+		else
+		{
+			V_swprintf_safe(bullets, L"%i/%i", magSizeCurrent, magSizeMax);
+		}
+		surface()->DrawPrintText(bullets, V_wcslen(bullets));
 		return;
 	}
 
 	if (ammoChar == nullptr)
 		return;
 
-	const int maxSpaceAvailableForBullets = digit_max_width;
 	const int bulletWidth = surface()->GetCharacterWidth(m_hBulletFont, *ammoChar);
+	// the chamber glyph sits half a glyph to the right of the magazine row, inside the same width
+	const int chamberGap = hasChamber ? bulletWidth / 2 : 0;
+	const int chamberWidth = hasChamber ? surface()->GetCharacterWidth(m_hChamberFont, *ammoChar) : 0;
+	const int maxSpaceAvailableForBullets = digit_max_width - chamberGap - chamberWidth;
 	const int plusWidth = surface()->GetCharacterWidth(m_hBulletFont, '+');
 	const int maxBulletsWeCanDisplay = bulletWidth == 0 ? 0 : (maxSpaceAvailableForBullets / bulletWidth);
 
@@ -224,6 +241,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 
 	const int maxBulletsWeCanDisplayWithPlus = bulletWidth == 0 ? 0 : ((maxSpaceAvailableForBullets - plusWidth) / bulletWidth);
 	const bool bulletsOverflowing = maxBulletsWeCanDisplay < magSizeMax;
+	const int magSizeFull = magSizeMax;
 
 	if(bulletsOverflowing)
 	{
@@ -248,7 +266,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		if (magSizeMax > 0)
 			bullets[magSizeMax - 1] = '+';
 
-		if(activeWep->GetMaxRoundsInGun() == magSizeCurrent)
+		if(magSizeFull == magSizeCurrent)
 		{
 			magAmountToDrawFilled = magSizeMax;
 		} else if(magSizeMax - 1 < magSizeCurrent)
@@ -277,6 +295,17 @@ void CNEOHud_Ammo::DrawAmmo() const
 			surface()->DrawSetTextPos(digit_xpos + xpos + (bulletWidth * magAmountToDrawFilled), digit_ypos + ypos);
 			surface()->DrawPrintText(&unicodeBullets[magAmountToDrawFilled], magSizeMax - magAmountToDrawFilled);
 		}
+	}
+
+	if (hasChamber)
+	{
+		// bottom-aligned with the row, lit while a live round is chambered
+		wchar_t chamberGlyph[2]{ static_cast<wchar_t>(*ammoChar), L'\0' };
+		const int chamberY = digit_ypos + ypos + surface()->GetFontTall(m_hBulletFont) - surface()->GetFontTall(m_hChamberFont);
+		surface()->DrawSetTextFont(m_hChamberFont);
+		surface()->DrawSetTextColor(activeWep->IsRoundChambered() ? ammo_color : emptied_ammo_color);
+		surface()->DrawSetTextPos(digit_xpos + xpos + bulletWidth * magSizeMax + chamberGap, chamberY);
+		surface()->DrawPrintText(chamberGlyph, 1);
 	}
 }
 
