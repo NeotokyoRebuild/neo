@@ -40,6 +40,22 @@ struct HazardInfo
 	float smokeExpireTime;      // when the smoke hazard risk expires
 	float hazardExpireTime;     // when a general deadly hazard risk expires
 	float smokePropagateTime;   // expiry this area has already propagated to its visible set
+	float detpackExpireTime;    // when an enemy detpack's blast radius stops blocking every route
+};
+
+// A detpack lying in the world, with the nav area it rests on
+struct DeployedDetpack_t
+{
+	EHANDLE hDetpack;
+	CNavArea *pArea;
+};
+
+// An enemy detpack whose blast radius a team has marked, so it is not re-marked every update
+struct DetpackMark_t
+{
+	EHANDLE hDetpack;
+	float flFirstMarkTime;
+	float flMarkTime;
 };
 
 struct BotReservedAreas_t
@@ -92,7 +108,21 @@ public:
     float GetAreaHazardousTime(int navAreaID, const CNEOBot *me) const;
     bool IsAreaHazardous(int navAreaID, const CNEOBot *me) const;
 
+    const CUtlVector<DeployedDetpack_t> &GetDeployedDetpacks();
+    bool IsDetpackMarkFresh(const CBaseEntity *pDetpack, int teamID) const;
+    bool MarkDetpackBlast(CBaseEntity *pDetpack, int teamID);
+    void AddDetpackHazard(int navAreaID, float expireTime, int teamID);
+    bool IsAreaDetpackHazard(int navAreaID, int teamID) const;
+    bool HasDetpackMark(int teamID) const;
+    float GetLastDetpackMarkTime(int teamID) const;
+
 private:
+    void ClearDetpackMarks();
+
+    CUtlVector<DetpackMark_t> m_DetpackMarks[TEAM__TOTAL];
+    float m_flNextDetpackScan = 0.0f;
+    CUtlVector<DeployedDetpack_t> m_DeployedDetpacks;
+
     int CountLiveClaims(const AreaReservation_t &res, const CNEOBot *excluding) const;
 
     CUtlMap<int, AreaReservation_t> m_Reservations[TEAM__TOTAL];   // keyed by nav area ID
