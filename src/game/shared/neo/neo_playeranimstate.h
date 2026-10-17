@@ -49,7 +49,12 @@ private:
 	const char *GetAimSuffix() const;
 	int CalcFireSequence();
 	int CalcReloadSequence();
-	void StartGesture( int iSequence );
+	enum GestureKind_t
+	{
+		GESTURE_FIRE,
+		GESTURE_RELOAD,
+	};
+	void StartGesture( int iSequence, GestureKind_t eKind );
 	void ComputeGestureSequence( CStudioHdr *pStudioHdr );
 
 	bool HandleJumping();
@@ -70,8 +75,9 @@ private:
 	int m_iGestureSequence;
 	float m_flGestureCycle;
 	EHANDLE m_hGestureWeapon;
-	// a reload cut short fades its gesture out from this time, 0 while it plays in full
+	// a reload cut short or switched away fades its gesture out from this time, 0 while it plays in full
 	float m_flGestureFadeStart;
+	GestureKind_t m_eGestureKind;
 };
 
 CNEOPlayerAnimState *CreateNEOPlayerAnimState( CHL2MP_Player *pPlayer );

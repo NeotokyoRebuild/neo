@@ -78,6 +78,7 @@ CNEOPlayerAnimState::CNEOPlayerAnimState( CHL2MP_Player *pPlayer )
 	m_iGestureSequence = 0;
 	m_flGestureCycle = 0.0f;
 	m_flGestureFadeStart = 0.0f;
+	m_eGestureKind = GESTURE_FIRE;
 
 	CModAnimConfig config;
 	config.m_flMaxBodyYawDegrees = NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES;
@@ -115,11 +116,11 @@ void CNEOPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 	switch ( event )
 	{
 	case PLAYERANIMEVENT_ATTACK_PRIMARY:
-		StartGesture( CalcFireSequence() );
+		StartGesture( CalcFireSequence(), GESTURE_FIRE );
 		break;
 
 	case PLAYERANIMEVENT_RELOAD:
-		StartGesture( CalcReloadSequence() );
+		StartGesture( CalcReloadSequence(), GESTURE_RELOAD );
 
 		// a resumed reload starts the gesture where the reload resumes: nData is that cycle x 1000
 		if ( nData > 0 && m_iGestureSequence > 0 )
@@ -157,7 +158,7 @@ void CNEOPlayerAnimState::ComputeSequences( CStudioHdr *pStudioHdr )
 	ComputeGestureSequence( pStudioHdr );
 }
 
-void CNEOPlayerAnimState::StartGesture( int iSequence )
+void CNEOPlayerAnimState::StartGesture( int iSequence, GestureKind_t eKind )
 {
 	if ( iSequence <= 0 )
 	{
@@ -167,6 +168,7 @@ void CNEOPlayerAnimState::StartGesture( int iSequence )
 	m_iGestureSequence = iSequence;
 	m_flGestureCycle = 0.0f;
 	m_flGestureFadeStart = 0.0f;
+	m_eGestureKind = eKind;
 	m_hGestureWeapon = m_pPlayer->GetActiveWeapon();
 }
 
@@ -177,11 +179,20 @@ void CNEOPlayerAnimState::ComputeGestureSequence( CStudioHdr *pStudioHdr )
 		return;
 	}
 
-	// a weapon switch ends the gesture of the previous weapon
+	// a weapon switch ends the gesture of the previous weapon:
+	// a reload fades out as when it ends early, any other gesture stops at once
 	if ( m_pPlayer->GetActiveWeapon() != m_hGestureWeapon.Get() )
 	{
-		m_iGestureSequence = 0;
-		return;
+		if ( m_eGestureKind != GESTURE_RELOAD )
+		{
+			m_iGestureSequence = 0;
+			return;
+		}
+
+		if ( m_flGestureFadeStart <= 0.0f )
+		{
+			m_flGestureFadeStart = gpGlobals->curtime;
+		}
 	}
 
 	m_flGestureCycle += m_pOuter->GetSequenceCycleRate( pStudioHdr, m_iGestureSequence ) * gpGlobals->frametime;
