@@ -470,19 +470,30 @@ struct CNEOFunctorPropagatePVSNpcTurretHazard
 // cannot see slow cloaked players, so bots escaping it should cloak
 void CNEOBotPathReservationSystem::AddNpcTurretHazard(int navAreaID, float expireTime, int teamID, bool propagatePVS)
 {
-    AddDeadlyHazard(navAreaID, expireTime, teamID);
+    if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() )
+    {
+        return;
+    }
 
     if ( (teamID < 0) || (teamID >= TEAM__TOTAL) )
     {
         return;
     }
 
+    // Kept apart from deadly hazards, so a bot in a hurry can accept the turret's risk
     int index = m_HazardAreas[teamID].Find(navAreaID);
-    if ( m_HazardAreas[teamID].IsValidIndex(index) )
+    if ( !m_HazardAreas[teamID].IsValidIndex(index) )
     {
-        // Inform the bots in every area the turret can see to turn on cloak
-        m_HazardAreas[teamID][index].npcTurretExpireTime = expireTime;
+        HazardInfo blank;
+        blank.hazardExpireTime = 0.0f;
+        blank.smokeExpireTime = 0.0f;
+        blank.smokePropagateTime = 0.0f;
+        blank.npcTurretExpireTime = 0.0f;
+        index = m_HazardAreas[teamID].Insert(navAreaID, blank);
     }
+
+    // Inform the bots in every area the turret can see to turn on cloak
+    m_HazardAreas[teamID][index].npcTurretExpireTime = expireTime;
 
     if ( propagatePVS )
     {
@@ -551,6 +562,12 @@ float CNEOBotPathReservationSystem::GetAreaHazardousTime(int navAreaID, const CN
 			return hazardTimeLeft;
 		}
 
+		auto npcTurretTimeLeft = h.npcTurretExpireTime - gpGlobals->curtime;
+		if (npcTurretTimeLeft > 0)
+		{
+			return npcTurretTimeLeft;
+		}
+
         // Support class can see through smoke
         if (me->GetClass() != NEO_CLASS_SUPPORT)
         {
@@ -572,7 +589,7 @@ bool CNEOBotPathReservationSystem::IsAreaHazardous(int navAreaID, const CNEOBot 
 }
 
 //-------------------------------------------------------------------------------------------------
-// Unlike IsAreaHazardous, smoke does not count: only marks that can kill, such as a frag grenade's blast area
+// Unlike IsAreaHazardous, smoke and the turret's sightline do not count: only marks that can kill, such as a frag grenade's blast area
 bool CNEOBotPathReservationSystem::IsAreaDeadlyHazard(int navAreaID, const CNEOBot *me) const
 {
 	if (!neo_bot_path_reservation_avoid_penalty_enable.GetBool())

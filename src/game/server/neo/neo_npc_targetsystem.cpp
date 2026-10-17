@@ -315,13 +315,12 @@ void CNEO_NPCTargetSystem::PublishBotHazards(CBasePlayer *pTarget)
 	{
 		for (int iTeam = FIRST_GAME_TEAM; iTeam < TEAM__TOTAL; ++iTeam)
 		{
+			// Being run over is deadly even for a bot in a hurry, unlike the turret's sightline
+			CNEOBotPathReservations()->AddDeadlyHazard(pOwnArea->GetID(), flExpireTime, iTeam);
+
 			if (bTeamTargeted[iTeam])
 			{
 				AddVisibleHazard(pOwnArea, iTeam, flExpireTime);
-			}
-			else
-			{
-				CNEOBotPathReservations()->AddDeadlyHazard(pOwnArea->GetID(), flExpireTime, iTeam);
 			}
 		}
 	}
