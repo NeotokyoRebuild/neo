@@ -653,7 +653,8 @@ static constexpr const char *VM_SEQ_FIRE_CHAMBER_ONEHAND = "fire_chamber_onehand
 static constexpr const char *VM_SEQ_FIRE_BLEND = "fire_blend";
 
 // The one way a trigger press acts on a reload in progress (the owner is busy, so it reaches only ItemBusyFrame):
-// before the magazine drops, or once the fresh one is seated, the reload ends and the gun fires;
+// before the magazine drops, or once the fresh one is seated (and slapped, on a gun with a slap), the reload ends
+// and the gun fires;
 // with the magazine out, the chambered round fires one-handed and the reload goes on dry; a dry reload ignores it
 bool CNEOBaseCombatWeapon::TryFireDuringReload()
 {
@@ -671,6 +672,13 @@ bool CNEOBaseCombatWeapon::TryFireDuringReload()
 	if (m_nReloadPhase == RELOAD_PHASE_DROPPED)
 	{
 		return StartChamberShot();
+	}
+
+	// once the magazine is out, the reload ends only when its last phase is done (a slap gun's slap, else the seat),
+	// so a cancel skips only what is already complete
+	if (m_nReloadPhase != RELOAD_PHASE_NONE && m_nReloadPhase < LastReloadPhase(m_bReloadDry))
+	{
+		return false;
 	}
 
 	if (!HasRoundToFire())
