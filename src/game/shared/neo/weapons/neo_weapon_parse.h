@@ -71,6 +71,9 @@ public:
 	int		m_iBullets;
 	float	m_flCycleTime;
 	float	m_flReloadReadyBeforeEnd;
+	// a pump gun: when the fire animation's pump is home with the next round, seconds after a shell / slug shot
+	float	m_flChamberAfterShot;
+	float	m_flChamberAfterSlugShot;
 	bool	m_bChamberedRound;	// a partial reload keeps the round in the chamber
 	int		m_iNumReloadTables;	// 0: the weapon reloads without phases
 	ReloadPhaseTable_t m_reloadTables[RELOAD_PHASE_TABLES_MAX];

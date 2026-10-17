@@ -18,6 +18,7 @@ BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 	RecvPropBool(RECVINFO(m_bRackPending)),
 	RecvPropTime(RECVINFO(m_flRackTime)),
 	RecvPropTime(RECVINFO(m_flRackSoundTime)),
+	RecvPropTime(RECVINFO(m_flPumpHomeTime)),
 #else
 	SendPropBool(SENDINFO(m_bSlugDelayed)),
 	SendPropBool(SENDINFO(m_bSlugLoaded)),
@@ -30,6 +31,7 @@ BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 	SendPropBool(SENDINFO(m_bRackPending)),
 	SendPropTime(SENDINFO(m_flRackTime)),
 	SendPropTime(SENDINFO(m_flRackSoundTime)),
+	SendPropTime(SENDINFO(m_flPumpHomeTime)),
 #endif
 END_NETWORK_TABLE()
 
@@ -46,6 +48,7 @@ BEGIN_PREDICTION_DATA(CWeaponSupa7)
 	DEFINE_PRED_FIELD(m_bRackPending, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flRackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flRackSoundTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flPumpHomeTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -66,6 +69,7 @@ BEGIN_DATADESC(CWeaponSupa7)
 	DEFINE_FIELD(m_bRackPending, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_flRackTime, FIELD_TIME),
 	DEFINE_FIELD(m_flRackSoundTime, FIELD_TIME),
+	DEFINE_FIELD(m_flPumpHomeTime, FIELD_TIME),
 END_DATADESC()
 #endif
 
@@ -105,6 +109,7 @@ CWeaponSupa7::CWeaponSupa7(void)
 	m_nChamber = SUPA7_CHAMBER_EMPTY;
 	m_bRackPending = false;
 	m_flRackTime = 0.0f;
+	m_flPumpHomeTime = 0.0f;
 	m_flRackSoundTime = 0.0f;
 
 	m_fMinRange1 = 0.0;
@@ -394,6 +399,9 @@ void CWeaponSupa7::PrimaryAttack(void)
 	ProposeNextAttack(gpGlobals->curtime + GetFireRate());
 
 	// the shot leaves a hull, and the fire animation's pump ejects it and feeds the tube's top item
+	// (the HUD shows the fed round in the tube until the pump is home, never after the next shot is allowed)
+	const float flPumpHome = m_bSlugLoaded ? GetNEOWpnData().m_flChamberAfterSlugShot : GetNEOWpnData().m_flChamberAfterShot;
+	m_flPumpHomeTime = Min(gpGlobals->curtime + flPumpHome, m_flNextPrimaryAttack.Get());
 	m_nChamber = SUPA7_CHAMBER_HULL;
 	Rack();
 
@@ -645,6 +653,7 @@ bool CWeaponSupa7::Holster(CBaseCombatWeapon *pSwitchingTo)
 	// a rack cut off before the back stroke does nothing
 	m_flRackTime = 0.0f;
 	m_flRackSoundTime = 0.0f;
+	m_flPumpHomeTime = 0.0f;
 	return BaseClass::Holster(pSwitchingTo);
 }
 
