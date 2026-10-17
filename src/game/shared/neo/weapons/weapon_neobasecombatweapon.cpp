@@ -640,6 +640,103 @@ bool CNEOBaseCombatWeapon::ReloadWithPhases()
 	return true;
 }
 
+// A trigger press can end a reload; turn this off and the trigger waits for the reload to end, as before
+static constexpr bool RELOAD_FIRE_INTERRUPTS = true;
+// The first shot after a cancelled reload, the shipped fire blended in from the reload pose instead of snapped
+static constexpr const char *VM_SEQ_FIRE_BLEND = "fire_blend";
+
+// The one way a trigger press acts on a reload in progress (the owner is busy, so it reaches only ItemBusyFrame):
+// before the magazine drops, or once the fresh one is seated, the reload ends and the gun fires;
+// a dry reload, or a gun whose magazine is out, ignores the press
+bool CNEOBaseCombatWeapon::TryFireDuringReload()
+{
+	if (!RELOAD_FIRE_INTERRUPTS || !m_bInReload || m_nReloadTable < 0)
+	{
+		return false;
+	}
+
+	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+	if (!pPlayer || !(pPlayer->m_afButtonPressed & IN_ATTACK) || ShootingIsPrevented())
+	{
+		return false;
+	}
+
+	if (m_nReloadPhase == RELOAD_PHASE_DROPPED || !HasRoundToFire())
+	{
+		return false;
+	}
+
+	CancelReloadAndFire();
+	return true;
+}
+
+// A round the trigger can fire now: a chambered one, or a revolver's with its cylinder closed
+bool CNEOBaseCombatWeapon::HasRoundToFire() const
+{
+	if (HasChamberSlot())
+	{
+		return IsRoundChambered();
+	}
+	return m_iClip1 > 0 && m_nReloadPhase != RELOAD_PHASE_DROPPED;
+}
+
+// End the reload where it is, with the phases credited so far, and fire on this tick
+void CNEOBaseCombatWeapon::CancelReloadAndFire()
+{
+	StopPendingReloadSoundPieces();
+	EndReloadGesture();
+	m_bInReload = false;
+	m_nReloadTable = -1;
+	m_nReloadPhase = RELOAD_PHASE_NONE;
+
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (pOwner)
+	{
+		pOwner->SetNextAttack(gpGlobals->curtime);
+	}
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack = gpGlobals->curtime;
+	SetWeaponIdleTime(gpGlobals->curtime);
+	m_bTriggerReset = true;
+
+	const int iClipBefore = m_iClip1;
+	PrimaryAttack();
+
+	// the hand comes back onto the gun with the recoil, where the model has that blend
+	const int iFireBlend = LookupReloadSequence(VM_SEQ_FIRE_BLEND);
+	if (m_iClip1 < iClipBefore && m_iClip1 > 0 && iFireBlend >= 0)
+	{
+		SetSequence(iFireBlend);
+		SendViewModelAnim(iFireBlend);
+	}
+}
+
+// Stop the sound pieces of the phases the reload has not reached (a piece can start before its phase's credit);
+// the pieces of credited phases play out
+void CNEOBaseCombatWeapon::StopPendingReloadSoundPieces()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner || m_nReloadTable < 0)
+	{
+		return;
+	}
+
+	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[m_nReloadTable];
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		if (table.rows[i].phase <= m_nReloadPhase)
+		{
+			continue;
+		}
+		for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
+		{
+			if (table.rows[i].sounds[j].szName[0])
+			{
+				StopSound(pOwner->entindex(), table.rows[i].sounds[j].szName);
+			}
+		}
+	}
+}
+
 // Credit every phase of the playing reload sequence whose time has come
 void CNEOBaseCombatWeapon::RunReloadPhases()
 {
@@ -1208,6 +1305,7 @@ void CNEOBaseCombatWeapon::ItemBusyFrame(void)
 	if (HasReloadPhases())
 	{
 		RunReloadPhases();
+		TryFireDuringReload();
 		return;
 	}
 

@@ -341,6 +341,10 @@ private:
 	int LookupReloadSequence(const char *pszName) const;
 	float ReloadSequenceDuration(int iSequence) const;
 	void EndReloadGesture();
+	bool TryFireDuringReload();
+	bool HasRoundToFire() const;
+	void CancelReloadAndFire();
+	void StopPendingReloadSoundPieces();
 
 };
 
