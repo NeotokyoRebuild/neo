@@ -7,6 +7,7 @@
 #include "neo_gamerules.h"
 #include "neo_bot_memory_sound_combat.h"
 #include "neo_bot_path_reservation.h"
+#include "neo_bot_ghost_guard.h"
 
 
 //----------------------------------------------------------------------------------------------------------------
@@ -140,6 +141,7 @@ void CNEOBotManager::OnMapLoaded( void )
 	ClearStuckBotData();
 
 	CNEOBotPathReservations()->Clear();
+	ClearGhostGuardPlans();
 	NEOMemorySoundCombat::Reset();
 }
 

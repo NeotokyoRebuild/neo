@@ -28,6 +28,14 @@ ConVar sv_neo_bot_seek_and_destroy_combat_sound_arrive_range( "sv_neo_bot_seek_a
 
 
 //---------------------------------------------------------------------------------------------
+static bool IsGhostGameType()
+{
+	const int iGameType = NEORules()->GetGameType();
+	return iGameType == NEO_GAME_TYPE_CTG || iGameType == NEO_GAME_TYPE_ATK;
+}
+
+
+//---------------------------------------------------------------------------------------------
 // Is the bot inside the potentially-audible set of a sound at vSoundPos?
 static bool BotInSoundPAS( CNEOBot *me, const Vector &vSoundPos )
 {
@@ -80,6 +88,11 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 			|| me->GetAbsOrigin().DistToSqr( vFight ) <= flArriveSqr )
 		{
 			return false; // no fight, out of PAS, or already there
+		}
+
+		if ( IsAtkDefendingTeam( me->GetTeamNumber() ) && !IsInAtkGhostView( vFight ) )
+		{
+			return false;
 		}
 
 		if ( vGoalBefore != vec3_origin )
@@ -166,11 +179,12 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 	// Check for Game Type Specific behaviors and suspend for them
 	if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
 	{
-		if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+		if (IsGhostGameType())
 		{
-			// Only switch to CTG behavior if there are available capture zones this round
+			// Only switch to CTG behavior if there are available capture zones this round,
+			// or the bot defends the ghost in ATK
 			const Vector vecCapPoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
-			if ( vecCapPoint != CNEO_Player::VECTOR_INVALID_WAYPOINT )
+			if ( vecCapPoint != CNEO_Player::VECTOR_INVALID_WAYPOINT || IsAtkDefendingTeam( me->GetTeamNumber() ) )
 			{
 				return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
 			}
@@ -184,7 +198,14 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		return Continue();
 	}
 
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	// ATK bots return to the ghost after a fight, attackers to take it and defenders to carry or guard it,
+	// and carry a ghost picked up outside of CtgSeek
+	if ( NEORules()->GetGameType() == NEO_GAME_TYPE_ATK )
+	{
+		return SuspendFor( new CNEOBotCtgSeek, "Going for the ghost" );
+	}
+
+	if (IsGhostGameType())
 	{
 		// Check if enemy has the ghost
 		if (NEORules()->GhostExists())
@@ -231,7 +252,9 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 		// This will just go to the ghoster RecomputeSeekPath logics instead of
 		// only going after it
 		const bool bDontSuspendForGhoster = (neoThreat && neoThreat->IsCarryingGhost());
-		if (!bDontSuspendForGhoster)
+		// ATK defenders shoot at threats out of the ghost's view but do not leave the ghost for them
+		const bool bBeyondGuard = IsAtkDefendingTeam( me->GetTeamNumber() ) && !IsInAtkGhostView( threat->GetLastKnownPosition() );
+		if (!bDontSuspendForGhoster && !bBeyondGuard)
 		{
 			const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
 			// fall back to nearest teammate for backup if I am the closest contact to enemy
@@ -577,8 +600,11 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 
 		CUtlVector<CBaseEntity*> pSpawns;
 
+		// ATK defenders patrol their own spawns, which the map places around the ghost
+		const char *pszSpawnClass = IsAtkDefendingTeam( me->GetTeamNumber() ) ? "info_player_defender" : "info_player_*";
+
 		CBaseEntity* pSearch = NULL;
-		while ( ( pSearch = gEntList.FindEntityByClassname( pSearch, "info_player_*", &spawnFilter ) ) != NULL )
+		while ( ( pSearch = gEntList.FindEntityByClassname( pSearch, pszSpawnClass, &spawnFilter ) ) != NULL )
 		{
 			if ( pSearch && Q_strcmp(pSearch->GetEntityName().ToCStr(), "info_player_start"))
 				pSpawns.AddToTail( pSearch );

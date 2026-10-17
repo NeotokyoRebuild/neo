@@ -43,6 +43,19 @@ inline int GetEnemyTeam(int team)
 	return team;
 }
 
+inline bool IsAtkAttackingTeam(int team)
+{
+	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetAttackingTeam();
+}
+
+inline bool IsAtkDefendingTeam(int team)
+{
+	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetDefendingTeam();
+}
+
+// ATK defenders chase threats and combat sounds only where the ghost's nav area could see them
+bool IsInAtkGhostView( const Vector &vecPos );
+
 class CNEOBotBehavior;
 
 // Not split off from neo_bot.h/cpp unless you want to deal with includes hell

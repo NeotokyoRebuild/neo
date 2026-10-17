@@ -60,6 +60,24 @@ bool IsTeamName(const char* string)
 
 
 //-----------------------------------------------------------------------------------------------------
+bool IsInAtkGhostView( const Vector &vecPos )
+{
+	const CNavArea *pGhostArea = TheNavMesh->GetNearestNavArea( NEORules()->GetGhostPos() );
+	const CNavArea *pArea = TheNavMesh->GetNearestNavArea( vecPos );
+
+	// Without nav areas, or on a mesh nav_analyze has not given visibility data,
+	// there is nothing to judge by, so do not hold the defender back
+	if ( !pGhostArea || !pArea || pGhostArea->GetPotentiallyVisibleAreaCount() == 0 )
+	{
+		return true;
+	}
+
+	return pGhostArea->IsPotentiallyVisible( pArea );
+}
+
+
+
+//-----------------------------------------------------------------------------------------------------
 int Bot_GetTeamByName(const char* string)
 {
 	if (!V_stricmp(string, TEAM_STR_JINRAI))

@@ -264,6 +264,22 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
 
+	if ( IsAtkDefendingTeam( me->GetTeamNumber() ) && !threat->IsVisibleRecently() )
+	{
+		// An ATK defender drops a chase it lost sight of when it leads out of the ghost's view,
+		// or when an attacker has the ghost, so it collapses on the carrier
+		if ( !IsInAtkGhostView( threatLastKnownPos ) )
+		{
+			return Done( "Threat is out of the ghost's view" );
+		}
+
+		const int iGhoster = NEORules()->GetGhosterPlayer();
+		if ( iGhoster > 0 && iGhoster != threat->GetEntity()->entindex() && NEORules()->GetGhosterTeam() != me->GetTeamNumber() )
+		{
+			return Done( "Collapsing on the ghost carrier" );
+		}
+	}
+
 	if ( sv_neo_bot_attack_debug_cover.GetBool() )
 	{
 		// red - last known position of the threat

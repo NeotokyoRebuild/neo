@@ -25,6 +25,7 @@
 #include "neo_ghost_spawn_point.h"
 #include "neo_ghost_cap_point.h"
 #include "neo/bot/neo_bot_path_reservation.h"
+#include "neo/bot/neo_bot_ghost_guard.h"
 #include "neo/weapons/weapon_ghost.h"
 #include "neo/weapons/weapon_neobasecombatweapon.h"
 #include "eventqueue.h"
@@ -2892,6 +2893,7 @@ void CNEORules::StartNextRound()
 
 #ifdef GAME_DLL
 	CNEOBotPathReservations()->ClearRound();
+	ClearGhostGuardPlans();
 #endif
 
 	CleanUpMap();
