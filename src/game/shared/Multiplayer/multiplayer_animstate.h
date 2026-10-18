@@ -84,6 +84,8 @@ enum
 #ifdef NEO
 	GESTURE_SLOT_AIM,
 	GESTURE_SLOT_AIM2, // For blending aim sequences
+	GESTURE_SLOT_AIM_MOVE, // Walk or run upper body, blended over the idle one by speed
+	GESTURE_SLOT_AIM_MOVE2,
 #endif
 	GESTURE_SLOT_ATTACK_AND_RELOAD,
 	GESTURE_SLOT_GRENADE,
@@ -250,6 +252,8 @@ protected:
 	int		CalcSequenceIndex(const char* pBaseName, ...);
 	void	UpdateAimSequenceLayers(float flCycle, int iFirstLayer, bool bForceIdle, CSequenceTransitioner* pTransitioner, float flWeightScale);
 	int		CalcAimLayerSequence(Activity activity, bool bForceIdle);
+	void	UpdateAimMoveLayers(float flCycle);
+	float	CalcAimMoveWeight();
 	int		CalcFireSequence();
 	int		CalcReloadSequence();
 	void	AddToGestureSlot(int iGestureSlot, int iGestureSequence, bool bAutoKill);
@@ -362,6 +366,8 @@ protected:
 #ifdef NEO
 	// This gives us smooth transitions between aim anim sequences on the client.
 	CSequenceTransitioner	m_IdleSequenceTransitioner;
+	CSequenceTransitioner	m_MoveSequenceTransitioner;
+	float	m_flAimMoveWeight = 0.0f;
 #endif
 };
 
