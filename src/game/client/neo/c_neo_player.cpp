@@ -127,7 +127,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_FIELD(m_flFootstepPrevYaw, FIELD_FLOAT),
 	DEFINE_FIELD(m_flFootstepTurnTime, FIELD_FLOAT),
 	DEFINE_FIELD(m_bFootstepForgivenessReady, FIELD_BOOLEAN),
-	DEFINE_FIELD(m_flCrouchedOnGroundTime, FIELD_FLOAT),
+	DEFINE_FIELD(m_flSilentModeOnGroundTime, FIELD_FLOAT),
 	DEFINE_FIELD(m_flFootstepQuietTime, FIELD_FLOAT),
 END_PREDICTION_DATA()
 

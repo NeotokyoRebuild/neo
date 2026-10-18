@@ -201,6 +201,7 @@ public:
 	virtual void StartWalking(void) OVERRIDE;
 	virtual void StopWalking(void) OVERRIDE;
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
+	bool IsInSilentMovementMode() const;
 	bool IsQuietFootstep() const;
 	void UpdateFootstepTurnRate();
 	void UpdateFootstepForgiveness(bool bLoud);
@@ -389,7 +390,7 @@ private:
 
 	// First step forgiveness, see ForgiveStep
 	bool m_bFootstepForgivenessReady = true;
-	float m_flCrouchedOnGroundTime = -1.f;
+	float m_flSilentModeOnGroundTime = -1.f;
 	float m_flFootstepQuietTime = -1.f;
 };
 

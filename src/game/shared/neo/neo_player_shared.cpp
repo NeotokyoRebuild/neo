@@ -388,35 +388,36 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	if (!moving_fast_enough || !(isOnLadder || (onground && movingalongground)))
 		return false;
 
-	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
-	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
-	// Crouching is silent until moving faster than a crouch walk, such as crouch sprinting, sliding or being pushed
-	constexpr float CROUCH_SILENT_THRESHOLD_GRACE = 1.1f;
+	// Crouching, walking and aiming are silent until moving faster than your own crouch walk speed, which is also your walk speed,
+	// such as when sprinting, sliding or being pushed
+	constexpr float SILENT_MODE_THRESHOLD_GRACE = 1.1f;
 	// Turning while moving raises ground speed, by up to about 50% at 180 to 360 degrees per second
 	constexpr float TURN_SILENT_THRESHOLD_GRACE = 0.45f;
 	constexpr float TURN_RATE_FOR_FULL_GRACE = 180.f;
 
 	// A ladder has no ground entity, so crouching takes effect at once, but ground speed is near zero while climbing
-	if ((GetFlags() & FL_DUCKING) && !isOnLadder)
+	if (IsInSilentMovementMode() && !isOnLadder)
 	{
-		float crouchSilentGrace = CROUCH_SILENT_THRESHOLD_GRACE;
-		// Crouch sprinting stays audible while turning
+		float silentGrace = SILENT_MODE_THRESHOLD_GRACE;
+		// Sprinting stays audible while turning
 		if (!m_fIsSprinting)
 		{
-			crouchSilentGrace += TURN_SILENT_THRESHOLD_GRACE * Min(m_flFootstepTurnRate / TURN_RATE_FOR_FULL_GRACE, 1.f);
+			silentGrace += TURN_SILENT_THRESHOLD_GRACE * Min(m_flFootstepTurnRate / TURN_RATE_FOR_FULL_GRACE, 1.f);
 		}
 		// Ground speed, as other clients estimate vertical speed from origin changes when stepping up stairs
-		if (groundspeed <= (GetCrouchSpeed_WithActiveWepEncumberment() * crouchSilentGrace))
+		if (groundspeed <= (GetCrouchSpeed_WithActiveWepEncumberment() * silentGrace))
 		{
 			return false;
 		}
 	}
-	else if ((IsInAim() || IsWalking()) && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
-	{
-		return false;
-	}
 
 	return true;
+}
+
+// Crouch walk speed and walk speed are the same, so crouching, walking and aiming share one silent threshold
+bool CNEO_Player::IsInSilentMovementMode() const
+{
+	return (GetFlags() & FL_DUCKING) || IsWalking() || IsInAim();
 }
 
 // The SDK picks the quiet or loud step volume by speed, with limits tuned for its third speed crouch that every NEO crouch walk exceeds.
@@ -432,16 +433,16 @@ void CNEO_Player::UpdateFootstepForgiveness(bool bLoud)
 	constexpr float FORGIVENESS_RECHARGE_TIME = 1.f;
 
 	const float flNow = gpGlobals->curtime;
-	if ((GetFlags() & FL_DUCKING) && (GetFlags() & FL_ONGROUND))
+	if (IsInSilentMovementMode() && (GetFlags() & FL_ONGROUND))
 	{
-		if (m_flCrouchedOnGroundTime < 0.f)
+		if (m_flSilentModeOnGroundTime < 0.f)
 		{
-			m_flCrouchedOnGroundTime = flNow;
+			m_flSilentModeOnGroundTime = flNow;
 		}
 	}
 	else
 	{
-		m_flCrouchedOnGroundTime = -1.f;
+		m_flSilentModeOnGroundTime = -1.f;
 	}
 
 	if (bLoud)
@@ -459,16 +460,16 @@ void CNEO_Player::UpdateFootstepForgiveness(bool bLoud)
 }
 
 // Switching movement keys raises ground speed the same way turning does, without turning the view.
-// The first crouched step that is only slightly too fast is forgiven, so a brief wiggle stays silent but repeating it does not.
+// The first crouched, walking or aiming step that is only slightly too fast is forgiven, so a brief wiggle stays silent but repeating it does not.
 bool CNEO_Player::ForgiveStep()
 {
-	// Settled into the crouch first, so slides from a run or a landing stay audible
-	constexpr float FORGIVENESS_CROUCHED_TIME = 0.5f;
+	// Settled into the crouch, walk or aim first, so slides from a run or a landing stay audible
+	constexpr float FORGIVENESS_SETTLED_TIME = 0.5f;
 	// The most that turning or switching movement keys adds to ground speed
 	constexpr float MAX_INPUT_SPEED_GAIN = 1.55f;
 
-	if (!m_bFootstepForgivenessReady || m_fIsSprinting || m_flCrouchedOnGroundTime < 0.f ||
-		gpGlobals->curtime - m_flCrouchedOnGroundTime < FORGIVENESS_CROUCHED_TIME)
+	if (!m_bFootstepForgivenessReady || m_fIsSprinting || m_flSilentModeOnGroundTime < 0.f ||
+		gpGlobals->curtime - m_flSilentModeOnGroundTime < FORGIVENESS_SETTLED_TIME)
 	{
 		return false;
 	}
