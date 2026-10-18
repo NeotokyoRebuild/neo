@@ -41,6 +41,14 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
+	RecvPropTime(RECVINFO(m_flReloadReadyTime)),
+	RecvPropInt(RECVINFO(m_nReloadPhase)),
+	RecvPropBool(RECVINFO(m_bChamberEmpty)),
+	RecvPropBool(RECVINFO(m_bReloadDry)),
+	RecvPropInt(RECVINFO(m_nReloadTable)),
+	RecvPropTime(RECVINFO(m_flReloadStart)),
+	RecvPropInt(RECVINFO(m_nReloadSoundsDone)),
+	RecvPropBool(RECVINFO(m_bChamberShotPending)),
 	RecvPropInt(RECVINFO(m_spawnflags)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
@@ -48,6 +56,14 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
+	SendPropTime(SENDINFO(m_flReloadReadyTime)),
+	SendPropInt(SENDINFO(m_nReloadPhase), 3, SPROP_UNSIGNED),
+	SendPropBool(SENDINFO(m_bChamberEmpty)),
+	SendPropBool(SENDINFO(m_bReloadDry)),
+	SendPropInt(SENDINFO(m_nReloadTable), RELOAD_PHASE_TABLE_BITS),
+	SendPropTime(SENDINFO(m_flReloadStart)),
+	SendPropInt(SENDINFO(m_nReloadSoundsDone), RELOAD_PHASE_ROWS_MAX * RELOAD_SOUNDS_PER_ROW, SPROP_UNSIGNED),
+	SendPropBool(SENDINFO(m_bChamberShotPending)),
 	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
@@ -60,6 +76,14 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flReloadReadyTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nReloadPhase, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bChamberEmpty, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bReloadDry, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nReloadTable, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flReloadStart, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nReloadSoundsDone, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bChamberShotPending, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -72,6 +96,14 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_flReloadReadyTime, FIELD_TIME),
+	DEFINE_FIELD(m_nReloadPhase, FIELD_INTEGER),
+	DEFINE_FIELD(m_bChamberEmpty, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bReloadDry, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_nReloadTable, FIELD_INTEGER),
+	DEFINE_FIELD(m_flReloadStart, FIELD_TIME),
+	DEFINE_FIELD(m_nReloadSoundsDone, FIELD_INTEGER),
+	DEFINE_FIELD(m_bChamberShotPending, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
 
@@ -229,6 +261,13 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
 	m_bTriggerReset = true;
+	m_nReloadPhase = RELOAD_PHASE_NONE;
+	m_bChamberEmpty = false;
+	m_bReloadDry = false;
+	m_nReloadTable = -1;
+	m_flReloadStart = 0.0f;
+	m_nReloadSoundsDone = 0;
+	m_bChamberShotPending = false;
 }
 
 const CNEOWeaponInfo &CNEOBaseCombatWeapon::GetNEOWpnData() const
@@ -414,9 +453,42 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 }
 
 
+// The pistols whose slide locks back on the last shot, until a reload releases it
+static constexpr NEO_WEP_BITS_UNDERLYING_TYPE NEO_WEP_SLIDE_LOCK = NEO_WEP_MILSO | NEO_WEP_TACHI;
+
 bool CNEOBaseCombatWeapon::Reload( void )
 {
-	return BaseClass::Reload();
+	if (HasReloadPhases())
+	{
+		return ReloadWithPhases();
+	}
+
+	// an empty weapon reloads with its slide held back until the release, where the model has that reload
+	bool bReloading;
+	if (UsesClipsForAmmo1() && m_iClip1 <= 0 && SelectWeightedSequence(ACT_VM_RELOAD_EMPTY) != ACTIVITY_NOT_AVAILABLE)
+	{
+		bReloading = DefaultReload(GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD_EMPTY);
+		// others see the reload, as for a reload with rounds left
+		if (bReloading)
+		{
+			ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
+		}
+	}
+	else
+	{
+		bReloading = BaseClass::Reload();
+	}
+
+	if (!bReloading)
+	{
+		return false;
+	}
+
+	// The magazine loads at the gun's last reload click, which the script gives as a time before the reload animation ends;
+	// the animation and the wait to fire still run to the end
+	m_flReloadReadyTime = Max(gpGlobals->curtime, m_flNextPrimaryAttack - GetNEOWpnData().m_flReloadReadyBeforeEnd);
+
+	return true;
 
 #if(0)
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
@@ -446,12 +518,666 @@ bool CNEOBaseCombatWeapon::Reload( void )
 #endif
 }
 
+// Each reload sound piece's file starts this long before its first transient
+static constexpr float RELOAD_SOUND_LEAD = 0.02f;
+
+// The shipped reload sequence, the dry reload with every phase
+static constexpr const char *VM_SEQ_RELOAD = "reload";
+// A pistol's dry reload (the Milso ships it, the Tachi's is built)
+static constexpr const char *VM_SEQ_RELOAD_EMPTY = "reloadempty";
+
+// The reload sequence for the phase credited last, dry or partial; nullptr: nothing left to play
+// (sequences other than the shipped reload carry no activity, so they are picked by name)
+static const char *ReloadSequenceName(int iPhaseDone, bool bDry, bool bFromDraw)
+{
+	switch (iPhaseDone)
+	{
+	case RELOAD_PHASE_NONE:
+		// a pistol's dry reload ends with the slide release; magazine guns have no reloadempty and play the reload
+		return bDry ? VM_SEQ_RELOAD_EMPTY : "reload_partial";
+	case RELOAD_PHASE_DROPPED:
+		// after a switch the magazine is out: the draw itself brings the fresh one up out of view
+		if (bFromDraw)
+		{
+			return bDry ? "draw_resume_drop_dry" : "draw_resume_drop_partial";
+		}
+		return bDry ? "reload_from_drop_dry" : "reload_from_drop_partial";
+	case RELOAD_PHASE_SEATED:
+		return bDry ? "reload_from_seat_dry" : "reload_from_seat_partial";
+	case RELOAD_PHASE_SLAPPED:
+		return bDry ? "reload_from_slap_dry" : nullptr;
+	default:
+		return nullptr;
+	}
+}
+
+bool CNEOBaseCombatWeapon::HasReloadPhases() const
+{
+	return GetNEOWpnData().m_iNumReloadTables > 0;
+}
+
+// A reload is dry when it has to chamber a round with the bolt
+bool CNEOBaseCombatWeapon::IsReloadDry() const
+{
+	return !GetNEOWpnData().m_bChamberedRound || m_bChamberEmpty;
+}
+
+// The phase that completes a reload: the bolt on a dry one, the last magazine phase otherwise
+ReloadPhase_t CNEOBaseCombatWeapon::LastReloadPhase(bool bDry) const
+{
+	// the full reload of that kind lists every phase it needs (a pistol's slide release is only in reloadempty)
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	int iTable = bDry ? info.FindReloadTable(VM_SEQ_RELOAD_EMPTY) : -1;
+	if (iTable < 0)
+	{
+		iTable = info.FindReloadTable(VM_SEQ_RELOAD);
+	}
+	if (iTable < 0)
+	{
+		return RELOAD_PHASE_NONE;
+	}
+
+	ReloadPhase_t last = RELOAD_PHASE_NONE;
+	const ReloadPhaseTable_t &table = info.m_reloadTables[iTable];
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		if (table.rows[i].phase == RELOAD_PHASE_BOLTED && !bDry)
+		{
+			continue;
+		}
+		last = Max(last, table.rows[i].phase);
+	}
+	return last;
+}
+
+// An interrupted reload has phases credited and phases left to do
+bool CNEOBaseCombatWeapon::IsReloadPending() const
+{
+	return m_nReloadPhase != RELOAD_PHASE_NONE && m_nReloadPhase < LastReloadPhase(IsReloadDry());
+}
+
+// Start, or resume after a switch, a reload whose phases the weapon script lists
+bool CNEOBaseCombatWeapon::ReloadWithPhases()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner || m_bInReload || pOwner->GetNextAttack() > gpGlobals->curtime)
+	{
+		return false;
+	}
+
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	if (!IsReloadPending())
+	{
+		m_nReloadPhase = RELOAD_PHASE_NONE;
+		if (m_iPrimaryAmmoCount <= 0)
+		{
+			return false;
+		}
+
+		if (m_iClip1 == 0)
+		{
+			CBasePlayer *pPlayer = ToBasePlayer(pOwner);
+			if (pPlayer && !(pPlayer->m_nButtons & IN_RELOAD) && !ClientWantsAutoReload(pOwner))
+			{
+				return false;
+			}
+			m_bChamberEmpty = info.m_bChamberedRound;
+		}
+
+		// a full magazine with a round in the chamber has nothing to gain
+		const int iFull = GetMaxClip1() + (IsReloadDry() ? 0 : 1);
+		if (m_iClip1 >= iFull)
+		{
+			return false;
+		}
+	}
+
+	m_bReloadDry = IsReloadDry();
+	int iSequence = -1;
+	const int iTable = SelectReloadTable(false, &iSequence);
+	if (iTable < 0)
+	{
+		Warning("%s: ReloadPhases has no \"%s\" sequence\n", GetClassname(), VM_SEQ_RELOAD);
+		return false;
+	}
+
+	StartReloadSequence(iTable, iSequence, ResumeGestureCycle());
+	return true;
+}
+
+// A trigger press can end a reload; turn this off and the trigger waits for the reload to end, as before
+static constexpr bool RELOAD_FIRE_INTERRUPTS = true;
+// A trigger press while the magazine is out fires the chambered round with the one-handed fire_chamber_onehand
+// sequence (a model without it refuses the shot)
+ConVar sv_neo_reload_chamber_shot("sv_neo_reload_chamber_shot", "1", FCVAR_REPLICATED,
+	"A trigger press while the magazine is out of a reloading gun fires the chambered round");
+static constexpr const char *VM_SEQ_FIRE_CHAMBER_ONEHAND = "fire_chamber_onehand";
+// The first shot after a cancelled reload, the shipped fire blended in from the reload pose instead of snapped
+static constexpr const char *VM_SEQ_FIRE_BLEND = "fire_blend";
+
+// The one way a trigger press acts on a reload in progress (the owner is busy, so it reaches only ItemBusyFrame):
+// before the magazine drops, or once the fresh one is seated (and slapped, on a gun with a slap), the reload ends
+// and the gun fires;
+// with the magazine out, the chambered round fires one-handed and the reload goes on dry; a dry reload ignores it
+bool CNEOBaseCombatWeapon::TryFireDuringReload()
+{
+	if (!RELOAD_FIRE_INTERRUPTS || !m_bInReload || m_nReloadTable < 0)
+	{
+		return false;
+	}
+
+	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+	if (!pPlayer || !(pPlayer->m_afButtonPressed & IN_ATTACK) || ShootingIsPrevented())
+	{
+		return false;
+	}
+
+	if (m_nReloadPhase == RELOAD_PHASE_DROPPED)
+	{
+		return StartChamberShot();
+	}
+
+	// once the magazine is out, the reload ends only when its last phase is done (a slap gun's slap, else the seat),
+	// so a cancel skips only what is already complete
+	if (m_nReloadPhase != RELOAD_PHASE_NONE && m_nReloadPhase < LastReloadPhase(m_bReloadDry))
+	{
+		return false;
+	}
+
+	if (!HasRoundToFire())
+	{
+		return false;
+	}
+
+	CancelReloadAndFire();
+	return true;
+}
+
+// With the magazine out, the shot's sequence flicks the gun to the hold one-handed and goes on with a dry reload
+// from the insert; the bullet fires when the gun reaches the hold (the table's fire_at)
+bool CNEOBaseCombatWeapon::StartChamberShot()
+{
+	if (!sv_neo_reload_chamber_shot.GetBool() || m_bChamberShotPending || !IsRoundChambered())
+	{
+		return false;
+	}
+
+	// a bolt action works its bolt from its own attack code
+	if (GetNeoWepBits() & NEO_WEP_SRS)
+	{
+		return false;
+	}
+
+	const int iTable = GetNEOWpnData().FindReloadTable(VM_SEQ_FIRE_CHAMBER_ONEHAND);
+	const int iSequence = (iTable >= 0) ? LookupReloadSequence(VM_SEQ_FIRE_CHAMBER_ONEHAND) : -1;
+	if (iSequence < 0 || GetNEOWpnData().m_reloadTables[iTable].flFireAt <= 0.0f)
+	{
+		return false;
+	}
+
+	StopPendingReloadSoundPieces();
+	// the round about to fire leaves the chamber empty: the rest of the reload works the bolt
+	m_bReloadDry = true;
+	m_bChamberShotPending = true;
+	StartReloadSequence(iTable, iSequence, ResumeGestureCycle());
+	return true;
+}
+
+// The chambered round's bullet, fired from the reload: no fire animation or gesture, the reload's timers kept
+void CNEOBaseCombatWeapon::FireChamberShot()
+{
+	m_bChamberShotPending = false;
+
+	const float flNextPrimary = m_flNextPrimaryAttack;
+	const float flNextSecondary = m_flNextSecondaryAttack;
+	const float flIdle = m_flTimeWeaponIdle;
+	m_flNextPrimaryAttack = gpGlobals->curtime;
+	m_bTriggerReset = true;
+	PrimaryAttack();
+	m_flNextPrimaryAttack = flNextPrimary;
+	m_flNextSecondaryAttack = flNextSecondary;
+	m_flTimeWeaponIdle = flIdle;
+
+	// the chamber is empty once its round is gone (the AA13 fires through its own attack code)
+	if (m_iClip1 <= 0)
+	{
+		m_bChamberEmpty = true;
+	}
+}
+
+// A round the trigger can fire now: a chambered one, or a revolver's with its cylinder closed
+bool CNEOBaseCombatWeapon::HasRoundToFire() const
+{
+	if (HasChamberSlot())
+	{
+		return IsRoundChambered();
+	}
+	return m_iClip1 > 0 && m_nReloadPhase != RELOAD_PHASE_DROPPED;
+}
+
+// End the reload where it is, with the phases credited so far, and fire on this tick
+void CNEOBaseCombatWeapon::CancelReloadAndFire()
+{
+	StopPendingReloadSoundPieces();
+	EndReloadGesture();
+	m_bInReload = false;
+	m_nReloadTable = -1;
+	m_nReloadPhase = RELOAD_PHASE_NONE;
+
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (pOwner)
+	{
+		pOwner->SetNextAttack(gpGlobals->curtime);
+	}
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack = gpGlobals->curtime;
+	SetWeaponIdleTime(gpGlobals->curtime);
+	m_bTriggerReset = true;
+
+	const int iClipBefore = m_iClip1;
+	PrimaryAttack();
+
+	// the hand comes back onto the gun with the recoil, where the model has that blend
+	const int iFireBlend = LookupReloadSequence(VM_SEQ_FIRE_BLEND);
+	if (m_iClip1 < iClipBefore && m_iClip1 > 0 && iFireBlend >= 0)
+	{
+		SetSequence(iFireBlend);
+		SendViewModelAnim(iFireBlend);
+	}
+}
+
+// Stop the sound pieces of the phases the reload has not reached (a piece can start before its phase's credit);
+// the pieces of credited phases play out
+void CNEOBaseCombatWeapon::StopPendingReloadSoundPieces()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner || m_nReloadTable < 0)
+	{
+		return;
+	}
+
+	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[m_nReloadTable];
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		if (table.rows[i].phase <= m_nReloadPhase)
+		{
+			continue;
+		}
+		for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
+		{
+			if (table.rows[i].sounds[j].szName[0])
+			{
+				StopSound(pOwner->entindex(), table.rows[i].sounds[j].szName);
+			}
+		}
+	}
+}
+
+// Credit every phase of the playing reload sequence whose time has come
+void CNEOBaseCombatWeapon::RunReloadPhases()
+{
+	if (!m_bInReload || m_nReloadTable < 0)
+	{
+		return;
+	}
+
+	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[m_nReloadTable];
+	const float flElapsed = gpGlobals->curtime - m_flReloadStart;
+
+	if (m_bChamberShotPending && flElapsed >= table.flFireAt)
+	{
+		FireChamberShot();
+	}
+
+	// Sound pieces play on their own times, before or after their phase's credit
+	// (the pieces of phases credited before this sequence started are marked done when it starts)
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
+		{
+			const ReloadSoundPiece_t &piece = table.rows[i].sounds[j];
+			const int iBit = 1 << (i * RELOAD_SOUNDS_PER_ROW + j);
+			if (piece.szName[0] && !(m_nReloadSoundsDone & iBit) && flElapsed >= piece.flAt - RELOAD_SOUND_LEAD)
+			{
+				m_nReloadSoundsDone |= iBit;
+				EmitReloadSoundPiece(piece.szName);
+			}
+		}
+	}
+
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		const ReloadPhaseRow_t &row = table.rows[i];
+		if (row.phase <= m_nReloadPhase || (row.phase == RELOAD_PHASE_BOLTED && !m_bReloadDry))
+		{
+			continue;
+		}
+		if (flElapsed < row.flCredit)
+		{
+			break;
+		}
+		CreditReloadPhase(row.phase);
+	}
+}
+
+// The phase table, and the viewmodel sequence (-1: the reload activity), for the reload to play now.
+// A model without the sequence a phase calls for plays the shipped reload, crediting only the phases left
+int CNEOBaseCombatWeapon::SelectReloadTable(bool bFromDraw, int *pSequence) const
+{
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	*pSequence = -1;
+
+	const char *pszName = ReloadSequenceName(m_nReloadPhase, m_bReloadDry, bFromDraw);
+	if (pszName && V_strcmp(pszName, VM_SEQ_RELOAD) != 0)
+	{
+		const int iTable = info.FindReloadTable(pszName);
+		const int iSequence = (iTable >= 0) ? LookupReloadSequence(pszName) : -1;
+		if (iSequence >= 0)
+		{
+			*pSequence = iSequence;
+			return iTable;
+		}
+	}
+
+	if (bFromDraw)
+	{
+		return -1;
+	}
+	return info.FindReloadTable(VM_SEQ_RELOAD);
+}
+
+// Play a reload sequence from its start; its phase table credits the phases left from now on
+// Where the full reload's gesture should start for a reload resumed after a switch: the time the last completed phase
+// counts in the full reload, as a fraction of it (0 for a fresh reload)
+float CNEOBaseCombatWeapon::ResumeGestureCycle() const
+{
+	if (m_nReloadPhase == RELOAD_PHASE_NONE)
+	{
+		return 0.0f;
+	}
+
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	const int iTable = info.FindReloadTable(VM_SEQ_RELOAD);
+	const int iSequence = LookupReloadSequence(VM_SEQ_RELOAD);
+	if (iTable < 0 || iSequence < 0)
+	{
+		return 0.0f;
+	}
+
+	const float flDuration = ReloadSequenceDuration(iSequence);
+	const ReloadPhaseTable_t &table = info.m_reloadTables[iTable];
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		if (table.rows[i].phase == m_nReloadPhase && flDuration > 0.0f)
+		{
+			return Clamp(table.rows[i].flCredit / flDuration, 0.0f, 1.0f);
+		}
+	}
+	return 0.0f;
+}
+
+// Reload sequences are looked up on the owner's viewmodel: on the client the weapon entity carries the world model,
+// so a lookup there would fail and the client would predict a different sequence than the server plays
+CBaseViewModel *CNEOBaseCombatWeapon::ReloadViewModel() const
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	return pOwner ? pOwner->GetViewModel(m_nViewModelIndex) : nullptr;
+}
+
+int CNEOBaseCombatWeapon::LookupReloadSequence(const char *pszName) const
+{
+	CBaseViewModel *pVM = ReloadViewModel();
+	return pVM ? pVM->LookupSequence(pszName) : -1;
+}
+
+float CNEOBaseCombatWeapon::ReloadSequenceDuration(int iSequence) const
+{
+	CBaseViewModel *pVM = ReloadViewModel();
+	return pVM ? pVM->SequenceDuration(iSequence) : 0.0f;
+}
+
+// Stop the reload gesture others see, for a reload that ended or was cut short
+void CNEOBaseCombatWeapon::EndReloadGesture()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (pOwner && pOwner->IsPlayer())
+	{
+		static_cast<CNEO_Player *>(pOwner)->DoAnimationEvent(PLAYERANIMEVENT_RELOAD_END);
+	}
+}
+
+void CNEOBaseCombatWeapon::StartReloadSequence(int iTable, int iSequence, float flGestureStartCycle)
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	m_nReloadTable = iTable;
+
+	// the phases already credited, and a partial reload's bolt, play no sound
+	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[iTable];
+	int iSoundsDone = 0;
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		const ReloadPhase_t phase = table.rows[i].phase;
+		if (phase <= m_nReloadPhase || (phase == RELOAD_PHASE_BOLTED && !m_bReloadDry))
+		{
+			iSoundsDone |= ((1 << RELOAD_SOUNDS_PER_ROW) - 1) << (i * RELOAD_SOUNDS_PER_ROW);
+		}
+	}
+	m_nReloadSoundsDone = iSoundsDone;
+	if (!HasReloadSoundPieces())
+	{
+		WeaponSound(RELOAD_NPC);
+	}
+
+	if (iSequence >= 0)
+	{
+		SetSequence(iSequence);
+		SendViewModelAnim(iSequence);
+	}
+	else
+	{
+		SendWeaponAnim(ACT_VM_RELOAD);
+	}
+	// the reload gesture other players see (SetAnimation(PLAYER_RELOAD) does nothing under NEO)
+	if (pOwner && pOwner->IsPlayer())
+	{
+		// the gesture's start cycle travels in the event's spare data, in thousandths
+		static_cast<CNEO_Player *>(pOwner)->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, static_cast<int>(flGestureStartCycle * 1000.0f));
+	}
+
+	// the wait to fire is never shorter than the animation that plays
+	const float flEnd = gpGlobals->curtime + ((iSequence >= 0) ? ReloadSequenceDuration(iSequence) : SequenceDuration());
+	if (pOwner)
+	{
+		pOwner->SetNextAttack(flEnd);
+	}
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack = flEnd;
+	SetWeaponIdleTime(flEnd);
+	m_flReloadStart = gpGlobals->curtime;
+	m_bInReload = true;
+}
+
+bool CNEOBaseCombatWeapon::HasReloadSoundPieces() const
+{
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	for (int t = 0; t < info.m_iNumReloadTables; ++t)
+	{
+		for (int i = 0; i < info.m_reloadTables[t].iNumRows; ++i)
+		{
+			if (info.m_reloadTables[t].rows[i].sounds[0].szName[0])
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+// Play a reload sound piece from the owner, as WeaponSound does: predicted for the owner, from the server for the rest
+void CNEOBaseCombatWeapon::EmitReloadSoundPiece(const char *pszSound)
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+	{
+		return;
+	}
+
+	CSoundParameters params;
+	if (!GetParametersForSound(pszSound, params, NULL))
+	{
+		return;
+	}
+
+	CPASAttenuationFilter filter(pOwner, params.soundlevel);
+	if (IsPredicted() && CBaseEntity::GetPredictionPlayer())
+	{
+		filter.UsePredictionRules();
+	}
+	EmitSound(filter, pOwner->entindex(), pszSound);
+}
+
+// A dropped weapon (a throw, or its owner's death) cuts the reload short: its sound pieces stop
+void CNEOBaseCombatWeapon::StopReloadOnDrop()
+{
+	if (HasReloadPhases())
+	{
+		StopReloadSoundPieces();
+		m_bChamberShotPending = false;
+		if (m_bInReload)
+		{
+			EndReloadGesture();
+		}
+	}
+}
+
+// A switch cuts the reload sound pieces off
+void CNEOBaseCombatWeapon::StopReloadSoundPieces()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+	{
+		return;
+	}
+
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	for (int t = 0; t < info.m_iNumReloadTables; ++t)
+	{
+		for (int i = 0; i < info.m_reloadTables[t].iNumRows; ++i)
+		{
+			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
+			{
+				const char *pszName = info.m_reloadTables[t].rows[i].sounds[j].szName;
+				if (pszName[0])
+				{
+					StopSound(pOwner->entindex(), pszName);
+				}
+			}
+		}
+	}
+}
+
+int CNEOBaseCombatWeapon::GetMaxRoundsInGun() const
+{
+	return GetMaxClip1() + ((HasReloadPhases() && GetNEOWpnData().m_bChamberedRound) ? 1 : 0);
+}
+
+bool CNEOBaseCombatWeapon::HasChamberSlot() const
+{
+	return HasReloadPhases() && GetNEOWpnData().m_bChamberedRound;
+}
+
+// The clip counts the chambered round, and the chamber is empty after the last shot until a dry reload's bolt
+bool CNEOBaseCombatWeapon::IsRoundChambered() const
+{
+	return HasChamberSlot() && m_iClip1 > 0 && !m_bChamberEmpty;
+}
+
+int CNEOBaseCombatWeapon::RoundsInMagazine() const
+{
+	return m_iClip1 - (IsRoundChambered() ? 1 : 0);
+}
+
+int CNEOBaseCombatWeapon::MagazineCapacity() const
+{
+	return GetMaxClip1();
+}
+
+void CNEOBaseCombatWeapon::CreditReloadPhase(ReloadPhase_t phase)
+{
+	switch (phase)
+	{
+	case RELOAD_PHASE_DROPPED:
+		// the old magazine and its rounds are gone, a chambered round stays;
+		// a revolver's cylinder (no chamber) keeps its live rounds and drops only the empty cases
+		if (GetNEOWpnData().m_bChamberedRound)
+		{
+			m_iClip1 = (m_iClip1 > 0 && !IsReloadDry()) ? 1 : 0;
+		}
+		break;
+	case RELOAD_PHASE_SEATED:
+	{
+		// a fresh magazine, or the rounds that fill a cylinder's empty slots
+		const int iRoom = GetNEOWpnData().m_bChamberedRound ? GetMaxClip1() : GetMaxClip1() - m_iClip1;
+		const int iLoad = Min(iRoom, m_iPrimaryAmmoCount.Get());
+		m_iClip1 += iLoad;
+		m_iPrimaryAmmoCount -= iLoad;
+		break;
+	}
+	case RELOAD_PHASE_BOLTED:
+		m_bChamberEmpty = false;
+		break;
+	default:
+		break;
+	}
+
+	m_nReloadPhase = phase;
+}
+
+void CNEOBaseCombatWeapon::CheckReloadWithPhases()
+{
+	if (m_bInReload)
+	{
+		RunReloadPhases();
+		if (m_flNextPrimaryAttack > gpGlobals->curtime)
+		{
+			return;
+		}
+
+		// the sequence has ended
+		m_bInReload = false;
+		EndReloadGesture();
+		m_nReloadTable = -1;
+		if (!IsReloadPending())
+		{
+			m_nReloadPhase = RELOAD_PHASE_NONE;
+		}
+		return;
+	}
+
+	// an interrupted reload resumes once the weapon is drawn again
+	if (IsReloadPending())
+	{
+		Reload();
+	}
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: Reload has finished.
 //-----------------------------------------------------------------------------
 void CNEOBaseCombatWeapon::FinishReload(void)
 {
+	// A reload with phases loads at its seat credit
+	if (HasReloadPhases())
+	{
+		return;
+	}
+
+	// The magazine was already loaded at the reload's ready time
+	if (m_flReloadReadyTime == 0.0f)
+	{
+		return;
+	}
+	m_flReloadReadyTime = 0.0f;
+
 	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner)
@@ -497,6 +1223,29 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 	{
 		AddEffects(EF_BONEMERGE);
 		m_bTriggerReset = true;
+
+		// An empty weapon draws with its slide held back where the model has that draw,
+		// which carries no activity, so it is picked by name
+		static constexpr const char *VM_SEQ_DRAW_EMPTY = "drawempty";
+		const int iDrawEmpty = IsSlideLockedBack() ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
+		if (iDrawEmpty != ACTIVITY_NOT_AVAILABLE)
+		{
+			SetSequence(iDrawEmpty);
+			SendViewModelAnim(iDrawEmpty);
+		}
+
+		// A reload interrupted after the magazine dropped resumes in the draw, where the model has that draw
+		if (HasReloadPhases() && m_nReloadPhase == RELOAD_PHASE_DROPPED && IsReloadPending())
+		{
+			m_bReloadDry = IsReloadDry();
+			int iSequence = -1;
+			const int iTable = SelectReloadTable(true, &iSequence);
+			if (iTable >= 0)
+			{
+				// the draw is part of the motion: the full gesture fits the draw-resume
+				StartReloadSequence(iTable, iSequence, 0.0f);
+			}
+		}
 
 #ifdef DEBUG
 		CNEO_Player* pOwner = NULL;
@@ -558,11 +1307,38 @@ float CNEOBaseCombatWeapon::GetPenetration() const
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
+	// The phases credited so far stay; a reload with nothing left to do is over
+	if (HasReloadPhases())
+	{
+		if (m_bInReload)
+		{
+			EndReloadGesture();
+		}
+		// a switch during the flick cancels the chambered-round shot: the round stays, the reload is partial again
+		if (m_bChamberShotPending)
+		{
+			m_bChamberShotPending = false;
+			m_bReloadDry = IsReloadDry();
+		}
+		if (!IsReloadPending())
+		{
+			m_nReloadPhase = RELOAD_PHASE_NONE;
+		}
+		m_nReloadTable = -1;
+		StopReloadSoundPieces();
+	}
+
 	return BaseClass::Holster(pSwitchingTo);
 }
 
 void CNEOBaseCombatWeapon::CheckReload(void)
 {
+	if (HasReloadPhases())
+	{
+		CheckReloadWithPhases();
+		return;
+	}
+
 	if (!m_bInReload && UsesClipsForAmmo1() && m_iClip1 == 0 && GetOwner() && !ClientWantsAutoReload(GetOwner()))
 	{
 		return;
@@ -612,6 +1388,19 @@ void CNEOBaseCombatWeapon::ItemBusyFrame(void)
 {
 	BaseClass::ItemBusyFrame();
 	UpdateInaccuracy();
+
+	if (HasReloadPhases())
+	{
+		RunReloadPhases();
+		TryFireDuringReload();
+		return;
+	}
+
+	// The owner stays busy until the reload animation ends, but the magazine loads at the reload's ready time
+	if (m_bInReload && m_flReloadReadyTime > 0.0f && gpGlobals->curtime >= m_flReloadReadyTime)
+	{
+		FinishReload();
+	}
 }
 
 void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
@@ -941,6 +1730,39 @@ void CNEOBaseCombatWeapon::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
 
+// An empty weapon idles on its empty sequence where the model has one, such as a pistol with its slide held back
+bool CNEOBaseCombatWeapon::SendWeaponAnim(int iActivity)
+{
+	if (iActivity == ACT_VM_IDLE && IsSlideLockedBack() && HasEmptyIdle())
+	{
+		iActivity = ACT_VM_IDLE_EMPTY;
+	}
+
+	return BaseClass::SendWeaponAnim(iActivity);
+}
+
+// An empty weapon shows its empty sequences, and so does a pistol whose dry reload seated a magazine
+// but has not released the slide yet
+bool CNEOBaseCombatWeapon::IsSlideLockedBack() const
+{
+	if (!UsesClipsForAmmo1())
+	{
+		return false;
+	}
+
+	if (m_iClip1 <= 0)
+	{
+		return true;
+	}
+
+	return HasReloadPhases() && m_bChamberEmpty && (GetNeoWepBits() & NEO_WEP_SLIDE_LOCK);
+}
+
+bool CNEOBaseCombatWeapon::HasEmptyIdle()
+{
+	return SelectWeightedSequence(ACT_VM_IDLE_EMPTY) != ACTIVITY_NOT_AVAILABLE;
+}
+
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -950,6 +1772,13 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
+		return;
+	}
+
+	// a dry reload seated the magazine but has not chambered a round yet
+	else if (HasReloadPhases() && m_bChamberEmpty && m_iClip1 > 0)
+	{
+		CheckReload();
 		return;
 	}
 
@@ -1019,15 +1848,16 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 #endif // GAME_DLL
 	}
 
-	SendWeaponAnim(GetPrimaryAttackActivity());
-	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
 	if (IsSemiAuto())
 	{
 		m_bTriggerReset = false;
 	}
 
-	// player "shoot" animation
-	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
+	// player "shoot" animation (a chambered-round shot keeps the reload gesture)
+	if (!m_bInReload)
+	{
+		pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
+	}
 
 	FireBulletsInfo_t info;
 	info.m_vecSrc = pPlayer->Weapon_ShootPosition();
@@ -1062,6 +1892,38 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	{
 		info.m_iShots = MIN(info.m_iShots, m_iPrimaryAmmoCount);
 		m_iPrimaryAmmoCount -= info.m_iShots;
+	}
+
+	if (HasReloadPhases())
+	{
+		// the last round leaves the chamber empty, and a shot shows the seated magazine feeds without its slap
+		if (GetNEOWpnData().m_bChamberedRound && m_iClip1 <= 0)
+		{
+			m_bChamberEmpty = true;
+		}
+		if (m_nReloadPhase == RELOAD_PHASE_SEATED)
+		{
+			m_nReloadPhase = RELOAD_PHASE_NONE;
+		}
+	}
+
+	// a chambered-round shot plays inside its reload sequence
+	if (!m_bInReload)
+	{
+		// the last round's shot locks a pistol's slide back:
+		// the pistols' dry fire sequence is a shot's kick with the slide held back,
+		if (UsesClipsForAmmo1() && m_iClip1 <= 0 && (GetNeoWepBits() & NEO_WEP_SLIDE_LOCK))
+		{
+			SendWeaponAnim(ACT_VM_DRYFIRE);
+		}
+		else
+		{
+			SendWeaponAnim(GetPrimaryAttackActivity());
+		}
+
+		// and goes straight on to the empty idle when it ends
+		const bool bEmptyIdleNext = UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle();
+		SetWeaponIdleTime(gpGlobals->curtime + (bEmptyIdleNext ? SequenceDuration() : 2.0));
 	}
 
 	info.m_flDistance = MAX_TRACE_LENGTH;

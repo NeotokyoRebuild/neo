@@ -15,6 +15,69 @@ WeaponData
 	"Damage"		"20"
 	"Penetration"		"28.0"
 	"CycleTime"		"0.090909"		// time between shots
+								// the charging handle is home 0.400 before the end, the alternative value
+	
+	// Reload phases, generated from segments.csv by segments_build.py (ntre proposals/0057):
+	// credit = when the phase counts, at = when its sound piece's first transient plays, both from the sequence start
+	"ReloadPhases"
+	{
+		"ChamberedRound"	"1"
+		"reload"
+		{
+			"drop" { "credit" "1.500" "sound" "weapon_pz.reload_drop" "at" "0.335" "sound2" "weapon_pz.reload_drop2" "at2" "2.383" }
+			"seat" { "credit" "3.800" "sound" "weapon_pz.reload_seat" "at" "3.382" }
+			"slap" { "credit" "4.667" "sound" "weapon_pz.reload_slap" "at" "4.461" }
+			"bolt" { "credit" "5.367" "sound" "weapon_pz.reload_bolt" "at" "4.802" }
+		}
+		"reload_partial"
+		{
+			"drop" { "credit" "1.500" "sound" "weapon_pz.reload_drop" "at" "0.335" "sound2" "weapon_pz.reload_drop2" "at2" "2.383" }
+			"seat" { "credit" "3.800" "sound" "weapon_pz.reload_seat" "at" "3.382" }
+			"slap" { "credit" "4.667" "sound" "weapon_pz.reload_slap" "at" "4.461" }
+		}
+		"reload_from_drop_dry"
+		{
+			"seat" { "credit" "2.433" "sound" "weapon_pz.reload_seat" "at" "2.015" }
+			"slap" { "credit" "3.300" "sound" "weapon_pz.reload_slap" "at" "3.094" }
+			"bolt" { "credit" "4.000" "sound" "weapon_pz.reload_bolt" "at" "3.435" }
+		}
+		"reload_from_drop_partial"
+		{
+			"seat" { "credit" "2.433" "sound" "weapon_pz.reload_seat" "at" "2.015" }
+			"slap" { "credit" "3.300" "sound" "weapon_pz.reload_slap" "at" "3.094" }
+		}
+		"reload_from_seat_dry"
+		{
+			"slap" { "credit" "0.733" "sound" "weapon_pz.reload_slap" "at" "0.528" }
+			"bolt" { "credit" "1.433" "sound" "weapon_pz.reload_bolt" "at" "0.869" }
+		}
+		"reload_from_seat_partial"
+		{
+			"slap" { "credit" "0.733" "sound" "weapon_pz.reload_slap" "at" "0.528" }
+		}
+		"reload_from_slap_dry"
+		{
+			"bolt" { "credit" "1.000" "sound" "weapon_pz.reload_bolt" "at" "0.435" }
+		}
+		"draw_resume_drop_dry"
+		{
+			"seat" { "credit" "2.767" "sound" "weapon_pz.reload_seat" "at" "2.349" }
+			"slap" { "credit" "3.633" "sound" "weapon_pz.reload_slap" "at" "3.428" }
+			"bolt" { "credit" "4.333" "sound" "weapon_pz.reload_bolt" "at" "3.769" }
+		}
+		"draw_resume_drop_partial"
+		{
+			"seat" { "credit" "2.767" "sound" "weapon_pz.reload_seat" "at" "2.349" }
+			"slap" { "credit" "3.633" "sound" "weapon_pz.reload_slap" "at" "3.428" }
+		}
+		"fire_chamber_onehand"
+		{
+			"fire_at"	"0.133"
+			"seat" { "credit" "2.500" "sound" "weapon_pz.reload_seat" "at" "2.082" }
+			"slap" { "credit" "3.367" "sound" "weapon_pz.reload_slap" "at" "3.161" }
+			"bolt" { "credit" "4.067" "sound" "weapon_pz.reload_bolt" "at" "3.502" }
+		}
+	}
 	
 	"TPMuzzleFlashScale"	"0.3"
 

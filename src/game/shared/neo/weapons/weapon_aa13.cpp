@@ -93,12 +93,19 @@ void CWeaponAA13::PrimaryAttack(void)
 #endif
 	pPlayer->DoMuzzleFlash();
 
-	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+	// a chambered-round shot plays inside its reload sequence
+	if (!m_bInReload)
+	{
+		SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+	}
 
 	m_iClip1 -= 1;
 
-	// player "shoot" animation
-	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
+	// player "shoot" animation (a chambered-round shot keeps the reload gesture)
+	if (!m_bInReload)
+	{
+		pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
+	}
 
 	Vector vecSrc = pPlayer->Weapon_ShootPosition();
 	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);

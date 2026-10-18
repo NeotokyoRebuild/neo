@@ -14,6 +14,26 @@ WeaponData
 	"Penetration"		"10.0"
 	"CycleTime"		"0.363636"		// time between shoots
 	
+	// Reload phases, generated from segments.csv by segments_build.py (ntre proposals/0057):
+	// credit = when the phase counts, at = when its sound piece's first transient plays, both from the sequence start
+	"ReloadPhases"
+	{
+		"ChamberedRound"	"0"
+		"reload"
+		{
+			"drop" { "credit" "0.800" "sound" "weapon_kyla.reload_drop" "at" "0.232" }
+			"seat" { "credit" "1.333" "sound" "weapon_kyla.reload_seat" "at" "1.216" "sound2" "weapon_kyla.reload_seat2" "at2" "1.673" }
+		}
+		"reload_from_drop_dry"
+		{
+			"seat" { "credit" "1.733" "sound" "weapon_kyla.reload_seat" "at" "1.616" "sound2" "weapon_kyla.reload_seat2" "at2" "2.073" }
+		}
+		"draw_resume_drop_dry"
+		{
+			"seat" { "credit" "1.633" "sound" "weapon_kyla.reload_seat" "at" "1.516" "sound2" "weapon_kyla.reload_seat2" "at2" "1.973" }
+		}
+	}
+	
 	"TPMuzzleFlashScale"	"0.6"
 
 	"clip_size"		"6"

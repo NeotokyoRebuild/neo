@@ -13,6 +13,53 @@ WeaponData
 	"Damage"		"12"
 	"Penetration"		"10.0"
 	"CycleTime"		"0.090909"		// time between shots
+								// the charging handle is home 0.167 before the end, the alternative value
+	
+	// Reload phases, generated from segments.csv by segments_build.py (ntre proposals/0057):
+	// credit = when the phase counts, at = when its sound piece's first transient plays, both from the sequence start
+	"ReloadPhases"
+	{
+		"ChamberedRound"	"1"
+		"reload"
+		{
+			"drop" { "credit" "0.633" "sound" "weapon_srm.reload_drop" "at" "0.496" }
+			"seat" { "credit" "1.733" "sound" "weapon_srm.reload_seat" "at" "1.634" }
+			"bolt" { "credit" "2.900" "sound" "weapon_srm.reload_bolt" "at" "2.537" }
+		}
+		"reload_partial"
+		{
+			"drop" { "credit" "0.633" "sound" "weapon_srm.reload_drop" "at" "0.496" }
+			"seat" { "credit" "1.733" "sound" "weapon_srm.reload_seat" "at" "1.634" }
+		}
+		"reload_from_drop_dry"
+		{
+			"seat" { "credit" "1.700" "sound" "weapon_srm.reload_seat" "at" "1.601" }
+			"bolt" { "credit" "2.867" "sound" "weapon_srm.reload_bolt" "at" "2.504" }
+		}
+		"reload_from_drop_partial"
+		{
+			"seat" { "credit" "1.700" "sound" "weapon_srm.reload_seat" "at" "1.601" }
+		}
+		"reload_from_seat_dry"
+		{
+			"bolt" { "credit" "1.000" "sound" "weapon_srm.reload_bolt" "at" "0.637" }
+		}
+		"draw_resume_drop_dry"
+		{
+			"seat" { "credit" "1.600" "sound" "weapon_srm.reload_seat" "at" "1.501" }
+			"bolt" { "credit" "2.767" "sound" "weapon_srm.reload_bolt" "at" "2.404" }
+		}
+		"draw_resume_drop_partial"
+		{
+			"seat" { "credit" "1.600" "sound" "weapon_srm.reload_seat" "at" "1.501" }
+		}
+		"fire_chamber_onehand"
+		{
+			"fire_at"	"0.133"
+			"seat" { "credit" "1.333" "sound" "weapon_srm.reload_seat" "at" "1.234" }
+			"bolt" { "credit" "2.500" "sound" "weapon_srm.reload_bolt" "at" "2.137" }
+		}
+	}
 	
 	"TPMuzzleFlashScale"	"0.5"
 
