@@ -201,6 +201,7 @@ public:
 	virtual void StartWalking(void) OVERRIDE;
 	virtual void StopWalking(void) OVERRIDE;
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
+	bool IsQuietFootstep() const;
 	void UpdateFootstepTurnRate();
 	void UpdateFootstepForgiveness(bool bLoud);
 	bool ForgiveStep();

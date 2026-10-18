@@ -419,6 +419,13 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	return true;
 }
 
+// The SDK picks the quiet or loud step volume by speed, with limits tuned for its third speed crouch that every NEO crouch walk exceeds.
+// Use the movement mode instead: only sprinting while standing is loud, and crouched steps also get the SDK's 65% volume
+bool CNEO_Player::IsQuietFootstep() const
+{
+	return (GetFlags() & FL_DUCKING) || !m_fIsSprinting;
+}
+
 void CNEO_Player::UpdateFootstepForgiveness(bool bLoud)
 {
 	// Time under the threshold that earns the forgiveness back
