@@ -44,6 +44,23 @@ extern ConVar sv_neo_spec_replace_player_min_exp;
 // Crouch/Walk Modifier
 #define NEO_CROUCH_WALK_MODIFIER 0.75
 
+// Held step: the first audible step after pressing crouch, walk or aim waits until the player settles or lets go
+enum NeoHeldStepState
+{
+	NEO_HELD_STEP_NONE = 0,
+	NEO_HELD_STEP_ARMED,	// Crouch, walk or aim pressed, the next audible step is held
+	NEO_HELD_STEP_HELD,		// A step is held back
+	NEO_HELD_STEP_DROPPED,	// The held step was dropped, but plays if the key is released soon after
+};
+
+// Keys that start a quiet movement mode, see CNEO_Player::GetSilentMovementKeys
+enum NeoSilentMovementKey
+{
+	NEO_SILENT_KEY_CROUCH = (1 << 0),
+	NEO_SILENT_KEY_WALK = (1 << 1),
+	NEO_SILENT_KEY_AIM = (1 << 2),
+};
+
 
 // Movement Calculations
 // Recon

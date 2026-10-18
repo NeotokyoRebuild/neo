@@ -202,10 +202,14 @@ public:
 	virtual void StopWalking(void) OVERRIDE;
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
 	bool IsInSilentMovementMode() const;
+	int GetSilentMovementKeys(bool bCrouchFromPress) const;
 	bool IsQuietFootstep() const;
+	float GetSurfaceStepVolume(const surfacedata_t *psurface) const;
 	void UpdateFootstepTurnRate();
+	void UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vector &vecOrigin);
 	void UpdateFootstepForgiveness(bool bLoud);
 	bool ForgiveStep();
+	bool HoldStep(surfacedata_t *psurface, const Vector &vecOrigin);
 
 	// Cloak Power Interface
 	float CloakPower_Get(void) const ;
@@ -382,6 +386,14 @@ private:
 	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerTarget);
 	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
 
+	// Held step: the first audible step after pressing crouch, walk or aim, see UpdateHeldStep
+	void PlayHeldStep(surfacedata_t *psurface, const Vector &vecOrigin);
+	int m_iHeldStep = NEO_HELD_STEP_NONE;
+	int m_nHeldStepKeysDown = 0;
+	int m_nHeldStepArmedKeys = 0;
+	float m_flHeldStepQuietTime = -1.f;
+	float m_flHeldStepDropTime = 0.f;
+	float m_flHeldStepWindow = 0.f;
 
 	// View turn rate in degrees per second, held at its peak and decaying, see UpdateFootstepTurnRate
 	float m_flFootstepTurnRate = 0.f;

@@ -554,6 +554,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	CNEO_Player *pNeoPlayer = assert_cast<CNEO_Player*>(this);
 	pNeoPlayer->UpdateFootstepTurnRate();
 	const bool bSilent = !pNeoPlayer->IsMakingFootstepSounds(&velrun, &speed, &fLadder);
+	pNeoPlayer->UpdateHeldStep(!bSilent, psurface, vecOrigin);
 	pNeoPlayer->UpdateFootstepForgiveness(!bSilent);
 #endif
 
@@ -670,6 +671,9 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 		SetStepSoundTime( STEPSOUNDTIME_NORMAL, bWalking );
 
+#ifdef NEO
+		fvol = pNeoPlayer->GetSurfaceStepVolume(psurface);
+#else
 		switch ( psurface->game.material )
 		{
 		default:
@@ -701,6 +705,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 			fvol = bQuietStep ? 0.2 : 0.5;
 			break;
 		}
+#endif
 	}
 
 #ifdef NEO
@@ -715,6 +720,8 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 		fvol *= 0.65;
 	}
 #ifdef NEO
+	if (pNeoPlayer->HoldStep(psurface, feet))
+		return;
 	if (pNeoPlayer->ForgiveStep())
 		return;
 #endif
