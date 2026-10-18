@@ -201,6 +201,9 @@ public:
 	virtual void StartWalking(void) OVERRIDE;
 	virtual void StopWalking(void) OVERRIDE;
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
+	void UpdateFootstepTurnRate();
+	void UpdateFootstepForgiveness(bool bLoud);
+	bool ForgiveStep();
 
 	// Cloak Power Interface
 	float CloakPower_Get(void) const ;
@@ -377,6 +380,16 @@ private:
 	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerTarget);
 	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
 
+
+	// View turn rate in degrees per second, held at its peak and decaying, see UpdateFootstepTurnRate
+	float m_flFootstepTurnRate = 0.f;
+	float m_flFootstepPrevYaw = 0.f;
+	float m_flFootstepTurnTime = 0.f;
+
+	// First step forgiveness, see ForgiveStep
+	bool m_bFootstepForgivenessReady = true;
+	float m_flCrouchedOnGroundTime = -1.f;
+	float m_flFootstepQuietTime = -1.f;
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

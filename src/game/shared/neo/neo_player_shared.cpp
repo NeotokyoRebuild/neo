@@ -392,12 +392,21 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
 	// Crouching is silent until moving faster than a crouch walk, such as crouch sprinting, sliding or being pushed
 	constexpr float CROUCH_SILENT_THRESHOLD_GRACE = 1.1f;
+	// Turning while moving raises ground speed, by up to about 50% at 180 to 360 degrees per second
+	constexpr float TURN_SILENT_THRESHOLD_GRACE = 0.45f;
+	constexpr float TURN_RATE_FOR_FULL_GRACE = 180.f;
 
 	// A ladder has no ground entity, so crouching takes effect at once, but ground speed is near zero while climbing
 	if ((GetFlags() & FL_DUCKING) && !isOnLadder)
 	{
+		float crouchSilentGrace = CROUCH_SILENT_THRESHOLD_GRACE;
+		// Crouch sprinting stays audible while turning
+		if (!m_fIsSprinting)
+		{
+			crouchSilentGrace += TURN_SILENT_THRESHOLD_GRACE * Min(m_flFootstepTurnRate / TURN_RATE_FOR_FULL_GRACE, 1.f);
+		}
 		// Ground speed, as other clients estimate vertical speed from origin changes when stepping up stairs
-		if (groundspeed <= (GetCrouchSpeed_WithActiveWepEncumberment() * CROUCH_SILENT_THRESHOLD_GRACE))
+		if (groundspeed <= (GetCrouchSpeed_WithActiveWepEncumberment() * crouchSilentGrace))
 		{
 			return false;
 		}
@@ -410,6 +419,86 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	return true;
 }
 
+void CNEO_Player::UpdateFootstepForgiveness(bool bLoud)
+{
+	// Time under the threshold that earns the forgiveness back
+	constexpr float FORGIVENESS_RECHARGE_TIME = 1.f;
+
+	const float flNow = gpGlobals->curtime;
+	if ((GetFlags() & FL_DUCKING) && (GetFlags() & FL_ONGROUND))
+	{
+		if (m_flCrouchedOnGroundTime < 0.f)
+		{
+			m_flCrouchedOnGroundTime = flNow;
+		}
+	}
+	else
+	{
+		m_flCrouchedOnGroundTime = -1.f;
+	}
+
+	if (bLoud)
+	{
+		m_flFootstepQuietTime = -1.f;
+	}
+	else if (m_flFootstepQuietTime < 0.f)
+	{
+		m_flFootstepQuietTime = flNow;
+	}
+	else if (!m_bFootstepForgivenessReady && flNow - m_flFootstepQuietTime >= FORGIVENESS_RECHARGE_TIME)
+	{
+		m_bFootstepForgivenessReady = true;
+	}
+}
+
+// Switching movement keys raises ground speed the same way turning does, without turning the view.
+// The first crouched step that is only slightly too fast is forgiven, so a brief wiggle stays silent but repeating it does not.
+bool CNEO_Player::ForgiveStep()
+{
+	// Settled into the crouch first, so slides from a run or a landing stay audible
+	constexpr float FORGIVENESS_CROUCHED_TIME = 0.5f;
+	// The most that turning or switching movement keys adds to ground speed
+	constexpr float MAX_INPUT_SPEED_GAIN = 1.55f;
+
+	if (!m_bFootstepForgivenessReady || m_fIsSprinting || m_flCrouchedOnGroundTime < 0.f ||
+		gpGlobals->curtime - m_flCrouchedOnGroundTime < FORGIVENESS_CROUCHED_TIME)
+	{
+		return false;
+	}
+
+	if (GetAbsVelocity().Length2D() > GetCrouchSpeed_WithActiveWepEncumberment() * MAX_INPUT_SPEED_GAIN)
+	{
+		return false;
+	}
+
+	m_bFootstepForgivenessReady = false;
+	return true;
+}
+
+// Acceleration builds toward a new view direction faster than friction removes the old one,
+// so turning while moving raises ground speed until friction catches up
+void CNEO_Player::UpdateFootstepTurnRate()
+{
+	// Friction's time constant, 1 / sv_friction
+	constexpr float TURN_RATE_DECAY_TIME = 0.25f;
+
+	const float flNow = gpGlobals->curtime;
+	const float flDt = flNow - m_flFootstepTurnTime;
+	if (flDt <= 0.f)
+	{
+		return;
+	}
+
+	// A larger change in one sample is a snap, such as a respawn, a spectator takeover or a remote player leaving dormancy
+	constexpr float MAX_TURN_PER_SAMPLE = 90.f;
+
+	const float flYaw = EyeAngles()[YAW];
+	const float flYawDelta = fabsf(AngleDiff(flYaw, m_flFootstepPrevYaw));
+	const float flRate = (flDt < 0.5f && flYawDelta <= MAX_TURN_PER_SAMPLE) ? flYawDelta / flDt : 0.f;
+	m_flFootstepTurnRate = Max(flRate, m_flFootstepTurnRate * expf(-flDt / TURN_RATE_DECAY_TIME));
+	m_flFootstepPrevYaw = flYaw;
+	m_flFootstepTurnTime = flNow;
+}
 int GetRank(const int xp)
 {
 	int iRank = NEO_RANK_RANKLESS_DOG;

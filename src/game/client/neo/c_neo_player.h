@@ -94,6 +94,9 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
+	void UpdateFootstepTurnRate();
+	void UpdateFootstepForgiveness(bool bLoud);
+	bool ForgiveStep();
 
 	void Lean(void);
 
@@ -271,6 +274,17 @@ private:
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
+
+
+	// View turn rate in degrees per second, held at its peak and decaying, see UpdateFootstepTurnRate
+	float m_flFootstepTurnRate = 0.f;
+	float m_flFootstepPrevYaw = 0.f;
+	float m_flFootstepTurnTime = 0.f;
+
+	// First step forgiveness, see ForgiveStep
+	bool m_bFootstepForgivenessReady = true;
+	float m_flCrouchedOnGroundTime = -1.f;
+	float m_flFootstepQuietTime = -1.f;
 };
 
 inline C_NEO_Player *ToNEOPlayer(C_BaseEntity *pEntity)
