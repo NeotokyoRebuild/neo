@@ -99,6 +99,8 @@ public:
 	bool IsQuietFootstep() const;
 	float GetSurfaceStepVolume(const surfacedata_t *psurface) const;
 	void UpdateFootstepTurnRate();
+	void UpdateFootstepLanding();
+	void OnFootstepDecided();
 	void UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vector &vecOrigin);
 	void UpdateFootstepForgiveness(bool bLoud);
 	bool ForgiveStep();
@@ -289,6 +291,10 @@ private:
 	float m_flHeldStepQuietTime = -1.f;
 	float m_flHeldStepDropTime = 0.f;
 	float m_flHeldStepWindow = 0.f;
+
+	// Landing, see UpdateFootstepLanding
+	float m_flFootstepAirTime = -1.f;
+	bool m_bFootstepLanding = false;
 
 	// View turn rate in degrees per second, held at its peak and decaying, see UpdateFootstepTurnRate
 	float m_flFootstepTurnRate = 0.f;

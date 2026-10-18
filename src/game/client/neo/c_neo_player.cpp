@@ -129,6 +129,8 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_FIELD(m_flHeldStepQuietTime, FIELD_FLOAT),
 	DEFINE_FIELD(m_flHeldStepDropTime, FIELD_FLOAT),
 	DEFINE_FIELD(m_flHeldStepWindow, FIELD_FLOAT),
+	DEFINE_FIELD(m_flFootstepAirTime, FIELD_FLOAT),
+	DEFINE_FIELD(m_bFootstepLanding, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_flFootstepTurnRate, FIELD_FLOAT),
 	DEFINE_FIELD(m_flFootstepPrevYaw, FIELD_FLOAT),
 	DEFINE_FIELD(m_flFootstepTurnTime, FIELD_FLOAT),
