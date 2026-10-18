@@ -390,10 +390,14 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 
 	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
 	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
+	// Crouching is silent until moving faster than a crouch walk, such as crouch sprinting, sliding or being pushed
+	constexpr float CROUCH_SILENT_THRESHOLD_GRACE = 1.1f;
 
-	if (GetFlags() & FL_DUCKING)
+	// A ladder has no ground entity, so crouching takes effect at once, but ground speed is near zero while climbing
+	if ((GetFlags() & FL_DUCKING) && !isOnLadder)
 	{
-		if ((IsInAim() || IsWalking()) && speed <= (GetCrouchSpeed() * SILENT_THRESHOLD_GRACE))
+		// Ground speed, as other clients estimate vertical speed from origin changes when stepping up stairs
+		if (groundspeed <= (GetCrouchSpeed_WithActiveWepEncumberment() * CROUCH_SILENT_THRESHOLD_GRACE))
 		{
 			return false;
 		}
