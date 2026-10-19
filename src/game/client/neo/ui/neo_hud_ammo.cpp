@@ -73,9 +73,10 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	LoadControlSettings("scripts/HudLayout.res");
 
-	m_hSmallTextFont = pScheme->GetFont("NHudOCRSmall");
-	m_hBulletFont = pScheme->GetFont("NHudBullets");
-	m_hTextFont = pScheme->GetFont("NHudOCR");
+	m_hSmallTextFont = pScheme->GetFont("NHudAmmoName", true);
+	m_hBulletFont = pScheme->GetFont("NHudBullets", true);
+	m_hFireModeFont = pScheme->GetFont("NHudFireMode", true);
+	m_hTextFont = pScheme->GetFont("NHudAmmoReserve", true);
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
@@ -137,8 +138,6 @@ void CNEOHud_Ammo::DrawAmmo() const
 		wchar_t unicodeClipsText[maxLen]{ L'\0' };
 		g_pVGuiLocalize->ConvertANSIToUnicode(clipsText, unicodeClipsText, sizeof(unicodeClipsText));
 
-		int clipsTextWidth, clipsTextHeight;
-		surface()->GetTextSize(m_hTextFont, unicodeClipsText, clipsTextWidth, clipsTextHeight);
 		surface()->DrawSetTextFont(m_hTextFont);
 
 		surface()->GetTextSize(m_hTextFont, unicodeClipsText, fontWidth, fontHeight);
@@ -147,7 +146,6 @@ void CNEOHud_Ammo::DrawAmmo() const
 	}
 
 	const char* ammoChar = nullptr;
-	int fireModeWidth = 0, fireModeHeight = 0;
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
 		
@@ -175,11 +173,9 @@ void CNEOHud_Ammo::DrawAmmo() const
 			wchar_t unicodeFireModeText[2]{ L'\0' };
 			g_pVGuiLocalize->ConvertANSIToUnicode(fireModeText, unicodeFireModeText, sizeof(unicodeFireModeText));
 
-			surface()->DrawSetTextFont(m_hBulletFont);
+			surface()->DrawSetTextFont(m_hFireModeFont);
 			surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
 			surface()->DrawPrintText(unicodeFireModeText, V_wcslen(unicodeFireModeText));
-
-			surface()->GetTextSize(m_hBulletFont, unicodeFireModeText, fireModeWidth, fireModeHeight);
 		}
 	} else 
 	{
@@ -302,7 +298,7 @@ void CNEOHud_Ammo::DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep) const
 	if (activeWep->GetPrimaryAmmoCount() == 0)
 	{
 		surface()->DrawSetTextFont(m_hSmallTextFont);
-		surface()->DrawSetTextPos(heatbar_xpos + xpos, (heatbar_ypos + ypos) - 22);
+		surface()->DrawSetTextPos(heatbar_xpos + xpos, text_ypos + ypos);
 		surface()->DrawPrintText(L"OVERHEAT", 8);
 	}
 
