@@ -2568,7 +2568,7 @@ Scheme
 				//"additive"	"1"
 			}
 		}
-		// The ammo panel's fonts, looked up proportional so they scale with the panel at every resolution
+		// The ammo and vitals panels' fonts, looked up proportional so they scale with the panels at every resolution
 		NHudBullets
 		{
 			"1"
@@ -2605,7 +2605,7 @@ Scheme
 				"additive"	"1"
 			}
 		}
-		NHudAmmoName
+		NHudPanelText
 		{
 			"1"
 			{

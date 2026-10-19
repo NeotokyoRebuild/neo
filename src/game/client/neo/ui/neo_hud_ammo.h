@@ -36,9 +36,6 @@ private:
 	vgui::HFont m_hFireModeFont = 0;
 
 	int m_resX, m_resY;
-	int m_smallFontWidth, m_smallFontHeight;
-	int m_fontWidth;
-	int m_bulletFontWidth, m_bulletFontHeight;
 
 	CPanelAnimationVarAliasType(int, xpos, "xpos", "r203", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "446", "proportional_ypos");

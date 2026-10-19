@@ -73,7 +73,7 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	LoadControlSettings("scripts/HudLayout.res");
 
-	m_hSmallTextFont = pScheme->GetFont("NHudAmmoName", true);
+	m_hSmallTextFont = pScheme->GetFont("NHudPanelText", true);
 	m_hBulletFont = pScheme->GetFont("NHudBullets", true);
 	m_hFireModeFont = pScheme->GetFont("NHudFireMode", true);
 	m_hTextFont = pScheme->GetFont("NHudAmmoReserve", true);
