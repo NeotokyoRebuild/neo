@@ -12,6 +12,9 @@
 #include "map_shared.h"
 #include "lightmap.h"
 #include "threads.h"
+#ifndef WIN32
+#include <unistd.h>
+#endif
 
 
 static CUtlVector<unsigned char> g_LastGoodLightData;
@@ -33,7 +36,7 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CVRadDLL, ILaunchableDLL, LAUNCHABLE_DLL_INTE
 class dat
 {
 public:
-	char *name;
+    const char *name;
 	int size;
 };
 #define DATENTRY(name) {#name, sizeof(name)}
@@ -169,15 +172,26 @@ void CVRadDLL::GetBSPInfo( CBSPInfo *pInfo )
 
 bool CVRadDLL::DoIncrementalLight( char const *pVMFFile )
 {
-	char tempPath[MAX_PATH], tempFilename[MAX_PATH];
+	char tempFilename[MAX_PATH];
+#ifdef WIN32
+	char tempPath[MAX_PATH];
 	GetTempPath( sizeof( tempPath ), tempPath );
 	GetTempFileName( tempPath, "vmf_entities_", 0, tempFilename );
+#else
+	const char *pTmpDir = getenv( "TMPDIR" );
+	if ( !pTmpDir )
+		pTmpDir = "/tmp";
+	V_snprintf( tempFilename, sizeof( tempFilename ), "%s/vmf_entities_XXXXXX", pTmpDir );
+	int fd = mkstemp( tempFilename );
+	if ( fd != -1 )
+		close( fd );
+#endif
 
 	FileHandle_t fp = g_pFileSystem->Open( tempFilename, "wb" );
 	if( !fp )
 		return false;
 
-	g_pFileSystem->Write( pVMFFile, strlen(pVMFFile)+1, fp );
+	g_pFileSystem->Write( pVMFFile, (int)strlen(pVMFFile)+1, fp );
 	g_pFileSystem->Close( fp );
 
 	// Parse the new entities.
