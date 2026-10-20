@@ -659,6 +659,20 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	}
 
 	newAng += angOffset;
+	if (m_flAdsBlend > 0.0f)
+	{
+		// On the sights the offset turns the gun inside the view, so a leaning (rolled) view keeps the sights centred.
+		matrix3x4_t eyeMatrix, offsetMatrix, gunMatrix;
+		AngleMatrix(eyeAngles, eyeMatrix);
+		AngleMatrix(angOffset, offsetMatrix);
+		ConcatTransforms(eyeMatrix, offsetMatrix, gunMatrix);
+		QAngle gunAng;
+		MatrixAngles(gunMatrix, gunAng);
+		for (int i = 0; i < 3; ++i)
+		{
+			newAng[i] += AngleDiff(gunAng[i], newAng[i]) * m_flAdsBlend;
+		}
+	}
 #ifdef CLIENT_DLL
 	if (cl_neo_lean_viewmodel_only.GetBool())
 	{
