@@ -559,7 +559,6 @@ void CHudCrosshair::Paint( void )
 				UseCrosshairIndexFor(&m_crosshairInfo, iNeoXHairWep, &bHideCrosshair));
 
 #ifdef NEO
-		// On an ADS weapon's sights the sights do the aiming.
 		if (NeoAdsHideCrosshair(pWeapon->GetNEOWpnData(), pNeoPlayer->m_bInAim, pNeoPlayer->IsCloaked()))
 		{
 			bHideCrosshair = true;
