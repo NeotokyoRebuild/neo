@@ -78,6 +78,20 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_hFireModeFont = pScheme->GetFont("NHudFireMode", true);
 	m_hTextFont = pScheme->GetFont("NHudAmmoReserve", true);
 
+	// A custom ClientScheme.res from before these fonts existed: use the fonts they replaced
+	if (!m_hSmallTextFont)
+	{
+		m_hSmallTextFont = pScheme->GetFont("NHudOCRSmall");
+	}
+	if (!m_hFireModeFont)
+	{
+		m_hFireModeFont = pScheme->GetFont("NHudBullets");
+	}
+	if (!m_hTextFont)
+	{
+		m_hTextFont = pScheme->GetFont("NHudOCR");
+	}
+
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
 	SetFgColor(COLOR_TRANSPARENT);
