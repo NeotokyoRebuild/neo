@@ -1247,7 +1247,7 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 		return false;
 	}
 
-	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
+	C_BasePlayer* pLocalPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 
 	// carried by local player?
 	if (pOwner == pLocalPlayer)
