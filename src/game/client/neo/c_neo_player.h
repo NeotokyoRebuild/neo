@@ -199,6 +199,7 @@ public:
 	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
 	void AimPunch(float amount);
+	void Recoil(const QAngle *amount);
 
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
@@ -219,6 +220,7 @@ private:
 	bool IsFakePlayer() const;
 
 	void ApplyAimPunch();
+	void ApplyRecoil();
 
 public:
 	CNetworkVar(bool, m_bShowTestMessage);
@@ -275,6 +277,9 @@ private:
 
 	float m_flAimPunchVel;
 	float m_flAimPunchCurrent;
+
+	QAngle m_vecRecoilVel;
+	QAngle m_vecRecoilCurrent;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

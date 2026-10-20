@@ -166,6 +166,8 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_MX,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
+		// {0., 0., 0., 0.},
+		// {1.0, 1.0, -0.5, -0.5, -0.3, 0.3},
 	},
 	{NEO_WEP_MX_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
@@ -920,13 +922,10 @@ void CNEOBaseCombatWeapon::AddViewKick()
 		return;
 	}
 
-	QAngle viewAngles;
-	engine->GetViewAngles(viewAngles);
-
-	viewAngles.x += SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * recoilScale, recoilInfo.maxX * recoilScale);
-	viewAngles.y += SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * recoilScale, recoilInfo.maxY * recoilScale);
-
-	engine->SetViewAngles(viewAngles);
+	QAngle recoil;
+	recoil.x = SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * recoilScale, recoilInfo.maxX * recoilScale);
+	recoil.y = SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * recoilScale, recoilInfo.maxY * recoilScale);
+	owner->Recoil(&recoil);
 
 	#endif
 }

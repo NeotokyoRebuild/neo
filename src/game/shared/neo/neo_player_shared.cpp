@@ -85,6 +85,10 @@ ConVar sv_neo_aimpunch_spring_constant("sv_neo_aimpunch_spring_constant", "65", 
 ConVar sv_neo_aimpunch_force("sv_neo_aimpunch_force", "40", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch force");
 ConVar sv_neo_aimpunch_max("sv_neo_aimpunch_max", "2", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch max deflection");
 
+ConVar sv_neo_recoil_damping("sv_neo_recoil_damping", "16", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil damping");
+ConVar sv_neo_recoil_spring_constant("sv_neo_recoil_spring_constant", "65", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil spring constant");
+ConVar sv_neo_recoil_force("sv_neo_recoil_force", "40", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil force");
+
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
 	if (!pWep || pWep->m_bInReload || !pWep->CanAim())
