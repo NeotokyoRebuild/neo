@@ -1134,8 +1134,7 @@ ConVar sv_neo_slidefriction("sv_neo_slidefriction", "0.5", FCVAR_NOTIFY | FCVAR_
 ConVar sv_neo_slidetime_gain("sv_neo_slidetime_gain", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Slide time gain per second.", true, 0, true, 10);
 ConVar sv_neo_slidetime_max("sv_neo_slidetime_max", "2", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max slide time.", true, 0, true, 10);
 ConVar sv_neo_jumpbuffer_penalty("sv_neo_jumpbuffer_penalty", "0.06", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum penalty for an early buffered jump", true, 0, true, 1);
-ConVar sv_neo_jump_cooldown("sv_neo_jump_cooldown", "0.03", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum time between releasing jump and jumping again", true, 0, true, 1 );
-
+ConVar sv_neo_jump_cooldown("sv_neo_jump_cooldown", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum time between releasing jump and jumping again", true, 0, true, 1 );
 #endif
 
 void CGameMovement::ReduceTimers( void )
