@@ -109,7 +109,6 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 	m_flAdsRecoilMaxDist = pAdsRecoil ? pAdsRecoil->GetFloat("max_dist", 0) : 0.f;
 	m_flAdsRecoilMaxAngle = pAdsRecoil ? pAdsRecoil->GetFloat("max_angle", 0) : 0.f;
 
-	// Optional glass on the sights (the "AdsOptic" block, neo_ads_optic_info.h).
 	ParseAdsOptic(pKeyValuesData);
 }
 

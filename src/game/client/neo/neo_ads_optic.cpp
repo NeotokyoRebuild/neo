@@ -104,7 +104,6 @@ static void DrawLensShape(IMaterial *pMaterial, const NeoLensPane &pane, const L
 			vertex(pOutline[seg].x * fraction, pOutline[seg].y * fraction, fraction);
 		}
 	}
-	// A fan from the centre to the first ring, quads between rings.
 	const auto at = [segments](int ring, int seg) { return 1 + (ring - 1) * segments + (seg % segments); };
 	for (int seg = 0; seg < segments; ++seg)
 	{

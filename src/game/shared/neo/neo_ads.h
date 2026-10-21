@@ -63,7 +63,6 @@ bool NeoAdsHideCrosshair(const CNEOWeaponInfo &data, bool bAiming, bool bCloaked
 
 class IMaterial;
 
-// The ADS blend from which the gun counts as on the sights.
 constexpr float NEO_ADS_ON_SIGHTS = 0.5f;
 
 // Hides a "one_pane" optic's glass while ADS is on, since neo_ads_optic.cpp draws its art instead. Wrap the

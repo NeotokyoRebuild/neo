@@ -10,7 +10,6 @@ Vector NeoLensPane::Centre(const CNEOWeaponInfo &data) const
 	return At(data.m_vecAdsOpticWindowCentre.x, data.m_vecAdsOpticWindowCentre.y);
 }
 
-// Looked up by name only when the model or the weapon changes.
 static int LensBone(C_BaseAnimating *pViewModel, const CNEOWeaponInfo &data)
 {
 	static const studiohdr_t *s_pModel = nullptr;
