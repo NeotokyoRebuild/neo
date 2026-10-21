@@ -609,7 +609,9 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 #ifndef NEO
 
 	VectorCopy( vecOrigin, knee );
+#endif // NEO
 	VectorCopy( vecOrigin, feet );
+#ifndef NEO
 
 	height = GetPlayerMaxs()[ 2 ] - GetPlayerMins()[ 2 ];
 
