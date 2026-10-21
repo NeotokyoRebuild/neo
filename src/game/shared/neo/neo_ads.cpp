@@ -50,7 +50,6 @@ ConVar cl_neo_ads_yaw("cl_neo_ads_yaw", "0", FCVAR_CHEAT | FCVAR_HIDDEN, "Tuning
 ConVar cl_neo_ads_roll("cl_neo_ads_roll", "0", FCVAR_CHEAT | FCVAR_HIDDEN, "Tuning: ADS roll offset.");
 ConVar cl_neo_ads_fov("cl_neo_ads_fov", "45", FCVAR_CHEAT | FCVAR_HIDDEN, "Tuning: ADS viewmodel FOV.");
 
-// Which weapon the tuning cvars were loaded from, by class name.
 static char s_szTunedWeapon[MAX_WEAPON_STRING] = "";
 
 static CNEOBaseCombatWeapon *LocalActiveWeapon()
@@ -154,7 +153,7 @@ NeoAimPose NeoGetAimPose(const CNEOWeaponInfo &data)
 	{
 		if (V_strcmp(data.szClassName, s_szTunedWeapon) != 0)
 		{
-			LoadTuningFrom(data); // Switched weapons: start from this weapon's current pose.
+			LoadTuningFrom(data);
 		}
 		return {
 			Vector(cl_neo_ads_forward.GetFloat(), cl_neo_ads_right.GetFloat(), cl_neo_ads_up.GetFloat()),
@@ -184,7 +183,7 @@ float NeoAimTransitionCurve(const CNEOWeaponInfo &data, float fraction)
 {
 	if (!NeoAdsActive(data))
 	{
-		return fraction; // Traditional NT aim moves linearly.
+		return fraction;
 	}
 	// Smootherstep: the gun eases out of the hip and settles gently onto the sights.
 	const float t = clamp(fraction, 0.0f, 1.0f);
@@ -217,7 +216,6 @@ bool NeoAdsIsRecoilActivity(int activity)
 }
 
 #ifdef CLIENT_DLL
-// Model-space transform of a bone, built by walking its parent chain.
 static void BoneToModel(CStudioHdr *hdr, int bone, const Vector pos[], const Quaternion q[], matrix3x4_t &out)
 {
 	matrix3x4_t local;
@@ -281,7 +279,6 @@ void NeoAdsDampRecoil(CStudioHdr *hdr, Vector pos[], Quaternion q[],
 	Vector dampedTravel(travel.x * backScale, travel.y * sideScale, travel.z * vertScale);
 	QAngle dampedAngles(kickAngles[PITCH] * vertScale, kickAngles[YAW] * sideScale, kickAngles[ROLL] * sideScale);
 
-	// Leash: on the sights the gun never strays far from its settled pose.
 	const float maxDist = ((data.m_flAdsRecoilMaxDist > 0.0f) ? data.m_flAdsRecoilMaxDist : cl_neo_ads_recoil_max_dist.GetFloat()) / blend;
 	const float dist = dampedTravel.Length();
 	if (dist > maxDist)

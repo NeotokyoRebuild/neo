@@ -101,7 +101,6 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 		m_angVMAdsAngOffset[ROLL] = pAdsOffset->GetFloat("roll", 0);
 	}
 
-	// Optional per-weapon multipliers for the fire animation's kick while on the sights.
 	KeyValues* pAdsRecoil = pKeyValuesData->FindKey("AdsRecoil");
 	m_flAdsRecoilVertical = pAdsRecoil ? pAdsRecoil->GetFloat("vertical", 1) : 1.f;
 	m_flAdsRecoilSide = pAdsRecoil ? pAdsRecoil->GetFloat("side", 1) : 1.f;
