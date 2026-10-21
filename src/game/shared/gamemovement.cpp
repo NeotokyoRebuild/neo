@@ -2640,19 +2640,6 @@ bool CGameMovement::CheckJumpButton( void ) {
 		return false;
 	}
 
-#ifdef NEO
-	auto neoPlayer = assert_cast<CNEO_Player*>(player);
-
-	if (neoPlayer->m_HL2Local.m_jumpCooldown > 0)
-	{
-		if (!(mv->m_nOldButtons & IN_JUMP))
-		{
-			mv->m_nButtons &= ~IN_JUMP;
-		}
-		return false;
-	}
-#endif
-
 	// No more effect
 	if (player->GetGroundEntity() == NULL)
 	{
@@ -2690,7 +2677,14 @@ bool CGameMovement::CheckJumpButton( void ) {
 		return false;
 
 #ifdef NEO
-	if (neoPlayer->m_HL2Local.m_jumpHeldTime > 0)
+	auto neoPlayer = assert_cast<CNEO_Player*>(player);
+
+	if (neoPlayer->m_HL2Local.m_jumpCooldown > 0)
+	{
+		Friction(neoPlayer->m_HL2Local.m_jumpCooldown);
+		neoPlayer->m_HL2Local.m_jumpCooldown = 0;
+	}
+	else if (neoPlayer->m_HL2Local.m_jumpHeldTime > 0)
 	{
 		Friction(neoPlayer->m_HL2Local.m_jumpHeldTime);
 	}
