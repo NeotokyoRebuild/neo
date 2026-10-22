@@ -166,8 +166,6 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_MX,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
-		// {0., 0., 0., 0.},
-		// {1.0, 1.0, -0.5, -0.5, -0.3, 0.3},
 	},
 	{NEO_WEP_MX_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
@@ -881,6 +879,13 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 }
 
 extern ConVar sv_suppress_viewpunch;
+extern ConVar sv_neo_recoil_override;
+extern ConVar sv_neo_recoil_override_hip;
+extern ConVar sv_neo_recoil_override_ads;
+extern ConVar sv_neo_recoil_override_ymin;
+extern ConVar sv_neo_recoil_override_ymax;
+extern ConVar sv_neo_recoil_override_xmin;
+extern ConVar sv_neo_recoil_override_xmax;
 
 void CNEOBaseCombatWeapon::AddViewKick()
 {
@@ -908,7 +913,7 @@ void CNEOBaseCombatWeapon::AddViewKick()
 
 	owner->ViewPunch(viewPunch);
 
-	#ifdef CLIENT_DLL
+#ifdef CLIENT_DLL
 
 	if (!prediction->IsFirstTimePredicted())
 	{
@@ -916,6 +921,19 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	auto recoilInfo = m_weaponHandling.recoilInfo;
+
+	if ((recoilInfo.minX == 0 && sv_neo_recoil_override.GetInt() == 1) || sv_neo_recoil_override.GetInt() == 2)
+	{
+		recoilInfo = {
+			.hipFactor = sv_neo_recoil_override_hip.GetFloat(),
+			.adsFactor = sv_neo_recoil_override_ads.GetFloat(),
+			.minX = sv_neo_recoil_override_xmin.GetFloat(),
+			.maxX = sv_neo_recoil_override_xmax.GetFloat(),
+			.minY = sv_neo_recoil_override_ymin.GetFloat(),
+			.maxY = sv_neo_recoil_override_ymax.GetFloat()
+		};
+	}
+
 	float recoilScale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
 	if (!recoilScale)
 	{

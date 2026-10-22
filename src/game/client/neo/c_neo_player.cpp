@@ -2082,7 +2082,6 @@ void C_NEO_Player::ApplyAimPunch()
 
 	// torsional spring
 	float springForceMagnitude = sv_neo_aimpunch_spring_constant.GetFloat() * gpGlobals->frametime;
-	springForceMagnitude = clamp(springForceMagnitude, 0.f, 2.f );
 	m_flAimPunchVel -= m_flAimPunchCurrent * springForceMagnitude;
 }
 
@@ -2128,7 +2127,6 @@ void C_NEO_Player::ApplyRecoil()
 
 	// torsional spring
 	float springForceMagnitude = sv_neo_recoil_spring_constant.GetFloat() * gpGlobals->frametime;
-	springForceMagnitude = clamp(springForceMagnitude, 0.f, 2.f );
 	m_vecRecoilVel -= m_vecRecoilCurrent * springForceMagnitude;
 
 	// don't wrap around
