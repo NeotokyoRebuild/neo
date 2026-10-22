@@ -2,7 +2,6 @@
 #include "neo_player.h"
 #include "neo_gamerules.h"
 #include "bot/neo_bot.h"
-#include "bot/neo_bot_path_compute.h"
 #include "bot/behavior/neo_bot_jgr_juggernaut.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #include "weapon_balc.h"
@@ -70,7 +69,7 @@ void CNEOBotJgrJuggernaut::RecomputeSeekPath( CNEOBot *me )
 			m_vGoalPos = pTargetSpawn->GetAbsOrigin();
 			m_bGoingToTargetEntity = false;
 
-			if (CNEOBotPathCompute(me, m_path, m_vGoalPos, DEFAULT_ROUTE) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+			if (TryPathToRoamGoal(me, m_vGoalPos))
 			{
 				return;
 			}

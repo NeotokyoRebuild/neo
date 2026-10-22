@@ -18,6 +18,10 @@ bool CNEOBotPathCompute
 	bool requireGoalArea = false
 );
 
+// True if the path reaches its goal: complete, and not the straight-line fallback
+// Path::Compute builds when no route reaches the goal
+bool CNEOBotPathReachesGoal(const PathFollower& path);
+
 bool CNEOBotPathUpdateChase
 (
 	CNEOBot *bot,
