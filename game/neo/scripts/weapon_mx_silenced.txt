@@ -62,10 +62,26 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"40"
-		"forward"	"2"
-		"right"		"0.75"
-		"up"		"5.2"
+		"forward"		"2"
+		"right"		"0.77"
+		"up"		"5.24"
+		"pitch"		"0"
+		"yaw"		"0"
+		"roll"		"0"
+	}
+
+	"AdsOptic"
+	{
+		"window"	"1"
+		"reticle"	"vgui/hud/optics/mxs_reticle"
+		"lens_bone"	"sight_glass"
+		"lens_map"	"1.551 0 1.727  -3.1 0 0  -0.0075 0 -3.454"
+		"window_glass"	"0 0.438  0 0.831  0.085 0.330  0.228 0.247  0.409 0.202  0.596 0.201  0.827 0.271  0.952 0.359  1 0.459  1 0.831"
+		// Hide the gun this deep behind the glass while drawn over: the sight's own parts sit there. The front of the gun beyond shows through.
+		"window_skip"	"1.3"
+		"lens"		"models/weapons/MpnSight_glass"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)

@@ -65,10 +65,25 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"45"
 		"forward"	"-3.5"
 		"right"		"1.04"
 		"up"		"3.45"
+	}
+
+	"AdsOptic"
+	{
+		"window"	"1"
+		"reticle"	"vgui/hud/optics/zr68_reticle"
+		"lens_bone"	"zr68c"
+		"lens_map"	"-2.382 -1.857 12.78  0 2.472 0  0 0 -2.472"
+		"lens_circle"	"0.51 0.51 0.33 0.31"
+		"window_glass"	"0 0.103  0 0.897  1 0.103  1 0.897"
+		// Its art is dark round the edge: drawn only in the clear circle, softened.
+		"reticle_in_lens"	"1"
+		"lens"		"models/weapons/zr68_reddot"
+		"lens_shape"	"4"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
