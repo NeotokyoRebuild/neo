@@ -551,7 +551,12 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	int	fLadder;
 
 #ifdef NEO
-	const bool bSilent = !assert_cast<CNEO_Player*>(this)->IsMakingFootstepSounds(&velrun, &speed, &fLadder);
+	CNEO_Player *pNeoPlayer = assert_cast<CNEO_Player*>(this);
+	pNeoPlayer->UpdateFootstepTurnRate();
+	pNeoPlayer->UpdateFootstepLanding();
+	const bool bSilent = !pNeoPlayer->IsMakingFootstepSounds(&velrun, &speed, &fLadder);
+	pNeoPlayer->UpdateHeldStep(!bSilent, psurface, vecOrigin);
+	pNeoPlayer->UpdateFootstepForgiveness(!bSilent);
 #endif
 
 
@@ -566,6 +571,12 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 	if ( m_flStepSoundTime > 0 )
 		return;
+#ifdef NEO
+	pNeoPlayer->OnFootstepDecided();
+	// Off the ground the step timer waits at zero, as in the SDK, so the step lands on the tick the player does
+	if ( !fLadder && !( GetFlags() & FL_ONGROUND ) && GetWaterLevel() == WL_NotInWater )
+		return;
+#endif
 
 #ifndef NEO
 	if ( GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
@@ -606,6 +617,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 #endif
 	bWalking = speed < velrun;	
+#ifdef NEO
+	const bool bQuietStep = pNeoPlayer->IsQuietFootstep();
+#else
+	const bool bQuietStep = bWalking;
+#endif
 #ifndef NEO
 
 	VectorCopy( vecOrigin, knee );
@@ -651,7 +667,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	else if ( GetWaterLevel() == WL_Feet )
 	{
 		psurface = physprops->GetSurfaceData( physprops->GetSurfaceIndex( "water" ) );
-		fvol = bWalking ? 0.2 : 0.5;
+		fvol = bQuietStep ? 0.2 : 0.5;
 
 		SetStepSoundTime( STEPSOUNDTIME_WATER_FOOT, bWalking );
 	}
@@ -662,37 +678,41 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 		SetStepSoundTime( STEPSOUNDTIME_NORMAL, bWalking );
 
+#ifdef NEO
+		fvol = pNeoPlayer->GetSurfaceStepVolume(psurface);
+#else
 		switch ( psurface->game.material )
 		{
 		default:
 		case CHAR_TEX_CONCRETE:						
-			fvol = bWalking ? 0.2 : 0.5;
+			fvol = bQuietStep ? 0.2 : 0.5;
 			break;
 
 		case CHAR_TEX_METAL:	
-			fvol = bWalking ? 0.2 : 0.5;
+			fvol = bQuietStep ? 0.2 : 0.5;
 			break;
 
 		case CHAR_TEX_DIRT:
-			fvol = bWalking ? 0.25 : 0.55;
+			fvol = bQuietStep ? 0.25 : 0.55;
 			break;
 
 		case CHAR_TEX_VENT:	
-			fvol = bWalking ? 0.4 : 0.7;
+			fvol = bQuietStep ? 0.4 : 0.7;
 			break;
 
 		case CHAR_TEX_GRATE:
-			fvol = bWalking ? 0.2 : 0.5;
+			fvol = bQuietStep ? 0.2 : 0.5;
 			break;
 
 		case CHAR_TEX_TILE:	
-			fvol = bWalking ? 0.2 : 0.5;
+			fvol = bQuietStep ? 0.2 : 0.5;
 			break;
 
 		case CHAR_TEX_SLOSH:
-			fvol = bWalking ? 0.2 : 0.5;
+			fvol = bQuietStep ? 0.2 : 0.5;
 			break;
 		}
+#endif
 	}
 
 #ifdef NEO
@@ -706,6 +726,12 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	{
 		fvol *= 0.65;
 	}
+#ifdef NEO
+	if (pNeoPlayer->HoldStep(psurface, feet))
+		return;
+	if (pNeoPlayer->ForgiveStep())
+		return;
+#endif
 	PlayStepSound( feet, psurface, fvol, false );
 }
 
