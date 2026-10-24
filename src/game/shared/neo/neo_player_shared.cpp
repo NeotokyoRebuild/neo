@@ -452,7 +452,7 @@ static void TrackSince(float &flSince, bool bActive, float flNow)
 // Use the movement mode instead: only sprinting while standing is loud, and crouched steps also get the SDK's 65% volume
 bool CNEO_Player::IsQuietFootstep() const
 {
-	return (GetFlags() & FL_DUCKING) || !m_fIsSprinting;
+	return !m_fIsSprinting;
 }
 
 // The SDK's quiet or loud step volume for a surface, before crouched steps are scaled to 65%
