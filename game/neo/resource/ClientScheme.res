@@ -2568,53 +2568,51 @@ Scheme
 				//"additive"	"1"
 			}
 		}
+		// The ammo and vitals panels' fonts, looked up proportional so they scale with the panels at every resolution
 		NHudBullets
 		{
 			"1"
 			{
 				"name"		"NOCR"
-				"tall"		"38"
+				"tall"		"21"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"480 599"
-				"additive"	"1"
-			}
-			"2"
-			{
-				"name"		"NOCR"
-				"tall"		"40"
-				"weight"	"0"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"600 767"
-				"additive"	"1"
-			}
-			"3"
-			{
-				"name"		"NOCR"
-				"tall"		"44"
-				"weight"	"0"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"		"768 1023"
 				"antialias"	"1"
 				"additive"	"1"
 			}
-			"4"
+		}
+		NHudFireMode
+		{
+			"1"
 			{
 				"name"		"NOCR"
-				"tall"		"50"
+				"tall"		"25"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1024 1199"
 				"antialias"	"1"
 				"additive"	"1"
 			}
-			"5"
+		}
+		NHudAmmoReserve
+		{
+			"1"
 			{
-				"name"		"NOCR"
-				"tall"		"68"
-				"weight"	"0"
+				"name"		"Neuropol2"
+				"tall"		"11"
+				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudPanelText
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"antialias"	"1"
 				"additive"	"1"
 			}
