@@ -182,6 +182,9 @@ public:
 
 	virtual void ItemPreFrame(void) override;
 	virtual void ItemPostFrame(void) override;
+#ifdef CLIENT_DLL
+	virtual void AddViewmodelBob(CBaseViewModel *viewmodel, Vector &origin, QAngle &angles) override;
+#endif
 	virtual void ItemBusyFrame(void) override;
 
 	virtual void PrimaryAttack(void) override;
