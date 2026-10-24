@@ -393,24 +393,24 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	if (m_bFootstepLanding)
 		return true;
 
-	// Crouching, walking and aiming are silent until moving faster than your own crouch walk speed, which is also your walk speed,
-	// such as when sprinting, sliding or being pushed
-	constexpr float SILENT_MODE_THRESHOLD_GRACE = 1.1f;
-	// Turning while moving raises ground speed, by up to about 50% at 180 to 360 degrees per second
-	constexpr float TURN_SILENT_THRESHOLD_GRACE = 0.45f;
+	// Crouching, walking and aiming are silent until moving faster than this fraction of your own run speed, weapon included.
+	// Crouch and walk speed are 0.75 of it, so this is that plus 10% headroom; above it you are sprinting, sliding or being pushed
+	constexpr float SILENT_MOVE_THRESHOLD = 0.825f;
+	// Turning while moving raises ground speed, by up to about 50% of crouch walk speed at 180 to 360 degrees per second
+	constexpr float TURN_SILENT_MOVE_THRESHOLD = 0.3375f;
 	constexpr float TURN_RATE_FOR_FULL_GRACE = 180.f;
 
 	// A ladder has no ground entity, so crouching takes effect at once, but ground speed is near zero while climbing
 	if (IsInSilentMovementMode() && !isOnLadder)
 	{
-		float silentGrace = SILENT_MODE_THRESHOLD_GRACE;
+		float silentThreshold = SILENT_MOVE_THRESHOLD;
 		// Sprinting stays audible while turning
 		if (!m_fIsSprinting)
 		{
-			silentGrace += TURN_SILENT_THRESHOLD_GRACE * Min(m_flFootstepTurnRate / TURN_RATE_FOR_FULL_GRACE, 1.f);
+			silentThreshold += TURN_SILENT_MOVE_THRESHOLD * Min(m_flFootstepTurnRate / TURN_RATE_FOR_FULL_GRACE, 1.f);
 		}
 		// Ground speed, as other clients estimate vertical speed from origin changes when stepping up stairs
-		if (groundspeed <= (GetCrouchSpeed_WithActiveWepEncumberment() * silentGrace))
+		if (groundspeed <= (GetNormSpeed_WithActiveWepEncumberment() * silentThreshold))
 		{
 			return false;
 		}
@@ -490,8 +490,9 @@ bool CNEO_Player::ForgiveStep()
 {
 	// Settled into the crouch, walk or aim first, so slides from a run or a landing stay audible
 	constexpr float FORGIVENESS_SETTLED_TIME = 0.5f;
-	// The most that turning or switching movement keys adds to ground speed
-	constexpr float MAX_INPUT_SPEED_GAIN = 1.55f;
+	// The most that turning or switching movement keys adds to ground speed, as a fraction of run speed:
+	// crouch walk speed (0.75) plus about 55% of it
+	constexpr float MAX_INPUT_SPEED_GAIN = 1.1625f;
 
 	if (!m_bFootstepForgivenessReady || m_fIsSprinting || m_flSilentModeOnGroundTime < 0.f ||
 		gpGlobals->curtime - m_flSilentModeOnGroundTime < FORGIVENESS_SETTLED_TIME)
@@ -499,7 +500,7 @@ bool CNEO_Player::ForgiveStep()
 		return false;
 	}
 
-	if (GetAbsVelocity().Length2D() > GetCrouchSpeed_WithActiveWepEncumberment() * MAX_INPUT_SPEED_GAIN)
+	if (GetAbsVelocity().Length2D() > GetNormSpeed_WithActiveWepEncumberment() * MAX_INPUT_SPEED_GAIN)
 	{
 		return false;
 	}
