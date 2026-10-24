@@ -1166,19 +1166,6 @@ void C_NEO_Player::PreThink( void )
 		Lean();
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON && 
-		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) && 
-		IsAllowedToSuperJump())
-	{
-		SuitPower_Drain(SUPER_JMP_COST);
-		bool forward = m_nButtons & IN_FORWARD;
-		bool backward = m_nButtons & IN_BACK;
-		if (forward xor backward)
-		{
-			SuperJump();
-		}
-	}
-
 	if (auto *indicator = GET_HUDELEMENT(CNEOHud_GameEvent))
 	{
 		if (m_bShowTestMessage)
@@ -1440,31 +1427,6 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 	}
 }
 #endif // GLOWS_ENABLE
-
-// This is applied for prediction purposes. It should match CNEO_Player's method.
-void C_NEO_Player::SuperJump(void)
-{
-	Vector forward;
-	AngleVectors(EyeAngles(), &forward);
-
-	// We don't give an upwards boost aside from regular jump
-	forward.z = 0;
-
-	// Flip direction if jumping backwards
-	if (m_nButtons & IN_BACK)
-	{
-		forward = -forward;
-	}
-
-	float boostIntensity = GetPlayerMaxSpeed();
-	if (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
-	{
-		constexpr float sideWaysNerf = 0.70710678118; // 1 / sqrt(2);
-		boostIntensity *= sideWaysNerf;
-	}
-
-	ApplyAbsVelocityImpulse(forward * boostIntensity);
-}
 
 float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
 {
