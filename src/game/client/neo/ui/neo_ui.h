@@ -90,6 +90,8 @@ enum TextStyle
 };
 
 static constexpr int FOCUSOFF_NUM = -1000;
+static constexpr wchar_t WSZ_ARROW_LEFT[] = L"<";
+static constexpr wchar_t WSZ_ARROW_RIGHT[] = L">";
 static constexpr int MAX_SECTIONS = 7;
 static constexpr int SIZEOF_SECTIONS = sizeof(int) * MAX_SECTIONS;
 static constexpr int MAX_TEXTINPUT_U8BYTES_LIMIT = 256;
@@ -532,6 +534,9 @@ int SuitableWideByWStr(const wchar_t *pwszStr, const ESuitableWide eWideType, co
 
 [[nodiscard]] CurrentWidgetState BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const CurrentWidgetState &wdgState);
+bool IsKeyEnter();
+bool IsKeyLeft();
+bool IsKeyRight();
 
 void SetPerRowLayout(const int iColTotal, const int *iColProportions = nullptr, const int iRowHeight = -1);
 // Layout a vertical within the (horizontal) column, iRowTotal = 0 to disable
