@@ -49,13 +49,6 @@ static constexpr float JUMP_MIN_TIME = 0.2f;
 // The remote of a thrown detpack fires the remote's sequence only this long after the detpack is ready to trigger
 static constexpr float DET_REMOTE_FIRE_DELAY = 0.005f;
 
-#ifdef CLIENT_DLL
-// A jump has landed when the drawn body is this close above the ground (the ground check of player movement),
-static constexpr float JUMP_LAND_GROUND_DIST = 2.0f;
-// or when the ground flag has been set this long and the trace still finds no ground under the drawn body
-static constexpr float JUMP_LAND_MAX_FLAG_LEAD = 0.5f;
-#endif
-
 CNEOPlayerAnimState *CreateNEOPlayerAnimState( CHL2MP_Player *pPlayer )
 {
 	MDLCACHE_CRITICAL_SECTION();
@@ -68,9 +61,6 @@ CNEOPlayerAnimState::CNEOPlayerAnimState( CHL2MP_Player *pPlayer )
 	m_bJumping = false;
 	m_bFirstJumpFrame = false;
 	m_flJumpStartTime = 0.0f;
-#ifdef CLIENT_DLL
-	m_flJumpGroundFlagTime = 0.0f;
-#endif
 	m_iGestureSequence = 0;
 	m_flGestureCycle = 0.0f;
 
@@ -219,56 +209,16 @@ bool CNEOPlayerAnimState::HandleJumping()
 	{
 		m_bFirstJumpFrame = false;
 		RestartMainSequence();
-#ifdef CLIENT_DLL
-		m_flJumpGroundFlagTime = 0.0f;
-#endif
 	}
 
 	const bool bInWater = m_pPlayer->GetWaterLevel() >= WL_Waist;
-	if ( bInWater || ( gpGlobals->curtime - m_flJumpStartTime > JUMP_MIN_TIME && HasLandedFromJump() ) )
+	if ( bInWater || ( gpGlobals->curtime - m_flJumpStartTime > JUMP_MIN_TIME && (m_pPlayer->GetFlags() & FL_ONGROUND) ) )
 	{
 		m_bJumping = false;
 		RestartMainSequence();
 	}
 
 	return m_bJumping;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Whether a jumping player has landed. The client draws other players a few tenths of a second behind
-//			their networked ground flag, so there the jump lasts until the drawn body reaches the ground.
-//-----------------------------------------------------------------------------
-bool CNEOPlayerAnimState::HasLandedFromJump()
-{
-	if ( !( m_pPlayer->GetFlags() & FL_ONGROUND ) )
-	{
-#ifdef CLIENT_DLL
-		m_flJumpGroundFlagTime = 0.0f;
-#endif
-		return false;
-	}
-
-#ifdef CLIENT_DLL
-	if ( m_flJumpGroundFlagTime <= 0.0f )
-	{
-		m_flJumpGroundFlagTime = gpGlobals->curtime;
-	}
-
-	if ( gpGlobals->curtime - m_flJumpGroundFlagTime > JUMP_LAND_MAX_FLAG_LEAD )
-	{
-		return true;
-	}
-
-	const Vector &vecOrigin = m_pPlayer->GetAbsOrigin();
-	trace_t tr;
-	UTIL_TraceHull( vecOrigin, vecOrigin - Vector( 0, 0, JUMP_LAND_GROUND_DIST ),
-		m_pPlayer->GetPlayerMins(), m_pPlayer->GetPlayerMaxs(),
-		MASK_PLAYERSOLID, m_pPlayer, COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
-
-	return tr.fraction < 1.0f || tr.startsolid;
-#else
-	return true;
-#endif // CLIENT_DLL
 }
 
 float CNEOPlayerAnimState::GetCurrentMaxGroundSpeed()
