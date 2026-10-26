@@ -14,7 +14,6 @@
 #ifdef CLIENT_DLL
 #include "ui/neo_hud_ghost_cap_point.h"
 #include "materialsystem/imaterialsystem.h"
-#include "cliententitylist.h"
 #include "neo_smoke_visual_state.h"
 #include <math.h>
 #endif
@@ -33,6 +32,7 @@ static constexpr int NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL = 1;
 // anyways. These are in Hammer units.
 static constexpr float NEO_CAP_MIN_RADIUS = 8.0f;
 static constexpr float NEO_CAP_MAX_RADIUS = 10240.0f;
+static constexpr int INITIAL_RING_OPACITY = 128;
 
 static constexpr int NEO_FGD_TEAMNUM_ATTACKER = 0;
 static constexpr int NEO_FGD_TEAMNUM_DEFENDER = 1;
@@ -85,10 +85,13 @@ enum NeoCapEdgeType
 	NEO_CAP_EDGE_OFF = 0, 		// disabled
 	NEO_CAP_EDGE_LINE,			// show only a line around the capzone
 	NEO_CAP_EDGE_LINE_LOGO,		// show the line + a team logo
+
+	NEO_CAP_EDGE__TOTAL,
 };
 
 #ifdef CLIENT_DLL
-ConVar cl_neo_cap_zone_edge("cl_neo_cap_zone_edge", "2", FCVAR_ARCHIVE, "Cap zone edge rendering", true, 0, true, NEO_CAP_EDGE_LINE_LOGO);
+
+ConVar cl_neo_cap_zone_edge("cl_neo_cap_zone_edge", "2", FCVAR_ARCHIVE, "Cap zone edge rendering", true, 0, true, NEO_CAP_EDGE__TOTAL - 1);
 ConVar cl_neo_cap_ring_smoke_proxy_debug("cl_neo_cap_ring_smoke_proxy_debug", "0", FCVAR_CHEAT,
 	"Draw the smoke proxy spheres as opaque magenta (instead of depth-only) for tuning.");
 #endif
@@ -350,31 +353,37 @@ static constexpr int SMOKE_PROXY_MAX_COUNT = 16;
 // While the smoke dissipates its alpha fades 1 -> 0; the proxy radius is
 // multiplied by fade^power so it shrinks (and the ring reappears) sooner than
 // the smoke visually thins out. 1 = shrinks in step with the fade.
-static constexpr float SMOKE_PROXY_FADE_POWER = 1.0f;
+static constexpr float SMOKE_PROXY_FADE_POWER = 1.2f;
 // The proxy follows the smoke's real expanding sphere (radius 0 -> ~330 over
 // SMOKESPHERE_EXPAND_TIME). The visibly opaque core is smaller than that radius
 // (density falls off towards the edge), so this scales it down.
 static constexpr float SMOKE_PROXY_SCALE = 0.575f;
+// A smoke's expanding sphere never exceeds SMOKEGRENADE_PARTICLERADIUS *
+// NUM_PARTICLES_PER_DIMENSION (55 * 6) units (see smoke_fog_overlay.h). Only
+// used to size the spatial query below.
+static constexpr float SMOKE_MAX_EXPAND_RADIUS = 330.0f;
 
 // Finds active smoke grenades whose proxy sphere overlaps this cap zone's
 // circle in the XY plane. The proxy follows the smoke's real state: it grows
 // with the expanding sphere after detonation and shrinks faster than the smoke
 // fades while it dissipates, so the ring doesn't pop out/in.
+//
+// Smoke grenades are non-solid, so they only show up in the spatial partition
+// (and thus in CEntitySphereQuery) because C_ParticleSmokeGrenade sets
+// EFL_USE_PARTITION_WHEN_NOT_SOLID.
 static void NeoCapRing_FindSmokeProxies(const Vector& capOrigin, float capRadius, CUtlVector<NeoCapSmokeProxy_t>& outProxies)
 {
 	const Vector2D capOrigin2D = capOrigin.AsVector2D();
 
-	C_BaseEntityIterator iterator;
-	C_BaseEntity *pEnt;
-	while ((pEnt = iterator.Next()) != NULL && outProxies.Count() < SMOKE_PROXY_MAX_COUNT)
-	{
-		IClientNetworkable *pNet = pEnt->GetClientNetworkable();
-		if (!pNet || !pNet->GetClientClass() ||
-			Q_stricmp(pNet->GetClientClass()->m_pNetworkName, "ParticleSmokeGrenade") != 0)
-		{
-			continue;
-		}
+	const float queryRadius = capRadius + SMOKE_MAX_EXPAND_RADIUS * SMOKE_PROXY_SCALE;
 
+	CEntitySphereQuery sphereQuery(capOrigin, queryRadius);
+
+	for (C_BaseEntity *pEnt = sphereQuery.GetCurrentEntity();
+		pEnt != NULL && outProxies.Count() < SMOKE_PROXY_MAX_COUNT;
+		sphereQuery.NextEntity(), pEnt = sphereQuery.GetCurrentEntity())
+	{
+		// Returns false for anything that isn't a formed smoke grenade.
 		NeoSmokeGrenadeVisualState_t state;
 		if (!NeoGetSmokeGrenadeVisualState(pEnt, state))
 		{
@@ -500,7 +509,7 @@ int CNEOGhostCapturePoint::DrawModel(int flags)
 	auto *player = C_NEO_Player::GetLocalNEOPlayer();
 
 	const Vector& capOrigin = GetAbsOrigin();
-	int ringOpacity = 172;
+	int ringOpacity = INITIAL_RING_OPACITY;
 	constexpr float MAX_VISIBILITY_RANGE = 768.0f;
 
 	if (player)
@@ -522,7 +531,7 @@ int CNEOGhostCapturePoint::DrawModel(int flags)
 
 		// smooth fade out of ring opacity based on distance to player
 		const float opacityCoef = distanceToCap / MAX_VISIBILITY_RANGE;
-		ringOpacity = static_cast<int>(172 * (1.0f - opacityCoef));
+		ringOpacity = static_cast<int>(INITIAL_RING_OPACITY * (1.0f - opacityCoef));
 	}
 
 	ringColor[3] = ringOpacity;

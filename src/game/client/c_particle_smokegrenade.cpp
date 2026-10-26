@@ -357,6 +357,13 @@ C_ParticleSmokeGrenade::C_ParticleSmokeGrenade()
 	m_CurrentStage = 0;
 
 	m_bStarted = false;
+
+#ifdef NEO
+	// Smoke is non-solid, so without this it never enters the spatial partition
+	// and CEntitySphereQuery (used by the cap zone ring to find nearby smoke)
+	// would never return it.
+	AddEFlags( EFL_USE_PARTITION_WHEN_NOT_SOLID );
+#endif
 }
 
 
