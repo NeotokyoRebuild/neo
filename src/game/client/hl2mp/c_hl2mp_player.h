@@ -9,7 +9,9 @@
 #define HL2MP_PLAYER_H
 #pragma once
 
+#ifdef NEO
 #include "neo_playeranimstate.h"
+#endif
 #include "c_basehlplayer.h"
 #include "hl2mp_player_shared.h"
 #include "beamdraw.h"

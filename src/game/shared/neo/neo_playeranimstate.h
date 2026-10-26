@@ -50,7 +50,6 @@ private:
 	void ComputeGestureSequence( CStudioHdr *pStudioHdr );
 
 	bool HandleJumping();
-	bool HasLandedFromJump();
 	bool IsLeaning() const;
 
 	CHL2MP_Player *m_pPlayer;
@@ -59,9 +58,6 @@ private:
 	bool m_bJumping;
 	bool m_bFirstJumpFrame;
 	float m_flJumpStartTime;
-#ifdef CLIENT_DLL
-	float m_flJumpGroundFlagTime; // when the client first saw the ground flag during a jump, 0 while in the air
-#endif
 
 	// fire, reload and throw sequences share one layer above the aim layers, and a new one restarts it
 	int m_iGestureSequence;
