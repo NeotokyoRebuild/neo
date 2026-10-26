@@ -37,6 +37,17 @@ static const float LANDING_NAV_AREA_RANGE = 50.0f;
 // A climb onto a ladder's wall cap takes the mesh's link at most this many times a path segment,
 // then is left to the ledge search: a bot that lands back at the launch point would otherwise jump on every landing
 static const int LADDER_CAP_LAUNCHES = 3;
+
+// A bot part way down a drop stands within this range of the drop's column (its top and landing share x and y);
+// the caller already holds a bot that is not stuck to 25 u of the top, so this range matters for a stuck one
+static constexpr float DROP_COLUMN_RANGE = 50.0f;
+
+// Fell-off re-paths this many times in a row,
+static constexpr int FELL_OFF_LOOP_REPEATS = 3;
+// each within this many seconds of the last,
+static constexpr float FELL_OFF_LOOP_TIME = 2.0f;
+// with the feet moved less than this, are a loop the stuck monitor has to see
+static constexpr float FELL_OFF_LOOP_RANGE = 8.0f;
 #endif
 
 
@@ -62,6 +73,10 @@ PathFollower::PathFollower( void )
 	m_wasOnGround = true;
 	m_capClimbGoal = NULL;
 	m_capLaunches = 0;
+
+	m_fellOffFeet = vec3_invalid;
+	m_fellOffTime = 0.0f;
+	m_fellOffCount = 0;
 #endif
 }
 
@@ -666,6 +681,64 @@ static bool IsNearNavMesh( INextBot *bot )
 {
 	return TheNavMesh->GetNearestNavArea( bot->GetEntity(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, LANDING_NAV_AREA_RANGE ) != NULL;
 }
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Called when our goal is high above us: return true if it is a drop's top and we are in the drop's column
+ * above its landing, falling down the drop or stopped on a ledge part way down it with no nav area.
+ * The stock check traces from the feet to the landing on a diagonal that hits a ledge's rim, so trace level instead
+ */
+bool PathFollower::IsPartWayDownDrop( INextBot *bot, const Segment *landing ) const
+{
+	if ( m_goal->type != DROP_DOWN || !landing )
+	{
+		return false;
+	}
+
+	ILocomotion *mover = bot->GetLocomotionInterface();
+	const Vector &feet = mover->GetFeet();
+	if ( feet.z < landing->pos.z + mover->GetStepHeight() )
+	{
+		return false;
+	}
+
+	if ( !( landing->pos - feet ).AsVector2D().IsLengthLessThan( DROP_COLUMN_RANGE ) )
+	{
+		return false;
+	}
+
+	// a bot on a nav area part way down stands on a ledge wide enough to plan from, so it re-paths from there
+	if ( TheNavMesh->GetNavArea( feet, mover->GetStepHeight() ) )
+	{
+		return false;
+	}
+
+	const Vector landingLevel( landing->pos.x, landing->pos.y, feet.z );
+	return mover->IsPotentiallyTraversable( feet, landingLevel );
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Count this fell-off re-path, and return true if it is one of a run that left us where we were,
+ * because each re-path handed back a path we cannot follow from here
+ */
+bool PathFollower::CountFellOffRepath( INextBot *bot )
+{
+	const Vector &feet = bot->GetLocomotionInterface()->GetFeet();
+	const bool isRepeat = ( feet - m_fellOffFeet ).IsLengthLessThan( FELL_OFF_LOOP_RANGE ) &&
+		gpGlobals->curtime - m_fellOffTime < FELL_OFF_LOOP_TIME;
+
+	m_fellOffCount = isRepeat ? m_fellOffCount + 1 : 1;
+	m_fellOffTime = gpGlobals->curtime;
+	if ( !isRepeat )
+	{
+		m_fellOffFeet = feet;
+	}
+
+	return m_fellOffCount >= FELL_OFF_LOOP_REPEATS;
+}
 #endif
 
 
@@ -852,7 +925,14 @@ void PathFollower::Update( INextBot *bot )
 
 			// check if we can reach the next segment, in case this was a "jump down" situation
 			const Path::Segment *next = NextSegment( m_goal );
-			if ( mover->IsStuck() || !next || ( next->pos.z - mover->GetFeet().z > mover->GetMaxJumpHeight() ) || !mover->IsPotentiallyTraversable( mover->GetFeet(), next->pos ) )
+#ifdef NEO
+			// part way down a drop, keep the drop's top as the goal and steer at it,
+			// which walks us off the ledge over the landing
+			const bool keepDropGoal = IsPartWayDownDrop( bot, next );
+#else
+			const bool keepDropGoal = false;
+#endif
+			if ( !keepDropGoal && ( mover->IsStuck() || !next || ( next->pos.z - mover->GetFeet().z > mover->GetMaxJumpHeight() ) || !mover->IsPotentiallyTraversable( mover->GetFeet(), next->pos ) ) )
 			{
 				// the next node is too high, too - we really did fall off the path
 				mover->GetBot()->OnMoveToFailure( this, FAIL_FELL_OFF );
@@ -869,7 +949,15 @@ void PathFollower::Update( INextBot *bot )
 				}
 
 				// reset stuck status since we're (likely) repathing anyways. otherwise, we could be stuck in a loop here and not move
+#ifdef NEO
+				// unless the re-paths keep handing back the same path and we have not moved, so let the stuck monitor see it
+				if ( !CountFellOffRepath( bot ) )
+				{
+					mover->ClearStuckStatus( "Fell off path" );
+				}
+#else
 				mover->ClearStuckStatus( "Fell off path" );
+#endif
 
 				return;
 			}

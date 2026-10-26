@@ -1451,7 +1451,13 @@ bool CNavArea::TestStairs( void )
 
 	if ( ret == STAIRS_YES )
 	{
+#ifdef NEO
+		// add the flag rather than replace every attribute, since this runs on every nav load
+		// and would otherwise erase hand annotations such as PRECISE or CLIFF on stair areas
+		SetAttributes( GetAttributes() | NAV_MESH_STAIRS );
+#else
 		SetAttributes( NAV_MESH_STAIRS );
+#endif
 		return true;
 	}
 

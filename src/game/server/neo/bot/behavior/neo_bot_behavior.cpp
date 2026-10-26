@@ -186,8 +186,6 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 	}
 	me->m_qPrevShouldAim = qDirectShouldAimQuery;
 	
-	me->RepathIfFriendlyBlockingLineOfFire();
-
 	ReconConsiderSuperJump( me );
 
 	return Continue();

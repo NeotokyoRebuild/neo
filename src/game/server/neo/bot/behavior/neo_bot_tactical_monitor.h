@@ -41,4 +41,5 @@ private:
 
 	void AvoidBumpingFriends(CNEOBot* me);
 	ActionResult< CNEOBot > WatchForLadders(CNEOBot* me);
+	void CloakPastNpcTurret(CNEOBot* me);
 };

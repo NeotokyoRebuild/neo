@@ -317,6 +317,33 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForLadders( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
+// A bot in a hurry does not retreat from the tank, so it cloaks in the tank's line of fire and keeps going:
+// the tank's motion vision ignores cloaked players under 180 u/s
+void CNEOBotTacticalMonitor::CloakPastNpcTurret( CNEOBot *me )
+{
+	if ( me->m_hCommandingPlayer.Get() )
+	{
+		return;
+	}
+
+	CNavArea *myArea = me->GetLastKnownArea();
+	if ( !myArea || !CNEOBotPathReservations()->IsAreaNpcTurretHazard( myArea->GetID(), me ) )
+	{
+		return;
+	}
+
+	me->EnableCloak( 3.0f );
+
+	// An Assault stays under that speed unless it sprints, while a Recon is over it anyway and keeps its pace
+	if ( me->IsCloakEnabled() && ( me->GetClass() == NEO_CLASS_ASSAULT ) )
+	{
+		// the child behaviors moved first this update, so this cancels their run press
+		me->ReleaseRunButton();
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
 	if ( neo_bot_force_jump.GetBool() )
@@ -348,8 +375,10 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 
 	if ( !bInAHurry )
 	{
-		// check if we need to get to cover
-		QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
+		// check if we need to get to cover,
+		// but not from the ghost carrier, since RetreatToCover would end at once and the next check would start it again
+		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
+		QueryResultType shouldRetreat = IsThreatGhostCarrier( threat ) ? ANSWER_NO : me->GetIntentionInterface()->ShouldRetreat( me );
 
 		if ( shouldRetreat == ANSWER_YES )
 		{
@@ -391,6 +420,10 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		{
 			return scavengeResult;
 		}
+	}
+	else
+	{
+		CloakPastNpcTurret( me );
 	}
 
 #if 0 // NEO TODO (Adam) search for dropped weapons to resupply ammunition

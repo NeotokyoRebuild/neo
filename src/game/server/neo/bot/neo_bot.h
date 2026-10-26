@@ -232,10 +232,8 @@ public:
 	bool IsLineOfFireClear(const Vector& from, const Vector& to, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given points
 	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given point and entity
 	bool IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const;
-	bool IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to) const;
 	bool IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) const;	// return true if a teammate is near the line between the given points
 	bool IsFriendlyNearBarrel(float range) const;			// return true if a teammate is near where my weapon points
-	void RepathIfFriendlyBlockingLineOfFire();
 
 	Vector FindVisibleThrowPointNear( const Vector &vecPos ) const;
 	bool IsThrowLineClear(const Vector& where) const;
@@ -538,9 +536,6 @@ private:
 	float m_flAutoJumpMin;
 	float m_flAutoJumpMax;
 	CountdownTimer m_autoJumpTimer;
-
-	CountdownTimer m_repathAroundFriendlyTimer;
-	PathFollower m_repathAroundFriendlyFollower;
 
 	int m_nPlainJumpTick = -1;
 

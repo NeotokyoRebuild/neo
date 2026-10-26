@@ -41,7 +41,6 @@ extern ConVar neo_bot_fire_weapon_min_time;
 extern ConVar neo_bot_difficulty;
 extern ConVar neo_bot_farthest_visible_theater_sample_count;
 extern ConVar neo_bot_path_lookahead_range;
-extern ConVar neo_bot_path_around_friendly_cooldown;
 extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 
 
@@ -592,7 +591,6 @@ CNEOBot::CNEOBot()
 	m_behaviorFlags = 0;
 	m_attentionFocusEntity = NULL;
 	m_noisyTimer.Invalidate();
-	m_repathAroundFriendlyTimer.Invalidate();
 
 	m_difficulty = clamp((CNEOBot::DifficultyType)neo_bot_difficulty.GetInt(), CNEOBot::EASY, CNEOBot::EXPERT);
 
@@ -2174,32 +2172,6 @@ bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who
 
 
 //-----------------------------------------------------------------------------------------------------
-// Return whether there is a friendly player blocking the line of fire
-bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to) const
-{
-	if (NEORules()->IsTeamplay())
-	{
-		trace_t playerTrace;
-		CTraceFilterSimple playerFilter(this, COLLISION_GROUP_NONE);
-		UTIL_TraceLine(from, to, MASK_SHOT_HULL, &playerFilter, &playerTrace);
-
-		if (playerTrace.DidHit())
-		{
-			CBaseEntity *pEnt = playerTrace.m_pEnt;
-			if (pEnt && pEnt->IsPlayer())
-			{
-				if (IsFriend(pEnt) && pEnt != this)
-				{
-					return false;
-				}
-			}
-		}
-	}
-	return true;
-}
-
-
-//-----------------------------------------------------------------------------------------------------
 bool CNEOBot::IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) const
 {
 	if (!NEORules()->IsTeamplay())
@@ -2300,52 +2272,6 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const Line
 bool CNEOBot::IsLineOfFireClear(CBaseEntity* who, const LineOfFireFlags flags) const
 {
 	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), who, flags);
-}
-
-
-//-----------------------------------------------------------------------------------------------------
-// If I am aiming at a friendly, recalculate my path to get around them
-void CNEOBot::RepathIfFriendlyBlockingLineOfFire()
-{
-	if (!IsAlive())
-	{
-		return;
-	}
-
-	const PathFollower* pPath = GetCurrentPath();
-	if (!pPath)
-	{
-		return;
-	}
-
-	if (!m_repathAroundFriendlyTimer.IsElapsed())
-	{
-		return;
-	}
-
-	float jitter = RandomFloat(0.0f, 0.5f);
-	m_repathAroundFriendlyTimer.Start(neo_bot_path_around_friendly_cooldown.GetFloat() + jitter);
-
-	Vector eyePos = EyePosition();
-	Vector forward;
-	EyeVectors(&forward);
-
-	const float checkDistance = 10000.0f;
-	Vector targetPos = eyePos + forward * checkDistance;
-
-	if (!IsLineOfFireClearOfFriendlies(eyePos, targetPos))
-	{
-		Vector goal = pPath->GetEndPosition();
-
-		CNEOBotPathCost cost(this, DEFAULT_ROUTE);
-		if (m_repathAroundFriendlyFollower.Compute(this, goal, cost))
-		{
-			if (m_repathAroundFriendlyFollower.IsValid())
-			{
-				SetCurrentPath(&m_repathAroundFriendlyFollower);
-			}
-		}
-	}
 }
 
 

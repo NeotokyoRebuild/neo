@@ -28,6 +28,7 @@ public:
 
 private:
 	bool m_bIgnoreHazards;
+	bool m_bInAHurry;
 	CNEOBot* m_me;
 	RouteType m_routeType;
 	float m_stepHeight;
