@@ -2446,7 +2446,7 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 #ifdef NEO
 	// or reloading: the reload ends after the sequence's duration,
 	// so a transition played first (such as the Tachi's lowtoidle after a sprint) would cut the reload short
-	if ( ideal != ACT_VM_DRAW && ideal != ACT_VM_RELOAD && IsWeaponVisible() && nextSequence != m_nIdealSequence )
+	if ( ideal != ACT_VM_DRAW && ideal != ACT_VM_RELOAD && ideal != ACT_VM_RELOAD_EMPTY && IsWeaponVisible() && nextSequence != m_nIdealSequence )
 #else
 	if ( ideal != ACT_VM_DRAW && IsWeaponVisible() && nextSequence != m_nIdealSequence )
 #endif
