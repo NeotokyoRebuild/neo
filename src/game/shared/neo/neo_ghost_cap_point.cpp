@@ -368,10 +368,6 @@ static constexpr float SMOKE_MAX_EXPAND_RADIUS = 330.0f;
 // circle in the XY plane. The proxy follows the smoke's real state: it grows
 // with the expanding sphere after detonation and shrinks faster than the smoke
 // fades while it dissipates, so the ring doesn't pop out/in.
-//
-// Smoke grenades are non-solid, so they only show up in the spatial partition
-// (and thus in CEntitySphereQuery) because C_ParticleSmokeGrenade sets
-// EFL_USE_PARTITION_WHEN_NOT_SOLID.
 static void NeoCapRing_FindSmokeProxies(const Vector& capOrigin, float capRadius, CUtlVector<NeoCapSmokeProxy_t>& outProxies)
 {
 	const Vector2D capOrigin2D = capOrigin.AsVector2D();
