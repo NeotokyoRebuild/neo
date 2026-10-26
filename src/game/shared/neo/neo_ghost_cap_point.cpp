@@ -13,6 +13,9 @@
 
 #ifdef CLIENT_DLL
 #include "ui/neo_hud_ghost_cap_point.h"
+#include "materialsystem/imaterialsystem.h"
+#include "neo_smoke_visual_state.h"
+#include <math.h>
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -29,6 +32,7 @@ static constexpr int NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL = 1;
 // anyways. These are in Hammer units.
 static constexpr float NEO_CAP_MIN_RADIUS = 8.0f;
 static constexpr float NEO_CAP_MAX_RADIUS = 10240.0f;
+static constexpr int INITIAL_RING_OPACITY = 128;
 
 static constexpr int NEO_FGD_TEAMNUM_ATTACKER = 0;
 static constexpr int NEO_FGD_TEAMNUM_DEFENDER = 1;
@@ -75,6 +79,22 @@ BEGIN_DATADESC(CNEOGhostCapturePoint)
 	DEFINE_OUTPUT(m_OnCap, "OnCap"),
 #endif
 END_DATADESC()
+
+enum NeoCapEdgeType
+{
+	NEO_CAP_EDGE_OFF = 0, 		// disabled
+	NEO_CAP_EDGE_LINE,			// show only a line around the capzone
+	NEO_CAP_EDGE_LINE_LOGO,		// show the line + a team logo
+
+	NEO_CAP_EDGE__TOTAL,
+};
+
+#ifdef CLIENT_DLL
+
+ConVar cl_neo_cap_zone_edge("cl_neo_cap_zone_edge", "2", FCVAR_ARCHIVE, "Cap zone edge rendering", true, 0, true, NEO_CAP_EDGE__TOTAL - 1);
+ConVar cl_neo_cap_ring_smoke_proxy_debug("cl_neo_cap_ring_smoke_proxy_debug", "0", FCVAR_CHEAT,
+	"Draw the smoke proxy spheres as opaque magenta (instead of depth-only) for tuning.");
+#endif
 
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 {
@@ -142,6 +162,7 @@ int CNEOGhostCapturePoint::owningTeamAlternate() const
 
 void CNEOGhostCapturePoint::Spawn(void)
 {
+	Precache();
 	BaseClass::Spawn();
 
 	AddEFlags(EFL_FORCE_CHECK_TRANSMIT);
@@ -202,6 +223,10 @@ void CNEOGhostCapturePoint::Spawn(void)
 	SetContextThink(&CNEOGhostCapturePoint::Think_CheckMyRadius,
 		gpGlobals->curtime, "CheckMyRadius");
 #else
+	m_pRingMaterial = materials->FindMaterial("effects/cap_zone_ring", TEXTURE_GROUP_CLIENT_EFFECTS);
+	m_pRingNsfMaterial = materials->FindMaterial("effects/cap_zone_ring_nsf", TEXTURE_GROUP_CLIENT_EFFECTS);
+	m_pRingJinraiMaterial = materials->FindMaterial("effects/cap_zone_ring_jinrai", TEXTURE_GROUP_CLIENT_EFFECTS);
+	AddToLeafSystem(RENDER_GROUP_TRANSLUCENT_ENTITY);
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 #endif
 }
@@ -298,6 +323,338 @@ void CNEOGhostCapturePoint::ClientThink(void)
 
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 }
+
+bool CNEOGhostCapturePoint::ShouldDraw()
+{
+	return m_bIsActive;
+}
+
+RenderGroup_t CNEOGhostCapturePoint::GetRenderGroup()
+{
+	return RENDER_GROUP_TRANSLUCENT_ENTITY;
+}
+
+void CNEOGhostCapturePoint::GetRenderBoundsWorldspace(Vector& mins, Vector& maxs)
+{
+	const Vector& origin = GetAbsOrigin();
+	const float r = m_flCapzoneRadius;
+	mins = origin + Vector(-r, -r, -16.0f);
+	maxs = origin + Vector(r, r, 16.0f);
+}
+
+struct NeoCapSmokeProxy_t
+{
+	Vector center;
+	float radius;
+};
+
+static constexpr float SMOKE_PROXY_MIN_RADIUS = 8.0f;
+static constexpr int SMOKE_PROXY_MAX_COUNT = 16;
+// While the smoke dissipates its alpha fades 1 -> 0 but its radius stays the
+// same. Depth testing is binary, so the proxy can't fade: it keeps its full
+// radius and is simply dropped (the ring reappears at once) when the smoke's
+// fade falls below this.
+static constexpr float SMOKE_PROXY_MIN_FADE = 0.25f;
+// The proxy follows the smoke's real expanding sphere (radius 0 -> ~330 over
+// SMOKESPHERE_EXPAND_TIME). The visibly opaque core is smaller than that radius
+// (density falls off towards the edge), so this scales it down.
+static constexpr float SMOKE_PROXY_SCALE = 0.575f;
+// A smoke's expanding sphere never exceeds SMOKEGRENADE_PARTICLERADIUS *
+// NUM_PARTICLES_PER_DIMENSION (55 * 6) units (see smoke_fog_overlay.h). Only
+// used to size the spatial query below.
+static constexpr float SMOKE_MAX_EXPAND_RADIUS = 330.0f;
+
+// Finds active smoke grenades whose proxy sphere overlaps this cap zone's
+// circle in the XY plane. The proxy follows the smoke's real state: it grows
+// with the expanding sphere after detonation and shrinks faster than the smoke
+// fades while it dissipates, so the ring doesn't pop out/in.
+static void NeoCapRing_FindSmokeProxies(const Vector& capOrigin, float capRadius, CUtlVector<NeoCapSmokeProxy_t>& outProxies)
+{
+	const Vector2D capOrigin2D = capOrigin.AsVector2D();
+
+	const float queryRadius = capRadius + SMOKE_MAX_EXPAND_RADIUS * SMOKE_PROXY_SCALE;
+
+	CEntitySphereQuery sphereQuery(capOrigin, queryRadius);
+
+	for (C_BaseEntity *pEnt = sphereQuery.GetCurrentEntity();
+		pEnt != NULL && outProxies.Count() < SMOKE_PROXY_MAX_COUNT;
+		sphereQuery.NextEntity(), pEnt = sphereQuery.GetCurrentEntity())
+	{
+		// Returns false for anything that isn't a formed smoke grenade.
+		NeoSmokeGrenadeVisualState_t state;
+		if (!NeoGetSmokeGrenadeVisualState(pEnt, state))
+		{
+			continue;
+		}
+
+		if (state.fade < SMOKE_PROXY_MIN_FADE)
+		{
+			continue;
+		}
+
+		const float radius = state.expandRadius * SMOKE_PROXY_SCALE;
+		if (radius < SMOKE_PROXY_MIN_RADIUS)
+		{
+			continue;
+		}
+
+		// The ring is a low, flat circle but the proxy extends as far in Z as in
+		// XY, so test overlap in the XY plane only.
+		if (capOrigin2D.DistTo(state.center.AsVector2D()) > capRadius + radius)
+		{
+			continue;
+		}
+
+		NeoCapSmokeProxy_t& proxy = outProxies[outProxies.AddToTail()];
+		proxy.center = state.center;
+		proxy.radius = radius;
+	}
+}
+
+// Draws one UV sphere per proxy. Each quad is emitted with both windings so
+// the result doesn't depend on the bound material's cull mode (otherwise only
+// the far hemisphere might write depth and the ring would show through).
+static void NeoCapRing_DrawSmokeProxies(const CUtlVector<NeoCapSmokeProxy_t>& proxies)
+{
+	// The sphere is split into LATITUDE_BANDS rings from pole to pole, each ring
+	// into LONGITUDE_SEGMENTS quads around the vertical axis.
+	constexpr int LATITUDE_BANDS = 8;
+	constexpr int LONGITUDE_SEGMENTS = 12;
+
+	const bool debug = cl_neo_cap_ring_smoke_proxy_debug.GetBool();
+
+	IMaterial *pMaterial = materials->FindMaterial("debug/debugvertexcolor", TEXTURE_GROUP_OTHER);
+	if (!pMaterial || pMaterial->IsErrorMaterial())
+	{
+		return;
+	}
+
+	CMatRenderContextPtr pRenderContext(materials);
+	if (!debug)
+	{
+		// Depth only: the proxies must stay invisible.
+		pRenderContext->OverrideColorWriteEnable(true, false);
+		pRenderContext->OverrideAlphaWriteEnable(true, false);
+	}
+
+	pRenderContext->Bind(pMaterial);
+	IMesh *pMesh = pRenderContext->GetDynamicMesh(true);
+	CMeshBuilder meshBuilder;
+	meshBuilder.Begin(pMesh, MATERIAL_QUADS, proxies.Count() * LATITUDE_BANDS * LONGITUDE_SEGMENTS * 2);
+
+	auto emitSphereVertex = [&](const Vector& sphereCenter, float sphereRadius, int latitudeLine, int longitudeLine)
+	{
+		const float polarAngle = M_PI_F * ((float)latitudeLine / LATITUDE_BANDS);
+		const float azimuthAngle = 2.0f * M_PI_F * ((float)longitudeLine / LONGITUDE_SEGMENTS);
+
+		const Vector surfaceNormal(
+			sinf(polarAngle) * cosf(azimuthAngle),
+			sinf(polarAngle) * sinf(azimuthAngle),
+			cosf(polarAngle));
+		const Vector surfacePosition = sphereCenter + surfaceNormal * sphereRadius;
+
+		meshBuilder.Position3f(surfacePosition.x, surfacePosition.y, surfacePosition.z);
+		meshBuilder.Normal3f(surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
+		meshBuilder.Color4ub(255, 0, 255, 255);
+		meshBuilder.TexCoord2f(0, 0.0f, 0.0f);
+		meshBuilder.AdvanceVertex();
+	};
+
+	FOR_EACH_VEC(proxies, proxyIndex)
+	{
+		const Vector& sphereCenter = proxies[proxyIndex].center;
+		const float sphereRadius = proxies[proxyIndex].radius;
+
+		for (int band = 0; band < LATITUDE_BANDS; band++)
+		{
+			for (int segment = 0; segment < LONGITUDE_SEGMENTS; segment++)
+			{
+				const int northLine = band;
+				const int southLine = band + 1;
+				const int westLine = segment;
+				const int eastLine = segment + 1;
+
+				emitSphereVertex(sphereCenter, sphereRadius, northLine, westLine);
+				emitSphereVertex(sphereCenter, sphereRadius, northLine, eastLine);
+				emitSphereVertex(sphereCenter, sphereRadius, southLine, eastLine);
+				emitSphereVertex(sphereCenter, sphereRadius, southLine, westLine);
+
+				emitSphereVertex(sphereCenter, sphereRadius, southLine, westLine);
+				emitSphereVertex(sphereCenter, sphereRadius, southLine, eastLine);
+				emitSphereVertex(sphereCenter, sphereRadius, northLine, eastLine);
+				emitSphereVertex(sphereCenter, sphereRadius, northLine, westLine);
+			}
+		}
+	}
+
+	meshBuilder.End(false, true);
+
+	if (!debug)
+	{
+		pRenderContext->OverrideAlphaWriteEnable(false, true);
+		pRenderContext->OverrideColorWriteEnable(false, true);
+	}
+}
+
+int CNEOGhostCapturePoint::DrawModel(int flags)
+{
+	int cl_neo_cap_zone_edge_value = cl_neo_cap_zone_edge.GetInt();
+
+	if (!m_bIsActive || !m_pRingMaterial || !m_pRingJinraiMaterial || !m_pRingNsfMaterial || cl_neo_cap_zone_edge_value == NEO_CAP_EDGE_OFF) {
+		return 0;
+	}
+
+	// Mirror the arrow color logic from CNEOHud_GhostCapPoint::DrawNeoHudElement exactly
+	const int capTeam = owningTeamAlternate();
+	Color ringColor = (capTeam == TEAM_ANY) ? COLOR_SPEC : ((capTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF);
+
+	auto *player = C_NEO_Player::GetLocalNEOPlayer();
+
+	const Vector& capOrigin = GetAbsOrigin();
+	int ringOpacity = INITIAL_RING_OPACITY;
+	constexpr float MAX_VISIBILITY_RANGE = 768.0f;
+
+	if (player)
+	{
+		const int playerTeam = player->GetTeamNumber();
+		const bool playerIsPlaying = (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF);
+
+		if (playerIsPlaying && capTeam != TEAM_ANY && playerTeam != capTeam)
+		{
+			ringColor = COLOR_RED;
+		}
+
+		const Vector& playerOrigin = player->GetAbsOrigin();
+		const float distanceToCap = max(0.f, playerOrigin.DistTo(capOrigin) - m_flCapzoneRadius);
+
+		if (distanceToCap > MAX_VISIBILITY_RANGE) {
+			return 0; // Don't draw the ring if the player is too far away
+		}
+
+		// smooth fade out of ring opacity based on distance to player
+		const float opacityCoef = distanceToCap / MAX_VISIBILITY_RANGE;
+		ringOpacity = static_cast<int>(INITIAL_RING_OPACITY * (1.0f - opacityCoef));
+	}
+
+	ringColor[3] = ringOpacity;
+
+	// Smoke writes no depth, so lay down invisible depth-only proxies for any
+	// nearby smoke first; the ring below then fails its depth test where smoke
+	// is in front of it and passes where it is in front of the smoke.
+	CUtlVector<NeoCapSmokeProxy_t> smokeProxies;
+	NeoCapRing_FindSmokeProxies(capOrigin, m_flCapzoneRadius, smokeProxies);
+	if (!smokeProxies.IsEmpty())
+	{
+		NeoCapRing_DrawSmokeProxies(smokeProxies);
+	}
+
+	// draw bars ring
+	constexpr float SEGMENT_SIZE = 8.0f;
+	constexpr float RING_BOTTOM = 4.0f;
+
+	const int segments = (int)round(M_PI_F * 2.0f * m_flCapzoneRadius / SEGMENT_SIZE);
+	const float zBottom = capOrigin.z + RING_BOTTOM;
+	const float radius = m_flCapzoneRadius;
+
+	CMatRenderContextPtr pRenderContext(materials);
+	pRenderContext->Bind(m_pRingMaterial);
+	IMesh *pMesh = pRenderContext->GetDynamicMesh(true);
+	CMeshBuilder meshBuilder;
+	meshBuilder.Begin(pMesh, MATERIAL_QUADS, segments);
+
+	this->DrawBarRing(meshBuilder, segments, zBottom, SEGMENT_SIZE, radius, capOrigin, ringColor);
+
+	meshBuilder.End(false, true);
+
+	if (cl_neo_cap_zone_edge_value != NEO_CAP_EDGE_LINE_LOGO || capTeam == TEAM_ANY) {
+		return 1;
+	}
+
+	// draw logo ring
+	constexpr float LOGO_SIZE = 16.0f;
+	constexpr float LOGO_BOTTOM = 2.0f;
+	const float logoRadius = m_flCapzoneRadius - 1.0f;
+	// draw logo only 5 times
+	constexpr int LOGO_SEGMENTS = 5;
+	const float zLogoBottom = capOrigin.z + LOGO_BOTTOM;
+
+	pRenderContext->Bind(capTeam == TEAM_JINRAI ? m_pRingJinraiMaterial : m_pRingNsfMaterial);
+	IMesh* pMeshTeam = pRenderContext->GetDynamicMesh(true);
+	CMeshBuilder meshBuilderTeam;
+	meshBuilderTeam.Begin(pMeshTeam, MATERIAL_QUADS, LOGO_SEGMENTS);
+
+	this->DrawLogoRing(meshBuilderTeam, LOGO_SEGMENTS, zLogoBottom, LOGO_SIZE, logoRadius, capOrigin, ringColor);
+
+	meshBuilderTeam.End(false, true);
+
+	return 1;
+}
+
+void CNEOGhostCapturePoint::DrawBarRing(CMeshBuilder& builder, int segments, float zBottom, float segmentSize, float radius, Vector capOrigin, Color ringColor)
+{
+	// for portal effect add currentRotationInRad to angle0, maybe use it for the cap effect?
+	//constexpr float ROTATION_SPEED = 45.0f;
+	//const float currentRotationInRad = ROTATION_SPEED * gpGlobals->curtime * (M_PI_F / 180.0f);
+	constexpr float CIRCLE_LENGTH = M_PI_F * 2.0f;
+
+	for (int i = 0; i < segments; i++)
+	{
+		const float angle0 = ((float)i / segments) * CIRCLE_LENGTH;
+		const float angle1 = ((float)(i + 1) / segments) * CIRCLE_LENGTH;
+		this->DrawSegment(builder, angle0, angle1, zBottom, zBottom + segmentSize, radius, capOrigin, ringColor);
+	}
+}
+
+void CNEOGhostCapturePoint::DrawLogoRing(CMeshBuilder& builder, int segmentsToFill, float zBottom, float segmentSize, float radius, Vector capOrigin, Color ringColor)
+{
+	constexpr float ROTATION_SPEED = 5.0f;
+	constexpr float CIRCLE_LENGTH = M_PI_F * 2.0f;
+	const float currentRotationInRad = ROTATION_SPEED * gpGlobals->curtime * (M_PI_F / 180.0f);
+	// calculate the number of segments to fill based on the segment size and radius
+	const int segmentsCountBySize = (int)round(CIRCLE_LENGTH * radius / segmentSize);
+
+	for (int i = 0; i < segmentsToFill; i++)
+	{
+		const float angle0 = ((float)i / segmentsToFill) * CIRCLE_LENGTH + currentRotationInRad;
+		// we take angle0 and add angle increment based on single segment size to get angle1
+		// that way we are achieving a partial fill of the ring based on the segment size and radius
+		const float angle1 = angle0 + ((float)1 / segmentsCountBySize) * CIRCLE_LENGTH;
+		this->DrawSegment(builder, angle0, angle1, zBottom, zBottom + segmentSize, radius, capOrigin, ringColor);
+	}
+}
+
+void CNEOGhostCapturePoint::DrawSegment(CMeshBuilder& builder, float angle0, float angle1, float zBottom, float zTop, float radius, Vector capOrigin, Color ringColor) {
+	const float cos0 = cosf(angle0), sin0 = sinf(angle0);
+	const float cos1 = cosf(angle1), sin1 = sinf(angle1);
+
+	// Bottom at angle0
+	builder.Position3f(capOrigin.x + cos0 * radius, capOrigin.y + sin0 * radius, zBottom);
+	builder.Normal3f(cos0, sin0, 0.0f);
+	builder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+	builder.TexCoord2f(0, 0.0f, 1.0f);
+	builder.AdvanceVertex();
+
+	// Bottom at angle1
+	builder.Position3f(capOrigin.x + cos1 * radius, capOrigin.y + sin1 * radius, zBottom);
+	builder.Normal3f(cos1, sin1, 0.0f);
+	builder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+	builder.TexCoord2f(0, 1.0f, 1.0f);
+	builder.AdvanceVertex();
+
+	// Top at angle1
+	builder.Position3f(capOrigin.x + cos1 * radius, capOrigin.y + sin1 * radius, zTop);
+	builder.Normal3f(cos1, sin1, 0.0f);
+	builder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+	builder.TexCoord2f(0, 1.0f, 0.0f);
+	builder.AdvanceVertex();
+
+	// Top at angle0
+	builder.Position3f(capOrigin.x + cos0 * radius, capOrigin.y + sin0 * radius, zTop);
+	builder.Normal3f(cos0, sin0, 0.0f);
+	builder.Color4ub(ringColor.r(), ringColor.g(), ringColor.b(), ringColor.a());
+	builder.TexCoord2f(0, 0.0f, 0.0f);
+	builder.AdvanceVertex();
+}
 #endif
 
 void CNEOGhostCapturePoint::Precache(void)
@@ -305,6 +662,12 @@ void CNEOGhostCapturePoint::Precache(void)
 	BaseClass::Precache();
 
 	AddEFlags(EFL_FORCE_CHECK_TRANSMIT);
+
+	#ifdef CLIENT_DLL
+	PrecacheMaterial("effects/cap_zone_ring");
+	PrecacheMaterial("effects/cap_zone_ring_nsf");
+	PrecacheMaterial("effects/cap_zone_ring_jinrai");
+	#endif
 }
 
 #ifdef GAME_DLL
