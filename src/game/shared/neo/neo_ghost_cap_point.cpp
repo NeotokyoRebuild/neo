@@ -350,10 +350,11 @@ struct NeoCapSmokeProxy_t
 
 static constexpr float SMOKE_PROXY_MIN_RADIUS = 8.0f;
 static constexpr int SMOKE_PROXY_MAX_COUNT = 16;
-// While the smoke dissipates its alpha fades 1 -> 0; the proxy radius is
-// multiplied by fade^power so it shrinks (and the ring reappears) sooner than
-// the smoke visually thins out. 1 = shrinks in step with the fade.
-static constexpr float SMOKE_PROXY_FADE_POWER = 1.2f;
+// While the smoke dissipates its alpha fades 1 -> 0 but its radius stays the
+// same. Depth testing is binary, so the proxy can't fade: it keeps its full
+// radius and is simply dropped (the ring reappears at once) when the smoke's
+// fade falls below this.
+static constexpr float SMOKE_PROXY_MIN_FADE = 0.25f;
 // The proxy follows the smoke's real expanding sphere (radius 0 -> ~330 over
 // SMOKESPHERE_EXPAND_TIME). The visibly opaque core is smaller than that radius
 // (density falls off towards the edge), so this scales it down.
@@ -390,7 +391,12 @@ static void NeoCapRing_FindSmokeProxies(const Vector& capOrigin, float capRadius
 			continue;
 		}
 
-		const float radius = state.expandRadius * SMOKE_PROXY_SCALE * powf(state.fade, SMOKE_PROXY_FADE_POWER);
+		if (state.fade < SMOKE_PROXY_MIN_FADE)
+		{
+			continue;
+		}
+
+		const float radius = state.expandRadius * SMOKE_PROXY_SCALE;
 		if (radius < SMOKE_PROXY_MIN_RADIUS)
 		{
 			continue;
