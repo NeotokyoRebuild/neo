@@ -80,6 +80,11 @@ ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_
 	true, -1, true, 999);
 #endif // GAME_DLL
 
+ConVar sv_neo_aimpunch_damping("sv_neo_aimpunch_damping", "12", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch damping");
+ConVar sv_neo_aimpunch_spring_constant("sv_neo_aimpunch_spring_constant", "65", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch spring constant");
+ConVar sv_neo_aimpunch_force("sv_neo_aimpunch_force", "40", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch force");
+ConVar sv_neo_aimpunch_max("sv_neo_aimpunch_max", "2", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch max deflection");
+
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
 	if (!pWep || pWep->m_bInReload || !pWep->CanAim())
