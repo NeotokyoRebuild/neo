@@ -905,6 +905,13 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 }
 
 extern ConVar sv_suppress_viewpunch;
+extern ConVar sv_neo_recoil_override;
+extern ConVar sv_neo_recoil_override_hip;
+extern ConVar sv_neo_recoil_override_ads;
+extern ConVar sv_neo_recoil_override_ymin;
+extern ConVar sv_neo_recoil_override_ymax;
+extern ConVar sv_neo_recoil_override_xmin;
+extern ConVar sv_neo_recoil_override_xmax;
 
 void CNEOBaseCombatWeapon::AddViewKick()
 {
@@ -932,7 +939,7 @@ void CNEOBaseCombatWeapon::AddViewKick()
 
 	owner->ViewPunch(viewPunch);
 
-	#ifdef CLIENT_DLL
+#ifdef CLIENT_DLL
 
 	if (!prediction->IsFirstTimePredicted())
 	{
@@ -940,19 +947,29 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	auto recoilInfo = m_weaponHandling.recoilInfo;
+
+	if ((recoilInfo.minX == 0 && sv_neo_recoil_override.GetInt() == 1) || sv_neo_recoil_override.GetInt() == 2)
+	{
+		recoilInfo = {
+			.hipFactor = sv_neo_recoil_override_hip.GetFloat(),
+			.adsFactor = sv_neo_recoil_override_ads.GetFloat(),
+			.minX = sv_neo_recoil_override_xmin.GetFloat(),
+			.maxX = sv_neo_recoil_override_xmax.GetFloat(),
+			.minY = sv_neo_recoil_override_ymin.GetFloat(),
+			.maxY = sv_neo_recoil_override_ymax.GetFloat()
+		};
+	}
+
 	float recoilScale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
 	if (!recoilScale)
 	{
 		return;
 	}
 
-	QAngle viewAngles;
-	engine->GetViewAngles(viewAngles);
-
-	viewAngles.x += SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * recoilScale, recoilInfo.maxX * recoilScale);
-	viewAngles.y += SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * recoilScale, recoilInfo.maxY * recoilScale);
-
-	engine->SetViewAngles(viewAngles);
+	QAngle recoil;
+	recoil.x = SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * recoilScale, recoilInfo.maxX * recoilScale);
+	recoil.y = SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * recoilScale, recoilInfo.maxY * recoilScale);
+	owner->Recoil(&recoil);
 
 	#endif
 }

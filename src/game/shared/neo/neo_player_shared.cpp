@@ -80,6 +80,23 @@ ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_
 	true, -1, true, 999);
 #endif // GAME_DLL
 
+ConVar sv_neo_aimpunch_damping("sv_neo_aimpunch_damping", "12", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch damping");
+ConVar sv_neo_aimpunch_spring_constant("sv_neo_aimpunch_spring_constant", "65", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch spring constant");
+ConVar sv_neo_aimpunch_force("sv_neo_aimpunch_force", "40", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch force");
+ConVar sv_neo_aimpunch_max("sv_neo_aimpunch_max", "2", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch max deflection");
+
+ConVar sv_neo_recoil_damping("sv_neo_recoil_damping", "14", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil damping");
+ConVar sv_neo_recoil_spring_constant("sv_neo_recoil_spring_constant", "120", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil spring constant");
+ConVar sv_neo_recoil_force("sv_neo_recoil_force", "20", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil force");
+
+ConVar sv_neo_recoil_override("sv_neo_recoil_override", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enable recoil parameters override. 1 = Apply for guns without their own recoil parameters. 2 = Apply for all guns.", true, 0, true, 2);
+ConVar sv_neo_recoil_override_hip("sv_neo_recoil_override_hip", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil multiplier while hipfiring");
+ConVar sv_neo_recoil_override_ads("sv_neo_recoil_override_ads", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil multiplier while ADS");
+ConVar sv_neo_recoil_override_xmin("sv_neo_recoil_override_xmin", "-0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Min vertical recoil");
+ConVar sv_neo_recoil_override_xmax("sv_neo_recoil_override_xmax", "-0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max vertical recoil");
+ConVar sv_neo_recoil_override_ymin("sv_neo_recoil_override_ymin", "-0.3", FCVAR_NOTIFY | FCVAR_REPLICATED, "Min horizontal recoil");
+ConVar sv_neo_recoil_override_ymax("sv_neo_recoil_override_ymax", "0.3", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max horizontal recoil");
+
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
 	if (!pWep || pWep->m_bInReload || !pWep->CanAim())

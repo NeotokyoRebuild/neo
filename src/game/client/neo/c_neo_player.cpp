@@ -148,6 +148,13 @@ static void __MsgFunc_AchievementMark(bf_read &msg)
 }
 USER_MESSAGE_REGISTER(AchievementMark);
 
+void __MsgFunc_AimPunch(bf_read& msg)
+{
+	float amount = msg.ReadFloat();
+	C_NEO_Player::GetLocalNEOPlayer()->AimPunch(amount);
+}
+USER_MESSAGE_REGISTER(AimPunch);
+
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
@@ -1063,6 +1070,9 @@ void C_NEO_Player::PreThink( void )
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 	CheckPingButton(this);
+
+	ApplyAimPunch();
+	ApplyRecoil();
 
 	if (m_bInThermOpticCamo)
 	{
@@ -2022,4 +2032,106 @@ void C_NEO_Player::ClearLocalPlayerDmgReports()
 	{
 		NeoAllKDReportsClear();
 	}
+}
+
+// Formula borrowed from CGameMovement::DecayPunchAngle
+extern ConVar sv_neo_aimpunch_damping;
+extern ConVar sv_neo_aimpunch_spring_constant;
+extern ConVar sv_neo_aimpunch_force;
+extern ConVar sv_neo_aimpunch_max;
+
+void C_NEO_Player::AimPunch(float amount)
+{
+	m_flAimPunchVel = amount * sv_neo_aimpunch_force.GetFloat();
+}
+
+void C_NEO_Player::ApplyAimPunch()
+{
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
+	if (abs(m_flAimPunchVel) < 0.001f && abs(m_flAimPunchCurrent) < 0.001f)
+	{
+		m_flAimPunchVel = 0.0f;
+		m_flAimPunchCurrent = 0.0f;
+		return;
+	}
+
+	const float oldAimPunch = m_flAimPunchCurrent;
+	m_flAimPunchCurrent += m_flAimPunchVel * gpGlobals->frametime;
+	if (abs(m_flAimPunchCurrent) > sv_neo_aimpunch_max.GetFloat())
+	{
+		m_flAimPunchCurrent = clamp(m_flAimPunchCurrent, -sv_neo_aimpunch_max.GetFloat(), sv_neo_aimpunch_max.GetFloat());
+		m_flAimPunchVel = 0.0f;
+	}
+
+	QAngle viewAngles;
+	engine->GetViewAngles(viewAngles);
+	viewAngles.x += m_flAimPunchCurrent - oldAimPunch;
+	engine->SetViewAngles(viewAngles);
+
+	float damping = 1 - (sv_neo_aimpunch_damping.GetFloat() * gpGlobals->frametime);
+
+	if ( damping < 0 )
+	{
+		damping = 0;
+	}
+	m_flAimPunchVel *= damping;
+
+	// torsional spring
+	float springForceMagnitude = sv_neo_aimpunch_spring_constant.GetFloat() * gpGlobals->frametime;
+	m_flAimPunchVel -= m_flAimPunchCurrent * springForceMagnitude;
+}
+
+extern ConVar sv_neo_recoil_damping;
+extern ConVar sv_neo_recoil_spring_constant;
+extern ConVar sv_neo_recoil_force;
+
+void C_NEO_Player::Recoil(const QAngle *amount)
+{
+	m_vecRecoilCurrent += *amount;
+	m_vecRecoilVel -= *amount * sv_neo_recoil_force.GetFloat();
+}
+
+void C_NEO_Player::ApplyRecoil()
+{
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
+	if ( m_vecRecoilCurrent.LengthSqr() < 0.001 && m_vecRecoilVel.LengthSqr() < 0.001 )
+	{
+		m_vecRecoilCurrent.Init( 0, 0, 0 );
+		m_vecRecoilVel.Init( 0, 0, 0 );
+		return;
+	}
+
+	const QAngle oldRecoil = m_vecRecoilCurrent;
+	m_vecRecoilCurrent += m_vecRecoilVel * gpGlobals->frametime;
+
+	QAngle viewAngles;
+	engine->GetViewAngles(viewAngles);
+	viewAngles += oldRecoil - m_vecRecoilCurrent;
+	engine->SetViewAngles(viewAngles);
+
+	float damping = 1 - (sv_neo_recoil_damping.GetFloat() * gpGlobals->frametime);
+
+	if ( damping < 0 )
+	{
+		damping = 0;
+	}
+	m_vecRecoilVel *= damping;
+
+	// torsional spring
+	float springForceMagnitude = sv_neo_recoil_spring_constant.GetFloat() * gpGlobals->frametime;
+	m_vecRecoilVel -= m_vecRecoilCurrent * springForceMagnitude;
+
+	// don't wrap around
+	m_vecRecoilCurrent.Init(
+		clamp(m_vecRecoilCurrent.x, -89.f, 89.f ),
+		clamp(m_vecRecoilCurrent.y, -179.f, 179.f ),
+		clamp(m_vecRecoilCurrent.z, -89.f, 89.f ) );
 }
