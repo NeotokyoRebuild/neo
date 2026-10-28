@@ -552,6 +552,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 #ifdef NEO
 	CNEO_Player *pNeoPlayer = assert_cast<CNEO_Player*>(this);
+	pNeoPlayer->UpdateFootstepAverageVelocity();
 	const bool bSilent = !pNeoPlayer->IsMakingFootstepSounds(&velrun, &speed, &fLadder);
 #endif
 

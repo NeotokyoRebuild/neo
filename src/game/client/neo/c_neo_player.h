@@ -96,6 +96,7 @@ public:
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
 	bool IsInSilentMoveMode() const;
 	float GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const;
+	void UpdateFootstepAverageVelocity();
 
 	void Lean(void);
 
@@ -280,6 +281,9 @@ private:
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
+
+	// Ground velocity averaged over about the last step interval, see UpdateFootstepAverageVelocity
+	Vector m_vecFootstepAvgVelocity = vec3_origin;
 };
 
 inline C_NEO_Player *ToNEOPlayer(C_BaseEntity *pEntity)

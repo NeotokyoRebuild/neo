@@ -203,6 +203,7 @@ public:
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
 	bool IsInSilentMoveMode() const;
 	float GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const;
+	void UpdateFootstepAverageVelocity();
 
 	// Cloak Power Interface
 	float CloakPower_Get(void) const ;
@@ -379,6 +380,8 @@ private:
 	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerTarget);
 	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerImpersonatingMe);
 
+	// Ground velocity averaged over about the last step interval, see UpdateFootstepAverageVelocity
+	Vector m_vecFootstepAvgVelocity = vec3_origin;
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

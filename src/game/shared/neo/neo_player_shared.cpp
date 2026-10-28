@@ -367,6 +367,12 @@ namespace
 	constexpr float FS_SILENT_SPEED_FRACTION = float(NEO_CROUCH_WALK_MODIFIER) * (1.f + FS_SILENT_HEADROOM); // 0.825
 	static_assert(FS_SILENT_SPEED_FRACTION < 1.f, "Running must never be silent");
 	static_assert(FS_SILENT_SPEED_FRACTION > NEO_AIM_MODIFIER, "Aiming must be silent");
+
+	// Turning or switching movement keys raises ground speed above the mode's speed for as long as the direction keeps
+	// changing, up to about 1.54 times crouching speed at 300 degrees per second. Anything faster is a sprint, a slide or a push
+	constexpr float FS_TURN_MAX_SPEED_FRACTION = float(NEO_CROUCH_WALK_MODIFIER) * 1.55f; // 1.1625
+	static_assert(FS_TURN_MAX_SPEED_FRACTION > FS_SILENT_SPEED_FRACTION, "The turn cap must sit above the silent limit");
+	static_assert(FS_TURN_MAX_SPEED_FRACTION < NEO_MIN_SPRINT_MODIFIER, "A sprint at full speed must never be silent");
 }
 
 bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLadder) const
@@ -414,7 +420,15 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 		// Ground speed is the horizontal part of velocity. Full speed would differ by client: other clients rebuild a
 		// remote player's velocity from origin changes, and stairs move the origin up a step at a time, so they see a
 		// vertical spike the local player never does. Ground speed is the same everywhere, so every client agrees
-		if (groundspeed <= (GetNormSpeed_WithActiveWepEncumberment() * FS_SILENT_SPEED_FRACTION))
+		const float flNormSpeed = GetNormSpeed_WithActiveWepEncumberment();
+		if (groundspeed <= flNormSpeed * FS_SILENT_SPEED_FRACTION)
+		{
+			return false;
+		}
+		// Turning or switching movement keys goes over the limit without covering ground any faster, so the average
+		// stays under it. Wiggle-walking, slides and pushes do cover ground faster. Sprinting stays audible
+		if (!m_fIsSprinting && groundspeed <= flNormSpeed * FS_TURN_MAX_SPEED_FRACTION &&
+			m_vecFootstepAvgVelocity.Length2D() <= flNormSpeed * FS_SILENT_SPEED_FRACTION)
 		{
 			return false;
 		}
@@ -442,6 +456,22 @@ float CNEO_Player::GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLou
 	default: // Concrete, metal, grate, tile and slosh
 		return bLoud ? 0.5f : 0.2f;
 	}
+}
+
+// Acceleration builds toward a new direction faster than friction removes the old one, so turning or switching
+// movement keys raises ground speed. The velocity keeps rotating meanwhile, so its average stays under the mode's speed
+void CNEO_Player::UpdateFootstepAverageVelocity()
+{
+	// About one step interval. Shorter lets the bump at the start of a fast turn through, longer lets a wiggle
+	// hide behind a gentle bend
+	constexpr float FS_AVG_VELOCITY_TIME = 0.4f;
+
+	// Ground velocity, for the same reason IsMakingFootstepSounds compares ground speed. frametime is the tick for
+	// the local player and the server, and the frame for other players
+	Vector vecGroundVelocity = GetAbsVelocity();
+	vecGroundVelocity.z = 0.f;
+	const float flBlend = Min(gpGlobals->frametime / FS_AVG_VELOCITY_TIME, 1.f);
+	m_vecFootstepAvgVelocity += (vecGroundVelocity - m_vecFootstepAvgVelocity) * flBlend;
 }
 
 int GetRank(const int xp)
