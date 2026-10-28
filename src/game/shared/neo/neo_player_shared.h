@@ -55,6 +55,22 @@ static_assert(NEO_MIN_SPRINT_MODIFIER > 1.f, "Sprinting must be faster than runn
 // Footsteps: the SDK plays crouched steps at 65% volume
 #define NEO_FS_CROUCH_VOLUME_SCALE 0.65f
 
+// Held step: the first audible step after pressing crouch, walk or aim waits until the player settles or lets go
+enum NeoFootstepHeldState
+{
+	NEO_FS_HELD_NONE = 0,
+	NEO_FS_HELD_ARMED,	// Crouch, walk or aim pressed, the next audible step is held
+	NEO_FS_HELD_HELD,		// A step is held back
+};
+
+// Keys that start a silent movement mode, see CNEO_Player::GetSilentMoveKeys
+enum NeoFootstepSilentMoveKey
+{
+	NEO_FS_SILENT_MOVE_KEY_CROUCH = (1 << 0),
+	NEO_FS_SILENT_MOVE_KEY_WALK = (1 << 1),
+	NEO_FS_SILENT_MOVE_KEY_AIM = (1 << 2),
+};
+
 
 // Movement Calculations
 // Recon
