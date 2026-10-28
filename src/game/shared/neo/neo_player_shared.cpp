@@ -386,8 +386,11 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 
 	bool onground = (GetFlags() & FL_ONGROUND);
 	bool movingalongground = (groundspeed > 0.0001f);
-	// Support crouched with a supa7 aimed in has a speed of 55.f
-	const bool moving_fast_enough = speed >= 50.f;
+	// Below this nothing plays, on a ladder or off. It catches drift that is not movement at all, such as being
+	// nudged, and sits just under the 55 u/s floor on max speed so no movement mode is ever filtered here.
+	// Whether crouching, walking or aiming is silent is decided below
+	constexpr float FS_MIN_STEP_SPEED = 50.f;
+	const bool moving_fast_enough = speed >= FS_MIN_STEP_SPEED;
 
 	// To hear step sounds you must be either on a ladder or moving along the ground AND
 	// You must be moving fast enough
@@ -397,19 +400,22 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
 	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
 
-	if (GetFlags() & FL_DUCKING)
+	if (IsInSilentMoveMode())
 	{
-		if ((IsInAim() || IsWalking()) && speed <= (GetCrouchSpeed() * SILENT_THRESHOLD_GRACE))
+		const float flClassSpeed = (GetFlags() & FL_DUCKING) ? GetCrouchSpeed() : GetNormSpeed();
+		if (speed <= (flClassSpeed * SILENT_THRESHOLD_GRACE))
 		{
 			return false;
 		}
 	}
-	else if ((IsInAim() || IsWalking()) && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
-	{
-		return false;
-	}
 
 	return true;
+}
+
+// Walking and aiming are the silent movement modes, measured against the silent limit
+bool CNEO_Player::IsInSilentMoveMode() const
+{
+	return IsWalking() || IsInAim();
 }
 
 // The SDK's soft or loud step volume for a surface, before crouched steps are scaled by NEO_FS_CROUCH_VOLUME_SCALE

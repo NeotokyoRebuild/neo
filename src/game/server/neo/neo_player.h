@@ -201,6 +201,7 @@ public:
 	virtual void StartWalking(void) OVERRIDE;
 	virtual void StopWalking(void) OVERRIDE;
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
+	bool IsInSilentMoveMode() const;
 	float GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const;
 
 	// Cloak Power Interface
