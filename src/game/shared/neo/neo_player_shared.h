@@ -39,6 +39,14 @@ extern ConVar sv_neo_spec_replace_player_min_exp;
 #define NEO_ASSAULT_SPRINT_MODIFIER 1.6
 #define NEO_SUPPORT_SPRINT_MODIFIER 1.35 // Redundant, but for future usecases
 
+constexpr float NEO_Min(float a, float b) { return a < b ? a : b; }
+
+// The slowest any class sprints. Support cannot sprint today, but its modifier is defined for future use, so it
+// is counted. Anything that must stay under every sprint, such as a footstep rule, compares against this
+static constexpr float NEO_MIN_SPRINT_MODIFIER =
+	NEO_Min(NEO_Min(NEO_RECON_SPRINT_MODIFIER, NEO_ASSAULT_SPRINT_MODIFIER), NEO_SUPPORT_SPRINT_MODIFIER);
+static_assert(NEO_MIN_SPRINT_MODIFIER > 1.f, "Sprinting must be faster than running");
+
 // Aim Modifier
 #define NEO_AIM_MODIFIER 0.6
 // Crouch/Walk Modifier
