@@ -358,6 +358,16 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
 }
 
+namespace
+{
+	// Footstep tuning. Fractions are of the player's run speed with the weapon's weight speed modifier applied
+
+	// Crouching is silent until moving faster than this. Anything above it is a sprint, a slide or a push
+	constexpr float FS_SILENT_HEADROOM = 0.10f;
+	constexpr float FS_SILENT_SPEED_FRACTION = float(NEO_CROUCH_WALK_MODIFIER) * (1.f + FS_SILENT_HEADROOM); // 0.825
+	static_assert(FS_SILENT_SPEED_FRACTION < 1.f, "Running must never be silent");
+}
+
 bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLadder) const
 {
 	if (GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
@@ -400,13 +410,20 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
 	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
 
-	if (IsInSilentMoveMode())
+	// A ladder has no ground entity, so crouching takes effect at once, but ground speed is near zero while climbing
+	if ((GetFlags() & FL_DUCKING) && !isOnLadder)
 	{
-		const float flClassSpeed = (GetFlags() & FL_DUCKING) ? GetCrouchSpeed() : GetNormSpeed();
-		if (speed <= (flClassSpeed * SILENT_THRESHOLD_GRACE))
+		// Ground speed is the horizontal part of velocity. Full speed would differ by client: other clients rebuild a
+		// remote player's velocity from origin changes, and stairs move the origin up a step at a time, so they see a
+		// vertical spike the local player never does. Ground speed is the same everywhere, so every client agrees
+		if (groundspeed <= (GetNormSpeed_WithActiveWepEncumberment() * FS_SILENT_SPEED_FRACTION))
 		{
 			return false;
 		}
+	}
+	else if (IsInSilentMoveMode() && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
+	{
+		return false;
 	}
 
 	return true;
