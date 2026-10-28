@@ -294,6 +294,8 @@ private:
 	int m_nHeldStepKeysDown = 0;
 	int m_nHeldStepArmedKeys = 0;
 	float m_flHeldStepQuietTime = -1.f;
+	float m_flHeldStepDropTime = 0.f;
+	float m_flHeldStepWindow = 0.f;
 
 	// Ground velocity averaged over about the last step interval, see UpdateFootstepAverageVelocity
 	Vector m_vecFootstepAvgVelocity = vec3_origin;

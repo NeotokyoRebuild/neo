@@ -61,6 +61,7 @@ enum NeoFootstepHeldState
 	NEO_FS_HELD_NONE = 0,
 	NEO_FS_HELD_ARMED,	// Crouch, walk or aim pressed, the next audible step is held
 	NEO_FS_HELD_HELD,		// A step is held back
+	NEO_FS_HELD_DROPPED,	// The held step was dropped, but plays if the key is released soon after
 };
 
 // Keys that start a silent movement mode, see CNEO_Player::GetSilentMoveKeys

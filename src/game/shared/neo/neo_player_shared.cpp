@@ -516,7 +516,7 @@ bool CNEO_Player::IsHeldStepPending() const
 }
 
 // Crouch only counts once the crouch animation ends, so without this one running step plays after pressing crouch.
-// The step is held until the player settles into the crouch, walk or aim, or lets go of the key
+// Releasing early gives the step back, so tapping crouch, walk or aim can delay a step but never skip one.
 void CNEO_Player::UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vector &vecOrigin)
 {
 	// Time to slow down under the silent limit after crouching, walking or aiming takes effect
@@ -538,10 +538,14 @@ void CNEO_Player::UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vect
 
 	const float flNow = gpGlobals->curtime;
 	// Letting go of a key that armed the step is the release. A step that is still held plays now: holding it back
-	// delayed it, releasing early means the player never settled, so it was never earned
+	// delayed it, releasing early means the player never settled, so it was never earned. A step that was already
+	// dropped plays only if the release came soon enough and no other silent mode is still held, so going from
+	// crouch to walk is not a tap
 	if (m_iHeldStep != NEO_FS_HELD_NONE && (m_nHeldStepArmedKeys & ~nKeysDown))
 	{
-		if (m_iHeldStep == NEO_FS_HELD_HELD)
+		const bool bStillQuiet = (GetSilentMoveKeys(false) & nKeysDown) != 0;
+		if (m_iHeldStep == NEO_FS_HELD_HELD ||
+			(m_iHeldStep == NEO_FS_HELD_DROPPED && !bStillQuiet && flNow - m_flHeldStepDropTime <= m_flHeldStepWindow))
 		{
 			PlayHeldStep(psurface, vecOrigin);
 		}
@@ -577,8 +581,16 @@ void CNEO_Player::UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vect
 		{
 			if (!bLoud)
 			{
-				// Settled into a silent crouch, walk or aim: the held step is dropped
-				m_iHeldStep = NEO_FS_HELD_NONE;
+				// Settled into a silent crouch, walk or aim
+				if (m_iHeldStep == NEO_FS_HELD_HELD)
+				{
+					m_iHeldStep = NEO_FS_HELD_DROPPED;
+					m_flHeldStepDropTime = flNow;
+				}
+				else
+				{
+					m_iHeldStep = NEO_FS_HELD_NONE;
+				}
 			}
 			else if (flNow - m_flHeldStepQuietTime >= FS_HELD_STEP_SETTLE_TIME)
 			{
@@ -590,6 +602,10 @@ void CNEO_Player::UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vect
 				m_iHeldStep = NEO_FS_HELD_NONE;
 			}
 		}
+	}
+	else if (m_iHeldStep == NEO_FS_HELD_DROPPED && flNow - m_flHeldStepDropTime > m_flHeldStepWindow)
+	{
+		m_iHeldStep = NEO_FS_HELD_NONE;
 	}
 }
 
@@ -614,6 +630,8 @@ bool CNEO_Player::HoldStep(surfacedata_t *psurface, const Vector &vecOrigin)
 	}
 
 	m_iHeldStep = NEO_FS_HELD_HELD;
+	// Releasing within one step interval of dropping the step still plays it
+	m_flHeldStepWindow = m_flStepSoundTime * 0.001f;
 	return true;
 }
 
