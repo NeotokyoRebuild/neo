@@ -362,10 +362,11 @@ namespace
 {
 	// Footstep tuning. Fractions are of the player's run speed with the weapon's weight speed modifier applied
 
-	// Crouching is silent until moving faster than this. Anything above it is a sprint, a slide or a push
+	// Crouching, walking and aiming are silent until moving faster than this. Anything above it is a sprint, a slide or a push
 	constexpr float FS_SILENT_HEADROOM = 0.10f;
 	constexpr float FS_SILENT_SPEED_FRACTION = float(NEO_CROUCH_WALK_MODIFIER) * (1.f + FS_SILENT_HEADROOM); // 0.825
 	static_assert(FS_SILENT_SPEED_FRACTION < 1.f, "Running must never be silent");
+	static_assert(FS_SILENT_SPEED_FRACTION > NEO_AIM_MODIFIER, "Aiming must be silent");
 }
 
 bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLadder) const
@@ -407,11 +408,8 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	if (!moving_fast_enough || !(isOnLadder || (onground && movingalongground)))
 		return false;
 
-	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
-	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
-
 	// A ladder has no ground entity, so crouching takes effect at once, but ground speed is near zero while climbing
-	if ((GetFlags() & FL_DUCKING) && !isOnLadder)
+	if (IsInSilentMoveMode() && !isOnLadder)
 	{
 		// Ground speed is the horizontal part of velocity. Full speed would differ by client: other clients rebuild a
 		// remote player's velocity from origin changes, and stairs move the origin up a step at a time, so they see a
@@ -421,18 +419,15 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 			return false;
 		}
 	}
-	else if (IsInSilentMoveMode() && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
-	{
-		return false;
-	}
 
 	return true;
 }
 
-// Walking and aiming are the silent movement modes, measured against the silent limit
+// Crouching speed and walking speed are the same, so crouching, walking and aiming share one silent limit.
+// Crouch counts once the crouch animation ends
 bool CNEO_Player::IsInSilentMoveMode() const
 {
-	return IsWalking() || IsInAim();
+	return (GetFlags() & FL_DUCKING) || IsWalking() || IsInAim();
 }
 
 // The SDK's soft or loud step volume for a surface, before crouched steps are scaled by NEO_FS_CROUCH_VOLUME_SCALE
