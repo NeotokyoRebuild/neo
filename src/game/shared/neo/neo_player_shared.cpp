@@ -444,6 +444,13 @@ bool CNEO_Player::IsInSilentMoveMode() const
 	return (GetFlags() & FL_DUCKING) || IsWalking() || IsInAim();
 }
 
+// The SDK picks the loud step volume by speed, with limits tuned for its slow crouch that every NEO crouch exceeds.
+// Pick it by intent instead: only sprinting is loud. The SDK's crouched volume reduction still applies on top
+bool CNEO_Player::IsLoudFootstep() const
+{
+	return m_fIsSprinting;
+}
+
 // The SDK's soft or loud step volume for a surface, before crouched steps are scaled by NEO_FS_CROUCH_VOLUME_SCALE
 float CNEO_Player::GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const
 {
