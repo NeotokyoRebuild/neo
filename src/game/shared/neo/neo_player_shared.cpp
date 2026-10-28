@@ -2,6 +2,7 @@
 #include "neo_player_shared.h"
 
 #include "in_buttons.h"
+#include "decals.h"
 #include "neo_gamerules.h"
 
 #include "tier0/valve_minmax_off.h"
@@ -409,6 +410,20 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	}
 
 	return true;
+}
+
+// The SDK's soft or loud step volume for a surface, before crouched steps are scaled by NEO_FS_CROUCH_VOLUME_SCALE
+float CNEO_Player::GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const
+{
+	switch (psurface->game.material)
+	{
+	case CHAR_TEX_DIRT:
+		return bLoud ? 0.55f : 0.25f;
+	case CHAR_TEX_VENT:
+		return bLoud ? 0.7f : 0.4f;
+	default: // Concrete, metal, grate, tile and slosh
+		return bLoud ? 0.5f : 0.2f;
+	}
 }
 
 int GetRank(const int xp)

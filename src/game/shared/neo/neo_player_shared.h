@@ -44,6 +44,9 @@ extern ConVar sv_neo_spec_replace_player_min_exp;
 // Crouch/Walk Modifier
 #define NEO_CROUCH_WALK_MODIFIER 0.75
 
+// Footsteps: the SDK plays crouched steps at 65% volume
+#define NEO_FS_CROUCH_VOLUME_SCALE 0.65f
+
 
 // Movement Calculations
 // Recon

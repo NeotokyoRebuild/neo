@@ -94,6 +94,7 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
+	float GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const;
 
 	void Lean(void);
 
