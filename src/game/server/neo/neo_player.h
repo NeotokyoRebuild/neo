@@ -207,6 +207,8 @@ public:
 	bool IsLoudFootstep() const;
 	float GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const;
 	void UpdateFootstepAverageVelocity();
+	void UpdateFootstepLanding();
+	void OnFootstepDecided();
 	void UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vector &vecOrigin);
 	bool HoldStep(surfacedata_t *psurface, const Vector &vecOrigin);
 
@@ -394,6 +396,10 @@ private:
 	float m_flHeldStepQuietTime = -1.f;
 	float m_flHeldStepDropTime = 0.f;
 	float m_flHeldStepWindow = 0.f;
+
+	// Landing, see UpdateFootstepLanding
+	float m_flFootstepAirTime = -1.f;
+	bool m_bFootstepLanding = false;
 
 	// Ground velocity averaged over about the last step interval, see UpdateFootstepAverageVelocity
 	Vector m_vecFootstepAvgVelocity = vec3_origin;

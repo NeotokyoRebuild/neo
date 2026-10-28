@@ -414,6 +414,10 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	if (!moving_fast_enough || !(isOnLadder || (onground && movingalongground)))
 		return false;
 
+	// Landing from a jump or a drop makes a footstep whatever the posture, see UpdateFootstepLanding
+	if (m_bFootstepLanding)
+		return true;
+
 	// A ladder has no ground entity, so crouching takes effect at once, but ground speed is near zero while climbing
 	if (IsInSilentMoveMode() && !isOnLadder)
 	{
@@ -485,6 +489,27 @@ float CNEO_Player::GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLou
 	default: // Concrete, metal, grate, tile and slosh
 		return bLoud ? 0.5f : 0.2f;
 	}
+}
+
+// Marks a landing after a jump or a drop. The mark lasts until the next step decision: after a jump the step timer
+// has run out in the air, so that is the landing tick; after a short drop it is the first step due
+void CNEO_Player::UpdateFootstepLanding()
+{
+	// Shorter than this is a stair edge or a bump, not a drop
+	constexpr float FS_LANDING_MIN_AIR_TIME = 0.1f;
+
+	const float flNow = gpGlobals->curtime;
+	const bool bInAir = !IsOnFootstepGround();
+	if (!bInAir && m_flFootstepAirTime >= 0.f && flNow - m_flFootstepAirTime >= FS_LANDING_MIN_AIR_TIME)
+	{
+		m_bFootstepLanding = true;
+	}
+	TrackSince(m_flFootstepAirTime, bInAir, flNow);
+}
+
+void CNEO_Player::OnFootstepDecided()
+{
+	m_bFootstepLanding = false;
 }
 
 // Acceleration builds toward a new direction faster than friction removes the old one, so turning or switching

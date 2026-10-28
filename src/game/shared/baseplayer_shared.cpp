@@ -553,6 +553,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 #ifdef NEO
 	CNEO_Player *pNeoPlayer = assert_cast<CNEO_Player*>(this);
 	pNeoPlayer->UpdateFootstepAverageVelocity();
+	pNeoPlayer->UpdateFootstepLanding();
 	const bool bSilent = !pNeoPlayer->IsMakingFootstepSounds(&velrun, &speed, &fLadder);
 	pNeoPlayer->UpdateHeldStep(!bSilent, psurface, vecOrigin);
 #endif
@@ -570,6 +571,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	if ( m_flStepSoundTime > 0 )
 		return;
 #ifdef NEO
+	pNeoPlayer->OnFootstepDecided();
 	// Off the ground the step timer waits at zero, as in the SDK, so the step lands on the tick the player does
 	if ( !fLadder && !( GetFlags() & FL_ONGROUND ) && GetWaterLevel() == WL_NotInWater )
 		return;
