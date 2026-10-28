@@ -4717,6 +4717,18 @@ void CGameMovement::Duck( void )
 		mv->m_nOldButtons &= ~IN_DUCK;
 	}
 
+#ifdef NEO
+	// Networked to every client, so other players' footsteps can tell a crouch that is starting
+	if ( mv->m_nButtons & IN_DUCK )
+	{
+		player->AddFlag( FL_ANIMDUCKING );
+	}
+	else
+	{
+		player->RemoveFlag( FL_ANIMDUCKING );
+	}
+#endif
+
 	// Handle death.
 	if ( IsDead() )
 		return;
