@@ -14,16 +14,24 @@
 #include <string.h>
 #include "tier1/strtools.h"
 #include <sys/stat.h>
+
+#ifdef WIN32
 #include "conio.h"
 #include <direct.h>
 #include <io.h>
-#include "UtlBuffer.h"
+#else
+#include <dirent.h>
+#endif
+#include "utlbuffer.h"
 #include "tier0/dbg.h"
 #include "cmdlib.h"
 #include "tier0/icommandline.h"
-#include "windows.h"
 
-#include "mathlib/IceKey.h"
+#ifdef WIN32
+#include "windows.h"
+#endif
+
+#include "mathlib/IceKey.H"
 #include <filesystem_tools.h>
 
 #define FF_TRYAGAIN 1
@@ -43,7 +51,11 @@ static void Pause( void )
 	if( !g_NoPause )
 	{
 		printf( "Hit a key to continue\n" );
+#ifdef WIN32
 		getch();
+#else
+		getchar();
+#endif
 	}
 }
 
@@ -233,6 +245,7 @@ int main(int argc, char* argv[])
 
 		if ( strstr( pInputBaseName, "*.") )
 		{
+#ifdef WIN32
 			char	search[ MAX_PATH ];
 			char	fname[ MAX_PATH ];
 			char	ext[_MAX_EXT];
@@ -247,7 +260,7 @@ int main(int argc, char* argv[])
 			WIN32_FIND_DATA wfd;
 			HANDLE hResult;
 			memset(&wfd, 0, sizeof(WIN32_FIND_DATA));
-			
+
 			hResult = FindFirstFile( search, &wfd );
 
 			while ( hResult != INVALID_HANDLE_VALUE )
@@ -260,10 +273,32 @@ int main(int argc, char* argv[])
 
 				if ( !FindNextFile( hResult, &wfd) )
 					break;
-							
+
 			}
-			
+
 			FindClose( hResult );
+#else
+			// Process every file in gamedir whose extension matches the "*.<ext>" pattern.
+			const char *pWantExt = strrchr( pInputBaseName, '.' );	// ".<ext>"
+
+			DIR *pDir = opendir( gamedir );
+			if ( pDir )
+			{
+				struct dirent *pEntry;
+				while ( ( pEntry = readdir( pDir ) ) != NULL )
+				{
+					const char *pFileExt = strrchr( pEntry->d_name, '.' );
+					if ( pWantExt && pFileExt && Q_stricmp( pFileExt, pWantExt ) == 0 )
+					{
+						char fname[ MAX_PATH ];
+						Q_strncpy( fname, pEntry->d_name, sizeof( fname ) );
+						if ( !Process_File( fname, sizeof( fname ) ) )
+							break;
+					}
+				}
+				closedir( pDir );
+			}
+#endif
 		}
 		else
 		{

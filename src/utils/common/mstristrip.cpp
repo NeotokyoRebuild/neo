@@ -24,10 +24,15 @@
 #include <algorithm>
 #include <list>
 #include <vector>
+#include <climits>
 
 #include <assert.h>
+#include <string.h>
+
+#ifdef WIN32
 #ifdef _DEBUG
 #include <crtdbg.h>
+#endif
 #endif
 
 #include "mstristrip.h"
@@ -756,6 +761,7 @@ bool CVertCache::Add(int strip, int vertindex)
 }
 
 #ifdef _DEBUG
+#ifdef WIN32
 //=========================================================================
 // Turn on c runtime leak checking, etc.
 //=========================================================================
@@ -789,6 +795,7 @@ void EnableLeakChecking()
     // _CrtSetBreakAlloc(0);
 }
 #endif
+#endif
 
 //=========================================================================
 // Main Stripify routine
@@ -799,7 +806,9 @@ int Stripify(int numtris, WORD *ptriangles, int *pnumindices, WORD **ppstripindi
         return 0;
 
 #ifdef _DEBUG
+#ifdef WIN32
 //    EnableLeakChecking();
+#endif
 #endif
 
     CStripper stripper(numtris, (TRIANGLELIST)ptriangles);
