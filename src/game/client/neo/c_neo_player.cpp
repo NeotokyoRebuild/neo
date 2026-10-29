@@ -58,7 +58,6 @@
 #include "neo_player_shared.h"
 
 #include "c_playerresource.h"
-#include "c_team.h"
 #include "collisionutils.h"
 
 // Don't alias here
@@ -2040,15 +2039,11 @@ extern ConVar cl_backspeed;
 void C_NEO_Player::AvoidPlayers(CUserCmd* pCmd)
 {
 	// Turn off the avoid player code.
-	if ( !neo_avoidteammates.GetBool() || !neo_avoidteammates_pushaway.GetBool() )
+	if ( !neo_avoidteammates_pushaway.GetBool() )
 		return;
 
 	// Don't test if the player doesn't exist or is dead.
 	if ( IsAlive() == false )
-		return;
-
-	C_Team* pTeam = GetGlobalTeam(NEORules()->GetOpposingTeam(GetTeamNumber()));
-	if ( !pTeam )
 		return;
 
 	Vector vecPlayerCenter = GetAbsOrigin();
