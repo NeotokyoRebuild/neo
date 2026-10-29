@@ -2574,7 +2574,7 @@ Scheme
 			"1"
 			{
 				"name"		"NOCR"
-				"tall"		"21"
+				"tall"		"23"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"antialias"	"1"
