@@ -32,6 +32,9 @@
 	#define CNEOGameRulesProxy C_NEOGameRulesProxy
 #endif
 
+extern ConVar	neo_avoidteammates;
+extern ConVar	neo_avoidteammates_pushaway;
+
 // NEO JANK (Rain): magic value for signaling a mp_restart originated from "neo_restart_this".
 // This is a hack around neo_restart_this leaking edicts for some reason; for now, it just
 // repurposes the mp_restartgame logic but without the HL2DM-style center print.

@@ -58,6 +58,8 @@
 #include "neo_player_shared.h"
 
 #include "c_playerresource.h"
+#include "c_team.h"
+#include "collisionutils.h"
 
 // Don't alias here
 #if defined( CNEO_Player )
@@ -2022,4 +2024,195 @@ void C_NEO_Player::ClearLocalPlayerDmgReports()
 	{
 		NeoAllKDReportsClear();
 	}
+}
+
+bool C_NEO_Player::CreateMove(float flInputSampleTime, CUserCmd* pCmd)
+{
+	bool result = BaseClass::CreateMove(flInputSampleTime, pCmd);
+	AvoidPlayers(pCmd);
+	return result;
+}
+
+ConVar neo_max_separation_force ( "neo_max_separation_force", "256", FCVAR_DEVELOPMENTONLY );
+extern ConVar cl_forwardspeed;
+extern ConVar cl_sidespeed;
+extern ConVar cl_backspeed;
+void C_NEO_Player::AvoidPlayers(CUserCmd* pCmd)
+{
+	// Turn off the avoid player code.
+	if ( !neo_avoidteammates.GetBool() || !neo_avoidteammates_pushaway.GetBool() )
+		return;
+
+	// Don't test if the player doesn't exist or is dead.
+	if ( IsAlive() == false )
+		return;
+
+	C_Team* pTeam = GetGlobalTeam(NEORules()->GetOpposingTeam(GetTeamNumber()));
+	if ( !pTeam )
+		return;
+
+	Vector vecPlayerCenter = GetAbsOrigin();
+	Vector vecPlayerMin = GetPlayerMins();
+	Vector vecPlayerMax = GetPlayerMaxs();
+	float flZHeight = vecPlayerMax.z - vecPlayerMin.z;
+	vecPlayerCenter.z += 0.5f * flZHeight;
+	VectorAdd( vecPlayerMin, vecPlayerCenter, vecPlayerMin );
+	VectorAdd( vecPlayerMax, vecPlayerCenter, vecPlayerMax );
+
+	// Find an intersecting player 
+	C_BaseEntity *pAvoidEntityList[MAX_PLAYERS_ARRAY_SAFE];
+	// FL_CLIENT | FL_FAKECLIENT should ensure only players get found
+	int nAvoidEntityCount = UTIL_EntitiesInBox( pAvoidEntityList, ARRAYSIZE(pAvoidEntityList), vecPlayerMin, vecPlayerMax, FL_CLIENT | FL_FAKECLIENT, PARTITION_CLIENT_SOLID_EDICTS );
+
+	C_BasePlayer *pClosestPlayer = nullptr;
+	float flAvoidRadius = FLT_MAX;
+
+	Vector vecAvoidCenter, vecAvoidMin, vecAvoidMax;
+	for ( int i = 0; i < nAvoidEntityCount; ++i )
+	{
+		C_BasePlayer *pAvoidPlayer = assert_cast<C_BasePlayer *>(pAvoidEntityList[i]);
+		if ( pAvoidPlayer == nullptr || pAvoidPlayer == this )
+			continue;
+
+		// Check to see if the avoid player is dormant.
+		if ( pAvoidPlayer->IsDormant() )
+			continue;
+
+		// Is the avoid player solid?
+		if ( pAvoidPlayer->IsSolidFlagSet( FSOLID_NOT_SOLID ) )
+			continue;
+		
+		vecAvoidCenter = pAvoidPlayer->GetAbsOrigin();
+		vecAvoidMin = pAvoidPlayer->GetPlayerMins();
+		vecAvoidMax = pAvoidPlayer->GetPlayerMaxs();
+		flZHeight = vecAvoidMax.z - vecAvoidMin.z;
+		vecAvoidCenter.z += 0.5f * flZHeight;
+		VectorAdd( vecAvoidMin, vecAvoidCenter, vecAvoidMin );
+		VectorAdd( vecAvoidMax, vecAvoidCenter, vecAvoidMax );
+
+		if (float avoidDistance = vecPlayerCenter.DistToSqr(vecAvoidCenter);
+			avoidDistance < flAvoidRadius)
+		{
+			pClosestPlayer = pAvoidPlayer;
+			flAvoidRadius = avoidDistance;
+		}
+	}
+
+	// Anything to avoid?
+	if ( !pClosestPlayer )
+	{
+		return;
+	}
+
+	// Calculate the push strength and direction.
+	Vector vecDelta;
+
+	VectorSubtract( pClosestPlayer->WorldSpaceCenter(), vecPlayerCenter, vecDelta );
+
+	Vector vRad = pClosestPlayer->WorldAlignMaxs() - pClosestPlayer->WorldAlignMins();
+	vRad.z = 0;
+
+	flAvoidRadius = vRad.Length();
+
+	float flPushStrength = RemapVal( vecDelta.Length(), flAvoidRadius, 0, 0, neo_max_separation_force.GetInt() ); //flPushScale;
+
+	//Msg( "PushScale = %f\n", flPushStrength );
+
+	// Check to see if we have enough push strength to make a difference.
+	if ( flPushStrength < 0.01f )
+		return;
+
+	Vector vecPush;
+	if ( GetAbsVelocity().Length2DSqr() > 0.1f )
+	{
+		Vector vecVelocity = GetAbsVelocity();
+		vecVelocity.z = 0.0f;
+		static Vector vecUp( 0.0f, 0.0f, 1.0f );
+		CrossProduct( vecUp, vecVelocity, vecPush );
+		VectorNormalize( vecPush );
+	}
+	else
+	{
+		// We are not moving, but we're still intersecting.
+		QAngle angView = pCmd->viewangles;
+		angView.x = 0.0f;
+		AngleVectors( angView, NULL, &vecPush, NULL );
+	}
+
+	// Move away from the other player/object.
+	Vector vecSeparationVelocity;
+	if ( vecDelta.Dot( vecPush ) < 0 )
+	{
+		vecSeparationVelocity = vecPush * flPushStrength;
+	}
+	else
+	{
+		vecSeparationVelocity = vecPush * -flPushStrength;
+	}
+
+	// Don't allow the max push speed to be greater than the max player speed.
+	float flMaxPlayerSpeed = MaxSpeed();
+	float flCropFraction = 1.33333333f;
+
+	if ( ( GetFlags() & FL_DUCKING ) && ( GetGroundEntity() != NULL ) )
+	{	
+		flMaxPlayerSpeed *= flCropFraction;
+	}	
+
+	float flMaxPlayerSpeedSqr = flMaxPlayerSpeed * flMaxPlayerSpeed;
+
+	if ( vecSeparationVelocity.LengthSqr() > flMaxPlayerSpeedSqr )
+	{
+		vecSeparationVelocity.NormalizeInPlace();
+		VectorScale( vecSeparationVelocity, flMaxPlayerSpeed, vecSeparationVelocity );
+	}
+
+	QAngle vAngles = pCmd->viewangles;
+	vAngles.x = 0;
+	Vector currentdir;
+	Vector rightdir;
+
+	AngleVectors( vAngles, &currentdir, &rightdir, NULL );
+
+	Vector vDirection = vecSeparationVelocity;
+
+	VectorNormalize( vDirection );
+
+	float fwd = currentdir.Dot( vDirection );
+	float rt = rightdir.Dot( vDirection );
+
+	float forward = fwd * flPushStrength;
+	float side = rt * flPushStrength;
+
+	//Msg( "fwd: %f - rt: %f - forward: %f - side: %f\n", fwd, rt, forward, side );
+
+	pCmd->forwardmove	+= forward;
+	pCmd->sidemove		+= side;
+
+	// Clamp the move to within legal limits, preserving direction. This is a little
+	// complicated because we have different limits for forward, back, and side
+
+	//Msg( "PRECLAMP: forwardmove=%f, sidemove=%f\n", pCmd->forwardmove, pCmd->sidemove );
+
+	float flForwardScale = 1.0f;
+	if ( pCmd->forwardmove > fabs( cl_forwardspeed.GetFloat() ) )
+	{
+		flForwardScale = fabs( cl_forwardspeed.GetFloat() ) / pCmd->forwardmove;
+	}
+	else if ( pCmd->forwardmove < -fabs( cl_backspeed.GetFloat() ) )
+	{
+		flForwardScale = fabs( cl_backspeed.GetFloat() ) / fabs( pCmd->forwardmove );
+	}
+
+	float flSideScale = 1.0f;
+	if ( fabs( pCmd->sidemove ) > fabs( cl_sidespeed.GetFloat() ) )
+	{
+		flSideScale = fabs( cl_sidespeed.GetFloat() ) / fabs( pCmd->sidemove );
+	}
+
+	float flScale = MIN( flForwardScale, flSideScale );
+	pCmd->forwardmove *= flScale;
+	pCmd->sidemove *= flScale;
+
+	//Msg( "Pforwardmove=%f, sidemove=%f\n", pCmd->forwardmove, pCmd->sidemove );
 }

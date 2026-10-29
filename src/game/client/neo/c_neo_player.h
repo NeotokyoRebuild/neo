@@ -197,6 +197,9 @@ public:
 	virtual void PlayerUse() override;
 	
 	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
+	
+	bool CreateMove(float flInputSampleTime, CUserCmd* pCmd) override;
+	void AvoidPlayers(CUserCmd* pCmd);
 
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
