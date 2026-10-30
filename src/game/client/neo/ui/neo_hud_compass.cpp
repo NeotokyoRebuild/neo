@@ -22,15 +22,6 @@
 
 using vgui::surface;
 
-ConVar cl_neo_hud_rangefinder_enabled("cl_neo_hud_rangefinder_enabled", "1", FCVAR_ARCHIVE,
-									  "Whether the rangefinder HUD is enabled or not.", true, 0.0f, true, 1.0f);
-ConVar cl_neo_hud_rangefinder_pos_frac_x("cl_neo_hud_rangefinder_pos_frac_x", "0.55", FCVAR_ARCHIVE,
-										 "In fractional to the total screen width, the x-axis position of the rangefinder.",
-										 true, 0.0f, true, 1.0f);
-ConVar cl_neo_hud_rangefinder_pos_frac_y("cl_neo_hud_rangefinder_pos_frac_y", "0.55", FCVAR_ARCHIVE,
-										 "In fractional to the total screen height, the y-axis position of the rangefinder.",
-										 true, 0.0f, true, 1.0f);
-
 ConVar cl_neo_ghost_callout_compass_time("cl_neo_ghost_callout_compass_time", "10.0", FCVAR_CHEAT,
 	"Time in seconds that ghost callouts remain on the compass.", true, 0.0f, false, 0.0f);
 
@@ -164,28 +155,6 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 		float objAngle = safeAngle(- objYaw + MainViewAngles()[YAW]);
 		m_objAngle = Clamp(objAngle, -(float)m_fov / 2, (float)m_fov / 2);
 	}
-
-	if (cl_neo_hud_rangefinder_enabled.GetBool())
-	{
-		if (pFPPlayer->IsInAim())
-		{
-			// Update Rangefinder
-			trace_t tr;
-			Vector vecForward;
-			AngleVectors(MainViewAngles(), &vecForward);
-			UTIL_TraceLine(MainViewOrigin(), MainViewOrigin() + (vecForward * MAX_TRACE_LENGTH),
-						   MASK_SHOT, pFPPlayer, COLLISION_GROUP_NONE, &tr);
-			const float flDist = METERS_PER_INCH * tr.startpos.DistTo(tr.endpos);
-			if (flDist >= 999.0f || tr.surface.flags & (SURF_SKY | SURF_SKY2D))
-			{
-				V_swprintf_safe(m_wszRangeFinder, L"RANGE ---m");
-			}
-			else
-			{
-				V_swprintf_safe(m_wszRangeFinder, L"RANGE %3.0fm", flDist);
-			}
-		}
-	}
 }
 
 void CNEOHud_Compass::DrawNeoHudElement(void)
@@ -198,15 +167,6 @@ void CNEOHud_Compass::DrawNeoHudElement(void)
 	if (m_showCompass)
 	{
 		DrawCompass();
-	}
-
-	if (cl_neo_hud_rangefinder_enabled.GetBool() && GetFirstPersonPlayer()->IsInAim())
-	{
-		surface()->DrawSetTextColor(COLOR_NEO_WHITE);
-		surface()->DrawSetTextFont(m_hFont);
-		surface()->DrawSetTextPos((m_resX * cl_neo_hud_rangefinder_pos_frac_x.GetFloat()),
-								  (m_resY * cl_neo_hud_rangefinder_pos_frac_y.GetFloat()));
-		surface()->DrawPrintText(m_wszRangeFinder, ARRAYSIZE(m_wszRangeFinder) - 1);
 	}
 }
 

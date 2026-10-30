@@ -20,16 +20,19 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
+	void DrawRangeFinder(C_NEO_Player* pPlayer, int &offset);
+	void DrawWalkingIndicator(C_NEO_Player* pPlayer, int &offset);
+
 	CPanelAnimationVarAliasType(bool, visible, "visible", "1", "bool");
 
 	CPanelAnimationVarAliasType(int, xpos, "xpos", "r203", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "446", "proportional_ypos");
-	CPanelAnimationVarAliasType(int, wide, "wide", "24", "proportional_xpos");
-	CPanelAnimationVarAliasType(int, tall, "tall", "24", "proportional_ypos");
-	CPanelAnimationVarAliasType(Color, color, "color", "150 150 150 40", "Color");
-	CPanelAnimationVarAliasType(int, texture, "texture", "vgui/hud/player/walkingIndicatorInverted", "textureid");
 
-	CPanelAnimationVarAliasType(int, barwidth, "barwidth", "0", "proportional_xpos");
+	CPanelAnimationVar(float, animationSpeed, "animationSpeed", "2");
+
+	CPanelAnimationVarAliasType(Color, color, "color", COLOR_NEO_WHITE_STR, "Color");
+	CPanelAnimationVarAliasType(Color, color2, "color2", "255 150 150 255", "Color");
+	CPanelAnimationVar(vgui::HFont, font, "font", "NHudPanelText");
 
 private:
 	CNEOHud_WalkingIndicator(const CNEOHud_WalkingIndicator&other);

@@ -5,6 +5,7 @@
 #include <vgui/ISurface.h>
 
 #include "c_neo_player.h"
+#include "view.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -30,46 +31,152 @@ CNEOHud_WalkingIndicator::CNEOHud_WalkingIndicator(const char *pElementName, vgu
 	SetVisible(true);
 }
 
+const wchar_t notWalkingText[] = L"NOT ";
+const wchar_t walkingText[] = L"WALKING";
+int notWalkingTextWidth = 0;
+int textHeight = 0;
 void CNEOHud_WalkingIndicator::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
-	
-	SetBounds(xpos, ypos, wide, tall);
+
+	int w,h;
+	vgui::surface()->GetTextSize(font, notWalkingText, notWalkingTextWidth, h);
+	int walkingTextWidth;
+	vgui::surface()->GetTextSize(font, walkingText, walkingTextWidth, h);
+	textHeight = vgui::surface()->GetFontTall(font);
+
+	vgui::ipanel()->GetSize( GetVParent(), w, h );
+
+	SetBounds(xpos, ypos, w - xpos, textHeight * 2);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
+ConVar cl_neo_hud_rangefinder_enabled("cl_neo_hud_rangefinder_enabled", "1", FCVAR_ARCHIVE,
+									  "Show the rangefinder", true, 0.0f, true, 1.0f);
+wchar_t m_wszRangeFinder[11];
 void CNEOHud_WalkingIndicator::UpdateStateForNeoHudElementDraw()
 {
+	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pLocalPlayer)
+		return;
+
+	C_NEO_Player* pTargetPlayer = pLocalPlayer->IsObserver() && (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE || pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE) ? static_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget())
+																																										  : pLocalPlayer;
+	if (!pTargetPlayer || !pTargetPlayer->IsAlive())
+		return;
+
+	if (cl_neo_hud_rangefinder_enabled.GetBool())
+	{
+		if (pTargetPlayer->IsInAim())
+		{
+			// Update Rangefinder
+			trace_t tr;
+			Vector vecForward;
+			AngleVectors(MainViewAngles(), &vecForward);
+			UTIL_TraceLine(MainViewOrigin(), MainViewOrigin() + (vecForward * MAX_TRACE_LENGTH),
+						   MASK_SHOT, pTargetPlayer, COLLISION_GROUP_NONE, &tr);
+			const float flDist = METERS_PER_INCH * tr.startpos.DistTo(tr.endpos);
+			if (flDist >= 999.0f || tr.surface.flags & (SURF_SKY | SURF_SKY2D))
+			{
+				V_swprintf_safe(m_wszRangeFinder, L"RANGE ---m");
+			}
+			else
+			{
+				V_swprintf_safe(m_wszRangeFinder, L"RANGE %3.0fm", flDist);
+			}
+		}
+	}
+}
+
+void CNEOHud_WalkingIndicator::DrawRangeFinder(C_NEO_Player * pPlayer, int &offset)
+{
+	if (!cl_neo_hud_rangefinder_enabled.GetBool())
+		return;
+
+	if (pPlayer->IsInAim())
+	{
+		vgui::surface()->DrawSetTextColor(color);
+		vgui::surface()->DrawSetTextFont(font);
+		vgui::surface()->DrawSetTextPos(notWalkingTextWidth, offset);
+		vgui::surface()->DrawPrintText(m_wszRangeFinder, ARRAYSIZE(m_wszRangeFinder) - 1);
+	}
+	offset += textHeight;
+}
+
+ConVar cl_neo_hud_walkindicator_enabled("cl_neo_hud_walkindicator_enabled", "1", FCVAR_ARCHIVE,
+									  "Show the walking indicator", true, 0.0f, true, 1.0f);
+void CNEOHud_WalkingIndicator::DrawWalkingIndicator(C_NEO_Player * pPlayer, int &offset)
+{
+	if (!cl_neo_hud_walkindicator_enabled.GetBool())
+		return;
+
+	static float animationWalkPress = 0.f;
+	const bool isWalking = pPlayer->IsWalking();
+	if (isWalking)
+	{
+		animationWalkPress += gpGlobals->frametime * animationSpeed;
+	}
+	else
+	{
+		animationWalkPress -= gpGlobals->frametime * animationSpeed;
+	}
+	animationWalkPress = Clamp(animationWalkPress, 0.f, 1.f);
+
+	if (animationWalkPress == 0.f)
+	{
+		offset += textHeight;
+		return;
+	}
+
+	static float animationFootstepThreshold = 0.f;
+	const bool isMakingFootsteps = pPlayer->IsMakingFootstepSounds();
+	if (isMakingFootsteps && isWalking)
+	{
+		animationFootstepThreshold += gpGlobals->frametime * animationSpeed;
+	}
+	else
+	{
+		animationFootstepThreshold -= gpGlobals->frametime * animationSpeed;
+	}
+	animationFootstepThreshold = Clamp(animationFootstepThreshold, 0.f, 1.f);
+
+	const float inverseAnimationFootstepThreshold = 1.f - animationFootstepThreshold;
+	const Color finalColor = Color((color2.r() * animationFootstepThreshold) + (color.r() * inverseAnimationFootstepThreshold),
+								   (color2.g() * animationFootstepThreshold) + (color.g() * inverseAnimationFootstepThreshold),
+								   (color2.b() * animationFootstepThreshold) + (color.b() * inverseAnimationFootstepThreshold),
+								   ((color2.a() * animationFootstepThreshold) + (color.a() * inverseAnimationFootstepThreshold)) * animationWalkPress);
+	vgui::surface()->DrawSetTextFont(font);
+	if (isWalking && isMakingFootsteps)
+	{
+		vgui::surface()->DrawSetTextColor(finalColor.r(), finalColor.g(), finalColor.b(), finalColor.a() * animationFootstepThreshold);
+		vgui::surface()->DrawSetTextPos(0, offset);
+		vgui::surface()->DrawPrintText(notWalkingText, ARRAYSIZE(notWalkingText) - 1);
+	}
+	vgui::surface()->DrawSetTextColor(finalColor);
+	vgui::surface()->DrawSetTextPos(notWalkingTextWidth, offset);
+	vgui::surface()->DrawPrintText(walkingText, ARRAYSIZE(walkingText) - 1);
+	
+	offset += textHeight;
 }
 
 void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 {
-	if (!ShouldDraw() || !visible)
+	if (!ShouldDraw())
 		return;
 
 	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalPlayer)
 		return;
 
-	C_NEO_Player* pTargetPlayer = pLocalPlayer->IsObserver() && (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE || pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE) ? static_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget()) : pLocalPlayer;
-	if (!pTargetPlayer)
+	C_NEO_Player* pTargetPlayer = pLocalPlayer->IsObserver() && (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE || pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE) ? static_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget())
+																																										  : pLocalPlayer;
+	if (!pTargetPlayer || !pTargetPlayer->IsAlive())
 		return;
 
-	if (!pTargetPlayer->IsAlive() || !pTargetPlayer->IsWalking())
-		return;
-	
-	vgui::surface()->DrawSetTexture(texture);
-	vgui::surface()->DrawSetColor(color);
-	vgui::surface()->DrawTexturedRect(0, 0, wide, tall);
-
-	if (barwidth)
-	{
-		const float percentageTowardsGraceThreshold = pTargetPlayer->SpeedFractionToSoundThreshold();
-		const float colourGB = 255 - (255 * (percentageTowardsGraceThreshold < 1 ? percentageTowardsGraceThreshold * 0.5f : 1));
-		vgui::surface()->DrawSetColor(255, colourGB, colourGB, 255);
-		vgui::surface()->DrawFilledRect(0, tall - (tall * percentageTowardsGraceThreshold), barwidth, tall);
-	}
+	int offset = 0;
+	DrawRangeFinder(pTargetPlayer, offset);
+	DrawWalkingIndicator(pTargetPlayer, offset);
 }
 
 void CNEOHud_WalkingIndicator::Paint()

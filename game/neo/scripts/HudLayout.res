@@ -910,17 +910,17 @@
 	}
 	neo_walking_indicator
 	{
-		"fieldName"		"neo_walking_indicator"
-		"visible" "1"
+		"fieldName"			"neo_walking_indicator"
+		"visible" 			"1"
 		
-		"xpos"	"208"
-		"ypos"	"446"
-		"wide"	"24"
-		"tall"  "24"
-		"color" "255 255 255 200"
-		"texture" "vgui/hud/player/walkingIndicator"
+		"xpos"				"c40"
+		"ypos"				"c30"
 		
-		"barwidth"	"0"
+		"animationSpeed" 	"4"
+		
+		"color" 			"218 217 213 255"
+		"color2" 			"255 150 150 255"
+		"font"				"NHudPanelText"
 	}
 	RoundResult
 	{
