@@ -218,6 +218,7 @@ void CWeaponGrenade::ItemPostFrame(void)
 	BaseClass::ItemPostFrame();
 }
 
+extern ConVar sv_neo_exp_dmg_modifier;
 void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntity *pAttacker)
 {
 	if (!sv_neo_infinite_frag_grenades.GetBool())
@@ -255,7 +256,7 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 
 	if (pGrenade)
 	{
-		pGrenade->SetDamage(sv_neo_grenade_blast_damage.GetFloat());
+		pGrenade->SetDamage(sv_neo_grenade_blast_damage.GetFloat() * sv_neo_exp_dmg_modifier.GetFloat());
 		pGrenade->SetDamageRadius(sv_neo_grenade_blast_radius.GetFloat());
 		pGrenade->SetDetonateTimerLength(sv_neo_grenade_fuse_timer.GetFloat());
 	}

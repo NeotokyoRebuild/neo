@@ -88,7 +88,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
-	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
 	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
 	RecvPropBool(RECVINFO(m_bCarryingGhost)),
@@ -103,7 +102,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
 	RecvPropString(RECVINFO(m_szNeoClantag)),
-	RecvPropString(RECVINFO(m_szNeoCrosshair)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
@@ -121,7 +119,6 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bInAim, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInLean, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flVisionLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
@@ -151,6 +148,13 @@ static void __MsgFunc_AchievementMark(bf_read &msg)
 }
 USER_MESSAGE_REGISTER(AchievementMark);
 
+void __MsgFunc_AimPunch(bf_read& msg)
+{
+	float amount = msg.ReadFloat();
+	C_NEO_Player::GetLocalNEOPlayer()->AimPunch(amount);
+}
+USER_MESSAGE_REGISTER(AimPunch);
+
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
@@ -170,7 +174,8 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
+		if (!engine->IsInGame() || engine->IsLevelMainMenuBackground() ||
+			engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
 		}
@@ -261,7 +266,8 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
+		if (!engine->IsInGame() || engine->IsLevelMainMenuBackground() ||
+			engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
 		{
 			return;
 		}
@@ -347,7 +353,8 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		if (engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
+		if (!engine->IsInGame() || engine->IsLevelMainMenuBackground() ||
+			engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
 		{
 			return;
 		}
@@ -444,14 +451,12 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
-	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = NEO_CLASS_RANDOM;
 	m_iXP.GetForModify() = 0;
 
 	m_bInThermOpticCamo = m_bInVision = false;
-	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 	m_bCarryingGhost = false;
 	m_bIneligibleForLoadoutPick = false;
@@ -459,8 +464,6 @@ C_NEO_Player::C_NEO_Player()
 
 	m_flCamoAuxLastTime = 0;
 	m_flVisionLastTime = 0;
-	m_flLastAirborneJumpOkTime = 0;
-	m_flLastSuperJumpTime = 0;
 
 	m_bFirstAliveTick = true;
 	m_bFirstDeathTick = true;
@@ -1068,6 +1071,8 @@ void C_NEO_Player::PreThink( void )
 	CheckVisionButtons();
 	CheckPingButton(this);
 
+	ApplyAimPunch();
+
 	if (m_bInThermOpticCamo)
 	{
 		if (m_flCamoAuxLastTime == 0)
@@ -1168,27 +1173,6 @@ void C_NEO_Player::PreThink( void )
 	if ((IsAlive() && !(GetFlags() & FL_FROZEN)) || m_vecLean != vec3_origin)
 	{
 		Lean();
-	}
-
-	// Eek. See rationale for this thing in CNEO_Player::PreThink
-	if (IsAirborne())
-	{
-		m_flLastAirborneJumpOkTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		const float leeway = 0.5f;
-		if (deltaTime > leeway)
-		{
-			m_bHasBeenAirborneForTooLongToSuperJump = false;
-			m_flLastAirborneJumpOkTime = gpGlobals->curtime;
-		}
-		else
-		{
-			m_bHasBeenAirborneForTooLongToSuperJump = true;
-		}
-	}
-	else
-	{
-		m_bHasBeenAirborneForTooLongToSuperJump = false;
 	}
 
 	if (m_iNeoClass == NEO_CLASS_RECON && 
@@ -1466,48 +1450,6 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 }
 #endif // GLOWS_ENABLE
 
-bool C_NEO_Player::IsAllowedToSuperJump(void)
-{
-	if (!IsSprinting())
-		return false;
-
-	if (IsCarryingGhost())
-		return false;
-
-	if (GetMoveParent())
-		return false;
-
-	if (IsPlayerUnderwater())
-		return false;
-
-	// Can't superjump whilst airborne (although it is kind of cool)
-	if (m_bHasBeenAirborneForTooLongToSuperJump)
-		return false;
-
-	// Only superjump if we have a reasonable jump direction in mind
-	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
-	{
-		return false;
-	}
-
-	// The suit check is for prediction only, actual power drain happens serverside
-	if (m_HL2Local.m_flSuitPower < SUPER_JMP_COST)
-		return false;
-
-	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
-	{
-		m_flLastSuperJumpTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - m_flLastSuperJumpTime;
-		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
-			return false;
-
-		m_flLastSuperJumpTime = gpGlobals->curtime;
-	}
-
-	return true;
-}
-
 // This is applied for prediction purposes. It should match CNEO_Player's method.
 void C_NEO_Player::SuperJump(void)
 {
@@ -1551,6 +1493,7 @@ float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
+	FixupOnGroundFlag();
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
 	m_flCamoAuxLastTime = 0;
@@ -1981,8 +1924,6 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 
 	m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
 	m_flVisionLastTime = pPlayerTakeoverTarget->m_flVisionLastTime;
-	m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
-	m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
 	m_bPreviouslyReloading = pPlayerTakeoverTarget->m_bPreviouslyReloading;
 	m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
 	m_flTocFactor = pPlayerTakeoverTarget->m_flTocFactor;
@@ -2090,4 +2031,56 @@ void C_NEO_Player::ClearLocalPlayerDmgReports()
 	{
 		NeoAllKDReportsClear();
 	}
+}
+
+// Formula borrowed from CGameMovement::DecayPunchAngle
+extern ConVar sv_neo_aimpunch_damping;
+extern ConVar sv_neo_aimpunch_spring_constant;
+extern ConVar sv_neo_aimpunch_force;
+extern ConVar sv_neo_aimpunch_max;
+
+void C_NEO_Player::AimPunch(float amount)
+{
+	m_flAimPunchVel = amount * sv_neo_aimpunch_force.GetFloat();
+}
+
+void C_NEO_Player::ApplyAimPunch()
+{
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
+	if (abs(m_flAimPunchVel) < 0.001f && abs(m_flAimPunchCurrent) < 0.001f)
+	{
+		m_flAimPunchVel = 0.0f;
+		m_flAimPunchCurrent = 0.0f;
+		return;
+	}
+
+	const float oldAimPunch = m_flAimPunchCurrent;
+	m_flAimPunchCurrent += m_flAimPunchVel * gpGlobals->frametime;
+	if (abs(m_flAimPunchCurrent) > sv_neo_aimpunch_max.GetFloat())
+	{
+		m_flAimPunchCurrent = clamp(m_flAimPunchCurrent, -sv_neo_aimpunch_max.GetFloat(), sv_neo_aimpunch_max.GetFloat());
+		m_flAimPunchVel = 0.0f;
+	}
+
+	QAngle viewAngles;
+	engine->GetViewAngles(viewAngles);
+	viewAngles.x += m_flAimPunchCurrent - oldAimPunch;
+	engine->SetViewAngles(viewAngles);
+
+	float damping = 1 - (sv_neo_aimpunch_damping.GetFloat() * gpGlobals->frametime);
+
+	if ( damping < 0 )
+	{
+		damping = 0;
+	}
+	m_flAimPunchVel *= damping;
+
+	// torsional spring
+	float springForceMagnitude = sv_neo_aimpunch_spring_constant.GetFloat() * gpGlobals->frametime;
+	springForceMagnitude = clamp(springForceMagnitude, 0.f, 2.f );
+	m_flAimPunchVel -= m_flAimPunchCurrent * springForceMagnitude;
 }

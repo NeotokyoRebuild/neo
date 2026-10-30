@@ -12,9 +12,11 @@
 #include <vgui_controls/Controls.h>
 #include <vgui/ISurface.h>
 #include "vgui/ISystem.h"
+#include "view.h"
 #include "voice_status.h"
 
 #include "neo_ui.h"
+#include "neo_ui_fpsslider.h"
 #include "neo_root.h"
 #include "neo/ui/neo_utils.h"
 #include "neo_theme.h"
@@ -657,12 +659,13 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		}
 		pVideo->iFilteringMode = filterIdx;
 		pVideo->bVSync = cvr->mat_vsync.GetBool();
+		pVideo->iFpsMax = cvr->fps_max.GetInt();
 		pVideo->bMotionBlur = cvr->mat_motion_blur_enabled.GetBool();
 		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
 		pVideo->iFov = cvr->neo_fov.GetInt();
 		pVideo->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
-		pVideo->bSoftwareCursor = cvr->cl_software_cursor.GetBool();
+		pVideo->iSoftwareCursor = cvr->cl_software_cursor.GetInt();
 	}
 	{
 		NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
@@ -928,12 +931,13 @@ void NeoSettingsSave(const NeoSettings *ns)
 		};
 		cvr->mat_forceaniso.SetValue(ANISO_MAP[pVideo->iFilteringMode]);
 		cvr->mat_vsync.SetValue(pVideo->bVSync);
+		cvr->fps_max.SetValue(pVideo->iFpsMax);
 		cvr->mat_motion_blur_enabled.SetValue(pVideo->bMotionBlur);
 		cvr->mat_hdr_level.SetValue(pVideo->iHDR);
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
 		cvr->neo_fov.SetValue(pVideo->iFov);
 		cvr->neo_viewmodel_fov_offset.SetValue(pVideo->iViewmodelFov);
-		cvr->cl_software_cursor.SetValue(pVideo->bSoftwareCursor);
+		cvr->cl_software_cursor.SetValue(pVideo->iSoftwareCursor);
 	}
 	{
 		const NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
@@ -1349,11 +1353,16 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::RingBox(L"Resolution", const_cast<const wchar_t **>(pVideo->p2WszVmDispList), pVideo->iVMListSize, &pVideo->iResolution);
 	NeoUI::RingBox(L"Window", WINDOW_MODE, WINDOWMODE__TOTAL, &pVideo->iWindow);
 	NeoUI::RingBoxBool(L"V-Sync", &pVideo->bVSync);
+	NeoUI::SliderFpsMax(L"Max FPS", &pVideo->iFpsMax);
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
 	NeoUI::Slider(L"Gamma", &pVideo->flGamma, 1.6, 2.6, 2, 0.1f);
 	NeoUI::SliderInt(L"FOV", &pVideo->iFov, MIN_FOV, MAX_FOV);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pVideo->iViewmodelFov, -20, 40);
-	NeoUI::RingBoxBool(L"Software Cursor", &pVideo->bSoftwareCursor);
+#ifndef LINUX // disabled on Linux for now, see bug #2114
+	NeoUI::RingBoxFlag(L"Force software cursor", ESoftwareCursor::EnabledForWindows, &pVideo->iSoftwareCursor);
+	// workaround for Windows bug #1705
+	NeoUI::RingBoxFlag(L"Never auto-enable software cursor", ESoftwareCursor::EnabledForWindowsInvertedMouseOnly, &pVideo->iSoftwareCursor, RINGBOX_BOOL_LABELS_REVERSE);
+#endif
 
 	NeoUI::Divider(L"VISUALS");
 	NeoUI::RingBox(L"Model detail", QUALITY_LABELS, 3, &pVideo->iModelDetail);

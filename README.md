@@ -326,10 +326,17 @@ By default, this project uses Unity Build to speed up compilation times. However
 reasons, set the CMake options `NEO_UNITY_BUILD_CLIENT_SERVER` or `NEO_UNITY_BUILD_OTHERS` to `OFF`. This will disable
 Unity Build for client/server libraries and vgui2/tier1/mathlib libraries, respectively.
 
+## HRTF audio (beta)
+
+This project is developing modern HRTF audio support by integrating with Steam Audio. This adds a download to the initial
+setup, so it is disabled by default for now. To enable it, set the CMake option `NEO_STEAMAUDIO` to `ON`, then in game
+set the ConVar `cl_neo_hrtf` to `1`. As the feature is still in development, `cl_neo_hrtf` requires `sv_cheats 1`.
+
 ## Credits
 * [NeotokyoRevamp/neo](https://github.com/NeotokyoRevamp/neo) - Original fork source
 * [ValveSoftware/source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) - Source SDK 2013 (2025 TF2 SDK Update)
     * Updated as of the TF2 SDK update: [Commit 0759e2e8e179d5352d81d0d4aaded72c1704b7a9](https://github.com/ValveSoftware/source-sdk-2013/commit/0759e2e8e179d5352d81d0d4aaded72c1704b7a9)
+* [ValveSoftware/steam-audio](https://github.com/ValveSoftware/steam-audio) - For adding modern HRTF audio support
 * [Nbc66/source-sdk-2013-ce](https://github.com/Nbc66/source-sdk-2013-ce) - Community Edition for additional fixes prior to the TF2 SDK update
 * [tonysergi/source-sdk-2013](https://github.com/tonysergi/source-sdk-2013) - tonysergi's commits that were missing from the original SDK
 * [Dragoteryx/drgbase](https://github.com/Dragoteryx/drgbase) - Reference for NextBot ladder climbing behavior

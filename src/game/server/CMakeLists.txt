@@ -1416,6 +1416,7 @@ target_sources_grouped(
 
 set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
@@ -1471,6 +1472,8 @@ target_sources_grouped(
     NAME "NEO"
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/nav_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h
@@ -1512,12 +1515,17 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/neo_bot.cpp
     neo/bot/neo_bot_path_compute.cpp
     neo/bot/neo_bot_path_cost.cpp
+    neo/bot/neo_bot_obstacle_props.cpp
+    neo/bot/neo_bot_path_obstacles.cpp
+    neo/bot/neo_bot_prop_detour.cpp
     neo/bot/neo_bot_path_reservation.cpp
     neo/bot/neo_bot_body.cpp
     neo/bot/neo_bot_locomotion.cpp
     neo/bot/neo_bot_manager.cpp
+    neo/bot/neo_bot_memory_sound_combat.cpp
     neo/bot/neo_bot_profile.cpp
     neo/bot/neo_bot_squad.cpp
+    neo/bot/neo_bot_suppressive_fire.cpp
     neo/bot/neo_bot_vision.cpp
     neo/bot/behavior/neo_bot_approach_object.cpp
     neo/bot/behavior/neo_bot_attack.cpp
@@ -1547,6 +1555,7 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/behavior/neo_bot_pause.cpp
     neo/bot/behavior/neo_bot_retreat_to_cover.cpp
     neo/bot/behavior/neo_bot_retreat_from_grenade.cpp
+    neo/bot/behavior/neo_bot_retreat_from_hazard_area.cpp
     neo/bot/behavior/neo_bot_scenario_monitor.cpp
     neo/bot/behavior/neo_bot_seek_and_destroy.cpp
     neo/bot/behavior/neo_bot_seek_weapon.cpp
@@ -1571,13 +1580,18 @@ target_sources_grouped(
     neo/bot/neo_bot.h
     neo/bot/neo_bot_path_compute.h
     neo/bot/neo_bot_path_cost.h
+    neo/bot/neo_bot_obstacle_props.h
+    neo/bot/neo_bot_path_obstacles.h
+    neo/bot/neo_bot_prop_detour.h
     neo/bot/neo_bot_path_reservation.h
     neo/bot/neo_bot_body.h
     neo/bot/neo_bot_contextual_query_interface.h
     neo/bot/neo_bot_locomotion.h
     neo/bot/neo_bot_manager.h
+    neo/bot/neo_bot_memory_sound_combat.h
     neo/bot/neo_bot_profile.h
     neo/bot/neo_bot_squad.h
+    neo/bot/neo_bot_suppressive_fire.h
     neo/bot/neo_bot_vision.h
     neo/bot/behavior/neo_bot_approach_object.h
     neo/bot/behavior/neo_bot_attack.h
@@ -1595,6 +1609,11 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_ctg_seek.cpp
     neo/bot/behavior/neo_bot_ctg_seek.h
     neo/bot/behavior/neo_bot_dead.h
+    neo/bot/behavior/neo_bot_detpack_deploy.cpp
+    neo/bot/behavior/neo_bot_detpack_deploy.h
+    neo/bot/behavior/neo_bot_detpack_trigger.cpp
+    neo/bot/behavior/neo_bot_detpack_trigger.h
+    neo/bot/behavior/neo_bot_grenade_dispatch.cpp
     neo/bot/behavior/neo_bot_grenade_dispatch.h
     neo/bot/behavior/neo_bot_grenade_throw.h
     neo/bot/behavior/neo_bot_grenade_throw_frag.h

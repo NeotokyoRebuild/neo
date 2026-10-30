@@ -17,6 +17,7 @@ public:
 private:
 	void EquipBestWeaponForGhoster( CNEOBot *me );
 	float GetUpdateInterval( CNEOBot *me ) const;
+	bool IsValidFocusEnemy( CNEOBot *me, CBaseEntity *pFocus ) const;
 	void UpdateGhostCarrierCallout( CNEOBot *me, const CUtlVector<CNEO_Player*> &enemies );
 
 	EHANDLE m_hCurrentFocusEnemy{nullptr};
@@ -39,20 +40,22 @@ public:
 	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path ) override;
 	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason ) override;
 
+	virtual QueryResultType ShouldHurry( const INextBot *me ) const override;
+
 	virtual const char *GetName( void ) const override { return "ctgGhostCarrier"; }
 
 private:
 	PathFollower m_path;
 	ChasePath m_chasePath;
 	CountdownTimer m_aloneTimer;
-	CountdownTimer m_repathTimer;
 	
 	CNEOBotGhostEquipmentHandler m_ghostEquipmentHandler;
 	
 	Vector m_closestCapturePoint;
 	CUtlVector<CNEO_Player*> m_teammates;
 
-	Vector GetNearestCapPoint( const CNEOBot *me ) const;
+	bool HasCleanRunToCap( const CNEOBot *me ) const;
+	bool IsCapPotentiallyVisible( const CNEOBot *me ) const;
 	void UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Player*> &teammates );
 };
 

@@ -41,6 +41,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
+	RecvPropTime(RECVINFO(m_flReloadReadyTime)),
 	RecvPropInt(RECVINFO(m_spawnflags)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
@@ -48,6 +49,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
+	SendPropTime(SENDINFO(m_flReloadReadyTime)),
 	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
@@ -60,6 +62,7 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flReloadReadyTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -72,6 +75,7 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_flReloadReadyTime, FIELD_TIME),
 END_DATADESC()
 #endif
 
@@ -350,6 +354,19 @@ void CNEOBaseCombatWeapon::Activate(void)
 #endif
 }
 
+void CNEOBaseCombatWeapon::Detach()
+{
+	BaseClass::Detach();
+
+	RemoveEffects(EF_BONEMERGE | EF_BONEMERGE_FASTCULL);
+	SetParent(nullptr);
+	SetOwnerEntity(nullptr);
+	SetAbsAngles(vec3_angle);
+	SetMoveType(MOVETYPE_VPHYSICS);
+	RemoveSolidFlags(FSOLID_NOT_SOLID);
+	SetCollisionGroup(COLLISION_GROUP_WEAPON);
+}
+
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ClientThink()
 {
@@ -403,7 +420,16 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 
 bool CNEOBaseCombatWeapon::Reload( void )
 {
-	return BaseClass::Reload();
+	if (!BaseClass::Reload())
+	{
+		return false;
+	}
+
+	// The magazine loads at the gun's last reload click, which the script gives as a time before the reload animation ends;
+	// the animation and the wait to fire still run to the end
+	m_flReloadReadyTime = Max(gpGlobals->curtime, m_flNextPrimaryAttack - GetNEOWpnData().m_flReloadReadyBeforeEnd);
+
+	return true;
 
 #if(0)
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
@@ -439,6 +465,13 @@ bool CNEOBaseCombatWeapon::Reload( void )
 //-----------------------------------------------------------------------------
 void CNEOBaseCombatWeapon::FinishReload(void)
 {
+	// The magazine was already loaded at the reload's ready time
+	if (m_flReloadReadyTime == 0.0f)
+	{
+		return;
+	}
+	m_flReloadReadyTime = 0.0f;
+
 	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner)
@@ -599,6 +632,12 @@ void CNEOBaseCombatWeapon::ItemBusyFrame(void)
 {
 	BaseClass::ItemBusyFrame();
 	UpdateInaccuracy();
+
+	// The owner stays busy until the reload animation ends, but the magazine loads at the reload's ready time
+	if (m_bInReload && m_flReloadReadyTime > 0.0f && gpGlobals->curtime >= m_flReloadReadyTime)
+	{
+		FinishReload();
+	}
 }
 
 void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
@@ -865,6 +904,8 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 	return cone;
 }
 
+extern ConVar sv_suppress_viewpunch;
+
 void CNEOBaseCombatWeapon::AddViewKick()
 {
 	auto owner = ToNEOPlayer(GetOwner());
@@ -872,6 +913,13 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	if (!owner)
 	{
 		return;
+	}
+
+	// Reset any existing viewkick so it doesn't accumulate
+	// TODO: Resetting viewpunch here doesn't just affect viewkick, but also aimpunch.
+	// This if-check is a temporary workaround until we can separate the two.
+	if (!sv_suppress_viewpunch.GetBool()) {
+		owner->ViewPunchReset();
 	}
 
 	auto kickInfo = m_weaponHandling.kickInfo;
@@ -1070,7 +1118,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	);
 
 	//Add our view kick in
-	pOwner->ViewPunchReset();
 	AddViewKick();
 }
 
@@ -1398,3 +1445,28 @@ void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 	// Calling BaseClass::Use will pick the weapon up without waiting for the touch cooldown, don't see anything important there that we need to do that we aren't doing here
 }
 #endif
+
+const char *CNEOBaseCombatWeapon::GetDeathIcon(const CNEOBaseCombatWeapon *pNeoWep,
+		const EDeathIconType eType, bool isGrenade, bool isRemoteDetpack)
+{
+	if (eType == DEATHICONTYPE_IDX && pNeoWep)
+	{
+		isGrenade = pNeoWep->WeaponIndex() == NEO_WIDX_FRAG_GRENADE;
+		isRemoteDetpack = pNeoWep->WeaponIndex() == NEO_WIDX_DETPACK;
+	}
+
+	if (isGrenade)
+	{
+		return "2";
+	}
+	else if (isRemoteDetpack)
+	{
+		return "A";
+	}
+	else if (pNeoWep)
+	{
+		return pNeoWep->GetNEOWpnData().szDeathIcon;
+	}
+	return "";
+}
+

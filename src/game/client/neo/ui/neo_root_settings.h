@@ -156,12 +156,13 @@ struct NeoSettings
 		int iAntiAliasing;
 		int iFilteringMode;
 		bool bVSync;
+		int iFpsMax;
 		bool bMotionBlur;
 		int iHDR;
 		float flGamma;
 		int iFov;
 		int iViewmodelFov;
-		bool bSoftwareCursor;
+		int iSoftwareCursor;
 
 		// Video modes
 		int iVMListSize;
@@ -336,6 +337,7 @@ struct NeoSettings
 		CONVARREF_DEF(mat_trilinear);
 		CONVARREF_DEF(mat_forceaniso);
 		CONVARREF_DEF(mat_vsync);
+		CONVARREF_DEF(fps_max);
 		CONVARREF_DEF(mat_motion_blur_enabled);
 		CONVARREF_DEF(mat_hdr_level);
 		CONVARREF_DEF(mat_monitorgamma);

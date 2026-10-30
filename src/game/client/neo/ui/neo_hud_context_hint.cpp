@@ -13,6 +13,7 @@
 #include "neo_root_settings.h"
 #include "glow_outline_effect.h"
 #include "smoke_fog_overlay.h"
+#include "c_buttons.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -218,6 +219,31 @@ void CNEOHud_ContextHint::UpdateStateForNeoHudElementDraw()
 				else
 				{
 					V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"Hold [%hs] Boot into JGR56", szUppercaseKeyBinding);
+				}
+			}
+			// Buttons
+			else if (C_BaseButton* pButton = dynamic_cast<C_BaseButton*>(pUseEntity))
+			{
+				if (pButton->m_bUseHint)
+				{
+					if (pButton->m_szUseHintText[0] != '\0')
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] %hs", szUppercaseKeyBinding, pButton->m_szUseHintText);
+						m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					}
+					else
+					{
+						V_snwprintf(m_wszHintText, ARRAYSIZE(m_wszHintText), L"[%hs] Use", szUppercaseKeyBinding);
+						m_flDisplayEndTime = gpGlobals->curtime + 1.f;
+					}
+				}
+				else
+				{
+					m_flDisplayEndTime = gpGlobals->curtime;
+					g_GlowObjectManager.ClearUseItem();
+					m_hUseEntity = INVALID_EHANDLE;
+					ClearUseEntityListEntry();
+					return;
 				}
 			}
 			// Some other useable entity

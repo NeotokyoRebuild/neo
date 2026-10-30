@@ -116,6 +116,9 @@ static ConVar sv_maxusrcmdprocessticks( "sv_maxusrcmdprocessticks", "24", FCVAR_
 static ConVar old_armor( "player_old_armor", "0" );
 
 static ConVar physicsshadowupdate_render( "physicsshadowupdate_render", "0" );
+#ifdef NEO
+static ConVar sv_neo_block_physics_warp( "sv_neo_block_physics_warp", "1", FCVAR_NONE, "Attempt to prevent players from being teleported through walls by some physics objects" );
+#endif
 bool IsInCommentaryMode( void );
 bool IsListeningToCommentary( void );
 
@@ -1139,6 +1142,9 @@ bool CBasePlayer::ShouldTakeDamageInCommentaryMode( const CTakeDamageInfo &input
 	return true;
 }
 
+#ifdef NEO
+ConVar sv_neo_clientside_aimpunch("sv_neo_clientside_aimpunch", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Apply aim punch client-side instead of on the server.", true, 0, true, 1);
+#endif
 int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 {
 	// have suit diagnose the problem - ie: report damage type
@@ -1440,8 +1446,23 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		else
 			flPunch = RandomFloat( -5, -7 );
 	}
-
+#ifndef NEO
 	m_Local.m_vecPunchAngle.SetX( flPunch );
+#else
+	if (!sv_neo_clientside_aimpunch.GetBool())
+	{
+		m_Local.m_vecPunchAngle.SetX( flPunch );
+	}
+	else
+	{
+		CSingleUserRecipientFilter user( this );
+		user.MakeReliable();
+
+		UserMessageBegin( user, "AimPunch" );
+			WRITE_FLOAT( flPunch );
+		MessageEnd();
+	}
+#endif
 
 	if (fTookDamage && !ftrivial && fmajor && flHealthPrev >= 75) 
 	{
@@ -8756,6 +8777,41 @@ void CBasePlayer::VPhysicsShadowUpdate( IPhysicsObject *pPhysics )
 	{
 		if ( m_touchedPhysObject || pPhysGround )
 		{
+#ifdef NEO
+			// Attempt to fix warping through walls.
+			// Rather than trusting whatever vphysics says, lets check if the
+			// player could have actually launched that far with that velocity
+			bool bBlockedWarp = false;
+			if ( sv_neo_block_physics_warp.GetBool() )
+			{
+				float flPhysDelta = TICK_INTERVAL * phys_timescale.GetFloat();
+				if ( flPhysDelta <= 0.0f )
+				{
+					flPhysDelta = TICK_INTERVAL;
+				}
+
+				const Vector vecWarp = newPosition - GetAbsOrigin();
+				const float flWarpDist = vecWarp.Length();
+				const float flValidSpeed = Max( newVelocity.Length(), GetAbsVelocity().Length() );
+
+				const float flMaxValidDist = ( flValidSpeed * flPhysDelta * 4.0f /* vphys leeway */ ) + 32.0f /* Dist tolerance gap before it looks sus */;
+				if ( flWarpDist > flMaxValidDist )
+				{
+					bBlockedWarp = true;
+
+					DevMsg( "VPhysicsShadowUpdate: Prevented warp for \"%s\" (Would've moved %.1f units, but only <%.1f was acceptable)\n", GetPlayerName(), flWarpDist, flMaxValidDist );
+
+					pPhysics->SetPosition( GetAbsOrigin(), vec3_angle, true );
+					const Vector vel = GetAbsVelocity();
+					pPhysics->SetVelocity( &vel, NULL );
+					UpdateVPhysicsPosition( GetAbsOrigin(), vel, 0.0f );
+					lastValidPosition = GetAbsOrigin();
+				}
+			}
+
+			if ( !bBlockedWarp )
+			{
+#endif
 			// BUGBUG: Rewrite this code using fixed timestep
 			if ( deltaV >= maxVelErrorSqr && !m_bPhysicsWasFrozen )
 			{
@@ -8795,6 +8851,9 @@ void CBasePlayer::VPhysicsShadowUpdate( IPhysicsObject *pPhysics )
 			{
 				SetAbsOrigin( newPosition );
 			}
+#ifdef NEO
+			}
+#endif
 		}
 		else
 		{

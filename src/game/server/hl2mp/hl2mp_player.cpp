@@ -1853,6 +1853,29 @@ void CHL2MP_Player::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 	TE_PlayerAnimEvent( this, event, nData );	// Send to any clients who can see this guy.
 }
 
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: Server-side mirror of C_HL2MP_Player::OnNewModel. The animation state
+//			caches per-model data (pose parameters, gesture slots, the aim-layer
+//			sequence transitioner), all of which is invalid once the model changes -
+//			CNEO_Player::SetPlayerTeamModel swaps models on spawn, class change and
+//			round restart. Only the client had this hook, so the server kept animating
+//			the new model against the old model's state.
+//-----------------------------------------------------------------------------
+CStudioHdr *CHL2MP_Player::OnNewModel( void )
+{
+	CStudioHdr *hdr = BaseClass::OnNewModel();
+
+	// Reset the players animation states, gestures
+	if ( m_PlayerAnimState )
+	{
+		m_PlayerAnimState->OnNewModel();
+	}
+
+	return hdr;
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Override setup bones so that is uses the render angles from
 //			the HL2MP animation state to setup the hitboxes.

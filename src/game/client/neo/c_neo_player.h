@@ -93,6 +93,7 @@ public:
 
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
+	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
 
 	void Lean(void);
 
@@ -197,8 +198,7 @@ public:
 	
 	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
-	bool ShouldPlayerMakeFootsteps(float speed = -1.f);
-	float SpeedFractionToSoundThreshold(float speed = -1.f);
+	void AimPunch(float amount);
 
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
@@ -208,6 +208,7 @@ private:
 	void CheckLeanButtons();
 	void PlayCloakSound();
 	void SetCloakState(bool state);
+	void FixupOnGroundFlag();
 
 	bool IsAllowedToSuperJump(void);
 
@@ -217,6 +218,8 @@ private:
 	bool IsAFK() const;
 	bool IsFakePlayer() const;
 
+	void ApplyAimPunch();
+
 public:
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
@@ -225,8 +228,6 @@ public:
 	CNetworkVar(int, m_iXP);
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
-	
-	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(float, m_flVisionLastTime);
@@ -253,7 +254,6 @@ public:
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
-	CNetworkString(m_szNeoCrosshair, NEO_XHAIR_SEQMAX);
 	CNetworkVar(int, m_szNameDupePos);
 	CNetworkVar(bool, m_bClientWantNeoName);
 
@@ -267,14 +267,14 @@ private:
 	bool m_bPreviouslyReloading;
 	bool m_bSpecRefreshedStates;
 
-	float m_flLastAirborneJumpOkTime;
-	float m_flLastSuperJumpTime;
-
 	float m_flTocFactor; // Cloak strength, controls tint, refraction amount. Lower values make player more difficult to spot
 
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
+
+	float m_flAimPunchVel;
+	float m_flAimPunchCurrent;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

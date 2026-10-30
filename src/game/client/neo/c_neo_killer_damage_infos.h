@@ -3,8 +3,6 @@
 #include "shareddefs.h"
 #include "neo_player_shared.h"
 
-static constexpr const int WEP_NAME_MAXSTRLEN = 32;
-
 struct CNEOKillerInfos
 {
 	bool bHasDmgInfos = false;

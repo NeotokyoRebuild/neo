@@ -44,5 +44,9 @@ namespace CNEOWeaponLoadout
 	extern const CLoadoutWeapon s_LoadoutWeapons[NEO_LOADOUT__COUNT][MAX_WEAPON_LOADOUTS];
 
 	int GetNumberOfLoadoutWeapons(const int rank, const int classType);
+
+	// The XP value to use for weapon eligibility checks. Returns actualXP unless
+	// sv_neo_wep_xp_override is set (>= 0), in which case the override wins.
+	int GetEffectiveXP(const int actualXP);
 } // namespace CNEOWeaponLoadout
 

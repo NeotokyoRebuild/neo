@@ -885,6 +885,30 @@ target_sources_grouped(
     neo/neo_mp3player.h
 )
 
+if(NEO_STEAMAUDIO)
+    target_compile_definitions(client PRIVATE NEO_STEAMAUDIO)
+
+    target_sources_grouped(
+        TARGET client
+        NAME "HRTF"
+        FILES
+        neo/audio/neo_hrtf_system.cpp
+        neo/audio/neo_hrtf_system.h
+        neo/audio/neo_spatializer.h
+        neo/audio/neo_spatializer_steamaudio.cpp
+    )
+
+    # NEO HRTF: The Steam Audio backend is plain C++ with no Source SDK headers, so it stays out
+    # of the cbase.h PCH and unity groups, and is the only file that sees phonon.h.
+    set_source_files_properties(
+        neo/audio/neo_spatializer_steamaudio.cpp
+        PROPERTIES
+            SKIP_UNITY_BUILD_INCLUSION ON
+            SKIP_PRECOMPILE_HEADERS ON
+            INCLUDE_DIRECTORIES ${STEAMAUDIO_INCLUDE_DIR}
+    )
+endif()
+
 target_sources_grouped(
     TARGET client
     NAME "Tool Framework"
@@ -1571,6 +1595,7 @@ target_sources_grouped(
 set(UNITY_SOURCE_NEO_SRC_CLIENT
     neo/c_neo_message.cpp
     neo/c_neo_npc_dummy.cpp
+    neo/c_neo_point_world_text.cpp
     neo/c_neo_player.cpp
     neo/c_neo_te_tocflash.cpp
     neo/neo_fixup_glshaders.cpp
@@ -1589,6 +1614,7 @@ target_sources_grouped(
     FILES
     neo/c_neo_message.h
     neo/c_neo_npc_dummy.h
+    neo/c_neo_point_world_text.h
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.h
     neo/neo_fixup_glshaders.h
@@ -1647,6 +1673,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_root_settings.cpp
     neo/ui/neo_loading.cpp
     neo/ui/neo_ui.cpp
+    neo/ui/neo_ui_fpsslider.cpp
     neo/ui/neo_theme.cpp
     neo/ui/neo_utils.cpp
     neo/ui/OverrideInterface.cpp
@@ -1665,14 +1692,18 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_hint.cpp
     neo/ui/neo_hud_message.cpp
+    neo/ui/neo_hud_place_name.cpp
     neo/ui/neo_hud_player_ping.cpp
     neo/ui/neo_hud_round_state.cpp
+    neo/ui/neo_hud_spectator_overlay.cpp
     neo/ui/neo_hud_startup_sequence.cpp
     neo/ui/neo_hud_walking_indicator.cpp
     neo/ui/neo_hud_worldpos_marker.cpp
     neo/ui/neo_hud_worldpos_marker_generic.cpp
     neo/ui/neo_scoreboard.cpp
     neo/ui/neo_hud_context_hint.cpp
+    neo/ui/neo_spec_player_by_hud.cpp
+    neo/ui/neo_avatar.cpp
 )
 
 set_source_files_properties(
@@ -1689,12 +1720,14 @@ target_sources_grouped(
     neo/ui/neo_root_settings.h
     neo/ui/neo_loading.h
     neo/ui/neo_ui.h
+    neo/ui/neo_ui_fpsslider.h
     neo/ui/neo_theme.h
     neo/ui/neo_utils.h
     neo/ui/IOverrideInterface.h
     neo/ui/neo_hud_ammo.h
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_compass.h
+    neo/ui/neo_hud_deathnotice.h
     neo/ui/neo_hud_friendly_marker.h
     neo/ui/neo_hud_game_event.h
     neo/ui/neo_hud_ghost_beacons.h
@@ -1705,19 +1738,23 @@ target_sources_grouped(
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_hint.h
     neo/ui/neo_hud_message.h
+    neo/ui/neo_hud_place_name.h
     neo/ui/neo_hud_player_ping.h
     neo/ui/neo_hud_round_state.h
+    neo/ui/neo_hud_spectator_overlay.h
     neo/ui/neo_hud_startup_sequence.h
     neo/ui/neo_hud_walking_indicator.h
     neo/ui/neo_hud_worldpos_marker.h
     neo/ui/neo_hud_worldpos_marker_generic.h
     neo/ui/neo_scoreboard.h
     neo/ui/neo_hud_context_hint.h
+    neo/ui/neo_avatar.h
     ${UNITY_SOURCE_NEO_UI}
 )
 
 set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
@@ -1746,6 +1783,8 @@ target_sources_grouped(
     NAME "Source Files\\Shared"
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/nav_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h

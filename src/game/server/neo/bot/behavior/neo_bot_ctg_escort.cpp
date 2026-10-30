@@ -5,7 +5,6 @@
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
-#include "neo_ghost_cap_point.h"
 #include "weapons/weapon_ghost.h"
 
 extern ConVar sv_neo_grenade_blast_radius;
@@ -54,6 +53,11 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		return Done( "Ghost carrier is not a teammate anymore" );
 	}
 	
+	if ( NEORules()->IsRoundOver() )
+	{
+		return Done( "Round Over: seek enemies instead of escorting CTG carrier" );
+	}
+
 	if ( m_repathTimer.IsElapsed() )
 	{
 		UpdateGoalPosition( me, pGhostCarrier );
@@ -195,7 +199,8 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		{
 			m_chasePath.Invalidate();
 
-			CNEOBotPathCompute( me, m_path, vecMoveTarget, SAFEST_ROUTE );
+			// when using m_repathTimer approach, use FASTEST_ROUTE for path consistency
+			CNEOBotPathCompute( me, m_path, vecMoveTarget, FASTEST_ROUTE );
 			m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 		}
 		m_path.Update( me );
@@ -233,6 +238,46 @@ EventDesiredResult< CNEOBot > CNEOBotCtgEscort::OnMoveToFailure( CNEOBot *me, co
 {
 	m_repathTimer.Invalidate(); 
 	return TryContinue();
+}
+
+//---------------------------------------------------------------------------------------------
+// Hurry back to friendly ghost carrier if there are enemies closer to them
+QueryResultType CNEOBotCtgEscort::ShouldHurry( const INextBot *me ) const
+{
+	const CNEOBot *meBot = static_cast<const CNEOBot *>( me );
+
+	CNEO_Player *pCarrier = ToNEOPlayer( UTIL_PlayerByIndex( NEORules()->GetGhosterPlayer() ) );
+	if ( !pCarrier || !pCarrier->IsAlive() || pCarrier->GetTeamNumber() != meBot->GetTeamNumber() || pCarrier == meBot )
+	{
+		return ANSWER_UNDEFINED;
+	}
+
+	const Vector &vecCarrierPos = pCarrier->GetAbsOrigin();
+	const float flMyDistToCarrierSq = meBot->GetAbsOrigin().DistToSqr( vecCarrierPos );
+
+	CUtlVector< CKnownEntity > knownVector;
+	meBot->GetVisionInterface()->CollectKnownEntities( &knownVector );
+
+	for ( int i = 0; i < knownVector.Count(); ++i )
+	{
+		CBaseEntity *pKnown = knownVector[i].GetEntity();
+		if ( !pKnown || !pKnown->IsPlayer() || !pKnown->IsAlive() )
+		{
+			continue;
+		}
+
+		if ( pKnown->GetTeamNumber() == meBot->GetTeamNumber() )
+		{
+			continue;
+		}
+
+		if ( pKnown->GetAbsOrigin().DistToSqr( vecCarrierPos ) < flMyDistToCarrierSq )
+		{
+			return ANSWER_YES;
+		}
+	}
+
+	return ANSWER_UNDEFINED;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -318,25 +363,6 @@ CNEOBotCtgEscort::EscortRole CNEOBotCtgEscort::UpdateRoleAssignment( CNEOBot *me
 //---------------------------------------------------------------------------------------------
 void CNEOBotCtgEscort::UpdateGoalPosition( CNEOBot *me, CNEO_Player *pGhostCarrier )
 {
-	m_vecGoalPos = CNEO_Player::VECTOR_INVALID_WAYPOINT;
-	m_bHasGoal = false;
-	
-	float flNearestCapDistSq = FLT_MAX;
-	const int iMyTeam = me->GetTeamNumber();
-
-	for( int i=0; i<NEORules()->m_pGhostCaps.Count(); ++i )
-	{
-		CNEOGhostCapturePoint *pCapPoint = dynamic_cast<CNEOGhostCapturePoint*>( UTIL_EntityByIndex( NEORules()->m_pGhostCaps[i] ) );
-		if ( !pCapPoint || !pCapPoint->GetActive() ) continue;
-		if ( pCapPoint->owningTeamAlternate() == iMyTeam )
-		{
-			float d = pGhostCarrier->GetAbsOrigin().DistToSqr( pCapPoint->GetAbsOrigin() );
-			if ( d < flNearestCapDistSq )
-			{
-				flNearestCapDistSq = d;
-				m_vecGoalPos = pCapPoint->GetAbsOrigin();
-				m_bHasGoal = true;
-			}
-		}
-	}
+	m_vecGoalPos = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), pGhostCarrier->GetAbsOrigin() );
+	m_bHasGoal = ( m_vecGoalPos != CNEO_Player::VECTOR_INVALID_WAYPOINT );
 }

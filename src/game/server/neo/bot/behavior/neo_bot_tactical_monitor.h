@@ -26,6 +26,7 @@ public:
 	virtual const char* GetName(void) const { return "TacticalMonitor"; }
 
 private:
+	CountdownTimer m_hazardCheckTimer;
 	CountdownTimer m_maintainTimer;
 
 	CountdownTimer m_acknowledgeAttentionTimer;
@@ -33,13 +34,12 @@ private:
 	CountdownTimer m_attentionTimer;
 	std::unique_ptr<CNEOIgnoredWeaponsCache> m_pIgnoredWeapons;
 
-#if 0
-	CountdownTimer m_stickyBombCheckTimer;
-	void MonitorArmedStickyBombs(CNEOBot* me);
-#endif
+	CountdownTimer m_detpackCheckTimer;
+	ActionResult< CNEOBot > MonitorArmedDetpack(CNEOBot *me);
 
 	ActionResult< CNEOBot > ScavengeForPrimaryWeapon(CNEOBot* me);
 
 	void AvoidBumpingFriends(CNEOBot* me);
 	ActionResult< CNEOBot > WatchForLadders(CNEOBot* me);
+	void CloakPastNpcTurret(CNEOBot* me);
 };

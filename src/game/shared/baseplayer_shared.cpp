@@ -536,13 +536,24 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 {
 	bool bWalking;
 	float fvol;
+#ifndef NEO
 	Vector knee;
+#endif
 	Vector feet;
+#ifndef NEO
 	float height;
+#endif
 	float speed;
 	float velrun;
+#ifndef NEO
 	float velwalk;
+#endif
 	int	fLadder;
+
+#ifdef NEO
+	const bool bSilent = !assert_cast<CNEO_Player*>(this)->IsMakingFootstepSounds(&velrun, &speed, &fLadder);
+#endif
+
 
 	if ( m_flStepSoundTime > 0 )
 	{
@@ -556,14 +567,9 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	if ( m_flStepSoundTime > 0 )
 		return;
 
+#ifndef NEO
 	if ( GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
 		return;
-	
-#ifdef NEO
-	auto neoPlayer = static_cast<CNEO_Player*>(this);
-	if (neoPlayer->GetNeoFlags() & NEO_FL_FREEZETIME)
-		return;
-#endif
 
 	if ( GetMoveType() == MOVETYPE_NOCLIP || GetMoveType() == MOVETYPE_OBSERVER )
 		return;
@@ -581,11 +587,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 	bool onground = ( GetFlags() & FL_ONGROUND );
 	bool movingalongground = ( groundspeed > 0.0001f );
-#ifdef NEO
-	const bool moving_fast_enough = speed >= 50.f; // Support crouched with a supa7 aimed in has a speed of 55.f
-#else
 	bool moving_fast_enough =  ( speed >= velwalk );
-#endif // NEO
 
 #ifdef PORTAL
 	// In Portal we MUST play footstep sounds even when the player is moving very slowly
@@ -602,18 +604,19 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 //	MoveHelper()->PlayerSetAnimation( PLAYER_WALK );
 
-#ifdef NEO
-	bWalking = speed < velrun && !neoPlayer->IsSprinting();
-#else
-	bWalking = speed < velrun;		
-#endif // NEO
+#endif
+	bWalking = speed < velrun;	
+#ifndef NEO
 
 	VectorCopy( vecOrigin, knee );
+#endif // NEO
 	VectorCopy( vecOrigin, feet );
+#ifndef NEO
 
 	height = GetPlayerMaxs()[ 2 ] - GetPlayerMins()[ 2 ];
 
 	knee[2] = vecOrigin[2] + 0.2 * height;
+#endif
 
 	// find out what we're stepping in or on...
 	if ( fLadder )
@@ -693,12 +696,10 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	}
 
 #ifdef NEO
-	if (!neoPlayer->ShouldPlayerMakeFootsteps(speed))
-	{
+	// can't return earlier because of the plentiful side-effects above
+	if (bSilent)
 		return;
-	}
-#endif // NEO
-
+#endif
 	// play the sound
 	// 65% volume if ducking
 	if ( GetFlags() & FL_DUCKING )
@@ -817,6 +818,9 @@ void CBasePlayer::UpdateButtonState( int nUserCmdButtonMask )
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CBasePlayer::GetStepSoundVelocities( float *velwalk, float *velrun )
+#ifdef NEO
+	const
+#endif
 {
 	// UNDONE: need defined numbers for run, walk, crouch, crouch run velocities!!!!	
 	if ( ( GetFlags() & FL_DUCKING) || ( GetMoveType() == MOVETYPE_LADDER ) )
@@ -2110,6 +2114,9 @@ void CBasePlayer::UpdateUnderwaterState( void )
 #ifndef CLIENT_DLL
 			if ( m_iHealth > 0 && IsAlive() )
 			{
+#ifdef NEO
+				if (assert_cast<CNEO_Player*>(this)->IsMakingFootstepSounds())
+#endif
 				EmitSound( "Player.Wade" );
 			}
 #endif
@@ -2122,6 +2129,9 @@ void CBasePlayer::UpdateUnderwaterState( void )
 		// player enter water sound
 		if (GetWaterType() == CONTENTS_WATER)
 		{
+#ifdef NEO
+			if (assert_cast<CNEO_Player*>(this)->IsMakingFootstepSounds())
+#endif
 			EmitSound( "Player.Wade" );
 		}
 #endif

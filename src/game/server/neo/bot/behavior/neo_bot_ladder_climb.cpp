@@ -7,12 +7,19 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+// The engine grabs a ladder within this distance of its face (CGameMovement::LadderDistance())
+static constexpr float LADDER_GRAB_DIST = 2.0f;
+// A hull placed off a ladder starts this far clear of the face,
+static constexpr float LADDER_PLACE_GAP = 2.0f;
+// and is slid at most this far towards the face to find it.
+static constexpr float LADDER_PLACE_SEEK = 16.0f;
+
 //---------------------------------------------------------------------------------------------
 CNEOBotLadderClimb::CNEOBotLadderClimb( const CNavLadder *ladder, bool goingUp )
 	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_flLastZ( 0.0f ),
-	m_bDismountPhase( false ), m_bJumpedOffLadder( false ), m_pExitArea( nullptr )
+	m_bDismountPhase( false ), m_bJumpedOffLadder( false ), m_bCrawlDismount( false ), m_bCrawlPushed( false ), m_pExitArea( nullptr ), m_nNudges( 0 )
 {
-	m_exitAreaCenter = vec3_origin;
+	m_dismountPos = vec3_origin;
 	m_ladderForward = ladder ? -ladder->GetNormal() : vec3_origin;
 }
 
@@ -68,23 +75,59 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 			mover->Reset(); // clear velocity cache in locomotion interface
 			me->SetAbsVelocity( vec3_origin );
 
+			// Half a hull off the nav line, unchecked: the fallback spot when the clear spot below starts in solid
 			Vector idealPos = m_ladder->GetPosAtHeight( m_flLastZ );
 			// Offset slightly from the ladder surface based on the bot's collision box
-			float offsetDist = me->CollisionProp()->OBBSize().x / 2.0f + 2.0f;
+			float offsetDist = me->CollisionProp()->OBBSize().x / 2.0f + LADDER_PLACE_GAP;
 			idealPos += m_ladder->GetNormal() * offsetDist;
 			idealPos.z = m_flLastZ;
+
+			// On a ladder turned off the world axes, half a hull width off the face leaves the hull's corner in the brush,
+			// so clear the corners first, then slide in until the hull touches the face
+			const Vector &normal = m_ladder->GetNormal();
+			const float flReach = me->CollisionProp()->OBBSize().x / 2.0f * ( fabsf( normal.x ) + fabsf( normal.y ) );
+			Vector clearPos = m_ladder->GetPosAtHeight( m_flLastZ ) + normal * ( flReach + LADDER_PLACE_GAP );
+			clearPos.z = m_flLastZ;
+
+			trace_t trFace;
+			UTIL_TraceHull( clearPos, clearPos - normal * LADDER_PLACE_SEEK, me->WorldAlignMins(), me->WorldAlignMaxs(),
+				MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trFace );
+			if ( !trFace.startsolid )
+			{
+				idealPos = trFace.DidHit() ? trFace.endpos + normal * ( LADDER_GRAB_DIST * 0.5f ) : clearPos;
+			}
+
+			// The floor at the spot can stand higher than the feet were, and a hull sunk into a displacement does not start solid,
+			// so stand the hull on that floor: unducking later on the ladder lowers the feet by the crouch's lift, into the floor
+			trace_t trFloor;
+			UTIL_TraceHull( idealPos + Vector( 0.0f, 0.0f, mover->GetStepHeight() ), idealPos, me->WorldAlignMins(), me->WorldAlignMaxs(),
+				MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trFloor );
+			if ( !trFloor.startsolid && trFloor.DidHit() )
+			{
+				idealPos.z = trFloor.endpos.z;
+			}
 
 			// Face perpendicularly straight on to the ladder (-normal)
 			Vector idealLookDir = -m_ladder->GetNormal();
 			QAngle idealAngles;
 			VectorAngles( idealLookDir, idealAngles );
 
-			// Teleport the bot
-			me->SetAbsOrigin( idealPos );
-			me->SetAbsAngles( idealAngles );
+			// A spot still in solid, such as inside a ladder brush that stands in front of its nav line, would hold the bot
+			// there for good, so the bot climbs from where it is instead
+			trace_t trSpot;
+			UTIL_TraceHull( idealPos, idealPos, me->WorldAlignMins(), me->WorldAlignMaxs(),
+				MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &trSpot );
+			if ( !trSpot.startsolid )
+			{
+				// Teleport the bot
+				me->SetAbsOrigin( idealPos );
+				me->SetAbsAngles( idealAngles );
+				// the view too: a forward press with the view off the face's normal slides the bot off the side of a narrow ladder
+				me->SnapEyeAngles( idealAngles );
 
-			// Update mover feet to new teleported position for stuck checking
-			m_flLastZ = idealPos.z;
+				// Update mover feet to new teleported position for stuck checking
+				m_flLastZ = idealPos.z;
+			}
 		}
 		else if ( me->IsDebugging( NEXTBOT_PATH ) )
 		{
@@ -103,7 +146,42 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::OnStart( CNEOBot *me, Action<CNEOBot> 
 	// Try to resolve the exit area from the current path early
 	ResolveExitArea( me );
 
+	ClaimLadder( me );
+
 	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+// PlayerLocomotion lets go of a ladder it was never asked to use, and once the contact persists
+// takes it over by the nearer end - at the foot, the bottom. Tell it this climb is wanted.
+void CNEOBotLadderClimb::ClaimLadder( CNEOBot *me ) const
+{
+	ILocomotion *mover = me->GetLocomotionInterface();
+	if ( mover->IsUsingLadder() )
+	{
+		return;
+	}
+
+	const CNavArea *pExitArea = m_pExitArea;
+	if ( !pExitArea )
+	{
+		pExitArea = LadderEndArea();
+	}
+
+	// The locomotion's dismount walks to this area, so there is nothing to claim with without one
+	if ( !pExitArea )
+	{
+		return;
+	}
+
+	if ( m_bGoingUp )
+	{
+		mover->ClimbLadder( m_ladder, pExitArea );
+	}
+	else
+	{
+		mover->DescendLadder( m_ladder, pExitArea );
+	}
 }
 
 //---------------------------------------------------------------------------------------------
@@ -122,6 +200,20 @@ void CNEOBotLadderClimb::ResolveExitArea( CNEOBot *me )
 		}
 
 		constexpr int MAX_PATH_SEARCH_STEPS = 100;
+
+		// The path's current goal can still be the area at the ladder's foot when the climb reaches the
+		// top, and that area is no exit: the exit is the first area after this ladder
+		const Path::Segment *ladderSeg = seg;
+		for ( int i = 0; ladderSeg && ladderSeg->ladder != m_ladder && i < MAX_PATH_SEARCH_STEPS; ++i )
+		{
+			ladderSeg = path->NextSegment( ladderSeg );
+		}
+
+		if ( ladderSeg && ladderSeg->ladder == m_ladder )
+		{
+			seg = ladderSeg;
+		}
+
 		int safetyCounter = 0;
 		while ( seg && safetyCounter < MAX_PATH_SEARCH_STEPS )
 		{
@@ -137,10 +229,76 @@ void CNEOBotLadderClimb::ResolveExitArea( CNEOBot *me )
 
 		if ( seg && !seg->ladder && seg->area )
 		{
-			m_pExitArea = seg->area;
-			m_exitAreaCenter = m_pExitArea->GetCenter();
+			m_pExitArea = FindLanding( path, seg->area );
+			m_dismountPos = GetDismountPos( me );
 		}
 	}
+}
+
+//---------------------------------------------------------------------------------------------
+// By the dismount the path's goal can already be past the area this ladder lands on,
+// so take a landing the path passes through, or else the ladder's own end area, or, with no end area, the path's
+const CNavArea *CNEOBotLadderClimb::FindLanding( const PathFollower *path, const CNavArea *pathExit ) const
+{
+	const CNavLadder::LadderDirectionType dir = m_bGoingUp ? CNavLadder::LADDER_UP : CNavLadder::LADDER_DOWN;
+	if ( m_ladder->IsConnected( pathExit, dir ) )
+	{
+		return pathExit;
+	}
+
+	for ( const Path::Segment *seg = path->FirstSegment(); seg; seg = path->NextSegment( seg ) )
+	{
+		if ( seg->area && m_ladder->IsConnected( seg->area, dir ) )
+		{
+			return seg->area;
+		}
+	}
+
+	const CNavArea *ladderEnd = LadderEndArea();
+	return ladderEnd ? ladderEnd : pathExit;
+}
+
+//---------------------------------------------------------------------------------------------
+// The area at the end this climb leaves the ladder by
+const CNavArea *CNEOBotLadderClimb::LadderEndArea() const
+{
+	return m_bGoingUp ? m_ladder->GetTopArea() : m_ladder->m_bottomArea;
+}
+
+//---------------------------------------------------------------------------------------------
+// A landing whose short side is under half a hull is a wall cap the climb crosses, not a floor to stand on,
+// and a deeper one holds the bot's center even where the path follower's LadderCapAhead() needs the mesh link to climb onto it
+bool CNEOBotLadderClimb::IsNarrowLanding( CNEOBot *me ) const
+{
+	const float flMinDepth = me->GetBodyInterface()->GetHullWidth() * NARROW_LANDING_HULLS;
+	return Min( m_pExitArea->GetSizeX(), m_pExitArea->GetSizeY() ) < flMinDepth;
+}
+
+//---------------------------------------------------------------------------------------------
+// Step off toward where the landing meets this end of the ladder: a long, narrow landing's center
+// can lie off to one side, and the dismount kick toward it carries the bot past the landing's edge
+Vector CNEOBotLadderClimb::GetDismountPos( CNEOBot *me ) const
+{
+	if ( IsNarrowLanding( me ) )
+	{
+		return m_pExitArea->GetCenter();
+	}
+
+	const Vector &ladderEnd = m_bGoingUp ? m_ladder->m_top : m_ladder->m_bottom;
+	Vector nearPoint;
+	m_pExitArea->GetClosestPointOnArea( ladderEnd, &nearPoint );
+
+	// into the wall at the top, where the landing is, and away from it at the bottom
+	Vector inward = m_bGoingUp ? m_ladderForward : -m_ladderForward;
+	inward.z = 0.0f;
+	if ( inward.NormalizeInPlace() > 0.0f )
+	{
+		nearPoint += inward * LANDING_INSET;
+	}
+
+	Vector dismountPos;
+	m_pExitArea->GetClosestPointOnArea( nearPoint, &dismountPos );
+	return dismountPos;
 }
 
 
@@ -175,7 +333,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 
 	if ( m_pExitArea )
 	{
-		toExit = m_exitAreaCenter - myPos;
+		toExit = m_dismountPos - myPos;
 		toExit.z = 0.0f;
 		if ( toExit.Length2DSqr() > 0.01f )
 		{
@@ -197,7 +355,8 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 
 	if ( !onLadder )
 	{
-		if ( mover->IsOnGround() )
+		// crawling off, the gap's sill is ground too, short of the landing
+		if ( mover->IsOnGround() && !m_bCrawlDismount )
 		{
 			return Done( "Reached the ground, ending climb" );
 		}
@@ -218,8 +377,22 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 	//------------------------------------------------------------
 	if ( !m_bDismountPhase )
 	{
+		// The locomotion drops its claim whenever the engine lets go of the bot, even for a tick
+		if ( me->GetMoveType() == MOVETYPE_LADDER )
+		{
+			ClaimLadder( me );
+		}
+
 		float currentZ = myPos.z;
 		float targetZ = m_bGoingUp ? m_ladder->m_top.z : m_ladder->m_bottom.z;
+
+		// Going down, the bot holds still until its view makes forward take it down: not a stall
+		const bool bHoldForView = !m_bGoingUp && !me->GetLocomotionInterface()->IsForwardDownLadder( m_ladder );
+		if ( bHoldForView )
+		{
+			m_flLastZ = currentZ;
+			m_stuckTimer.Start( STUCK_CHECK_INTERVAL );
+		}
 
 		// Stuck detection: if we haven't made vertical progress, bail out gracefully
 		if ( m_stuckTimer.IsElapsed() )
@@ -233,6 +406,13 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 				{
 					EnterDismountPhase( me );
 					return Continue();
+				}
+				else if ( m_nNudges < STALL_NUDGES )
+				{
+					// Usually snagged on something at the ladder's edge, not blocked outright:
+					// shimmy sideways, right then left, until the next progress check, before giving up
+					++m_nNudges;
+					m_nudgeTimer.Start( STUCK_CHECK_INTERVAL );
 				}
 				else
 				{
@@ -251,15 +431,17 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			m_stuckTimer.Start( STUCK_CHECK_INTERVAL );
 		}
 
-		// Early jump-off
+		// Early jump-off. Going down, only once a standing height below the top: from any higher, the
+		// kick towards the exit lands the bot back on the floor the descent started from.
+		bool bWantsDismount = false;
 		if ( m_pExitArea )
 		{
-			float zDistToExit = currentZ - m_exitAreaCenter.z;
+			float zDistToExit = currentZ - m_dismountPos.z;
+			const bool bBelowTopFloor = m_bGoingUp || currentZ < m_ladder->m_top.z - body->GetStandHullHeight();
 
-			if ( zDistToExit > 0.0f && zDistToExit <= SAFE_FALL_DIST )
+			if ( zDistToExit > 0.0f && zDistToExit <= SAFE_FALL_DIST && bBelowTopFloor )
 			{
-				EnterDismountPhase( me );
-				return Continue();
+				bWantsDismount = true;
 			}
 		}
 
@@ -275,18 +457,42 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			{
 				if ( bExitIsBehind )
 				{
-					dismountZ = Min( m_exitAreaCenter.z, targetZ );
+					dismountZ = Min( m_dismountPos.z, targetZ );
 				}
 			}
 			else
 			{
 				// Allow early drop-off at intermediate floors
-				dismountZ = Max( m_exitAreaCenter.z, targetZ );
+				dismountZ = Max( m_dismountPos.z, targetZ );
 			}
 		}
 
 		// Check if we've reached the target exit height
 		if ( m_bGoingUp ? ( currentZ >= dismountZ ) : ( currentZ <= dismountZ ) )
+		{
+			bWantsDismount = true;
+		}
+
+		// A gap at the top only a crouched body fits through, such as a vent or a low window: climbing on never clears it,
+		// so duck on the way up, and step off crouched once the gap is in reach
+		if ( m_bGoingUp && onLadder && m_pExitArea && currentZ > GetCrawlFeetZ() - CRAWL_DUCK_RANGE && IsCrawlOnlyExit( me, toExit ) )
+		{
+			me->PressCrouchButton( CRAWL_CROUCH_HOLD );
+			if ( ( me->GetFlags() & FL_DUCKING ) && fabsf( GetCrawlFeetZ() - currentZ ) <= CRAWL_SNAP_DIST )
+			{
+				m_bCrawlDismount = true;
+				EnterDismountPhase( me );
+				UpdateCrawlDismount( me, toExit, onLadder );
+				return Continue();
+			}
+		}
+
+		// A parapet between the ladder and a roof exit blocks the step off at floor height:
+		// keep climbing until the hull clears it (stuck detection ends it if nothing does)
+		const bool bLipInTheWay = bWantsDismount && m_bGoingUp && onLadder
+			&& IsDismountBlocked( me, m_pExitArea ? toExit : m_ladderForward );
+
+		if ( bWantsDismount && !bLipInTheWay )
 		{
 			EnterDismountPhase( me );
 			return Continue();
@@ -299,7 +505,12 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			bool bShouldGoUp = m_bGoingUp;
 			if ( m_pExitArea )
 			{
-				bShouldGoUp = ( currentZ < m_exitAreaCenter.z );
+				bShouldGoUp = ( currentZ < m_dismountPos.z );
+			}
+
+			if ( bLipInTheWay )
+			{
+				bShouldGoUp = true;
 			}
 
 			if ( bShouldGoUp )
@@ -314,12 +525,37 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		}
 
 
-		// Look at and move to the dismount height, slightly behind the ladder
-		Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
-		lookTarget -= m_ladder->GetNormal() * 50.0f;
-		body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr,
-			m_bGoingUp ? "Climbing up (looking at dismount position)" : "Climbing down (looking at dismount position)" );
-		me->PressForwardButton(0.1f);
+		// A descent the locomotion has claimed is aimed by its DescendLadder();
+		// a second MANDATORY aim here would hold the view back from it
+		if ( m_bGoingUp || !mover->IsUsingLadder() )
+		{
+			// Look at and move to the dismount height, slightly behind the ladder
+			Vector lookTarget = m_ladder->GetPosAtHeight( dismountZ );
+			lookTarget -= m_ladder->GetNormal() * 50.0f;
+			body->AimHeadTowards( lookTarget, IBody::MANDATORY, 0.1f, nullptr,
+				m_bGoingUp ? "Climbing up (looking at dismount position)" : "Climbing down (looking at dismount position)" );
+		}
+
+		if ( bHoldForView )
+		{
+			me->ReleaseForwardButton();
+		}
+		else
+		{
+			me->PressForwardButton(0.1f);
+		}
+
+		if ( onLadder && m_nudgeTimer.HasStarted() && !m_nudgeTimer.IsElapsed() )
+		{
+			if ( m_nNudges % 2 )
+			{
+				me->PressRightButton( 0.1f );
+			}
+			else
+			{
+				me->PressLeftButton( 0.1f );
+			}
+		}
 	}
 
 	//------------------------------------------------------------
@@ -327,8 +563,10 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 	//------------------------------------------------------------
 	if ( m_bDismountPhase )
 	{
-		// Reached the target NavArea after the ladder
-		if ( m_pExitArea && me->GetLastKnownArea() == m_pExitArea )
+		// The last known area becomes the landing while the bot is still in the air beside it,
+		// so finish once the bot stands on the landing, or enters a narrow one it crosses
+		if ( m_pExitArea && me->GetLastKnownArea() == m_pExitArea
+			&& ( IsNarrowLanding( me ) || ( mover->IsOnGround() && m_pExitArea->IsOverlapping( myPos ) ) ) )
 		{
 			return Done( "Reached next NavArea after dismount" );
 		}
@@ -339,14 +577,20 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 			return Done( "Dismount walk timed out" );
 		}
 
+		if ( m_bCrawlDismount && m_pExitArea )
+		{
+			UpdateCrawlDismount( me, toExit, onLadder );
+			return Continue();
+		}
+
 		// Build look target toward exit area center with vertical bias preserved
 		if ( m_pExitArea )
 		{
-			bool bDroppingEarly = ( myPos.z >= m_exitAreaCenter.z ); 
+			bool bDroppingEarly = ( myPos.z >= m_dismountPos.z ); 
 			// Maintain Z-height while on the ladder in the dismount phase
 			if ( onLadder )
 			{
-				if ( myPos.z < m_exitAreaCenter.z )
+				if ( myPos.z < m_dismountPos.z )
 				{
 					me->PressMoveUpButton();
 				}
@@ -360,7 +604,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 				bDroppingEarly = true;
 			}
 
-			body->AimHeadTowards( m_exitAreaCenter, IBody::MANDATORY, 0.1f, nullptr, "Walking to exit area" );
+			body->AimHeadTowards( m_dismountPos, IBody::MANDATORY, 0.1f, nullptr, "Walking to exit area" );
 
 			// Jump to detach from ladder if exit is not straight ahead, or if we have reached the exit height
 			float dot = DotProduct( toExit, m_ladderForward );
@@ -393,7 +637,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 
 			if ( me->IsDebugging( NEXTBOT_PATH ) )
 			{
-				NDebugOverlay::Line( myPos, m_exitAreaCenter, 0, 255, 255, true, 0.1f );
+				NDebugOverlay::Line( myPos, m_dismountPos, 0, 255, 255, true, 0.1f );
 			}
 		}
 		else
@@ -412,6 +656,112 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 	}
 
 	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
+bool CNEOBotLadderClimb::IsDismountBlocked( CNEOBot *me, const Vector &toExit ) const
+{
+	const Vector &feet = me->GetLocomotionInterface()->GetFeet();
+	const float hullWidth = me->GetBodyInterface()->GetHullWidth();
+	const Vector traceEnd = feet + toExit * ( DISMOUNT_CLEARANCE_HULLS * hullWidth );
+
+	trace_t tr;
+	UTIL_TraceHull( feet, traceEnd, me->WorldAlignMins(), me->WorldAlignMaxs(), MASK_NPCSOLID, me, COLLISION_GROUP_NONE, &tr );
+
+	return tr.DidHit();
+}
+//---------------------------------------------------------------------------------------------
+// Which way to crawl off toward the exit: along the face for an exit beside the ladder,
+// since on the ladder a press with any part into the face climbs
+Vector CNEOBotLadderClimb::GetCrawlDirection( const Vector &toExit ) const
+{
+	if ( DotProduct( toExit, m_ladderForward ) >= 0.5f )
+	{
+		return toExit;
+	}
+
+	const Vector &normal = m_ladder->GetNormal();
+	Vector along = toExit - DotProduct( toExit, normal ) * normal;
+	along.z = 0.0f;
+	return ( along.NormalizeInPlace() > 0.0f ) ? along : toExit;
+}
+
+//---------------------------------------------------------------------------------------------
+// Where the feet step off crawling: just above the ladder's top
+float CNEOBotLadderClimb::GetCrawlFeetZ() const
+{
+	return m_ladder->m_top.z + CRAWL_FEET_ABOVE_TOP;
+}
+
+//---------------------------------------------------------------------------------------------
+// From the ladder's top toward the exit, the standing body is blocked but a crouched one is clear
+bool CNEOBotLadderClimb::IsCrawlOnlyExit( CNEOBot *me, const Vector &toExit ) const
+{
+	const IBody *body = me->GetBodyInterface();
+	const float halfWidth = body->GetHullWidth() * 0.5f;
+	const Vector mins( -halfWidth, -halfWidth, 0.0f );
+	const Vector standMaxs( halfWidth, halfWidth, body->GetStandHullHeight() );
+	const Vector crouchMaxs( halfWidth, halfWidth, body->GetCrouchHullHeight() );
+
+	Vector start = me->GetLocomotionInterface()->GetFeet();
+	start.z = GetCrawlFeetZ();
+	const Vector end = start + GetCrawlDirection( toExit ) * ( DISMOUNT_CLEARANCE_HULLS * body->GetHullWidth() );
+
+	trace_t tr;
+	UTIL_TraceHull( start, end, mins, standMaxs, MASK_NPCSOLID, me, COLLISION_GROUP_NONE, &tr );
+	if ( !tr.DidHit() )
+	{
+		return false;
+	}
+
+	UTIL_TraceHull( start, end, mins, crouchMaxs, MASK_NPCSOLID, me, COLLISION_GROUP_NONE, &tr );
+	return !tr.DidHit();
+}
+
+//---------------------------------------------------------------------------------------------
+// Bot updates come a tenth of a second apart, too coarse to stop a climb inside the gap's few units,
+// so the crouched bot is set just above the ladder's top, let go of the ladder and pushed into the gap:
+//
+//              |#####|          <- the gap's top
+//      ladder  | o-> |  landing
+//       ||     |_____|________  <- the gap's sill, the ladder's top
+//       ||     |#####|
+void CNEOBotLadderClimb::UpdateCrawlDismount( CNEOBot *me, const Vector &toExit, bool bOnLadder )
+{
+	me->PressCrouchButton( CRAWL_CROUCH_HOLD );
+	if ( bOnLadder && !m_bCrawlPushed )
+	{
+		m_bCrawlPushed = true;
+
+		Vector crawlPos = me->GetLocomotionInterface()->GetFeet();
+		crawlPos.z = GetCrawlFeetZ();
+		trace_t tr;
+		UTIL_TraceHull( crawlPos, crawlPos, me->WorldAlignMins(), me->WorldAlignMaxs(), MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
+		if ( tr.startsolid )
+		{
+			return;
+		}
+
+		me->ReleaseMoveUpButton();
+		me->ReleaseForwardButton();
+		me->SetAbsOrigin( crawlPos );
+		me->SetMoveType( MOVETYPE_WALK );
+
+		// with a little rise, so the bot reaches the sill before it falls below it
+		Vector push = GetCrawlDirection( toExit ) * CRAWL_PUSH_SPEED;
+		push.z = CRAWL_PUSH_RISE_SPEED;
+		me->SetAbsVelocity( push );
+		return;
+	}
+
+	// Level, so the bot looks where it walks. In the air beside the ladder a press toward its face grabs it again,
+	// so the push alone carries the bot until it lands
+	me->GetBodyInterface()->AimHeadTowards( me->EyePosition() + toExit * 100.0f, IBody::MANDATORY, 0.1f, nullptr, "Crawling off the ladder" );
+	ILocomotion *mover = me->GetLocomotionInterface();
+	if ( mover->IsOnGround() )
+	{
+		mover->Approach( mover->GetFeet() + toExit * 100.0f );
+	}
 }
 
 //---------------------------------------------------------------------------------------------

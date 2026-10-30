@@ -41,6 +41,7 @@
 #include "nav_mesh.h"
 #include "neo_spawn_manager.h"
 #include "recipientfilter.h"
+#include "nav_mesh.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -62,7 +63,6 @@ SendPropEHandle(SENDINFO(m_hCommandingPlayer)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bInVision)),
-SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
 SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
@@ -80,7 +80,6 @@ SendPropArray(SendPropVector(SENDINFO_ARRAY(m_vLastPingByStar), -1, SPROP_COORD)
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
 SendPropString(SENDINFO(m_szNeoClantag)),
-SendPropString(SENDINFO(m_szNeoCrosshair)),
 SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
 
@@ -104,7 +103,6 @@ DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
-DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
@@ -119,7 +117,6 @@ DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
 DEFINE_FIELD(m_szNeoName, FIELD_STRING),
 DEFINE_FIELD(m_szNeoClantag, FIELD_STRING),
-DEFINE_FIELD(m_szNeoCrosshair, FIELD_STRING),
 DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 
@@ -142,8 +139,8 @@ CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
 extern ConVar sv_neo_bot_cmdr_enable;
-extern ConVar sv_neo_ignore_wep_xp_limit;
 extern ConVar sv_neo_clantag_allow;
+extern ConVar sv_neo_detpack_xp_limit;
 extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
 extern ConVar sv_neo_dev_loadout;
@@ -170,6 +167,9 @@ ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detec
 ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.45", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.50", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
 
+// onTargetTolerance defines on-target aim threshold as 0.98
+ConVar sv_neo_bot_cloak_detection_threshold_ratio_aim_on_target("sv_neo_bot_cloak_detection_threshold_ratio_aim_on_target", "0.98", FCVAR_NONE, "Bot cloak detection threshold when considered aimed on target", true, 0.0f, true, 1.0f);
+
 // Bot Cloak Detection Bonus Factors
 // Used in CNEO_Player::GetFogObscuredRatio to determine if the bot (me) can detect a cloaked target given circumstances
 // Style guide:
@@ -179,45 +179,41 @@ ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detec
 ConVar sv_neo_bot_cloak_debug_perceive_always_on("sv_neo_bot_cloak_debug_perceive_always_on", "0", FCVAR_CHEAT,
 	"Debug: Force bots to perceive all players as having cloaking on all the time", true, 0, true, 1);
 
-ConVar sv_neo_bot_cloak_detection_bonus_disruption_effect("sv_neo_bot_cloak_detection_bonus_disruption_effect", "30", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_disruption_effect("sv_neo_bot_cloak_detection_bonus_disruption_effect", "8", FCVAR_NONE,
 	"Bot cloak detection bonus for target being surrounded by the blue disruption effect", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_assault_motion_vision("sv_neo_bot_cloak_detection_bonus_assault_motion_vision", "60", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_assault_motion_vision("sv_neo_bot_cloak_detection_bonus_assault_motion_vision", "15", FCVAR_NONE,
 	"Bot cloak detection bonus for assault class detecting movement with motion vision", true, 0, true, 100);
 
 // Support has difficulty seeing cloak in thermal vision
-ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "5", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_non_support("sv_neo_bot_cloak_detection_bonus_non_support", "2", FCVAR_NONE,
 	"Bot cloak detection bonus for non-support classes", true, 0, true, 100);
 
-// 0.7 dot product is about a 45 degree half hangle for a 90 degree cone
-ConVar sv_neo_bot_cloak_detection_aim_bonus_dot_threshold("sv_neo_bot_cloak_detection_aim_bonus_dot_threshold", "0.3", FCVAR_NONE,
-	"Bot cloak detection bonus minimum dot product threshold for aim bonus", true, 0.01, true, 0.7);
-
-ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "10", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_observer_stationary("sv_neo_bot_cloak_detection_bonus_observer_stationary", "3", FCVAR_NONE,
 	"Bot cloak detection bonus for observer being stationary", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_observer_walking("sv_neo_bot_cloak_detection_bonus_observer_walking", "5", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_observer_walking("sv_neo_bot_cloak_detection_bonus_observer_walking", "1", FCVAR_NONE,
 	"Bot cloak detection bonus for observer walking", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_running("sv_neo_bot_cloak_detection_bonus_target_running", "10", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_running("sv_neo_bot_cloak_detection_bonus_target_running", "3", FCVAR_NONE,
 	"Bot cloak detection bonus for target running", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_moving("sv_neo_bot_cloak_detection_bonus_target_moving", "5", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_moving("sv_neo_bot_cloak_detection_bonus_target_moving", "1", FCVAR_NONE,
 	"Bot cloak detection bonus for target moving", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_target_standing("sv_neo_bot_cloak_detection_bonus_target_standing", "5", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_target_standing("sv_neo_bot_cloak_detection_bonus_target_standing", "1", FCVAR_NONE,
 	"Bot cloak detection bonus for target standing", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_scope_range("sv_neo_bot_cloak_detection_bonus_scope_range", "10", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_scope_range("sv_neo_bot_cloak_detection_bonus_scope_range", "3", FCVAR_NONE,
 	"Bot cloak detection bonus for being in scope range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_shotgun_range("sv_neo_bot_cloak_detection_bonus_shotgun_range", "60", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_shotgun_range("sv_neo_bot_cloak_detection_bonus_shotgun_range", "12", FCVAR_NONE,
 	"Bot cloak detection bonus for being in shotgun range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_melee_range("sv_neo_bot_cloak_detection_bonus_melee_range", "80", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_melee_range("sv_neo_bot_cloak_detection_bonus_melee_range", "20", FCVAR_NONE,
 	"Bot cloak detection bonus for being in melee range", true, 0, true, 100);
 
-ConVar sv_neo_bot_cloak_detection_bonus_per_injury("sv_neo_bot_cloak_detection_bonus_per_injury", "5", FCVAR_NONE,
+ConVar sv_neo_bot_cloak_detection_bonus_per_injury("sv_neo_bot_cloak_detection_bonus_per_injury", "1", FCVAR_NONE,
 	"Bot cloak detection bonus per injury event", true, 0, true, 100);
 
 // TODO: Lighting information is not yet baked into NavAreas, so we would need to implement that for bots to detect based on lighting
@@ -392,9 +388,8 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (!sv_neo_ignore_wep_xp_limit.GetBool() &&
-			loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
-				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
+	if (loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
+			sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = RequestSetLoadout(0);
@@ -584,10 +579,8 @@ CNEO_Player::CNEO_Player()
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	m_bNeoNameHasSet = false;
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
-	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
 	m_bInThermOpticCamo = m_bInVision = false;
-	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 	m_bCarryingGhost = false;
 	m_bInLean = NEO_LEAN_NONE;
@@ -600,10 +593,7 @@ CNEO_Player::CNEO_Player()
 
 	m_flCamoAuxLastTime = 0;
 	m_flVisionLastTime = 0;
-	m_flLastAirborneJumpOkTime = 0;
-	m_flLastSuperJumpTime = 0;
 	m_botThermOpticCamoDisruptedTimer.Invalidate();
-
 
 	m_bFirstDeathTick = true;
 	m_bCorpseSet = false;
@@ -725,6 +715,7 @@ void CNEO_Player::Spawn(void)
 	}
 
 	BaseClass::Spawn();
+	FixupOnGroundFlag();
 
 	SetMaxHealth(MAX_HEALTH_FOR_CLASS[m_iNeoClass]);
 	SetHealth(GetMaxHealth());
@@ -1152,37 +1143,6 @@ void CNEO_Player::PreThink(void)
 		Lean();
 	}
 
-	// NEO HACK (Rain): Just bodging together a check for if we're allowed
-	// to superjump, or if we've been airborne too long for that.
-	// Ideally this should get cleaned up and moved to wherever
-	// the regular engine jump does a similar check.
-	bool newNetAirborneVal;
-	if (IsAirborne())
-	{
-		m_flLastAirborneJumpOkTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		const float leeway = 0.5f;
-		if (deltaTime > leeway)
-		{
-			newNetAirborneVal = false;
-			m_flLastAirborneJumpOkTime = gpGlobals->curtime;
-		}
-		else
-		{
-			newNetAirborneVal = true;
-		}
-	}
-	else
-	{
-		newNetAirborneVal = false;
-	}
-	// Only send the network update if we actually changed state
-	if (m_bHasBeenAirborneForTooLongToSuperJump != newNetAirborneVal)
-	{
-		m_bHasBeenAirborneForTooLongToSuperJump = newNetAirborneVal;
-		NetworkStateChanged();
-	}
-
 	if (m_iNeoClass == NEO_CLASS_RECON &&
 		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) &&
 		IsAllowedToSuperJump())
@@ -1193,6 +1153,21 @@ void CNEO_Player::PreThink(void)
 		if (forward xor backward)
 		{
 			SuperJump();
+		}
+	}
+
+	if (TheNavMesh)
+	{
+		// NEO TODO (Adam) do this in OnNavAreaChanged instead
+		const CNavArea* pArea = GetLastKnownArea();
+		const char* placeName = pArea ? TheNavMesh->PlaceToName(pArea->GetPlace()) : NULL;
+		if (!placeName || !placeName[0])
+		{
+			placeName = "";
+		}
+		if (Q_strcmp(m_szLastPlaceName.Get(), placeName))
+		{
+			Q_strncpy(m_szLastPlaceName.GetForModify(), placeName, sizeof(m_szLastPlaceName));
 		}
 	}
 }
@@ -1327,9 +1302,10 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 		return false; // Not a player that is affected by cloaking/etc
 	}
 
-	if (GetTeamNumber() == targetPlayer->GetTeamNumber())
+	if (NEORules()->IsTeamplay() && GetTeamNumber() == targetPlayer->GetTeamNumber())
 	{
-		return false; // Teammates are always labeled with IFF
+		// Teammates are always labeled with IFF, unless in DM
+		return false;
 	}
 
 	// Check visibility cache for this player
@@ -1461,6 +1437,19 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		return 0.0f;
 	}
 
+	// Compute how closely player is looking at the target
+	Vector vEyeForward;
+	AngleVectors(pl.v_angle, &vEyeForward);
+	Vector vToTarget = target->WorldSpaceCenter() - (GetAbsOrigin() + GetViewOffset());
+	vToTarget.NormalizeInPlace();
+	const float flDot = vEyeForward.Dot(vToTarget);
+
+	// If the aim is close on target, consider the target spotted
+	if (flDot > sv_neo_bot_cloak_detection_threshold_ratio_aim_on_target.GetFloat())
+	{
+		return 0.0f;
+	}
+
 	// From this point on, assume we are counting bonus points towards observer detection
 	float flDetectionBonus = 0.0f; // # of factors that are helping the observer detect the target
 
@@ -1566,20 +1555,9 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		}
 	}
 
-	// The closer a target is to the bot's center aim, the more noticeable they are
-	Vector vEyeForward;
-	AngleVectors(pl.v_angle, &vEyeForward);
-	Vector vToTarget = target->WorldSpaceCenter() - (GetAbsOrigin() + GetViewOffset());
-	vToTarget.NormalizeInPlace();
-	float flDot = vEyeForward.Dot(vToTarget);
-	float flFovBonusRatio = RemapValClamped(flDot, sv_neo_bot_cloak_detection_aim_bonus_dot_threshold.GetFloat(), 1.0f, 0.0f, 1.0f);
-	// Make bonus more pronounced closer to the center and less so at edges
-	flFovBonusRatio *= flFovBonusRatio;
-
 	float obscuredDenominator = 100.0f; // scale from 0-100 percent likelyhood to detect every 200ms
 
 	float obscuredNumerator = Max(0.0f, obscuredDenominator - flDetectionBonus);
-	obscuredNumerator *= (1.0f - flFovBonusRatio);
 
 	float obscuredRatio = obscuredNumerator / obscuredDenominator;
 	obscuredRatio = Clamp(obscuredRatio, 0.0f, 1.0f);
@@ -1645,51 +1623,6 @@ void CNEO_Player::SuperJump(void)
 #endif
 
 	ApplyAbsVelocityImpulse(forward * boostIntensity);
-}
-
-bool CNEO_Player::IsAllowedToSuperJump(void)
-{
-	// NEOJANK: Bots are exempt from certain checks due to their their erratic input control
-	if (!IsBot())
-	{
-		if (!IsSprinting())
-			return false;
-	}
-
-	if (IsCarryingGhost())
-		return false;
-
-	if (GetMoveParent())
-		return false;
-
-	if (IsPlayerUnderwater())
-		return false;
-
-	// Can't superjump whilst airborne (although it is kind of cool)
-	if (m_bHasBeenAirborneForTooLongToSuperJump)
-		return false;
-
-	// Only superjump if we have a reasonable jump direction in mind
-	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
-	{
-		return false;
-	}
-
-	if (SuitPower_GetCurrentPercentage() < SUPER_JMP_COST)
-		return false;
-
-	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
-	{
-		m_flLastSuperJumpTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - m_flLastSuperJumpTime;
-		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
-			return false;
-
-		m_flLastSuperJumpTime = gpGlobals->curtime;
-	}
-
-	return true;
 }
 
 void CNEO_Player::PostThink(void)
@@ -3398,8 +3331,8 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				flDmgAccumlator -= 1.0f;
 			}
 
-			// Mirror team-damage
-			const bool bIsTeamDmg = (attackerIdx != entindex() && attacker->GetTeamNumber() == GetTeamNumber());
+			// Mirror team-damage (unless in DM)
+			const bool bIsTeamDmg = (NEORules()->IsTeamplay() && attackerIdx != entindex() && attacker->GetTeamNumber() == GetTeamNumber());
 			if (bIsTeamDmg)
 			{
 				const float flMirrorMult = NEORules()->MirrorDamageMultiplier();
@@ -3443,7 +3376,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 					++m_iBotDetectableBleedingInjuryEvents;
 				}
 
-				if (bIsTeamDmg && NEORules()->IsTeamplay() && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
+				if (bIsTeamDmg && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
 				{
 					attacker->m_botPauseFiringTimer.Start(1.0f);
 				}
@@ -3476,6 +3409,15 @@ CBaseEntity* CNEO_Player::GiveNamedItem(const char* szName, int iSubType)
 
 void GiveDet(CNEO_Player* pPlayer)
 {
+	// Cost of -1 XP means no XP cost. Checked before creating the weapon
+	// entity so ineligible players don't pay a create/destroy cycle.
+	const int detXpCost = sv_neo_detpack_xp_limit.GetInt();
+	const bool canHaveDet = (detXpCost < 0 || CNEOWeaponLoadout::GetEffectiveXP(pPlayer->m_iXP) >= detXpCost);
+	if (!canHaveDet)
+	{
+		return;
+	}
+
 	constexpr const char* detpackClassname = "weapon_remotedet";
 	if (!pPlayer->Weapon_OwnsThisType(detpackClassname))
 	{
@@ -3493,23 +3435,12 @@ void GiveDet(CNEO_Player* pPlayer)
 			auto pWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
 			if (pWeapon)
 			{
-				const int detXpCost = pWeapon->GetNeoWepXPCost(pPlayer->GetClass());
-				// Cost of -1 XP means no XP cost.
-				const bool canHaveDet = (detXpCost < 0 || pPlayer->m_iXP >= detXpCost);
-
 				pWeapon->SetSubType(0);
-				if (canHaveDet)
-				{
-					DispatchSpawn(pent);
+				DispatchSpawn(pent);
 
-					if (pent != NULL && !(pent->IsMarkedForDeletion()))
-					{
-						pent->Touch(pPlayer);
-					}
-				}
-				else
+				if (pent != NULL && !(pent->IsMarkedForDeletion()))
 				{
-					UTIL_Remove(pWeapon);
+					pent->Touch(pPlayer);
 				}
 			}
 		}
@@ -3523,7 +3454,7 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
-		if (this->m_iXP >= 4) { GiveDet(this); }
+		GiveDet(this);
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
@@ -3597,9 +3528,8 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (sv_neo_ignore_wep_xp_limit.GetBool() ||
-				m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
-					sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()))
+		if (m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
+				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 
@@ -4282,14 +4212,11 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			m_HL2Local.m_flSuitPower = pPlayerTakeoverTarget->m_HL2Local.m_flSuitPower;
 
 			m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
-			m_bHasBeenAirborneForTooLongToSuperJump = pPlayerTakeoverTarget->m_bHasBeenAirborneForTooLongToSuperJump;
 			m_bInAim = pPlayerTakeoverTarget->m_bInAim;
 			Weapon_SetZoom(pPlayerTakeoverTarget->m_bInAim);
 			m_bCarryingGhost = pPlayerTakeoverTarget->m_bCarryingGhost;
 			m_bInLean = pPlayerTakeoverTarget->m_bInLean;
 			m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
-			m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
-			m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
 			m_botThermOpticCamoDisruptedTimer.Invalidate(); // taken over by player
 			m_bFirstDeathTick = pPlayerTakeoverTarget->m_bFirstDeathTick;
 			m_bCorpseSet = pPlayerTakeoverTarget->m_bCorpseSet;

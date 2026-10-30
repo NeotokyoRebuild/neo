@@ -369,7 +369,7 @@
 		"textAlignment"		"center"
 		"dulltext"		"0"
 		"brighttext"		"1"
-		"Font"		"Default"
+		"font"		"CLTDefault"
 		"wrap"		"0"
 		"Command"		"classmenu"
 		"Default"		"0"

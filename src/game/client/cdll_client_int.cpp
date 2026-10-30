@@ -154,6 +154,7 @@
 #include <vgui_controls/Button.h>
 #include <vgui_controls/MenuButton.h>
 #include "neo_mp3player.h"
+#include "neo/neo_debugoverlay_budget.h"
 #endif
 
 extern vgui::IInputInternal *g_InputInternal;
@@ -939,6 +940,49 @@ static void RestrictNeoClientCheats()
 			AssertMsg1(false, "convar or concmd named \"%s\" was not found\n", cheatName);
 	}
 }
+
+// Verify crosshair and fixup any invalid crosshair to default
+static void FixupNeoCrosshair()
+{
+	ConVarRef cl_neo_crosshair("cl_neo_crosshair");
+
+	const char* pszCrosshair = cl_neo_crosshair.GetString();
+	const int crosshairVer = V_atoi(pszCrosshair);
+
+	const auto fnRevertCrosshairToDefault = [&cl_neo_crosshair]() {
+		// Don't need to call DefaultCrosshairSerial(szBuffer) again
+		// because InitializeClNeoCrosshair has set the default value.
+		cl_neo_crosshair.SetValue(cl_neo_crosshair.GetDefault());
+		};
+
+	if (!ValidateCrosshairSerial(pszCrosshair, crosshairVer))
+		return fnRevertCrosshairToDefault();
+
+	// Upgrade pre NEOXHAIR_SERIAL_ALPHA_V35 crosshairs to NEOXHAIR_SERIAL_ALPHA_V35+
+	// This is the version where delimiter char was changed from ';' to ','
+	if (crosshairVer < NEOXHAIR_SERIAL_ALPHA_V35)
+	{
+		CrosshairInfo oldXhairInfo = {};
+		if (!ImportCrosshair(&oldXhairInfo, pszCrosshair))
+		{
+			Assert(false);
+			return fnRevertCrosshairToDefault();
+		}
+		char szBuffer[NEO_XHAIR_SEQMAX];
+		ExportCrosshair(&oldXhairInfo, szBuffer);
+
+		// Verify old and new crosshair formats hold the same information
+		CrosshairInfo newXhairInfo = {};
+		if (!ImportCrosshair(&newXhairInfo, szBuffer) || newXhairInfo != oldXhairInfo)
+		{
+			Assert(false);
+			return fnRevertCrosshairToDefault();
+		}
+
+		// All is well, update the cvar contents with the newest serialization
+		cl_neo_crosshair.SetValue(szBuffer);
+	}
+}
 #endif
 
 // Purpose: Called when the DLL is first loaded.
@@ -991,8 +1035,15 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		return false;
 	if ( (render = (IVRenderView *)appSystemFactory( VENGINE_RENDERVIEW_INTERFACE_VERSION, NULL )) == NULL )
 		return false;
+#ifdef NEO
+	// Route every debug overlay through the budgeting proxy (neo/neo_debugoverlay_budget.*)
+	// so a runaway per-tick visualiser such as nb_debug can't exhaust the renderer.
+	if ( (debugoverlay = NEO_InstallDebugOverlayBudget( (IVDebugOverlay *)appSystemFactory( VDEBUG_OVERLAY_INTERFACE_VERSION, NULL ) )) == NULL )
+		return false;
+#else
 	if ( (debugoverlay = (IVDebugOverlay *)appSystemFactory( VDEBUG_OVERLAY_INTERFACE_VERSION, NULL )) == NULL )
 		return false;
+#endif
 	if ( (datacache = (IDataCache*)appSystemFactory(DATACACHE_INTERFACE_VERSION, NULL )) == NULL )
 		return false;
 	if ( !mdlcache )
@@ -1408,15 +1459,9 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(NeoMP3::MusicVolCallback);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 		RestrictNeoClientCheats();
+		g_pCVar->FindVar("fps_max")->AddFlags(FCVAR_ARCHIVE);
 
-		// Fixup invalid crosshair to default
-		ConVarRef cl_neo_crosshair("cl_neo_crosshair");
-		if (false == ValidateCrosshairSerial(cl_neo_crosshair.GetString()))
-		{
-			char szSequence[NEO_XHAIR_SEQMAX] = {};
-			DefaultCrosshairSerial(szSequence);
-			cl_neo_crosshair.SetValue(szSequence);
-		}
+		FixupNeoCrosshair();
 
 		ConVar *sv_maxupdaterate = g_pCVar->FindVar( "sv_maxupdaterate" ); Assert(sv_maxupdaterate);
 		ConVar *cl_updaterate = g_pCVar->FindVar( "cl_updaterate" ); Assert(cl_updaterate);
@@ -1527,6 +1572,16 @@ void CHLClient::PostInit()
 					char szExportSeq[NEO_XHAIR_SEQMAX];
 					ExportCrosshair(&xhairInfo, szExportSeq);
 					cl_neo_crosshair.SetValue(szExportSeq);
+				}
+			}
+
+			if (iCfgVerMajor < 35)
+			{
+				ConVarRef cl_software_cursor("cl_software_cursor");
+				Assert(cl_software_cursor.IsValid());
+				if (cl_software_cursor.IsValid())
+				{
+					cl_software_cursor.SetValue(cl_software_cursor.GetDefault());
 				}
 			}
 

@@ -374,7 +374,6 @@ void CWeaponSupa7::PrimaryAttack(void)
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
 
-	pPlayer->ViewPunchReset();
 	AddViewKick();
 }
 

@@ -9,6 +9,8 @@ public:
 	DECLARE_CLIENTCLASS();
 
 	int m_spawnflags;
+	char m_szUseHintText[64];
+	bool m_bUseHint;
 	
 	virtual int	ObjectCaps(void) override;
 };

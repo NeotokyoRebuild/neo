@@ -52,6 +52,7 @@ public:
 	virtual const char *GetTracerType() override final { return "AirboatGunTracer"; }
 	virtual bool CanDrop() final { return false; }
 	virtual bool CanAim() final { return true; }
+	virtual bool IsWeaponReloadable() const override final { return false; }
 	inline virtual bool IsAutomatic(void) const override final
 	{
 		return m_bIsPrimaryFireMode;

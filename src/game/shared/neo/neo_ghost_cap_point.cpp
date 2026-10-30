@@ -79,7 +79,7 @@ END_DATADESC()
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 {
 	m_flCapzoneRadius = -1;
-	m_iOwningTeam = TEAM_INVALID;
+	m_iOwningTeam = NEO_FGD_TEAMNUM_ATTACKER;
 	m_bIsActive = true;
 
 #ifdef CLIENT_DLL

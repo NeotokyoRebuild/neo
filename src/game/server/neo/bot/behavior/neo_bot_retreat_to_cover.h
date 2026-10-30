@@ -1,5 +1,11 @@
 #pragma once
 
+// How many known enemies could see into this area
+int CountThreatsExposingArea( CNEOBot *me, CNavArea *area );
+
+// Bots do not retreat from the ghost carrier
+bool IsThreatGhostCarrier( const CKnownEntity *threat );
+
 class CNEOBotRetreatToCover : public Action< CNEOBot >
 {
 public:
@@ -22,7 +28,6 @@ private:
 	Action< CNEOBot > *m_actionToChangeToOnceCoverReached;
 
 	PathFollower m_path;
-	CountdownTimer m_repathTimer;
 
 	CNavArea *m_coverArea;
 	CountdownTimer m_grenadeCheckTimer;
