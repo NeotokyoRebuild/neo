@@ -23,16 +23,16 @@ private:
 	void DrawRangeFinder(C_NEO_Player* pPlayer, int &offset);
 	void DrawWalkingIndicator(C_NEO_Player* pPlayer, int &offset);
 
-	CPanelAnimationVarAliasType(bool, visible, "visible", "1", "bool");
+	CPanelAnimationVarAliasType(bool, m_bVisible, "visible", "1", "bool");
 
-	CPanelAnimationVarAliasType(int, xpos, "xpos", "r203", "proportional_xpos");
-	CPanelAnimationVarAliasType(int, ypos, "ypos", "446", "proportional_ypos");
+	CPanelAnimationVarAliasType(int, m_iXpos, "xpos", "r203", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, m_iYpos, "ypos", "446", "proportional_ypos");
 
-	CPanelAnimationVar(float, animationSpeed, "animationSpeed", "2");
+	CPanelAnimationVar(float, m_flAnimationSpeed, "animationSpeed", "2");
 
-	CPanelAnimationVarAliasType(Color, color, "color", COLOR_NEO_WHITE_STR, "Color");
-	CPanelAnimationVarAliasType(Color, color2, "color2", "255 150 150 255", "Color");
-	CPanelAnimationVar(vgui::HFont, font, "font", "NHudPanelText");
+	CPanelAnimationVarAliasType(Color, m_color, "color", COLOR_NEO_WHITE_STR, "Color");
+	CPanelAnimationVarAliasType(Color, m_color2, "color2", "255 150 150 255", "Color");
+	CPanelAnimationVar(vgui::HFont, m_hFont, "font", "NHudPanelText");
 
 private:
 	CNEOHud_WalkingIndicator(const CNEOHud_WalkingIndicator&other);

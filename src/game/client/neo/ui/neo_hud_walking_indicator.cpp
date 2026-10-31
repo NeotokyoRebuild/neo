@@ -40,14 +40,14 @@ void CNEOHud_WalkingIndicator::ApplySchemeSettings(vgui::IScheme* pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	int w,h;
-	vgui::surface()->GetTextSize(font, notWalkingText, notWalkingTextWidth, h);
+	vgui::surface()->GetTextSize(m_hFont, notWalkingText, notWalkingTextWidth, h);
 	int walkingTextWidth;
-	vgui::surface()->GetTextSize(font, walkingText, walkingTextWidth, h);
-	textHeight = vgui::surface()->GetFontTall(font);
+	vgui::surface()->GetTextSize(m_hFont, walkingText, walkingTextWidth, h);
+	textHeight = vgui::surface()->GetFontTall(m_hFont);
 
 	vgui::ipanel()->GetSize( GetVParent(), w, h );
 
-	SetBounds(xpos, ypos, w - xpos, textHeight * 2);
+	SetBounds(m_iXpos, m_iYpos, w - m_iXpos, textHeight * 2);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 }
@@ -96,8 +96,8 @@ void CNEOHud_WalkingIndicator::DrawRangeFinder(C_NEO_Player * pPlayer, int &offs
 
 	if (pPlayer->IsInAim())
 	{
-		vgui::surface()->DrawSetTextColor(color);
-		vgui::surface()->DrawSetTextFont(font);
+		vgui::surface()->DrawSetTextColor(m_color);
+		vgui::surface()->DrawSetTextFont(m_hFont);
 		vgui::surface()->DrawSetTextPos(notWalkingTextWidth, offset);
 		vgui::surface()->DrawPrintText(m_wszRangeFinder, ARRAYSIZE(m_wszRangeFinder) - 1);
 	}
@@ -128,11 +128,11 @@ void CNEOHud_WalkingIndicator::DrawWalkingIndicator(C_NEO_Player * pPlayer, int 
 				animIsMakingFootsteps = 0.f;
 			}
 		}
-		animWalkKeyPressed += gpGlobals->frametime * animationSpeed;
+		animWalkKeyPressed += gpGlobals->frametime * m_flAnimationSpeed;
 	}
 	else
 	{
-		animWalkKeyPressed -= gpGlobals->frametime * animationSpeed;
+		animWalkKeyPressed -= gpGlobals->frametime * m_flAnimationSpeed;
 	}
 	animWalkKeyPressed = Clamp(animWalkKeyPressed, 0.f, 1.f);
 
@@ -144,11 +144,11 @@ void CNEOHud_WalkingIndicator::DrawWalkingIndicator(C_NEO_Player * pPlayer, int 
 
 	if (isMakingFootsteps)
 	{
-		animIsMakingFootsteps += gpGlobals->frametime * animationSpeed;
+		animIsMakingFootsteps += gpGlobals->frametime * m_flAnimationSpeed;
 	}
 	else
 	{
-		animIsMakingFootsteps -= gpGlobals->frametime * animationSpeed;
+		animIsMakingFootsteps -= gpGlobals->frametime * m_flAnimationSpeed;
 	}
 	animIsMakingFootsteps = Clamp(animIsMakingFootsteps, 0.f, 1.f);
 
@@ -156,11 +156,11 @@ void CNEOHud_WalkingIndicator::DrawWalkingIndicator(C_NEO_Player * pPlayer, int 
 	const float animIsMakingFootstepsSmoothStep = animIsMakingFootsteps * animIsMakingFootsteps * (3.0f - 2.0f * animIsMakingFootsteps);
 	const float inverseAnimIsMakingFootstepsSmooth = 1.f - animIsMakingFootstepsSmoothStep;
 
-	const Color finalColor = Color((color2.r() * animIsMakingFootstepsSmoothStep) + (color.r() * inverseAnimIsMakingFootstepsSmooth),
-								   (color2.g() * animIsMakingFootstepsSmoothStep) + (color.g() * inverseAnimIsMakingFootstepsSmooth),
-								   (color2.b() * animIsMakingFootstepsSmoothStep) + (color.b() * inverseAnimIsMakingFootstepsSmooth),
-								   ((color2.a() * animIsMakingFootstepsSmoothStep) + (color.a() * inverseAnimIsMakingFootstepsSmooth)) * animWalkKeyPressedSmooth);
-	vgui::surface()->DrawSetTextFont(font);
+	const Color finalColor = Color((m_color2.r() * animIsMakingFootstepsSmoothStep) + (m_color.r() * inverseAnimIsMakingFootstepsSmooth),
+								   (m_color2.g() * animIsMakingFootstepsSmoothStep) + (m_color.g() * inverseAnimIsMakingFootstepsSmooth),
+								   (m_color2.b() * animIsMakingFootstepsSmoothStep) + (m_color.b() * inverseAnimIsMakingFootstepsSmooth),
+								   ((m_color2.a() * animIsMakingFootstepsSmoothStep) + (m_color.a() * inverseAnimIsMakingFootstepsSmooth)) * animWalkKeyPressedSmooth);
+	vgui::surface()->DrawSetTextFont(m_hFont);
 	if (animIsMakingFootsteps > 0.f)
 	{
 		vgui::surface()->DrawSetTextColor(finalColor.r(), finalColor.g(), finalColor.b(), finalColor.a() * animIsMakingFootstepsSmoothStep);
@@ -176,15 +176,16 @@ void CNEOHud_WalkingIndicator::DrawWalkingIndicator(C_NEO_Player * pPlayer, int 
 
 void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 {
-	if (!visible || !ShouldDraw())
+	if (!m_bVisible || !ShouldDraw())
 		return;
 
 	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalPlayer)
 		return;
 
-	C_NEO_Player* pTargetPlayer = pLocalPlayer->IsObserver() && (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE || pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE) ? static_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget())
-																																										  : pLocalPlayer;
+	C_NEO_Player* pTargetPlayer = pLocalPlayer->IsObserver() && (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE || pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE)
+									? assert_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget())
+									: pLocalPlayer;
 	if (!pTargetPlayer || !pTargetPlayer->IsAlive())
 		return;
 
