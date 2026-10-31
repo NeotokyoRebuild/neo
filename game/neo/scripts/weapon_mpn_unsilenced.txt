@@ -17,6 +17,7 @@ WeaponData
 	
 	// Reload phases, generated from segments.csv by segments_build.py (ntre proposals/0057):
 	// credit = when the phase counts, at = when its sound piece's first transient plays, both from the sequence start
+	"ReloadReadyBeforeEnd"	"0.500"	// the reload is done at the last reload click, this long before its animation ends
 	"ReloadPhases"
 	{
 		"ChamberedRound"	"1"
@@ -52,12 +53,6 @@ WeaponData
 		"draw_resume_drop_partial"
 		{
 			"seat" { "credit" "1.900" "sound" "weapon_mpn45.reload_seat" "at" "1.880" }
-		}
-		"fire_chamber_onehand"
-		{
-			"fire_at"	"0.200"
-			"seat" { "credit" "1.300" "sound" "weapon_mpn45.reload_seat" "at" "1.280" }
-			"bolt" { "credit" "2.633" "sound" "weapon_mpn45.reload_bolt" "at" "2.207" }
 		}
 	}
 	

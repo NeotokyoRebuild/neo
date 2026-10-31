@@ -38,7 +38,7 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 
 static ReloadPhase_t ReloadPhaseFromName(const char *pszName)
 {
-	static constexpr const char *PHASE_NAMES[RELOAD_PHASE_COUNT] = { "", "drop", "seat", "slap", "bolt" };
+	static constexpr const char *PHASE_NAMES[RELOAD_PHASE_COUNT] = { "", "drop", "seat", "bolt" };
 	for (int i = RELOAD_PHASE_DROPPED; i < RELOAD_PHASE_COUNT; ++i)
 	{
 		if (V_stricmp(pszName, PHASE_NAMES[i]) == 0)
@@ -63,7 +63,6 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 	{
 		ReloadPhaseTable_t &table = m_reloadTables[m_iNumReloadTables++];
 		V_strncpy(table.szSequence, pSeq->GetName(), sizeof(table.szSequence));
-		table.flFireAt = pSeq->GetFloat("fire_at");
 		table.iNumRows = 0;
 
 		for (KeyValues *pRow = pSeq->GetFirstTrueSubKey(); pRow && table.iNumRows < RELOAD_PHASE_ROWS_MAX; pRow = pRow->GetNextTrueSubKey())
@@ -78,7 +77,9 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 			ReloadPhaseRow_t &row = table.rows[table.iNumRows++];
 			row.phase = phase;
 			row.flCredit = pRow->GetFloat("credit");
-			static constexpr const char *SOUND_KEYS[RELOAD_SOUNDS_PER_ROW][2] = { { "sound", "at" }, { "sound2", "at2" } };
+			static constexpr const char *SOUND_KEYS[RELOAD_SOUNDS_PER_ROW][2] = {
+				{ "sound", "at" }, { "sound2", "at2" }, { "sound3", "at3" }
+			};
 			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
 			{
 				row.sounds[j].flAt = pRow->GetFloat(SOUND_KEYS[j][1]);
@@ -164,5 +165,4 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 		m_angVMAimAngOffset[ROLL] = pAimOffset->GetFloat("roll", 0);
 	}
 }
-
 

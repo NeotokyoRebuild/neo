@@ -18,7 +18,6 @@ enum ReloadPhase_t
 	RELOAD_PHASE_NONE = 0,	// no reload in progress, or none pending
 	RELOAD_PHASE_DROPPED,	// the old magazine is out
 	RELOAD_PHASE_SEATED,	// the fresh magazine is in
-	RELOAD_PHASE_SLAPPED,	// the magazine was tapped or slapped home
 	RELOAD_PHASE_BOLTED,	// the bolt or charging handle chambered a round
 
 	RELOAD_PHASE_COUNT
@@ -31,8 +30,8 @@ static_assert((1 << (RELOAD_PHASE_TABLE_BITS - 1)) >= RELOAD_PHASE_TABLES_MAX, "
 static constexpr int RELOAD_PHASE_ROWS_MAX = RELOAD_PHASE_COUNT - 1;
 static constexpr int RELOAD_SOUND_NAME_MAX = 64;
 static constexpr int RELOAD_SEQUENCE_NAME_MAX = 32;
-// a phase may need two sound pieces timed apart, such as the M41's tap rattle and tap clicks
-static constexpr int RELOAD_SOUNDS_PER_ROW = 2;
+// a phase may need three sound pieces, such as the M41's seat clicks and tap
+static constexpr int RELOAD_SOUNDS_PER_ROW = 3;
 
 // A sound piece of a phase
 struct ReloadSoundPiece_t
@@ -53,7 +52,6 @@ struct ReloadPhaseRow_t
 struct ReloadPhaseTable_t
 {
 	char szSequence[RELOAD_SEQUENCE_NAME_MAX];
-	float flFireAt;	// a chambered-round shot's sequence: when the bullet fires, seconds from its start; 0 otherwise
 	int iNumRows;
 	ReloadPhaseRow_t rows[RELOAD_PHASE_ROWS_MAX];
 };

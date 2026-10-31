@@ -91,11 +91,14 @@ void CWeaponSRS::ItemPreFrame()
 		WeaponSound(SPECIAL1);
 		m_bNeedsBolting = false;
 
-		// the script's "charge" table gives when the bolt is home with the next round
-		const CNEOWeaponInfo &info = GetNEOWpnData();
-		const int iTable = info.FindReloadTable(VM_SEQ_CHARGE);
-		const bool bHasCredit = iTable >= 0 && info.m_reloadTables[iTable].iNumRows > 0;
-		m_flBoltHomeTime = gpGlobals->curtime + (bHasCredit ? info.m_reloadTables[iTable].rows[0].flCredit : 0.0f);
+		if (IsReloadPhaseSystemEnabled())
+		{
+			// the script's "charge" table gives when the bolt is home with the next round
+			const CNEOWeaponInfo &info = GetNEOWpnData();
+			const int iTable = info.FindReloadTable(VM_SEQ_CHARGE);
+			const bool bHasCredit = iTable >= 0 && info.m_reloadTables[iTable].iNumRows > 0;
+			m_flBoltHomeTime = gpGlobals->curtime + (bHasCredit ? info.m_reloadTables[iTable].rows[0].flCredit : 0.0f);
+		}
 	}
 
 	BaseClass::ItemPreFrame();
@@ -123,6 +126,11 @@ bool CWeaponSRS::Reload()
 
 bool CWeaponSRS::IsRoundChambered() const
 {
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return BaseClass::IsRoundChambered();
+	}
+
 	if (m_bNeedsBolting || gpGlobals->curtime < m_flBoltHomeTime)
 	{
 		return false;

@@ -18,63 +18,42 @@ WeaponData
 	
 	// Reload phases, generated from segments.csv by segments_build.py (ntre proposals/0057):
 	// credit = when the phase counts, at = when its sound piece's first transient plays, both from the sequence start
+	"ReloadReadyBeforeEnd"	"0.417"	// the reload is done at the last reload click, this long before its animation ends
 	"ReloadPhases"
 	{
 		"ChamberedRound"	"1"
 		"reload"
 		{
 			"drop" { "credit" "0.467" "sound" "weapon_mx.reload_drop" "at" "0.354" }
-			"seat" { "credit" "1.300" "sound" "weapon_mx.reload_seat" "at" "1.284" }
-			"slap" { "credit" "1.700" "sound" "weapon_mx.reload_slap" "at" "1.725" }
+			"seat" { "credit" "1.300" "sound" "weapon_mx.reload_seat" "at" "1.284"  "sound2" "weapon_mx.reload_slap" "at2" "1.725" }
 			"bolt" { "credit" "2.500" "sound" "weapon_mx.reload_bolt" "at" "2.200" }
 		}
 		"reload_partial"
 		{
 			"drop" { "credit" "0.467" "sound" "weapon_mx.reload_drop" "at" "0.354" }
-			"seat" { "credit" "1.300" "sound" "weapon_mx.reload_seat" "at" "1.284" }
-			"slap" { "credit" "1.700" "sound" "weapon_mx.reload_slap" "at" "1.725" }
+			"seat" { "credit" "1.300" "sound" "weapon_mx.reload_seat" "at" "1.284"  "sound2" "weapon_mx.reload_slap" "at2" "1.725" }
 		}
 		"reload_from_drop_dry"
 		{
-			"seat" { "credit" "1.167" "sound" "weapon_mx.reload_seat" "at" "1.151" }
-			"slap" { "credit" "1.567" "sound" "weapon_mx.reload_slap" "at" "1.592" }
+			"seat" { "credit" "1.167" "sound" "weapon_mx.reload_seat" "at" "1.151"  "sound2" "weapon_mx.reload_slap" "at2" "1.592" }
 			"bolt" { "credit" "2.367" "sound" "weapon_mx.reload_bolt" "at" "2.067" }
 		}
 		"reload_from_drop_partial"
 		{
-			"seat" { "credit" "1.167" "sound" "weapon_mx.reload_seat" "at" "1.151" }
-			"slap" { "credit" "1.567" "sound" "weapon_mx.reload_slap" "at" "1.592" }
+			"seat" { "credit" "1.167" "sound" "weapon_mx.reload_seat" "at" "1.151"  "sound2" "weapon_mx.reload_slap" "at2" "1.592" }
 		}
 		"reload_from_seat_dry"
-		{
-			"slap" { "credit" "0.600" "sound" "weapon_mx.reload_slap" "at" "0.625" }
-			"bolt" { "credit" "1.400" "sound" "weapon_mx.reload_bolt" "at" "1.100" }
-		}
-		"reload_from_seat_partial"
-		{
-			"slap" { "credit" "0.600" "sound" "weapon_mx.reload_slap" "at" "0.625" }
-		}
-		"reload_from_slap_dry"
 		{
 			"bolt" { "credit" "1.300" "sound" "weapon_mx.reload_bolt" "at" "1.000" }
 		}
 		"draw_resume_drop_dry"
 		{
-			"seat" { "credit" "1.400" "sound" "weapon_mx.reload_seat" "at" "1.384" }
-			"slap" { "credit" "1.800" "sound" "weapon_mx.reload_slap" "at" "1.825" }
+			"seat" { "credit" "1.400" "sound" "weapon_mx.reload_seat" "at" "1.384"  "sound2" "weapon_mx.reload_slap" "at2" "1.825" }
 			"bolt" { "credit" "2.600" "sound" "weapon_mx.reload_bolt" "at" "2.300" }
 		}
 		"draw_resume_drop_partial"
 		{
-			"seat" { "credit" "1.400" "sound" "weapon_mx.reload_seat" "at" "1.384" }
-			"slap" { "credit" "1.800" "sound" "weapon_mx.reload_slap" "at" "1.825" }
-		}
-		"fire_chamber_onehand"
-		{
-			"fire_at"	"0.133"
-			"seat" { "credit" "1.133" "sound" "weapon_mx.reload_seat" "at" "1.117" }
-			"slap" { "credit" "1.533" "sound" "weapon_mx.reload_slap" "at" "1.558" }
-			"bolt" { "credit" "2.333" "sound" "weapon_mx.reload_bolt" "at" "2.033" }
+			"seat" { "credit" "1.400" "sound" "weapon_mx.reload_seat" "at" "1.384"  "sound2" "weapon_mx.reload_slap" "at2" "1.825" }
 		}
 	}
 	

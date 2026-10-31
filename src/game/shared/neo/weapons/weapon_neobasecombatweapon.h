@@ -293,6 +293,7 @@ protected:
 	virtual float GetMaxAccuracyPenalty() const { return 1.0; }
 	virtual float GetAccuracyPenaltyDecay();
 	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+	bool IsReloadPhaseSystemEnabled() const;
 
 protected:
 	CNetworkVar(float, m_flSoonestAttack);
@@ -304,6 +305,9 @@ protected:
 
 	// When the reload in progress loads the magazine, 0 once it is loaded
 	CNetworkVar(float, m_flReloadReadyTime);
+
+	// The server's pre-game reload setting, snapshotted for prediction
+	CNetworkVar(bool, m_bReloadExperimentalEnabled);
 
 	// Reload phases (weapons whose script has a ReloadPhases block): the last phase credited, kept across a switch
 	CNetworkVar(int, m_nReloadPhase);
@@ -317,8 +321,6 @@ protected:
 	CNetworkVar(float, m_flReloadStart);
 	// the sound pieces of the playing sequence already started, one bit per phase row
 	CNetworkVar(int, m_nReloadSoundsDone);
-	// a chambered-round shot is under way and its bullet has not fired yet
-	CNetworkVar(bool, m_bChamberShotPending);
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
@@ -343,12 +345,6 @@ private:
 	int LookupReloadSequence(const char *pszName) const;
 	float ReloadSequenceDuration(int iSequence) const;
 	void EndReloadGesture();
-	bool TryFireDuringReload();
-	bool HasRoundToFire() const;
-	void CancelReloadAndFire();
-	void StopPendingReloadSoundPieces();
-	bool StartChamberShot();
-	void FireChamberShot();
 
 };
 
