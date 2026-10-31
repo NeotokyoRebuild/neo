@@ -1,19 +1,12 @@
-﻿#include "cbase.h"
-#include "neo_hud_compass.h"
+﻿#include "neo_hud_compass.h"
 
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
 #include "view.h"
 
 #include "iclientmode.h"
-#include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
-#include <vgui_controls/Controls.h>
-#include <vgui_controls/ImagePanel.h>
 #include <vgui/IScheme.h>
-
-#include <engine/ivdebugoverlay.h>
-#include "ienginevgui.h"
 
 #include "c_team.h"
 

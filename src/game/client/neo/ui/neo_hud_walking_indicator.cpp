@@ -1,4 +1,3 @@
-#include "cbase.h"
 #include "neo_hud_walking_indicator.h"
 
 #include "iclientmode.h"
