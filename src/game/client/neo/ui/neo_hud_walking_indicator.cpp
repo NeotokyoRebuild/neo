@@ -61,8 +61,9 @@ void CNEOHud_WalkingIndicator::UpdateStateForNeoHudElementDraw()
 	if (!pLocalPlayer)
 		return;
 
-	C_NEO_Player* pTargetPlayer = pLocalPlayer->IsObserver() && (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE || pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE) ? static_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget())
-																																										  : pLocalPlayer;
+	C_NEO_Player* pTargetPlayer = pLocalPlayer->IsObserver() && (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE || pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE)
+									? static_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget())
+									: pLocalPlayer;
 	if (!pTargetPlayer || !pTargetPlayer->IsAlive())
 		return;
 
