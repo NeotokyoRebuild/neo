@@ -26,6 +26,8 @@ out
 /game/**/bin/**
 /game/neo/maps
 /game/neo/mapsrc
+# Authoring sources copied alongside runtime assets by CMake.
+/game/neo/modelsrc
 /game/neo/materials
 /game/neo/particles
 /game/neo/shaders

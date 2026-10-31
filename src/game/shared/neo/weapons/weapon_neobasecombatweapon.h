@@ -191,6 +191,7 @@ public:
 #endif
 
 	virtual void DryFire(void);
+	virtual bool SendWeaponAnim(int iActivity) override;
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
 #ifdef CLIENT_DLL
@@ -263,6 +264,17 @@ public:
 
 	virtual float GetFireRate() override final;
 	float GetPenetration() const;
+	// the magazine plus the round a partial reload keeps in the chamber
+	virtual int GetMaxRoundsInGun() const;
+	// the gun has a chamber that holds one round apart from the magazine (every gun with reload phases but the Kyla)
+	virtual bool HasChamberSlot() const;
+	// a live round is in the chamber
+	virtual bool IsRoundChambered() const;
+	// the rounds in the magazine (or tube), the chambered round not counted
+	virtual int RoundsInMagazine() const;
+	// how many rounds the magazine (or tube) holds
+	virtual int MagazineCapacity() const;
+	void StopReloadOnDrop();
 #ifdef CLIENT_DLL
 	float m_flTemperature;
 	int m_spawnflags;
@@ -281,6 +293,7 @@ protected:
 	virtual float GetMaxAccuracyPenalty() const { return 1.0; }
 	virtual float GetAccuracyPenaltyDecay();
 	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+	bool IsReloadPhaseSystemEnabled() const;
 
 protected:
 	CNetworkVar(float, m_flSoonestAttack);
@@ -293,8 +306,45 @@ protected:
 	// When the reload in progress loads the magazine, 0 once it is loaded
 	CNetworkVar(float, m_flReloadReadyTime);
 
+	// The server's pre-game reload setting, snapshotted for prediction
+	CNetworkVar(bool, m_bReloadExperimentalEnabled);
+
+	// Reload phases (weapons whose script has a ReloadPhases block): the last phase credited, kept across a switch
+	CNetworkVar(int, m_nReloadPhase);
+	// no round in the chamber: the gun cannot fire, and the next reload needs the bolt
+	CNetworkVar(bool, m_bChamberEmpty);
+	// the reload in progress needs the bolt
+	CNetworkVar(bool, m_bReloadDry);
+	// the phase table of the sequence playing, -1 none
+	CNetworkVar(int, m_nReloadTable);
+	// when the reload sequence started; phase credits are offsets from it
+	CNetworkVar(float, m_flReloadStart);
+	// the sound pieces of the playing sequence already started, one bit per phase row
+	CNetworkVar(int, m_nReloadSoundsDone);
+
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
+	bool HasEmptyIdle();
+	bool IsSlideLockedBack() const;
+
+	bool HasReloadPhases() const;
+	bool IsReloadDry() const;
+	ReloadPhase_t LastReloadPhase(bool bDry) const;
+	bool IsReloadPending() const;
+	bool ReloadWithPhases();
+	void RunReloadPhases();
+	void CreditReloadPhase(ReloadPhase_t phase);
+	void CheckReloadWithPhases();
+	bool HasReloadSoundPieces() const;
+	void StopReloadSoundPieces();
+	void EmitReloadSoundPiece(const char *pszSound);
+	int SelectReloadTable(bool bFromDraw, int *pSequence) const;
+	void StartReloadSequence(int iTable, int iSequence, float flGestureStartCycle);
+	float ResumeGestureCycle() const;
+	CBaseViewModel *ReloadViewModel() const;
+	int LookupReloadSequence(const char *pszName) const;
+	float ReloadSequenceDuration(int iSequence) const;
+	void EndReloadGesture();
 
 };
 
