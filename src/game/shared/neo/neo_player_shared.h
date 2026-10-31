@@ -258,6 +258,7 @@ static_assert(NEO_ZOOM_SPEED != 0.0f, "Divide by zero");
 #define COLOR_NEO_GREEN Color(154, 255, 154, 255)
 #define COLOR_NEO_ORANGE Color(243, 190, 52, 255)
 #define COLOR_NEO_WHITE Color(218, 217, 213, 255)
+#define COLOR_NEO_WHITE_STR "218 217 213 255"
 
 class CNEO_Player;
 class CNEOBaseCombatWeapon;

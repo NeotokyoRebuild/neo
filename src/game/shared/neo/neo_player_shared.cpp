@@ -860,6 +860,7 @@ void CNEO_Player::CheckVisionButtons()
 
 	EmitSound(filter, entindex(), params);
 }
+
 ConVar sv_neo_hitboxgroup_pen("sv_neo_hitboxgroup_pen", "0", FCVAR_REPLICATED, "When hitting outer limbs, do a second trace against head, chest and stomach", true, 0.f, true, 1.f); // NEO TODO (Adam) remove this and pick one
 bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr)
 {
