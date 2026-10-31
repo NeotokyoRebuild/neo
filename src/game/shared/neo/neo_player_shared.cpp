@@ -2,6 +2,7 @@
 #include "neo_player_shared.h"
 
 #include "in_buttons.h"
+#include "decals.h"
 #include "neo_gamerules.h"
 
 #include "tier0/valve_minmax_off.h"
@@ -357,6 +358,23 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
 }
 
+namespace
+{
+	// Footstep tuning. Fractions are of the player's run speed with the weapon's weight speed modifier applied
+
+	// Crouching, walking and aiming are silent until moving faster than this. Anything above it is a sprint, a slide or a push
+	constexpr float FS_SILENT_HEADROOM = 0.10f;
+	constexpr float FS_SILENT_SPEED_FRACTION = float(NEO_CROUCH_WALK_MODIFIER) * (1.f + FS_SILENT_HEADROOM); // 0.825
+	static_assert(FS_SILENT_SPEED_FRACTION < 1.f, "Running must never be silent");
+	static_assert(FS_SILENT_SPEED_FRACTION > NEO_AIM_MODIFIER, "Aiming must be silent");
+
+	// Turning or switching movement keys raises ground speed above the mode's speed for as long as the direction keeps
+	// changing, up to about 1.54 times crouching speed at 300 degrees per second. Anything faster is a sprint, a slide or a push
+	constexpr float FS_TURN_MAX_SPEED_FRACTION = float(NEO_CROUCH_WALK_MODIFIER) * 1.55f; // 1.1625
+	static_assert(FS_TURN_MAX_SPEED_FRACTION > FS_SILENT_SPEED_FRACTION, "The turn cap must sit above the silent limit");
+	static_assert(FS_TURN_MAX_SPEED_FRACTION < NEO_MIN_SPRINT_MODIFIER, "A sprint at full speed must never be silent");
+}
+
 bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLadder) const
 {
 	if (GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
@@ -385,30 +403,284 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 
 	bool onground = (GetFlags() & FL_ONGROUND);
 	bool movingalongground = (groundspeed > 0.0001f);
-	// Support crouched with a supa7 aimed in has a speed of 55.f
-	const bool moving_fast_enough = speed >= 50.f;
+	// Below this nothing plays, on a ladder or off. It catches drift that is not movement at all, such as being
+	// nudged, and sits just under the 55 u/s floor on max speed so no movement mode is ever filtered here.
+	// Whether crouching, walking or aiming is silent is decided below
+	constexpr float FS_MIN_STEP_SPEED = 50.f;
+	const bool moving_fast_enough = speed >= FS_MIN_STEP_SPEED;
 
 	// To hear step sounds you must be either on a ladder or moving along the ground AND
 	// You must be moving fast enough
 	if (!moving_fast_enough || !(isOnLadder || (onground && movingalongground)))
 		return false;
 
-	// Changing movement direction, looking around, wall-running accelerate the player. Threshold should be lower than regular speed, but higher than walk/aim speed
-	constexpr float SILENT_THRESHOLD_GRACE = 0.7f;
+	// Landing from a jump or a drop makes a footstep whatever the posture, see UpdateFootstepLanding
+	if (m_bFootstepLanding)
+		return true;
 
-	if (GetFlags() & FL_DUCKING)
+	// A ladder has no ground entity, so crouching takes effect at once, but ground speed is near zero while climbing
+	if (IsInSilentMoveMode() && !isOnLadder)
 	{
-		if ((IsInAim() || IsWalking()) && speed <= (GetCrouchSpeed() * SILENT_THRESHOLD_GRACE))
+		// Ground speed is the horizontal part of velocity. Full speed would differ by client: other clients rebuild a
+		// remote player's velocity from origin changes, and stairs move the origin up a step at a time, so they see a
+		// vertical spike the local player never does. Ground speed is the same everywhere, so every client agrees
+		const float flNormSpeed = GetNormSpeed_WithActiveWepEncumberment();
+		if (groundspeed <= flNormSpeed * FS_SILENT_SPEED_FRACTION)
+		{
+			return false;
+		}
+		// Turning or switching movement keys goes over the limit without covering ground any faster, so the average
+		// stays under it. Wiggle-walking, slides and pushes do cover ground faster. Sprinting stays audible
+		if (!m_fIsSprinting && groundspeed <= flNormSpeed * FS_TURN_MAX_SPEED_FRACTION &&
+			m_vecFootstepAvgVelocity.Length2D() <= flNormSpeed * FS_SILENT_SPEED_FRACTION)
 		{
 			return false;
 		}
 	}
-	else if ((IsInAim() || IsWalking()) && speed <= (GetNormSpeed() * SILENT_THRESHOLD_GRACE))
+
+	return true;
+}
+
+// Crouching speed and walking speed are the same, so crouching, walking and aiming share one silent limit.
+// Crouch counts once the crouch animation ends
+bool CNEO_Player::IsInSilentMoveMode() const
+{
+	return GetSilentMoveKeys(false) != 0;
+}
+
+// The same modes as a key mask. Crouch counts from the key press (FL_ANIMDUCKING, see CGameMovement::Duck) or once the
+// crouch animation ends (FL_DUCKING); walking and aiming take effect at once either way
+int CNEO_Player::GetSilentMoveKeys(bool bCrouchFromPress) const
+{
+	return ((GetFlags() & (bCrouchFromPress ? FL_ANIMDUCKING : FL_DUCKING)) ? NEO_FS_SILENT_MOVE_KEY_CROUCH : 0) |
+		(IsWalking() ? NEO_FS_SILENT_MOVE_KEY_WALK : 0) |
+		(IsInAim() ? NEO_FS_SILENT_MOVE_KEY_AIM : 0);
+}
+
+// Starts a timestamp the first time a condition holds and clears it when it stops
+static void TrackSince(float &flSince, bool bActive, float flNow)
+{
+	if (!bActive)
+	{
+		flSince = -1.f;
+	}
+	else if (flSince < 0.f)
+	{
+		flSince = flNow;
+	}
+}
+
+// The SDK picks the loud step volume by speed, with limits tuned for its slow crouch that every NEO crouch exceeds.
+// Pick it by intent instead: only sprinting is loud. The SDK's crouched volume reduction still applies on top
+bool CNEO_Player::IsLoudFootstep() const
+{
+	return m_fIsSprinting;
+}
+
+// The SDK's soft or loud step volume for a surface, before crouched steps are scaled by NEO_FS_CROUCH_VOLUME_SCALE
+float CNEO_Player::GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const
+{
+	switch (psurface->game.material)
+	{
+	case CHAR_TEX_DIRT:
+		return bLoud ? 0.55f : 0.25f;
+	case CHAR_TEX_VENT:
+		return bLoud ? 0.7f : 0.4f;
+	default: // Concrete, metal, grate, tile and slosh
+		return bLoud ? 0.5f : 0.2f;
+	}
+}
+
+// Marks a landing after a jump or a drop. The mark lasts until the next step decision: after a jump the step timer
+// has run out in the air, so that is the landing tick; after a short drop it is the first step due
+void CNEO_Player::UpdateFootstepLanding()
+{
+	// Shorter than this is a stair edge or a bump, not a drop
+	constexpr float FS_LANDING_MIN_AIR_TIME = 0.1f;
+
+	const float flNow = gpGlobals->curtime;
+	const bool bInAir = !IsOnFootstepGround();
+	if (!bInAir && m_flFootstepAirTime >= 0.f && flNow - m_flFootstepAirTime >= FS_LANDING_MIN_AIR_TIME)
+	{
+		m_bFootstepLanding = true;
+	}
+	TrackSince(m_flFootstepAirTime, bInAir, flNow);
+}
+
+void CNEO_Player::OnFootstepDecided()
+{
+	m_bFootstepLanding = false;
+}
+
+// Acceleration builds toward a new direction faster than friction removes the old one, so turning or switching
+// movement keys raises ground speed. The velocity keeps rotating meanwhile, so its average stays under the mode's speed
+void CNEO_Player::UpdateFootstepAverageVelocity()
+{
+	// About one step interval. Shorter lets the bump at the start of a fast turn through, longer lets a wiggle
+	// hide behind a gentle bend
+	constexpr float FS_AVG_VELOCITY_TIME = 0.4f;
+
+	// Ground velocity, for the same reason IsMakingFootstepSounds compares ground speed. frametime is the tick for
+	// the local player and the server, and the frame for other players
+	Vector vecGroundVelocity = GetAbsVelocity();
+	vecGroundVelocity.z = 0.f;
+	const float flBlend = Min(gpGlobals->frametime / FS_AVG_VELOCITY_TIME, 1.f);
+	m_vecFootstepAvgVelocity += (vecGroundVelocity - m_vecFootstepAvgVelocity) * flBlend;
+}
+
+// On the ground and not climbing. A ladder has no ground entity, and its steps are always audible
+bool CNEO_Player::IsOnFootstepGround() const
+{
+	return (GetFlags() & FL_ONGROUND) && GetMoveType() != MOVETYPE_LADDER;
+}
+
+// A step is armed or already held back
+bool CNEO_Player::IsHeldStepPending() const
+{
+	return m_iHeldStep == NEO_FS_HELD_ARMED || m_iHeldStep == NEO_FS_HELD_HELD;
+}
+
+// Crouch only counts once the crouch animation ends, so without this one running step plays after pressing crouch.
+// Releasing early gives the step back, so tapping crouch, walk or aim can delay a step but never skip one.
+void CNEO_Player::UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vector &vecOrigin)
+{
+	// Time to slow down under the silent limit after crouching, walking or aiming takes effect
+	constexpr float FS_HELD_STEP_SETTLE_TIME = 0.1f;
+
+	// Each key arms from its own press, as pressing crouch while still aiming keeps run speed through the crouch animation
+	const int nKeysDown = GetSilentMoveKeys(true);
+	const int nPressed = nKeysDown & ~m_nHeldStepKeysDown;
+	m_nHeldStepKeysDown = nKeysDown;
+
+	// The held step only settles or plays on the ground. A jump lands with its own sound and restarts the step cadence,
+	// and a ladder has every step audible, so a step held across either would swallow the steps that follow
+	if (!IsAlive() || !IsOnFootstepGround())
+	{
+		m_iHeldStep = NEO_FS_HELD_NONE;
+		m_nHeldStepArmedKeys = 0;
+		return;
+	}
+
+	const float flNow = gpGlobals->curtime;
+	// Letting go of a key that armed the step is the release. A step that is still held plays now: holding it back
+	// delayed it, releasing early means the player never settled, so it was never earned. A step that was already
+	// dropped plays only if the release came soon enough and no other silent mode is still held, so going from
+	// crouch to walk is not a tap
+	if (m_iHeldStep != NEO_FS_HELD_NONE && (m_nHeldStepArmedKeys & ~nKeysDown))
+	{
+		const bool bStillQuiet = (GetSilentMoveKeys(false) & nKeysDown) != 0;
+		if (m_iHeldStep == NEO_FS_HELD_HELD ||
+			(m_iHeldStep == NEO_FS_HELD_DROPPED && !bStillQuiet && flNow - m_flHeldStepDropTime <= m_flHeldStepWindow))
+		{
+			PlayHeldStep(psurface, vecOrigin);
+		}
+		m_iHeldStep = NEO_FS_HELD_NONE;
+		m_nHeldStepArmedKeys = 0;
+	}
+
+	// Already crouched: walking or aiming does not raise the threshold, so there is no step to hold
+	if (nPressed && !(GetFlags() & FL_DUCKING))
+	{
+		if (IsHeldStepPending())
+		{
+			m_nHeldStepArmedKeys |= nPressed;
+		}
+		else
+		{
+			m_iHeldStep = NEO_FS_HELD_ARMED;
+			m_nHeldStepArmedKeys = nPressed;
+			m_flHeldStepQuietTime = -1.f;
+		}
+	}
+
+	if (IsHeldStepPending())
+	{
+		// Has a mode the player pressed taken effect yet. It must be one that armed the step, not any silent mode the
+		// player was already in: pressing crouch while aiming, the aim is already silent but the crouch only counts
+		// once its animation ends. Until then the player is still at run speed, and the step that would play is the
+		// accidental running step this hold exists to stop
+		const bool bArmedModeActive = (m_nHeldStepArmedKeys & GetSilentMoveKeys(false)) != 0;
+		TrackSince(m_flHeldStepQuietTime, bArmedModeActive, flNow);
+
+		if (bArmedModeActive)
+		{
+			if (!bLoud)
+			{
+				// Settled into a silent crouch, walk or aim
+				if (m_iHeldStep == NEO_FS_HELD_HELD)
+				{
+					m_iHeldStep = NEO_FS_HELD_DROPPED;
+					m_flHeldStepDropTime = flNow;
+				}
+				else
+				{
+					m_iHeldStep = NEO_FS_HELD_NONE;
+				}
+			}
+			else if (flNow - m_flHeldStepQuietTime >= FS_HELD_STEP_SETTLE_TIME)
+			{
+				// Still loud after crouching, walking or aiming took effect, such as a slide, a push or a crouch sprint
+				if (m_iHeldStep == NEO_FS_HELD_HELD)
+				{
+					PlayHeldStep(psurface, vecOrigin);
+				}
+				m_iHeldStep = NEO_FS_HELD_NONE;
+			}
+		}
+	}
+	else if (m_iHeldStep == NEO_FS_HELD_DROPPED && flNow - m_flHeldStepDropTime > m_flHeldStepWindow)
+	{
+		m_iHeldStep = NEO_FS_HELD_NONE;
+	}
+}
+
+// Returns true if this audible step is held back instead of played
+bool CNEO_Player::HoldStep(surfacedata_t *psurface, const Vector &vecOrigin)
+{
+	if (!IsHeldStepPending())
 	{
 		return false;
 	}
 
+	if (m_iHeldStep == NEO_FS_HELD_HELD)
+	{
+		// Crouching or walking took effect and speed is still dropping, so keep waiting on the same step
+		if (m_flHeldStepQuietTime >= 0.f)
+		{
+			return true;
+		}
+
+		// Another step before crouching takes effect: the earlier one plays and this one waits, so no step is skipped
+		PlayHeldStep(psurface, vecOrigin);
+	}
+
+	m_iHeldStep = NEO_FS_HELD_HELD;
+	// Releasing within one step interval of dropping the step still plays it
+	m_flHeldStepWindow = m_flStepSoundTime * 0.001f;
 	return true;
+}
+
+void CNEO_Player::PlayHeldStep(surfacedata_t *psurface, const Vector &vecOrigin)
+{
+	// Only reached on the ground, where the surface was just traced; without one there is no step to play
+	if (!psurface)
+	{
+		return;
+	}
+	// The volume for how the player moves now, not when the step was held: crouching, sprinting or releasing aim since
+	// then changes it, and the listener hears the step with the player as they are
+	float flVolume = GetSurfaceStepVolume(psurface, IsLoudFootstep());
+	if (GetFlags() & FL_DUCKING)
+	{
+		flVolume *= NEO_FS_CROUCH_VOLUME_SCALE;
+	}
+	Vector vecFeet = vecOrigin;
+	PlayStepSound(vecFeet, psurface, flVolume, false);
+
+	// Keep the next step off the top of this one without restarting the step cadence,
+	// as a full interval here lets tapping crouch push every step back and skip half of them
+	constexpr float FS_HELD_STEP_MIN_GAP_MS = 100.f;
+	m_flStepSoundTime = Max(m_flStepSoundTime, FS_HELD_STEP_MIN_GAP_MS);
 }
 
 int GetRank(const int xp)

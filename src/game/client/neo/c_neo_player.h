@@ -94,6 +94,16 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
+	bool IsInSilentMoveMode() const;
+	int GetSilentMoveKeys(bool bCrouchFromPress) const;
+	bool IsOnFootstepGround() const;
+	bool IsLoudFootstep() const;
+	float GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const;
+	void UpdateFootstepAverageVelocity();
+	void UpdateFootstepLanding();
+	void OnFootstepDecided();
+	void UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vector &vecOrigin);
+	bool HoldStep(surfacedata_t *psurface, const Vector &vecOrigin);
 
 	void Lean(void);
 
@@ -278,6 +288,23 @@ private:
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
+
+	// Held step: the first audible step after pressing crouch, walk or aim, see UpdateHeldStep
+	bool IsHeldStepPending() const;
+	void PlayHeldStep(surfacedata_t *psurface, const Vector &vecOrigin);
+	int m_iHeldStep = NEO_FS_HELD_NONE;
+	int m_nHeldStepKeysDown = 0;
+	int m_nHeldStepArmedKeys = 0;
+	float m_flHeldStepQuietTime = -1.f;
+	float m_flHeldStepDropTime = 0.f;
+	float m_flHeldStepWindow = 0.f;
+
+	// Landing, see UpdateFootstepLanding
+	float m_flFootstepAirTime = -1.f;
+	bool m_bFootstepLanding = false;
+
+	// Ground velocity averaged over about the last step interval, see UpdateFootstepAverageVelocity
+	Vector m_vecFootstepAvgVelocity = vec3_origin;
 };
 
 inline C_NEO_Player *ToNEOPlayer(C_BaseEntity *pEntity)
