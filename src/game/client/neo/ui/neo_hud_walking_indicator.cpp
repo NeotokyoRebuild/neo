@@ -20,7 +20,8 @@ CNEOHud_WalkingIndicator::CNEOHud_WalkingIndicator(const char *pElementName, vgu
 	SetAutoDelete(true);
 	m_iHideHudElementNumber = NEO_HUD_ELEMENT_WALKING_INDICATOR;
 
-	if (parent) {
+	if (parent)
+	{
 		SetParent(parent);
 	}
 	else
@@ -111,45 +112,59 @@ void CNEOHud_WalkingIndicator::DrawWalkingIndicator(C_NEO_Player * pPlayer, int 
 	if (!cl_neo_hud_walkindicator_enabled.GetBool())
 		return;
 
-	static float animationWalkPress = 0.f;
+	static float animWalkKeyPressed = 0.f;
 	const bool isWalking = pPlayer->IsWalking();
+	static float animIsMakingFootsteps = 0.f;
+	const bool isMakingFootsteps = pPlayer->IsMakingFootstepSounds() || !(pPlayer->GetFlags() & FL_ONGROUND);
 	if (isWalking)
 	{
-		animationWalkPress += gpGlobals->frametime * animationSpeed;
+		if (animWalkKeyPressed == 0.f)
+		{
+			if (isMakingFootsteps)
+			{
+				animIsMakingFootsteps = 1.f;
+			}
+			else
+			{
+				animIsMakingFootsteps = 0.f;
+			}
+		}
+		animWalkKeyPressed += gpGlobals->frametime * animationSpeed;
 	}
 	else
 	{
-		animationWalkPress -= gpGlobals->frametime * animationSpeed;
+		animWalkKeyPressed -= gpGlobals->frametime * animationSpeed;
 	}
-	animationWalkPress = Clamp(animationWalkPress, 0.f, 1.f);
+	animWalkKeyPressed = Clamp(animWalkKeyPressed, 0.f, 1.f);
 
-	if (animationWalkPress == 0.f)
+	if (animWalkKeyPressed == 0.f)
 	{
 		offset += textHeight;
 		return;
 	}
 
-	static float animationFootstepThreshold = 0.f;
-	const bool isMakingFootsteps = pPlayer->IsMakingFootstepSounds();
-	if (isMakingFootsteps && isWalking)
+	if (isMakingFootsteps)
 	{
-		animationFootstepThreshold += gpGlobals->frametime * animationSpeed;
+		animIsMakingFootsteps += gpGlobals->frametime * animationSpeed;
 	}
 	else
 	{
-		animationFootstepThreshold -= gpGlobals->frametime * animationSpeed;
+		animIsMakingFootsteps -= gpGlobals->frametime * animationSpeed;
 	}
-	animationFootstepThreshold = Clamp(animationFootstepThreshold, 0.f, 1.f);
+	animIsMakingFootsteps = Clamp(animIsMakingFootsteps, 0.f, 1.f);
 
-	const float inverseAnimationFootstepThreshold = 1.f - animationFootstepThreshold;
-	const Color finalColor = Color((color2.r() * animationFootstepThreshold) + (color.r() * inverseAnimationFootstepThreshold),
-								   (color2.g() * animationFootstepThreshold) + (color.g() * inverseAnimationFootstepThreshold),
-								   (color2.b() * animationFootstepThreshold) + (color.b() * inverseAnimationFootstepThreshold),
-								   ((color2.a() * animationFootstepThreshold) + (color.a() * inverseAnimationFootstepThreshold)) * animationWalkPress);
+	const float animWalkKeyPressedSmooth = animWalkKeyPressed * animWalkKeyPressed * (3.0f - 2.0f * animWalkKeyPressed);
+	const float animIsMakingFootstepsSmoothStep = animIsMakingFootsteps * animIsMakingFootsteps * (3.0f - 2.0f * animIsMakingFootsteps);
+	const float inverseAnimIsMakingFootstepsSmooth = 1.f - animIsMakingFootstepsSmoothStep;
+
+	const Color finalColor = Color((color2.r() * animIsMakingFootstepsSmoothStep) + (color.r() * inverseAnimIsMakingFootstepsSmooth),
+								   (color2.g() * animIsMakingFootstepsSmoothStep) + (color.g() * inverseAnimIsMakingFootstepsSmooth),
+								   (color2.b() * animIsMakingFootstepsSmoothStep) + (color.b() * inverseAnimIsMakingFootstepsSmooth),
+								   ((color2.a() * animIsMakingFootstepsSmoothStep) + (color.a() * inverseAnimIsMakingFootstepsSmooth)) * animWalkKeyPressedSmooth);
 	vgui::surface()->DrawSetTextFont(font);
-	if (isWalking && isMakingFootsteps)
+	if (animIsMakingFootsteps > 0.f)
 	{
-		vgui::surface()->DrawSetTextColor(finalColor.r(), finalColor.g(), finalColor.b(), finalColor.a() * animationFootstepThreshold);
+		vgui::surface()->DrawSetTextColor(finalColor.r(), finalColor.g(), finalColor.b(), finalColor.a() * animIsMakingFootstepsSmoothStep);
 		vgui::surface()->DrawSetTextPos(0, offset);
 		vgui::surface()->DrawPrintText(notWalkingText, ARRAYSIZE(notWalkingText) - 1);
 	}
@@ -162,7 +177,7 @@ void CNEOHud_WalkingIndicator::DrawWalkingIndicator(C_NEO_Player * pPlayer, int 
 
 void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 {
-	if (!ShouldDraw())
+	if (!ShouldDraw() || !visible)
 		return;
 
 	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();

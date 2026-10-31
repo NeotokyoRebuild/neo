@@ -143,9 +143,6 @@ static float safeAngle(float angle) {
 
 void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 {
-	auto pFPPlayer = GetFirstPersonPlayer();
-	Assert(pFPPlayer);
-
 	// Point the objective arrow to the relevant objective, if it exists
 	if (NEORules()->GhostExists() || NEORules()->GetJuggernautMarkerPos() != vec3_origin)
 	{
