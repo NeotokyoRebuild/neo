@@ -176,7 +176,7 @@ void CNEOHud_WalkingIndicator::DrawWalkingIndicator(C_NEO_Player * pPlayer, int 
 
 void CNEOHud_WalkingIndicator::DrawNeoHudElement()
 {
-	if (!ShouldDraw() || !visible)
+	if (!visible || !ShouldDraw())
 		return;
 
 	C_NEO_Player* pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
