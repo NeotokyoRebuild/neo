@@ -519,6 +519,7 @@ void CNEO_Player::UpdateFootstepAverageVelocity()
 	// About one step interval. Shorter lets the bump at the start of a fast turn through, longer lets a wiggle
 	// hide behind a gentle bend
 	constexpr float FS_AVG_VELOCITY_TIME = 0.4f;
+	static_assert(FS_AVG_VELOCITY_TIME > 0.f, "The average divides by its time");
 
 	// Ground velocity, for the same reason IsMakingFootstepSounds compares ground speed. frametime is the tick for
 	// the local player and the server, and the frame for other players
