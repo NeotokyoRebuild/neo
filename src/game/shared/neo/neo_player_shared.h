@@ -39,10 +39,38 @@ extern ConVar sv_neo_spec_replace_player_min_exp;
 #define NEO_ASSAULT_SPRINT_MODIFIER 1.6
 #define NEO_SUPPORT_SPRINT_MODIFIER 1.35 // Redundant, but for future usecases
 
+constexpr float NEO_Min(float a, float b) { return a < b ? a : b; }
+
+// The slowest any class sprints. Support cannot sprint today, but its modifier is defined for future use, so it
+// is counted. Anything that must stay under every sprint, such as a footstep rule, compares against this
+static constexpr float NEO_MIN_SPRINT_MODIFIER =
+	NEO_Min(NEO_Min(NEO_RECON_SPRINT_MODIFIER, NEO_ASSAULT_SPRINT_MODIFIER), NEO_SUPPORT_SPRINT_MODIFIER);
+static_assert(NEO_MIN_SPRINT_MODIFIER > 1.f, "Sprinting must be faster than running");
+
 // Aim Modifier
 #define NEO_AIM_MODIFIER 0.6
 // Crouch/Walk Modifier
 #define NEO_CROUCH_WALK_MODIFIER 0.75
+
+// Footsteps: the SDK plays crouched steps at 65% volume
+#define NEO_FS_CROUCH_VOLUME_SCALE 0.65f
+
+// Held step: the first audible step after pressing crouch, walk or aim waits until the player settles or lets go
+enum NeoFootstepHeldState
+{
+	NEO_FS_HELD_NONE = 0,
+	NEO_FS_HELD_ARMED,	// Crouch, walk or aim pressed, the next audible step is held
+	NEO_FS_HELD_HELD,		// A step is held back
+	NEO_FS_HELD_DROPPED,	// The held step was dropped, but plays if the key is released soon after
+};
+
+// Keys that start a silent movement mode, see CNEO_Player::GetSilentMoveKeys
+enum NeoFootstepSilentMoveKey
+{
+	NEO_FS_SILENT_MOVE_KEY_CROUCH = (1 << 0),
+	NEO_FS_SILENT_MOVE_KEY_WALK = (1 << 1),
+	NEO_FS_SILENT_MOVE_KEY_AIM = (1 << 2),
+};
 
 
 // Movement Calculations
