@@ -204,8 +204,13 @@ void CheckPingButton(CNEO_Player* player)
 						}());
 				};
 
-			const auto actualNavAreaOfPing = fnGetNearbyNavArea(tr.endpos, 1024, false);
-			const auto nearestNamedNavAreaOfPing = !actualNavAreaOfPing ? nullptr : fnGetNearbyNavArea(tr.endpos, 1024*10, true);
+			constexpr float maxPingAreaDist = 1024;
+			constexpr float maxMissedPingAreaDist = maxPingAreaDist * 4;
+			static_assert(maxPingAreaDist < maxMissedPingAreaDist);
+			static_assert(IN_BETWEEN_EQ(0, maxPingAreaDist, COORD_EXTENT));
+			static_assert(IN_BETWEEN_EQ(0, maxMissedPingAreaDist, COORD_EXTENT));
+			const auto actualNavAreaOfPing = fnGetNearbyNavArea(tr.endpos, maxPingAreaDist, false);
+			const auto nearestNamedNavAreaOfPing = !actualNavAreaOfPing ? nullptr : fnGetNearbyNavArea(tr.endpos, maxMissedPingAreaDist, true);
 
 			if (actualNavAreaOfPing && nearestNamedNavAreaOfPing)
 			{
