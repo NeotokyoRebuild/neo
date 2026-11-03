@@ -12,7 +12,6 @@
 #include "voice_status.h"
 #include "hud_chat.h"
 #include "engine/IEngineSound.h"
-#include "gamestringpool.h"
 
 #include "ienginevgui.h"
 
