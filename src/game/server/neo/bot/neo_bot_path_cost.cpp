@@ -54,7 +54,7 @@ CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 }
 
 //-------------------------------------------------------------------------------------------------
-// A crouch area promises HumanCrouchHeight (55 u) of room, but Support ducks to 59 u and the Juggernaut to 75 u,
+// A crouch area promises HumanCrouchHeight of clearance, but Support and Juggernaut ducked hulls are taller,
 // so some crouch gaps in the mesh are ones they cannot get through
 
 static constexpr float NEO_DUCK_LANE_SPACING = 4.0f;	// one lane per this much portal width, edge to edge
@@ -107,17 +107,17 @@ public:
 static CNeoDuckLaneReset s_duckLaneReset;
 
 // The point of the area nearest (x, y), on the floor under the hull's footprint,
-// which can lie a few units off the nav plane
+// which can lie slightly off the nav plane
 static Vector NeoLaneEnd( const CNavArea *area, float x, float y, const Vector &vecMins, const Vector &vecMaxs )
 {
 	const Vector nw = area->GetCorner( NORTH_WEST );
 	const Vector se = area->GetCorner( SOUTH_EAST );
-	const float flInsetX = MIN( NEO_DUCK_LANE_INSET, ( se.x - nw.x ) / 2.0f );
-	const float flInsetY = MIN( NEO_DUCK_LANE_INSET, ( se.y - nw.y ) / 2.0f );
+	const float flInsetX = Min( NEO_DUCK_LANE_INSET, ( se.x - nw.x ) / 2.0f );
+	const float flInsetY = Min( NEO_DUCK_LANE_INSET, ( se.y - nw.y ) / 2.0f );
 	Vector pos( clamp( x, nw.x + flInsetX, se.x - flInsetX ), clamp( y, nw.y + flInsetY, se.y - flInsetY ), 0.0f );
 	pos.z = area->GetZ( pos.x, pos.y );
 
-	// a footprint-sized slab, 1 u thick, dropped from a step above the nav plane to a step below
+	// A footprint-sized slab dropped from above the nav plane to below it
 	CTraceFilterWorldAndPropsOnly filter;
 	trace_t tr;
 	UTIL_TraceHull( pos + Vector( 0.0f, 0.0f, StepHeight ), pos - Vector( 0.0f, 0.0f, StepHeight ),
@@ -136,14 +136,14 @@ static bool NeoLaneClear( const Vector &a, const Vector &b, const Vector &vecMin
 {
 	const Vector mins( vecMins.x, vecMins.y, StepHeight );
 	const Vector maxs( vecMaxs.x, vecMaxs.y, vecMaxs.z - vecMins.z );
-	const float flTop = MAX( a.z, b.z );
+	const float flTop = Max( a.z, b.z );
 	const Vector legs[] = { a, Vector( a.x, a.y, flTop ), Vector( b.x, b.y, flTop ), b };
-	const int nLegs = ARRAYSIZE( legs );
+	constexpr int nLegs = ARRAYSIZE( legs );
 
 	CTraceFilterWorldAndPropsOnly filter;
+	trace_t tr;
 	for ( int i = 0; i + 1 < nLegs; ++i )
 	{
-		trace_t tr;
 		UTIL_TraceHull( legs[i], legs[i + 1], mins, maxs, MASK_PLAYERSOLID, &filter, &tr );
 		if ( tr.startsolid || tr.fraction < 1.0f )
 		{
@@ -180,7 +180,7 @@ static bool NeoDuckLaneFits( const CNavArea *from, const CNavArea *to, const Vec
 	Vector2D across;
 	DirectionToVector2D( dir, &across );
 	const Vector2D along( across.y != 0.0f ? 1.0f : 0.0f, across.x != 0.0f ? 1.0f : 0.0f );
-	const float flSpan = MAX( 0.0f, flHalfWidth - NEO_DUCK_LANE_INSET );
+	const float flSpan = Max( 0.0f, flHalfWidth - NEO_DUCK_LANE_INSET );
 	const int nLanes = 1 + (int)( 2.0f * flSpan / NEO_DUCK_LANE_SPACING );
 	for ( int i = 0; i < nLanes; ++i )
 	{
