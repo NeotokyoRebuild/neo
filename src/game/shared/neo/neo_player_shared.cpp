@@ -215,7 +215,7 @@ void CheckPingButton(CNEO_Player* player)
 				const char* placeName = TheNavMesh->PlaceToName(nearestNamedNavAreaOfPing->GetPlace());
 				event->SetString("place_name", placeName);
 
-				AssertMsg(!pingPlaceNameIsExact || *placeName, "Exact named place but place name is empty");
+				AssertMsg(!pingPlaceNameIsExact || (placeName && *placeName), "Exact named place but place name is empty");
 			}
 		}
 		gameeventmanager->FireEvent(event);
