@@ -143,7 +143,7 @@ static ConVar cl_neo_player_pings_print_own("cl_neo_player_pings_print_own", "0"
 #endif
 #else
 static ConVar sv_neo_player_pings_calc_placename("sv_neo_player_pings_calc_placename", "1", 0,
-	"Whether the server should calculare place names for player pings from the nav mesh (possibly expensive)", true, false, true, true);
+	"Whether the server should calculate place names for player pings from the nav mesh (possibly expensive)", true, false, true, true);
 #endif // CLIENT_DLL
 void CheckPingButton(CNEO_Player* player)
 {
