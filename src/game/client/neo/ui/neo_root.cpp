@@ -650,8 +650,8 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 	}
 #ifdef _WIN32
 	else if (!neo_flash_taskbar_no_spec.GetBool() ||
-		C_NEO_Player::GetLocalPlayer() &&
-		C_NEO_Player::GetLocalPlayer()->GetObserverMode() == OBS_MODE_NONE)
+		(C_NEO_Player::GetLocalPlayer() &&
+		C_NEO_Player::GetLocalPlayer()->GetObserverMode() == OBS_MODE_NONE))
 	{
 		Assert(engine);
 		if (!engine->IsActiveApp())
