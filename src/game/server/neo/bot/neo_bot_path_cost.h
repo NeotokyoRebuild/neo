@@ -34,4 +34,7 @@ private:
 	float m_stepHeight;
 	float m_maxJumpHeight;
 	float m_maxDropHeight;
+	Vector m_vecDuckHullMins;
+	Vector m_vecDuckHullMaxs;
+	bool m_bDucksAboveCrouchHeight;	// Support and Juggernaut, whose ducked hull is taller than a crouch area promises
 };
