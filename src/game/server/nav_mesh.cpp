@@ -1043,9 +1043,6 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDi
 			}
 		}
 	}
-#ifdef NEO
-	AssertMsg(!ignorePredicate || !ignorePredicate(close), "Result should be ignored but it wasn't");
-#endif
 	return close;
 }
 
