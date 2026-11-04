@@ -145,6 +145,11 @@ static ConVar sv_neo_player_pings_calc_placename("sv_neo_player_pings_calc_place
 #endif // CLIENT_DLL
 void CheckPingButton(CNEO_Player* player)
 {
+	if (!(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
+	{
+		return;
+	}
+
 #ifdef GAME_DLL
 	if (!GameRules() || !GameRules()->IsTeamplay())
 	{ // because for game modes with no friendlies, it would make no sense to send pings to enemies
@@ -152,7 +157,7 @@ void CheckPingButton(CNEO_Player* player)
 	}
 #endif
 
-	if (!player->IsAlive() || !(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
+	if (!player->IsAlive())
 	{
 		return;
 	}
