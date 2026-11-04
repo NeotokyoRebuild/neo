@@ -34,6 +34,7 @@ protected:
 	virtual void FireGameEvent(IGameEvent* event) override;
 
 private:
+	void OnPlayerPing(const IGameEvent* event);
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
 	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex);
 	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing);
