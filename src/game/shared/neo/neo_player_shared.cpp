@@ -149,13 +149,11 @@ void CheckPingButton(CNEO_Player* player)
 	{
 		return;
 	}
-
-#ifdef GAME_DLL
+	
 	if (!NEORules() || !NEORules()->ArePingsAllowed())
 	{
 		return;
 	}
-#endif
 
 	if (!player->IsAlive())
 	{
