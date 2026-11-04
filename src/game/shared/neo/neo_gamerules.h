@@ -450,6 +450,12 @@ public:
 	bool IsClassFull(int team, int classId) const;
 	int GetFallbackClass(int team, int preferredClass) const;
 
+	inline bool ArePingsAllowed()
+	{
+		// Only allow pings for game modes with friendlies, because it makes no sense to send pings to your enemies.
+		return IsTeamplay();
+	}
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.

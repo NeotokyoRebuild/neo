@@ -151,8 +151,8 @@ void CheckPingButton(CNEO_Player* player)
 	}
 
 #ifdef GAME_DLL
-	if (!GameRules() || !GameRules()->IsTeamplay())
-	{ // because for game modes with no friendlies, it would make no sense to send pings to enemies
+	if (!NEORules() || !NEORules()->ArePingsAllowed())
+	{
 		return;
 	}
 #endif
