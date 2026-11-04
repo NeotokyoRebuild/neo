@@ -149,7 +149,7 @@ void CheckPingButton(CNEO_Player* player)
 	{
 		return;
 	}
-	
+
 	if (!NEORules() || !NEORules()->ArePingsAllowed())
 	{
 		return;
