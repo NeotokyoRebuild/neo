@@ -140,7 +140,8 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 
 void CNEOHud_PlayerPing::OnPlayerPing(const IGameEvent* event)
 {
-	// because it makes no sense to send pings for enemies to see
+	// Don't team-ping for non-teamplay modes.
+	// This is already checked by the emitter side, but we check again because it could arrive late (dynamic custom rule change etc.)
 	if (!NEORules() || !NEORules()->IsTeamplay())
 	{
 		return;
