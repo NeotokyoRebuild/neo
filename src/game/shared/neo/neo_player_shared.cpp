@@ -195,13 +195,8 @@ void CheckPingButton(CNEO_Player* player)
 					constexpr auto ignoreNamelessPlaces = [](const CNavArea* area)->bool {
 						return !area || !TheNavMesh->PlaceToName(area->GetPlace());
 						};
-					constexpr auto ignoreNothing = [](const CNavArea*)->bool {
-						return false;
-						};
 					return TheNavMesh->GetNearestNavArea(pingPos, true, maxDist, false, false, TEAM_ANY,
-						[requireAreaBeNamed, ignoreNamelessPlaces, ignoreNothing]() {
-							return requireAreaBeNamed ? ignoreNamelessPlaces : ignoreNothing;
-						}());
+						requireAreaBeNamed ? ignoreNamelessPlaces : nullptr);
 				};
 
 			constexpr float maxPingAreaDist = 1024;
