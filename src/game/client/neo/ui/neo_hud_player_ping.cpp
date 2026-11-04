@@ -140,6 +140,12 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 
 void CNEOHud_PlayerPing::OnPlayerPing(const IGameEvent* event)
 {
+	// because it makes no sense to send pings for enemies to see
+	if (!NEORules() || !NEORules()->IsTeamplay())
+	{
+		return;
+	}
+
 	if (!cl_neo_player_pings.GetBool())
 	{
 		return;
