@@ -137,10 +137,8 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 
 #ifdef CLIENT_DLL
 extern ConVar cl_neo_player_pings;
-#ifdef _DEBUG
 static ConVar cl_neo_player_pings_print_own("cl_neo_player_pings_print_own", "0", FCVAR_ARCHIVE,
 	"Whether to print the place names of your own pings to chat.", true, false, true, true);
-#endif
 #else
 static ConVar sv_neo_player_pings_calc_placename("sv_neo_player_pings_calc_placename", "1", 0,
 	"Whether the server should calculate place names for player pings from the nav mesh (possibly expensive)", true, false, true, true);
