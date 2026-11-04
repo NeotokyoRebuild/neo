@@ -176,6 +176,7 @@ void CheckPingButton(CNEO_Player* player)
 	}
 
 	IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
+	Assert(event);
 	if (event)
 	{
 		trace_t tr;
