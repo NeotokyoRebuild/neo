@@ -179,6 +179,7 @@ public:
 	bool IsDrawnTransparent() const;
 	float GetCloakFactor() const { return m_flTocFactor; }
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
+	bool IsAllowedToSuperJumpIgnoringSprint(void);
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
 

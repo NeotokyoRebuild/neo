@@ -181,6 +181,7 @@ public:
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsAllowedToSuperJump(void);
+	bool IsAllowedToSuperJumpIgnoringSprint(void);
 
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events

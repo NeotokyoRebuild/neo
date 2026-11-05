@@ -1217,15 +1217,18 @@ bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, tra
 	return true;
 }
 
+// Whether jumping now makes a super jump, which needs sprint on top of the other checks
 bool CNEO_Player::IsAllowedToSuperJump()
 {
-	// NEOJANK: Bots are exempt from certain checks due to their their erratic input control
-	if (!IsBot())
-	{
-		if (!IsSprinting())
-			return false;
-	}
+	if (!IsSprinting())
+		return false;
 
+	return IsAllowedToSuperJumpIgnoringSprint();
+}
+
+// The super jump checks without sprint, for a bot that asks before it presses run
+bool CNEO_Player::IsAllowedToSuperJumpIgnoringSprint()
+{
 	if (IsCarryingGhost())
 		return false;
 

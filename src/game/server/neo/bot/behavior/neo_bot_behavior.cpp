@@ -363,7 +363,7 @@ void CNEOBotMainAction::ReconConsiderSuperJump( CNEOBot *me )
 		return;
 	}
 
-	if (!me->IsAllowedToSuperJump())
+	if (!me->IsAllowedToSuperJumpIgnoringSprint())
 	{
 		return;
 	}
