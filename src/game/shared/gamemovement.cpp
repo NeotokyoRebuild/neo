@@ -2756,7 +2756,7 @@ bool CGameMovement::CheckJumpButton( void ) {
 	neoPlayer->m_HL2Local.m_slideTime = 0.0f;
 
 	// Super jump
-	if (neoPlayer->GetClass() == NEO_CLASS_RECON && neoPlayer->IsAllowedToSuperJump())
+	if (neoPlayer->GetClass() == NEO_CLASS_RECON && (mv->m_nButtons & IN_SPEED) && neoPlayer->IsAllowedToSuperJump())
 	{
 		neoPlayer->SuitPower_Drain(SUPER_JMP_COST);
 		Vector vecForward;
