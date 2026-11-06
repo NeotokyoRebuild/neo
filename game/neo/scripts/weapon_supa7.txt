@@ -68,10 +68,32 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"40"
 		"forward"	"-2"
 		"right"		"1.275"	
 		"up"		"4.75"
+	}
+
+	"AdsOptic"
+	{
+		"window"	"1"
+		"reticle"	"vgui/hud/optics/supa7_reticle"
+		// Both panes carry the glass art: hide it and draw it once.
+		"lens"		"models/weapons/eos_glass"
+		"one_pane"	"1"
+		"lens_bone"	"Base"
+		"lens_map"	"-1.468 -4.191 8.404  3.004 0 0  0 0 -3.112"
+		"lens_map2"	"-1.468 -3.846 8.404  3.004 0 0  0 0 -3.112"
+		"window_glass"	"-0.010 0  -0.010 1  1 0  1 1"
+	}
+
+	// The pump's pullback is large on the buckshot animation: keep it in frame on the sights.
+	"AdsRecoil"
+	{
+		"back"		"0.2"
+		"max_dist"	"0.5"
+		"max_angle"	"1"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)

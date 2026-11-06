@@ -2,6 +2,7 @@
 #include "neo_gamerules.h"
 #include "neo_version_info.h"
 #include "neo_misc.h"
+#include "neo_ads.h"
 #include "in_buttons.h"
 #include "ammodef.h"
 
@@ -737,6 +738,7 @@ CNEORules::~CNEORules()
 void CNEORules::Precache()
 {
 	BaseClass::Precache();
+	NeoAdsPrecacheReticles();
 }
 #endif // GAME_DLL
 
