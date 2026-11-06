@@ -7,11 +7,6 @@
 //=============================================================================//
 
 #include "vrad.h"
-#include "vmpi.h"
-#ifdef MPI
-#include "messbuf.h"
-static MessageBuffer mb;
-#endif
 
 #define	HALFBIT
 
@@ -382,13 +377,7 @@ transfer_t* BuildVisLeafs_Start()
 }
 
 
-// If PatchCB is non-null, it is called after each row is generated (used by MPI).
-void BuildVisLeafs_Cluster( 
-	int threadnum,
-	transfer_t *transfers, 
-	int iCluster, 
-	void (*PatchCB)(int iThread, int patchnum, CPatch *patch)
-	)
+void BuildVisLeafs_Cluster( int threadnum, transfer_t *transfers, int iCluster )
 {
 	byte	pvs[(MAX_MAP_CLUSTERS+7)/8];
 	CPatch	*patch;
@@ -423,10 +412,6 @@ void BuildVisLeafs_Cluster(
 			
 			// do the transfers
 			MakeScales( patchnum, transfers );
-
-			// Let MPI aggregate the data if it's being used.
-			if ( PatchCB )
-				PatchCB( threadnum, patchnum, patch );
 		}
 	}
 }
@@ -453,7 +438,7 @@ void BuildVisLeafs( int threadnum, void *pUserData )
 		if ( iCluster == -1 )
 			break;
 
-		BuildVisLeafs_Cluster( threadnum, transfers, iCluster, NULL );
+		BuildVisLeafs_Cluster( threadnum, transfers, iCluster );
 	}
 	
 	BuildVisLeafs_End( transfers );
@@ -467,16 +452,7 @@ BuildVisMatrix
 */
 void BuildVisMatrix (void)
 {
-#ifdef MPI
-	if ( g_bUseMPI )
-	{
-		RunMPIBuildVisLeafs();
-	}
-	else 
-#endif
-	{
-		RunThreadsOn (dvis->numclusters, true, BuildVisLeafs);
-	}
+	RunThreadsOn (dvis->numclusters, true, BuildVisLeafs);
 }
 
 void FreeVisMatrix (void)

@@ -181,7 +181,7 @@ foreach (TEST_EXE ${TEST_EXE_LIST})
             vgui_controls::vgui_controls
             dl
             m
-            pthread
+            Threads::Threads
             rt
             z
             GL

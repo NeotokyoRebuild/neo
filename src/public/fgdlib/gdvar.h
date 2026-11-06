@@ -10,7 +10,7 @@
 #pragma once
 
 #include <utlvector.h>
-#include <TokenReader.h> // dvs: for MAX_STRING. Fix.
+#include <tokenreader.h> // dvs: for MAX_STRING. Fix.
 
 
 class MDkeyvalue;
@@ -133,7 +133,7 @@ class GDinputvariable
 		// for choices/flags:
 		CUtlVector<GDIVITEM> m_Items;
 
-		static char *m_pszEmpty;
+        static const char *m_pszEmpty;
 
 		char m_szName[MAX_IDENT];
 		char m_szLongName[MAX_STRING];

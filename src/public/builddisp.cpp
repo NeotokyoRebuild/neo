@@ -1302,20 +1302,20 @@ void CCoreDispInfo::CalcErrorTermAtNode( int nodeIndex, int level )
     if( level == m_Power )
         return;
 
-	//
-	// get the vertex indices
-	//
-	int neighborVertIndices[9];
-	for( int i = 0; i < 8; i++ )
-	{
-		neighborVertIndices[i] = m_Nodes[nodeIndex].GetNeighborVertIndex( i );
-	}
-	neighborVertIndices[8] = m_Nodes[nodeIndex].GetCenterVertIndex();
+    //
+    // get the vertex indices
+    //
+    int neighborVertIndices[9];
+    for( int i = 0; i < 8; i++ )
+    {
+        neighborVertIndices[i] = m_Nodes[nodeIndex].GetNeighborVertIndex( i );
+    }
+    neighborVertIndices[8] = m_Nodes[nodeIndex].GetCenterVertIndex();
 
 
-	//
-	// calculate the error terms
-	//
+    //
+    // calculate the error terms
+    //
     Vector          segment;
     Vector          v;
 
@@ -1354,13 +1354,13 @@ void CCoreDispInfo::CalcErrorTermAtNode( int nodeIndex, int level )
     if( errorTerm < ( float )VectorLength( segment ) )
         errorTerm = ( float )VectorLength( segment );
 
-	//
-	// add the max child's error term
-	//
-	errorTerm += GetMaxErrorFromChildren( nodeIndex, level );
+    //
+    // add the max child's error term
+    //
+    errorTerm += GetMaxErrorFromChildren( nodeIndex, level );
 
-	// set the error term
-	m_Nodes[nodeIndex].SetErrorTerm( errorTerm );
+    // set the error term
+    m_Nodes[nodeIndex].SetErrorTerm( errorTerm );
 }
 
 

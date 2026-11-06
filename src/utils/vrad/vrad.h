@@ -24,9 +24,9 @@
 #include "polylib.h"
 #include "threads.h"
 #include "builddisp.h"
-#include "VRAD_DispColl.h"
-#include "UtlMemory.h"
-#include "UtlHash.h"
+#include "vrad_dispcoll.h"
+#include "utlmemory.h"
+#include "utlhash.h"
 #include "utlvector.h"
 #include "iincremental.h"
 #include "raytrace.h"
@@ -39,12 +39,18 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef _WIN32
 #pragma warning(disable: 4142 4028)
 #include <io.h>
 #pragma warning(default: 4142 4028)
+#endif
 
 #include <fcntl.h>
+
+#ifdef _WIN32
 #include <direct.h>
+#endif
+
 #include <ctype.h>
 
 
@@ -302,8 +308,6 @@ extern bool IsModelTextureShadowsForced( const char *pModelName );
 #define TRACE_ID_STATICPROP    0x04000000  // static prop - lower bits are prop ID
 extern RayTracingEnvironment g_RtEnv;
 
-#include "mpivrad.h"
-
 void MakeShadowSplits (void);
 
 //==============================================
@@ -333,11 +337,8 @@ extern	directlight_t	*freelights;
 // things), we need to always access (r/w) face data though this pointer
 extern dface_t *g_pFaces;
 
-
-extern bool g_bMPIProps;
-
 extern	byte	nodehit[MAX_MAP_NODES];
-extern  float	gamma;
+extern  float	g_flGamma;
 extern	float	indirect_sun;
 extern	float	smoothing_threshold;
 extern	int		dlight_map;
@@ -397,7 +398,7 @@ void AddBrushesForRayTrace ( void );
 void BaseLightForFace( dface_t *f, Vector& light, float *parea, Vector& reflectivity );
 void CreateDirectLights (void);
 void GetPhongNormal( int facenum, Vector const& spot, Vector& phongnormal );
-int LightForString( char *pLight, Vector& intensity );
+int LightForString(const char *pLight, Vector& intensity );
 void MakeTransfer( int ndxPatch1, int ndxPatch2, transfer_t *all_transfers );
 void MakeScales( int ndxPatch, transfer_t *all_transfers );
 
@@ -416,7 +417,7 @@ bool RadWorld_Go();
 
 dleaf_t		*PointInLeaf (Vector const& point);
 int			ClusterFromPoint( Vector const& point );
-winding_t	*WindingFromFace (dface_t *f, Vector& origin );
+winding_t	*WindingFromFace (dface_t *f, const Vector &origin );
 
 void WriteWinding (FileHandle_t out, winding_t *w, Vector& color );
 void WriteNormal( FileHandle_t out, Vector const &nPos, Vector const &nDir, 

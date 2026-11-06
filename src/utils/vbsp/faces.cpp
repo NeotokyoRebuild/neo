@@ -1096,8 +1096,8 @@ face_t *TryMerge (face_t *f1, face_t *f2, Vector& planenormal)
 		return NULL;
 	if (f1->contents != f2->contents)
 		return NULL;
-    if ( f1->originalface->smoothingGroups != f2->originalface->smoothingGroups )
-        return NULL;
+	if ( f1->originalface->smoothingGroups != f2->originalface->smoothingGroups )
+		return NULL;
 	if ( !OverlaysAreEqual( f1, f2 ) )
 		return NULL;
 	if ( nomergewater && ( FaceOnWaterBrush( f1 ) || FaceOnWaterBrush( f2 ) ) )
