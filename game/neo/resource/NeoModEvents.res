@@ -25,7 +25,7 @@
 //   time	: firing server time
 //   eventid	: holds the event ID
 
-"modevents"
+"neomodevents"
 {
 	"player_death"				// a game event, name may be 32 charaters long
 	{
@@ -123,5 +123,25 @@
 	{
 		"area"			"long"
 		"blocked"		"bool"
+	}
+	
+	"comp_match_start"
+	{
+	}
+	
+	"comp_match_end"
+	{
+	}
+	
+	"match_start"
+	{
+	}
+	
+	"comp_round_start"
+	{
+	}
+	
+	"lobby_all_players_ready"
+	{
 	}
 }
