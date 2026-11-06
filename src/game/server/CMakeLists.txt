@@ -1518,6 +1518,7 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/neo_bot_obstacle_props.cpp
     neo/bot/neo_bot_path_obstacles.cpp
     neo/bot/neo_bot_prop_detour.cpp
+    neo/bot/neo_bot_ghost_guard.cpp
     neo/bot/neo_bot_path_reservation.cpp
     neo/bot/neo_bot_body.cpp
     neo/bot/neo_bot_locomotion.cpp
@@ -1535,6 +1536,7 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/behavior/neo_bot_ctg_carrier.cpp
     neo/bot/behavior/neo_bot_ctg_enemy.cpp
     neo/bot/behavior/neo_bot_ctg_escort.cpp
+    neo/bot/behavior/neo_bot_ctg_guard_carrier.cpp
     neo/bot/behavior/neo_bot_ctg_lone_wolf.cpp
     neo/bot/behavior/neo_bot_ctg_seek.cpp
     neo/bot/behavior/neo_bot_dead.cpp
@@ -1583,6 +1585,7 @@ target_sources_grouped(
     neo/bot/neo_bot_obstacle_props.h
     neo/bot/neo_bot_path_obstacles.h
     neo/bot/neo_bot_prop_detour.h
+    neo/bot/neo_bot_ghost_guard.h
     neo/bot/neo_bot_path_reservation.h
     neo/bot/neo_bot_body.h
     neo/bot/neo_bot_contextual_query_interface.h
@@ -1601,6 +1604,7 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_ctg_carrier.h
     neo/bot/behavior/neo_bot_ctg_enemy.h
     neo/bot/behavior/neo_bot_ctg_escort.h
+    neo/bot/behavior/neo_bot_ctg_guard_carrier.h
     neo/bot/behavior/neo_bot_ctg_lone_wolf.h
     neo/bot/behavior/neo_bot_ctg_lone_wolf_ambush.cpp
     neo/bot/behavior/neo_bot_ctg_lone_wolf_ambush.h

@@ -256,6 +256,18 @@ const CNavArea *CNEOBotAttack::FindAttackCover( CNEOBot *me, const CKnownEntity 
 ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	const bool bAtkDefender = IsAtkDefendingTeam( me->GetTeamNumber() );
+
+	// Prefer the visible target that entered Attack; a different remembered target can make an
+	// ATK defender immediately drop the action it was just asked to run.
+	if ( bAtkDefender )
+	{
+		const CKnownEntity *visibleThreat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
+		if ( visibleThreat )
+		{
+			threat = visibleThreat;
+		}
+	}
 
 	if ( threat == nullptr || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
@@ -263,6 +275,22 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 	}
 
 	const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
+
+	if ( bAtkDefender && !threat->IsVisibleRecently() )
+	{
+		// An ATK defender drops a chase it lost sight of when it leads out of the ghost's view,
+		// or when an attacker has the ghost, so it collapses on the carrier
+		if ( !IsInAtkGhostView( threatLastKnownPos ) )
+		{
+			return Done( "Threat is out of the ghost's view" );
+		}
+
+		const int iGhoster = NEORules()->GetGhosterPlayer();
+		if ( iGhoster > 0 && iGhoster != threat->GetEntity()->entindex() && NEORules()->GetGhosterTeam() != me->GetTeamNumber() )
+		{
+			return Done( "Collapsing on the ghost carrier" );
+		}
+	}
 
 	if ( sv_neo_bot_attack_debug_cover.GetBool() )
 	{

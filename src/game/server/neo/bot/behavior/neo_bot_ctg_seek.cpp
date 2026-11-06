@@ -5,18 +5,20 @@
 #include "bot/behavior/neo_bot_ctg_seek.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/behavior/neo_bot_ctg_escort.h"
+#include "bot/behavior/neo_bot_ctg_guard_carrier.h"
 #include "bot/behavior/neo_bot_ctg_enemy.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_capture.h"
+#include "bot/neo_bot_ghost_guard.h"
 #include "bot/neo_bot_path_compute.h"
 #include "weapon_ghost.h"
 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 {
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG)
+	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK)
 	{
-		return Done( "Game mode is no longer CTG" );
+		return Done( "Game mode is no longer CTG or ATK" );
 	}
 
 	if (NEORules()->IsRoundOver())
@@ -40,7 +42,8 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	if ( team_members == 1 )
+	// In ATK the clock runs for the defenders, so the last attacker still goes for the ghost
+	if ( team_members == 1 && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK )
 	{
 		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one on my team!" );
 	}
@@ -55,6 +58,11 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 			{
 				if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
 				{
+					if ( IsGhostGuardRound( me->GetTeamNumber() ) )
+					{
+						return SuspendFor( new CNEOBotCtgGuardCarrier, "Guarding the ghost carrier" );
+					}
+
 					return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");
 				}
 				else
@@ -114,7 +122,7 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 void CNEOBotCtgSeek::RecomputeSeekPath( CNEOBot *me )
 {
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG)
+	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK)
 	{
 		// Wait until next tick to exit behavior
 		return;

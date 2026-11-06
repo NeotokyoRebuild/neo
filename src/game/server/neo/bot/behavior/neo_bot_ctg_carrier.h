@@ -35,6 +35,7 @@ public:
 	virtual ActionResult< CNEOBot > OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot > Update( CNEOBot *me, float interval ) override;
 	virtual ActionResult< CNEOBot > OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
+	virtual void OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction ) override;
 
 	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me ) override;
 	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path ) override;
@@ -54,9 +55,14 @@ private:
 	Vector m_closestCapturePoint;
 	CUtlVector<CNEO_Player*> m_teammates;
 
+	// where a carrier with no capture zone holds the ghost, chosen once on pickup
+	CNavArea *m_holdArea;
+	bool m_bHoldAreaChosen;
+
 	bool HasCleanRunToCap( const CNEOBot *me ) const;
 	bool IsCapPotentiallyVisible( const CNEOBot *me ) const;
 	void UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Player*> &teammates );
+	void UpdateHoldPath( CNEOBot *me );
 };
 
 #endif // NEO_BOT_CTG_CARRIER_H
