@@ -151,13 +151,6 @@ void CNEOHud_PlayerPing::OnPlayerPing(const IGameEvent* event)
 		return;
 	}
 
-	const bool thisIsPredictedPing = !event->GetBool("server", false);
-	if (thisIsPredictedPing)
-	{
-		// don't print predicted (bogus) placenames; we only wanna predict the in-world visuals but not the place text
-		return;
-	}
-
 	const auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	Assert(localPlayer);
 	const auto localTeamNumber = localPlayer->GetTeamNumber();
@@ -165,16 +158,13 @@ void CNEOHud_PlayerPing::OnPlayerPing(const IGameEvent* event)
 	const int pingerIndex = engine->GetPlayerForUserID(event->GetInt("userid"));
 	Assert(pingerIndex >= 0);
 
-	if (pingerIndex == localPlayer->entindex())
+	const bool isOwnPing = (pingerIndex == localPlayer->entindex());
+	if (!isOwnPing)
 	{
-		static ConVarRef cl_neo_player_pings_print_own("cl_neo_player_pings_print_own");
-		Assert(cl_neo_player_pings_print_own.IsValid());
-		if (!cl_neo_player_pings_print_own.GetBool())
+		if (pingerIndex == 0 || GetClientVoiceMgr()->IsPlayerBlocked(pingerIndex))
+		{
 			return;
-	}
-	else if (pingerIndex == 0 || GetClientVoiceMgr()->IsPlayerBlocked(pingerIndex))
-	{
-		return;
+		}
 	}
 
 	const int pingRecipientTeam = event->GetInt("playerteam");
@@ -209,6 +199,21 @@ void CNEOHud_PlayerPing::OnPlayerPing(const IGameEvent* event)
 	const Vector worldpos(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 	const bool ghosterPing = event->GetBool("ghosterping");
 	SetPos(pingerSlot, pingRecipientTeam, worldpos, ghosterPing);
+
+	const bool thisIsPredictedPing = !event->GetBool("server", false);
+	if (thisIsPredictedPing)
+	{
+		// don't print predicted (bogus) placenames; we only wanna predict the in-world visuals but not the place text
+		return;
+	}
+
+	if (isOwnPing)
+	{
+		static ConVarRef cl_neo_player_pings_print_own("cl_neo_player_pings_print_own");
+		Assert(cl_neo_player_pings_print_own.IsValid());
+		if (!cl_neo_player_pings_print_own.GetBool())
+			return;
+	}
 
 	const bool placeIsExact = event->GetBool("place_exact");
 	const char* placeName = event->GetString("place_name");
