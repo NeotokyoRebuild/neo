@@ -111,7 +111,7 @@ ActionResult< CNEOBot >	CNEOBotCtgGuardCarrier::Update( CNEOBot *me, float inter
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
-	if ( threat && threat->IsVisibleRecently() )
+	if ( threat )
 	{
 		// Shoot from the spot, but leave it to cut off a threat that is closer to the carrier than I am
 		const Vector &vecCarrierPos = pCarrier->GetAbsOrigin();
@@ -174,7 +174,7 @@ ActionResult< CNEOBot >	CNEOBotCtgGuardCarrier::Update( CNEOBot *me, float inter
 void CNEOBotCtgGuardCarrier::LookForEnemies( CNEOBot *me, CNEO_Player *pCarrier )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
-	if ( threat && threat->IsVisibleRecently() )
+	if ( threat )
 	{
 		return;
 	}

@@ -40,9 +40,7 @@ ActionResult< CNEOBot >	CNEOBotCtgEnemy::Update( CNEOBot *me, float interval )
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
-	// ATK defenders fight only threats in sight on the way, so a remembered one does not pull them off the carrier
-	const bool bThreatInReach = threat && ( !IsAtkDefendingTeam( me->GetTeamNumber() ) || threat->IsVisibleRecently() );
-	if ( bThreatInReach && !threat->IsObsolete() && me->GetIntentionInterface()->ShouldAttack( me, threat ) )
+	if ( threat && !threat->IsObsolete() && me->GetIntentionInterface()->ShouldAttack( me, threat ) )
 	{
 		return SuspendFor( new CNEOBotAttack(pGhostCarrier->GetAbsOrigin()), "Attacking ghoster team" );
 	}

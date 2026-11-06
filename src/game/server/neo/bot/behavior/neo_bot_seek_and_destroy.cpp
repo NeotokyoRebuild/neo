@@ -208,7 +208,7 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 
 	// ATK bots return to the ghost after a fight, attackers to take it and defenders to carry or guard it,
 	// and carry a ghost picked up outside of CtgSeek
-	if ( NEORules()->GetGameType() == NEO_GAME_TYPE_ATK )
+	if ( NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && !NEORules()->IsRoundOver() )
 	{
 		return SuspendFor( new CNEOBotCtgSeek, "Going for the ghost" );
 	}
