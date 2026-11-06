@@ -34,6 +34,7 @@
 	//#include "weapon_m41l.h"
 
 	#include "view.h"
+	#include "neo_ads.h"
 
 	#include <mathlib/mathlib.h>
 #endif
@@ -254,17 +255,20 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 		const CNEOWeaponInfo* pWepInfo = &pWeapon->GetNEOWpnData();
 		Assert(pWepInfo);
 
-		const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
+		const float flAimFov = NeoGetAimPose(*pWepInfo).fov;
+		const float aimChangeTime = NeoAimTransitionTime(*pWepInfo);
+		const float endAimingChange = m_flStartAimingChange + aimChangeTime;
 		const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
 		if (inAimingChange)
 		{
-			float percentage = clamp((currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED, 0.0f, 1.0f);
+			float percentage = clamp((currentTime - m_flStartAimingChange) / aimChangeTime, 0.0f, 1.0f);
 			if (playerAiming) percentage = 1.0f - percentage;
-			flTargetFov = Lerp(percentage, pWepInfo->m_flVMAimFov, pWepInfo->m_flVMFov);
+			percentage = NeoAimTransitionCurve(*pWepInfo, percentage);
+			flTargetFov = Lerp(percentage, flAimFov, pWepInfo->m_flVMFov);
 		}
 		else
 		{
-			flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
+			flTargetFov = playerAiming ? flAimFov : (pWepInfo->m_flVMFov);
 		}
 		m_flVMFOV = flTargetFov;
 	}
