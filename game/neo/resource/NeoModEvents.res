@@ -25,7 +25,7 @@
 //   time	: firing server time
 //   eventid	: holds the event ID
 
-"modevents"
+"neomodevents"
 {
 	"player_death"				// a game event, name may be 32 charaters long
 	{
