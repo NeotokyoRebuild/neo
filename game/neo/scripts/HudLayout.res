@@ -950,6 +950,10 @@
 		"ypos"	"0"
 		"wide"	"640"
 		"tall"	"480"
+		
+		"color"			"255 20 20 150"
+		"font"			"NHudOCRSmall"
+		"texture"		"vgui/hud/ctg/g_beacon_enemy"
 	}
 
 	CNEOHud_GameEvent
