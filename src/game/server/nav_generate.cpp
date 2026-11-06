@@ -52,9 +52,11 @@ bool FindGroundForNode( Vector *pos, Vector *normal );	// find a ground Z for po
 const float MaxTraversableHeight = StepHeight;		// max internal obstacle height that can occur between nav nodes and safely disregarded
 const float MinObstacleAreaWidth = 10.0f;			// min width of a nav area we will generate on top of an obstacle
 
+#ifdef NEO
 // the visibility pass runs no earlier than this game time after map load, when the map's opening motion has usually ended,
 // such as a dropship landing (idle by about 10 s on ntre_rise_ctg) or a juggernaut spawned by a round restart
 static constexpr float NAV_VIS_SETTLE_SECONDS = 15.0f;
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -3808,14 +3810,12 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			BeginVisibilityComputations();
 			Msg( "Computing mesh visibility...\n" );
 
-			bool isPassWaiting = gpGlobals->curtime < NAV_VIS_SETTLE_SECONDS;
 #ifdef NEO
-			isPassWaiting = isPassWaiting && !nav_neo_skip_visibility_calculation.GetBool();
-#endif // NEO
-			if ( isPassWaiting )
+			if ( gpGlobals->curtime < NAV_VIS_SETTLE_SECONDS && !nav_neo_skip_visibility_calculation.GetBool() )
 			{
 				Msg( "Waiting until %.0f s after map load, for the map's entities to settle...\n", NAV_VIS_SETTLE_SECONDS );
 			}
+#endif // NEO
 		
 			return true;
 		}
@@ -3832,6 +3832,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 				return true;
 			}
 #endif // NEO
+#ifdef NEO
 			// visibility traces hit entities in their state at the time of the trace, so the whole pass runs in one frame once they have settled
 			// (game time restarts at map load): the analysis is a snapshot of that instant, not a mix of hundreds of frames
 			if ( gpGlobals->curtime < NAV_VIS_SETTLE_SECONDS )
@@ -3840,6 +3841,22 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			}
 
 			CNavArea::ComputeMeshVisibility();
+#else
+			while( m_generationIndex < TheNavAreas.Count() )
+			{
+				CNavArea *area = TheNavAreas[ m_generationIndex ];
+				++m_generationIndex;
+
+				area->ComputeVisibilityToMesh();
+
+				// don't go over our time allotment
+				if ( Plat_FloatTime() - startTime > maxTime )
+				{
+					AnalysisProgress( "Computing mesh visibility...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
+					return true;
+				}
+			}
+#endif // NEO
 
 			Msg( "Optimizing mesh visibility...\n" );
 
