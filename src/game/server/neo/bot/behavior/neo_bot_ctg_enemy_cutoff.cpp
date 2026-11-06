@@ -88,6 +88,17 @@ ActionResult< CNEOBot > CNEOBotCtgEnemyCutOff::Update( CNEOBot *me, float interv
 }
 
 //---------------------------------------------------------------------------------------------
+ActionResult< CNEOBot > CNEOBotCtgEnemyCutOff::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
+{
+	if ( !RepathToCutOff( me ) )
+	{
+		return ChangeTo( new CNEOBotCtgEnemyChase( FASTEST_ROUTE ), "No path to the cut-off on resume - chasing" );
+	}
+
+	return Continue();
+}
+
+//---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotCtgEnemyCutOff::OnStuck( CNEOBot *me )
 {
 	if ( !RepathToCutOff( me ) )

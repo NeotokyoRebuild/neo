@@ -29,13 +29,15 @@ static bool PredictRoute( CNavArea *pStartArea, const Vector &vecGoal, CNEOBotPr
 	}
 
 	ShortestPathCost cost;
-	if ( !NavAreaBuildPath( pStartArea, pGoalArea, &vecGoal, cost ) )
+	CNavArea *pReachedArea = nullptr;
+	if ( !NavAreaBuildPath( pStartArea, pGoalArea, &vecGoal, cost, &pReachedArea ) )
 	{
 		return false;
 	}
 
-	// The parent chain runs goal -> start
-	for ( CNavArea *pArea = pGoalArea; pArea; pArea = pArea->GetParent() )
+	// The parent chain runs goal -> start, from the area the search reached: a blocked pGoalArea is
+	// passed over for another area containing vecGoal, and its own parent links are stale
+	for ( CNavArea *pArea = pReachedArea; pArea; pArea = pArea->GetParent() )
 	{
 		route.areas.AddToTail( pArea );
 	}

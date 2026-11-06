@@ -15,6 +15,7 @@ public:
 
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval ) override;
+	virtual ActionResult< CNEOBot >	OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction ) override;
 
 	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me ) override;
 	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason ) override;
