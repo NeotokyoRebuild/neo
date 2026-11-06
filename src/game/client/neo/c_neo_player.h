@@ -164,8 +164,6 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
-	void SuperJump(void);
-
 	void DrawCompass(void);
 
 	void Weapon_AimToggle(C_NEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType);
@@ -181,6 +179,7 @@ public:
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
+	bool IsAllowedToSuperJump(void);
 
 	const char *InternalGetNeoPlayerName() const;
 	const char *GetNeoPlayerName() const;
@@ -219,8 +218,6 @@ private:
 	void PlayCloakSound();
 	void SetCloakState(bool state);
 	void FixupOnGroundFlag();
-
-	bool IsAllowedToSuperJump(void);
 
 	void ClearLocalPlayerDmgReports();
 
