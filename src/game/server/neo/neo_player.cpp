@@ -2968,7 +2968,7 @@ CWeaponGhost *CNEO_Player::GetBeaconingGhost(void) const
 		? Weapon_GetSlot( 0 )
 		: GetActiveWeapon();
 
-	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>( pCandidate );
+	CNEOBaseCombatWeapon *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon *>( pCandidate );
 	if ( !pNeoWeapon || !pNeoWeapon->IsGhost() )
 	{
 		return nullptr;
