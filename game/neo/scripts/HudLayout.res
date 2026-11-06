@@ -908,6 +908,20 @@
 		"sprint_text_color"		"255 255 255 100"
 		"sprint_color"		"255 255 255 150"
 	}
+	neo_walking_indicator
+	{
+		"fieldName"			"neo_walking_indicator"
+		"visible" 			"1"
+		
+		"xpos"				"c40"
+		"ypos"				"c30"
+		
+		"animationSpeed" 	"4"
+		
+		"color" 			"218 217 213 255"
+		"color2" 			"255 150 150 255"
+		"font"				"NHudPanelText"
+	}
 	RoundResult
 	{
 		"fieldName"		"RoundResult"

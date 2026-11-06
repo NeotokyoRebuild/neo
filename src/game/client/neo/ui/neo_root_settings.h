@@ -204,6 +204,7 @@ struct NeoSettings
 		bool bShowPos;
 		int iShowFps;
 		bool bEnableRangeFinder;
+		bool bEnableWalkIndicator;
 		int iExtendedKillfeed;
 		bool bShowHudContextHints;
 		bool bShowHudContextHintPlayerTakeover;
@@ -274,6 +275,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_streamermode);
 		CONVARREF_DEF(cl_neo_streamermode_autodetect_obs);
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
+		CONVARREF_DEF(cl_neo_hud_walkindicator_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_player_takeover_hint);
