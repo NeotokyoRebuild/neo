@@ -115,10 +115,12 @@ public:
     const CUtlVector<DeployedDetpack_t> &GetDeployedDetpacks();
     bool IsDetpackMarkFresh(const CBaseEntity *pDetpack, int teamID) const;
     bool MarkDetpackBlast(CBaseEntity *pDetpack, int teamID);
+    bool HasDeployedDetpackMarkInBlastOfGhostArea(int teamID);
     void AddDetpackHazard(int navAreaID, float expireTime, int teamID);
     bool IsAreaDetpackHazard(int navAreaID, int teamID) const;
     bool HasDetpackMark(int teamID) const;
     float GetLastDetpackMarkTime(int teamID) const;
+    CNavArea *GetCachedGhostArea() const { return m_pCachedGhostArea; }
 
 private:
     void ClearDetpackMarks();
@@ -126,6 +128,7 @@ private:
     CUtlVector<DetpackMark_t> m_DetpackMarks[TEAM__TOTAL];
     float m_flNextDetpackScan = 0.0f;
     CUtlVector<DeployedDetpack_t> m_DeployedDetpacks;
+    CNavArea *m_pCachedGhostArea = nullptr;
 
     int CountLiveClaims(const AreaReservation_t &res, const CNEOBot *excluding) const;
 

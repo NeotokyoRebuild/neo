@@ -29,7 +29,7 @@ static bool IsLooseGhostUnderDetpack( const CNEOBot *me )
 		return false;
 	}
 
-	const CNavArea *ghostArea = TheNavMesh->GetNearestNavArea( NEORules()->GetGhostPos() );
+	const CNavArea *ghostArea = CNEOBotPathReservations()->GetCachedGhostArea();
 	return ghostArea && CNEOBotPathReservations()->IsAreaDetpackHazard( ghostArea->GetID(), iTeam );
 }
 
@@ -96,7 +96,7 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 	// an enemy detpack waits at the loose ghost: hunt the enemy from outside its blast instead
 	if ( IsLooseGhostUnderDetpack( me ) )
 	{
-		return SuspendFor( new CNEOBotCtgLoneWolfSeek, "Ghost is under an enemy detpack, hunting the enemy" );
+		return SuspendFor( new CNEOBotCtgLoneWolfSeek( true ), "Ghost is under an enemy detpack, hunting the enemy" );
 	}
 
 	// Ghost capture logic

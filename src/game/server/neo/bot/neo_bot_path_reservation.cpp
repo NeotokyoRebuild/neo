@@ -209,6 +209,8 @@ void CNEOBotPathReservationSystem::ClearRound()
         m_DetpackMarks[team].RemoveAll();
     }
     m_BotReservedAreas.RemoveAll();
+	m_pCachedGhostArea = nullptr;
+	m_flNextDetpackScan = 0.0f;
 
     // a new round respawns everyone, so where bots got stuck starts over
     FOR_EACH_MAP_FAST( m_AreaPenalties, i )
@@ -637,11 +639,17 @@ static constexpr float DETPACK_AREA_SEARCH_MARGIN = 256.0f;
 const CUtlVector<DeployedDetpack_t> &CNEOBotPathReservationSystem::GetDeployedDetpacks()
 {
 	// a map change resets curtime, so a scan time far in the future is stale
-	const bool bScanDue = ( gpGlobals->curtime >= m_flNextDetpackScan )
-		|| ( m_flNextDetpackScan > gpGlobals->curtime + DETPACK_SCAN_INTERVAL );
+	const bool bClockReset = m_flNextDetpackScan > gpGlobals->curtime + DETPACK_SCAN_INTERVAL;
+	const bool bScanDue = ( gpGlobals->curtime >= m_flNextDetpackScan ) || bClockReset;
 	if ( !bScanDue )
 	{
 		return m_DeployedDetpacks;
+	}
+
+	if ( bClockReset )
+	{
+		// The cached nav-area pointer belongs to the previous map's nav mesh.
+		m_pCachedGhostArea = nullptr;
 	}
 
 	m_flNextDetpackScan = gpGlobals->curtime + DETPACK_SCAN_INTERVAL;
@@ -654,12 +662,64 @@ const CUtlVector<DeployedDetpack_t> &CNEOBotPathReservationSystem::GetDeployedDe
 		det.pArea = TheNavMesh->GetNearestNavArea( pEnt->GetAbsOrigin() );
 	}
 
+	// refresh the cached ghost area while we are here, so per-bot checks avoid the nav lookup
+	if ( NEORules()->GhostExists() && NEORules()->GetGhosterPlayer() <= 0 )
+	{
+		const Vector &ghostPos = NEORules()->GetGhostPos();
+		m_pCachedGhostArea = TheNavMesh->GetNearestNavArea( ghostPos );
+	}
+	else
+	{
+		m_pCachedGhostArea = nullptr;
+	}
+
 	if ( m_DeployedDetpacks.Count() == 0 )
 	{
 		ClearDetpackMarks();
 	}
 
 	return m_DeployedDetpacks;
+}
+
+//-------------------------------------------------------------------------------------------------
+// Whether a still-deployed detpack previously marked by this team threatens this nav area.
+// The deployed list is shared and scanned at most every 0.5 seconds; mark expiry does not end a hunt.
+bool CNEOBotPathReservationSystem::HasDeployedDetpackMarkInBlastOfGhostArea( int teamID )
+{
+	if ( ( teamID < 0 ) || ( teamID >= TEAM__TOTAL ) )
+	{
+		return false;
+	}
+
+	const CUtlVector<DeployedDetpack_t> &deployedDetpacks = GetDeployedDetpacks();
+	const CNavArea *ghostArea = m_pCachedGhostArea;
+	if ( !ghostArea )
+	{
+		return false;
+	}
+
+	const CUtlVector<DetpackMark_t> &marks = m_DetpackMarks[teamID];
+	for ( int i = 0; i < marks.Count(); ++i )
+	{
+		CBaseEntity *pMarkedDetpack = marks[i].hDetpack.Get();
+		if ( !pMarkedDetpack )
+		{
+			continue;
+		}
+
+		for ( int j = 0; j < deployedDetpacks.Count(); ++j )
+		{
+			CBaseEntity *pDeployedDetpack = deployedDetpacks[j].hDetpack.Get();
+			if ( ( pDeployedDetpack == pMarkedDetpack )
+				&& ( ghostArea->GetDistanceSquaredToPoint( pDeployedDetpack->GetAbsOrigin() )
+					<= Square( NEO_DETPACK_DAMAGE_RADIUS ) ) )
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -747,6 +807,11 @@ bool CNEOBotPathReservationSystem::MarkDetpackBlast( CBaseEntity *pDetpack, int 
 	{
 		pMark = &marks[marks.AddToTail()];
 		pMark->hDetpack = pDetpack;
+		pMark->flFirstMarkTime = gpGlobals->curtime;
+	}
+	else if ( gpGlobals->curtime >= pMark->flMarkTime + DETPACK_HAZARD_DURATION )
+	{
+		// the old mark lapsed, so a path built since then may run through the blast
 		pMark->flFirstMarkTime = gpGlobals->curtime;
 	}
 
