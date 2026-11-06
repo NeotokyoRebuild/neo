@@ -234,6 +234,17 @@ void CBasePlayerAnimState::RestartMainSequence()
 }
 
 
+#ifdef NEO
+void CBasePlayerAnimState::OnNewModel()
+{
+	// the aim layer transitioners keep the previous sequences to blend out of them,
+	// and after a model swap those indices address a foreign sequence table
+	m_IdleSequenceTransitioner.RemoveAll();
+	m_SequenceTransitioner.RemoveAll();
+	ClearAnimationState();
+}
+#endif
+
 void CBasePlayerAnimState::ComputeSequences( CStudioHdr *pStudioHdr )
 {
 	VPROF( "CBasePlayerAnimState::ComputeSequences" );
