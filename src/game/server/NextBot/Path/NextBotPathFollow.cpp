@@ -779,10 +779,11 @@ static const Path::Segment *FindWalkableGoal( INextBot *bot, const Path *path, c
 		return goal;
 	}
 
-	// back up to the nearest earlier waypoint still walkable from here, but not back over a ladder, climb or drop
-	for ( const Path::Segment *seg = prior; seg && seg->type == Path::ON_GROUND && !seg->ladder; seg = path->PriorSegment( seg ) )
+	// back up to the nearest earlier waypoint still walkable from here, but not back over a ladder, climb or drop,
+	// and not to the first segment, which IsAtGoal treats as already passed
+	for ( const Path::Segment *seg = prior; seg && path->PriorSegment( seg ) && seg->type == Path::ON_GROUND && !seg->ladder; seg = path->PriorSegment( seg ) )
 	{
-		if ( !mover->IsPotentiallyTraversable( feet, seg->pos ) )
+		if ( !mover->IsPotentiallyTraversable( feet, seg->pos ) || mover->HasPotentialGap( feet, seg->pos ) )
 		{
 			continue;
 		}
