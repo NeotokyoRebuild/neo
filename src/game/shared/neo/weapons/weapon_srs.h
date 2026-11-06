@@ -46,6 +46,8 @@ public:
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 
 	inline bool GetNeedsBolting() const { return m_bNeedsBolting; }
+	// after a shot the chamber holds a spent case until the bolt brings the next round home
+	bool IsRoundChambered() const override;
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
@@ -54,6 +56,8 @@ private:
 	CWeaponSRS(const CWeaponSRS &other);
 
 	CNetworkVar(bool, m_bNeedsBolting);
+	// when the bolt cycle in progress chambers the next round, 0 when none is in progress
+	CNetworkVar(float, m_flBoltHomeTime);
 };
 
 #endif // NEO_WEAPON_SRS_H

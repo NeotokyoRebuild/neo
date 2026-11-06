@@ -343,6 +343,11 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 		{
 #ifdef NEO
 		AddToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, CalcReloadSequence(), true);
+		// a resumed reload starts the gesture where the reload resumes: nData is that cycle x 1000
+		if (nData > 0)
+		{
+			SetGestureSlotCycle(GESTURE_SLOT_ATTACK_AND_RELOAD, nData / 1000.0f);
+		}
 #else
 			// Weapon reload.
 			if ( GetBasePlayer()->GetFlags() & FL_DUCKING )
@@ -363,6 +368,16 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 		}
 	case PLAYERANIMEVENT_RELOAD_END:
 		{
+#ifdef NEO
+			// the reload ended or was cut short: stop its gesture, if the slot still plays it
+			const int iReloadSequence = CalcReloadSequence();
+			if (m_aGestureSlots[GESTURE_SLOT_ATTACK_AND_RELOAD].m_pAnimLayer && iReloadSequence > 0 &&
+				m_aGestureSlots[GESTURE_SLOT_ATTACK_AND_RELOAD].m_pAnimLayer->m_nSequence == iReloadSequence)
+			{
+				ResetGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD);
+			}
+			break;
+#endif
 			// Weapon reload.
 			if ( GetBasePlayer()->GetFlags() & FL_DUCKING )
 				RestartGesture( GESTURE_SLOT_ATTACK_AND_RELOAD, ACT_MP_RELOAD_CROUCH_END );
@@ -1013,3 +1028,24 @@ void CHL2MPPlayerAnimState::DebugShowAnimStateFull(int iStartLine)
 
 	AnimStateLog("--------------------------------------------\n\n");
 }
+
+#ifdef NEO
+// Start a gesture part way through its sequence, as AddVCDSequenceToGestureSlot does for scene gestures
+void CHL2MPPlayerAnimState::SetGestureSlotCycle(int iGestureSlot, float flCycle)
+{
+	GestureSlot_t &slot = m_aGestureSlots[iGestureSlot];
+	if (!slot.m_pAnimLayer)
+	{
+		return;
+	}
+
+	slot.m_pAnimLayer->m_flCycle = flCycle;
+	slot.m_pAnimLayer->m_flPrevCycle = flCycle;
+#ifdef CLIENT_DLL
+	if (CBasePlayer *pPlayer = GetBasePlayer())
+	{
+		pPlayer->m_flOverlayPrevEventCycle[iGestureSlot] = flCycle;
+	}
+#endif
+}
+#endif // NEO
