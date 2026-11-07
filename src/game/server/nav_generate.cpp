@@ -321,8 +321,9 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 /**
  * Create a navigation representation of a ladder.
  */
-void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea, bool brushGenerated )
+void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea, NavLadderSourceType source )
 {
+	const bool brushGenerated = (source == NAV_LADDER_SOURCE_BRUSH);
 	CNavLadder *ladder = new CNavLadder;
 
 	ladder->m_top = top;
@@ -405,6 +406,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	}
 
 	ladder->m_length = (ladder->m_top - ladder->m_bottom).Length();
+
 	if (brushGenerated)
 	{
 		const float finalSignedSpan = DotProduct(ladder->m_top - ladder->m_bottom, along);
@@ -414,11 +416,12 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 		{
 			rejectReason = "coincident or crossed endpoints";
 		}
-		// One scan interval is the prototype floor: shorter remnants are below this scan's resolution.
+		// The clearance scans cannot resolve a remnant shorter than their step.
 		else if (trimmedByClearance && finalSignedSpan < inc)
 		{
 			rejectReason = "clearance-trimmed span below scan interval";
 		}
+
 		if (rejectReason)
 		{
 			DevMsg("Brush ladder rejected (%s): raw span %.1f, final signed span %.1f\n",
@@ -447,9 +450,11 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brushGenerated )
+void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, NavLadderSourceType source )
 {
 	const float nearLadderRange = 75.0f;		// 50
+	const float behindLadderRange = 2.0f * nearLadderRange;
+	const bool brushGenerated = (source == NAV_LADDER_SOURCE_BRUSH);
 
 	//
 	// Find naviagtion area at bottom of ladder
@@ -463,8 +468,9 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 	if (brushGenerated)
 	{
 		// The nearest area can be the top landing when the foot hangs above the floor,
-		// so prefer the floor under the foot, within the reach the dangling check allows.
-		m_bottomArea = TheNavMesh->GetNavArea( center, GenerationStepSize + HumanHeight );
+		// so prefer the floor under the foot, down to the deepest drop the dangling check accepts.
+		const float floorReach = GenerationStepSize + HumanHeight;
+		m_bottomArea = TheNavMesh->GetNavArea( center, floorReach );
 	}
 
 	if (!m_bottomArea)
@@ -509,7 +515,7 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 		m_topRightArea = NULL;
 
 	// find "behind" area - must look farther, since ladder is against the wall away from this area
-	m_topBehindArea = findFirstAreaInDirection( &center, m_dir, 2.0f*nearLadderRange, beneathLimit, NULL, NULL, topLookup );
+	m_topBehindArea = findFirstAreaInDirection( &center, m_dir, behindLadderRange, beneathLimit, NULL, NULL, topLookup );
 	if (m_topBehindArea == m_bottomArea)
 		m_topBehindArea = NULL;
 
@@ -535,7 +541,7 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 		m_topRightArea = findTopArea( DirectionRight( m_dir ), nearLadderRange );
 		if (!m_topBehindArea)
 		{
-			m_topBehindArea = findTopArea( m_dir, 2.0f*nearLadderRange );
+			m_topBehindArea = findTopArea( m_dir, behindLadderRange );
 		}
 	}
 
@@ -3538,7 +3544,7 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 			CNavLadder *ladder = m_ladders[i];
 #ifdef NEO
 			// Every ladder of a full generation comes from BuildBrushLaddersFromBsp.
-			ladder->ConnectGeneratedLadder( 0.0f, true );
+			ladder->ConnectGeneratedLadder( 0.0f, NAV_LADDER_SOURCE_BRUSH );
 #else
 			ladder->ConnectGeneratedLadder( 0.0f );
 #endif

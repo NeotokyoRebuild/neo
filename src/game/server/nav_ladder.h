@@ -15,6 +15,12 @@
 
 class CNavArea;
 
+enum NavLadderSourceType
+{
+	NAV_LADDER_SOURCE_DEFAULT,
+	NAV_LADDER_SOURCE_BRUSH,	///< built from a climbable brush of the BSP
+};
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * The NavLadder represents ladders in the Navigation Mesh, and their connections to adjacent NavAreas
@@ -71,7 +77,7 @@ public:
 
 	bool IsConnected( const CNavArea *area, LadderDirectionType dir ) const;	///< returns true if given area is connected in given direction
 
-	void ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brushGenerated = false );		///< Connect a generated ladder to nav areas at the end of nav generation
+	void ConnectGeneratedLadder( float maxHeightAboveTopArea, NavLadderSourceType source = NAV_LADDER_SOURCE_DEFAULT );		///< Connect a generated ladder to nav areas at the end of nav generation
 
 	void ConnectTo( CNavArea *area );				///< connect this ladder to given area
 	void Disconnect( CNavArea *area );				///< disconnect this ladder from given area
