@@ -630,9 +630,14 @@ bool IVision::IsAbleToSee( CBaseEntity *subject, FieldOfViewCheckType checkFOV, 
 			inSight = !myArea || !subjectArea || myArea->IsPotentiallyVisible( subjectArea );
 		}
 		inSight = inSight && IsLineOfSightClearToEntity( subject );
+		if ( !inSight )
+		{
+			observer->NoteOutOfSight( targetPlayer );
+			return false;
+		}
 
 		// only a target inside the view cone can be noticed
-		if ( observer->IsHiddenFromSight( targetPlayer, inSight && inFieldOfView ) || !inSight )
+		if ( observer->IsHiddenFromSight( targetPlayer, inFieldOfView ) )
 		{
 			return false;
 		}
