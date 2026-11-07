@@ -4,6 +4,7 @@
 #include "filesystem.h"
 #include "engine/IEngineTrace.h"
 #include "nav.h"
+#include "mapentities_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -93,6 +94,64 @@ Vector VectorAt( const CUtlVector<byte> &data, int offset )
 }
 
 // Lights and their shadows come from opaque brushes and props; players and NPCs cast none.
+// Lights with a style from this one up are named lights the map can switch; the light entity says whether one starts off.
+constexpr int FIRST_SWITCHABLE_STYLE = 32;
+
+// Marks the switchable light styles whose light entities start off, as CLight::Spawn sets them dark.
+void ReadStartOffStyles( const CUtlVector<byte> &entities, bool startOff[MAX_LIGHTSTYLES] )
+{
+	CUtlVector<char> text;
+	text.SetCount( entities.Count() + 1 );
+	V_memcpy( text.Base(), entities.Base(), entities.Count() );
+	text[entities.Count()] = '\0';
+
+	const char *data = text.Base();
+	char key[MAPKEY_MAXLENGTH];
+	char value[MAPKEY_MAXLENGTH];
+	while ( ( data = MapEntity_ParseToken( data, key ) ) != nullptr )
+	{
+		if ( key[0] != '{' )
+		{
+			continue;
+		}
+
+		bool isLight = false;
+		int style = 0;
+		int spawnFlags = 0;
+		while ( ( data = MapEntity_ParseToken( data, key ) ) != nullptr && key[0] != '}' )
+		{
+			data = MapEntity_ParseToken( data, value );
+			if ( !data )
+			{
+				break;
+			}
+
+			if ( !V_stricmp( key, "classname" ) )
+			{
+				isLight = !V_strnicmp( value, "light", 5 );
+			}
+			else if ( !V_stricmp( key, "style" ) )
+			{
+				style = V_atoi( value );
+			}
+			else if ( !V_stricmp( key, "spawnflags" ) )
+			{
+				spawnFlags = V_atoi( value );
+			}
+		}
+
+		if ( isLight && style >= FIRST_SWITCHABLE_STYLE && style < MAX_LIGHTSTYLES && ( spawnFlags & SF_LIGHT_START_OFF ) )
+		{
+			startOff[style] = true;
+		}
+
+		if ( !data )
+		{
+			return;
+		}
+	}
+}
+
 bool IsBlocked( const Vector &from, const Vector &to, trace_t *tr )
 {
 	Ray_t ray;
@@ -114,7 +173,14 @@ bool CNEOBspLighting::Load()
 		return true;
 	}
 
+	// a map without usable lighting fails the same way for every nav area, so fail once
+	if ( !m_failedMapName.IsEmpty() && m_failedMapName == mapName )
+	{
+		return false;
+	}
+
 	Release();
+	m_failedMapName = mapName;
 
 	char path[MAX_PATH];
 	V_snprintf( path, sizeof( path ), "maps/%s.bsp", mapName );
@@ -128,7 +194,7 @@ bool CNEOBspLighting::Load()
 	dheader_t header;
 	const bool headerOk = filesystem->Read( &header, sizeof( header ), file ) == sizeof( header ) && header.ident == IDBSPHEADER;
 
-	CUtlVector<byte> leaves, ambientIndex, ambientLighting, worldLights;
+	CUtlVector<byte> leaves, ambientIndex, ambientLighting, worldLights, entities;
 	bool hdr = false;
 	int lightsVersion = 0;
 	bool lumpsOk = headerOk;
@@ -140,7 +206,8 @@ bool CNEOBspLighting::Load()
 		lumpsOk = ReadLump( file, header.lumps[LUMP_LEAFS], &leaves )
 			&& ReadLump( file, header.lumps[hdr ? LUMP_LEAF_AMBIENT_INDEX_HDR : LUMP_LEAF_AMBIENT_INDEX], &ambientIndex )
 			&& ReadLump( file, header.lumps[hdr ? LUMP_LEAF_AMBIENT_LIGHTING_HDR : LUMP_LEAF_AMBIENT_LIGHTING], &ambientLighting )
-			&& ReadLump( file, lightsLump, &worldLights );
+			&& ReadLump( file, lightsLump, &worldLights )
+			&& ReadLump( file, header.lumps[LUMP_ENTITIES], &entities );
 	}
 
 	const int leafStride = ( headerOk && header.lumps[LUMP_LEAFS].version == 0 ) ? LEAF_V0_STRIDE : LEAF_V1_STRIDE;
@@ -191,12 +258,24 @@ bool CNEOBspLighting::Load()
 		m_ambientSamples[i].pos[2] = sample.z;
 	}
 
+	bool startOff[MAX_LIGHTSTYLES] = {};
+	ReadStartOffStyles( entities, startOff );
+	int lightsOff = 0;
+
 	const int lightStride = ( lightsVersion == 1 ) ? WORLDLIGHT_V1_STRIDE : WORLDLIGHT_V0_STRIDE;
 	const int fieldBase = 36 + ( ( lightsVersion == 1 ) ? WORLDLIGHT_V1_EXTRA : 0 );
 	for ( int base = 0; base + lightStride <= worldLights.Count(); base += lightStride )
 	{
 		const int type = ReadAt<int>( worldLights, fieldBase + 4 + base );
 		const int flags = ReadAt<int>( worldLights, fieldBase + 40 + base );
+		const int style = ReadAt<int>( worldLights, fieldBase + 8 + base );
+
+		// the bake describes the map as it starts, so a light switched off at the start adds nothing
+		if ( style >= 0 && style < MAX_LIGHTSTYLES && startOff[style] )
+		{
+			++lightsOff;
+			continue;
+		}
 
 		// sky ambient and lights already in the ambient cubes would count twice
 		if ( type == emit_skyambient || ( flags & DWL_FLAGS_INAMBIENTCUBE ) )
@@ -224,14 +303,16 @@ bool CNEOBspLighting::Load()
 	}
 
 	m_mapName = mapName;
-	Msg( "BSP lighting: %s %s, %d leaves, %d ambient samples, %d direct lights\n",
-		mapName, hdr ? "HDR" : "LDR", numLeaves, numSamples, m_lights.Count() );
+	m_failedMapName.Clear();
+	Msg( "BSP lighting: %s %s, %d leaves, %d ambient samples, %d direct lights, %d off at start\n",
+		mapName, hdr ? "HDR" : "LDR", numLeaves, numSamples, m_lights.Count(), lightsOff );
 	return true;
 }
 
 void CNEOBspLighting::Release()
 {
 	m_mapName.Clear();
+	m_failedMapName.Clear();
 	m_leafMins.Purge();
 	m_leafMaxs.Purge();
 	m_leafAmbient.Purge();
