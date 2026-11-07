@@ -1271,6 +1271,8 @@ void CNEO_Player::CheckThermOpticButtons()
 //-----------------------------------------------------------------------------
 // Notice budgets use their own random stream, so they stay independent of any reseeding of the shared one.
 static CUniformRandomStream s_noticeRandom;
+// Players this close touch, so the observer notices the target by bumping into it
+constexpr float BUMP_REVEAL_RANGE = 40.0f;
 
 bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 {
@@ -1303,6 +1305,18 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 	if (cacheEntry.m_flUpdateTime == now)
 	{
 		return cacheEntry.m_bIsHidden;
+	}
+
+	// Bumping into someone gives them away, however well hidden.
+	if (GetAbsOrigin().DistToSqr(targetPlayer->GetAbsOrigin()) < Square(BUMP_REVEAL_RANGE))
+	{
+		cacheEntry.m_flUpdateTime = now;
+		cacheEntry.m_flLastInView = now;
+		cacheEntry.m_bNoticed = true;
+		cacheEntry.m_flRollTime = now;
+		cacheEntry.m_bRollHidden = false;
+		cacheEntry.m_bIsHidden = false;
+		return false;
 	}
 
 	const float grace = sv_neo_bot_cloak_grace.GetFloat();
