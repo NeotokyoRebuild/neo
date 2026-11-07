@@ -38,6 +38,11 @@ struct CNEO_Player_FogCacheEntry
     bool m_bIsHidden{false};
     float m_flUpdateTime{-1.0f};   // ensure update the first time
     float m_flObscuredRatio{1.0f}; // more handy for debugging
+    float m_flHazard{0.0f};        // notice budget left in the current exposure
+    float m_flLastInView{-1.0f};   // last time the target was in view
+    bool m_bNoticed{false};
+    float m_flRollTime{-1.0f};     // fog roll for plainly visible targets
+    bool m_bRollHidden{false};
 };
 
 class CNEO_Player : public CHL2MP_Player
