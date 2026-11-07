@@ -104,10 +104,49 @@ public:
 
 
 //--------------------------------------------------------------------------------------------------------------
+enum AreaLookupType
+{
+	AREA_LOOKUP_GRID,
+	AREA_LOOKUP_ALL_AREAS,
+};
+
+// Merging grows areas without re-adding them to the grid, so during generation
+// a grid lookup can miss the part of an area added by a merge.
+static CNavArea *GetAreaBeneathFromAllAreas( const Vector &pos, float beneathLimit )
+{
+	// Same probe lift as CNavMesh::GetNavArea.
+	const float probeLift = 5.0f;
+	const Vector testPos = pos + Vector( 0, 0, probeLift );
+	CNavArea *use = NULL;
+	float useZ = -FLT_MAX;
+
+	FOR_EACH_VEC( TheNavAreas, it )
+	{
+		CNavArea *area = TheNavAreas[ it ];
+		if (!area->IsOverlapping( testPos ))
+		{
+			continue;
+		}
+
+		const float z = area->GetZ( testPos );
+		if (z > testPos.z || z < pos.z - beneathLimit || z <= useZ)
+		{
+			continue;
+		}
+
+		use = area;
+		useZ = z;
+	}
+
+	return use;
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
 /**
  * Start at given position and find first area in given direction
  */
-inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, float range, float beneathLimit, CBaseEntity *traceIgnore = NULL, Vector *closePos = NULL )
+inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, float range, float beneathLimit, CBaseEntity *traceIgnore = NULL, Vector *closePos = NULL, AreaLookupType lookup = AREA_LOOKUP_GRID )
 {
 	CNavArea *area = NULL;
 
@@ -127,7 +166,7 @@ inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, 
 		if (result.fraction < 1.0f)
 			break;
 
-		area = TheNavMesh->GetNavArea( pos, beneathLimit );
+		area = (lookup == AREA_LOOKUP_ALL_AREAS) ? GetAreaBeneathFromAllAreas( pos, beneathLimit ) : TheNavMesh->GetNavArea( pos, beneathLimit );
 		if (area)
 		{
 			if (closePos)
@@ -452,24 +491,25 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 	AddDirectionVector( &center, m_dir, HalfHumanWidth );
 
 	float beneathLimit = MIN( 120.0f, m_top.z - m_bottom.z + HalfHumanWidth );
+	const AreaLookupType topLookup = brushGenerated ? AREA_LOOKUP_ALL_AREAS : AREA_LOOKUP_GRID;
 
 	// find "ahead" area
-	m_topForwardArea = findFirstAreaInDirection( &center, OppositeDirection( m_dir ), nearLadderRange, beneathLimit, NULL );
+	m_topForwardArea = findFirstAreaInDirection( &center, OppositeDirection( m_dir ), nearLadderRange, beneathLimit, NULL, NULL, topLookup );
 	if (m_topForwardArea == m_bottomArea)
 		m_topForwardArea = NULL;
 
 	// find "left" area
-	m_topLeftArea = findFirstAreaInDirection( &center, DirectionLeft( m_dir ), nearLadderRange, beneathLimit, NULL );
+	m_topLeftArea = findFirstAreaInDirection( &center, DirectionLeft( m_dir ), nearLadderRange, beneathLimit, NULL, NULL, topLookup );
 	if (m_topLeftArea == m_bottomArea)
 		m_topLeftArea = NULL;
 
 	// find "right" area
-	m_topRightArea = findFirstAreaInDirection( &center, DirectionRight( m_dir ), nearLadderRange, beneathLimit, NULL );
+	m_topRightArea = findFirstAreaInDirection( &center, DirectionRight( m_dir ), nearLadderRange, beneathLimit, NULL, NULL, topLookup );
 	if (m_topRightArea == m_bottomArea)
 		m_topRightArea = NULL;
 
 	// find "behind" area - must look farther, since ladder is against the wall away from this area
-	m_topBehindArea = findFirstAreaInDirection( &center, m_dir, 2.0f*nearLadderRange, beneathLimit, NULL );
+	m_topBehindArea = findFirstAreaInDirection( &center, m_dir, 2.0f*nearLadderRange, beneathLimit, NULL, NULL, topLookup );
 	if (m_topBehindArea == m_bottomArea)
 		m_topBehindArea = NULL;
 
@@ -486,7 +526,7 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 		const Vector retryStart = center + Vector( 0, 0, offset );
 		auto findTopArea = [&]( NavDirType dir, float range ) -> CNavArea *
 		{
-			CNavArea *area = findFirstAreaInDirection( &retryStart, dir, range, beneathLimit, NULL );
+			CNavArea *area = findFirstAreaInDirection( &retryStart, dir, range, beneathLimit, NULL, NULL, topLookup );
 			return (area == m_bottomArea) ? NULL : area;
 		};
 
@@ -496,6 +536,18 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 		if (!m_topBehindArea)
 		{
 			m_topBehindArea = findTopArea( m_dir, 2.0f*nearLadderRange );
+		}
+	}
+
+	// Over the top of a climbable brush, a floor well below the top lies past the far side of
+	// the climb, not on a landing; snapping the top down to it would end the climb under the brush top.
+	if (brushGenerated && m_topForwardArea)
+	{
+		Vector close;
+		m_topForwardArea->GetClosestPointOnArea( m_top, &close );
+		if (close.z < m_top.z - StepHeight)
+		{
+			m_topForwardArea = NULL;
 		}
 	}
 
