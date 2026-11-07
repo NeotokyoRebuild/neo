@@ -22,7 +22,7 @@ NT;RE does not cross that line. Apart from the exception for reviewed translatio
 ### Game content
 * Nothing that ships with the game may be made with generative AI. This covers art, textures, models, sounds, voice, music, maps and player-facing text such as UI strings and translations.
 * The same applies to everything published for the game, including Steam store art, trailers, screenshots and Steam Community posts.
-* Translations must be written or reviewed by people, ideally native speakers or professional translators of that language. Translators may use AI tools in their own workflow, but unreviewed machine translation will not be accepted.
+* Translations must be written or reviewed by people, ideally native speakers or professional translators of that language. Wholesale machine translation reads poorly and misses meaning, so it will not be accepted. A translator is responsible for their output, the same way a contributor is responsible for their code, so translators may use whatever tools fit their workflow.
 * The ban includes AI features built into standard tools that add or replace content. Examples are Generative Fill, Generative Expand and Neural Filters in Adobe Photoshop, and AI upscalers.
 * AI features that only clean up your own work are allowed. An example is the denoiser in Blender's Cycles renderer, which removes render noise without adding content you did not make.
 * AI-generated "vibe-coded" art assets will not be accepted.
