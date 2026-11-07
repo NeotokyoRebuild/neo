@@ -97,13 +97,30 @@ Vector VectorAt( const CUtlVector<byte> &data, int offset )
 // Lights with a style from this one up are named lights the map can switch; the light entity says whether one starts off.
 constexpr int FIRST_SWITCHABLE_STYLE = 32;
 
-// Marks the switchable light styles whose light entities start off, as CLight::Spawn sets them dark.
+// Whether an entity I/O output value ("target,input,param,delay,times") sends input to target.
+bool OutputSends( const char *output, const char *target, const char *input )
+{
+	const int targetLen = V_strlen( target );
+	return !V_strnicmp( output, target, targetLen ) && output[targetLen] == ','
+		&& !V_strnicmp( output + targetLen + 1, input, V_strlen( input ) );
+}
+
+// Marks the switchable light styles that are dark in play: their light entity starts off, as CLight::Spawn sets it,
+// unless the map only ever turns it on (a light switched on for good at round start lights the whole match).
 void ReadStartOffStyles( const CUtlVector<byte> &entities, bool startOff[MAX_LIGHTSTYLES] )
 {
 	CUtlVector<char> text;
 	text.SetCount( entities.Count() + 1 );
 	V_memcpy( text.Base(), entities.Base(), entities.Count() );
 	text[entities.Count()] = '\0';
+
+	struct StartOffLight
+	{
+		CUtlString name;
+		int style;
+	};
+	CUtlVector<StartOffLight> lights;
+	CUtlVector<CUtlString> outputs;
 
 	const char *data = text.Base();
 	char key[MAPKEY_MAXLENGTH];
@@ -118,6 +135,7 @@ void ReadStartOffStyles( const CUtlVector<byte> &entities, bool startOff[MAX_LIG
 		bool isLight = false;
 		int style = 0;
 		int spawnFlags = 0;
+		CUtlString name;
 		while ( ( data = MapEntity_ParseToken( data, key ) ) != nullptr && key[0] != '}' )
 		{
 			data = MapEntity_ParseToken( data, value );
@@ -138,16 +156,40 @@ void ReadStartOffStyles( const CUtlVector<byte> &entities, bool startOff[MAX_LIG
 			{
 				spawnFlags = V_atoi( value );
 			}
+			else if ( !V_stricmp( key, "targetname" ) )
+			{
+				name = value;
+			}
+			else if ( !V_strnicmp( key, "On", 2 ) )
+			{
+				outputs.AddToTail( CUtlString( value ) );
+			}
 		}
 
 		if ( isLight && style >= FIRST_SWITCHABLE_STYLE && style < MAX_LIGHTSTYLES && ( spawnFlags & SF_LIGHT_START_OFF ) )
 		{
-			startOff[style] = true;
+			lights.AddToTail( StartOffLight{ name, style } );
 		}
 
 		if ( !data )
 		{
-			return;
+			break;
+		}
+	}
+
+	for ( const StartOffLight &light : lights )
+	{
+		bool turnedOn = false;
+		bool turnedOff = false;
+		for ( const CUtlString &output : outputs )
+		{
+			turnedOn |= OutputSends( output.Get(), light.name.Get(), "TurnOn" );
+			turnedOff |= OutputSends( output.Get(), light.name.Get(), "TurnOff" ) || OutputSends( output.Get(), light.name.Get(), "Toggle" );
+		}
+
+		if ( light.name.IsEmpty() || !turnedOn || turnedOff )
+		{
+			startOff[light.style] = true;
 		}
 	}
 }
