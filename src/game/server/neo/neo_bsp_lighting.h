@@ -13,7 +13,7 @@
 class CNEOBspLighting
 {
 public:
-	// Loads the current map's lighting lumps, once per map. False when the map has none.
+	// Loads the current map's lighting lumps, once per map. False when the map has none, until Release().
 	bool Load();
 	void Release();
 
@@ -58,6 +58,7 @@ private:
 	float LightFalloff( const WorldLight &light, const Vector &toLight, float dist ) const;
 
 	CUtlString m_mapName;
+	CUtlString m_failedMapName;
 	CUtlVector<Vector> m_leafMins;
 	CUtlVector<Vector> m_leafMaxs;
 	CUtlVector<LeafAmbient> m_leafAmbient;
