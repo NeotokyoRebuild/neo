@@ -3562,6 +3562,8 @@ namespace Neo
 	Vector& polyCenter = m_editCursorPos;
 	Vector& polyNormal = m_surfaceNormal;
 
+	const int firstLadder = m_ladders.Count();
+
 	Vector polyMins, polyMaxs;
 	trace_t tr;
 	for (int i = 0; i < polyhedron->iPolygonCount; ++i)
@@ -3714,7 +3716,42 @@ namespace Neo
 		CommandNavBuildLadder(true);
 	}
 
+	RemoveNarrowSideLadders(firstLadder);
+
 	return true;
+}
+
+// A climb brush often has climbable end faces narrower than its main face. The player hull
+// overhangs such a face, so a small sideways drift while climbing loses the surface, and bots
+// mounting one fall off. Drop a ladder of the brush when a wider one facing another way covers
+// the same height.
+void CNavMesh::RemoveNarrowSideLadders(int firstLadder)
+{
+	constexpr float widthTolerance = 1.0f;
+
+	for (int i = m_ladders.Count() - 1; i >= firstLadder; --i)
+	{
+		const CNavLadder* ladder = m_ladders[i];
+		bool covered = false;
+		for (int j = firstLadder; j < m_ladders.Count() && !covered; ++j)
+		{
+			const CNavLadder* other = m_ladders[j];
+			covered = other->GetDir() != ladder->GetDir()
+				&& other->m_width > ladder->m_width + widthTolerance
+				&& other->m_top.z >= ladder->m_top.z - StepHeight
+				&& other->m_bottom.z <= ladder->m_bottom.z + StepHeight;
+		}
+
+		if (!covered)
+		{
+			continue;
+		}
+
+		CNavLadder* sideLadder = m_ladders[i];
+		m_ladders.Remove(i);
+		OnEditDestroyNotify(sideLadder);
+		delete sideLadder;
+	}
 }
 
 bool CNavMesh::BuildBrushLaddersFromBsp()

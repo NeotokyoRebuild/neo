@@ -1221,6 +1221,7 @@ private:
 	[[nodiscard]] bool BuildBrushLaddersFromBsp();
 private:
 	[[nodiscard]] bool LadderFromPolyhedron(const CPolyhedron* polyhedron);
+	void RemoveNarrowSideLadders(int firstLadder);
 #endif
 
 	bool SampleStep( void );									// sample the walkable areas of the map
