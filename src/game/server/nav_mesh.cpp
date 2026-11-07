@@ -3713,7 +3713,7 @@ namespace Neo
 		m_editMode = EditModeType::NORMAL;
 		m_climbableSurface = true;
 
-		CommandNavBuildLadder(true);
+		CommandNavBuildLadder(NAV_LADDER_SOURCE_BRUSH);
 	}
 
 	RemoveNarrowSideLadders(firstLadder);
