@@ -1192,12 +1192,12 @@ void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 		params.m_nChannel = CHAN_VOICE; // NEO TODO (Adam) This doesn't change the channel this sound is played on, set correct channel in sound script
 
 		EmitSound(filter, edict()->m_EdictIndex, params);
+	}
 
-		// for emulating bot visibility of cloak initiation flash; turning cloak off does not flash
-		if (m_bInThermOpticCamo)
-		{
-			m_botThermOpticCamoDisruptedTimer.Start(0.2f);
-		}
+	// The cloak-on flash is visible whether or not anyone hears the sound; turning cloak off does not flash
+	if (m_bInThermOpticCamo)
+	{
+		m_botThermOpticCamoDisruptedTimer.Start(0.2f);
 	}
 }
 
