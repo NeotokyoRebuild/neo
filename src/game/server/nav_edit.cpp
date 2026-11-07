@@ -555,7 +555,7 @@ void StepAlongClimbableSurface( Vector &pos, const Vector &increment, const Vect
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CNavMesh::CommandNavBuildLadder( void )
+void CNavMesh::CommandNavBuildLadder( bool brushGenerated )
 {
 	if ( !IsEditMode( NORMAL ) || !m_climbableSurface )
 	{
@@ -590,7 +590,7 @@ void CNavMesh::CommandNavBuildLadder( void )
 	Vector bottom = top;
 	bottom.z = bottomEdge.z;
 
-	CreateLadder( topEdge, bottomEdge, leftEdge.DistTo( rightEdge ), m_ladderNormal.AsVector2D(), 0.0f );
+	CreateLadder( topEdge, bottomEdge, leftEdge.DistTo( rightEdge ), m_ladderNormal.AsVector2D(), 0.0f, brushGenerated );
 }
 
 
