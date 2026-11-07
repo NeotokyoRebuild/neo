@@ -5,6 +5,7 @@
 #include "engine/IEngineTrace.h"
 #include "nav.h"
 #include "mapentities_shared.h"
+#include "fgdlib/entitydefs.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -13,16 +14,10 @@
 namespace NEOBspLightingInternal
 {
 
-// Version 0 leaves embed an ambient cube; version 1 leaves do not.
-constexpr int LEAF_V0_STRIDE = 56;
-constexpr int LEAF_V1_STRIDE = 32;
-constexpr int LEAF_MINS_OFFSET = 8;
-constexpr int LEAF_MAXS_OFFSET = 14;
-
-// Version 1 worldlights add a shadow cast offset vector after the normal.
-constexpr int WORLDLIGHT_V0_STRIDE = 88;
-constexpr int WORLDLIGHT_V1_STRIDE = 100;
-constexpr int WORLDLIGHT_V1_EXTRA = 12;
+// Version 1 worldlights insert a shadow cast offset vector after the normal, which moves every later field;
+// dworldlight_t is the version 0 layout.
+constexpr int WORLDLIGHT_V1_EXTRA = sizeof( Vector );
+constexpr int WORLDLIGHT_V1_EXTRA_AT = offsetof( dworldlight_t, normal ) + sizeof( Vector );
 
 // A zero-count ambient index points at another leaf; follow it this many times at most.
 constexpr int MAX_AMBIENT_LEAF_HOPS = 4;
@@ -88,9 +83,12 @@ T ReadAt( const CUtlVector<byte> &data, int offset )
 	return value;
 }
 
-Vector VectorAt( const CUtlVector<byte> &data, int offset )
+// Reads one worldlight field, given by its dworldlight_t offset, from a light of the lump's version.
+template <typename T>
+T WorldLightField( const CUtlVector<byte> &data, int base, int version, size_t fieldOffset )
 {
-	return Vector( ReadAt<float>( data, offset ), ReadAt<float>( data, offset + 4 ), ReadAt<float>( data, offset + 8 ) );
+	const int shift = ( version == 1 && static_cast<int>( fieldOffset ) >= WORLDLIGHT_V1_EXTRA_AT ) ? WORLDLIGHT_V1_EXTRA : 0;
+	return ReadAt<T>( data, base + static_cast<int>( fieldOffset ) + shift );
 }
 
 // Lights and their shadows come from opaque brushes and props; players and NPCs cast none.
@@ -100,8 +98,10 @@ constexpr int FIRST_SWITCHABLE_STYLE = 32;
 // Whether an entity I/O output value ("target,input,param,delay,times") sends input to target.
 bool OutputSends( const char *output, const char *target, const char *input )
 {
+	// Hammer separates the fields with commas, or with VMF_IOPARAM_STRING_DELIMITER so a parameter can hold commas.
 	const int targetLen = V_strlen( target );
-	return !V_strnicmp( output, target, targetLen ) && output[targetLen] == ','
+	const char delimiter = output[targetLen];
+	return !V_strnicmp( output, target, targetLen ) && ( delimiter == ',' || delimiter == VMF_IOPARAM_STRING_DELIMITER )
 		&& !V_strnicmp( output + targetLen + 1, input, V_strlen( input ) );
 }
 
@@ -252,7 +252,8 @@ bool CNEOBspLighting::Load()
 			&& ReadLump( file, header.lumps[LUMP_ENTITIES], &entities );
 	}
 
-	const int leafStride = ( headerOk && header.lumps[LUMP_LEAFS].version == 0 ) ? LEAF_V0_STRIDE : LEAF_V1_STRIDE;
+	// Version 0 leaves end in an ambient cube that version 1 moved to its own lump; the fields before it match.
+	const int leafStride = ( headerOk && header.lumps[LUMP_LEAFS].version == 0 ) ? sizeof( dleaf_version_0_t ) : sizeof( dleaf_t );
 	filesystem->Close( file );
 
 	if ( !lumpsOk || ambientIndex.IsEmpty() )
@@ -266,11 +267,11 @@ bool CNEOBspLighting::Load()
 	m_leafMaxs.SetCount( numLeaves );
 	for ( int i = 0; i < numLeaves; ++i )
 	{
-		const int base = i * leafStride;
+		const dleaf_t leaf = ReadAt<dleaf_t>( leaves, i * leafStride );
 		for ( int k = 0; k < 3; ++k )
 		{
-			m_leafMins[i][k] = ReadAt<short>( leaves, base + LEAF_MINS_OFFSET + 2 * k );
-			m_leafMaxs[i][k] = ReadAt<short>( leaves, base + LEAF_MAXS_OFFSET + 2 * k );
+			m_leafMins[i][k] = leaf.mins[k];
+			m_leafMaxs[i][k] = leaf.maxs[k];
 		}
 	}
 
@@ -304,13 +305,12 @@ bool CNEOBspLighting::Load()
 	ReadStartOffStyles( entities, startOff );
 	int lightsOff = 0;
 
-	const int lightStride = ( lightsVersion == 1 ) ? WORLDLIGHT_V1_STRIDE : WORLDLIGHT_V0_STRIDE;
-	const int fieldBase = 36 + ( ( lightsVersion == 1 ) ? WORLDLIGHT_V1_EXTRA : 0 );
+	const int lightStride = sizeof( dworldlight_t ) + ( ( lightsVersion == 1 ) ? WORLDLIGHT_V1_EXTRA : 0 );
 	for ( int base = 0; base + lightStride <= worldLights.Count(); base += lightStride )
 	{
-		const int type = ReadAt<int>( worldLights, fieldBase + 4 + base );
-		const int flags = ReadAt<int>( worldLights, fieldBase + 40 + base );
-		const int style = ReadAt<int>( worldLights, fieldBase + 8 + base );
+		const int type = WorldLightField<int>( worldLights, base, lightsVersion, offsetof( dworldlight_t, type ) );
+		const int flags = WorldLightField<int>( worldLights, base, lightsVersion, offsetof( dworldlight_t, flags ) );
+		const int style = WorldLightField<int>( worldLights, base, lightsVersion, offsetof( dworldlight_t, style ) );
 
 		// the bake describes the map as it starts, so a light switched off at the start adds nothing
 		if ( style >= 0 && style < MAX_LIGHTSTYLES && startOff[style] )
@@ -332,16 +332,16 @@ bool CNEOBspLighting::Load()
 
 		WorldLight &light = m_lights[m_lights.AddToTail()];
 		light.type = type;
-		light.origin = VectorAt( worldLights, base );
-		light.luminance = Luminance( VectorAt( worldLights, base + 12 ) );
-		light.normal = VectorAt( worldLights, base + 24 );
-		light.stopDot = ReadAt<float>( worldLights, base + fieldBase + 12 );
-		light.stopDot2 = ReadAt<float>( worldLights, base + fieldBase + 16 );
-		light.exponent = ReadAt<float>( worldLights, base + fieldBase + 20 );
-		light.radius = ReadAt<float>( worldLights, base + fieldBase + 24 );
-		light.constantAttn = ReadAt<float>( worldLights, base + fieldBase + 28 );
-		light.linearAttn = ReadAt<float>( worldLights, base + fieldBase + 32 );
-		light.quadraticAttn = ReadAt<float>( worldLights, base + fieldBase + 36 );
+		light.origin = WorldLightField<Vector>( worldLights, base, lightsVersion, offsetof( dworldlight_t, origin ) );
+		light.luminance = Luminance( WorldLightField<Vector>( worldLights, base, lightsVersion, offsetof( dworldlight_t, intensity ) ) );
+		light.normal = WorldLightField<Vector>( worldLights, base, lightsVersion, offsetof( dworldlight_t, normal ) );
+		light.stopDot = WorldLightField<float>( worldLights, base, lightsVersion, offsetof( dworldlight_t, stopdot ) );
+		light.stopDot2 = WorldLightField<float>( worldLights, base, lightsVersion, offsetof( dworldlight_t, stopdot2 ) );
+		light.exponent = WorldLightField<float>( worldLights, base, lightsVersion, offsetof( dworldlight_t, exponent ) );
+		light.radius = WorldLightField<float>( worldLights, base, lightsVersion, offsetof( dworldlight_t, radius ) );
+		light.constantAttn = WorldLightField<float>( worldLights, base, lightsVersion, offsetof( dworldlight_t, constant_attn ) );
+		light.linearAttn = WorldLightField<float>( worldLights, base, lightsVersion, offsetof( dworldlight_t, linear_attn ) );
+		light.quadraticAttn = WorldLightField<float>( worldLights, base, lightsVersion, offsetof( dworldlight_t, quadratic_attn ) );
 	}
 
 	m_mapName = mapName;
