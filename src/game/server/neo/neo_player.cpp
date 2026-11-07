@@ -187,10 +187,7 @@ ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detec
 ConVar sv_neo_bot_light_dark("sv_neo_bot_light_dark", "0.1", FCVAR_NONE, "Nav light at or below which a target is fully in the dark", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_light_lit("sv_neo_bot_light_lit", "0.35", FCVAR_NONE, "Nav light at or above which a target is fully lit", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_night_floor("sv_neo_bot_night_floor", "0.3", FCVAR_NONE, "Nav light an observer with night vision on sees at least", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_reveal_degrees_easy("sv_neo_bot_cloak_reveal_degrees_easy", "5", FCVAR_NONE, "Easy bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
-ConVar sv_neo_bot_cloak_reveal_degrees_normal("sv_neo_bot_cloak_reveal_degrees_normal", "4", FCVAR_NONE, "Normal bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
-ConVar sv_neo_bot_cloak_reveal_degrees_hard("sv_neo_bot_cloak_reveal_degrees_hard", "3", FCVAR_NONE, "Hard bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
-ConVar sv_neo_bot_cloak_reveal_degrees_expert("sv_neo_bot_cloak_reveal_degrees_expert", "2", FCVAR_NONE, "Expert bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
+ConVar sv_neo_bot_cloak_reveal_degrees("sv_neo_bot_cloak_reveal_degrees", "3", FCVAR_NONE, "Bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
 
 ConVar sv_neo_infinite_cloak("sv_neo_infinite_cloak", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Don't drain cloak", true, 0, true, 1);
 
@@ -1571,19 +1568,7 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	}
 
 	const float difficulty = GetBotNoticeHazardScale();
-	float revealDegrees = sv_neo_bot_cloak_reveal_degrees_easy.GetFloat();
-	switch (neo_bot_difficulty.GetInt())
-	{
-	case CNEOBot::NORMAL:
-		revealDegrees = sv_neo_bot_cloak_reveal_degrees_normal.GetFloat();
-		break;
-	case CNEOBot::HARD:
-		revealDegrees = sv_neo_bot_cloak_reveal_degrees_hard.GetFloat();
-		break;
-	case CNEOBot::EXPERT:
-		revealDegrees = sv_neo_bot_cloak_reveal_degrees_expert.GetFloat();
-		break;
-	}
+	const float revealDegrees = sv_neo_bot_cloak_reveal_degrees.GetFloat();
 
 	// Compute how closely player is looking at the target
 	Vector vEyeForward;
