@@ -391,7 +391,11 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	ladder->m_topLeftArea = NULL;
 	ladder->m_topRightArea = NULL;
 	ladder->m_topBehindArea = NULL;
-	ladder->ConnectGeneratedLadder( maxHeightAboveTopArea, brushGenerated );
+	// Brush ladders are built before sampling; area creation connects them once areas exist.
+	if (!brushGenerated)
+	{
+		ladder->ConnectGeneratedLadder( maxHeightAboveTopArea );
+	}
 
 	// add ladder to global list
 	m_ladders.AddToTail( ladder );
@@ -411,7 +415,19 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 	Vector center = m_bottom + Vector( 0, 0, GenerationStepSize );
 	AddDirectionVector( &center, m_dir, HalfHumanWidth );
 
-	m_bottomArea = TheNavMesh->GetNearestNavArea( center, true );
+	m_bottomArea = NULL;
+	if (brushGenerated)
+	{
+		// The nearest area can be the top landing when the foot hangs above the floor,
+		// so prefer the floor under the foot, within the reach the dangling check allows.
+		m_bottomArea = TheNavMesh->GetNavArea( center, GenerationStepSize + HumanHeight );
+	}
+
+	if (!m_bottomArea)
+	{
+		m_bottomArea = TheNavMesh->GetNearestNavArea( center, true );
+	}
+
 	if (!m_bottomArea)
 	{
 		DevMsg( "ERROR: Unconnected ladder bottom at ( %g, %g, %g )\n", m_bottom.x, m_bottom.y, m_bottom.z );
@@ -451,6 +467,25 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 	m_topBehindArea = findFirstAreaInDirection( &center, m_dir, 2.0f*nearLadderRange, beneathLimit, NULL );
 	if (m_topBehindArea == m_bottomArea)
 		m_topBehindArea = NULL;
+
+	if (brushGenerated && !m_topForwardArea && !m_topLeftArea && !m_topRightArea)
+	{
+		// A climbable brush can end below the landing, where the scan hits the landing's lip.
+		const Vector raised = center + Vector( 0, 0, StepHeight );
+		auto findTopArea = [&]( NavDirType dir, float range ) -> CNavArea *
+		{
+			CNavArea *area = findFirstAreaInDirection( &raised, dir, range, beneathLimit, NULL );
+			return (area == m_bottomArea) ? NULL : area;
+		};
+
+		m_topForwardArea = findTopArea( OppositeDirection( m_dir ), nearLadderRange );
+		m_topLeftArea = findTopArea( DirectionLeft( m_dir ), nearLadderRange );
+		m_topRightArea = findTopArea( DirectionRight( m_dir ), nearLadderRange );
+		if (!m_topBehindArea)
+		{
+			m_topBehindArea = findTopArea( m_dir, 2.0f*nearLadderRange );
+		}
+	}
 
 	// can't include behind area, since it is not used when going up a ladder
 	if (!m_topForwardArea && !m_topLeftArea && !m_topRightArea)
@@ -3437,7 +3472,12 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 		for ( int i=0; i<m_ladders.Count(); ++i )
 		{
 			CNavLadder *ladder = m_ladders[i];
+#ifdef NEO
+			// Every ladder of a full generation comes from BuildBrushLaddersFromBsp.
+			ladder->ConnectGeneratedLadder( 0.0f, true );
+#else
 			ladder->ConnectGeneratedLadder( 0.0f );
+#endif
 		}
 	}
 }
@@ -3531,6 +3571,18 @@ void CNavMesh::BeginGeneration( bool incremental )
 	if ( !incremental ) ///< @incremental update doesn't build ladders to avoid overlapping existing ones
 	{
 		BuildLadders();
+#ifdef NEO
+		// Before sampling, so the sampler also explores from the ladder ends and reaches
+		// landings that only a climb leads to.
+		if (!BuildBrushLaddersFromBsp())
+		{
+			Warning("Generating brush ladders...FAIL\n");
+		}
+		else
+		{
+			Msg( "Generating brush ladders...DONE\n" );
+		}
+#endif
 	}
 
 	// start sampling from a spawn point
@@ -4101,22 +4153,6 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 				m_isAnalyzed = true;
 			}
 
-#ifdef NEO
-			// This runs earlier during the generation for the debug==true case, so skip here.
-			if (!nav_generate_debug_brushladders.GetBool())
-			{
-				// Post-gen because we want automatic merge with the final navmesh
-				if (!BuildBrushLaddersFromBsp())
-				{
-					Warning("Generating brush ladders...FAIL\n");
-				}
-				else
-				{
-					Msg( "Generating brush ladders...DONE\n" );
-				}
-			}
-#endif
-
 			// generation complete!
 			float generationTime = Plat_FloatTime() - m_generationStartTime;
 			Msg( "Generation complete!  %0.1f seconds elapsed.\n", generationTime );
@@ -4290,6 +4326,15 @@ inline CNavNode *LadderEndSearch( const Vector *pos, NavDirType mountDir )
 		Vector tryNormal;
 		if (TheNavMesh->GetGroundHeight( tryPos, &tryPos.z, &tryNormal ) == false)
 			continue;
+
+#ifdef NEO
+		// Ground this far below the ladder end is a fall, not a dismount; a climbable brush
+		// over a void would otherwise seed the void's floor.
+		if (pos->z - tryPos.z > HumanHeight)
+		{
+			continue;
+		}
+#endif
 
 		// make sure this point is not on the other side of a wall
 		const float fudge = 4.0f;
