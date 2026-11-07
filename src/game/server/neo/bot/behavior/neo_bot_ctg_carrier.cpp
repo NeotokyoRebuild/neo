@@ -3,6 +3,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
+#include "bot/neo_bot_ghost_callout.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "neo_gamerules.h"
@@ -69,8 +70,10 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 
 	EquipBestWeaponForGhoster( me );
 
-	bool bUpdateCallout = m_enemyUpdateTimer.IsElapsed();
-	if ( bUpdateCallout )
+	// Pick a focus enemy on the timer, or at once when the ghost stops showing the current one
+	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
+	const bool bFocusLost = pFocus && !IsValidFocusEnemy( me, pFocus );
+	if ( m_enemyUpdateTimer.IsElapsed() || bFocusLost )
 	{
 		m_enemies.RemoveAll();
 		CollectPlayers( me, nullptr, &m_enemies );
@@ -79,7 +82,7 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 	}
 
 	// Check if currently focused enemy has disappeared from beacon range
-	CBaseEntity *pFocus = m_hCurrentFocusEnemy.Get();
+	pFocus = m_hCurrentFocusEnemy.Get();
 	if ( !IsValidFocusEnemy( me, pFocus ) )
 	{
 		m_hCurrentFocusEnemy = nullptr;
@@ -94,44 +97,7 @@ void CNEOBotGhostEquipmentHandler::Update( CNEOBot *me )
 
 	if ( pFocus )
 	{
-		if ( bUpdateCallout )
-		{
-			IGameEvent *event = gameeventmanager->CreateEvent( "ghost_enemy_callout" );
-			if ( event )
-			{
-				event->SetInt( "userid", me->GetUserID() );
-				event->SetInt( "team", me->GetTeamNumber() );
-				event->SetInt( "targetid", pFocus->entindex() );
-				const Vector& pos = pFocus->GetAbsOrigin();
-				event->SetInt( "targetx", pos.x );
-				event->SetInt( "targety", pos.y );
-				event->SetInt( "targetz", pos.z );
-				gameeventmanager->FireEvent( event );
-			}
-		}
-
-		// Notify teammates to look at the enemy
-		for ( int i = 1; i <= gpGlobals->maxClients; i++ )
-		{
-			CNEO_Player *pTeammate = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-			if ( !pTeammate || !pTeammate->IsAlive() || pTeammate == me || pTeammate->GetTeamNumber() != me->GetTeamNumber() )
-			{
-				continue;
-			}
-
-			CNEOBot *pBot = ToNEOBot( pTeammate );
-			if ( pBot )
-			{
-				if ( pBot->IsLineOfFireClear( pFocus, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
-				{
-					// NEO Jank: Urge relevant teammate bots look at the enemy
-					pBot->GetBodyInterface()->AimHeadTowards( pFocus, IBody::IMPORTANT, 0.5f, nullptr, "Ghost carrier teammate look override" );
-				}
-
-				pBot->GetVisionInterface()->UpdateKnownEntityPosition( pFocus );
-			}
-		}
-
+		// NEOBotGhostCallout tells teammates about the enemy the carrier looks at
 		me->GetBodyInterface()->AimHeadTowards( pFocus->WorldSpaceCenter(), IBody::IMPORTANT, 1.0f, nullptr, "Ghost carrier focus look" );
 	}
 }
@@ -187,20 +153,22 @@ bool CNEOBotGhostEquipmentHandler::IsValidFocusEnemy( CNEOBot *me, CBaseEntity *
 		return false;
 	}
 
-	return me->GetVisionInterface()->IsAbleToSee( pFocus, IVision::DISREGARD_FOV );
+	return me->IsRevealedByMyGhost( pFocus );
 }
 
 float CNEOBotGhostEquipmentHandler::GetUpdateInterval( CNEOBot *me ) const
 {
+	float flInterval = 3.0f;
 	switch ( me->GetDifficulty() )
 	{
-	case CNEOBot::EASY:		return 2.5f;
-	case CNEOBot::NORMAL:	return 2.0f;
-	case CNEOBot::HARD:		return 1.5f;
-	case CNEOBot::EXPERT:	return 1.0f;
+	case CNEOBot::EASY:		flInterval = 2.5f; break;
+	case CNEOBot::NORMAL:	flInterval = 2.0f; break;
+	case CNEOBot::HARD:		flInterval = 1.5f; break;
+	case CNEOBot::EXPERT:	flInterval = 1.0f; break;
 	}
 
-	return 3.0f;
+	// Look at each focus enemy long enough for at least one callout to read the carrier's aim
+	return Max( flInterval, NEOBotGhostCallout::GetMinAimHoldTime() );
 }
 
 void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const CUtlVector<CNEO_Player*> &enemies )
@@ -209,9 +177,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 	float flBestCalloutMoved = -1.0f;
 	float flBestCalloutDistSq = FLT_MAX;
 	bool bBestCalloutIsNew = false;
-	
-	bool bConsideringOnlyLoSEnemies = false;
-	
+
 	const Vector& vecMyPos = me->GetAbsOrigin();
 
 	for ( int i = 0; i < enemies.Count(); ++i )
@@ -229,8 +195,8 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 			continue;
 		}
 
-		// IsAbleToSee already checks if ghost is booted up to see enemies behind walls
-		if ( !me->GetVisionInterface()->IsAbleToSee( pPlayer, IVision::DISREGARD_FOV ) )
+		// Only the enemies the ghost shows, as a human carrier calls out the beacons on their screen
+		if ( !me->IsRevealedByMyGhost( pPlayer ) )
 		{
 			continue;
 		}
@@ -245,36 +211,6 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 		if ( !bIsNew )
 		{
 			flMoved = ( pPlayer->GetAbsOrigin() - vecLast ).Length();
-		}
-
-		// Any enemies in line of sight have the top priority
-		if ( me->GetVisionInterface()->IsLineOfSightClear( pPlayer->WorldSpaceCenter() ) )
-		{
-			if ( !bConsideringOnlyLoSEnemies )
-			{
-				bConsideringOnlyLoSEnemies = true;
-				pBestCallout = pPlayer;
-				bBestCalloutIsNew = bIsNew;
-				flBestCalloutMoved = flMoved;
-				flBestCalloutDistSq = flDistToMeSq;
-			}
-			else
-			{
-				if ( flDistToMeSq < flBestCalloutDistSq )
-				{
-					pBestCallout = pPlayer;
-					bBestCalloutIsNew = bIsNew;
-					flBestCalloutMoved = flMoved;
-					flBestCalloutDistSq = flDistToMeSq;
-				}
-			}
-			continue;
-		}
-
-		if ( bConsideringOnlyLoSEnemies )
-		{
-			// we don't need to consider other criteria anymore if we are only considering LoS enemies
-			continue;
 		}
 
 		if ( !pBestCallout )
@@ -340,8 +276,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 
 	if ( pBestCallout )
 	{
-		// NEO Jank: Ideally we could detect the enemy in the middle of the bot's screen, but they tend to look erratically
-		// It's easier to just set an enemy handle to appromimate a human focusing on calling out one enemy
+		// The carrier looks at its focus enemy, and NEOBotGhostCallout reads that aim as the callout
 		m_hCurrentFocusEnemy = pBestCallout;
 		
 		// Update cache for this enemy so we know how much they moved next time
@@ -353,7 +288,7 @@ void CNEOBotGhostEquipmentHandler::UpdateGhostCarrierCallout( CNEOBot *me, const
 	}
 	else
 	{
-		// Nobody is in beacon range or in sight
+		// Nobody is in beacon range
 		m_hCurrentFocusEnemy = nullptr;
 	}
 }

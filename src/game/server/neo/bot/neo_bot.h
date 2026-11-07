@@ -167,7 +167,6 @@ public:
 	void ReloadIfLowClip(bool bForceReload = false);
 
 	bool DropGhost();
-	CWeaponGhost *GetBeaconingGhost(void) const;
 	bool IsRevealedByMyGhost(CBaseEntity *subject) const;
 
 	void DropPrimaryWeapon(void);
