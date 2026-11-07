@@ -391,7 +391,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	ladder->m_topLeftArea = NULL;
 	ladder->m_topRightArea = NULL;
 	ladder->m_topBehindArea = NULL;
-	ladder->ConnectGeneratedLadder( maxHeightAboveTopArea );
+	ladder->ConnectGeneratedLadder( maxHeightAboveTopArea, brushGenerated );
 
 	// add ladder to global list
 	m_ladders.AddToTail( ladder );
@@ -399,7 +399,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
+void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brushGenerated )
 {
 	const float nearLadderRange = 75.0f;		// 50
 
@@ -469,7 +469,15 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	if (m_topBehindArea)
 	{
 		m_topBehindArea->AddLadderDown( this );
-		Disconnect( m_topBehindArea );
+		if (brushGenerated)
+		{
+			// The generic disconnect may clear a valid forward/side slot when both searches found this area.
+			m_topBehindArea = NULL;
+		}
+		else
+		{
+			Disconnect( m_topBehindArea );
+		}
 	}
 
 	// adjust top of ladder to highest connected area
