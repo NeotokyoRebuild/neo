@@ -158,28 +158,21 @@ ConVar bot_class("bot_class", "-1", 0, "Force all bots to spawn with the specifi
 static void BotChangeClassFn(const CCommand& args);
 ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots to switch to the specified class number.");
 
-// Bot cloak detection
-// A bot notices a cloaked target at a rate per second while the target is in view. The rate grows with the light
-// on the target, its motion and height, its proximity, how directly the bot looks at it, and the bot's skill.
-// See CNEO_Player::GetCloakObscuredRatio for the rate and CNEO_Player::IsHiddenByFog for how it accrues.
+// Bot notice of cloaked and dark players
+// A bot notices a hidden target at a rate per second while the target is in view. Each cue the target gives away adds
+// its own rate: standing tall, light on it, motion, closeness and visible blood. A target that gives away none of
+// them is noticed only at a slow quiet rate. A cloak dampens the cues it hides. The sum is scaled by the bot's skill,
+// how directly it looks, and range. See CNEO_Player::GetCloakObscuredRatio for the rate and
+// CNEO_Player::IsHiddenByFog for how it accrues.
 ConVar sv_neo_bot_cloak_debug_perceive_always_on("sv_neo_bot_cloak_debug_perceive_always_on", "0", FCVAR_CHEAT,
 	"Debug: Force bots to perceive all players as having cloaking on all the time", true, 0, true, 1);
 
-ConVar sv_neo_bot_cloak_rate("sv_neo_bot_cloak_rate", "0.180507078", FCVAR_NONE, "Base cloak notice hazard per second", true, 0.0f, true, 100.0f);
-ConVar sv_neo_bot_cloak_rate_max("sv_neo_bot_cloak_rate_max", "8", FCVAR_NONE, "Maximum cloak notice hazard per second", true, 0.0f, true, 100.0f);
-ConVar sv_neo_bot_cloak_dark("sv_neo_bot_cloak_dark", "0.08", FCVAR_NONE, "Cloak light contrast floor in dark areas", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_gamma("sv_neo_bot_cloak_gamma", "1.5", FCVAR_NONE, "Cloak light contrast exponent", true, 0.01f, true, 8.0f);
-ConVar sv_neo_bot_cloak_motion("sv_neo_bot_cloak_motion", "14", FCVAR_NONE, "Maximum added motion multiplier", true, 0.0f, true, 100.0f);
-ConVar sv_neo_bot_cloak_speed("sv_neo_bot_cloak_speed", "200", FCVAR_NONE, "Motion cue speed scale in units per second", true, 1.0f, true, 1000.0f);
-ConVar sv_neo_bot_cloak_crouch("sv_neo_bot_cloak_crouch", "0.35", FCVAR_NONE, "Crouched silhouette multiplier", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_cloak_range("sv_neo_bot_cloak_range", "600", FCVAR_NONE, "Cloak reference range in units", true, 1.0f, true, 10000.0f);
-ConVar sv_neo_bot_cloak_gaze("sv_neo_bot_cloak_gaze", "0", FCVAR_NONE, "Peripheral gaze multiplier floor", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_notice_rate("sv_neo_bot_notice_rate", "1", FCVAR_NONE, "Overall gain on the bot notice hazard for hidden targets", true, 0.0f, true, 100.0f);
+ConVar sv_neo_bot_notice_quiet_rate("sv_neo_bot_notice_quiet_rate", "0.0015", FCVAR_NONE, "Notice hazard per second for a hidden target that gives away no cue", true, 0.0f, true, 100.0f);
+ConVar sv_neo_bot_notice_rate_max("sv_neo_bot_notice_rate_max", "8", FCVAR_NONE, "Maximum notice hazard per second for a hidden target", true, 0.0f, true, 100.0f);
 ConVar sv_neo_bot_cloak_assault("sv_neo_bot_cloak_assault", "1", FCVAR_NONE, "Added Assault motion vision multiplier against a moving target", true, 0.0f, true, 10.0f);
 // Support struggles to pick out cloak, thermal vision on or off
 ConVar sv_neo_bot_cloak_support("sv_neo_bot_cloak_support", "0.7", FCVAR_NONE, "Support cloak hazard multiplier", true, 0.0f, true, 1.0f);
-// Past a few hits, more splatter adds little to what an observer sees
-constexpr int MAX_VISIBLE_BLEEDING_INJURIES = 4;
-ConVar sv_neo_bot_cloak_blood("sv_neo_bot_cloak_blood", "0.5", FCVAR_NONE, "Added notice hazard multiplier per bleeding injury on a lit target", true, 0.0f, true, 10.0f);
 ConVar sv_neo_bot_cloak_grace("sv_neo_bot_cloak_grace", "0.5", FCVAR_NONE, "Seconds out of view before a noticed target must be noticed again", true, 0.0f, true, 5.0f);
 // Bot detection skill per difficulty: the upper bound of the fog roll for plainly visible targets, and the
 // base of the notice hazard multiplier for cloaked and dark targets (see GetBotNoticeSkillRatio)
@@ -189,14 +182,11 @@ ConVar sv_neo_bot_cloak_detection_threshold_ratio_normal("sv_neo_bot_cloak_detec
 ConVar sv_neo_bot_cloak_detection_threshold_ratio_hard("sv_neo_bot_cloak_detection_threshold_ratio_hard", "0.45", FCVAR_NONE, "Bot cloak detection threshold for hard difficulty observers", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detection_threshold_ratio_expert", "0.50", FCVAR_NONE, "Bot cloak detection threshold for expert difficulty observers", true, 0.0f, true, 1.0f);
 
-// Nav light bands: at or below the dark level a target is fully in the dark, at or above the lit level light no
-// longer helps. In between, dark areas slow notice of uncloaked players and weaken the cloak light cue.
+// Nav light bands: at or below the dark level a target gives away no light cue, at or above the lit level the cue is
+// full and an uncloaked target is plainly visible.
 ConVar sv_neo_bot_light_dark("sv_neo_bot_light_dark", "0.1", FCVAR_NONE, "Nav light at or below which a target is fully in the dark", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_light_lit("sv_neo_bot_light_lit", "0.35", FCVAR_NONE, "Nav light at or above which a target is fully lit", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_night_floor("sv_neo_bot_night_floor", "0.3", FCVAR_NONE, "Nav light an observer with night vision on sees at least", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_dark_rate("sv_neo_bot_dark_rate", "0.012", FCVAR_NONE, "Notice hazard per second for a still, standing, uncloaked player at the reference range in full dark", true, 0.0f, true, 100.0f);
-ConVar sv_neo_bot_dark_exponent("sv_neo_bot_dark_exponent", "6", FCVAR_NONE, "How steeply the dark notice hazard rises toward the lit band", true, 0.0f, true, 20.0f);
-ConVar sv_neo_bot_dark_motion("sv_neo_bot_dark_motion", "150", FCVAR_NONE, "Maximum added motion multiplier for an uncloaked player in the dark band", true, 0.0f, true, 1000.0f);
 ConVar sv_neo_bot_cloak_reveal_degrees_easy("sv_neo_bot_cloak_reveal_degrees_easy", "5", FCVAR_NONE, "Easy bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
 ConVar sv_neo_bot_cloak_reveal_degrees_normal("sv_neo_bot_cloak_reveal_degrees_normal", "4", FCVAR_NONE, "Normal bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
 ConVar sv_neo_bot_cloak_reveal_degrees_hard("sv_neo_bot_cloak_reveal_degrees_hard", "3", FCVAR_NONE, "Hard bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
@@ -1448,6 +1438,26 @@ float CNEO_Player::GetFogObscuredRatio( float range ) const
 	return 0.0f;
 }
 
+// Notice cue rates per second, before skill, gaze and range
+constexpr float NOTICE_STAND_RATE = 0.114f;
+constexpr float NOTICE_LIGHT_RATE = 0.599198f;
+constexpr float NOTICE_MOTION_RATE = 10.0f;
+constexpr float NOTICE_NEAR_RATE = 1.2f;
+constexpr float NOTICE_BLOOD_RATE = 1.2f;
+// Past a few hits, more splatter adds little to what an observer sees
+constexpr int NOTICE_BLOOD_FULL_INJURIES = 3;
+// Speed at which the motion cue is half strength
+constexpr float NOTICE_MOTION_SPEED = 200.0f;
+// Nearness starts to count inside this range and is full well inside it
+constexpr float NOTICE_NEAR_RANGE = 600.0f;
+// Range term falls to half at the falloff range; the scale makes it one at a typical engagement range
+constexpr float NOTICE_FALLOFF_RANGE = 2000.0f;
+constexpr float NOTICE_RANGE_SCALE = 1.09f;
+// Share of a cue that still shows through a cloak
+constexpr float CLOAK_LIGHT_SHOWS = 0.6f;
+constexpr float CLOAK_MOTION_SHOWS = 0.2f;
+constexpr float CLOAK_NEAR_SHOWS = 0.5f;
+
 //-----------------------------------------------------------------------------
 // Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 // NEO JANK: If this function is too expensive,
@@ -1537,50 +1547,49 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		return 0.0f;
 	}
 
-	// Blood decals cover the cloak material, but only show where there is light to see them.
-	const int bleedingInjuries = Min(target->GetBotDetectableBleedingInjuryEvents(), MAX_VISIBLE_BLEEDING_INJURIES);
-	const float blood = 1.0f + sv_neo_bot_cloak_blood.GetFloat() * bleedingInjuries * lit;
-
-	const float speedRatio = target->GetAbsVelocity().Length() / sv_neo_bot_cloak_speed.GetFloat();
-	const float motion = speedRatio * speedRatio / (1.0f + speedRatio * speedRatio);
-	// The silhouette's apparent area falls with the square of range; the rate cap bounds it up close.
-	const float minRangeRatio = 0.01f;
-	const float rangeRatio = Max(minRangeRatio, flRange / sv_neo_bot_cloak_range.GetFloat());
-	const float range = 1.0f / (rangeRatio * rangeRatio);
-
+	const float speedSqr = target->GetAbsVelocity().LengthSqr();
+	const float motion = speedSqr / (Square(NOTICE_MOTION_SPEED) + speedSqr);
 	// Peripheral vision still catches motion.
-	const float gazeFloor = sv_neo_bot_cloak_gaze.GetFloat() + (1.0f - sv_neo_bot_cloak_gaze.GetFloat()) * motion;
-	const float gaze = gazeFloor + (1.0f - gazeFloor) * powf(Max(0.0f, flDot), 2.0f);
+	const float gaze = motion + (1.0f - motion) * Square(Max(0.0f, flDot));
+	// Range dims every cue gently; only up close does nearness become a cue of its own.
+	const float range = NOTICE_RANGE_SCALE / (1.0f + Square(flRange / NOTICE_FALLOFF_RANGE));
+	const float minRange = 1.0f;
+	const float nearness = Clamp(Square(NOTICE_NEAR_RANGE / Max(flRange, minRange)) - 1.0f, 0.0f, 1.0f);
+	const float standing = (target->GetFlags() & FL_DUCKING) ? 0.0f : 1.0f;
+	// Blood decals cover the cloak material, but only show where there is light to see them.
+	const float blood = lit * Min(target->GetBotDetectableBleedingInjuryEvents(), NOTICE_BLOOD_FULL_INJURIES)
+		/ static_cast<float>(NOTICE_BLOOD_FULL_INJURIES);
 
-	// Darkness, stillness, a low silhouette and range each make a target harder to pick out.
-	const float silhouette = (target->GetFlags() & FL_DUCKING) ? sv_neo_bot_cloak_crouch.GetFloat() : 1.0f;
-	if (!cloaked)
-	{
-		// The delay fades out toward the lit band.
-		const float darkRate = sv_neo_bot_dark_rate.GetFloat() * difficulty * blood
-			* (1.0f + sv_neo_bot_dark_motion.GetFloat() * motion) * silhouette * range * gaze
-			/ powf(1.0f - lit, sv_neo_bot_dark_exponent.GetFloat());
-		return expf(-Min(sv_neo_bot_cloak_rate_max.GetFloat(), darkRate));
-	}
+	// Each cue the target gives away adds its own rate; a target that gives away none keeps only the quiet rate.
+	const float quietRate = sv_neo_bot_notice_quiet_rate.GetFloat();
+	const float scale = sv_neo_bot_notice_rate.GetFloat() * difficulty * gaze * range;
+	float rate = scale * (quietRate + NOTICE_STAND_RATE * standing + NOTICE_LIGHT_RATE * lit
+		+ NOTICE_MOTION_RATE * motion + NOTICE_NEAR_RATE * nearness + NOTICE_BLOOD_RATE * blood);
 
-	const float contrast = sv_neo_bot_cloak_dark.GetFloat() + (1.0f - sv_neo_bot_cloak_dark.GetFloat())
-		* powf(lit, sv_neo_bot_cloak_gamma.GetFloat());
-	float vision = 1.0f;
-	if (GetClass() == NEO_CLASS_ASSAULT)
+	if (cloaked)
 	{
-		// I have motion vision, but I don't always have it turned on
-		vision += sv_neo_bot_cloak_assault.GetFloat() * motion;
-	}
-	else if (GetClass() == NEO_CLASS_SUPPORT)
-	{
-		vision = sv_neo_bot_cloak_support.GetFloat();
-	}
+		float vision = 1.0f;
+		if (GetClass() == NEO_CLASS_ASSAULT)
+		{
+			// I have motion vision, but I don't always have it turned on
+			vision += sv_neo_bot_cloak_assault.GetFloat() * motion;
+		}
+		else if (GetClass() == NEO_CLASS_SUPPORT)
+		{
+			vision = sv_neo_bot_cloak_support.GetFloat();
+		}
 
-	const float rate = sv_neo_bot_cloak_rate.GetFloat() * difficulty * contrast
-		* (1.0f + sv_neo_bot_cloak_motion.GetFloat() * motion) * silhouette * range * gaze * vision * blood;
+		// The cloak hides part of the light, motion and nearness cues.
+		const float cloakRate = scale * vision * (quietRate + NOTICE_STAND_RATE * standing
+			+ CLOAK_LIGHT_SHOWS * NOTICE_LIGHT_RATE * lit + CLOAK_MOTION_SHOWS * NOTICE_MOTION_RATE * motion
+			+ CLOAK_NEAR_SHOWS * NOTICE_NEAR_RATE * nearness + NOTICE_BLOOD_RATE * blood);
+
+		// A cloak never makes a target easier to notice than it would be uncloaked.
+		rate = (lit >= 1.0f) ? cloakRate : Min(cloakRate, rate);
+	}
 
 	// Report the chance to stay unnoticed through one second in view.
-	return expf(-Min(sv_neo_bot_cloak_rate_max.GetFloat(), rate));
+	return expf(-Min(sv_neo_bot_notice_rate_max.GetFloat(), rate));
 }
 
 void CNEO_Player::PostThink(void)
