@@ -401,6 +401,11 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	GetStepSoundVelocities(&velwalk, &velrun);
 	if (pVelRun) *pVelRun = velrun;
 
+	// Other clients rebuild a dead player's velocity from origin changes, so it can read as moving for a moment after
+	// death. Checked after the out parameters are written, as UpdateStepSound reads them either way
+	if (m_lifeState != LIFE_ALIVE)
+		return false;
+
 	bool onground = (GetFlags() & FL_ONGROUND);
 	bool movingalongground = (groundspeed > 0.0001f);
 	// Below this nothing plays, on a ladder or off. It catches drift that is not movement at all, such as being
