@@ -3711,7 +3711,7 @@ namespace Neo
 		m_editMode = EditModeType::NORMAL;
 		m_climbableSurface = true;
 
-		CommandNavBuildLadder();
+		CommandNavBuildLadder(true);
 	}
 
 	return true;

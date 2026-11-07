@@ -282,7 +282,7 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 /**
  * Create a navigation representation of a ladder.
  */
-void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea )
+void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea, bool brushGenerated )
 {
 	CNavLadder *ladder = new CNavLadder;
 
@@ -322,6 +322,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	// adjust bottom to bypass blockages
 	const float inc = 10.0f;
 	float t;
+	bool bottomTrimmedByClearance = false;
 	trace_t result;
 	for( t = 0.0f; t <= length; t += inc )
 	{
@@ -334,12 +335,14 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 		if (result.fraction == 1.0f && !result.startsolid)
 		{
 			// found viable ladder bottom
+			bottomTrimmedByClearance = (t > 0.0f);
 			ladder->m_bottom = on;
 			break;
 		}
 	}
 
 	// adjust top to bypass blockages
+	bool topTrimmedByClearance = false;
 	for( t = 0.0f; t <= length; t += inc )
 	{
 		on = ladder->m_top - t * along;
@@ -351,12 +354,35 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 		if (result.fraction == 1.0f && !result.startsolid)
 		{
 			// found viable ladder top
+			topTrimmedByClearance = (t > 0.0f);
 			ladder->m_top = on;
 			break;
 		}
 	}
 
 	ladder->m_length = (ladder->m_top - ladder->m_bottom).Length();
+	if (brushGenerated)
+	{
+		const float finalSignedSpan = DotProduct(ladder->m_top - ladder->m_bottom, along);
+		const bool trimmedByClearance = bottomTrimmedByClearance || topTrimmedByClearance;
+		const char *rejectReason = nullptr;
+		if (finalSignedSpan <= 0.0f)
+		{
+			rejectReason = "coincident or crossed endpoints";
+		}
+		// One scan interval is the prototype floor: shorter remnants are below this scan's resolution.
+		else if (trimmedByClearance && finalSignedSpan < inc)
+		{
+			rejectReason = "clearance-trimmed span below scan interval";
+		}
+		if (rejectReason)
+		{
+			DevMsg("Brush ladder rejected (%s): raw span %.1f, final signed span %.1f\n",
+				rejectReason, length, finalSignedSpan);
+			delete ladder;
+			return;
+		}
+	}
 
 	ladder->SetDir( ladder->GetDir() );	// now that we've adjusted the top and bottom, re-check the normal
 
