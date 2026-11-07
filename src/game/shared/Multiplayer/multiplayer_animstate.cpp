@@ -145,6 +145,9 @@ void CMultiPlayerAnimState::ClearAnimationState()
 	m_bCurrentFeetYawInitialized = false;
 	m_flLastAnimationStateClearTime = gpGlobals->curtime;
 	m_nSpecificMainSequence = -1;
+#ifdef NEO
+	m_flAimMoveWeight = 0.0f;
+#endif
 
 	ResetGestureSlots();
 }
@@ -1229,6 +1232,16 @@ void CMultiPlayerAnimState::ComputeSequences( CStudioHdr *pStudioHdr )
 #define DEFAULT_FIRE_WALK_NAME "walk_shoot_"
 #define DEFAULT_FIRE_RUN_NAME "run_shoot_"
 
+// Classic NEOTOKYO blends the walking upper body over the idle one by 2D speed, at full weight from this speed up,
+static constexpr float AIM_MOVE_FULL_SPEED_WALK = 100.0f;
+// the sprinting upper body from this speed, so a sprinter at about 205 u/s keeps about a fifth of the idle one,
+static constexpr float AIM_MOVE_FULL_SPEED_RUN = 250.0f;
+// and the crouch walking upper body from this speed (the 2006 SDK player anim state's ANIM_TOPSPEED_* values)
+static constexpr float AIM_MOVE_FULL_SPEED_CROUCH = 85.0f;
+// A player who stops dead (a wall, or releasing walk) fades the moving upper body out over the aim crossfade time,
+// so the torso does not snap to idle in one frame
+static constexpr float AIM_MOVE_FADE_OUT_TIME = 0.2f;
+
 int CMultiPlayerAnimState::CalcSequenceIndex(const char* pBaseName, ...)
 {
 	if (!m_pPlayer)
@@ -1270,7 +1283,7 @@ void CMultiPlayerAnimState::UpdateAimSequenceLayers(
 )
 {
 	float flAimSequenceWeight = 1;
-	int iAimSequence = CalcAimLayerSequence(m_eCurrentMainSequenceActivity, false);
+	int iAimSequence = CalcAimLayerSequence(m_eCurrentMainSequenceActivity, bForceIdle);
 	if (iAimSequence == -1)
 		iAimSequence = 0;
 
@@ -1432,6 +1445,70 @@ int CMultiPlayerAnimState::CalcAimLayerSequence(Activity activity, bool bForceId
 	}
 }
 
+// The idle upper body always plays, and the walk or run upper body is blended over it by speed,
+// so a player moving slowly keeps the idle torso instead of the full walk bob
+void CMultiPlayerAnimState::UpdateAimMoveLayers(float flCycle)
+{
+	CAnimationLayer* pMove0 = m_aGestureSlots[GESTURE_SLOT_AIM_MOVE].m_pAnimLayer;
+	CAnimationLayer* pMove1 = m_aGestureSlots[GESTURE_SLOT_AIM_MOVE2].m_pAnimLayer;
+
+	const float flLastWeight = m_flAimMoveWeight;
+	const float flTargetWeight = CalcAimMoveWeight();
+	m_flAimMoveWeight = MAX(flTargetWeight, flLastWeight - gpGlobals->frametime / AIM_MOVE_FADE_OUT_TIME);
+	if (m_flAimMoveWeight <= 0.0f)
+	{
+		m_flAimMoveWeight = 0.0f;
+		pMove0->m_flWeight = 0.0f;
+		pMove1->m_flWeight = 0.0f;
+		return;
+	}
+
+	if (flTargetWeight > 0.0f)
+	{
+		UpdateAimSequenceLayers(flCycle, GESTURE_SLOT_AIM_MOVE, false, &m_MoveSequenceTransitioner, m_flAimMoveWeight);
+	}
+	else
+	{
+		// stopped: hold the last moving pose and fade it out
+		pMove0->m_flWeight *= m_flAimMoveWeight / flLastWeight;
+		pMove1->m_flWeight *= m_flAimMoveWeight / flLastWeight;
+	}
+
+	// the idle upper body keeps the weight the moving one leaves
+	m_aGestureSlots[GESTURE_SLOT_AIM].m_pAnimLayer->m_flWeight *= 1.0f - m_flAimMoveWeight;
+	m_aGestureSlots[GESTURE_SLOT_AIM2].m_pAnimLayer->m_flWeight *= 1.0f - m_flAimMoveWeight;
+}
+
+float CMultiPlayerAnimState::CalcAimMoveWeight()
+{
+	float flFullSpeed;
+	switch (m_eCurrentMainSequenceActivity)
+	{
+	case ACT_NEO_MOVE_WALK:
+		flFullSpeed = AIM_MOVE_FULL_SPEED_WALK;
+		break;
+
+	case ACT_NEO_MOVE_RUN:
+		flFullSpeed = AIM_MOVE_FULL_SPEED_RUN;
+		break;
+
+	case ACT_NEO_MOVE_CROUCH:
+		flFullSpeed = AIM_MOVE_FULL_SPEED_CROUCH;
+		break;
+
+	default:
+		return 0.0f;
+	}
+
+	const float flSpeed = GetOuterXYSpeed();
+	if (flSpeed <= MOVING_MINIMUM_SPEED)
+	{
+		return 0.0f;
+	}
+
+	return MIN(flSpeed / flFullSpeed, 1.0f);
+}
+
 int CMultiPlayerAnimState::CalcFireSequence()
 {
 	if (!m_pPlayer)
@@ -1572,6 +1649,7 @@ void CMultiPlayerAnimState::ComputeMainSequence()
 #ifdef NEO
 	float flCycle = pPlayer->GetCycle();
 	UpdateAimSequenceLayers(flCycle, GESTURE_SLOT_AIM, true, &m_IdleSequenceTransitioner, 1);
+	UpdateAimMoveLayers(flCycle);
 
 	auto activeWeapon = GetBasePlayer()->GetActiveWeapon();
 	if (m_hActiveWeapon != activeWeapon)
@@ -2627,6 +2705,7 @@ void CMultiPlayerAnimState::OnNewModel( void )
 	// Drop the queue along with the model - an empty queue simply snaps, which is what
 	// the transitioner already does for STUDIO_SNAP sequences.
 	m_IdleSequenceTransitioner.RemoveAll();
+	m_MoveSequenceTransitioner.RemoveAll();
 #endif
 	ClearAnimationState();
 }
