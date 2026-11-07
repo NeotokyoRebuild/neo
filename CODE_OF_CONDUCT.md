@@ -30,7 +30,7 @@ to make it clear to other community members that inappropriate behavior is not o
 
 ### 1. Scope and Standards
 
-This code applies within all project spaces and when an individual is officially representing the project in public spaces. We expect contributors to uphold the following standards:
+This code applies within all spaces of the NEOTOKYO;REBUILD project and when an individual is officially representing the project in public spaces. We expect contributors to uphold the following standards:
 
 - **Demonstrate Empathy:** Treat others with kindness and prioritize the health of the community.
 - **Focus on Ideas:** Disagreement is a natural part of development. Keep feedback focused on the code, the logic, or the contribution, never the individual.
@@ -38,9 +38,9 @@ This code applies within all project spaces and when an individual is officially
 
 ### 2. Unacceptable Behavior
 
-The following behaviors is a non-exhaustive list of violations of our standards:
+The following are a non-exhaustive list of violations of our standards:
 
-- **Discrimination:** Use of language or imagery related to race, religion, gender identity/expression, sexual orientation, disability, age, etc.
+- **Discrimination:** Use of derogatory language or imagery related to race, religion, gender identity/expression, sexual orientation, disability, age, etc.
 - **Harassment:** Unwanted sexual advances, threats, stalking, or repeated, or other abusive behavior intended to intimidate.
 - **Bad Faith Conduct:** Repeatedly accusing others of conduct violations without basis as a tactic to silence or harass them.
 
@@ -58,4 +58,4 @@ If you experience or witness behavior that violates this Code of Conduct, please
 > **[codeofconduct@neotokyorebuild.com](mailto:codeofconduct@neotokyorebuild.com)**
 
 All reports will be reviewed and investigated. We are committed to maintaining the confidentiality of the reporter and will take all necessary steps to ensure they are protected from retaliation.
-If you have specific accomodations in mind with regards to this, please let us know and we'll doour best to make you comfortable.
+If you have specific accommodations in mind with regards to this, please let us know and we'll do our best to make you comfortable.
