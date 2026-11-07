@@ -1219,23 +1219,10 @@ bool CNEO_Player::TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, tra
 
 bool CNEO_Player::IsAllowedToSuperJump()
 {
-	// NEOJANK: Bots are exempt from certain checks due to their their erratic input control
-	if (!IsBot())
-	{
-		if (!IsSprinting())
-			return false;
-	}
-
 	if (IsCarryingGhost())
 		return false;
 
 	if (GetMoveParent())
-		return false;
-
-	if (IsAirborne())
-		return false;
-
-	if (GetWaterLevel() > WL_Feet)
 		return false;
 
 	// Only superjump if we have a reasonable jump direction in mind

@@ -168,7 +168,7 @@ enum GetNavAreaFlags_t
 	GETNAVAREA_CHECK_GROUND			= 0x4,
 };
 
-
+#ifndef NEO
 //--------------------------------------------------------------------------------------------------------
 // for nav mesh visibilty computation
 struct NavVisPair_t
@@ -218,6 +218,8 @@ public:
 #if defined(NEO) && defined(LINUX)
 #pragma GCC diagnostic pop
 #endif
+#endif // NEO
+
 
 //--------------------------------------------------------------------------------------------------------------
 //
