@@ -794,7 +794,6 @@ void CNEO_Player::Spawn(void)
 	}
 
 	ResetBotCommandState();
-	m_iBotDetectableBleedingInjuryEvents = 0;
 }
 
 extern ConVar neo_lean_angle;
@@ -3327,11 +3326,6 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				}
 
 				constexpr const int botDamageTypes = DMG_SLASH | DMG_BULLET | DMG_BUCKSHOT;
-				if (info.GetDamageType() & botDamageTypes)
-				{
-					++m_iBotDetectableBleedingInjuryEvents;
-				}
-
 				if (bIsTeamDmg && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
 				{
 					attacker->m_botPauseFiringTimer.Start(1.0f);
@@ -4175,7 +4169,6 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
 			m_bIsPendingSpawnForThisRound = pPlayerTakeoverTarget->m_bIsPendingSpawnForThisRound;
 			m_bAllowGibbing = pPlayerTakeoverTarget->m_bAllowGibbing;
-			m_iBotDetectableBleedingInjuryEvents = pPlayerTakeoverTarget->m_iBotDetectableBleedingInjuryEvents;
 
 			m_bInVision = pPlayerTakeoverTarget->m_bInVision;
 			m_flVisionLastTime = pPlayerTakeoverTarget->m_flVisionLastTime;
