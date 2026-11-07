@@ -498,7 +498,11 @@ BEGIN_PREDICTION_DATA_NO_BASE( C_BaseEntity )
 	DEFINE_PRED_FIELD( m_MoveCollide, FIELD_CHARACTER, FTYPEDESC_INSENDTABLE ),
 
 	DEFINE_FIELD( m_vecAbsVelocity, FIELD_VECTOR ),
+#ifdef NEO
+	DEFINE_PRED_FIELD_TOL( m_vecVelocity, FIELD_VECTOR, FTYPEDESC_INSENDTABLE | FTYPEDESC_NOERRORCHECK_WHEN_FOLLOWING_TARGET, 0.5f ),
+#else
 	DEFINE_PRED_FIELD_TOL( m_vecVelocity, FIELD_VECTOR, FTYPEDESC_INSENDTABLE, 0.5f ),
+#endif
 //	DEFINE_PRED_FIELD( m_fEffects, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_nRenderMode, FIELD_CHARACTER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_nRenderFX, FIELD_CHARACTER, FTYPEDESC_INSENDTABLE ),
@@ -519,7 +523,11 @@ BEGIN_PREDICTION_DATA_NO_BASE( C_BaseEntity )
 //	DEFINE_PRED_FIELD( m_pMovePeer, FIELD_EHANDLE ),
 //	DEFINE_PRED_FIELD( m_pMovePrevPeer, FIELD_EHANDLE ),
 
+#ifdef NEO
+	DEFINE_PRED_FIELD_TOL( m_vecNetworkOrigin, FIELD_VECTOR, FTYPEDESC_INSENDTABLE | FTYPEDESC_NOERRORCHECK_WHEN_FOLLOWING_TARGET, coordTolerance ),
+#else
 	DEFINE_PRED_FIELD_TOL( m_vecNetworkOrigin, FIELD_VECTOR, FTYPEDESC_INSENDTABLE, coordTolerance ),
+#endif
 	DEFINE_PRED_FIELD( m_angNetworkAngles, FIELD_VECTOR, FTYPEDESC_INSENDTABLE | FTYPEDESC_NOERRORCHECK ),
 	DEFINE_FIELD( m_vecAbsOrigin, FIELD_VECTOR ),
 	DEFINE_FIELD( m_angAbsRotation, FIELD_VECTOR ),
@@ -4735,6 +4743,12 @@ bool C_BaseEntity::PostNetworkDataReceived( int commands_acknowledged )
 			predicted_state_data, PC_DATA_PACKED, 
 			original_state_data, PC_DATA_PACKED, 
 			counterrors, reporterrors, copydata );
+#ifdef NEO
+		// The client only has an interpolated, lower precision copy of the target that FullObserverMove copies,
+		// so these fields cannot match the server. The next command overwrites them, so they are not errors.
+		const C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
+		errorCheckHelper.SetFollowingObserverTarget( pLocalPlayer && this == pLocalPlayer && pLocalPlayer->IsFollowingObserverTarget() );
+#endif
 		// Suppress debugging output
 		int ecount = errorCheckHelper.TransferData( "", -1, GetPredDescMap() );
 		if ( ecount > 0 )
