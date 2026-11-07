@@ -182,6 +182,7 @@ public:
 	int GetStar() const { return m_iNeoStar; }
 	const char *GetStarName( int iStar ) const;
 	bool IsInAim() const { return m_bInAim; }
+	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsAllowedToSuperJump(void);
@@ -373,6 +374,8 @@ private:
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable bool m_szNeoNameWDupeIdxNeedUpdate;
 
+	// blood decals are client-side, so track injury event count for bots
+	int m_iBotDetectableBleedingInjuryEvents = 0;
 	bool m_bSpectatorTakeoverPlayerPending{false};
 
 	// Cache for GetFogObscuredRatio for each player

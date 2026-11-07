@@ -181,6 +181,9 @@ ConVar sv_neo_bot_cloak_easy("sv_neo_bot_cloak_easy", "0.43478261", FCVAR_NONE, 
 ConVar sv_neo_bot_cloak_normal("sv_neo_bot_cloak_normal", "0.71428571", FCVAR_NONE, "Normal cloak hazard multiplier", true, 0.0f, true, 10.0f);
 ConVar sv_neo_bot_cloak_hard("sv_neo_bot_cloak_hard", "1", FCVAR_NONE, "Hard cloak hazard multiplier", true, 0.0f, true, 10.0f);
 ConVar sv_neo_bot_cloak_expert("sv_neo_bot_cloak_expert", "1.25", FCVAR_NONE, "Expert cloak hazard multiplier", true, 0.0f, true, 10.0f);
+// Past a few hits, more splatter adds little to what an observer sees
+constexpr int MAX_VISIBLE_BLEEDING_INJURIES = 4;
+ConVar sv_neo_bot_cloak_blood("sv_neo_bot_cloak_blood", "0.5", FCVAR_NONE, "Added notice hazard multiplier per bleeding injury on a lit target", true, 0.0f, true, 10.0f);
 ConVar sv_neo_bot_cloak_grace("sv_neo_bot_cloak_grace", "0.5", FCVAR_NONE, "Seconds out of view before a noticed target must be noticed again", true, 0.0f, true, 5.0f);
 // Bot fog roll thresholds for plainly visible targets
 // Base detection chance ratio (0.0 - 1.0) for bots to notice a target through fog based on difficulty
@@ -794,6 +797,7 @@ void CNEO_Player::Spawn(void)
 	}
 
 	ResetBotCommandState();
+	m_iBotDetectableBleedingInjuryEvents = 0;
 }
 
 extern ConVar neo_lean_angle;
@@ -1520,10 +1524,14 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		return 0.0f;
 	}
 
+	// Blood decals cover the cloak material, but only show where there is light to see them.
+	const int bleedingInjuries = Min(target->GetBotDetectableBleedingInjuryEvents(), MAX_VISIBLE_BLEEDING_INJURIES);
+	const float blood = 1.0f + sv_neo_bot_cloak_blood.GetFloat() * bleedingInjuries * lit;
+
 	if (!cloaked)
 	{
 		// The delay fades out toward the lit band.
-		return expf(-Min(sv_neo_bot_cloak_rate_max.GetFloat(), sv_neo_bot_dark_rate.GetFloat() * difficulty / (1.0f - lit)));
+		return expf(-Min(sv_neo_bot_cloak_rate_max.GetFloat(), sv_neo_bot_dark_rate.GetFloat() * difficulty * blood / (1.0f - lit)));
 	}
 
 	const float contrast = sv_neo_bot_cloak_dark.GetFloat() + (1.0f - sv_neo_bot_cloak_dark.GetFloat())
@@ -1551,7 +1559,7 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	}
 
 	const float rate = sv_neo_bot_cloak_rate.GetFloat() * difficulty * contrast
-		* (1.0f + sv_neo_bot_cloak_motion.GetFloat() * motion) * silhouette * range * gaze * vision;
+		* (1.0f + sv_neo_bot_cloak_motion.GetFloat() * motion) * silhouette * range * gaze * vision * blood;
 
 	// Report the chance to stay unnoticed through one second in view.
 	return expf(-Min(sv_neo_bot_cloak_rate_max.GetFloat(), rate));
@@ -3326,6 +3334,11 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				}
 
 				constexpr const int botDamageTypes = DMG_SLASH | DMG_BULLET | DMG_BUCKSHOT;
+				if (info.GetDamageType() & botDamageTypes)
+				{
+					++m_iBotDetectableBleedingInjuryEvents;
+				}
+
 				if (bIsTeamDmg && attacker->IsBot() && (info.GetDamageType() & botDamageTypes))
 				{
 					attacker->m_botPauseFiringTimer.Start(1.0f);
@@ -4169,6 +4182,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
 			m_bIsPendingSpawnForThisRound = pPlayerTakeoverTarget->m_bIsPendingSpawnForThisRound;
 			m_bAllowGibbing = pPlayerTakeoverTarget->m_bAllowGibbing;
+			m_iBotDetectableBleedingInjuryEvents = pPlayerTakeoverTarget->m_iBotDetectableBleedingInjuryEvents;
 
 			m_bInVision = pPlayerTakeoverTarget->m_bInVision;
 			m_flVisionLastTime = pPlayerTakeoverTarget->m_flVisionLastTime;
