@@ -47,6 +47,9 @@
 
 extern ConVar sv_showanimstate;
 extern ConVar showanimstate_log;
+#ifdef NEO
+extern ConVar mp_facefronttime;
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -773,6 +776,13 @@ void CHL2MPPlayerAnimState::ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr )
 			m_flCurrentFeetYaw = m_flEyeYaw;
 			m_PoseParameterData.m_flLastAimTurnTime = gpGlobals->curtime;
 		}
+#ifdef NEO
+		// A player who has stood this long without turning the feet squares them up to the eyes
+		else if ( gpGlobals->curtime - m_flLastAimTurnTime > mp_facefronttime.GetFloat() )
+		{
+			m_flGoalFeetYaw = m_flEyeYaw;
+		}
+#endif
 		// Make sure the feet yaw isn't too far out of sync with the eye yaw.
 		// TODO: Do something better here!
 		else
