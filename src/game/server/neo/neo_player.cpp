@@ -194,6 +194,7 @@ ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detec
 // longer helps. In between, dark areas slow notice of uncloaked players and weaken the cloak light cue.
 ConVar sv_neo_bot_light_dark("sv_neo_bot_light_dark", "0.1", FCVAR_NONE, "Nav light at or below which a target is fully in the dark", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_light_lit("sv_neo_bot_light_lit", "0.35", FCVAR_NONE, "Nav light at or above which a target is fully lit", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_night_floor("sv_neo_bot_night_floor", "0.3", FCVAR_NONE, "Nav light an observer with night vision on sees at least", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_dark_rate("sv_neo_bot_dark_rate", "2", FCVAR_NONE, "Notice hazard per second for an uncloaked player in the dark band", true, 0.01f, true, 100.0f);
 ConVar sv_neo_bot_cloak_reveal_degrees_easy("sv_neo_bot_cloak_reveal_degrees_easy", "5", FCVAR_NONE, "Easy bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
 ConVar sv_neo_bot_cloak_reveal_degrees_normal("sv_neo_bot_cloak_reveal_degrees_normal", "4", FCVAR_NONE, "Normal bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
@@ -1469,6 +1470,12 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		{
 			flLight = Clamp(area->GetLightIntensity(target->GetAbsOrigin()), 0.0f, 1.0f);
 		}
+	}
+
+	// Night vision lifts dark areas for the observer, short of full light.
+	if (m_bInVision && HasNightVision())
+	{
+		flLight = Max(flLight, sv_neo_bot_night_floor.GetFloat());
 	}
 
 	// Lit-ness runs from 0 in the dark band to 1 in the lit band.
