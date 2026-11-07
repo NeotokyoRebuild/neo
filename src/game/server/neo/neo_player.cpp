@@ -165,13 +165,13 @@ ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots 
 ConVar sv_neo_bot_cloak_debug_perceive_always_on("sv_neo_bot_cloak_debug_perceive_always_on", "0", FCVAR_CHEAT,
 	"Debug: Force bots to perceive all players as having cloaking on all the time", true, 0, true, 1);
 
-ConVar sv_neo_bot_cloak_rate("sv_neo_bot_cloak_rate", "0.722028313", FCVAR_NONE, "Base cloak notice hazard per second", true, 0.0f, true, 100.0f);
+ConVar sv_neo_bot_cloak_rate("sv_neo_bot_cloak_rate", "0.180507078", FCVAR_NONE, "Base cloak notice hazard per second", true, 0.0f, true, 100.0f);
 ConVar sv_neo_bot_cloak_rate_max("sv_neo_bot_cloak_rate_max", "8", FCVAR_NONE, "Maximum cloak notice hazard per second", true, 0.0f, true, 100.0f);
-ConVar sv_neo_bot_cloak_dark("sv_neo_bot_cloak_dark", "0.15", FCVAR_NONE, "Cloak light contrast floor in dark areas", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_dark("sv_neo_bot_cloak_dark", "0.08", FCVAR_NONE, "Cloak light contrast floor in dark areas", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_cloak_gamma("sv_neo_bot_cloak_gamma", "1.5", FCVAR_NONE, "Cloak light contrast exponent", true, 0.01f, true, 8.0f);
-ConVar sv_neo_bot_cloak_motion("sv_neo_bot_cloak_motion", "2", FCVAR_NONE, "Maximum added motion multiplier", true, 0.0f, true, 10.0f);
+ConVar sv_neo_bot_cloak_motion("sv_neo_bot_cloak_motion", "14", FCVAR_NONE, "Maximum added motion multiplier", true, 0.0f, true, 100.0f);
 ConVar sv_neo_bot_cloak_speed("sv_neo_bot_cloak_speed", "200", FCVAR_NONE, "Motion cue speed scale in units per second", true, 1.0f, true, 1000.0f);
-ConVar sv_neo_bot_cloak_crouch("sv_neo_bot_cloak_crouch", "0.6", FCVAR_NONE, "Crouched silhouette multiplier", true, 0.0f, true, 1.0f);
+ConVar sv_neo_bot_cloak_crouch("sv_neo_bot_cloak_crouch", "0.35", FCVAR_NONE, "Crouched silhouette multiplier", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_cloak_range("sv_neo_bot_cloak_range", "600", FCVAR_NONE, "Cloak reference range in units", true, 1.0f, true, 10000.0f);
 ConVar sv_neo_bot_cloak_gaze("sv_neo_bot_cloak_gaze", "0", FCVAR_NONE, "Peripheral gaze multiplier floor", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_cloak_assault("sv_neo_bot_cloak_assault", "1", FCVAR_NONE, "Added Assault motion vision multiplier against a moving target", true, 0.0f, true, 10.0f);
@@ -194,9 +194,9 @@ ConVar sv_neo_bot_cloak_detection_threshold_ratio_expert("sv_neo_bot_cloak_detec
 ConVar sv_neo_bot_light_dark("sv_neo_bot_light_dark", "0.1", FCVAR_NONE, "Nav light at or below which a target is fully in the dark", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_light_lit("sv_neo_bot_light_lit", "0.35", FCVAR_NONE, "Nav light at or above which a target is fully lit", true, 0.0f, true, 1.0f);
 ConVar sv_neo_bot_night_floor("sv_neo_bot_night_floor", "0.3", FCVAR_NONE, "Nav light an observer with night vision on sees at least", true, 0.0f, true, 1.0f);
-ConVar sv_neo_bot_dark_rate("sv_neo_bot_dark_rate", "0.12", FCVAR_NONE, "Notice hazard per second for a still, standing, uncloaked player at the reference range in full dark", true, 0.01f, true, 100.0f);
+ConVar sv_neo_bot_dark_rate("sv_neo_bot_dark_rate", "0.012", FCVAR_NONE, "Notice hazard per second for a still, standing, uncloaked player at the reference range in full dark", true, 0.0f, true, 100.0f);
 ConVar sv_neo_bot_dark_exponent("sv_neo_bot_dark_exponent", "6", FCVAR_NONE, "How steeply the dark notice hazard rises toward the lit band", true, 0.0f, true, 20.0f);
-ConVar sv_neo_bot_dark_motion("sv_neo_bot_dark_motion", "30", FCVAR_NONE, "Maximum added motion multiplier for an uncloaked player in the dark band", true, 0.0f, true, 100.0f);
+ConVar sv_neo_bot_dark_motion("sv_neo_bot_dark_motion", "150", FCVAR_NONE, "Maximum added motion multiplier for an uncloaked player in the dark band", true, 0.0f, true, 1000.0f);
 ConVar sv_neo_bot_cloak_reveal_degrees_easy("sv_neo_bot_cloak_reveal_degrees_easy", "5", FCVAR_NONE, "Easy bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
 ConVar sv_neo_bot_cloak_reveal_degrees_normal("sv_neo_bot_cloak_reveal_degrees_normal", "4", FCVAR_NONE, "Normal bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
 ConVar sv_neo_bot_cloak_reveal_degrees_hard("sv_neo_bot_cloak_reveal_degrees_hard", "3", FCVAR_NONE, "Hard bot cloak reveal half-angle in degrees", true, 0.1f, true, 10.0f);
