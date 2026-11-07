@@ -32,6 +32,16 @@ ConVar cl_neo_player_pings("cl_neo_player_pings", "1", FCVAR_ARCHIVE | FCVAR_USE
 		}
 	});
 
+enum NeoPlayerPingsInSpectate
+{
+	NEO_SPECTATE_PINGS_DISABLED	=		0,
+	NEO_SPECTATE_PINGS_TARGET,
+	NEO_SPECTATE_PINGS_ALL,
+
+	NEO_SPECTATE_PINGS_LAST_VALUE =		NEO_SPECTATE_PINGS_ALL
+};
+ConVar cl_neo_player_pings_in_spectate("cl_neo_player_pings_in_spectate", "1", FCVAR_ARCHIVE, "See pings of players playing the game. 0 = disabled, 1 = spectate target team, 2 = all", true, NEO_SPECTATE_PINGS_DISABLED, true, NEO_SPECTATE_PINGS_LAST_VALUE);
+
 CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
@@ -109,31 +119,10 @@ void CNEOHud_PlayerPing::Init(void)
 //-----------------------------------------------------------------------------
 void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 {
-	auto eventName = event->GetName();
+	const auto eventName = event->GetName();
 	if (!Q_stricmp(eventName, "player_ping"))
 	{
-		if (!cl_neo_player_pings.GetBool())
-		{
-			return;
-		}
-
-		const int userID = event->GetInt("userid");
-		const int playerIndex = engine->GetPlayerForUserID(userID);
-		if (GetClientVoiceMgr()->IsPlayerBlocked(playerIndex) || (!NEORules()->IsTeamplay() && playerIndex != GetLocalPlayerIndex()))
-		{
-			return;
-		}
-
-		const int localTeam = GetLocalPlayerTeam();
-		const int playerTeam = event->GetInt("playerteam");
-		if (localTeam != TEAM_SPECTATOR && playerTeam != localTeam)
-		{
-			return;
-		}
-
-		const Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
-		bool ghosterPing = event->GetBool("ghosterping");
-		SetPos(playerIndex - 1, playerTeam, worldpos, ghosterPing);
+		OnPlayerPing(event);
 	}
 	else if (!Q_stricmp(eventName, "round_start"))
 	{
@@ -147,7 +136,88 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 			HideAllPings();
 		}
 	}
+}
 
+void CNEOHud_PlayerPing::OnPlayerPing(const IGameEvent* event)
+{
+	// This is already checked by the emitter side, but we check again because it could arrive late (dynamic custom rule change etc.)
+	if (!NEORules() || !NEORules()->ArePingsAllowed())
+	{
+		return;
+	}
+
+	if (!cl_neo_player_pings.GetBool())
+	{
+		return;
+	}
+
+	const auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	Assert(localPlayer);
+	const auto localTeamNumber = localPlayer->GetTeamNumber();
+
+	const int pingerIndex = engine->GetPlayerForUserID(event->GetInt("userid"));
+	Assert(pingerIndex >= 0);
+
+	const bool isOwnPing = (pingerIndex == localPlayer->entindex());
+	if (!isOwnPing)
+	{
+		if (pingerIndex == 0 || GetClientVoiceMgr()->IsPlayerBlocked(pingerIndex))
+		{
+			return;
+		}
+	}
+
+	const int pingRecipientTeam = event->GetInt("playerteam");
+
+	if (localTeamNumber == TEAM_SPECTATOR)
+	{
+		const C_BaseEntity* obsTarget;
+		switch (cl_neo_player_pings_in_spectate.GetInt())
+		{
+		case NEO_SPECTATE_PINGS_DISABLED:
+			return;
+		case NEO_SPECTATE_PINGS_TARGET:
+			obsTarget = localPlayer->GetObserverTarget();
+			if (!obsTarget || obsTarget->GetTeamNumber() != pingRecipientTeam)
+				return;
+			break;
+		case NEO_SPECTATE_PINGS_ALL:
+			break;
+		default:
+			Warning("%s: unhandled enum case %d\n", __FUNCTION__, cl_neo_player_pings_in_spectate.GetInt());
+			return;
+		}
+	}
+	else if (localTeamNumber != pingRecipientTeam)
+	{
+		return;
+	}
+
+	const int pingerSlot = pingerIndex - 1;
+	Assert(pingerSlot >= 0);
+
+	const Vector worldpos(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
+	const bool ghosterPing = event->GetBool("ghosterping");
+	SetPos(pingerSlot, pingRecipientTeam, worldpos, ghosterPing);
+
+	const bool thisIsPredictedPing = !event->GetBool("server", false);
+	if (thisIsPredictedPing)
+	{
+		// don't print predicted (bogus) placenames; we only wanna predict the in-world visuals but not the place text
+		return;
+	}
+
+	if (isOwnPing)
+	{
+		static ConVarRef cl_neo_player_pings_print_own("cl_neo_player_pings_print_own");
+		Assert(cl_neo_player_pings_print_own.IsValid());
+		if (!cl_neo_player_pings_print_own.GetBool())
+			return;
+	}
+
+	const bool placeIsExact = event->GetBool("place_exact");
+	const char* placeName = event->GetString("place_name");
+	NotifyPing(pingerSlot, placeName, placeIsExact);
 }
 
 void CNEOHud_PlayerPing::LevelShutdown(void)
@@ -156,15 +226,6 @@ void CNEOHud_PlayerPing::LevelShutdown(void)
 	m_flNextPingSoundTime = 0.f;
 }
 
-enum NeoPlayerPingsInSpectate
-{
-	NEO_SPECTATE_PINGS_DISABLED	=		0,
-	NEO_SPECTATE_PINGS_TARGET,
-	NEO_SPECTATE_PINGS_ALL,
-
-	NEO_SPECTATE_PINGS_LAST_VALUE =		NEO_SPECTATE_PINGS_ALL
-};
-ConVar cl_neo_player_pings_in_spectate("cl_neo_player_pings_in_spectate", "1", FCVAR_ARCHIVE, "See pings of players playing the game. 0 = disabled, 1 = spectate target team, 2 = all", true, NEO_SPECTATE_PINGS_DISABLED, true, NEO_SPECTATE_PINGS_LAST_VALUE);
 void CNEOHud_PlayerPing::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
@@ -315,7 +376,8 @@ void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, const int 
 	m_iPlayerPings[playerSlot].noLineOfSight = tr.fraction < 0.999;
 }
 
-void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, const Vector& pos, bool ghosterPing) {
+void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, const Vector& pos, bool ghosterPing)
+{
 	constexpr float PLAYER_PING_LIFETIME = 8;
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer) { return; }
@@ -326,51 +388,38 @@ void CNEOHud_PlayerPing::SetPos(const int playerSlot, const int playerTeam, cons
 	m_iPlayerPings[playerSlot].ghosterPing = ghosterPing;
 
 	UpdateDistanceToPlayer(localPlayer, playerSlot);
-	const int playerPingsInSpectate = cl_neo_player_pings_in_spectate.GetInt();
-	if (GetLocalPlayerTeam() == TEAM_SPECTATOR && playerPingsInSpectate != NEO_SPECTATE_PINGS_ALL)
-	{
-		if (playerPingsInSpectate == NEO_SPECTATE_PINGS_DISABLED)
-		{
-			return;
-		}
-
-		int spectateTargetTeam = TEAM_UNASSIGNED;
-		if (auto observerTarget = localPlayer->GetObserverTarget())
-		{
-			spectateTargetTeam = observerTarget->GetTeamNumber();
-			if (playerTeam != spectateTargetTeam)
-			{
-				return;
-			}
-		}
-		else
-		{
-			return;
-		}
-	}
-	NotifyPing(playerSlot);
 }
 
 ConVar snd_ping_volume("snd_ping_volume", "0.33", FCVAR_ARCHIVE, "Player ping volume", true, 0.f, true, 1.f);
 ConVar cl_neo_player_pings_chat_message("cl_neo_player_pings_chat_message", "1", FCVAR_ARCHIVE, "Show message in chat for player pings.", true, 0, true, 1); // NEO TODO (Adam) custom chat filter instead?
 ConVar cl_neo_player_pings_time_between_sounds("cl_neo_player_pings_time_between_sounds", "0", FCVAR_ARCHIVE, "Minimum time between two ping sounds", true, 0, false, 0);
-void CNEOHud_PlayerPing::NotifyPing(const int playerSlot)
+#ifdef _DEBUG
+ConVar cl_neo_player_pings_skip_text_for_bots("cl_neo_player_pings_skip_text_for_bots", "1", FCVAR_DONTRECORD);
+#endif
+void CNEOHud_PlayerPing::NotifyPing(const int playerSlot, const char* placeName, bool placeIsExact)
 {
 	C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerSlot + 1));
-	if (!pPlayer || pPlayer->IsLocalPlayer())
+	if (!pPlayer)
 	{
 		return;
 	}
 
 	if (cl_neo_player_pings_chat_message.GetBool())
 	{
-		// Skip text notification for bots
-		if (g_PR && !g_PR->IsFakePlayer(playerSlot + 1))
+		if (
+			( g_PR && !g_PR->IsFakePlayer(playerSlot + 1) )
+#ifdef _DEBUG
+			|| !cl_neo_player_pings_skip_text_for_bots.GetBool()
+#endif
+			)
 		{
 			CBaseHudChat* hudChat = (CBaseHudChat*)GET_HUDELEMENT(CHudChat);
 			if (hudChat)
 			{
-				hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged a location\n", pPlayer->GetNeoPlayerName());
+				hudChat->ChatPrintf(0, CHAT_FILTER_NONE, "%s pinged %s%s\n",
+					pPlayer->GetNeoPlayerName(),
+					(placeIsExact || !placeName || !*placeName) ? "" : "near ", // only specify "near" for concrete callouts
+					(placeName && *placeName) ? placeName : "a location");
 			}
 		}
 	}
