@@ -459,7 +459,7 @@ public:
 	void CommandNavLadderFlip( void );									// Flips the direction a ladder faces
 	void CommandNavToggleAttribute( NavAttributeType attribute );		// toggle an attribute on current area
 	void CommandNavMakeSniperSpots( void );								// cuts up the marked area into individual areas suitable for sniper spots
-	void CommandNavBuildLadder( void );									// builds a nav ladder on the climbable surface under the cursor
+	void CommandNavBuildLadder( bool brushGenerated = false );				// builds a nav ladder on the climbable surface under the cursor
 	void CommandNavRemoveJumpAreas( void );								// removes jump areas, replacing them with connections
 	void CommandNavSubdivide( const CCommand &args );					// subdivide each nav area in X and Y to create 4 new areas - limit min size
 	void CommandNavSaveSelected( const CCommand &args );				// Save selected set to disk
@@ -489,7 +489,7 @@ public:
 	}
 
 	void CreateLadder( const Vector &mins, const Vector &maxs, float maxHeightAboveTopArea );
-	void CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea );
+	void CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea, bool brushGenerated = false );
 
 	float SnapToGrid( float x, bool forceGrid = false ) const;					// snap given coordinate to generation grid boundary
 	Vector SnapToGrid( const Vector& in, bool snapX = true, bool snapY = true, bool forceGrid = false ) const;	// snap given vector's X & Y coordinates to generation grid boundary
