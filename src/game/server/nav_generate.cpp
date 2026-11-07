@@ -319,6 +319,11 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	Vector on, out;
 	const float minLadderClearance = 32.0f;
 
+	// A brush ladder's ends lie on the face of its own climbable brush, which the trace mask
+	// can count as solid, so start the clearance traces just off the face.
+	const float faceOffset = 0.1f;
+	const Vector offFace = ladder->GetNormal() * faceOffset;
+
 	// adjust bottom to bypass blockages
 	const float inc = 10.0f;
 	float t;
@@ -330,7 +335,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 
 		out = on + ladder->GetNormal() * minLadderClearance;
 
-		UTIL_TraceLine( on, out, GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
+		UTIL_TraceLine( on + offFace, out, GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
 
 		if (result.fraction == 1.0f && !result.startsolid)
 		{
@@ -349,7 +354,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 
 		out = on + ladder->GetNormal() * minLadderClearance;
 
-		UTIL_TraceLine( on, out, GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
+		UTIL_TraceLine( on + offFace, out, GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
 
 		if (result.fraction == 1.0f && !result.startsolid)
 		{
@@ -468,13 +473,20 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, bool brush
 	if (m_topBehindArea == m_bottomArea)
 		m_topBehindArea = NULL;
 
-	if (brushGenerated && !m_topForwardArea && !m_topLeftArea && !m_topRightArea)
+	// A climbable brush can end below the landing, where the scan hits the landing's lip.
+	// Or the space above its top can be solid (a ceiling or prop), so the scan starts inside it.
+	const float topRetryOffsets[] = { StepHeight, -GenerationStepSize };
+	for ( const float offset : topRetryOffsets )
 	{
-		// A climbable brush can end below the landing, where the scan hits the landing's lip.
-		const Vector raised = center + Vector( 0, 0, StepHeight );
+		if (!brushGenerated || m_topForwardArea || m_topLeftArea || m_topRightArea)
+		{
+			break;
+		}
+
+		const Vector retryStart = center + Vector( 0, 0, offset );
 		auto findTopArea = [&]( NavDirType dir, float range ) -> CNavArea *
 		{
-			CNavArea *area = findFirstAreaInDirection( &raised, dir, range, beneathLimit, NULL );
+			CNavArea *area = findFirstAreaInDirection( &retryStart, dir, range, beneathLimit, NULL );
 			return (area == m_bottomArea) ? NULL : area;
 		};
 
