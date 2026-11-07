@@ -163,7 +163,7 @@ ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots 
 // its own rate: standing tall, light on it, motion, closeness and visible blood. A target that gives away none of
 // them is noticed only at a slow quiet rate. A cloak dampens the cues it hides. The sum is scaled by the bot's skill,
 // how directly it looks, and range. See CNEO_Player::GetCloakObscuredRatio for the rate and
-// CNEO_Player::IsHiddenByFog for how it accrues.
+// CNEO_Player::IsHiddenFromSight for how it accrues.
 ConVar sv_neo_bot_cloak_debug_perceive_always_on("sv_neo_bot_cloak_debug_perceive_always_on", "0", FCVAR_CHEAT,
 	"Debug: Force bots to perceive all players as having cloaking on all the time", true, 0, true, 1);
 
@@ -1287,17 +1287,23 @@ static float GetBotNoticeHazardScale()
 	return Max(0.0f, (GetBotNoticeSkillRatio() - NOTICE_SKILL_RATIO_FLOOR) / (NOTICE_SKILL_RATIO_HARD - NOTICE_SKILL_RATIO_FLOOR));
 }
 
+// Answers from the latest sight check, which bots make through IsHiddenFromSight.
 bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 {
-	if (!target)
+	auto targetPlayer = ToNEOPlayer(target);
+	if (!targetPlayer || !IsIndexIntoPlayerArrayValid(targetPlayer->entindex()))
 	{
 		return false;
 	}
 
-	auto targetPlayer = ToNEOPlayer(target);
-	if (targetPlayer == nullptr)
+	return m_playerFogCache[targetPlayer->entindex()].m_bIsHidden;
+}
+
+bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) const
+{
+	if (!targetPlayer)
 	{
-		return false; // Not a player that is affected by cloaking/etc
+		return false;
 	}
 
 	if (NEORules()->IsTeamplay() && GetTeamNumber() == targetPlayer->GetTeamNumber())
@@ -1320,6 +1326,17 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 		return cacheEntry.m_bIsHidden;
 	}
 
+	// What a bot noticed about one life of a player says nothing about the next one, or about whoever takes the slot.
+	const int targetSerial = targetPlayer->GetRefEHandle().GetSerialNumber();
+	if (cacheEntry.m_iTargetSerial != targetSerial || cacheEntry.m_iTargetTeam != targetPlayer->GetTeamNumber()
+		|| cacheEntry.m_flTargetDeathTime != targetPlayer->GetDeathTime())
+	{
+		cacheEntry = CNEO_Player_FogCacheEntry();
+		cacheEntry.m_iTargetSerial = targetSerial;
+		cacheEntry.m_iTargetTeam = targetPlayer->GetTeamNumber();
+		cacheEntry.m_flTargetDeathTime = targetPlayer->GetDeathTime();
+	}
+
 	// Bumping into someone gives them away, however well hidden.
 	if (GetAbsOrigin().DistToSqr(targetPlayer->GetAbsOrigin()) < Square(BUMP_REVEAL_RANGE))
 	{
@@ -1334,7 +1351,7 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 
 	const float grace = sv_neo_bot_cloak_grace.GetFloat();
 	const float cloakRatio = GetCloakObscuredRatio(targetPlayer);
-	const float fogRatio = GetFogObscuredRatio(CBaseCombatCharacter::EyePosition().DistTo(target->WorldSpaceCenter()));
+	const float fogRatio = GetFogObscuredRatio(CBaseCombatCharacter::EyePosition().DistTo(targetPlayer->WorldSpaceCenter()));
 	const float obscuredRatio = 1.0f - (1.0f - fogRatio) * (1.0f - cloakRatio);
 	cacheEntry.m_flObscuredRatio = obscuredRatio; // for debugging
 
@@ -1342,11 +1359,14 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 	const bool cloaked = targetPlayer->GetInThermOpticCamo() && !targetPlayer->IsCarryingGhost();
 	const bool plain = !cloaked && cloakRatio <= 0.0f;
 
-	// Notice only accrues while the target is in view; a gap longer than the grace starts a new exposure.
-	if (IsInFieldOfView(targetPlayer) && IsLineOfSightClear(targetPlayer, IGNORE_ACTORS))
+	// Notice accrues only over time the target stays in view; a gap longer than the grace starts a new exposure.
+	if (inView)
 	{
-		float dt = now - cacheEntry.m_flLastInView;
-		if (cacheEntry.m_flLastInView < 0.0f || dt > grace)
+		// A sight check long after the last one cannot vouch for the time between them.
+		constexpr float MAX_SIGHT_CHECK_GAP = 0.5f;
+		const bool keptInView = cacheEntry.m_flLastInView >= 0.0f && cacheEntry.m_flLastInView == cacheEntry.m_flUpdateTime
+			&& now - cacheEntry.m_flLastInView <= MAX_SIGHT_CHECK_GAP;
+		if (!keptInView && (cacheEntry.m_flLastInView < 0.0f || now - cacheEntry.m_flLastInView > grace))
 		{
 			// Draw once per exposure, so query frequency cannot create extra chances.
 			const float minUniform = 0.000001f;
@@ -1359,8 +1379,8 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 			}
 			cacheEntry.m_flHazard = -logf(s_noticeRandom.RandomFloat(minUniform, 1.0f));
 			cacheEntry.m_bNoticed = false;
-			dt = 0.0f;
 		}
+		const float dt = keptInView ? now - cacheEntry.m_flLastInView : 0.0f;
 		cacheEntry.m_flLastInView = now;
 
 		if (!cacheEntry.m_bNoticed)
@@ -1371,15 +1391,9 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 			cacheEntry.m_bNoticed = cloakRatio <= 0.0f || cacheEntry.m_flHazard <= 0.0f;
 		}
 	}
-
 	cacheEntry.m_flUpdateTime = now;
-	if (!plain)
-	{
-		cacheEntry.m_bIsHidden = !(cacheEntry.m_bNoticed && now - cacheEntry.m_flLastInView <= grace);
-		return cacheEntry.m_bIsHidden;
-	}
 
-	// A plainly visible target can still be lost in fog, re-rolled at human reaction time.
+	// Fog hides any target, noticed or not, re-rolled at human reaction time.
 	if (now - cacheEntry.m_flRollTime >= 0.2f)
 	{
 		// Bot difficulty perception roll range
@@ -1387,10 +1401,12 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 		// Higher range = higher potential rolls = higher likelihood of exceeding the obscuredRatio (detect the target).
 		const float fBotDifficultyRange = IsBot() ? GetBotNoticeSkillRatio() : 1.0f;
 
-		cacheEntry.m_bRollHidden = RandomFloat(0.0f, fBotDifficultyRange) < obscuredRatio;
+		cacheEntry.m_bRollHidden = RandomFloat(0.0f, fBotDifficultyRange) < fogRatio;
 		cacheEntry.m_flRollTime = now;
 	}
-	cacheEntry.m_bIsHidden = cacheEntry.m_bRollHidden;
+
+	const bool unnoticed = !plain && !(cacheEntry.m_bNoticed && now - cacheEntry.m_flLastInView <= grace);
+	cacheEntry.m_bIsHidden = cacheEntry.m_bRollHidden || unnoticed;
 	return cacheEntry.m_bIsHidden;
 }
 
@@ -1574,7 +1590,7 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		float vision = 1.0f;
 		if (GetClass() == NEO_CLASS_ASSAULT)
 		{
-			// I have motion vision, but I don't always have it turned on
+			// motion vision picks out a moving cloak; bots are taken to use it whenever the target moves
 			vision += sv_neo_bot_cloak_assault.GetFloat() * motion;
 		}
 		else if (GetClass() == NEO_CLASS_SUPPORT)
@@ -4282,11 +4298,40 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			SetPlayerTeamModel();
 			InitSprinting();
 
+			TakeOverNoticeOf(pPlayerTakeoverTarget);
+
 			// Put the takeover target in stasis.
 			pPlayerTakeoverTarget->SpectatorTakeoverPlayerInitiate(this);
 		}
 
 		m_bSpectatorTakeoverPlayerPending = false;
+	}
+}
+
+// The body stays where it was and looks the same, so what other players had noticed about it carries over.
+void CNEO_Player::TakeOverNoticeOf(const CNEO_Player* pBody)
+{
+	const int bodyIdx = pBody->entindex();
+	const int thisIdx = entindex();
+	if (!IsIndexIntoPlayerArrayValid(bodyIdx) || !IsIndexIntoPlayerArrayValid(thisIdx))
+	{
+		return;
+	}
+
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		auto *pObserver = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(pIdx));
+		if (!pObserver || pObserver == this || pObserver == pBody)
+		{
+			continue;
+		}
+
+		CNEO_Player_FogCacheEntry &entry = pObserver->m_playerFogCache[thisIdx];
+		entry = pObserver->m_playerFogCache[bodyIdx];
+		entry.m_flUpdateTime = -1.0f;
+		entry.m_iTargetSerial = GetRefEHandle().GetSerialNumber();
+		entry.m_iTargetTeam = GetTeamNumber();
+		entry.m_flTargetDeathTime = m_flDeathTime;
 	}
 }
 

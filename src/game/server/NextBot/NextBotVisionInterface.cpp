@@ -615,7 +615,32 @@ bool IVision::IsAbleToSee( CBaseEntity *subject, FieldOfViewCheckType checkFOV, 
 		return false;
 	}
 
-	
+#ifdef NEO
+	// A hidden player is noticed over time in view, so the notice state needs this check's own sight result.
+	CNEO_Player *observer = ToNEOPlayer( GetBot()->GetEntity() );
+	CNEO_Player *targetPlayer = ToNEOPlayer( subject );
+	if ( observer && targetPlayer )
+	{
+		const bool inFieldOfView = IsInFieldOfView( subject );
+		bool inSight = ( inFieldOfView || checkFOV == DISREGARD_FOV ) && !GetBot()->GetEntity()->IsHiddenByFog( subject->WorldSpaceCenter() );
+		if ( inSight )
+		{
+			CNavArea *subjectArea = targetPlayer->GetLastKnownArea();
+			CNavArea *myArea = observer->GetLastKnownArea();
+			inSight = !myArea || !subjectArea || myArea->IsPotentiallyVisible( subjectArea );
+		}
+		inSight = inSight && IsLineOfSightClearToEntity( subject );
+
+		// only a target inside the view cone can be noticed
+		if ( observer->IsHiddenFromSight( targetPlayer, inSight && inFieldOfView ) || !inSight )
+		{
+			return false;
+		}
+
+		return IsVisibleEntityNoticed( subject );
+	}
+#endif
+
 	if ( GetBot()->GetEntity()->IsHiddenByFog( subject ) )
 	{
 		// lost in the fog

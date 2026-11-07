@@ -35,14 +35,18 @@ enum EMenuSelectType
 // For rate-limiting thermoptic/etc visibility calculations
 struct CNEO_Player_FogCacheEntry
 {
-    bool m_bIsHidden{false};
-    float m_flUpdateTime{-1.0f};   // ensure update the first time
-    float m_flObscuredRatio{1.0f}; // more handy for debugging
-    float m_flHazard{0.0f};        // notice budget left in the current exposure
-    float m_flLastInView{-1.0f};   // last time the target was in view
-    bool m_bNoticed{false};
-    float m_flRollTime{-1.0f};     // fog roll for plainly visible targets
-    bool m_bRollHidden{false};
+	bool m_bIsHidden{false};
+	float m_flUpdateTime{-1.0f};   // ensure update the first time
+	float m_flObscuredRatio{1.0f}; // more handy for debugging
+	float m_flHazard{0.0f};        // notice budget left in the current exposure
+	float m_flLastInView{-1.0f};   // last time the target was in view
+	bool m_bNoticed{false};
+	float m_flRollTime{-1.0f};     // fog roll for plainly visible targets
+	bool m_bRollHidden{false};
+	// the target life this entry describes
+	int m_iTargetSerial{-1};
+	int m_iTargetTeam{-1};
+	float m_flTargetDeathTime{-1.0f};
 };
 
 class CNEO_Player : public CHL2MP_Player
@@ -122,6 +126,9 @@ public:
 	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 	virtual float		GetFogObscuredRatio(float range) const OVERRIDE;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 	float				GetCloakObscuredRatio(CNEO_Player* target) const;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+	// Bot sight of a player: inView says whether this check found the target in the view cone with a clear line of sight.
+	// Returns true while the target is unnoticed or lost in fog.
+	bool				IsHiddenFromSight(CNEO_Player* target, bool inView) const;
 
 	void AddNeoFlag(int flags)
 	{
@@ -389,6 +396,8 @@ private:
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
+	// moves what other players had noticed about pBody over to this player taking it over
+	void TakeOverNoticeOf(const CNEO_Player* pBody);
 	void SpectatorTakeoverPlayerRevert(bool bHardReset=true);
 
 	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerTarget);
