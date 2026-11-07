@@ -38,7 +38,7 @@ This code applies within all spaces of the NEOTOKYO;REBUILD project and when an 
 
 ### 2. Unacceptable Behavior
 
-The following are a non-exhaustive list of violations of our standards:
+The following is a non-exhaustive list of violations of our standards:
 
 - **Discrimination:** Use of derogatory language or imagery related to race, religion, gender identity/expression, sexual orientation, disability, age, etc.
 - **Harassment:** Unwanted sexual advances, threats, stalking, or repeated, or other abusive behavior intended to intimidate.
