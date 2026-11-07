@@ -14,6 +14,30 @@ The overall goal is to create a reimplementation of Neotokyo for Source 2013 MP 
 
 The end result should hopefully be a shinier and less error-prone rendition of NT, with the source code and more cvars providing room to fine tune game balance, or come up with completely new modes.
 
+## AI usage
+Steam requires every game to disclose its generative AI content in the [Content Survey](https://partner.steamgames.com/doc/gettingstarted/contentsurvey). The survey covers content that ships with the game and is consumed by players, such as artwork, sound, narrative and localization. Steam states that efficiency gains from AI-powered development tools are not the focus of that disclosure.
+
+NT;RE does not cross that line. Apart from the exception for reviewed translations below, any content that would need to be disclosed in the survey will not be accepted. The rules that follow set out what that means for contributors.
+
+### Game content
+* Nothing that ships with the game may be made with generative AI. This covers art, textures, models, sounds, voice, music, maps and player-facing text such as UI strings and translations.
+* The same applies to everything published for the game, including Steam store art, trailers, screenshots and Steam Community posts.
+* Translations must be written or reviewed by people, ideally native speakers or professional translators of that language. Translators may use AI tools in their own workflow, but unreviewed machine translation will not be accepted.
+* The ban includes AI features built into standard tools that add or replace content. Examples are Generative Fill, Generative Expand and Neural Filters in Adobe Photoshop, and AI upscalers.
+* AI features that only clean up your own work are allowed. An example is the denoiser in Blender's Cycles renderer, which removes render noise without adding content you did not make.
+* AI-generated "vibe-coded" art assets will not be accepted.
+
+### Code
+* AI tools may be used to help write code and to speed up development work. They are a tool for the process, never a source of game content.
+* You are responsible for all code you submit for review, however it was written.
+* AI-assisted code is judged by the same standard as any other code: it must be maintainable by human contributors. Expect to explain any part of your change during review.
+
+### Clean-room standard
+* Pull requests are assessed against a clean-room standard. Code must not be copied from or derived from leaked or decompiled Valve source code.
+* AI tools can reproduce leaked code from their training data. Code that does so will be rejected, whether it was written by hand or generated.
+* Use the [Source 1 SDK](https://github.com/ValveSoftware/source-sdk-2013), Valve's other public repositories and the [Valve Developer Community wiki](https://developer.valvesoftware.com/wiki/Main_Page) as references.
+* We will not accept changes that work against the [Source 1 SDK license](LICENSE) or our other agreements with Valve.
+
 ## Table of contents
 To see the Table of Contents, please use the "Outline" feature on GitHub by clicking the button located in the top right of this document.
 
