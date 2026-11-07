@@ -1257,8 +1257,6 @@ void CNEO_Player::CheckThermOpticButtons()
 // This has been repurposed for cloaking/fog of war logic
 // to fit in with existing bot APIs
 //-----------------------------------------------------------------------------
-// Notice budgets use their own random stream, so they stay independent of any reseeding of the shared one.
-static CUniformRandomStream s_noticeRandom;
 // Players this close touch, so the observer notices the target by bumping into it
 constexpr float BUMP_REVEAL_RANGE = 40.0f;
 
@@ -1299,34 +1297,39 @@ bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 	return m_playerFogCache[targetPlayer->entindex()].m_bIsHidden;
 }
 
-bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) const
+// Notice budgets use their own random stream, so they stay independent of any reseeding of the shared one.
+class CNoticeRandomStream : public CUniformRandomStream
+{
+public:
+	CNoticeRandomStream()
+	{
+		// seed from the clock so each server process draws a different sequence
+		SetSeed(static_cast<int>(Plat_MSTime() & 0x7fffffff));
+	}
+};
+
+// Returns null for a target the observer never has to notice.
+CNEO_Player_FogCacheEntry* CNEO_Player::GetSightCacheEntry(CNEO_Player* targetPlayer) const
 {
 	if (!targetPlayer)
 	{
-		return false;
+		return nullptr;
 	}
 
 	if (NEORules()->IsTeamplay() && GetTeamNumber() == targetPlayer->GetTeamNumber())
 	{
 		// Teammates are always labeled with IFF, unless in DM
-		return false;
+		return nullptr;
 	}
 
-	// Check visibility cache for this player
 	int playerIndex = targetPlayer->entindex();
 	if (!IsIndexIntoPlayerArrayValid(playerIndex))
 	{
-		return false;
-	}
-
-	CNEO_Player_FogCacheEntry& cacheEntry = m_playerFogCache[playerIndex];
-	const float now = gpGlobals->curtime;
-	if (cacheEntry.m_flUpdateTime == now)
-	{
-		return cacheEntry.m_bIsHidden;
+		return nullptr;
 	}
 
 	// What a bot noticed about one life of a player says nothing about the next one, or about whoever takes the slot.
+	CNEO_Player_FogCacheEntry& cacheEntry = m_playerFogCache[playerIndex];
 	const int targetSerial = targetPlayer->GetRefEHandle().GetSerialNumber();
 	if (cacheEntry.m_iTargetSerial != targetSerial || cacheEntry.m_iTargetTeam != targetPlayer->GetTeamNumber()
 		|| cacheEntry.m_flTargetDeathTime != targetPlayer->GetDeathTime())
@@ -1337,23 +1340,61 @@ bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) cons
 		cacheEntry.m_flTargetDeathTime = targetPlayer->GetDeathTime();
 	}
 
-	// Bumping into someone gives them away, however well hidden.
-	if (GetAbsOrigin().DistToSqr(targetPlayer->GetAbsOrigin()) < Square(BUMP_REVEAL_RANGE))
+	return &cacheEntry;
+}
+
+// Bumping into someone gives them away, however well hidden.
+bool CNEO_Player::NoticeByBump(CNEO_Player* targetPlayer, CNEO_Player_FogCacheEntry& cacheEntry) const
+{
+	if (GetAbsOrigin().DistToSqr(targetPlayer->GetAbsOrigin()) >= Square(BUMP_REVEAL_RANGE))
 	{
-		cacheEntry.m_flUpdateTime = now;
-		cacheEntry.m_flLastInView = now;
-		cacheEntry.m_bNoticed = true;
-		cacheEntry.m_flRollTime = now;
-		cacheEntry.m_bRollHidden = false;
-		cacheEntry.m_bIsHidden = false;
+		return false;
+	}
+
+	const float now = gpGlobals->curtime;
+	cacheEntry.m_flUpdateTime = now;
+	cacheEntry.m_flLastInView = now;
+	cacheEntry.m_bNoticed = true;
+	cacheEntry.m_flRollTime = now;
+	cacheEntry.m_bRollHidden = false;
+	cacheEntry.m_bIsHidden = false;
+	return true;
+}
+
+void CNEO_Player::NoteOutOfSight(CNEO_Player* targetPlayer) const
+{
+	CNEO_Player_FogCacheEntry* cacheEntry = GetSightCacheEntry(targetPlayer);
+	if (!cacheEntry || NoticeByBump(targetPlayer, *cacheEntry))
+	{
+		return;
+	}
+
+	cacheEntry->m_flLastOutOfSight = gpGlobals->curtime;
+}
+
+bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) const
+{
+	CNEO_Player_FogCacheEntry* pCacheEntry = GetSightCacheEntry(targetPlayer);
+	if (!pCacheEntry)
+	{
+		return false;
+	}
+
+	CNEO_Player_FogCacheEntry& cacheEntry = *pCacheEntry;
+	const float now = gpGlobals->curtime;
+	if (cacheEntry.m_flUpdateTime == now)
+	{
+		return cacheEntry.m_bIsHidden;
+	}
+
+	if (NoticeByBump(targetPlayer, cacheEntry))
+	{
 		return false;
 	}
 
 	const float grace = sv_neo_bot_cloak_grace.GetFloat();
 	const float cloakRatio = GetCloakObscuredRatio(targetPlayer);
-	const float fogRatio = GetFogObscuredRatio(CBaseCombatCharacter::EyePosition().DistTo(targetPlayer->WorldSpaceCenter()));
-	const float obscuredRatio = 1.0f - (1.0f - fogRatio) * (1.0f - cloakRatio);
-	cacheEntry.m_flObscuredRatio = obscuredRatio; // for debugging
+	cacheEntry.m_flObscuredRatio = cloakRatio; // for debugging
 
 	// A cloaked target, or an uncloaked one in the dark, must be noticed; any other target is plainly visible.
 	const bool cloaked = targetPlayer->GetInThermOpticCamo() && !targetPlayer->IsCarryingGhost();
@@ -1365,18 +1406,12 @@ bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) cons
 		// A sight check long after the last one cannot vouch for the time between them.
 		constexpr float MAX_SIGHT_CHECK_GAP = 0.5f;
 		const bool keptInView = cacheEntry.m_flLastInView >= 0.0f && cacheEntry.m_flLastInView == cacheEntry.m_flUpdateTime
-			&& now - cacheEntry.m_flLastInView <= MAX_SIGHT_CHECK_GAP;
+			&& cacheEntry.m_flLastOutOfSight < cacheEntry.m_flLastInView && now - cacheEntry.m_flLastInView <= MAX_SIGHT_CHECK_GAP;
 		if (!keptInView && (cacheEntry.m_flLastInView < 0.0f || now - cacheEntry.m_flLastInView > grace))
 		{
 			// Draw once per exposure, so query frequency cannot create extra chances.
 			const float minUniform = 0.000001f;
-			static bool s_bNoticeRandomSeeded = false;
-			if (!s_bNoticeRandomSeeded)
-			{
-				// seed from the clock so each server process draws a different sequence
-				s_noticeRandom.SetSeed(static_cast<int>(Plat_MSTime() & 0x7fffffff));
-				s_bNoticeRandomSeeded = true;
-			}
+			static CNoticeRandomStream s_noticeRandom;
 			cacheEntry.m_flHazard = -logf(s_noticeRandom.RandomFloat(minUniform, 1.0f));
 			cacheEntry.m_bNoticed = false;
 		}
@@ -1385,8 +1420,8 @@ bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) cons
 
 		if (!cacheEntry.m_bNoticed)
 		{
-			// The obscured ratio is the chance to stay unnoticed through one second in view.
-			const float rate = obscuredRatio < 1.0f ? -logf(Max(obscuredRatio, FLT_MIN)) : 0.0f;
+			// The cloak ratio is the chance to stay unnoticed through one second in view; fog is rolled apart below.
+			const float rate = cloakRatio < 1.0f ? -logf(Max(cloakRatio, FLT_MIN)) : 0.0f;
 			cacheEntry.m_flHazard -= rate * dt;
 			cacheEntry.m_bNoticed = cloakRatio <= 0.0f || cacheEntry.m_flHazard <= 0.0f;
 		}
@@ -1401,6 +1436,8 @@ bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) cons
 		// Higher range = higher potential rolls = higher likelihood of exceeding the obscuredRatio (detect the target).
 		const float fBotDifficultyRange = IsBot() ? GetBotNoticeSkillRatio() : 1.0f;
 
+		// CBasePlayer's non-const EyePosition hides the const overload; the base one still calls it virtually.
+		const float fogRatio = GetFogObscuredRatio(CBaseCombatCharacter::EyePosition().DistTo(targetPlayer->WorldSpaceCenter()));
 		cacheEntry.m_bRollHidden = RandomFloat(0.0f, fBotDifficultyRange) < fogRatio;
 		cacheEntry.m_flRollTime = now;
 	}
@@ -1508,15 +1545,11 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		return 0.0f;
 	}
 
-	float flLight = 0.5f; // no nav area nearby: assume middling light
-	if (TheNavMesh)
+	float flLight = 0.5f; // not yet on the mesh: assume middling light
+	const CNavArea *area = target->GetLastKnownArea();
+	if (area)
 	{
-		const float navLightRadius = 500.0f;
-		CNavArea *area = TheNavMesh->GetNearestNavArea(target->GetAbsOrigin(), true, navLightRadius);
-		if (area)
-		{
-			flLight = Clamp(area->GetLightIntensity(target->GetAbsOrigin()), 0.0f, 1.0f);
-		}
+		flLight = Clamp(area->GetLightIntensity(target->GetAbsOrigin()), 0.0f, 1.0f);
 	}
 
 	// Night vision lifts dark areas for the observer, short of full light.
