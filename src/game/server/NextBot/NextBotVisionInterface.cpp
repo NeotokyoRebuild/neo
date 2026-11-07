@@ -755,8 +755,9 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	bool canSeeThroughSmoke = false;
 	if (auto player = ToNEOPlayer(GetBot()->GetEntity()))
 	{
-		// Bot has thermal vision as a Support class
-		canSeeThroughSmoke = (player->GetClass() == NEO_CLASS_SUPPORT);
+		// A Support sees through smoke always; with thermal off the first trace
+		// still stops at smoke so the hit can turn thermal on
+		canSeeThroughSmoke = (player->GetClass() == NEO_CLASS_SUPPORT && player->m_bInVision);
 	}
 	if (!canSeeThroughSmoke)
 	{
@@ -824,9 +825,17 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	if ( result.DidHit() )
 	{
 		// Check if first center traceline hit any blocking smoke
-		if (neo_bot_path_reservation_enable.GetBool()
-			&& result.m_pEnt
-			&& FStrEq(result.m_pEnt->GetClassname(), SMOKELINEOFSIGHTBLOCKER_ENTITYNAME))
+		const bool hitSmoke = result.m_pEnt && FStrEq(result.m_pEnt->GetClassname(), SMOKELINEOFSIGHTBLOCKER_ENTITYNAME);
+		const bool supportInSmoke = hitSmoke && neoBot && neoBot->GetClass() == NEO_CLASS_SUPPORT;
+		ScopedSmokeLOS supportSmokeGuard(canSeeThroughSmoke || supportInSmoke);
+		if (supportInSmoke)
+		{
+			// an active blocker's next think is its removal
+			neoBot->OnSmokeBlockedSight(result.m_pEnt->GetNextThink());
+			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), firstPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+		}
+
+		if (neo_bot_path_reservation_enable.GetBool() && hitSmoke && !supportInSmoke)
 		{
 			auto pSmoke = static_cast<CNEOSmokeLineOfSightBlocker*>(result.m_pEnt);
 			// Assume that threat could be hiding inside navarea where smoke blocked sight
@@ -850,7 +859,10 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 			}
 		}
 
-		UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), secondPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+		if ( result.DidHit() )
+		{
+			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), secondPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+		}
 
 		if ( result.DidHit() )
 		{

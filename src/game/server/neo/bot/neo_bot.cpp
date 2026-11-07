@@ -898,7 +898,76 @@ void CNEOBot::Update()
 		}
 		return;
 	}
+
+	UpdateVisionMode();
 	BaseClass::Update();
+}
+
+//-----------------------------------------------------------------------------------------------------
+// A bot turns its vision mode on in dark areas and off again in lit ones, from the light where it stands.
+// A Support also keeps thermal on while smoke that blocked its sight lasts.
+void CNEOBot::UpdateVisionMode(void)
+{
+	constexpr float VISION_CHECK_INTERVAL = 1.0f;
+	// a wide band between the on and off levels keeps the bot from flickering along the edge of a dark area
+	constexpr float VISION_ON_LIGHT = 0.25f;
+	constexpr float VISION_OFF_LIGHT = 0.45f;
+	// after each switch the bot keeps the new state for a while, so spectators do not see it flicker
+	constexpr float VISION_HOLD = 5.0f;
+
+	if (!IsAlive() || GetClass() == NEO_CLASS_VIP || !m_visionHoldTimer.IsElapsed())
+	{
+		return;
+	}
+
+	// the player toggles vision only on a fresh press, as with cloak
+	if (m_prevInputButtons & IN_VISION)
+	{
+		return;
+	}
+
+	bool wantVision = true;
+	if (GetClass() == NEO_CLASS_SUPPORT && !m_smokeThermalTimer.IsElapsed())
+	{
+		// re-check the light as soon as the smoke hold ends
+		m_visionArea = nullptr;
+	}
+	else
+	{
+		if (!m_visionCheckTimer.IsElapsed())
+		{
+			return;
+		}
+
+		CNavArea *area = GetLastKnownArea();
+		if (!area || area == m_visionArea)
+		{
+			return;
+		}
+
+		m_visionArea = area;
+		m_visionCheckTimer.Start(VISION_CHECK_INTERVAL);
+		const float light = area->GetLightIntensity(GetAbsOrigin());
+		wantVision = m_bInVision ? light <= VISION_OFF_LIGHT : light < VISION_ON_LIGHT;
+	}
+
+	if (wantVision == m_bInVision)
+	{
+		return;
+	}
+
+	m_inputButtons |= IN_VISION;
+	m_visionHoldTimer.Start(VISION_HOLD);
+}
+
+void CNEOBot::OnSmokeBlockedSight(float smokeExpireTime)
+{
+	// keep thermal on for as long as the smoke that blocked sight lasts
+	const float smokeLeft = smokeExpireTime - gpGlobals->curtime;
+	if (smokeLeft > m_smokeThermalTimer.GetRemainingTime())
+	{
+		m_smokeThermalTimer.Start(smokeLeft);
+	}
 }
 
 //-----------------------------------------------------------------------------------------------------
