@@ -1437,6 +1437,8 @@ set(UNITY_SOURCE_NEO_SHARED
 
 set(UNITY_SOURCE_NEO_SRC_SERVER
     neo/neo_bloom_controller.cpp
+    neo/neo_bsp_lighting.cpp
+    neo/neo_bsp_lighting.h
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_game_config.cpp
