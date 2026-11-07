@@ -72,8 +72,7 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
-	if ( threat )
+	if ( const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true) )
 	{
 		const Vector& ghosterPos = pGhostCarrier->GetAbsOrigin();
 		const Vector& threatPos = threat->GetLastKnownPosition();
