@@ -1443,7 +1443,9 @@ constexpr float NOTICE_STAND_RATE = 0.114f;
 constexpr float NOTICE_LIGHT_RATE = 0.599198f;
 constexpr float NOTICE_MOTION_RATE = 10.0f;
 constexpr float NOTICE_NEAR_RATE = 1.2f;
-constexpr float NOTICE_BLOOD_RATE = 1.2f;
+constexpr float NOTICE_BLOOD_RATE = 0.2f;
+// Blood on a moving target reads as splatter floating across the room, so it multiplies the motion cue
+constexpr float NOTICE_BLOOD_MOTION = 4.0f;
 // Past a few hits, more splatter adds little to what an observer sees
 constexpr int NOTICE_BLOOD_FULL_INJURIES = 3;
 // Speed at which the motion cue is half strength
@@ -1556,15 +1558,16 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	const float minRange = 1.0f;
 	const float nearness = Clamp(Square(NOTICE_NEAR_RANGE / Max(flRange, minRange)) - 1.0f, 0.0f, 1.0f);
 	const float standing = (target->GetFlags() & FL_DUCKING) ? 0.0f : 1.0f;
-	// Blood decals cover the cloak material, but only show where there is light to see them.
+	// Blood decals cover the cloak material, but they are small and only show where there is light to see them.
 	const float blood = lit * Min(target->GetBotDetectableBleedingInjuryEvents(), NOTICE_BLOOD_FULL_INJURIES)
 		/ static_cast<float>(NOTICE_BLOOD_FULL_INJURIES);
 
 	// Each cue the target gives away adds its own rate; a target that gives away none keeps only the quiet rate.
 	const float quietRate = sv_neo_bot_notice_quiet_rate.GetFloat();
 	const float scale = sv_neo_bot_notice_rate.GetFloat() * difficulty * gaze * range;
+	const float bloodyMotion = motion * (1.0f + NOTICE_BLOOD_MOTION * blood);
 	float rate = scale * (quietRate + NOTICE_STAND_RATE * standing + NOTICE_LIGHT_RATE * lit
-		+ NOTICE_MOTION_RATE * motion + NOTICE_NEAR_RATE * nearness + NOTICE_BLOOD_RATE * blood);
+		+ NOTICE_MOTION_RATE * bloodyMotion + NOTICE_NEAR_RATE * nearness + NOTICE_BLOOD_RATE * blood);
 
 	if (cloaked)
 	{
@@ -1581,7 +1584,7 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 
 		// The cloak hides part of the light, motion and nearness cues.
 		const float cloakRate = scale * vision * (quietRate + NOTICE_STAND_RATE * standing
-			+ CLOAK_LIGHT_SHOWS * NOTICE_LIGHT_RATE * lit + CLOAK_MOTION_SHOWS * NOTICE_MOTION_RATE * motion
+			+ CLOAK_LIGHT_SHOWS * NOTICE_LIGHT_RATE * lit + CLOAK_MOTION_SHOWS * NOTICE_MOTION_RATE * bloodyMotion
 			+ CLOAK_NEAR_SHOWS * NOTICE_NEAR_RATE * nearness + NOTICE_BLOOD_RATE * blood);
 
 		// A cloak never makes a target easier to notice than it would be uncloaked.
