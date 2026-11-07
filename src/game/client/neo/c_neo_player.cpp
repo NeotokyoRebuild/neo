@@ -853,7 +853,9 @@ void C_NEO_Player::CalculateSpeed(void)
 {
 	float speed = GetNormSpeed();
 
-	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
+	// C_BasePlayer::GetActiveWeapon returns the observer target's weapon while spectating in eye.
+	// The server only ever scales by this player's own weapon, so read that one to keep m_flMaxspeed predicted.
+	if (auto pNeoWep = assert_cast<CNEOBaseCombatWeapon*>(C_BaseCombatCharacter::GetActiveWeapon()))
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
