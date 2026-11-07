@@ -133,6 +133,8 @@ public:
 
 	bool IsCloakEnabled(void) const;
 	float GetCloakPower(void) const;
+	// smoke blocked a line of sight this bot traced; a Support answers with thermal vision
+	void OnSmokeBlockedSight(float smokeExpireTime);
 	void EnableCloak(float threshold);
 	void DisableCloak(void);
 
@@ -466,6 +468,12 @@ public:
 
 private:
 	void ToggleCloak(void);
+	void UpdateVisionMode(void);
+
+	CNavArea *m_visionArea = nullptr;
+	CountdownTimer m_visionCheckTimer;
+	CountdownTimer m_visionHoldTimer;
+	CountdownTimer m_smokeThermalTimer;
 
 	CNEOBotSuppressiveFire m_suppressiveFire;
 

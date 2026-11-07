@@ -188,6 +188,8 @@ public:
 	bool IsAllowedToSuperJump(void);
 
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
+	// the classes whose vision mode the client draws as night vision (DoNEOVision)
+	bool HasNightVision() const { return GetClass() == NEO_CLASS_RECON || GetClass() == NEO_CLASS_JUGGERNAUT; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotCloakStateDisrupted() const { return !m_botThermOpticCamoDisruptedTimer.IsElapsed(); }
 	bool GetBotPauseFiring() const { return !m_botPauseFiringTimer.IsElapsed(); }
