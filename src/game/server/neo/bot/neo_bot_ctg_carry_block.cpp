@@ -44,6 +44,12 @@ namespace NEOBotCarryBlock
 	static constexpr float CARRY_BLOCK_MAX_FLOOD_RANGE = 2400.0f;
 	static constexpr int CARRY_BLOCK_MAX_FLOOD_AREAS = 1500;
 
+	// All floods of one evaluation share this many areas, which bounds its total cost on a dense mesh
+	static constexpr int CARRY_BLOCK_MAX_EVAL_AREAS = 2000;
+
+	// The horizon is cut into this many stretches, each bounded by a sphere, to prune a flood early
+	static constexpr int CARRY_BLOCK_PRUNE_CHUNKS = 4;
+
 	// A numbers lead this large sends the carrier for the zone whatever the enemies do
 	static constexpr int CARRY_BLOCK_BREAK_LEAD = 2;
 
@@ -65,6 +71,15 @@ namespace NEOBotCarryBlock
 		Vector vecKnownPos;
 		float flDistSq;
 		float flSinceKnown;
+	};
+
+	// A stretch of the horizon: a sphere around its area centers, and the most travel an enemy may have
+	// at any of them and still intercept
+	struct CarryBlockChunk_t
+	{
+		Vector vecCenter;
+		float flRadius;
+		float flMaxReach;
 	};
 
 	struct CarryBlockState_t
@@ -91,6 +106,8 @@ namespace NEOBotCarryBlock
 		int iStart;
 		int iHorizon;
 		float flMaxSlack;
+		CarryBlockChunk_t chunks[CARRY_BLOCK_PRUNE_CHUNKS];
+		int nChunks;
 		int nInterceptors;
 		int iFirstInterceptor;
 		int nMicroseconds;
@@ -389,14 +406,77 @@ namespace NEOBotCarryBlock
 		return true;
 	}
 
+	// Splits the horizon route areas into consecutive stretches for the flood's pruning
+	static void BuildPruneChunks( CarryBlockState_t &state )
+	{
+		const int iFirst = state.iStart + 1;
+		const int nHorizonAreas = state.iHorizon - state.iStart;
+		state.nChunks = Min( CARRY_BLOCK_PRUNE_CHUNKS, nHorizonAreas );
+
+		for ( int k = 0; k < state.nChunks; ++k )
+		{
+			const int iBegin = iFirst + ( nHorizonAreas * k ) / state.nChunks;
+			const int iEnd = iFirst + ( nHorizonAreas * ( k + 1 ) ) / state.nChunks;
+
+			Vector vecMins = state.route.areas[iBegin]->GetCenter();
+			Vector vecMaxs = vecMins;
+			for ( int i = iBegin + 1; i < iEnd; ++i )
+			{
+				const Vector &vecCenter = state.route.areas[i]->GetCenter();
+				vecMins = vecMins.Min( vecCenter );
+				vecMaxs = vecMaxs.Max( vecCenter );
+			}
+
+			CarryBlockChunk_t &chunk = state.chunks[k];
+			chunk.vecCenter = ( vecMins + vecMaxs ) * 0.5f;
+			chunk.flRadius = 0.0f;
+			for ( int i = iBegin; i < iEnd; ++i )
+			{
+				chunk.flRadius = Max( chunk.flRadius, chunk.vecCenter.DistTo( state.route.areas[i]->GetCenter() ) );
+			}
+
+			// Carrier travel grows along the route, so the stretch's last area allows the most
+			chunk.flMaxReach = GetCarrierTravel( state, iEnd - 1 ) + state.flMaxSlack;
+		}
+	}
+
+	// Travel between area centers is never shorter than the straight line, so an enemy this far along
+	// at this position cannot reach any horizon area in time, whichever way it goes on
+	static bool CanStillIntercept( const CarryBlockState_t &state, const Vector &vecPos, float flTravel )
+	{
+		for ( int k = 0; k < state.nChunks; ++k )
+		{
+			const CarryBlockChunk_t &chunk = state.chunks[k];
+			const float flReach = chunk.flMaxReach - flTravel + chunk.flRadius;
+			if ( ( flReach >= 0.0f ) && ( vecPos.DistToSqr( chunk.vecCenter ) <= Square( flReach ) ) )
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	//---------------------------------------------------------------------------------------------
 	// One enemy's flood toward the route horizon. It stops on the first horizon route area the enemy
-	// reaches within the allowed slack, which proves it an interceptor, or at the area cap.
+	// reaches within the allowed slack, which proves it an interceptor, or at the area cap,
+	// and never expands an area from which no horizon area can be reached in time.
 	class CCarryBlockFlood : public CNEOBotTraversableFlood
 	{
 	public:
-		CCarryBlockFlood( CNEOBot *me, const CarryBlockState_t &state )
-			: CNEOBotTraversableFlood( me ), m_state( state ) {}
+		CCarryBlockFlood( CNEOBot *me, const CarryBlockState_t &state, int nMaxAreas )
+			: CNEOBotTraversableFlood( me ), m_state( state ), m_nMaxAreas( nMaxAreas ) {}
+
+		virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) override
+		{
+			const float flTravel = travelDistanceSoFar + ( adjArea->GetCenter() - currentArea->GetCenter() ).Length();
+			if ( !CanStillIntercept( m_state, adjArea->GetCenter(), flTravel ) )
+			{
+				return false;
+			}
+
+			return CNEOBotTraversableFlood::ShouldSearch( adjArea, currentArea, travelDistanceSoFar );
+		}
 
 		virtual bool operator()( CNavArea *area, CNavArea *priorArea, float travelDistanceSoFar ) override
 		{
@@ -410,7 +490,7 @@ namespace NEOBotCarryBlock
 				return false;
 			}
 
-			if ( m_nAreas >= CARRY_BLOCK_MAX_FLOOD_AREAS )
+			if ( m_nAreas >= m_nMaxAreas )
 			{
 				m_bCapped = true;
 				return false;
@@ -425,6 +505,7 @@ namespace NEOBotCarryBlock
 
 	private:
 		const CarryBlockState_t &m_state;
+		const int m_nMaxAreas;
 	};
 
 	//---------------------------------------------------------------------------------------------
@@ -545,6 +626,48 @@ namespace NEOBotCarryBlock
 		return true;
 	}
 
+	// Counts one enemy in if its flood proves it an interceptor
+	static void FloodEnemy( CNEOBot *pCarrier, CarryBlockState_t &state, const CarryBlockEnemy_t &enemy )
+	{
+		// The kill feed may have named it since the evaluation started
+		CBasePlayer *pEnemy = UTIL_PlayerByIndex( enemy.iEnemy );
+		if ( !pEnemy || IsNamedDead( pEnemy ) )
+		{
+			return;
+		}
+
+		// Too far from every horizon area to make it in time: no flood needed
+		if ( !CanStillIntercept( state, enemy.pArea->GetCenter(), 0.0f ) )
+		{
+			return;
+		}
+
+		const int nMaxAreas = Min( CARRY_BLOCK_MAX_FLOOD_AREAS, CARRY_BLOCK_MAX_EVAL_AREAS - state.nAreas );
+		if ( nMaxAreas <= 0 )
+		{
+			state.bCapped = true;
+			return;
+		}
+
+		const float flLimit = Min( GetCarrierTravel( state, state.iHorizon ) + state.flMaxSlack, CARRY_BLOCK_MAX_FLOOD_RANGE );
+
+		CCarryBlockFlood flood( pCarrier, state, nMaxAreas );
+		SearchSurroundingAreas( enemy.pArea, flood, flLimit );
+
+		state.nAreas += flood.m_nAreas;
+		state.bCapped |= flood.m_bCapped;
+		if ( !flood.m_bIntercepts )
+		{
+			return;
+		}
+
+		++state.nInterceptors;
+		if ( state.iFirstInterceptor < 0 )
+		{
+			state.iFirstInterceptor = enemy.iEnemy;
+		}
+	}
+
 	// Floods the next counted enemy, and completes the evaluation after the last one
 	static void FloodNextEnemy( CNEOBot *pCarrier, CarryBlockState_t &state )
 	{
@@ -554,26 +677,7 @@ namespace NEOBotCarryBlock
 		const CarryBlockEnemy_t &enemy = state.enemies[state.iCursor];
 		++state.iCursor;
 
-		// The kill feed may have named it since the evaluation started
-		CBasePlayer *pEnemy = UTIL_PlayerByIndex( enemy.iEnemy );
-		if ( pEnemy && !IsNamedDead( pEnemy ) )
-		{
-			const float flLimit = Min( GetCarrierTravel( state, state.iHorizon ) + state.flMaxSlack, CARRY_BLOCK_MAX_FLOOD_RANGE );
-
-			CCarryBlockFlood flood( pCarrier, state );
-			SearchSurroundingAreas( enemy.pArea, flood, flLimit );
-
-			state.nAreas += flood.m_nAreas;
-			state.bCapped |= flood.m_bCapped;
-			if ( flood.m_bIntercepts )
-			{
-				++state.nInterceptors;
-				if ( state.iFirstInterceptor < 0 )
-				{
-					state.iFirstInterceptor = enemy.iEnemy;
-				}
-			}
-		}
+		FloodEnemy( pCarrier, state, enemy );
 
 		const int nMicroseconds = GetElapsedMicroseconds( timer );
 		state.nMicroseconds += nMicroseconds;
@@ -658,6 +762,7 @@ namespace NEOBotCarryBlock
 		// A held block gets the band and longer-lived knowledge
 		const float flFreshness = state.bBlocked ? CARRY_BLOCK_STAY_FRESHNESS : CARRY_BLOCK_ENTRY_FRESHNESS;
 		state.flMaxSlack = state.bBlocked ? CARRY_BLOCK_SLACK_BAND : 0.0f;
+		BuildPruneChunks( state );
 
 		CollectCountedEnemies( pCarrier, flFreshness, state.enemies );
 
