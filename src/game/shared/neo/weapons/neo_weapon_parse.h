@@ -49,6 +49,7 @@ struct ReloadPhaseRow_t
 	ReloadPhase_t phase;
 	float flAmmo;	// seconds from the sequence start
 	ReloadSoundPiece_t sounds[RELOAD_SOUNDS_PER_ROW];
+	char szResume[RELOAD_SEQUENCE_NAME_MAX];	// the sequence that resumes a reload interrupted after this phase, or empty
 };
 
 // The phases one reload sequence carries, in order

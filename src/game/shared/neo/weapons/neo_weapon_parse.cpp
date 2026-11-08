@@ -51,7 +51,7 @@ static ReloadPhase_t ReloadPhaseFromName(const char *pszName)
 	return RELOAD_PHASE_NONE;
 }
 
-// "ReloadPhases" { "<sequence>" { "<phase>" { "ammo" "s" "sound" "s" "sound_name" "name" } ... } ... }
+// "ReloadPhases" { "<sequence>" { "<phase>" { "ammo" "s" "sound" "s" "sound_name" "name" "resume" "sequence" } ... } ... }
 void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 {
 	m_iNumReloadTables = 0;
@@ -89,6 +89,7 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 				row.sounds[j].flAt = pRow->GetFloat(RELOAD_SOUND_KEYS[j][1]);
 				V_strncpy(row.sounds[j].szName, pRow->GetString(RELOAD_SOUND_KEYS[j][0]), sizeof(row.sounds[j].szName));
 			}
+			V_strncpy(row.szResume, pRow->GetString("resume"), sizeof(row.szResume));
 		}
 	}
 }

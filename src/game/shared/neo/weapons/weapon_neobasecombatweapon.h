@@ -315,6 +315,7 @@ private:
 	void StartReloadPhases(int iTable);
 	void RunReloadPhases();
 	void FinishReloadPhase(ReloadPhase_t phase);
+	const char *FindResumeSequence() const;
 	bool ResumeReload();
 	void StopReloadSoundPieces();
 	void EmitReloadSoundPiece(const char *pszSound);

@@ -446,9 +446,6 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 }
 
 
-// The shipped reload sequence
-static constexpr const char *VM_SEQ_RELOAD = "reload";
-
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	const bool bEmptyReload = UsesClipsForAmmo1() && m_iClip1 <= 0 &&
@@ -474,8 +471,10 @@ bool CNEOBaseCombatWeapon::Reload( void )
 
 	if (IsReloadPhaseSystemEnabled())
 	{
+		// the phases are those of the sequence the reload plays, such as reload or reloadempty
+		CBaseViewModel *pVM = ReloadViewModel();
 		m_nReloadPhase = RELOAD_PHASE_NONE;
-		StartReloadPhases(GetNEOWpnData().FindReloadTable(VM_SEQ_RELOAD));
+		StartReloadPhases(pVM ? GetNEOWpnData().FindReloadTable(pVM->GetSequenceName(pVM->GetSequence())) : -1);
 	}
 
 	return true;
@@ -511,23 +510,36 @@ bool CNEOBaseCombatWeapon::Reload( void )
 // Each reload sound piece's file starts this long before its first transient
 static constexpr float RELOAD_SOUND_LEAD = 0.02f;
 
-// The viewmodel sequence that resumes a reload interrupted after the phase finished last; nullptr: none
-// (resume sequences carry no activity, so they are picked by name)
-static const char *ResumeSequenceName(int iPhaseDone)
-{
-	switch (iPhaseDone)
-	{
-	case RELOAD_PHASE_UNLOADED:
-		// the magazine is out: the draw itself brings the fresh one up
-		return "resume_after_1_unload_empty";
-	default:
-		return nullptr;
-	}
-}
-
 bool CNEOBaseCombatWeapon::IsReloadPhaseSystemEnabled() const
 {
 	return m_bReloadExperimentalEnabled && GetNEOWpnData().m_iNumReloadTables > 0;
+}
+
+// The viewmodel sequence that resumes the reload interrupted now, from the phase table of the playing sequence;
+// nullptr: none (resume sequences carry no activity, so they are picked by name)
+const char *CNEOBaseCombatWeapon::FindResumeSequence() const
+{
+	const ReloadPhase_t phase = static_cast<ReloadPhase_t>(m_nReloadPhase.Get());
+	if (phase == RELOAD_PHASE_NONE || m_nReloadTable < 0)
+	{
+		return nullptr;
+	}
+
+	// a sequence that starts after the phase is itself the resume from it, interrupted again before its first phase
+	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[m_nReloadTable];
+	if (table.iNumRows > 0 && table.rows[0].phase > phase)
+	{
+		return table.szSequence;
+	}
+
+	for (int i = 0; i < table.iNumRows; ++i)
+	{
+		if (table.rows[i].phase == phase)
+		{
+			return table.rows[i].szResume[0] ? table.rows[i].szResume : nullptr;
+		}
+	}
+	return nullptr;
 }
 
 // Time the phases of a reload sequence that starts now (-1: a sequence without a table finishes none)
@@ -598,12 +610,13 @@ void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 // as a cancelled reload does; returns whether the reload resumed
 bool CNEOBaseCombatWeapon::ResumeReload()
 {
-	const char *pszName = ResumeSequenceName(m_nReloadPhase);
+	const char *pszName = FindResumeSequence();
 	const int iTable = pszName ? GetNEOWpnData().FindReloadTable(pszName) : -1;
 	const int iSequence = (iTable >= 0) ? LookupReloadSequence(pszName) : -1;
 	if (iSequence < 0)
 	{
 		m_nReloadPhase = RELOAD_PHASE_NONE;
+		m_nReloadTable = -1;
 		return false;
 	}
 
@@ -648,23 +661,20 @@ int CNEOBaseCombatWeapon::LookupReloadSequence(const char *pszName) const
 void CNEOBaseCombatWeapon::StopReloadSoundPieces()
 {
 	CBaseCombatCharacter *pOwner = GetOwner();
-	if (!pOwner)
+	if (!pOwner || m_nReloadTable < 0)
 	{
 		return;
 	}
 
-	const CNEOWeaponInfo &info = GetNEOWpnData();
-	for (int t = 0; t < info.m_iNumReloadTables; ++t)
+	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[m_nReloadTable];
+	for (int i = 0; i < table.iNumRows; ++i)
 	{
-		for (int i = 0; i < info.m_reloadTables[t].iNumRows; ++i)
+		for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
 		{
-			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
+			const char *pszName = table.rows[i].sounds[j].szName;
+			if (pszName[0])
 			{
-				const char *pszName = info.m_reloadTables[t].rows[i].sounds[j].szName;
-				if (pszName[0])
-				{
-					StopSound(pOwner->entindex(), pszName);
-				}
+				StopSound(pOwner->entindex(), pszName);
 			}
 		}
 	}
@@ -721,7 +731,7 @@ void CNEOBaseCombatWeapon::FinishReload(void)
 	// the magazine is in: the phases up to the load are done, and a switch from here leaves nothing to resume
 	if (IsReloadPhaseSystemEnabled())
 	{
-		m_nReloadPhase = Max(m_nReloadPhase.Get(), static_cast<int>(RELOAD_PHASE_LOADED));
+		m_nReloadPhase = Max(static_cast<ReloadPhase_t>(m_nReloadPhase.Get()), RELOAD_PHASE_LOADED);
 	}
 
 	CBaseCombatCharacter* pOwner = GetOwner();
@@ -842,15 +852,15 @@ float CNEOBaseCombatWeapon::GetPenetration() const
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-	// Only a phase that a sequence resumes from outlasts the switch
+	// Only a phase that a sequence resumes from outlasts the switch, with the table that names the resume
 	if (IsReloadPhaseSystemEnabled())
 	{
-		if (!ResumeSequenceName(m_nReloadPhase))
+		StopReloadSoundPieces();
+		if (!FindResumeSequence())
 		{
 			m_nReloadPhase = RELOAD_PHASE_NONE;
+			m_nReloadTable = -1;
 		}
-		m_nReloadTable = -1;
-		StopReloadSoundPieces();
 	}
 
 	return BaseClass::Holster(pSwitchingTo);
