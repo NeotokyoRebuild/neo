@@ -24,12 +24,87 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 	m_flPenetration = 0.f;
 	m_bDropOnDeath = true;
 	iAimFOV = 0;
+	m_iNumReloadTables = 0;
 
 	m_flVMFov = m_flVMAimFov = 0.f;
 	m_vecVMPosOffset = m_vecVMAimPosOffset = vec3_origin;
 	m_angVMAngOffset = m_angVMAimAngOffset = vec3_angle;
 }
 
+
+// Weapon-script names of the reload phases, by ReloadPhase_t
+static constexpr const char *RELOAD_PHASE_NAMES[RELOAD_PHASE_COUNT] = { "", "1_unload", "2_load", "3_cycle" };
+// Weapon-script keys of a phase's sound pieces: { sound name, time }
+static constexpr const char *RELOAD_SOUND_KEYS[RELOAD_SOUNDS_PER_ROW][2] = {
+	{ "sound_name", "sound" }, { "sound2_name", "sound2" }, { "sound3_name", "sound3" }
+};
+
+static ReloadPhase_t ReloadPhaseFromName(const char *pszName)
+{
+	for (int i = RELOAD_PHASE_UNLOADED; i < RELOAD_PHASE_COUNT; ++i)
+	{
+		if (V_stricmp(pszName, RELOAD_PHASE_NAMES[i]) == 0)
+		{
+			return static_cast<ReloadPhase_t>(i);
+		}
+	}
+	return RELOAD_PHASE_NONE;
+}
+
+// "ReloadPhases" { "<sequence>" { "<phase>" { "ammo" "s" "sound" "s" "sound_name" "name" "resume" "sequence" } ... } ... }
+void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
+{
+	m_iNumReloadTables = 0;
+	if (!pBlock)
+	{
+		return;
+	}
+
+	if (!pBlock->GetFirstTrueSubKey())
+	{
+		Warning("%s: \"ReloadPhases\" is empty (is its neoAssets #base file missing?); reloading without phases\n", szClassName);
+		return;
+	}
+
+	for (KeyValues *pSeq = pBlock->GetFirstTrueSubKey(); pSeq && m_iNumReloadTables < RELOAD_PHASE_TABLES_MAX; pSeq = pSeq->GetNextTrueSubKey())
+	{
+		ReloadPhaseTable_t &table = m_reloadTables[m_iNumReloadTables++];
+		V_strncpy(table.szSequence, pSeq->GetName(), sizeof(table.szSequence));
+		table.iNumRows = 0;
+
+		for (KeyValues *pRow = pSeq->GetFirstTrueSubKey(); pRow && table.iNumRows < RELOAD_PHASE_ROWS_MAX; pRow = pRow->GetNextTrueSubKey())
+		{
+			const ReloadPhase_t phase = ReloadPhaseFromName(pRow->GetName());
+			if (phase == RELOAD_PHASE_NONE)
+			{
+				Warning("%s: unknown reload phase \"%s\" in \"%s\"\n", szClassName, pRow->GetName(), table.szSequence);
+				continue;
+			}
+
+			ReloadPhaseRow_t &row = table.rows[table.iNumRows++];
+			row.phase = phase;
+			row.flAmmo = pRow->GetFloat("ammo");
+			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
+			{
+				row.sounds[j].flAt = pRow->GetFloat(RELOAD_SOUND_KEYS[j][1]);
+				V_strncpy(row.sounds[j].szName, pRow->GetString(RELOAD_SOUND_KEYS[j][0]), sizeof(row.sounds[j].szName));
+			}
+			V_strncpy(row.szResume, pRow->GetString("resume"), sizeof(row.szResume));
+		}
+	}
+}
+
+int CNEOWeaponInfo::FindReloadTable(const char *pszSequence) const
+{
+	for (int i = 0; i < m_iNumReloadTables; ++i)
+	{
+		if (V_stricmp(m_reloadTables[i].szSequence, pszSequence) == 0)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
 
 void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName )
 {
@@ -39,6 +114,7 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 	m_iBullets = pKeyValuesData->GetInt( "Bullets", 1 );
 	m_flCycleTime = pKeyValuesData->GetFloat( "CycleTime", 0.15 );
 	m_flReloadReadyBeforeEnd = pKeyValuesData->GetFloat( "ReloadReadyBeforeEnd", 0.0f );
+	ParseReloadPhases(pKeyValuesData->FindKey("ReloadPhases"));
 
 	const char *notFoundStr = "notfound";
 	Q_strncpy(szViewModel2, pKeyValuesData->GetString("team2viewmodel", notFoundStr), MAX_WEAPON_STRING);
