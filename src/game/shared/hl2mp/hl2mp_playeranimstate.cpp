@@ -80,6 +80,10 @@ CHL2MPPlayerAnimState* CreateHL2MPPlayerAnimState( CHL2MP_Player *pPlayer )
 CHL2MPPlayerAnimState::CHL2MPPlayerAnimState()
 {
 	m_pHL2MPPlayer = NULL;
+#ifdef NEO
+	m_iReloadGestureSequence = -1;
+	m_flReloadGestureStartCycle = 0.0f;
+#endif
 
 	// Don't initialize HL2MP specific variables here. Init them in InitHL2MPAnimState()
 }
@@ -93,6 +97,10 @@ CHL2MPPlayerAnimState::CHL2MPPlayerAnimState( CBasePlayer *pPlayer, MultiPlayerM
 : CMultiPlayerAnimState( pPlayer, movementData )
 {
 	m_pHL2MPPlayer = NULL;
+#ifdef NEO
+	m_iReloadGestureSequence = -1;
+	m_flReloadGestureStartCycle = 0.0f;
+#endif
 
 	// Don't initialize HL2MP specific variables here. Init them in InitHL2MPAnimState()
 }
@@ -182,6 +190,7 @@ void CHL2MPPlayerAnimState::ComputeSequences(CStudioHdr* pStudioHdr)
 	// The groundspeed interpolator uses the main sequence info.
 	UpdateInterpolators();
 	ComputeGestureSequence(pStudioHdr);
+	UpdateReloadGesture();
 }
 
 #endif //NEO
@@ -343,6 +352,7 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 		{
 #ifdef NEO
 		AddToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, CalcReloadSequence(), true);
+		StartReloadGesture(nData);
 #else
 			// Weapon reload.
 			if ( GetBasePlayer()->GetFlags() & FL_DUCKING )
@@ -1013,3 +1023,91 @@ void CHL2MPPlayerAnimState::DebugShowAnimStateFull(int iStartLine)
 
 	AnimStateLog("--------------------------------------------\n\n");
 }
+
+#ifdef NEO
+// Start a gesture part way through its sequence, as AddVCDSequenceToGestureSlot does for scene gestures
+void CHL2MPPlayerAnimState::SetGestureSlotCycle(int iGestureSlot, float flCycle)
+{
+	GestureSlot_t &slot = m_aGestureSlots[iGestureSlot];
+	if (!slot.m_pAnimLayer)
+	{
+		return;
+	}
+
+	slot.m_pAnimLayer->m_flCycle = flCycle;
+	slot.m_pAnimLayer->m_flPrevCycle = flCycle;
+#ifdef CLIENT_DLL
+	if (CBasePlayer *pPlayer = GetBasePlayer())
+	{
+		pPlayer->m_flOverlayPrevEventCycle[iGestureSlot] = flCycle;
+	}
+#endif
+}
+
+static constexpr float RELOAD_GESTURE_MS_PER_SECOND = 1000.0f;
+
+// The player models' reload gestures have no blend of their own, so a gesture started part way
+// blends in over this long to hide the jump in pose
+static constexpr float RELOAD_GESTURE_BLEND_TIME = 0.2f;
+
+int CHL2MPPlayerAnimState::ResumedReloadGestureData(float flDuration)
+{
+	return static_cast<int>(Max(flDuration, 0.0f) * RELOAD_GESTURE_MS_PER_SECOND);
+}
+
+// Fit the reload gesture just added to a resumed reload shorter than the gesture: play only the gesture's end, for as
+// long as the resume lasts. An event without data plays the whole gesture
+void CHL2MPPlayerAnimState::StartReloadGesture(int nData)
+{
+	m_iReloadGestureSequence = -1;
+
+	CBasePlayer *pPlayer = GetBasePlayer();
+	const GestureSlot_t &slot = m_aGestureSlots[GESTURE_SLOT_ATTACK_AND_RELOAD];
+	if (nData <= 0 || !pPlayer || !slot.m_bActive || !slot.m_pAnimLayer)
+	{
+		return;
+	}
+
+	// A reload resumed by the draw starts with the weapon change, which would otherwise clear the gesture
+	m_hActiveWeapon = pPlayer->GetActiveWeapon();
+
+	const int iSequence = slot.m_pAnimLayer->m_nSequence;
+	const float flDuration = nData / RELOAD_GESTURE_MS_PER_SECOND;
+	const float flCycles = flDuration * pPlayer->GetSequenceCycleRate(pPlayer->GetModelPtr(), iSequence);
+	if (flCycles >= 1.0f)
+	{
+		return;
+	}
+
+	m_flReloadGestureStartCycle = 1.0f - flCycles;
+	m_iReloadGestureSequence = iSequence;
+	SetGestureSlotCycle(GESTURE_SLOT_ATTACK_AND_RELOAD, m_flReloadGestureStartCycle);
+}
+
+// Blend a late-started reload gesture in from its start cycle
+void CHL2MPPlayerAnimState::UpdateReloadGesture()
+{
+	if (m_iReloadGestureSequence < 0)
+	{
+		return;
+	}
+
+	CBasePlayer *pPlayer = GetBasePlayer();
+	GestureSlot_t &slot = m_aGestureSlots[GESTURE_SLOT_ATTACK_AND_RELOAD];
+	if (!pPlayer || !slot.m_bActive || !slot.m_pAnimLayer || slot.m_pAnimLayer->m_nSequence != m_iReloadGestureSequence)
+	{
+		// a new gesture took the slot, or the reload gesture ended
+		m_iReloadGestureSequence = -1;
+		return;
+	}
+
+	const float flBlendCycles = RELOAD_GESTURE_BLEND_TIME * pPlayer->GetSequenceCycleRate(pPlayer->GetModelPtr(), m_iReloadGestureSequence);
+	if (flBlendCycles <= 0.0f)
+	{
+		return;
+	}
+
+	const float flWeight = (slot.m_pAnimLayer->m_flCycle - m_flReloadGestureStartCycle) / flBlendCycles;
+	slot.m_pAnimLayer->m_flWeight = clamp(flWeight, 0.0f, 1.0f);
+}
+#endif // NEO
