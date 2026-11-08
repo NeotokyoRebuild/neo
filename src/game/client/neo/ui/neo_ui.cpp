@@ -35,8 +35,6 @@ static constexpr int I_MIN_COL_WIDE_RATIO = 8;
 // single character but a (wide-)string instead of (wide-)char
 static constexpr wchar_t WSZ_ARROW_UP[] = L"\u2191";
 static constexpr wchar_t WSZ_ARROW_DOWN[] = L"\u2193";
-static constexpr wchar_t WSZ_ARROW_LEFT[] = L"<";
-static constexpr wchar_t WSZ_ARROW_RIGHT[] = L">";
 static constexpr wchar_t WSZ_CHECK_MARK[] = L"\u2713";
 #define NEOUI_SCROLL_THICKNESS() (c->iMarginX * 3)
 
@@ -207,7 +205,7 @@ void FreeContext(NeoUI::Context *pCtx)
 
 // Just helper bool function to deal with both KB and gamepad inputs
 
-static bool IsKeyEnter()
+bool IsKeyEnter()
 {
 	return c->eCode == KEY_ENTER || c->eCode == KEY_XBUTTON_A ||
 		c->eCode == STEAMCONTROLLER_A;
@@ -219,13 +217,13 @@ static bool IsKeyBack()
 		c->eCode == STEAMCONTROLLER_B;
 }
 
-static bool IsKeyLeft()
+bool IsKeyLeft()
 {
 	return c->eCode == KEY_LEFT || c->eCode == KEY_XBUTTON_LEFT ||
 			c->eCode == KEY_XSTICK1_LEFT || c->eCode == STEAMCONTROLLER_DPAD_LEFT;
 }
 
-static bool IsKeyRight()
+bool IsKeyRight()
 {
 	return c->eCode == KEY_RIGHT || c->eCode == KEY_XBUTTON_RIGHT ||
 			c->eCode == KEY_XSTICK1_RIGHT || c->eCode == STEAMCONTROLLER_DPAD_RIGHT;

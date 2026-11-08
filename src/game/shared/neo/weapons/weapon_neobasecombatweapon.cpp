@@ -43,6 +43,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
+	RecvPropTime(RECVINFO(m_flReloadReadyTime)),
 	RecvPropInt(RECVINFO(m_spawnflags)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
@@ -50,6 +51,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
+	SendPropTime(SENDINFO(m_flReloadReadyTime)),
 	SendPropInt(SENDINFO(m_spawnflags)),
 	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
@@ -62,6 +64,7 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flReloadReadyTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -74,6 +77,7 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_flReloadReadyTime, FIELD_TIME),
 END_DATADESC()
 #endif
 
@@ -418,7 +422,28 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 
 bool CNEOBaseCombatWeapon::Reload( void )
 {
-	return BaseClass::Reload();
+	const bool bEmptyReload = UsesClipsForAmmo1() && m_iClip1 <= 0 &&
+		SelectWeightedSequence(ACT_VM_RELOAD_EMPTY) != ACTIVITY_NOT_AVAILABLE;
+
+	const bool bReloaded = bEmptyReload
+		? DefaultReload(GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD_EMPTY)
+		: BaseClass::Reload();
+	if (!bReloaded)
+	{
+		return false;
+	}
+
+	if (bEmptyReload)
+	{
+		// others see the reload, as for a reload with rounds left
+		ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
+	}
+
+	// The magazine loads at the gun's last reload click, which the script gives as a time before the reload animation ends;
+	// the animation and the wait to fire still run to the end
+	m_flReloadReadyTime = Max(gpGlobals->curtime, m_flNextPrimaryAttack - GetNEOWpnData().m_flReloadReadyBeforeEnd);
+
+	return true;
 
 #if(0)
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
@@ -454,6 +479,13 @@ bool CNEOBaseCombatWeapon::Reload( void )
 //-----------------------------------------------------------------------------
 void CNEOBaseCombatWeapon::FinishReload(void)
 {
+	// The magazine was already loaded at the reload's ready time
+	if (m_flReloadReadyTime == 0.0f)
+	{
+		return;
+	}
+	m_flReloadReadyTime = 0.0f;
+
 	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner)
@@ -499,6 +531,16 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 	{
 		AddEffects(EF_BONEMERGE);
 		m_bTriggerReset = true;
+
+		// An empty weapon draws with its slide held back where the model has that draw,
+		// which carries no activity, so it is picked by name
+		static constexpr const char *VM_SEQ_DRAW_EMPTY = "drawempty";
+		const int iDrawEmpty = (UsesClipsForAmmo1() && m_iClip1 <= 0) ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
+		if (iDrawEmpty != ACTIVITY_NOT_AVAILABLE)
+		{
+			SetSequence(iDrawEmpty);
+			SendViewModelAnim(iDrawEmpty);
+		}
 
 #ifdef DEBUG
 		CNEO_Player* pOwner = NULL;
@@ -614,6 +656,12 @@ void CNEOBaseCombatWeapon::ItemBusyFrame(void)
 {
 	BaseClass::ItemBusyFrame();
 	UpdateInaccuracy();
+
+	// The owner stays busy until the reload animation ends, but the magazine loads at the reload's ready time
+	if (m_bInReload && m_flReloadReadyTime > 0.0f && gpGlobals->curtime >= m_flReloadReadyTime)
+	{
+		FinishReload();
+	}
 }
 
 void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
@@ -943,6 +991,22 @@ void CNEOBaseCombatWeapon::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
 
+// An empty weapon idles on its empty sequence where the model has one, such as a pistol with its slide held back
+bool CNEOBaseCombatWeapon::SendWeaponAnim(int iActivity)
+{
+	if (iActivity == ACT_VM_IDLE && UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle())
+	{
+		iActivity = ACT_VM_IDLE_EMPTY;
+	}
+
+	return BaseClass::SendWeaponAnim(iActivity);
+}
+
+bool CNEOBaseCombatWeapon::HasEmptyIdle()
+{
+	return SelectWeightedSequence(ACT_VM_IDLE_EMPTY) != ACTIVITY_NOT_AVAILABLE;
+}
+
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -1021,8 +1085,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 #endif // GAME_DLL
 	}
 
-	SendWeaponAnim(GetPrimaryAttackActivity());
-	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
 	if (IsSemiAuto())
 	{
 		m_bTriggerReset = false;
@@ -1065,6 +1127,22 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		info.m_iShots = MIN(info.m_iShots, m_iPrimaryAmmoCount);
 		m_iPrimaryAmmoCount -= info.m_iShots;
 	}
+
+	// the last round's shot locks a pistol's slide back:
+	// the pistols' dry fire sequence is a shot's kick with the slide held back,
+	static constexpr NEO_WEP_BITS_UNDERLYING_TYPE NEO_WEP_SLIDE_LOCK = NEO_WEP_MILSO | NEO_WEP_TACHI;
+	if (UsesClipsForAmmo1() && m_iClip1 <= 0 && (GetNeoWepBits() & NEO_WEP_SLIDE_LOCK))
+	{
+		SendWeaponAnim(ACT_VM_DRYFIRE);
+	}
+	else
+	{
+		SendWeaponAnim(GetPrimaryAttackActivity());
+	}
+
+	// and goes straight on to the empty idle when it ends
+	const bool bEmptyIdleNext = UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle();
+	SetWeaponIdleTime(gpGlobals->curtime + (bEmptyIdleNext ? SequenceDuration() : 2.0));
 
 	info.m_flDistance = MAX_TRACE_LENGTH;
 	info.m_iAmmoType = m_iPrimaryAmmoType;

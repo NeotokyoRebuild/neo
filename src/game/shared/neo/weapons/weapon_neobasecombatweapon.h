@@ -194,6 +194,7 @@ public:
 #endif
 
 	virtual void DryFire(void);
+	virtual bool SendWeaponAnim(int iActivity) override;
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
 #ifdef CLIENT_DLL
@@ -293,8 +294,12 @@ protected:
 	CNetworkVar(int, m_nNumShotsFired);
 	CNetworkVar(bool, m_bTriggerReset);
 
+	// When the reload in progress loads the magazine, 0 once it is loaded
+	CNetworkVar(float, m_flReloadReadyTime);
+
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
+	bool HasEmptyIdle();
 
 };
 

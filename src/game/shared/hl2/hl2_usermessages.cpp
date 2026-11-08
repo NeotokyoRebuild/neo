@@ -53,6 +53,7 @@ void RegisterUserMessages( void )
 	usermessages->Register( "IdleRespawnShowMenu", -1 );
 	usermessages->Register( "CSpectatorTakeoverPlayer", -1 );
 	usermessages->Register( "AchievementMark", -1 );
+	usermessages->Register( "AimPunch", 4);
 #endif
 
 #ifndef _X360

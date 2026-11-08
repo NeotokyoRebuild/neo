@@ -172,7 +172,11 @@ public:
 	virtual int			DrawModel( int flags );
 	virtual bool		IsTransparent( void );
 	virtual bool		ShouldDraw();
+#ifdef NEO
+	virtual bool		IgnoresZBuffer( void ) const { return false; }
+#else
 	virtual bool		IgnoresZBuffer( void ) const { return true; }
+#endif // NEO
 	virtual void		OnDataChanged( DataUpdateType_t updateType );
 
 	virtual bool		OnPredictedEntityRemove( bool isbeingremoved, C_BaseEntity *predicted );

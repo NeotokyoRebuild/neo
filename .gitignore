@@ -30,6 +30,7 @@ out
 /game/neo/particles
 /game/neo/shaders
 /game/neo/models
+/game/neo/modelsrc
 /game/neo/materials/temp
 /game/neo/resource/*.sfd
 /game/neo/resource/*.ttf

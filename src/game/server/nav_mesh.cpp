@@ -3669,11 +3669,16 @@ void CNavMesh::UpdateAvoidanceObstacleAreas( void )
 
 
 
+#ifdef NEO
+extern void ReleaseVisDeltaStamps( void );
+#else
 extern CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs > *g_pNavVisPairHash;
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::BeginVisibilityComputations( void )
 {
+#ifndef NEO
 	if ( !g_pNavVisPairHash )
 	{
 		g_pNavVisPairHash = new CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs >( 16*1024 );
@@ -3682,11 +3687,15 @@ void CNavMesh::BeginVisibilityComputations( void )
 	{
 		g_pNavVisPairHash->RemoveAll();
 	}
+#endif // NEO
 
 	FOR_EACH_VEC( TheNavAreas, it )
 	{
 		CNavArea *area = TheNavAreas[ it ];
 		area->ResetPotentiallyVisibleAreas();
+#ifdef NEO
+		area->m_isVisibilityComputed = false;
+#endif // NEO
 	}
 }
 
@@ -3697,7 +3706,9 @@ void CNavMesh::BeginVisibilityComputations( void )
  */
 void CNavMesh::EndVisibilityComputations( void )
 {
+#ifndef NEO
 	g_pNavVisPairHash->RemoveAll();
+#endif // NEO
 
 	int avgVisLength = 0;
 	int maxVisLength = 0;
@@ -3781,4 +3792,8 @@ void CNavMesh::EndVisibilityComputations( void )
 	}
 
 	Msg( "NavMesh Visibility List Lengths:  min = %d, avg = %d, max = %d\n", minVisLength, avgVisLength, maxVisLength );
+
+#ifdef NEO
+	ReleaseVisDeltaStamps();
+#endif // NEO
 }

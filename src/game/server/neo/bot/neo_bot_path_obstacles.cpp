@@ -85,6 +85,26 @@ static void GetLineBounds( const CUtlVector< Vector > &line, float range, Vector
 
 
 //----------------------------------------------------------------------------------------------------------------
+// Return true if the body, walking the line up to the end of the given leg, meets the entity before anything else,
+// passing through players, who move
+static bool IsMetFirst( INextBot *bot, const BodyBox_t &body, const CUtlVector< Vector > &line, int lastLeg, CBaseEntity *entity )
+{
+	CTraceFilterNoNPCsOrPlayer filter( bot->GetEntity(), COLLISION_GROUP_NONE );
+	for ( int leg = 0; leg <= lastLeg; ++leg )
+	{
+		trace_t result;
+		UTIL_TraceHull( line[ leg ], line[ leg + 1 ], body.mins, body.maxs, MASK_PLAYERSOLID, &filter, &result );
+		if ( result.DidHit() )
+		{
+			return result.m_pEnt == entity;
+		}
+	}
+
+	return false;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------
 // The breakable the body meets first walking the line, within PATH_OBSTACLE_BREAKABLE_RANGE,
 // when nothing else stands in front of it
 static CBaseEntity *FindBreakableInWay( INextBot *bot, const BodyBox_t &body, const CUtlVector< Vector > &line, const CUtlVector< CBaseEntity * > &breakables )
@@ -130,25 +150,32 @@ static CBaseEntity *FindBreakableInWay( INextBot *bot, const BodyBox_t &body, co
 	}
 
 	// what the body meets first on the way may be a crate, a door or a wall in front of the breakable:
-	// keep the breakable only if the body reaches it first, passing through players, who move
-	CTraceFilterNoNPCsOrPlayer filter( bot->GetEntity(), COLLISION_GROUP_NONE );
-	for ( int leg = 0; leg <= nearestLeg; ++leg )
+	// keep the breakable only if the body reaches it first
+	if ( IsMetFirst( bot, body, line, nearestLeg, nearest ) )
 	{
-		trace_t result;
-		UTIL_TraceHull( line[ leg ], line[ leg + 1 ], body.mins, body.maxs, MASK_PLAYERSOLID, &filter, &result );
-		if ( result.DidHit() )
-		{
-			return ( result.m_pEnt == nearest ) ? nearest : NULL;
-		}
+		return nearest;
 	}
 
-	return NULL;
+	// or reaches it crouched, since a vent cover in a crawl gap sits under a lintel the standing body meets first
+	BodyBox_t crouched = body;
+	crouched.maxs.z = bot->GetBodyInterface()->GetCrouchHullHeight();
+	return IsMetFirst( bot, crouched, line, nearestLeg, nearest ) ? nearest : NULL;
 }
+
+//----------------------------------------------------------------------------------------------------------------
+// Where the path ahead ends: at the first segment not walked on the ground,
+// or at the ledge of a drop, which is walked at the height of the floor above before the fall
+enum PathAheadEnd_t
+{
+	PATH_AHEAD_TO_GROUND_END,
+	PATH_AHEAD_TO_DROP_LEDGE,
+};
 
 //----------------------------------------------------------------------------------------------------------------
 // The path ahead as a line from the bot's feet, over walked segments only, up to the range,
 // and, given a list for them, the segment each point of the line belongs to
-static void GetPathAhead( const PathFollower &path, const Vector &feet, float range, CUtlVector< Vector > *line, CUtlVector< const Path::Segment * > *segments = NULL )
+static void GetPathAhead( const PathFollower &path, const Vector &feet, float range, CUtlVector< Vector > *line,
+	CUtlVector< const Path::Segment * > *segments = NULL, PathAheadEnd_t end = PATH_AHEAD_TO_GROUND_END )
 {
 	line->AddToTail( feet );
 	if ( segments )
@@ -159,7 +186,8 @@ static void GetPathAhead( const PathFollower &path, const Vector &feet, float ra
 	float length = 0.0f;
 	for ( const Path::Segment *seg = path.GetCurrentGoal(); seg && length < range; seg = path.NextSegment( seg ) )
 	{
-		if ( seg->ladder || seg->type != Path::ON_GROUND )
+		const bool isDropLedge = ( end == PATH_AHEAD_TO_DROP_LEDGE && seg->type == Path::DROP_DOWN );
+		if ( seg->ladder || ( seg->type != Path::ON_GROUND && !isDropLedge ) )
 		{
 			break;
 		}
@@ -179,6 +207,10 @@ static void GetPathAhead( const PathFollower &path, const Vector &feet, float ra
 
 		length += legLength;
 		line->AddToTail( seg->pos );
+		if ( isDropLedge )
+		{
+			break;
+		}
 	}
 }
 
@@ -358,7 +390,8 @@ void CNEOBotPathObstacles::LookForBreakable( INextBot *bot, const PathFollower &
 	m_breakable = NULL;
 
 	CUtlVector< Vector > line;
-	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PATH_OBSTACLE_BREAKABLE_RANGE, &line );
+	// a vent cover can block the way to a drop's ledge, such as out of a crawl duct
+	GetPathAhead( path, bot->GetLocomotionInterface()->GetFeet(), PATH_OBSTACLE_BREAKABLE_RANGE, &line, NULL, PATH_AHEAD_TO_DROP_LEDGE );
 	if ( line.Count() < 2 )
 	{
 		return;

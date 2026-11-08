@@ -160,7 +160,23 @@ struct CrosshairWepInfo
 
 struct CrosshairInfo
 {
-	bool operator==(const CrosshairInfo&) const = default;
+	// NEO NOTE: Not defaulted because GCC 10 (Steam Runtime) compares array members
+	// by address in a defaulted operator==, so two separate CrosshairInfo never compare equal
+	bool operator==(const CrosshairInfo &other) const
+	{
+		if (wepFlags != other.wepFlags || hipfireFlags != other.hipfireFlags)
+		{
+			return false;
+		}
+		for (int i = 0; i < CROSSHAIR_WEP__TOTAL; ++i)
+		{
+			if (!(wep[i] == other.wep[i]))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 
 	NeoCrosshairWepFlags wepFlags;
 	NeoCrosshairHipfireCustomFlags hipfireFlags;

@@ -123,6 +123,15 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD_TOL(m_flVisionLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD_TOL(m_flNextPingTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
+	DEFINE_FIELD(m_iHeldStep, FIELD_INTEGER),
+	DEFINE_FIELD(m_nHeldStepKeysDown, FIELD_INTEGER),
+	DEFINE_FIELD(m_nHeldStepArmedKeys, FIELD_INTEGER),
+	DEFINE_FIELD(m_flHeldStepQuietTime, FIELD_FLOAT),
+	DEFINE_FIELD(m_flHeldStepDropTime, FIELD_FLOAT),
+	DEFINE_FIELD(m_flHeldStepWindow, FIELD_FLOAT),
+	DEFINE_FIELD(m_flFootstepAirTime, FIELD_FLOAT),
+	DEFINE_FIELD(m_bFootstepLanding, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_vecFootstepAvgVelocity, FIELD_VECTOR),
 END_PREDICTION_DATA()
 
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
@@ -147,6 +156,13 @@ static void __MsgFunc_AchievementMark(bf_read &msg)
 	pAchievementMgr->OnMapEvent(szString);
 }
 USER_MESSAGE_REGISTER(AchievementMark);
+
+void __MsgFunc_AimPunch(bf_read& msg)
+{
+	float amount = msg.ReadFloat();
+	C_NEO_Player::GetLocalNEOPlayer()->AimPunch(amount);
+}
+USER_MESSAGE_REGISTER(AimPunch);
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
@@ -1064,6 +1080,8 @@ void C_NEO_Player::PreThink( void )
 	CheckVisionButtons();
 	CheckPingButton(this);
 
+	ApplyAimPunch();
+
 	if (m_bInThermOpticCamo)
 	{
 		if (m_flCamoAuxLastTime == 0)
@@ -1164,19 +1182,6 @@ void C_NEO_Player::PreThink( void )
 	if ((IsAlive() && !(GetFlags() & FL_FROZEN)) || m_vecLean != vec3_origin)
 	{
 		Lean();
-	}
-
-	if (m_iNeoClass == NEO_CLASS_RECON && 
-		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) && 
-		IsAllowedToSuperJump())
-	{
-		SuitPower_Drain(SUPER_JMP_COST);
-		bool forward = m_nButtons & IN_FORWARD;
-		bool backward = m_nButtons & IN_BACK;
-		if (forward xor backward)
-		{
-			SuperJump();
-		}
 	}
 
 	if (auto *indicator = GET_HUDELEMENT(CNEOHud_GameEvent))
@@ -1440,31 +1445,6 @@ void C_NEO_Player::UpdateGlowEffects(int iNewTeam)
 	}
 }
 #endif // GLOWS_ENABLE
-
-// This is applied for prediction purposes. It should match CNEO_Player's method.
-void C_NEO_Player::SuperJump(void)
-{
-	Vector forward;
-	AngleVectors(EyeAngles(), &forward);
-
-	// We don't give an upwards boost aside from regular jump
-	forward.z = 0;
-
-	// Flip direction if jumping backwards
-	if (m_nButtons & IN_BACK)
-	{
-		forward = -forward;
-	}
-
-	float boostIntensity = GetPlayerMaxSpeed();
-	if (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
-	{
-		constexpr float sideWaysNerf = 0.70710678118; // 1 / sqrt(2);
-		boostIntensity *= sideWaysNerf;
-	}
-
-	ApplyAbsVelocityImpulse(forward * boostIntensity);
-}
 
 float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
 {
@@ -2022,4 +2002,56 @@ void C_NEO_Player::ClearLocalPlayerDmgReports()
 	{
 		NeoAllKDReportsClear();
 	}
+}
+
+// Formula borrowed from CGameMovement::DecayPunchAngle
+extern ConVar sv_neo_aimpunch_damping;
+extern ConVar sv_neo_aimpunch_spring_constant;
+extern ConVar sv_neo_aimpunch_force;
+extern ConVar sv_neo_aimpunch_max;
+
+void C_NEO_Player::AimPunch(float amount)
+{
+	m_flAimPunchVel = amount * sv_neo_aimpunch_force.GetFloat();
+}
+
+void C_NEO_Player::ApplyAimPunch()
+{
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
+	if (abs(m_flAimPunchVel) < 0.001f && abs(m_flAimPunchCurrent) < 0.001f)
+	{
+		m_flAimPunchVel = 0.0f;
+		m_flAimPunchCurrent = 0.0f;
+		return;
+	}
+
+	const float oldAimPunch = m_flAimPunchCurrent;
+	m_flAimPunchCurrent += m_flAimPunchVel * gpGlobals->frametime;
+	if (abs(m_flAimPunchCurrent) > sv_neo_aimpunch_max.GetFloat())
+	{
+		m_flAimPunchCurrent = clamp(m_flAimPunchCurrent, -sv_neo_aimpunch_max.GetFloat(), sv_neo_aimpunch_max.GetFloat());
+		m_flAimPunchVel = 0.0f;
+	}
+
+	QAngle viewAngles;
+	engine->GetViewAngles(viewAngles);
+	viewAngles.x += m_flAimPunchCurrent - oldAimPunch;
+	engine->SetViewAngles(viewAngles);
+
+	float damping = 1 - (sv_neo_aimpunch_damping.GetFloat() * gpGlobals->frametime);
+
+	if ( damping < 0 )
+	{
+		damping = 0;
+	}
+	m_flAimPunchVel *= damping;
+
+	// torsional spring
+	float springForceMagnitude = sv_neo_aimpunch_spring_constant.GetFloat() * gpGlobals->frametime;
+	springForceMagnitude = clamp(springForceMagnitude, 0.f, 2.f );
+	m_flAimPunchVel -= m_flAimPunchCurrent * springForceMagnitude;
 }

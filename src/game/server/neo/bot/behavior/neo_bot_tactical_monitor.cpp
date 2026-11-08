@@ -317,6 +317,139 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::WatchForLadders( CNEOBot *me )
 
 
 //-----------------------------------------------------------------------------------------
+// A bot in a hurry does not retreat from the tank, so it cloaks in the tank's line of fire and keeps going:
+// the tank's motion vision ignores cloaked players under 180 u/s
+void CNEOBotTacticalMonitor::CloakPastNpcTurret( CNEOBot *me )
+{
+	if ( me->m_hCommandingPlayer.Get() )
+	{
+		return;
+	}
+
+	CNavArea *myArea = me->GetLastKnownArea();
+	if ( !myArea || !CNEOBotPathReservations()->IsAreaNpcTurretHazard( myArea->GetID(), me ) )
+	{
+		return;
+	}
+
+	me->EnableCloak( 3.0f );
+
+	// An Assault stays under that speed unless it sprints, while a Recon is over it anyway and keeps its pace
+	if ( me->IsCloakEnabled() && ( me->GetClass() == NEO_CLASS_ASSAULT ) )
+	{
+		// the child behaviors moved first this update, so this cancels their run press
+		me->ReleaseRunButton();
+	}
+}
+
+//-----------------------------------------------------------------------------------------
+// How often a bot looks for a deployed detpack it can see
+static constexpr float ENEMY_DETPACK_CHECK_INTERVAL = 0.5f;
+// A detpack is small: a bot notices one only within this range
+static constexpr float DETPACK_NOTICE_RANGE = 1000.0f;
+
+//-----------------------------------------------------------------------------------------
+// Whether I know the plan behind a detpack: my own, or a teammate's, who would have told me
+static bool IsFriendlyDetpack( const CNEOBot *me, CBaseEntity *pDetpack )
+{
+	const CBaseEntity *pOwner = static_cast< CBaseGrenade* >( pDetpack )->GetThrower();
+	if ( !pOwner )
+	{
+		return false;
+	}
+
+	if ( pOwner == me )
+	{
+		return true;
+	}
+
+	return NEORules()->IsTeamplay() && ( pOwner->GetTeamNumber() == me->GetTeamNumber() );
+}
+
+//-----------------------------------------------------------------------------------------
+// When I see a detpack that is not my team's, mark its blast radius as deadly for my team
+void CNEOBotTacticalMonitor::MonitorEnemyDetpack( CNEOBot *me )
+{
+	if ( !m_enemyDetpackTimer.IsElapsed() )
+	{
+		return;
+	}
+
+	m_enemyDetpackTimer.Start( ENEMY_DETPACK_CHECK_INTERVAL );
+
+	// one entity search every half second, shared by every bot, while no detpack is deployed
+	const CUtlVector< DeployedDetpack_t > &detpacks = CNEOBotPathReservations()->GetDeployedDetpacks();
+	if ( detpacks.Count() == 0 )
+	{
+		return;
+	}
+
+	const int iTeam = me->GetTeamNumber();
+	const CNavArea *myArea = me->GetLastKnownArea();
+	for ( int i = 0; i < detpacks.Count(); ++i )
+	{
+		CBaseEntity *pDetpack = detpacks[i].hDetpack.Get();
+		if ( !pDetpack || IsFriendlyDetpack( me, pDetpack ) )
+		{
+			continue;
+		}
+
+		if ( CNEOBotPathReservations()->IsDetpackMarkFresh( pDetpack, iTeam ) )
+		{
+			continue;
+		}
+
+		if ( me->GetAbsOrigin().DistToSqr( pDetpack->GetAbsOrigin() ) > Square( DETPACK_NOTICE_RANGE ) )
+		{
+			continue;
+		}
+
+		// the nav visibility lists rule out most detpacks before any trace
+		if ( myArea && detpacks[i].pArea && !myArea->IsPotentiallyVisible( detpacks[i].pArea ) )
+		{
+			continue;
+		}
+
+		if ( me->GetVisionInterface()->IsAbleToSee( pDetpack, IVision::USE_FOV ) )
+		{
+			CNEOBotPathReservations()->MarkDetpackBlast( pDetpack, iTeam );
+		}
+	}
+
+	RepathAroundNewDetpackMark( me );
+}
+
+//-----------------------------------------------------------------------------------------
+// A path computed before my team marked a detpack may run through its blast radius: drop it so my behavior re-paths
+void CNEOBotTacticalMonitor::RepathAroundNewDetpackMark( CNEOBot *me )
+{
+	const int iTeam = me->GetTeamNumber();
+	const float flMarkTime = CNEOBotPathReservations()->GetLastDetpackMarkTime( iTeam );
+	const PathFollower *path = me->GetCurrentPath();
+	if ( ( flMarkTime < 0.0f ) || !path || !path->IsValid() )
+	{
+		return;
+	}
+
+	const float flPathBuiltTime = gpGlobals->curtime - path->GetAge();
+	if ( flPathBuiltTime >= flMarkTime )
+	{
+		return;
+	}
+
+	for ( const Path::Segment *seg = path->GetCurrentGoal(); seg; seg = path->NextSegment( seg ) )
+	{
+		if ( seg->area && CNEOBotPathReservations()->IsAreaDetpackHazard( seg->area->GetID(), iTeam ) )
+		{
+			// the follower is owned by the active behavior, which recomputes an invalid path on its next update
+			const_cast< PathFollower* >( path )->Invalidate();
+			return;
+		}
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
 	if ( neo_bot_force_jump.GetBool() )
@@ -344,12 +477,17 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		return SuspendFor( new CNEOBotPathClearBreakable( breakable ), "Clearing breakable in path" );
 	}
 
+	// before the hazard check below, so a bot reacts to a new mark on this update even when hurrying
+	MonitorEnemyDetpack( me );
+
 	const bool bInAHurry = ( me->GetIntentionInterface()->ShouldHurry( me ) == ANSWER_YES );
 
 	if ( !bInAHurry )
 	{
-		// check if we need to get to cover
-		QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
+		// check if we need to get to cover,
+		// but not from the ghost carrier, since RetreatToCover would end at once and the next check would start it again
+		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
+		QueryResultType shouldRetreat = IsThreatGhostCarrier( threat ) ? ANSWER_NO : me->GetIntentionInterface()->ShouldRetreat( me );
 
 		if ( shouldRetreat == ANSWER_YES )
 		{
@@ -391,6 +529,10 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		{
 			return scavengeResult;
 		}
+	}
+	else
+	{
+		CloakPastNpcTurret( me );
 	}
 
 #if 0 // NEO TODO (Adam) search for dropped weapons to resupply ammunition

@@ -102,7 +102,7 @@ void CNEO_GhostBoundary::Think()
         }
 
         CBasePlayer* pPlayer = UTIL_PlayerByIndex(iJuggernautIndex);
-        if (pPlayer->GetFlags() & FL_ONGROUND)
+        if (pPlayer && (pPlayer->GetFlags() & FL_ONGROUND))
         {
             m_vecLastObjectivePos = pPlayer->GetAbsOrigin();
         }
@@ -120,8 +120,9 @@ void CNEO_GhostBoundary::Think()
             return;
         }
 
+        // The ghoster index is only refreshed after entities think, so it can still name a player who just disconnected
         CBasePlayer* pPlayer = UTIL_PlayerByIndex(iGhosterIndex);
-        if (pPlayer->GetFlags() & FL_ONGROUND)
+        if (pPlayer && (pPlayer->GetFlags() & FL_ONGROUND))
         {
             m_vecLastObjectivePos = pPlayer->GetAbsOrigin();
         }

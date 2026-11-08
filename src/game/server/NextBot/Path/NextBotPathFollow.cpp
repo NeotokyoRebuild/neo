@@ -37,6 +37,27 @@ static const float LANDING_NAV_AREA_RANGE = 50.0f;
 // A climb onto a ladder's wall cap takes the mesh's link at most this many times a path segment,
 // then is left to the ledge search: a bot that lands back at the launch point would otherwise jump on every landing
 static const int LADDER_CAP_LAUNCHES = 3;
+
+// A bot part way down a drop stands within this range of the drop's column (its top and landing share x and y);
+// the caller already holds a bot that is not stuck to 25 u of the top, so this range matters for a stuck one
+static constexpr float DROP_COLUMN_RANGE = 50.0f;
+
+// Fell-off re-paths this many times in a row,
+static constexpr int FELL_OFF_LOOP_REPEATS = 3;
+// each within this many seconds of the last,
+static constexpr float FELL_OFF_LOOP_TIME = 2.0f;
+// with the feet moved less than this, are a loop the stuck monitor has to see
+static constexpr float FELL_OFF_LOOP_RANGE = 8.0f;
+
+// A re-path from the goal recheck can lead back into the same prop, so once the recheck has acted,
+// a goal within this range of the one it acted on,
+static constexpr float RECHECK_SAME_GOAL_RANGE = 16.0f;
+// or feet within this range of where the bot stood (a re-path can alternate between waypoints a few units apart),
+static constexpr float RECHECK_SAME_FEET_RANGE = 32.0f;
+// is left alone this long after each action,
+static constexpr float RECHECK_HOLD_TIME = 3.0f;
+// and after this many actions is left to the stuck monitor
+static constexpr int RECHECK_MAX_ACTIONS = 2;
 #endif
 
 
@@ -62,6 +83,15 @@ PathFollower::PathFollower( void )
 	m_wasOnGround = true;
 	m_capClimbGoal = NULL;
 	m_capLaunches = 0;
+
+	m_fellOffFeet = vec3_invalid;
+	m_fellOffTime = 0.0f;
+	m_fellOffCount = 0;
+
+	m_recheckGoalPos = vec3_invalid;
+	m_recheckFeetPos = vec3_invalid;
+	m_recheckCount = 0;
+	m_recheckHoldTimer.Invalidate();
 #endif
 }
 
@@ -205,6 +235,15 @@ bool PathFollower::IsAtGoal( INextBot *bot ) const
 				// reached goal
 				return true;
 			}
+
+#ifdef NEO
+			// a bot that walked off past the top of the drop has started its fall,
+			// so steer for the landing instead of back toward the edge behind it
+			if ( !mover->IsOnGround() && DotProduct2D( toGoal.AsVector2D(), current->forward.AsVector2D() ) < 0.0f )
+			{
+				return true;
+			}
+#endif
 		}
 				
 		/// @todo: it is possible to fall into a bad place and get stuck - should move back onto the path
@@ -573,6 +612,14 @@ bool PathFollower::CheckProgress( INextBot *bot )
 		// iterate to next segment of the path
 		const Path::Segment *nextSegment = pSkipToGoal ? pSkipToGoal : NextSegment( m_goal );
 
+#ifdef NEO
+		// a drop's landing lies straight below its top, so it is behind a bot already falling past the top
+		if ( !pSkipToGoal && m_goal->type == DROP_DOWN && !mover->IsOnGround() && nextSegment && NextSegment( nextSegment ) )
+		{
+			nextSegment = NextSegment( nextSegment );
+		}
+#endif
+
 		if ( nextSegment == NULL )
 		{
 			// must be on ground to complete the path
@@ -665,6 +712,147 @@ bool PathFollower::HasFallenBelowPath( INextBot *bot ) const
 static bool IsNearNavMesh( INextBot *bot )
 {
 	return TheNavMesh->GetNearestNavArea( bot->GetEntity(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, LANDING_NAV_AREA_RANGE ) != NULL;
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Called when our goal is high above us: return true if it is a drop's top and we are in the drop's column
+ * above its landing, falling down the drop or stopped on a ledge part way down it with no nav area.
+ * The stock check traces from the feet to the landing on a diagonal that hits a ledge's rim, so trace level instead
+ */
+bool PathFollower::IsPartWayDownDrop( INextBot *bot, const Segment *landing ) const
+{
+	if ( m_goal->type != DROP_DOWN || !landing )
+	{
+		return false;
+	}
+
+	ILocomotion *mover = bot->GetLocomotionInterface();
+	const Vector &feet = mover->GetFeet();
+	if ( feet.z < landing->pos.z + mover->GetStepHeight() )
+	{
+		return false;
+	}
+
+	if ( !( landing->pos - feet ).AsVector2D().IsLengthLessThan( DROP_COLUMN_RANGE ) )
+	{
+		return false;
+	}
+
+	// a bot on a nav area part way down stands on a ledge wide enough to plan from, so it re-paths from there
+	if ( TheNavMesh->GetNavArea( feet, mover->GetStepHeight() ) )
+	{
+		return false;
+	}
+
+	const Vector landingLevel( landing->pos.x, landing->pos.y, feet.z );
+	return mover->IsPotentiallyTraversable( feet, landingLevel );
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Return the goal an off-path bot should steer at, or NULL to re-path. The path may have skipped ahead
+ * to a goal that was clear from where the bot was then, but a bot pushed off its path keeps steering at it
+ * from wherever it ends up, and the straight line from there can run into a wall or a prop
+ */
+static const Path::Segment *FindWalkableGoal( INextBot *bot, const Path *path, const Path::Segment *goal, float goalTolerance )
+{
+	ILocomotion *mover = bot->GetLocomotionInterface();
+	if ( goal->type != Path::ON_GROUND || goal->ladder || !mover->IsOnGround() || mover->IsClimbingOrJumping() )
+	{
+		return goal;
+	}
+
+	// on the goal's area or the one before it, the bot is still on the line the path planned
+	const CNavArea *myArea = bot->GetEntity()->GetLastKnownArea();
+	const Path::Segment *prior = path->PriorSegment( goal );
+	if ( !myArea || myArea == goal->area || ( prior && myArea == prior->area ) )
+	{
+		return goal;
+	}
+
+	const Vector &feet = mover->GetFeet();
+	if ( mover->IsPotentiallyTraversable( feet, goal->pos ) )
+	{
+		return goal;
+	}
+
+	// back up to the nearest earlier waypoint still walkable from here, but not back over a ladder, climb or drop,
+	// and not to the first segment, which IsAtGoal treats as already passed
+	for ( const Path::Segment *seg = prior; seg && path->PriorSegment( seg ) && seg->type == Path::ON_GROUND && !seg->ladder; seg = path->PriorSegment( seg ) )
+	{
+		if ( !mover->IsPotentiallyTraversable( feet, seg->pos ) || mover->HasPotentialGap( feet, seg->pos ) )
+		{
+			continue;
+		}
+
+		// a waypoint the bot already stands at would hand it straight back the blocked goal, so re-path instead
+		const Vector2D toSeg = ( seg->pos - feet ).AsVector2D();
+		return toSeg.IsLengthLessThan( goalTolerance ) ? NULL : seg;
+	}
+
+	return NULL;
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Count this fell-off re-path, and return true if it is one of a run that left us where we were,
+ * because each re-path handed back a path we cannot follow from here
+ */
+bool PathFollower::CountFellOffRepath( INextBot *bot )
+{
+	const Vector &feet = bot->GetLocomotionInterface()->GetFeet();
+	const bool isRepeat = ( feet - m_fellOffFeet ).IsLengthLessThan( FELL_OFF_LOOP_RANGE ) &&
+		gpGlobals->curtime - m_fellOffTime < FELL_OFF_LOOP_TIME;
+
+	m_fellOffCount = isRepeat ? m_fellOffCount + 1 : 1;
+	m_fellOffTime = gpGlobals->curtime;
+	if ( !isRepeat )
+	{
+		m_fellOffFeet = feet;
+	}
+
+	return m_fellOffCount >= FELL_OFF_LOOP_REPEATS;
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Check that an off-path bot can still walk to its goal, and back the goal up or re-path when it cannot.
+ * Return false if the path was invalidated for a re-path
+ */
+bool PathFollower::RecheckGoal( INextBot *bot )
+{
+	const Vector &feet = bot->GetLocomotionInterface()->GetFeet();
+	const bool isRepeat = ( m_goal->pos - m_recheckGoalPos ).IsLengthLessThan( RECHECK_SAME_GOAL_RANGE ) ||
+		( feet - m_recheckFeetPos ).IsLengthLessThan( RECHECK_SAME_FEET_RANGE );
+	if ( isRepeat && ( m_recheckCount >= RECHECK_MAX_ACTIONS || !m_recheckHoldTimer.IsElapsed() ) )
+	{
+		return true;
+	}
+
+	const Segment *walkableGoal = FindWalkableGoal( bot, this, m_goal, m_goalTolerance );
+	if ( walkableGoal == m_goal )
+	{
+		return true;
+	}
+
+	m_recheckCount = isRepeat ? m_recheckCount + 1 : 1;
+	m_recheckGoalPos = m_goal->pos;
+	m_recheckFeetPos = feet;
+	m_recheckHoldTimer.Start( RECHECK_HOLD_TIME );
+
+	if ( !walkableGoal )
+	{
+		Invalidate();
+		return false;
+	}
+
+	m_goal = walkableGoal;
+	return true;
 }
 #endif
 
@@ -815,6 +1003,16 @@ void PathFollower::Update( INextBot *bot )
 	const bool hasJustLanded = isOnGround && !m_wasOnGround;
 	m_wasOnGround = isOnGround;
 
+	// a bot that skipped a drop's landing in the air can come down on a ledge part way down,
+	// so aim for the top of the drop again instead of the path past the landing it missed
+	const Path::Segment *landing = hasJustLanded ? PriorSegment( m_goal ) : NULL;
+	const Path::Segment *dropTop = landing ? PriorSegment( landing ) : NULL;
+	const float feetZ = mover->GetFeet().z;
+	if ( dropTop && dropTop->type == DROP_DOWN && feetZ > landing->pos.z + mover->GetStepHeight() && feetZ < dropTop->pos.z - mover->GetStepHeight() )
+	{
+		m_goal = dropTop;
+	}
+
 	if ( hasJustLanded && HasFallenBelowPath( bot ) && IsNearNavMesh( bot ) )
 	{
 		mover->GetBot()->OnMoveToFailure( this, FAIL_FELL_OFF );
@@ -852,7 +1050,14 @@ void PathFollower::Update( INextBot *bot )
 
 			// check if we can reach the next segment, in case this was a "jump down" situation
 			const Path::Segment *next = NextSegment( m_goal );
-			if ( mover->IsStuck() || !next || ( next->pos.z - mover->GetFeet().z > mover->GetMaxJumpHeight() ) || !mover->IsPotentiallyTraversable( mover->GetFeet(), next->pos ) )
+#ifdef NEO
+			// part way down a drop, keep the drop's top as the goal and steer at it,
+			// which walks us off the ledge over the landing
+			const bool keepDropGoal = IsPartWayDownDrop( bot, next );
+#else
+			const bool keepDropGoal = false;
+#endif
+			if ( !keepDropGoal && ( mover->IsStuck() || !next || ( next->pos.z - mover->GetFeet().z > mover->GetMaxJumpHeight() ) || !mover->IsPotentiallyTraversable( mover->GetFeet(), next->pos ) ) )
 			{
 				// the next node is too high, too - we really did fall off the path
 				mover->GetBot()->OnMoveToFailure( this, FAIL_FELL_OFF );
@@ -869,12 +1074,29 @@ void PathFollower::Update( INextBot *bot )
 				}
 
 				// reset stuck status since we're (likely) repathing anyways. otherwise, we could be stuck in a loop here and not move
+#ifdef NEO
+				// unless the re-paths keep handing back the same path and we have not moved, so let the stuck monitor see it
+				if ( !CountFellOffRepath( bot ) )
+				{
+					mover->ClearStuckStatus( "Fell off path" );
+				}
+#else
 				mover->ClearStuckStatus( "Fell off path" );
+#endif
 
 				return;
 			}
 		}
 	}
+
+#ifdef NEO
+	// on Avoid()'s cadence, an off-path bot whose goal is blocked backs it up or re-paths,
+	// except while it detours around a prop: the detour's goal lies past the prop on purpose
+	if ( !isDetouring && m_avoidTimer.IsElapsed() && !RecheckGoal( bot ) )
+	{
+		return;
+	}
+#endif
 
 
 	Vector goalPos = m_goal->pos;

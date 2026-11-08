@@ -32,6 +32,7 @@ WeaponData
 	"Damage"		"17"
 	"Penetration"           "19.0"
 	"CycleTime"             "0.121212"
+	"ReloadReadyBeforeEnd"	"0.400"	// the reload is done at the last reload click, this long before its animation ends
 
 	"ViewModelOffset"
 	{

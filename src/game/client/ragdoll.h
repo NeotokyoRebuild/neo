@@ -89,7 +89,6 @@ public:
 	float GetLastVPhysicsUpdateTime() const { return m_lastUpdate; }
 
 #ifdef NEO
-	void SetInitialVelocity(const Vector& velocity) { m_vecInitialVelocity = velocity; }
 	void SetLastOrigin(const Vector& velocity) { m_vecLastOrigin = velocity; }
 
 #endif // NEO
@@ -110,7 +109,6 @@ private:
 public:
 	Vector		m_vecLastVelocity;
 private:
-	Vector		m_vecInitialVelocity;
 #endif // NEO
 
 #if RAGDOLL_VISUALIZE

@@ -145,6 +145,7 @@ extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
 extern ConVar sv_neo_dev_loadout;
 extern ConVar neo_bot_difficulty;
+extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
@@ -352,6 +353,26 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		return false;
 	}
 
+	// XP eligibility first, so ineligible requests fall back to the default
+	// slot without paying for the validation entity below
+	if (loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP), iLoadoutClass))
+	{
+		DevMsg("Insufficient XP for %s\n", pszWepName);
+		// Slot 0 is the floor; if even it is ineligible there is nothing to fall back to
+		if (loadoutNumber == 0)
+		{
+			return false;
+		}
+		// Grant the default slot now, but keep the requested pick so Spawn()
+		// re-requests it once the player has the XP (matches prior behavior)
+		if (!RequestSetLoadout(0))
+		{
+			return false;
+		}
+		m_iLoadoutWepChoice = loadoutNumber;
+		return true;
+	}
+
 	EHANDLE pEnt;
 	pEnt = CreateEntityByName(pszWepName);
 
@@ -384,13 +405,6 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		Assert(false);
 		Warning("CNEO_Player::RequestSetLoadout: Not a Neo primary weapon: %s\n", pszWepName);
 		result = false;
-	}
-
-	if (loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
-			sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
-	{
-		DevMsg("Insufficient XP for %s\n", pszWepName);
-		result = RequestSetLoadout(0);
 	}
 
 	if (result)
@@ -1141,19 +1155,6 @@ void CNEO_Player::PreThink(void)
 		Lean();
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON &&
-		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) &&
-		IsAllowedToSuperJump())
-	{
-		SuitPower_Drain(SUPER_JMP_COST);
-		bool forward = m_nButtons & IN_FORWARD;
-		bool backward = m_nButtons & IN_BACK;
-		if (forward xor backward)
-		{
-			SuperJump();
-		}
-	}
-
 	if (TheNavMesh)
 	{
 		// NEO TODO (Adam) do this in OnNavAreaChanged instead
@@ -1560,67 +1561,6 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	float obscuredRatio = obscuredNumerator / obscuredDenominator;
 	obscuredRatio = Clamp(obscuredRatio, 0.0f, 1.0f);
 	return obscuredRatio;
-}
-
-void CNEO_Player::SuperJump(void)
-{
-	Vector forward;
-	AngleVectors(EyeAngles(), &forward);
-
-	// We don't give an upwards boost aside from regular jump
-	forward.z = 0;
-	
-	// Flip direction if jumping backwards
-	if (m_nButtons & IN_BACK)
-	{
-		forward = -forward;
-	}
-
-	float boostIntensity = GetPlayerMaxSpeed();
-	if (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
-	{
-		constexpr float sideWaysNerf = 0.70710678118; // 1 / sqrt(2);
-		boostIntensity *= sideWaysNerf;
-	}
-
-	// NEO TODO (Rain): handle underwater case
-	// NEO TODO (Rain): handle ladder mounted case
-	// NEO TODO (Rain): handle "mounted" use key context case
-
-	// NEO TODO (Rain): this disabled block below is taken from trigger_push implementation.
-	// Probably wanna do some of this so we handle lag compensation accordingly; needs testing.
-#if(0)
-#if defined( HL2_DLL )
-	// HACK HACK  HL2 players on ladders will only be disengaged if the sf is set, otherwise no push occurs.
-	if ( pOther->IsPlayer() && 
-		pOther->GetMoveType() == MOVETYPE_LADDER )
-	{
-		if ( !HasSpawnFlags(SF_TRIG_PUSH_AFFECT_PLAYER_ON_LADDER) )
-		{
-			// Ignore the push
-			return;
-		}
-	}
-#endif
-
-	Vector vecPush = (m_flPushSpeed * vecAbsDir);
-	if ((pOther->GetFlags() & FL_BASEVELOCITY) && !lagcompensation->IsCurrentlyDoingLagCompensation())
-	{
-		vecPush = vecPush + pOther->GetBaseVelocity();
-	}
-	if (vecPush.z > 0 && (pOther->GetFlags() & FL_ONGROUND))
-	{
-		pOther->SetGroundEntity(NULL);
-		Vector origin = pOther->GetAbsOrigin();
-		origin.z += 1.0f;
-		pOther->SetAbsOrigin(origin);
-	}
-
-	pOther->SetBaseVelocity(vecPush);
-	pOther->AddFlag(FL_BASEVELOCITY);
-#endif
-
-	ApplyAbsVelocityImpulse(forward * boostIntensity);
 }
 
 void CNEO_Player::PostThink(void)
@@ -2941,6 +2881,29 @@ bool CNEO_Player::IsCarryingGhost(void) const
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
 }
 
+// Return the ghost if it is beaconing for this player, by the same rule as the carrier's beacon HUD:
+// the ghost is the active weapon (or carried, with sv_neo_ctg_ghost_beacons_when_inactive) and booted
+CWeaponGhost *CNEO_Player::GetBeaconingGhost(void) const
+{
+	if ( !IsCarryingGhost() )
+	{
+		return nullptr;
+	}
+
+	CBaseCombatWeapon *pCandidate = sv_neo_ctg_ghost_beacons_when_inactive.GetBool()
+		? Weapon_GetSlot( 0 )
+		: GetActiveWeapon();
+
+	CNEOBaseCombatWeapon *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon *>( pCandidate );
+	if ( !pNeoWeapon || !pNeoWeapon->IsGhost() )
+	{
+		return nullptr;
+	}
+
+	CWeaponGhost *pGhost = assert_cast<CWeaponGhost *>( pNeoWeapon );
+	return pGhost->IsBootupCompleted() ? pGhost : nullptr;
+}
+
 bool CNEO_Player::IsObjective(void) const
 {
 	return IsCarryingGhost() || GetClass() == NEO_CLASS_VIP || GetClass() == NEO_CLASS_JUGGERNAUT;
@@ -3503,6 +3466,12 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	//DevMsg("Loadout slot: %i (\"%s\") for %s\n", m_iLoadoutWepChoice.Get(), szWep, GetPlayerName());
 #endif
 
+	// XP eligibility first, so ineligible picks don't pay a weapon entity create/destroy cycle
+	if (m_iLoadoutWepChoice+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP), iLoadoutClass))
+	{
+		return;
+	}
+
 	// If I already own this type don't create one
 	const int wepSubType = 0;
 	if (Weapon_OwnsThisType(szWep, wepSubType))
@@ -3526,33 +3495,22 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(CNEOWeaponLoadout::GetEffectiveXP(m_iXP),
-				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()))
+		pNeoWeapon->SetSubType(wepSubType);
+
+		DispatchSpawn(pEnt);
+
+		if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
 		{
-			pNeoWeapon->SetSubType(wepSubType);
-
-			DispatchSpawn(pEnt);
-
-			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+			RemoveAllItems(false);
+			GiveDefaultItems();
+			if (!BumpWeapon(pNeoWeapon))
 			{
-				RemoveAllItems(false);
-				GiveDefaultItems();
-				if (!BumpWeapon(pNeoWeapon))
-				{
-					UTIL_Remove( pNeoWeapon );
-				}
-				else
-				{
-					pEnt->Touch( this );
-					Weapon_Switch(Weapon_OwnsThisType(szWep));
-				}
+				UTIL_Remove( pNeoWeapon );
 			}
-		}
-		else
-		{
-			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+			else
 			{
-				UTIL_Remove(pEnt);
+				pEnt->Touch( this );
+				Weapon_Switch(Weapon_OwnsThisType(szWep));
 			}
 		}
 	}

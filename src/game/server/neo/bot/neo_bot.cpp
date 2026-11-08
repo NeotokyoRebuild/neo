@@ -41,8 +41,8 @@ extern ConVar neo_bot_fire_weapon_min_time;
 extern ConVar neo_bot_difficulty;
 extern ConVar neo_bot_farthest_visible_theater_sample_count;
 extern ConVar neo_bot_path_lookahead_range;
-extern ConVar neo_bot_path_around_friendly_cooldown;
 extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
+extern ConVar neo_bot_path_around_friendly_cooldown;
 
 
 
@@ -592,7 +592,6 @@ CNEOBot::CNEOBot()
 	m_behaviorFlags = 0;
 	m_attentionFocusEntity = NULL;
 	m_noisyTimer.Invalidate();
-	m_repathAroundFriendlyTimer.Invalidate();
 
 	m_difficulty = clamp((CNEOBot::DifficultyType)neo_bot_difficulty.GetInt(), CNEOBot::EASY, CNEOBot::EXPERT);
 
@@ -1306,6 +1305,14 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 	{
 		if (known->IsVisibleInFOVNow())
 		{
+			// A threat only the ghost shows through a wall is not one to aim at,
+			// so the ghost carrier behavior chooses which beacon to look at
+			CBaseEntity *pThreat = known->GetEntity();
+			if (IsRevealedByMyGhost(pThreat) && !GetVisionInterface()->IsLineOfSightClear(pThreat->WorldSpaceCenter()))
+			{
+				return;
+			}
+
 			// I see you!
 			GetBodyInterface()->AimHeadTowards(known->GetEntity(), IBody::CRITICAL, 1.0f, NULL, "Aiming at a visible threat");
 			return;
@@ -1322,10 +1329,18 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 
 		// known but not currently visible (I know you're around here somewhere)
 
+		// Turn toward where the threat was last seen, heard or called out,
+		// but an enemy ghost carrier's live position shows on every HUD
+		const CNEO_Player *pThreatPlayer = ToNEOPlayer(known->GetEntity());
+		const bool bLivePosition = pThreatPlayer && pThreatPlayer->IsCarryingGhost();
+		const Vector vecThreatSpot = bLivePosition
+			? known->GetEntity()->WorldSpaceCenter()
+			: known->GetLastKnownPosition() + Vector(0, 0, HalfHumanHeight);
+
 		// if there is unobstructed space between us, turn around
-		if (IsLineOfSightClear(known->GetEntity(), IGNORE_ACTORS))
+		if (bLivePosition || IsLineOfSightClear(vecThreatSpot, IGNORE_ACTORS))
 		{
-			Vector toThreat = known->GetEntity()->GetAbsOrigin() - GetAbsOrigin();
+			Vector toThreat = vecThreatSpot - GetAbsOrigin();
 			float threatRange = toThreat.NormalizeInPlace();
 
 			float aimError = M_PI / 6.0f;
@@ -1334,7 +1349,7 @@ void CNEOBot::UpdateLookingAroundForEnemies(void)
 			FastSinCos(aimError, &s, &c);
 
 			float error = threatRange * s;
-			Vector imperfectAimSpot = known->GetEntity()->WorldSpaceCenter();
+			Vector imperfectAimSpot = vecThreatSpot;
 			imperfectAimSpot.x += RandomFloat(-error, error);
 			imperfectAimSpot.y += RandomFloat(-error, error);
 
@@ -1725,31 +1740,6 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	{
 		Weapon_Switch(pChosen);
 	}
-}
-
-
-//-----------------------------------------------------------------------------------------------------
-// Return handle to ghost if it is beaconing for the bot player
-// Also useful to get true beacon range from weapon implementation
-CWeaponGhost *CNEOBot::GetBeaconingGhost( void ) const
-{
-	if ( !IsCarryingGhost() )
-	{
-		return nullptr;
-	}
-
-	CBaseCombatWeapon *pCandidate = sv_neo_ctg_ghost_beacons_when_inactive.GetBool()
-		? Weapon_GetSlot( 0 )
-		: GetActiveWeapon();
-
-	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>( pCandidate );
-	if ( !pNeoWeapon || !pNeoWeapon->IsGhost() )
-	{
-		return nullptr;
-	}
-
-	CWeaponGhost *pGhost = assert_cast<CWeaponGhost *>( pNeoWeapon );
-	return pGhost->IsBootupCompleted() ? pGhost : nullptr;
 }
 
 
@@ -2174,32 +2164,6 @@ bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who
 
 
 //-----------------------------------------------------------------------------------------------------
-// Return whether there is a friendly player blocking the line of fire
-bool CNEOBot::IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to) const
-{
-	if (NEORules()->IsTeamplay())
-	{
-		trace_t playerTrace;
-		CTraceFilterSimple playerFilter(this, COLLISION_GROUP_NONE);
-		UTIL_TraceLine(from, to, MASK_SHOT_HULL, &playerFilter, &playerTrace);
-
-		if (playerTrace.DidHit())
-		{
-			CBaseEntity *pEnt = playerTrace.m_pEnt;
-			if (pEnt && pEnt->IsPlayer())
-			{
-				if (IsFriend(pEnt) && pEnt != this)
-				{
-					return false;
-				}
-			}
-		}
-	}
-	return true;
-}
-
-
-//-----------------------------------------------------------------------------------------------------
 bool CNEOBot::IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) const
 {
 	if (!NEORules()->IsTeamplay())
@@ -2300,52 +2264,6 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const Line
 bool CNEOBot::IsLineOfFireClear(CBaseEntity* who, const LineOfFireFlags flags) const
 {
 	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), who, flags);
-}
-
-
-//-----------------------------------------------------------------------------------------------------
-// If I am aiming at a friendly, recalculate my path to get around them
-void CNEOBot::RepathIfFriendlyBlockingLineOfFire()
-{
-	if (!IsAlive())
-	{
-		return;
-	}
-
-	const PathFollower* pPath = GetCurrentPath();
-	if (!pPath)
-	{
-		return;
-	}
-
-	if (!m_repathAroundFriendlyTimer.IsElapsed())
-	{
-		return;
-	}
-
-	float jitter = RandomFloat(0.0f, 0.5f);
-	m_repathAroundFriendlyTimer.Start(neo_bot_path_around_friendly_cooldown.GetFloat() + jitter);
-
-	Vector eyePos = EyePosition();
-	Vector forward;
-	EyeVectors(&forward);
-
-	const float checkDistance = 10000.0f;
-	Vector targetPos = eyePos + forward * checkDistance;
-
-	if (!IsLineOfFireClearOfFriendlies(eyePos, targetPos))
-	{
-		Vector goal = pPath->GetEndPosition();
-
-		CNEOBotPathCost cost(this, DEFAULT_ROUTE);
-		if (m_repathAroundFriendlyFollower.Compute(this, goal, cost))
-		{
-			if (m_repathAroundFriendlyFollower.IsValid())
-			{
-				SetCurrentPath(&m_repathAroundFriendlyFollower);
-			}
-		}
-	}
 }
 
 

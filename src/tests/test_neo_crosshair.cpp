@@ -1235,6 +1235,28 @@ void TestFeature_RunLengthEncode_Partial()
 	}
 }
 
+// Mirrors the pre-NEOXHAIR_SERIAL_ALPHA_V35 upgrade check in FixupNeoCrosshair
+void TestFeature_Equality_UpgradeRoundTrip()
+{
+	static const char SERIAL_TEST_STR[] = "6;60;15;0;2;-1;0;8;2;4;1;0;0;0;-16777216;48^";
+
+	CrosshairInfo oldXhairInfo = {};
+	TEST_COMPARE_INT(true, ImportCrosshair(&oldXhairInfo, SERIAL_TEST_STR));
+
+	const CrosshairInfo copyXhairInfo = oldXhairInfo;
+	TEST_VERIFY(copyXhairInfo == oldXhairInfo);
+
+	char szExportSeq[NEO_XHAIR_SEQMAX];
+	ExportCrosshair(&oldXhairInfo, szExportSeq);
+
+	CrosshairInfo newXhairInfo = {};
+	TEST_COMPARE_INT(true, ImportCrosshair(&newXhairInfo, szExportSeq));
+	TEST_VERIFY(newXhairInfo == oldXhairInfo);
+
+	newXhairInfo.wep[CROSSHAIR_WEP__TOTAL - 1].iGap += 1;
+	TEST_VERIFY(newXhairInfo != oldXhairInfo);
+}
+
 struct TestFeature_WepFlags_Hipfire_data_s
 {
 	CrosshairInfo xhairInfo;
@@ -1517,6 +1539,7 @@ TEST_INIT()
 	TEST_RUN(TestFeature_Flags_Topline_Off_SepDotColor);
 	TEST_RUN(TestFeature_RunLengthEncode_Full);
 	TEST_RUN(TestFeature_RunLengthEncode_Partial);
+	TEST_RUN(TestFeature_Equality_UpgradeRoundTrip);
 	TEST_RUN_MULTI(TestFeature_WepFlags_Hipfire, WEPFLAG_HIPFIRE_DATA__TOTAL);
 TEST_END()
 
