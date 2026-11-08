@@ -531,6 +531,35 @@
 	"wave"				"weapons/jitte/jitte_reload.wav"
 }
 
+// Jitte reload in per-step pieces (sv_neo_reload_experimental).
+
+"weapon_jitte.reload_1_unload"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/jitte/jitte_reload_1_unload.wav"
+}
+
+"weapon_jitte.reload_2_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/jitte/jitte_reload_2_load.wav"
+}
+
+"weapon_jitte.reload_3_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/jitte/jitte_reload_3_cycle.wav"
+}
+
 //-------------------
 
 "weapon_jitte.npc_reload"
