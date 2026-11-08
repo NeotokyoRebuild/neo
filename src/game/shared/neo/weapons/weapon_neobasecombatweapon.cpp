@@ -626,9 +626,9 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 	}
 	SendViewModelAnim(iSequence);
 
-	// the third-person reload gesture lasts no longer than the resume
+	ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, CHL2MPPlayerAnimState::RELOAD_EVENT_RESUMED);
+
 	const float flDuration = ReloadViewModel()->SequenceDuration(iSequence);
-	ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, CHL2MPPlayerAnimState::ResumedReloadGestureData(flDuration));
 
 	const float flEnd = gpGlobals->curtime + flDuration;
 	GetOwner()->SetNextAttack(flEnd);

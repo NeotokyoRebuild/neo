@@ -48,8 +48,8 @@ public:
 #ifdef NEO
 	virtual void ComputeSequences(CStudioHdr* pStudioHdr);
 
-	// A resumed reload's event data: how long the first-person resume lasts
-	static int ResumedReloadGestureData(float flDuration);
+	// Reload event data: the draw resumes an interrupted reload
+	static constexpr int RELOAD_EVENT_RESUMED = 1;
 #endif
 
 	void DebugShowAnimStateFull(int iStartLine);
@@ -67,17 +67,9 @@ private:
 	
 #ifdef NEO
 	bool	IsLeaning(CStudioHdr *pStudioHdr);
-	void	SetGestureSlotCycle(int iGestureSlot, float flCycle);
-	void	StartReloadGesture(int nData);
-	void	UpdateReloadGesture();
 #endif // NEO
 	
 	CHL2MP_Player   *m_pHL2MPPlayer;
-#ifdef NEO
-	// The playing late-started reload gesture's sequence (-1: none) and the cycle it blends in from
-	int		m_iReloadGestureSequence;
-	float	m_flReloadGestureStartCycle;
-#endif
 #ifndef NEO
 	bool		m_bInAirWalk;
 	float		m_flHoldDeployedPoseUntilTime;
