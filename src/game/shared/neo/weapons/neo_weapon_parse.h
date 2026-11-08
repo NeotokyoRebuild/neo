@@ -12,13 +12,13 @@
 
 #include "hl2mp_weapon_parse.h"
 
-// A reload is a linear sequence of phases; a reload sequence credits each phase at a point of its animation
+// A reload is a linear sequence of phases; a reload sequence finishes each phase at a point of its animation
 enum ReloadPhase_t
 {
 	RELOAD_PHASE_NONE = 0,	// no reload in progress, or none pending
-	RELOAD_PHASE_DROPPED,	// the old magazine is out
-	RELOAD_PHASE_SEATED,	// the fresh magazine is in
-	RELOAD_PHASE_BOLTED,	// the bolt or charging handle chambered a round
+	RELOAD_PHASE_UNLOADED,	// 1_unload: the old magazine is out
+	RELOAD_PHASE_LOADED,	// 2_load: the fresh magazine is in
+	RELOAD_PHASE_CYCLED,	// 3_cycle: the bolt or charging handle chambered a round
 
 	RELOAD_PHASE_COUNT
 };
@@ -33,7 +33,7 @@ static_assert((1 << (RELOAD_PHASE_TABLE_BITS - 1)) >= RELOAD_PHASE_TABLES_MAX, "
 static constexpr int RELOAD_PHASE_ROWS_MAX = RELOAD_PHASE_COUNT - 1;
 static constexpr int RELOAD_SOUND_NAME_MAX = 64;
 static constexpr int RELOAD_SEQUENCE_NAME_MAX = 32;
-// a phase may need more than one sound piece, such as a magazine seat and its slap
+// a phase may need more than one sound piece, such as loading a magazine and the tap after it
 static constexpr int RELOAD_SOUNDS_PER_ROW = 3;
 
 // A sound piece of a phase
@@ -43,11 +43,11 @@ struct ReloadSoundPiece_t
 	char szName[RELOAD_SOUND_NAME_MAX];
 };
 
-// One phase of a reload sequence: when it is credited, and the sound pieces that go with it
+// One phase of a reload sequence: when its ammo counts, and the sound pieces that go with it
 struct ReloadPhaseRow_t
 {
 	ReloadPhase_t phase;
-	float flCredit;	// seconds from the sequence start
+	float flAmmo;	// seconds from the sequence start
 	ReloadSoundPiece_t sounds[RELOAD_SOUNDS_PER_ROW];
 };
 

@@ -511,15 +511,15 @@ bool CNEOBaseCombatWeapon::Reload( void )
 // Each reload sound piece's file starts this long before its first transient
 static constexpr float RELOAD_SOUND_LEAD = 0.02f;
 
-// The viewmodel sequence that resumes a reload interrupted after the phase credited last; nullptr: none
+// The viewmodel sequence that resumes a reload interrupted after the phase finished last; nullptr: none
 // (resume sequences carry no activity, so they are picked by name)
 static const char *ResumeSequenceName(int iPhaseDone)
 {
 	switch (iPhaseDone)
 	{
-	case RELOAD_PHASE_DROPPED:
+	case RELOAD_PHASE_UNLOADED:
 		// the magazine is out: the draw itself brings the fresh one up
-		return "draw_resume_drop_dry";
+		return "resume_after_1_unload_empty";
 	default:
 		return nullptr;
 	}
@@ -530,7 +530,7 @@ bool CNEOBaseCombatWeapon::IsReloadPhaseSystemEnabled() const
 	return m_bReloadExperimentalEnabled && GetNEOWpnData().m_iNumReloadTables > 0;
 }
 
-// Credit the phases of a reload sequence that starts now (-1: a sequence without a table credits nothing)
+// Time the phases of a reload sequence that starts now (-1: a sequence without a table finishes none)
 void CNEOBaseCombatWeapon::StartReloadPhases(int iTable)
 {
 	m_nReloadTable = iTable;
@@ -538,7 +538,7 @@ void CNEOBaseCombatWeapon::StartReloadPhases(int iTable)
 	m_nReloadSoundsDone = 0;
 }
 
-// Credit every phase of the playing reload sequence whose time has come, and play its sound pieces
+// Finish every phase of the playing reload sequence whose time has come, and play its sound pieces
 void CNEOBaseCombatWeapon::RunReloadPhases()
 {
 	if (!m_bInReload || m_nReloadTable < 0)
@@ -549,7 +549,7 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[m_nReloadTable];
 	const float flElapsed = gpGlobals->curtime - m_flReloadStart;
 
-	// Sound pieces play on their own times, before or after their phase's credit
+	// Sound pieces play on their own times, before or after their phase's ammo time
 	for (int i = 0; i < table.iNumRows; ++i)
 	{
 		for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
@@ -572,20 +572,20 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 			continue;
 		}
 
-		if (flElapsed < row.flCredit)
+		if (flElapsed < row.flAmmo)
 		{
 			break;
 		}
 
-		CreditReloadPhase(row.phase);
+		FinishReloadPhase(row.phase);
 	}
 }
 
-void CNEOBaseCombatWeapon::CreditReloadPhase(ReloadPhase_t phase)
+void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 {
-	// The drop takes no rounds: they are lost only if a switch interrupts the reload after it (ResumeReload),
+	// The unload takes no rounds: they are lost only if a switch interrupts the reload after it (ResumeReload),
 	// so an uninterrupted reload shows the same clip as without phases
-	if (phase == RELOAD_PHASE_SEATED)
+	if (phase == RELOAD_PHASE_LOADED)
 	{
 		// the magazine loads now, as at a reload's ready time (ItemBusyFrame)
 		m_flReloadReadyTime = gpGlobals->curtime;
@@ -621,7 +621,7 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = flEnd;
 	SetWeaponIdleTime(flEnd);
 
-	// the seat credit loads the magazine
+	// the load phase loads the magazine
 	m_flReloadReadyTime = 0.0f;
 	StartReloadPhases(iTable);
 	m_bInReload = true;
@@ -718,10 +718,10 @@ void CNEOBaseCombatWeapon::FinishReload(void)
 	}
 	m_flReloadReadyTime = 0.0f;
 
-	// the magazine is in: the phases up to the seat are done, and a switch from here leaves nothing to resume
+	// the magazine is in: the phases up to the load are done, and a switch from here leaves nothing to resume
 	if (IsReloadPhaseSystemEnabled())
 	{
-		m_nReloadPhase = Max(m_nReloadPhase.Get(), static_cast<int>(RELOAD_PHASE_SEATED));
+		m_nReloadPhase = Max(m_nReloadPhase.Get(), static_cast<int>(RELOAD_PHASE_LOADED));
 	}
 
 	CBaseCombatCharacter* pOwner = GetOwner();

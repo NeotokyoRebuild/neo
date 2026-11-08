@@ -33,15 +33,15 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 
 
 // Weapon-script names of the reload phases, by ReloadPhase_t
-static constexpr const char *RELOAD_PHASE_NAMES[RELOAD_PHASE_COUNT] = { "", "drop", "seat", "bolt" };
+static constexpr const char *RELOAD_PHASE_NAMES[RELOAD_PHASE_COUNT] = { "", "1_unload", "2_load", "3_cycle" };
 // Weapon-script keys of a phase's sound pieces: { sound name, time }
 static constexpr const char *RELOAD_SOUND_KEYS[RELOAD_SOUNDS_PER_ROW][2] = {
-	{ "sound", "at" }, { "sound2", "at2" }, { "sound3", "at3" }
+	{ "sound_name", "sound" }, { "sound2_name", "sound2" }, { "sound3_name", "sound3" }
 };
 
 static ReloadPhase_t ReloadPhaseFromName(const char *pszName)
 {
-	for (int i = RELOAD_PHASE_DROPPED; i < RELOAD_PHASE_COUNT; ++i)
+	for (int i = RELOAD_PHASE_UNLOADED; i < RELOAD_PHASE_COUNT; ++i)
 	{
 		if (V_stricmp(pszName, RELOAD_PHASE_NAMES[i]) == 0)
 		{
@@ -51,7 +51,7 @@ static ReloadPhase_t ReloadPhaseFromName(const char *pszName)
 	return RELOAD_PHASE_NONE;
 }
 
-// "ReloadPhases" { "<sequence>" { "<phase>" { "credit" "s" "sound" "name" "at" "s" } ... } ... }
+// "ReloadPhases" { "<sequence>" { "<phase>" { "ammo" "s" "sound" "s" "sound_name" "name" } ... } ... }
 void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 {
 	m_iNumReloadTables = 0;
@@ -83,7 +83,7 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 
 			ReloadPhaseRow_t &row = table.rows[table.iNumRows++];
 			row.phase = phase;
-			row.flCredit = pRow->GetFloat("credit");
+			row.flAmmo = pRow->GetFloat("ammo");
 			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
 			{
 				row.sounds[j].flAt = pRow->GetFloat(RELOAD_SOUND_KEYS[j][1]);

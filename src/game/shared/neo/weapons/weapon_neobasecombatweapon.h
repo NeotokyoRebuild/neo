@@ -299,11 +299,11 @@ protected:
 	// The server's pre-game reload setting, snapshotted for prediction
 	CNetworkVar(bool, m_bReloadExperimentalEnabled);
 
-	// Reload phases (weapons whose script has a ReloadPhases block): the last phase credited, kept across a switch
+	// Reload phases (weapons whose script has a ReloadPhases block): the last phase finished, kept across a switch
 	CNetworkVar(int, m_nReloadPhase);
 	// the phase table of the reload sequence started last, -1 none
 	CNetworkVar(int, m_nReloadTable);
-	// when the reload sequence started; phase credits are offsets from it
+	// when the reload sequence started; phase times are offsets from it
 	CNetworkVar(float, m_flReloadStart);
 	// the sound pieces of the playing sequence already started, one bit per piece
 	CNetworkVar(int, m_nReloadSoundsDone);
@@ -314,7 +314,7 @@ private:
 
 	void StartReloadPhases(int iTable);
 	void RunReloadPhases();
-	void CreditReloadPhase(ReloadPhase_t phase);
+	void FinishReloadPhase(ReloadPhase_t phase);
 	bool ResumeReload();
 	void StopReloadSoundPieces();
 	void EmitReloadSoundPiece(const char *pszSound);
