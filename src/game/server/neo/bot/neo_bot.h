@@ -56,6 +56,9 @@ inline bool IsAtkDefendingTeam(int team)
 // ATK defenders chase threats and combat sounds only where the ghost's nav area could see them
 bool IsInAtkGhostView( const Vector &vecPos );
 
+// ATK defenders keep to the ghost's view unless a teammate carries it, when the rest hunt freely
+bool IsAtkGhostLeashed( CNEOBot *me );
+
 class CNEOBotBehavior;
 
 // Not split off from neo_bot.h/cpp unless you want to deal with includes hell

@@ -6,7 +6,7 @@
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
 #include "bot/behavior/neo_bot_ctg_escort.h"
-#include "bot/behavior/neo_bot_ctg_guard_carrier.h"
+#include "bot/behavior/neo_bot_ctg_hunt.h"
 #include "bot/behavior/neo_bot_ctg_enemy.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_capture.h"
@@ -88,9 +88,9 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 			if (pGhostCarrier && pGhostCarrier != me
 				&& pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
 			{
-				if ( IsGhostGuardRound( me->GetTeamNumber() ) )
+				if ( IsAtkDefendingTeam( me->GetTeamNumber() ) )
 				{
-					return SuspendFor( new CNEOBotCtgGuardCarrier, "Guarding the ghost carrier" );
+					return SuspendFor( new CNEOBotCtgHunt, "Hunting while a teammate carries the ghost" );
 				}
 
 				return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");

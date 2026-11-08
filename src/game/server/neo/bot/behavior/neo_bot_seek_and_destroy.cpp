@@ -90,7 +90,7 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 			return false; // no fight, out of PAS, or already there
 		}
 
-		if ( IsAtkDefendingTeam( me->GetTeamNumber() ) && !IsInAtkGhostView( vFight ) )
+		if ( IsAtkGhostLeashed( me ) && !IsInAtkGhostView( vFight ) )
 		{
 			return false;
 		}
@@ -261,7 +261,7 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 		// only going after it
 		const bool bDontSuspendForGhoster = (neoThreat && neoThreat->IsCarryingGhost());
 		// ATK defenders shoot at threats out of the ghost's view but do not leave the ghost for them
-		const bool bBeyondGuard = IsAtkDefendingTeam( me->GetTeamNumber() ) && !IsInAtkGhostView( threat->GetLastKnownPosition() );
+		const bool bBeyondGuard = IsAtkGhostLeashed( me ) && !IsInAtkGhostView( threat->GetLastKnownPosition() );
 		if (!bDontSuspendForGhoster && !bBeyondGuard)
 		{
 			const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
@@ -609,7 +609,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		CUtlVector<CBaseEntity*> pSpawns;
 
 		// ATK defenders patrol their own spawns, which the map places around the ghost
-		const char *pszSpawnClass = IsAtkDefendingTeam( me->GetTeamNumber() ) ? "info_player_defender" : "info_player_*";
+		const char *pszSpawnClass = IsAtkGhostLeashed( me ) ? "info_player_defender" : "info_player_*";
 
 		CBaseEntity* pSearch = NULL;
 		while ( ( pSearch = gEntList.FindEntityByClassname( pSearch, pszSpawnClass, &spawnFilter ) ) != NULL )

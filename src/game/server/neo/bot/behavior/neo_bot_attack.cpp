@@ -276,7 +276,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
 
-	if ( bAtkDefender && !threat->IsVisibleRecently() )
+	if ( bAtkDefender && IsAtkGhostLeashed( me ) && !threat->IsVisibleRecently() )
 	{
 		// An ATK defender drops a chase it lost sight of when it leads out of the ghost's view,
 		// or when an attacker has the ghost, so it collapses on the carrier

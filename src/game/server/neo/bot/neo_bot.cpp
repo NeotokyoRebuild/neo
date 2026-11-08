@@ -79,6 +79,27 @@ bool IsInAtkGhostView( const Vector &vecPos )
 
 
 //-----------------------------------------------------------------------------------------------------
+bool IsAtkGhostLeashed( CNEOBot *me )
+{
+	if ( !IsAtkDefendingTeam( me->GetTeamNumber() ) )
+	{
+		return false;
+	}
+
+	// The carrier calls out what it sees, so the others can leave it to hunt;
+	// a loose or stolen ghost pulls the whole team back
+	const int iGhoster = NEORules()->GetGhosterPlayer();
+	if ( iGhoster <= 0 || iGhoster == me->entindex() )
+	{
+		return true;
+	}
+
+	return NEORules()->GetGhosterTeam() != me->GetTeamNumber();
+}
+
+
+
+//-----------------------------------------------------------------------------------------------------
 int Bot_GetTeamByName(const char* string)
 {
 	if (!V_stricmp(string, TEAM_STR_JINRAI))
