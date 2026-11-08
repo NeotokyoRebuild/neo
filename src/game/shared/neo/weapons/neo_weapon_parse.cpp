@@ -60,6 +60,12 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 		return;
 	}
 
+	if (!pBlock->GetFirstTrueSubKey())
+	{
+		Warning("%s: \"ReloadPhases\" is empty (is its neoAssets #base file missing?); reloading without phases\n", szClassName);
+		return;
+	}
+
 	for (KeyValues *pSeq = pBlock->GetFirstTrueSubKey(); pSeq && m_iNumReloadTables < RELOAD_PHASE_TABLES_MAX; pSeq = pSeq->GetNextTrueSubKey())
 	{
 		ReloadPhaseTable_t &table = m_reloadTables[m_iNumReloadTables++];

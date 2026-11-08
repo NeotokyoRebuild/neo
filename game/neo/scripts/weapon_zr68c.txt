@@ -1,3 +1,5 @@
+#base "weapon_zr68c_reload_phases.txt"
+
 // ZR68S
 
 WeaponData
@@ -17,20 +19,8 @@ WeaponData
 	"CycleTime"		"0.090909"		// time between shots
 	"ReloadReadyBeforeEnd"	"0.483"	// the reload is done at the last reload click, this long before its animation ends
 
-	// Reload phases (sv_neo_reload_experimental): per viewmodel sequence, when each phase counts ("credit")
-	// and when each sound piece's first transient plays ("at"), in seconds from the sequence start
-	"ReloadPhases"
-	{
-		"reload"
-		{
-			"drop" { "credit" "0.700" }
-		}
-		"draw_resume_drop_dry"
-		{
-			"seat" { "credit" "1.433" "sound" "weapon_zr68.reload_seat" "at" "1.394"  "sound2" "weapon_zr68.reload_slap" "at2" "1.829" }
-			"bolt" { "credit" "2.367" "sound" "weapon_zr68.reload_bolt" "at" "2.129" }
-		}
-	}
+	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers
+	"ReloadPhases"	{}
 	
 	"TPMuzzleFlashScale"	"0.5"
 
