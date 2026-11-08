@@ -55,6 +55,7 @@ struct ReloadPhaseRow_t
 struct ReloadPhaseTable_t
 {
 	char szSequence[RELOAD_SEQUENCE_NAME_MAX];
+	float flReady;	// when the reload is done and fire is allowed, seconds from the sequence start; 0: at its end
 	int iNumRows;
 	ReloadPhaseRow_t rows[RELOAD_PHASE_ROWS_MAX];
 };
