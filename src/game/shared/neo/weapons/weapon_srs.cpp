@@ -63,6 +63,12 @@ void CWeaponSRS::PrimaryAttack()
 		return BaseClass::PrimaryAttack();
 	}
 
+	// An unchambered gun completes its bolt cycle before it can fire; the press is ignored
+	if (HasChamberSlot() && IsBoltPending())
+	{
+		return;
+	}
+
 	const bool tryingToShootTooFast =
 		(gpGlobals->curtime < m_flLastAttackTime + GetFireRate());
 	if (tryingToShootTooFast)
