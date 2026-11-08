@@ -166,6 +166,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	int fireModeWidth = 0, fireModeHeight = 0;
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
+	// NEO TODO (sunzenshen): client tests for the 30+1/30 row and the chamber glyph (fresh, after tactical reload, after drop).
 	// a gun with a chamber counts the magazine in the row, and the round icon of the fire-mode glyph shows the chamber
 	const bool hasChamber = activeWep->HasChamberSlot();
 		

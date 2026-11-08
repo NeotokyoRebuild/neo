@@ -265,8 +265,8 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 	m_nReloadTable = -1;
 	m_flReloadStart = 0.0f;
 	m_nReloadSoundsDone = 0;
-	// NEO TODO (sunzenshen): sketch-zr68c-full. A fresh gun spawns with 30 = 29+1 here; should it spawn 30+1 (clip
-	// GetMaxClip1() + 1)? Open question for the user, it changes the ZR68C's spawn ammo
+	// NEO TODO (sunzenshen): a fresh gun spawns 29+1 (user decision 2026-11-07); the +1 appears only after a tactical
+	// reload, so do not raise the spawn ammo here.
 	m_bChamberEmpty = false;
 }
 
@@ -453,6 +453,8 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 }
 
 
+// NEO TODO (sunzenshen): Chamber model: a tactical reload (clip < max + 1) plays reload_partial, no cycle, 30+1. Dry-reload fallback for a
+// lost resume is still open; spawn ammo stays 29+1 (user decision 2026-11-07).
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	// sketch-zr68c-full (MVP Reload(), new lines before its first statement): a reload with a round chambered keeps it
@@ -608,6 +610,7 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 	}
 }
 
+// NEO TODO (sunzenshen): RELOAD_END: stop the third-person reload gesture on a cut-short reload (U5b); not decided.
 void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 {
 	// The unload takes no rounds: they are lost only if a switch interrupts the reload after it (ResumeReload),
@@ -804,6 +807,8 @@ void CNEOBaseCombatWeapon::StopReloadSoundPieces()
 }
 
 // A dropped weapon cancels its reload: the next owner does not resume it
+// NEO TODO (sunzenshen): Fallback for a lost resume (full magazine, empty chamber): Reload() must then play the dry reload (user decision
+// 2026-11-07); this function keeps the phase and table at >= 2_load but a lost resume is not handled yet.
 void CNEOBaseCombatWeapon::StopReloadOnDrop()
 {
 	if (!IsReloadPhaseSystemEnabled())

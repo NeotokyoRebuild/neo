@@ -1813,6 +1813,8 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 		return;
 	}
 
+	// NEO TODO (sunzenshen): with a chamber slot 30 of 31 counts as full here, and 29+1 (clip 30) never reloads by bot
+	// logic. Accepted for now; revisit the threshold later.
 	if (myWeapon->Clip1() >= myWeapon->GetMaxClip1())
 	{
 		return;

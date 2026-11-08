@@ -1,4 +1,6 @@
 #base "weapon_zr68c_reload_phases.txt"
+// NEO TODO (sunzenshen): Full slice: 3 transitions to author (rows 2, 3, 5 of the combinatorics), unload sound piece, markers 1_unload.sound,
+// 2_load.exit, 2_load.join; ChamberedRound key and 29+1 spawn; see the plan's Open TODO list.
 
 // ZR68S
 
