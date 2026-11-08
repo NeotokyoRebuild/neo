@@ -1,7 +1,10 @@
 #pragma once
 
+#include "mathlib/vector.h"
+
 class CNEOBot;
 class CNEO_Player;
+class CBasePlayer;
 
 // Whether a bot ghost carrier's route to its capture zone is blocked: a known enemy can stand on
 // that route no later than the carrier. The carrier's verdict is shared with its team, as a human
@@ -9,9 +12,11 @@ class CNEO_Player;
 // for the zone when it clears.
 namespace NEOBotCarryBlock
 {
+	bool IsNamedDead( CBasePlayer *pPlayer );
+
 	// Re-evaluate the carrier team's verdict, at most once per evaluation interval.
 	// bCapInReach: the carrier sees its capture zone or has a clean run to it.
-	void UpdateCarryBlock( CNEOBot *pCarrier, bool bCapInReach );
+	void UpdateCarryBlock( CNEOBot *pCarrier, bool bCapInReach, const Vector &vecGoal );
 
 	// Every tick: drop a verdict whose carrier no longer carries the ghost
 	void Update();

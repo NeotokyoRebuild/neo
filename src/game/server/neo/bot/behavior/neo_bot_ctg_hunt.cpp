@@ -176,11 +176,20 @@ void CNEOBotCtgHunt::RecomputeSeekPath( CNEOBot *me )
 	m_retargetTimer.Start( HUNT_RETARGET_INTERVAL );
 	m_bRepathPending = false;
 
+	CFastTimer planTimer;
+	planTimer.Start();
 	CNEO_Player *pTarget = SelectHuntTarget( me );
 	const CKnownEntity *known = pTarget ? me->GetVisionInterface()->GetKnown( pTarget ) : nullptr;
 	if ( known && TryPlanWatch( me, pTarget, *known ) )
 	{
 		return;
+	}
+	if ( !known )
+	{
+		planTimer.End();
+		// NEO-DEF-TEMP: record planning attempts with no usable target knowledge.
+		Msg( "NEO_DEF plan bot=%d enemy=0 outcome=none reason=target watched=0 watch=0 us=%d\n",
+			me->entindex(), (int)planTimer.GetDuration().GetMicroseconds() );
 	}
 
 	if ( m_bHasWatch )
@@ -220,6 +229,17 @@ void CNEOBotCtgHunt::RecomputeSeekPath( CNEOBot *me )
 // Plans, keeps or drops the watch on the target; one call decides entry and exit
 bool CNEOBotCtgHunt::TryPlanWatch( CNEOBot *me, CNEO_Player *pTarget, const CKnownEntity &known )
 {
+	CFastTimer timer;
+	timer.Start();
+	auto logPlan = [me, pTarget, &timer]( const char *pszOutcome, const char *pszReason, unsigned int iWatched, unsigned int iWatch )
+	{
+		timer.End();
+		// NEO-DEF-TEMP: include both watch search and any route construction in the plan cost.
+		Msg( "NEO_DEF plan bot=%d enemy=%d outcome=%s reason=%s watched=%u watch=%u us=%d\n",
+			me->entindex(), pTarget->entindex(), pszOutcome, pszReason, iWatched, iWatch,
+			(int)timer.GetDuration().GetMicroseconds() );
+	};
+
 	if ( m_bHasWatch && ( m_hHuntTarget.Get() != pTarget ) )
 	{
 		DropWatch( me, "target" );
@@ -227,6 +247,7 @@ bool CNEOBotCtgHunt::TryPlanWatch( CNEOBot *me, CNEO_Player *pTarget, const CKno
 
 	if ( !m_watchStaggerTimer.IsElapsed() )
 	{
+		logPlan( "none", "stagger", 0, 0 );
 		return false;
 	}
 
@@ -238,6 +259,7 @@ bool CNEOBotCtgHunt::TryPlanWatch( CNEOBot *me, CNEO_Player *pTarget, const CKno
 			DropWatch( me, "lost" );
 		}
 
+		logPlan( "none", "carrier", 0, 0 );
 		return false;
 	}
 
@@ -250,18 +272,13 @@ bool CNEOBotCtgHunt::TryPlanWatch( CNEOBot *me, CNEO_Player *pTarget, const CKno
 			DropWatch( me, "stale" );
 		}
 
+		logPlan( "none", "stale", 0, 0 );
 		return false;
 	}
-
-	CFastTimer timer;
-	timer.Start();
 
 	WatchArea_t watch;
 	const char *pszFailReason = "race";
 	const bool bFound = NEOBotDefense::FindWatchArea( me, known, pCarrier, m_bHasWatch ? &m_watch : nullptr, watch, &pszFailReason );
-
-	timer.End();
-	const int nMicroseconds = (int)timer.GetDuration().GetMicroseconds();
 
 	if ( !bFound )
 	{
@@ -270,6 +287,7 @@ bool CNEOBotCtgHunt::TryPlanWatch( CNEOBot *me, CNEO_Player *pTarget, const CKno
 			DropWatch( me, pszFailReason );
 		}
 
+		logPlan( "failed", pszFailReason, 0, 0 );
 		return false;
 	}
 
@@ -283,16 +301,18 @@ bool CNEOBotCtgHunt::TryPlanWatch( CNEOBot *me, CNEO_Player *pTarget, const CKno
 				DropWatch( me, "route" );
 			}
 
+			logPlan( "failed", "route", watch.pWatched->GetID(), watch.pWatch->GetID() );
 			return false;
 		}
 	}
 
+	logPlan( bNewWatch ? "new" : "kept", "ok", watch.pWatched->GetID(), watch.pWatch->GetID() );
 	if ( bNewWatch )
 	{
 		// NEO-DEF-TEMP
-		Msg( "NEO_DEF watch bot=%d enemy=%d watched=%u watch=%u mine=%.0f eta=%.0f age=%.1f us=%d\n",
+		Msg( "NEO_DEF watch bot=%d enemy=%d watched=%u watch=%u mine=%.0f eta=%.0f age=%.1f\n",
 			me->entindex(), pTarget->entindex(), watch.pWatched->GetID(), watch.pWatch->GetID(),
-			watch.flMyTravel, watch.flEnemyEta, flAge, nMicroseconds );
+			watch.flMyTravel, watch.flEnemyEta, flAge );
 
 		m_bHolding = false;
 		m_flLastReport = gpGlobals->curtime - flAge;

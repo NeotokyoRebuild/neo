@@ -544,7 +544,7 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	NEOBotCarryBlock::UpdateCarryBlock( me, IsCapPotentiallyVisible( me ) || HasCleanRunToCap( me ) );
+	NEOBotCarryBlock::UpdateCarryBlock( me, IsCapPotentiallyVisible( me ) || HasCleanRunToCap( me ), m_closestCapturePoint );
 	UpdateHoldState( me );
 
 	UpdateFollowPath( me, m_teammates );
@@ -792,8 +792,9 @@ bool CNEOBotCtgCarrier::HasCleanRunToCap( const CNEOBot *me ) const
 
 	for ( int i = 0; i < knownVector.Count(); ++i )
 	{
-		CBaseEntity *pKnown = knownVector[i].GetEntity();
-		if ( !pKnown || !pKnown->IsPlayer() || !pKnown->IsAlive() )
+		const CKnownEntity &known = knownVector[i];
+		CBaseEntity *pKnown = known.GetEntity();
+		if ( !pKnown || !pKnown->IsPlayer() )
 		{
 			continue;
 		}
@@ -803,7 +804,12 @@ bool CNEOBotCtgCarrier::HasCleanRunToCap( const CNEOBot *me ) const
 			continue;
 		}
 
-		if ( pKnown->GetAbsOrigin().DistToSqr( m_closestCapturePoint ) <= flMyDistToGoalSq )
+		if ( NEOBotCarryBlock::IsNamedDead( ToBasePlayer( pKnown ) ) )
+		{
+			continue;
+		}
+
+		if ( known.GetLastKnownPosition().DistToSqr( m_closestCapturePoint ) <= flMyDistToGoalSq )
 		{
 			// A known enemy is at least as close to the cap as we are.
 			return false;

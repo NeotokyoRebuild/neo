@@ -151,7 +151,7 @@ namespace NEOBotCarryBlock
 
 	static CCarryBlockDeathFeed s_deathFeed;
 
-	static bool IsNamedDead( CBasePlayer *pPlayer )
+	bool IsNamedDead( CBasePlayer *pPlayer )
 	{
 		const int iIndex = pPlayer->entindex();
 		if ( !s_bNamedDead[iIndex] )
@@ -197,7 +197,7 @@ namespace NEOBotCarryBlock
 		for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 		{
 			CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
-			if ( pPlayer && pPlayer->IsAlive() && ( pPlayer->GetTeamNumber() == iTeam ) )
+			if ( pPlayer && ( pPlayer->GetTeamNumber() == iTeam ) && pPlayer->IsAlive() )
 			{
 				++nAlive;
 			}
@@ -289,7 +289,7 @@ namespace NEOBotCarryBlock
 		for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 		{
 			CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
-			if ( pPlayer && ( pPlayer != pCarrier ) && pPlayer->IsAlive() && pCarrier->InSameTeam( pPlayer ) )
+			if ( pPlayer && ( pPlayer != pCarrier ) && pCarrier->InSameTeam( pPlayer ) && pPlayer->IsAlive() )
 			{
 				return true;
 			}
@@ -669,7 +669,7 @@ namespace NEOBotCarryBlock
 	}
 
 	// Floods the next counted enemy, and completes the evaluation after the last one
-	static void FloodNextEnemy( CNEOBot *pCarrier, CarryBlockState_t &state )
+	static void FloodNextEnemy( CNEOBot *pCarrier, CarryBlockState_t &state, int nSetupMicroseconds = 0 )
 	{
 		CFastTimer timer;
 		timer.Start();
@@ -681,7 +681,7 @@ namespace NEOBotCarryBlock
 
 		const int nMicroseconds = GetElapsedMicroseconds( timer );
 		state.nMicroseconds += nMicroseconds;
-		state.nMaxTickMicroseconds = Max( state.nMaxTickMicroseconds, nMicroseconds );
+		state.nMaxTickMicroseconds = Max( state.nMaxTickMicroseconds, nSetupMicroseconds + nMicroseconds );
 
 		if ( state.iCursor >= state.enemies.Count() )
 		{
@@ -695,7 +695,7 @@ namespace NEOBotCarryBlock
 	}
 
 	// Checks the gates, then sets up the floods; the first one runs on this tick
-	static void StartEvaluation( CNEOBot *pCarrier, bool bCapInReach, CarryBlockState_t &state )
+	static void StartEvaluation( CNEOBot *pCarrier, bool bCapInReach, const Vector &vecGoal, CarryBlockState_t &state )
 	{
 		CFastTimer timer;
 		timer.Start();
@@ -723,7 +723,6 @@ namespace NEOBotCarryBlock
 			return;
 		}
 
-		const Vector vecGoal = NEORules()->GetNearestGhostCapPoint( iTeam, pCarrier->GetAbsOrigin() );
 		if ( vecGoal == CNEO_Player::VECTOR_INVALID_WAYPOINT )
 		{
 			EndGate( state, iTeam, "route", timer );
@@ -792,11 +791,11 @@ namespace NEOBotCarryBlock
 
 		state.bEvaluating = true;
 		state.iCursor = 0;
-		FloodNextEnemy( pCarrier, state );
+		FloodNextEnemy( pCarrier, state, state.nMicroseconds );
 	}
 
 	//---------------------------------------------------------------------------------------------
-	void UpdateCarryBlock( CNEOBot *pCarrier, bool bCapInReach )
+	void UpdateCarryBlock( CNEOBot *pCarrier, bool bCapInReach, const Vector &vecGoal )
 	{
 		const int iTeam = pCarrier->GetTeamNumber();
 		CarryBlockState_t *pState = GetState( iTeam );
@@ -806,6 +805,14 @@ namespace NEOBotCarryBlock
 		}
 
 		CarryBlockState_t &state = *pState;
+		if ( ( state.flRouteTime >= 0.0f ) && ( state.vecRouteGoal.DistToSqr( vecGoal ) >= 1.0f ) )
+		{
+			state.bEvaluating = false;
+			state.bHasLast = false;
+			state.flNextEval = 0.0f;
+			state.flRouteTime = -1.0f;
+		}
+
 		if ( state.iCarrier != pCarrier->entindex() )
 		{
 			ClearState( state, iTeam, "carrier", 0 );
@@ -827,7 +834,7 @@ namespace NEOBotCarryBlock
 		}
 
 		state.flNextEval = gpGlobals->curtime + CARRY_BLOCK_EVAL_INTERVAL;
-		StartEvaluation( pCarrier, bCapInReach, state );
+		StartEvaluation( pCarrier, bCapInReach, vecGoal, state );
 	}
 
 	//---------------------------------------------------------------------------------------------
