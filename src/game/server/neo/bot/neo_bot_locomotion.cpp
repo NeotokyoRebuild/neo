@@ -1,8 +1,6 @@
-#include "cbase.h"
-
 #include "neo_bot.h"
 #include "neo_bot_locomotion.h"
-#include "particle_parse.h"
+#include "NextBotUtil.h"
 
 extern ConVar falldamage;
 
