@@ -266,8 +266,7 @@ public:
 	float GetPenetration() const;
 	void StopReloadOnDrop();
 
-	// sketch-zr68c-full: chamber model (old slice ad3749afb). The clip counts the chambered round, so a full
-	// ZR68C holds GetMaxClip1() + 1; the HUD shows it as "30+1/30"
+	// Clip1 includes the chambered round; the magazine can hold GetMaxClip1() more.
 	bool HasChamberSlot() const;
 	bool IsRoundChambered() const;
 	int RoundsInMagazine() const;
@@ -303,9 +302,6 @@ protected:
 	// When the reload in progress loads the magazine, 0 once it is loaded
 	CNetworkVar(float, m_flReloadReadyTime);
 
-	// The server's pre-game reload setting, snapshotted for prediction
-	CNetworkVar(bool, m_bReloadExperimentalEnabled);
-
 	// Reload phases (weapons whose script has a ReloadPhases block): the last phase finished, kept across a switch
 	CNetworkVar(int, m_nReloadPhase);
 	// the phase table of the reload sequence started last, -1 none
@@ -314,8 +310,7 @@ protected:
 	CNetworkVar(float, m_flReloadStart);
 	// the sound pieces of the playing sequence already started, one bit per piece
 	CNetworkVar(int, m_nReloadSoundsDone);
-	// sketch-zr68c-full: the last shot left the chamber empty; only a 3_cycle clears it. No m_bReloadDry as in the
-	// old slice: the chamber cannot change during a reload, so this flag already tells dry from live
+	// Only a reload cycle chambers a round after the last shot.
 	CNetworkVar(bool, m_bChamberEmpty);
 
 private:
@@ -327,7 +322,6 @@ private:
 	void FinishReloadPhase(ReloadPhase_t phase);
 	const char *FindResumeSequence() const;
 	bool ResumeReload();
-	// sketch-zr68c-full: factored out of the MVP's ResumeReload, shared with the fresh partial reload
 	bool PlayReloadSequence(const char *pszName, int iTable, float flGestureCycle);
 	bool StartPartialReload();
 	float ResumeGestureCycle() const;

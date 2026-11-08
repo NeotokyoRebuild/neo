@@ -22,10 +22,10 @@ extern ConVar weaponstay;
 #include "in_main.h"
 #else
 #include "items.h"
-#include "neo_gamerules.h"
 #endif // CLIENT_DLL
 
 #include "basecombatweapon_shared.h"
+#include "neo_gamerules.h"
 
 #include <initializer_list>
 
@@ -42,7 +42,6 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
 	RecvPropTime(RECVINFO(m_flReloadReadyTime)),
-	RecvPropBool(RECVINFO(m_bReloadExperimentalEnabled)),
 	RecvPropInt(RECVINFO(m_nReloadPhase)),
 	RecvPropInt(RECVINFO(m_nReloadTable)),
 	RecvPropTime(RECVINFO(m_flReloadStart)),
@@ -56,7 +55,6 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
 	SendPropTime(SENDINFO(m_flReloadReadyTime)),
-	SendPropBool(SENDINFO(m_bReloadExperimentalEnabled)),
 	SendPropInt(SENDINFO(m_nReloadPhase), RELOAD_PHASE_BITS, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nReloadTable), RELOAD_PHASE_TABLE_BITS),
 	SendPropTime(SENDINFO(m_flReloadStart)),
@@ -75,7 +73,6 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flReloadReadyTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bReloadExperimentalEnabled, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nReloadPhase, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nReloadTable, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flReloadStart, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
@@ -94,7 +91,6 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_flReloadReadyTime, FIELD_TIME),
-	DEFINE_FIELD(m_bReloadExperimentalEnabled, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_nReloadPhase, FIELD_INTEGER),
 	DEFINE_FIELD(m_nReloadTable, FIELD_INTEGER),
 	DEFINE_FIELD(m_flReloadStart, FIELD_TIME),
@@ -106,7 +102,7 @@ END_DATADESC()
 ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
 ConVar sv_neo_dynamic_viewkick("sv_neo_dynamic_viewkick", "0", FCVAR_REPLICATED, "Enables view kick scaling based on current inaccuracy.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_reload_experimental("sv_neo_reload_experimental", "0", FCVAR_REPLICATED,
-	"Lets a switch interrupt a reload after the magazine is out, for weapons that define reload phases. Set before the map loads.",
+	"Lets a switch interrupt a reload after the magazine is out, for weapons that define reload phases. A change applies from the next map.",
 	true, 0.0f, true, 1.0f);
 
 const char *GetWeaponByLoadoutId(int id)
@@ -259,14 +255,12 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
-	m_bReloadExperimentalEnabled = sv_neo_reload_experimental.GetBool();
 	m_bTriggerReset = true;
 	m_nReloadPhase = RELOAD_PHASE_NONE;
 	m_nReloadTable = -1;
 	m_flReloadStart = 0.0f;
 	m_nReloadSoundsDone = 0;
-	// NEO TODO (sunzenshen): a fresh gun spawns 29+1 (user decision 2026-11-07); the +1 appears only after a tactical
-	// reload, so do not raise the spawn ammo here.
+	// Spawn ammo includes the chambered round; only a tactical reload adds an extra round.
 	m_bChamberEmpty = false;
 }
 
@@ -453,13 +447,35 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 }
 
 
-// NEO TODO (sunzenshen): Chamber model: a tactical reload (clip < max + 1) plays reload_partial, no cycle, 30+1. Dry-reload fallback for a
-// lost resume is still open; spawn ammo stays 29+1 (user decision 2026-11-07).
 bool CNEOBaseCombatWeapon::Reload( void )
 {
-	// sketch-zr68c-full (MVP Reload(), new lines before its first statement): a reload with a round chambered keeps it
-	// and skips the cycle (U2: 30+1, fire at the clip end). It bypasses DefaultReload: its single wav contains the bolt,
-	// and its clip >= max gate refuses 29+1. A model without reload_partial falls through to master's reload
+	if (m_bInReload)
+	{
+		return false;
+	}
+
+	// A lost resume must still allow chambering the loaded magazine, even without spare ammo.
+	if (HasChamberSlot() && m_bChamberEmpty && m_iClip1 > 0)
+	{
+		static constexpr const char *VM_SEQ_RELOAD_DRY = "reload";
+		const int iTable = GetNEOWpnData().FindReloadTable(VM_SEQ_RELOAD_DRY);
+		if (iTable < 0 || !PlayReloadSequence(VM_SEQ_RELOAD_DRY, iTable, 0.0f))
+		{
+			return false;
+		}
+
+		// Keep the loaded magazine's ammo; only the cycle phase still needs credit.
+		m_nReloadPhase = RELOAD_PHASE_LOADED;
+		CBaseCombatWeapon::WeaponSound(RELOAD_NPC);
+		return true;
+	}
+
+	if (HasChamberSlot() && RoundsInMagazine() >= MagazineCapacity())
+	{
+		return false;
+	}
+
+	// The tactical sequence omits the bolt cycle and retains the chambered round.
 	if (StartPartialReload())
 	{
 		return true;
@@ -529,7 +545,7 @@ static constexpr float RELOAD_SOUND_LEAD = 0.02f;
 
 bool CNEOBaseCombatWeapon::IsReloadPhaseSystemEnabled() const
 {
-	return m_bReloadExperimentalEnabled && GetNEOWpnData().m_iNumReloadTables > 0;
+	return NEORules() && NEORules()->IsReloadExperimental() && !GetNEOWpnData().m_reloadTables.IsEmpty();
 }
 
 // The viewmodel sequence that resumes the reload interrupted now, from the phase table of the playing sequence;
@@ -610,7 +626,6 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 	}
 }
 
-// NEO TODO (sunzenshen): RELOAD_END: stop the third-person reload gesture on a cut-short reload (U5b); not decided.
 void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 {
 	// The unload takes no rounds: they are lost only if a switch interrupts the reload after it (ResumeReload),
@@ -621,7 +636,6 @@ void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 		m_flReloadReadyTime = gpGlobals->curtime;
 	}
 
-	// sketch-zr68c-full (new case in MVP FinishReloadPhase): the bolt chambers a round
 	if (phase == RELOAD_PHASE_CYCLED)
 	{
 		m_bChamberEmpty = false;
@@ -632,8 +646,6 @@ void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 
 // Resume, in the draw, a reload interrupted by a switch. A model without the resume sequence keeps the old magazine,
 // as a cancelled reload does; returns whether the reload resumed
-// sketch-zr68c-full: MVP ResumeReload() body split; the play part moved to PlayReloadSequence. The resume itself is
-// still chosen by FindResumeSequence (M2), so the chamber-live and dry resumes need no chamber test here
 bool CNEOBaseCombatWeapon::ResumeReload()
 {
 	const char *pszName = FindResumeSequence();
@@ -648,8 +660,8 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 	// read from the interrupted table before PlayReloadSequence replaces it
 	const float flGestureCycle = ResumeGestureCycle();
 
-	// The old magazine and its rounds are gone, as when a reload loads at its ready time; a chambered round stays.
-	// Only after the unload: after 2_load the fresh magazine is already in (resume_after_2_load_empty)
+	// After the unload the old magazine is lost, but a chambered round stays.
+	// After the load the fresh magazine is already in.
 	if (m_nReloadPhase == RELOAD_PHASE_UNLOADED)
 	{
 		m_iClip1 = IsRoundChambered() ? 1 : 0;
@@ -658,19 +670,16 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 	return PlayReloadSequence(pszName, iTable, flGestureCycle);
 }
 
-// sketch-zr68c-full: the fresh chamber-live reload (U2). Plays reload_partial by name: it carries no activity, and
-// the shipped reload (ACT_VM_RELOAD) is the dry one, as in Source's reload / reload_empty pairs read the other way
+// The tactical sequence has no activity; ACT_VM_RELOAD selects the dry reload.
 bool CNEOBaseCombatWeapon::StartPartialReload()
 {
-	static constexpr const char *VM_SEQ_RELOAD_PARTIAL = "reload_partial";
+	static constexpr const char *VM_SEQ_RELOAD_PARTIAL = "reload_reloadexit";
 	if (!IsReloadPhaseSystemEnabled() || !IsRoundChambered())
 	{
 		return false;
 	}
 
-	// NEO TODO (sunzenshen): DefaultReload's other gates (owner, reserve) are repeated here, check the full list
-	// (ClientWantsAutoReload, m_bInReload, the HL2MP CheckReload path) before review
-	if (RoundsInMagazine() >= MagazineCapacity() || m_iPrimaryAmmoCount <= 0)
+	if (!UsesClipsForAmmo1() || RoundsInMagazine() >= MagazineCapacity() || m_iPrimaryAmmoCount <= 0)
 	{
 		return false;
 	}
@@ -685,12 +694,12 @@ bool CNEOBaseCombatWeapon::StartPartialReload()
 	return PlayReloadSequence(VM_SEQ_RELOAD_PARTIAL, iTable, 0.0f);
 }
 
-// Play a reload sequence picked by name and time its phase table. The third-person gesture starts at flGestureCycle
-// (U5, ported from the old slice: a resume starts the full reload gesture where the reload resumes)
+// Named sequences carry no activity, so time their reload phases and gesture explicitly.
 bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, float flGestureCycle)
 {
+	auto *pOwner = ToHL2MPPlayer(GetOwner());
 	const int iSequence = LookupReloadSequence(pszName);
-	if (iSequence < 0)
+	if (!pOwner || iSequence < 0)
 	{
 		return false;
 	}
@@ -699,7 +708,7 @@ bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, f
 	SendViewModelAnim(iSequence);
 
 	// the gesture event carries the start cycle in thousandths (CHL2MPPlayerAnimState::DoAnimationEvent)
-	ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, static_cast<int>(flGestureCycle * 1000.0f));
+	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, static_cast<int>(flGestureCycle * 1000.0f));
 
 	// the clip end is the fire point: no ReloadReadyBeforeEnd on this path
 	const float flEnd = gpGlobals->curtime + ReloadViewModel()->SequenceDuration(iSequence);
@@ -716,9 +725,7 @@ bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, f
 
 // Where the third-person reload gesture starts for a resume: the interrupted table's ammo time of the last finished
 // phase, as a fraction of that table's sequence (0 for anything else)
-// NEO TODO (sunzenshen): the gesture is the player model's reload, not the viewmodel's, so the fraction is only an
-// approximation (old slice did the same). A resume interrupted again before its first phase gets 0: it should map
-// back to the original reload's fraction. Open question U5 follow-up: is RELOAD_END on holster wanted too?
+// NEO TODO (sunzenshen): Map a resume interrupted before its first phase back to the original gesture cycle.
 float CNEOBaseCombatWeapon::ResumeGestureCycle() const
 {
 	if (m_nReloadPhase == RELOAD_PHASE_NONE || m_nReloadTable < 0)
@@ -745,7 +752,6 @@ float CNEOBaseCombatWeapon::ResumeGestureCycle() const
 	return 0.0f;
 }
 
-// sketch-zr68c-full: chamber model, ported from the old slice (ad3749afb)
 bool CNEOBaseCombatWeapon::HasChamberSlot() const
 {
 	return IsReloadPhaseSystemEnabled() && GetNEOWpnData().m_bChamberedRound;
@@ -806,9 +812,6 @@ void CNEOBaseCombatWeapon::StopReloadSoundPieces()
 	}
 }
 
-// A dropped weapon cancels its reload: the next owner does not resume it
-// NEO TODO (sunzenshen): Fallback for a lost resume (full magazine, empty chamber): Reload() must then play the dry reload (user decision
-// 2026-11-07); this function keeps the phase and table at >= 2_load but a lost resume is not handled yet.
 void CNEOBaseCombatWeapon::StopReloadOnDrop()
 {
 	if (!IsReloadPhaseSystemEnabled())
@@ -818,12 +821,8 @@ void CNEOBaseCombatWeapon::StopReloadOnDrop()
 
 	StopReloadSoundPieces();
 
-	// sketch-zr68c-full, U4 (a): a gun dropped after the load but before the cycle keeps its phase and table, so the
-	// next owner's draw plays the resume (resume_after_2_load_empty) and chambers the round. Without this the gun would
-	// hold a full magazine it cannot fire. A drop after the unload still cancels, as in the MVP (the old magazine stays)
-	// NEO TODO (sunzenshen): open question: should a drop after 1_unload also resume for the next owner?
-	// NEO TODO (sunzenshen): the dropping player's sound pieces stop here; the next owner hears the resume's own
-	// pieces only (sound rule: no tap)
+	// Preserve a pending bolt cycle for the next owner's draw.
+	// NEO TODO (sunzenshen): Should a drop after 1_unload also resume for the next owner?
 	if (m_nReloadPhase >= RELOAD_PHASE_LOADED && FindResumeSequence())
 	{
 		return;
@@ -881,8 +880,7 @@ void CNEOBaseCombatWeapon::FinishReload(void)
 		// If I use primary clips, reload primary
 		if (UsesClipsForAmmo1())
 		{
-			// sketch-zr68c-full (master code the MVP touches): a chambered round stays, 30+1 (U2). Without a chamber
-			// slot IsRoundChambered() is false and this is master's fill
+			// Replacing the magazine retains a round already in the chamber.
 			const int iChambered = IsRoundChambered() ? 1 : 0;
 			int primary = MIN(MagazineCapacity(), m_iPrimaryAmmoCount);
 			m_iClip1 = iChambered + primary;
@@ -995,6 +993,7 @@ float CNEOBaseCombatWeapon::GetPenetration() const
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
+	// NEO TODO (sunzenshen): Decide whether RELOAD_END should stop the gesture on a switch.
 	// Only a phase that a sequence resumes from outlasts the switch, with the table that names the resume
 	if (IsReloadPhaseSystemEnabled())
 	{
@@ -1428,10 +1427,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 
-	// sketch-zr68c-full: a magazine is in but the chamber is empty (a reload interrupted after 2_load whose resume was
-	// lost, such as a model without resume_after_2_load_empty)
-	// NEO TODO (sunzenshen): Reload() refuses here (29+1 gate and clip >= max): allow a dry reload with a full magazine
-	// and an empty chamber (U4 option (b)) as the fallback, or chamber silently (option (c)). Today the gun is stuck
+	// A loaded magazine cannot fire until a reload cycle chambers a round.
 	else if (HasChamberSlot() && m_bChamberEmpty && m_iClip1 > 0)
 	{
 		CheckReload();
@@ -1541,7 +1537,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		info.m_iShots = MIN(info.m_iShots, m_iClip1);
 		m_iClip1 -= info.m_iShots;
 
-		// sketch-zr68c-full: the last round leaves the chamber empty, so the next reload is the dry one with the cycle
+		// The last shot requires a bolt cycle on the next reload.
 		if (HasChamberSlot() && m_iClip1 <= 0)
 		{
 			m_bChamberEmpty = true;

@@ -487,7 +487,7 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 		return;
 	}
 
-	CNEOWeaponInfo data = weapon->GetNEOWpnData();
+	const CNEOWeaponInfo &data = weapon->GetNEOWpnData();
 
 	Vector vForward, vRight, vUp, newPos, vOffset;
 	QAngle newAng, angOffset;

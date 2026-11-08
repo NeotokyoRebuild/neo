@@ -762,9 +762,6 @@
 // ZR68 reload in per-step pieces (sv_neo_reload_experimental), named after the step; _2 is a step's second sound.
 // Each file starts just before its first transient
 
-// sketch-zr68c-full: the unload piece for reload_partial (the single reload wav contains the bolt).
-// NEO TODO (sunzenshen): PLACEHOLDER wav in the sketch's neoAssets (a copy of zr68_reload_2_load.wav); cut the real
-// piece from zr68_reload.wav at the reload:1_unload.sound marker - 0.020 s, as the others
 "weapon_zr68.reload_1_unload"
 {
 	"channel"		"CHAN_ITEM"

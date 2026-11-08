@@ -344,8 +344,6 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 #ifdef NEO
 		AddToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, CalcReloadSequence(), true);
 		// a resumed reload starts the gesture where the reload resumes: nData is that cycle x 1000
-		// (sketch-zr68c-full, U5: ported from the old slice reload-zr68c; RELOAD_END on a cut-short reload not ported,
-		// NEO TODO (sunzenshen): decide whether a switch should stop the third-person gesture)
 		if (nData > 0)
 		{
 			SetGestureSlotCycle(GESTURE_SLOT_ATTACK_AND_RELOAD, nData / 1000.0f);

@@ -1,8 +1,6 @@
 #base "weapon_zr68c_reload_phases.txt"
-// NEO TODO (sunzenshen): Full slice: 3 transitions to author (rows 2, 3, 5 of the combinatorics), unload sound piece, markers 1_unload.sound,
-// 2_load.exit, 2_load.join; ChamberedRound key and 29+1 spawn; see the plan's Open TODO list.
 
-// ZR68S
+// ZR68C
 
 WeaponData
 {
@@ -23,8 +21,7 @@ WeaponData
 
 	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers
 	"ReloadPhases"	{}
-	// sketch-zr68c-full: closed bolt, a reload with rounds left keeps the chambered one (30+1). Gameplay, so here and
-	// not in the neoAssets phases file; only read while the reload phases are on (HasChamberSlot)
+	// Chamber capacity is gameplay data; the phase timing comes from neoAssets.
 	"ChamberedRound"	"1"
 	
 	"TPMuzzleFlashScale"	"0.5"

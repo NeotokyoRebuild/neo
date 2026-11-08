@@ -11,6 +11,7 @@
 #endif
 
 #include "hl2mp_weapon_parse.h"
+#include "utlvector.h"
 
 // A reload is a linear sequence of phases; a reload sequence finishes each phase at a point of its animation
 enum ReloadPhase_t
@@ -73,12 +74,10 @@ public:
 	int		m_iBullets;
 	float	m_flCycleTime;
 	float	m_flReloadReadyBeforeEnd;
-	int		m_iNumReloadTables;	// 0: the weapon reloads without phases
-	// NEO TODO (sunzenshen): sketch-zr68c-full. A closed-bolt gun keeps a round in the chamber through a reload with
-	// rounds left (30+1). Gameplay, not asset data, so the key sits at WeaponData top level in neo's weapon script,
-	// not in the neoAssets phases file. Ported from the old slice (ad3749afb), where it sat inside ReloadPhases.
+	// A closed-bolt weapon retains a chambered round when reloading with rounds left.
 	bool	m_bChamberedRound;
-	ReloadPhaseTable_t m_reloadTables[RELOAD_PHASE_TABLES_MAX];
+	// Empty: the weapon reloads without phases. Allocated only for scripts with a ReloadPhases block.
+	CUtlVector<ReloadPhaseTable_t> m_reloadTables;
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
 	char	szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
 	char	szDeathIcon[MAX_BULLET_CHARACTER];

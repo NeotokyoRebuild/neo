@@ -24,7 +24,6 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 	m_flPenetration = 0.f;
 	m_bDropOnDeath = true;
 	iAimFOV = 0;
-	m_iNumReloadTables = 0;
 	m_bChamberedRound = false;
 
 	m_flVMFov = m_flVMAimFov = 0.f;
@@ -55,7 +54,7 @@ static ReloadPhase_t ReloadPhaseFromName(const char *pszName)
 // "ReloadPhases" { "<sequence>" { "<phase>" { "ammo" "s" "sound" "s" "sound_name" "name" "resume" "sequence" } ... } ... }
 void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 {
-	m_iNumReloadTables = 0;
+	m_reloadTables.Purge();
 	if (!pBlock)
 	{
 		return;
@@ -67,9 +66,9 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 		return;
 	}
 
-	for (KeyValues *pSeq = pBlock->GetFirstTrueSubKey(); pSeq && m_iNumReloadTables < RELOAD_PHASE_TABLES_MAX; pSeq = pSeq->GetNextTrueSubKey())
+	for (KeyValues *pSeq = pBlock->GetFirstTrueSubKey(); pSeq && m_reloadTables.Count() < RELOAD_PHASE_TABLES_MAX; pSeq = pSeq->GetNextTrueSubKey())
 	{
-		ReloadPhaseTable_t &table = m_reloadTables[m_iNumReloadTables++];
+		ReloadPhaseTable_t &table = m_reloadTables[m_reloadTables.AddToTail()];
 		V_strncpy(table.szSequence, pSeq->GetName(), sizeof(table.szSequence));
 		table.iNumRows = 0;
 
@@ -97,7 +96,7 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 
 int CNEOWeaponInfo::FindReloadTable(const char *pszSequence) const
 {
-	for (int i = 0; i < m_iNumReloadTables; ++i)
+	for (int i = 0; i < m_reloadTables.Count(); ++i)
 	{
 		if (V_stricmp(m_reloadTables[i].szSequence, pszSequence) == 0)
 		{
@@ -116,7 +115,6 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 	m_flCycleTime = pKeyValuesData->GetFloat( "CycleTime", 0.15 );
 	m_flReloadReadyBeforeEnd = pKeyValuesData->GetFloat( "ReloadReadyBeforeEnd", 0.0f );
 	ParseReloadPhases(pKeyValuesData->FindKey("ReloadPhases"));
-	// sketch-zr68c-full: only meaningful with phases (the chamber round needs reload_partial); see HasChamberSlot
 	m_bChamberedRound = pKeyValuesData->GetBool("ChamberedRound", false);
 
 	const char *notFoundStr = "notfound";

@@ -313,7 +313,6 @@ void CNEOHud_Ammo::DrawAmmo() const
 	}
 }
 
-// sketch-zr68c-full: HUD ported unchanged from the old slice (ad3749afb), HasChamberSlot guarded
 // The fire-mode glyph's top rows are a round icon (bullet or shell), its letter sits below them
 static constexpr float FIRE_MODE_ROUND_ICON_HEIGHT = 0.184f;
 
