@@ -701,7 +701,12 @@ bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, R
 		return false;
 	}
 
-	SetSequence(iSequence);
+	// The weapon entity draws its world model in third person, which has none of the viewmodel's sequences
+	const int iOwnSequence = LookupSequence(pszName);
+	if (iOwnSequence >= 0)
+	{
+		SetSequence(iOwnSequence);
+	}
 	SendViewModelAnim(iSequence);
 
 	// the third-person reload gesture lasts no longer than this sequence
