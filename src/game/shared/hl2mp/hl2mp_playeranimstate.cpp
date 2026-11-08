@@ -343,6 +343,13 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 		{
 #ifdef NEO
 		AddToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, CalcReloadSequence(), true);
+		// a resumed reload starts the gesture where the reload resumes: nData is that cycle x 1000
+		// (sketch-zr68c-full, U5: ported from the old slice reload-zr68c; RELOAD_END on a cut-short reload not ported,
+		// NEO TODO (sunzenshen): decide whether a switch should stop the third-person gesture)
+		if (nData > 0)
+		{
+			SetGestureSlotCycle(GESTURE_SLOT_ATTACK_AND_RELOAD, nData / 1000.0f);
+		}
 #else
 			// Weapon reload.
 			if ( GetBasePlayer()->GetFlags() & FL_DUCKING )
@@ -1013,3 +1020,24 @@ void CHL2MPPlayerAnimState::DebugShowAnimStateFull(int iStartLine)
 
 	AnimStateLog("--------------------------------------------\n\n");
 }
+
+#ifdef NEO
+// Start a gesture part way through its sequence, as AddVCDSequenceToGestureSlot does for scene gestures
+void CHL2MPPlayerAnimState::SetGestureSlotCycle(int iGestureSlot, float flCycle)
+{
+	GestureSlot_t &slot = m_aGestureSlots[iGestureSlot];
+	if (!slot.m_pAnimLayer)
+	{
+		return;
+	}
+
+	slot.m_pAnimLayer->m_flCycle = flCycle;
+	slot.m_pAnimLayer->m_flPrevCycle = flCycle;
+#ifdef CLIENT_DLL
+	if (CBasePlayer *pPlayer = GetBasePlayer())
+	{
+		pPlayer->m_flOverlayPrevEventCycle[iGestureSlot] = flCycle;
+	}
+#endif
+}
+#endif // NEO
