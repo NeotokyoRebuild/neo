@@ -274,16 +274,17 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 			// to partially path up to boundary of hazard area
 			return -1.0f;
 		}
+	}
 
-		// an enemy detpack's blast is lethal on the fastest and safest routes too,
-		// but a bot already inside the blast radius may still walk out through it
-		const bool bDetpackRoute = ( m_routeType == FASTEST_ROUTE ) || ( m_routeType == SAFEST_ROUTE );
-		const int iTeam = m_me->GetTeamNumber();
-		if ( bDetpackRoute && CNEOBotPathReservations()->IsAreaDetpackHazard( area->GetID(), iTeam )
-			&& !CNEOBotPathReservations()->IsAreaDetpackHazard( fromArea->GetID(), iTeam ) )
-		{
-			return -1.0f;
-		}
+	// The default route already treats a detpack blast as a deadly hazard above.
+	// The safest route avoids it too, but a bot already inside the blast may still walk out through it.
+	// The fastest route accepts the risk that the enemy notices the bot and triggers the detpack.
+	const int iTeam = m_me->GetTeamNumber();
+	if ( !m_bIgnoreHazards && ( m_routeType == SAFEST_ROUTE )
+		&& CNEOBotPathReservations()->IsAreaDetpackHazard( area->GetID(), iTeam )
+		&& !CNEOBotPathReservations()->IsAreaDetpackHazard( fromArea->GetID(), iTeam ) )
+	{
+		return -1.0f;
 	}
 
 	// compute distance traveled along path so far
