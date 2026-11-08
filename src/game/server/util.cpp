@@ -2173,11 +2173,20 @@ void UTIL_SetClientVisibilityPVS( edict_t *pClient, const unsigned char *pvs, in
 
 		g_CheckClient.m_bClientPVSIsExpanded = false;
 
+#ifdef NEO // https://github.com/ValveSoftware/source-sdk-2013/pull/890
+		size_t *pFrom = (size_t *)pvs;
+		size_t *pMask = (size_t *)g_CheckClient.m_checkPVS;
+		size_t *pTo = (size_t *)g_CheckClient.m_checkVisibilityPVS;
+		
+		int limit = static_cast<int>(sizeof(size_t));
+#else
 		unsigned *pFrom = (unsigned *)pvs;
 		unsigned *pMask = (unsigned *)g_CheckClient.m_checkPVS;
 		unsigned *pTo = (unsigned *)g_CheckClient.m_checkVisibilityPVS;
-
+		
 		int limit = pvssize / 4;
+#endif // NEO
+
 		int i;
 
 		for ( i = 0; i < limit; i++ )
@@ -2190,10 +2199,18 @@ void UTIL_SetClientVisibilityPVS( edict_t *pClient, const unsigned char *pvs, in
 			}
 		}
 
+#ifdef NEO // https://github.com/ValveSoftware/source-sdk-2013/pull/890
+		int remainder = pvssize % static_cast<int>( sizeof(size_t) );
+#else
 		int remainder = pvssize % 4;
+#endif // NEO
 		for ( i = 0; i < remainder; i++ )
 		{
+#ifdef NEO // https://github.com/ValveSoftware/source-sdk-2013/pull/890
+			((unsigned char *)&pTo[limit])[i] = ((unsigned char *)&pFrom[limit])[i] & ~((unsigned char *)&pMask[limit])[i];
+#else
 			((unsigned char *)&pTo[limit])[i] = ((unsigned char *)&pFrom[limit])[i] & !((unsigned char *)&pMask[limit])[i];
+#endif // NEO
 
 			if ( ((unsigned char *)&pFrom[limit])[i] != 0)
 			{
