@@ -459,7 +459,7 @@ bool CNEOBaseCombatWeapon::Reload( void )
 	{
 		static constexpr const char *VM_SEQ_RELOAD_DRY = "reload";
 		const int iTable = GetNEOWpnData().FindReloadTable(VM_SEQ_RELOAD_DRY);
-		if (iTable < 0 || !PlayReloadSequence(VM_SEQ_RELOAD_DRY, iTable, 0.0f))
+		if (iTable < 0 || !PlayReloadSequence(VM_SEQ_RELOAD_DRY, iTable, RELOAD_GESTURE_KEEP_START))
 		{
 			return false;
 		}
@@ -657,9 +657,6 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 		return false;
 	}
 
-	// read from the interrupted table before PlayReloadSequence replaces it
-	const float flGestureCycle = ResumeGestureCycle();
-
 	// After the unload the old magazine is lost, but a chambered round stays.
 	// After the load the fresh magazine is already in.
 	if (m_nReloadPhase == RELOAD_PHASE_UNLOADED)
@@ -667,7 +664,7 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 		m_iClip1 = IsRoundChambered() ? 1 : 0;
 	}
 
-	return PlayReloadSequence(pszName, iTable, flGestureCycle);
+	return PlayReloadSequence(pszName, iTable, RELOAD_GESTURE_KEEP_END);
 }
 
 // The tactical sequence has no activity; ACT_VM_RELOAD selects the dry reload.
@@ -691,11 +688,11 @@ bool CNEOBaseCombatWeapon::StartPartialReload()
 	}
 
 	m_nReloadPhase = RELOAD_PHASE_NONE;
-	return PlayReloadSequence(VM_SEQ_RELOAD_PARTIAL, iTable, 0.0f);
+	return PlayReloadSequence(VM_SEQ_RELOAD_PARTIAL, iTable, RELOAD_GESTURE_KEEP_START);
 }
 
 // Named sequences carry no activity, so time their reload phases and gesture explicitly.
-bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, float flGestureCycle)
+bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, ReloadGestureFit_t gestureFit)
 {
 	auto *pOwner = ToHL2MPPlayer(GetOwner());
 	const int iSequence = LookupReloadSequence(pszName);
@@ -707,11 +704,12 @@ bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, f
 	SetSequence(iSequence);
 	SendViewModelAnim(iSequence);
 
-	// the gesture event carries the start cycle in thousandths (CHL2MPPlayerAnimState::DoAnimationEvent)
-	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, static_cast<int>(flGestureCycle * 1000.0f));
+	// the third-person reload gesture lasts no longer than this sequence
+	const float flDuration = ReloadViewModel()->SequenceDuration(iSequence);
+	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, CHL2MPPlayerAnimState::PackReloadGestureData(gestureFit, flDuration));
 
 	// the clip end is the fire point: no ReloadReadyBeforeEnd on this path
-	const float flEnd = gpGlobals->curtime + ReloadViewModel()->SequenceDuration(iSequence);
+	const float flEnd = gpGlobals->curtime + flDuration;
 	GetOwner()->SetNextAttack(flEnd);
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = flEnd;
 	SetWeaponIdleTime(flEnd);
@@ -721,35 +719,6 @@ bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, f
 	StartReloadPhases(iTable);
 	m_bInReload = true;
 	return true;
-}
-
-// Where the third-person reload gesture starts for a resume: the interrupted table's ammo time of the last finished
-// phase, as a fraction of that table's sequence (0 for anything else)
-// NEO TODO (sunzenshen): Map a resume interrupted before its first phase back to the original gesture cycle.
-float CNEOBaseCombatWeapon::ResumeGestureCycle() const
-{
-	if (m_nReloadPhase == RELOAD_PHASE_NONE || m_nReloadTable < 0)
-	{
-		return 0.0f;
-	}
-
-	const ReloadPhaseTable_t &table = GetNEOWpnData().m_reloadTables[m_nReloadTable];
-	const int iSequence = LookupReloadSequence(table.szSequence);
-	CBaseViewModel *pVM = ReloadViewModel();
-	const float flDuration = (pVM && iSequence >= 0) ? pVM->SequenceDuration(iSequence) : 0.0f;
-	if (flDuration <= 0.0f)
-	{
-		return 0.0f;
-	}
-
-	for (int i = 0; i < table.iNumRows; ++i)
-	{
-		if (table.rows[i].phase == m_nReloadPhase)
-		{
-			return clamp(table.rows[i].flAmmo / flDuration, 0.0f, 1.0f);
-		}
-	}
-	return 0.0f;
 }
 
 bool CNEOBaseCombatWeapon::HasChamberSlot() const

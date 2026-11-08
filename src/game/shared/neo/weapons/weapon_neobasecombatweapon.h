@@ -322,9 +322,8 @@ private:
 	void FinishReloadPhase(ReloadPhase_t phase);
 	const char *FindResumeSequence() const;
 	bool ResumeReload();
-	bool PlayReloadSequence(const char *pszName, int iTable, float flGestureCycle);
+	bool PlayReloadSequence(const char *pszName, int iTable, ReloadGestureFit_t gestureFit);
 	bool StartPartialReload();
-	float ResumeGestureCycle() const;
 	void StopReloadSoundPieces();
 	void EmitReloadSoundPiece(const char *pszSound);
 	CBaseViewModel *ReloadViewModel() const;
