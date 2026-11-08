@@ -512,7 +512,7 @@ static constexpr float RELOAD_SOUND_LEAD = 0.02f;
 
 bool CNEOBaseCombatWeapon::IsReloadPhaseSystemEnabled() const
 {
-	return m_bReloadExperimentalEnabled && GetNEOWpnData().m_iNumReloadTables > 0;
+	return m_bReloadExperimentalEnabled && !GetNEOWpnData().m_reloadTables.IsEmpty();
 }
 
 // The viewmodel sequence that resumes the reload interrupted now, from the phase table of the playing sequence;
