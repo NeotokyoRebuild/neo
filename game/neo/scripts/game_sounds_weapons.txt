@@ -1273,6 +1273,62 @@
 	"wave"			        "weapons/pz/pz_reload.wav"
 }
 
+// PZ252 reload in per-step pieces (sv_neo_reload_experimental).
+
+"weapon_pz.reload_1_unload"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_1_unload.wav"
+}
+
+"weapon_pz.reload_1_unload_2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_1_unload_2.wav"
+}
+
+"weapon_pz.reload_2_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_2_load.wav"
+}
+
+"weapon_pz.reload_2_load_2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_2_load_2.wav"
+}
+
+"weapon_pz.reload_2_load_3"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_2_load_3.wav"
+}
+
+"weapon_pz.reload_3_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/pz/pz_reload_3_cycle.wav"
+}
+
 //-------------------
 
 "weapon_pz.npc_reload"
