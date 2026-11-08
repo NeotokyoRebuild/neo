@@ -198,6 +198,12 @@ bool CWeaponSupa7::StartReloadSlug(void)
 
 	if (IsTubeEnabled())
 	{
+		// One slug per request: a held alt-fire neither queues another nor delays the shot
+		if (m_bSlugDelayed || m_nInsert == SUPA7_INSERT_SLUG)
+		{
+			return false;
+		}
+
 		SyncTube();
 		if (m_nTubeCount >= TubeCapacity())
 		{
