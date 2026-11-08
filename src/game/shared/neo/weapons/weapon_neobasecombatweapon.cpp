@@ -673,7 +673,7 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 // The tactical sequence has no activity; ACT_VM_RELOAD selects the dry reload.
 bool CNEOBaseCombatWeapon::StartPartialReload()
 {
-	static constexpr const char *VM_SEQ_RELOAD_PARTIAL = "reload_reloadexit";
+	static constexpr const char *VM_SEQ_RELOAD_PARTIAL = "reload_loadedtoidle";
 	if (!IsReloadPhaseSystemEnabled() || !IsRoundChambered())
 	{
 		return false;
