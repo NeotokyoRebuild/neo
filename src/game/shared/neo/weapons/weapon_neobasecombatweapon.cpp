@@ -616,12 +616,9 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 	// the draw is part of the motion: the full reload gesture fits the resume
 	ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
 
-	// The reload is done and fire is allowed at the ready time; the clip plays on unless a shot interrupts it
 	const float flEnd = gpGlobals->curtime + ReloadViewModel()->SequenceDuration(iSequence);
-	const float flReady = GetNEOWpnData().m_reloadTables[iTable].flReady;
-	const float flFire = (flReady > 0.0f) ? Min(flEnd, gpGlobals->curtime + flReady) : flEnd;
-	GetOwner()->SetNextAttack(flFire);
-	m_flNextPrimaryAttack = m_flNextSecondaryAttack = flFire;
+	GetOwner()->SetNextAttack(flEnd);
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack = flEnd;
 	SetWeaponIdleTime(flEnd);
 
 	// the load phase loads the magazine
