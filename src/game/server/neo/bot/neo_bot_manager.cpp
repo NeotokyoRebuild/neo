@@ -6,6 +6,7 @@
 #include "neo_bot.h"
 #include "neo_gamerules.h"
 #include "neo_bot_ctg_carry_block.h"
+#include "neo_bot_ctg_defense.h"
 #include "neo_bot_ghost_callout.h"
 #include "neo_bot_memory_sound_combat.h"
 #include "neo_bot_path_reservation.h"
@@ -145,6 +146,7 @@ void CNEOBotManager::OnMapLoaded( void )
 	NEOMemorySoundCombat::Reset();
 	NEOBotGhostCallout::Reset();
 	NEOBotCarryBlock::Reset();
+	NEOBotDefense::Reset();
 }
 
 
