@@ -586,6 +586,47 @@
 	"wave"				"weapons/m41/m41_reload.wav"
 }
 
+// M41 reload in per-step pieces (sv_neo_reload_experimental), named after the step; _2 and _3 are a step's second and
+// third sounds (seat rattle, tap, slap). The ZR68 entries above use ")" in front of the wave; these do not, as
+// weapon_m41.reload does not. NEO TODO (sunzenshen): the wavs are placeholders from the research branch; re-cut from
+// m41_reload.wav as the ZR68 pieces were (zr68c-sound-align.md).
+
+"weapon_m41.reload_2_load"
+{
+	"channel"			"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"			"1.0"
+	"pitch"				"PITCH_NORM"
+	"wave"				"weapons/m41/m41_reload_2_load.wav"
+}
+
+"weapon_m41.reload_2_load_2"
+{
+	"channel"			"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"			"1.0"
+	"pitch"				"PITCH_NORM"
+	"wave"				"weapons/m41/m41_reload_2_load_2.wav"
+}
+
+"weapon_m41.reload_2_load_3"
+{
+	"channel"			"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"			"1.0"
+	"pitch"				"PITCH_NORM"
+	"wave"				"weapons/m41/m41_reload_2_load_3.wav"
+}
+
+"weapon_m41.reload_3_cycle"
+{
+	"channel"			"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"			"1.0"
+	"pitch"				"PITCH_NORM"
+	"wave"				"weapons/m41/m41_reload_3_cycle.wav"
+}
+
 //-------------------
 
 "weapon_m41.npc_reload"
