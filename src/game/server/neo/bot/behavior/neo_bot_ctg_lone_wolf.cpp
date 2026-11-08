@@ -4,6 +4,7 @@
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_ctg_enemy.h"
 #include "bot/behavior/neo_bot_ctg_escort.h"
+#include "bot/behavior/neo_bot_ctg_hunt.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_ambush.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
@@ -18,7 +19,7 @@
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	// NEO-ATKH-TEMP
-	if ( IsAtkDefendingTeam( me->GetTeamNumber() ) )
+	if ( IsGhostGameType() && !HasGhostCapZone( me->GetTeamNumber() ) )
 	{
 		Msg( "NEO_ATKH lonewolf bot=%d carrier=%d\n", me->entindex(), me->IsCarryingGhost() ? 1 : 0 );
 	}
@@ -180,6 +181,16 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostCaptureTransition( CNEO
 				// Use ChangeTo to reset scenario evaluation after reacting to ghost pickup
 				if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
 				{
+					if ( IsGhostGameType() && !HasGhostCapZone( me->GetTeamNumber() ) )
+					{
+						if ( pGhostCarrier->IsAlive() )
+						{
+							return ChangeTo( new CNEOBotCtgHunt, "Hunting while a teammate carries the ghost" );
+						}
+
+						return Continue();
+					}
+
 					return ChangeTo(new CNEOBotCtgEscort, "Protect teammate that had better luck capturing ghost");
 				}
 				else

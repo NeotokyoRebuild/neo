@@ -3,7 +3,7 @@
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 
 //
-// ATK defender with a teammate carrying the ghost: hunt the enemies the team knows about,
+// A zoneless team with a teammate carrying the ghost: hunt the enemies the team knows about,
 // pursue the nearest known enemy, and roam like seek-and-destroy when none is known
 //
 class CNEOBotCtgHunt : public CNEOBotSeekAndDestroy

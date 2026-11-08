@@ -10,7 +10,6 @@
 #include "bot/behavior/neo_bot_ctg_enemy.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_capture.h"
-#include "bot/neo_bot_ghost_guard.h"
 #include "bot/neo_bot_path_compute.h"
 #include "bot/neo_bot_path_reservation.h"
 #include "nav_mesh.h"
@@ -38,7 +37,7 @@ static bool IsLooseGhostUnderDetpack( const CNEOBot *me )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 {
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK)
+	if ( !IsGhostGameType() )
 	{
 		return Done( "Game mode is no longer CTG or ATK" );
 	}
@@ -72,7 +71,8 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 	}
 
 	// In ATK the clock runs for the defenders, so the last attacker still goes for the ghost
-	if ( team_members == 1 && !IsAtkAttackingTeam( me->GetTeamNumber() ) )
+	if ( team_members == 1
+		&& !( IsAtkAttackingTeam( me->GetTeamNumber() ) && HasGhostCapZone( me->GetTeamNumber() ) ) )
 	{
 		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one on my team!" );
 	}
@@ -88,9 +88,14 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 			if (pGhostCarrier && pGhostCarrier != me
 				&& pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
 			{
-				if ( IsAtkDefendingTeam( me->GetTeamNumber() ) )
+				if ( !HasGhostCapZone( me->GetTeamNumber() ) )
 				{
-					return SuspendFor( new CNEOBotCtgHunt, "Hunting while a teammate carries the ghost" );
+					if ( pGhostCarrier->IsAlive() )
+					{
+						return SuspendFor( new CNEOBotCtgHunt, "Hunting while a teammate carries the ghost" );
+					}
+
+					return Continue();
 				}
 
 				return SuspendFor(new CNEOBotCtgEscort, "Protecting the ghost carrier!");
@@ -153,7 +158,7 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 void CNEOBotCtgSeek::RecomputeSeekPath( CNEOBot *me )
 {
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG && NEORules()->GetGameType() != NEO_GAME_TYPE_ATK)
+	if ( !IsGhostGameType() )
 	{
 		// Wait until next tick to exit behavior
 		return;

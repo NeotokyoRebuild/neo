@@ -48,18 +48,24 @@ inline bool IsAtkAttackingTeam(int team)
 	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetAttackingTeam();
 }
 
-inline bool IsAtkDefendingTeam(int team)
+inline bool IsGhostGameType()
 {
-	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetDefendingTeam();
+	const int iGameType = NEORules()->GetGameType();
+	return iGameType == NEO_GAME_TYPE_CTG || iGameType == NEO_GAME_TYPE_ATK;
 }
 
-// ATK defenders chase threats and combat sounds only where the ghost's nav area could see them
-bool IsInAtkGhostView( const Vector &vecPos );
+inline bool HasGhostCapZone( int iTeam )
+{
+	return NEORules()->GetNearestGhostCapPoint( iTeam, vec3_origin ) != CNEO_Player::VECTOR_INVALID_WAYPOINT;
+}
 
-// ATK defenders keep to the ghost's view unless a teammate carries it, when the rest hunt freely
-bool IsAtkGhostLeashed( CNEOBot *me );
+// Teams without a capture zone keep threats and combat sounds in the ghost's nav visibility
+bool IsInGhostView( const Vector &vecPos );
 
-bool IsBeyondAtkGhostGuard( CNEOBot *me, const Vector &vecThreatPos );
+// A teammate carrying the ghost frees the rest of a zoneless team to hunt
+bool IsGhostLeashed( CNEOBot *me );
+
+bool IsBeyondGhostLeash( CNEOBot *me, const Vector &vecThreatPos );
 
 class CNEOBotBehavior;
 

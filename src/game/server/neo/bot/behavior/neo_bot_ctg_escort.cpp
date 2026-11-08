@@ -37,6 +37,11 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::OnStart( CNEOBot *me, Action< CNEOBot 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 {
+	if ( IsGhostGameType() && !HasGhostCapZone( me->GetTeamNumber() ) )
+	{
+		return Done( "No capture zone, reevaluate the carrier role" );
+	}
+
 	if ( !NEORules()->GhostExists() )
 	{
 		return Done( "Ghost does not exist" );

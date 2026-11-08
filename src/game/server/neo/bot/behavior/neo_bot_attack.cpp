@@ -256,11 +256,11 @@ const CNavArea *CNEOBotAttack::FindAttackCover( CNEOBot *me, const CKnownEntity 
 ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
-	const bool bAtkDefender = IsAtkDefendingTeam( me->GetTeamNumber() );
+	const bool bZonelessTeam = IsGhostGameType() && !HasGhostCapZone( me->GetTeamNumber() );
 
-	// Prefer the visible target that entered Attack; a different remembered target can make an
-	// ATK defender immediately drop the action it was just asked to run.
-	if ( bAtkDefender )
+	// Prefer the visible target that entered Attack; a different remembered target can make a
+	// zoneless teammate immediately drop the action it was just asked to run.
+	if ( bZonelessTeam )
 	{
 		const CKnownEntity *visibleThreat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 		if ( visibleThreat )
@@ -270,7 +270,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 	}
 
 	// Using the threat position matches Seek, preventing an action loop while allowing defense of the ghost.
-	if ( threat && IsBeyondAtkGhostGuard( me, threat->GetLastKnownPosition() ) )
+	if ( threat && IsBeyondGhostLeash( me, threat->GetLastKnownPosition() ) )
 	{
 		// NEO-ATKH-TEMP
 		Msg( "NEO_ATKH unwind bot=%d ghoster=%d\n", me->entindex(), NEORules()->GetGhosterPlayer() );
@@ -285,11 +285,11 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
 
-	if ( bAtkDefender && IsAtkGhostLeashed( me ) && !threat->IsVisibleRecently() )
+	if ( IsGhostLeashed( me ) && !threat->IsVisibleRecently() )
 	{
-		// An ATK defender drops a chase it lost sight of when it leads out of the ghost's view,
-		// or when an attacker has the ghost, so it collapses on the carrier
-		if ( !IsInAtkGhostView( threatLastKnownPos ) )
+		// A zoneless teammate drops a chase it lost sight of when it leads out of the ghost's view,
+		// or when an enemy has the ghost, so it collapses on the carrier
+		if ( !IsInGhostView( threatLastKnownPos ) )
 		{
 			return Done( "Threat is out of the ghost's view" );
 		}

@@ -15,7 +15,7 @@ static const float HUNT_ARRIVAL_TOLERANCE = 32.0f;
 static CNEO_Player *GetTeammateCarrier( CNEOBot *me )
 {
 	const int iGhoster = NEORules()->GetGhosterPlayer();
-	if ( iGhoster <= 0 || iGhoster == me->entindex() )
+	if ( !NEORules()->GhostExists() || iGhoster <= 0 || iGhoster == me->entindex() )
 	{
 		return nullptr;
 	}
@@ -45,9 +45,9 @@ ActionResult< CNEOBot > CNEOBotCtgHunt::OnStart( CNEOBot *me, Action< CNEOBot > 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgHunt::Update( CNEOBot *me, float interval )
 {
-	if ( !IsAtkDefendingTeam( me->GetTeamNumber() ) || NEORules()->IsRoundOver() )
+	if ( !IsGhostGameType() || HasGhostCapZone( me->GetTeamNumber() ) || NEORules()->IsRoundOver() )
 	{
-		return Done( "No longer defending in ATK" );
+		return Done( "No longer hunting for a zoneless team" );
 	}
 
 	if ( !GetTeammateCarrier( me ) )
@@ -173,6 +173,6 @@ void CNEOBotCtgHunt::RecomputeSeekPath( CNEOBot *me )
 	m_hHuntTarget = nullptr;
 	m_bListenForCombatSounds = true;
 
-	// No known enemy: roam and follow combat sounds as an unleashed defender does
+	// No known enemy: roam and follow combat sounds as an unleashed teammate does
 	CNEOBotSeekAndDestroy::RecomputeSeekPath( me );
 }

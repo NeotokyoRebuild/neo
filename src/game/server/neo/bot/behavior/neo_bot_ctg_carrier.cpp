@@ -4,15 +4,179 @@
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
 #include "bot/neo_bot_ghost_callout.h"
-#include "bot/neo_bot_ghost_guard.h"
+#include "bot/neo_bot_path_reservation.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
+#include "nav_pathfind.h"
 #include "neo_gamerules.h"
 #include "debugoverlay_shared.h"
 #include "weapon_ghost.h"
 
 // A carrier with no capture zone counts as arrived at its hold area this close to the area's center
 static constexpr float CARRIER_HOLD_ARRIVE_RANGE = 48.0f;
+
+// The carrier looks for a less exposed area among the areas its own area can see within this distance,
+static constexpr float CARRIER_CLIMB_STEP_DIST = 600.0f;
+// at most this many steps
+static constexpr int CARRIER_CLIMB_MAX_STEPS = 8;
+// and only where a path is at most this much longer than the straight line, so a step does not lead around the map
+static constexpr float CARRIER_CLIMB_MAX_DETOUR = 2.0f;
+// and tests the walk to at most this many of the best candidates a step
+static constexpr int CARRIER_CLIMB_MAX_PATH_TESTS = 8;
+
+// A carrier holds only an area at least a player wide each way:
+// nav_generate leaves narrow strips along walls, where a bot often cannot reach the center
+static constexpr float HOLD_AREA_MIN_WIDTH = 2.0f * HalfHumanWidth;
+
+static bool IsWideEnoughToHold( const CNavArea *area )
+{
+	return area->GetSizeX() >= HOLD_AREA_MIN_WIDTH && area->GetSizeY() >= HOLD_AREA_MIN_WIDTH;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+// A step of the carrier's climb: an area the current area can see, its exposure and its distance to the enemy zones
+struct ClimbCandidate_t
+{
+	CNavArea *area;
+	int nVisible;
+	float flZoneDist;
+};
+
+static int CompareClimbCandidates( const ClimbCandidate_t *a, const ClimbCandidate_t *b )
+{
+	// least exposed first, then farther from the enemy zones, then lower ID so the choice is the same every round
+	if ( a->nVisible != b->nVisible )
+	{
+		return a->nVisible < b->nVisible ? -1 : 1;
+	}
+
+	if ( a->flZoneDist != b->flZoneDist )
+	{
+		return a->flZoneDist > b->flZoneDist ? -1 : 1;
+	}
+
+	return a->area->GetID() < b->area->GetID() ? -1 : 1;
+}
+
+//-----------------------------------------------------------------------------------------------------
+// Collects the areas the current area can see within a step that are less exposed and no closer to the enemy zones
+class CCollectLessExposedAreas
+{
+public:
+	CCollectLessExposedAreas( CNEOBot *me, CNavArea *pCurrentArea, CUtlVector< ClimbCandidate_t > *pCandidates )
+		: m_me( me ), m_pCurrent( pCurrentArea ), m_pCandidates( pCandidates )
+	{
+		m_iEnemyTeam = GetEnemyTeam( me->GetTeamNumber() );
+		m_flCurrentZoneDist = GetZoneDist( pCurrentArea );
+	}
+
+	bool operator() ( CNavArea *area )
+	{
+		// strictly less exposed, so the climb cannot go back and forth between equal areas
+		const int nVisible = area->GetPotentiallyVisibleAreaCount();
+		if ( nVisible == 0 || nVisible >= m_pCurrent->GetPotentiallyVisibleAreaCount() )
+		{
+			return true;
+		}
+
+		if ( area->GetCenter().DistToSqr( m_pCurrent->GetCenter() ) > Square( CARRIER_CLIMB_STEP_DIST ) )
+		{
+			return true;
+		}
+
+		// the carrier stands upright, where it can move freely
+		if ( !IsWideEnoughToHold( area ) || ( area->GetAttributes() & ( NAV_MESH_CROUCH | NAV_MESH_JUMP | NAV_MESH_AVOID ) ) )
+		{
+			return true;
+		}
+
+		const AreaPenalty_t penalty = CNEOBotPathReservations()->GetAreaPenalty( area->GetID() );
+		if ( penalty.IsStuckProne() || CNEOBotPathReservations()->IsAreaHazardous( area->GetID(), m_me ) )
+		{
+			return true;
+		}
+
+		// carry the ghost away from the enemy zones, never toward them
+		const float flZoneDist = GetZoneDist( area );
+		if ( flZoneDist < m_flCurrentZoneDist )
+		{
+			return true;
+		}
+
+		m_pCandidates->AddToTail( { area, nVisible, flZoneDist } );
+		return true;
+	}
+
+private:
+	float GetZoneDist( const CNavArea *area ) const
+	{
+		const Vector vecZone = NEORules()->GetNearestGhostCapPoint( m_iEnemyTeam, area->GetCenter() );
+		if ( vecZone == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+		{
+			return FLT_MAX;
+		}
+
+		return vecZone.DistTo( area->GetCenter() );
+	}
+
+	CNEOBot *m_me;
+	CNavArea *m_pCurrent;
+	CUtlVector< ClimbCandidate_t > *m_pCandidates;
+	int m_iEnemyTeam;
+	float m_flCurrentZoneDist;
+};
+
+
+//-----------------------------------------------------------------------------------------------------
+// Can a bot walk from one area to the other without a long detour
+static bool IsShortWalk( CNavArea *pFrom, CNavArea *pTo )
+{
+	const float flMaxLength = CARRIER_CLIMB_MAX_DETOUR * pFrom->GetCenter().DistTo( pTo->GetCenter() );
+	ShortestPathCost costFunc;
+	return NavAreaBuildPath( pFrom, pTo, nullptr, costFunc, nullptr, flMaxLength );
+}
+
+
+//-----------------------------------------------------------------------------------------------------
+static CNavArea *FindLeastExposedArea( CNEOBot *me, CNavArea *pStartArea )
+{
+	// Without nav_analyze visibility data there is nothing to judge by, so stay put
+	if ( !pStartArea || pStartArea->GetPotentiallyVisibleAreaCount() == 0 )
+	{
+		return pStartArea;
+	}
+
+	CNavArea *pCurrent = pStartArea;
+	for ( int iStep = 0; iStep < CARRIER_CLIMB_MAX_STEPS; iStep++ )
+	{
+		CUtlVector< ClimbCandidate_t > candidates;
+		CCollectLessExposedAreas collect( me, pCurrent, &candidates );
+		pCurrent->ForAllPotentiallyVisibleAreas( collect );
+		candidates.Sort( CompareClimbCandidates );
+
+		// take the least exposed candidate the carrier can walk to without a long detour
+		CNavArea *pNext = nullptr;
+		for ( int i = 0; i < candidates.Count() && i < CARRIER_CLIMB_MAX_PATH_TESTS; i++ )
+		{
+			if ( IsShortWalk( pCurrent, candidates[i].area ) )
+			{
+				pNext = candidates[i].area;
+				break;
+			}
+		}
+
+		// a local minimum: no visible area within a step is less exposed and reachable
+		if ( !pNext )
+		{
+			break;
+		}
+
+		pCurrent = pNext;
+	}
+
+	return pCurrent;
+}
 
 ConVar neo_debug_ghost_carrier( "neo_debug_ghost_carrier", "0", FCVAR_CHEAT );
 
@@ -351,7 +515,7 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 	// Check if bot should transition into lone wolf behavior,
 	// except for an ATK attacker, which still has to take the ghost
 	if ( m_teammates.Count() == 0
-		&& !IsAtkAttackingTeam( me->GetTeamNumber() ) )
+		&& !( IsAtkAttackingTeam( me->GetTeamNumber() ) && HasGhostCapZone( me->GetTeamNumber() ) ) )
 	{
 		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 		if ( threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
@@ -366,7 +530,8 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 		}
 
 		// Lone wolf will drop the ghost and go into enemy seeking behavior
-		if ( m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+		if ( !HasGhostCapZone( me->GetTeamNumber() )
+			|| m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
 		{
 			return SuspendFor( new CNEOBotCtgLoneWolf, "Looking for enemy since there is no capture point" );
 		}
@@ -395,12 +560,8 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 
 	// Identify the goal first
 	Vector vecGoalPos = m_closestCapturePoint;
-	bool bFoundGoal = ( vecGoalPos != CNEO_Player::VECTOR_INVALID_WAYPOINT );
-
-	if ( vecGoalPos == CNEO_Player::VECTOR_INVALID_WAYPOINT )
-	{
-		bFoundGoal = false;
-	}
+	const bool bHasCapZone = HasGhostCapZone( me->GetTeamNumber() );
+	const bool bFoundGoal = bHasCapZone && vecGoalPos != CNEO_Player::VECTOR_INVALID_WAYPOINT;
 
 	CNEO_Player *pTeammateNearestToMe = nullptr;
 	float flTeammateNearestToMeDistSq = FLT_MAX;
@@ -434,9 +595,14 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 
 	if ( !bFoundGoal )
 	{
-		// If we have no goal (defending team on asymmetric map), we should just stay put and call out targets,
-		// after carrying the ghost to a less exposed area in ATK
+		// Without a capture zone, carry the ghost to cover and call out targets.
 		m_chasePath.Invalidate();
+		if ( bHasCapZone )
+		{
+			m_path.Invalidate();
+			return;
+		}
+
 		UpdateHoldPath( me );
 		return;
 	}
@@ -482,7 +648,7 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 	}
 
 	// In ATK the clock runs for the defenders, so head for the zone and let the escorts keep up
-	if ( IsAtkAttackingTeam( me->GetTeamNumber() ) )
+	if ( IsAtkAttackingTeam( me->GetTeamNumber() ) && HasGhostCapZone( me->GetTeamNumber() ) )
 	{
 		m_chasePath.Invalidate();
 
@@ -595,7 +761,8 @@ bool CNEOBotCtgCarrier::HasCleanRunToCap( const CNEOBot *me ) const
 		return false;
 	}
 
-	if ( m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+	if ( !HasGhostCapZone( me->GetTeamNumber() )
+		|| m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
 		return false;
 	}
@@ -636,7 +803,8 @@ bool CNEOBotCtgCarrier::IsCapPotentiallyVisible( const CNEOBot *me ) const
 		return false;
 	}
 
-	if ( m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+	if ( !HasGhostCapZone( me->GetTeamNumber() )
+		|| m_closestCapturePoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
 	{
 		return false;
 	}
@@ -679,26 +847,13 @@ ActionResult< CNEOBot > CNEOBotCtgCarrier::OnResume( CNEOBot *me, Action< CNEOBo
 }
 
 //---------------------------------------------------------------------------------------------
-void CNEOBotCtgCarrier::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
-{
-	SetGhostHoldArea( me, nullptr );
-}
-
-//---------------------------------------------------------------------------------------------
-// A guard round's carrier walks quietly to a less exposed area and holds there
+// A carrier without a capture zone walks quietly to cover and holds there
 void CNEOBotCtgCarrier::UpdateHoldPath( CNEOBot *me )
 {
-	if ( !IsGhostGuardRound( me->GetTeamNumber() ) )
-	{
-		m_path.Invalidate();
-		return;
-	}
-
 	if ( !m_bHoldAreaChosen )
 	{
 		m_bHoldAreaChosen = true;
 		m_holdArea = FindLeastExposedArea( me, me->GetLastKnownArea() );
-		SetGhostHoldArea( me, m_holdArea );
 	}
 
 	const bool bArrived = !m_holdArea || me->GetLastKnownArea() == m_holdArea
@@ -714,7 +869,7 @@ void CNEOBotCtgCarrier::UpdateHoldPath( CNEOBot *me )
 		CNEOBotPathCompute( me, m_path, m_holdArea->GetCenter(), SAFEST_ROUTE );
 	}
 
-	// Walk quietly, so attackers cannot hear where the ghost goes
+	// Walk quietly, so enemies cannot hear where the ghost goes
 	me->ReleaseRunButton();
 	me->PressSneakButton( 0.3f );
 	m_path.Update( me );
@@ -745,7 +900,6 @@ EventDesiredResult< CNEOBot > CNEOBotCtgCarrier::OnMoveToFailure( CNEOBot *me, c
 	if ( m_holdArea )
 	{
 		m_holdArea = nullptr;
-		SetGhostHoldArea( me, me->GetLastKnownArea() );
 	}
 
 	return TryContinue();
