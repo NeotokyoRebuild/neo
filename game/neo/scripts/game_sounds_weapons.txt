@@ -12,6 +12,18 @@
 	"wave"				"weapons/milso/milso_reload.wav"
 }
 
+// MilSO reload in per-step pieces (sv_neo_reload_experimental): only the load step has a sound; the slide release
+// (3_cycle) is silent in the shipped wav. NEO TODO (sunzenshen): placeholder wav from the research branch.
+"weapon_milso.reload_2_load"
+{
+	"channel"			"CHAN_ITEM"
+	"soundlevel"			"SNDLVL_NORM"
+	"volume"			"1.0"
+	"CompatibilityAttenuation"	"1.0"
+	"pitch"				"PITCH_NORM"
+	"wave"				"weapons/milso/milso_reload_2_load.wav"
+}
+
 //------------------
 
 "weapon_milso.npc_reload"

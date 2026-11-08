@@ -1,3 +1,5 @@
+#base "weapon_milso_reload_phases.txt"
+
 // Milso
 WeaponData
 {
@@ -14,7 +16,13 @@ WeaponData
 	"Penetration"		"12.0"
 	"CycleTime"		"0.212121"
 	"ReloadReadyBeforeEnd"	"0.467"	// the reload is done at the last reload click, this long before its animation ends
-	
+
+	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers.
+	// The pistol ships two reloads (reload, reloadempty); the phases file has a table for each and a resume for each.
+	// NEO TODO (sunzenshen): the same U1/U2 question as the M41: with the flag on, the magazine loads at the 2_load ammo
+	// time, not at the end minus ReloadReadyBeforeEnd above.
+	"ReloadPhases"	{}
+
 	"TPMuzzleFlashScale"	"0.5"
 	
 	"clip_size"		"12"
