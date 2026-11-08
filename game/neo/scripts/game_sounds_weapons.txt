@@ -802,6 +802,35 @@
 	"wave"				"weapons/srs/srs_reload.wav"
 }
 
+// SRS reload in per-step pieces (sv_neo_reload_experimental).
+
+"weapon_srs.reload_1_unload"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srs/srs_reload_1_unload.wav"
+}
+
+"weapon_srs.reload_2_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srs/srs_reload_2_load.wav"
+}
+
+"weapon_srs.reload_3_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/srs/srs_reload_3_cycle.wav"
+}
+
 //-------------------
 
 "weapon_srs.npc_reload"
