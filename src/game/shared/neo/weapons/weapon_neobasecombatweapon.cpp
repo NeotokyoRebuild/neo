@@ -618,7 +618,12 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 	// the old magazine and its rounds are gone, as when a reload loads at its ready time
 	m_iClip1 = 0;
 
-	SetSequence(iSequence);
+	// The weapon entity draws its world model in third person, which has none of the viewmodel's sequences
+	const int iOwnSequence = LookupSequence(pszName);
+	if (iOwnSequence >= 0)
+	{
+		SetSequence(iOwnSequence);
+	}
 	SendViewModelAnim(iSequence);
 
 	// the third-person reload gesture lasts no longer than the resume
