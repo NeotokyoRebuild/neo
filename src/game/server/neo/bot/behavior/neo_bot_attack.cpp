@@ -255,6 +255,16 @@ const CNavArea *CNEOBotAttack::FindAttackCover( CNEOBot *me, const CKnownEntity 
 // head aiming and weapon firing is handled elsewhere - we just need to get into position to fight
 ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 {
+	// A leashed defender outside the ghost's view must return even while combat suspends hunt.
+	if ( NEORules()->GhostExists() && IsAtkGhostLeashed( me )
+		&& NEORules()->GetGhosterPlayer() != me->entindex() && !IsInAtkGhostView( me->GetAbsOrigin() ) )
+	{
+		// NEO-ATKH-TEMP
+		Msg( "NEO_ATKH unwind bot=%d ghoster=%d\n", me->entindex(), NEORules()->GetGhosterPlayer() );
+
+		return Done( "No live teammate carries the ghost, return to the ghost" );
+	}
+
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	const bool bAtkDefender = IsAtkDefendingTeam( me->GetTeamNumber() );
 

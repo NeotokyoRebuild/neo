@@ -183,6 +183,7 @@ public:
 	void ReloadIfLowClip(bool bForceReload = false);
 
 	bool DropGhost();
+	bool IsDroppingGhost() const;
 	bool IsRevealedByMyGhost(CBaseEntity *subject) const;
 
 	void DropPrimaryWeapon(void);
@@ -491,6 +492,7 @@ private:
 	CNEOBotIntention *m_intention;
 
 	CountdownTimer m_lookAtEnemyInvasionAreasTimer;
+	CountdownTimer m_dropGhostTimer;
 
 	CNavArea* m_spawnArea;			// where we spawned
 	CountdownTimer m_justLostPointTimer;

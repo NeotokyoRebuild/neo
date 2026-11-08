@@ -136,10 +136,13 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 // 		}
 	}
 
-	me->EquipRequiredWeapon();
-
-	me->UpdateLookingAroundForEnemies();
-	FireWeaponAtEnemy( me );
+	// A drop needs to keep the ghost equipped and turn away even under visible fire.
+	if ( !me->IsDroppingGhost() )
+	{
+		me->EquipRequiredWeapon();
+		me->UpdateLookingAroundForEnemies();
+		FireWeaponAtEnemy( me );
+	}
 	Dodge( me );
 
 	auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(me->GetActiveWeapon());

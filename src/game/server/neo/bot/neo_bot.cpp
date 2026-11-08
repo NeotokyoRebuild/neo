@@ -44,6 +44,9 @@ extern ConVar neo_bot_path_lookahead_range;
 extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 extern ConVar neo_bot_path_around_friendly_cooldown;
 
+static const float DROP_GHOST_PREPARE_TIME = 0.5f;
+static const float DROP_GHOST_LOOK_DISTANCE = 100.0f;
+static const float DROP_GHOST_FORWARD_DOT = 0.4f;
 
 
 //-----------------------------------------------------------------------------------------------------
@@ -86,6 +89,23 @@ bool IsAtkGhostLeashed( CNEOBot *me )
 		return false;
 	}
 
+	bool bHasLivingTeammate = false;
+	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+	{
+		CNEO_Player *pMate = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+		if ( pMate && pMate != me && pMate->IsAlive() && pMate->InSameTeam( me ) )
+		{
+			bHasLivingTeammate = true;
+			break;
+		}
+	}
+
+	// The last defender must be free to pursue after dropping the ghost.
+	if ( !bHasLivingTeammate )
+	{
+		return false;
+	}
+
 	// The carrier calls out what it sees, so the others can leave it to hunt;
 	// a loose or stolen ghost pulls the whole team back
 	const int iGhoster = NEORules()->GetGhosterPlayer();
@@ -94,7 +114,8 @@ bool IsAtkGhostLeashed( CNEOBot *me )
 		return true;
 	}
 
-	return NEORules()->GetGhosterTeam() != me->GetTeamNumber();
+	CNEO_Player *pCarrier = ToNEOPlayer( UTIL_PlayerByIndex( iGhoster ) );
+	return !pCarrier || !pCarrier->IsAlive() || !pCarrier->InSameTeam( me );
 }
 
 
@@ -1810,6 +1831,9 @@ bool CNEOBot::DropGhost()
 		return false;
 	}
 
+	// Keep combat from undoing the equip and turn until the drop completes.
+	m_dropGhostTimer.Start( DROP_GHOST_PREPARE_TIME );
+
 	CBaseCombatWeapon *pGhost = Weapon_GetSlot( 0 );
 	if ( pGhost )
 	{
@@ -1822,11 +1846,11 @@ bool CNEOBot::DropGhost()
 			// Look behind where we are moving
 			Vector moveDir = GetLocomotionInterface()->GetMotionVector();
 			Vector lookDir = -moveDir;
-			GetBodyInterface()->AimHeadTowards( EyePosition() + lookDir * 100.0f, IBody::IMPORTANT, 0.2f, nullptr, "Preparing to drop ghost away from path" );
+			GetBodyInterface()->AimHeadTowards( EyePosition() + lookDir * DROP_GHOST_LOOK_DISTANCE, IBody::MANDATORY, DROP_GHOST_PREPARE_TIME, nullptr, "Preparing to drop ghost away from path" );
 
 			// Drop the ghost if we are looking anywhere but the front
 			Vector viewDir = GetBodyInterface()->GetViewVector();
-			if ( moveDir.Dot( viewDir ) < 0.4f )
+			if ( moveDir.Dot( viewDir ) < DROP_GHOST_FORWARD_DOT )
 			{
 				PressDropButton();
 			}
@@ -1834,6 +1858,12 @@ bool CNEOBot::DropGhost()
 	}
 
 	return true;
+}
+
+//-----------------------------------------------------------------------------------------------------
+bool CNEOBot::IsDroppingGhost() const
+{
+	return IsCarryingGhost() && m_dropGhostTimer.HasStarted() && !m_dropGhostTimer.IsElapsed();
 }
 
 //-----------------------------------------------------------------------------------------------------

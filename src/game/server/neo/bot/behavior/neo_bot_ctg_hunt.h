@@ -4,14 +4,13 @@
 
 //
 // ATK defender with a teammate carrying the ghost: hunt the enemies the team knows about,
-// spread over different targets, and roam like seek-and-destroy when none is known
+// pursue the nearest known enemy, and roam like seek-and-destroy when none is known
 //
 class CNEOBotCtgHunt : public CNEOBotSeekAndDestroy
 {
 public:
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval ) override;
-	virtual void OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction ) override;
 
 	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path ) override;
 
@@ -25,4 +24,5 @@ private:
 
 	CHandle< CNEO_Player > m_hHuntTarget;
 	CountdownTimer m_retargetTimer;
+	bool m_bRepathPending = false;
 };
