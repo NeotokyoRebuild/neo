@@ -3,6 +3,7 @@
 #include "neo_gamerules.h"
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_hunt.h"
+#include "bot/neo_bot_ctg_carry_block.h"
 #include "bot/neo_bot_path_compute.h"
 #include "nav_mesh.h"
 #include "tier0/fasttimer.h"
@@ -66,9 +67,9 @@ ActionResult< CNEOBot > CNEOBotCtgHunt::OnStart( CNEOBot *me, Action< CNEOBot > 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgHunt::Update( CNEOBot *me, float interval )
 {
-	if ( !IsGhostGameType() || HasGhostCapZone( me->GetTeamNumber() ) || NEORules()->IsRoundOver() )
+	if ( !NEOBotCarryBlock::IsTeamHoldingGhost( me->GetTeamNumber() ) || NEORules()->IsRoundOver() )
 	{
-		return Done( "No longer hunting for a zoneless team" );
+		return Done( "The team no longer holds the ghost" );
 	}
 
 	if ( !GetTeammateCarrier( me ) )

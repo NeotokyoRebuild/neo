@@ -20,6 +20,8 @@ static constexpr float CARRIER_HOLD_ARRIVE_RANGE = 48.0f;
 static constexpr float CARRIER_CLIMB_STEP_DIST = 600.0f;
 // at most this many steps
 static constexpr int CARRIER_CLIMB_MAX_STEPS = 8;
+// or this many while a blocked route holds the carrier, which stays near its way to the zone for the break
+static constexpr int CARRIER_BLOCKED_CLIMB_MAX_STEPS = 2;
 // and only where a path is at most this much longer than the straight line, so a step does not lead around the map
 static constexpr float CARRIER_CLIMB_MAX_DETOUR = 2.0f;
 // and tests the walk to at most this many of the best candidates a step
@@ -140,7 +142,7 @@ static bool IsShortWalk( CNavArea *pFrom, CNavArea *pTo )
 
 
 //-----------------------------------------------------------------------------------------------------
-static CNavArea *FindLeastExposedArea( CNEOBot *me, CNavArea *pStartArea )
+static CNavArea *FindLeastExposedArea( CNEOBot *me, CNavArea *pStartArea, int nMaxSteps )
 {
 	// Without nav_analyze visibility data there is nothing to judge by, so stay put
 	if ( !pStartArea || pStartArea->GetPotentiallyVisibleAreaCount() == 0 )
@@ -149,7 +151,7 @@ static CNavArea *FindLeastExposedArea( CNEOBot *me, CNavArea *pStartArea )
 	}
 
 	CNavArea *pCurrent = pStartArea;
-	for ( int iStep = 0; iStep < CARRIER_CLIMB_MAX_STEPS; iStep++ )
+	for ( int iStep = 0; iStep < nMaxSteps; iStep++ )
 	{
 		CUtlVector< ClimbCandidate_t > candidates;
 		CCollectLessExposedAreas collect( me, pCurrent, &candidates );
@@ -473,6 +475,7 @@ CNEOBotCtgCarrier::CNEOBotCtgCarrier( void )
 	m_closestCapturePoint = CNEO_Player::VECTOR_INVALID_WAYPOINT;
 	m_holdArea = nullptr;
 	m_bHoldAreaChosen = false;
+	m_holdState = HOLD_STATE_UNKNOWN;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -486,6 +489,9 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::OnStart( CNEOBot *me, Action< CNEOBot
 	CollectPlayers( me, &m_teammates );
 
 	m_closestCapturePoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
+
+	m_holdState = HOLD_STATE_UNKNOWN;
+	UpdateHoldState( me );
 
 	UpdateFollowPath( me, m_teammates );
 	return Continue();
@@ -538,8 +544,8 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	// Computed and logged only: no behavior reads the verdict yet
 	NEOBotCarryBlock::UpdateCarryBlock( me, IsCapPotentiallyVisible( me ) || HasCleanRunToCap( me ) );
+	UpdateHoldState( me );
 
 	UpdateFollowPath( me, m_teammates );
 	
@@ -595,6 +601,14 @@ void CNEOBotCtgCarrier::UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Pla
 				pBestGoalTeammate = pPlayer;
 			}
 		}
+	}
+
+	// A blocked route: hold near here and let the teammates hunt, until the verdict clears
+	if ( bFoundGoal && ( m_holdState == HOLD_STATE_HOLD ) )
+	{
+		m_chasePath.Invalidate();
+		UpdateHoldPath( me );
+		return;
 	}
 
 	if ( !bFoundGoal )
@@ -846,18 +860,44 @@ ActionResult< CNEOBot > CNEOBotCtgCarrier::OnResume( CNEOBot *me, Action< CNEOBo
 	// Re-evaluate nearest cap point on resume (in case we moved significantly while interrupted)
 	m_closestCapturePoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
 
+	UpdateHoldState( me );
 	UpdateFollowPath( me, m_teammates );
 	return Continue();
 }
 
 //---------------------------------------------------------------------------------------------
-// A carrier without a capture zone walks quietly to cover and holds there
+// Follows the team's hold-or-break verdict, the same one the teammates read
+void CNEOBotCtgCarrier::UpdateHoldState( CNEOBot *me )
+{
+	const HoldState_t state = NEOBotCarryBlock::IsTeamHoldingGhost( me->GetTeamNumber() ) ? HOLD_STATE_HOLD : HOLD_STATE_BREAK;
+	if ( state == m_holdState )
+	{
+		return;
+	}
+
+	m_holdState = state;
+
+	// A hold spot or a run planned for the other state is stale
+	m_path.Invalidate();
+	m_chasePath.Invalidate();
+	m_holdArea = nullptr;
+	m_bHoldAreaChosen = false;
+
+	// NEO-DEF-TEMP
+	Msg( "NEO_DEF mode team=%d carrier=%d state=%s\n", me->GetTeamNumber(), me->entindex(),
+		( state == HOLD_STATE_HOLD ) ? "hold" : "break" );
+}
+
+//---------------------------------------------------------------------------------------------
+// A holding carrier walks quietly to cover and holds there
 void CNEOBotCtgCarrier::UpdateHoldPath( CNEOBot *me )
 {
 	if ( !m_bHoldAreaChosen )
 	{
 		m_bHoldAreaChosen = true;
-		m_holdArea = FindLeastExposedArea( me, me->GetLastKnownArea() );
+
+		const int nMaxSteps = HasGhostCapZone( me->GetTeamNumber() ) ? CARRIER_BLOCKED_CLIMB_MAX_STEPS : CARRIER_CLIMB_MAX_STEPS;
+		m_holdArea = FindLeastExposedArea( me, me->GetLastKnownArea(), nMaxSteps );
 	}
 
 	const bool bArrived = !m_holdArea || me->GetLastKnownArea() == m_holdArea

@@ -3,6 +3,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_escort.h"
 #include "bot/behavior/neo_bot_attack.h"
+#include "bot/neo_bot_ctg_carry_block.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 #include "weapons/weapon_ghost.h"
@@ -37,9 +38,9 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::OnStart( CNEOBot *me, Action< CNEOBot 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 {
-	if ( IsGhostGameType() && !HasGhostCapZone( me->GetTeamNumber() ) )
+	if ( NEOBotCarryBlock::IsTeamHoldingGhost( me->GetTeamNumber() ) )
 	{
-		return Done( "No capture zone, reevaluate the carrier role" );
+		return Done( "The team holds the ghost, reevaluate the carrier role" );
 	}
 
 	if ( !NEORules()->GhostExists() )

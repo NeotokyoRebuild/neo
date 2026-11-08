@@ -10,6 +10,7 @@
 #include "bot/behavior/neo_bot_ctg_enemy.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_capture.h"
+#include "bot/neo_bot_ctg_carry_block.h"
 #include "bot/neo_bot_path_compute.h"
 #include "bot/neo_bot_path_reservation.h"
 #include "nav_mesh.h"
@@ -88,7 +89,7 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 			if (pGhostCarrier && pGhostCarrier != me
 				&& pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
 			{
-				if ( !HasGhostCapZone( me->GetTeamNumber() ) )
+				if ( NEOBotCarryBlock::IsTeamHoldingGhost( me->GetTeamNumber() ) )
 				{
 					if ( pGhostCarrier->IsAlive() )
 					{

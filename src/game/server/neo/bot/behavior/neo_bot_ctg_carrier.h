@@ -54,13 +54,23 @@ private:
 	Vector m_closestCapturePoint;
 	CUtlVector<CNEO_Player*> m_teammates;
 
-	// where a carrier with no capture zone holds the ghost, chosen once on pickup
+	// where a holding carrier holds the ghost, chosen once each time the team starts holding
 	CNavArea *m_holdArea;
 	bool m_bHoldAreaChosen;
+
+	enum HoldState_t
+	{
+		HOLD_STATE_UNKNOWN,
+		HOLD_STATE_BREAK,
+		HOLD_STATE_HOLD,
+	};
+
+	HoldState_t m_holdState;
 
 	bool HasCleanRunToCap( const CNEOBot *me ) const;
 	bool IsCapPotentiallyVisible( const CNEOBot *me ) const;
 	void UpdateFollowPath( CNEOBot *me, const CUtlVector<CNEO_Player*> &teammates );
+	void UpdateHoldState( CNEOBot *me );
 	void UpdateHoldPath( CNEOBot *me );
 };
 

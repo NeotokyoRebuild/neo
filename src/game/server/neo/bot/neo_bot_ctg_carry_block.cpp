@@ -785,6 +785,12 @@ namespace NEOBotCarryBlock
 	}
 
 	//---------------------------------------------------------------------------------------------
+	bool IsTeamHoldingGhost( int iTeam )
+	{
+		return IsGhostGameType() && !HasClearPathToGoal( iTeam );
+	}
+
+	//---------------------------------------------------------------------------------------------
 	CNEO_Player *GetCarryBlocker( int iTeam )
 	{
 		const CarryBlockState_t *pState = GetState( iTeam );

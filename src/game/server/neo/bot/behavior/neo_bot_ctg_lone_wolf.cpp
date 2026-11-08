@@ -9,6 +9,7 @@
 #include "bot/behavior/neo_bot_ctg_lone_wolf_ambush.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
 #include "bot/behavior/neo_bot_detpack_deploy.h"
+#include "bot/neo_bot_ctg_carry_block.h"
 #include "bot/neo_bot_path_compute.h"
 #include "neo_gamerules.h"
 #include "weapon_detpack.h"
@@ -181,7 +182,7 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostCaptureTransition( CNEO
 				// Use ChangeTo to reset scenario evaluation after reacting to ghost pickup
 				if (pGhostCarrier->GetTeamNumber() == me->GetTeamNumber())
 				{
-					if ( IsGhostGameType() && !HasGhostCapZone( me->GetTeamNumber() ) )
+					if ( NEOBotCarryBlock::IsTeamHoldingGhost( me->GetTeamNumber() ) )
 					{
 						if ( pGhostCarrier->IsAlive() )
 						{
