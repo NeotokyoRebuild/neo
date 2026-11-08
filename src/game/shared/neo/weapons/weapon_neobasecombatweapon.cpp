@@ -446,6 +446,8 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 }
 
 
+// NEO TODO (sunzenshen): Partial reload (chamber live, skip the cycle) and the chamber model are not here; see sketch-zr68c-full.
+// Bots: Clip1() >= GetMaxClip1() treats 30 of 31 as full; revisit the threshold later.
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	const bool bEmptyReload = UsesClipsForAmmo1() && m_iClip1 <= 0 &&
@@ -593,6 +595,7 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 	}
 }
 
+// NEO TODO (sunzenshen): RELOAD_END: stop the third-person reload gesture on a cut-short reload (U5b); not decided.
 void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 {
 	// The unload takes no rounds: they are lost only if a switch interrupts the reload after it (ResumeReload),
@@ -608,6 +611,8 @@ void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 
 // Resume, in the draw, a reload interrupted by a switch. A model without the resume sequence keeps the old magazine,
 // as a cancelled reload does; returns whether the reload resumed
+// NEO TODO (sunzenshen): Resume after 2_load keeps the loaded magazine; only a resume after 1_unload zeroes the clip.
+// A tactical reload also needs the chambered round kept (chamber model).
 bool CNEOBaseCombatWeapon::ResumeReload()
 {
 	const char *pszName = FindResumeSequence();
@@ -681,6 +686,8 @@ void CNEOBaseCombatWeapon::StopReloadSoundPieces()
 }
 
 // A dropped weapon cancels its reload: the next owner does not resume it
+// NEO TODO (sunzenshen): Gun dropped after the load but before the cycle: the next owner's draw plays the dry resume (U4a).
+// Fallback for a lost resume (full magazine, empty chamber): let Reload() play the dry reload.
 void CNEOBaseCombatWeapon::StopReloadOnDrop()
 {
 	if (!IsReloadPhaseSystemEnabled())

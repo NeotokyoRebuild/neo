@@ -1,4 +1,6 @@
 #base "weapon_mosok41_reload_phases.txt"
+// NEO TODO (sunzenshen): M41 (one reload, no 30+1 rule): decide the fire point (clip end or ReloadReadyBeforeEnd) and whether the resume keeps
+// the _empty name; resume after 2_load and the 3 sounds in 2_load are not done; see the plan's Open TODO list.
 
 // M41
 

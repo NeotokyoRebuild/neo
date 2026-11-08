@@ -1,4 +1,6 @@
 #base "weapon_milso_reload_phases.txt"
+// NEO TODO (sunzenshen): MilSO: resume after 2_load (dry slide release) needs a resume that keeps the clip; tactical resume must keep the
+// chambered round; ReloadReadyBeforeEnd 0.467 s vs the new fire point; see the plan's Open TODO list.
 
 // Milso
 WeaponData
