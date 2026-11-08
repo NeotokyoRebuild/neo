@@ -42,6 +42,7 @@
 #include <utility>
 
 extern ConVar weaponstay;
+extern ConVar sv_neo_reload_experimental;
 #endif
 
 ConVar sv_neo_loopback_warmup_round("sv_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
@@ -306,6 +307,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iForcedSkin)),
 	RecvPropInt(RECVINFO(m_iForcedWeapon)),
 	RecvPropBool(RECVINFO(m_bCyberspaceLevel)),
+	RecvPropBool(RECVINFO(m_bReloadExperimental)),
 	RecvPropString(RECVINFO(m_szNeoJinraiClantag)),
 	RecvPropString(RECVINFO(m_szNeoNSFClantag)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -349,6 +351,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iForcedSkin)),
 	SendPropInt(SENDINFO(m_iForcedWeapon)),
 	SendPropBool(SENDINFO(m_bCyberspaceLevel)),
+	SendPropBool(SENDINFO(m_bReloadExperimental)),
 	SendPropString(SENDINFO(m_szNeoJinraiClantag)),
 	SendPropString(SENDINFO(m_szNeoNSFClantag)),
 	SendPropInt(SENDINFO(m_iGhosterTeam), NumBitsForCount(TEAM__TOTAL), SPROP_UNSIGNED),
@@ -705,6 +708,12 @@ CNEORules::CNEORules()
 	m_iForcedSkin = -1;
 	m_iForcedWeapon = -1;
 	m_bCyberspaceLevel = false;
+#ifdef GAME_DLL
+	// Read once per map so that every weapon, and the client's prediction of it, sees one value for the whole map
+	m_bReloadExperimental = sv_neo_reload_experimental.GetBool();
+#else
+	m_bReloadExperimental = false;
+#endif
 
 	m_iClassLimitRecon = -1;
 	m_iClassLimitAssault = -1;

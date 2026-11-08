@@ -296,9 +296,6 @@ protected:
 	// When the reload in progress loads the magazine, 0 once it is loaded
 	CNetworkVar(float, m_flReloadReadyTime);
 
-	// The server's pre-game reload setting, snapshotted for prediction
-	CNetworkVar(bool, m_bReloadExperimentalEnabled);
-
 	// Reload phases (weapons whose script has a ReloadPhases block): the last phase finished, kept across a switch
 	CNetworkVar(int, m_nReloadPhase);
 	// the phase table of the reload sequence started last, -1 none

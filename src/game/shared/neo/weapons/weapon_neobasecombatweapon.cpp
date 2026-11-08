@@ -22,10 +22,10 @@ extern ConVar weaponstay;
 #include "in_main.h"
 #else
 #include "items.h"
-#include "neo_gamerules.h"
 #endif // CLIENT_DLL
 
 #include "basecombatweapon_shared.h"
+#include "neo_gamerules.h"
 
 #include <initializer_list>
 
@@ -42,7 +42,6 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bTriggerReset)),
 	RecvPropTime(RECVINFO(m_flReloadReadyTime)),
-	RecvPropBool(RECVINFO(m_bReloadExperimentalEnabled)),
 	RecvPropInt(RECVINFO(m_nReloadPhase)),
 	RecvPropInt(RECVINFO(m_nReloadTable)),
 	RecvPropTime(RECVINFO(m_flReloadStart)),
@@ -55,7 +54,6 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bTriggerReset)),
 	SendPropTime(SENDINFO(m_flReloadReadyTime)),
-	SendPropBool(SENDINFO(m_bReloadExperimentalEnabled)),
 	SendPropInt(SENDINFO(m_nReloadPhase), RELOAD_PHASE_BITS, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nReloadTable), RELOAD_PHASE_TABLE_BITS),
 	SendPropTime(SENDINFO(m_flReloadStart)),
@@ -73,7 +71,6 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bTriggerReset, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flReloadReadyTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bReloadExperimentalEnabled, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nReloadPhase, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nReloadTable, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flReloadStart, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
@@ -91,7 +88,6 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 	DEFINE_FIELD(m_bTriggerReset, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_flReloadReadyTime, FIELD_TIME),
-	DEFINE_FIELD(m_bReloadExperimentalEnabled, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_nReloadPhase, FIELD_INTEGER),
 	DEFINE_FIELD(m_nReloadTable, FIELD_INTEGER),
 	DEFINE_FIELD(m_flReloadStart, FIELD_TIME),
@@ -102,7 +98,7 @@ END_DATADESC()
 ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
 ConVar sv_neo_dynamic_viewkick("sv_neo_dynamic_viewkick", "0", FCVAR_REPLICATED, "Enables view kick scaling based on current inaccuracy.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_reload_experimental("sv_neo_reload_experimental", "0", FCVAR_REPLICATED,
-	"Lets a switch interrupt a reload after the magazine is out, for weapons that define reload phases. Set before the map loads.",
+	"Lets a switch interrupt a reload after the magazine is out, for weapons that define reload phases. A change applies from the next map.",
 	true, 0.0f, true, 1.0f);
 
 const char *GetWeaponByLoadoutId(int id)
@@ -255,7 +251,6 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
-	m_bReloadExperimentalEnabled = sv_neo_reload_experimental.GetBool();
 	m_bTriggerReset = true;
 	m_nReloadPhase = RELOAD_PHASE_NONE;
 	m_nReloadTable = -1;
@@ -512,7 +507,7 @@ static constexpr float RELOAD_SOUND_LEAD = 0.02f;
 
 bool CNEOBaseCombatWeapon::IsReloadPhaseSystemEnabled() const
 {
-	return m_bReloadExperimentalEnabled && !GetNEOWpnData().m_reloadTables.IsEmpty();
+	return NEORules() && NEORules()->IsReloadExperimental() && !GetNEOWpnData().m_reloadTables.IsEmpty();
 }
 
 // The viewmodel sequence that resumes the reload interrupted now, from the phase table of the playing sequence;
