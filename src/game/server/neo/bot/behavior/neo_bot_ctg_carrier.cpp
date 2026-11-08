@@ -3,6 +3,7 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_ctg_carrier.h"
 #include "bot/behavior/neo_bot_ctg_lone_wolf.h"
+#include "bot/neo_bot_ctg_carry_block.h"
 #include "bot/neo_bot_ghost_callout.h"
 #include "bot/neo_bot_path_reservation.h"
 #include "bot/neo_bot_path_compute.h"
@@ -536,6 +537,9 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 			return SuspendFor( new CNEOBotCtgLoneWolf, "Looking for enemy since there is no capture point" );
 		}
 	}
+
+	// Computed and logged only: no behavior reads the verdict yet
+	NEOBotCarryBlock::UpdateCarryBlock( me, IsCapPotentiallyVisible( me ) || HasCleanRunToCap( me ) );
 
 	UpdateFollowPath( me, m_teammates );
 	

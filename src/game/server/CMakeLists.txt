@@ -1521,6 +1521,7 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/neo_bot_path_reservation.cpp
     neo/bot/neo_bot_body.cpp
     neo/bot/neo_bot_ghost_callout.cpp
+    neo/bot/neo_bot_ctg_carry_block.cpp
     neo/bot/neo_bot_route_predict.cpp
     neo/bot/neo_bot_locomotion.cpp
     neo/bot/neo_bot_manager.cpp
@@ -1591,6 +1592,7 @@ target_sources_grouped(
     neo/bot/neo_bot_path_reservation.h
     neo/bot/neo_bot_body.h
     neo/bot/neo_bot_ghost_callout.h
+    neo/bot/neo_bot_ctg_carry_block.h
     neo/bot/neo_bot_route_predict.h
     neo/bot/neo_bot_contextual_query_interface.h
     neo/bot/neo_bot_locomotion.h
