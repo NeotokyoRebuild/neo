@@ -74,8 +74,6 @@ public:
 	float	m_flReloadReadyBeforeEnd;
 	int		m_iNumReloadTables;	// 0: the weapon reloads without phases
 	ReloadPhaseTable_t m_reloadTables[RELOAD_PHASE_TABLES_MAX];
-
-	int FindReloadTable(const char *pszSequence) const;
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
 	char	szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
 	char	szDeathIcon[MAX_BULLET_CHARACTER];
@@ -90,6 +88,8 @@ public:
 	float	m_flVMAimFov;
 	Vector	m_vecVMAimPosOffset;
 	QAngle	m_angVMAimAngOffset;
+
+	int FindReloadTable(const char *pszSequence) const;
 
 private:
 	void ParseReloadPhases(::KeyValues *pBlock);

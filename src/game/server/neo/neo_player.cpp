@@ -2486,6 +2486,7 @@ void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector da
 	}
 
 	pNeoWeapon->StopReloadOnDrop();
+
 	Vector playerVelocity = vec3_origin;
 	GetVelocity(&playerVelocity, nullptr);
 	pNeoWeapon->Drop(playerVelocity);

@@ -32,12 +32,18 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 }
 
 
+// Weapon-script names of the reload phases, by ReloadPhase_t
+static constexpr const char *RELOAD_PHASE_NAMES[RELOAD_PHASE_COUNT] = { "", "drop", "seat", "bolt" };
+// Weapon-script keys of a phase's sound pieces: { sound name, time }
+static constexpr const char *RELOAD_SOUND_KEYS[RELOAD_SOUNDS_PER_ROW][2] = {
+	{ "sound", "at" }, { "sound2", "at2" }, { "sound3", "at3" }
+};
+
 static ReloadPhase_t ReloadPhaseFromName(const char *pszName)
 {
-	static constexpr const char *PHASE_NAMES[RELOAD_PHASE_COUNT] = { "", "drop", "seat", "bolt" };
 	for (int i = RELOAD_PHASE_DROPPED; i < RELOAD_PHASE_COUNT; ++i)
 	{
-		if (V_stricmp(pszName, PHASE_NAMES[i]) == 0)
+		if (V_stricmp(pszName, RELOAD_PHASE_NAMES[i]) == 0)
 		{
 			return static_cast<ReloadPhase_t>(i);
 		}
@@ -72,13 +78,10 @@ void CNEOWeaponInfo::ParseReloadPhases(KeyValues *pBlock)
 			ReloadPhaseRow_t &row = table.rows[table.iNumRows++];
 			row.phase = phase;
 			row.flCredit = pRow->GetFloat("credit");
-			static constexpr const char *SOUND_KEYS[RELOAD_SOUNDS_PER_ROW][2] = {
-				{ "sound", "at" }, { "sound2", "at2" }, { "sound3", "at3" }
-			};
 			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
 			{
-				row.sounds[j].flAt = pRow->GetFloat(SOUND_KEYS[j][1]);
-				V_strncpy(row.sounds[j].szName, pRow->GetString(SOUND_KEYS[j][0]), sizeof(row.sounds[j].szName));
+				row.sounds[j].flAt = pRow->GetFloat(RELOAD_SOUND_KEYS[j][1]);
+				V_strncpy(row.sounds[j].szName, pRow->GetString(RELOAD_SOUND_KEYS[j][0]), sizeof(row.sounds[j].szName));
 			}
 		}
 	}

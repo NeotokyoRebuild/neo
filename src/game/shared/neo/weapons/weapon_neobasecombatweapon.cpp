@@ -102,7 +102,8 @@ END_DATADESC()
 ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
 ConVar sv_neo_dynamic_viewkick("sv_neo_dynamic_viewkick", "0", FCVAR_REPLICATED, "Enables view kick scaling based on current inaccuracy.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_reload_experimental("sv_neo_reload_experimental", "0", FCVAR_REPLICATED,
-	"Server reload-phase setting; set before a game starts; mid-game changes are unsupported.");
+	"Lets a switch interrupt a reload after the magazine is out, for weapons that define reload phases. Set before the map loads.",
+	true, 0.0f, true, 1.0f);
 
 const char *GetWeaponByLoadoutId(int id)
 {
@@ -583,7 +584,7 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 void CNEOBaseCombatWeapon::CreditReloadPhase(ReloadPhase_t phase)
 {
 	// The drop takes no rounds: they are lost only if a switch interrupts the reload after it (ResumeReload),
-	// so an uninterrupted reload shows the clip as master's does
+	// so an uninterrupted reload shows the same clip as without phases
 	if (phase == RELOAD_PHASE_SEATED)
 	{
 		// the magazine loads now, as at a reload's ready time (ItemBusyFrame)
@@ -594,7 +595,7 @@ void CNEOBaseCombatWeapon::CreditReloadPhase(ReloadPhase_t phase)
 }
 
 // Resume, in the draw, a reload interrupted by a switch. A model without the resume sequence keeps the old magazine,
-// as when master cancels a reload; returns whether the reload resumed
+// as a cancelled reload does; returns whether the reload resumed
 bool CNEOBaseCombatWeapon::ResumeReload()
 {
 	const char *pszName = ResumeSequenceName(m_nReloadPhase);
@@ -669,7 +670,7 @@ void CNEOBaseCombatWeapon::StopReloadSoundPieces()
 	}
 }
 
-// A dropped weapon cancels its reload as on master: the next owner does not resume it
+// A dropped weapon cancels its reload: the next owner does not resume it
 void CNEOBaseCombatWeapon::StopReloadOnDrop()
 {
 	if (!IsReloadPhaseSystemEnabled())
