@@ -473,6 +473,7 @@ bool CNEOBaseCombatWeapon::Reload( void )
 
 	if (IsReloadPhaseSystemEnabled())
 	{
+		m_nReloadPhase = RELOAD_PHASE_NONE;
 		StartReloadPhases(GetNEOWpnData().FindReloadTable(VM_SEQ_RELOAD));
 	}
 
@@ -536,12 +537,6 @@ void CNEOBaseCombatWeapon::StartReloadPhases(int iTable)
 	m_nReloadSoundsDone = 0;
 }
 
-void CNEOBaseCombatWeapon::EndReloadPhases()
-{
-	m_nReloadTable = -1;
-	m_nReloadPhase = RELOAD_PHASE_NONE;
-}
-
 // Credit every phase of the playing reload sequence whose time has come, and play its sound pieces
 void CNEOBaseCombatWeapon::RunReloadPhases()
 {
@@ -587,25 +582,20 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 
 void CNEOBaseCombatWeapon::CreditReloadPhase(ReloadPhase_t phase)
 {
-	switch (phase)
+	// The drop takes no rounds: they are lost only if a switch interrupts the reload after it (ResumeReload),
+	// so an uninterrupted reload shows the clip as master's does
+	if (phase == RELOAD_PHASE_SEATED)
 	{
-	case RELOAD_PHASE_DROPPED:
-		// the old magazine and its rounds are gone, as when the reload loads at its ready time
-		m_iClip1 = 0;
-		break;
-	case RELOAD_PHASE_SEATED:
-		m_iClip1 = Min(GetMaxClip1(), m_iPrimaryAmmoCount.Get());
-		m_iPrimaryAmmoCount -= m_iClip1;
-		break;
-	default:
-		break;
+		// the magazine loads now, as at a reload's ready time (ItemBusyFrame)
+		m_flReloadReadyTime = gpGlobals->curtime;
 	}
 
 	m_nReloadPhase = phase;
 }
 
-// Resume, in the draw, a reload interrupted by a switch; a model without the resume sequence reloads afresh
-void CNEOBaseCombatWeapon::ResumeReload()
+// Resume, in the draw, a reload interrupted by a switch. A model without the resume sequence keeps the old magazine,
+// as when master cancels a reload; returns whether the reload resumed
+bool CNEOBaseCombatWeapon::ResumeReload()
 {
 	const char *pszName = ResumeSequenceName(m_nReloadPhase);
 	const int iTable = pszName ? GetNEOWpnData().FindReloadTable(pszName) : -1;
@@ -613,8 +603,11 @@ void CNEOBaseCombatWeapon::ResumeReload()
 	if (iSequence < 0)
 	{
 		m_nReloadPhase = RELOAD_PHASE_NONE;
-		return;
+		return false;
 	}
+
+	// the old magazine and its rounds are gone, as when a reload loads at its ready time
+	m_iClip1 = 0;
 
 	SetSequence(iSequence);
 	SendViewModelAnim(iSequence);
@@ -631,10 +624,12 @@ void CNEOBaseCombatWeapon::ResumeReload()
 	m_flReloadReadyTime = 0.0f;
 	StartReloadPhases(iTable);
 	m_bInReload = true;
+	return true;
 }
 
-// Reload sequences are looked up on the owner's viewmodel: on the client the weapon entity carries the world model,
-// so a lookup there would fail and the client would predict a different sequence than the server plays
+// Reload sequences are looked up on the owner's viewmodel, the entity that plays them. The weapon entity's model is not
+// always that viewmodel on the client: CalcOverrideModelIndex gives it the world model whenever the local player does
+// not draw its viewmodel
 CBaseViewModel *CNEOBaseCombatWeapon::ReloadViewModel() const
 {
 	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
@@ -645,6 +640,46 @@ int CNEOBaseCombatWeapon::LookupReloadSequence(const char *pszName) const
 {
 	CBaseViewModel *pVM = ReloadViewModel();
 	return pVM ? pVM->LookupSequence(pszName) : -1;
+}
+
+// Sound pieces play on their own channel entries, so a switch or a drop stops them by name,
+// as the player stops the single reload sound
+void CNEOBaseCombatWeapon::StopReloadSoundPieces()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+	{
+		return;
+	}
+
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	for (int t = 0; t < info.m_iNumReloadTables; ++t)
+	{
+		for (int i = 0; i < info.m_reloadTables[t].iNumRows; ++i)
+		{
+			for (int j = 0; j < RELOAD_SOUNDS_PER_ROW; ++j)
+			{
+				const char *pszName = info.m_reloadTables[t].rows[i].sounds[j].szName;
+				if (pszName[0])
+				{
+					StopSound(pOwner->entindex(), pszName);
+				}
+			}
+		}
+	}
+}
+
+// A dropped weapon cancels its reload as on master: the next owner does not resume it
+void CNEOBaseCombatWeapon::StopReloadOnDrop()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return;
+	}
+
+	StopReloadSoundPieces();
+	m_nReloadPhase = RELOAD_PHASE_NONE;
+	m_nReloadTable = -1;
 }
 
 // Play a reload sound piece from the owner, as WeaponSound does: predicted for the owner, from the server for the rest
@@ -682,10 +717,10 @@ void CNEOBaseCombatWeapon::FinishReload(void)
 	}
 	m_flReloadReadyTime = 0.0f;
 
-	// the magazine is in: nothing is left to credit or resume
+	// the magazine is in: the phases up to the seat are done, and a switch from here leaves nothing to resume
 	if (IsReloadPhaseSystemEnabled())
 	{
-		EndReloadPhases();
+		m_nReloadPhase = Max(m_nReloadPhase.Get(), static_cast<int>(RELOAD_PHASE_SEATED));
 	}
 
 	CBaseCombatCharacter* pOwner = GetOwner();
@@ -737,17 +772,13 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 		// An empty weapon draws with its slide held back where the model has that draw,
 		// which carries no activity, so it is picked by name
 		static constexpr const char *VM_SEQ_DRAW_EMPTY = "drawempty";
-		const int iDrawEmpty = (UsesClipsForAmmo1() && m_iClip1 <= 0) ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
+		// a reload interrupted by a switch goes on in the draw
+		const bool bResumed = IsReloadPhaseSystemEnabled() && m_nReloadPhase != RELOAD_PHASE_NONE && ResumeReload();
+		const int iDrawEmpty = (!bResumed && UsesClipsForAmmo1() && m_iClip1 <= 0) ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
 		if (iDrawEmpty != ACTIVITY_NOT_AVAILABLE)
 		{
 			SetSequence(iDrawEmpty);
 			SendViewModelAnim(iDrawEmpty);
-		}
-
-		// A reload interrupted by a switch goes on in the draw
-		if (IsReloadPhaseSystemEnabled() && m_nReloadPhase != RELOAD_PHASE_NONE)
-		{
-			ResumeReload();
 		}
 
 #ifdef DEBUG
@@ -818,6 +849,7 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 			m_nReloadPhase = RELOAD_PHASE_NONE;
 		}
 		m_nReloadTable = -1;
+		StopReloadSoundPieces();
 	}
 
 	return BaseClass::Holster(pSwitchingTo);
@@ -831,12 +863,6 @@ void CNEOBaseCombatWeapon::CheckReload(void)
 	}
 
 	BaseClass::CheckReload();
-
-	// a reload that ran to its end leaves nothing to resume
-	if (IsReloadPhaseSystemEnabled() && !m_bInReload && m_nReloadTable >= 0)
-	{
-		EndReloadPhases();
-	}
 }
 
 float CNEOBaseCombatWeapon::GetAccuracyPenaltyDecay()

@@ -264,6 +264,7 @@ public:
 
 	virtual float GetFireRate() override final;
 	float GetPenetration() const;
+	void StopReloadOnDrop();
 #ifdef CLIENT_DLL
 	float m_flTemperature;
 	int m_spawnflags;
@@ -300,7 +301,7 @@ protected:
 
 	// Reload phases (weapons whose script has a ReloadPhases block): the last phase credited, kept across a switch
 	CNetworkVar(int, m_nReloadPhase);
-	// the phase table of the sequence playing, -1 none
+	// the phase table of the reload sequence started last, -1 none
 	CNetworkVar(int, m_nReloadTable);
 	// when the reload sequence started; phase credits are offsets from it
 	CNetworkVar(float, m_flReloadStart);
@@ -312,10 +313,10 @@ private:
 	bool HasEmptyIdle();
 
 	void StartReloadPhases(int iTable);
-	void EndReloadPhases();
 	void RunReloadPhases();
 	void CreditReloadPhase(ReloadPhase_t phase);
-	void ResumeReload();
+	bool ResumeReload();
+	void StopReloadSoundPieces();
 	void EmitReloadSoundPiece(const char *pszSound);
 	CBaseViewModel *ReloadViewModel() const;
 	int LookupReloadSequence(const char *pszName) const;
