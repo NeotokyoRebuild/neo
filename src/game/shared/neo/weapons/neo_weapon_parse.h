@@ -74,6 +74,10 @@ public:
 	float	m_flCycleTime;
 	float	m_flReloadReadyBeforeEnd;
 	int		m_iNumReloadTables;	// 0: the weapon reloads without phases
+	// NEO TODO (sunzenshen): sketch-zr68c-full. A closed-bolt gun keeps a round in the chamber through a reload with
+	// rounds left (30+1). Gameplay, not asset data, so the key sits at WeaponData top level in neo's weapon script,
+	// not in the neoAssets phases file. Ported from the old slice (ad3749afb), where it sat inside ReloadPhases.
+	bool	m_bChamberedRound;
 	ReloadPhaseTable_t m_reloadTables[RELOAD_PHASE_TABLES_MAX];
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
 	char	szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip

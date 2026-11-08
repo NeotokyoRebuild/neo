@@ -21,6 +21,9 @@ WeaponData
 
 	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers
 	"ReloadPhases"	{}
+	// sketch-zr68c-full: closed bolt, a reload with rounds left keeps the chambered one (30+1). Gameplay, so here and
+	// not in the neoAssets phases file; only read while the reload phases are on (HasChamberSlot)
+	"ChamberedRound"	"1"
 	
 	"TPMuzzleFlashScale"	"0.5"
 

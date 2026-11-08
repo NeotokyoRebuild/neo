@@ -265,6 +265,13 @@ public:
 	virtual float GetFireRate() override final;
 	float GetPenetration() const;
 	void StopReloadOnDrop();
+
+	// sketch-zr68c-full: chamber model (old slice ad3749afb). The clip counts the chambered round, so a full
+	// ZR68C holds GetMaxClip1() + 1; the HUD shows it as "30+1/30"
+	bool HasChamberSlot() const;
+	bool IsRoundChambered() const;
+	int RoundsInMagazine() const;
+	int MagazineCapacity() const;
 #ifdef CLIENT_DLL
 	float m_flTemperature;
 	int m_spawnflags;
@@ -307,6 +314,9 @@ protected:
 	CNetworkVar(float, m_flReloadStart);
 	// the sound pieces of the playing sequence already started, one bit per piece
 	CNetworkVar(int, m_nReloadSoundsDone);
+	// sketch-zr68c-full: the last shot left the chamber empty; only a 3_cycle clears it. No m_bReloadDry as in the
+	// old slice: the chamber cannot change during a reload, so this flag already tells dry from live
+	CNetworkVar(bool, m_bChamberEmpty);
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
@@ -317,6 +327,10 @@ private:
 	void FinishReloadPhase(ReloadPhase_t phase);
 	const char *FindResumeSequence() const;
 	bool ResumeReload();
+	// sketch-zr68c-full: factored out of the MVP's ResumeReload, shared with the fresh partial reload
+	bool PlayReloadSequence(const char *pszName, int iTable, float flGestureCycle);
+	bool StartPartialReload();
+	float ResumeGestureCycle() const;
 	void StopReloadSoundPieces();
 	void EmitReloadSoundPiece(const char *pszSound);
 	CBaseViewModel *ReloadViewModel() const;
