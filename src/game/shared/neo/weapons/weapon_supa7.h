@@ -63,6 +63,30 @@ public:
 	void ClearDelayedInputs(void);
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
+	bool Holster(CBaseCombatWeapon *pSwitchingTo) OVERRIDE;
+
+	// Clip1 stays the live rounds in the gun: the tube plus the chambered round
+	bool HasChamberSlot() const OVERRIDE;
+	bool IsRoundChambered() const OVERRIDE;
+	int RoundsInMagazine() const OVERRIDE;
+	int MagazineCapacity() const OVERRIDE;
+
+	// What sits in the chamber: a live shell or slug, the hull of a fired one, or nothing
+	enum Supa7Chamber_t
+	{
+		SUPA7_CHAMBER_EMPTY = 0,
+		SUPA7_CHAMBER_SHELL,
+		SUPA7_CHAMBER_SLUG,
+		SUPA7_CHAMBER_HULL,
+	};
+
+	// The round in the hand of the insert that is playing
+	enum Supa7Insert_t
+	{
+		SUPA7_INSERT_NONE = 0,
+		SUPA7_INSERT_SHELL,
+		SUPA7_INSERT_SLUG,
+	};
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
@@ -77,6 +101,21 @@ private:
 		}
 	}
 
+	bool IsTubeEnabled() const;
+	bool IsChamberLive() const { return m_nChamber == SUPA7_CHAMBER_SHELL || m_nChamber == SUPA7_CHAMBER_SLUG; }
+	bool IsTubeSynced() const { return m_nTubeCount + (IsChamberLive() ? 1 : 0) == m_iClip1; }
+	int TubeCapacity() const { return GetMaxClip1() - SUPA7_CHAMBER_ROUNDS; }
+	void SyncTube();
+	void TubePush(Supa7Insert_t round);
+	void FeedChamber();
+	void UpdateClipFromTube();
+	void StartInsert(Supa7Insert_t round);
+	void RunInsert();
+	void CancelInsert();
+	void StartRack();
+	void RunRack();
+	float ViewModelSequenceDuration() const;
+
 	void SetShotgunShellVisible(bool is_visible)
 	{
 		const int bodygroup_shell = 1;
@@ -90,6 +129,15 @@ private:
 	CNetworkVar(bool, m_bWeaponRaised); // Slug currently loaded in chamber
 	CNetworkVar(bool, m_bShellInChamber); // Slug currently loaded in chamber
 	CNetworkVar(float, m_flNextReload); // Time to load the next shell
+
+	// sv_neo_reload_experimental: the tube is a stack, the last round loaded is the first fed
+	static constexpr int SUPA7_CHAMBER_ROUNDS = 1;
+	CNetworkVar(int, m_nTubeCount); // rounds in the tube
+	CNetworkVar(int, m_nTubeSlugs); // bit i: the round at tube position i (0 = loaded first) is a slug
+	CNetworkVar(int, m_nChamber); // Supa7Chamber_t
+	CNetworkVar(int, m_nInsert); // Supa7Insert_t
+	CNetworkVar(float, m_flInsertCreditTime); // when the inserted round enters the tube, 0 none
+	CNetworkVar(float, m_flRackFeedTime); // when the rack's pump is home with the next round, 0 none
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);
