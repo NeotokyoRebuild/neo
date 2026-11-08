@@ -126,6 +126,13 @@ bool IsBeyondAtkGhostGuard( CNEOBot *me, const Vector &vecThreatPos )
 		return false;
 	}
 
+	const int iGhoster = NEORules()->GetGhosterPlayer();
+	CNEO_Player *pCarrier = ToNEOPlayer( UTIL_PlayerByIndex( iGhoster ) );
+	if ( pCarrier && !pCarrier->InSameTeam( me ) )
+	{
+		return false;
+	}
+
 	return !IsInAtkGhostView( vecThreatPos );
 }
 
