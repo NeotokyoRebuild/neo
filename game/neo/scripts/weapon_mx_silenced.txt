@@ -1,3 +1,5 @@
+#base "weapon_mxs_reload_phases.txt"
+
 WeaponData
 {
 	// Weapon data is loaded by both the Game and Client DLLs.
@@ -15,6 +17,11 @@ WeaponData
 	"CycleTime"			"0.106060"		// time between shots
 	"ReloadReadyBeforeEnd"	"0.427"	// the reload is done at the last reload click, this long before its animation ends
 	
+	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers
+	"ReloadPhases"	{}
+	// Chamber capacity is gameplay data; the phase timing comes from neoAssets.
+	"ChamberedRound"	"1"
+
 	"TPMuzzleFlashScale"	"0.3"
 
 	"clip_size"		"30"
