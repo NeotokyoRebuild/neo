@@ -759,6 +759,35 @@
 	"wave"			        "weapons/zr68/zr68_reload.wav"
 }
 
+// ZR68 reload in per-phase pieces (sv_neo_reload_experimental): each file starts just before its first transient
+
+"weapon_zr68.reload_seat"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68_reload_seat.wav"
+}
+
+"weapon_zr68.reload_slap"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68_reload_slap.wav"
+}
+
+"weapon_zr68.reload_bolt"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68_reload_bolt.wav"
+}
+
 //-------------------
 
 "weapon_zr68.npc_reload"
