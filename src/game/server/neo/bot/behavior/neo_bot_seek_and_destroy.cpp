@@ -6,7 +6,6 @@
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_ctg_seek.h"
-#include "bot/behavior/neo_bot_ctg_enemy.h"
 #include "bot/behavior/neo_bot_jgr_seek.h"
 #include "bot/neo_bot_memory_sound_combat.h"
 #include "bot/neo_bot_path_compute.h"
@@ -176,17 +175,19 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNE
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interval )
 {
+	// A disabled CtgSeek child returns Done; exit here so it cannot be re-suspended.
+	if ( neo_bot_disable_seek_and_destroy.GetBool() )
+	{
+		return Done( "Disabled." );
+	}
+
 	// Check for Game Type Specific behaviors and suspend for them
 	if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
 	{
-		if (IsGhostGameType())
+		// CtgSeek exits at round over, so do not enter it during a finished round.
+		if ( IsGhostGameType() && !NEORules()->IsRoundOver() )
 		{
-			// ATK teams also seek the ghost when they cannot capture it.
-			if ( HasGhostCapZone( me->GetTeamNumber() ) || NEORules()->GetGameType() == NEO_GAME_TYPE_ATK )
-			{
-				return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
-			}
-
+			return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
 		}
 		else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
 		{
@@ -196,28 +197,11 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		return Continue();
 	}
 
-	// ATK bots return to the ghost after a fight, attackers to take it and defenders to carry or guard it,
-	// and carry a ghost picked up outside of CtgSeek
-	if ( NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && !NEORules()->IsRoundOver() )
+	// Return to the objective after interruptions, including a ghost picked up
+	// outside CtgSeek.
+	if ( IsGhostGameType() && !NEORules()->IsRoundOver() )
 	{
 		return SuspendFor( new CNEOBotCtgSeek, "Going for the ghost" );
-	}
-
-	if (IsGhostGameType())
-	{
-		// Check if enemy has the ghost
-		if (NEORules()->GhostExists())
-		{
-			int iGhosterPlayer = NEORules()->GetGhosterPlayer();
-			if (iGhosterPlayer > 0 && iGhosterPlayer <= gpGlobals->maxClients)
-			{
-				CNEO_Player* pGhostCarrier = ToNEOPlayer(UTIL_PlayerByIndex(iGhosterPlayer));
-				if (pGhostCarrier && pGhostCarrier != me && pGhostCarrier->GetTeamNumber() != me->GetTeamNumber())
-				{
-					return SuspendFor(new CNEOBotCtgEnemy, "Stopping the ghost carrier!");
-				}
-			}
-		}
 	}
 
 	ActionResult< CNEOBot > result = UpdateCommon( me, interval );
