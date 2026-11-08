@@ -17,6 +17,12 @@
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	// NEO-ATKH-TEMP
+	if ( IsAtkDefendingTeam( me->GetTeamNumber() ) )
+	{
+		Msg( "NEO_ATKH lonewolf bot=%d carrier=%d\n", me->entindex(), me->IsCarryingGhost() ? 1 : 0 );
+	}
+
 	return Continue();
 }
 

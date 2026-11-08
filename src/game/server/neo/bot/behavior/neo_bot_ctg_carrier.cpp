@@ -349,10 +349,9 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 	CollectPlayers( me, &m_teammates );
 
 	// Check if bot should transition into lone wolf behavior,
-	// except in ATK, where waiting runs the clock out for the defenders
+	// except for an ATK attacker, which still has to take the ghost
 	if ( m_teammates.Count() == 0
-		&& !IsAtkAttackingTeam( me->GetTeamNumber() )
-		&& !IsGhostGuardRound( me->GetTeamNumber() ) )
+		&& !IsAtkAttackingTeam( me->GetTeamNumber() ) )
 	{
 		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 		if ( threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
