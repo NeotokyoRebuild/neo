@@ -264,7 +264,6 @@ public:
 
 	virtual float GetFireRate() override final;
 	float GetPenetration() const;
-	void StopReloadOnDrop();
 #ifdef CLIENT_DLL
 	float m_flTemperature;
 	int m_spawnflags;
@@ -283,7 +282,6 @@ protected:
 	virtual float GetMaxAccuracyPenalty() const { return 1.0; }
 	virtual float GetAccuracyPenaltyDecay();
 	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
-	bool IsReloadPhaseSystemEnabled() const;
 
 protected:
 	CNetworkVar(float, m_flSoonestAttack);
@@ -296,7 +294,19 @@ protected:
 	// When the reload in progress loads the magazine, 0 once it is loaded
 	CNetworkVar(float, m_flReloadReadyTime);
 
-	// Reload phases (weapons whose script has a ReloadPhases block): the last phase finished, kept across a switch
+private:
+	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
+	bool HasEmptyIdle();
+
+	// Reload phases (sv_neo_reload_experimental, weapons whose script has a ReloadPhases block).
+	// Each hook checks IsReloadPhaseSystemEnabled itself, so with the flag off a hook call does nothing
+public:
+	void StopReloadOnDrop();
+
+protected:
+	bool IsReloadPhaseSystemEnabled() const;
+
+	// the last phase finished, kept across a switch
 	CNetworkVar(int, m_nReloadPhase);
 	// the phase table of the reload sequence started last, -1 none
 	CNetworkVar(int, m_nReloadTable);
@@ -306,8 +316,11 @@ protected:
 	CNetworkVar(int, m_nReloadSoundsDone);
 
 private:
-	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
-	bool HasEmptyIdle();
+	void ReloadPhasesOnReload();
+	void ReloadPhasesOnFinish();
+	bool ReloadPhasesOnDeploy();
+	void ReloadPhasesOnHolster();
+	void ReloadPhasesOnBusyFrame();
 
 	void StartReloadPhases(int iTable);
 	void RunReloadPhases();
@@ -318,7 +331,6 @@ private:
 	void EmitReloadSoundPiece(const char *pszSound);
 	CBaseViewModel *ReloadViewModel() const;
 	int LookupReloadSequence(const char *pszName) const;
-
 };
 
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H

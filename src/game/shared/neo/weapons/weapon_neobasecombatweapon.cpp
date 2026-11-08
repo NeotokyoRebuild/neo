@@ -464,13 +464,7 @@ bool CNEOBaseCombatWeapon::Reload( void )
 	// the animation and the wait to fire still run to the end
 	m_flReloadReadyTime = Max(gpGlobals->curtime, m_flNextPrimaryAttack - GetNEOWpnData().m_flReloadReadyBeforeEnd);
 
-	if (IsReloadPhaseSystemEnabled())
-	{
-		// the phases are those of the sequence the reload plays, such as reload or reloadempty
-		CBaseViewModel *pVM = ReloadViewModel();
-		m_nReloadPhase = RELOAD_PHASE_NONE;
-		StartReloadPhases(pVM ? GetNEOWpnData().FindReloadTable(pVM->GetSequenceName(pVM->GetSequence())) : -1);
-	}
+	ReloadPhasesOnReload();
 
 	return true;
 
@@ -508,6 +502,67 @@ static constexpr float RELOAD_SOUND_LEAD = 0.02f;
 bool CNEOBaseCombatWeapon::IsReloadPhaseSystemEnabled() const
 {
 	return NEORules() && NEORules()->IsReloadExperimental() && !GetNEOWpnData().m_reloadTables.IsEmpty();
+}
+
+// The phases are those of the sequence the reload plays, such as reload or reloadempty
+void CNEOBaseCombatWeapon::ReloadPhasesOnReload()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return;
+	}
+
+	CBaseViewModel *pVM = ReloadViewModel();
+	m_nReloadPhase = RELOAD_PHASE_NONE;
+	StartReloadPhases(pVM ? GetNEOWpnData().FindReloadTable(pVM->GetSequenceName(pVM->GetSequence())) : -1);
+}
+
+// The magazine is in: the phases up to the load are done, and a switch from here leaves nothing to resume
+void CNEOBaseCombatWeapon::ReloadPhasesOnFinish()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return;
+	}
+
+	m_nReloadPhase = Max(static_cast<ReloadPhase_t>(m_nReloadPhase.Get()), RELOAD_PHASE_LOADED);
+}
+
+// A reload interrupted by a switch goes on in the draw; returns whether it resumed
+bool CNEOBaseCombatWeapon::ReloadPhasesOnDeploy()
+{
+	if (!IsReloadPhaseSystemEnabled() || m_nReloadPhase == RELOAD_PHASE_NONE)
+	{
+		return false;
+	}
+
+	return ResumeReload();
+}
+
+// Only a phase that a sequence resumes from outlasts the switch, with the table that names the resume
+void CNEOBaseCombatWeapon::ReloadPhasesOnHolster()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return;
+	}
+
+	StopReloadSoundPieces();
+	if (!FindResumeSequence())
+	{
+		m_nReloadPhase = RELOAD_PHASE_NONE;
+		m_nReloadTable = -1;
+	}
+}
+
+void CNEOBaseCombatWeapon::ReloadPhasesOnBusyFrame()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return;
+	}
+
+	RunReloadPhases();
 }
 
 // The viewmodel sequence that resumes the reload interrupted now, from the phase table of the playing sequence;
@@ -729,11 +784,7 @@ void CNEOBaseCombatWeapon::FinishReload(void)
 	}
 	m_flReloadReadyTime = 0.0f;
 
-	// the magazine is in: the phases up to the load are done, and a switch from here leaves nothing to resume
-	if (IsReloadPhaseSystemEnabled())
-	{
-		m_nReloadPhase = Max(static_cast<ReloadPhase_t>(m_nReloadPhase.Get()), RELOAD_PHASE_LOADED);
-	}
+	ReloadPhasesOnFinish();
 
 	CBaseCombatCharacter* pOwner = GetOwner();
 
@@ -784,8 +835,7 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 		// An empty weapon draws with its slide held back where the model has that draw,
 		// which carries no activity, so it is picked by name
 		static constexpr const char *VM_SEQ_DRAW_EMPTY = "drawempty";
-		// a reload interrupted by a switch goes on in the draw
-		const bool bResumed = IsReloadPhaseSystemEnabled() && m_nReloadPhase != RELOAD_PHASE_NONE && ResumeReload();
+		const bool bResumed = ReloadPhasesOnDeploy();
 		const int iDrawEmpty = (!bResumed && UsesClipsForAmmo1() && m_iClip1 <= 0) ? LookupSequence(VM_SEQ_DRAW_EMPTY) : ACTIVITY_NOT_AVAILABLE;
 		if (iDrawEmpty != ACTIVITY_NOT_AVAILABLE)
 		{
@@ -853,16 +903,7 @@ float CNEOBaseCombatWeapon::GetPenetration() const
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-	// Only a phase that a sequence resumes from outlasts the switch, with the table that names the resume
-	if (IsReloadPhaseSystemEnabled())
-	{
-		StopReloadSoundPieces();
-		if (!FindResumeSequence())
-		{
-			m_nReloadPhase = RELOAD_PHASE_NONE;
-			m_nReloadTable = -1;
-		}
-	}
+	ReloadPhasesOnHolster();
 
 	return BaseClass::Holster(pSwitchingTo);
 }
@@ -919,10 +960,7 @@ void CNEOBaseCombatWeapon::ItemBusyFrame(void)
 	BaseClass::ItemBusyFrame();
 	UpdateInaccuracy();
 
-	if (IsReloadPhaseSystemEnabled())
-	{
-		RunReloadPhases();
-	}
+	ReloadPhasesOnBusyFrame();
 
 	// The owner stays busy until the reload animation ends, but the magazine loads at the reload's ready time
 	if (m_bInReload && m_flReloadReadyTime > 0.0f && gpGlobals->curtime >= m_flReloadReadyTime)
