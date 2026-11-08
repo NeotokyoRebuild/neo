@@ -69,7 +69,8 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	if ( team_members == 1 )
+	// ATK attackers must keep pursuing the ghost because the clock runs for defenders.
+	if ( team_members == 1 && !IsAtkAttackingTeam( me->GetTeamNumber() ) )
 	{
 		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one on my team!" );
 	}
