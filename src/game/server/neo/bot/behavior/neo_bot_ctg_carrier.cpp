@@ -481,6 +481,8 @@ CNEOBotCtgCarrier::CNEOBotCtgCarrier( void )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgCarrier::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	LogTransition( me, "start", priorAction );
+
 	m_chasePath.Invalidate();
 	m_aloneTimer.Invalidate();
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
@@ -860,6 +862,8 @@ QueryResultType CNEOBotCtgCarrier::ShouldHurry( const INextBot *me ) const
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgCarrier::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	LogTransition( me, "resume", interruptingAction );
+
 	m_teammates.RemoveAll();
 	CollectPlayers( me, &m_teammates );
 

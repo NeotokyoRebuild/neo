@@ -1,11 +1,12 @@
 #ifndef NEO_BOT_CTG_ESCORT_H
 #define NEO_BOT_CTG_ESCORT_H
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "bot/neo_bot.h"
 #include "Path/NextBotChasePath.h"
 
 //--------------------------------------------------------------------------------------------------------
-class CNEOBotCtgEscort : public Action< CNEOBot >
+class CNEOBotCtgEscort : public CNEOBotTransitionAction
 {
 public:
 	CNEOBotCtgEscort( void );

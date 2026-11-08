@@ -23,6 +23,8 @@ CNEOBotCtgEscort::CNEOBotCtgEscort( void ) :
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgEscort::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	LogTransition( me, "start", priorAction );
+
 	m_chasePath.Invalidate();
 	m_path.Invalidate();
 	m_repathTimer.Invalidate();
@@ -78,7 +80,8 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	if ( const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true) )
+	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
+	if ( EvaluateCombat( me, threat, NEOCombatContext::Escort ) == NEOCombatVerdict::Eligible )
 	{
 		const Vector& ghosterPos = pGhostCarrier->GetAbsOrigin();
 		const Vector& threatPos = threat->GetLastKnownPosition();
@@ -218,6 +221,8 @@ ActionResult< CNEOBot >	CNEOBotCtgEscort::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgEscort::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	LogTransition( me, "resume", interruptingAction );
+
 	m_chasePath.Invalidate();
 	m_path.Invalidate();
 	m_repathTimer.Invalidate();

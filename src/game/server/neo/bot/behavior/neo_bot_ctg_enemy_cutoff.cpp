@@ -40,6 +40,8 @@ bool CNEOBotCtgEnemyCutOff::Replan( CNEOBot *me, CNEO_Player *pGhostCarrier )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgEnemyCutOff::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	LogTransition( me, "start", priorAction );
+
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
 	if ( !RepathToCutOff( me ) )
@@ -90,6 +92,8 @@ ActionResult< CNEOBot > CNEOBotCtgEnemyCutOff::Update( CNEOBot *me, float interv
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgEnemyCutOff::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	LogTransition( me, "resume", interruptingAction );
+
 	if ( !RepathToCutOff( me ) )
 	{
 		return ChangeTo( new CNEOBotCtgEnemyChase( FASTEST_ROUTE ), "No path to the cut-off on resume - chasing" );

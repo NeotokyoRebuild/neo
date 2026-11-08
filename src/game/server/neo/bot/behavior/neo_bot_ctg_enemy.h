@@ -1,6 +1,7 @@
 #ifndef NEO_BOT_CTG_ENEMY_H
 #define NEO_BOT_CTG_ENEMY_H
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "bot/neo_bot.h"
 
 class CNEO_Player;
@@ -9,7 +10,7 @@ class CNavArea;
 //--------------------------------------------------------------------------------------------------------
 // Decides whether to cut the enemy ghost carrier off or chase it, hands over, and never stays on the
 // stack. Plans only from what any opponent sees: the ghost marker and the fixed cap zones.
-class CNEOBotCtgEnemy : public Action< CNEOBot >
+class CNEOBotCtgEnemy : public CNEOBotTransitionAction
 {
 public:
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval ) override;

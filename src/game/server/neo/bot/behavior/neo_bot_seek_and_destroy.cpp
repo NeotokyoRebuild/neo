@@ -153,6 +153,8 @@ CNEOBotSeekAndDestroy::CNEOBotSeekAndDestroy( float duration )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	LogTransition( me, "start", priorAction );
+
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
 	RecomputeSeekPath( me );
@@ -227,20 +229,16 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
-	if ( ShouldHoldFire( me, threat ) )
+	const bool bHoldFire = ShouldHoldFire( me, threat );
+	const NEOCombatVerdict combat = EvaluateCombat( me, threat, NEOCombatContext::Seek, nullptr, bHoldFire );
+	if ( combat == NEOCombatVerdict::HoldFire )
 	{
 		return Continue();
 	}
 
 	if ( threat )
 	{
-		const auto *neoThreat = ToNEOPlayer(threat->GetEntity());
-		// This will just go to the ghoster RecomputeSeekPath logics instead of
-		// only going after it
-		const bool bDontSuspendForGhoster = (neoThreat && neoThreat->IsCarryingGhost());
-		// Zoneless teams shoot at threats out of the ghost's view without leaving it for them
-		const bool bBeyondGuard = IsBeyondGhostLeash( me, threat->GetLastKnownPosition() );
-		if (!bDontSuspendForGhoster && !bBeyondGuard)
+		if ( combat == NEOCombatVerdict::Eligible )
 		{
 			const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
 			// fall back to nearest teammate for backup if I am the closest contact to enemy
@@ -379,6 +377,8 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotSeekAndDestroy::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	LogTransition( me, "resume", interruptingAction );
+
 	RecomputeSeekPath( me );
 
 	return Continue();

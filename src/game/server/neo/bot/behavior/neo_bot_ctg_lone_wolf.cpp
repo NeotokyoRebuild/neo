@@ -19,6 +19,8 @@
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolf::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	LogTransition( me, "start", priorAction );
+
 	// NEO-ATKH-TEMP
 	if ( IsGhostGameType() && !HasGhostCapZone( me->GetTeamNumber() ) )
 	{
@@ -107,7 +109,7 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostInterception( CNEOBot *
 
 	// intercept enemy carrier
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
-	if ( threat && threat->GetEntity() == pGhostOwner && me->IsLineOfFireClear( threat->GetEntity()->WorldSpaceCenter(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+	if ( EvaluateCombat( me, threat, NEOCombatContext::GhostInterception, pGhostOwner ) == NEOCombatVerdict::Eligible )
 	{
 		me->EnableCloak( 3.0f );
 		return SuspendFor( new CNEOBotAttack, "Attacking the ghost carrier!" );
@@ -213,6 +215,8 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::ConsiderGhostCaptureTransition( CNEO
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgLoneWolf::OnSuspend( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	LogTransition( me, "suspend", interruptingAction );
+
 	m_path.Invalidate();
 	return Continue();
 }
@@ -220,6 +224,8 @@ ActionResult< CNEOBot > CNEOBotCtgLoneWolf::OnSuspend( CNEOBot *me, Action< CNEO
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgLoneWolf::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	LogTransition( me, "resume", interruptingAction );
+
 	return Continue();
 }
 

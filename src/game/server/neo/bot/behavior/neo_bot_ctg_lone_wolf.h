@@ -1,9 +1,10 @@
 #pragma once
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "bot/neo_bot.h"
 
 //--------------------------------------------------------------------------------------------------------
-class CNEOBotCtgLoneWolf : public Action< CNEOBot >
+class CNEOBotCtgLoneWolf : public CNEOBotTransitionAction
 {
 public:
 	CNEOBotCtgLoneWolf( void ) = default;

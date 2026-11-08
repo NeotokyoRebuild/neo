@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "Path/NextBotChasePath.h"
 
 class CKnownEntity;
@@ -7,7 +8,7 @@ class CKnownEntity;
 //
 // Roam around the map attacking enemies
 //
-class CNEOBotSeekAndDestroy : public Action< CNEOBot >
+class CNEOBotSeekAndDestroy : public CNEOBotTransitionAction
 {
 public:
 	CNEOBotSeekAndDestroy( float duration = -1.0f );

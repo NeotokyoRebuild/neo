@@ -51,6 +51,8 @@ CNEOBotAttack::CNEOBotAttack( const Vector &goalPosition ) : m_chasePath( ChaseP
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotAttack::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	LogTransition( me, "start", priorAction );
+
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 	return Continue();
 }
@@ -269,8 +271,8 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	// Using the threat position matches Seek, preventing an action loop while allowing defense of the ghost.
-	if ( threat && IsBeyondGhostLeash( me, threat->GetLastKnownPosition() ) )
+	const NEOCombatVerdict combat = EvaluateCombat( me, threat, NEOCombatContext::AttackContinuation );
+	if ( combat == NEOCombatVerdict::BeyondGhostLeash )
 	{
 		// NEO-ATKH-TEMP
 		Msg( "NEO_ATKH unwind bot=%d ghoster=%d\n", me->entindex(), NEORules()->GetGhosterPlayer() );
@@ -278,28 +280,22 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		return Done( "No live teammate carries the ghost, return to the ghost" );
 	}
 
-	if ( threat == nullptr || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
+	if ( combat == NEOCombatVerdict::NoThreat )
 	{
 		return Done( "No threat" );
 	}
 
-	const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
-
-	if ( IsGhostLeashed( me ) && !threat->IsVisibleRecently() )
+	if ( combat == NEOCombatVerdict::OutsideGhostView )
 	{
-		// A zoneless teammate drops a chase it lost sight of when it leads out of the ghost's view,
-		// or when an enemy has the ghost, so it collapses on the carrier
-		if ( !IsInGhostView( threatLastKnownPos ) )
-		{
-			return Done( "Threat is out of the ghost's view" );
-		}
-
-		const int iGhoster = NEORules()->GetGhosterPlayer();
-		if ( iGhoster > 0 && iGhoster != threat->GetEntity()->entindex() && NEORules()->GetGhosterTeam() != me->GetTeamNumber() )
-		{
-			return Done( "Collapsing on the ghost carrier" );
-		}
+		return Done( "Threat is out of the ghost's view" );
 	}
+
+	if ( combat == NEOCombatVerdict::CollapseOnCarrier )
+	{
+		return Done( "Collapsing on the ghost carrier" );
+	}
+
+	const Vector& threatLastKnownPos = threat->GetLastKnownPosition();
 
 	if ( sv_neo_bot_attack_debug_cover.GetBool() )
 	{
@@ -485,6 +481,8 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotAttack::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	LogTransition( me, "resume", interruptingAction );
+
 	m_path.Invalidate();
 	m_chasePath.Invalidate();
 	m_attackCoverArea = nullptr;

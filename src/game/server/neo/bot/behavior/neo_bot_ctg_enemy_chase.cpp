@@ -14,6 +14,8 @@ static constexpr float CTG_ENEMY_CHASE_REPLAN_SECONDS = 20.0f;
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgEnemyChase::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
+	LogTransition( me, "start", priorAction );
+
 	m_chasePath.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 	m_routeTypeTimer.Start( CTG_ENEMY_CHASE_REPLAN_SECONDS );
 
@@ -37,7 +39,7 @@ ActionResult< CNEOBot > CNEOBotCtgEnemyChase::Update( CNEOBot *me, float interva
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
-	if ( threat && !threat->IsObsolete() && me->GetIntentionInterface()->ShouldAttack( me, threat ) )
+	if ( EvaluateCombat( me, threat, NEOCombatContext::EnemyChase ) == NEOCombatVerdict::Eligible )
 	{
 		return SuspendFor( new CNEOBotAttack( pGhostCarrier->GetAbsOrigin() ), "Attacking ghoster team" );
 	}
@@ -50,6 +52,8 @@ ActionResult< CNEOBot > CNEOBotCtgEnemyChase::Update( CNEOBot *me, float interva
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgEnemyChase::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
+	LogTransition( me, "resume", interruptingAction );
+
 	m_chasePath.Invalidate();
 
 	return Continue();

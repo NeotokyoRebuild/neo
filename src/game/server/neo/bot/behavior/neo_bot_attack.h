@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "NextBotBehavior.h"
 #include "Path/NextBotChasePath.h"
 
@@ -8,7 +9,7 @@ class CKnownEntity;
 
 
 //-------------------------------------------------------------------------------
-class CNEOBotAttack : public Action< CNEOBot >
+class CNEOBotAttack : public CNEOBotTransitionAction
 {
 public:
 	CNEOBotAttack( void );

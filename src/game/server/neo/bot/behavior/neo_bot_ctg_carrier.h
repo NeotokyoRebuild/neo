@@ -1,6 +1,7 @@
 #ifndef NEO_BOT_CTG_CARRIER_H
 #define NEO_BOT_CTG_CARRIER_H
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "bot/neo_bot.h"
 #include "Path/NextBotChasePath.h"
 
@@ -27,7 +28,7 @@ private:
 };
 
 //--------------------------------------------------------------------------------------------------------
-class CNEOBotCtgCarrier : public Action< CNEOBot >
+class CNEOBotCtgCarrier : public CNEOBotTransitionAction
 {
 public:
 	CNEOBotCtgCarrier( void );

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "bot/neo_bot.h"
 #include "Path/NextBotChasePath.h"
 #include "nav_pathfind.h"
@@ -7,7 +8,7 @@
 //--------------------------------------------------------------------------------------------------------
 // Runs the enemy ghost carrier down until there is no longer a living enemy carrier. FASTEST_ROUTE
 // from behind it; DEFAULT_ROUTE from ahead, where the reservation penalty spreads defenders out.
-class CNEOBotCtgEnemyChase : public Action< CNEOBot >
+class CNEOBotCtgEnemyChase : public CNEOBotTransitionAction
 {
 public:
 	CNEOBotCtgEnemyChase( RouteType route ) : m_routeType( route ) {}

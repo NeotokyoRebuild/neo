@@ -28,7 +28,40 @@ public:
 	bool IsAbleToSee(CBaseEntity *subject, FieldOfViewCheckType checkFOV, Vector *visibleSpot = nullptr) const override;
 	// NEO NOTE (nullsystem): Not overriding non-CBaseEntity version as that doesn't give us enough info properly
 
+	// TEMP: invalidate telemetry when existing vision operations forget its selection.
+	void Reset() override
+	{
+		IVision::Reset();
+		m_hTransitionTarget = nullptr;
+	}
+
+	void ForgetEntity( CBaseEntity *forgetMe ) override
+	{
+		IVision::ForgetEntity( forgetMe );
+		if ( m_hTransitionTarget.Get() == forgetMe )
+		{
+			m_hTransitionTarget = nullptr;
+		}
+	}
+
+	void ForgetAllKnownEntities() override
+	{
+		IVision::ForgetAllKnownEntities();
+		m_hTransitionTarget = nullptr;
+	}
+
+	// TEMP: remember existing selections without running threat arbitration for telemetry.
+	const CKnownEntity *GetPrimaryKnownThreat( bool onlyVisibleThreats = false ) const override
+	{
+		const CKnownEntity *threat = IVision::GetPrimaryKnownThreat( onlyVisibleThreats );
+		m_hTransitionTarget = threat ? threat->GetEntity() : nullptr;
+		return threat;
+	}
+
+	CBaseEntity *GetTransitionTarget() const { return m_hTransitionTarget.Get(); }
+
 private:
+	mutable CHandle< CBaseEntity > m_hTransitionTarget;
 	CUtlVector< CHandle< CBaseCombatCharacter > > m_potentiallyVisibleNPCVector;
 	CountdownTimer m_potentiallyVisibleUpdateTimer;
 	void UpdatePotentiallyVisibleNPCVector( void );

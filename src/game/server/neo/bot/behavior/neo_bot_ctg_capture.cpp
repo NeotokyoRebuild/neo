@@ -33,6 +33,8 @@ CNEOBotCtgCapture::CNEOBotCtgCapture( CWeaponGhost *pObjective )
 //---------------------------------------------------------------------------------------------
 ActionResult<CNEOBot> CNEOBotCtgCapture::OnStart( CNEOBot *me, Action<CNEOBot> *priorAction )
 {
+	LogTransition( me, "start", priorAction );
+
 	m_path.Invalidate();
 	m_repathTimer.Invalidate();
 	m_captureAttemptTimer.Start( CTG_CAPTURE_ATTEMPT_TIME );

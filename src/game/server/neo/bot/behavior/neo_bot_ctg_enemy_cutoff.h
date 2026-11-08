@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "bot/neo_bot.h"
 
 class CNEO_Player;
@@ -8,7 +9,7 @@ class CNavArea;
 //--------------------------------------------------------------------------------------------------------
 // Runs to the earliest area on the enemy ghost carrier's predicted route that this bot reaches first,
 // then chases from there. Re-picks the area on a timer, because the carrier's route is only a guess.
-class CNEOBotCtgEnemyCutOff : public Action< CNEOBot >
+class CNEOBotCtgEnemyCutOff : public CNEOBotTransitionAction
 {
 public:
 	CNEOBotCtgEnemyCutOff( CNavArea *pCutOff ) : m_pCutOff( pCutOff ) {}

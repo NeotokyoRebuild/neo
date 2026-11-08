@@ -1,11 +1,12 @@
 #ifndef NEO_BOT_CTG_CAPTURE_H
 #define NEO_BOT_CTG_CAPTURE_H
 
+#include "bot/behavior/neo_bot_transition_action.h"
 #include "NextBotBehavior.h"
 #include "bot/neo_bot.h"
 
 //----------------------------------------------------------------------------------------------------------------
-class CNEOBotCtgCapture : public Action<CNEOBot>
+class CNEOBotCtgCapture : public CNEOBotTransitionAction
 {
 public:
 	CNEOBotCtgCapture( CWeaponGhost *pObjective );

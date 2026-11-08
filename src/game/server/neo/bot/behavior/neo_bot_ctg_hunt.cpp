@@ -584,6 +584,8 @@ QueryResultType CNEOBotCtgHunt::IsHindrance( const INextBot *me, CBaseEntity *bl
 //---------------------------------------------------------------------------------------------
 void CNEOBotCtgHunt::OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction )
 {
+	LogTransition( me, "end", nextAction );
+
 	if ( m_bHasWatch || m_hHoldFireThreat.Get() )
 	{
 		DropWatch( me, "action" );

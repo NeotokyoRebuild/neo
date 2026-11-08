@@ -24,6 +24,10 @@
 #include "neo_crosshair.h"
 #include "neo/weapons/weapon_ghost.h"
 
+// TEMP: opt-in lifecycle telemetry for the CTG transition baseline.
+ConVar neo_bot_transition_log( "neo_bot_transition_log", "0", FCVAR_CHEAT,
+	"Log CTG and Attack lifecycle transitions for baseline analysis" );
+
 ConVar neo_bot_notice_gunfire_range("neo_bot_notice_gunfire_range", "3000", FCVAR_GAMEDLL);
 ConVar neo_bot_notice_quiet_gunfire_range("neo_bot_notice_quiet_gunfire_range", "500", FCVAR_GAMEDLL);
 ConVar neo_bot_near_point_travel_distance("neo_bot_near_point_travel_distance", "750", FCVAR_CHEAT, "If within this travel distance to the current point, bot is 'near' it");
@@ -136,6 +140,71 @@ bool IsBeyondGhostLeash( CNEOBot *me, const Vector &vecThreatPos )
 	return !IsInGhostView( vecThreatPos );
 }
 
+
+
+//-----------------------------------------------------------------------------------------------------
+NEOCombatVerdict EvaluateCombat( CNEOBot *me, const CKnownEntity *threat,
+	NEOCombatContext context, const CBaseCombatCharacter *ghostOwner, bool holdFire )
+{
+	if ( context == NEOCombatContext::Seek )
+	{
+		if ( holdFire )
+		{
+			return NEOCombatVerdict::HoldFire;
+		}
+
+		if ( !threat )
+		{
+			return NEOCombatVerdict::NoThreat;
+		}
+
+		const CNEO_Player *neoThreat = ToNEOPlayer( threat->GetEntity() );
+		const bool carrierTarget = neoThreat && neoThreat->IsCarryingGhost();
+		// Preserve the leash query even when the target is the carrier.
+		const bool beyondGuard = IsBeyondGhostLeash( me, threat->GetLastKnownPosition() );
+		return carrierTarget ? NEOCombatVerdict::CarrierTarget :
+			( beyondGuard ? NEOCombatVerdict::BeyondGhostLeash : NEOCombatVerdict::Eligible );
+	}
+
+	if ( context == NEOCombatContext::Escort )
+	{
+		return threat ? NEOCombatVerdict::Eligible : NEOCombatVerdict::NoThreat;
+	}
+
+	if ( context == NEOCombatContext::GhostInterception )
+	{
+		return threat && threat->GetEntity() == ghostOwner &&
+			me->IsLineOfFireClear( threat->GetEntity()->WorldSpaceCenter(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT )
+			? NEOCombatVerdict::Eligible : NEOCombatVerdict::NoThreat;
+	}
+
+	if ( context == NEOCombatContext::AttackContinuation && threat &&
+		IsBeyondGhostLeash( me, threat->GetLastKnownPosition() ) )
+	{
+		return NEOCombatVerdict::BeyondGhostLeash;
+	}
+
+	if ( !threat || threat->IsObsolete() || !me->GetIntentionInterface()->ShouldAttack( me, threat ) )
+	{
+		return NEOCombatVerdict::NoThreat;
+	}
+
+	if ( context == NEOCombatContext::AttackContinuation && IsGhostLeashed( me ) && !threat->IsVisibleRecently() )
+	{
+		if ( !IsInGhostView( threat->GetLastKnownPosition() ) )
+		{
+			return NEOCombatVerdict::OutsideGhostView;
+		}
+
+		const int ghoster = NEORules()->GetGhosterPlayer();
+		if ( ghoster > 0 && ghoster != threat->GetEntity()->entindex() && NEORules()->GetGhosterTeam() != me->GetTeamNumber() )
+		{
+			return NEOCombatVerdict::CollapseOnCarrier;
+		}
+	}
+
+	return NEOCombatVerdict::Eligible;
+}
 
 
 //-----------------------------------------------------------------------------------------------------

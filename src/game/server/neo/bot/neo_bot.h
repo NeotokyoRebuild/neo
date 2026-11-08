@@ -67,6 +67,30 @@ bool IsGhostLeashed( CNEOBot *me );
 
 bool IsBeyondGhostLeash( CNEOBot *me, const Vector &vecThreatPos );
 
+// Callers retain their threat query and evaluate role-specific hold-fire work first.
+enum class NEOCombatContext
+{
+	Seek,
+	Escort,
+	EnemyChase,
+	GhostInterception,
+	AttackContinuation
+};
+
+enum class NEOCombatVerdict
+{
+	Eligible,
+	HoldFire,
+	NoThreat,
+	CarrierTarget,
+	BeyondGhostLeash,
+	OutsideGhostView,
+	CollapseOnCarrier
+};
+
+NEOCombatVerdict EvaluateCombat( CNEOBot *me, const CKnownEntity *threat,
+	NEOCombatContext context, const CBaseCombatCharacter *ghostOwner = nullptr, bool holdFire = false );
+
 class CNEOBotBehavior;
 
 // Not split off from neo_bot.h/cpp unless you want to deal with includes hell
