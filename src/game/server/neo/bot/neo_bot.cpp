@@ -118,6 +118,17 @@ bool IsAtkGhostLeashed( CNEOBot *me )
 	return !pCarrier || !pCarrier->IsAlive() || !pCarrier->InSameTeam( me );
 }
 
+bool IsBeyondAtkGhostGuard( CNEOBot *me, const Vector &vecThreatPos )
+{
+	if ( !NEORules()->GhostExists() || !IsAtkGhostLeashed( me )
+		|| NEORules()->GetGhosterPlayer() == me->entindex() )
+	{
+		return false;
+	}
+
+	return !IsInAtkGhostView( vecThreatPos );
+}
+
 
 
 //-----------------------------------------------------------------------------------------------------

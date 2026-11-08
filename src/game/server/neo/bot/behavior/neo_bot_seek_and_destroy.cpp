@@ -261,7 +261,7 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 		// only going after it
 		const bool bDontSuspendForGhoster = (neoThreat && neoThreat->IsCarryingGhost());
 		// ATK defenders shoot at threats out of the ghost's view but do not leave the ghost for them
-		const bool bBeyondGuard = IsAtkGhostLeashed( me ) && !IsInAtkGhostView( threat->GetLastKnownPosition() );
+		const bool bBeyondGuard = IsBeyondAtkGhostGuard( me, threat->GetLastKnownPosition() );
 		if (!bDontSuspendForGhoster && !bBeyondGuard)
 		{
 			const Vector& threatLastKnownPos = threat->GetLastKnownPosition();

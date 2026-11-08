@@ -59,6 +59,8 @@ bool IsInAtkGhostView( const Vector &vecPos );
 // ATK defenders keep to the ghost's view unless a teammate carries it, when the rest hunt freely
 bool IsAtkGhostLeashed( CNEOBot *me );
 
+bool IsBeyondAtkGhostGuard( CNEOBot *me, const Vector &vecThreatPos );
+
 class CNEOBotBehavior;
 
 // Not split off from neo_bot.h/cpp unless you want to deal with includes hell
