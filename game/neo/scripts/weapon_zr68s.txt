@@ -1,3 +1,5 @@
+#base "weapon_zr68s_reload_phases.txt"
+
 // ZR68S
 
 WeaponData
@@ -18,6 +20,11 @@ WeaponData
 	"Penetration"		"18.0"
 	"CycleTime"		"0.106060"		// time between shots
 	"ReloadReadyBeforeEnd"	"0.483"	// the reload is done at the last reload click, this long before its animation ends
+
+	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers
+	"ReloadPhases"	{}
+	// Chamber capacity is gameplay data; the phase timing comes from neoAssets.
+	"ChamberedRound"	"1"
 	
 	"TPMuzzleFlashScale"	"0.5"
 
