@@ -706,7 +706,7 @@ bool PathFollower::HasFallenBelowPath( INextBot *bot ) const
 
 //--------------------------------------------------------------------------------------------------------------
 /**
- * Return true if we stand off the path, more than a step above it:
+ * Return true if we stand off the path, more than a crouch height above it:
  * we walked onto a floor over the path, such as a grate or a door frame's top,
  * and walking on along the path's line does not lead down to it
  */
@@ -748,7 +748,9 @@ bool PathFollower::HasRisenAbovePath( INextBot *bot ) const
 
 	const Vector &feet = mover->GetFeet();
 	MoveCursorToClosestPosition( feet );
-	return feet.z - GetCursorData().pos.z > mover->GetStepHeight();
+	// areas over the same spot are at least a crouch height apart, so a smaller rise above the path's line
+	// is uneven ground under the line, not a floor over the path
+	return feet.z - GetCursorData().pos.z > HumanCrouchHeight;
 }
 
 
