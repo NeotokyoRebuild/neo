@@ -2,6 +2,8 @@
 
 #include "Path/NextBotChasePath.h"
 
+class CKnownEntity;
+
 //
 // Roam around the map attacking enemies
 //
@@ -31,6 +33,8 @@ public:
 	virtual const char *GetName( void ) const	{ return "SeekAndDestroy"; };
 
 protected:
+	virtual bool ShouldHoldFire( CNEOBot *me, const CKnownEntity *threat ) { return false; }
+
 	virtual ActionResult< CNEOBot > UpdateCommon( CNEOBot *me, float interval );
 
 	virtual void RecomputeSeekPath( CNEOBot *me );

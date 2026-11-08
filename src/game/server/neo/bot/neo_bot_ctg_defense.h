@@ -12,6 +12,7 @@ struct WatchArea_t
 	CNavArea *pWatched = nullptr;
 	float flMyTravel = 0.0f;
 	float flEnemyEta = 0.0f;
+	float flReportAge = 0.0f;
 };
 
 // Route watch for the teammates of a ghost carrier: predict the known enemy's route to the carrier
@@ -23,6 +24,9 @@ namespace NEOBotDefense
 	// ppszFailReason: why no watch was found, for logging.
 	bool FindWatchArea( CNEOBot *me, const CKnownEntity &known, CNEO_Player *pCarrier,
 		const WatchArea_t *pHeld, WatchArea_t &out, const char **ppszFailReason = nullptr );
+
+	// Team report union and sticky crossfire plan; false keeps the caller's ordinary hunt behavior.
+	bool GetAssignment( CNEOBot *me, CNEO_Player *pCarrier, CNEO_Player *&pEnemy, WatchArea_t &out );
 
 	// Forget the cached routes, e.g. on a map change where nav areas are rebuilt
 	void Reset();

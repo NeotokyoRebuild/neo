@@ -14,16 +14,21 @@ public:
 	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval ) override;
 
 	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path ) override;
+	virtual EventDesiredResult< CNEOBot > OnInjured( CNEOBot *me, const CTakeDamageInfo &info ) override;
+	virtual void OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction ) override;
+	virtual QueryResultType ShouldHurry( const INextBot *me ) const override;
+	virtual QueryResultType IsHindrance( const INextBot *me, CBaseEntity *blocker ) const override;
 
 	virtual const char *GetName( void ) const override { return "ctgHunt"; }
 
 protected:
+	virtual bool ShouldHoldFire( CNEOBot *me, const CKnownEntity *threat ) override;
 	virtual void RecomputeSeekPath( CNEOBot *me ) override;
 
 private:
 	CNEO_Player *SelectHuntTarget( CNEOBot *me ) const;
 
-	bool TryPlanWatch( CNEOBot *me, CNEO_Player *pTarget, const CKnownEntity &known );
+	bool TryPlanWatch( CNEOBot *me, CNEO_Player *pTarget, const CKnownEntity *known, const WatchArea_t *pAssigned );
 	void UpdateWatch( CNEOBot *me );
 	void DropWatch( CNEOBot *me, const char *pszReason );
 
@@ -35,6 +40,9 @@ private:
 	WatchArea_t m_watch;
 	bool m_bHasWatch = false;
 	bool m_bHolding = false;
+	CHandle< CNEO_Player > m_hHoldFireThreat;
+	bool m_bHurtByUnseen = false;
+	float m_flHoldFireLastSeen = 0.0f;
 	float m_flHoldStart = 0.0f;
 	float m_flLastReport = 0.0f;
 	CountdownTimer m_watchStaggerTimer;

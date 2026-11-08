@@ -227,6 +227,10 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 	}
 
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat(true);
+	if ( ShouldHoldFire( me, threat ) )
+	{
+		return Continue();
+	}
 
 	if ( threat )
 	{
