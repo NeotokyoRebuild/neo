@@ -49,6 +49,9 @@ out
 # Match session restore file
 /game/neo/scripts/match_session_restore_point.txt
 
+# Reload phases copied from neoAssets
+/game/neo/scripts/weapon_*_reload_phases.txt
+
 # Shader state debug image dumps
 /game/neo/*.tga
 
