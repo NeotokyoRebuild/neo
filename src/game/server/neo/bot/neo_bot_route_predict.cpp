@@ -58,12 +58,22 @@ void CNEOBotTraversableFlood::IterateAdjacentAreas( CNavArea *area, CNavArea *pr
 		for ( int i = 0; i < count; ++i )
 		{
 			CNavArea *adjArea = area->GetAdjacentArea( (NavDirType)dir, i );
-			if ( !ShouldSearch( adjArea, area, travelDistanceSoFar ) )
+			// Settled distances cannot improve in this nonnegative-cost flood.
+			if ( adjArea->IsMarked() && !adjArea->IsOpen() )
 			{
 				continue;
 			}
 
 			const float flCost = travelDistanceSoFar + ( adjArea->GetCenter() - area->GetCenter() ).Length();
+			if ( adjArea->IsMarked() && flCost >= adjArea->GetCostSoFar() )
+			{
+				continue;
+			}
+
+			if ( !ShouldSearchAtCost( adjArea, area, travelDistanceSoFar, flCost ) )
+			{
+				continue;
+			}
 			if ( !adjArea->IsMarked() )
 			{
 				adjArea->Mark();

@@ -821,23 +821,39 @@ namespace NEOBotDefense
 				if ( !pFirst )
 				{
 					slot.watch = WatchArea_t();
+					Msg( "NEO_DEF slot2 fail team=%d enemy=%d bot=%d reason=no_first areas=%d checks=%d first=0\n",
+						iTeam, slot.enemy->entindex(), slot.bot->entindex(), budget.nAreas, budget.nChecks ); // NEO-DEF-TEMP
 					continue;
 				}
 			}
 			WatchArea_t watch;
 			const float flAge = gpGlobals->curtime - threat.flReportTime;
+			const char *pszFailReason = nullptr;
 			bool bValid = slot.watch.pWatch && FindWatchOnRoute( slot.bot.Get(), threat.pRoute, flAge,
-				&slot.watch, pFirst, watch, nullptr );
+				&slot.watch, pFirst, watch, &pszFailReason );
 			if ( !bValid && ( gpGlobals->curtime >= slot.flNextWatch ) )
 			{
-				slot.flNextWatch = gpGlobals->curtime + WATCH_REPLAN_INTERVAL;
+				// A skipped search due to another slot exhausting the team budget is not a replan attempt.
+				if ( ( budget.nAreas > 0 ) && ( budget.nChecks > 0 ) )
+				{
+					slot.flNextWatch = gpGlobals->curtime + WATCH_REPLAN_INTERVAL;
+				}
 				++nFloods;
-				bValid = FindWatchOnRoute( slot.bot.Get(), threat.pRoute, flAge, nullptr, pFirst, watch, nullptr, &budget );
+				bValid = FindWatchOnRoute( slot.bot.Get(), threat.pRoute, flAge, nullptr, pFirst, watch, &pszFailReason, &budget );
+			}
+			else if ( !bValid && !pszFailReason )
+			{
+				pszFailReason = "throttled";
 			}
 			slot.watch = bValid ? watch : WatchArea_t();
+			if ( !bValid && ( slot.iSlot == 2 ) )
+			{
+				Msg( "NEO_DEF slot2 fail team=%d enemy=%d bot=%d reason=%s areas=%d checks=%d first=1\n",
+					iTeam, slot.enemy->entindex(), slot.bot->entindex(), pszFailReason ? pszFailReason : "unknown",
+					budget.nAreas, budget.nChecks ); // NEO-DEF-TEMP
+			}
 			if ( bValid )
 			{
-				float flAngle = 0.0f;
 				if ( pFirst )
 				{
 					Vector a = pFirst->pWatch->GetCenter() - watch.pWatched->GetCenter();
@@ -845,10 +861,15 @@ namespace NEOBotDefense
 					a.z = b.z = 0.0f;
 					a.NormalizeInPlace();
 					b.NormalizeInPlace();
-					flAngle = RAD2DEG( acosf( clamp( DotProduct( a, b ), -1.0f, 1.0f ) ) );
+					const float flAngle = RAD2DEG( acosf( clamp( DotProduct( a, b ), -1.0f, 1.0f ) ) );
+					Msg( "NEO_DEF assign team=%d enemy=%d bot=%d slot=%d angle=%.1f\n",
+						iTeam, slot.enemy->entindex(), slot.bot->entindex(), slot.iSlot, flAngle ); // NEO-DEF-TEMP
 				}
-				Msg( "NEO_DEF assign team=%d enemy=%d bot=%d slot=%d angle=%.1f\n",
-					iTeam, slot.enemy->entindex(), slot.bot->entindex(), slot.iSlot, flAngle ); // NEO-DEF-TEMP
+				else
+				{
+					Msg( "NEO_DEF assign team=%d enemy=%d bot=%d slot=%d angle=NA\n",
+						iTeam, slot.enemy->entindex(), slot.bot->entindex(), slot.iSlot ); // NEO-DEF-TEMP
+				}
 			}
 		}
 		timer.End();

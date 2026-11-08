@@ -170,8 +170,14 @@ CNEO_Player *CNEOBotCtgHunt::SelectHuntTarget( CNEOBot *me ) const
 //---------------------------------------------------------------------------------------------
 void CNEOBotCtgHunt::RecomputeSeekPath( CNEOBot *me )
 {
+	// Establish arrival before a retarget can replace the watch, including resume callbacks.
+	if ( m_bHasWatch )
+	{
+		UpdateWatch( me );
+	}
+
 	// A contact owns the watch until the shared hold predicate releases it.
-	if ( m_bHolding && ShouldHoldFire( me, me->GetVisionInterface()->GetPrimaryKnownThreat( true ) ) )
+	if ( ShouldHoldFire( me, me->GetVisionInterface()->GetPrimaryKnownThreat( true ) ) )
 	{
 		return;
 	}
@@ -402,15 +408,6 @@ void CNEOBotCtgHunt::UpdateWatch( CNEOBot *me )
 	{
 		return;
 	}
-	if ( threat && threat->IsVisibleInFOVNow() )
-	{
-		const CNavArea *pThreatArea = threat->GetLastKnownArea();
-		const bool bOnRoute = pThreatArea && ( pThreatArea == m_watch.pWatched || m_watch.pWatched->IsPotentiallyVisible( pThreatArea ) );
-		Msg( "NEO_DEF contact bot=%d enemy=%d holding=1 onroute=%d first=na\n",
-			me->entindex(), threat->GetEntity() ? threat->GetEntity()->entindex() : 0, bOnRoute ? 1 : 0 );
-		DropWatch( me, "contact" );
-		return;
-	}
 
 	if ( gpGlobals->curtime - Max( m_flHoldStart, m_flLastReport ) > HUNT_WATCH_MAX_HOLD )
 	{
@@ -479,7 +476,7 @@ bool CNEOBotCtgHunt::ShouldHoldFire( CNEOBot *me, const CKnownEntity *threat )
 	}
 
 	// A newly visible close threat also ends a contact with somebody farther away.
-	if ( bActive && threat && threat->IsVisibleInFOVNow()
+	if ( bActive && threat && threat->IsVisibleRecently()
 		&& me->GetAbsOrigin().DistToSqr( threat->GetLastKnownPosition() ) <= Square( HUNT_HOLDFIRE_MELEE_RANGE ) )
 	{
 		DropWatch( me, "close" );
@@ -517,18 +514,20 @@ bool CNEOBotCtgHunt::ShouldHoldFire( CNEOBot *me, const CKnownEntity *threat )
 		{
 			pszEnd = "range";
 		}
-		if ( threat->IsVisibleInFOVNow() )
+		if ( threat->IsVisibleRecently() )
 		{
-			m_flHoldFireLastSeen = gpGlobals->curtime;
+			// Recently visible is also Attack's entry gate; retain the actual sighting age.
+			m_flHoldFireLastSeen = gpGlobals->curtime - threat->GetTimeSinceLastSeen();
 		}
 	}
-	if ( !pszEnd && bActive && gpGlobals->curtime - m_flHoldFireLastSeen >= HUNT_HOLDFIRE_LOST_TIME )
+	if ( !pszEnd && ( bActive || ( threat && threat->IsVisibleRecently() ) )
+		&& gpGlobals->curtime - m_flHoldFireLastSeen >= HUNT_HOLDFIRE_LOST_TIME )
 	{
 		pszEnd = "lost";
 	}
 	if ( pszEnd )
 	{
-		if ( bActive )
+		if ( bActive || ( threat && threat->IsVisibleRecently() ) )
 		{
 			DropWatch( me, pszEnd );
 		}
@@ -536,7 +535,7 @@ bool CNEOBotCtgHunt::ShouldHoldFire( CNEOBot *me, const CKnownEntity *threat )
 	}
 	if ( !bActive )
 	{
-		if ( !threat || !threat->IsVisibleInFOVNow() || pEnemy->InSameTeam( me ) )
+		if ( !threat || !threat->IsVisibleRecently() || pEnemy->InSameTeam( me ) )
 		{
 			return false;
 		}

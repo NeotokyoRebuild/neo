@@ -34,6 +34,13 @@ public:
 
 	virtual void IterateAdjacentAreas( CNavArea *area, CNavArea *priorArea, float travelDistanceSoFar ) override;
 
+protected:
+	virtual bool ShouldSearchAtCost( CNavArea *adjArea, CNavArea *currentArea,
+		float travelDistanceSoFar, float flCost )
+	{
+		return ShouldSearch( adjArea, currentArea, travelDistanceSoFar );
+	}
+
 private:
 	CNEOBot *m_me;
 };

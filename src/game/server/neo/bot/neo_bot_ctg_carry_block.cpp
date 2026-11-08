@@ -467,17 +467,6 @@ namespace NEOBotCarryBlock
 		CCarryBlockFlood( CNEOBot *me, const CarryBlockState_t &state, int nMaxAreas )
 			: CNEOBotTraversableFlood( me ), m_state( state ), m_nMaxAreas( nMaxAreas ) {}
 
-		virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) override
-		{
-			const float flTravel = travelDistanceSoFar + ( adjArea->GetCenter() - currentArea->GetCenter() ).Length();
-			if ( !CanStillIntercept( m_state, adjArea->GetCenter(), flTravel ) )
-			{
-				return false;
-			}
-
-			return CNEOBotTraversableFlood::ShouldSearch( adjArea, currentArea, travelDistanceSoFar );
-		}
-
 		virtual bool operator()( CNavArea *area, CNavArea *priorArea, float travelDistanceSoFar ) override
 		{
 			++m_nAreas;
@@ -502,6 +491,18 @@ namespace NEOBotCarryBlock
 		bool m_bIntercepts = false;
 		bool m_bCapped = false;
 		int m_nAreas = 0;
+
+	protected:
+		virtual bool ShouldSearchAtCost( CNavArea *adjArea, CNavArea *currentArea,
+			float travelDistanceSoFar, float flCost ) override
+		{
+			if ( !CanStillIntercept( m_state, adjArea->GetCenter(), flCost ) )
+			{
+				return false;
+			}
+
+			return CNEOBotTraversableFlood::ShouldSearch( adjArea, currentArea, travelDistanceSoFar );
+		}
 
 	private:
 		const CarryBlockState_t &m_state;
@@ -669,7 +670,7 @@ namespace NEOBotCarryBlock
 	}
 
 	// Floods the next counted enemy, and completes the evaluation after the last one
-	static void FloodNextEnemy( CNEOBot *pCarrier, CarryBlockState_t &state, int nSetupMicroseconds = 0 )
+	static void FloodNextEnemy( CNEOBot *pCarrier, CarryBlockState_t &state )
 	{
 		CFastTimer timer;
 		timer.Start();
@@ -681,7 +682,7 @@ namespace NEOBotCarryBlock
 
 		const int nMicroseconds = GetElapsedMicroseconds( timer );
 		state.nMicroseconds += nMicroseconds;
-		state.nMaxTickMicroseconds = Max( state.nMaxTickMicroseconds, nSetupMicroseconds + nMicroseconds );
+		state.nMaxTickMicroseconds = Max( state.nMaxTickMicroseconds, nMicroseconds );
 
 		if ( state.iCursor >= state.enemies.Count() )
 		{
@@ -694,7 +695,7 @@ namespace NEOBotCarryBlock
 		return IsAtkAttackingTeam( iTeam ) ? CARRY_BLOCK_CLOCK_RESERVE_ATK : CARRY_BLOCK_CLOCK_RESERVE_CTG;
 	}
 
-	// Checks the gates, then sets up the floods; the first one runs on this tick
+	// Checks the gates and prepares the floods for following ticks.
 	static void StartEvaluation( CNEOBot *pCarrier, bool bCapInReach, const Vector &vecGoal, CarryBlockState_t &state )
 	{
 		CFastTimer timer;
@@ -729,6 +730,19 @@ namespace NEOBotCarryBlock
 			return;
 		}
 
+		const float flFreshness = state.bBlocked ? CARRY_BLOCK_STAY_FRESHNESS : CARRY_BLOCK_ENTRY_FRESHNESS;
+		CollectCountedEnemies( pCarrier, flFreshness, state.enemies );
+
+		// No counted enemy can hold the block, regardless of the route or clock.
+		if ( state.enemies.IsEmpty() )
+		{
+			state.vecLastCarrierPos = pCarrier->GetAbsOrigin();
+			state.nMicroseconds = GetElapsedMicroseconds( timer );
+			state.nMaxTickMicroseconds = state.nMicroseconds;
+			FinishEvaluation( state, iTeam, false );
+			return;
+		}
+
 		if ( !UpdateRoute( pCarrier, vecGoal, state ) )
 		{
 			EndGate( state, iTeam, "route", timer );
@@ -759,11 +773,8 @@ namespace NEOBotCarryBlock
 		}
 
 		// A held block gets the band and longer-lived knowledge
-		const float flFreshness = state.bBlocked ? CARRY_BLOCK_STAY_FRESHNESS : CARRY_BLOCK_ENTRY_FRESHNESS;
 		state.flMaxSlack = state.bBlocked ? CARRY_BLOCK_SLACK_BAND : 0.0f;
 		BuildPruneChunks( state );
-
-		CollectCountedEnemies( pCarrier, flFreshness, state.enemies );
 
 		// The reference positions move only with a real count, so slow drift cannot reuse one forever
 		const bool bReuse = CanReuseLast( pCarrier, state );
@@ -782,16 +793,8 @@ namespace NEOBotCarryBlock
 			FinishEvaluation( state, iTeam, true );
 			return;
 		}
-
-		if ( state.enemies.IsEmpty() )
-		{
-			FinishEvaluation( state, iTeam, false );
-			return;
-		}
-
 		state.bEvaluating = true;
 		state.iCursor = 0;
-		FloodNextEnemy( pCarrier, state, state.nMicroseconds );
 	}
 
 	//---------------------------------------------------------------------------------------------
