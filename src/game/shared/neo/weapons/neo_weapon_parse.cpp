@@ -24,6 +24,7 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 	m_flPenetration = 0.f;
 	m_bDropOnDeath = true;
 	iAimFOV = 0;
+	m_bChamberedRound = false;
 
 	m_flVMFov = m_flVMAimFov = 0.f;
 	m_vecVMPosOffset = m_vecVMAimPosOffset = vec3_origin;
@@ -114,6 +115,7 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 	m_flCycleTime = pKeyValuesData->GetFloat( "CycleTime", 0.15 );
 	m_flReloadReadyBeforeEnd = pKeyValuesData->GetFloat( "ReloadReadyBeforeEnd", 0.0f );
 	ParseReloadPhases(pKeyValuesData->FindKey("ReloadPhases"));
+	m_bChamberedRound = pKeyValuesData->GetBool("ChamberedRound", false);
 
 	const char *notFoundStr = "notfound";
 	Q_strncpy(szViewModel2, pKeyValuesData->GetString("team2viewmodel", notFoundStr), MAX_WEAPON_STRING);

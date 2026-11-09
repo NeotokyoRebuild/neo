@@ -74,6 +74,8 @@ public:
 	int		m_iBullets;
 	float	m_flCycleTime;
 	float	m_flReloadReadyBeforeEnd;
+	// A closed-bolt weapon retains a chambered round when reloading with rounds left.
+	bool	m_bChamberedRound;
 	// Empty: the weapon reloads without phases. Allocated only for scripts with a ReloadPhases block.
 	CUtlVector<ReloadPhaseTable_t> m_reloadTables;
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm

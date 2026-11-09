@@ -27,6 +27,7 @@ protected:
 
 private:
 	void DrawAmmo() const;
+	void DrawFireModeWithChamber(const wchar_t *pszGlyph, int iGlyphTall, bool bChambered) const;
 	void DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep) const;
 
 private:

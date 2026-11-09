@@ -302,6 +302,13 @@ private:
 	// Each hook checks IsReloadPhaseSystemEnabled itself, so with the flag off a hook call does nothing
 public:
 	void StopReloadOnDrop();
+	bool IsReloadPastUnload() const;
+
+	// Clip1 includes the chambered round; the magazine can hold GetMaxClip1() more.
+	bool HasChamberSlot() const;
+	bool IsRoundChambered() const;
+	int RoundsInMagazine() const;
+	int MagazineCapacity() const;
 
 protected:
 	bool IsReloadPhaseSystemEnabled() const;
@@ -314,10 +321,21 @@ protected:
 	CNetworkVar(float, m_flReloadStart);
 	// the sound pieces of the playing sequence already started, one bit per piece
 	CNetworkVar(int, m_nReloadSoundsDone);
+	// Only a reload cycle chambers a round after the last shot.
+	CNetworkVar(bool, m_bChamberEmpty);
 
 private:
+	// What a reload request does before the default reload: run it, or answer for the phases
+	enum ReloadRequest_t
+	{
+		RELOAD_REQUEST_DEFAULT,		// the default reload runs
+		RELOAD_REQUEST_STARTED,		// the phases started their own reload
+		RELOAD_REQUEST_REFUSED,		// no reload starts
+	};
+
+	ReloadRequest_t ReloadPhasesOnRequest();
 	void ReloadPhasesOnReload();
-	void ReloadPhasesOnFinish();
+	int ReloadPhasesOnFinish();
 	bool ReloadPhasesOnDeploy();
 	void ReloadPhasesOnHolster();
 	void ReloadPhasesOnBusyFrame();
@@ -327,6 +345,8 @@ private:
 	void FinishReloadPhase(ReloadPhase_t phase);
 	const char *FindResumeSequence() const;
 	bool ResumeReload();
+	bool PlayReloadSequence(const char *pszName, int iTable, ReloadGestureFit_t gestureFit);
+	bool StartPartialReload();
 	void StopReloadSoundPieces();
 	void EmitReloadSoundPiece(const char *pszSound);
 	CBaseViewModel *ReloadViewModel() const;

@@ -1628,6 +1628,13 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	if (EquipRequiredWeapon())
 		return;
 
+	// A switch would only delay the reload that is about to refill the clip
+	auto *pActiveWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (pActiveWeapon && pActiveWeapon->IsReloadPastUnload())
+	{
+		return;
+	}
+
 	// -------------------------------------------------------------------------------
 
 	CNEOBaseCombatWeapon* primaryWeapon = static_cast<CNEOBaseCombatWeapon *>(Weapon_GetSlot(0));
@@ -1813,6 +1820,8 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 		return;
 	}
 
+	// NEO TODO: with a chamber slot 30 of 31 counts as full here, and 29+1 (clip 30) never reloads by bot
+	// logic. Accepted for now; revisit the threshold later.
 	if (myWeapon->Clip1() >= myWeapon->GetMaxClip1())
 	{
 		return;
