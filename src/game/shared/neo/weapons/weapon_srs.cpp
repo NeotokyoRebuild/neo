@@ -63,8 +63,7 @@ void CWeaponSRS::PrimaryAttack()
 		return BaseClass::PrimaryAttack();
 	}
 
-	// An unchambered gun completes its bolt cycle before it can fire; the press is ignored
-	if (HasChamberSlot() && IsBoltPending())
+	if (BoltPhasesBlockShot())
 	{
 		return;
 	}
@@ -77,8 +76,7 @@ void CWeaponSRS::PrimaryAttack()
 	}
 
 	m_bNeedsBolting = true;
-	m_flBoltHomeTime = 0.0f;
-	m_flBoltStartTime = 0.0f;
+	BoltPhasesOnShot();
 	BaseClass::PrimaryAttack();
 }
 
@@ -89,7 +87,12 @@ void CWeaponSRS::ItemPreFrame()
 		return BaseClass::ItemPreFrame();
 	}
 
-	if (m_flLastAttackTime + 0.08f <= gpGlobals->curtime && m_flBoltStartTime <= gpGlobals->curtime)
+	if (BoltPhasesDelayCycle())
+	{
+		return BaseClass::ItemPreFrame();
+	}
+
+	if (m_flLastAttackTime + 0.08f <= gpGlobals->curtime)
 	{ // Primary attack animation finished, begin chambering a round
 		if (auto* pOwner = ToNEOPlayer(GetOwner())) {
 			if (pOwner->m_nButtons & IN_ATTACK)
@@ -102,17 +105,7 @@ void CWeaponSRS::ItemPreFrame()
 		SendWeaponAnim(ACT_VM_PULLBACK);
 		WeaponSound(SPECIAL1);
 		m_bNeedsBolting = false;
-
-		if (IsReloadPhaseSystemEnabled())
-		{
-			// The round counts as chambered once the bolt is home
-			const CNEOWeaponInfo &info = GetNEOWpnData();
-			const int iTable = info.FindReloadTable(VM_SEQ_CHARGE);
-			if (iTable >= 0 && info.m_reloadTables[iTable].iNumRows > 0)
-			{
-				m_flBoltHomeTime = gpGlobals->curtime + info.m_reloadTables[iTable].rows[0].flAmmo;
-			}
-		}
+		BoltPhasesOnCycle();
 	}
 
 	BaseClass::ItemPreFrame();
@@ -121,19 +114,11 @@ void CWeaponSRS::ItemPreFrame()
 bool CWeaponSRS::Deploy()
 {
 	// This is on purpose; the player is allowed to cancel the bolting animation
-	// with a quick-switch input. With reload phases the round does not count as
-	// chambered before the bolt is home, so a cut-short cycle resumes after the draw.
-	const bool bResumeBolt = IsReloadPhaseSystemEnabled() && m_bNeedsBolting;
-	m_bNeedsBolting = bResumeBolt;
-	m_flBoltHomeTime = 0.0f;
-	m_flBoltStartTime = 0.0f;
+	// with a quick-switch input.
+	m_bNeedsBolting = BoltPhasesKeepCycle();
 
 	const bool bDeployed = BaseClass::Deploy();
-	if (bResumeBolt)
-	{
-		m_flBoltStartTime = m_flNextPrimaryAttack;
-	}
-
+	BoltPhasesOnDeploy();
 	return bDeployed;
 }
 
@@ -142,7 +127,7 @@ bool CWeaponSRS::Reload()
 	// The reloading animation already contains the bolting motion;
 	// we don't want to bolt twice.
 	m_bNeedsBolting = false;
-	m_flBoltHomeTime = 0.0f;
+	BoltPhasesOnReload();
 
 	return BaseClass::Reload();
 }
@@ -154,13 +139,7 @@ bool CWeaponSRS::IsBoltPending() const
 
 bool CWeaponSRS::Holster(CBaseCombatWeapon *pSwitchingTo)
 {
-	// Time passes while holstered, so note that the bolt is not home for the next draw
-	if (IsReloadPhaseSystemEnabled() && IsBoltPending())
-	{
-		m_bNeedsBolting = true;
-		m_flBoltHomeTime = 0.0f;
-	}
-
+	BoltPhasesOnHolster();
 	return BaseClass::Holster(pSwitchingTo);
 }
 
@@ -172,6 +151,91 @@ bool CWeaponSRS::IsRoundChambered() const
 	}
 
 	return BaseClass::IsRoundChambered();
+}
+
+// An unchambered gun completes its bolt cycle before it can fire; the press is ignored
+bool CWeaponSRS::BoltPhasesBlockShot() const
+{
+	return HasChamberSlot() && IsBoltPending();
+}
+
+void CWeaponSRS::BoltPhasesOnShot()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return;
+	}
+
+	m_flBoltHomeTime = 0.0f;
+	m_flBoltStartTime = 0.0f;
+}
+
+// A bolt cycle resumed by a draw waits for the draw to end
+bool CWeaponSRS::BoltPhasesDelayCycle() const
+{
+	return IsReloadPhaseSystemEnabled() && m_flBoltStartTime > gpGlobals->curtime;
+}
+
+// The round counts as chambered once the bolt is home
+void CWeaponSRS::BoltPhasesOnCycle()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return;
+	}
+
+	const CNEOWeaponInfo &info = GetNEOWpnData();
+	const int iTable = info.FindReloadTable(VM_SEQ_CHARGE);
+	if (iTable >= 0 && info.m_reloadTables[iTable].iNumRows > 0)
+	{
+		m_flBoltHomeTime = gpGlobals->curtime + info.m_reloadTables[iTable].rows[0].flAmmo;
+	}
+}
+
+// The round does not count as chambered before the bolt is home, so a cut-short cycle resumes after the draw.
+// Returns whether the draw keeps the cycle
+bool CWeaponSRS::BoltPhasesKeepCycle()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return false;
+	}
+
+	m_flBoltHomeTime = 0.0f;
+	m_flBoltStartTime = 0.0f;
+	return m_bNeedsBolting;
+}
+
+void CWeaponSRS::BoltPhasesOnDeploy()
+{
+	if (!IsReloadPhaseSystemEnabled() || !m_bNeedsBolting)
+	{
+		return;
+	}
+
+	m_flBoltStartTime = m_flNextPrimaryAttack;
+}
+
+void CWeaponSRS::BoltPhasesOnReload()
+{
+	if (!IsReloadPhaseSystemEnabled())
+	{
+		return;
+	}
+
+	m_flBoltHomeTime = 0.0f;
+}
+
+// Time passes while holstered, so note that the bolt is not home for the next draw
+void CWeaponSRS::BoltPhasesOnHolster()
+{
+	if (!IsReloadPhaseSystemEnabled() || !IsBoltPending())
+	{
+		return;
+	}
+
+	m_bNeedsBolting = true;
+	m_flBoltHomeTime = 0.0f;
 }
 
 bool CWeaponSRS::CanBePickedUpByClass(int classId)

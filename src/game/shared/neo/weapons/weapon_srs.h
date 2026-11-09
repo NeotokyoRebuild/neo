@@ -58,6 +58,16 @@ private:
 	// Whether the bolt cycle after a shot has not finished yet
 	bool IsBoltPending() const;
 
+	// Bolt phases (sv_neo_reload_experimental); each hook does nothing with the flag off
+	bool BoltPhasesBlockShot() const;
+	void BoltPhasesOnShot();
+	bool BoltPhasesDelayCycle() const;
+	void BoltPhasesOnCycle();
+	bool BoltPhasesKeepCycle();
+	void BoltPhasesOnDeploy();
+	void BoltPhasesOnReload();
+	void BoltPhasesOnHolster();
+
 	CNetworkVar(bool, m_bNeedsBolting);
 	// The bolt is home, and a round chambered, at this time; 0: no bolt cycle is running
 	CNetworkVar(float, m_flBoltHomeTime);
