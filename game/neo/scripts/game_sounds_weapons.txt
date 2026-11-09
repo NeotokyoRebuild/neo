@@ -1175,6 +1175,35 @@
 	"wave"			        "weapons/mx/mx_reload.wav"
 }
 
+// MX reload in per-step pieces (sv_neo_reload_experimental).
+
+"weapon_mx.reload_unload"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mx/mx_reload_unload.wav"
+}
+
+"weapon_mx.reload_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mx/mx_reload_load.wav"
+}
+
+"weapon_mx.reload_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mx/mx_reload_cycle.wav"
+}
+
 //-------------------
 
 "weapon_mx.npc_reload"
