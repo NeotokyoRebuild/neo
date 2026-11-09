@@ -1,3 +1,5 @@
+#base "weapon_zr68c_reload_phases.txt"
+
 // ZR68S
 
 WeaponData
@@ -16,6 +18,9 @@ WeaponData
 	"Penetration"		"28.0"
 	"CycleTime"		"0.090909"		// time between shots
 	"ReloadReadyBeforeEnd"	"0.483"	// the reload is done at the last reload click, this long before its animation ends
+
+	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers
+	"ReloadPhases"	{}
 	
 	"TPMuzzleFlashScale"	"0.5"
 
