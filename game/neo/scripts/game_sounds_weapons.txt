@@ -207,6 +207,44 @@
         "wave"				"weapons/aa13/aa13_reload.wav"
 }
 
+// AA13 reload in per-step pieces (sv_neo_reload_experimental).
+
+"weapon_aa13.reload_unload"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/aa13/aa13_reload_unload.wav"
+}
+
+"weapon_aa13.reload_unload_part2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/aa13/aa13_reload_unload_part2.wav"
+}
+
+"weapon_aa13.reload_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/aa13/aa13_reload_load.wav"
+}
+
+"weapon_aa13.reload_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/aa13/aa13_reload_cycle.wav"
+}
+
 //------------------
 
 "weapon_aa13.npc_reload"
