@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "weapon_supa7.h"
+#include "neo_gamerules.h"
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -12,12 +13,24 @@ BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 	RecvPropBool(RECVINFO(m_bWeaponRaised)),
 	RecvPropBool(RECVINFO(m_bShellInChamber)),
 	RecvPropFloat(RECVINFO(m_flNextReload)),
+	RecvPropInt(RECVINFO(m_nTubeCount)),
+	RecvPropInt(RECVINFO(m_nTubeSlugs)),
+	RecvPropInt(RECVINFO(m_nChamber)),
+	RecvPropInt(RECVINFO(m_nInsert)),
+	RecvPropTime(RECVINFO(m_flInsertCreditTime)),
+	RecvPropTime(RECVINFO(m_flRackFeedTime)),
 #else
 	SendPropBool(SENDINFO(m_bSlugDelayed)),
 	SendPropBool(SENDINFO(m_bSlugLoaded)),
 	SendPropBool(SENDINFO(m_bWeaponRaised)),
 	SendPropBool(SENDINFO(m_bShellInChamber)),
 	SendPropFloat(SENDINFO(m_flNextReload)),
+	SendPropInt(SENDINFO(m_nTubeCount), 4, SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_nTubeSlugs), 8, SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_nChamber), 2, SPROP_UNSIGNED),
+	SendPropInt(SENDINFO(m_nInsert), 2, SPROP_UNSIGNED),
+	SendPropTime(SENDINFO(m_flInsertCreditTime)),
+	SendPropTime(SENDINFO(m_flRackFeedTime)),
 #endif
 END_NETWORK_TABLE()
 
@@ -28,6 +41,12 @@ BEGIN_PREDICTION_DATA(CWeaponSupa7)
 	DEFINE_PRED_FIELD(m_bWeaponRaised, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bShellInChamber, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flNextReload, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nTubeCount, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nTubeSlugs, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nChamber, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nInsert, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flInsertCreditTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flRackFeedTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -42,6 +61,12 @@ BEGIN_DATADESC(CWeaponSupa7)
 	DEFINE_FIELD(m_bWeaponRaised, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bShellInChamber, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_flNextReload, FIELD_FLOAT),
+	DEFINE_FIELD(m_nTubeCount, FIELD_INTEGER),
+	DEFINE_FIELD(m_nTubeSlugs, FIELD_INTEGER),
+	DEFINE_FIELD(m_nChamber, FIELD_INTEGER),
+	DEFINE_FIELD(m_nInsert, FIELD_INTEGER),
+	DEFINE_FIELD(m_flInsertCreditTime, FIELD_TIME),
+	DEFINE_FIELD(m_flRackFeedTime, FIELD_TIME),
 END_DATADESC()
 #endif
 
@@ -67,7 +92,11 @@ IMPLEMENT_ACTTABLE(CWeaponSupa7);
 
 // Viewmodel frames of the shipped team models, which play at this rate
 static constexpr float VM_FRAMES_PER_SECOND = 30.0f;
-// reloadpump: the rack after the first insert of a dry reload; the pump is home with that round chambered
+// reloadinsert: the hatch closes behind the round, which is then in the tube
+static constexpr float INSERT_ROUND_IN_TUBE_TIME = 12.0f / VM_FRAMES_PER_SECOND;
+// reloadend: the pump is forward again with the next round chambered
+static constexpr float RACK_PUMP_HOME_TIME = 21.0f / VM_FRAMES_PER_SECOND;
+// reloadpump: the rack after the first insert of a reload; the pump is home with that round chambered
 static constexpr const char *VM_SEQ_PUMP_AFTER_INSERT = "reloadpump";
 static constexpr float PUMP_AFTER_INSERT_HOME_TIME = 17.0f / VM_FRAMES_PER_SECOND;
 // The shell shot without the pump clicks of the shipped shot sound
@@ -81,6 +110,12 @@ CWeaponSupa7::CWeaponSupa7(void)
 	m_bWeaponRaised = false;
 	m_bShellInChamber = true;
 	m_flNextReload = 0.0f;
+	m_nTubeCount = 0;
+	m_nTubeSlugs = 0;
+	m_nChamber = SUPA7_CHAMBER_EMPTY;
+	m_nInsert = SUPA7_INSERT_NONE;
+	m_flInsertCreditTime = 0.0f;
+	m_flRackFeedTime = 0.0f;
 
 	m_fMinRange1 = 0.0;
 	m_fMaxRange1 = 500;
@@ -98,7 +133,8 @@ CWeaponSupa7::CWeaponSupa7(void)
 // Purpose: Override so only reload one shell at a time
 bool CWeaponSupa7::StartReload(void)
 {
-	if (m_bSlugLoaded)
+	// the tube takes shells behind a chambered slug
+	if (m_bSlugLoaded && !IsTubeEnabled())
 		return false;
 
 	CBaseCombatCharacter* pOwner = GetOwner();
@@ -123,6 +159,11 @@ bool CWeaponSupa7::StartReload(void)
 
 	if (m_iClip1 >= GetMaxClip1())
 		return false;
+
+	if (!TubePhasesOnStart())
+	{
+		return false;
+	}
 
 	SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
 
@@ -154,6 +195,11 @@ bool CWeaponSupa7::StartReloadSlug(void)
 
 	if (m_iClip1 >= GetMaxClip1())
 		return false;
+
+	if (!TubePhasesOnStartSlug())
+	{
+		return false;
+	}
 
 	if (!m_bInReload)
 	{
@@ -193,10 +239,16 @@ bool CWeaponSupa7::Reload(void)
 	if (m_iClip1 >= GetMaxClip1())
 		return false;
 
+	if (IsTubeFull())
+	{
+		return false;
+	}
+
 	// Play reload on different channel as otherwise steals channel away from fire sound
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
 	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
+	StartInsert(SUPA7_INSERT_SHELL);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	constexpr float TIME_BETWEEN_SHELLS_LOADED = 0.5f;
@@ -230,13 +282,23 @@ bool CWeaponSupa7::ReloadSlug(void)
 	if (m_iClip1 >= GetMaxClip1())
 		return false;
 
-	FillClipSlug();
-	m_bShellInChamber = false;
+	if (IsTubeFull())
+	{
+		return false;
+	}
+
+	// the tube takes the slug only once it is in
+	if (!IsTubeEnabled())
+	{
+		FillClipSlug();
+		m_bShellInChamber = false;
+	}
 
 	// Play reload on different channel as otherwise steals channel away from fire sound
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
 	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
+	StartInsert(SUPA7_INSERT_SLUG);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	// ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -256,6 +318,11 @@ void CWeaponSupa7::FinishReload(void)
 		return;
 
 	m_bInReload = false;
+
+	if (TubePhasesOnFinish())
+	{
+		return;
+	}
 
 	// Finish reload animation
 	if (!m_bShellInChamber)
@@ -325,6 +392,11 @@ void CWeaponSupa7::PrimaryAttack(void)
 		return;
 	}
 
+	if (!TubePhasesCanFire())
+	{
+		return;
+	}
+
 	const bool bLastShotWithoutPump = IsLastShotWithoutPump();
 	int numBullets = GetNEOWpnData().m_iBullets;
 	Vector bulletSpread = GetBulletSpread();
@@ -385,6 +457,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	{
 		m_bShellInChamber = false;
 	}
+	TubePhasesOnShot();
 
 	// player "shoot" animation
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
@@ -425,6 +498,8 @@ void CWeaponSupa7::ClearDelayedInputs(void)
 	// for not having to do a larger rewrite.
 	m_bInReload.GetForModify() = false;
 
+	TubePhasesOnDrop();
+
 	SetShotgunShellVisible(false);
 }
 
@@ -437,11 +512,12 @@ void CWeaponSupa7::ItemPostFrame(void)
 		return;
 	}
 	ProcessAnimationEvents();
+	TubePhasesOnFrame();
 
 	if (m_bInReload)
 	{
 		// If I'm primary firing and have one round stop reloading
-		if ((pOwner->m_nButtons & IN_ATTACK) && (m_iClip1 >= 1) && !IsPumpingAfterInsert())
+		if ((pOwner->m_nButtons & IN_ATTACK) && (m_iClip1 >= 1) && !IsRackPending())
 		{
 			// OG cues a shotgun rack when beginning a reload from a completely empty clip. You can however fire without racking the shotgun, and it will instead rack the next time you reload (if you don't cancel it by shooting again)
 			// This is a slight nerf to the supa where the gun has to be racked before it is fired
@@ -457,7 +533,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 					m_bSlugDelayed.GetForModify() = false;
 				}
 			}
-			else
+			else if (!TubePhasesOnNextInsert())
 			{
 				// If out of ammo end reload
 				if ((m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1()))
@@ -470,13 +546,6 @@ void CWeaponSupa7::ItemPostFrame(void)
 					{ // delays filling the clip until the first reload animation is finished, forcing the entire reload animation to be finished before a shell is loaded into the clip
 						FillClip();
 					}
-
-					if (m_bWeaponRaised && !m_bShellInChamber && UsesPumpAfterInsert())
-					{
-						StartPumpAfterInsert();
-						return;
-					}
-
 					m_bWeaponRaised = true;
 					Reload();
 				}
@@ -506,6 +575,10 @@ void CWeaponSupa7::ItemPostFrame(void)
 		{
 			DryFire();
 		}
+		else if (TubePhasesNeedRack())
+		{
+			StartRack();
+		}
 		// Fire underwater?
 		else if (pOwner->GetWaterLevel() == WL_Eyes && !m_bFiresUnderwater)
 		{
@@ -528,7 +601,10 @@ void CWeaponSupa7::ItemPostFrame(void)
 	if (!(pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime && pOwner->m_nButtons & IN_RELOAD && UsesClipsForAmmo1() && !m_bInReload)
 	{
 		// reload when reload is pressed, or if no buttons are down and weapon is empty.
-		StartReload();
+		if (!StartReload())
+		{
+			TubePhasesOnReloadPress();
+		}
 	}
 	else if (!(pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime && pOwner->m_nButtons & IN_ATTACK2 && UsesClipsForAmmo1() && !m_bInReload)
 	{
@@ -556,6 +632,428 @@ void CWeaponSupa7::ItemPostFrame(void)
 	}
 }
 
+bool CWeaponSupa7::IsTubeEnabled() const
+{
+	return NEORules() && NEORules()->IsReloadExperimental();
+}
+
+bool CWeaponSupa7::IsTubeFull() const
+{
+	return IsTubeEnabled() && m_nTubeCount >= TubeCapacity();
+}
+
+// Returns whether the shell reload may start
+bool CWeaponSupa7::TubePhasesOnStart()
+{
+	if (!IsTubeEnabled())
+	{
+		return true;
+	}
+
+	SyncTube();
+	if (IsTubeFull())
+	{
+		return false;
+	}
+
+	m_nInsert = SUPA7_INSERT_NONE;
+	return true;
+}
+
+// One slug per request: a held alt-fire neither queues another nor delays the shot
+bool CWeaponSupa7::TubePhasesOnStartSlug()
+{
+	if (!IsTubeEnabled())
+	{
+		return true;
+	}
+
+	if (m_bSlugDelayed || m_nInsert == SUPA7_INSERT_SLUG)
+	{
+		return false;
+	}
+
+	SyncTube();
+	return !IsTubeFull();
+}
+
+// A round still in the hand goes back to the reserve; an empty chamber is racked before the next shot.
+// Returns whether the tube finished the reload
+bool CWeaponSupa7::TubePhasesOnFinish()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!IsTubeEnabled() || !pOwner)
+	{
+		return false;
+	}
+
+	CancelInsert();
+	SyncTube();
+	if (!IsChamberLive() && m_nTubeCount > 0)
+	{
+		StartRack();
+	}
+	else
+	{
+		SendWeaponAnim(ACT_SHOTGUN_RELOAD_FINISH);
+	}
+	pOwner->m_flNextAttack = gpGlobals->curtime;
+	return true;
+}
+
+bool CWeaponSupa7::TubePhasesCanFire()
+{
+	if (!IsTubeEnabled())
+	{
+		return true;
+	}
+
+	SyncTube();
+	return IsChamberLive();
+}
+
+// The fire animation's pump ejects the hull and feeds the tube's last-loaded round; the tube then sets the clip
+void CWeaponSupa7::TubePhasesOnShot()
+{
+	if (!IsTubeEnabled())
+	{
+		return;
+	}
+
+	m_nChamber = SUPA7_CHAMBER_HULL;
+	if (m_nTubeCount <= 0 && UsesPumpAfterInsert())
+	{
+		// the last shot leaves the action closed on its hull; the reload's first round is racked over it
+		UpdateClipFromTube();
+		return;
+	}
+	FeedChamber();
+}
+
+// A rack or insert cut off by the drop does nothing for the next owner
+void CWeaponSupa7::TubePhasesOnDrop()
+{
+	if (!IsTubeEnabled())
+	{
+		return;
+	}
+
+	CancelInsert();
+	m_flRackFeedTime = 0.0f;
+}
+
+void CWeaponSupa7::TubePhasesOnFrame()
+{
+	if (!IsTubeEnabled())
+	{
+		return;
+	}
+
+	SyncTube();
+	RunInsert();
+	RunRack();
+}
+
+// The next shell of a reload; a slug insert ends the reload, as it does without the tube.
+// Returns whether the tube handled the step
+bool CWeaponSupa7::TubePhasesOnNextInsert()
+{
+	if (!IsTubeEnabled())
+	{
+		return false;
+	}
+
+	const bool bSlugInserted = (m_nInsert == SUPA7_INSERT_SLUG);
+	m_nInsert = SUPA7_INSERT_NONE;
+	// a slug ends the reload with the shipped rack, as it does without the pump
+	if (!IsChamberLive() && m_nTubeCount > 0 && !bSlugInserted && UsesPumpAfterInsert())
+	{
+		StartPumpAfterInsert();
+		return true;
+	}
+
+	if (m_iPrimaryAmmoCount <= 0 || bSlugInserted || IsTubeFull() || !Reload())
+	{
+		FinishReload();
+	}
+	return true;
+}
+
+// Rounds in the tube and none in the chamber: the trigger racks one up first
+bool CWeaponSupa7::TubePhasesNeedRack() const
+{
+	return IsTubeEnabled() && !IsChamberLive() && !IsRackPending();
+}
+
+// With nothing to load, a reload press racks up a round for an empty chamber
+void CWeaponSupa7::TubePhasesOnReloadPress()
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	if (!IsTubeEnabled() || !pOwner || !(pOwner->m_afButtonPressed & IN_RELOAD))
+	{
+		return;
+	}
+
+	if (!IsChamberLive() && m_nTubeCount > 0)
+	{
+		StartRack();
+	}
+}
+
+// Credited rounds stay in the tube; a round still in the hand and a rack before its pump is home do nothing
+void CWeaponSupa7::TubePhasesOnHolster()
+{
+	if (!IsTubeEnabled())
+	{
+		return;
+	}
+
+	CancelInsert();
+	m_flRackFeedTime = 0.0f;
+	m_bSlugDelayed = false;
+}
+
+// Rebuild the tube from the clip count when something set the count directly (a new or picked-up gun, a give):
+// a live round in the chamber, shells in the tube
+void CWeaponSupa7::SyncTube()
+{
+	if (IsTubeSynced())
+	{
+		return;
+	}
+
+	const int iClip = Clamp(m_iClip1.Get(), 0, GetMaxClip1());
+	m_nChamber = (iClip > 0) ? (m_bSlugLoaded ? SUPA7_CHAMBER_SLUG : SUPA7_CHAMBER_SHELL) : SUPA7_CHAMBER_EMPTY;
+	m_nTubeCount = Max(0, iClip - SUPA7_CHAMBER_ROUNDS);
+	m_nTubeSlugs = 0;
+	UpdateClipFromTube();
+}
+
+void CWeaponSupa7::TubePush(Supa7Insert_t round)
+{
+	if (m_nTubeCount >= TubeCapacity())
+	{
+		return;
+	}
+
+	if (round == SUPA7_INSERT_SLUG)
+	{
+		m_nTubeSlugs |= (1 << m_nTubeCount);
+	}
+	else
+	{
+		m_nTubeSlugs &= ~(1 << m_nTubeCount);
+	}
+	m_nTubeCount += 1;
+	UpdateClipFromTube();
+}
+
+// The pump ejects a hull and feeds the tube's last-loaded round; a live round stays where it is
+void CWeaponSupa7::FeedChamber()
+{
+	if (IsChamberLive())
+	{
+		return;
+	}
+
+	if (m_nTubeCount <= 0)
+	{
+		m_nChamber = SUPA7_CHAMBER_EMPTY;
+		UpdateClipFromTube();
+		return;
+	}
+
+	m_nTubeCount -= 1;
+	const bool bSlug = (m_nTubeSlugs & (1 << m_nTubeCount)) != 0;
+	m_nTubeSlugs &= ~(1 << m_nTubeCount);
+	m_nChamber = bSlug ? SUPA7_CHAMBER_SLUG : SUPA7_CHAMBER_SHELL;
+	UpdateClipFromTube();
+}
+
+// The counts the rest of the game reads: live rounds in the gun, and the chambered round's type
+void CWeaponSupa7::UpdateClipFromTube()
+{
+	m_iClip1 = m_nTubeCount + (IsChamberLive() ? 1 : 0);
+	m_bSlugLoaded = (m_nChamber == SUPA7_CHAMBER_SLUG);
+	m_bShellInChamber = IsChamberLive();
+}
+
+// The reserve gives up the round only when it is in the tube, so an insert cut off before then costs nothing
+void CWeaponSupa7::StartInsert(Supa7Insert_t round)
+{
+	if (!IsTubeEnabled())
+	{
+		return;
+	}
+
+	m_nInsert = round;
+	m_flInsertCreditTime = gpGlobals->curtime + INSERT_ROUND_IN_TUBE_TIME;
+}
+
+void CWeaponSupa7::RunInsert()
+{
+	if (m_flInsertCreditTime <= 0.0f || gpGlobals->curtime < m_flInsertCreditTime)
+	{
+		return;
+	}
+
+	m_flInsertCreditTime = 0.0f;
+	if (m_nTubeCount >= TubeCapacity())
+	{
+		return;
+	}
+
+	if (m_nInsert == SUPA7_INSERT_SLUG && m_iSecondaryAmmoCount > 0)
+	{
+		TubePush(SUPA7_INSERT_SLUG);
+		m_iSecondaryAmmoCount -= 1;
+	}
+	else if (m_nInsert == SUPA7_INSERT_SHELL && m_iPrimaryAmmoCount > 0)
+	{
+		TubePush(SUPA7_INSERT_SHELL);
+		m_iPrimaryAmmoCount -= 1;
+	}
+}
+
+void CWeaponSupa7::CancelInsert()
+{
+	m_nInsert = SUPA7_INSERT_NONE;
+	m_flInsertCreditTime = 0.0f;
+}
+
+// The shipped reload's finishing rack, also played alone: the gun fires only once it ends
+void CWeaponSupa7::StartRack()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+	{
+		return;
+	}
+
+	SendWeaponAnim(ACT_SHOTGUN_PUMP);
+	WeaponSound(SPECIAL2);
+
+	const float flDuration = ViewModelSequenceDuration();
+	m_flRackFeedTime = gpGlobals->curtime + Min(RACK_PUMP_HOME_TIME, flDuration);
+	pOwner->m_flNextAttack = gpGlobals->curtime;
+	ProposeNextAttack(gpGlobals->curtime + flDuration);
+	SetWeaponIdleTime(gpGlobals->curtime + flDuration);
+}
+
+// The model's own rack between the first insert and the rest of the reload; without it the reload ends with the
+// shipped rack
+bool CWeaponSupa7::UsesPumpAfterInsert() const
+{
+	return IsTubeEnabled() && LookupViewModelSequence(VM_SEQ_PUMP_AFTER_INSERT) != ACTIVITY_NOT_AVAILABLE;
+}
+
+// The shot that empties the tube has no round to rack up
+bool CWeaponSupa7::IsLastShotWithoutPump() const
+{
+	return m_nTubeCount <= 0 && UsesPumpAfterInsert();
+}
+
+// Racks the round just loaded over the hull, then the reload goes on from the loading pose
+void CWeaponSupa7::StartPumpAfterInsert()
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if (!pOwner)
+	{
+		return;
+	}
+
+	SetActivity(ACT_SHOTGUN_PUMP);
+	SendViewModelAnim(LookupViewModelSequence(VM_SEQ_PUMP_AFTER_INSERT));
+	WeaponSound(SPECIAL2);
+
+	const float flDuration = ViewModelSequenceDuration();
+	m_flRackFeedTime = gpGlobals->curtime + Min(PUMP_AFTER_INSERT_HOME_TIME, flDuration);
+	m_flNextReload = gpGlobals->curtime + flDuration;
+	pOwner->m_flNextAttack = gpGlobals->curtime;
+	ProposeNextAttack(m_flRackFeedTime);
+}
+
+void CWeaponSupa7::RunRack()
+{
+	if (m_flRackFeedTime <= 0.0f || gpGlobals->curtime < m_flRackFeedTime)
+	{
+		return;
+	}
+
+	m_flRackFeedTime = 0.0f;
+	FeedChamber();
+}
+
+// The viewmodel plays the sequence; the weapon entity can carry the world model on the client
+float CWeaponSupa7::ViewModelSequenceDuration() const
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	CBaseViewModel *pVM = pOwner ? pOwner->GetViewModel(m_nViewModelIndex) : nullptr;
+	return pVM ? pVM->SequenceDuration() : 0.0f;
+}
+
+int CWeaponSupa7::LookupViewModelSequence(const char *pszSequence) const
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	CBaseViewModel *pVM = pOwner ? pOwner->GetViewModel(m_nViewModelIndex) : nullptr;
+	return pVM ? pVM->LookupSequence(pszSequence) : ACTIVITY_NOT_AVAILABLE;
+}
+
+// Played as WeaponSound plays: predicted for the owner, from the server for the rest
+void CWeaponSupa7::EmitShotSoundPiece(const char *pszSound)
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	CSoundParameters params;
+	if (!pOwner || !GetParametersForSound(pszSound, params, NULL))
+	{
+		return;
+	}
+
+	CPASAttenuationFilter filter(pOwner, params.soundlevel);
+	if (IsPredicted() && CBaseEntity::GetPredictionPlayer())
+	{
+		filter.UsePredictionRules();
+	}
+	EmitSound(filter, pOwner->entindex(), pszSound);
+}
+
+bool CWeaponSupa7::Holster(CBaseCombatWeapon *pSwitchingTo)
+{
+	TubePhasesOnHolster();
+	return BaseClass::Holster(pSwitchingTo);
+}
+
+bool CWeaponSupa7::HasChamberSlot() const
+{
+	return IsTubeEnabled() || BaseClass::HasChamberSlot();
+}
+
+bool CWeaponSupa7::IsRoundChambered() const
+{
+	if (!IsTubeEnabled())
+	{
+		return BaseClass::IsRoundChambered();
+	}
+
+	// before the first update rebuilds the tube from a new clip count, a loaded gun has a round chambered
+	return IsTubeSynced() ? IsChamberLive() : (m_iClip1 > 0);
+}
+
+int CWeaponSupa7::RoundsInMagazine() const
+{
+	if (!IsTubeEnabled())
+	{
+		return BaseClass::RoundsInMagazine();
+	}
+
+	return IsTubeSynced() ? m_nTubeCount.Get() : Max(0, m_iClip1 - SUPA7_CHAMBER_ROUNDS);
+}
+
+int CWeaponSupa7::MagazineCapacity() const
+{
+	return IsTubeEnabled() ? TubeCapacity() : BaseClass::MagazineCapacity();
+}
+
 const WeaponSpreadInfo_t &CWeaponSupa7::GetSpreadInfo()
 {
 	Assert(m_weaponHandling.weaponID & GetNeoWepBits());
@@ -576,77 +1074,4 @@ void CWeaponSupa7::Drop(const Vector& vecVelocity)
 bool CWeaponSupa7::CanBePickedUpByClass(int classId)
 {
 	return classId != NEO_CLASS_JUGGERNAUT;
-}
-
-// The model's own rack after the first insert of a dry reload; without it the reload ends with the shipped rack
-bool CWeaponSupa7::UsesPumpAfterInsert() const
-{
-	return NEORules() && NEORules()->IsReloadExperimental()
-		&& LookupViewModelSequence(VM_SEQ_PUMP_AFTER_INSERT) != ACTIVITY_NOT_AVAILABLE;
-}
-
-// The shot that empties the gun has no round to rack up, so it leaves the hull in the chamber
-bool CWeaponSupa7::IsLastShotWithoutPump() const
-{
-	return m_iClip1 == 1 && UsesPumpAfterInsert();
-}
-
-// A shot waits until the pump is home
-bool CWeaponSupa7::IsPumpingAfterInsert() const
-{
-	return m_bInReload && GetActivity() == ACT_SHOTGUN_PUMP && gpGlobals->curtime < m_flNextPrimaryAttack;
-}
-
-// Racks the round just loaded over the hull; the next step goes on from the loading pose without filling the clip
-void CWeaponSupa7::StartPumpAfterInsert()
-{
-	CBaseCombatCharacter *pOwner = GetOwner();
-	if (!pOwner)
-	{
-		return;
-	}
-
-	SetActivity(ACT_SHOTGUN_PUMP);
-	SendViewModelAnim(LookupViewModelSequence(VM_SEQ_PUMP_AFTER_INSERT));
-	WeaponSound(SPECIAL2);
-
-	const float flDuration = ViewModelSequenceDuration();
-	m_bShellInChamber = true;
-	m_bWeaponRaised = false;
-	m_flNextReload = gpGlobals->curtime + flDuration;
-	pOwner->m_flNextAttack = gpGlobals->curtime;
-	ProposeNextAttack(gpGlobals->curtime + Min(PUMP_AFTER_INSERT_HOME_TIME, flDuration));
-}
-
-// The viewmodel plays the sequence; the weapon entity can carry the world model on the client
-int CWeaponSupa7::LookupViewModelSequence(const char *pszSequence) const
-{
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
-	CBaseViewModel *pVM = pOwner ? pOwner->GetViewModel(m_nViewModelIndex) : nullptr;
-	return pVM ? pVM->LookupSequence(pszSequence) : ACTIVITY_NOT_AVAILABLE;
-}
-
-float CWeaponSupa7::ViewModelSequenceDuration() const
-{
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
-	CBaseViewModel *pVM = pOwner ? pOwner->GetViewModel(m_nViewModelIndex) : nullptr;
-	return pVM ? pVM->SequenceDuration() : 0.0f;
-}
-
-// Played as WeaponSound plays: predicted for the owner, from the server for the rest
-void CWeaponSupa7::EmitShotSoundPiece(const char *pszSound)
-{
-	CBaseCombatCharacter *pOwner = GetOwner();
-	CSoundParameters params;
-	if (!pOwner || !GetParametersForSound(pszSound, params, NULL))
-	{
-		return;
-	}
-
-	CPASAttenuationFilter filter(pOwner, params.soundlevel);
-	if (IsPredicted() && CBaseEntity::GetPredictionPlayer())
-	{
-		filter.UsePredictionRules();
-	}
-	EmitSound(filter, pOwner->entindex(), pszSound);
 }
