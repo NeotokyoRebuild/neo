@@ -102,6 +102,21 @@ private:
 	}
 
 	bool IsTubeEnabled() const;
+	bool IsTubeFull() const;
+
+	// Tube phases (sv_neo_reload_experimental); each hook does nothing with the flag off
+	bool TubePhasesOnStart();
+	bool TubePhasesOnStartSlug();
+	bool TubePhasesOnFinish();
+	bool TubePhasesCanFire();
+	void TubePhasesOnShot();
+	void TubePhasesOnDrop();
+	void TubePhasesOnFrame();
+	bool TubePhasesOnNextInsert();
+	bool TubePhasesNeedRack() const;
+	void TubePhasesOnReloadPress();
+	void TubePhasesOnHolster();
+
 	bool IsChamberLive() const { return m_nChamber == SUPA7_CHAMBER_SHELL || m_nChamber == SUPA7_CHAMBER_SLUG; }
 	bool IsTubeSynced() const { return m_nTubeCount + (IsChamberLive() ? 1 : 0) == m_iClip1; }
 	int TubeCapacity() const { return GetMaxClip1() - SUPA7_CHAMBER_ROUNDS; }
