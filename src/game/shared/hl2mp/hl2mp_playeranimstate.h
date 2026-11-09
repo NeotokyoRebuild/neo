@@ -16,6 +16,15 @@ class C_HL2MP_Player;
 class CHL2MP_Player;
 #endif
 
+#ifdef NEO
+// The part of the third-person reload gesture that a shorter first-person reload shows
+enum ReloadGestureFit_t
+{
+	RELOAD_GESTURE_KEEP_START,	// a reload from the start: the gesture ends early
+	RELOAD_GESTURE_KEEP_END,	// a resumed reload: the gesture starts late
+};
+#endif
+
 // ------------------------------------------------------------------------------------------------ //
 // CPlayerAnimState declaration.
 // ------------------------------------------------------------------------------------------------ //
@@ -48,8 +57,8 @@ public:
 #ifdef NEO
 	virtual void ComputeSequences(CStudioHdr* pStudioHdr);
 
-	// Reload event data: the draw resumes an interrupted reload
-	static constexpr int RELOAD_EVENT_RESUMED = 1;
+	// A reload event's data: how long the first-person reload lasts, and which part of a longer gesture it shows
+	static int PackReloadGestureData(ReloadGestureFit_t fit, float flDuration);
 #endif
 
 	void DebugShowAnimStateFull(int iStartLine);
@@ -67,9 +76,18 @@ private:
 	
 #ifdef NEO
 	bool	IsLeaning(CStudioHdr *pStudioHdr);
+	void	SetGestureSlotCycle(int iGestureSlot, float flCycle);
+	void	StartReloadGesture(int nData);
+	void	UpdateReloadGesture();
 #endif // NEO
 	
 	CHL2MP_Player   *m_pHL2MPPlayer;
+#ifdef NEO
+	// The playing reload gesture's sequence (-1: none) and the cycles it blends in from and out to
+	int		m_iReloadGestureSequence;
+	float	m_flReloadGestureStartCycle;
+	float	m_flReloadGestureEndCycle;
+#endif
 #ifndef NEO
 	bool		m_bInAirWalk;
 	float		m_flHoldDeployedPoseUntilTime;

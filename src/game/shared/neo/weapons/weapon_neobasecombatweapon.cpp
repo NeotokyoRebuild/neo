@@ -519,7 +519,7 @@ void CNEOBaseCombatWeapon::ReloadPhasesOnReload()
 	StartReloadPhases(pVM ? GetNEOWpnData().FindReloadTable(pVM->GetSequenceName(pVM->GetSequence())) : -1);
 }
 
-// The magazine is in: the phases up to the load are done, and a switch from here leaves nothing to resume
+// The magazine is in: the phases up to the load are done; a switch from here resumes only where the table names a resume
 void CNEOBaseCombatWeapon::ReloadPhasesOnFinish()
 {
 	if (!IsReloadPhaseSystemEnabled())
@@ -672,8 +672,12 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 		return false;
 	}
 
-	// the old magazine and its rounds are gone, as when a reload loads at its ready time
-	m_iClip1 = 0;
+	// After the unload the old magazine and its rounds are gone, as when a reload loads at its ready time.
+	// After the load the fresh magazine is already in.
+	if (m_nReloadPhase == RELOAD_PHASE_UNLOADED)
+	{
+		m_iClip1 = 0;
+	}
 
 	// The weapon entity draws its world model in third person, which has none of the viewmodel's sequences
 	const int iOwnSequence = LookupSequence(pszName);
@@ -683,9 +687,10 @@ bool CNEOBaseCombatWeapon::ResumeReload()
 	}
 	SendViewModelAnim(iSequence);
 
-	ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD, CHL2MPPlayerAnimState::RELOAD_EVENT_RESUMED);
-
+	// the third-person reload gesture lasts no longer than the resume
 	const float flDuration = ReloadViewModel()->SequenceDuration(iSequence);
+	ToHL2MPPlayer(GetOwner())->DoAnimationEvent(PLAYERANIMEVENT_RELOAD,
+		CHL2MPPlayerAnimState::PackReloadGestureData(RELOAD_GESTURE_KEEP_END, flDuration));
 
 	const float flEnd = gpGlobals->curtime + flDuration;
 	GetOwner()->SetNextAttack(flEnd);
