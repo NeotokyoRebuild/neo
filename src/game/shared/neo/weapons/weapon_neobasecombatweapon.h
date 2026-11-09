@@ -305,10 +305,10 @@ public:
 	bool IsReloadPastUnload() const;
 
 	// Clip1 includes the chambered round; the magazine can hold GetMaxClip1() more.
-	bool HasChamberSlot() const;
-	bool IsRoundChambered() const;
-	int RoundsInMagazine() const;
-	int MagazineCapacity() const;
+	virtual bool HasChamberSlot() const;
+	virtual bool IsRoundChambered() const;
+	virtual int RoundsInMagazine() const;
+	virtual int MagazineCapacity() const;
 
 protected:
 	bool IsReloadPhaseSystemEnabled() const;

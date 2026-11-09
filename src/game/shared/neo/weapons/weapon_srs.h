@@ -37,6 +37,8 @@ public:
 	virtual bool	Deploy() override;
 	virtual void	PrimaryAttack() override;
 	virtual bool	Reload(void) OVERRIDE;
+	virtual bool	Holster(CBaseCombatWeapon *pSwitchingTo) OVERRIDE;
+	bool	IsRoundChambered() const OVERRIDE;
 
 	NEO_WEP_BITS_UNDERLYING_TYPE WeaponIndex() const override { return NEO_WIDX_SRS; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_SRS | NEO_WEP_SCOPEDWEAPON | NEO_WEP_FIREARM; }
@@ -53,7 +55,25 @@ protected:
 private:
 	CWeaponSRS(const CWeaponSRS &other);
 
+	// Whether the bolt cycle after a shot has not finished yet
+	bool IsBoltPending() const;
+
+	// Bolt phases (sv_neo_reload_experimental); each hook does nothing with the flag off
+	bool BoltPhasesBlockShot() const;
+	bool BoltPhasesBlockReload() const;
+	void BoltPhasesOnShot();
+	bool BoltPhasesDelayCycle() const;
+	void BoltPhasesOnCycle();
+	bool BoltPhasesKeepCycle();
+	void BoltPhasesOnDeploy();
+	void BoltPhasesOnReload();
+	void BoltPhasesOnHolster();
+
 	CNetworkVar(bool, m_bNeedsBolting);
+	// The bolt is home, and a round chambered, at this time; 0: no bolt cycle is running
+	CNetworkVar(float, m_flBoltHomeTime);
+	// A bolt cycle resumed by a draw starts no earlier than this time
+	CNetworkVar(float, m_flBoltStartTime);
 };
 
 #endif // NEO_WEAPON_SRS_H

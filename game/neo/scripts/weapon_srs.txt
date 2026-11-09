@@ -1,3 +1,5 @@
+#base "weapon_srs_reload_phases.txt"
+
 // SRS
 
 WeaponData
@@ -16,6 +18,11 @@ WeaponData
 	"Penetration"		"65.0"
 	"CycleTime"		"1.4"
 	"ReloadReadyBeforeEnd"	"0.583"	// the reload is done at the last reload click, this long before its animation ends
+
+	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers
+	"ReloadPhases"	{}
+	// Chamber capacity is gameplay data; the phase timing comes from neoAssets.
+	"ChamberedRound"	"1"
 	
 	"TPMuzzleFlashScale"	"0.25"
 
