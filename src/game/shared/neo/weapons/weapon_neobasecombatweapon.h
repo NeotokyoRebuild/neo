@@ -264,13 +264,6 @@ public:
 
 	virtual float GetFireRate() override final;
 	float GetPenetration() const;
-	void StopReloadOnDrop();
-
-	// Clip1 includes the chambered round; the magazine can hold GetMaxClip1() more.
-	bool HasChamberSlot() const;
-	bool IsRoundChambered() const;
-	int RoundsInMagazine() const;
-	int MagazineCapacity() const;
 #ifdef CLIENT_DLL
 	float m_flTemperature;
 	int m_spawnflags;
@@ -289,7 +282,6 @@ protected:
 	virtual float GetMaxAccuracyPenalty() const { return 1.0; }
 	virtual float GetAccuracyPenaltyDecay();
 	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
-	bool IsReloadPhaseSystemEnabled() const;
 
 protected:
 	CNetworkVar(float, m_flSoonestAttack);
@@ -302,7 +294,25 @@ protected:
 	// When the reload in progress loads the magazine, 0 once it is loaded
 	CNetworkVar(float, m_flReloadReadyTime);
 
-	// Reload phases (weapons whose script has a ReloadPhases block): the last phase finished, kept across a switch
+private:
+	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
+	bool HasEmptyIdle();
+
+	// Reload phases (sv_neo_reload_experimental, weapons whose script has a ReloadPhases block).
+	// Each hook checks IsReloadPhaseSystemEnabled itself, so with the flag off a hook call does nothing
+public:
+	void StopReloadOnDrop();
+
+	// Clip1 includes the chambered round; the magazine can hold GetMaxClip1() more.
+	bool HasChamberSlot() const;
+	bool IsRoundChambered() const;
+	int RoundsInMagazine() const;
+	int MagazineCapacity() const;
+
+protected:
+	bool IsReloadPhaseSystemEnabled() const;
+
+	// the last phase finished, kept across a switch
 	CNetworkVar(int, m_nReloadPhase);
 	// the phase table of the reload sequence started last, -1 none
 	CNetworkVar(int, m_nReloadTable);
@@ -314,8 +324,20 @@ protected:
 	CNetworkVar(bool, m_bChamberEmpty);
 
 private:
-	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
-	bool HasEmptyIdle();
+	// What a reload request does before the default reload: run it, or answer for the phases
+	enum ReloadRequest_t
+	{
+		RELOAD_REQUEST_DEFAULT,		// the default reload runs
+		RELOAD_REQUEST_STARTED,		// the phases started their own reload
+		RELOAD_REQUEST_REFUSED,		// no reload starts
+	};
+
+	ReloadRequest_t ReloadPhasesOnRequest();
+	void ReloadPhasesOnReload();
+	int ReloadPhasesOnFinish();
+	bool ReloadPhasesOnDeploy();
+	void ReloadPhasesOnHolster();
+	void ReloadPhasesOnBusyFrame();
 
 	void StartReloadPhases(int iTable);
 	void RunReloadPhases();
@@ -328,7 +350,6 @@ private:
 	void EmitReloadSoundPiece(const char *pszSound);
 	CBaseViewModel *ReloadViewModel() const;
 	int LookupReloadSequence(const char *pszName) const;
-
 };
 
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H
