@@ -195,40 +195,40 @@
 
 // AA13 reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_aa13.reload_1_unload"
+"weapon_aa13.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/aa13/aa13_reload_1_unload.wav"
+	"wave"			")weapons/aa13/aa13_reload_unload.wav"
 }
 
-"weapon_aa13.reload_1_unload_2"
+"weapon_aa13.reload_unload_part2"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/aa13/aa13_reload_1_unload_2.wav"
+	"wave"			")weapons/aa13/aa13_reload_unload_part2.wav"
 }
 
-"weapon_aa13.reload_2_load"
+"weapon_aa13.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/aa13/aa13_reload_2_load.wav"
+	"wave"			")weapons/aa13/aa13_reload_load.wav"
 }
 
-"weapon_aa13.reload_3_cycle"
+"weapon_aa13.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/aa13/aa13_reload_3_cycle.wav"
+	"wave"			")weapons/aa13/aa13_reload_cycle.wav"
 }
 
 //------------------
@@ -383,31 +383,31 @@
 
 // MPN45 reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_mpn45.reload_1_unload"
+"weapon_mpn45.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/mpn45/mpn45_reload_1_unload.wav"
+	"wave"			")weapons/mpn45/mpn45_reload_unload.wav"
 }
 
-"weapon_mpn45.reload_2_load"
+"weapon_mpn45.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/mpn45/mpn45_reload_2_load.wav"
+	"wave"			")weapons/mpn45/mpn45_reload_load.wav"
 }
 
-"weapon_mpn45.reload_3_cycle"
+"weapon_mpn45.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/mpn45/mpn45_reload_3_cycle.wav"
+	"wave"			")weapons/mpn45/mpn45_reload_cycle.wav"
 }
 
 //-------------------
@@ -486,31 +486,31 @@
 
 // SRM reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_srm.reload_1_unload"
+"weapon_srm.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/srm/srm_reload_1_unload.wav"
+	"wave"			")weapons/srm/srm_reload_unload.wav"
 }
 
-"weapon_srm.reload_2_load"
+"weapon_srm.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/srm/srm_reload_2_load.wav"
+	"wave"			")weapons/srm/srm_reload_load.wav"
 }
 
-"weapon_srm.reload_3_cycle"
+"weapon_srm.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/srm/srm_reload_3_cycle.wav"
+	"wave"			")weapons/srm/srm_reload_cycle.wav"
 }
 
 //-------------------
@@ -600,31 +600,31 @@
 
 // Jitte reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_jitte.reload_1_unload"
+"weapon_jitte.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/jitte/jitte_reload_1_unload.wav"
+	"wave"			")weapons/jitte/jitte_reload_unload.wav"
 }
 
-"weapon_jitte.reload_2_load"
+"weapon_jitte.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/jitte/jitte_reload_2_load.wav"
+	"wave"			")weapons/jitte/jitte_reload_load.wav"
 }
 
-"weapon_jitte.reload_3_cycle"
+"weapon_jitte.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/jitte/jitte_reload_3_cycle.wav"
+	"wave"			")weapons/jitte/jitte_reload_cycle.wav"
 }
 
 //-------------------
@@ -713,40 +713,40 @@
 
 // M41 reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_m41.reload_1_unload"
+"weapon_m41.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/m41/m41_reload_1_unload.wav"
+	"wave"			")weapons/m41/m41_reload_unload.wav"
 }
 
-"weapon_m41.reload_2_load"
+"weapon_m41.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/m41/m41_reload_2_load.wav"
+	"wave"			")weapons/m41/m41_reload_load.wav"
 }
 
-"weapon_m41.reload_2_load_2"
+"weapon_m41.reload_load_part2"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/m41/m41_reload_2_load_2.wav"
+	"wave"			")weapons/m41/m41_reload_load_part2.wav"
 }
 
-"weapon_m41.reload_3_cycle"
+"weapon_m41.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/m41/m41_reload_3_cycle.wav"
+	"wave"			")weapons/m41/m41_reload_cycle.wav"
 }
 
 //-------------------
@@ -842,31 +842,31 @@
 
 // SRS reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_srs.reload_1_unload"
+"weapon_srs.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/srs/srs_reload_1_unload.wav"
+	"wave"			")weapons/srs/srs_reload_unload.wav"
 }
 
-"weapon_srs.reload_2_load"
+"weapon_srs.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/srs/srs_reload_2_load.wav"
+	"wave"			")weapons/srs/srs_reload_load.wav"
 }
 
-"weapon_srs.reload_3_cycle"
+"weapon_srs.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/srs/srs_reload_3_cycle.wav"
+	"wave"			")weapons/srs/srs_reload_cycle.wav"
 }
 
 //-------------------
@@ -992,40 +992,40 @@
 
 // ZR68L reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_zr68l.reload_1_unload"
+"weapon_zr68l.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/zr68l/zr68l_reload_1_unload.wav"
+	"wave"			")weapons/zr68l/zr68l_reload_unload.wav"
 }
 
-"weapon_zr68l.reload_2_load"
+"weapon_zr68l.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/zr68l/zr68l_reload_2_load.wav"
+	"wave"			")weapons/zr68l/zr68l_reload_load.wav"
 }
 
-"weapon_zr68l.reload_2_load_2"
+"weapon_zr68l.reload_load_part2"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/zr68l/zr68l_reload_2_load_2.wav"
+	"wave"			")weapons/zr68l/zr68l_reload_load_part2.wav"
 }
 
-"weapon_zr68l.reload_3_cycle"
+"weapon_zr68l.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/zr68l/zr68l_reload_3_cycle.wav"
+	"wave"			")weapons/zr68l/zr68l_reload_cycle.wav"
 }
 
 //-------------------
@@ -1163,31 +1163,31 @@
 
 // MX reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_mx.reload_1_unload"
+"weapon_mx.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/mx/mx_reload_1_unload.wav"
+	"wave"			")weapons/mx/mx_reload_unload.wav"
 }
 
-"weapon_mx.reload_2_load"
+"weapon_mx.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/mx/mx_reload_2_load.wav"
+	"wave"			")weapons/mx/mx_reload_load.wav"
 }
 
-"weapon_mx.reload_3_cycle"
+"weapon_mx.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/mx/mx_reload_3_cycle.wav"
+	"wave"			")weapons/mx/mx_reload_cycle.wav"
 }
 
 //-------------------
@@ -1275,58 +1275,58 @@
 
 // PZ252 reload in per-step pieces (sv_neo_reload_experimental).
 
-"weapon_pz.reload_1_unload"
+"weapon_pz.reload_unload"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/pz/pz_reload_1_unload.wav"
+	"wave"			")weapons/pz/pz_reload_unload.wav"
 }
 
-"weapon_pz.reload_1_unload_2"
+"weapon_pz.reload_unload_part2"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/pz/pz_reload_1_unload_2.wav"
+	"wave"			")weapons/pz/pz_reload_unload_part2.wav"
 }
 
-"weapon_pz.reload_2_load"
+"weapon_pz.reload_load"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/pz/pz_reload_2_load.wav"
+	"wave"			")weapons/pz/pz_reload_load.wav"
 }
 
-"weapon_pz.reload_2_load_2"
+"weapon_pz.reload_load_part2"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/pz/pz_reload_2_load_2.wav"
+	"wave"			")weapons/pz/pz_reload_load_part2.wav"
 }
 
-"weapon_pz.reload_2_load_3"
+"weapon_pz.reload_load_part3"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/pz/pz_reload_2_load_3.wav"
+	"wave"			")weapons/pz/pz_reload_load_part3.wav"
 }
 
-"weapon_pz.reload_3_cycle"
+"weapon_pz.reload_cycle"
 {
 	"channel"		"CHAN_ITEM"
 	"soundlevel"		"SNDLVL_NORM"
 	"volume"		"1.0"
 	"pitch"			"PITCH_NORM"
-	"wave"			")weapons/pz/pz_reload_3_cycle.wav"
+	"wave"			")weapons/pz/pz_reload_cycle.wav"
 }
 
 //-------------------
