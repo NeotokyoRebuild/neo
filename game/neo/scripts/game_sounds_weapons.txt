@@ -725,6 +725,44 @@
 	"wave"				"weapons/m41/m41_reload.wav"
 }
 
+// M41 reload in per-step pieces (sv_neo_reload_experimental).
+
+"weapon_m41.reload_unload"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_unload.wav"
+}
+
+"weapon_m41.reload_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_load.wav"
+}
+
+"weapon_m41.reload_load_part2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_load_part2.wav"
+}
+
+"weapon_m41.reload_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/m41/m41_reload_cycle.wav"
+}
+
 //-------------------
 
 "weapon_m41.npc_reload"
