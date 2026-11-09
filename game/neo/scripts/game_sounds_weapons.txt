@@ -759,6 +759,36 @@
 	"wave"			        "weapons/zr68/zr68_reload.wav"
 }
 
+// ZR68 reload in per-step pieces (sv_neo_reload_experimental), named reload_<step>; a step's later sounds add _part2, _part3.
+// Each file starts just before its first transient
+
+"weapon_zr68.reload_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68_reload_load.wav"
+}
+
+"weapon_zr68.reload_load_part2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68_reload_load_part2.wav"
+}
+
+"weapon_zr68.reload_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68/zr68_reload_cycle.wav"
+}
+
 //-------------------
 
 "weapon_zr68.npc_reload"

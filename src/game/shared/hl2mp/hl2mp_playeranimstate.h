@@ -47,6 +47,9 @@ public:
 	virtual float GetCurrentMaxGroundSpeed();
 #ifdef NEO
 	virtual void ComputeSequences(CStudioHdr* pStudioHdr);
+
+	// Reload event data: the draw resumes an interrupted reload
+	static constexpr int RELOAD_EVENT_RESUMED = 1;
 #endif
 
 	void DebugShowAnimStateFull(int iStartLine);

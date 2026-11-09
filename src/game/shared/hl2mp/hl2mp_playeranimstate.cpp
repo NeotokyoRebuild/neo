@@ -343,6 +343,11 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 		{
 #ifdef NEO
 		AddToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, CalcReloadSequence(), true);
+		if (nData == RELOAD_EVENT_RESUMED)
+		{
+			// A reload resumed by the draw starts with the weapon change, which would otherwise clear the gesture
+			m_hActiveWeapon = GetBasePlayer()->GetActiveWeapon();
+		}
 #else
 			// Weapon reload.
 			if ( GetBasePlayer()->GetFlags() & FL_DUCKING )

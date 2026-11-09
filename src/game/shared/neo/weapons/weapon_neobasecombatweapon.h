@@ -298,6 +298,39 @@ private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
 	bool HasEmptyIdle();
 
+	// Reload phases (sv_neo_reload_experimental, weapons whose script has a ReloadPhases block).
+	// Each hook checks IsReloadPhaseSystemEnabled itself, so with the flag off a hook call does nothing
+public:
+	void StopReloadOnDrop();
+
+protected:
+	bool IsReloadPhaseSystemEnabled() const;
+
+	// the last phase finished, kept across a switch
+	CNetworkVar(int, m_nReloadPhase);
+	// the phase table of the reload sequence started last, -1 none
+	CNetworkVar(int, m_nReloadTable);
+	// when the reload sequence started; phase times are offsets from it
+	CNetworkVar(float, m_flReloadStart);
+	// the sound pieces of the playing sequence already started, one bit per piece
+	CNetworkVar(int, m_nReloadSoundsDone);
+
+private:
+	void ReloadPhasesOnReload();
+	void ReloadPhasesOnFinish();
+	bool ReloadPhasesOnDeploy();
+	void ReloadPhasesOnHolster();
+	void ReloadPhasesOnBusyFrame();
+
+	void StartReloadPhases(int iTable);
+	void RunReloadPhases();
+	void FinishReloadPhase(ReloadPhase_t phase);
+	const char *FindResumeSequence() const;
+	bool ResumeReload();
+	void StopReloadSoundPieces();
+	void EmitReloadSoundPiece(const char *pszSound);
+	CBaseViewModel *ReloadViewModel() const;
+	int LookupReloadSequence(const char *pszName) const;
 };
 
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H
