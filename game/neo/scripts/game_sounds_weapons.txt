@@ -798,6 +798,44 @@
 	"wave"			")weapons/zr68/zr68_reload_cycle.wav"
 }
 
+// ZR68L reload in per-step pieces (sv_neo_reload_experimental).
+
+"weapon_zr68l.reload_unload"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68l/zr68l_reload_unload.wav"
+}
+
+"weapon_zr68l.reload_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68l/zr68l_reload_load.wav"
+}
+
+"weapon_zr68l.reload_load_part2"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68l/zr68l_reload_load_part2.wav"
+}
+
+"weapon_zr68l.reload_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/zr68l/zr68l_reload_cycle.wav"
+}
+
 //-------------------
 
 "weapon_zr68.npc_reload"
