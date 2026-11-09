@@ -449,11 +449,6 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 
 bool CNEOBaseCombatWeapon::Reload( void )
 {
-	if (m_bInReload)
-	{
-		return false;
-	}
-
 	const ReloadRequest_t request = ReloadPhasesOnRequest();
 	if (request != RELOAD_REQUEST_DEFAULT)
 	{
@@ -526,6 +521,12 @@ CNEOBaseCombatWeapon::ReloadRequest_t CNEOBaseCombatWeapon::ReloadPhasesOnReques
 	if (!IsReloadPhaseSystemEnabled())
 	{
 		return RELOAD_REQUEST_DEFAULT;
+	}
+
+	// The phase paths below bypass DefaultReload, so a call during a reload must not restart it.
+	if (m_bInReload)
+	{
+		return RELOAD_REQUEST_REFUSED;
 	}
 
 	// A lost resume must still allow chambering the loaded magazine, even without spare ammo.
