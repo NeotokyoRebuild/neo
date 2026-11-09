@@ -9,6 +9,9 @@
 #include "usercmd.h"
 #include "bitbuf.h"
 #include "checksum_md5.h"
+#ifdef NEO
+#include "voice_common.h"
+#endif // NEO
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -169,6 +172,17 @@ void WriteUsercmd( bf_write *buf, const CUserCmd *to, const CUserCmd *from )
 		buf->WriteOneBit( 0 );
 	}
 
+#ifdef NEO
+	if (to->voiceTransmitType != from->voiceTransmitType)
+	{
+		buf->WriteOneBit(1);
+		buf->WriteUBitLong(to->voiceTransmitType, NEO_VOICE_TRANSMIT__BITS);
+	}
+	else
+	{
+		buf->WriteOneBit(0);
+	}
+#endif // NEO
 #if defined( HL2_CLIENT_DLL )
 	if ( to->entitygroundcontact.Count() != 0 )
 	{
@@ -288,6 +302,12 @@ void ReadUsercmd( bf_read *buf, CUserCmd *move, CUserCmd *from )
 	{
 		move->mousedy = buf->ReadShort();
 	}
+#ifdef NEO
+	if (buf->ReadOneBit())
+	{
+		move->voiceTransmitType = buf->ReadUBitLong(NEO_VOICE_TRANSMIT__BITS);
+	}
+#endif // NEO
 
 #if defined( HL2_DLL )
 	if ( buf->ReadOneBit() )
