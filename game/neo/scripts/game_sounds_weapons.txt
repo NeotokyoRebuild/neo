@@ -136,6 +136,20 @@
 
 //------------------
 
+// Kyla reload load piece (sv_neo_reload_experimental), played by a reload resumed after the unload.
+// The file starts just before its first transient
+
+"weapon_kyla.reload_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/kyla/kyla_reload_load.wav"
+}
+
+//------------------
+
 "weapon_kyla.npc_reload"
 {
 	"channel"		        "CHAN_AUTO"

@@ -1,3 +1,5 @@
+#base "weapon_klya9_reload_phases.txt"
+
 // Kyla
 WeaponData
 {
@@ -14,6 +16,8 @@ WeaponData
 	"Penetration"		"10.0"
 	"CycleTime"		"0.363636"		// time between shoots
 	"ReloadReadyBeforeEnd"	"0.600"	// the reload is done at the last reload click, this long before its animation ends
+	// Reload phases (sv_neo_reload_experimental): the rows come from neoAssets, timed from its Blender markers
+	"ReloadPhases"	{}
 	
 	"TPMuzzleFlashScale"	"0.6"
 
