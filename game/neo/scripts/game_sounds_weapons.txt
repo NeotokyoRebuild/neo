@@ -395,6 +395,35 @@
 	"wave"				"weapons/mpn45/mpn45_reload.wav"
 }
 
+// MPN45 reload in per-step pieces (sv_neo_reload_experimental).
+
+"weapon_mpn45.reload_unload"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mpn45/mpn45_reload_unload.wav"
+}
+
+"weapon_mpn45.reload_load"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mpn45/mpn45_reload_load.wav"
+}
+
+"weapon_mpn45.reload_cycle"
+{
+	"channel"		"CHAN_ITEM"
+	"soundlevel"		"SNDLVL_NORM"
+	"volume"		"1.0"
+	"pitch"			"PITCH_NORM"
+	"wave"			")weapons/mpn45/mpn45_reload_cycle.wav"
+}
+
 //-------------------
 
 "weapon_mpn45.npc_reload"
