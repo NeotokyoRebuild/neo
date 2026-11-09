@@ -24,8 +24,6 @@
 #include "weapon_smokegrenade.h"
 #include "weapon_supa7.h"
 
-ConVar cl_neo_harness_hudtrace("cl_neo_harness_hudtrace", "0", FCVAR_NONE, "Harness only: print the ammo HUD inputs when they change"); // NEO-HARNESS-TEMP
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -171,18 +169,6 @@ void CNEOHud_Ammo::DrawAmmo() const
 	// NEO TODO: client tests for the 30+1/30 row and the chamber glyph (fresh, after tactical reload, after drop).
 	// a gun with a chamber counts the magazine in the row, and the round icon of the fire-mode glyph shows the chamber
 	const bool hasChamber = activeWep->HasChamberSlot();
-	{ // NEO-HARNESS-TEMP: the HUD's ammo inputs, printed when they change
-		static ConVarRef s_hudTrace("cl_neo_harness_hudtrace");
-		static char s_szLast[128];
-		char szHud[128];
-		V_sprintf_safe(szHud, "clip=%d mag=%d chambered=%d haschamber=%d", activeWep->Clip1(), activeWep->RoundsInMagazine(),
-			activeWep->IsRoundChambered() ? 1 : 0, hasChamber ? 1 : 0);
-		if (s_hudTrace.IsValid() && s_hudTrace.GetBool() && V_strcmp(szHud, s_szLast))
-		{
-			V_strcpy_safe(s_szLast, szHud);
-			Msg("NEO_HUDTRACE t=%.3f %s\n", gpGlobals->curtime, szHud);
-		}
-	} // NEO-HARNESS-TEMP
 		
 	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || (activeWep->GetNeoWepBits() & NEO_WEP_BALC))
 	{
