@@ -594,7 +594,7 @@ bool CNEOBaseCombatWeapon::ReloadPhasesOnDeploy()
 // Only a phase that a sequence resumes from outlasts the switch, with the table that names the resume
 void CNEOBaseCombatWeapon::ReloadPhasesOnHolster()
 {
-	// NEO TODO (sunzenshen): Decide whether RELOAD_END should stop the gesture on a switch.
+	// NEO TODO: Decide whether RELOAD_END should stop the gesture on a switch.
 	if (!IsReloadPhaseSystemEnabled())
 	{
 		return;
@@ -876,7 +876,7 @@ void CNEOBaseCombatWeapon::StopReloadOnDrop()
 	StopReloadSoundPieces();
 
 	// Preserve a pending bolt cycle for the next owner's draw.
-	// NEO TODO (sunzenshen): Should a drop after 1_unload also resume for the next owner?
+	// NEO TODO: Should a drop after 1_unload also resume for the next owner?
 	if (m_nReloadPhase >= RELOAD_PHASE_LOADED && FindResumeSequence())
 	{
 		return;

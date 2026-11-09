@@ -35,6 +35,9 @@ ConVar neo_bot_ignore_real_players("neo_bot_ignore_real_players", "0", FCVAR_CHE
 ConVar neo_bot_shotgunner_range("neo_bot_shotgunner_range", "320", FCVAR_NONE);
 ConVar neo_bot_recon_ratio("neo_bot_recon_ratio", "0.2", FCVAR_NONE);
 ConVar neo_bot_support_ratio("neo_bot_support_ratio", "0.2", FCVAR_NONE);
+// NEO-HARNESS-TEMP: harness-only, so an in-eye spectator sees a chosen weapon in bot hands.
+ConVar sv_neo_harness_bot_weapon("sv_neo_harness_bot_weapon", "", FCVAR_CHEAT,
+	"Harness only: bots pick this loadout weapon (e.g. weapon_zr68c) when their class can carry it.");
 
 extern ConVar bot_class;
 extern ConVar neo_bot_fire_weapon_min_time;
@@ -682,6 +685,19 @@ void CNEOBot::Spawn()
 
 int CNEOBot::ChooseRandomWeaponIndex() const
 {
+	// NEO-HARNESS-TEMP: forced bot weapon, see sv_neo_harness_bot_weapon
+	const char *szForcedWep = sv_neo_harness_bot_weapon.GetString();
+	if (szForcedWep[0] && IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP))
+	{
+		for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
+		{
+			if (FStrEq(CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].info.m_szWeaponEntityName, szForcedWep))
+			{
+				return i;
+			}
+		}
+	}
+
     const int iEffectiveXP = CNEOWeaponLoadout::GetEffectiveXP(m_iXP);
     const ENeoRank eRank = static_cast<ENeoRank>(GetRank(iEffectiveXP) - 1);
     if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
@@ -1820,7 +1836,7 @@ void CNEOBot::ReloadIfLowClip(bool bForceReload)
 		return;
 	}
 
-	// NEO TODO (sunzenshen): with a chamber slot 30 of 31 counts as full here, and 29+1 (clip 30) never reloads by bot
+	// NEO TODO: with a chamber slot 30 of 31 counts as full here, and 29+1 (clip 30) never reloads by bot
 	// logic. Accepted for now; revisit the threshold later.
 	if (myWeapon->Clip1() >= myWeapon->GetMaxClip1())
 	{
