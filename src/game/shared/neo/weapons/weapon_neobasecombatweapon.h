@@ -302,6 +302,7 @@ private:
 	// Each hook checks IsReloadPhaseSystemEnabled itself, so with the flag off a hook call does nothing
 public:
 	void StopReloadOnDrop();
+	bool IsReloadPastUnload() const;
 
 	// Clip1 includes the chambered round; the magazine can hold GetMaxClip1() more.
 	virtual bool HasChamberSlot() const;

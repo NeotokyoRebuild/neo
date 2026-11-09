@@ -698,9 +698,13 @@ void CNEOBaseCombatWeapon::RunReloadPhases()
 
 void CNEOBaseCombatWeapon::FinishReloadPhase(ReloadPhase_t phase)
 {
-	// The unload takes no rounds: they are lost only if a switch interrupts the reload after it (ResumeReload),
-	// so an uninterrupted reload shows the same clip as without phases
-	if (phase == RELOAD_PHASE_LOADED)
+	// The old magazine's rounds go with it, as a reload without phases discards them at the load (FinishReload);
+	// a chambered round stays
+	if (phase == RELOAD_PHASE_UNLOADED)
+	{
+		m_iClip1 = IsRoundChambered() ? 1 : 0;
+	}
+	else if (phase == RELOAD_PHASE_LOADED)
 	{
 		// the magazine loads now, as at a reload's ready time (ItemBusyFrame)
 		m_flReloadReadyTime = gpGlobals->curtime;
@@ -794,6 +798,12 @@ bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, R
 	StartReloadPhases(iTable);
 	m_bInReload = true;
 	return true;
+}
+
+// The old magazine is out and the fresh one not yet in: the reload is about to refill the clip
+bool CNEOBaseCombatWeapon::IsReloadPastUnload() const
+{
+	return IsReloadPhaseSystemEnabled() && m_bInReload && m_nReloadPhase == RELOAD_PHASE_UNLOADED;
 }
 
 bool CNEOBaseCombatWeapon::HasChamberSlot() const
