@@ -60,6 +60,7 @@ private:
 
 	// Bolt phases (sv_neo_reload_experimental); each hook does nothing with the flag off
 	bool BoltPhasesBlockShot() const;
+	bool BoltPhasesBlockReload() const;
 	void BoltPhasesOnShot();
 	bool BoltPhasesDelayCycle() const;
 	void BoltPhasesOnCycle();

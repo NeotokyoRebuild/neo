@@ -124,6 +124,11 @@ bool CWeaponSRS::Deploy()
 
 bool CWeaponSRS::Reload()
 {
+	if (BoltPhasesBlockReload())
+	{
+		return false;
+	}
+
 	// The reloading animation already contains the bolting motion;
 	// we don't want to bolt twice.
 	m_bNeedsBolting = false;
@@ -157,6 +162,13 @@ bool CWeaponSRS::IsRoundChambered() const
 bool CWeaponSRS::BoltPhasesBlockShot() const
 {
 	return HasChamberSlot() && IsBoltPending();
+}
+
+// With rounds left, the chamber holds the shot's spent case until the bolt is home. A reload before then would
+// count the case as a chambered round, at the unload and as the round kept through the magazine change
+bool CWeaponSRS::BoltPhasesBlockReload() const
+{
+	return HasChamberSlot() && IsBoltPending() && m_iClip1 > 0;
 }
 
 void CWeaponSRS::BoltPhasesOnShot()
