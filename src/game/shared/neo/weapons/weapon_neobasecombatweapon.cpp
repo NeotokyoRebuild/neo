@@ -800,6 +800,12 @@ bool CNEOBaseCombatWeapon::PlayReloadSequence(const char *pszName, int iTable, R
 	return true;
 }
 
+// The old magazine is out and the fresh one not yet in: the reload is about to refill the clip
+bool CNEOBaseCombatWeapon::IsReloadPastUnload() const
+{
+	return IsReloadPhaseSystemEnabled() && m_bInReload && m_nReloadPhase == RELOAD_PHASE_UNLOADED;
+}
+
 bool CNEOBaseCombatWeapon::HasChamberSlot() const
 {
 	return IsReloadPhaseSystemEnabled() && GetNEOWpnData().m_bChamberedRound;

@@ -1628,6 +1628,13 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bN
 	if (EquipRequiredWeapon())
 		return;
 
+	// A switch would only delay the reload that is about to refill the clip
+	auto *pActiveWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (pActiveWeapon && pActiveWeapon->IsReloadPastUnload())
+	{
+		return;
+	}
+
 	// -------------------------------------------------------------------------------
 
 	CNEOBaseCombatWeapon* primaryWeapon = static_cast<CNEOBaseCombatWeapon *>(Weapon_GetSlot(0));
