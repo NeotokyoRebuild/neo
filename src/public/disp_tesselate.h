@@ -140,7 +140,10 @@ inline void TesselateDisplacement_R(
 				childInfo.m_Flags = 0;
 			}
 
-			iChildNodeBit += pHelper->m_pPowerInfo->m_NodeIndexIncrements[iLevel];
+			// This is only reached when iLevel < m_Power - 1, so iLevel is always in
+			// [0, MAX_MAP_DISP_POWER - 2]; mask to make that bound provable to the
+			// compiler (GCC can't prove m_Power <= MAX_MAP_DISP_POWER -> -Warray-bounds).
+			iChildNodeBit += pHelper->m_pPowerInfo->m_NodeIndexIncrements[iLevel & ( MAX_MAP_DISP_POWER - 1 )];
 		}
 	}
 

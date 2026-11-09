@@ -37,17 +37,17 @@ static bool CompareLights( dworldlight_t *a, dworldlight_t *b )
 }
 
 
-long FileOpen( char const *pFilename, bool bRead )
+FileHandle_t FileOpen( char const *pFilename, bool bRead )
 {
 	g_bFileError = false;
-	return (long)g_pFileSystem->Open( pFilename, bRead ? "rb" : "wb" );
+	return g_pFileSystem->Open( pFilename, bRead ? "rb" : "wb" );
 }
 
 
-void FileClose( long fp )
+void FileClose( FileHandle_t fp )
 {
 	if( fp )
-		g_pFileSystem->Close( (FILE*)fp );
+		g_pFileSystem->Close( fp );
 }
 
 
@@ -57,7 +57,7 @@ bool FileError()
 	return g_bFileError;
 }
 
-static inline void FileRead( long fp, void *pOut, int size )
+static inline void FileRead( FileHandle_t fp, void *pOut, int size )
 {
 	if( g_bFileError || g_pFileSystem->Read( pOut, size, (FileHandle_t)fp ) != size )
 	{
@@ -68,15 +68,15 @@ static inline void FileRead( long fp, void *pOut, int size )
 
 
 template<class T>
-static inline void FileRead( long fp, T &out )
+static inline void FileRead( FileHandle_t fp, T &out )
 {
 	FileRead( fp, &out, sizeof(out) );
 }
 
 
-static inline void FileWrite( long fp, void const *pData, int size )
+static inline void FileWrite( FileHandle_t fp, void const *pData, int size )
 {
-	if( g_bFileError || g_pFileSystem->Write( pData, size, (FileHandle_t)fp ) != size )
+	if( g_bFileError || g_pFileSystem->Write( pData, size, fp ) != size )
 	{
 		g_bFileError = true;
 	}
@@ -84,7 +84,7 @@ static inline void FileWrite( long fp, void const *pData, int size )
 
 
 template<class T>
-static inline void FileWrite( long fp, T out )
+static inline void FileWrite( FileHandle_t fp, T out )
 {
 	FileWrite( fp, &out, sizeof(out) );
 }
@@ -211,7 +211,7 @@ bool CIncremental::PrepareForLighting()
 }
 
 
-bool CIncremental::ReadIncrementalHeader( long fp, CIncrementalHeader *pHeader )
+bool CIncremental::ReadIncrementalHeader( FileHandle_t fp, CIncrementalHeader *pHeader )
 {
 	int version;
 	FileRead( fp, version );
@@ -228,7 +228,7 @@ bool CIncremental::ReadIncrementalHeader( long fp, CIncrementalHeader *pHeader )
 }
 
 
-bool CIncremental::WriteIncrementalHeader( long fp )
+bool CIncremental::WriteIncrementalHeader( FileHandle_t fp )
 {
 	int version = INCREMENTALFILE_VERSION;
 	FileWrite( fp, version );
@@ -253,7 +253,7 @@ bool CIncremental::WriteIncrementalHeader( long fp )
 
 bool CIncremental::IsIncrementalFileValid()
 {
-	long fp = FileOpen( m_pIncrementalFilename, true );
+	FileHandle_t fp = FileOpen( m_pIncrementalFilename, true );
 	if( !fp )
 		return false;
 
@@ -311,9 +311,9 @@ void CIncremental::AddLightToFace(
 	{
 		bool bNew;
 		
-		EnterCriticalSection( &pLight->m_CS );
+		pLight->m_CS.Lock();
 			pFace = pLight->FindOrCreateLightFace( iFace, lmSize, &bNew );
-		LeaveCriticalSection( &pLight->m_CS );
+		pLight->m_CS.Unlock();
 
 		pLight->m_pCachedFaces[iThread] = pFace;
 
@@ -460,10 +460,10 @@ void CIncremental::FinishFace(
 		if( pFace->m_CompressedData.TellPut() == 0 )
 		{
 			// No contribution.. delete this face from the light.
-			EnterCriticalSection( &pLight->m_CS );
+			pLight->m_CS.Lock();
 				pLight->m_LightFaces.Remove( pFace->m_LightFacesIndex );
 				delete pFace;
-			LeaveCriticalSection( &pLight->m_CS );
+			pLight->m_CS.Unlock();
 		}
 		else
 		{
@@ -586,7 +586,7 @@ bool CIncremental::LoadIncrementalFile()
 	if( !IsIncrementalFileValid() )
 		return false;
 
-	long fp = FileOpen( m_pIncrementalFilename, true );
+	FileHandle_t fp = FileOpen( m_pIncrementalFilename, true );
 	if( !fp )
 		return false;
 
@@ -648,7 +648,7 @@ bool CIncremental::LoadIncrementalFile()
 
 bool CIncremental::SaveIncrementalFile()
 {
-	long fp = FileOpen( m_pIncrementalFilename, false );
+	FileHandle_t fp = FileOpen( m_pIncrementalFilename, false );
 	if( !fp )
 		return false;
 
@@ -719,14 +719,12 @@ void CIncremental::LinkLightsToFaces( CUtlVector<CFaceLightList> &faceLights )
 CIncLight::CIncLight()
 {
 	memset( m_pCachedFaces, 0, sizeof(m_pCachedFaces) );
-	InitializeCriticalSection( &m_CS );
 }
 
 
 CIncLight::~CIncLight()
 {
 	m_LightFaces.PurgeAndDeleteElements();
-	DeleteCriticalSection( &m_CS );
 }
 
 

@@ -13,9 +13,6 @@
 #include "coordsize.h"
 #include "vstdlib/random.h"
 #include "bsptreedata.h"
-#include "messbuf.h"
-#include "vmpi.h"
-#include "vmpi_distribute_work.h"
 
 static TableVector g_BoxDirections[6] = 
 {
@@ -584,40 +581,6 @@ static void ThreadComputeLeafAmbient( int iThread, void *pUserData )
 	}
 }
 
-#ifdef MPI
-void VMPI_ProcessLeafAmbient( int iThread, uint64 iLeaf, MessageBuffer *pBuf )
-{
-	CUtlVector<ambientsample_t> list;
-	ComputeAmbientForLeaf(iThread, (int)iLeaf, list);
-
-	VMPI_SetCurrentStage( "EncodeLeafAmbientResults" );
-
-	// Encode the results.
-	int nSamples = list.Count();
-	pBuf->write( &nSamples, sizeof( nSamples ) );
-	if ( nSamples )
-	{
-		pBuf->write( list.Base(), list.Count() * sizeof( ambientsample_t ) );
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Called on the master when a worker finishes processing a static prop.
-//-----------------------------------------------------------------------------
-void VMPI_ReceiveLeafAmbientResults( uint64 leafID, MessageBuffer *pBuf, int iWorker )
-{
-	// Decode the results.
-	int nSamples;
-	pBuf->read( &nSamples, sizeof( nSamples ) );
-
-	g_LeafAmbientSamples[leafID].SetCount( nSamples );
-	if ( nSamples )
-	{
-		pBuf->read(g_LeafAmbientSamples[leafID].Base(), nSamples * sizeof(ambientsample_t) );
-	}
-}
-#endif
-
 void ComputePerLeafAmbientLighting()
 {
 	// Figure out which lights should go in the per-leaf ambient cubes.
@@ -643,15 +606,6 @@ void ComputePerLeafAmbientLighting()
 
 	g_LeafAmbientSamples.SetCount(numleafs);
 
-#ifdef MPI
-	if ( g_bUseMPI )
-	{
-		// Distribute the work among the workers.
-		VMPI_SetCurrentStage( "ComputeLeafAmbientLighting" );
-		DistributeWork( numleafs, VMPI_ProcessLeafAmbient, VMPI_ReceiveLeafAmbientResults );
-	}
-	else
-#endif
 	{
 		RunThreadsOn(numleafs, true, ThreadComputeLeafAmbient);
 	}
