@@ -101,9 +101,7 @@ END_DATADESC()
 
 ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
 ConVar sv_neo_dynamic_viewkick("sv_neo_dynamic_viewkick", "0", FCVAR_REPLICATED, "Enables view kick scaling based on current inaccuracy.", true, 0.0f, true, 1.0f);
-// NEO TODO: Set the default back to 0 before the partial-reload PRs merge.
-// It is 1 while they are reviewed, so reviewers can test without setting it.
-ConVar sv_neo_reload_experimental("sv_neo_reload_experimental", "1", FCVAR_REPLICATED,
+ConVar sv_neo_reload_experimental("sv_neo_reload_experimental", "0", FCVAR_REPLICATED,
 	"Lets a switch interrupt a reload after the magazine is out, for weapons that define reload phases. A change applies from the next map.",
 	true, 0.0f, true, 1.0f);
 
