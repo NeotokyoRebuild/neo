@@ -142,6 +142,9 @@ private:
 	float ViewModelSequenceDuration() const;
 	int LookupViewModelSequence(const char *pszSequence) const;
 	void EmitShotSoundPiece(const char *pszSound);
+	bool IsSlugInHand() const;
+	void UpdateSaddleRounds();
+	void ShowSaddleRounds(int iShown);
 
 	void SetShotgunShellVisible(bool is_visible)
 	{
@@ -159,6 +162,7 @@ private:
 
 	// sv_neo_reload_experimental: the tube is a stack, the last round loaded is the first fed
 	static constexpr int SUPA7_CHAMBER_ROUNDS = 1;
+	static constexpr int SUPA7_SADDLE_ROUNDS = 4;
 	CNetworkVar(int, m_nTubeCount); // rounds in the tube
 	CNetworkVar(int, m_nTubeSlugs); // bit i: the round at tube position i (0 = loaded first) is a slug
 	CNetworkVar(int, m_nChamber); // Supa7Chamber_t

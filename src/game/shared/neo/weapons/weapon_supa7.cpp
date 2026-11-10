@@ -113,6 +113,10 @@ static constexpr const char *VM_SEQ_PUMP_AFTER_INSERT = "reloadpump";
 static constexpr float PUMP_AFTER_INSERT_HOME_TIME = 17.0f / VM_FRAMES_PER_SECOND;
 // The shell shot without the pump clicks of the shipped shot sound
 static constexpr const char *SND_LAST_SHELL_SHOT = "weapon_murata.single_nopump";
+// Side-saddle rounds of the viewmodel, front (nearest the muzzle) first; the shipped viewmodel has none
+static constexpr const char *VM_SADDLE_BODYGROUPS[] = { "saddle1", "saddle2", "saddle3", "saddle4" };
+static constexpr int SADDLE_ROUND_SHOWN = 0;
+static constexpr int SADDLE_ROUND_HIDDEN = 1;
 
 CWeaponSupa7::CWeaponSupa7(void)
 {
@@ -527,6 +531,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 	ProcessAnimationEvents();
 	TubePhasesOnFrame();
 	TubePhasesOnFreezeTime();
+	UpdateSaddleRounds();
 
 	if (m_bInReload)
 	{
@@ -652,6 +657,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 void CWeaponSupa7::ItemBusyFrame(void)
 {
 	TubePhasesOnFreezeTime();
+	UpdateSaddleRounds();
 	BaseClass::ItemBusyFrame();
 }
 
@@ -989,6 +995,7 @@ void CWeaponSupa7::StartInsert(Supa7Insert_t round)
 
 	m_nInsert = round;
 	m_flInsertCreditTime = gpGlobals->curtime + INSERT_ROUND_IN_TUBE_TIME;
+	UpdateSaddleRounds();
 }
 
 void CWeaponSupa7::RunInsert()
@@ -1176,7 +1183,55 @@ void CWeaponSupa7::EmitShotSoundPiece(const char *pszSound)
 bool CWeaponSupa7::Holster(CBaseCombatWeapon *pSwitchingTo)
 {
 	TubePhasesOnHolster();
+	ShowSaddleRounds(SUPA7_SADDLE_ROUNDS);
 	return BaseClass::Holster(pSwitchingTo);
+}
+
+// A slug is in the hand from the start of its insert until it is in the tube
+bool CWeaponSupa7::IsSlugInHand() const
+{
+	return m_bSlugLoad && m_nInsert != SUPA7_INSERT_NONE && m_flInsertCreditTime > 0.0f;
+}
+
+// The side saddle holds the last slugs of the reserve; a slug load takes its front round at once
+void CWeaponSupa7::UpdateSaddleRounds()
+{
+	// With the flag off the saddle stays as shipped, at no cost per frame
+	if (!IsTubeEnabled())
+	{
+		return;
+	}
+
+	const int iSlugsLeft = m_iSecondaryAmmoCount - (IsSlugInHand() ? 1 : 0);
+	ShowSaddleRounds(Clamp(iSlugsLeft, 0, SUPA7_SADDLE_ROUNDS));
+}
+
+// Hides the front rounds of the side saddle; the viewmodel keeps its body for the next weapon, so a holster or drop
+// shows them all again
+void CWeaponSupa7::ShowSaddleRounds(int iShown)
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	CBaseViewModel *pViewModel = pOwner ? pOwner->GetViewModel(m_nViewModelIndex) : NULL;
+	if (!pViewModel || pViewModel->GetOwningWeapon() != this)
+	{
+		return;
+	}
+
+	const int iHidden = SUPA7_SADDLE_ROUNDS - iShown;
+	for (int i = 0; i < SUPA7_SADDLE_ROUNDS; ++i)
+	{
+		const int iGroup = pViewModel->FindBodygroupByName(VM_SADDLE_BODYGROUPS[i]);
+		if (iGroup < 0)
+		{
+			continue;
+		}
+
+		const int iState = (i < iHidden) ? SADDLE_ROUND_HIDDEN : SADDLE_ROUND_SHOWN;
+		if (pViewModel->GetBodygroup(iGroup) != iState)
+		{
+			pViewModel->SetBodygroup(iGroup, iState);
+		}
+	}
 }
 
 bool CWeaponSupa7::HasChamberSlot() const
@@ -1229,6 +1284,7 @@ bool CWeaponSupa7::SlugLoaded() const
 void CWeaponSupa7::Drop(const Vector& vecVelocity)
 {
 	ClearDelayedInputs();
+	ShowSaddleRounds(SUPA7_SADDLE_ROUNDS);
 	CNEOBaseCombatWeapon::Drop(vecVelocity);
 }
 
