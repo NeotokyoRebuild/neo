@@ -15,12 +15,14 @@
 
 class CNavArea;
 
+#ifdef NEO
 enum NavLadderSourceType
 {
 	NAV_LADDER_SOURCE_DEFAULT,
 	NAV_LADDER_SOURCE_BRUSH,	///< built from a climbable brush of the BSP
 };
 
+#endif // NEO
 //--------------------------------------------------------------------------------------------------------------
 /**
  * The NavLadder represents ladders in the Navigation Mesh, and their connections to adjacent NavAreas
@@ -77,7 +79,11 @@ public:
 
 	bool IsConnected( const CNavArea *area, LadderDirectionType dir ) const;	///< returns true if given area is connected in given direction
 
+#ifdef NEO
 	void ConnectGeneratedLadder( float maxHeightAboveTopArea, NavLadderSourceType source = NAV_LADDER_SOURCE_DEFAULT );		///< Connect a generated ladder to nav areas at the end of nav generation
+#else
+	void ConnectGeneratedLadder( float maxHeightAboveTopArea );		///< Connect a generated ladder to nav areas at the end of nav generation
+#endif
 
 	void ConnectTo( CNavArea *area );				///< connect this ladder to given area
 	void Disconnect( CNavArea *area );				///< disconnect this ladder from given area
