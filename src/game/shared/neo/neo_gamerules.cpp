@@ -708,12 +708,7 @@ CNEORules::CNEORules()
 	m_iForcedSkin = -1;
 	m_iForcedWeapon = -1;
 	m_bCyberspaceLevel = false;
-#ifdef GAME_DLL
-	// Read once per map so that every weapon, and the client's prediction of it, sees one value for the whole map
-	m_bReloadExperimental = sv_neo_reload_experimental.GetBool();
-#else
 	m_bReloadExperimental = false;
-#endif
 
 	m_iClassLimitRecon = -1;
 	m_iClassLimitAssault = -1;
@@ -1123,6 +1118,13 @@ void CNEORules::CheckGameType()
 
 void CNEORules::CheckGameConfig()
 {
+	if (!m_bGamemodeTypeBeenInitialized)
+	{
+		// The server's cfg runs after the constructor, so read on the first think.
+		// Read once per map so that every weapon, and the client's prediction of it, sees one value for the whole map
+		m_bReloadExperimental = sv_neo_reload_experimental.GetBool();
+	}
+
 	CheckGameType();
 
 	const auto pEntGameCfg = GetActiveGameConfig();
