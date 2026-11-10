@@ -2537,6 +2537,10 @@ void ActivityList_RegisterSharedActivities( void )
 	REGISTER_SHARED_ACTIVITY( ACT_MP_CYOA_PDA_INTRO );
 	REGISTER_SHARED_ACTIVITY( ACT_MP_CYOA_PDA_IDLE );
 	REGISTER_SHARED_ACTIVITY( ACT_MP_CYOA_PDA_OUTRO );
+
+#ifdef NEO
+	REGISTER_SHARED_ACTIVITY( ACT_VM_IDLE_LOWERED_EMPTY );
+#endif
 	
 	AssertMsg( g_HighestActivity == LAST_SHARED_ACTIVITY - 1, "Not all activities from ai_activity.h registered in activitylist.cpp" ); 
 } 

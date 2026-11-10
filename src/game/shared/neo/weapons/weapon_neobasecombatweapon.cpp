@@ -989,12 +989,18 @@ void CNEOBaseCombatWeapon::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
 }
 
-// An empty weapon idles on its empty sequence where the model has one, such as a pistol with its slide held back
+// An empty weapon idles, raised or lowered, on its empty sequence where the model has one,
+// such as a pistol with its slide held back
 bool CNEOBaseCombatWeapon::SendWeaponAnim(int iActivity)
 {
 	if (iActivity == ACT_VM_IDLE && UsesClipsForAmmo1() && m_iClip1 <= 0 && HasEmptyIdle())
 	{
 		iActivity = ACT_VM_IDLE_EMPTY;
+	}
+	else if (iActivity == ACT_VM_IDLE_LOWERED && UsesClipsForAmmo1() && m_iClip1 <= 0
+		&& SelectWeightedSequence(ACT_VM_IDLE_LOWERED_EMPTY) != ACTIVITY_NOT_AVAILABLE)
+	{
+		iActivity = ACT_VM_IDLE_LOWERED_EMPTY;
 	}
 
 	return BaseClass::SendWeaponAnim(iActivity);
