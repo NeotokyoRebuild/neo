@@ -668,6 +668,9 @@ void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
 	UpdateInaccuracy();
 }
 
+// Fire stays blocked this long past each frame while a reload end plays out, as for a lowered weapon
+static constexpr float LOWERED_FIRE_HOLD = 0.2f;
+
 // A reload's closing sequence, such as a shotgun pump, plays out before the weapon lowers
 static bool IsReloadEndPlaying(const CBaseCombatWeapon *pWeapon)
 {
@@ -712,7 +715,7 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		if (IsReloadEndPlaying(this))
 		{
 			// Hold fire as a lowered weapon does, and lower once the sequence ends
-			m_flNextPrimaryAttack = Max(gpGlobals->curtime + 0.2f, m_flNextPrimaryAttack.Get());
+			m_flNextPrimaryAttack = Max(gpGlobals->curtime + LOWERED_FIRE_HOLD, m_flNextPrimaryAttack.Get());
 			m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 			return;
 		}
