@@ -91,6 +91,7 @@ void UTIL_AddDebugLine(const Vector &startPos, const Vector &endPos, bool noDept
 			return;
 		}
 	}
+
 #ifdef NEO
 	debugLine->r = color.r();
 	debugLine->g = color.g();

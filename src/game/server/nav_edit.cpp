@@ -555,7 +555,11 @@ void StepAlongClimbableSurface( Vector &pos, const Vector &increment, const Vect
 
 
 //--------------------------------------------------------------------------------------------------------------
+#ifdef NEO
 void CNavMesh::CommandNavBuildLadder( NavLadderSourceType source )
+#else
+void CNavMesh::CommandNavBuildLadder( void )
+#endif
 {
 	if ( !IsEditMode( NORMAL ) || !m_climbableSurface )
 	{
@@ -590,7 +594,11 @@ void CNavMesh::CommandNavBuildLadder( NavLadderSourceType source )
 	Vector bottom = top;
 	bottom.z = bottomEdge.z;
 
+#ifdef NEO
 	CreateLadder( topEdge, bottomEdge, leftEdge.DistTo( rightEdge ), m_ladderNormal.AsVector2D(), 0.0f, source );
+#else
+	CreateLadder( topEdge, bottomEdge, leftEdge.DistTo( rightEdge ), m_ladderNormal.AsVector2D(), 0.0f );
+#endif
 }
 
 

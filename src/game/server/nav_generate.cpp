@@ -103,6 +103,7 @@ public:
 };
 
 
+#ifdef NEO
 //--------------------------------------------------------------------------------------------------------------
 enum AreaLookupType
 {
@@ -142,11 +143,16 @@ static CNavArea *GetAreaBeneathFromAllAreas( const Vector &pos, float beneathLim
 }
 
 
+#endif // NEO
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Start at given position and find first area in given direction
  */
+#ifdef NEO
 inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, float range, float beneathLimit, CBaseEntity *traceIgnore = NULL, Vector *closePos = NULL, AreaLookupType lookup = AREA_LOOKUP_GRID )
+#else
+inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, float range, float beneathLimit, CBaseEntity *traceIgnore = NULL, Vector *closePos = NULL )
+#endif // NEO
 {
 	CNavArea *area = NULL;
 
@@ -166,7 +172,11 @@ inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, 
 		if (result.fraction < 1.0f)
 			break;
 
+#ifdef NEO
 		area = (lookup == AREA_LOOKUP_ALL_AREAS) ? GetAreaBeneathFromAllAreas( pos, beneathLimit ) : TheNavMesh->GetNavArea( pos, beneathLimit );
+#else
+		area = TheNavMesh->GetNavArea( pos, beneathLimit );
+#endif // NEO
 		if (area)
 		{
 			if (closePos)
@@ -317,13 +327,96 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 }
 
 
+#ifdef NEO
+//--------------------------------------------------------------------------------------------------------------
+static const float LadderEndScanStep = 10.0f;
+
+/**
+ * Move a ladder end along the ladder until the space in front of it is clear.
+ * Returns true if the end moved.
+ */
+static bool ClearLadderEnd( Vector *end, const Vector &along, float length, const Vector &normal )
+{
+	const float minLadderClearance = 32.0f;
+
+	// A brush ladder's ends lie on the face of its own climbable brush, which the trace mask
+	// can count as solid, so start the clearance traces just off the face.
+	const float faceOffset = 0.1f;
+	const Vector offFace = normal * faceOffset;
+
+	trace_t result;
+	for ( float t = 0.0f; t <= length; t += LadderEndScanStep )
+	{
+		const Vector on = *end + t * along;
+		const Vector out = on + normal * minLadderClearance;
+
+		UTIL_TraceLine( on + offFace, out, TheNavMesh->GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
+
+		if (result.fraction == 1.0f && !result.startsolid)
+		{
+			*end = on;
+			return t > 0.0f;
+		}
+	}
+
+	return false;
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Move both ends of a new ladder to where they are reachable.
+ * Returns false if a brush ladder has too little climb left to keep.
+ */
+static bool TrimLadderEnds( CNavLadder *ladder, NavLadderSourceType source )
+{
+	Vector along = ladder->m_top - ladder->m_bottom;
+	const float length = along.NormalizeInPlace();
+
+	const bool bottomTrimmed = ClearLadderEnd( &ladder->m_bottom, along, length, ladder->GetNormal() );
+	const bool topTrimmed = ClearLadderEnd( &ladder->m_top, -along, length, ladder->GetNormal() );
+
+	ladder->m_length = (ladder->m_top - ladder->m_bottom).Length();
+
+	if (source != NAV_LADDER_SOURCE_BRUSH)
+	{
+		return true;
+	}
+
+	const float finalSignedSpan = DotProduct( ladder->m_top - ladder->m_bottom, along );
+	const char *rejectReason = nullptr;
+	if (finalSignedSpan <= 0.0f)
+	{
+		rejectReason = "coincident or crossed endpoints";
+	}
+	// The clearance scans cannot resolve a remnant shorter than their step.
+	else if ((bottomTrimmed || topTrimmed) && finalSignedSpan < LadderEndScanStep)
+	{
+		rejectReason = "clearance-trimmed span below scan interval";
+	}
+
+	if (!rejectReason)
+	{
+		return true;
+	}
+
+	DevMsg( "Brush ladder rejected (%s): raw span %.1f, final signed span %.1f\n",
+		rejectReason, length, finalSignedSpan );
+	return false;
+}
+
+
+#endif // NEO
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Create a navigation representation of a ladder.
  */
+#ifdef NEO
 void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea, NavLadderSourceType source )
+#else
+void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea )
+#endif // NEO
 {
-	const bool brushGenerated = (source == NAV_LADDER_SOURCE_BRUSH);
 	CNavLadder *ladder = new CNavLadder;
 
 	ladder->m_top = top;
@@ -354,20 +447,21 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 
 	// adjust top and bottom of ladder to make sure they are reachable
 	// (cs_office has a crate right in front of the base of a ladder)
+#ifdef NEO
+	if (!TrimLadderEnds( ladder, source ))
+	{
+		delete ladder;
+		return;
+	}
+#else
 	Vector along = ladder->m_top - ladder->m_bottom;
 	float length = along.NormalizeInPlace();
 	Vector on, out;
 	const float minLadderClearance = 32.0f;
 
-	// A brush ladder's ends lie on the face of its own climbable brush, which the trace mask
-	// can count as solid, so start the clearance traces just off the face.
-	const float faceOffset = 0.1f;
-	const Vector offFace = ladder->GetNormal() * faceOffset;
-
 	// adjust bottom to bypass blockages
 	const float inc = 10.0f;
 	float t;
-	bool bottomTrimmedByClearance = false;
 	trace_t result;
 	for( t = 0.0f; t <= length; t += inc )
 	{
@@ -375,61 +469,35 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 
 		out = on + ladder->GetNormal() * minLadderClearance;
 
-		UTIL_TraceLine( on + offFace, out, GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
+		UTIL_TraceLine( on, out, GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
 
 		if (result.fraction == 1.0f && !result.startsolid)
 		{
 			// found viable ladder bottom
-			bottomTrimmedByClearance = (t > 0.0f);
 			ladder->m_bottom = on;
 			break;
 		}
 	}
 
 	// adjust top to bypass blockages
-	bool topTrimmedByClearance = false;
 	for( t = 0.0f; t <= length; t += inc )
 	{
 		on = ladder->m_top - t * along;
 
 		out = on + ladder->GetNormal() * minLadderClearance;
 
-		UTIL_TraceLine( on + offFace, out, GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
+		UTIL_TraceLine( on, out, GetGenerationTraceMask(), NULL, COLLISION_GROUP_NONE, &result );
 
 		if (result.fraction == 1.0f && !result.startsolid)
 		{
 			// found viable ladder top
-			topTrimmedByClearance = (t > 0.0f);
 			ladder->m_top = on;
 			break;
 		}
 	}
 
 	ladder->m_length = (ladder->m_top - ladder->m_bottom).Length();
-
-	if (brushGenerated)
-	{
-		const float finalSignedSpan = DotProduct(ladder->m_top - ladder->m_bottom, along);
-		const bool trimmedByClearance = bottomTrimmedByClearance || topTrimmedByClearance;
-		const char *rejectReason = nullptr;
-		if (finalSignedSpan <= 0.0f)
-		{
-			rejectReason = "coincident or crossed endpoints";
-		}
-		// The clearance scans cannot resolve a remnant shorter than their step.
-		else if (trimmedByClearance && finalSignedSpan < inc)
-		{
-			rejectReason = "clearance-trimmed span below scan interval";
-		}
-
-		if (rejectReason)
-		{
-			DevMsg("Brush ladder rejected (%s): raw span %.1f, final signed span %.1f\n",
-				rejectReason, length, finalSignedSpan);
-			delete ladder;
-			return;
-		}
-	}
+#endif // NEO
 
 	ladder->SetDir( ladder->GetDir() );	// now that we've adjusted the top and bottom, re-check the normal
 
@@ -438,23 +506,109 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	ladder->m_topLeftArea = NULL;
 	ladder->m_topRightArea = NULL;
 	ladder->m_topBehindArea = NULL;
+#ifdef NEO
 	// Brush ladders are built before sampling; area creation connects them once areas exist.
-	if (!brushGenerated)
+	if (source != NAV_LADDER_SOURCE_BRUSH)
 	{
 		ladder->ConnectGeneratedLadder( maxHeightAboveTopArea );
 	}
+#else
+	ladder->ConnectGeneratedLadder( maxHeightAboveTopArea );
+#endif // NEO
 
 	// add ladder to global list
 	m_ladders.AddToTail( ladder );
 }
 
 
+#ifdef NEO
 //--------------------------------------------------------------------------------------------------------------
+/**
+ * Find the area at the bottom of a generated ladder.
+ */
+static CNavArea *FindLadderBottomArea( const Vector &center, NavLadderSourceType source )
+{
+	if (source == NAV_LADDER_SOURCE_BRUSH)
+	{
+		// The nearest area can be the top landing when the foot hangs above the floor,
+		// so prefer the floor under the foot, down to the deepest drop the dangling check accepts.
+		const float floorReach = GenerationStepSize + HumanHeight;
+		CNavArea *floor = TheNavMesh->GetNavArea( center, floorReach );
+		if (floor)
+		{
+			return floor;
+		}
+	}
+
+	return TheNavMesh->GetNearestNavArea( center, true );
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Find the areas at the top of a brush ladder, searching all areas rather than the grid.
+ */
+static void FindBrushLadderTopAreas( CNavLadder *ladder, const Vector &center, float beneathLimit, float nearLadderRange )
+{
+	const float behindLadderRange = 2.0f * nearLadderRange;
+	const NavDirType dir = ladder->GetDir();
+
+	auto findTopArea = [&]( const Vector &start, NavDirType searchDir, float range ) -> CNavArea *
+	{
+		CNavArea *area = findFirstAreaInDirection( &start, searchDir, range, beneathLimit, NULL, NULL, AREA_LOOKUP_ALL_AREAS );
+		return (area == ladder->m_bottomArea) ? NULL : area;
+	};
+
+	ladder->m_topForwardArea = findTopArea( center, OppositeDirection( dir ), nearLadderRange );
+	ladder->m_topLeftArea = findTopArea( center, DirectionLeft( dir ), nearLadderRange );
+	ladder->m_topRightArea = findTopArea( center, DirectionRight( dir ), nearLadderRange );
+	ladder->m_topBehindArea = findTopArea( center, dir, behindLadderRange );
+
+	// A climbable brush can end below the landing, where the scan hits the landing's lip.
+	// Or the space above its top can be solid (a ceiling or prop), so the scan starts inside it.
+	const float topRetryOffsets[] = { StepHeight, -GenerationStepSize };
+	for ( const float offset : topRetryOffsets )
+	{
+		if (ladder->m_topForwardArea || ladder->m_topLeftArea || ladder->m_topRightArea)
+		{
+			break;
+		}
+
+		const Vector retryStart = center + Vector( 0, 0, offset );
+		ladder->m_topForwardArea = findTopArea( retryStart, OppositeDirection( dir ), nearLadderRange );
+		ladder->m_topLeftArea = findTopArea( retryStart, DirectionLeft( dir ), nearLadderRange );
+		ladder->m_topRightArea = findTopArea( retryStart, DirectionRight( dir ), nearLadderRange );
+		if (!ladder->m_topBehindArea)
+		{
+			ladder->m_topBehindArea = findTopArea( retryStart, dir, behindLadderRange );
+		}
+	}
+
+	if (!ladder->m_topForwardArea)
+	{
+		return;
+	}
+
+	// Over the top of a climbable brush, a floor well below the top lies past the far side of
+	// the climb, not on a landing; snapping the top down to it would end the climb under the brush top.
+	Vector close;
+	ladder->m_topForwardArea->GetClosestPointOnArea( ladder->m_top, &close );
+	if (close.z < ladder->m_top.z - StepHeight)
+	{
+		ladder->m_topForwardArea = NULL;
+	}
+}
+
+
+#endif // NEO
+//--------------------------------------------------------------------------------------------------------------
+#ifdef NEO
 void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, NavLadderSourceType source )
+#else
+void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
+#endif // NEO
 {
 	const float nearLadderRange = 75.0f;		// 50
-	const float behindLadderRange = 2.0f * nearLadderRange;
-	const bool brushGenerated = (source == NAV_LADDER_SOURCE_BRUSH);
 
 	//
 	// Find naviagtion area at bottom of ladder
@@ -464,20 +618,11 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, NavLadderS
 	Vector center = m_bottom + Vector( 0, 0, GenerationStepSize );
 	AddDirectionVector( &center, m_dir, HalfHumanWidth );
 
-	m_bottomArea = NULL;
-	if (brushGenerated)
-	{
-		// The nearest area can be the top landing when the foot hangs above the floor,
-		// so prefer the floor under the foot, down to the deepest drop the dangling check accepts.
-		const float floorReach = GenerationStepSize + HumanHeight;
-		m_bottomArea = TheNavMesh->GetNavArea( center, floorReach );
-	}
-
-	if (!m_bottomArea)
-	{
-		m_bottomArea = TheNavMesh->GetNearestNavArea( center, true );
-	}
-
+#ifdef NEO
+	m_bottomArea = FindLadderBottomArea( center, source );
+#else
+	m_bottomArea = TheNavMesh->GetNearestNavArea( center, true );
+#endif // NEO
 	if (!m_bottomArea)
 	{
 		DevMsg( "ERROR: Unconnected ladder bottom at ( %g, %g, %g )\n", m_bottom.x, m_bottom.y, m_bottom.z );
@@ -497,65 +642,34 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, NavLadderS
 	AddDirectionVector( &center, m_dir, HalfHumanWidth );
 
 	float beneathLimit = MIN( 120.0f, m_top.z - m_bottom.z + HalfHumanWidth );
-	const AreaLookupType topLookup = brushGenerated ? AREA_LOOKUP_ALL_AREAS : AREA_LOOKUP_GRID;
 
 	// find "ahead" area
-	m_topForwardArea = findFirstAreaInDirection( &center, OppositeDirection( m_dir ), nearLadderRange, beneathLimit, NULL, NULL, topLookup );
+	m_topForwardArea = findFirstAreaInDirection( &center, OppositeDirection( m_dir ), nearLadderRange, beneathLimit, NULL );
 	if (m_topForwardArea == m_bottomArea)
 		m_topForwardArea = NULL;
 
 	// find "left" area
-	m_topLeftArea = findFirstAreaInDirection( &center, DirectionLeft( m_dir ), nearLadderRange, beneathLimit, NULL, NULL, topLookup );
+	m_topLeftArea = findFirstAreaInDirection( &center, DirectionLeft( m_dir ), nearLadderRange, beneathLimit, NULL );
 	if (m_topLeftArea == m_bottomArea)
 		m_topLeftArea = NULL;
 
 	// find "right" area
-	m_topRightArea = findFirstAreaInDirection( &center, DirectionRight( m_dir ), nearLadderRange, beneathLimit, NULL, NULL, topLookup );
+	m_topRightArea = findFirstAreaInDirection( &center, DirectionRight( m_dir ), nearLadderRange, beneathLimit, NULL );
 	if (m_topRightArea == m_bottomArea)
 		m_topRightArea = NULL;
 
 	// find "behind" area - must look farther, since ladder is against the wall away from this area
-	m_topBehindArea = findFirstAreaInDirection( &center, m_dir, behindLadderRange, beneathLimit, NULL, NULL, topLookup );
+	m_topBehindArea = findFirstAreaInDirection( &center, m_dir, 2.0f*nearLadderRange, beneathLimit, NULL );
 	if (m_topBehindArea == m_bottomArea)
 		m_topBehindArea = NULL;
+#ifdef NEO
 
-	// A climbable brush can end below the landing, where the scan hits the landing's lip.
-	// Or the space above its top can be solid (a ceiling or prop), so the scan starts inside it.
-	const float topRetryOffsets[] = { StepHeight, -GenerationStepSize };
-	for ( const float offset : topRetryOffsets )
+	if (source == NAV_LADDER_SOURCE_BRUSH)
 	{
-		if (!brushGenerated || m_topForwardArea || m_topLeftArea || m_topRightArea)
-		{
-			break;
-		}
-
-		const Vector retryStart = center + Vector( 0, 0, offset );
-		auto findTopArea = [&]( NavDirType dir, float range ) -> CNavArea *
-		{
-			CNavArea *area = findFirstAreaInDirection( &retryStart, dir, range, beneathLimit, NULL, NULL, topLookup );
-			return (area == m_bottomArea) ? NULL : area;
-		};
-
-		m_topForwardArea = findTopArea( OppositeDirection( m_dir ), nearLadderRange );
-		m_topLeftArea = findTopArea( DirectionLeft( m_dir ), nearLadderRange );
-		m_topRightArea = findTopArea( DirectionRight( m_dir ), nearLadderRange );
-		if (!m_topBehindArea)
-		{
-			m_topBehindArea = findTopArea( m_dir, behindLadderRange );
-		}
+		// A grid lookup misses the parts merging added to an area, so search again over all areas.
+		FindBrushLadderTopAreas( this, center, beneathLimit, nearLadderRange );
 	}
-
-	// Over the top of a climbable brush, a floor well below the top lies past the far side of
-	// the climb, not on a landing; snapping the top down to it would end the climb under the brush top.
-	if (brushGenerated && m_topForwardArea)
-	{
-		Vector close;
-		m_topForwardArea->GetClosestPointOnArea( m_top, &close );
-		if (close.z < m_top.z - StepHeight)
-		{
-			m_topForwardArea = NULL;
-		}
-	}
+#endif // NEO
 
 	// can't include behind area, since it is not used when going up a ladder
 	if (!m_topForwardArea && !m_topLeftArea && !m_topRightArea)
@@ -574,7 +688,8 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, NavLadderS
 	if (m_topBehindArea)
 	{
 		m_topBehindArea->AddLadderDown( this );
-		if (brushGenerated)
+#ifdef NEO
+		if (source == NAV_LADDER_SOURCE_BRUSH)
 		{
 			// The generic disconnect may clear a valid forward/side slot when both searches found this area.
 			m_topBehindArea = NULL;
@@ -583,6 +698,9 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea, NavLadderS
 		{
 			Disconnect( m_topBehindArea );
 		}
+#else
+		Disconnect( m_topBehindArea );
+#endif // NEO
 	}
 
 	// adjust top of ladder to highest connected area
@@ -3594,8 +3712,8 @@ void CNavMesh::BeginGeneration( bool incremental )
 		}
 		return;
 	}
-#endif
 
+#endif
 	IGameEvent *event = gameeventmanager->CreateEvent( "nav_generate" );
 	if ( event )
 	{
@@ -4396,8 +4514,8 @@ inline CNavNode *LadderEndSearch( const Vector *pos, NavDirType mountDir )
 		Vector tryNormal;
 		if (TheNavMesh->GetGroundHeight( tryPos, &tryPos.z, &tryNormal ) == false)
 			continue;
-
 #ifdef NEO
+
 		// Ground this far below the ladder end is a fall, not a dismount; a climbable brush
 		// over a void would otherwise seed the void's floor.
 		if (pos->z - tryPos.z > HumanHeight)

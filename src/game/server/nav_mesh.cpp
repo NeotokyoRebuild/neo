@@ -31,7 +31,6 @@
 #include "nav.h"
 #include "polylib.h"
 #endif
-
 #ifdef NEXT_BOT
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
 #endif
@@ -40,6 +39,7 @@
 
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
+
 
 #ifdef NEO
 static auto DrawLine(const Vector& from, const Vector& to, float duration = NDEBUG_PERSIST_TILL_NEXT_SERVER,
@@ -3248,8 +3248,8 @@ void CNavMesh::DestroyLadders( void )
 	m_markedLadder = NULL;
 	m_selectedLadder = NULL;
 }
-
 #ifdef NEO
+
 namespace Neo
 {
 	struct MockBspHdr {

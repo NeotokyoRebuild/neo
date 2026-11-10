@@ -459,7 +459,11 @@ public:
 	void CommandNavLadderFlip( void );									// Flips the direction a ladder faces
 	void CommandNavToggleAttribute( NavAttributeType attribute );		// toggle an attribute on current area
 	void CommandNavMakeSniperSpots( void );								// cuts up the marked area into individual areas suitable for sniper spots
+#ifdef NEO
 	void CommandNavBuildLadder( NavLadderSourceType source = NAV_LADDER_SOURCE_DEFAULT );	// builds a nav ladder on the climbable surface under the cursor
+#else
+	void CommandNavBuildLadder( void );									// builds a nav ladder on the climbable surface under the cursor
+#endif
 	void CommandNavRemoveJumpAreas( void );								// removes jump areas, replacing them with connections
 	void CommandNavSubdivide( const CCommand &args );					// subdivide each nav area in X and Y to create 4 new areas - limit min size
 	void CommandNavSaveSelected( const CCommand &args );				// Save selected set to disk
@@ -489,7 +493,11 @@ public:
 	}
 
 	void CreateLadder( const Vector &mins, const Vector &maxs, float maxHeightAboveTopArea );
+#ifdef NEO
 	void CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea, NavLadderSourceType source = NAV_LADDER_SOURCE_DEFAULT );
+#else
+	void CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea );
+#endif
 
 	float SnapToGrid( float x, bool forceGrid = false ) const;					// snap given coordinate to generation grid boundary
 	Vector SnapToGrid( const Vector& in, bool snapX = true, bool snapY = true, bool forceGrid = false ) const;	// snap given vector's X & Y coordinates to generation grid boundary
