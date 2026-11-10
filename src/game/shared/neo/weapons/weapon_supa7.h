@@ -77,6 +77,14 @@ private:
 		}
 	}
 
+	bool UsesPumpAfterInsert() const;
+	bool IsLastShotWithoutPump() const;
+	bool IsPumpingAfterInsert() const;
+	void StartPumpAfterInsert();
+	int LookupViewModelSequence(const char *pszSequence) const;
+	float ViewModelSequenceDuration() const;
+	void EmitShotSoundPiece(const char *pszSound);
+
 	void SetShotgunShellVisible(bool is_visible)
 	{
 		const int bodygroup_shell = 1;

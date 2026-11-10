@@ -369,6 +369,15 @@
 	"wave"			        "^weapons/murata/murata_fire.wav"
 }
 
+"weapon_murata.single_nopump"
+{
+	"channel"			"CHAN_WEAPON"
+	"soundlevel"			"SNDLVL_150dB"
+	"volume"			"1.0"
+	"pitch"				"PITCH_NORM"
+	"wave"			        "^weapons/murata/murata_fire_nopump.wav"
+}
+
 //-------------------
 
 "weapon_murata.npc_single"
