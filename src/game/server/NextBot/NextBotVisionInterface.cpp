@@ -615,6 +615,7 @@ bool IVision::IsAbleToSee( CBaseEntity *subject, FieldOfViewCheckType checkFOV, 
 		return false;
 	}
 
+	
 #ifdef NEO
 	// A hidden player is noticed over time in view, so the notice state needs this check's own sight result.
 	CNEO_Player *observer = ToNEOPlayer( GetBot()->GetEntity() );

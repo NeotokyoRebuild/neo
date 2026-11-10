@@ -381,7 +381,7 @@ bool CNEOBspLighting::ExposureAt( const Vector &floorPos, float *ambient, float 
 
 float CNEOBspLighting::Normalize( float exposure )
 {
-	exposure = MAX( exposure, 0.0f );
+	exposure = Max( exposure, 0.0f );
 	return exposure / ( exposure + EXPOSURE_HALF_POINT );
 }
 
@@ -410,7 +410,7 @@ bool CNEOBspLighting::TorsoPoint( const Vector &navPos, Vector *torso ) const
 	if ( IsBlocked( base, floorPos + Vector( 0, 0, CEILING_PROBE ), &tr ) )
 	{
 		const float headroom = FLOOR_CLEARANCE + tr.fraction * ( CEILING_PROBE - FLOOR_CLEARANCE );
-		height = MIN( TORSO_HEIGHT, headroom * 0.5f );
+		height = Min( TORSO_HEIGHT, headroom * 0.5f );
 	}
 
 	*torso = floorPos + Vector( 0, 0, height );
@@ -473,7 +473,7 @@ float CNEOBspLighting::LightFalloff( const WorldLight &light, const Vector &toLi
 		return 1.0f / attenuation;
 
 	case emit_surface:
-		return MAX( facing, 0.0f ) / ( dist * dist );
+		return Max( facing, 0.0f ) / ( dist * dist );
 
 	case emit_spotlight:
 	{
@@ -523,7 +523,7 @@ float CNEOBspLighting::DirectAt( const Vector &pos ) const
 
 		Vector toLight = light.origin - pos;
 		const float length = toLight.NormalizeInPlace();
-		const float dist = MAX( length, 1.0f );
+		const float dist = Max( length, 1.0f );
 		if ( light.radius > 0.0f && dist > light.radius )
 		{
 			continue;
