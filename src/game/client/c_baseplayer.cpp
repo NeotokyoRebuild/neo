@@ -64,6 +64,7 @@
 #ifdef NEO
 #include "c_neo_player.h"
 #include "weapon_tachi.h"
+#include "weapon_supa7.h"
 #include "ivieweffects.h"
 #endif
 
@@ -2611,7 +2612,9 @@ void C_BasePlayer::PhysicsSimulate( void )
 		ctx->cmd.buttons &= ~(IN_ATTACK | IN_JUMP | IN_SPEED |
 			IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN);
 		const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
-		if (!isTachi)
+		const bool isSupa7 = (dynamic_cast<CWeaponSupa7*>(GetActiveWeapon()) != NULL);
+		// with the experimental reloads, the Supa-7's freeze-time alt-fire picks slugs for the load
+		if (!isTachi && !(isSupa7 && NEORules()->IsReloadExperimental()))
 		{
 			ctx->cmd.buttons &= ~IN_ATTACK2;
 		}

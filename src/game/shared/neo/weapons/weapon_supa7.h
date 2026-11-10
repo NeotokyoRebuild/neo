@@ -55,6 +55,7 @@ public:
 	void FillClipSlug(void);
 	void FinishReload(void);
 	void ItemPostFrame(void);
+	void ItemBusyFrame(void) OVERRIDE;
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
 
@@ -107,6 +108,8 @@ private:
 	// Tube phases (sv_neo_reload_experimental); each hook does nothing with the flag off
 	bool TubePhasesOnStart();
 	bool TubePhasesOnStartSlug();
+	void TubePhasesOnLoadInput();
+	void TubePhasesOnFreezeTime();
 	bool TubePhasesOnFinish();
 	bool TubePhasesCanFire();
 	void TubePhasesOnShot();
@@ -122,6 +125,9 @@ private:
 	int TubeCapacity() const { return GetMaxClip1() - SUPA7_CHAMBER_ROUNDS; }
 	void SyncTube();
 	void TubePush(Supa7Insert_t round);
+	bool IsSlugLoadActive() const { return IsTubeEnabled() && m_bSlugLoad; }
+	bool IsInFreezeTime() const;
+	void ConvertLoad(Supa7Insert_t round);
 	void FeedChamber();
 	void UpdateClipFromTube();
 	void StartInsert(Supa7Insert_t round);
@@ -159,6 +165,10 @@ private:
 	CNetworkVar(int, m_nInsert); // Supa7Insert_t
 	CNetworkVar(float, m_flInsertCreditTime); // when the inserted round enters the tube, 0 none
 	CNetworkVar(float, m_flRackFeedTime); // when the rack's pump is home with the next round, 0 none
+	CNetworkVar(bool, m_bSlugLoad); // the reload loads slugs, each round typed when it is credited
+#ifdef GAME_DLL
+	bool m_bFreezePreferenceApplied = false; // the owner's saved freeze-time load type, once per freeze time
+#endif
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);

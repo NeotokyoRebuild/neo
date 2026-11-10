@@ -1,6 +1,9 @@
 #include "cbase.h"
 #include "weapon_supa7.h"
 #include "neo_gamerules.h"
+#ifdef CLIENT_DLL
+#include "prediction.h"
+#endif
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -19,6 +22,7 @@ BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 	RecvPropInt(RECVINFO(m_nInsert)),
 	RecvPropTime(RECVINFO(m_flInsertCreditTime)),
 	RecvPropTime(RECVINFO(m_flRackFeedTime)),
+	RecvPropBool(RECVINFO(m_bSlugLoad)),
 #else
 	SendPropBool(SENDINFO(m_bSlugDelayed)),
 	SendPropBool(SENDINFO(m_bSlugLoaded)),
@@ -31,6 +35,7 @@ BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 	SendPropInt(SENDINFO(m_nInsert), 2, SPROP_UNSIGNED),
 	SendPropTime(SENDINFO(m_flInsertCreditTime)),
 	SendPropTime(SENDINFO(m_flRackFeedTime)),
+	SendPropBool(SENDINFO(m_bSlugLoad)),
 #endif
 END_NETWORK_TABLE()
 
@@ -47,12 +52,18 @@ BEGIN_PREDICTION_DATA(CWeaponSupa7)
 	DEFINE_PRED_FIELD(m_nInsert, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flInsertCreditTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flRackFeedTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bSlugLoad, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
 LINK_ENTITY_TO_CLASS(weapon_supa7, CWeaponSupa7);
 
 PRECACHE_WEAPON_REGISTER(weapon_supa7);
+
+#ifdef CLIENT_DLL
+ConVar cl_neo_supa7_prefer_slugs("cl_neo_supa7_prefer_slugs", "0", FCVAR_ARCHIVE | FCVAR_USERINFO,
+	"Whether the Supa-7 starts a round loaded with slugs. Set by the freeze-time alt-fire and reload presses.", true, false, true, true);
+#endif
 
 #ifdef GAME_DLL
 BEGIN_DATADESC(CWeaponSupa7)
@@ -67,6 +78,7 @@ BEGIN_DATADESC(CWeaponSupa7)
 	DEFINE_FIELD(m_nInsert, FIELD_INTEGER),
 	DEFINE_FIELD(m_flInsertCreditTime, FIELD_TIME),
 	DEFINE_FIELD(m_flRackFeedTime, FIELD_TIME),
+	DEFINE_FIELD(m_bSlugLoad, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
 
@@ -116,6 +128,7 @@ CWeaponSupa7::CWeaponSupa7(void)
 	m_nInsert = SUPA7_INSERT_NONE;
 	m_flInsertCreditTime = 0.0f;
 	m_flRackFeedTime = 0.0f;
+	m_bSlugLoad = false;
 
 	m_fMinRange1 = 0.0;
 	m_fMaxRange1 = 500;
@@ -154,7 +167,7 @@ bool CWeaponSupa7::StartReload(void)
 		}
 	}
 
-	if (m_iPrimaryAmmoCount <= 0)
+	if (m_iPrimaryAmmoCount <= 0 && !IsSlugLoadActive())
 		return false;
 
 	if (m_iClip1 >= GetMaxClip1())
@@ -180,6 +193,11 @@ bool CWeaponSupa7::StartReload(void)
 // Purpose: Start loading a slug, avoid overriding the default reload functionality due to secondary ammo
 bool CWeaponSupa7::StartReloadSlug(void)
 {
+	if (IsTubeEnabled())
+	{
+		return TubePhasesOnStartSlug();
+	}
+
 	if (m_bSlugLoaded)
 		return false;
 
@@ -195,11 +213,6 @@ bool CWeaponSupa7::StartReloadSlug(void)
 
 	if (m_iClip1 >= GetMaxClip1())
 		return false;
-
-	if (!TubePhasesOnStartSlug())
-	{
-		return false;
-	}
 
 	if (!m_bInReload)
 	{
@@ -233,7 +246,7 @@ bool CWeaponSupa7::Reload(void)
 	if (pOwner == NULL)
 		return false;
 
-	if (m_iPrimaryAmmoCount <= 0)
+	if (m_iPrimaryAmmoCount <= 0 && !IsSlugLoadActive())
 		return false;
 
 	if (m_iClip1 >= GetMaxClip1())
@@ -248,7 +261,7 @@ bool CWeaponSupa7::Reload(void)
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
 	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
-	StartInsert(SUPA7_INSERT_SHELL);
+	StartInsert(IsSlugLoadActive() ? SUPA7_INSERT_SLUG : SUPA7_INSERT_SHELL);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	constexpr float TIME_BETWEEN_SHELLS_LOADED = 0.5f;
@@ -513,9 +526,12 @@ void CWeaponSupa7::ItemPostFrame(void)
 	}
 	ProcessAnimationEvents();
 	TubePhasesOnFrame();
+	TubePhasesOnFreezeTime();
 
 	if (m_bInReload)
 	{
+		TubePhasesOnLoadInput();
+
 		// If I'm primary firing and have one round stop reloading
 		if ((pOwner->m_nButtons & IN_ATTACK) && (m_iClip1 >= 1) && !IsRackPending())
 		{
@@ -632,6 +648,13 @@ void CWeaponSupa7::ItemPostFrame(void)
 	}
 }
 
+// The draw at spawn keeps the gun busy; the freeze-time load choice applies during it
+void CWeaponSupa7::ItemBusyFrame(void)
+{
+	TubePhasesOnFreezeTime();
+	BaseClass::ItemBusyFrame();
+}
+
 bool CWeaponSupa7::IsTubeEnabled() const
 {
 	return NEORules() && NEORules()->IsReloadExperimental();
@@ -660,21 +683,97 @@ bool CWeaponSupa7::TubePhasesOnStart()
 	return true;
 }
 
-// One slug per request: a held alt-fire neither queues another nor delays the shot
+// Alt-fire with no reload running starts one that loads slugs
 bool CWeaponSupa7::TubePhasesOnStartSlug()
 {
-	if (!IsTubeEnabled())
-	{
-		return true;
-	}
-
-	if (m_bSlugDelayed || m_nInsert == SUPA7_INSERT_SLUG)
+	if (m_bInReload || m_iSecondaryAmmoCount <= 0 || IsInFreezeTime())
 	{
 		return false;
 	}
 
-	SyncTube();
-	return !IsTubeFull();
+	m_bSlugLoad = true;
+	if (!StartReload())
+	{
+		m_bSlugLoad = false;
+		return false;
+	}
+	return true;
+}
+
+// Alt-fire makes the rest of the load slugs, from the round in the hand on; a reload press makes it shells again
+void CWeaponSupa7::TubePhasesOnLoadInput()
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	if (!IsTubeEnabled() || !pOwner)
+	{
+		return;
+	}
+
+	if ((pOwner->m_nButtons & IN_ATTACK2) && m_iSecondaryAmmoCount > 0)
+	{
+		m_bSlugLoad = true;
+	}
+	else if ((pOwner->m_afButtonPressed & IN_RELOAD) && m_iPrimaryAmmoCount > 0)
+	{
+		m_bSlugLoad = false;
+	}
+}
+
+// Freeze time: alt-fire loads the gun with slugs, a reload press with shells, and the client keeps the choice for
+// later freeze times
+void CWeaponSupa7::TubePhasesOnFreezeTime()
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	if (!IsTubeEnabled() || !pOwner)
+	{
+		return;
+	}
+
+#ifdef GAME_DLL
+	if (!IsInFreezeTime())
+	{
+		m_bFreezePreferenceApplied = false;
+		return;
+	}
+
+	if (!m_bFreezePreferenceApplied)
+	{
+		m_bFreezePreferenceApplied = true;
+		const char *pszPrefer = engine->GetClientConVarValue(pOwner->entindex(), "cl_neo_supa7_prefer_slugs");
+		if (pszPrefer && *pszPrefer && V_atoi(pszPrefer) != 0)
+		{
+			ConvertLoad(SUPA7_INSERT_SLUG);
+		}
+	}
+#else
+	if (!IsInFreezeTime())
+	{
+		return;
+	}
+#endif
+
+	Supa7Insert_t load = SUPA7_INSERT_NONE;
+	if (pOwner->m_afButtonPressed & IN_ATTACK2)
+	{
+		load = SUPA7_INSERT_SLUG;
+	}
+	else if (pOwner->m_afButtonPressed & IN_RELOAD)
+	{
+		load = SUPA7_INSERT_SHELL;
+	}
+
+	if (load == SUPA7_INSERT_NONE)
+	{
+		return;
+	}
+
+	ConvertLoad(load);
+#ifdef CLIENT_DLL
+	if (pOwner->IsLocalPlayer() && prediction->IsFirstTimePredicted())
+	{
+		cl_neo_supa7_prefer_slugs.SetValue(load == SUPA7_INSERT_SLUG);
+	}
+#endif
 }
 
 // A round still in the hand goes back to the reserve; an empty chamber is racked before the next shot.
@@ -688,6 +787,7 @@ bool CWeaponSupa7::TubePhasesOnFinish()
 	}
 
 	CancelInsert();
+	m_bSlugLoad = false;
 	SyncTube();
 	if (!IsChamberLive() && m_nTubeCount > 0)
 	{
@@ -740,6 +840,7 @@ void CWeaponSupa7::TubePhasesOnDrop()
 
 	CancelInsert();
 	m_flRackFeedTime = 0.0f;
+	m_bSlugLoad = false;
 }
 
 void CWeaponSupa7::TubePhasesOnFrame()
@@ -754,7 +855,7 @@ void CWeaponSupa7::TubePhasesOnFrame()
 	RunRack();
 }
 
-// The next shell of a reload; a slug insert ends the reload, as it does without the tube.
+// The next round of a reload; the reload ends when the reserve of the type it loads runs out.
 // Returns whether the tube handled the step
 bool CWeaponSupa7::TubePhasesOnNextInsert()
 {
@@ -763,16 +864,15 @@ bool CWeaponSupa7::TubePhasesOnNextInsert()
 		return false;
 	}
 
-	const bool bSlugInserted = (m_nInsert == SUPA7_INSERT_SLUG);
 	m_nInsert = SUPA7_INSERT_NONE;
-	// a slug ends the reload with the shipped rack, as it does without the pump
-	if (!IsChamberLive() && m_nTubeCount > 0 && !bSlugInserted && UsesPumpAfterInsert())
+	if (!IsChamberLive() && m_nTubeCount > 0 && UsesPumpAfterInsert())
 	{
 		StartPumpAfterInsert();
 		return true;
 	}
 
-	if (m_iPrimaryAmmoCount <= 0 || bSlugInserted || IsTubeFull() || !Reload())
+	const int iReserve = m_bSlugLoad ? m_iSecondaryAmmoCount : m_iPrimaryAmmoCount;
+	if (iReserve <= 0 || IsTubeFull() || !Reload())
 	{
 		FinishReload();
 	}
@@ -811,6 +911,7 @@ void CWeaponSupa7::TubePhasesOnHolster()
 	CancelInsert();
 	m_flRackFeedTime = 0.0f;
 	m_bSlugDelayed = false;
+	m_bSlugLoad = false;
 }
 
 // Rebuild the tube from the clip count when something set the count directly (a new or picked-up gun, a give):
@@ -903,16 +1004,71 @@ void CWeaponSupa7::RunInsert()
 		return;
 	}
 
-	if (m_nInsert == SUPA7_INSERT_SLUG && m_iSecondaryAmmoCount > 0)
+	// the round's type is set as it enters the tube, so an input during the insert decides it
+	if (m_nInsert == SUPA7_INSERT_NONE)
+	{
+		return;
+	}
+
+	if (m_bSlugLoad && m_iSecondaryAmmoCount > 0)
 	{
 		TubePush(SUPA7_INSERT_SLUG);
 		m_iSecondaryAmmoCount -= 1;
 	}
-	else if (m_nInsert == SUPA7_INSERT_SHELL && m_iPrimaryAmmoCount > 0)
+	else if (!m_bSlugLoad && m_iPrimaryAmmoCount > 0)
 	{
 		TubePush(SUPA7_INSERT_SHELL);
 		m_iPrimaryAmmoCount -= 1;
 	}
+}
+
+bool CWeaponSupa7::IsInFreezeTime() const
+{
+	auto pOwner = static_cast<CNEO_Player *>(GetOwner());
+	return pOwner && (pOwner->GetNeoFlags() & NEO_FL_FREEZETIME);
+}
+
+// Sets the type of the rounds in the gun, the chamber first, then the tube in fire order, while the reserve of that
+// type lasts; each replaced round goes back to its reserve
+void CWeaponSupa7::ConvertLoad(Supa7Insert_t round)
+{
+	const bool bToSlug = (round == SUPA7_INSERT_SLUG);
+	auto swapWithReserve = [this, bToSlug]()
+	{
+		int &iTakeFrom = bToSlug ? m_iSecondaryAmmoCount.GetForModify() : m_iPrimaryAmmoCount.GetForModify();
+		if (iTakeFrom <= 0)
+		{
+			return false;
+		}
+
+		iTakeFrom -= 1;
+		int &iGiveTo = bToSlug ? m_iPrimaryAmmoCount.GetForModify() : m_iSecondaryAmmoCount.GetForModify();
+		iGiveTo += 1;
+		return true;
+	};
+
+	SyncTube();
+	if (IsChamberLive() && (m_nChamber == SUPA7_CHAMBER_SLUG) != bToSlug && swapWithReserve())
+	{
+		m_nChamber = bToSlug ? SUPA7_CHAMBER_SLUG : SUPA7_CHAMBER_SHELL;
+	}
+
+	for (int i = m_nTubeCount - 1; i >= 0; --i)
+	{
+		const int iBit = (1 << i);
+		if (((m_nTubeSlugs & iBit) != 0) == bToSlug)
+		{
+			continue;
+		}
+
+		if (!swapWithReserve())
+		{
+			break;
+		}
+
+		m_nTubeSlugs = bToSlug ? (m_nTubeSlugs | iBit) : (m_nTubeSlugs & ~iBit);
+	}
+	UpdateClipFromTube();
 }
 
 void CWeaponSupa7::CancelInsert()
@@ -1060,8 +1216,13 @@ const WeaponSpreadInfo_t &CWeaponSupa7::GetSpreadInfo()
 	return m_weaponHandling.spreadInfo[m_bSlugLoaded];
 }
 
+// For the fire-mode letter: the type a reload is loading, otherwise the chambered round's
 bool CWeaponSupa7::SlugLoaded() const
 {
+	if (IsTubeEnabled() && m_bInReload)
+	{
+		return m_bSlugLoad;
+	}
 	return m_bSlugLoaded;
 }
 

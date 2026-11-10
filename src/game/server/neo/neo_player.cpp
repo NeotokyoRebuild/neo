@@ -640,6 +640,7 @@ CNEO_Player::CNEO_Player()
 		} convars[] = {
 			{ "cl_neo_pvs_cull_roaming_observer", "0" },
 			{ "cl_neo_streamermode", "0" },
+			{ "cl_neo_supa7_prefer_slugs", "0" },
 			{ "cl_neo_tachi_prefer_auto", "1" },
 			{ "cl_neo_taking_damage_sounds", "0" },
 			{ "cl_onlysteamnick", "0" },
