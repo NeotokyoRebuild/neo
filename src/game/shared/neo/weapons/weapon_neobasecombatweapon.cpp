@@ -668,6 +668,18 @@ void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
 	UpdateInaccuracy();
 }
 
+// A reload's closing sequence, such as a shotgun pump, plays out before the weapon lowers
+static bool IsReloadEndPlaying(const CBaseCombatWeapon *pWeapon)
+{
+	const Activity activity = pWeapon->GetActivity();
+	if (activity != ACT_SHOTGUN_PUMP && activity != ACT_SHOTGUN_RELOAD_FINISH)
+	{
+		return false;
+	}
+
+	return !pWeapon->IsViewModelSequenceFinished();
+}
+
 // Handles lowering the weapon view model when character is sprinting
 void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 {
@@ -697,6 +709,14 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	if (loweredCheck && !m_bInReload &&
 		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
+		if (IsReloadEndPlaying(this))
+		{
+			// Hold fire as a lowered weapon does, and lower once the sequence ends
+			m_flNextPrimaryAttack = Max(gpGlobals->curtime + 0.2f, m_flNextPrimaryAttack.Get());
+			m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+			return;
+		}
+
 		m_bLowered = true;
 		next(ACT_VM_IDLE_LOWERED);
 	}
