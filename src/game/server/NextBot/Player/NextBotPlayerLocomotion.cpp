@@ -873,8 +873,9 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 	{
 		// If walk key was activated this tick, stop pressing run button.
 	}
-	else if ( IsRunning() )
+	else if ( IsRunning() && !me->IsFiring() )
 	{
+		// Stop sprinting if a bot is trying to fire their weapon at an enemy
 		playerButtons->PressRunButton();
 	}
 #else
