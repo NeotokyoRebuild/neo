@@ -1,8 +1,10 @@
 #include "cbase.h"
-
-#include "neo_bot.h"
 #include "neo_bot_locomotion.h"
-#include "particle_parse.h"
+#include "neo_bot.h"
+#include "NextBotUtil.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 
 extern ConVar falldamage;
 
