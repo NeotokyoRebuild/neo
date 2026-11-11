@@ -74,6 +74,9 @@ CPredictionCopy::CPredictionCopy( int type, void *dest, bool dest_packed, void c
 	m_bReportErrors		= reporterrors;
 	m_bPerformCopy		= performcopy;
 	m_bDescribeFields	= describefields;
+#ifdef NEO
+	m_bFollowingObserverTarget = false;
+#endif
 
 	m_pCurrentField		= NULL;
 	m_pCurrentMap		= NULL;
@@ -195,6 +198,13 @@ bool CPredictionCopy::CanCheck( void )
 	{
 		return false;
 	}
+
+#ifdef NEO
+	if ( m_bFollowingObserverTarget && ( m_pCurrentField->flags & FTYPEDESC_NOERRORCHECK_WHEN_FOLLOWING_TARGET ) )
+	{
+		return false;
+	}
+#endif
 
 	return true;
 }

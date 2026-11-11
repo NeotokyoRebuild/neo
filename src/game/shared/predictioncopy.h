@@ -82,6 +82,10 @@ public:
 
 	int		TransferData( const char *operation, int entindex, datamap_t *dmap );
 
+#ifdef NEO
+	void	SetFollowingObserverTarget( bool bFollowing ) { m_bFollowingObserverTarget = bFollowing; }
+#endif
+
 private:
 	void	TransferData_R( int chaincount, datamap_t *dmap );
 
@@ -145,6 +149,9 @@ private:
 	bool			m_bErrorCheck;
 	bool			m_bReportErrors;
 	bool			m_bDescribeFields;
+#ifdef NEO
+	bool			m_bFollowingObserverTarget;
+#endif
 	typedescription_t *m_pCurrentField;
 	char const		*m_pCurrentClassName;
 	datamap_t		*m_pCurrentMap;
