@@ -480,6 +480,12 @@ endif()
 
 add_subdirectory(game/server)
 
+# The compile-time acoustic probe baker: a map-compile tool beside VBSP and VRAD, built with the
+# client's Steam Audio code.
+if((OS_WINDOWS OR OS_LINUX) AND NEO_STEAMAUDIO)
+    add_subdirectory(utils/neo_soundbake)
+endif()
+
 if(NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
     add_subdirectory(launcher_main)
 endif()
