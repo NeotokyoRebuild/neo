@@ -1255,7 +1255,7 @@ void CNEO_Player::CheckThermOpticButtons()
 // to fit in with existing bot APIs
 //-----------------------------------------------------------------------------
 // Players this close touch, so the observer notices the target by bumping into it
-constexpr float BUMP_REVEAL_RANGE = 40.0f;
+constexpr float BUMP_REVEAL_RANGE = 16.0f;
 
 // Skill ratio at which the notice hazard multiplier reaches zero, and the Hard ratio it is scaled to
 constexpr float NOTICE_SKILL_RATIO_FLOOR = 0.27f;
