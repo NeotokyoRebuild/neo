@@ -3901,11 +3901,13 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 #ifdef NEO
 			// lighting is read from the BSP, so a dedicated server can bake it too
 			bool shouldSkipLightComputation = ( m_generationMode == GENERATE_INCREMENTAL );
-#elif defined( NAV_ANALYZE_LIGHT_INTENSITY )
+#else
+#ifdef NAV_ANALYZE_LIGHT_INTENSITY
 			bool shouldSkipLightComputation = ( m_generationMode == GENERATE_INCREMENTAL || engine->IsDedicatedServer() );
 #else
 			bool shouldSkipLightComputation = true;
 #endif
+#endif // NEO
 
 			if ( shouldSkipLightComputation )
 			{
