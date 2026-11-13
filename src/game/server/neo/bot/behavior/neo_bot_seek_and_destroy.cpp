@@ -25,6 +25,8 @@ ConVar sv_neo_bot_seek_and_destroy_combat_sound_detour_ratio( "sv_neo_bot_seek_a
 	"When racing for an objective, divert only if going via the combat sound costs at most this multiple of direct distance.", true, 0, false, 0 );
 ConVar sv_neo_bot_seek_and_destroy_combat_sound_arrive_range( "sv_neo_bot_seek_and_destroy_combat_sound_arrive_range", "200.0", FCVAR_CHEAT,
 	"Combat sound close enough to count as investigated.", true, 0, false, 0 );
+ConVar sv_neo_bot_seek_and_destroy_roam_goal_tries( "sv_neo_bot_seek_and_destroy_roam_goal_tries", "10", FCVAR_CHEAT,
+	"Random roam goals to try before settling on one the bot can already see.", true, 1, false, 0 );
 
 
 //---------------------------------------------------------------------------------------------
@@ -127,8 +129,6 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 }
 
 
-constexpr int ROAM_GOAL_TRIES = 10;
-
 //---------------------------------------------------------------------------------------------
 // Roam goals are picked at random, so skip one that no route reaches instead of walking at it. A refused
 // attempt stays in m_path: the wander loop's last resort keeps it.
@@ -139,7 +139,7 @@ bool CNEOBotSeekAndDestroy::TryPathToRoamGoal( CNEOBot *me, const Vector &vGoal 
 
 
 //---------------------------------------------------------------------------------------------
-// A place the bot can already see is not worth the walk, and picking one keeps it circling in one room
+// A place the bot can already see is not worth the walk, so pick an area outside of PVS
 static bool IsRoamGoalInView( CNEOBot *me, const Vector &vGoal )
 {
 	const CNavArea *pMyArea = me->GetLastKnownArea();
@@ -616,7 +616,8 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		// Don't wander between spawns if there aren't that many.
 		if ( pSpawns.Size() >= 3 )
 		{
-			for ( int i = 0; i < ROAM_GOAL_TRIES; i++ )
+			const int iTries = sv_neo_bot_seek_and_destroy_roam_goal_tries.GetInt();
+			for ( int i = 0; i < iTries; i++ )
 			{
 				CBaseEntity *pSpawn = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
 				const Vector vSpawn = pSpawn->WorldSpaceCenter();
@@ -633,8 +634,8 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 					return;
 				}
 
-				// No route reaches this spawn (a protected spawn room). Re-rolling would only pile
-				// the picks onto the spawns that are left, so wander instead.
+				// An unreachable spawn usually indicates a spawn protected area.
+				// Re-rolling would likely pick other spawn protected areas, so wander instead.
 				break;
 			}
 		}
@@ -643,14 +644,15 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 	m_hTargetEntity = nullptr;
 	m_bGoingToTargetEntity = false;
 
-	for ( int i = 0; i < ROAM_GOAL_TRIES; i++ )
+	const int iTries = sv_neo_bot_seek_and_destroy_roam_goal_tries.GetInt();
+	for ( int i = 0; i < iTries; i++ )
 	{
 		// No spawns we can get to? Just wander... somewhere!
 
 		Vector vWanderPoint = TheNavAreas[RandomInt( 0, TheNavAreas.Size() - 1 )]->GetCenter();
 
 		// The last try takes any point, so a bot that sees most of a small map still gets a path
-		const bool bLastTry = ( i == ROAM_GOAL_TRIES - 1 );
+		const bool bLastTry = ( i == iTries - 1 );
 		if ( !bLastTry && IsRoamGoalInView( me, vWanderPoint ) )
 		{
 			continue;
