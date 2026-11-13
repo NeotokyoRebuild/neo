@@ -127,12 +127,29 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 }
 
 
+constexpr int ROAM_GOAL_TRIES = 10;
+
 //---------------------------------------------------------------------------------------------
 // Roam goals are picked at random, so skip one that no route reaches instead of walking at it. A refused
 // attempt stays in m_path: the wander loop's last resort keeps it.
 bool CNEOBotSeekAndDestroy::TryPathToRoamGoal( CNEOBot *me, const Vector &vGoal )
 {
 	return CNEOBotPathCompute( me, m_path, vGoal, DEFAULT_ROUTE ) && CNEOBotPathReachesGoal( m_path );
+}
+
+
+//---------------------------------------------------------------------------------------------
+// A place the bot can already see is not worth the walk, and picking one keeps it circling in one room
+static bool IsRoamGoalInView( CNEOBot *me, const Vector &vGoal )
+{
+	const CNavArea *pMyArea = me->GetLastKnownArea();
+	if ( !pMyArea )
+	{
+		return false;
+	}
+
+	const CNavArea *pGoalArea = TheNavMesh->GetNearestNavArea( vGoal );
+	return pGoalArea && pMyArea->IsPotentiallyVisible( pGoalArea );
 }
 
 
@@ -590,29 +607,55 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		CBaseEntity* pSearch = NULL;
 		while ( ( pSearch = gEntList.FindEntityByClassname( pSearch, "info_player_*", &spawnFilter ) ) != NULL )
 		{
-			if ( pSearch && Q_strcmp(pSearch->GetEntityName().ToCStr(), "info_player_start"))
+			if ( pSearch && !FClassnameIs( pSearch, "info_player_start" ) )
+			{
 				pSpawns.AddToTail( pSearch );
+			}
 		}
 
 		// Don't wander between spawns if there aren't that many.
 		if ( pSpawns.Size() >= 3 )
 		{
-			for ( int i = 0; i < 10; i++ )
+			for ( int i = 0; i < ROAM_GOAL_TRIES; i++ )
 			{
-				m_hTargetEntity = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
+				CBaseEntity *pSpawn = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
+				const Vector vSpawn = pSpawn->WorldSpaceCenter();
+				if ( IsRoamGoalInView( me, vSpawn ) )
+				{
+					continue;
+				}
+
+				m_hTargetEntity = pSpawn;
 				m_bGoingToTargetEntity = true;
-				m_vGoalPos = m_hTargetEntity->WorldSpaceCenter();
+				m_vGoalPos = vSpawn;
 				if ( TryPathToRoamGoal( me, m_vGoalPos ) )
+				{
 					return;
+				}
+
+				// No route reaches this spawn (a protected spawn room). Re-rolling would only pile
+				// the picks onto the spawns that are left, so wander instead.
+				break;
 			}
 		}
 	}
 
-	for ( int i = 0; i < 10; i++ )
+	m_hTargetEntity = nullptr;
+	m_bGoingToTargetEntity = false;
+
+	for ( int i = 0; i < ROAM_GOAL_TRIES; i++ )
 	{
 		// No spawns we can get to? Just wander... somewhere!
 
 		Vector vWanderPoint = TheNavAreas[RandomInt( 0, TheNavAreas.Size() - 1 )]->GetCenter();
+
+		// The last try takes any point, so a bot that sees most of a small map still gets a path
+		const bool bLastTry = ( i == ROAM_GOAL_TRIES - 1 );
+		if ( !bLastTry && IsRoamGoalInView( me, vWanderPoint ) )
+		{
+			continue;
+		}
+
 		m_vGoalPos = vWanderPoint;
 		if ( TryPathToRoamGoal( me, vWanderPoint ) )
 			return;
