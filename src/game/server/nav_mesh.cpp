@@ -3547,7 +3547,7 @@ namespace Neo
 	}
 }
 
-[[nodiscard]] bool CNavMesh::LadderFromPolyhedron(const CPolyhedron* polyhedron)
+void CNavMesh::LadderFromPolyhedron(const CPolyhedron* polyhedron)
 {
 	Assert(polyhedron);
 
@@ -3717,8 +3717,6 @@ namespace Neo
 	}
 
 	RemoveNarrowSideLadders(firstLadder);
-
-	return true;
 }
 
 // A climb brush often has climbable end faces narrower than its main face. The player hull
@@ -3821,41 +3819,8 @@ bool CNavMesh::BuildBrushLaddersFromBsp()
 			goto fail;
 		}
 
-		const bool ladderGenOk = LadderFromPolyhedron(polyhedron);
-
+		LadderFromPolyhedron(polyhedron);
 		polyhedron->Release();
-
-		if (!ladderGenOk)
-		{
-			Warning("%s: failed to generate ladder from polyhedron\n", __FUNCTION__);
-
-			if (polyhedron->iVertexCount <= 0)
-			{
-				Warning("\tAdditionally, generated polyhedron reports %d sides but expected >0\n",
-					polyhedron->iVertexCount);
-				Assert(false);
-				continue;
-			}
-
-			CUtlVector<decltype(polyhedron->pVertices)> vertices;
-			vertices.EnsureCapacity(polyhedron->iVertexCount);
-			for (int i = 0; i < polyhedron->iVertexCount; ++i)
-			{
-				auto** pVert = vertices.AddToTailGetPtr();
-				*pVert = polyhedron->pVertices + i;
-				Assert(*pVert);
-			}
-			Assert(vertices.Count() == polyhedron->iVertexCount);
-
-			CUtlString errMsg;
-			errMsg.Format("\t%d verts: ", polyhedron->iVertexCount);
-			for (const auto& vert : vertices)
-			{
-				errMsg.Format("%s [%f %f %f],", errMsg.String(), vert->x, vert->y, vert->z);
-			}
-			errMsg.SetLength(errMsg.Length() - 1); // remove final comma from the above loop
-			Warning("%s\n", errMsg.String());
-		}
 	}
 
 cleanup:
