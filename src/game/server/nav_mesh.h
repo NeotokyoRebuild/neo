@@ -1228,7 +1228,7 @@ private:
 	// Build ladders from the BSP brush lump ladders (rather than func_ladder)
 	[[nodiscard]] bool BuildBrushLaddersFromBsp();
 private:
-	[[nodiscard]] bool LadderFromPolyhedron(const CPolyhedron* polyhedron);
+	void LadderFromPolyhedron(const CPolyhedron* polyhedron);
 	void RemoveNarrowSideLadders(int firstLadder);
 #endif
 
