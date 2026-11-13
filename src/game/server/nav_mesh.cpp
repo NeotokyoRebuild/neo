@@ -549,8 +549,8 @@ void CNavMesh::AddNavArea( CNavArea *area )
 
 	++m_areaCount;
 }
-
 #ifdef NEO
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Add an area to every grid cell of its extent that does not hold it yet.
@@ -575,8 +575,8 @@ void CNavMesh::AddNavAreaToGrid( CNavArea *area )
 		}
 	}
 }
-
 #endif // NEO
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Remove an area from the mesh

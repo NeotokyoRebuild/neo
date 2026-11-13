@@ -14,15 +14,15 @@
 #include "nav.h"
 
 class CNavArea;
-
 #ifdef NEO
+
 enum NavLadderSourceType
 {
 	NAV_LADDER_SOURCE_DEFAULT,
 	NAV_LADDER_SOURCE_BRUSH,	///< built from a climbable brush of the BSP
 };
-
 #endif // NEO
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * The NavLadder represents ladders in the Navigation Mesh, and their connections to adjacent NavAreas
