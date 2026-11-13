@@ -38,6 +38,7 @@
 #ifdef NEO
 #include "nav_shared.h"
 #include "modelentities.h"
+#include "neo/neo_bsp_lighting.h"
 #include "props.h"
 #include "BasePropDoor.h"
 #endif // NEO
@@ -4293,12 +4294,99 @@ float CNavArea::GetLightIntensity( void ) const
 }
 
 
+#ifdef NEO
+// Raw exposure at a corner's torso point, or at the center when the corner point has no sample
+static bool ComputeCornerExposure( CNavArea *area, NavCornerType corner, float *ambient, float *direct )
+{
+	const CNEOBspLighting &lighting = NEOBspLighting();
+	Vector pos = FindPositionInArea( area, corner );
+	pos.z = area->GetZ( pos );
+	if ( lighting.ExposureAt( pos, ambient, direct ) )
+	{
+		return true;
+	}
+
+	return lighting.ExposureAt( area->GetCenter(), ambient, direct );
+}
+
+// Mean raw exposure at the centers of the connected areas, for an area with no sample of its own
+static bool ComputeNeighborExposure( CNavArea *area, float *exposure )
+{
+	float sum = 0.0f;
+	int count = 0;
+	for ( int dir = 0; dir < NUM_DIRECTIONS; ++dir )
+	{
+		const NavConnectVector *connections = area->GetAdjacentAreas( (NavDirType)dir );
+		FOR_EACH_VEC( *connections, it )
+		{
+			float ambient, direct;
+			if ( NEOBspLighting().ExposureAt( connections->Element( it ).area->GetCenter(), &ambient, &direct ) )
+			{
+				sum += ambient + direct;
+				++count;
+			}
+		}
+	}
+
+	if ( count == 0 )
+	{
+		return false;
+	}
+
+	*exposure = sum / count;
+	return true;
+}
+#endif // NEO
+
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Compute light intensity at corners and center (requires client via listenserver)
  */
 bool CNavArea::ComputeLighting( void )
 {
+#ifdef NEO
+	if ( !NEOBspLighting().Load() )
+	{
+		return false;
+	}
+
+	float exposure[NUM_CORNERS];
+	bool isLit[NUM_CORNERS];
+	float litSum = 0.0f;
+	int litCount = 0;
+	for ( int i = 0; i < NUM_CORNERS; ++i )
+	{
+		float ambient, direct;
+		isLit[i] = ComputeCornerExposure( this, (NavCornerType)i, &ambient, &direct );
+		if ( isLit[i] )
+		{
+			exposure[i] = ambient + direct;
+			litSum += exposure[i];
+			++litCount;
+		}
+	}
+
+	if ( litCount == 0 )
+	{
+		float neighborExposure;
+		if ( !ComputeNeighborExposure( this, &neighborExposure ) )
+		{
+			return false;
+		}
+
+		litSum = neighborExposure;
+		litCount = 1;
+	}
+
+	// a corner with no sample takes the mean of the others, or of the neighbors when none has one
+	for ( int i = 0; i < NUM_CORNERS; ++i )
+	{
+		m_lightIntensity[i] = CNEOBspLighting::Normalize( isLit[i] ? exposure[i] : litSum / litCount );
+	}
+
+	return true;
+#else
 	if ( engine->IsDedicatedServer() )
 	{
 		for ( int i=0; i<NUM_CORNERS; ++i )
@@ -4348,6 +4436,7 @@ bool CNavArea::ComputeLighting( void )
 	}
 
 	return true;
+#endif // NEO
 }
 
 
@@ -4368,6 +4457,17 @@ CON_COMMAND_F( nav_update_lighting, "Recomputes lighting values", FCVAR_CHEAT )
 			{
 				++numComputed;
 			}
+#ifdef NEO
+			// print the raw exposure behind each stored corner value, to check a bake by hand
+			for ( int i = 0; i < NUM_CORNERS; ++i )
+			{
+				float ambient, direct;
+				if ( ComputeCornerExposure( area, (NavCornerType)i, &ambient, &direct ) )
+				{
+					Msg( "area %d corner %d: ambient %.4f direct %.4f stored %.3f\n", areaID, i, ambient, direct, area->GetLightIntensity( area->GetCorner( (NavCornerType)i ) ) );
+				}
+			}
+#endif // NEO
 		}
 	}
 	else
@@ -4382,6 +4482,9 @@ CON_COMMAND_F( nav_update_lighting, "Recomputes lighting values", FCVAR_CHEAT )
 		}
 	}
 	DevMsg( "Computed lighting for %d/%d areas\n", numComputed, TheNavAreas.Count() );
+#ifdef NEO
+	NEOBspLighting().Release();
+#endif // NEO
 }
 
 

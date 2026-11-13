@@ -22,6 +22,10 @@
 #include "func_simpleladder.h"
 #endif
 
+#ifdef NEO
+#include "neo/neo_bsp_lighting.h"
+#endif // NEO
+
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
@@ -3658,10 +3662,15 @@ ConVar nav_neo_skip_visibility_calculation("nav_neo_skip_visibility_calculation"
 bool CNavMesh::UpdateGeneration( float maxTime )
 {
 	double startTime = Plat_FloatTime();
+#ifdef NEO
+	static int s_unlitAreaCount = 0;
+	static double s_lightBakeStart = 0.0;
+#else
 	static unsigned int s_movedPlayerToArea = 0;	// Last area we moved a player to for lighting calcs
 	static CountdownTimer s_playerSettleTimer;		// Settle time after moving the player for lighting calcs
 	static CUtlVector<CNavArea *> s_unlitAreas;
 	static CUtlVector<CNavArea *> s_unlitSeedAreas;
+#endif // NEO
 
 	static ConVarRef host_thread_mode( "host_thread_mode" );
 
@@ -3889,11 +3898,16 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 
 			Msg( "Finding earliest occupy times...DONE\n" );
 
+#ifdef NEO
+			// lighting is read from the BSP, so a dedicated server can bake it too
+			bool shouldSkipLightComputation = ( m_generationMode == GENERATE_INCREMENTAL );
+#else
 #ifdef NAV_ANALYZE_LIGHT_INTENSITY
 			bool shouldSkipLightComputation = ( m_generationMode == GENERATE_INCREMENTAL || engine->IsDedicatedServer() );
 #else
 			bool shouldSkipLightComputation = true;
 #endif
+#endif // NEO
 
 			if ( shouldSkipLightComputation )
 			{
@@ -3902,6 +3916,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			else
 			{
 				m_generationState = FIND_LIGHT_INTENSITY;
+#ifndef NEO
 				s_playerSettleTimer.Invalidate();
 				CNavArea::MakeNewMarker();
 				s_unlitAreas.RemoveAll();
@@ -3910,6 +3925,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 					s_unlitAreas.AddToTail( TheNavAreas[nit] );
 					s_unlitSeedAreas.AddToTail( TheNavAreas[nit] );
 				}
+#endif // NEO
 			}
 
 			m_generationIndex = 0;
@@ -3919,6 +3935,38 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_LIGHT_INTENSITY:
 		{
+#ifdef NEO
+			if ( m_generationIndex == 0 )
+			{
+				s_lightBakeStart = Plat_FloatTime();
+			}
+
+			while( m_generationIndex < TheNavAreas.Count() )
+			{
+				CNavArea *area = TheNavAreas[ m_generationIndex ];
+				++m_generationIndex;
+
+				if ( !area->ComputeLighting() )
+				{
+					++s_unlitAreaCount;
+				}
+
+				// don't go over our time allotment
+				if( Plat_FloatTime() - startTime > maxTime )
+				{
+					AnalysisProgress( "Finding light intensity...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
+					return true;
+				}
+			}
+
+			NEOBspLighting().Release();
+			Msg( "Finding light intensity...DONE (%d unlit areas, %.1f s)\n", s_unlitAreaCount, Plat_FloatTime() - s_lightBakeStart );
+			s_unlitAreaCount = 0;
+
+			m_generationState = CUSTOM;
+			m_generationIndex = 0;
+			return true;
+#else
 			host_thread_mode.SetValue( 0 );	// need non-threaded server for light calcs
 
 			CBasePlayer *host = UTIL_GetListenServerHost();
@@ -4001,6 +4049,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			m_generationState = CUSTOM;
 			m_generationIndex = 0;
 			return true;
+#endif // NEO
 		}
 
 		//---------------------------------------------------------------------------

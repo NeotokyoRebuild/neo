@@ -35,9 +35,19 @@ enum EMenuSelectType
 // For rate-limiting thermoptic/etc visibility calculations
 struct CNEO_Player_FogCacheEntry
 {
-    bool m_bIsHidden{false};
-    float m_flUpdateTime{-1.0f};   // ensure update the first time
-    float m_flObscuredRatio{1.0f}; // more handy for debugging
+	bool m_bIsHidden{false};
+	float m_flUpdateTime{-1.0f};   // ensure update the first time
+	float m_flObscuredRatio{1.0f}; // more handy for debugging
+	float m_flHazard{0.0f};        // notice budget left in the current exposure
+	float m_flLastInView{-1.0f};   // last time the target was in view
+	float m_flLastOutOfSight{-1.0f}; // last sight check that found the target out of sight
+	bool m_bNoticed{false};
+	float m_flRollTime{-1.0f};     // fog roll for plainly visible targets
+	bool m_bRollHidden{false};
+	// the target life this entry describes
+	int m_iTargetSerial{-1};
+	int m_iTargetTeam{-1};
+	float m_flTargetDeathTime{-1.0f};
 };
 
 class CNEO_Player : public CHL2MP_Player
@@ -116,7 +126,12 @@ public:
 	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of "fog"
 	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 	virtual float		GetFogObscuredRatio(float range) const OVERRIDE;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
-	float				GetCloakObscuredRatio(CNEO_Player* target) const;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+	float				GetCloakObscuredRatio(CNEO_Player* target) const;		///< return the 0-1 chance that a hidden target stays unnoticed through one second in view, where zero means seen at once
+	// Bot sight of a player: inView says whether this check found the target in the view cone with a clear line of sight.
+	// Returns true while the target is unnoticed or lost in fog.
+	bool				IsHiddenFromSight(CNEO_Player* target, bool inView) const;
+	// Bot sight of a player that this check found out of sight: ends the current stretch in view without the notice work.
+	void				NoteOutOfSight(CNEO_Player* target) const;
 
 	void AddNeoFlag(int flags)
 	{
@@ -183,6 +198,8 @@ public:
 	bool IsAllowedToSuperJump(void);
 
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
+	// the classes whose vision mode the client draws as night vision (DoNEOVision)
+	bool HasNightVision() const { return GetClass() == NEO_CLASS_RECON || GetClass() == NEO_CLASS_JUGGERNAUT; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotCloakStateDisrupted() const { return !m_botThermOpticCamoDisruptedTimer.IsElapsed(); }
 	bool GetBotPauseFiring() const { return !m_botPauseFiringTimer.IsElapsed(); }
@@ -374,6 +391,9 @@ private:
 	// Cache for GetFogObscuredRatio for each player
 	mutable CNEO_Player_FogCacheEntry m_playerFogCache[MAX_PLAYERS_ARRAY_SAFE];
 
+	CNEO_Player_FogCacheEntry* GetSightCacheEntry(CNEO_Player* target) const;
+	bool NoticeByBump(CNEO_Player* target, CNEO_Player_FogCacheEntry& cacheEntry) const;
+
 private:
 	CNEO_Player(const CNEO_Player&);
 
@@ -382,6 +402,8 @@ private:
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
+	// moves what other players had noticed about pBody over to this player taking it over
+	void TakeOverNoticeOf(const CNEO_Player* pBody);
 	void SpectatorTakeoverPlayerRevert(bool bHardReset=true);
 
 	CNetworkHandle(CNEO_Player, m_hSpectatorTakeoverPlayerTarget);
