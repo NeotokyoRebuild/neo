@@ -530,8 +530,10 @@ static CNavArea *FindLadderBottomArea( const Vector &center, NavLadderSourceType
 {
 	if (source == NAV_LADDER_SOURCE_BRUSH)
 	{
-		// The nearest area can be the top landing when the foot hangs above the floor,
-		// so prefer the floor under the foot, down to the deepest drop the dangling check accepts.
+		// The foot is the ladder's bottom end, and it can sit above the floor.
+		// GetNearestNavArea picks by distance with no beneath test, so from a raised foot
+		// the top landing can be nearer than the floor. Look straight down first,
+		// as far as the dangling check lets a foot hang.
 		const float floorReach = GenerationStepSize + HumanHeight;
 		CNavArea *floor = TheNavMesh->GetNavArea( center, floorReach );
 		if (floor)
@@ -691,7 +693,8 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 #ifdef NEO
 		if (source == NAV_LADDER_SOURCE_BRUSH)
 		{
-			// The generic disconnect may clear a valid forward/side slot when both searches found this area.
+			// Disconnect() clears the first slot holding the area, which is a forward or side slot
+			// when one of those scans found this area too.
 			m_topBehindArea = NULL;
 		}
 		else
