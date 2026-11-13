@@ -171,6 +171,12 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNE
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interval )
 {
+	// Bots respawn mid-round in JGR, so the switch cannot wait for the pre-round freeze
+	if ( NEORules()->GetGameType() == NEO_GAME_TYPE_JGR )
+	{
+		return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
+	}
+
 	// Check for Game Type Specific behaviors and suspend for them
 	if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
 	{
@@ -183,10 +189,6 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 				return SuspendFor( new CNEOBotCtgSeek, "Switching to Ghost-related Seek and Destroy" );
 			}
 
-		}
-		else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
-		{
-			return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
 		}
 
 		return Continue();
