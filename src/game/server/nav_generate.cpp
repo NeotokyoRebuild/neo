@@ -280,9 +280,9 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 	// add ladder to global list
 	m_ladders.AddToTail( ladder );		
 }
+
+
 #ifdef NEO
-
-
 //--------------------------------------------------------------------------------------------------------------
 static const float LadderEndScanStep = 10.0f;
 
@@ -474,9 +474,9 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	// add ladder to global list
 	m_ladders.AddToTail( ladder );
 }
+
+
 #ifdef NEO
-
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Find the area at the bottom of a generated ladder.
@@ -3665,6 +3665,7 @@ void CNavMesh::BeginGeneration( bool incremental )
 		return;
 	}
 #endif
+
 	IGameEvent *event = gameeventmanager->CreateEvent( "nav_generate" );
 	if ( event )
 	{
