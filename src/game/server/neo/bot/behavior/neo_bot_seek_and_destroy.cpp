@@ -25,6 +25,8 @@ ConVar sv_neo_bot_seek_and_destroy_combat_sound_detour_ratio( "sv_neo_bot_seek_a
 	"When racing for an objective, divert only if going via the combat sound costs at most this multiple of direct distance.", true, 0, false, 0 );
 ConVar sv_neo_bot_seek_and_destroy_combat_sound_arrive_range( "sv_neo_bot_seek_and_destroy_combat_sound_arrive_range", "200.0", FCVAR_CHEAT,
 	"Combat sound close enough to count as investigated.", true, 0, false, 0 );
+ConVar sv_neo_bot_seek_and_destroy_roam_min_dist( "sv_neo_bot_seek_and_destroy_roam_min_dist", "512.0", FCVAR_CHEAT,
+	"Roaming bots skip a goal closer than this horizontally, such as a spawn point on the floor right below them.", true, 0, false, 0 );
 
 
 //---------------------------------------------------------------------------------------------
@@ -135,6 +137,16 @@ constexpr int ROAM_GOAL_TRIES = 10;
 bool CNEOBotSeekAndDestroy::TryPathToRoamGoal( CNEOBot *me, const Vector &vGoal )
 {
 	return CNEOBotPathCompute( me, m_path, vGoal, DEFAULT_ROUTE ) && CNEOBotPathReachesGoal( m_path );
+}
+
+
+//---------------------------------------------------------------------------------------------
+// The visibility check misses a goal on another floor right above or below the bot, which is often
+// only reached by a detour or a ladder and gains the bot nothing
+static bool IsRoamGoalNearby( CNEOBot *me, const Vector &vGoal )
+{
+	const float flMinDist = sv_neo_bot_seek_and_destroy_roam_min_dist.GetFloat();
+	return me->GetAbsOrigin().AsVector2D().DistToSqr( vGoal.AsVector2D() ) < flMinDist * flMinDist;
 }
 
 
@@ -620,7 +632,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 			{
 				CBaseEntity *pSpawn = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
 				const Vector vSpawn = pSpawn->WorldSpaceCenter();
-				if ( IsRoamGoalInView( me, vSpawn ) )
+				if ( IsRoamGoalNearby( me, vSpawn ) || IsRoamGoalInView( me, vSpawn ) )
 				{
 					continue;
 				}
@@ -651,7 +663,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 
 		// The last try takes any point, so a bot that sees most of a small map still gets a path
 		const bool bLastTry = ( i == ROAM_GOAL_TRIES - 1 );
-		if ( !bLastTry && IsRoamGoalInView( me, vWanderPoint ) )
+		if ( !bLastTry && ( IsRoamGoalNearby( me, vWanderPoint ) || IsRoamGoalInView( me, vWanderPoint ) ) )
 		{
 			continue;
 		}
