@@ -759,6 +759,12 @@ QueryResultType CNEOBotMainAction::ShouldAttack( const INextBot *meBot, const CK
 //---------------------------------------------------------------------------------------------
 QueryResultType	CNEOBotMainAction::ShouldHurry( const INextBot *meBot ) const
 {
+	// ATK attackers must hurry because the clock runs for defenders.
+	if ( IsAtkAttackingTeam( meBot->GetEntity()->GetTeamNumber() ) )
+	{
+		return ANSWER_YES;
+	}
+
 	return ANSWER_UNDEFINED;
 }
 

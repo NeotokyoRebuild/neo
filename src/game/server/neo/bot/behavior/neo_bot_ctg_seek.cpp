@@ -36,9 +36,9 @@ static bool IsLooseGhostUnderDetpack( const CNEOBot *me )
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 {
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG)
+	if ( !IsGhostGameType() )
 	{
-		return Done( "Game mode is no longer CTG" );
+		return Done( "Game mode is no longer CTG or ATK" );
 	}
 
 	if (NEORules()->IsRoundOver())
@@ -69,7 +69,8 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 		}
 	}
 
-	if ( team_members == 1 )
+	// ATK attackers must keep pursuing the ghost because the clock runs for defenders.
+	if ( team_members == 1 && !IsAtkAttackingTeam( me->GetTeamNumber() ) )
 	{
 		return SuspendFor( new CNEOBotCtgLoneWolf, "I'm the last one on my team!" );
 	}
@@ -145,7 +146,7 @@ ActionResult< CNEOBot > CNEOBotCtgSeek::Update( CNEOBot *me, float interval )
 //---------------------------------------------------------------------------------------------
 void CNEOBotCtgSeek::RecomputeSeekPath( CNEOBot *me )
 {
-	if (NEORules()->GetGameType() != NEO_GAME_TYPE_CTG)
+	if ( !IsGhostGameType() )
 	{
 		// Wait until next tick to exit behavior
 		return;

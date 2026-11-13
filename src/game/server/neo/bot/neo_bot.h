@@ -31,6 +31,17 @@ extern void BotGenerateAndWearItem(CNEO_Player* pBot, const char* itemName);
 
 extern int Bot_GetTeamByName(const char* string);
 
+// ATK uses the same ghost objective as CTG, with the clock running for defenders.
+inline bool IsGhostGameType()
+{
+	return NEORules()->GetGameType() == NEO_GAME_TYPE_CTG || NEORules()->GetGameType() == NEO_GAME_TYPE_ATK;
+}
+
+inline bool IsAtkAttackingTeam( int team )
+{
+	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetAttackingTeam();
+}
+
 inline int GetEnemyTeam(int team)
 {
 	if (team == TEAM_JINRAI)

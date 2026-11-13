@@ -346,7 +346,8 @@ ActionResult< CNEOBot >	CNEOBotCtgCarrier::Update( CNEOBot *me, float interval )
 	if ( m_teammates.Count() == 0 )
 	{
 		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
-		if ( threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
+		// ATK attackers must keep trying to capture because the clock runs for defenders.
+		if ( !IsAtkAttackingTeam( me->GetTeamNumber() ) && threat && threat->GetEntity() && threat->GetEntity()->IsAlive() )
 		{
 			CNavArea *destArea = TheNavMesh->GetNearestNavArea( m_closestCapturePoint );
 			CNavArea *myArea = me->GetLastKnownArea();

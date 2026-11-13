@@ -174,7 +174,7 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 	// Check for Game Type Specific behaviors and suspend for them
 	if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
 	{
-		if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+		if ( IsGhostGameType() )
 		{
 			// Only switch to CTG behavior if there are available capture zones this round
 			const Vector vecCapPoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
@@ -192,7 +192,7 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		return Continue();
 	}
 
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	if ( IsGhostGameType() )
 	{
 		// Check if enemy has the ghost
 		if (NEORules()->GhostExists())
