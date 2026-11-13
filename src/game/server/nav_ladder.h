@@ -14,8 +14,8 @@
 #include "nav.h"
 
 class CNavArea;
-#ifdef NEO
 
+#ifdef NEO
 enum NavLadderSourceType
 {
 	NAV_LADDER_SOURCE_DEFAULT,
