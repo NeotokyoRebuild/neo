@@ -377,6 +377,21 @@ namespace
 
 bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLadder) const
 {
+	// UpdateStepSound reads the out parameters even for a silent step, so they are written before any early return
+	const Vector& absVel = GetAbsVelocity();
+	const float speed = absVel.Length();
+	if (pSpeed) *pSpeed = speed;
+	const bool isOnLadder = (GetMoveType() == MOVETYPE_LADDER);
+	if (pLadder) *pLadder = isOnLadder;
+
+	float velwalk, velrun;
+	GetStepSoundVelocities(&velwalk, &velrun);
+	if (pVelRun) *pVelRun = velrun;
+
+	// Dead players make no footsteps. Other clients keep the speed a player died with until that player is an observer
+	if (m_lifeState != LIFE_ALIVE)
+		return false;
+
 	if (GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
 		return false;
 
@@ -390,22 +405,7 @@ bool CNEO_Player::IsMakingFootstepSounds(float* pVelRun, float* pSpeed, int* pLa
 	if (!sv_footsteps.GetFloat())
 		return false;
 
-	const Vector& absVel = GetAbsVelocity();
-	const float speed = absVel.Length();
-	if (pSpeed) *pSpeed = speed;
 	const float groundspeed = absVel.AsVector2D().Length();
-	const bool isOnLadder = (GetMoveType() == MOVETYPE_LADDER);
-	if (pLadder) *pLadder = isOnLadder;
-
-	float velwalk, velrun;
-	GetStepSoundVelocities(&velwalk, &velrun);
-	if (pVelRun) *pVelRun = velrun;
-
-	// Other clients rebuild a dead player's velocity from origin changes, so it can read as moving for a moment after
-	// death. Checked after the out parameters are written, as UpdateStepSound reads them either way
-	if (m_lifeState != LIFE_ALIVE)
-		return false;
-
 	bool onground = (GetFlags() & FL_ONGROUND);
 	bool movingalongground = (groundspeed > 0.0001f);
 	// Below this nothing plays, on a ladder or off. It catches drift that is not movement at all, such as being
