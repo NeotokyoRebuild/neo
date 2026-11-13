@@ -1139,6 +1139,9 @@ private:
 	void GridToWorld( int gridX, int gridY, Vector *pos ) const;
 
 	void AddNavArea( CNavArea *area );							// add an area to the grid
+#ifdef NEO
+	void AddNavAreaToGrid( CNavArea *area );					// add an area to grid cells its grown extent now covers
+#endif // NEO
 
 	void DestroyNavigationMesh( bool incremental = false );		// free all resources of the mesh and reset it to empty state
 	void DestroyHidingSpots( void );

@@ -550,6 +550,33 @@ void CNavMesh::AddNavArea( CNavArea *area )
 	++m_areaCount;
 }
 
+#ifdef NEO
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Add an area to every grid cell of its extent that does not hold it yet.
+ * Merging grows an area in place, so its new part would otherwise be missing from the grid.
+ */
+void CNavMesh::AddNavAreaToGrid( CNavArea *area )
+{
+	const int loX = WorldToGridX( area->GetCorner( NORTH_WEST ).x );
+	const int loY = WorldToGridY( area->GetCorner( NORTH_WEST ).y );
+	const int hiX = WorldToGridX( area->GetCorner( SOUTH_EAST ).x );
+	const int hiY = WorldToGridY( area->GetCorner( SOUTH_EAST ).y );
+
+	for ( int y = loY; y <= hiY; ++y )
+	{
+		for ( int x = loX; x <= hiX; ++x )
+		{
+			NavAreaVector &cell = m_grid[ x + y*m_gridSizeX ];
+			if ( !cell.HasElement( area ) )
+			{
+				cell.AddToTail( area );
+			}
+		}
+	}
+}
+
+#endif // NEO
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Remove an area from the mesh
