@@ -103,56 +103,11 @@ public:
 };
 
 
-#ifdef NEO
-//--------------------------------------------------------------------------------------------------------------
-enum AreaLookupType
-{
-	AREA_LOOKUP_GRID,
-	AREA_LOOKUP_ALL_AREAS,
-};
-
-// Merging grows areas without re-adding them to the grid, so during generation
-// a grid lookup can miss the part of an area added by a merge.
-static CNavArea *GetAreaBeneathFromAllAreas( const Vector &pos, float beneathLimit )
-{
-	// Same probe lift as CNavMesh::GetNavArea.
-	const float probeLift = 5.0f;
-	const Vector testPos = pos + Vector( 0, 0, probeLift );
-	CNavArea *use = NULL;
-	float useZ = -FLT_MAX;
-
-	FOR_EACH_VEC( TheNavAreas, it )
-	{
-		CNavArea *area = TheNavAreas[ it ];
-		if (!area->IsOverlapping( testPos ))
-		{
-			continue;
-		}
-
-		const float z = area->GetZ( testPos );
-		if (z > testPos.z || z < pos.z - beneathLimit || z <= useZ)
-		{
-			continue;
-		}
-
-		use = area;
-		useZ = z;
-	}
-
-	return use;
-}
-
-
-#endif // NEO
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Start at given position and find first area in given direction
  */
-#ifdef NEO
-inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, float range, float beneathLimit, CBaseEntity *traceIgnore = NULL, Vector *closePos = NULL, AreaLookupType lookup = AREA_LOOKUP_GRID )
-#else
 inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, float range, float beneathLimit, CBaseEntity *traceIgnore = NULL, Vector *closePos = NULL )
-#endif // NEO
 {
 	CNavArea *area = NULL;
 
@@ -172,11 +127,7 @@ inline CNavArea *findFirstAreaInDirection( const Vector *start, NavDirType dir, 
 		if (result.fraction < 1.0f)
 			break;
 
-#ifdef NEO
-		area = (lookup == AREA_LOOKUP_ALL_AREAS) ? GetAreaBeneathFromAllAreas( pos, beneathLimit ) : TheNavMesh->GetNavArea( pos, beneathLimit );
-#else
 		area = TheNavMesh->GetNavArea( pos, beneathLimit );
-#endif // NEO
 		if (area)
 		{
 			if (closePos)
@@ -548,23 +499,18 @@ static CNavArea *FindLadderBottomArea( const Vector &center, NavLadderSourceType
 
 //--------------------------------------------------------------------------------------------------------------
 /**
- * Find the areas at the top of a brush ladder, searching all areas rather than the grid.
+ * Retry the top scans of a brush ladder that found no exit, and drop a forward area far below the top.
  */
-static void FindBrushLadderTopAreas( CNavLadder *ladder, const Vector &center, float beneathLimit, float nearLadderRange )
+static void RetryBrushLadderTopScans( CNavLadder *ladder, const Vector &center, float beneathLimit, float nearLadderRange )
 {
 	const float behindLadderRange = 2.0f * nearLadderRange;
 	const NavDirType dir = ladder->GetDir();
 
 	auto findTopArea = [&]( const Vector &start, NavDirType searchDir, float range ) -> CNavArea *
 	{
-		CNavArea *area = findFirstAreaInDirection( &start, searchDir, range, beneathLimit, NULL, NULL, AREA_LOOKUP_ALL_AREAS );
+		CNavArea *area = findFirstAreaInDirection( &start, searchDir, range, beneathLimit, NULL );
 		return (area == ladder->m_bottomArea) ? NULL : area;
 	};
-
-	ladder->m_topForwardArea = findTopArea( center, OppositeDirection( dir ), nearLadderRange );
-	ladder->m_topLeftArea = findTopArea( center, DirectionLeft( dir ), nearLadderRange );
-	ladder->m_topRightArea = findTopArea( center, DirectionRight( dir ), nearLadderRange );
-	ladder->m_topBehindArea = findTopArea( center, dir, behindLadderRange );
 
 	// A climbable brush can end below the landing, where the scan hits the landing's lip.
 	// Or the space above its top can be solid (a ceiling or prop), so the scan starts inside it.
@@ -668,8 +614,7 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 
 	if (source == NAV_LADDER_SOURCE_BRUSH)
 	{
-		// A grid lookup misses the parts merging added to an area, so search again over all areas.
-		FindBrushLadderTopAreas( this, center, beneathLimit, nearLadderRange );
+		RetryBrushLadderTopScans( this, center, beneathLimit, nearLadderRange );
 	}
 #endif // NEO
 
