@@ -162,6 +162,11 @@ public:
 
 	void				RestartMainSequence();
 
+#ifdef NEO
+	// A sequence index is only meaningful for the model it was computed against
+	void				OnNewModel();
+#endif
+
 
 // Helpers for the derived classes to use.
 protected:
