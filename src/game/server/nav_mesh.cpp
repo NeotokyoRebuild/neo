@@ -41,14 +41,14 @@
 #include "tier0/memdbgon.h"
 
 
+#define DrawLine( from, to, duration, red, green, blue )		NDebugOverlay::Line( from, to, red, green, blue, true, NDEBUG_PERSIST_TILL_NEXT_SERVER )
+
 #ifdef NEO
-static auto DrawLine(const Vector& from, const Vector& to, float duration = NDEBUG_PERSIST_TILL_NEXT_SERVER,
+static auto DrawBrushLadderLine(const Vector& from, const Vector& to, float duration = NDEBUG_PERSIST_TILL_NEXT_SERVER,
 	int r = 255, int g=255, int b=255)
 {
 	return NDebugOverlay::Line(from, to, r, g, b, true, duration);
 }
-#else
-#define DrawLine( from, to, duration, red, green, blue )		NDebugOverlay::Line( from, to, red, green, blue, true, NDEBUG_PERSIST_TILL_NEXT_SERVER )
 #endif
 
 
@@ -3651,7 +3651,7 @@ void CNavMesh::LadderFromPolyhedron(const CPolyhedron* polyhedron)
 
 				static int r = 0;
 				r = (r + 25) % 255;
-				DrawLine(linePos1, linePos2,
+				DrawBrushLadderLine(linePos1, linePos2,
 					nav_generate_debug_brushladders.GetFloat(), r, 255, 255);
 			}
 		}
@@ -3717,7 +3717,7 @@ void CNavMesh::LadderFromPolyhedron(const CPolyhedron* polyhedron)
 			}
 			DevMsg("\t\tPOLY NORMAL: %f %f %f\n",
 				polyNormal.x, polyNormal.y, polyNormal.z);
-			DrawLine(polyCenter, polyCenter + (polyNormal * GenerationStepSize),
+			DrawBrushLadderLine(polyCenter, polyCenter + (polyNormal * GenerationStepSize),
 				nav_generate_debug_brushladders.GetFloat(), c.r(), c.g(), c.b());
 		}
 

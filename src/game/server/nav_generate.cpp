@@ -280,7 +280,7 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 
 #ifdef NEO
 //--------------------------------------------------------------------------------------------------------------
-static const float LadderEndScanStep = 10.0f;
+static constexpr float LadderEndScanStep = 10.0f;
 
 /**
  * Move a ladder end along the ladder until the space in front of it is clear.
