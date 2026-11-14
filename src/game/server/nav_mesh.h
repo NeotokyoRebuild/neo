@@ -36,6 +36,9 @@ extern ConVar nav_edit;
 extern ConVar nav_quicksave;
 extern ConVar nav_show_approach_points;
 extern ConVar nav_show_danger;
+#ifdef NEO
+extern ConVar nav_generate_debug_brushladders;
+#endif
 
 //--------------------------------------------------------------------------------------------------------
 class NavAreaCollector
@@ -456,7 +459,11 @@ public:
 	void CommandNavLadderFlip( void );									// Flips the direction a ladder faces
 	void CommandNavToggleAttribute( NavAttributeType attribute );		// toggle an attribute on current area
 	void CommandNavMakeSniperSpots( void );								// cuts up the marked area into individual areas suitable for sniper spots
+#ifdef NEO
+	void CommandNavBuildLadder( NavLadderSourceType source = NAV_LADDER_SOURCE_DEFAULT );	// builds a nav ladder on the climbable surface under the cursor
+#else
 	void CommandNavBuildLadder( void );									// builds a nav ladder on the climbable surface under the cursor
+#endif
 	void CommandNavRemoveJumpAreas( void );								// removes jump areas, replacing them with connections
 	void CommandNavSubdivide( const CCommand &args );					// subdivide each nav area in X and Y to create 4 new areas - limit min size
 	void CommandNavSaveSelected( const CCommand &args );				// Save selected set to disk
@@ -486,7 +493,11 @@ public:
 	}
 
 	void CreateLadder( const Vector &mins, const Vector &maxs, float maxHeightAboveTopArea );
+#ifdef NEO
+	void CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea, NavLadderSourceType source = NAV_LADDER_SOURCE_DEFAULT );
+#else
 	void CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea );
+#endif
 
 	float SnapToGrid( float x, bool forceGrid = false ) const;					// snap given coordinate to generation grid boundary
 	Vector SnapToGrid( const Vector& in, bool snapX = true, bool snapY = true, bool forceGrid = false ) const;	// snap given vector's X & Y coordinates to generation grid boundary
@@ -1128,6 +1139,9 @@ private:
 	void GridToWorld( int gridX, int gridY, Vector *pos ) const;
 
 	void AddNavArea( CNavArea *area );							// add an area to the grid
+#ifdef NEO
+	void AddNavAreaToGrid( CNavArea *area );					// add an area to grid cells its grown extent now covers
+#endif // NEO
 
 	void DestroyNavigationMesh( bool incremental = false );		// free all resources of the mesh and reset it to empty state
 	void DestroyHidingSpots( void );
@@ -1213,6 +1227,13 @@ private:
 	NavLadderVector m_ladders;									// list of ladder navigation representations
 	void BuildLadders( void );
 	void DestroyLadders( void );
+#ifdef NEO
+	// Build ladders from the BSP brush lump ladders (rather than func_ladder)
+	[[nodiscard]] bool BuildBrushLaddersFromBsp();
+private:
+	void LadderFromPolyhedron(const CPolyhedron* polyhedron);
+	void RemoveNarrowSideLadders(int firstLadder);
+#endif
 
 	bool SampleStep( void );									// sample the walkable areas of the map
 	void CreateNavAreasFromNodes( void );						// cover all of the sampled nodes with nav areas
