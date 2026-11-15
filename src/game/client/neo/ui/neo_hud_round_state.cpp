@@ -45,6 +45,7 @@ extern ConVar sv_neo_readyup_countdown;
 extern ConVar cl_neo_hud_scoreboard_hide_others;
 extern ConVar sv_neo_ctg_ghost_overtime_grace;
 extern ConVar cl_neo_hud_health_mode;
+extern ConVar sv_neo_bot_cmdr_enable;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -735,9 +736,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		return;
 	}
 
-	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
-	Assert(cl_neo_bot_cmdr_enable_ref.IsValid());
-	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
+	if (sv_neo_bot_cmdr_enable.GetBool())
 	{
 		DrawPlayerList_BotCmdr();
 		return;
@@ -921,9 +920,7 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 
 int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small)
 {
-	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
-	Assert(cl_neo_bot_cmdr_enable_ref.IsValid());
-	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
+	if (sv_neo_bot_cmdr_enable.GetBool())
 	{
 		return DrawPlayerRow_BotCmdr(playerIndex, yOffset, small);
 	}
@@ -1142,9 +1139,7 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	}
 
 	// Draw commander selected highlight
-	ConVarRef cl_neo_bot_cmdr_enable_ref("sv_neo_bot_cmdr_enable");
-	Assert(cl_neo_bot_cmdr_enable_ref.IsValid());
-	if (cl_neo_bot_cmdr_enable_ref.IsValid() && cl_neo_bot_cmdr_enable_ref.GetBool())
+	if (sv_neo_bot_cmdr_enable.GetBool())
 	{
 		C_NEO_Player* pPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerIndex));
 		if (pPlayer)
