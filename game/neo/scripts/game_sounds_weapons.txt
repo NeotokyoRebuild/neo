@@ -26,7 +26,7 @@
 
 "weapon_milso.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/milso/milso_empty.wav"
@@ -82,7 +82,7 @@
 
 "weapon_tachi.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/tachi/tachi_empty.wav"
@@ -148,7 +148,7 @@
 
 "weapon_kyla.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"				"weapons/kyla/kyla_empty.wav"
@@ -207,7 +207,7 @@
 
 "weapon_aa13.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/aa13/aa13_empty.wav"
@@ -299,7 +299,7 @@
 //-------------------
 "weapon_murata.empty"
 {
-	"channel"			"CHAN_WEAPON"
+	"channel"			"CHAN_AUTO"
 	"soundlevel"			"SNDLVL_NORM"
 	"volume"			"1.0"
 	"pitch"				"PITCH_NORM"
@@ -357,7 +357,7 @@
 
 "weapon_mpn45.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/mpn45/mpn45_empty.wav"
@@ -433,7 +433,7 @@
 
 "weapon_srm.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/srm/srm_empty.wav"
@@ -518,7 +518,7 @@
 
 "weapon_jitte.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/jitte/jitte_empty.wav"
@@ -601,7 +601,7 @@
 
 "weapon_m41.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/m41/m41_empty.wav"
@@ -714,7 +714,7 @@
 
 "weapon_srs.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/srs/srs_empty.wav"
@@ -798,7 +798,7 @@
 
 "weapon_zr68.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
 	"volume"		        "1.0"
 	"soundlevel"		        "SNDLVL_NORM"
         "wave"			        "weapons/zr68/zr68_empty.wav"
@@ -909,7 +909,7 @@
 
 "weapon_mx.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
         "soundlevel"		        "SNDLVL_NORM"
 	"volume"		        "1.0"
         "pitch"                         "PITCH_NORM"
@@ -991,7 +991,7 @@
 
 "weapon_pz.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
         "soundlevel"		        "SNDLVL_NORM"
 	"volume"		        "1.0"       
         "pitch"                         "PITCH_NORM"
@@ -1051,7 +1051,7 @@
 
 "weapon_remotedet.empty"
 {
-	"channel"		        "CHAN_WEAPON"
+	"channel"		        "CHAN_AUTO"
         "soundlevel"		        "SNDLVL_NORM"
 	"volume"		        "1.0"       
         "pitch"                         "100"
@@ -1517,7 +1517,7 @@
 
 "weapon_balc.empty"
 {
-	"channel"				"CHAN_WEAPON"
+	"channel"				"CHAN_AUTO"
 	"soundlevel"			"SNDLVL_NORM"
 	"wave"					"weapons/balc/balc_empty.wav"
 }
