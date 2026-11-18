@@ -6,7 +6,7 @@
 
 class CNEOBaseProjectile : public CNEOBaseCombatWeapon
 {
-	DECLARE_CLASS(CNEOBaseProjectile, CNEOBaseProjectile);
+	DECLARE_CLASS(CNEOBaseProjectile, CNEOBaseCombatWeapon);
 public:
 	virtual bool IsWeaponReloadable(void) const override { return false; }
 protected:
