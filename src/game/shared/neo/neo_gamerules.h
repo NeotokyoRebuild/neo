@@ -452,6 +452,11 @@ public:
 
 	inline bool ArePingsAllowed()
 	{
+		constexpr auto modesWhereWeUseSaneLogic = NEO_GAME_TYPE_CTG;
+		if (GetGameType() != modesWhereWeUseSaneLogic)
+		{
+			return true;
+		}
 		// Only allow pings for game modes with friendlies, because it makes no sense to send pings to your enemies.
 		return IsTeamplay();
 	}
