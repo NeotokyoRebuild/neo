@@ -25,6 +25,7 @@
 
 #ifdef GAME_DLL
 #include "basetypes.h"
+#include "nav_mesh.h"
 #endif
 
 #include "convar.h"
@@ -136,10 +137,25 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 
 #ifdef CLIENT_DLL
 extern ConVar cl_neo_player_pings;
+static ConVar cl_neo_player_pings_print_own("cl_neo_player_pings_print_own", "0", FCVAR_ARCHIVE,
+	"Whether to print the place names of your own pings to chat.", true, false, true, true);
+#else
+static ConVar sv_neo_player_pings_calc_placename("sv_neo_player_pings_calc_placename", "1", 0,
+	"Whether the server should calculate place names for player pings from the nav mesh (possibly expensive)", true, false, true, true);
 #endif // CLIENT_DLL
 void CheckPingButton(CNEO_Player* player)
 {
-	if (!player->IsAlive() || !(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
+	if (!(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
+	{
+		return;
+	}
+
+	if (!NEORules() || !NEORules()->ArePingsAllowed())
+	{
+		return;
+	}
+
+	if (!player->IsAlive())
 	{
 		return;
 	}
@@ -158,6 +174,7 @@ void CheckPingButton(CNEO_Player* player)
 	}
 
 	IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
+	Assert(event);
 	if (event)
 	{
 		trace_t tr;
@@ -177,7 +194,39 @@ void CheckPingButton(CNEO_Player* player)
 		event->SetInt("pingy", tr.endpos.y);
 		event->SetInt("pingz", tr.endpos.z);
 		event->SetBool("ghosterping", player->IsCarryingGhost() || player->m_iNeoClass == NEO_CLASS_VIP);
+		event->SetBool("server", player->IsServer());
 #ifdef GAME_DLL
+		if (sv_neo_player_pings_calc_placename.GetBool() && TheNavMesh)
+		{
+			constexpr auto fnGetNearbyNavArea =
+				[](const Vector& pingPos, const float maxDist, const bool requireAreaBeNamed)->CNavArea* {
+					Assert(TheNavMesh);
+					constexpr auto ignoreNamelessPlaces = [](const CNavArea* area)->bool {
+						return !area || !TheNavMesh->PlaceToName(area->GetPlace());
+						};
+					return TheNavMesh->GetNearestNavArea(pingPos, true, maxDist, false, false, TEAM_ANY,
+						requireAreaBeNamed
+						? static_cast<bool(*)(const CNavArea*)>(ignoreNamelessPlaces)
+						: nullptr);
+				};
+
+			constexpr float maxPingAreaDist = 1024;
+			constexpr float maxMissedPingAreaDist = maxPingAreaDist * 4;
+			static_assert(maxPingAreaDist < maxMissedPingAreaDist);
+			static_assert(IN_BETWEEN_EQ(0, maxPingAreaDist, COORD_EXTENT));
+			static_assert(IN_BETWEEN_EQ(0, maxMissedPingAreaDist, COORD_EXTENT));
+			const auto actualNavAreaOfPing = fnGetNearbyNavArea(tr.endpos, maxPingAreaDist, false);
+			const auto nearestNamedNavAreaOfPing = !actualNavAreaOfPing ? nullptr : fnGetNearbyNavArea(tr.endpos, maxMissedPingAreaDist, true);
+
+			if (actualNavAreaOfPing && nearestNamedNavAreaOfPing)
+			{
+				const bool pingPlaceNameIsExact = (actualNavAreaOfPing == nearestNamedNavAreaOfPing);
+				event->SetBool("place_exact", pingPlaceNameIsExact);
+
+				const char* placeName = TheNavMesh->PlaceToName(nearestNamedNavAreaOfPing->GetPlace());
+				event->SetString("place_name", placeName);
+			}
+		}
 		gameeventmanager->FireEvent(event);
 #else
 		gameeventmanager->FireEventClientSide(event);

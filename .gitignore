@@ -3,6 +3,9 @@
 # Qt Creator
 /build-src-*
 
+# Rider
+**/.idea
+
 # CMake build dir
 /src/build
 out
