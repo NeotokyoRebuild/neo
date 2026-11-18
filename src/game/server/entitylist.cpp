@@ -199,6 +199,11 @@ public:
 			// only copy out entities that will simulate or think this frame
 			if ( m_simThinkList[i].nextThinkTick <= gpGlobals->tickcount )
 			{
+#if defined(NEO) && defined(DBGFLAG_ASSERT)
+				ConVarRef nb_stop("nb_stop");
+				Assert(nb_stop.IsValid());
+				if (!nb_stop.GetBool())
+#endif
 				Assert(m_simThinkList[i].nextThinkTick>=0);
 				int entinfoIndex = m_simThinkList[i].entEntry;
 				const CEntInfo *pInfo = gEntList.GetEntInfoPtrByIndex( entinfoIndex );
@@ -239,6 +244,11 @@ public:
 				if ( pEntity->IsEFlagSet(EFL_NO_GAME_PHYSICS_SIMULATION) )
 				{
 					m_simThinkList[m_entinfoIndex[index]].nextThinkTick = pEntity->GetFirstThinkTick();
+#if defined(NEO) && defined(DBGFLAG_ASSERT)
+					ConVarRef nb_stop("nb_stop");
+					Assert(nb_stop.IsValid());
+					if (!nb_stop.GetBool())
+#endif
 					Assert(m_simThinkList[m_entinfoIndex[index]].nextThinkTick>=0);
 				}
 			}
