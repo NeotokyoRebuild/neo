@@ -948,7 +948,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
 		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
 		cvr->cl_neo_crosshair_friendly_fire_warning.SetValue(pCrosshair->bFriendlyFireWarning);
-		cvr->crosshair.SetValue(true);  // override disabled crosshair
+		cvr->crosshair.SetValue(true);  // accepting crosshair changes implies enabling it
 	}
 	{
 		const NeoSettings::HUD *pHUD = &ns->hud;
