@@ -944,10 +944,10 @@ void NeoSettingsSave(const NeoSettings *ns)
 		char szSequence[NEO_XHAIR_SEQMAX];
 		ExportCrosshair(const_cast<CrosshairInfo *>(&pCrosshair->info), szSequence);
 		cvr->cl_neo_crosshair.SetValue(szSequence);
-		cvr->crosshair.SetValue(true);  // override disabled crosshair
 		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
 		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
 		cvr->cl_neo_crosshair_friendly_fire_warning.SetValue(pCrosshair->bFriendlyFireWarning);
+		cvr->crosshair.SetValue(true);  // override disabled crosshair
 	}
 	{
 		const NeoSettings::HUD *pHUD = &ns->hud;
