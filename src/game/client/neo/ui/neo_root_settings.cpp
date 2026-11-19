@@ -945,6 +945,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		char szSequence[NEO_XHAIR_SEQMAX];
 		ExportCrosshair(const_cast<CrosshairInfo *>(&pCrosshair->info), szSequence);
 		cvr->cl_neo_crosshair.SetValue(szSequence);
+		// The menu has no global crosshair toggle, so a stale console "crosshair 0" would hide every style
+		cvr->crosshair.SetValue(true);
 		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
 		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
 		cvr->cl_neo_crosshair_friendly_fire_warning.SetValue(pCrosshair->bFriendlyFireWarning);
