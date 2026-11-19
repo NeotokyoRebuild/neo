@@ -690,6 +690,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pHUD->bShowPos = cvr->cl_showpos.GetBool();
 		pHUD->iShowFps = cvr->cl_showfps.GetInt();
 		pHUD->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
+		pHUD->bEnableWalkIndicator = cvr->cl_neo_hud_walkindicator_enabled.GetBool();
 		pHUD->iExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetInt();
 		pHUD->iScoreboardPadding = cvr->cl_neo_hud_scoreboard_padding.GetInt();
 		pHUD->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
@@ -958,6 +959,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_showpos.SetValue(pHUD->bShowPos);
 		cvr->cl_showfps.SetValue(pHUD->iShowFps);
 		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pHUD->bEnableRangeFinder);
+		cvr->cl_neo_hud_walkindicator_enabled.SetValue(pHUD->bEnableWalkIndicator);
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pHUD->iExtendedKillfeed);
 		cvr->cl_neo_hud_scoreboard_padding.SetValue(pHUD->iScoreboardPadding);
 		cvr->cl_neo_hud_context_hint_enabled.SetValue(pHUD->bShowHudContextHints);
@@ -1683,6 +1685,7 @@ void NeoSettings_HUD(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show position", &pHud->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pHud->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pHud->bEnableRangeFinder);
+	NeoUI::RingBoxBool(L"Show walk indicator", &pHud->bEnableWalkIndicator);
 	NeoUI::RingBox(L"Extended killfeed", EXT_KILLFEED_LABELS, ARRAYSIZE(EXT_KILLFEED_LABELS), &pHud->iExtendedKillfeed);
 	NeoUI::RingBox(L"Scoreboard padding", NEOSCOREBOARDPADDING_LABELS, NEOSCOREBOARDPADDING__TOTAL, &pHud->iScoreboardPadding);
 
