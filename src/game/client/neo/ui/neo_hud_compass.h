@@ -42,6 +42,7 @@ private:
 private:
 	vgui::HFont m_hFont;
 	vgui::HFont m_hFontSmall;
+	vgui::HFont m_hLabelFont;
 
 	int m_resX, m_resY;
 	float m_objAngle;
@@ -55,6 +56,8 @@ private:
 	CPanelAnimationVarAliasType(int, m_yPos, "ypos", "469", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, m_width, "wide", "100", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, m_height, "tall", "8", "proportional_ypos");
+	// The directions' baseline from the top of the box, which centers NHudCompassText's capitals in it
+	CPanelAnimationVarAliasType(int, m_iLabelBaseline, "label_baseline", "8", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, m_fov, "fov", "90", "int");
 	CPanelAnimationVarAliasType(bool, m_separators, "separators", "1", "bool")
 	CPanelAnimationVarAliasType(bool, m_objectiveVisible, "objective_visible", "1", "bool");
