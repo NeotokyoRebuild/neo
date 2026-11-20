@@ -37,6 +37,11 @@ extern ConVar cl_neo_hud_scoreboard_hide_others;
 inline int gRoundKillerUserIDs[MAX_PLAYERS_ARRAY_SAFE];
 inline int gRoundKillerUserIDsSize;
 
+wchar_t GetRankGlyph(const int iXP)
+{
+	return static_cast<wchar_t>(NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + GetRank(iXP));
+}
+
 namespace
 {
 // The side padding clears the box's 8px corner
