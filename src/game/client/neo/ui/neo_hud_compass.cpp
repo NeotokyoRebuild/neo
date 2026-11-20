@@ -126,6 +126,9 @@ void CNEOHud_Compass::Paint()
 	BaseClass::Paint();
 }
 
+// Side padding inside the box, in label heights
+static constexpr float COMPASS_PADDING_SCALE = 1.5f;
+
 static C_NEO_Player *GetFirstPersonPlayer()
 {
 	C_NEO_Player *pFPPlayer = C_NEO_Player::GetLocalNEOPlayer();
@@ -206,7 +209,7 @@ void CNEOHud_Compass::DrawNeoHudElement(void)
 		surface()->DrawSetTextFont(m_hFont);
 		surface()->DrawSetTextPos((m_resX * cl_neo_hud_rangefinder_pos_frac_x.GetFloat()),
 								  (m_resY * cl_neo_hud_rangefinder_pos_frac_y.GetFloat()));
-		surface()->DrawPrintText(m_wszRangeFinder, ARRAYSIZE(m_wszRangeFinder) - 1);
+		NeoHud::DrawPrintText(m_wszRangeFinder, ARRAYSIZE(m_wszRangeFinder) - 1);
 	}
 }
 
@@ -218,6 +221,8 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	m_hFont = NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false);
 	m_hFontSmall = NeoHud::GetFont(pScheme, "NHudOCRSmallerNoAdditive", vgui::INVALID_FONT, false);
+	// The directions are instrument text, in the readout style's font. A scheme without it keeps the compass font.
+	m_hLabelFont = NeoHud::GetFont(pScheme, "NHudCompassText", m_hFont);
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
@@ -231,6 +236,7 @@ void CNEOHud_Compass::DrawCompass() const
 	static const wchar_t* ROSE[] = {
 		L"S", L"|", L"SW", L"|", L"W", L"|", L"NW", L"|", L"N", L"|", L"NE", L"|", L"E", L"|", L"SE", L"|",
 	};
+	static constexpr int COMPASS_SEPARATOR_LIFT_PX = 1;
 
 	auto player = GetFirstPersonPlayer();
 	Assert(player);
@@ -244,6 +250,11 @@ void CNEOHud_Compass::DrawCompass() const
 
 	const float angle = -MainViewAngles()[YAW];
 	const int steps = ARRAYSIZE(ROSE);
+	// The directions take the readout style's spacing, as the vitals labels, clock and weapon name do
+	const float flLabelTracking = NeoHud::GetReadoutTracking(m_hLabelFont);
+	const int yLabelBaseline = m_yPos + m_iLabelBaseline;
+	// The objective arrow and callouts share this inset, so it stays measured from their font
+	const float padding = surface()->GetFontTall(m_hFont) * COMPASS_PADDING_SCALE;
 	for (int i = 0; i < steps; i += m_separators ? 1 : 2) {
 		const float stepAngle = (float)(i * 360) / steps;
 		float drawAngle = safeAngle(stepAngle - angle + (float)m_fov / 2);
@@ -256,12 +267,13 @@ void CNEOHud_Compass::DrawCompass() const
 		const float proportion = drawAngle / m_fov;
 		const float alpha = !m_fadeExp ? 1 : 1 - pow(abs(2 * (proportion - 0.5)), m_fadeExp);
 		surface()->DrawSetTextColor(m_textColor.r(), m_textColor.g(), m_textColor.b(), alpha * m_textColor.a());
-		int labelWidth, labelHeight;
-		surface()->GetTextSize(m_hFont, ROSE[i], labelWidth, labelHeight);
-		const float padding = (float)labelHeight;
-		surface()->DrawSetTextPos(m_xPos + padding + (m_width - padding * 2) * proportion - (float)labelWidth / 2, m_yPos + (float)m_height / 2 - (float)labelHeight / 2);
-		surface()->DrawPrintText(ROSE[i], Q_UnicodeLength(ROSE[i]));	
+		// The separator's glyph sits low in the font, so lift it to center it in the box
+		const int iSeparatorLift = (i % 2) ? ScaledPx(COMPASS_SEPARATOR_LIFT_PX) : 0;
+		const int xCenter = m_xPos + padding + (m_width - padding * 2) * proportion;
+		NeoHud::DrawTextCentered(m_hLabelFont, xCenter, yLabelBaseline - iSeparatorLift, ROSE[i], flLabelTracking);
 	}
+	// The arrows below draw in the compass's own font
+	surface()->DrawSetTextFont(m_hFont);
 
 	// Print compass objective arrow
 	if (m_objectiveVisible && !player->IsObjective())
@@ -286,9 +298,9 @@ void CNEOHud_Compass::DrawCompass() const
 			surface()->DrawSetTextColor(ghostIsBeingCarried ? ghostIsCarriedByEnemyTeam ? COLOR_RED : teamColor : COLOR_WHITE);
 			int labelWidth, labelHeight;
 			surface()->GetTextSize(m_hFont, arrowUnicode, labelWidth, labelHeight);
-			const float padding = (float)labelHeight;
+			const float padding = labelHeight * COMPASS_PADDING_SCALE;
 			surface()->DrawSetTextPos(m_xPos + padding + (m_width - padding * 2) * proportion - (float)labelWidth / 2, m_yPos - labelHeight);
-			surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
+			NeoHud::DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
 		}
 	}
 
@@ -313,7 +325,7 @@ void CNEOHud_Compass::DrawCallouts() const
 	const wchar_t arrowUnicode[] = L"▼";
 	int labelWidth, labelHeight;
 	surface()->GetTextSize(m_hFont, arrowUnicode, labelWidth, labelHeight);
-	const float padding = (float)labelHeight;
+	const float padding = labelHeight * COMPASS_PADDING_SCALE;
 
 	// Cache ConVars and View parameters
 	const float maxAge = cl_neo_ghost_callout_compass_time.GetFloat();
@@ -366,7 +378,7 @@ void CNEOHud_Compass::DrawCallouts() const
 
 		surface()->DrawSetTextColor(calloutColor);
 		surface()->DrawSetTextPos(info.renderX, info.renderY);
-		surface()->DrawPrintText(arrowUnicode, 1);
+		NeoHud::DrawPrintText(arrowUnicode, 1);
 
 		if (bDrawText)
 		{
@@ -380,7 +392,7 @@ void CNEOHud_Compass::DrawCallouts() const
 
 			surface()->DrawSetTextFont(m_hFontSmall);
 			surface()->DrawSetTextPos(info.renderX + (labelWidth / 2) - (distWidth / 2), info.renderY - distHeight);
-			surface()->DrawPrintText(wszDist, Q_UnicodeLength(wszDist));
+			NeoHud::DrawPrintText(wszDist, Q_UnicodeLength(wszDist));
 		}
 	};
 
