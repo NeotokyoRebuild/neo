@@ -2574,9 +2574,33 @@ Scheme
 			"1"
 			{
 				"name"		"NOCR"
-				"tall"		"23"
+				"tall"		"25"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudPanelLabel
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"11"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudPanelLabelSmall
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"8"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
 				"antialias"	"1"
 				"additive"	"1"
 			}
@@ -2605,26 +2629,122 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudBulletsA
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"32"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudBulletsB
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"28"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudBulletsD
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"24"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudBulletsF
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"26"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudBulletsG
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"23"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudThrowableIcon
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"35"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudWeaponIcon
+		{
+			"1"
+			{
+				"name"		"killfeedicons"
+				"tall"		"16"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudWeaponIconSmall
+		{
+			"1"
+			{
+				"name"		"killfeedicons"
+				"tall"		"11"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
 		NHudFireMode
 		{
 			"1"
 			{
 				"name"		"NOCR Icons"
-				"tall"		"24"
+				"tall"		"27"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"antialias"	"1"
 				"additive"	"1"
 			}
 		}
-		NHudAmmoReserve
+		NHudAmmoStatus
 		{
 			"1"
 			{
 				"name"		"Neuropol2"
-				"tall"		"11"
+				"tall"		"10"
 				"weight"	"600"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"range"		"0x0000 0x017F"
 				"antialias"	"1"
 				"additive"	"1"
 			}
@@ -2641,6 +2761,18 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudAmmoCount
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"10"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
 		NHudVitalsNumber
 		{
 			"1"
@@ -2649,6 +2781,61 @@ Scheme
 				"tall"		"9"
 				"weight"	"600"
 				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudReserveA
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"12"
+				"weight"	"0"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudReserveB
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"11"
+				"weight"	"0"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudReserveC
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"10"
+				"weight"	"0"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudReserveD
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"9"
+				"weight"	"0"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudReserveM
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"7"
+				"weight"	"0"
 				"antialias"	"1"
 				"additive"	"1"
 			}
