@@ -87,6 +87,10 @@ protected:
 	ConVar *GetUpdateFrequencyConVar() const final;
 
 private:
+	void DrawCardNameRow(const SpectatorPlayerCard &card, const bool bIsLeftSide,
+			const int x, const int y, const int wide, const int iAvatarSize, const int iTextPad) const;
+	void DrawCardStatsRow(const SpectatorPlayerCard &card, const bool bIsLeftSide,
+			const int x, const int y, const int wide, const int iAvatarSize, const int iTextPad, const float flWideAs43) const;
 	void DrawPlayerCard(const int iPlayerIdx,
 			const bool bIsLeftSide,
 			const int x, const int y,
