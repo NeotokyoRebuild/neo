@@ -13,7 +13,6 @@
 #include <vgui_controls/Panel.h>
 
 namespace vgui {
-class ImagePanel;
 class ImageList;
 }
 
@@ -56,6 +55,9 @@ private:
 	};
 
 	void CheckActiveStar();
+	void DrawActiveStar() const;
+	void DrawRoundClock(const Color &color) const;
+	void DrawPlayersAlive() const;
 	// The name a squad row shows. A dead teammate's row shows the player who took over its body, if any.
 	const char *GetSquadRowName(int playerIndex) const;
 	void DrawPlayerList();
@@ -113,7 +115,10 @@ private:
 	int m_iSquadClassWide = 0;
 	int m_iSquadRankWide = 0;
 
-	vgui::ImagePanel *m_ipStars[STAR__TOTAL] = {};
+	int m_iStarTextures[STAR__TOTAL] = {};
+	int m_iStarToDraw = -1;
+	Color m_colorStar = {};
+	float m_flStarScale = 1.0f;
 	int m_iPreviouslyActiveStar = -1;
 	int m_iPreviouslyActiveTeam = -1;
 
