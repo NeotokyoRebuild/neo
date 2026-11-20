@@ -897,13 +897,13 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 	const Color* colorOverride = pTeamLogoColor ? &pTeamLogoColor->color : nullptr;
 	for (int i = 0; i < m_commandedList.Count(); ++i)
 	{
-		offset = DrawPlayerRow_BotCmdr(m_commandedList[i], offset, false, colorOverride);
+		offset = DrawPlayerRow(m_commandedList[i], offset, false, colorOverride);
 	}
 
 	// Draw non-commanded players (who are also in the same squad star)
 	for (int i = 0; i < m_nonCommandedList.Count(); ++i)
 	{
-		offset = DrawPlayerRow_BotCmdr(m_nonCommandedList[i], offset, false);
+		offset = DrawPlayerRow(m_nonCommandedList[i], offset, false);
 	}
 
 	if (squadMateFound)
@@ -914,71 +914,11 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 	// Draw other team mates
 	for (int i = 0; i < m_nonSquadList.Count(); ++i)
 	{
-		offset = DrawPlayerRow_BotCmdr(m_nonSquadList[i], offset, true);
+		offset = DrawPlayerRow(m_nonSquadList[i], offset, true);
 	}
 }
 
-int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small)
-{
-	if (sv_neo_bot_cmdr_enable.GetBool())
-	{
-		return DrawPlayerRow_BotCmdr(playerIndex, yOffset, small);
-	}
-
-	// Draw player
-	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
-	char squadMateText[SQUAD_MATE_TEXT_LENGTH];
-	wchar_t wSquadMateText[SQUAD_MATE_TEXT_LENGTH];
-	const char* squadMateRankName = GetRankName(g_PR->GetXP(playerIndex), true);
-	const char* squadMateClass = GetNeoClassName(g_PR->GetClass(playerIndex));
-	const bool isAlive = g_PR->IsAlive(playerIndex);
-
-	C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
-	if (isAlive)
-	{
-		const char* pPlayerDisplayName = pNeoPlayer ?
-			pNeoPlayer->GetPlayerNameWithTakeoverContext(playerIndex)
-			: g_PR->GetPlayerName(playerIndex);
-
-		const char* displayRankName = squadMateRankName;
-		if (pNeoPlayer)
-		{
-			C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
-			if (pTakeoverTarget)
-			{
-				displayRankName = GetRankName(g_PR->GetXP(pTakeoverTarget->entindex()), true);
-			}
-		}
-
-		const int healthMode = cl_neo_hud_health_mode.GetInt();
-		char playerHealth[7]; // 4 digits + 2 letters
-		V_snprintf(playerHealth, sizeof(playerHealth), healthMode ? "%dhp" : "%d%%", g_PR->GetDisplayedHealth(playerIndex, healthMode));
-		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", pPlayerDisplayName, squadMateRankName, squadMateClass, playerHealth);
-	}
-	else
-	{
-		auto* pImpersonator = pNeoPlayer ? pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get() : nullptr;
-
-		const char* pPlayerDisplayName = pImpersonator ?
-			pImpersonator->GetPlayerName()
-			: g_PR->GetPlayerName(playerIndex);
-
-		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
-		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", pPlayerDisplayName, displayClass);
-	}
-	g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
-
-	int fontWidth, fontHeight;
-	surface()->DrawSetTextFont(small ? m_hOCRSmallerFont : m_hOCRSmallFont);
-	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
-	surface()->DrawSetTextPos(8, yOffset);
-	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
-
-	return yOffset + fontHeight;
-}
-
-int CNEOHud_RoundState::DrawPlayerRow_BotCmdr(int playerIndex, const int yOffset, bool small, const Color* colorOverride)
+int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small, const Color* colorOverride)
 {
 	// Draw player
 	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
@@ -994,16 +934,6 @@ int CNEOHud_RoundState::DrawPlayerRow_BotCmdr(int playerIndex, const int yOffset
 		const char* pPlayerDisplayName = pNeoPlayer ?
 			pNeoPlayer->GetPlayerNameWithTakeoverContext(playerIndex)
 			: g_PR->GetPlayerName(playerIndex);
-
-		const char* displayRankName = squadMateRankName;
-		if (pNeoPlayer)
-		{
-			C_NEO_Player* pTakeoverTarget = ToNEOPlayer(pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get());
-			if (pTakeoverTarget)
-			{
-				displayRankName = GetRankName(g_PR->GetXP(pTakeoverTarget->entindex()), true);
-			}
-		}
 
 		const int healthMode = cl_neo_hud_health_mode.GetInt();
 		char playerHealth[7]; // 4 digits + 2 letters
