@@ -259,7 +259,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			int textWidth, textHeight;
 			vgui::surface()->GetTextSize(m_hFont, textUTF, textWidth, textHeight);
 			vgui::surface()->DrawSetTextPos(x - (textWidth / 2), y - textHeight);
-			vgui::surface()->DrawPrintText(textUTF, numChars);
+			NeoHud::DrawPrintText(textUTF, numChars);
 			textSize = textHeight;
 		};
 

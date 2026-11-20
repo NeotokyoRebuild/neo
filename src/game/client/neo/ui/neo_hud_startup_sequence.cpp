@@ -111,7 +111,7 @@ void CNEOHud_StartupSequence::DrawNeoHudElement()
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawSetTextColor(COLOR_FADED_WHITE);
 	surface()->DrawSetTextPos(0,0);
-	surface()->DrawPrintText(FLAVOUR_TEXT[m_iSelectedText].text, FLAVOUR_TEXT[m_iSelectedText].length);
+	NeoHud::DrawPrintText(FLAVOUR_TEXT[m_iSelectedText].text, FLAVOUR_TEXT[m_iSelectedText].length);
 }
 
 void CNEOHud_StartupSequence::Paint()

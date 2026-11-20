@@ -131,7 +131,7 @@ void CNEOHud_PlaceName::DrawNeoHudElement()
 		vgui::surface()->DrawSetTextFont(textFont);
 		vgui::surface()->DrawSetTextColor(textColor);
 		vgui::surface()->DrawSetTextPos(textXpos + textXOffset, textYpos);
-		vgui::surface()->DrawPrintText(m_szPlaceName, V_wcslen(m_szPlaceName));
+		NeoHud::DrawPrintText(m_szPlaceName, V_wcslen(m_szPlaceName));
 	}
 }
 
