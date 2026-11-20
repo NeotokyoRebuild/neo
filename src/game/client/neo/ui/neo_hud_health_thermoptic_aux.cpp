@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_hud_health_thermoptic_aux.h"
+#include "neo_hud_draw.h"
 
 #include "c_neo_player.h"
 
@@ -77,7 +78,10 @@ void CNEOHud_HTA::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	LoadControlSettings("scripts/HudLayout.res");
 
-	m_hFont = NeoHud::GetFont(pScheme, "NHudPanelText", NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false));
+	const vgui::HFont hOCRSmallFont = NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false);
+	const vgui::HFont hPanelTextFont = NeoHud::GetFont(pScheme, "NHudPanelText", hOCRSmallFont);
+	m_hFont = NeoHud::GetFont(pScheme, "NHudVitalsText", hPanelTextFont);
+	m_hNumberFont = NeoHud::GetFont(pScheme, "NHudVitalsNumber", hPanelTextFont);
 	m_hFontBuildInfo = NeoHud::GetFont(pScheme, "Default", vgui::INVALID_FONT, false);
 
 	surface()->GetScreenSize(m_resX, m_resY);
@@ -96,11 +100,11 @@ void CNEOHud_HTA::DrawBuildInfo() const
 	// DIY text shadow for contrast
 	surface()->DrawSetTextColor(COLOR_BLACK);
 	surface()->DrawSetTextPos(x + 2, y + 2);
-	surface()->DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
+	NeoHud::DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
 
 	surface()->DrawSetTextColor(COLOR_WHITE);
 	surface()->DrawSetTextPos(x, y);
-	surface()->DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
+	NeoHud::DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
 }
 
 
@@ -136,10 +140,6 @@ void CNEOHud_HTA::DrawHTA() const
 		V_sprintf_safe(value_Aux, "%d", aux);
 	}
 
-	const int valLen_Integrity = V_strlen(value_Integrity);
-	const int valLen_ThermOptic = V_strlen(value_ThermOptic);
-	const int valLen_Aux = V_strlen(value_Aux);
-
 	g_pVGuiLocalize->ConvertANSIToUnicode(value_Integrity, unicodeValue_Integrity, sizeof(unicodeValue_Integrity));
 	if (playerIsNotSupport)
 	{
@@ -149,41 +149,35 @@ void CNEOHud_HTA::DrawHTA() const
 
 	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall, m_boxColor, top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner);
 
-	surface()->DrawSetTextFont(m_hFont);
+	// Each row's text sits on the bottom of its bar, in master's panel text size and spacing
+	const int iHealthBaseline = static_cast<int>(healthbar_ypos + ypos + healthbar_h);
+	const int iCamoBaseline = static_cast<int>(camobar_ypos + ypos + camobar_h);
+	const int iSprintBaseline = static_cast<int>(sprintbar_ypos + ypos + sprintbar_h);
+
 	surface()->DrawSetTextColor(m_healthTextColor);
-	surface()->DrawSetTextPos(healthtext_xpos + xpos, healthtext_ypos + ypos);
-	surface()->DrawPrintText(L"INTEGRITY", 9);
+	NeoHud::DrawTextLeft(m_hFont, healthtext_xpos + xpos, iHealthBaseline, L"INTEGRITY");
 	if (playerIsNotSupport)
 	{
 		if (playerIsNotJuggernaut)
 		{
 			surface()->DrawSetTextColor(m_camoTextColor);
-			surface()->DrawSetTextPos(camotext_xpos + xpos, camotext_ypos + ypos);
-			surface()->DrawPrintText(L"THERM-OPTIC", 11);
+			NeoHud::DrawTextLeft(m_hFont, camotext_xpos + xpos, iCamoBaseline, L"THERM-OPTIC");
 		}
 		surface()->DrawSetTextColor(m_sprintTextColor);
-		surface()->DrawSetTextPos(sprinttext_xpos + xpos, sprinttext_ypos + ypos);
-		surface()->DrawPrintText(L"AUX POWER", 9);
+		NeoHud::DrawTextLeft(m_hFont, sprinttext_xpos + xpos, iSprintBaseline, L"AUX POWER");
 	}
 
-	int fontWidth, fontHeight;
 	surface()->DrawSetTextColor(m_healthTextColor);
-	surface()->GetTextSize(m_hFont, unicodeValue_Integrity, fontWidth, fontHeight);
-	surface()->DrawSetTextPos(healthnum_xpos + xpos - fontWidth, healthnum_ypos + ypos);
-	surface()->DrawPrintText(unicodeValue_Integrity, valLen_Integrity);
+	NeoHud::DrawTextRight(m_hNumberFont, healthnum_xpos + xpos, iHealthBaseline, unicodeValue_Integrity);
 	if (playerIsNotSupport)
 	{
 		if (playerIsNotJuggernaut)
 		{
 			surface()->DrawSetTextColor(m_camoTextColor);
-			surface()->GetTextSize(m_hFont, unicodeValue_ThermOptic, fontWidth, fontHeight);
-			surface()->DrawSetTextPos(camonum_xpos + xpos - fontWidth, camonum_ypos + ypos);
-			surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
+			NeoHud::DrawTextRight(m_hNumberFont, camonum_xpos + xpos, iCamoBaseline, unicodeValue_ThermOptic);
 		}
 		surface()->DrawSetTextColor(m_sprintTextColor);
-		surface()->GetTextSize(m_hFont, unicodeValue_Aux, fontWidth, fontHeight);
-		surface()->DrawSetTextPos(sprintnum_xpos + xpos - fontWidth, sprintnum_ypos + ypos);
-		surface()->DrawPrintText(unicodeValue_Aux, valLen_Aux);
+		NeoHud::DrawTextRight(m_hNumberFont, sprintnum_xpos + xpos, iSprintBaseline, unicodeValue_Aux);
 	}
 
 	// Integrity progress bar
