@@ -1,6 +1,5 @@
 #include "cbase.h"
 
-#include <vgui_controls/ImagePanel.h>
 #include <vgui_controls/ImageList.h>
 #include "neo_hud_round_state.h"
 #include "neo_hud_draw.h"
@@ -13,8 +12,6 @@
 #include <vgui/ISurface.h>
 
 #include <initializer_list>
-
-#include <vgui_controls/ImagePanel.h>
 
 #include "c_neo_player.h"
 #include "neo_weapon_loadout.h"
@@ -52,6 +49,9 @@ extern ConVar sv_neo_bot_cmdr_enable;
 namespace {
 constexpr int Y_POS = 0;
 constexpr bool STARS_HW_FILTERED = false;
+// The star image, icon and squad name together, as it is drawn at 1080p
+constexpr int STAR_IMAGE_WIDE = 192;
+constexpr int STAR_IMAGE_TALL = 48;
 
 constexpr int SQUAD_LIST_Y = 50;
 constexpr int SQUAD_ROW_ALPHA = 225;
@@ -95,28 +95,14 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	}
 
 	// Initialize star textures
-	const bool starAutoDelete = true;
-	COMPILE_TIME_ASSERT(starAutoDelete); // If not, we need to handle that memory on dtor manually
-
 	for (int i = 0; i < STAR__TOTAL; ++i)
 	{
-		static constexpr const char *IP_STAR_NAMES[STAR__TOTAL] = {
-			"alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "none"
+		static constexpr const char *STAR_TEXTURES[STAR__TOTAL] = {
+			"vgui/hud/star_alpha", "vgui/hud/star_bravo", "vgui/hud/star_charlie", "vgui/hud/star_delta",
+			"vgui/hud/star_echo", "vgui/hud/star_foxtrot", "vgui/hud/star_none"
 		};
-		const char *name = IP_STAR_NAMES[i];
-		char ipName[32];
-		char hudName[32];
-		V_snprintf(ipName, sizeof(ipName), "star_%s", name);
-		V_snprintf(hudName, sizeof(hudName), "hud/star_%s", name);
-
-		m_ipStars[i] = new vgui::ImagePanel(this, ipName);
-		auto *star = m_ipStars[i];
-		star->SetImage(vgui::scheme()->GetImage(hudName, STARS_HW_FILTERED));
-		star->SetDrawColor(COLOR_NSF); // This will get updated in the draw check as required
-		star->SetAlpha(1.0f);
-		star->SetShouldScaleImage(true);
-		star->SetAutoDelete(starAutoDelete);
-		star->SetVisible(false);
+		m_iStarTextures[i] = surface()->CreateNewTextureID();
+		surface()->DrawSetTextureFile(m_iStarTextures[i], STAR_TEXTURES[i], STARS_HW_FILTERED, false);
 	}
 
 	m_iClassIcons = surface()->CreateNewTextureID();
@@ -154,11 +140,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 
 void CNEOHud_RoundState::LevelShutdown(void)
 {
-	for (int i = 0; i < STAR__TOTAL; ++i)
-	{
-		auto* star = m_ipStars[i];
-		star->SetVisible(false);
-	}
+	m_iStarToDraw = -1;
 
 	// NEO NOTE (Adam) set m_iPreviouslyActiveStar && m_iPreviouslyActiveTeam to -1? Seems to work fine without 
 }
@@ -190,14 +172,8 @@ void CNEOHud_RoundState::UpdateStarSize()
 {
 	IntDim res = {};
 	surface()->GetScreenSize(res.w, res.h);
-	const float scale = cl_neo_squad_hud_star_scale.GetFloat() != 0 ? cl_neo_squad_hud_star_scale.GetFloat() * (res.h / 1080.0f)
-																	: 1.f;
-
-	for (auto* star : m_ipStars)
-	{
-		star->SetWide(192 * scale);
-		star->SetTall(48 * scale);
-	}
+	m_flStarScale = cl_neo_squad_hud_star_scale.GetFloat() != 0 ? cl_neo_squad_hud_star_scale.GetFloat() * (res.h / 1080.0f)
+																: 1.f;
 }
 
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -546,9 +522,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		return;
 	}
 
-	surface()->DrawSetTextFont(m_hOCRFont);
 	int fontWidth, fontHeight;
-	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
 
 	// Draw Box
 	DrawNeoHudRoundedBox(m_iLeftOffset, Y_POS, m_iRightOffset, m_iBoxYEnd, box_color, top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner);
@@ -577,26 +551,12 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	const auto rightTeamInfo = m_teamLogoColors[rightTeam];
 
 	// Draw total players alive (or score)
-	surface()->DrawSetTextFont(m_hOCRSmallerFont);
-	surface()->GetTextSize(m_hOCRSmallerFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(COLOR_FADED_WHITE);
-	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd - fontHeight);
-	surface()->DrawPrintText(m_wszPlayersAliveUnicode, ARRAYSIZE(m_wszPlayersAliveUnicode) - 1);
+	DrawPlayersAlive();
 
 	// Draw time
-	surface()->DrawSetTextFont(m_hOCRFont);
-	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
-	if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown || NEORules()->GetGameType() == NEO_GAME_TYPE_CTG ?
-		(NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime && (NEORules()->GetRoundRemainingTime() < sv_neo_ctg_ghost_overtime_grace.GetFloat())) : NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime)
-	{
-		surface()->DrawSetTextColor(COLOR_RED);
-	}
-	else
-	{
-		surface()->DrawSetTextColor(COLOR_WHITE);
-	}
-	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd / 2 - fontHeight / 2);
-	surface()->DrawPrintText(m_wszTime, 6);
+	const bool bClockRed = NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown || NEORules()->GetGameType() == NEO_GAME_TYPE_CTG ?
+		(NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime && (NEORules()->GetRoundRemainingTime() < sv_neo_ctg_ghost_overtime_grace.GetFloat())) : NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime;
+	DrawRoundClock(bClockRed ? COLOR_RED : COLOR_WHITE);
 
 	if (NEORules()->IsTeamplay())
 	{
@@ -771,6 +731,38 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			}
 		}
 	}
+}
+
+void CNEOHud_RoundState::DrawRoundClock(const Color &color) const
+{
+	int fontWidth, fontHeight;
+	surface()->DrawSetTextFont(m_hOCRFont);
+	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
+	surface()->DrawSetTextColor(color);
+	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd / 2 - fontHeight / 2);
+	surface()->DrawPrintText(m_wszTime, 6);
+}
+
+void CNEOHud_RoundState::DrawPlayersAlive() const
+{
+	int fontWidth, fontHeight;
+	surface()->DrawSetTextFont(m_hOCRSmallerFont);
+	surface()->GetTextSize(m_hOCRSmallerFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
+	surface()->DrawSetTextColor(COLOR_FADED_WHITE);
+	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd - fontHeight);
+	surface()->DrawPrintText(m_wszPlayersAliveUnicode, ARRAYSIZE(m_wszPlayersAliveUnicode) - 1);
+}
+
+void CNEOHud_RoundState::DrawActiveStar() const
+{
+	if (m_iStarToDraw < 0)
+	{
+		return;
+	}
+
+	surface()->DrawSetTexture(m_iStarTextures[m_iStarToDraw]);
+	surface()->DrawSetColor(m_colorStar);
+	surface()->DrawTexturedRect(0, Y_POS, static_cast<int>(STAR_IMAGE_WIDE * m_flStarScale), Y_POS + static_cast<int>(STAR_IMAGE_TALL * m_flStarScale));
 }
 
 const char *CNEOHud_RoundState::GetSquadRowName(const int playerIndex) const
@@ -1209,10 +1201,7 @@ void CNEOHud_RoundState::CheckActiveStar()
 	m_iPreviouslyActiveStar = currentStar;
 	m_iPreviouslyActiveTeam = currentTeam;
 
-	for (auto *ipStar : m_ipStars)
-	{
-		ipStar->SetVisible(false);
-	}
+	m_iStarToDraw = -1;
 
 	if (currentTeam != TEAM_JINRAI && currentTeam != TEAM_NSF)
 	{
@@ -1226,13 +1215,13 @@ void CNEOHud_RoundState::CheckActiveStar()
 		currentStar = STAR_NONE;
 	}
 
-	vgui::ImagePanel *target = m_ipStars[currentStar];
-	target->SetVisible(true);
-	target->SetDrawColor(currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
+	m_iStarToDraw = currentStar;
+	m_colorStar = currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI;
 }
 
 void CNEOHud_RoundState::Paint()
 {
+	DrawActiveStar();
 	BaseClass::Paint();
 	PaintNeoElement();
 }
