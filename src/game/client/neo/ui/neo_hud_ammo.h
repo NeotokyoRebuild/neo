@@ -27,6 +27,8 @@ protected:
 
 private:
 	void DrawAmmo() const;
+	void DrawWeaponIcon(const C_NEOBaseCombatWeapon *activeWep) const;
+	void DrawRounds(const char *ammoChar, int magSizeMax, int magSizeCurrent, int maxClip) const;
 	void DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep) const;
 
 private:

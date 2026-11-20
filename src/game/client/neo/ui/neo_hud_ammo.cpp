@@ -123,7 +123,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	const int ammoCount = activeWep->m_iPrimaryAmmoCount;
 	const int numClips = ceil(abs((float)ammoCount / activeWep->GetMaxClip1())); // abs because grenades return negative values (???) // casting division to float in case we have a half-empty mag, rounding up to show the half mag as one more mag
 	const bool isSupa = activeWep->GetNeoWepBits() & NEO_WEP_SUPA7;
-		
+
 	if (activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_DETPACK)) {
 		const int maxLen = 5;
 		char clipsText[maxLen]{ '\0' };
@@ -151,32 +151,11 @@ void CNEOHud_Ammo::DrawAmmo() const
 		
 	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || (activeWep->GetNeoWepBits() & NEO_WEP_BALC))
 	{
-		char fireModeText[2]{ '\0' };
-
 		ammoChar = activeWep->GetNEOWpnData().szBulletCharacter;
 		magSizeMax = activeWep->GetMaxClip1();
 		magSizeCurrent = activeWep->Clip1();
-			
-		if(activeWep)
-		{			
-			if(activeWep->IsAutomatic())
-				fireModeText[0] = 'j';
-			else if(isSupa)
-				if(dynamic_cast<CWeaponSupa7*>(activeWep)->SlugLoaded())
-					fireModeText[0] = 'h';
-				else
-					fireModeText[0] = 'l';
-			else
-				fireModeText[0] = 'h';
-				
- 
-			wchar_t unicodeFireModeText[2]{ L'\0' };
-			g_pVGuiLocalize->ConvertANSIToUnicode(fireModeText, unicodeFireModeText, sizeof(unicodeFireModeText));
 
-			surface()->DrawSetTextFont(m_hFireModeFont);
-			surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
-			surface()->DrawPrintText(unicodeFireModeText, V_wcslen(unicodeFireModeText));
-		}
+		DrawWeaponIcon(activeWep);
 	} else 
 	{
 		if(activeWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE)
@@ -210,6 +189,34 @@ void CNEOHud_Ammo::DrawAmmo() const
 	if (ammoChar == nullptr)
 		return;
 
+	DrawRounds(ammoChar, magSizeMax, magSizeCurrent, maxClip);
+}
+
+void CNEOHud_Ammo::DrawWeaponIcon(const C_NEOBaseCombatWeapon *activeWep) const
+{
+	const NEO_WEP_BITS_UNDERLYING_TYPE iNeoWepBits = activeWep->GetNeoWepBits();
+
+	char fireModeText[2]{ '\0' };
+	if(activeWep->IsAutomatic())
+		fireModeText[0] = 'j';
+	else if(iNeoWepBits & NEO_WEP_SUPA7)
+		if(assert_cast<const CWeaponSupa7*>(activeWep)->SlugLoaded())
+			fireModeText[0] = 'h';
+		else
+			fireModeText[0] = 'l';
+	else
+		fireModeText[0] = 'h';
+
+	wchar_t unicodeFireModeText[2]{ L'\0' };
+	g_pVGuiLocalize->ConvertANSIToUnicode(fireModeText, unicodeFireModeText, sizeof(unicodeFireModeText));
+
+	surface()->DrawSetTextFont(m_hFireModeFont);
+	surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
+	surface()->DrawPrintText(unicodeFireModeText, V_wcslen(unicodeFireModeText));
+}
+
+void CNEOHud_Ammo::DrawRounds(const char *ammoChar, int magSizeMax, const int magSizeCurrent, const int maxClip) const
+{
 	const int maxSpaceAvailableForBullets = digit_max_width;
 	const int bulletWidth = surface()->GetCharacterWidth(m_hBulletFont, *ammoChar);
 	const int plusWidth = surface()->GetCharacterWidth(m_hBulletFont, '+');
