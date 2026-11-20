@@ -1966,6 +1966,30 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudSquadRow
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudSquadRowSmall
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"7"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
 		NHudOCRSmallerNoAdditive
 		{
 			"1"

@@ -3,6 +3,7 @@
 #include <vgui_controls/ImagePanel.h>
 #include <vgui_controls/ImageList.h>
 #include "neo_hud_round_state.h"
+#include "neo_hud_draw.h"
 
 #include "iclientmode.h"
 #include "ienginevgui.h"
@@ -16,6 +17,7 @@
 #include <vgui_controls/ImagePanel.h>
 
 #include "c_neo_player.h"
+#include "neo_weapon_loadout.h"
 #include "c_team.h"
 #include "c_playerresource.h"
 #include "neo_scoreboard.h"
@@ -50,6 +52,26 @@ extern ConVar sv_neo_bot_cmdr_enable;
 namespace {
 constexpr int Y_POS = 0;
 constexpr bool STARS_HW_FILTERED = false;
+
+constexpr int SQUAD_LIST_Y = 50;
+constexpr int SQUAD_ROW_ALPHA = 225;
+constexpr int SQUAD_ROW_SMALL_ALPHA = 170;
+// A dead teammate's row keeps this share of the alpha its group draws in
+constexpr float SQUAD_ROW_DEAD_ALPHA_SCALE = 0.4f;
+constexpr float SQUAD_DETAIL_ALPHA_SCALE = 0.72f;
+
+// Sizes written in pixels at 1080p
+constexpr int SQUAD_ROW_X_PX = 13;
+constexpr int SQUAD_COLUMN_GAP_PX = 10;
+constexpr int SQUAD_LIST_GROUP_GAP_PX = 10;
+// Pixels between one row's line height and the next row
+constexpr int SQUAD_ROW_GAP_PX = 1;
+
+// The squad list calls the Juggernaut a Jaeger
+const wchar_t *GetSquadClassNameW(const int iClass)
+{
+	return (iClass == NEO_CLASS_JUGGERNAUT) ? L"Jaeger" : GetNeoClassNameW(iClass);
+}
 }
 
 CNEOHud_RoundState *g_pNeoHudRoundState;
@@ -186,6 +208,8 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_hOCRFont = NeoHud::GetFont(pScheme, "NHudOCR", vgui::INVALID_FONT, false);
 	m_hOCRSmallFont = NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false);
 	m_hOCRSmallerFont = NeoHud::GetFont(pScheme, "NHudOCRSmaller", vgui::INVALID_FONT, false);
+	m_hSquadFont = NeoHud::GetFont(pScheme, "NHudSquadRow", m_hOCRSmallFont);
+	m_hSquadSmallFont = NeoHud::GetFont(pScheme, "NHudSquadRowSmall", m_hOCRSmallerFont);
 	m_hTinyText = NeoHud::GetFont(pScheme, "NHudTinyText", vgui::INVALID_FONT, false);
 	m_iTinyTextHeight = surface()->GetFontTall(m_hTinyText);
 
@@ -213,6 +237,26 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_iLeftOffset = m_iXpos - iBoxWidthHalf;
 	m_iRightOffset = m_iXpos + iBoxWidthHalf;
 	m_iBoxYEnd = Y_POS + iBoxHeight;
+
+	m_iSquadRowX = ScaledPx(SQUAD_ROW_X_PX);
+	m_iSquadColumnGap = ScaledPx(SQUAD_COLUMN_GAP_PX);
+	m_iSquadGroupGap = ScaledPx(SQUAD_LIST_GROUP_GAP_PX);
+	m_iSquadRowGap = ScaledPx(SQUAD_ROW_GAP_PX);
+	// The squad list's fixed columns, each as wide as the widest text it can hold in the squad's rows, whose font is the larger
+	m_iSquadClassWide = 0;
+	for (int i = 0; i < NEO_CLASS__ENUM_COUNT; ++i)
+	{
+		m_iSquadClassWide = Max(m_iSquadClassWide, NeoHud::GetTextWide(m_hSquadFont, GetSquadClassNameW(i)));
+	}
+	m_iSquadRankWide = 0;
+	for (const int iXP : { XP_PRIVATE - 1, XP_PRIVATE, XP_CORPORAL, XP_SERGEANT, XP_LIEUTENANT })
+	{
+		m_iSquadRankWide = Max(m_iSquadRankWide, NeoHud::GetTextWide(m_hSquadFont, GetRankNameW(iXP, true)));
+	}
+	// Health reaches three digits, measured here at the widest digit, and a dead teammate's row reads DEAD
+	const int iDeadWide = NeoHud::GetTextWide(m_hSquadFont, L"DEAD");
+	m_iSquadHealthHpWide = Max(iDeadWide, NeoHud::GetNumberWide(m_hSquadFont, L"000hp"));
+	m_iSquadHealthPercentWide = Max(iDeadWide, NeoHud::GetNumberWide(m_hSquadFont, L"000%"));
 
 	UpdateAvatarSize();
 	UpdateStarSize();
@@ -729,6 +773,17 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	}
 }
 
+const char *CNEOHud_RoundState::GetSquadRowName(const int playerIndex) const
+{
+	C_NEO_Player *pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+	if (g_PR->IsAlive(playerIndex))
+	{
+		return pNeoPlayer ? pNeoPlayer->GetPlayerNameWithTakeoverContext(playerIndex) : g_PR->GetPlayerName(playerIndex);
+	}
+	C_NEO_Player *pImpersonator = pNeoPlayer ? pNeoPlayer->GetSpectatorTakeoverPlayerImpersonatingMe() : nullptr;
+	return pImpersonator ? pImpersonator->GetPlayerName() : g_PR->GetPlayerName(playerIndex);
+}
+
 void CNEOHud_RoundState::DrawPlayerList()
 {
 	if (!NEORules()->IsTeamplay())
@@ -749,7 +804,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const int localPlayerIndex = GetLocalPlayerIndex();
 		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
 
-		int offset = 52;
+		int offset = SQUAD_LIST_Y;
 		if (cl_neo_squad_hud_star_scale.GetFloat() > 0)
 		{
 			IntDim res = {};
@@ -791,7 +846,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 
 			if (squadMateFound)
 			{
-				offset += 12;
+				offset += m_iSquadGroupGap;
 			}
 		}
 
@@ -834,7 +889,7 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 	const int localPlayerIndex = GetLocalPlayerIndex();
 	const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
 
-	int offset = 52;
+	int offset = SQUAD_LIST_Y;
 	if (cl_neo_squad_hud_star_scale.GetFloat() > 0)
 	{
 		IntDim res = {};
@@ -908,7 +963,7 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 
 	if (squadMateFound)
 	{
-		offset += 12;
+		offset += m_iSquadGroupGap;
 	}
 
 	// Draw other team mates
@@ -920,48 +975,60 @@ void CNEOHud_RoundState::DrawPlayerList_BotCmdr()
 
 int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool small, const Color* colorOverride)
 {
-	// Draw player
-	static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
-	char squadMateText[SQUAD_MATE_TEXT_LENGTH];
-	wchar_t wSquadMateText[SQUAD_MATE_TEXT_LENGTH];
-	const char* squadMateRankName = GetRankName(g_PR->GetXP(playerIndex), true);
-	const char* squadMateClass = GetNeoClassName(g_PR->GetClass(playerIndex));
 	const bool isAlive = g_PR->IsAlive(playerIndex);
 
 	C_NEO_Player* pNeoPlayer = ToNEOPlayer(UTIL_PlayerByIndex(playerIndex));
+	const char* pPlayerDisplayName = GetSquadRowName(playerIndex);
+	const wchar_t* pwszRank = GetRankNameW(g_PR->GetXP(playerIndex), true);
+	const wchar_t* pwszClass = GetSquadClassNameW(g_PR->GetClass(playerIndex));
+	char playerHealth[7] = "DEAD"; // 4 digits + 2 letters
 	if (isAlive)
 	{
-		const char* pPlayerDisplayName = pNeoPlayer ?
-			pNeoPlayer->GetPlayerNameWithTakeoverContext(playerIndex)
-			: g_PR->GetPlayerName(playerIndex);
-
 		const int healthMode = cl_neo_hud_health_mode.GetInt();
-		char playerHealth[7]; // 4 digits + 2 letters
 		V_snprintf(playerHealth, sizeof(playerHealth), healthMode ? "%dhp" : "%d%%", g_PR->GetDisplayedHealth(playerIndex, healthMode));
-		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  %s", pPlayerDisplayName, squadMateRankName, squadMateClass, playerHealth);
 	}
 	else
 	{
 		auto* pImpersonator = pNeoPlayer ? pNeoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get() : nullptr;
-
-		const char* pPlayerDisplayName = pImpersonator ?
-			pImpersonator->GetPlayerName()
-			: g_PR->GetPlayerName(playerIndex);
-
-		const char* displayClass = pImpersonator ? GetNeoClassName(pImpersonator->m_iClassBeforeTakeover) : squadMateClass;
-		V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s  [%s]  DEAD", pPlayerDisplayName, displayClass);
+		if (pImpersonator)
+		{
+			pwszClass = GetSquadClassNameW(pImpersonator->m_iClassBeforeTakeover);
+			pwszRank = GetRankNameW(g_PR->GetXP(pImpersonator->entindex()), true);
+		}
 	}
-	int wSquadMateTextLen = g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
 
-	int fontWidth, fontHeight;
-	surface()->DrawSetTextFont(small ? m_hOCRSmallerFont : m_hOCRSmallFont);
-	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
+	wchar_t wszName[MAX_PLAYER_NAME_LENGTH + 1];
+	wchar_t wszHealth[ARRAYSIZE(playerHealth)];
+	g_pVGuiLocalize->ConvertANSIToUnicode(pPlayerDisplayName, wszName, sizeof(wszName));
+	g_pVGuiLocalize->ConvertANSIToUnicode(playerHealth, wszHealth, sizeof(wszHealth));
 
-	surface()->DrawSetTextColor(colorOverride ? *colorOverride : (isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE));
-	surface()->DrawSetTextPos(8, yOffset);
-	surface()->DrawPrintText(wSquadMateText, wSquadMateTextLen - 1);
+	// A teammate outside the squad has the smaller font, as on master
+	const vgui::HFont hRowFont = small ? m_hSquadSmallFont : m_hSquadFont;
+	const int iAliveAlpha = small ? SQUAD_ROW_SMALL_ALPHA : SQUAD_ROW_ALPHA;
+	const int iAlpha = isAlive ? iAliveAlpha : static_cast<int>(iAliveAlpha * SQUAD_ROW_DEAD_ALPHA_SCALE);
+	const Color colorRow = Color(255, 255, 255, iAlpha);
+	const Color colorDetail = Color(255, 255, 255, iAlpha * SQUAD_DETAIL_ALPHA_SCALE);
 
-	return yOffset + fontHeight;
+	// The health, class and rank have fixed columns, so the name comes last and shows in full
+	const int iHealthWide = (cl_neo_hud_health_mode.GetInt() != 0) ? m_iSquadHealthHpWide : m_iSquadHealthPercentWide;
+	const int iHealthRight = m_iSquadRowX + iHealthWide;
+	const int iClassX = iHealthRight + m_iSquadColumnGap;
+	const int iRankX = iClassX + m_iSquadClassWide + m_iSquadColumnGap;
+	const int iNameX = iRankX + m_iSquadRankWide + m_iSquadColumnGap;
+	const int yBaseline = yOffset + surface()->GetFontAscent(hRowFont, L'0');
+
+	// The health ends on the column's right edge by its ink
+	surface()->DrawSetTextColor(colorOverride ? *colorOverride : colorRow);
+	NeoHud::DrawTextRight(hRowFont, iHealthRight, yBaseline, wszHealth);
+
+	surface()->DrawSetTextColor(colorDetail);
+	NeoHud::DrawTextLeft(hRowFont, iClassX, yBaseline, pwszClass);
+	NeoHud::DrawTextLeft(hRowFont, iRankX, yBaseline, pwszRank);
+
+	surface()->DrawSetTextColor(colorOverride ? *colorOverride : colorRow);
+	NeoHud::DrawTextLeft(hRowFont, iNameX, yBaseline, wszName);
+
+	return yOffset + surface()->GetFontTall(hRowFont) + m_iSquadRowGap;
 }
 
 void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
