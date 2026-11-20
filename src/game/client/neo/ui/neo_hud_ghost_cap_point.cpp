@@ -125,7 +125,7 @@ void CNEOHud_GhostCapPoint::DrawNeoHudElement()
 			vgui::surface()->DrawSetTextColor(FadeColour(COLOR_TINTGREY, fadeTextMultiplier));
 			vgui::surface()->DrawSetTextFont(m_hFont);
 			vgui::surface()->DrawSetTextPos(x - (xWide / 2), y + (HALF_BASE_TEX_LENGTH * scale));
-			vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, V_wcslen(m_wszMarkerTextUnicode));
+			NeoHud::DrawPrintText(m_wszMarkerTextUnicode, V_wcslen(m_wszMarkerTextUnicode));
 		}
 	}
 

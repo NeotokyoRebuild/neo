@@ -1680,6 +1680,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_ammo.cpp
     neo/ui/neo_hud_childelement.cpp
     neo/ui/neo_hud_draw.cpp
+    neo/ui/neo_hud_draw_debug.cpp
     neo/ui/neo_hud_compass.cpp
     neo/ui/neo_hud_damage_indicator.cpp
     neo/ui/neo_hud_deathnotice.cpp
@@ -1727,6 +1728,7 @@ target_sources_grouped(
     neo/ui/neo_hud_ammo.h
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_draw.h
+    neo/ui/neo_hud_draw_debug.h
     neo/ui/neo_hud_compass.h
     neo/ui/neo_hud_deathnotice.h
     neo/ui/neo_hud_friendly_marker.h

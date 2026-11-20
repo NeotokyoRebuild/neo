@@ -6,8 +6,13 @@
 
 #include "neo_gamerules.h"
 #include "neo_hud_draw.h"
+#include "neo_hud_draw_debug.h"
 
 class C_NEO_Player;
+namespace vgui
+{
+class Panel;
+}
 
 #define NEO_HUD_ELEMENT_FREQ_CVAR_NAME(Name) cl_neo_hud_ ## Name ## _update_freq
 #ifndef xstr
@@ -63,7 +68,9 @@ protected:
 				UpdateStateForNeoHudElementDraw();
 			}
 
+			BeginDebugElement();
 			DrawNeoHudElement();
+			NeoHud::SetDebugElement(nullptr);
 		}
 	}
 
@@ -100,12 +107,18 @@ protected:
 
 private:
 	float GetUpdateFrequency() const { return GetUpdateFrequencyConVar()->GetFloat(); }
+	// Tells the debug view which element draws next and where its panel is on screen
+	void BeginDebugElement();
 
 private:
 	vgui::HTexture m_hTex_Rounded_NE, m_hTex_Rounded_NW, m_hTex_Rounded_SE, m_hTex_Rounded_SW;
 	int m_rounded_width, m_rounded_height;
 
 	float m_flLastUpdateTime;
+
+	// The panel this element also is, looked up the first time the debug view asks
+	vgui::Panel *m_pDebugPanel = nullptr;
+	bool m_bDebugPanelLookedUp = false;
 };
 
 #endif // NEO_HUD_CHILDELEMENT_H

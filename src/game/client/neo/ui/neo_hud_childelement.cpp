@@ -4,6 +4,7 @@
 #include "c_neo_player.h"
 
 #include "clientmode_hl2mpnormal.h"
+#include <vgui_controls/Panel.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -72,6 +73,8 @@ CNEOHud_ChildElement::XYHudPos CNEOHud_ChildElement::DrawNeoHudRoundedCommon(
 	if (p.x1w < p.x0w)
 		p.x1w = p.x0w = x0 + ((x1 - x0) / 2);
 
+	NeoHud::DebugBox("box", x0, y0, x1, y1);
+
 	surface()->DrawSetColor(color);
 
 	// Rounded corner pieces
@@ -124,6 +127,26 @@ void CNEOHud_ChildElement::DrawNeoHudRoundedBoxFaded(const int x0, const int y0,
 	// Small side rectangles
 	surface()->DrawFilledRectFade(x0, topLeft ? p.y0h : y0, p.x0w, bottomLeft ? p.y1h : y1, alpha0, alpha0, bHorizontal);
 	surface()->DrawFilledRectFade(p.x1w, topRight ? p.y0h : y0, x1, bottomRight ? p.y1h : y1, alpha1, alpha1, bHorizontal);
+}
+
+void CNEOHud_ChildElement::BeginDebugElement()
+{
+	if (!NeoHud::IsDebugActive())
+	{
+		return;
+	}
+	if (!m_bDebugPanelLookedUp)
+	{
+		// Every HUD element is also a panel, but this base class does not know which
+		m_pDebugPanel = dynamic_cast<vgui::Panel *>(this);
+		m_bDebugPanelLookedUp = true;
+	}
+	int x = 0, y = 0;
+	if (m_pDebugPanel)
+	{
+		m_pDebugPanel->LocalToScreen(x, y);
+	}
+	NeoHud::SetDebugElement(m_pDebugPanel ? m_pDebugPanel->GetName() : "", x, y);
 }
 
 int CNEOHud_ChildElement::GetMargin()
