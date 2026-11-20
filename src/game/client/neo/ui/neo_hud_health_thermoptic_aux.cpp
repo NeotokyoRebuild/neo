@@ -77,13 +77,8 @@ void CNEOHud_HTA::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	LoadControlSettings("scripts/HudLayout.res");
 
-	m_hFont = pScheme->GetFont("NHudPanelText", true);
-	if (!m_hFont)
-	{
-		// A custom ClientScheme.res from before NHudPanelText existed
-		m_hFont = pScheme->GetFont("NHudOCRSmall");
-	}
-	m_hFontBuildInfo = pScheme->GetFont("Default");
+	m_hFont = NeoHud::GetFont(pScheme, "NHudPanelText", NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false));
+	m_hFontBuildInfo = NeoHud::GetFont(pScheme, "Default", vgui::INVALID_FONT, false);
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);

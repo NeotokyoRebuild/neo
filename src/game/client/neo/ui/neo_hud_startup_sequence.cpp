@@ -38,7 +38,7 @@ void CNEOHud_StartupSequence::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	m_hFont = pScheme->GetFont("BOOT");
+	m_hFont = NeoHud::GetFont(pScheme, "BOOT", vgui::INVALID_FONT, false);
 	int fontTall = surface()->GetFontTall(m_hFont);
 	surface()->DrawSetTextFont(m_hFont);
 

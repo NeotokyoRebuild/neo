@@ -76,7 +76,7 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
+	m_hFont = NeoHud::GetFont(pScheme, "NHudOCRSmall");
 
 	int wide, tall;
 	surface()->GetScreenSize(wide, tall);

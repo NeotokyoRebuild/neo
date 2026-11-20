@@ -216,8 +216,8 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	LoadControlSettings("scripts/HudLayout.res");
 
-	m_hFont = pScheme->GetFont("NHudOCRSmall");
-	m_hFontSmall = pScheme->GetFont("NHudOCRSmallerNoAdditive");
+	m_hFont = NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false);
+	m_hFontSmall = NeoHud::GetFont(pScheme, "NHudOCRSmallerNoAdditive", vgui::INVALID_FONT, false);
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
