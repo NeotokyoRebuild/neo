@@ -206,18 +206,12 @@ void CNEOScoreBoard::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 
-	static constexpr const char *FONT_NAMES[NeoUI::FONT__TOTAL] = {
-		"HudSelectionText",
-		"NHudOCR",
-		"NHudOCRSmallNoAdditive",
-		"ClientTitleFont",
-		"ClientTitleFontSmall",
-		"NeoUINormal",
+	// The body font is the HUD's selection text, and the large slot the menu's normal size
+	static constexpr NeoUI::FontOverride FONT_OVERRIDES[] = {
+		{ NeoUI::FONT_NTNORMAL, "HudSelectionText" },
+		{ NeoUI::FONT_NTLARGE, "NeoUINormal" },
 	};
-	for (int i = 0; i < NeoUI::FONT__TOTAL; ++i)
-	{
-		m_uiCtx.fonts[i].hdl = pScheme->GetFont(FONT_NAMES[i], true);
-	}
+	NeoUI::LoadFonts(&m_uiCtx, pScheme, FONT_OVERRIDES, ARRAYSIZE(FONT_OVERRIDES));
 
 	m_playerPopup = {};
 	m_iTotalPlayers = 0;
