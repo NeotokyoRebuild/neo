@@ -56,6 +56,8 @@ private:
 	};
 
 	void CheckActiveStar();
+	// The name a squad row shows. A dead teammate's row shows the player who took over its body, if any.
+	const char *GetSquadRowName(int playerIndex) const;
 	void DrawPlayerList();
 	void DrawPlayerList_BotCmdr();
 	int DrawPlayerRow(int playerIndex, int yOffset, bool small = false, const Color* highlightColor = nullptr);
@@ -102,6 +104,14 @@ private:
 	vgui::IntRect m_rectLeftTeamTotalLogo = {};
 	vgui::IntRect m_rectRightTeamTotalLogo = {};
 	int m_ilogoSize = 0;
+
+	// Squad list
+	int m_iSquadRowX = 0;
+	int m_iSquadColumnGap = 0;
+	int m_iSquadHealthHpWide = 0;
+	int m_iSquadHealthPercentWide = 0;
+	int m_iSquadClassWide = 0;
+	int m_iSquadRankWide = 0;
 
 	vgui::ImagePanel *m_ipStars[STAR__TOTAL] = {};
 	int m_iPreviouslyActiveStar = -1;
