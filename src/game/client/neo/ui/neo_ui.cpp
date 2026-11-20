@@ -51,6 +51,7 @@ static constexpr const char *DEFAULT_FONT_NAMES[FONT__TOTAL] = {
 	"ClientTitleFont",			// FONT_LOGO
 	"ClientTitleFontSmall",		// FONT_LOGOSMALL
 	"NeoUILarge",				// FONT_NTLARGE
+	"NeoUINormal",				// FONT_NTSMALLTEXT
 };
 
 void LoadFonts(Context *pCtx, vgui::IScheme *pScheme, const FontOverride *pOverrides, const int iOverrides)
