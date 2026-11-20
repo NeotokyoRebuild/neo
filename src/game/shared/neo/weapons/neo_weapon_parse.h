@@ -26,6 +26,7 @@ public:
 	float	m_flCycleTime;
 	float	m_flReloadReadyBeforeEnd;
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
+	char	szHudName[MAX_WEAPON_STRING];			// Name in the ammo panel, the print name unless the script gives a shorter one
 	char	szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
 	char	szDeathIcon[MAX_BULLET_CHARACTER];
 	float	m_flPenetration;
