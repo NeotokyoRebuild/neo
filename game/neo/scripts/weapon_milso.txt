@@ -2,6 +2,7 @@
 WeaponData
 {
 	"printname"		"MilSO"
+	"hudrailbatch"		"4"
 	"BulletCharacter"	"b"
 	"iDeathIcon"		":"
 	"viewmodel"		"models/weapons/v_jinrai_milso.mdl"

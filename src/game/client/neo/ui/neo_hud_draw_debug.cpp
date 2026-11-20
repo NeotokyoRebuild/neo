@@ -54,6 +54,8 @@ struct DebugRecord
 	int x0, y0, x1, y1;
 	int yBaseline;
 	int iInkLeft, iInkRight;
+	// The share of the font's size the text was drawn at, below one for a scaled quad
+	float flScale;
 	wchar_t wszText[DEBUG_TEXT_LENGTH];
 };
 
@@ -107,7 +109,7 @@ void WriteDump()
 	int iScreenWide = 0, iScreenTall = 0;
 	surface()->GetScreenSize(iScreenWide, iScreenTall);
 	g_pFullFileSystem->FPrintf(hFile, "# screen\t%d\t%d\tframe\t%d\n", iScreenWide, iScreenTall, s_iRecordFrame);
-	g_pFullFileSystem->FPrintf(hFile, "# kind\telement\tname\tscheme_font\tfont_family\tfont_tall\tfont_ascent\tx0\ty0\tx1\ty1\tbaseline\tink_left\tink_right\ttext\n");
+	g_pFullFileSystem->FPrintf(hFile, "# kind\telement\tname\tscheme_font\tfont_family\tfont_tall\tfont_ascent\tx0\ty0\tx1\ty1\tbaseline\tink_left\tink_right\ttext\tscale\n");
 	for (const DebugRecord &record : s_records)
 	{
 		static constexpr const char *KIND_NAMES[] = { "box", "text", "glyph" };
@@ -121,13 +123,13 @@ void WriteDump()
 			}
 		}
 		const bool bHasFont = record.eKind != DEBUG_KIND_BOX;
-		g_pFullFileSystem->FPrintf(hFile, "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\n",
+		g_pFullFileSystem->FPrintf(hFile, "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%.3f\n",
 			KIND_NAMES[record.eKind], record.szElement[0] ? record.szElement : "-", record.szName[0] ? record.szName : "-",
 			bHasFont ? GetFontSchemeName(record.hFont) : "-",
 			bHasFont ? surface()->GetFontName(record.hFont) : "-",
 			bHasFont ? surface()->GetFontTall(record.hFont) : 0,
 			bHasFont ? surface()->GetFontAscent(record.hFont, L'0') : 0,
-			record.x0, record.y0, record.x1, record.y1, record.yBaseline, record.iInkLeft, record.iInkRight, szText);
+			record.x0, record.y0, record.x1, record.y1, record.yBaseline, record.iInkLeft, record.iInkRight, szText, record.flScale);
 	}
 	g_pFullFileSystem->Close(hFile);
 	Msg("NeoHud: wrote %d HUD draws of frame %d to %s\n", s_records.Count(), s_iRecordFrame, s_szDumpFile);
@@ -155,6 +157,7 @@ DebugRecord &AddRecord(const DebugKind eKind, const int x0, const int y0, const 
 	DebugRecord &record = s_records[s_records.AddToTail()];
 	record = {};
 	record.eKind = eKind;
+	record.flScale = 1.0f;
 	V_strcpy_safe(record.szElement, s_szElement);
 	record.x0 = x0 + s_xPanel;
 	record.y0 = y0 + s_yPanel;
@@ -330,6 +333,47 @@ void DrawUnicodeChar(const wchar_t wch)
 		DebugSurfaceText(&wch, 1);
 	}
 	surface()->DrawUnicodeChar(wch);
+}
+
+void DebugScaledGlyph(const vgui::HFont font, const wchar_t wch, const float flScale, const int xPen, const int yBaseline, const InkRange &ink)
+{
+	if (!IsDebugActive())
+	{
+		return;
+	}
+	UpdateFrame();
+
+	int a = 0, b = 0, c = 0;
+	surface()->GetCharABCwide(font, wch, a, b, c);
+	const int yTop = yBaseline - RoundFloatToInt(surface()->GetFontAscent(font, L'0') * flScale);
+	const int yBottom = yTop + RoundFloatToInt(surface()->GetFontTall(font) * flScale);
+	const int xPenEnd = xPen + RoundFloatToInt((a + b + c) * flScale);
+
+	// A text record and a glyph record, as DebugText writes for a run of one character
+	for (const DebugKind eKind : { DEBUG_KIND_TEXT, DEBUG_KIND_GLYPH })
+	{
+		DebugRecord &record = AddRecord(eKind, xPen, yTop, xPenEnd, yBottom);
+		record.hFont = font;
+		record.flScale = flScale;
+		record.yBaseline = yBaseline + s_yPanel;
+		record.iInkLeft = ink.iLeft + s_xPanel;
+		record.iInkRight = ink.iRight + s_xPanel;
+		record.wszText[0] = wch;
+	}
+
+	const int iMode = cl_neo_hud_debug_draw.GetInt();
+	if (iMode == NEO_HUD_DEBUG_DRAW_OFF)
+	{
+		return;
+	}
+	surface()->DrawSetColor(COLOR_DEBUG_LINE_BOX);
+	surface()->DrawOutlinedRect(xPen, yTop, xPenEnd, yBottom);
+	DrawHorizontal(COLOR_DEBUG_CUT_EDGE, xPen, xPenEnd, yTop);
+	DrawHorizontal(COLOR_DEBUG_BASELINE, xPen, xPenEnd, yBaseline);
+	if (iMode >= NEO_HUD_DEBUG_DRAW_GLYPHS)
+	{
+		DrawHorizontal(COLOR_DEBUG_GLYPH_EVEN, ink.iLeft, ink.iRight, yBottom - 1);
+	}
 }
 
 void DebugBox(const char *pszName, const int x0, const int y0, const int x1, const int y1)
