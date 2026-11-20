@@ -2585,8 +2585,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"NOCR"
-				"tall"		"25"
+				"name"		"NOCR Icons"
+				"tall"		"24"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"antialias"	"1"
@@ -3904,6 +3904,7 @@ Scheme
 		"12"		"resource/neotokyo_press_n.ttf"
 		"13"		"resource/killfeedicons.ttf"
 		"14"		"resource/montserrat-regular.ttf"
+		"15"		"resource/nocr_icons.ttf"
 	}
 
 }
