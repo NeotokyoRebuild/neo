@@ -3079,6 +3079,17 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudScoreboardIcons
+		{
+			"1"
+			{
+				"name"		"killfeedicons"
+				"tall"		"5"
+				"weight"	"0"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
 		NHudDashScore
 		{
 			"1"
@@ -3423,6 +3434,28 @@ Scheme
 				"weight"	"600"
 				"range"		"0x0000 0x017F"
 				"yres"		"1600 6000"
+				"antialias"	"1"
+			}
+		}
+		NHudScoreboardMono
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"5" [!$LINUX]
+				"tall"		"7" [$LINUX]
+				"weight"	"900"
+				"antialias"	"1"
+			}
+		}
+		NHudScoreboardText
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"5" [!$LINUX]
+				"tall"		"7" [$LINUX]
+				"weight"	"900"
 				"antialias"	"1"
 			}
 		}
