@@ -17,6 +17,7 @@
 #include "utllinkedlist.h"
 #include "utlvector.h"
 #include "utlbuffer.h"
+#include "tier0/threadtools.h"
 #include "vrad.h"
 
 
@@ -59,7 +60,7 @@ public:
 
 public:
 
-	CRITICAL_SECTION	m_CS;
+	CThreadFastMutex	m_CS;
 
 	// This is the light for which m_LightFaces was built.
 	dworldlight_t	m_Light;
@@ -133,8 +134,8 @@ public:
 private:
 
 	// Read/write the header from the file.
-	bool				ReadIncrementalHeader( long fp, CIncrementalHeader *pHeader );
-	bool				WriteIncrementalHeader( long fp );
+	bool				ReadIncrementalHeader( FileHandle_t fp, CIncrementalHeader *pHeader );
+	bool				WriteIncrementalHeader( FileHandle_t fp );
 
 	// Returns true if the incremental file is valid and we can use InitUpdate.
 	bool				IsIncrementalFileValid();

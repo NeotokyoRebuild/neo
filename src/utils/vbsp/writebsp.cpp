@@ -951,7 +951,7 @@ void SetModelNumbers (void)
 {
 	int		i;
 	int		models;
-	char	value[10];
+	char	value[16];
 
 	models = 1;
 	for (i=1 ; i<num_entities ; i++)
@@ -961,12 +961,12 @@ void SetModelNumbers (void)
 
 		if ( !IsFuncOccluder(i) )
 		{
-			sprintf (value, "*%i", models);
+			V_snprintf (value, sizeof( value ), "*%i", models);
 			models++;
 		}
 		else
 		{
-			sprintf (value, "");
+			//sprintf (value, "");
 		}
 		SetKeyValue (&entities[i], "model", value);
 	}
@@ -982,10 +982,9 @@ SetLightStyles
 void SetLightStyles (void)
 {
 	int		stylenum;
-	char	*t;
 	entity_t	*e;
 	int		i, j;
-	char	value[10];
+	char	value[12];
 	char	lighttargets[MAX_SWITCHED_LIGHTS][64];
 
 
@@ -997,7 +996,7 @@ void SetLightStyles (void)
 	{
 		e = &entities[i];
 
-		t = ValueForKey (e, "classname");
+        auto t = ValueForKey (e, "classname");
 		if (Q_strncasecmp (t, "light", 5))
 			continue;
 
@@ -1020,8 +1019,8 @@ void SetLightStyles (void)
 			strcpy (lighttargets[j], t);
 			stylenum++;
 		}
-		sprintf (value, "%i", 32 + j);
-		char *pCurrentStyle = ValueForKey( e, "style" );
+		snprintf (value, sizeof(value), "%i", 32 + j);
+        auto pCurrentStyle = ValueForKey( e, "style" );
 		// the designer has set a default lightstyle as well as making the light switchable
 		if ( pCurrentStyle )
 		{
@@ -1537,7 +1536,7 @@ void ComputeBoundsNoSkybox( )
 	// Add the bounds to the worldspawn data
 	for (int i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto  pEntity = ValueForKey(&entities[i], "classname");
 		if (!strcmp(pEntity, "worldspawn"))
 		{
 			char	string[32];
