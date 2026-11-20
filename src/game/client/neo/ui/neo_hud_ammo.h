@@ -28,10 +28,10 @@ protected:
 private:
 	void DrawAmmo() const;
 	void DrawWeaponIcon(const C_NEOBaseCombatWeapon *activeWep, int yBaseline) const;
-	int DrawReserve(wchar_t wchGlyph, const wchar_t *pwszCount, int iRight, int yBaseline) const;
-	int DrawSupaReserves(int iShells, int iSlugs, int iRight, int yBaseline) const;
+	NeoHud::InkRange DrawGlyphCount(vgui::HFont hCountFont, vgui::HFont hGlyphFont, wchar_t wchGlyph, const wchar_t *pwszCount, int iRight, int yBaseline) const;
+	void DrawSupaReserves(int iShells, int iSlugs, int iRight, int yRailBaseline) const;
 	void DrawWeaponName(const wchar_t *pwszName, int yBaseline, int iRoomRight) const;
-	void DrawRounds(wchar_t wchBullet, int iMagSizeMax, int iMagSizeCurrent, int yBaseline) const;
+	void DrawRounds(wchar_t wchBullet, int iMagSizeMax, int iMagSizeCurrent, int yBaseline, int iRailTall, int iRows, int iBatch) const;
 	void DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep, int yBaseline) const;
 	vgui::HFont GetBulletFont(wchar_t wchBullet) const;
 	vgui::HFont GetReserveGlyphFont(wchar_t wchGlyph) const;
@@ -39,6 +39,9 @@ private:
 private:
 	vgui::HFont m_hSmallTextFont = 0;
 	vgui::HFont m_hCountFont = 0;
+	vgui::HFont m_hMagCountFont = 0;
+	vgui::HFont m_hMagCountStackFont = 0;
+	vgui::HFont m_hSlugStackFont = 0;
 	vgui::HFont m_hLabelFont = 0;
 	vgui::HFont m_hLabelSmallFont = 0;
 	vgui::HFont m_hStatusFont = 0;
@@ -57,7 +60,7 @@ private:
 	BulletFont m_bulletFonts[6] = {};
 
 	// The standing round beside a mag count: the rail's sizes, scaled down to the numerals
-	BulletFont m_reserveGlyphFonts[5] = {};
+	BulletFont m_reserveGlyphFonts[7] = {};
 
 	int m_resX, m_resY;
 
@@ -81,7 +84,8 @@ private:
 	CPanelAnimationVarAliasType(int, row_h, "row_h", "6", "proportional_ypos");
 	CPanelAnimationVarAliasType(bool, digit_as_number, "digit_as_number", "0", "bool");
 	CPanelAnimationVarAliasType(int, count_gap, "count_gap", "14", "proportional_xpos");
-	CPanelAnimationVarAliasType(int, count_xpos, "count_xpos", "197", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, count_xpos, "count_xpos", "171", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, mag_xpos, "mag_xpos", "197", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, icon_xpos, "icon_xpos", "6", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, icon_wide, "icon_wide", "22", "proportional_xpos");
 	CPanelAnimationVar(Color, ammo_text_color, "ammo_text_color", "255 255 255 100");

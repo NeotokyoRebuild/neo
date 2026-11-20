@@ -2,6 +2,8 @@ WeaponData
 {
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"		"SMAC"
+	"hudrailrows"		"2"
+	"hudrailbatch"		"10"
 	"BulletCharacter"	"a"
 	"iDeathIcon"		"B"
 	"viewmodel"		"models/weapons/v_vip_smac.mdl"

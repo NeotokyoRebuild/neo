@@ -2,6 +2,8 @@ WeaponData
 {
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"		"SRM-S"
+	"hudrailrows"		"2"
+	"hudrailbatch"		"5"
 	"BulletCharacter"	"a"
 	"iDeathIcon"		"E"
 	"viewmodel"		"models/weapons/v_jinrai_srm_s.mdl"

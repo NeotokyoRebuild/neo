@@ -21,6 +21,8 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 	szViewModel2[0] = 0;
 	szHudName[0] = 0;
 	szBulletCharacter[0] = 0;
+	iHudRailRows = 1;
+	iHudRailBatch = 0;
 	szDeathIcon[0] = 0;
 	m_flPenetration = 0.f;
 	m_bDropOnDeath = true;
@@ -55,6 +57,8 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 
 	Q_strncpy( szHudName, pKeyValuesData->GetString("hudname", szPrintName), MAX_WEAPON_STRING);
 	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
+	iHudRailRows = Clamp(pKeyValuesData->GetInt("hudrailrows", 1), 1, 2);
+	iHudRailBatch = Max(pKeyValuesData->GetInt("hudrailbatch", 0), 0);
 	Q_strncpy( szDeathIcon, pKeyValuesData->GetString("iDeathIcon", ""), MAX_BULLET_CHARACTER);
 	m_flPenetration = pKeyValuesData->GetFloat("Penetration", 0);
 	m_bDropOnDeath = pKeyValuesData->GetBool("DropOnDeath", true);

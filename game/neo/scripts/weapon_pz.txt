@@ -4,6 +4,8 @@ WeaponData
 {
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"		"PZ252"
+	"hudrailrows"		"2"
+	"hudrailbatch"		"10"
 	"BulletCharacter"	"c"
 	"iDeathIcon"		"@"
 	"viewmodel"		"models/weapons/v_jinrai_pz.mdl"

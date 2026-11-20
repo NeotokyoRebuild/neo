@@ -2829,7 +2829,64 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudReserveF
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"10"
+				"weight"	"0"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudReserveG
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"9"
+				"weight"	"0"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
 		NHudReserveM
+		{
+			"1"
+			{
+				"name"		"NOCR"
+				"tall"		"11"
+				"weight"	"0"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudMagCount
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"17"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudMagCountStack
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"11"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudReserveMStack
 		{
 			"1"
 			{
