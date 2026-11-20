@@ -47,7 +47,7 @@ void CNEOHud_WorldPosMarker_Generic::ApplySchemeSettings( vgui::IScheme *pScheme
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	m_hFont = pScheme->GetFont("NHudOCRSmall");
+	m_hFont = NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false);
 
 	vgui::surface()->GetScreenSize(m_iPosX, m_iPosY);
 	SetBounds(0, 0, m_iPosX, m_iPosY);

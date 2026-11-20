@@ -120,7 +120,7 @@ void CNEOHud_FriendlyMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	m_hFont = pScheme->GetFont("NHudOCRSmaller", true);
+	m_hFont = NeoHud::GetFont(pScheme, "NHudOCRSmaller");
 }
 
 void CNEOHud_FriendlyMarker::DrawNeoHudElement()

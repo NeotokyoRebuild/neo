@@ -1,6 +1,7 @@
 #include "cbase.h"
 #include "neo_hud_draw.h"
 
+#include <vgui/IScheme.h>
 #include <vgui/ISurface.h>
 #include <vgui_controls/Controls.h>
 
@@ -16,6 +17,18 @@ namespace
 // The reference resolution. Sizes in the HUD are written as they are at this screen height
 constexpr int REFERENCE_SCREEN_TALL = 1080;
 }  // namespace
+
+vgui::HFont GetFont(vgui::IScheme *pScheme, const char *pszName, const vgui::HFont hFallback, const bool bProportional)
+{
+	const vgui::HFont hFont = pScheme->GetFont(pszName, bProportional);
+	if (hFont == vgui::INVALID_FONT)
+	{
+		Warning("NeoHud: ClientScheme.res has no font %s%s\n", pszName,
+				(hFallback == vgui::INVALID_FONT) ? ", and it has no fallback" : ", using its fallback");
+		return hFallback;
+	}
+	return hFont;
+}
 
 int ScaledPx(const int iReferencePx)
 {
