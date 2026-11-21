@@ -747,7 +747,7 @@ bool C_BasePlayer::IsValidObserverTarget(CBaseEntity* target)
 	if (player->m_lifeState == LIFE_DEAD || player->m_lifeState == LIFE_DYING)
 	{
 #ifdef NEO
-		constexpr int DEATH_SPEC_TIME = 3.0f; // OGNT switches spectator targets much faster than the DEATH_ANIMATION_TIME
+		constexpr int DEATH_SPEC_TIME = 3.0f; // OGNT switches spectator targets much faster than sv_neo_death_animation_time
 		if ((player->m_flDeathTime + DEATH_SPEC_TIME) < gpGlobals->curtime)
 #else
 		if ((player->m_flDeathTime + DEATH_ANIMATION_TIME) < gpGlobals->curtime)
@@ -1986,9 +1986,17 @@ void C_BasePlayer::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 #endif
 }
 
+#ifdef NEO
+extern ConVar sv_neo_death_animation_time;
+#endif // NEO
+
 float C_BasePlayer::GetDeathCamInterpolationTime()
 {
+#ifdef NEO
+	return sv_neo_death_animation_time.GetFloat();
+#else
 	return DEATH_ANIMATION_TIME;
+#endif // NEO
 }
 
 

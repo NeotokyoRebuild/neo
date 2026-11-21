@@ -1272,10 +1272,13 @@ void C_NEO_Player::PostThink(void)
 			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
 				SetObserverMode(OBS_MODE_DEATHCAM);
-				// Fade out 8s to blackout + 2s full blackout
+				// Fade out to blackout, then hold the full blackout until the deathcam ends.
+				// The hold is clamped so the fade never outlasts the deathcam.
+				const float flDeathTime = sv_neo_death_animation_time.GetFloat();
+				const float flBlackoutTime = Min(sv_neo_death_blackout_time.GetFloat(), flDeathTime);
 				ScreenFade_t sfade{
-					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * (DEATH_ANIMATION_TIME - 2.0f)),
-					.holdTime = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
+					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * (flDeathTime - flBlackoutTime)),
+					.holdTime = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * flBlackoutTime),
 					.fadeFlags = FFADE_OUT|FFADE_PURGE,
 					.r = 0,
 					.g = 0,
@@ -1295,14 +1298,14 @@ void C_NEO_Player::PostThink(void)
 		}
 
 		auto observerMode = GetObserverMode();
-		if (IsLocalPlayer() && observerMode == OBS_MODE_DEATHCAM && gpGlobals->curtime >= (GetDeathTime() + DEATH_ANIMATION_TIME))
+		if (IsLocalPlayer() && observerMode == OBS_MODE_DEATHCAM && gpGlobals->curtime >= (GetDeathTime() + sv_neo_death_animation_time.GetFloat()))
 		{
 			SetObserverMode(OBS_MODE_IN_EYE);
 			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
 
-			// Fade in 2s from blackout
+			// Fade in from blackout
 			ScreenFade_t sfade{
-				.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
+				.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * sv_neo_death_fadein_time.GetFloat()),
 				.holdTime = static_cast<unsigned short>(0),
 				.fadeFlags = FFADE_IN|FFADE_PURGE,
 				.r = 0,
