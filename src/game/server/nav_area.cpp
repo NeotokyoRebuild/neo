@@ -984,6 +984,10 @@ void CNavArea::FinishMerge( CNavArea *adjArea )
 	{
 		m_invDxCorners = m_invDyCorners = 0;
 	}
+#ifdef NEO
+
+	TheNavMesh->AddNavAreaToGrid( this );
+#endif // NEO
 
 	// reassign the adjacent area's internal nodes to the final area
 	adjArea->AssignNodes( this );
@@ -1830,6 +1834,10 @@ bool CNavArea::MergeEdit( CNavArea *adj )
 	MergeAdjacentConnections( adj );
 
 	InheritAttributes( adj );
+#ifdef NEO
+
+	TheNavMesh->AddNavAreaToGrid( this );
+#endif // NEO
 
 	// remove subsumed adjacent area
 	TheNavAreas.FindAndRemove( adj );
