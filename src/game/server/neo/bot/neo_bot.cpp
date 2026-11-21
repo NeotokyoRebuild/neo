@@ -43,6 +43,7 @@ extern ConVar neo_bot_farthest_visible_theater_sample_count;
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar sv_neo_ctg_ghost_beacons_when_inactive;
 extern ConVar neo_bot_path_around_friendly_cooldown;
+extern ConVar sv_neo_smoke_blocker_duration;
 
 
 
@@ -678,6 +679,11 @@ void CNEOBot::Spawn()
 
 	m_bWantsRespawn = false;
 	m_bRespawnCopyCorpse = false;
+
+	m_visionClass = GetClass();
+	m_visionCheckTimer.Invalidate();
+	m_visionHoldTimer.Invalidate();
+	m_smokeThermalTimer.Invalidate();
 }
 
 int CNEOBot::ChooseRandomWeaponIndex() const
@@ -898,7 +904,86 @@ void CNEOBot::Update()
 		}
 		return;
 	}
+
+	UpdateVisionMode();
 	BaseClass::Update();
+}
+
+//-----------------------------------------------------------------------------------------------------
+// A bot turns its vision mode on in dark areas and off again in lit ones, from the light where it stands.
+// A Support also keeps thermal on while smoke that blocked its sight lasts.
+void CNEOBot::UpdateVisionMode(void)
+{
+	constexpr float VISION_CHECK_INTERVAL = 1.0f;
+	// a wide band between the on and off levels keeps the bot from flickering along the edge of a dark area
+	constexpr float VISION_ON_LIGHT = 0.25f;
+	constexpr float VISION_OFF_LIGHT = 0.45f;
+	// after each switch the bot keeps the new state for a while, so spectators do not see it flicker
+	constexpr float VISION_HOLD = 5.0f;
+
+	if (!IsAlive() || GetClass() == NEO_CLASS_VIP)
+	{
+		return;
+	}
+
+	// becoming the Juggernaut switches vision off, so the hold from before no longer applies
+	if (GetClass() != m_visionClass)
+	{
+		m_visionClass = GetClass();
+		m_visionHoldTimer.Invalidate();
+		m_visionCheckTimer.Invalidate();
+	}
+
+	if (!m_visionHoldTimer.IsElapsed())
+	{
+		return;
+	}
+
+	// the player toggles vision only on a fresh press, as with cloak
+	if (m_prevInputButtons & IN_VISION)
+	{
+		return;
+	}
+
+	bool wantVision = true;
+	if (GetClass() == NEO_CLASS_SUPPORT && !m_smokeThermalTimer.IsElapsed())
+	{
+		// re-check the light as soon as the smoke hold ends
+		m_visionCheckTimer.Invalidate();
+	}
+	else
+	{
+		if (!m_visionCheckTimer.IsElapsed())
+		{
+			return;
+		}
+
+		// light varies across a nav area, so resample it on the interval even without changing area
+		m_visionCheckTimer.Start(VISION_CHECK_INTERVAL);
+		CNavArea *area = GetLastKnownArea();
+		if (!area)
+		{
+			return;
+		}
+
+		const float light = area->GetLightIntensity(GetAbsOrigin());
+		wantVision = m_bInVision ? light <= VISION_OFF_LIGHT : light < VISION_ON_LIGHT;
+	}
+
+	if (wantVision == m_bInVision)
+	{
+		return;
+	}
+
+	m_inputButtons |= IN_VISION;
+	m_visionHoldTimer.Start(VISION_HOLD);
+}
+
+void CNEOBot::OnSmokeBlockedSight(void)
+{
+	// The bot sees the smoke but not when it was thrown, so it keeps thermal on for a full smoke lifetime from the
+	// latest sighting.
+	m_smokeThermalTimer.Start(sv_neo_smoke_blocker_duration.GetFloat());
 }
 
 //-----------------------------------------------------------------------------------------------------

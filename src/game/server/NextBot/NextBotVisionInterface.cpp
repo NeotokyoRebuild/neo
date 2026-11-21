@@ -616,6 +616,37 @@ bool IVision::IsAbleToSee( CBaseEntity *subject, FieldOfViewCheckType checkFOV, 
 	}
 
 	
+#ifdef NEO
+	// A hidden player is noticed over time in view, so the notice state needs this check's own sight result.
+	CNEO_Player *observer = ToNEOPlayer( GetBot()->GetEntity() );
+	CNEO_Player *targetPlayer = ToNEOPlayer( subject );
+	if ( observer && targetPlayer )
+	{
+		const bool inFieldOfView = IsInFieldOfView( subject );
+		bool inSight = ( inFieldOfView || checkFOV == DISREGARD_FOV ) && !GetBot()->GetEntity()->IsHiddenByFog( subject->WorldSpaceCenter() );
+		if ( inSight )
+		{
+			CNavArea *subjectArea = targetPlayer->GetLastKnownArea();
+			CNavArea *myArea = observer->GetLastKnownArea();
+			inSight = !myArea || !subjectArea || myArea->IsPotentiallyVisible( subjectArea );
+		}
+		inSight = inSight && IsLineOfSightClearToEntity( subject );
+		if ( !inSight )
+		{
+			observer->NoteOutOfSight( targetPlayer );
+			return false;
+		}
+
+		// only a target inside the view cone can be noticed
+		if ( observer->IsHiddenFromSight( targetPlayer, inFieldOfView ) )
+		{
+			return false;
+		}
+
+		return IsVisibleEntityNoticed( subject );
+	}
+#endif
+
 	if ( GetBot()->GetEntity()->IsHiddenByFog( subject ) )
 	{
 		// lost in the fog
@@ -753,19 +784,11 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 {
 #ifdef NEO
 	bool canSeeThroughSmoke = false;
-	if (auto player = ToNEOPlayer(GetBot()->GetEntity()))
+	const auto *pSubjectPlayer = ToNEOPlayer(subject);
+	if (pSubjectPlayer && pSubjectPlayer->IsCarryingGhost())
 	{
-		// Bot has thermal vision as a Support class
-		canSeeThroughSmoke = (player->GetClass() == NEO_CLASS_SUPPORT);
-	}
-	if (!canSeeThroughSmoke)
-	{
-		const auto *pSubjectPlayer = ToNEOPlayer(subject);
-		if (pSubjectPlayer && pSubjectPlayer->IsCarryingGhost())
-		{
-			// Ghoster is always visible through smoke
-			canSeeThroughSmoke = true;
-		}
+		// Ghoster is always visible through smoke
+		canSeeThroughSmoke = true;
 	}
 	ScopedSmokeLOS smokeGuard(canSeeThroughSmoke);
 #endif
@@ -820,13 +843,26 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	{
 		std::swap(firstPosition, secondPosition);
 	}
-	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), firstPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+	// A Support sees through smoke, but each ray still stops at smoke first so the bot notices the smoke.
+	const bool supportBot = neoBot && neoBot->GetClass() == NEO_CLASS_SUPPORT;
+	const auto traceSight = [&]( const Vector &to )
+	{
+		UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), to, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+		const bool hitSmoke = result.m_pEnt && FStrEq(result.m_pEnt->GetClassname(), SMOKELINEOFSIGHTBLOCKER_ENTITYNAME);
+		if (supportBot && hitSmoke)
+		{
+			neoBot->OnSmokeBlockedSight();
+			ScopedSmokeLOS supportSmokeGuard(true);
+			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), to, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+		}
+	};
+
+	traceSight( firstPosition );
 	if ( result.DidHit() )
 	{
 		// Check if first center traceline hit any blocking smoke
-		if (neo_bot_path_reservation_enable.GetBool()
-			&& result.m_pEnt
-			&& FStrEq(result.m_pEnt->GetClassname(), SMOKELINEOFSIGHTBLOCKER_ENTITYNAME))
+		const bool hitSmoke = result.m_pEnt && FStrEq(result.m_pEnt->GetClassname(), SMOKELINEOFSIGHTBLOCKER_ENTITYNAME);
+		if (neo_bot_path_reservation_enable.GetBool() && hitSmoke)
 		{
 			auto pSmoke = static_cast<CNEOSmokeLineOfSightBlocker*>(result.m_pEnt);
 			// Assume that threat could be hiding inside navarea where smoke blocked sight
@@ -850,11 +886,11 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 			}
 		}
 
-		UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), secondPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+		traceSight( secondPosition );
 
 		if ( result.DidHit() )
 		{
-			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->GetAbsOrigin(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+			traceSight( subject->GetAbsOrigin() );
 		}
 	}
 #else
