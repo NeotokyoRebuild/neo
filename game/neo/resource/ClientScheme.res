@@ -2581,6 +2581,300 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudMonoTiny
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"10"
+				"weight"	"0"
+				"antialias"	"1"
+			}
+		}
+		NHudDashClock
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"21"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"480 599"
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"24"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"600 767"
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"27"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"768 1023"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1024 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"29"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"33"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"33"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1600 6000"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashAlive
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"11"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"480 599"
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"600 767"
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"16"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"768 1023"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"20"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1024 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"24"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"31"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1600 6000"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashVs
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"480 599"
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"600 767"
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"12"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"768 1023"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1024 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"16"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"21"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"21"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1600 6000"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashRound
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"10"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"480 599"
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"10"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"600 767"
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"11"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"768 1023"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1024 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"17"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"20"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"22"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1600 6000"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
 		NHudPanelLabel
 		{
 			"1"
@@ -2781,6 +3075,148 @@ Scheme
 				"tall"		"9"
 				"weight"	"600"
 				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashScore
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"33"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"480 599"
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"34"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"600 767"
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"36"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"768 1023"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"39"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1024 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"43"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"45"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"46"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1600 6000"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashStatus
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"480 599"
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"17"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"600 767"
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"19"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"768 1023"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"24"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1024 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"31"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"33"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1600 6000"
 				"antialias"	"1"
 				"additive"	"1"
 			}
