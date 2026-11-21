@@ -188,7 +188,7 @@ C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles(
 	m_EntClientFlags |= ENTCLIENTFLAG_DONTUSEIK;
 #endif
 #ifdef NEO
-	m_PlayerAnimState = CreateHL2MPPlayerAnimState( this );
+	m_PlayerAnimState = CreateNEOPlayerAnimState( this );
 #endif
 
 	m_blinkTimer.Invalidate();
