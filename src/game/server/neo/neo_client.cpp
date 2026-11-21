@@ -354,7 +354,7 @@ bool RespawnWithRet( CBaseEntity *pEdict, bool fCopyCorpse )
 
 	if ( pPlayer )
 	{
-		if ( (gpGlobals->curtime > pPlayer->GetDeathTime() + DEATH_ANIMATION_TIME) || pPlayer->GetDeathTime() == 0.f)
+		if ( (gpGlobals->curtime > pPlayer->GetDeathTime() + sv_neo_death_animation_time.GetFloat()) || pPlayer->GetDeathTime() == 0.f)
 		{
 			if (NEORules()->FPlayerCanRespawn(pPlayer))
 			{

@@ -101,6 +101,10 @@ ConVar	spec_freeze_time( "spec_freeze_time", "4.0", FCVAR_CHEAT | FCVAR_REPLICAT
 ConVar	spec_freeze_traveltime( "spec_freeze_traveltime", "0.4", FCVAR_CHEAT | FCVAR_REPLICATED, "Time taken to zoom in to frame a target in observer freeze cam.", true, 0.01, false, 0 );
 #endif
 
+#ifdef NEO
+extern ConVar sv_neo_death_animation_time;
+#endif // NEO
+
 ConVar sv_bonus_challenge( "sv_bonus_challenge", "0", FCVAR_REPLICATED, "Set to values other than 0 to select a bonus map challenge type." );
 
 ConVar sv_chat_bucket_size_tier1( "sv_chat_bucket_size_tier1", "4", FCVAR_NONE, "The maxmimum size of the short term chat msg bucket." );
@@ -2313,7 +2317,11 @@ void CBasePlayer::PlayerDeathThink(void)
 // if the player has been dead for one second longer than allowed by forcerespawn, 
 // forcerespawn isn't on. Send the player off to an intermission camera until they 
 // choose to respawn.
+#ifdef NEO
+	if ( g_pGameRules->IsMultiplayer() && ( gpGlobals->curtime > (m_flDeathTime + sv_neo_death_animation_time.GetFloat()) ) && !IsObserver() )
+#else
 	if ( g_pGameRules->IsMultiplayer() && ( gpGlobals->curtime > (m_flDeathTime + DEATH_ANIMATION_TIME) ) && !IsObserver() )
+#endif // NEO
 	{
 		// go to dead camera. 
 		StartObserverMode( m_iObserverLastMode );
@@ -2872,7 +2880,7 @@ bool CBasePlayer::IsValidObserverTarget(CBaseEntity * target)
 	if ( player->m_lifeState == LIFE_DEAD || player->m_lifeState == LIFE_DYING )
 	{
 #ifdef NEO
-		constexpr int DEATH_SPEC_TIME = 3.0f; // OGNT switches spectator targets much faster than the DEATH_ANIMATION_TIME
+		constexpr int DEATH_SPEC_TIME = 3.0f; // OGNT switches spectator targets much faster than sv_neo_death_animation_time
 		if ((player->m_flDeathTime + DEATH_SPEC_TIME) < gpGlobals->curtime)
 #else
 		if ( (player->m_flDeathTime + DEATH_ANIMATION_TIME ) < gpGlobals->curtime )

@@ -30,9 +30,7 @@
 #define PLAY_PLAYER_JINGLE	1
 #define UPDATE_PLAYER_RADAR	2
 
-#ifdef NEO
-#define DEATH_ANIMATION_TIME	10.0f
-#else
+#ifndef NEO // NEO reads sv_neo_death_animation_time instead
 #define DEATH_ANIMATION_TIME	3.0f
 #endif
 typedef struct 
