@@ -2617,6 +2617,64 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudMonoTiny
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"5"
+				"weight"	"0"
+				"antialias"	"1"
+			}
+		}
+		NHudDashClock
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"13"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashAlive
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashVs
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"7"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashRound
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"7"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
 		NHudPanelLabel
 		{
 			"1"
@@ -2815,6 +2873,30 @@ Scheme
 			{
 				"name"		"Neuropol2"
 				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashScore
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"18"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudDashStatus
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"11"
 				"weight"	"600"
 				"range"		"0x0000 0x017F"
 				"antialias"	"1"
