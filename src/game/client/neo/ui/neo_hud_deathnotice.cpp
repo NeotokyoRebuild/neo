@@ -101,6 +101,7 @@ protected:
 	void SetDeathNoticeItemDimensions(DeathNoticeItem* deathNoticeItem);
 
 	void DrawCommon(int index);
+	void SetNoticeFont(vgui::HFont font);
 	void DrawPlayerDeath(int index);
 	void DrawPlayerRankChange(int index);
 	void DrawPlayerGhostCapture(int index);
@@ -416,6 +417,12 @@ void CNEOHud_DeathNotice::DrawCommon(int i)
 		m_DeathNotices[i].bInvolved ? m_BackgroundColourInvolved : m_BackgroundColour,
 		true, true, true, true);
 	surface()->DrawSetTextPos(xStart, yStart);
+	SetNoticeFont(g_hFontKillfeed);
+}
+
+void CNEOHud_DeathNotice::SetNoticeFont(vgui::HFont font)
+{
+	surface()->DrawSetTextFont(font);
 }
 
 void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
@@ -426,7 +433,7 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 	if (!m_DeathNotices[i].bSuicide && m_DeathNotices[i].Killer.iEntIndex != 0)
 	{
 		SetColorForNoticePlayer(m_DeathNotices[i].Killer.iTeam);
-		surface()->DrawSetTextFont(g_hFontKillfeed);
+		SetNoticeFont(g_hFontKillfeed);
 		surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
 	}
 
@@ -437,7 +444,7 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 		{
 			// Victim in killer position if suicide and there's an assister
 			SetColorForNoticePlayer(m_DeathNotices[i].Victim.iTeam);
-			surface()->DrawSetTextFont(g_hFontKillfeed);
+			SetNoticeFont(g_hFontKillfeed);
 			surface()->DrawPrintText(m_DeathNotices[i].Victim.szName, m_DeathNotices[i].Victim.iNameLength);
 		}
 
@@ -445,31 +452,31 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 		surface()->DrawPrintText(ASSIST_SEPARATOR, ASSIST_SEPARATOR_LENGTH - 1);
 
 		SetColorForNoticePlayer(m_DeathNotices[i].Assist.iTeam);
-		surface()->DrawSetTextFont(g_hFontKillfeed);
+		SetNoticeFont(g_hFontKillfeed);
 		surface()->DrawPrintText(m_DeathNotices[i].Assist.szName, m_DeathNotices[i].Assist.iNameLength);
 	}
 
 	if (!m_DeathNotices[i].bSuicide)
 	{
 		// Icons
-		surface()->DrawSetTextFont(g_hFontKillfeed);
+		SetNoticeFont(g_hFontKillfeed);
 		surface()->DrawPrintText(L" ", 1);
-		surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+		SetNoticeFont(g_hFontKillfeedIcons);
 		surface()->DrawSetTextColor(COLOR_NEO_WHITE);
 		surface()->DrawPrintText(m_DeathNotices[i].szDeathIcon, 1);
 		if (m_DeathNotices[i].bExplosive)
 		{
-			surface()->DrawSetTextFont(g_hFontKillfeed);
+			SetNoticeFont(g_hFontKillfeed);
 			surface()->DrawPrintText(L" ", 1);
-			surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+			SetNoticeFont(g_hFontKillfeedIcons);
 			wchar_t icon = NEO_HUD_DEATHNOTICEICON_EXPLODE;
 			surface()->DrawPrintText(&icon, 1);
 		}
 		if (m_DeathNotices[i].bHeadshot)
 		{
-			surface()->DrawSetTextFont(g_hFontKillfeed);
+			SetNoticeFont(g_hFontKillfeed);
 			surface()->DrawPrintText(L" ", 1);
-			surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+			SetNoticeFont(g_hFontKillfeedIcons);
 			wchar_t icon = NEO_HUD_DEATHNOTICEICON_HEADSHOT;
 			surface()->DrawPrintText(&icon, 1);
 		}
@@ -479,10 +486,10 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 		// Suicide Icon
 		if (m_DeathNotices[i].Assist.iEntIndex != 0)
 		{
-			surface()->DrawSetTextFont(g_hFontKillfeed);
+			SetNoticeFont(g_hFontKillfeed);
 			surface()->DrawPrintText(L" ", 1);
 		}
-		surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+		SetNoticeFont(g_hFontKillfeedIcons);
 		surface()->DrawSetTextColor(COLOR_NEO_ORANGE);
 		wchar_t icon = NEO_HUD_DEATHNOTICEICON_SHORTBUS;
 		surface()->DrawPrintText(&icon, 1);
@@ -492,16 +499,16 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 	if (m_DeathNotices[i].Victim.iEntIndex != 0)
 	{
 		SetColorForNoticePlayer(m_DeathNotices[i].Victim.iTeam);
-		surface()->DrawSetTextFont(g_hFontKillfeed);
+		SetNoticeFont(g_hFontKillfeed);
 		surface()->DrawPrintText(L" ", 1);
 		surface()->DrawPrintText(m_DeathNotices[i].Victim.szName, m_DeathNotices[i].Victim.iNameLength);
 
 		// Victim Ghoster Icon
 		if (m_DeathNotices[i].bWasCarryingGhost)
 		{
-			surface()->DrawSetTextFont(g_hFontKillfeed);
+			SetNoticeFont(g_hFontKillfeed);
 			surface()->DrawPrintText(L" ", 1);
-			surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+			SetNoticeFont(g_hFontKillfeedIcons);
 			surface()->DrawSetTextColor(COLOR_NEO_WHITE);
 			wchar_t icon = NEO_HUD_DEATHNOTICEICON_GHOST;
 			surface()->DrawPrintText(&icon, 1);
@@ -516,17 +523,17 @@ void CNEOHud_DeathNotice::DrawPlayerRankChange(int i)
 	// *Player name*
 	if (m_DeathNotices[i].Killer.iEntIndex != 0)
 	{
-		surface()->DrawSetTextFont(g_hFontKillfeed);
+		SetNoticeFont(g_hFontKillfeed);
 		SetColorForNoticePlayer(m_DeathNotices[i].Killer.iTeam);
 		surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
 		surface()->DrawPrintText(L" ", 1);
 	}
 
 	// *old rank*
-	surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+	SetNoticeFont(g_hFontKillfeedIcons);
 	surface()->DrawSetTextColor(COLOR_NEO_WHITE);
 	surface()->DrawPrintText(&m_DeathNotices[i].szOldRank[0], 1);
-	surface()->DrawSetTextFont(g_hFontKillfeed);
+	SetNoticeFont(g_hFontKillfeed);
 	surface()->DrawPrintText(L" ", 1);
 
 	// *rank change arrow*
@@ -542,13 +549,13 @@ void CNEOHud_DeathNotice::DrawPlayerRankChange(int i)
 		}
 	}
 	wchar_t icon = m_DeathNotices[i].bRankUp ? NEO_HUD_DEATHNOTICEICON_RANKUP : NEO_HUD_DEATHNOTICEICON_RANKDOWN;
-	surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+	SetNoticeFont(g_hFontKillfeedIcons);
 	surface()->DrawPrintText(&icon, 1);
-	surface()->DrawSetTextFont(g_hFontKillfeed);
+	SetNoticeFont(g_hFontKillfeed);
 	surface()->DrawPrintText(L" ", 1);
 
 	// *new rank*
-	surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+	SetNoticeFont(g_hFontKillfeedIcons);
 	surface()->DrawSetTextColor(COLOR_NEO_WHITE);
 	surface()->DrawPrintText(&m_DeathNotices[i].szNewRank[0], 1);
 }
@@ -557,7 +564,7 @@ void CNEOHud_DeathNotice::DrawPlayerGhostCapture(int i)
 {
 	DrawCommon(i);
 
-	surface()->DrawSetTextFont(g_hFontKillfeed);
+	SetNoticeFont(g_hFontKillfeed);
 	// *ghost capturer name*
 	if (m_DeathNotices[i].Killer.iEntIndex != 0)
 	{
@@ -569,14 +576,14 @@ void CNEOHud_DeathNotice::DrawPlayerGhostCapture(int i)
 		surface()->DrawPrintText(GHOST_CAPTURE_TEXT, GHOST_CAPTURE_TEXT_LENGTH - 1);
 
 		// *ghost icon*
-		surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+		SetNoticeFont(g_hFontKillfeedIcons);
 		wchar_t icon = NEO_HUD_DEATHNOTICEICON_GHOST;
 		surface()->DrawPrintText(&icon, 1);
 	}
 	else
 	{
 		// *ghost icon*
-		surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+		SetNoticeFont(g_hFontKillfeedIcons);
 		wchar_t icon = NEO_HUD_DEATHNOTICEICON_GHOST;
 		surface()->DrawPrintText(&icon, 1);
 
@@ -592,7 +599,7 @@ void CNEOHud_DeathNotice::DrawVIPExtract(int i)
 
 	// The VIP 
 	surface()->DrawSetTextColor(COLOR_NEO_WHITE);
-	surface()->DrawSetTextFont(g_hFontKillfeed);
+	SetNoticeFont(g_hFontKillfeed);
 	surface()->DrawPrintText(VIP_TEXT, VIP_TEXT_LENGTH - 1);
 
 	// *VIP name*
@@ -612,7 +619,7 @@ void CNEOHud_DeathNotice::DrawVIPDeath(int i)
 {
 	DrawCommon(i);
 
-	surface()->DrawSetTextFont(g_hFontKillfeed);
+	SetNoticeFont(g_hFontKillfeed);
 	const bool hasKiller = m_DeathNotices[i].Killer.iEntIndex != 0;
 	if (hasKiller)
 	{
