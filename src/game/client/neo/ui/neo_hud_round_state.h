@@ -40,6 +40,11 @@ public:
 	void SelectNextAlivePlayerInHud();
 	void SelectPreviousAlivePlayerInHud();
 	int GetSelectedPlayerInHud();
+	// True when the player avatars beside the dash were drawn this frame or the last, which cl_neo_squad_hud_original
+	// alone doesn't decide. The last frame counts too, because the kill feed may paint before or after the dash in a frame.
+	bool IsDrawingAvatars() const { return m_iAvatarsDrawnFrame >= gpGlobals->framecount - 1; }
+	// The bottom of the avatars, their health bars and the fade behind them, or of the box when that is lower
+	int GetAvatarsYEnd() const { return m_iAvatarsYEnd; }
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw();
@@ -121,6 +126,7 @@ private:
 	int m_ilogoSize = 0;
 
 	// Player avatars beside the dash
+	int m_iAvatarsDrawnFrame = -1;
 	int m_iAvatarsYEnd = 0;
 	int m_iAvatarDashGap = 0;
 	int m_iAvatarGap = 0;

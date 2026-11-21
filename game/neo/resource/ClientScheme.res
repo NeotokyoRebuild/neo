@@ -3298,6 +3298,134 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudFeedName
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"10"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"480 599"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"11"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"600 767"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"768 1023"
+				"antialias"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"16"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1024 1199"
+				"antialias"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"19"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1200 1440"
+				"antialias"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"22"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1441 1599"
+				"antialias"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"23"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1600 6000"
+				"antialias"	"1"
+			}
+		}
+		NHudFeedText
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"8"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"480 599"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"600 767"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"12"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"768 1023"
+				"antialias"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1024 1199"
+				"antialias"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"18"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1200 1440"
+				"antialias"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"20"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1441 1599"
+				"antialias"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"21"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"yres"		"1600 6000"
+				"antialias"	"1"
+			}
+		}
 		NHudMagCount
 		{
 			"1"

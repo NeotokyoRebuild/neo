@@ -707,6 +707,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	}
 
 	// Draw players on top
+	m_iAvatarsDrawnFrame = gpGlobals->framecount;
 	int leftCount = 0;
 	int rightCount = 0;
 	if (NEORules()->IsTeamplay())

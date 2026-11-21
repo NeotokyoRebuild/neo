@@ -502,7 +502,8 @@ void CHud::InitFonts()
 	g_hFontTrebuchet24 = pScheme->GetFont("CenterPrintText", true);
 
 #ifdef NEO
-	g_hFontKillfeed = NeoHud::GetFont(pScheme, "NHudOCRSmallNoAdditive", g_hFontTrebuchet24);
+	const vgui::HFont hOldKillfeed = NeoHud::GetFont(pScheme, "NHudOCRSmallNoAdditive", g_hFontTrebuchet24);
+	g_hFontKillfeed = NeoHud::GetFont(pScheme, "NHudFeedName", hOldKillfeed);
 	g_hFontKillfeedIcons = NeoHud::GetFont(pScheme, "NHudKillfeedIcons", g_hFontTrebuchet24);
 #endif
 }
