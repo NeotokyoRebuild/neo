@@ -145,7 +145,8 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{10.5, 6.0, -0.75, 0.0, -0.5, 0.5},
 	},
 	{NEO_WEP_M41,
-		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{-0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_M41_L,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
@@ -153,7 +154,8 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5},
 	},
 	{NEO_WEP_M41_S,
-		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{-0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_MILSO,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES}},
@@ -928,10 +930,14 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 	return cone;
 }
 
-extern ConVar sv_suppress_viewpunch;
-
 void CNEOBaseCombatWeapon::AddViewKick()
 {
+	#ifdef CLIENT_DLL
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
 	auto owner = ToNEOPlayer(GetOwner());
 
 	if (!owner)
@@ -940,11 +946,7 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	// Reset any existing viewkick so it doesn't accumulate
-	// TODO: Resetting viewpunch here doesn't just affect viewkick, but also aimpunch.
-	// This if-check is a temporary workaround until we can separate the two.
-	if (!sv_suppress_viewpunch.GetBool()) {
-		owner->ViewPunchReset();
-	}
+	owner->ViewKickReset();
 
 	auto kickInfo = m_weaponHandling.kickInfo;
 	float punchScale = sv_neo_dynamic_viewkick.GetBool() ? m_flAccuracyPenalty : 1.0f;
@@ -954,14 +956,7 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	viewPunch.y = SharedRandomFloat(m_weaponSeeds.punchY, kickInfo.minY * punchScale, kickInfo.maxY * punchScale);
 	viewPunch.z = 0;
 
-	owner->ViewPunch(viewPunch);
-
-	#ifdef CLIENT_DLL
-
-	if (!prediction->IsFirstTimePredicted())
-	{
-		return;
-	}
+	owner->ViewKick(viewPunch);
 
 	auto recoilInfo = m_weaponHandling.recoilInfo;
 	float recoilScale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;

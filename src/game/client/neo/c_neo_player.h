@@ -209,6 +209,10 @@ public:
 
 	void AimPunch(float amount);
 
+	void ViewKick(const QAngle &angleOffset);
+	void ViewKickReset();
+	const QAngle *GetViewKick() const;
+
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
 	void CheckAimButtons();
@@ -226,6 +230,7 @@ private:
 	bool IsFakePlayer() const;
 
 	void ApplyAimPunch();
+	void ApplyViewKick();
 
 public:
 	CNetworkVar(bool, m_bShowTestMessage);
@@ -282,6 +287,9 @@ private:
 
 	float m_flAimPunchVel;
 	float m_flAimPunchCurrent;
+
+	QAngle m_vecViewKickVel;
+	QAngle m_vecViewKickCurrent;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

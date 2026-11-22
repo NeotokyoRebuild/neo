@@ -1718,6 +1718,11 @@ void CBasePlayer::CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& f
 	// Apply punch angle
 	VectorAdd( eyeAngles, m_Local.m_vecPunchAngle, eyeAngles );
 
+#if defined NEO && defined CLIENT_DLL
+	const auto neoPlayer = assert_cast<C_NEO_Player*>(this);
+	VectorAdd(eyeAngles, *neoPlayer->GetViewKick(), eyeAngles);
+#endif
+
 #if defined( CLIENT_DLL )
 	if ( !prediction->InPrediction() )
 	{
