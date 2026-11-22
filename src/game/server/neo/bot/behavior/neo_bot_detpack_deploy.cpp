@@ -7,7 +7,7 @@
 #include "neo_detpack.h"
 #include "weapon_detpack.h"
 
-ConVar neo_bot_detpack_deploy_nearby_check( "neo_bot_detpack_deploy_nearby_check", "1", FCVAR_NONE, "If zero, bots skip the search for another detpack in blast radius before deploying" );
+extern ConVar neo_bot_detpack_avoid;
 
 //---------------------------------------------------------------------------------------------
 CNEOBotDetpackDeploy::CNEOBotDetpackDeploy( const Vector &targetPos, Action< CNEOBot > *nextAction )
@@ -97,7 +97,7 @@ ActionResult< CNEOBot >	CNEOBotDetpackDeploy::Update( CNEOBot *me, float interva
 
 				bool bDetpackNear = false;
 				CBaseEntity *pDetpack = nullptr;
-				while ( neo_bot_detpack_deploy_nearby_check.GetBool()
+				while ( neo_bot_detpack_avoid.GetBool()
 					&& ( pDetpack = gEntList.FindEntityByClassnameWithin( pDetpack, "neo_deployed_detpack", me->GetAbsOrigin(), NEO_DETPACK_DAMAGE_RADIUS ) ) != nullptr )
 				{
 					if ( me->GetVisionInterface()->IsAbleToSee( pDetpack, IVision::USE_FOV ) )

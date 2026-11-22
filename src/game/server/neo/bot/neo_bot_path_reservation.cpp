@@ -33,6 +33,9 @@ ConVar neo_bot_path_reservation_killed_penalty("neo_bot_path_reservation_killed_
 ConVar neo_bot_path_reservation_onstuck_penalty("neo_bot_path_reservation_onstuck_penalty", "1000", FCVAR_NONE,
     "Path selection penalty added to a nav area each time a bot gets stuck moving through that area.", true, 0, false, 0);
 
+ConVar neo_bot_detpack_avoid("neo_bot_detpack_avoid", "1", FCVAR_NONE,
+    "If zero, bots never search for deployed detpacks: they neither avoid enemy detpacks nor check for another detpack before deploying their own.");
+
 
 
 CNEOBotPathReservationSystem* CNEOBotPathReservations()
@@ -654,7 +657,7 @@ const CUtlVector<DeployedDetpack_t> &CNEOBotPathReservationSystem::GetDeployedDe
 
 	m_flNextDetpackScan = gpGlobals->curtime + DETPACK_SCAN_INTERVAL;
 	m_DeployedDetpacks.RemoveAll();
-	for ( CBaseEntity *pEnt = gEntList.FindEntityByClassname( nullptr, "neo_deployed_detpack" ); pEnt;
+	for ( CBaseEntity *pEnt = neo_bot_detpack_avoid.GetBool() ? gEntList.FindEntityByClassname( nullptr, "neo_deployed_detpack" ) : nullptr; pEnt;
 		pEnt = gEntList.FindEntityByClassname( pEnt, "neo_deployed_detpack" ) )
 	{
 		DeployedDetpack_t &det = m_DeployedDetpacks[m_DeployedDetpacks.AddToTail()];
