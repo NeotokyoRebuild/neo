@@ -7,6 +7,8 @@
 #include "neo_detpack.h"
 #include "weapon_detpack.h"
 
+extern ConVar neo_bot_detpack_avoid;
+
 //---------------------------------------------------------------------------------------------
 CNEOBotDetpackDeploy::CNEOBotDetpackDeploy( const Vector &targetPos, Action< CNEOBot > *nextAction )
 	: m_targetPos( targetPos ), m_nextAction( nextAction ), m_flDeployDistSq( 0.0f )
@@ -93,18 +95,15 @@ ActionResult< CNEOBot >	CNEOBotDetpackDeploy::Update( CNEOBot *me, float interva
 			{
 				m_losTimer.Start( RandomFloat( 0.2f, 0.4f ) );
 
-				CBaseEntity *pEnts[256];
-				int numEnts = UTIL_EntitiesInSphere( pEnts, 256, me->GetAbsOrigin(), NEO_DETPACK_DAMAGE_RADIUS, 0 );
 				bool bDetpackNear = false;
-				for ( int i = 0; i < numEnts; ++i )
+				CBaseEntity *pDetpack = nullptr;
+				while ( neo_bot_detpack_avoid.GetBool()
+					&& ( pDetpack = gEntList.FindEntityByClassnameWithin( pDetpack, "neo_deployed_detpack", me->GetAbsOrigin(), NEO_DETPACK_DAMAGE_RADIUS ) ) != nullptr )
 				{
-					if ( pEnts[i] && FClassnameIs( pEnts[i], "neo_deployed_detpack" ) )
+					if ( me->GetVisionInterface()->IsAbleToSee( pDetpack, IVision::USE_FOV ) )
 					{
-						if ( me->GetVisionInterface()->IsAbleToSee( pEnts[i], IVision::USE_FOV ) )
-						{
-							bDetpackNear = true;
-							break;
-						}
+						bDetpackNear = true;
+						break;
 					}
 				}
 
