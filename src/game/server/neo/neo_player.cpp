@@ -162,7 +162,7 @@ ConCommand bot_changeclass("bot_changeclass", BotChangeClassFn, "Force all bots 
 // A bot notices a hidden target at a rate per second while the target is in view. Each cue the target gives away adds
 // its own rate: standing tall, light on it, motion, closeness and visible blood. A target that gives away none of
 // them is noticed only at a slow quiet rate. A cloak dampens the cues it hides. The sum is scaled by the bot's skill,
-// how directly it looks, and range. See CNEO_Player::GetCloakObscuredRatio for the rate and
+// how directly it looks, and range. See CNEO_Player::GetCloakNoticeRate for the rate and
 // CNEO_Player::IsHiddenFromSight for how it accrues.
 ConVar sv_neo_bot_cloak_debug_perceive_always_on("sv_neo_bot_cloak_debug_perceive_always_on", "0", FCVAR_CHEAT,
 	"Debug: Force bots to perceive all players as having cloaking on all the time", true, 0, true, 1);
@@ -1390,12 +1390,14 @@ bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) cons
 	}
 
 	const float grace = sv_neo_bot_cloak_grace.GetFloat();
-	const float cloakRatio = GetCloakObscuredRatio(targetPlayer);
+	bool seenAtOnce = false;
+	const float noticeRate = GetCloakNoticeRate(targetPlayer, seenAtOnce);
+	const float cloakRatio = seenAtOnce ? 0.0f : expf(-noticeRate);
 	cacheEntry.m_flObscuredRatio = cloakRatio; // for debugging
 
 	// A cloaked target, or an uncloaked one in the dark, must be noticed; any other target is plainly visible.
 	const bool cloaked = targetPlayer->GetInThermOpticCamo() && !targetPlayer->IsCarryingGhost();
-	const bool plain = !cloaked && cloakRatio <= 0.0f;
+	const bool plain = !cloaked && seenAtOnce;
 
 	// Notice accrues only over time the target stays in view; a gap longer than the grace starts a new exposure.
 	if (inView)
@@ -1417,10 +1419,9 @@ bool CNEO_Player::IsHiddenFromSight(CNEO_Player* targetPlayer, bool inView) cons
 
 		if (!cacheEntry.m_bNoticed)
 		{
-			// The cloak ratio is the chance to stay unnoticed through one second in view; fog is rolled apart below.
-			const float rate = cloakRatio < 1.0f ? -logf(Max(cloakRatio, FLT_MIN)) : 0.0f;
-			cacheEntry.m_flHazard -= rate * dt;
-			cacheEntry.m_bNoticed = cloakRatio <= 0.0f || cacheEntry.m_flHazard <= 0.0f;
+			// Fog is rolled apart below.
+			cacheEntry.m_flHazard -= noticeRate * dt;
+			cacheEntry.m_bNoticed = seenAtOnce || cacheEntry.m_flHazard <= 0.0f;
 		}
 	}
 	cacheEntry.m_flUpdateTime = now;
@@ -1459,7 +1460,9 @@ float CNEO_Player::GetFogObscuredRatio( CBaseEntity *target ) const
 	auto targetPlayer = ToNEOPlayer( target );
 	if ( targetPlayer )
 	{
-		const float flCloakRatio = GetCloakObscuredRatio( targetPlayer );
+		bool seenAtOnce = false;
+		const float noticeRate = GetCloakNoticeRate(targetPlayer, seenAtOnce);
+		const float flCloakRatio = seenAtOnce ? 0.0f : expf(-noticeRate);
 		return 1.0f - ( 1.0f - flFogRatio ) * ( 1.0f - flCloakRatio );
 	}
 
@@ -1511,16 +1514,18 @@ constexpr float CLOAK_MOTION_SHOWS = 0.2f;
 constexpr float CLOAK_NEAR_SHOWS = 0.5f;
 
 //-----------------------------------------------------------------------------
-// Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+// Purpose: return the notice rate per second for a hidden target; seenAtOnce is set when the target is noticed at once
 // NEO JANK: If this function is too expensive,
 // players may report that the game gets laggy when in line of sight bots.
 //-----------------------------------------------------------------------------
-float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
+float CNEO_Player::GetCloakNoticeRate(CNEO_Player* target, bool& seenAtOnce) const
 {
 	VPROF_BUDGET(__FUNCTION__, "NextBotExpensive");
+	seenAtOnce = false;
 
 	if (!target)
 	{
+		seenAtOnce = true;
 		return 0.0f;
 	}
 
@@ -1528,17 +1533,20 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		&& (GetTeamNumber() == target->GetTeamNumber()) )
 	{
 		// Teammates are always labeled with IFF markers, unless in free-for-all game modes
+		seenAtOnce = true;
 		return 0.0f;
 	}
 
 	if (target->IsCarryingGhost())
 	{
+		seenAtOnce = true;
 		return 0.0f;
 	}
 
 	// Cloaking on and unsuppressed fire flash the target into full view.
 	if (target->GetBotCloakStateDisrupted())
 	{
+		seenAtOnce = true;
 		return 0.0f;
 	}
 
@@ -1564,6 +1572,7 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	const bool cloaked = target->GetInThermOpticCamo() || sv_neo_bot_cloak_debug_perceive_always_on.GetBool();
 	if (!cloaked && lit >= 1.0f)
 	{
+		seenAtOnce = true;
 		return 0.0f; // Not obscured
 	}
 
@@ -1580,6 +1589,7 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 	// If the aim is close on target, consider the target spotted
 	if (flDot > cosf(DEG2RAD(revealDegrees)))
 	{
+		seenAtOnce = true;
 		return 0.0f;
 	}
 
@@ -1625,8 +1635,7 @@ float CNEO_Player::GetCloakObscuredRatio(CNEO_Player* target) const
 		rate = (lit >= 1.0f) ? cloakRate : Min(cloakRate, rate);
 	}
 
-	// Report the chance to stay unnoticed through one second in view.
-	return expf(-Min(sv_neo_bot_notice_rate_max.GetFloat(), rate));
+	return Min(sv_neo_bot_notice_rate_max.GetFloat(), rate);
 }
 
 void CNEO_Player::PostThink(void)

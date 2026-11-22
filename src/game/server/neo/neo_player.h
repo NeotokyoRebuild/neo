@@ -126,7 +126,7 @@ public:
 	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of "fog"
 	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 	virtual float		GetFogObscuredRatio(float range) const OVERRIDE;		///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
-	float				GetCloakObscuredRatio(CNEO_Player* target) const;		///< return the 0-1 chance that a hidden target stays unnoticed through one second in view, where zero means seen at once
+	float				GetCloakNoticeRate(CNEO_Player* target, bool& seenAtOnce) const;	///< return the notice rate per second for a hidden target; seenAtOnce is set when the target is noticed at once
 	// Bot sight of a player: inView says whether this check found the target in the view cone with a clear line of sight.
 	// Returns true while the target is unnoticed or lost in fog.
 	bool				IsHiddenFromSight(CNEO_Player* target, bool inView) const;
