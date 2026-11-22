@@ -27,7 +27,11 @@ public:
 	virtual ActionResult<CNEOBot> OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction ) override;
 	virtual ActionResult<CNEOBot> OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction ) override;
 
+	static bool TeleportPastLadder( CNEOBot *me, const CNavLadder *ladder, bool goingUp, const CNavArea *exitArea, const char *reason );
+
 private:
+	bool TryHandicap( CNEOBot *me, const char *reason ) const;
+	bool IsWrongGround( CNEOBot *me ) const;
 	void EnterDismountPhase( CNEOBot *me );
 	void ResolveExitArea( CNEOBot *me );
 	const CNavArea *FindLanding( const PathFollower *path, const CNavArea *pathExit ) const;
@@ -49,6 +53,7 @@ private:
 	bool m_bJumpedOffLadder;
 	bool m_bCrawlDismount;	// stepping off crouched, through a gap only a crouched body fits
 	bool m_bCrawlPushed;	// set in the gap and pushed off the ladder
+	bool m_bLeftGround;		// on the ladder or in the air at some point in this climb
 
 	float m_flLastZ;
 	Vector m_dismountPos;
