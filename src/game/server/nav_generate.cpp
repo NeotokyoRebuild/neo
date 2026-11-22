@@ -3613,7 +3613,7 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 		{
 			CNavLadder *ladder = m_ladders[i];
 #ifdef NEO
-			// Every ladder of a full generation comes from BuildBrushLaddersFromBsp.
+			// Every ladder of a full generation comes from BuildWorldBrushLadders.
 			ladder->ConnectGeneratedLadder( 0.0f, NAV_LADDER_SOURCE_BRUSH );
 #else
 			ladder->ConnectGeneratedLadder( 0.0f );
@@ -3654,7 +3654,7 @@ void CNavMesh::BeginGeneration( bool incremental )
 #ifdef NEO
 	if (nav_generate_debug_brushladders.GetBool())
 	{
-		if (!BuildBrushLaddersFromBsp())
+		if (!BuildWorldBrushLadders())
 		{
 			Warning("Generating brush ladders...FAIL\n");
 		}
@@ -3714,7 +3714,7 @@ void CNavMesh::BeginGeneration( bool incremental )
 #ifdef NEO
 		// Before sampling, so the sampler also explores from the ladder ends and reaches
 		// landings that only a climb leads to.
-		if (!BuildBrushLaddersFromBsp())
+		if (!BuildWorldBrushLadders())
 		{
 			Warning("Generating brush ladders...FAIL\n");
 		}

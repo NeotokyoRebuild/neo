@@ -1228,8 +1228,8 @@ private:
 	void BuildLadders( void );
 	void DestroyLadders( void );
 #ifdef NEO
-	// Build ladders from the BSP brush lump ladders (rather than func_ladder)
-	[[nodiscard]] bool BuildBrushLaddersFromBsp();
+	// Build navigation ladders from climbable world brushes.
+	[[nodiscard]] bool BuildWorldBrushLadders();
 private:
 	void LadderFromPolyhedron(const CPolyhedron* polyhedron);
 	void RemoveNarrowSideLadders(int firstLadder);
