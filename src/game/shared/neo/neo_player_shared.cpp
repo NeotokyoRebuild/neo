@@ -86,7 +86,6 @@ ConVar sv_neo_aimpunch_spring_constant("sv_neo_aimpunch_spring_constant", "65", 
 ConVar sv_neo_aimpunch_force("sv_neo_aimpunch_force", "40", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch force");
 ConVar sv_neo_aimpunch_max("sv_neo_aimpunch_max", "2", FCVAR_NOTIFY | FCVAR_REPLICATED, "Aim punch max deflection");
 
-ConVar sv_neo_recoil_damping("sv_neo_recoil_damping", "14", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil damping");
 ConVar sv_neo_recoil_spring_constant("sv_neo_recoil_spring_constant", "120", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil spring constant");
 ConVar sv_neo_recoil_force("sv_neo_recoil_force", "20", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil force");
 
@@ -97,6 +96,7 @@ ConVar sv_neo_recoil_override_xmin("sv_neo_recoil_override_xmin", "-0.5", FCVAR_
 ConVar sv_neo_recoil_override_xmax("sv_neo_recoil_override_xmax", "-0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max vertical recoil");
 ConVar sv_neo_recoil_override_ymin("sv_neo_recoil_override_ymin", "-0.3", FCVAR_NOTIFY | FCVAR_REPLICATED, "Min horizontal recoil");
 ConVar sv_neo_recoil_override_ymax("sv_neo_recoil_override_ymax", "0.3", FCVAR_NOTIFY | FCVAR_REPLICATED, "Max horizontal recoil");
+ConVar sv_neo_recoil_override_damping("sv_neo_recoil_override_damping", "14", FCVAR_NOTIFY | FCVAR_REPLICATED, "Recoil damping");
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {

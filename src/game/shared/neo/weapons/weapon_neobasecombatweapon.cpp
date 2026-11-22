@@ -129,7 +129,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_BALC,
 		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_6DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
-		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
+		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6, 14.0},
 	},
 	{NEO_WEP_JITTE,
 		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
@@ -142,7 +142,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_KYLA,
 		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{10.5, 6.0, -0.75, 0.0, -0.5, 0.5},
+		{10.5, 6.0, -0.75, 0.0, -0.5, 0.5, 18.0},
 	},
 	{NEO_WEP_M41,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
@@ -150,7 +150,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_M41_L,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5},
+		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5, 14.0},
 	},
 	{NEO_WEP_M41_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
@@ -162,12 +162,12 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_MPN,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 1.0, -0.5, -0.25, -0.6, 0.6},
+		{1.0, 1.0, -0.5, -0.25, -0.6, 0.6, 14.0},
 	},
 	{NEO_WEP_MPN_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 1.0, -0.5, -0.25, -0.6, 0.6},
+		{1.0, 1.0, -0.5, -0.25, -0.6, 0.6, 14.0},
 	},
 	{NEO_WEP_MX,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
@@ -180,7 +180,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_PZ,
 		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES / 2, VECTOR_CONE_2DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
-		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
+		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6, 14.0},
 	},
 #ifdef INCLUDE_WEP_PBK
 	{NEO_WEP_PBK56S,
@@ -204,7 +204,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_SRS,
 		{{VECTOR_CONE_7DEGREES, VECTOR_CONE_20DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_7DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 1.5, -0.5, 0.0, -0.5, 0.5},
+		{1.0, 1.5, -0.5, 0.0, -0.5, 0.5, 14.0},
 	},
 	{NEO_WEP_SUPA7,
 		{
@@ -224,7 +224,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_ZR68_L,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_2DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5},
+		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5, 14.0},
 	},
 	{NEO_WEP_ZR68_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
@@ -250,6 +250,11 @@ const CNEOWeaponInfo &CNEOBaseCombatWeapon::GetNEOWpnData() const
 #endif
 
 	return *pNEOInfo;
+}
+
+const WeaponHandlingInfo_t *CNEOBaseCombatWeapon::GetWeaponHandling() const
+{
+	return &m_weaponHandling;
 }
 
 void CNEOBaseCombatWeapon::Precache()

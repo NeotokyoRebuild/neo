@@ -2058,9 +2058,10 @@ void C_NEO_Player::ApplyAimPunch()
 	m_flAimPunchVel -= m_flAimPunchCurrent * springForceMagnitude;
 }
 
-extern ConVar sv_neo_recoil_damping;
 extern ConVar sv_neo_recoil_spring_constant;
 extern ConVar sv_neo_recoil_force;
+extern ConVar sv_neo_recoil_override;
+extern ConVar sv_neo_recoil_override_damping;
 
 void C_NEO_Player::Recoil(const QAngle *amount)
 {
@@ -2090,7 +2091,14 @@ void C_NEO_Player::ApplyRecoil()
 	viewAngles += oldRecoil - m_vecRecoilCurrent;
 	engine->SetViewAngles(viewAngles);
 
-	float damping = 1 - (sv_neo_recoil_damping.GetFloat() * gpGlobals->frametime);
+	auto currentWeapon = assert_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
+	float damping = currentWeapon->GetWeaponHandling()->recoilInfo.damping;
+	if ((damping == 0 && sv_neo_recoil_override.GetInt() == 1) || sv_neo_recoil_override.GetInt() == 2)
+	{
+		damping = sv_neo_recoil_override_damping.GetFloat();
+	}
+
+	damping = 1 - damping * gpGlobals->frametime;
 
 	if ( damping < 0 )
 	{

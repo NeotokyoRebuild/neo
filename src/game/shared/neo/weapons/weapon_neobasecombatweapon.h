@@ -68,6 +68,7 @@ struct WeaponRecoilInfo_t {
 	float maxX;
 	float minY;
 	float maxY;
+	float damping;
 };
 
 struct WeaponHandlingInfo_t
@@ -275,6 +276,8 @@ public:
 	static const char *GetDeathIcon(const CNEOBaseCombatWeapon *pNeoWep,
 			const EDeathIconType eType,
 			bool isGrenade = false, bool isRemoteDetpack = false);
+
+	const WeaponHandlingInfo_t *GetWeaponHandling() const;
 
 protected:
 	WeaponHandlingInfo_t m_weaponHandling;
