@@ -1274,10 +1274,15 @@ void C_NEO_Player::PostThink(void)
 				SetObserverMode(OBS_MODE_DEATHCAM);
 				// Fade out to blackout, then hold the full blackout until the deathcam ends.
 				// The hold is clamped so the fade never outlasts the deathcam.
+				// CViewEffects::Fade drops a fade with zero duration at once, so the
+				// fade out lasts at least one fixed point step, even when the blackout
+				// covers the whole deathcam.
+				constexpr float MIN_FADE_OUT_TIME = 1.0f / static_cast<float>(1<<SCREENFADE_FRACBITS);
 				const float flDeathTime = sv_neo_death_animation_time.GetFloat();
 				const float flBlackoutTime = Min(sv_neo_death_blackout_time.GetFloat(), flDeathTime);
+				const float flFadeOutTime = Max(flDeathTime - flBlackoutTime, MIN_FADE_OUT_TIME);
 				ScreenFade_t sfade{
-					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * (flDeathTime - flBlackoutTime)),
+					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * flFadeOutTime),
 					.holdTime = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * flBlackoutTime),
 					.fadeFlags = FFADE_OUT|FFADE_PURGE,
 					.r = 0,
