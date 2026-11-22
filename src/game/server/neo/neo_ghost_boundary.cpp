@@ -56,8 +56,7 @@ void CNEO_TriggerWeapon::CheckForWeapon()
     Vector mins, maxs;
     CollisionProp()->WorldSpaceAABB(&mins, &maxs);
 
-    // Collect only the dropped weapons: a fixed-size list of every entity in the box
-    // can fill up with props and players and miss the ghost
+    // Collect only the dropped weapons
     CDroppedWeaponsEnum droppedWeapons;
     ::partition->EnumerateElementsInBox(PARTITION_ENGINE_NON_STATIC_EDICTS, mins, maxs, false, &droppedWeapons); // Low accuracy
 
