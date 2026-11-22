@@ -4490,6 +4490,13 @@ bool CGameMovement::CanUnduck()
 
 #ifdef NEO
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+		// Same class correction as FinishDuck, so the origin drops by what the air duck raised it
+		auto playerClass = static_cast<CNEO_Player*>(player)->GetClass();
+		if (playerClass != NEO_CLASS_SUPPORT)
+		{
+			hullSizeNormal -= playerClass == NEO_CLASS_RECON ? NEO_RECON_MAXHULL_OFFSET : NEO_ASSAULT_MAXHULL_OFFSET;
+			hullSizeCrouch -= playerClass == NEO_CLASS_RECON ? NEO_RECON_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET;
+		}
 #else
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
 #endif
@@ -4542,6 +4549,13 @@ void CGameMovement::FinishUnDuck( void )
 #ifdef NEO
 		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+		// Same class correction as FinishDuck, so the origin drops by what the air duck raised it
+		auto playerClass = static_cast<CNEO_Player*>(player)->GetClass();
+		if (playerClass != NEO_CLASS_SUPPORT)
+		{
+			hullSizeNormal -= playerClass == NEO_CLASS_RECON ? NEO_RECON_MAXHULL_OFFSET : NEO_ASSAULT_MAXHULL_OFFSET;
+			hullSizeCrouch -= playerClass == NEO_CLASS_RECON ? NEO_RECON_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET;
+		}
 #else
 		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
