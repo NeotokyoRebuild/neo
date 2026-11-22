@@ -29,6 +29,23 @@ void CNEO_TriggerWeapon::Think()
     SetNextThink(gpGlobals->curtime + THINK_INTERVAL);
 }
 
+class CDroppedWeaponsEnum : public IPartitionEnumerator
+{
+public:
+    virtual IterationRetval_t EnumElement(IHandleEntity* pHandleEntity) override
+    {
+        CBaseEntity* pEnt = gEntList.GetBaseEntity(pHandleEntity->GetRefEHandle());
+        if (pEnt && pEnt->IsBaseCombatWeapon() && !pEnt->GetOwnerEntity())
+        {
+            m_Weapons.AddToTail(pEnt);
+        }
+
+        return ITERATION_CONTINUE;
+    }
+
+    CUtlVector<CBaseEntity*> m_Weapons;
+};
+
 // Weapons have the FSOLID_TRIGGER solidflag which is why they can't be used in triggers.
 // If we remove it weapons can't be picked up by walking over them.
 
@@ -39,23 +56,13 @@ void CNEO_TriggerWeapon::CheckForWeapon()
     Vector mins, maxs;
     CollisionProp()->WorldSpaceAABB(&mins, &maxs);
 
-    CBaseEntity* pEntList[128];
-    int count = UTIL_EntitiesInBox(pEntList, ARRAYSIZE(pEntList), mins, maxs, 0); // Low accuracy
+    // Collect only the dropped weapons: a fixed-size list of every entity in the box
+    // can fill up with props and players and miss the ghost
+    CDroppedWeaponsEnum droppedWeapons;
+    ::partition->EnumerateElementsInBox(PARTITION_ENGINE_NON_STATIC_EDICTS, mins, maxs, false, &droppedWeapons); // Low accuracy
 
-    for (int i = 0; i < count; ++i)
+    for (CBaseEntity* pEnt : droppedWeapons.m_Weapons)
     {
-        CBaseEntity* pEnt = pEntList[i];
-
-        if (!pEnt->IsBaseCombatWeapon())
-        {
-            continue;
-        }
-
-        if (pEnt->GetOwnerEntity())
-        {
-            continue;
-        }
-
         if (IsEntityInside(pEnt)) // High(er) accuracy
         {
             StartTouch(pEnt);
