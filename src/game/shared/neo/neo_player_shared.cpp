@@ -67,11 +67,11 @@ ConVar sv_neo_ghost_delay_secs("sv_neo_ghost_delay_secs", "3.3", FCVAR_NOTIFY | 
 
 // The minimum is above zero because the deathcam interpolation in
 // C_BasePlayer::CalcDeathCamView divides by this value.
-ConVar sv_neo_death_animation_time("sv_neo_death_animation_time", "10", FCVAR_NOTIFY | FCVAR_REPLICATED,
+ConVar sv_neo_death_animation_time("sv_neo_death_animation_time", "6", FCVAR_NOTIFY | FCVAR_REPLICATED,
 	"Seconds after death before the deathcam ends. In game modes with respawns, it is also the respawn delay.", true, 0.01f, true, 60.0f);
-ConVar sv_neo_death_blackout_time("sv_neo_death_blackout_time", "2", FCVAR_NOTIFY | FCVAR_REPLICATED,
+ConVar sv_neo_death_blackout_time("sv_neo_death_blackout_time", "1.5", FCVAR_NOTIFY | FCVAR_REPLICATED,
 	"Seconds of full blackout at the end of the deathcam. The screen fades out over the rest of sv_neo_death_animation_time.", true, 0.0f, true, 60.0f);
-ConVar sv_neo_death_fadein_time("sv_neo_death_fadein_time", "2", FCVAR_NOTIFY | FCVAR_REPLICATED,
+ConVar sv_neo_death_fadein_time("sv_neo_death_fadein_time", "1.5", FCVAR_NOTIFY | FCVAR_REPLICATED,
 	"Seconds to fade back in from the blackout when the deathcam ends.", true, 0.0f, true, 10.0f);
 
 ConVar sv_neo_serverside_beacons("sv_neo_serverside_beacons", "1", FCVAR_NOTIFY | FCVAR_REPLICATED,
