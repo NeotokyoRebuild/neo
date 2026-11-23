@@ -238,9 +238,9 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		{
 			me->EnableCloak(4.0f);
 		}
-		else if (!me->IsAggravated())
+		else
 		{
-			me->DisableCloak();
+			me->DisableCloakIfCalm();
 		}
 	}
 

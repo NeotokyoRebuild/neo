@@ -1198,6 +1198,22 @@ void CNEOBot::DisableCloak(void)
 	}
 }
 
+void CNEOBot::DisableCloakIfCalm()
+{
+	if ( !IsCloakEnabled() )
+	{
+		return;
+	}
+
+	// Keep enough charge to cloak again on contact.
+	if ( IsAggravated() && GetCloakPower() >= 3.0f )
+	{
+		return;
+	}
+
+	DisableCloak();
+}
+
 bool CNEOBot::IsAggravated() const
 {
 	constexpr float AGGRAVATED_TIME = 5.0f;

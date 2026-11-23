@@ -314,10 +314,7 @@ ActionResult< CNEOBot > CNEOBotSeekAndDestroy::UpdateCommon( CNEOBot *me, float 
 	else
 	{
 		// Out of combat
-		if ( !me->IsAggravated() )
-		{
-			me->DisableCloak();
-		}
+		me->DisableCloakIfCalm();
 
 		// Reload when safe
 		me->ReloadIfLowClip();
