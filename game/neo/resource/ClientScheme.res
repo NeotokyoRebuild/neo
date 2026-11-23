@@ -2059,68 +2059,9 @@ Scheme
 			"1"
 			{
 				"name"		"killfeedicons"
-				"tall"		"12"
+				"tall"		"9"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"480 599"
-				"additive"	"0"
-			}
-			"2"
-			{
-				"name"		"killfeedicons"
-				"tall"		"14"
-				"weight"	"600"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"600 767"
-				"additive"	"0"
-			}
-			"3"
-			{
-				"name"		"killfeedicons"
-				"tall"		"16"
-				"weight"	"600"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"768 1023"
-				"antialias"	"1"
-				"additive"	"0"
-			}
-			"4"
-			{
-				"name"		"killfeedicons"
-				"tall"		"20"
-				"weight"	"600"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1024 1199"
-				"antialias"	"1"
-				"additive"	"0"
-			}
-			"5"
-			{
-				"name"		"killfeedicons"
-				"tall"		"24"
-				"weight"	"600"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 1440"
-				"antialias"	"1"
-				"additive"	"0"
-			}
-			"6"
-			{
-				"name"		"killfeedicons"
-				"tall"		"26"
-				"weight"	"600"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1441 1599"
-				"antialias"	"1"
-				"additive"	"0"
-			}
-			"7"
-			{
-				"name"		"killfeedicons"
-				"tall"		"32"
-				"weight"	"600"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1600 6000"
 				"antialias"	"1"
 				"additive"	"0"
 			}
@@ -2978,6 +2919,28 @@ Scheme
 				"weight"	"0"
 				"antialias"	"1"
 				"additive"	"1"
+			}
+		}
+		NHudFeedName
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"7"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+			}
+		}
+		NHudFeedText
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"6"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
 			}
 		}
 		NHudMagCount
