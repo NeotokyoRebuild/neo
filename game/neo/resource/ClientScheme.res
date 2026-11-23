@@ -759,6 +759,18 @@ Scheme
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
+		NHudKillerText
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"7" [!$LINUX]
+				"tall"		"9" [$LINUX]
+				"weight"	"900"
+				"antialias" "1"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+		}
 
 		NHudSpectatorOverlayName
 		{
@@ -2952,6 +2964,18 @@ Scheme
 				"weight"	"550"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1600 6000"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+		}
+		NHudKillerTitle
+		{
+			"1"
+			{
+				"name"		"Montserrat"
+				"tall"		"14"
+				"weight"	"550"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"antialias"	"1"
 				//"additive"	"1"
 			}
