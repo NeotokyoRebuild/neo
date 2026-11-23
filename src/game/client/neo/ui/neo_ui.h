@@ -3,6 +3,11 @@
 #include <utlhashtable.h>
 #include <vgui/ISurface.h>
 
+namespace vgui
+{
+class IScheme;
+}
+
 /*
  * NEO NOTE (nullsystem):
  * NeoUI - Immediate-mode GUI on top of VGUI2 for NT;RE
@@ -122,6 +127,7 @@ enum EFont
 	FONT_LOGO,
 	FONT_LOGOSMALL,
 	FONT_NTLARGE,
+	FONT_NTSMALLTEXT,
 
 	FONT__TOTAL,
 };
@@ -547,6 +553,13 @@ void BeginOverridePanelWide(const int iOverridePanelWide);
 void EndOverridePanelWide();
 
 void SwapFont(const EFont eFont, const bool bForce = false);
+// The scheme font for each EFont slot, from a default table. A panel passes overrides for the slots it wants different.
+struct FontOverride
+{
+	EFont eFont;
+	const char *pszName;
+};
+void LoadFonts(Context *pCtx, vgui::IScheme *pScheme, const FontOverride *pOverrides = nullptr, int iOverrides = 0);
 void BeginMultiWidgetHighlighter(const int iTotalWidgets);
 void EndMultiWidgetHighlighter();
 

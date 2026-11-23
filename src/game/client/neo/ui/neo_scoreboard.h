@@ -90,7 +90,13 @@ public:
 	MESSAGE_FUNC_INT(OnPollHideCode, "PollHideCode", code);
 	void OnThink() final;
 
+	int GetRankIconWide() const;
+	void DrawRankCell(int iXP) const;
+
 	NeoUI::Context m_uiCtx;
+	vgui::HFont m_hRankIconFont = 0;
+	// The widest rank glyph's ink, measured when the scheme applies
+	int m_iRankGlyphWide = 0;
 
 	bool m_bSourceTVEnabled = false;
 	int	m_HLTVSpectators = 0;

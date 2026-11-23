@@ -520,14 +520,7 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 
-	static constexpr const char *FONT_NAMES[NeoUI::FONT__TOTAL] = {
-		"NeoUINormal", "NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont", "ClientTitleFontSmall",
-		"NeoUILarge"
-	};
-	for (int i = 0; i < NeoUI::FONT__TOTAL; ++i)
-	{
-		g_uiCtx.fonts[i].hdl = pScheme->GetFont(FONT_NAMES[i], true);
-	}
+	NeoUI::LoadFonts(&g_uiCtx, pScheme);
 
 	// In 1080p, g_uiCtx.layout.iDefRowTall == 40, g_uiCtx.iMarginX = 10, g_iAvatar = 64,
 	// other resolution scales up/down from it

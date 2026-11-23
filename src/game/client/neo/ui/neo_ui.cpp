@@ -1,6 +1,7 @@
 #include "neo_ui.h"
 
 #include <vgui/ILocalize.h>
+#include <vgui/IScheme.h>
 #include <vgui/IInput.h>
 #include <vgui/ISystem.h>
 #include <vgui_controls/Controls.h>
@@ -42,6 +43,32 @@ static constexpr wchar_t WSZ_CHECK_MARK[] = L"\u2713";
 #ifndef DEBUG
 static_assert(DEBUG_NEOUI == 0);
 #endif
+
+static constexpr const char *DEFAULT_FONT_NAMES[FONT__TOTAL] = {
+	"NeoUINormal",				// FONT_NTNORMAL
+	"NHudOCR",					// FONT_NTHEADING
+	"NHudOCRSmallNoAdditive",	// FONT_NTHORIZSIDES
+	"ClientTitleFont",			// FONT_LOGO
+	"ClientTitleFontSmall",		// FONT_LOGOSMALL
+	"NeoUILarge",				// FONT_NTLARGE
+	"NeoUINormal",				// FONT_NTSMALLTEXT
+};
+
+void LoadFonts(Context *pCtx, vgui::IScheme *pScheme, const FontOverride *pOverrides, const int iOverrides)
+{
+	for (int i = 0; i < FONT__TOTAL; ++i)
+	{
+		const char *pszName = DEFAULT_FONT_NAMES[i];
+		for (int j = 0; j < iOverrides; ++j)
+		{
+			if (pOverrides[j].eFont == i)
+			{
+				pszName = pOverrides[j].pszName;
+			}
+		}
+		pCtx->fonts[i].hdl = pScheme->GetFont(pszName, true);
+	}
+}
 
 void SwapFont(const EFont eFont, const bool bForce)
 {
