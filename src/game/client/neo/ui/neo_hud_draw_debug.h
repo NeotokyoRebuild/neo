@@ -28,6 +28,10 @@ void DebugText(vgui::HFont font, int xPen, int yBaseline, const wchar_t *pwszTex
 void DrawPrintText(const wchar_t *pwszText, int iLength);
 void DrawUnicodeChar(wchar_t wch);
 
+// A glyph drawn from its rendered quad at flScale of the font's size, as the ammo rail draws its smaller rounds.
+// Its line box is the font's, scaled about the baseline. ink is the span its visible pixels were placed in.
+void DebugScaledGlyph(vgui::HFont font, wchar_t wch, float flScale, int xPen, int yBaseline, const InkRange &ink);
+
 // A box that holds other draws, such as a panel's background or a column inside it
 void DebugBox(const char *pszName, int x0, int y0, int x1, int y1);
 }

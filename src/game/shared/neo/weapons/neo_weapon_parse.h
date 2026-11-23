@@ -28,6 +28,8 @@ public:
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
 	char	szHudName[MAX_WEAPON_STRING];			// Name in the ammo panel, the print name unless the script gives a shorter one
 	char	szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
+	int		iHudRailRows;							// Rows the ammo panel's rail stands the mag in, 1 or 2
+	int		iHudRailBatch;							// Rounds between spaces on the rail, or 0 for none
 	char	szDeathIcon[MAX_BULLET_CHARACTER];
 	float	m_flPenetration;
 	bool	m_bDropOnDeath;
