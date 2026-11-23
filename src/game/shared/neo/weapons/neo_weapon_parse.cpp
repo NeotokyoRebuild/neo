@@ -19,6 +19,7 @@ CNEOWeaponInfo::CNEOWeaponInfo()
 	m_iBullets = 0;
 	m_flCycleTime = 0.f;
 	szViewModel2[0] = 0;
+	szHudName[0] = 0;
 	szBulletCharacter[0] = 0;
 	szDeathIcon[0] = 0;
 	m_flPenetration = 0.f;
@@ -52,6 +53,7 @@ void CNEOWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName 
 		Q_strncpy(szViewModel2, pKeyValuesData->GetString("viewmodel"), MAX_WEAPON_STRING);
 	}
 
+	Q_strncpy( szHudName, pKeyValuesData->GetString("hudname", szPrintName), MAX_WEAPON_STRING);
 	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
 	Q_strncpy( szDeathIcon, pKeyValuesData->GetString("iDeathIcon", ""), MAX_BULLET_CHARACTER);
 	m_flPenetration = pKeyValuesData->GetFloat("Penetration", 0);

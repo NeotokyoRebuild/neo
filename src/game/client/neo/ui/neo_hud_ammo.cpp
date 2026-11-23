@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_hud_ammo.h"
+#include "neo_hud_draw.h"
 
 #include "c_neo_player.h"
 
@@ -74,14 +75,235 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 	LoadControlSettings("scripts/HudLayout.res");
 
 	m_hSmallTextFont = NeoHud::GetFont(pScheme, "NHudPanelText", NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false));
+	m_hCountFont = NeoHud::GetFont(pScheme, "NHudAmmoCount", m_hSmallTextFont);
+	m_hStatusFont = NeoHud::GetFont(pScheme, "NHudAmmoStatus", m_hSmallTextFont);
+	m_hLabelFont = NeoHud::GetFont(pScheme, "NHudPanelLabel", m_hSmallTextFont);
+	m_hLabelSmallFont = NeoHud::GetFont(pScheme, "NHudPanelLabelSmall", m_hLabelFont);
 	m_hBulletFont = NeoHud::GetFont(pScheme, "NHudBullets");
 	m_hFireModeFont = NeoHud::GetFont(pScheme, "NHudFireMode", NeoHud::GetFont(pScheme, "NHudBullets", vgui::INVALID_FONT, false));
-	m_hTextFont = NeoHud::GetFont(pScheme, "NHudAmmoReserve", NeoHud::GetFont(pScheme, "NHudOCR", vgui::INVALID_FONT, false));
+	m_hThrowableIconFont = NeoHud::GetFont(pScheme, "NHudThrowableIcon", m_hFireModeFont);
+	m_hWeaponIconFont = NeoHud::GetFont(pScheme, "NHudWeaponIcon", NeoHud::GetFont(pScheme, "NHudKillfeedIcons"));
+	m_hWeaponIconSmallFont = NeoHud::GetFont(pScheme, "NHudWeaponIconSmall", m_hWeaponIconFont);
+
+	static constexpr struct
+	{
+		wchar_t wchBullet;
+		const char *pszFont;
+	} BULLET_FONTS[ARRAYSIZE(m_bulletFonts)] = {
+		{L'a', "NHudBulletsA"}, {L'b', "NHudBulletsB"}, {L'c', "NHudBullets"},
+		{L'd', "NHudBulletsD"}, {L'f', "NHudBulletsF"}, {L'g', "NHudBulletsG"},
+	};
+	for (int i = 0; i < ARRAYSIZE(m_bulletFonts); ++i)
+	{
+		m_bulletFonts[i].wchBullet = BULLET_FONTS[i].wchBullet;
+		m_bulletFonts[i].hFont = NeoHud::GetFont(pScheme, BULLET_FONTS[i].pszFont, m_hBulletFont);
+	}
+
+	static constexpr struct
+	{
+		wchar_t wchGlyph;
+		const char *pszFont;
+	} RESERVE_GLYPH_FONTS[ARRAYSIZE(m_reserveGlyphFonts)] = {
+		{L'a', "NHudReserveA"}, {L'b', "NHudReserveB"}, {L'c', "NHudReserveC"},
+		{L'd', "NHudReserveD"}, {L'm', "NHudReserveM"},
+	};
+	for (int i = 0; i < ARRAYSIZE(m_reserveGlyphFonts); ++i)
+	{
+		m_reserveGlyphFonts[i].wchBullet = RESERVE_GLYPH_FONTS[i].wchGlyph;
+		m_reserveGlyphFonts[i].hFont = NeoHud::GetFont(pScheme, RESERVE_GLYPH_FONTS[i].pszFont);
+	}
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
+}
+
+vgui::HFont CNEOHud_Ammo::GetBulletFont(const wchar_t wchBullet) const
+{
+	for (const BulletFont &bulletFont : m_bulletFonts)
+	{
+		if (bulletFont.wchBullet == wchBullet)
+		{
+			return bulletFont.hFont;
+		}
+	}
+	return m_hBulletFont;
+}
+
+vgui::HFont CNEOHud_Ammo::GetReserveGlyphFont(const wchar_t wchGlyph) const
+{
+	for (const BulletFont &reserveGlyphFont : m_reserveGlyphFonts)
+	{
+		if (reserveGlyphFont.wchBullet == wchGlyph)
+		{
+			return reserveGlyphFont.hFont;
+		}
+	}
+	return vgui::INVALID_FONT;
+}
+
+void CNEOHud_Ammo::DrawWeaponIcon(const C_NEOBaseCombatWeapon *activeWep, const int yBaseline) const
+{
+	const NEO_WEP_BITS_UNDERLYING_TYPE iNeoWepBits = activeWep->GetNeoWepBits();
+
+	wchar_t wchIcon = L'\0';
+	vgui::HFont hIconFont = m_hFireModeFont;
+	if (activeWep->IsGhost())
+	{
+		// Uses the kill feed icon below
+	}
+	else if ((activeWep->UsesClipsForAmmo1() && !(iNeoWepBits & NEO_WEP_THROWABLE)) || (iNeoWepBits & NEO_WEP_BALC))
+	{
+		if (activeWep->IsAutomatic())
+		{
+			wchIcon = L'j';
+		}
+		else if ((iNeoWepBits & NEO_WEP_SUPA7) && !assert_cast<const CWeaponSupa7 *>(activeWep)->SlugLoaded())
+		{
+			wchIcon = L'l';
+		}
+		else
+		{
+			wchIcon = L'h';
+		}
+	}
+	else if (iNeoWepBits & NEO_WEP_SMOKE_GRENADE)
+	{
+		wchIcon = L'f';
+		hIconFont = m_hThrowableIconFont;
+	}
+	else if (iNeoWepBits & NEO_WEP_FRAG_GRENADE)
+	{
+		wchIcon = L'g';
+		hIconFont = m_hThrowableIconFont;
+	}
+
+	const int iColumnX = icon_xpos + xpos;
+	surface()->DrawSetTextColor(ammo_text_color);
+
+	if (wchIcon != L'\0')
+	{
+		// Fire mode icons sit on the rail's baseline. Grenades are shorter, so they are centered in the panel instead.
+		static constexpr int FRAG_GRENADE_ICON_DROP_PX = -4;
+		static constexpr int SMOKE_GRENADE_ICON_DROP_PX = -6;
+		int iIconDrop = 0;
+		switch (wchIcon)
+		{
+		case L'g': iIconDrop = ScaledPx(FRAG_GRENADE_ICON_DROP_PX); break;
+		case L'f': iIconDrop = ScaledPx(SMOKE_GRENADE_ICON_DROP_PX); break;
+		default: break;
+		}
+		NeoHud::DrawGlyphInColumn(hIconFont, iColumnX, icon_wide, yBaseline + iIconDrop, wchIcon);
+		return;
+	}
+
+	// Knife, ghost, detpack: the same icon as the kill feed. Its widest icons need a smaller size to fit the column.
+	wchar_t wszDeathIcon[2] = {};
+	Q_UTF8ToUnicode(CNEOBaseCombatWeapon::GetDeathIcon(activeWep, DEATHICONTYPE_IDX), wszDeathIcon, sizeof(wszDeathIcon));
+	if (wszDeathIcon[0] == L'\0')
+	{
+		return;
+	}
+	int a = 0, b = 0, c = 0;
+	surface()->GetCharABCwide(m_hWeaponIconFont, wszDeathIcon[0], a, b, c);
+	if (b > icon_wide)
+	{
+		hIconFont = m_hWeaponIconSmallFont;
+		surface()->GetCharABCwide(hIconFont, wszDeathIcon[0], a, b, c);
+	}
+	else
+	{
+		hIconFont = m_hWeaponIconFont;
+	}
+	// Centered in the panel, since these are far shorter than the column. Their middle is about a quarter of the font's height above the baseline.
+	const int iIconBaseline = ypos + (tall / 2) + (surface()->GetFontTall(hIconFont) / 4);
+	NeoHud::DrawGlyphInColumn(hIconFont, iColumnX, icon_wide, iIconBaseline, wszDeathIcon[0]);
+}
+
+int CNEOHud_Ammo::DrawReserve(const wchar_t wchGlyph, const wchar_t *pwszCount, const int iRight, const int yBaseline) const
+{
+	static constexpr int RESERVE_GLYPH_GAP_PX = 3;
+
+	const NeoHud::InkRange count = NeoHud::DrawNumberRight(m_hSmallTextFont, iRight, yBaseline, pwszCount);
+
+	const vgui::HFont hGlyphFont = GetReserveGlyphFont(wchGlyph);
+	if (hGlyphFont == vgui::INVALID_FONT)
+	{
+		return count.iLeft;
+	}
+	const wchar_t wszGlyph[] = { wchGlyph, L'\0' };
+	return NeoHud::DrawTextRight(hGlyphFont, count.iLeft - ScaledPx(RESERVE_GLYPH_GAP_PX), yBaseline, wszGlyph).iLeft;
+}
+
+int CNEOHud_Ammo::DrawSupaReserves(const int iShells, const int iSlugs, const int iRight, const int yBaseline) const
+{
+	wchar_t wszShells[8] = {};
+	wchar_t wszSlugs[8] = {};
+	V_swprintf_safe(wszShells, L"x%d", iShells);
+	V_swprintf_safe(wszSlugs, L"x%d", iSlugs);
+
+	surface()->DrawSetTextColor(count_color);
+
+	// Shells take the place of other weapons' mag counts, with the slugs a count gap to their left
+	const int iShellsLeft = DrawReserve(L'd', wszShells, iRight, yBaseline);
+	return DrawReserve(L'm', wszSlugs, iShellsLeft - count_gap, yBaseline);
+}
+
+void CNEOHud_Ammo::DrawWeaponName(const wchar_t *pwszName, const int yBaseline, const int iRoomRight) const
+{
+	// The name matches the counts' size, unless it would come closer to them than the gap between counts
+	const int iLeft = text_xpos + xpos;
+	const int iRight = iRoomRight - count_gap;
+
+	vgui::HFont hFont = m_hLabelFont;
+	const NeoHud::InkRange ink = NeoHud::GetTextInk(hFont, pwszName, NeoHud::GetReadoutTracking(hFont));
+	if (iLeft + (ink.iRight - ink.iLeft) > iRight)
+	{
+		hFont = m_hLabelSmallFont;
+	}
+	surface()->DrawSetTextColor(ammo_text_color);
+	NeoHud::DrawTextLeft(hFont, iLeft, yBaseline, pwszName, NeoHud::GetReadoutTracking(hFont));
+}
+
+void CNEOHud_Ammo::DrawRounds(const wchar_t wchBullet, const int iMagSizeMax, const int iMagSizeCurrent, const int yBaseline) const
+{
+	const vgui::HFont hBulletFont = GetBulletFont(wchBullet);
+	int a = 0, b = 0, c = 0;
+	surface()->GetCharABCwide(hBulletFont, wchBullet, a, b, c);
+	const int iBulletWide = a + b + c;
+	if (iBulletWide <= 0 || iMagSizeMax <= 0)
+	{
+		return;
+	}
+
+	// The rail runs from the first round's left edge to the round count's right edge
+	const int iRailLeft = digit_xpos + xpos;
+	const int iRailRight = count_xpos + xpos;
+	const int iSlots = (iRailRight - iRailLeft) / iBulletWide;
+	if (iSlots <= 0)
+	{
+		return;
+	}
+
+	// Rounds keep their natural spacing, so the rail's length shows the mag's size.
+	// Only mags with more rounds than slots fill the row, by proportion.
+	const bool bOverflow = iMagSizeMax > iSlots;
+	const int iRounds = Min(iMagSizeMax, iSlots);
+	const int iFilled = bOverflow ? Ceil2Int(iMagSizeCurrent * iSlots / static_cast<float>(iMagSizeMax)) : iMagSizeCurrent;
+
+	const int iStartX = iRailLeft - a;
+	const int iLastX = iRailRight - (a + b);
+	const float flPitch = (bOverflow && iRounds > 1) ? (iLastX - iStartX) / static_cast<float>(iRounds - 1) : iBulletWide;
+	const int y = NeoHud::GetTextY(hBulletFont, yBaseline);
+
+	surface()->DrawSetTextFont(hBulletFont);
+	for (int i = 0; i < iRounds; ++i)
+	{
+		surface()->DrawSetTextColor((i < iFilled) ? ammo_color : emptied_ammo_color);
+		surface()->DrawSetTextPos(iStartX + RoundFloatToInt(flPitch * i), y);
+		NeoHud::DrawUnicodeChar(wchBullet);
+	}
 }
 
 void CNEOHud_Ammo::DrawAmmo() const
@@ -95,9 +317,8 @@ void CNEOHud_Ammo::DrawAmmo() const
 	const size_t maxWepnameLen = 64;
 	char wepName[maxWepnameLen]{ '\0' };
 	wchar_t unicodeWepName[maxWepnameLen]{ L'\0' };
-	V_strcpy_safe(wepName, activeWep->GetPrintName());
-	int textLen;
-	for (textLen = 0; textLen < sizeof(wepName); ++textLen) {
+	V_strcpy_safe(wepName, activeWep->GetNEOWpnData().szHudName);
+	for (int textLen = 0; textLen < sizeof(wepName); ++textLen) {
 		if (wepName[textLen] == 0)
 			break;
 		wepName[textLen] = toupper(wepName[textLen]);
@@ -105,174 +326,104 @@ void CNEOHud_Ammo::DrawAmmo() const
 	g_pVGuiLocalize->ConvertANSIToUnicode(wepName, unicodeWepName, sizeof(unicodeWepName));
 
 	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall, box_color, top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner);
+	NeoHud::DebugBox("icon column", icon_xpos + xpos, ypos, icon_xpos + xpos + icon_wide, ypos + tall);
+	NeoHud::DebugBox("text column", text_xpos + xpos, ypos, count_xpos + xpos, ypos + tall);
 
-	surface()->DrawSetTextFont(m_hSmallTextFont);
-	surface()->DrawSetTextColor(ammo_text_color);
-	int fontWidth, fontHeight;
-	surface()->GetTextSize(m_hSmallTextFont, unicodeWepName, fontWidth, fontHeight);
-	surface()->DrawSetTextPos((text_xpos + xpos) - fontWidth, text_ypos + ypos);
-	surface()->DrawPrintText(unicodeWepName, textLen);
+	// These baselines match the first and third rows of the vitals panel, whose text sits on the bottom of its bars
+	const int iTopRowBaseline = ypos + text_ypos + row_h;
+	const int iRailBaseline = ypos + digit_ypos + row_h;
 
-	if(activeWep->IsGhost())
-		return;
+	DrawWeaponIcon(activeWep, iRailBaseline);
 
+	const NEO_WEP_BITS_UNDERLYING_TYPE iNeoWepBits = activeWep->GetNeoWepBits();
 	const int maxClip = activeWep->GetMaxClip1();
-	if (maxClip == 0 || activeWep->IsMeleeWeapon())
-		return;
-
+	const bool bHasAmmo = !activeWep->IsGhost() && maxClip != 0 && !activeWep->IsMeleeWeapon();
 	const int ammoCount = activeWep->m_iPrimaryAmmoCount;
-	const int numClips = ceil(abs((float)ammoCount / activeWep->GetMaxClip1())); // abs because grenades return negative values (???) // casting division to float in case we have a half-empty mag, rounding up to show the half mag as one more mag
-	const bool isSupa = activeWep->GetNeoWepBits() & NEO_WEP_SUPA7;
-		
-	if (activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_DETPACK)) {
-		const int maxLen = 5;
-		char clipsText[maxLen]{ '\0' };
-		if(isSupa)
-		{
-			V_sprintf_safe(clipsText, "%d+%d", ammoCount, activeWep->m_iSecondaryAmmoCount.Get());
-		} else
-		{
-			V_sprintf_safe(clipsText, "%d", numClips);
-		}
-
-		wchar_t unicodeClipsText[maxLen]{ L'\0' };
-		g_pVGuiLocalize->ConvertANSIToUnicode(clipsText, unicodeClipsText, sizeof(unicodeClipsText));
-
-		surface()->DrawSetTextFont(m_hTextFont);
-
-		surface()->GetTextSize(m_hTextFont, unicodeClipsText, fontWidth, fontHeight);
-		surface()->DrawSetTextPos(digit2_xpos + xpos - fontWidth, digit2_ypos + ypos);
-		surface()->DrawPrintText(unicodeClipsText, V_wcslen(unicodeClipsText));
-	}
+	const bool bBalc = iNeoWepBits & NEO_WEP_BALC;
+	const bool bRoundsAsNumber = digit_as_number && activeWep->UsesClipsForAmmo1();
 
 	const char* ammoChar = nullptr;
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
-		
-	if ((activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) || (activeWep->GetNeoWepBits() & NEO_WEP_BALC))
+
+	if (bHasAmmo)
 	{
-		char fireModeText[2]{ '\0' };
-
-		ammoChar = activeWep->GetNEOWpnData().szBulletCharacter;
-		magSizeMax = activeWep->GetMaxClip1();
-		magSizeCurrent = activeWep->Clip1();
-			
-		if(activeWep)
-		{			
-			if(activeWep->IsAutomatic())
-				fireModeText[0] = 'j';
-			else if(isSupa)
-				if(dynamic_cast<CWeaponSupa7*>(activeWep)->SlugLoaded())
-					fireModeText[0] = 'h';
-				else
-					fireModeText[0] = 'l';
-			else
-				fireModeText[0] = 'h';
-				
- 
-			wchar_t unicodeFireModeText[2]{ L'\0' };
-			g_pVGuiLocalize->ConvertANSIToUnicode(fireModeText, unicodeFireModeText, sizeof(unicodeFireModeText));
-
-			surface()->DrawSetTextFont(m_hFireModeFont);
-			surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
-			surface()->DrawPrintText(unicodeFireModeText, V_wcslen(unicodeFireModeText));
+		if ((activeWep->UsesClipsForAmmo1() && !(iNeoWepBits & NEO_WEP_THROWABLE)) || bBalc)
+		{
+			ammoChar = activeWep->GetNEOWpnData().szBulletCharacter;
+			magSizeMax = maxClip;
+			magSizeCurrent = activeWep->Clip1();
 		}
-	} else 
-	{
-		if(activeWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE)
+		else if (iNeoWepBits & NEO_WEP_SMOKE_GRENADE)
 		{
 			ammoChar = "f";
 			magSizeMax = magSizeCurrent = ammoCount;
-		} else if(activeWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE)
+		}
+		else if (iNeoWepBits & NEO_WEP_FRAG_GRENADE)
 		{
 			ammoChar = "g";
 			magSizeMax = magSizeCurrent = ammoCount;
-		}			
+		}
 	}
 
-	if (activeWep->GetNeoWepBits() & NEO_WEP_BALC)
+	// The counts stand at the right of the top row, the round count first, with an equal gap between each.
+	// The round count keeps room for a full mag, so the others hold still as it falls: a digit cell is the
+	// same width for every digit, so a full mag's ink starts that many cells left of this count's.
+	const bool bShowsCount = !bBalc && !bRoundsAsNumber && ammoChar != nullptr;
+	int iNameRoomRight = count_xpos + xpos;
+	int iReservesRight = iNameRoomRight;
+	if (bShowsCount)
 	{
-		DrawHeatMeter(activeWep);
+		wchar_t wszCount[8] = {};
+		wchar_t wszFullCount[8] = {};
+		V_swprintf_safe(wszCount, L"%d", magSizeCurrent);
+		V_swprintf_safe(wszFullCount, L"%d", magSizeMax);
+		surface()->DrawSetTextColor(count_color);
+		const NeoHud::InkRange count = NeoHud::DrawNumberRight(m_hCountFont, count_xpos + xpos, iTopRowBaseline, wszCount);
+		iNameRoomRight = count.iLeft - (NeoHud::GetNumberWide(m_hCountFont, wszFullCount) - NeoHud::GetNumberWide(m_hCountFont, wszCount));
+		iReservesRight = iNameRoomRight - count_gap;
+	}
+	if (bHasAmmo && activeWep->UsesClipsForAmmo1() && !(iNeoWepBits & NEO_WEP_DETPACK))
+	{
+		if (iNeoWepBits & NEO_WEP_SUPA7)
+		{
+			iNameRoomRight = DrawSupaReserves(ammoCount, activeWep->m_iSecondaryAmmoCount.Get(), iReservesRight, iTopRowBaseline);
+		}
+		else
+		{
+			// Rounded up, so a part-filled mag shows as one more mag
+			const int numClips = Ceil2Int(static_cast<float>(ammoCount) / maxClip);
+			wchar_t unicodeClipsText[8]{ L'\0' };
+			V_swprintf_safe(unicodeClipsText, L"x%d", numClips);
+			surface()->DrawSetTextColor(count_color);
+			iNameRoomRight = DrawReserve(static_cast<wchar_t>(*activeWep->GetNEOWpnData().szBulletCharacter), unicodeClipsText, iReservesRight, iTopRowBaseline);
+		}
+	}
+	DrawWeaponName(unicodeWepName, iTopRowBaseline, iNameRoomRight);
+
+	if (!bHasAmmo)
+		return;
+
+	if (bBalc)
+	{
+		DrawHeatMeter(activeWep, iTopRowBaseline);
 		return;
 	}
 
-	surface()->DrawSetTextColor(ammo_color);
-	if (digit_as_number && activeWep->UsesClipsForAmmo1())
+	if (bRoundsAsNumber)
 	{ // Draw bullets in magazine in number form
+		surface()->DrawSetTextColor(ammo_color);
 		surface()->DrawSetTextFont(m_hBulletFont);
-		surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
+		surface()->DrawSetTextPos(digit_xpos + xpos, NeoHud::GetTextY(m_hBulletFont, iRailBaseline));
 		wchar_t bullets[22];
 		V_swprintf_safe(bullets, L"%i/%i", magSizeCurrent, magSizeMax);
-		surface()->DrawPrintText(bullets, (int)(magSizeCurrent == 0 ? 1 : log10(magSizeCurrent) + 1) + (int)(log10(magSizeMax) + 1) + 1);
+		NeoHud::DrawPrintText(bullets, V_wcslen(bullets));
 		return;
 	}
 
-	if (ammoChar == nullptr)
-		return;
-
-	const int maxSpaceAvailableForBullets = digit_max_width;
-	const int bulletWidth = surface()->GetCharacterWidth(m_hBulletFont, *ammoChar);
-	const int plusWidth = surface()->GetCharacterWidth(m_hBulletFont, '+');
-	const int maxBulletsWeCanDisplay = bulletWidth == 0 ? 0 : (maxSpaceAvailableForBullets / bulletWidth);
-
-	if (maxBulletsWeCanDisplay == 0)
-		return;
-
-	const int maxBulletsWeCanDisplayWithPlus = bulletWidth == 0 ? 0 : ((maxSpaceAvailableForBullets - plusWidth) / bulletWidth);
-	const bool bulletsOverflowing = maxBulletsWeCanDisplay < magSizeMax;
-
-	if(bulletsOverflowing)
+	if (bShowsCount)
 	{
-		magSizeMax = maxBulletsWeCanDisplayWithPlus + 1;
-	}
-
-	constexpr auto maxBullets = 100; // PZ Mag Size
-
-	char bullets[maxBullets + 1];
-	magSizeMax = Min(magSizeMax, narrow_cast<int>(sizeof(bullets) - 1));
-	int i;
-	for(i = 0; i < magSizeMax; i++)
-	{
-		bullets[i] = *ammoChar;
-	}
-	bullets[i] = '\0';
-
-	int magAmountToDrawFilled = magSizeCurrent;
-		
-	if(bulletsOverflowing)
-	{
-		if (magSizeMax > 0)
-			bullets[magSizeMax - 1] = '+';
-
-		if(maxClip == magSizeCurrent)
-		{
-			magAmountToDrawFilled = magSizeMax;
-		} else if(magSizeMax - 1 < magSizeCurrent)
-		{
-			magAmountToDrawFilled = magSizeMax - 1;
-		} else
-		{
-			magAmountToDrawFilled = magSizeCurrent;
-		}
-	}
-		
-	wchar_t unicodeBullets[maxBullets + 1];
-	g_pVGuiLocalize->ConvertANSIToUnicode(bullets, unicodeBullets, sizeof(unicodeBullets));
-		
-	surface()->DrawSetTextFont(m_hBulletFont);
-	if (magAmountToDrawFilled > 0)
-	{
-		surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
-		surface()->DrawPrintText(unicodeBullets, magAmountToDrawFilled);
-	}
-
-	if(maxClip > 0)
-	{
-		if (magSizeMax > 0) {
-			surface()->DrawSetTextColor(emptied_ammo_color);
-			surface()->DrawSetTextPos(digit_xpos + xpos + (bulletWidth * magAmountToDrawFilled), digit_ypos + ypos);
-			surface()->DrawPrintText(&unicodeBullets[magAmountToDrawFilled], magSizeMax - magAmountToDrawFilled);
-		}
+		DrawRounds(static_cast<wchar_t>(*ammoChar), magSizeMax, magSizeCurrent, iRailBaseline);
 	}
 }
 
@@ -290,16 +441,15 @@ void CNEOHud_Ammo::DrawNeoHudElement()
 	}
 }
 
-void CNEOHud_Ammo::DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep) const
+void CNEOHud_Ammo::DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep, const int yBaseline) const
 {
 	float flHeatAmount = (1.0f - (activeWep->GetPrimaryAmmoCount() / (float)activeWep->GetDefaultClip1()));
 	Color heatColorLerp = LerpColor(ammo_color,heat_color, flHeatAmount);
 	
 	if (activeWep->GetPrimaryAmmoCount() == 0)
 	{
-		surface()->DrawSetTextFont(m_hSmallTextFont);
-		surface()->DrawSetTextPos(heatbar_xpos + xpos, text_ypos + ypos);
-		surface()->DrawPrintText(L"OVERHEAT", 8);
+		surface()->DrawSetTextColor(heat_color);
+		NeoHud::DrawTextRight(m_hStatusFont, count_xpos + xpos, yBaseline, L"OVERHEAT", NeoHud::GetReadoutTracking(m_hStatusFont));
 	}
 
 	surface()->DrawSetColor(heatColorLerp);

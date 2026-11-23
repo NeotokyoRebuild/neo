@@ -9,6 +9,7 @@ WeaponData
 	
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"			"MURATA SUPA 7"
+	"hudname"			"SUPA 7"
 	"BulletCharacter"		"d"	
 	"iDeathIcon"		"G"
 	"viewmodel"			"models/weapons/v_jinrai_shotgun.mdl"
