@@ -234,7 +234,7 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		int textSizeX, textSizeY;
 		surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, textSizeX, textSizeY);
 		surface()->DrawSetTextPos(iPosX - (textSizeX / 2), iPosY + (HALF_BASE_TEX_LENGTH * scale));
-		surface()->DrawPrintText(m_wszMarkerTextUnicode, V_wcslen(m_wszMarkerTextUnicode));
+		NeoHud::DrawPrintText(m_wszMarkerTextUnicode, V_wcslen(m_wszMarkerTextUnicode));
 	}
 }
 

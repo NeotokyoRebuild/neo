@@ -100,7 +100,7 @@ void CNEOHud_Message::DrawNeoHudElement()
     {
         surface()->DrawSetTextPos(m_Padding, yOffset);
         const std::wstring& line = m_Lines[i];
-        surface()->DrawPrintText(line.c_str(), narrow_cast<int>(line.size()));
+        NeoHud::DrawPrintText(line.c_str(), narrow_cast<int>(line.size()));
         yOffset += m_LineHeights[i] + (int)(2 * m_fScale);
     }
 
@@ -123,7 +123,7 @@ void CNEOHud_Message::DrawNeoHudElement()
     surface()->DrawSetTextFont(m_hTitleFont);
     surface()->DrawSetTextColor(255, 255, 255, 255);
     surface()->DrawSetTextPos(crossInset + (int)(20 * m_fScale), crossInset);
-    surface()->DrawPrintText(L"SYSTEM_MSG", 10);
+    NeoHud::DrawPrintText(L"SYSTEM_MSG", 10);
 
     // Sub message for keybind hints
     if (m_szSubMessage[0])
@@ -136,7 +136,7 @@ void CNEOHud_Message::DrawNeoHudElement()
 
         surface()->DrawSetTextColor(255, 255, 255, alpha);
         surface()->DrawSetTextPos(m_Padding, m_BoxHeight - crossSize - crossInset * (1.5 * m_fScale));
-        surface()->DrawPrintText(m_szSubMessage, V_wcslen(m_szSubMessage));
+        NeoHud::DrawPrintText(m_szSubMessage, V_wcslen(m_szSubMessage));
     }
 }
 

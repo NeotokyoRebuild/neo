@@ -135,11 +135,11 @@ void CNEOHud_GameEvent::DrawNeoHudElement()
 	const int textPosX = (m_iResX / 2) - (messageWidth /2);
 	surface()->DrawSetTextColor(Color(0, 0, 0, alpha));
 	surface()->DrawSetTextPos(textPosX + 2, text_y_offset + 2);
-	surface()->DrawPrintText(messageWord, messageLength); // the address of the null character minus the address of the first character
+	NeoHud::DrawPrintText(messageWord, messageLength); // the address of the null character minus the address of the first character
 
 	surface()->DrawSetTextColor(Color(255, 255, 255, alpha));
 	surface()->DrawSetTextPos(textPosX, text_y_offset);
-	surface()->DrawPrintText(messageWord, messageLength); // the address of the null character minus the address of the first character
+	NeoHud::DrawPrintText(messageWord, messageLength); // the address of the null character minus the address of the first character
 
 	if (NEORules()->IsTeamplay())
 	{
