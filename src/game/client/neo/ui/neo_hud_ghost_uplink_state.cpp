@@ -58,7 +58,7 @@ void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	// Calculate margin between compass + material
 	// NEO FIXME: Find a way to get 'HudLayout.res' -> 'NHudCompass' -> 'y_bottom_pos' value dynamically
 	int iCompassMargin = (screenHeight / 480) * 3;
-	vgui::HFont m_hFont = pScheme->GetFont("NHudOCRSmall");
+	vgui::HFont m_hFont = NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false);
 	int iFontHeight = vgui::surface()->GetFontTall(m_hFont);
 	int textureYPos = screenHeight - m_iUplinkTextureHeight - iFontHeight - ( 2 * iCompassMargin);
 	SetBounds(textureXPos, textureYPos, m_iUplinkTextureWidth, m_iUplinkTextureHeight);

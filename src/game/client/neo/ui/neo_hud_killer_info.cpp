@@ -42,8 +42,8 @@ CNEOHud_KillerInfo::CNEOHud_KillerInfo(const char *pszName, vgui::Panel *parent)
 void CNEOHud_KillerInfo::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	vgui::Panel::ApplySchemeSettings(pScheme);
-	m_hFontNormal = pScheme->GetFont("HudSelectionText", true);
-	m_hFontTitle = pScheme->GetFont("NeoUINormal", true);
+	m_hFontNormal = NeoHud::GetFont(pScheme, "HudSelectionText");
+	m_hFontTitle = NeoHud::GetFont(pScheme, "NeoUINormal");
 	CommonSetupHUD();
 }
 

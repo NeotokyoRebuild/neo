@@ -49,8 +49,8 @@ void CNEOHud_Message::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
     BaseClass::ApplySchemeSettings(pScheme);
 
-    m_hFont = pScheme->GetFont("NHudMessage", IsProportional());
-    m_hTitleFont = pScheme->GetFont("NHudMessageTitle", IsProportional());
+    m_hFont = NeoHud::GetFont(pScheme, "NHudMessage", vgui::INVALID_FONT, IsProportional());
+    m_hTitleFont = NeoHud::GetFont(pScheme, "NHudMessageTitle", vgui::INVALID_FONT, IsProportional());
 
     int screenWidth, screenHeight;
     surface()->GetScreenSize(screenWidth, screenHeight);

@@ -70,7 +70,7 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
+	m_hFont = NeoHud::GetFont(pScheme, "NHudOCRSmall");
 
 	int screenWidth, screenHeight;
 	surface()->GetScreenSize(screenWidth, screenHeight);

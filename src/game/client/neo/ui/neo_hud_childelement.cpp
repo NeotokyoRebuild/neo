@@ -10,7 +10,9 @@
 
 using vgui::surface;
 
-#define NEO_HUDBOX_CORNER_SCALE 1.0
+namespace {
+constexpr int ROUNDED_CORNER_PX = 8;
+}
 
 // NEO TODO (Rain): this should be expanded into two margin_width/height cvars, so players can tweak their HUD position if they wish to.
 ConVar cl_neo_hud_margin("cl_neo_hud_margin", "2", FCVAR_ARCHIVE, "Neo HUD margin, in pixels.", true, 0.0, false, 0.0);
@@ -39,15 +41,6 @@ CNEOHud_ChildElement::CNEOHud_ChildElement()
 	Assert(width_ne == width_nw && width_ne == width_se && width_ne == width_sw);
 	Assert(height_ne == height_nw && height_ne == height_se && height_ne == height_sw);
 #endif
-
-	// Only need to store one width/height for identically shaped corner pieces.
-	// NEO NOTE (nullsystem): See: Panel::GetCornerTextureSize, legacy non-8x was always w/h 8
-	// NEO TODO (nullsystem): Should actually be scaling with higher res, so remove fixed
-	// usage of LEGACY800CORNERWH eventually
-	static constexpr int LEGACY800CORNERWH = 8;
-	m_rounded_width = LEGACY800CORNERWH * NEO_HUDBOX_CORNER_SCALE;
-	m_rounded_height = LEGACY800CORNERWH * NEO_HUDBOX_CORNER_SCALE;
-	Assert(m_rounded_width > 0 && m_rounded_height > 0);
 }
 
 void CNEOHud_ChildElement::resetLastUpdateTime()
@@ -59,11 +52,14 @@ CNEOHud_ChildElement::XYHudPos CNEOHud_ChildElement::DrawNeoHudRoundedCommon(
 	const int x0, const int y0, const int x1, const int y1, Color color,
 	bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const
 {
+	// The 8x corner textures, drawn 8px square at 1080p and scaled with the screen like the boxes they round
+	// NEO NOTE (nullsystem): See: Panel::GetCornerTextureSize, legacy non-8x was always w/h 8
+	const int iCorner = ScaledPx(ROUNDED_CORNER_PX);
 	XYHudPos p{
-		.x0w = x0 + m_rounded_width,
-		.x1w = x1 - m_rounded_width,
-		.y0h = y0 + m_rounded_height,
-		.y1h = y1 - m_rounded_height,
+		.x0w = x0 + iCorner,
+		.x1w = x1 - iCorner,
+		.y0h = y0 + iCorner,
+		.y1h = y1 - iCorner,
 	};
 
 	if (p.y1h < p.y0h)

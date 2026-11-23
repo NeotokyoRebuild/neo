@@ -65,7 +65,7 @@ void CNEOHud_GameEvent::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	LoadControlSettings("scripts/HudLayout.res");
 
-	m_hFont = pScheme->GetFont("NHudOCRNoAdditive");
+	m_hFont = NeoHud::GetFont(pScheme, "NHudOCRNoAdditive", vgui::INVALID_FONT, false);
 
 	surface()->GetScreenSize(m_iResX, m_iResY);
 	SetBounds(0, 0, m_iResX, m_iResY);

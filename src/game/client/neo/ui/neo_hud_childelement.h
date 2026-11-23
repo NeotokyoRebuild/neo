@@ -5,6 +5,7 @@
 #endif
 
 #include "neo_gamerules.h"
+#include "neo_hud_draw.h"
 
 class C_NEO_Player;
 
@@ -93,6 +94,8 @@ protected:
 	}
 
 	static int GetMargin();
+	// A size in pixels at the reference resolution of 1080p, scaled to the screen. See NeoHud::ScaledPx.
+	static int ScaledPx(const int iReferencePx) { return NeoHud::ScaledPx(iReferencePx); }
 	int m_iHideHudElementNumber = NEO_HUD_ELEMENT_INVALID;
 
 private:
@@ -100,7 +103,6 @@ private:
 
 private:
 	vgui::HTexture m_hTex_Rounded_NE, m_hTex_Rounded_NW, m_hTex_Rounded_SE, m_hTex_Rounded_SW;
-	int m_rounded_width, m_rounded_height;
 
 	float m_flLastUpdateTime;
 };
