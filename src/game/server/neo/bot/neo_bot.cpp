@@ -1200,10 +1200,15 @@ void CNEOBot::DisableCloak(void)
 
 bool CNEOBot::IsAggravated() const
 {
-	constexpr float RECENT_INJURY_WINDOW = 5.0f;
+	constexpr float AGGRAVATED_TIME = 5.0f;
 	const int attackerTeam = NEORules()->IsTeamplay() ? GetEnemyTeam( GetTeamNumber() ) : TEAM_ANY;
-	return GetTimeSinceLastInjury( attackerTeam ) < RECENT_INJURY_WINDOW ||
-		GetVisionInterface()->GetPrimaryKnownThreat() != nullptr;
+	if ( GetTimeSinceLastInjury( attackerTeam ) < AGGRAVATED_TIME )
+	{
+		return true;
+	}
+
+	const CKnownEntity *threat = GetVisionInterface()->GetPrimaryKnownThreat();
+	return threat && threat->GetTimeSinceLastKnown() < AGGRAVATED_TIME;
 }
 
 void CNEOBot::ToggleCloak(void)
