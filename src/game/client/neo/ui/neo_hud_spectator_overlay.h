@@ -22,12 +22,17 @@ struct SpectatorPlayerCard
 	int iEntIndex = 0;
 	int iTeam = 0;
 	wchar_t wszPlayerName[MAX_PLAYER_NAME_LENGTH] = {};
+	// As the card shows them: the name cut to fit beside the class name, and the class name in capitals
+	wchar_t wszDisplayName[MAX_PLAYER_NAME_LENGTH] = {};
+	wchar_t wszClassName[32] = {};
 	// NEO NOTE (nullsystem): wcaWeaponIcons is NOT used as a string
 	// but individual characters!
 	wchar_t wcaWeaponIcons[MAX_WEAPONS] = {};
 	int iTotalWeaponIcons = 0;
 	int iWeaponIdxActive = 0;
 	int iWeaponIdxPrimary = 0;
+	// The gap between this row's weapon icons, tighter when they would come too close to the stats
+	int iWeaponGap = 0;
 	int iXP = 0;
 	int iDeath = 0;
 	int iClass = 0;
@@ -87,6 +92,24 @@ protected:
 	ConVar *GetUpdateFrequencyConVar() const final;
 
 private:
+	// A team's stats columns, worked out in the update step, since the cards change only there
+	struct TeamStatsLayout
+	{
+		int iXPWide = 0;
+		int iDeathWide = 0;
+		int iGroupGap = 0;
+	};
+
+	void SetCardNames(SpectatorPlayerCard &card, const int iNameRowWide) const;
+	void UpdateTeamStatsLayout(const int iRowRoom);
+	// Text held to the card's left or right edge, so a card and its mirror image share one call
+	void DrawCardText(const vgui::HFont font, const bool bAlignLeft, const int xLeft, const int xRight, const int yBaseline,
+			const wchar_t *pwszText) const;
+	int GetCardWeaponsWide(const SpectatorPlayerCard &card, const int iWeaponGap) const;
+	void DrawCardNameRow(const SpectatorPlayerCard &card, const bool bIsLeftSide,
+			const int x, const int y, const int wide, const int iAvatarSize, const int iEdgePad, const Color &colorText) const;
+	void DrawCardStatsRow(const SpectatorPlayerCard &card, const bool bIsLeftSide,
+			const int x, const int y, const int wide, const int iAvatarSize, const int iEdgePad, const Color &colorText) const;
 	void DrawPlayerCard(const int iPlayerIdx,
 			const bool bIsLeftSide,
 			const int x, const int y,
@@ -104,6 +127,9 @@ private:
 	CPanelAnimationVarAliasType(int, m_iDeadTexture, "DeadTexture", "vgui/hud/kill_kill", "textureid");
 
 	int m_iTeamPlayersCount[TEAM__TOTAL] = {};
+	TeamStatsLayout m_teamStats[TEAM__TOTAL] = {};
+	int m_iRankIconWide = 0;
+	int m_iDeathIconWide = 0;
 };
 
 extern CNEOHud_SpectatorOverlay *g_pNeoHudSpecOverlay;

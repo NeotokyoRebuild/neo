@@ -49,3 +49,6 @@ enum NeoHudDeathNoticeIcon : wchar_t
 	NEO_HUD_DEATHNOTICEICON_ZR68S,
 };
 
+// The kill feed's rank glyph for an XP total, from the rankless dog up to lieutenant
+wchar_t GetRankGlyph(int iXP);
+
