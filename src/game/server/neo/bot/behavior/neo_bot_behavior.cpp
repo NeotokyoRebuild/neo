@@ -725,7 +725,7 @@ const CKnownEntity *CNEOBotMainAction::SelectMoreDangerousThreatInternal( const 
 		const bool bThreat2VisibleRecently = threat2->IsVisibleRecently();
 		if ( bThreat1VisibleRecently != bThreat2VisibleRecently )
 		{
-			// A nearer hidden record can keep the bot from engaging an enemy it has seen.
+			// The cloak/smoke/light detection systems mean that a nearest threat is not always the best priority
 			return bThreat1VisibleRecently ? threat1 : threat2;
 		}
 
