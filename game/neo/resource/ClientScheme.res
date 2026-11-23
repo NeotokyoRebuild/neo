@@ -2581,6 +2581,18 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudVitalsText
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
 		NHudFireMode
 		{
 			"1"
@@ -2613,6 +2625,18 @@ Scheme
 				"tall"		"9"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudVitalsNumber
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"9"
+				"weight"	"600"
+				"range"		"0x0000 0x017F"
 				"antialias"	"1"
 				"additive"	"1"
 			}
