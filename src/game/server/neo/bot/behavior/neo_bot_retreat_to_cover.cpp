@@ -75,9 +75,10 @@ public:
 			Vector vecThreatEye = known.GetLastKnownPosition() + pThreatPlayer->GetViewOffset();
 			Vector vecCandidateArea = m_area->GetCenter() + m_me->GetViewOffset();
 
+			// The smoke blocker is not a brush, so the trace filter skips it unless the mask includes CONTENTS_MONSTER
 			trace_t tr;
-			CTraceFilterSimple filter( known.GetEntity(), COLLISION_GROUP_NONE);
-			UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS, &filter, &tr );
+			NextBotTraceFilterIgnoreActors filter( known.GetEntity(), COLLISION_GROUP_NONE );
+			UTIL_TraceLine( vecThreatEye, vecCandidateArea, MASK_BLOCKLOS_AND_NPCS, &filter, &tr );
 
 			if ( tr.fraction < 1.0f )
 			{
