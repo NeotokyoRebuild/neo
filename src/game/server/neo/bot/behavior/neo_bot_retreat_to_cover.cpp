@@ -332,7 +332,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 				m_path.Invalidate();
 			}
 		}
-		else
+		else if ( !me->IsAggravated() )
 		{
 			me->DisableCloak();
 		}

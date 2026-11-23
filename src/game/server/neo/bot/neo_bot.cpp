@@ -1198,6 +1198,14 @@ void CNEOBot::DisableCloak(void)
 	}
 }
 
+bool CNEOBot::IsAggravated() const
+{
+	constexpr float RECENT_INJURY_WINDOW = 5.0f;
+	const int attackerTeam = NEORules()->IsTeamplay() ? GetEnemyTeam( GetTeamNumber() ) : TEAM_ANY;
+	return GetTimeSinceLastInjury( attackerTeam ) < RECENT_INJURY_WINDOW ||
+		GetVisionInterface()->GetPrimaryKnownThreat() != nullptr;
+}
+
 void CNEOBot::ToggleCloak(void)
 {
 	// the player toggles cloak only on a fresh press, and a press is held until the next bot update,
