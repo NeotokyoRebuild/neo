@@ -17,14 +17,21 @@ static Vector FindSmokePathThrowPoint( CNEOBot *me, const Vector &vecThreatPos )
 		return vec3_invalid;
 	}
 	CNavArea *pGoalArea = TheNavMesh->GetNavArea( vecThreatPos );
-	ShortestPathCost cost;
-	if ( !pGoalArea || !NavAreaBuildPath( pStartArea, pGoalArea, nullptr, cost, nullptr, flMaxPathLength, me->GetTeamNumber() ) )
+	if ( !pGoalArea )
+	{
+		pGoalArea = TheNavMesh->GetNearestNavArea( vecThreatPos );
+	}
+	if ( !pGoalArea )
 	{
 		return vec3_invalid;
 	}
 
+	ShortestPathCost cost;
+	CNavArea *pClosestArea = nullptr;
+	NavAreaBuildPath( pStartArea, pGoalArea, nullptr, cost, &pClosestArea, flMaxPathLength, me->GetTeamNumber() );
+
 	CUtlVector< CNavArea * > path;
-	for ( CNavArea *pArea = pGoalArea; pArea && pArea != pStartArea; pArea = pArea->GetParent() )
+	for ( CNavArea *pArea = pClosestArea; pArea && pArea != pStartArea; pArea = pArea->GetParent() )
 	{
 		path.AddToTail( pArea );
 	}
@@ -43,8 +50,26 @@ static Vector FindSmokePathThrowPoint( CNEOBot *me, const Vector &vecThreatPos )
 	{
 		return vec3_invalid;
 	}
+
 	const Vector &vecCenter = pTargetArea->GetCenter();
-	return me->IsThrowLineClear( vecCenter ) ? vecCenter : vec3_invalid;
+	if ( me->IsThrowLineClear( vecCenter ) )
+	{
+		return vecCenter;
+	}
+
+	Vector vecClosest;
+	pTargetArea->GetClosestPointOnArea( vecThreatPos, &vecClosest );
+	if ( me->IsThrowLineClear( vecClosest ) )
+	{
+		return vecClosest;
+	}
+
+	CNavArea *pPreviousArea = pTargetArea->GetParent();
+	if ( pPreviousArea && me->IsThrowLineClear( pPreviousArea->GetCenter() ) )
+	{
+		return pPreviousArea->GetCenter();
+	}
+	return vec3_invalid;
 }
 
 CNEOBotGrenadeThrowSmoke::CNEOBotGrenadeThrowSmoke( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat )
