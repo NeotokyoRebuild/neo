@@ -4223,7 +4223,10 @@ void CGameMovement::CategorizePosition( void )
 					player->m_surfaceFriction = 0.25f;
 				}
 #ifdef NEO
-				else if (!sv_neo_airaccel_classic.GetBool() && player->GetMoveType() != MOVETYPE_NOCLIP)
+				else if (const auto neoPlayer = assert_cast<CNEO_Player*>(player);
+					!sv_neo_airaccel_classic.GetBool() &&
+                    player->GetMoveType() != MOVETYPE_NOCLIP &&
+                    (gpGlobals->curtime - neoPlayer->m_flJumpLastTime < GAMEMOVEMENT_JUMP_TIME / 1000.0))
 				{
 					float fallTime = player->m_Local.m_flFallVelocity / GetCurrentGravity();
 					if (fallTime < sv_neo_airaccel_compensation.GetFloat())
