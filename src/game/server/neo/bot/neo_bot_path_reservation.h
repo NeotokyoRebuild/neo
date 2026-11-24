@@ -44,6 +44,14 @@ struct HazardInfo
 	float detpackExpireTime;    // when an enemy detpack's blast radius stops blocking every route
 };
 
+enum GrenadeHazard : unsigned int
+{
+	GRENADE_HAZARD_NONE = 0,
+	GRENADE_HAZARD_SMOKE = 1 << 0,
+	GRENADE_HAZARD_DEADLY = 1 << 1,
+	GRENADE_HAZARD_SMOKE_OR_DEADLY = GRENADE_HAZARD_SMOKE | GRENADE_HAZARD_DEADLY,
+};
+
 // A detpack lying in the world, with the nav area it rests on
 struct DeployedDetpack_t
 {
@@ -111,6 +119,7 @@ public:
     float GetAreaHazardousTime(int navAreaID, const CNEOBot *me) const;
     bool IsAreaHazardous(int navAreaID, const CNEOBot *me) const;
     bool IsAreaDeadlyHazard(int navAreaID, const CNEOBot *me) const;
+    GrenadeHazard GetAreaGrenadeReservation( int navAreaID, int teamID, GrenadeHazard kinds ) const;
 
     const CUtlVector<DeployedDetpack_t> &GetDeployedDetpacks();
     bool IsDetpackMarkFresh(const CBaseEntity *pDetpack, int teamID) const;

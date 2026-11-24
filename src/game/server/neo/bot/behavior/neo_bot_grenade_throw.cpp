@@ -8,6 +8,7 @@
 #include "weapon_smokegrenade.h"
 #include "nav_mesh.h"
 #include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_reservation.h"
 #include "movevars_shared.h"
 
 extern ConVar sv_neo_bot_grenade_frag_safety_range_multiplier;
@@ -154,6 +155,16 @@ ConVar sv_neo_bot_grenade_give_up_time("sv_neo_bot_grenade_give_up_time", "5.0",
 
 ConVar sv_neo_bot_grenade_search_range("sv_neo_bot_grenade_search_range", "1000", FCVAR_CHEAT,
 	"Travel distance range for bot to search for a grenade throw vantage point", true, 0, false, 0);
+
+bool CNEOBotGrenadeThrow::IsThrowTargetReserved( const CNEOBot *me, const CNavArea *pArea, GrenadeHazard kinds )
+{
+	if ( !pArea )
+	{
+		return false;
+	}
+
+	return CNEOBotPathReservations()->GetAreaGrenadeReservation( pArea->GetID(), me->GetTeamNumber(), kinds ) != GRENADE_HAZARD_NONE;
+}
 
 //---------------------------------------------------------------------------------------------
 CNEOBotGrenadeThrow::CNEOBotGrenadeThrow( CNEOBaseCombatWeapon *pWeapon, const CKnownEntity *threat )

@@ -59,6 +59,7 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 			m_hThreatGrenadeTarget = pPrimaryThreat->GetEntity();
 			m_vantageArea = nullptr; // reconsider vantage point
 			m_vecTarget = pPrimaryThreat->GetLastKnownPosition();
+			m_pTargetArea = TheNavMesh->GetNearestNavArea( m_vecTarget );
 			m_vecThreatLastKnownPos = m_vecTarget;
 			m_scanTimer.Start( 0.2f );
 		}
@@ -74,6 +75,7 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 			if ( vecThrowTarget != vec3_invalid )
 			{
 				m_vecTarget = vecThrowTarget;
+				m_pTargetArea = TheNavMesh->GetNearestNavArea( m_vecTarget );
 			}
 			else
 			{
@@ -88,6 +90,11 @@ CNEOBotGrenadeThrow::ThrowTargetResult CNEOBotGrenadeThrowFrag::UpdateGrenadeTar
 		}
 	}
 	Assert( m_vecTarget != vec3_invalid );
+
+	if ( IsThrowTargetReserved( me, m_pTargetArea, GRENADE_HAZARD_DEADLY ) )
+	{
+		return THROW_TARGET_CANCEL;
+	}
 
 	// Safety checks
 	if ( !me->IsLineOfFireClear( m_vecTarget, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN ) )

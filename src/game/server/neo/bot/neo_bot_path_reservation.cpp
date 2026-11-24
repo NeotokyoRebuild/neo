@@ -430,9 +430,8 @@ void CNEOBotPathReservationSystem::AddSmokeHazard(int navAreaID, float expireTim
     else
     {
         HazardInfo &existing = m_HazardAreas[teamID][index];
-        // Optimizing simplification: assume new time is later to skip comparisons
-        // May also work for resetting an area to be non-hazardous early
-        existing.smokeExpireTime = expireTime;
+        // An older smoke sighting can overlap a newer throw's reservation.
+        existing.smokeExpireTime = Max( existing.smokeExpireTime, expireTime );
 
         if (propagatePVS && (existing.smokePropagateTime == expireTime))
         {
@@ -602,29 +601,34 @@ bool CNEOBotPathReservationSystem::IsAreaHazardous(int navAreaID, const CNEOBot 
 // Unlike IsAreaHazardous, smoke and the turret's sightline do not count: only marks that can kill, such as a frag grenade's blast area
 bool CNEOBotPathReservationSystem::IsAreaDeadlyHazard(int navAreaID, const CNEOBot *me) const
 {
-	if (!neo_bot_path_reservation_avoid_penalty_enable.GetBool())
+	return me && GetAreaGrenadeReservation( navAreaID, me->GetTeamNumber(), GRENADE_HAZARD_DEADLY ) == GRENADE_HAZARD_DEADLY;
+}
+
+GrenadeHazard CNEOBotPathReservationSystem::GetAreaGrenadeReservation( int navAreaID, int teamID, GrenadeHazard kinds ) const
+{
+	if ( !neo_bot_path_reservation_avoid_penalty_enable.GetBool() || teamID < 0 || teamID >= TEAM__TOTAL )
 	{
-		return false;
+		return GRENADE_HAZARD_NONE;
 	}
 
-	if (!me)
+	const int index = m_HazardAreas[teamID].Find( navAreaID );
+	if ( !m_HazardAreas[teamID].IsValidIndex( index ) )
 	{
-		return false;
+		return GRENADE_HAZARD_NONE;
 	}
 
-	const int teamID = me->GetTeamNumber();
-	if (teamID < 0 || teamID >= TEAM__TOTAL)
+	const HazardInfo &hazard = m_HazardAreas[teamID][index];
+	if ( ( kinds & GRENADE_HAZARD_DEADLY ) && hazard.hazardExpireTime > gpGlobals->curtime )
 	{
-		return false;
+		return GRENADE_HAZARD_DEADLY;
 	}
 
-	const int index = m_HazardAreas[teamID].Find(navAreaID);
-	if (!m_HazardAreas[teamID].IsValidIndex(index))
+	if ( ( kinds & GRENADE_HAZARD_SMOKE ) && hazard.smokeExpireTime > gpGlobals->curtime )
 	{
-		return false;
+		return GRENADE_HAZARD_SMOKE;
 	}
 
-	return m_HazardAreas[teamID][index].hazardExpireTime > gpGlobals->curtime;
+	return GRENADE_HAZARD_NONE;
 }
 
 // How often the server looks for any deployed detpack, so bots skip the sight check when there is none

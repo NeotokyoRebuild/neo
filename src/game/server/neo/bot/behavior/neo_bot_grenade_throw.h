@@ -9,6 +9,7 @@
 
 class CNEOBaseCombatWeapon;
 class CKnownEntity;
+enum GrenadeHazard : unsigned int;
 
 class CNEOBotGrenadeThrow : public Action< CNEOBot >
 {
@@ -26,6 +27,7 @@ public:
 protected:
 	CNavArea *m_vantageArea;
 	Vector m_vecTarget; // caches target to aim at during throw action in implementation classes
+	const CNavArea *m_pTargetArea = nullptr;
 	Vector m_vecThreatLastKnownPos;
 	Vector m_vecThrowLookAt; // far point in m_angThrowSolved's direction, for AimHeadTowards; vec3_invalid until solved
 	QAngle m_angThrowSolved; // eye angles that land the grenade on m_vecTarget; valid while m_vecThrowLookAt is
@@ -61,6 +63,7 @@ protected:
 
 	ThrowAimResult UpdateThrowAim( CNEOBot *me );
 	CNavArea *FindVantageArea( CNEOBot *me );
+	static bool IsThrowTargetReserved( const CNEOBot *me, const CNavArea *pArea, GrenadeHazard kinds );
 
 	virtual ThrowTargetResult UpdateGrenadeTargeting( CNEOBot *me, CNEOBaseCombatWeapon *pWeapon ) = 0;
 	virtual void OnThrowReleased( CNEOBot *me ) { }
