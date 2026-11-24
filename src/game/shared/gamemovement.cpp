@@ -1803,6 +1803,8 @@ ConVar sv_neo_airfriction("sv_neo_airfriction", "0", FCVAR_NOTIFY | FCVAR_REPLIC
 ConVar sv_neo_airfriction_objective("sv_neo_airfriction_objective", "0.5", FCVAR_NOTIFY | FCVAR_REPLICATED, "Air friction for ghost carrier, VIP and juggernaut.", true, 0, false, 0);
 ConVar sv_neo_airstopspeed("sv_neo_airstopspeed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Minimum stopping speed when in the air.", true, 0, false, 0);
 ConVar sv_neo_jumpbuffer("sv_neo_jumpbuffer", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allow Quake style jump buffering.", true, 0, true, 1);
+ConVar sv_neo_airaccel_classic("sv_neo_airaccel_classic", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Reset friction periodically, Source 2006 style, instead of every frame, to achieve classic air acceleration.", true, 0, true, 1 );
+ConVar sv_neo_airaccel_compensation("sv_neo_airaccel_compensation", "0.15", FCVAR_NOTIFY | FCVAR_REPLICATED, "When not using classic air acceleration, this can be used to reduce air acceleration by a fixed amount (whereas classic would be random) at the apex of a jump.", true, 0, true, 0.3f);
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -4139,6 +4141,9 @@ void CGameMovement::CategorizePosition( void )
 	trace_t pm;
 
 	// Reset this each time we-recategorize, otherwise we have bogus friction when we jump into water and plunge downward really quickly
+#ifdef NEO
+	if (!sv_neo_airaccel_classic.GetBool() || CheckInterval(GROUND))
+#endif
 	player->m_surfaceFriction = 1.0f;
 
 	// if the player hull point one unit down is solid, the player
@@ -4217,6 +4222,19 @@ void CGameMovement::CategorizePosition( void )
 				{
 					player->m_surfaceFriction = 0.25f;
 				}
+#ifdef NEO
+				else if (const auto neoPlayer = assert_cast<CNEO_Player*>(player);
+					!sv_neo_airaccel_classic.GetBool() &&
+                    player->GetMoveType() != MOVETYPE_NOCLIP &&
+                    (gpGlobals->curtime - neoPlayer->m_flJumpLastTime < GAMEMOVEMENT_JUMP_TIME / 1000.0))
+				{
+					float fallTime = player->m_Local.m_flFallVelocity / GetCurrentGravity();
+					if (fallTime < sv_neo_airaccel_compensation.GetFloat())
+					{
+						player->m_surfaceFriction = 0.25f;
+					}
+				}
+#endif
 			}
 			else
 			{
