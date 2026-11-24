@@ -23,12 +23,12 @@ private:
 	void DrawRangeFinder(C_NEO_Player* pPlayer, int &offset);
 	void DrawWalkingIndicator(C_NEO_Player* pPlayer, int &offset);
 
-	CPanelAnimationVarAliasType(bool, m_bVisible, "visible", "1", "bool");
+	CPanelAnimationVar(bool, m_bVisible, "visible", "1");
 
-	CPanelAnimationVarAliasType(int, m_iXpos, "xpos", "r203", "proportional_xpos");
-	CPanelAnimationVarAliasType(int, m_iYpos, "ypos", "446", "proportional_ypos");
+	CPanelAnimationVarAliasType(int, m_iXpos, "xpos", "c40", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, m_iYpos, "ypos", "c30", "proportional_ypos");
 
-	CPanelAnimationVar(float, m_flAnimationSpeed, "animationSpeed", "2");
+	CPanelAnimationVar(float, m_flAnimationSpeed, "animationSpeed", "4");
 
 	CPanelAnimationVarAliasType(Color, m_color, "color", COLOR_NEO_WHITE_STR, "Color");
 	CPanelAnimationVarAliasType(Color, m_color2, "color2", "255 150 150 255", "Color");
