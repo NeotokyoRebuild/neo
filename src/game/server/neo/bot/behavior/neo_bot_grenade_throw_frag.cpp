@@ -124,7 +124,7 @@ float CNEOBotGrenadeThrowFrag::GetFragSafetyRadius()
 	return sv_neo_grenade_blast_radius.GetFloat() * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat();
 }
 
-bool CNEOBotGrenadeThrowFrag::IsFragInSafeRange( const CNEOBot *me, const Vector &vecTarget )
+bool CNEOBotGrenadeThrowFrag::IsFragPolite( const CNEOBot *me, const Vector &vecTarget )
 {
 	const float flDistToTargetSqr = me->GetAbsOrigin().DistToSqr( vecTarget );
 	const float flSafeRadius = GetFragSafetyRadius();
@@ -146,7 +146,7 @@ bool CNEOBotGrenadeThrowFrag::IsFragInSafeRange( const CNEOBot *me, const Vector
 
 bool CNEOBotGrenadeThrowFrag::IsFragSafe( const CNEOBot *me, const Vector &vecTarget )
 {
-	if ( !IsFragInSafeRange( me, vecTarget ) )
+	if ( !IsFragPolite( me, vecTarget ) )
 	{
 		return false;
 	}

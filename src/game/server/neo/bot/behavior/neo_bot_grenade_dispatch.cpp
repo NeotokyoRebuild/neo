@@ -125,7 +125,7 @@ Action< CNEOBot > *CNEOBotGrenadeDispatch::ChooseGrenadeThrowBehavior( const CNE
 	{
 		const bool bFragSafe = sv_neo_bot_grenade_polite_frag.GetBool()
 			? CNEOBotGrenadeThrowFrag::IsFragSafe( me, threat->GetLastKnownPosition() )
-			: CNEOBotGrenadeThrowFrag::IsFragInSafeRange( me, threat->GetLastKnownPosition() );
+			: CNEOBotGrenadeThrowFrag::IsFragPolite( me, threat->GetLastKnownPosition() );
 		if ( !bFragSafe )
 		{
 			return nullptr;
