@@ -31,6 +31,7 @@ public:
 
 private:
 	ActionResult<CNEOBot> UpdateOverTop( CNEOBot *me, const Vector &hangPos, float range );
+	bool IsHeldByLadder( CNEOBot *me ) const;
 	bool IsBarrierAhead( CNEOBot *me, const Vector &hangPos ) const;
 	bool TryHandicap( CNEOBot *me, const char *reason ) const;
 
