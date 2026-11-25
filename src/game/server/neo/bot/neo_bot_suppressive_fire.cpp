@@ -227,7 +227,7 @@ void CNEOBotSuppressiveFire::OnInjured( CNEOBot *me, const CTakeDamageInfo &info
 	const Vector eyes = me->EyePosition();
 	const Vector force = info.GetDamageForce();
 	// Bullet force points away from the shooter.
-	Vector towardShooter = force.LengthSqr() > 0.0f ? -force : attacker->EyePosition() - eyes;
+	Vector towardShooter = -force;
 	if ( towardShooter.NormalizeInPlace() == 0.0f )
 	{
 		return;
