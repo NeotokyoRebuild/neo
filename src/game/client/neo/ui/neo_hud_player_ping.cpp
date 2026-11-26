@@ -62,8 +62,8 @@ void CNEOHud_PlayerPing::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	m_hFont = pScheme->GetFont("NHudOCRSmall");
-	m_hFontSmall = pScheme->GetFont("NHudOCRSmallerNoAdditive");
+	m_hFont = NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false);
+	m_hFontSmall = NeoHud::GetFont(pScheme, "NHudOCRSmallerNoAdditive", vgui::INVALID_FONT, false);
 	m_iFontTall = vgui::surface()->GetFontTall(m_hFontSmall);
 	m_iTexTall = m_iFontTall;
 

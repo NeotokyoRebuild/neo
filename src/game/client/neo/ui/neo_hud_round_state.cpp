@@ -182,11 +182,11 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	m_hOCRLargeFont = pScheme->GetFont("NHudOCRLarge");
-	m_hOCRFont = pScheme->GetFont("NHudOCR");
-	m_hOCRSmallFont = pScheme->GetFont("NHudOCRSmall");
-	m_hOCRSmallerFont = pScheme->GetFont("NHudOCRSmaller");
-	m_hTinyText = pScheme->GetFont("NHudTinyText");
+	m_hOCRLargeFont = NeoHud::GetFont(pScheme, "NHudOCRLarge", vgui::INVALID_FONT, false);
+	m_hOCRFont = NeoHud::GetFont(pScheme, "NHudOCR", vgui::INVALID_FONT, false);
+	m_hOCRSmallFont = NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false);
+	m_hOCRSmallerFont = NeoHud::GetFont(pScheme, "NHudOCRSmaller", vgui::INVALID_FONT, false);
+	m_hTinyText = NeoHud::GetFont(pScheme, "NHudTinyText", vgui::INVALID_FONT, false);
 	m_iTinyTextHeight = surface()->GetFontTall(m_hTinyText);
 
 	SetFgColor(COLOR_TRANSPARENT);

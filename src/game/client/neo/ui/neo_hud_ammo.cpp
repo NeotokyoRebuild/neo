@@ -73,24 +73,10 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	LoadControlSettings("scripts/HudLayout.res");
 
-	m_hSmallTextFont = pScheme->GetFont("NHudPanelText", true);
-	m_hBulletFont = pScheme->GetFont("NHudBullets", true);
-	m_hFireModeFont = pScheme->GetFont("NHudFireMode", true);
-	m_hTextFont = pScheme->GetFont("NHudAmmoReserve", true);
-
-	// A custom ClientScheme.res from before these fonts existed: use the fonts they replaced
-	if (!m_hSmallTextFont)
-	{
-		m_hSmallTextFont = pScheme->GetFont("NHudOCRSmall");
-	}
-	if (!m_hFireModeFont)
-	{
-		m_hFireModeFont = pScheme->GetFont("NHudBullets");
-	}
-	if (!m_hTextFont)
-	{
-		m_hTextFont = pScheme->GetFont("NHudOCR");
-	}
+	m_hSmallTextFont = NeoHud::GetFont(pScheme, "NHudPanelText", NeoHud::GetFont(pScheme, "NHudOCRSmall", vgui::INVALID_FONT, false));
+	m_hBulletFont = NeoHud::GetFont(pScheme, "NHudBullets");
+	m_hFireModeFont = NeoHud::GetFont(pScheme, "NHudFireMode", NeoHud::GetFont(pScheme, "NHudBullets", vgui::INVALID_FONT, false));
+	m_hTextFont = NeoHud::GetFont(pScheme, "NHudAmmoReserve", NeoHud::GetFont(pScheme, "NHudOCR", vgui::INVALID_FONT, false));
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
