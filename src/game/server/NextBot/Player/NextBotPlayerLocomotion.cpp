@@ -121,6 +121,20 @@ const CNavLadder *PlayerLocomotion::FindTouchedLadder( void ) const
 
 
 //-----------------------------------------------------------------------------------------------------
+// A behavior asks this instead of measuring the ladder itself, so its idea of which ladder holds
+// the bot cannot differ from the one this locomotion would take over
+bool PlayerLocomotion::IsHeldByLadder( const CNavLadder *ladder ) const
+{
+	if ( ladder == NULL || !m_player->IsOnLadder() )
+	{
+		return false;
+	}
+
+	return FindTouchedLadder() == ladder;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 /**
  * Called when the engine has us on a ladder our own path never asked for. Returns true if the
  * ladder was taken over, in which case the caller leaves the move type alone and the normal ladder

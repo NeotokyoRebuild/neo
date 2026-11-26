@@ -146,7 +146,7 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	const Vector& myPos = mover->GetFeet();
 
 	// The engine can grab the bot before it is within mount range, and lining up further strafes it off
-	if ( m_bGoingUp && IsHeldByLadder( me ) )
+	if ( m_bGoingUp && me->GetLocomotionInterface()->IsHeldByLadder( m_ladder ) )
 	{
 		me->SetAbsVelocity( vec3_origin );
 		return ChangeTo( new CNEOBotLadderClimb( m_ladder, m_bGoingUp ), "Mounting ladder" );
@@ -284,27 +284,6 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	}
 
 	return Continue();
-}
-
-//---------------------------------------------------------------------------------------------
-bool CNEOBotLadderApproach::IsHeldByLadder( CNEOBot *me ) const
-{
-	if ( !me->IsOnLadder() )
-	{
-		return false;
-	}
-
-	const Vector &feet = me->GetLocomotionInterface()->GetFeet();
-	const float stepHeight = me->GetLocomotionInterface()->GetStepHeight();
-	if ( feet.z < m_ladder->m_bottom.z - stepHeight || feet.z > m_ladder->m_top.z )
-	{
-		return false;
-	}
-
-	const float range = CalcDistanceToLineSegment2D(
-		feet.AsVector2D(), m_ladder->m_bottom.AsVector2D(), m_ladder->m_top.AsVector2D() );
-	const float mountRange = MOUNT_RANGE + me->GetBodyInterface()->GetHullWidth() * 0.5f;
-	return range <= mountRange;
 }
 
 //---------------------------------------------------------------------------------------------
