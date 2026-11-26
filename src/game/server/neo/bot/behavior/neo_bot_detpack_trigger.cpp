@@ -13,7 +13,7 @@ CNEOBotDetpackTrigger::CNEOBotDetpackTrigger( void )
 }
 
 //---------------------------------------------------------------------------------------------
-// Teammates are checked by their true position, like IsFragSafe: a teammate's location is team knowledge.
+// Check if teammates would be in the blast radius, since teammate positions might have changed since initial decision
 bool CNEOBotDetpackTrigger::IsTeammateInBlast( const CNEOBot *me, const Vector &vecDetpackPos, float flRadius )
 {
 	if ( !NEORules()->IsTeamplay() )
