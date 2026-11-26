@@ -145,7 +145,7 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 
 	const Vector& myPos = mover->GetFeet();
 
-	// The engine can grab the bot before it is within mount range, and lining up further strafes it off
+	// Transition to the climb behavior as soon as the bot is attached to the ladder
 	if ( m_bGoingUp && me->GetLocomotionInterface()->IsHeldByLadder( m_ladder ) )
 	{
 		me->SetAbsVelocity( vec3_origin );
