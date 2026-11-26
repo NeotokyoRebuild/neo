@@ -80,7 +80,7 @@ ActionResult< CNEOBot >	CNEOBotDetpackTrigger::Update( CNEOBot *me, float interv
 	CBaseEntity *pDetpackEnt = m_hDetpackWeapon->GetDetpackEntity();
 	if ( pDetpackEnt && IsTeammateInBlast( me, pDetpackEnt->GetAbsOrigin(), NEO_DETPACK_DAMAGE_RADIUS ) )
 	{
-		return Done( "Teammate in detpack blast" );
+		return Done( "Teammate in detpack blast radius" );
 	}
 
 	if ( me->GetActiveWeapon() == m_hDetpackWeapon && gpGlobals->curtime >= m_hDetpackWeapon->m_flNextPrimaryAttack )
