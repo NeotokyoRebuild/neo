@@ -13,7 +13,7 @@ CNEOBotDetpackTrigger::CNEOBotDetpackTrigger( void )
 }
 
 //---------------------------------------------------------------------------------------------
-// Check if teammates would be in the blast radius, since teammate positions might have changed since initial decision
+// Check if teammates would be in the blast radius
 bool CNEOBotDetpackTrigger::IsTeammateInBlast( const CNEOBot *me, const Vector &vecDetpackPos, float flRadius )
 {
 	if ( !NEORules()->IsTeamplay() )
