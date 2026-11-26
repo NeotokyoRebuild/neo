@@ -146,7 +146,7 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	const Vector& myPos = mover->GetFeet();
 
 	// Transition to the climb behavior as soon as the bot is attached to the ladder
-	if ( m_bGoingUp && me->GetLocomotionInterface()->IsHeldByLadder( m_ladder ) )
+	if ( m_bGoingUp && me->GetLocomotionInterface()->IsAttachedToLadder( m_ladder ) )
 	{
 		me->SetAbsVelocity( vec3_origin );
 		return ChangeTo( new CNEOBotLadderClimb( m_ladder, m_bGoingUp ), "Attached to ladder, climbing" );

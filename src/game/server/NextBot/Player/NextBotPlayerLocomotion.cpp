@@ -121,9 +121,8 @@ const CNavLadder *PlayerLocomotion::FindTouchedLadder( void ) const
 
 
 //-----------------------------------------------------------------------------------------------------
-// A behavior asks this instead of measuring the ladder itself, so its idea of which ladder holds
-// the bot cannot differ from the one this locomotion would take over
-bool PlayerLocomotion::IsHeldByLadder( const CNavLadder *ladder ) const
+// Returns if a bot is attached to a ladder
+bool PlayerLocomotion::IsAttachedToLadder( const CNavLadder *ladder ) const
 {
 	if ( ladder == NULL || !m_player->IsOnLadder() )
 	{
