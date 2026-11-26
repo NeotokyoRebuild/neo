@@ -149,7 +149,7 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	if ( m_bGoingUp && me->GetLocomotionInterface()->IsHeldByLadder( m_ladder ) )
 	{
 		me->SetAbsVelocity( vec3_origin );
-		return ChangeTo( new CNEOBotLadderClimb( m_ladder, m_bGoingUp ), "Mounting ladder" );
+		return ChangeTo( new CNEOBotLadderClimb( m_ladder, m_bGoingUp ), "Mounting ladder the engine holds" );
 	}
 
 	// If we end up closer to exit point than entry point,
