@@ -187,7 +187,7 @@ void CNEOHud_GhostBeacons::DrawPlayer(float distance, const Vector& playerPos) c
 	int textWidth, textHeight;
 	surface()->GetTextSize(m_hFont, m_wszBeaconTextUnicode, textWidth, textHeight);
 	surface()->DrawSetTextPos(posX - (textWidth / 2), posY + halfBeaconLength);
-	surface()->DrawPrintText(m_wszBeaconTextUnicode, V_wcslen(m_wszBeaconTextUnicode));
+	NeoHud::DrawPrintText(m_wszBeaconTextUnicode, V_wcslen(m_wszBeaconTextUnicode));
 
 	surface()->DrawSetColor(255, 20, 20, alpha);
 	surface()->DrawSetTexture(m_hTex);

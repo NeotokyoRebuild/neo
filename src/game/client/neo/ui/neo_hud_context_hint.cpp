@@ -368,7 +368,7 @@ void CNEOHud_ContextHint::DrawNeoHudElement()
 	vgui::surface()->DrawSetTextFont(m_hHintFont);
 	vgui::surface()->DrawSetTextColor(m_TextColor);
 	vgui::surface()->DrawSetTextPos(textX, textY);
-	vgui::surface()->DrawPrintText(m_wszHintText, static_cast<int>(wcslen(m_wszHintText)));
+	NeoHud::DrawPrintText(m_wszHintText, static_cast<int>(wcslen(m_wszHintText)));
 }
 
 void CNEOHud_ContextHint::Paint()

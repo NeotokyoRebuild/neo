@@ -268,12 +268,12 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 		color.SetColor(COLOR_BLACK.r(), COLOR_BLACK.g(), COLOR_BLACK.b(), opacity);
 		vgui::surface()->DrawSetTextColor(color);
 		vgui::surface()->DrawSetTextPos(x2 - halfTextWidth, y2 + 1 - m_iTexTall - m_iFontTall);
-		vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, 5);
+		NeoHud::DrawPrintText(m_wszMarkerTextUnicode, 5);
 
 		color.SetColor(COLOR_WHITE.r(), COLOR_WHITE.g(), COLOR_WHITE.b(), opacity);
 		vgui::surface()->DrawSetTextColor(color);
 		vgui::surface()->DrawSetTextPos(x2 - 1 - halfTextWidth, y2 - m_iTexTall - m_iFontTall);
-		vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, 5);
+		NeoHud::DrawPrintText(m_wszMarkerTextUnicode, 5);
 	}
 }
 

@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_hud_draw.h"
+#include "neo_hud_draw_debug.h"
 
 #include <vgui/IScheme.h>
 #include <vgui/ISurface.h>
@@ -95,6 +96,10 @@ InkRange GetNumberInk(vgui::HFont font, const DigitCell &cell, const wchar_t *pw
 // Draws from the pen position x, which stands a left bearing short of the first ink
 void DrawText(vgui::HFont font, const int x, const int yBaseline, const wchar_t *pwszText, const float flTracking)
 {
+	if (IsDebugActive())
+	{
+		DebugText(font, x, yBaseline, pwszText, flTracking, Offset(GetTextInk(font, pwszText, flTracking), x));
+	}
 	surface()->DrawSetTextFont(font);
 	const int y = GetTextY(font, yBaseline);
 	if (flTracking == 0.0f)
@@ -116,6 +121,10 @@ void DrawText(vgui::HFont font, const int x, const int yBaseline, const wchar_t 
 
 void DrawNumber(vgui::HFont font, const DigitCell &cell, const int xStart, const int yBaseline, const wchar_t *pwszNumber, const float flTracking)
 {
+	if (IsDebugActive())
+	{
+		DebugText(font, xStart, yBaseline, pwszNumber, flTracking, Offset(GetNumberInk(font, cell, pwszNumber, flTracking), xStart), cell.iWide);
+	}
 	const int y = GetTextY(font, yBaseline);
 	surface()->DrawSetTextFont(font);
 	int x = xStart;
@@ -151,6 +160,7 @@ vgui::HFont GetFont(vgui::IScheme *pScheme, const char *pszName, const vgui::HFo
 				(hFallback == vgui::INVALID_FONT) ? ", and it has no fallback" : ", using its fallback");
 		return hFallback;
 	}
+	NameDebugFont(hFont, pszName);
 	return hFont;
 }
 
