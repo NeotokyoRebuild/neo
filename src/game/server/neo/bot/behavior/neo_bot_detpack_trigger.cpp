@@ -76,7 +76,7 @@ ActionResult< CNEOBot >	CNEOBotDetpackTrigger::Update( CNEOBot *me, float interv
 		return Done( "Detpack triggered or invalid" );
 	}
 
-	// A teammate may have walked into the blast since the decision to trigger
+	// A teammate may have walked into the blast radius since the decision to trigger
 	CBaseEntity *pDetpackEnt = m_hDetpackWeapon->GetDetpackEntity();
 	if ( pDetpackEnt && IsTeammateInBlast( me, pDetpackEnt->GetAbsOrigin(), NEO_DETPACK_DAMAGE_RADIUS ) )
 	{
