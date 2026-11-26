@@ -151,7 +151,7 @@ void CWeaponGrenade::PrimaryAttack(void)
 
 		// Don't let weapon idle interfere in the middle of a throw!
 		m_flTimeWeaponIdle = FLT_MAX;
-		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
+		m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 		m_bDrawbackFinished = false;
 	}
 }
