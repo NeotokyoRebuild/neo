@@ -2097,7 +2097,6 @@ bool CBasePlayer::SetFOV( CBaseEntity *pRequester, int FOV, float zoomRate, int 
 	}
 
 	// Setup our FOV and our scaling time
-
 #ifdef NEO
 	const float flTurnTime = gpGlobals->curtime;
 	const float flEased = (m_Local.m_flFOVRate > 0.0f) ? (flTurnTime - m_flFOVTime) / m_Local.m_flFOVRate : 1.0f;
