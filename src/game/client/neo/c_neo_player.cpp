@@ -1520,6 +1520,11 @@ void C_NEO_Player::CalcView( Vector &eyeOrigin, QAngle &eyeAngles,
 	float &zNear, float &zFar, float &fov )
 {
 	BaseClass::CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
+
+	if (IsAlive() && !IsObserver())
+	{
+		eyeAngles += Lerp(gpGlobals->interpolation_amount, m_vecViewKickPrev, m_vecViewKickCurrent);
+	}
 }
 
 const QAngle &C_NEO_Player::EyeAngles()
@@ -2074,17 +2079,14 @@ void C_NEO_Player::ViewKick( const QAngle &angleOffset )
 	m_vecViewKickVel += angleOffset * 20.0 * cl_neo_viewkick_strength.GetFloat();
 }
 
-const QAngle *C_NEO_Player::GetViewKick() const
-{
-	return &m_vecViewKickCurrent;
-}
-
 void C_NEO_Player::ApplyViewKick()
 {
 	if (!prediction->IsFirstTimePredicted())
 	{
 		return;
 	}
+
+	m_vecViewKickPrev = m_vecViewKickCurrent;
 
 	if ( m_vecViewKickCurrent.LengthSqr() > 0.001 || m_vecViewKickVel.LengthSqr() > 0.001 )
 	{

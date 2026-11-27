@@ -211,7 +211,6 @@ public:
 
 	void ViewKick(const QAngle &angleOffset);
 	void ViewKickReset();
-	const QAngle *GetViewKick() const;
 
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
@@ -290,6 +289,7 @@ private:
 
 	QAngle m_vecViewKickVel;
 	QAngle m_vecViewKickCurrent;
+	QAngle m_vecViewKickPrev;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
