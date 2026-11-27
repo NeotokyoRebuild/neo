@@ -3291,6 +3291,13 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + sv_neo_change_threshold_interval.GetFloat();
 	
+	// A living player can switch to spectator, and RemoveAllItems would delete the ghost with them
+	if (auto pGhost = GetNeoWepWithBits(this, NEO_WEP_GHOST))
+	{
+		pGhost->Drop(vec3_origin);
+		Weapon_Detach(pGhost);
+	}
+
 	RemoveAllItems(true);
 	ShowCrosshair(false);
 
