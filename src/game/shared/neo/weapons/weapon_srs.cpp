@@ -10,8 +10,10 @@ BEGIN_NETWORK_TABLE(CWeaponSRS, DT_WeaponSRS)
 	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 #ifdef CLIENT_DLL
 	RecvPropBool(RECVINFO(m_bNeedsBolting)),
+	RecvPropBool(RECVINFO(m_bBlockAimUntilBolt)),
 #else
 	SendPropBool(SENDINFO(m_bNeedsBolting)),
+	SendPropBool(SENDINFO(m_bBlockAimUntilBolt)),
 #endif
 END_NETWORK_TABLE()
 
@@ -19,6 +21,7 @@ END_NETWORK_TABLE()
 BEGIN_PREDICTION_DATA(CWeaponSRS)
 	DEFINE_NEO_BASE_WEP_PREDICTION
 	DEFINE_PRED_FIELD(m_bNeedsBolting, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bBlockAimUntilBolt, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -35,6 +38,7 @@ CWeaponSRS::CWeaponSRS()
 
 	m_nNumShotsFired = 0;
 	m_bNeedsBolting = false;
+	m_bBlockAimUntilBolt = false;
 
 	m_weaponSeeds = {
 		"srspx",
@@ -64,9 +68,17 @@ void CWeaponSRS::PrimaryAttack()
 	BaseClass::PrimaryAttack();
 
 	auto *pOwner = ToNEOPlayer(GetOwner());
-	if (m_iClip1 < clipBeforeShot && pOwner && pOwner->IsInAim() && !pOwner->IsInScope())
+	if (m_iClip1 < clipBeforeShot && pOwner && !pOwner->IsInScope())
 	{
-		pOwner->Weapon_SetZoom(false);
+		const bool bInAim = pOwner->IsInAim();
+		if (bInAim || (pOwner->m_nButtons & (IN_AIM | IN_ZOOM)))
+		{
+			m_bBlockAimUntilBolt = true;
+		}
+		if (bInAim)
+		{
+			pOwner->Weapon_SetZoom(false);
+		}
 	}
 }
 
@@ -90,6 +102,7 @@ void CWeaponSRS::ItemPreFrame()
 		SendWeaponAnim(ACT_VM_PULLBACK);
 		WeaponSound(SPECIAL1);
 		m_bNeedsBolting = false;
+		m_bBlockAimUntilBolt = false;
 	}
 
 	BaseClass::ItemPreFrame();
@@ -100,6 +113,7 @@ bool CWeaponSRS::Deploy()
 	// This is on purpose; the player is allowed to cancel the bolting animation
 	// with a quick-switch input.
 	m_bNeedsBolting = false;
+	m_bBlockAimUntilBolt = false;
 
 	return BaseClass::Deploy();
 }
@@ -109,8 +123,14 @@ bool CWeaponSRS::Reload()
 	// The reloading animation already contains the bolting motion;
 	// we don't want to bolt twice.
 	m_bNeedsBolting = false;
+	m_bBlockAimUntilBolt = false;
 
 	return BaseClass::Reload();
+}
+
+bool CWeaponSRS::CanAim()
+{
+	return !m_bBlockAimUntilBolt && GetIdealActivity() != ACT_VM_PULLBACK;
 }
 
 bool CWeaponSRS::CanBePickedUpByClass(int classId)

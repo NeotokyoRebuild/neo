@@ -31,7 +31,6 @@
 #include "convar.h"
 #include "neo_weapon_loadout.h"
 #include "weapon_neobasecombatweapon.h"
-#include "weapon_srs.h"
 #include "igameresources.h"
 #ifdef GAME_DLL
 #include "ai_basenpc.h"
@@ -90,29 +89,7 @@ ConVar sv_neo_aimpunch_max("sv_neo_aimpunch_max", "2", FCVAR_NOTIFY | FCVAR_REPL
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
-	if (!pWep || pWep->m_bInReload || !pWep->CanAim())
-	{
-		return false;
-	}
-
-	if (pWep->GetNeoWepBits() & NEO_WEP_SRS)
-	{
-		if (pWep->GetIdealActivity() == ACT_VM_PULLBACK)
-		{
-			return false;
-		}
-
-		const auto *pOwner = ToNEOPlayer(pWep->GetOwner());
-		const float flShotTime = pWep->GetLastAttackTime();
-		const bool bShotDuringRaise = pOwner && flShotTime < pOwner->m_flScopeUpTime &&
-			flShotTime >= pOwner->m_flScopeUpTime - NEO_SCOPE_RAISE_TIME;
-		if (bShotDuringRaise && static_cast<CWeaponSRS *>(pWep)->GetNeedsBolting() && !pOwner->IsInScope())
-		{
-			return false;
-		}
-	}
-
-	return true;
+	return pWep && !pWep->m_bInReload && pWep->CanAim();
 }
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits)
