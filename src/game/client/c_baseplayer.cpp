@@ -2727,6 +2727,13 @@ float C_BasePlayer::GetFOV( void )
 				const float fovNorm = static_cast<float>(fovNormInt);
 				const float fovAim = static_cast<float>(NeoAimFOV(fovNormInt, pTargetPlayer->GetActiveWeapon()));
 
+				auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(pTargetPlayer->GetActiveWeapon());
+				if (pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
+				{
+					pTargetPlayer->m_flSpecFOV = fovNorm;
+					return pTargetPlayer->IsInScope() ? fovAim : fovNorm;
+				}
+
 				// Don't spline/lerp when we're already at the desired FOV
 				if ((pTargetPlayer->m_bInAim && (fov == fovAim)) ||
 						(!pTargetPlayer->m_bInAim && (fov == fovNorm)))

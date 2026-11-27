@@ -239,24 +239,25 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 	{
 		const bool playerAiming = pOwner->IsInAim();
 		const float currentTime = gpGlobals->curtime;
+		const CNEOWeaponInfo* pWepInfo = &pWeapon->GetNEOWpnData();
+		Assert(pWepInfo);
+
+		const float aimChangeTime = (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+			? NEO_SCOPE_RAISE_TIME : NeoAimTransitionTime(*pWepInfo);
 		if (m_bViewAim && !playerAiming)
 		{
 			// From aiming to not aiming
-			m_flStartAimingChange = currentTime;
+			m_flStartAimingChange = NeoAimChangeStart(m_flStartAimingChange, currentTime, aimChangeTime);
 			m_bViewAim = false;
 		}
 		else if (!m_bViewAim && playerAiming)
 		{
 			// From not aiming to aiming
-			m_flStartAimingChange = currentTime;
+			m_flStartAimingChange = NeoAimChangeStart(m_flStartAimingChange, currentTime, aimChangeTime);
 			m_bViewAim = true;
 		}
 
-		const CNEOWeaponInfo* pWepInfo = &pWeapon->GetNEOWpnData();
-		Assert(pWepInfo);
-
 		const float flAimFov = NeoGetAimPose(*pWepInfo).fov;
-		const float aimChangeTime = NeoAimTransitionTime(*pWepInfo);
 		const float endAimingChange = m_flStartAimingChange + aimChangeTime;
 		const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
 		if (inAimingChange)

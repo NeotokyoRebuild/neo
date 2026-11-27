@@ -179,6 +179,17 @@ float NeoAimTransitionTime(const CNEOWeaponInfo &data)
 	return NEO_ZOOM_SPEED;
 }
 
+float NeoAimChangeStart(const float lastStart, const float now, const float changeTime)
+{
+	const float elapsed = now - lastStart;
+	if (elapsed < 0.0f || elapsed >= changeTime)
+	{
+		return now;
+	}
+
+	return now - (changeTime - elapsed);
+}
+
 float NeoAimTransitionCurve(const CNEOWeaponInfo &data, float fraction)
 {
 	if (!NeoAdsActive(data))

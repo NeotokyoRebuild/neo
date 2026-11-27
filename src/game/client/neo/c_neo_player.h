@@ -179,6 +179,7 @@ public:
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
+	bool IsInScope() const;
 	bool IsAllowedToSuperJump(void);
 
 	const char *InternalGetNeoPlayerName() const;
@@ -248,6 +249,7 @@ public:
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
+	CNetworkVar(float, m_flScopeUpTime);
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);

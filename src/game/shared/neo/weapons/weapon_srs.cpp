@@ -59,8 +59,15 @@ void CWeaponSRS::PrimaryAttack()
 		return;
 	}
 
+	const int clipBeforeShot = m_iClip1;
 	m_bNeedsBolting = true;
 	BaseClass::PrimaryAttack();
+
+	auto *pOwner = ToNEOPlayer(GetOwner());
+	if (m_iClip1 < clipBeforeShot && pOwner && pOwner->IsInAim() && !pOwner->IsInScope())
+	{
+		pOwner->Weapon_SetZoom(false);
+	}
 }
 
 void CWeaponSRS::ItemPreFrame()

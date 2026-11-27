@@ -16,6 +16,7 @@
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #include "c_playerresource.h"
+#include "prediction.h"
 #include "ui/neo_hud_context_hint.h"
 #include "vprof.h"
 #define CNEO_Player C_NEO_Player
@@ -30,6 +31,7 @@
 #include "convar.h"
 #include "neo_weapon_loadout.h"
 #include "weapon_neobasecombatweapon.h"
+#include "weapon_srs.h"
 #include "igameresources.h"
 #ifdef GAME_DLL
 #include "ai_basenpc.h"
@@ -93,8 +95,14 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 		return false;
 	}
 
-	if (pWep->GetNeoWepBits() & NEO_WEP_SRS && pWep->GetIdealActivity() == ACT_VM_PULLBACK) {
-		return false;
+	if (pWep->GetNeoWepBits() & NEO_WEP_SRS)
+	{
+		const auto *pOwner = ToNEOPlayer(pWep->GetOwner());
+		if (pWep->GetIdealActivity() == ACT_VM_PULLBACK ||
+			(static_cast<CWeaponSRS *>(pWep)->GetNeedsBolting() && pOwner && !pOwner->IsInScope()))
+		{
+			return false;
+		}
 	}
 
 	return true;
@@ -752,6 +760,30 @@ const wchar_t *GetRankNameW(const int xp, const bool shortened)
 	return GetRankNameBase(xp, shortened).wszStr;
 }
 
+// Accounts for the prediction lead of the local player
+static float ScopeClock(const CNEO_Player *pPlayer)
+{
+#ifdef CLIENT_DLL
+	if (!prediction->InPrediction() && pPlayer->IsLocalPlayer() && pPlayer->GetPredictable())
+	{
+		return pPlayer->GetFinalPredictedTime() - TICK_INTERVAL;
+	}
+#endif
+	return gpGlobals->curtime;
+}
+
+bool CNEO_Player::IsInScope() const
+{
+	if (!IsInAim())
+	{
+		return false;
+	}
+
+	const auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	return pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		&& ScopeClock(this) >= m_flScopeUpTime;
+}
+
 void CNEO_Player::CheckAimButtons()
 {
 	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
@@ -776,6 +808,15 @@ void CNEO_Player::CheckAimButtons()
 	else
 	{
 	    Weapon_SetZoom(false);
+	}
+
+	if (IsInScope())
+	{
+		const int aimFOV = NeoAimFOV(GetDefaultFOV(), GetActiveWeapon());
+		if (m_iFOV != aimFOV)
+		{
+			SetFOV(this, aimFOV, 0.0f);
+		}
 	}
 }
 

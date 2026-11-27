@@ -192,6 +192,7 @@ public:
 	int GetStar() const { return m_iNeoStar; }
 	const char *GetStarName( int iStar ) const;
 	bool IsInAim() const { return m_bInAim; }
+	bool IsInScope() const;
 	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
@@ -325,6 +326,7 @@ public:
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
+	CNetworkVar(float, m_flScopeUpTime);
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);

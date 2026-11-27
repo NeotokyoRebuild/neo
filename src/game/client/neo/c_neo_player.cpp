@@ -89,6 +89,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bInAim)),
+	RecvPropTime(RECVINFO(m_flScopeUpTime)),
 	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
 	RecvPropBool(RECVINFO(m_bCarryingGhost)),
 
@@ -117,6 +118,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInAim, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD_TOL(m_flScopeUpTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	DEFINE_PRED_FIELD(m_bInLean, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
@@ -467,6 +469,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bInAim = false;
+	m_flScopeUpTime = 0.0f;
 	m_bCarryingGhost = false;
 	m_bIneligibleForLoadoutPick = false;
 	m_bInLean = NEO_LEAN_NONE;
@@ -1710,7 +1713,16 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
 	}
 
-	float zoomSpeedSecs = NEO_ZOOM_SPEED;
+	auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (bZoomIn && pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
+	{
+		// Wait for the raising scope to eye animation to finish before zooming in
+		m_flScopeUpTime = gpGlobals->curtime + NEO_SCOPE_RAISE_TIME;
+		m_bInAim = true;
+		return;
+	}
+
+	float zoomSpeedSecs = IsInScope() ? 0.0f : NEO_ZOOM_SPEED;
 
 #if(0)
 #if !defined( NO_ENTITY_PREDICTION )
@@ -1891,6 +1903,7 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 	m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
 	m_bInVision = pPlayerTakeoverTarget->m_bInVision;
 	m_bInAim = pPlayerTakeoverTarget->m_bInAim;
+	m_flScopeUpTime = pPlayerTakeoverTarget->m_flScopeUpTime;
 	m_bCarryingGhost = pPlayerTakeoverTarget->m_bCarryingGhost;
 	m_bIneligibleForLoadoutPick = pPlayerTakeoverTarget->m_bIneligibleForLoadoutPick;
 	m_bInLean = pPlayerTakeoverTarget->m_bInLean;
