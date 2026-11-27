@@ -721,6 +721,14 @@ const CKnownEntity *CNEOBotMainAction::SelectMoreDangerousThreatInternal( const 
 	}
 	else if ( !isImmediateThreat1 && !isImmediateThreat2 )
 	{
+		const bool bThreat1VisibleRecently = threat1->IsVisibleRecently();
+		const bool bThreat2VisibleRecently = threat2->IsVisibleRecently();
+		if ( bThreat1VisibleRecently != bThreat2VisibleRecently )
+		{
+			// The cloak/smoke/light detection systems mean that a nearest threat is not always the best priority
+			return bThreat1VisibleRecently ? threat1 : threat2;
+		}
+
 		// neither threat is immediately dangerous - use closest
 		return closerThreat;
 	}
