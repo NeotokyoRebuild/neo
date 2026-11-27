@@ -164,6 +164,35 @@ inline T clamp( T const &val, T const &minVal, T const &maxVal )
 		return val;
 }
 
+#ifdef NEO
+//
+// Clamps a value in the range [min, max]. Returns true if the value was clamped
+//
+template< class T >
+inline bool clamp( T *val, T const &minVal, T const &maxVal )
+{
+	if (maxVal < minVal)
+	{
+		*val = maxVal;
+		return true;
+	}
+	else if (*val < minVal)
+	{
+		*val = minVal;
+		return true;
+	}
+	else if (*val > maxVal)
+	{
+		*val = maxVal;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+#endif // NEO
+
 
 // plane_t structure
 // !!! if this is changed, it must be changed in asm code too !!!
