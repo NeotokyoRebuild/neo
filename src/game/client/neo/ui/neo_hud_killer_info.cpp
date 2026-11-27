@@ -70,7 +70,7 @@ void CNEOHud_KillerInfo::UpdateStateForNeoHudElementDraw()
 			&& (const_cast<C_NEO_Player *>(pLocalPlayer)->IsPlayerDead() && g_neoKillerInfos.bHasDmgInfos)
 			&& (pLocalPlayer->GetTeamNumber() == TEAM_JINRAI
 					|| pLocalPlayer->GetTeamNumber() == TEAM_NSF)
-			&& (gpGlobals->curtime < (const_cast<C_NEO_Player *>(pLocalPlayer)->GetDeathTime() + DEATH_ANIMATION_TIME));
+			&& (gpGlobals->curtime < (const_cast<C_NEO_Player *>(pLocalPlayer)->GetDeathTime() + sv_neo_death_animation_time.GetFloat()));
 
 	const CSteamID steamID = GetSteamIDForPlayerIndex(g_neoKillerInfos.iEntIndex);
 	m_avatar.SetSteamID(

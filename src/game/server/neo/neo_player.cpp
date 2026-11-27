@@ -1655,7 +1655,7 @@ void CNEO_Player::PostThink(void)
 		}
 
 		auto observerMode = GetObserverMode();
-		if ((observerMode == OBS_MODE_DEATHCAM || observerMode == OBS_MODE_NONE) && gpGlobals->curtime >= (GetDeathTime() + DEATH_ANIMATION_TIME))
+		if ((observerMode == OBS_MODE_DEATHCAM || observerMode == OBS_MODE_NONE) && gpGlobals->curtime >= (GetDeathTime() + sv_neo_death_animation_time.GetFloat()))
 		{ 
 			SetObserverMode(OBS_MODE_IN_EYE);
 		}
