@@ -1083,6 +1083,7 @@ void C_NEO_Player::PreThink( void )
 	CheckPingButton(this);
 
 	ApplyAimPunch();
+	ApplyRecoil();
 
 	if (m_bInThermOpticCamo)
 	{
@@ -2054,6 +2055,64 @@ void C_NEO_Player::ApplyAimPunch()
 
 	// torsional spring
 	float springForceMagnitude = sv_neo_aimpunch_spring_constant.GetFloat() * gpGlobals->frametime;
-	springForceMagnitude = clamp(springForceMagnitude, 0.f, 2.f );
 	m_flAimPunchVel -= m_flAimPunchCurrent * springForceMagnitude;
+}
+
+extern ConVar sv_neo_recoil_spring_constant;
+extern ConVar sv_neo_recoil_force;
+extern ConVar sv_neo_recoil_override;
+extern ConVar sv_neo_recoil_override_damping;
+
+void C_NEO_Player::Recoil(const QAngle *amount)
+{
+	m_vecRecoilCurrent += *amount;
+	m_vecRecoilVel -= *amount * sv_neo_recoil_force.GetFloat();
+}
+
+void C_NEO_Player::ApplyRecoil()
+{
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
+	if ( m_vecRecoilCurrent.LengthSqr() < 0.001 && m_vecRecoilVel.LengthSqr() < 0.001 )
+	{
+		m_vecRecoilCurrent.Init( 0, 0, 0 );
+		m_vecRecoilVel.Init( 0, 0, 0 );
+		return;
+	}
+
+	const QAngle oldRecoil = m_vecRecoilCurrent;
+	m_vecRecoilCurrent += m_vecRecoilVel * gpGlobals->frametime;
+
+	QAngle viewAngles;
+	engine->GetViewAngles(viewAngles);
+	viewAngles += oldRecoil - m_vecRecoilCurrent;
+	engine->SetViewAngles(viewAngles);
+
+	auto currentWeapon = assert_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
+	float damping = currentWeapon->GetWeaponHandling()->recoilInfo.damping;
+	if ((damping == 0 && sv_neo_recoil_override.GetInt() == 1) || sv_neo_recoil_override.GetInt() == 2)
+	{
+		damping = sv_neo_recoil_override_damping.GetFloat();
+	}
+
+	damping = 1 - damping * gpGlobals->frametime;
+
+	if ( damping < 0 )
+	{
+		damping = 0;
+	}
+	m_vecRecoilVel *= damping;
+
+	// torsional spring
+	float springForceMagnitude = sv_neo_recoil_spring_constant.GetFloat() * gpGlobals->frametime;
+	m_vecRecoilVel -= m_vecRecoilCurrent * springForceMagnitude;
+
+	// don't wrap around
+	m_vecRecoilCurrent.Init(
+		clamp(m_vecRecoilCurrent.x, -89.f, 89.f ),
+		clamp(m_vecRecoilCurrent.y, -179.f, 179.f ),
+		clamp(m_vecRecoilCurrent.z, -89.f, 89.f ) );
 }
