@@ -4455,6 +4455,33 @@ void CGameMovement::FixPlayerCrouchStuck( bool upward )
 	mv->SetAbsOrigin( test ); // Failed
 }
 
+#ifdef NEO
+// OGNT uses the Support hull except in GetPlayerMaxs/GetPlayerMins. Subtract
+// class offsets to preserve its crouch jump heights with the correct hulls.
+static Vector NeoAirHullCorrect(CNEO_Player *pPlayer, Vector hullSize,
+	const Vector &reconOffset, const Vector &assaultOffset)
+{
+	auto playerClass = pPlayer->GetClass();
+	if (playerClass != NEO_CLASS_SUPPORT)
+	{
+		hullSize -= playerClass == NEO_CLASS_RECON ? reconOffset : assaultOffset;
+	}
+	return hullSize;
+}
+
+static Vector NeoAirHullSize(CNEO_Player *pPlayer)
+{
+	Vector hullSize = VEC_HULL_MAX_SCALED(pPlayer) - VEC_HULL_MIN_SCALED(pPlayer);
+	return NeoAirHullCorrect(pPlayer, hullSize, NEO_RECON_MAXHULL_OFFSET, NEO_ASSAULT_MAXHULL_OFFSET);
+}
+
+static Vector NeoAirDuckHullSize(CNEO_Player *pPlayer)
+{
+	Vector hullSize = VEC_DUCK_HULL_MAX_SCALED(pPlayer) - VEC_DUCK_HULL_MIN_SCALED(pPlayer);
+	return NeoAirHullCorrect(pPlayer, hullSize, NEO_RECON_DUCK_MAXHULL_OFFSET, NEO_ASSAULT_DUCK_MAXHULL_OFFSET);
+}
+#endif
+
 bool CGameMovement::CanUnduck()
 {
 #ifdef NEO
@@ -4483,13 +4510,13 @@ bool CGameMovement::CanUnduck()
 		// If in air an letting go of crouch, make sure we can offset origin to make
 		//  up for uncrouching
 #ifdef NEO
-		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+		Vector hullSizeNormal = NeoAirHullSize(static_cast<CNEO_Player*>(player));
 #else
 		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 #endif
 
 #ifdef NEO
-		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+		Vector hullSizeCrouch = NeoAirDuckHullSize(static_cast<CNEO_Player*>(player));
 #else
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
 #endif
@@ -4540,8 +4567,8 @@ void CGameMovement::FinishUnDuck( void )
 		// If in air an letting go of crouch, make sure we can offset origin to make
 		//  up for uncrouching
 #ifdef NEO
-		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
-		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+		Vector hullSizeNormal = NeoAirHullSize(static_cast<CNEO_Player*>(player));
+		Vector hullSizeCrouch = NeoAirDuckHullSize(static_cast<CNEO_Player*>(player));
 #else
 		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
@@ -4681,16 +4708,8 @@ void CGameMovement::FinishDuck( void )
 	else
 	{
 #ifdef NEO
-		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
-		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
-		// OGNT uses the Support hull everywhere except in GetPlayerMaxs/GetPLayerMins. Now we're using the correct hulls everywhere
-		// which is probably better, but to get the same crouch jump heights we need to subtract the offsets here.
-		auto playerClass = static_cast<CNEO_Player*>(player)->GetClass();
-		if (playerClass != NEO_CLASS_SUPPORT)
-		{
-			hullSizeNormal -= playerClass == NEO_CLASS_RECON ? NEO_RECON_MAXHULL_OFFSET : NEO_ASSAULT_MAXHULL_OFFSET;
-			hullSizeCrouch -= playerClass == NEO_CLASS_RECON ? NEO_RECON_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET;
-		}
+		Vector hullSizeNormal = NeoAirHullSize(static_cast<CNEO_Player*>(player));
+		Vector hullSizeCrouch = NeoAirDuckHullSize(static_cast<CNEO_Player*>(player));
 #else
 		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
