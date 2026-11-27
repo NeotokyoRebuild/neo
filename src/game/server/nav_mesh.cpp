@@ -26,6 +26,12 @@
 #include "tf/nav_mesh/tf_nav_area.h"
 #endif
 
+#ifdef NEO
+#include "mathlib/polyhedron.h"
+#include "nav.h"
+#include "polylib.h"
+#include "world.h"
+#endif
 #ifdef NEXT_BOT
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
 #endif
@@ -37,6 +43,14 @@
 
 
 #define DrawLine( from, to, duration, red, green, blue )		NDebugOverlay::Line( from, to, red, green, blue, true, NDEBUG_PERSIST_TILL_NEXT_SERVER )
+
+#ifdef NEO
+static auto DrawBrushLadderLine(const Vector& from, const Vector& to, float duration = NDEBUG_PERSIST_TILL_NEXT_SERVER,
+	int r = 255, int g=255, int b=255)
+{
+	return NDebugOverlay::Line(from, to, r, g, b, true, duration);
+}
+#endif
 
 
 /**
@@ -56,6 +70,12 @@ ConVar nav_max_vis_delta_list_length( "nav_max_vis_delta_list_length", "64", FCV
 
 extern ConVar nav_show_potentially_visible;
 
+#ifdef NEO
+ConVar nav_generate_debug_brushladders("nav_generate_debug_brushladders", "0", FCVAR_CHEAT,
+	"If non-zero, will only visualize ladder brush generation during nav_generate and do nothing else. "
+	"The visualization will remain visible for the amount of seconds specified by cvar value.",
+	true, false, false, 0);
+#endif
 
 
 bool FindGroundForNode( Vector *pos, Vector *normal );
@@ -530,6 +550,33 @@ void CNavMesh::AddNavArea( CNavArea *area )
 
 	++m_areaCount;
 }
+
+#ifdef NEO
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Add an area to every grid cell of its extent that does not hold it yet.
+ * Merging grows an area in place, so its new part would otherwise be missing from the grid.
+ */
+void CNavMesh::AddNavAreaToGrid( CNavArea *area )
+{
+	const int loX = WorldToGridX( area->GetCorner( NORTH_WEST ).x );
+	const int loY = WorldToGridY( area->GetCorner( NORTH_WEST ).y );
+	const int hiX = WorldToGridX( area->GetCorner( SOUTH_EAST ).x );
+	const int hiY = WorldToGridY( area->GetCorner( SOUTH_EAST ).y );
+
+	for ( int y = loY; y <= hiY; ++y )
+	{
+		for ( int x = loX; x <= hiX; ++x )
+		{
+			NavAreaVector &cell = m_grid[ x + y*m_gridSizeX ];
+			if ( !cell.HasElement( area ) )
+			{
+				cell.AddToTail( area );
+			}
+		}
+	}
+}
+#endif // NEO
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -3229,6 +3276,293 @@ void CNavMesh::DestroyLadders( void )
 	m_markedLadder = NULL;
 	m_selectedLadder = NULL;
 }
+#ifdef NEO
+
+void CNavMesh::LadderFromPolyhedron(const CPolyhedron* polyhedron)
+{
+	Assert(polyhedron);
+
+	if (nav_generate_debug_brushladders.GetBool())
+	{
+		Assert(debugoverlay);
+	}
+
+	// To be used for the center position of each polygon of the polyhedron.
+	// By reference, because the final CommandNavBuildLadder call which actually builds the ladder
+	// depends on this state, and we can spare the extra Vector by just assigning to it directly.
+	Vector& polyCenter = m_editCursorPos;
+	Vector& polyNormal = m_surfaceNormal;
+
+	const int firstLadder = m_ladders.Count();
+
+	Vector polyMins, polyMaxs;
+	trace_t tr;
+	for (int i = 0; i < polyhedron->iPolygonCount; ++i)
+	{
+		const auto& polygon = polyhedron->pPolygons[i];
+		polyNormal = { polygon.polyNormal.x, polygon.polyNormal.y, polygon.polyNormal.z };
+#ifdef DBGFLAG_ASSERT
+		{
+			Assert(polyNormal.IsValid());
+			Assert(!polyNormal.IsZero());
+			AssertFloatEquals(polyNormal.Length(), 1.f, 0.01f); // unit vector
+		}
+#endif
+		// Can't build up/down facing ladder mounting points, skip
+		if (!polyNormal.x && !polyNormal.y)
+		{
+			continue;
+		}
+		// Also reject sides that the nav system considers too flat for ladders
+		if (polyNormal.z)
+		{
+			extern ConVar nav_slope_limit;
+			Assert(nav_slope_limit.GetFloat() >= 0);
+			Assert(nav_slope_limit.GetFloat() <= 1);
+			if (abs(polyNormal.z) > nav_slope_limit.GetFloat())
+			{
+				continue;
+			}
+		}
+
+		if (nav_generate_debug_brushladders.GetBool())
+		{
+			DevMsg("---\n\t%d POLYGON: %d\n", i, polygon.iIndexCount);
+		}
+
+		ClearBounds(polyMins, polyMaxs);
+
+		for (int j = 0; j < polygon.iIndexCount; ++j)
+		{
+			auto index = polygon.iFirstIndex + j;
+			const auto& idxLineRef = polyhedron->pIndices[index];
+			const auto& pointIndices = polyhedron->pLines[idxLineRef.iLineIndex].iPointIndices;
+
+			const Vector& linePos1 = polyhedron->pVertices[pointIndices[0]];
+			const Vector& linePos2 = polyhedron->pVertices[pointIndices[1]];
+			Assert(linePos1.IsValid());
+			Assert(linePos2.IsValid());
+			Assert(linePos1 != linePos2);
+
+			AddPointToBounds(linePos1, polyMins, polyMaxs);
+			AddPointToBounds(linePos2, polyMins, polyMaxs);
+
+			if (nav_generate_debug_brushladders.GetBool())
+			{
+				DevMsg("\t\tLINE: %f %f %f ->  %f %f %f\n",
+					linePos1.x, linePos1.y, linePos1.z,
+					linePos2.x, linePos2.y, linePos2.z);
+
+				static int r = 0;
+				r = (r + 25) % 255;
+				DrawBrushLadderLine(linePos1, linePos2,
+					nav_generate_debug_brushladders.GetFloat(), r, 255, 255);
+			}
+		}
+		polyCenter = VectorLerp(polyMins, polyMaxs, 0.5);
+
+		enum LadderPolyFilterReason {
+			ThisIsFine = 0, // No problems detected, do not filter this poly.
+			TooSlim, // At least one of the dimensions of this 2D poly is unacceptably slim for bot navigation.
+			TooCramped, // Insufficient nav clearance for bots to meaningfully mount here.
+		} filter = ThisIsFine;
+
+		// Ignore ladder polygons that are super slim, because it's likely either a side
+		// or a bevel of the actual intended mounting point.
+		// While such surfaces *could* sometimes be used by humans, they require a lot of
+		// finesse to meaningfully traverse, so it's better for the bots to prefer the obvious
+		// large mapper-intended primary climb surfaces. Of course, the mapper could opt
+		// to manually markup their custom slim ladders as usual outside the auto-gen.
+		constexpr float smallestLadderDimToConsider = 4;
+		int nSmaller = 0;
+		nSmaller += (polyMaxs.x - polyMins.x < smallestLadderDimToConsider);
+		nSmaller += (polyMaxs.y - polyMins.y < smallestLadderDimToConsider);
+		nSmaller += (polyMaxs.z - polyMins.z < smallestLadderDimToConsider);
+		// Because the poly mins/maxs are modeling a 2D surface, it is expected for
+		// one of the dimensions to be 0 or near 0. But if 2 or more are below
+		// smallestLadderDimToConsider, then we do want to filter.
+		if (nSmaller > 1)
+		{
+			filter = TooSlim;
+		}
+
+		else if (filter == ThisIsFine)
+		{
+			// Cull ladder sides facing the wall etc.
+			// Need clearance of at least GenerationStepSize in front of the ladder to mount.
+			UTIL_TraceLine(
+				polyCenter + (polyNormal * ON_EPSILON),
+				polyCenter + (polyNormal * GenerationStepSize),
+				GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, &tr);
+			if (tr.DidHit())
+			{
+				filter = TooCramped;
+			}
+		}
+
+		if (nav_generate_debug_brushladders.GetBool())
+		{
+			Color c;
+			switch (filter)
+			{
+			case ThisIsFine:
+				c = COLOR_LIME;
+				break;
+			case TooSlim:
+				c = COLOR_DARK_ORANGE;
+				break;
+			case TooCramped:
+				c = COLOR_NEON_PINK;
+				break;
+			default:
+				c = COLOR_BLACK;
+				Assert(false);
+				break;
+			}
+			DevMsg("\t\tPOLY NORMAL: %f %f %f\n",
+				polyNormal.x, polyNormal.y, polyNormal.z);
+			DrawBrushLadderLine(polyCenter, polyCenter + (polyNormal * GenerationStepSize),
+				nav_generate_debug_brushladders.GetFloat(), c.r(), c.g(), c.b());
+		}
+
+		if (filter != ThisIsFine)
+		{
+			if (nav_generate_debug_brushladders.GetBool())
+			{
+				DevMsg("\t\tREJECTED! enum: %d\n", filter);
+			}
+			continue;
+		}
+
+		// Create for real only if we're not debugging this logic
+		if (nav_generate_debug_brushladders.GetBool())
+		{
+			continue;
+		}
+
+		// Set up state as required by the CommandNavBuildLadder call below
+		m_editMode = EditModeType::NORMAL;
+		m_climbableSurface = true;
+
+		CommandNavBuildLadder(NAV_LADDER_SOURCE_BRUSH);
+	}
+
+	RemoveNarrowSideLadders(firstLadder);
+}
+
+// A climb brush often has climbable end faces narrower than its main face. The player hull
+// overhangs such a face, so a small sideways drift while climbing loses the surface, and bots
+// mounting one fall off. Drop a ladder of the brush when a wider one facing another way covers
+// the same height.
+void CNavMesh::RemoveNarrowSideLadders(int firstLadder)
+{
+	constexpr float widthTolerance = 1.0f;
+
+	for (int i = m_ladders.Count() - 1; i >= firstLadder; --i)
+	{
+		const CNavLadder* ladder = m_ladders[i];
+		bool covered = false;
+		for (int j = firstLadder; j < m_ladders.Count() && !covered; ++j)
+		{
+			const CNavLadder* other = m_ladders[j];
+			covered = other->GetDir() != ladder->GetDir()
+				&& other->m_width > ladder->m_width + widthTolerance
+				&& other->m_top.z >= ladder->m_top.z - StepHeight
+				&& other->m_bottom.z <= ladder->m_bottom.z + StepHeight;
+		}
+
+		if (!covered)
+		{
+			continue;
+		}
+
+		CNavLadder* sideLadder = m_ladders[i];
+		m_ladders.Remove(i);
+		OnEditDestroyNotify(sideLadder);
+		delete sideLadder;
+	}
+}
+
+bool CNavMesh::BuildWorldBrushLadders()
+{
+	if (!enginetrace || gpGlobals->bMapLoadFailed || !GetWorldEntity())
+	{
+		Warning("%s: no engine trace or world available\n", __FUNCTION__);
+		return false;
+	}
+
+	const Vector mins(MIN_COORD_FLOAT, MIN_COORD_FLOAT, MIN_COORD_FLOAT);
+	const Vector maxs(MAX_COORD_FLOAT, MAX_COORD_FLOAT, MAX_COORD_FLOAT);
+	CUtlVector<int> brushIds;
+	enginetrace->GetBrushesInAABB(mins, maxs, &brushIds, CONTENTS_LADDER);
+	if (brushIds.Count() > 1)
+	{
+		brushIds.Sort();
+	}
+
+	constexpr int minimumBrushPlanes = 4;
+	CUtlVector<CUtlVector<Vector4D>> planesOfLadderBrushes;
+	for (int i = 0; i < brushIds.Count(); ++i)
+	{
+		const int brushId = brushIds[i];
+		if (i > 0 && brushId == brushIds[i - 1])
+		{
+			continue;
+		}
+
+		CUtlVector<Vector4D> planes;
+		int contents = 0;
+		if (!enginetrace->GetBrushInfo(brushId, &planes, &contents))
+		{
+			Warning("%s: could not read brush %d\n", __FUNCTION__, brushId);
+			continue;
+		}
+
+		// GetBrushesInAABB can return brushes outside the contents mask.
+		if (!(contents & CONTENTS_LADDER))
+		{
+			continue;
+		}
+
+		if (planes.Count() < minimumBrushPlanes || planes.Count() > MAX_MAP_BRUSHSIDES)
+		{
+			Warning("%s: invalid plane count %d for ladder brush %d\n",
+				__FUNCTION__, planes.Count(), brushId);
+			return false;
+		}
+
+		for (const auto& plane : planes)
+		{
+			if (!plane.IsValid())
+			{
+				Warning("%s: invalid plane for ladder brush %d\n", __FUNCTION__, brushId);
+				return false;
+			}
+		}
+
+		planesOfLadderBrushes.AddToTailGetPtr()->Swap(planes);
+	}
+
+	for (const auto& planesOfLadderBrush : planesOfLadderBrushes)
+	{
+		auto* polyhedron = GeneratePolyhedronFromPlanes(
+			planesOfLadderBrush.Base()->Base(),
+			planesOfLadderBrush.Count(),
+			ON_EPSILON, true);
+
+		if (!polyhedron)
+		{
+			Assert(false);
+			return false;
+		}
+
+		LadderFromPolyhedron(polyhedron);
+		polyhedron->Release();
+	}
+
+	return true;
+}
+#endif
 
 //--------------------------------------------------------------------------------------------------------------
 /**
