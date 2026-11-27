@@ -266,7 +266,7 @@ static constexpr int MAX_HEALTH_FOR_CLASS[NEO_CLASS__ENUM_COUNT] = {
 #define NEO_ANIMSTATE_USES_AIMSEQUENCES true
 #define NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES 90.0f
 
-static constexpr float NEO_ZOOM_SPEED = 0.115f;
+static constexpr float NEO_ZOOM_SPEED = 0.1f;
 static_assert(NEO_ZOOM_SPEED != 0.0f, "Divide by zero");
 
 // Implemented by CNEOPlayer::m_fNeoFlags.
