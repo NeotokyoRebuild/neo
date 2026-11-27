@@ -2734,13 +2734,31 @@ float C_BasePlayer::GetFOV( void )
 					return pTargetPlayer->IsInScope() ? fovAim : fovNorm;
 				}
 
+				// A target not drawn for a while shows its current zoom at once instead of a stale ease
+				if (gpGlobals->curtime - pTargetPlayer->m_flSpecFOVDrawTime > NEO_ZOOM_SPEED)
+				{
+					pTargetPlayer->m_bSpecFOVInAim = pTargetPlayer->m_bInAim;
+					fov = (pTargetPlayer->m_bInAim) ? fovAim : fovNorm;
+					pTargetPlayer->m_flSpecFOV = fov;
+				}
+				pTargetPlayer->m_flSpecFOVDrawTime = gpGlobals->curtime;
+
+				// The target's zoom start is on its own command clock, so ease on ours from the drawn FOV
+				if (pTargetPlayer->m_bInAim != pTargetPlayer->m_bSpecFOVInAim)
+				{
+					pTargetPlayer->m_bSpecFOVInAim = pTargetPlayer->m_bInAim;
+					const float flTowardNorm = RemapValClamped(fov, fovAim, fovNorm, 0.0f, 1.0f);
+					const float flDone = (pTargetPlayer->m_bInAim) ? (1.0f - flTowardNorm) : flTowardNorm;
+					pTargetPlayer->m_flSpecFOVStartTime = gpGlobals->curtime - (flDone * NEO_ZOOM_SPEED);
+				}
+
 				// Don't spline/lerp when we're already at the desired FOV
 				if ((pTargetPlayer->m_bInAim && (fov == fovAim)) ||
 						(!pTargetPlayer->m_bInAim && (fov == fovNorm)))
 				{
 					return fov;
 				}
-				float perc = (gpGlobals->curtime - TICK_INTERVAL - pTargetPlayer->m_flFOVTime) / NEO_ZOOM_SPEED;
+				float perc = (gpGlobals->curtime - pTargetPlayer->m_flSpecFOVStartTime) / NEO_ZOOM_SPEED;
 				perc = clamp(perc, 0.0f, 1.0f);
 				if (pTargetPlayer->m_bInAim) perc = 1.0f - perc;
 				fov = RemapValClamped( perc, 0.0f, 1.0f, fovAim, fovNorm);
