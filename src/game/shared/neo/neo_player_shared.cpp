@@ -97,11 +97,16 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 
 	if (pWep->GetNeoWepBits() & NEO_WEP_SRS)
 	{
+		if (pWep->GetIdealActivity() == ACT_VM_PULLBACK)
+		{
+			return false;
+		}
+
 		const auto *pOwner = ToNEOPlayer(pWep->GetOwner());
-		if (pWep->GetIdealActivity() == ACT_VM_PULLBACK ||
-			(static_cast<CWeaponSRS *>(pWep)->GetNeedsBolting() && pOwner && !pOwner->IsInScope() &&
-			pWep->GetLastAttackTime() >= pOwner->m_flScopeUpTime - NEO_SCOPE_RAISE_TIME &&
-			pWep->GetLastAttackTime() < pOwner->m_flScopeUpTime))
+		const float flShotTime = pWep->GetLastAttackTime();
+		const bool bShotDuringRaise = pOwner && flShotTime < pOwner->m_flScopeUpTime &&
+			flShotTime >= pOwner->m_flScopeUpTime - NEO_SCOPE_RAISE_TIME;
+		if (bShotDuringRaise && static_cast<CWeaponSRS *>(pWep)->GetNeedsBolting() && !pOwner->IsInScope())
 		{
 			return false;
 		}
