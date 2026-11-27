@@ -21,11 +21,15 @@ target_include_directories(vgui_controls
 
 target_link_libraries(vgui_controls
     PRIVATE
-    tier0::tier0
     tier1::tier1
 )
 
-if (OS_LINUX)
+if(OS_WINDOWS)
+    target_compile_definitions(vgui_controls
+        PRIVATE
+        fopen=dont_use_fopen
+    )
+elseif (OS_LINUX)
     set_target_properties(vgui_controls PROPERTIES
         POSITION_INDEPENDENT_CODE ON
     )

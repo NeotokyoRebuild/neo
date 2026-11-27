@@ -2146,8 +2146,17 @@ SRes LzmaEnc_CodeOneMemBlock(CLzmaEncHandle pp, Bool reInit,
   LzmaEnc_InitPrices(p);
   nowPos64 = p->nowPos64;
   RangeEnc_Init(&p->rc);
+#ifdef ACTUALLY_COMPILER_GCC
+#pragma GCC diagnostic push
+#if (__GNUC__ >= 12)
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif
+#endif
   p->rc.outStream = &outStream.funcTable;
-
+#ifdef ACTUALLY_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif
+  
   res = LzmaEnc_CodeOneBlock(p, True, desiredPackSize, *unpackSize);
   
   *unpackSize = (UInt32)(p->nowPos64 - nowPos64);
