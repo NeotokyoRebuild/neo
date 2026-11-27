@@ -1714,15 +1714,18 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	}
 
 	auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
-	if (bZoomIn && pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
+	if (pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
 	{
-		// Wait for the raising scope to eye animation to finish before zooming in
-		m_flScopeUpTime = gpGlobals->curtime + NEO_SCOPE_RAISE_TIME;
-		m_bInAim = true;
+		if (bZoomIn)
+		{
+			// Wait for the raising scope to eye animation to finish before zooming in
+			m_flScopeUpTime = gpGlobals->curtime + NEO_SCOPE_RAISE_TIME;
+		}
+		m_bInAim = bZoomIn;
 		return;
 	}
 
-	float zoomSpeedSecs = IsInScope() ? 0.0f : NEO_ZOOM_SPEED;
+	float zoomSpeedSecs = NEO_ZOOM_SPEED;
 
 #if(0)
 #if !defined( NO_ENTITY_PREDICTION )

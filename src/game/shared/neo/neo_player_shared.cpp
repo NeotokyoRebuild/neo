@@ -811,19 +811,21 @@ void CNEO_Player::CheckAimButtons()
 		{
 			Weapon_SetZoom(!IsInAim());
 		}
+
+		if (pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		{
+			const int defaultFOV = GetDefaultFOV();
+			const int targetFOV = IsInScope() ? NeoAimFOV(defaultFOV, pNeoWep) : defaultFOV;
+			const int currentTargetFOV = (m_iFOV == 0) ? defaultFOV : m_iFOV;
+			if (currentTargetFOV != targetFOV || m_Local.m_flFOVRate != 0.0f)
+			{
+				SetFOV(this, targetFOV, 0.0f);
+			}
+		}
 	}
 	else
 	{
 	    Weapon_SetZoom(false);
-	}
-
-	if (IsInScope())
-	{
-		const int aimFOV = NeoAimFOV(GetDefaultFOV(), GetActiveWeapon());
-		if (m_iFOV != aimFOV)
-		{
-			SetFOV(this, aimFOV, 0.0f);
-		}
 	}
 }
 

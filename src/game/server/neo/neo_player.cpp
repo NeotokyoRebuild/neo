@@ -1854,17 +1854,19 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	ShowCrosshair(bZoomIn);
 
 	auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
-	if (bZoomIn && pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
+	if (pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
 	{
-		// Wait for the raising scope to eye animation to finish before zooming in
-		m_flScopeUpTime = gpGlobals->curtime + NEO_SCOPE_RAISE_TIME;
-		m_bInAim = true;
+		if (bZoomIn)
+		{
+			// Wait for the raising scope to eye animation to finish before zooming in
+			m_flScopeUpTime = gpGlobals->curtime + NEO_SCOPE_RAISE_TIME;
+		}
+		m_bInAim = bZoomIn;
 		return;
 	}
 
-	const float zoomSpeedSecs = IsInScope() ? 0.0f : NEO_ZOOM_SPEED;
 	const int fov = GetDefaultFOV();
-	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, zoomSpeedSecs);
+	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, NEO_ZOOM_SPEED);
 	m_bInAim = bZoomIn;
 }
 

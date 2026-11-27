@@ -578,7 +578,6 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 				else if (GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
 				{
 					pOwner->m_flScopeUpTime = gpGlobals->curtime + NEO_SCOPE_RAISE_TIME;
-					pOwner->SetFOV(pOwner, pOwner->GetDefaultFOV(), 0.0f);
 				}
 				else
 				{
