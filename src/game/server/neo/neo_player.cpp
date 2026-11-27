@@ -4232,6 +4232,23 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 
 		CNEO_Player* pPlayerTakeoverTarget = m_hSpectatorTakeoverPlayerTarget.Get();
 
+		// The target can die, leave, or be taken by another spectator between the request and this swap.
+		if (!pPlayerTakeoverTarget || !pPlayerTakeoverTarget->IsAlive()
+			|| pPlayerTakeoverTarget->m_hSpectatorTakeoverPlayerImpersonatingMe.Get()
+			|| !InSameTeam(pPlayerTakeoverTarget))
+		{
+			m_bSpectatorTakeoverPlayerPending = false;
+			m_hSpectatorTakeoverPlayerTarget = nullptr;
+
+			// Undo the respawn from the request, so the spectator does not get a life of their own.
+			RemoveAllItems(true);
+			State_Transition(STATE_OBSERVER_MODE);
+
+			CSingleUserRecipientFilter filter(this);
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed");
+			return;
+		}
+
 		if (pPlayerTakeoverTarget)
 		{
 			SetClass(pPlayerTakeoverTarget->m_iNeoClass);
