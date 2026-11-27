@@ -579,7 +579,11 @@ void CHudCrosshair::Paint( void )
 		showFriendlyFireCrosshair = IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber();
 	}
 
+#ifdef NEO
 	if (bIsScopedWep && pPlayer->IsInScope())
+#else
+	if (bIsScopedWep && pPlayer->m_bInAim)
+#endif
 	{
 		m_pCrosshair->DrawSelfCropped (
 			iX-(iWidth/2), iY-(iHeight/2),
@@ -657,7 +661,11 @@ void CHudCrosshair::Paint( void )
 		}
 	}
 
+#ifdef NEO
 	if (bIsScopedWep && pPlayer->IsInScope())
+#else
+	if (bIsScopedWep && pPlayer->m_bInAim)
+#endif
 	{
 		int screenWidth, screenHeight;
 		GetHudSize(screenWidth, screenHeight);
