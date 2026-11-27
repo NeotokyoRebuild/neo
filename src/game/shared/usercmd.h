@@ -56,6 +56,9 @@ public:
 #endif
 		mousedx = 0;
 		mousedy = 0;
+#ifdef NEO
+		voiceTransmitType = 0;
+#endif // NEO
 
 		hasbeenpredicted = false;
 #if defined( HL2_DLL ) || defined( HL2_CLIENT_DLL )
@@ -84,6 +87,9 @@ public:
 #endif
 		mousedx				= src.mousedx;
 		mousedy				= src.mousedy;
+#ifdef NEO
+		voiceTransmitType	= src.voiceTransmitType;
+#endif // NEO
 
 		hasbeenpredicted	= src.hasbeenpredicted;
 
@@ -117,6 +123,9 @@ public:
 		CRC32_ProcessBuffer( &crc, &random_seed, sizeof( random_seed ) );
 		CRC32_ProcessBuffer( &crc, &mousedx, sizeof( mousedx ) );
 		CRC32_ProcessBuffer( &crc, &mousedy, sizeof( mousedy ) );
+#ifdef NEO
+		CRC32_ProcessBuffer( &crc, &voiceTransmitType, sizeof( voiceTransmitType ) );
+#endif // NEO
 		CRC32_Final( &crc );
 
 		return crc;
@@ -163,6 +172,9 @@ public:
 
 	short	mousedx;		// mouse accum in x from create move
 	short	mousedy;		// mouse accum in y from create move
+#ifdef NEO
+	int	voiceTransmitType;
+#endif // NEO
 
 	// Client only, tracks whether we've predicted this command at least once
 	bool	hasbeenpredicted;

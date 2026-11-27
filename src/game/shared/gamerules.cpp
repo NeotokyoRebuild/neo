@@ -619,7 +619,9 @@ ConVar skill( "skill", "1" );
 
 void CGameRules::Think()
 {
+#ifndef NEO // NEO TODO (Adam) do this here once neogamerules::Think is fixed
 	GetVoiceGameMgr()->Update( gpGlobals->frametime );
+#endif // NEO
 	SetSkillLevel( skill.GetInt() );
 
 	if ( log_verbose_enable.GetBool() )

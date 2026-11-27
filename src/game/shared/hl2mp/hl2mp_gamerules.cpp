@@ -30,7 +30,9 @@
 	#include "hl2mp_player.h"
 	#include "weapon_hl2mpbasehlmpcombatweapon.h"
 	#include "team.h"
+#ifndef NEO
 	#include "voice_gamemgr.h"
+#endif // NEO
 	#include "hl2mp_gameinterface.h"
 	#include "hl2mp_cvars.h"
 
@@ -168,6 +170,7 @@ static const char *s_PreserveEnts[] =
 	END_SEND_TABLE()
 #endif
 
+#ifndef NEO
 #ifndef CLIENT_DLL
 
 	class CVoiceGameMgrHelper : public IVoiceGameMgrHelper
@@ -182,6 +185,7 @@ static const char *s_PreserveEnts[] =
 	IVoiceGameMgrHelper *g_pVoiceGameMgrHelper = &g_VoiceGameMgrHelper;
 
 #endif
+#endif // NEO
 
 // NOTE: the indices here must match TEAM_TERRORIST, TEAM_CT, TEAM_SPECTATOR, etc.
 const char *sTeamNames[] =
