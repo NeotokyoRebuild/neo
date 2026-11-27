@@ -201,7 +201,7 @@ ActionResult< CNEOBot > CNEOBotTacticalMonitor::MonitorArmedDetpack( CNEOBot *me
 		}
 	}
 
-	if ( bShouldDetonate )
+	if ( bShouldDetonate && !CNEOBotDetpackTrigger::IsTeammateInBlast( me, vecDetpackPos, NEO_DETPACK_DAMAGE_RADIUS ) )
 	{
 		return SuspendFor( new CNEOBotDetpackTrigger(), "Triggering detpack!" );
 	}
