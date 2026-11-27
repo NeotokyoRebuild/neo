@@ -1198,7 +1198,7 @@ void CNEOBot::DisableCloak(void)
 	}
 }
 
-void CNEOBot::DisableCloakIfCalm()
+void CNEOBot::DisableCloakUnlessRecentlyInjured()
 {
 	if ( !IsCloakEnabled() )
 	{
@@ -1206,7 +1206,7 @@ void CNEOBot::DisableCloakIfCalm()
 	}
 
 	// Keep enough charge to cloak again on contact.
-	if ( IsAggravated() && GetCloakPower() >= 3.0f )
+	if ( WasRecentlyInjuredByEnemy() && GetCloakPower() >= 3.0f )
 	{
 		return;
 	}
@@ -1214,17 +1214,11 @@ void CNEOBot::DisableCloakIfCalm()
 	DisableCloak();
 }
 
-bool CNEOBot::IsAggravated() const
+bool CNEOBot::WasRecentlyInjuredByEnemy() const
 {
-	constexpr float AGGRAVATED_TIME = 5.0f;
+	constexpr float RECENT_INJURY_TIME = 5.0f;
 	const int attackerTeam = NEORules()->IsTeamplay() ? GetEnemyTeam( GetTeamNumber() ) : TEAM_ANY;
-	if ( GetTimeSinceLastInjury( attackerTeam ) < AGGRAVATED_TIME )
-	{
-		return true;
-	}
-
-	const CKnownEntity *threat = GetVisionInterface()->GetPrimaryKnownThreat();
-	return threat && threat->GetTimeSinceLastKnown() < AGGRAVATED_TIME;
+	return GetTimeSinceLastInjury( attackerTeam ) < RECENT_INJURY_TIME;
 }
 
 void CNEOBot::ToggleCloak(void)

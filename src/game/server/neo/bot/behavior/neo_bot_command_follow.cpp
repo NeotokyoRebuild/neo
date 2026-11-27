@@ -240,7 +240,7 @@ bool CNEOBotCommandFollow::FollowCommandChain(CNEOBot* me)
 		}
 		else
 		{
-			me->DisableCloakIfCalm();
+			me->DisableCloakUnlessRecentlyInjured();
 		}
 	}
 

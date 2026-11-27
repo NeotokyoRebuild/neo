@@ -334,7 +334,7 @@ ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interv
 		}
 		else
 		{
-			me->DisableCloakIfCalm();
+			me->DisableCloakUnlessRecentlyInjured();
 		}
 
 		if ( m_actionToChangeToOnceCoverReached )
