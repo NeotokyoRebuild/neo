@@ -35,6 +35,14 @@ constexpr float SUPPRESS_SWEEP_MAX_DEG = 12.0f;
 constexpr float SUPPRESS_SWEEP_PERIOD = 1.5f;
 // Keep sweeping through a stretch of the arc that is not worth firing down
 constexpr float SUPRESS_HOLD_AIM_TIME = 0.5f;
+
+constexpr float HIT_LOOK_DISTANCE = 512.0f;
+
+float GetBearingErrorScale( const CNEOBot *me )
+{
+	static constexpr float errorScaleByDifficulty[ CNEOBot::NUM_DIFFICULTY_LEVELS ] = { 2.5f, 2.0f, 1.5f, 1.0f };
+	return errorScaleByDifficulty[ clamp( me->GetDifficulty(), CNEOBot::EASY, CNEOBot::EXPERT ) ];
+}
 }
 
 //---------------------------------------------------------------------------------------------
@@ -149,8 +157,7 @@ void CNEOBotSuppressiveFire::Reset()
 // The error is kept for the whole window, so following a moving sound does not jump the aim.
 void CNEOBotSuppressiveFire::OpenFireWindow( CNEOBot *me, CBaseEntity *target, const Vector &pos, bool bSeen )
 {
-	static constexpr float errorScaleByDifficulty[ CNEOBot::NUM_DIFFICULTY_LEVELS ] = { 2.5f, 2.0f, 1.5f, 1.0f };
-	const float errorScale = bSeen ? 0.0f : errorScaleByDifficulty[ clamp( me->GetDifficulty(), CNEOBot::EASY, CNEOBot::EXPERT ) ];
+	const float errorScale = bSeen ? 0.0f : GetBearingErrorScale( me );
 
 	m_hTarget = target;
 	m_bearingErrorDeg = RandomFloat( -SUPPRESS_BEARING_ERROR_DEG, SUPPRESS_BEARING_ERROR_DEG ) * errorScale;
@@ -189,7 +196,7 @@ Vector CNEOBotSuppressiveFire::GetSweptAimSpot( const Vector &from, const Vector
 void CNEOBotSuppressiveFire::OnInjured( CNEOBot *me, const CTakeDamageInfo &info )
 {
 	CBaseEntity *attacker = info.GetAttacker();
-	if ( !neo_bot_suppressive_fire.GetBool() || !attacker || !attacker->IsPlayer() || !me->IsEnemy( attacker ) )
+	if ( !attacker || !attacker->IsPlayer() || !me->IsEnemy( attacker ) )
 	{
 		return;
 	}
@@ -205,7 +212,31 @@ void CNEOBotSuppressiveFire::OnInjured( CNEOBot *me, const CTakeDamageInfo &info
 		return; // FireWeaponAtEnemy owns threats I can see
 	}
 
-	OpenFireWindow( me, attacker, attacker->GetAbsOrigin(), false );
+	const bool bOpenFireWindow = neo_bot_suppressive_fire.GetBool();
+	if ( bOpenFireWindow )
+	{
+		OpenFireWindow( me, attacker, attacker->GetAbsOrigin(), false );
+	}
+
+	// An enemy the bot can see keeps its aim
+	if ( me->HasAttribute( CNEOBot::IGNORE_ENEMIES ) || me->GetVisionInterface()->GetPrimaryKnownThreat( true ) )
+	{
+		return;
+	}
+
+	const Vector eyes = me->EyePosition();
+	const Vector force = info.GetDamageForce();
+	// Bullet force points away from the shooter.
+	Vector towardShooter = -force;
+	if ( towardShooter.NormalizeInPlace() == 0.0f )
+	{
+		return;
+	}
+
+	const float bearingError = bOpenFireWindow ? m_bearingErrorDeg
+		: RandomFloat( -SUPPRESS_BEARING_ERROR_DEG, SUPPRESS_BEARING_ERROR_DEG ) * GetBearingErrorScale( me );
+	const Vector aimSpot = RotateBearing( eyes, eyes + towardShooter * HIT_LOOK_DISTANCE, bearingError );
+	me->GetBodyInterface()->AimHeadTowards( aimSpot, IBody::IMPORTANT, 0.5f, nullptr, "Looking toward incoming fire" );
 }
 
 
