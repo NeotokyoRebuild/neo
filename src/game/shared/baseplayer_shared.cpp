@@ -2099,7 +2099,6 @@ bool CBasePlayer::SetFOV( CBaseEntity *pRequester, int FOV, float zoomRate, int 
 	// Setup our FOV and our scaling time
 
 #ifdef NEO
-	// Handle reversal of FOV zoom smoothly from point of interruption
 	const float flTurnTime = gpGlobals->curtime;
 	const float flEased = (m_Local.m_flFOVRate > 0.0f) ? (flTurnTime - m_flFOVTime) / m_Local.m_flFOVRate : 1.0f;
 	if (iZoomStart <= 0 && m_iFOV != 0 && FOV == m_iFOVStart && flEased >= 0.0f && flEased < 1.0f)
