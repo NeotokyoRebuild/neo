@@ -2717,9 +2717,6 @@ float C_BasePlayer::GetFOV( void )
 		// get fov from observer target. Not if target is observer itself
 		if (pTargetPlayer && !pTargetPlayer->IsObserver())
 		{
-			// NEO NOTE (nullsystem): This uses a percentage based rather than delta, but it's good enough
-			// to provide a motion of going between ADS states rather than immediate for the spectator viewing
-			// in first person
 			float fov = pTargetPlayer->m_flSpecFOV;
 			if (!prediction->InPrediction())
 			{
@@ -2734,35 +2731,20 @@ float C_BasePlayer::GetFOV( void )
 					return pTargetPlayer->IsInScope() ? fovAim : fovNorm;
 				}
 
+				const float targetFOV = pTargetPlayer->m_bInAim ? fovAim : fovNorm;
+				const float fovSpan = fabsf(fovNorm - fovAim);
+				const float sinceDrawn = gpGlobals->curtime - pTargetPlayer->m_flSpecFOVDrawTime;
 				// A target not drawn for a while shows its current zoom at once instead of a stale ease
-				if (gpGlobals->curtime - pTargetPlayer->m_flSpecFOVDrawTime > NEO_ZOOM_SPEED)
+				if (sinceDrawn > NEO_ZOOM_SPEED || fovSpan == 0.0f)
 				{
-					pTargetPlayer->m_bSpecFOVInAim = pTargetPlayer->m_bInAim;
-					fov = (pTargetPlayer->m_bInAim) ? fovAim : fovNorm;
-					pTargetPlayer->m_flSpecFOV = fov;
+					fov = targetFOV;
 				}
-				pTargetPlayer->m_flSpecFOVDrawTime = gpGlobals->curtime;
-
-				// The target's zoom start is on its own command clock, so ease on ours from the drawn FOV
-				if (pTargetPlayer->m_bInAim != pTargetPlayer->m_bSpecFOVInAim)
+				else if (sinceDrawn > 0.0f)
 				{
-					pTargetPlayer->m_bSpecFOVInAim = pTargetPlayer->m_bInAim;
-					const float flTowardNorm = RemapValClamped(fov, fovAim, fovNorm, 0.0f, 1.0f);
-					const float flDone = (pTargetPlayer->m_bInAim) ? (1.0f - flTowardNorm) : flTowardNorm;
-					pTargetPlayer->m_flSpecFOVStartTime = gpGlobals->curtime - (flDone * NEO_ZOOM_SPEED);
+					fov = Approach(targetFOV, fov, fovSpan * sinceDrawn / NEO_ZOOM_SPEED);
 				}
-
-				// Don't spline/lerp when we're already at the desired FOV
-				if ((pTargetPlayer->m_bInAim && (fov == fovAim)) ||
-						(!pTargetPlayer->m_bInAim && (fov == fovNorm)))
-				{
-					return fov;
-				}
-				float perc = (gpGlobals->curtime - pTargetPlayer->m_flSpecFOVStartTime) / NEO_ZOOM_SPEED;
-				perc = clamp(perc, 0.0f, 1.0f);
-				if (pTargetPlayer->m_bInAim) perc = 1.0f - perc;
-				fov = RemapValClamped( perc, 0.0f, 1.0f, fovAim, fovNorm);
 				pTargetPlayer->m_flSpecFOV = fov;
+				pTargetPlayer->m_flSpecFOVDrawTime = gpGlobals->curtime;
 			}
 			return fov;
 		}

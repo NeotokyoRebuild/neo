@@ -146,9 +146,7 @@ private:
 
 public:
 	float m_flSpecFOV = 0.0f;
-	float m_flSpecFOVStartTime = 0.0f;
 	float m_flSpecFOVDrawTime = 0.0f;
-	bool m_bSpecFOVInAim = false;
 	bool ShouldDrawHL2StyleQuickHud( void );
 
 	int GetClass() const { return m_iNeoClass; }
