@@ -349,6 +349,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_crosshair_network);
 		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
 		CONVARREF_DEF(cl_neo_crosshair_friendly_fire_warning);
+		CONVARREF_DEF(crosshair);
 
 		// Friendly Markers
 		CONVARREF_DEFNOGLOBALPTR(cl_neo_squad_marker);

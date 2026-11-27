@@ -944,10 +944,17 @@ void NeoSettingsSave(const NeoSettings *ns)
 		const NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
 		char szSequence[NEO_XHAIR_SEQMAX];
 		ExportCrosshair(const_cast<CrosshairInfo *>(&pCrosshair->info), szSequence);
+		const bool bCrosshairChanged = V_strcmp(szSequence, cvr->cl_neo_crosshair.GetString()) != 0;
 		cvr->cl_neo_crosshair.SetValue(szSequence);
 		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
 		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pCrosshair->bInaccuracyInScope);
 		cvr->cl_neo_crosshair_friendly_fire_warning.SetValue(pCrosshair->bFriendlyFireWarning);
+
+		// Only a changed crosshair re-enables it, so an unrelated Accept keeps a deliberate "crosshair 0"
+		if (bCrosshairChanged)
+		{
+			cvr->crosshair.SetValue(true);
+		}
 	}
 	{
 		const NeoSettings::HUD *pHUD = &ns->hud;
