@@ -242,8 +242,7 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 		const CNEOWeaponInfo* pWepInfo = &pWeapon->GetNEOWpnData();
 		Assert(pWepInfo);
 
-		const float aimChangeTime = (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
-			? NEO_SCOPE_RAISE_TIME : NeoAimTransitionTime(*pWepInfo);
+		const float aimChangeTime = NeoAimTransitionTime(*pWeapon);
 		if (m_bViewAim && !playerAiming)
 		{
 			// From aiming to not aiming

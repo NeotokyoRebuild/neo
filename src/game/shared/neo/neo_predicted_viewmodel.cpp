@@ -567,8 +567,7 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 		{
 			const bool playerAiming = neoPlayer->IsInAim();
 			const float currentTime = gpGlobals->curtime;
-			const float aimChangeTime = (weapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
-				? NEO_SCOPE_RAISE_TIME : NeoAimTransitionTime(data);
+			const float aimChangeTime = NeoAimTransitionTime(*weapon);
 			if (m_bViewAim && !playerAiming)
 			{
 				// From aiming to not aiming
