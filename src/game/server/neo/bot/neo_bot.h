@@ -148,6 +148,8 @@ public:
 	void OnSmokeBlockedSight(void);
 	void EnableCloak(float threshold);
 	void DisableCloak(void);
+	void DisableCloakUnlessRecentlyInjured();
+	bool WasRecentlyInjuredByEnemy() const;
 
 	void UpdateLookingAroundForEnemies(void);						// update our view to keep an eye on enemies, and where enemies come from
 

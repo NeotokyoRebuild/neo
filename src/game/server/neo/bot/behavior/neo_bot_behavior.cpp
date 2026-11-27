@@ -215,6 +215,23 @@ EventDesiredResult<CNEOBot> CNEOBotMainAction::OnKilled( CNEOBot *me, const CTak
 }
 
 
+static void CloakOnInjured( CNEOBot *me, const CTakeDamageInfo &info )
+{
+	CBaseEntity *attacker = info.GetAttacker();
+	if ( !attacker || !attacker->IsPlayer() || !me->IsEnemy( attacker ) )
+	{
+		return;
+	}
+
+	if ( !( info.GetDamageType() & ( DMG_BULLET | DMG_BUCKSHOT ) ) )
+	{
+		return;
+	}
+
+	me->EnableCloak( 3.0f );
+}
+
+
 //---------------------------------------------------------------------------------------------
 EventDesiredResult< CNEOBot > CNEOBotMainAction::OnInjured( CNEOBot *me, const CTakeDamageInfo &info )
 {
@@ -224,6 +241,8 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnInjured( CNEOBot *me, const C
 	// notice the gunfire - needed for sentry guns, which don't go through the player OnWeaponFired() system
 	me->GetVisionInterface()->AddKnownEntity( subject );
 	me->GetSuppressiveFire()->OnInjured( me, info );
+
+	CloakOnInjured( me, info );
 
 	return TryContinue();
 }
