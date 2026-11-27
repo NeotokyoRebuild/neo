@@ -121,6 +121,19 @@ const CNavLadder *PlayerLocomotion::FindTouchedLadder( void ) const
 
 
 //-----------------------------------------------------------------------------------------------------
+// Returns if a bot is attached to a ladder
+bool PlayerLocomotion::IsAttachedToLadder( const CNavLadder *ladder ) const
+{
+	if ( ladder == NULL || !m_player->IsOnLadder() )
+	{
+		return false;
+	}
+
+	return FindTouchedLadder() == ladder;
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 /**
  * Called when the engine has us on a ladder our own path never asked for. Returns true if the
  * ladder was taken over, in which case the caller leaves the move type alone and the normal ladder
