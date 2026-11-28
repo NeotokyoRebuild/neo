@@ -6,9 +6,6 @@
 #include "nav_mesh.h"
 #include "neo_bot_path_reservation.h"
 
-ConVar neo_bot_path_around_friendly_cooldown("neo_bot_path_around_friendly_cooldown", "2.0", FCVAR_CHEAT,
-	"How often to check for friendly path dispersion", true, 0, true, 60);
-
 ConVar neo_bot_path_penalty_avoid_multiplier("neo_bot_path_penalty_avoid_multiplier", "20.0", FCVAR_CHEAT,
 	"Penalty multiplier for navmesh avoid areas in pathfinding", true, 1.0f, false, 0.0f);
 
@@ -36,6 +33,9 @@ ConVar neo_bot_path_penalty_exposure_inverse_base_scoped("neo_bot_path_penalty_e
 ConVar neo_bot_path_visibility_exposure_enable("neo_bot_path_visibility_exposure_enable", "1", FCVAR_NONE,
 	"Enable visibility-exposure pathing penalties", true, 0, true, 1);
 
+ConVar neo_bot_path_penalty_hurry_hazard_multiplier("neo_bot_path_penalty_hurry_hazard_multiplier", "20.0", FCVAR_CHEAT,
+	"Cost multiplier for a hurrying bot crossing a hazard area that is not deadly, such as smoke, which it takes only when no shorter detour exists", true, 1.0f, false, 0.0f);
+
 //-------------------------------------------------------------------------------------------------
 CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 {
@@ -47,6 +47,190 @@ CNEOBotPathCost::CNEOBotPathCost(CNEOBot* me, RouteType routeType)
 	m_bIgnoreReservations = !neo_bot_path_reservation_enable.GetBool();
 	m_bIgnoreHazards = (me->m_hCommandingPlayer.Get() != nullptr);
 	m_bIgnoreVisibilityExposure = !neo_bot_path_visibility_exposure_enable.GetBool();
+	m_bInAHurry = ( me->GetIntentionInterface()->ShouldHurry( me ) == ANSWER_YES );
+	m_vecDuckHullMins = VEC_DUCK_HULL_MIN_SCALED( me );
+	m_vecDuckHullMaxs = VEC_DUCK_HULL_MAX_SCALED( me );
+	m_bDucksAboveCrouchHeight = ( m_vecDuckHullMaxs.z - m_vecDuckHullMins.z ) > HumanCrouchHeight;
+}
+
+//-------------------------------------------------------------------------------------------------
+// A crouch area promises HumanCrouchHeight of clearance, but Support and Juggernaut ducked hulls are taller,
+// so some crouch gaps in the mesh are ones they cannot get through
+
+static constexpr float NEO_DUCK_LANE_SPACING = 4.0f;	// one lane per this much portal width, edge to edge
+static constexpr float NEO_DUCK_LANE_REACH = 2.0f;	// how far a lane runs into each area
+static constexpr float NEO_DUCK_LANE_INSET = 0.5f;	// lane ends keep this far inside their area
+
+// A crouch portal and a ducked hull height: the key of one lane verdict
+struct NeoDuckLaneKey_t
+{
+	unsigned int m_fromId;
+	unsigned int m_toId;
+	int m_height;
+
+	bool operator<( const NeoDuckLaneKey_t &other ) const
+	{
+		if ( m_fromId != other.m_fromId )
+		{
+			return m_fromId < other.m_fromId;
+		}
+
+		if ( m_toId != other.m_toId )
+		{
+			return m_toId < other.m_toId;
+		}
+
+		return m_height < other.m_height;
+	}
+};
+
+// The lane traces see only the world and static props, so a verdict holds while the navmesh does
+static CUtlMap<NeoDuckLaneKey_t, bool> s_duckLaneVerdicts( DefLessFunc( NeoDuckLaneKey_t ) );
+
+// nav_load and nav editing commands renumber areas without a level change,
+// so the verdicts are dropped when the area count they were made on changes
+static unsigned int s_nDuckLaneAreaCount = 0;
+
+class CNeoDuckLaneReset : public CAutoGameSystem
+{
+public:
+	CNeoDuckLaneReset() : CAutoGameSystem( "CNeoDuckLaneReset" )
+	{
+	}
+
+	virtual void LevelShutdownPostEntity() override
+	{
+		s_duckLaneVerdicts.RemoveAll();
+	}
+};
+
+static CNeoDuckLaneReset s_duckLaneReset;
+
+// The point of the area nearest (x, y), on the floor under the hull's footprint,
+// which can lie slightly off the nav plane
+static Vector NeoLaneEnd( const CNavArea *area, float x, float y, const Vector &vecMins, const Vector &vecMaxs )
+{
+	const Vector nw = area->GetCorner( NORTH_WEST );
+	const Vector se = area->GetCorner( SOUTH_EAST );
+	const float flInsetX = Min( NEO_DUCK_LANE_INSET, ( se.x - nw.x ) / 2.0f );
+	const float flInsetY = Min( NEO_DUCK_LANE_INSET, ( se.y - nw.y ) / 2.0f );
+	Vector pos( clamp( x, nw.x + flInsetX, se.x - flInsetX ), clamp( y, nw.y + flInsetY, se.y - flInsetY ), 0.0f );
+	pos.z = area->GetZ( pos.x, pos.y );
+
+	// A footprint-sized slab dropped from above the nav plane to below it
+	CTraceFilterWorldAndPropsOnly filter;
+	trace_t tr;
+	UTIL_TraceHull( pos + Vector( 0.0f, 0.0f, StepHeight ), pos - Vector( 0.0f, 0.0f, StepHeight ),
+		Vector( vecMins.x, vecMins.y, 0.0f ), Vector( vecMaxs.x, vecMaxs.y, 1.0f ), MASK_PLAYERSOLID, &filter, &tr );
+	if ( !tr.startsolid && tr.fraction < 1.0f )
+	{
+		pos.z = tr.endpos.z;
+	}
+
+	return pos;
+}
+
+// Can the hull get from a to b? It is swept with its underside a step above the floor,
+// so it ignores a lip or slope lower than a step, as the bot steps over it
+static bool NeoLaneClear( const Vector &a, const Vector &b, const Vector &vecMins, const Vector &vecMaxs )
+{
+	const Vector mins( vecMins.x, vecMins.y, StepHeight );
+	const Vector maxs( vecMaxs.x, vecMaxs.y, vecMaxs.z - vecMins.z );
+	const float flTop = Max( a.z, b.z );
+	const Vector legs[] = { a, Vector( a.x, a.y, flTop ), Vector( b.x, b.y, flTop ), b };
+	constexpr int nLegs = ARRAYSIZE( legs );
+
+	CTraceFilterWorldAndPropsOnly filter;
+	trace_t tr;
+	for ( int i = 0; i + 1 < nLegs; ++i )
+	{
+		UTIL_TraceHull( legs[i], legs[i + 1], mins, maxs, MASK_PLAYERSOLID, &filter, &tr );
+		if ( tr.startsolid || tr.fraction < 1.0f )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// Does the hull fit through the portal from 'from' into 'to' on at least one lane?
+// Lanes run across the portal, each from just inside one area to just inside the other
+static bool NeoDuckLaneFits( const CNavArea *from, const CNavArea *to, const Vector &vecMins, const Vector &vecMaxs )
+{
+	NavDirType dir = NUM_DIRECTIONS;
+	for ( int d = 0; d < NUM_DIRECTIONS; ++d )
+	{
+		if ( from->IsConnected( to, (NavDirType)d ) )
+		{
+			dir = (NavDirType)d;
+			break;
+		}
+	}
+
+	if ( dir == NUM_DIRECTIONS )
+	{
+		return true;
+	}
+
+	Vector center;
+	float flHalfWidth;
+	from->ComputePortal( to, dir, &center, &flHalfWidth );
+
+	Vector2D across;
+	DirectionToVector2D( dir, &across );
+	const Vector2D along( across.y != 0.0f ? 1.0f : 0.0f, across.x != 0.0f ? 1.0f : 0.0f );
+	const float flSpan = Max( 0.0f, flHalfWidth - NEO_DUCK_LANE_INSET );
+	const int nLanes = 1 + (int)( 2.0f * flSpan / NEO_DUCK_LANE_SPACING );
+	for ( int i = 0; i < nLanes; ++i )
+	{
+		const float flOffset = ( nLanes == 1 ) ? 0.0f : -flSpan + 2.0f * flSpan * i / ( nLanes - 1 );
+		const float x = center.x + along.x * flOffset;
+		const float y = center.y + along.y * flOffset;
+		const float dx = across.x * NEO_DUCK_LANE_REACH;
+		const float dy = across.y * NEO_DUCK_LANE_REACH;
+		const Vector a = NeoLaneEnd( from, x - dx, y - dy, vecMins, vecMaxs );
+		const Vector b = NeoLaneEnd( to, x + dx, y + dy, vecMins, vecMaxs );
+		if ( NeoLaneClear( a, b, vecMins, vecMaxs ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// Is a level step into or out of a crouch area open to this ducked hull? Climbs and drops are not tested
+static bool NeoDuckLaneOpen( const CNavArea *from, const CNavArea *to, const Vector &vecMins, const Vector &vecMaxs,
+	float flStepHeight )
+{
+	if ( !from->HasAttributes( NAV_MESH_CROUCH ) && !to->HasAttributes( NAV_MESH_CROUCH ) )
+	{
+		return true;
+	}
+
+	if ( fabs( from->ComputeAdjacentConnectionHeightChange( to ) ) > flStepHeight )
+	{
+		return true;
+	}
+
+	if ( TheNavMesh->GetNavAreaCount() != s_nDuckLaneAreaCount )
+	{
+		s_duckLaneVerdicts.RemoveAll();
+		s_nDuckLaneAreaCount = TheNavMesh->GetNavAreaCount();
+	}
+
+	const float flHeight = vecMaxs.z - vecMins.z;
+	const NeoDuckLaneKey_t key = { from->GetID(), to->GetID(), (int)flHeight };
+	const auto idx = s_duckLaneVerdicts.Find( key );
+	if ( idx != s_duckLaneVerdicts.InvalidIndex() )
+	{
+		return s_duckLaneVerdicts[idx];
+	}
+
+	const bool bOpen = NeoDuckLaneFits( from, to, vecMins, vecMaxs );
+	s_duckLaneVerdicts.Insert( key, bOpen );
+	return bOpen;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -67,13 +251,37 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 		return -1.0f;
 	}
 
-	if ( !m_bIgnoreHazards && CNEOBotPathReservations()->IsAreaHazardous(area->GetID(), m_me) )
+	// Support and Juggernaut duck too tall for some crouch gaps
+	if ( m_bDucksAboveCrouchHeight && !ladder && !elevator
+		&& !NeoDuckLaneOpen( fromArea, area, m_vecDuckHullMins, m_vecDuckHullMaxs, m_stepHeight ) )
 	{
-		if ( m_routeType == DEFAULT_ROUTE )
+		return -1.0f;
+	}
+
+	float hazardMultiplier = 1.0f;
+	if ( !m_bIgnoreHazards && ( m_routeType == DEFAULT_ROUTE ) && CNEOBotPathReservations()->IsAreaHazardous(area->GetID(), m_me) )
+	{
+		// a hurrying bot pushes through a hazard that is not deadly, such as smoke, when no detour exists,
+		// instead of stalling at its edge, but deadly hazards such as frag grenades stay impassable
+		if ( m_bInAHurry && !CNEOBotPathReservations()->IsAreaDeadlyHazard(area->GetID(), m_me) )
+		{
+			hazardMultiplier = neo_bot_path_penalty_hurry_hazard_multiplier.GetFloat();
+		}
+		else
 		{
 			// attempt to route around hazards
 			// if blocked, assumes includeGoalIfPathFails=true
 			// to partially path up to boundary of hazard area
+			return -1.0f;
+		}
+
+		// an enemy detpack's blast is lethal on the fastest and safest routes too,
+		// but a bot already inside the blast radius may still walk out through it
+		const bool bDetpackRoute = ( m_routeType == FASTEST_ROUTE ) || ( m_routeType == SAFEST_ROUTE );
+		const int iTeam = m_me->GetTeamNumber();
+		if ( bDetpackRoute && CNEOBotPathReservations()->IsAreaDetpackHazard( area->GetID(), iTeam )
+			&& !CNEOBotPathReservations()->IsAreaDetpackHazard( fromArea->GetID(), iTeam ) )
+		{
 			return -1.0f;
 		}
 	}
@@ -233,6 +441,8 @@ float CNEOBotPathCost::operator()(CNavArea* baseArea, CNavArea* fromArea, const 
 	{
 		cost *= neo_bot_path_penalty_avoid_multiplier.GetFloat();
 	}
+
+	cost *= hazardMultiplier;
 	// ------------------------------------------------------------------------------------------------
 
 	if (area->HasAttributes(NAV_MESH_FUNC_COST))

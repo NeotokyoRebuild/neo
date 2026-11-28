@@ -25,17 +25,20 @@ public:
 	virtual void OnEnd( CNEOBot *me, Action<CNEOBot> *nextAction ) override;
 	virtual ActionResult<CNEOBot> OnSuspend( CNEOBot *me, Action<CNEOBot> *interruptingAction ) override;
 	virtual ActionResult<CNEOBot> OnResume( CNEOBot *me, Action<CNEOBot> *interruptingAction ) override;
+	virtual EventDesiredResult<CNEOBot> OnStuck( CNEOBot *me ) override;
 
 	static constexpr float ALIGN_RANGE = 100.0f;        // Distance to start alignment behavior
 
 private:
 	ActionResult<CNEOBot> UpdateOverTop( CNEOBot *me, const Vector &hangPos, float range );
 	bool IsBarrierAhead( CNEOBot *me, const Vector &hangPos ) const;
+	bool TryHandicap( CNEOBot *me, const char *reason ) const;
 
 	const CNavLadder *m_ladder;
 	bool m_bGoingUp;
 	bool m_bOverTop;	// going down from behind a barrier at the ladder's top (UpdateOverTop)
 	bool m_bFlushTop;	// over the top with no barrier: the floor is level with it
+	bool m_bStuck;		// the locomotion reported the bot stuck
 	Vector m_vecLastProgressPos;
 	IntervalTimer m_progressTimer;	// since the bot last moved PROGRESS_STEP
 	Vector m_ladderCenter;

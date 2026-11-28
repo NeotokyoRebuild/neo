@@ -213,7 +213,12 @@ void CPrediction::CheckError( int commands_acknowledged )
 		{
 			player->NotePredictionError( delta );
 
+#ifdef NEO
+			// This compares the origin directly, so FTYPEDESC_NOERRORCHECK_WHEN_FOLLOWING_TARGET does not reach it.
+			if ( cl_showerror.GetInt() >= 1 && !player->IsFollowingObserverTarget() )
+#else
 			if ( cl_showerror.GetInt() >= 1 )
+#endif
 			{
 				con_nprint_t np;
 				np.fixed_width_font = true;

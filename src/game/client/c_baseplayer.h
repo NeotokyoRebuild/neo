@@ -158,6 +158,7 @@ public:
 	virtual int				GetNextObserverSearchStartPoint(bool bReverse); // Where we should start looping the player list in a FindNextObserverTarget call
 	virtual CBaseEntity* FindNextObserverTarget(bool bReverse); // returns next/prev player to follow or nullptr
 	virtual bool			IsValidObserverTarget(CBaseEntity* target); // true, if player is allowed to see this target
+	bool					IsFollowingObserverTarget() const; // true, if FullObserverMove copies this player's movement from a target
 #endif
 
 	bool			AudioStateIsUnderwater( Vector vecMainViewOrigin );

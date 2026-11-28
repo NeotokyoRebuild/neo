@@ -1416,6 +1416,7 @@ target_sources_grouped(
 
 set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ads.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
@@ -1437,6 +1438,8 @@ set(UNITY_SOURCE_NEO_SHARED
 
 set(UNITY_SOURCE_NEO_SRC_SERVER
     neo/neo_bloom_controller.cpp
+    neo/neo_bsp_lighting.cpp
+    neo/neo_bsp_lighting.h
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_game_config.cpp
@@ -1473,6 +1476,7 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/nav_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ads.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
@@ -1520,6 +1524,7 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/neo_bot_prop_detour.cpp
     neo/bot/neo_bot_path_reservation.cpp
     neo/bot/neo_bot_body.cpp
+    neo/bot/neo_bot_ghost_callout.cpp
     neo/bot/neo_bot_locomotion.cpp
     neo/bot/neo_bot_manager.cpp
     neo/bot/neo_bot_memory_sound_combat.cpp
@@ -1534,6 +1539,8 @@ set(UNITY_SOURCE_NEO_BOT
     neo/bot/behavior/neo_bot_ctg_capture.cpp
     neo/bot/behavior/neo_bot_ctg_carrier.cpp
     neo/bot/behavior/neo_bot_ctg_enemy.cpp
+    neo/bot/behavior/neo_bot_ctg_enemy_chase.cpp
+    neo/bot/behavior/neo_bot_ctg_enemy_cutoff.cpp
     neo/bot/behavior/neo_bot_ctg_escort.cpp
     neo/bot/behavior/neo_bot_ctg_lone_wolf.cpp
     neo/bot/behavior/neo_bot_ctg_seek.cpp
@@ -1585,6 +1592,7 @@ target_sources_grouped(
     neo/bot/neo_bot_prop_detour.h
     neo/bot/neo_bot_path_reservation.h
     neo/bot/neo_bot_body.h
+    neo/bot/neo_bot_ghost_callout.h
     neo/bot/neo_bot_contextual_query_interface.h
     neo/bot/neo_bot_locomotion.h
     neo/bot/neo_bot_manager.h
@@ -1600,6 +1608,8 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_ctg_capture.h
     neo/bot/behavior/neo_bot_ctg_carrier.h
     neo/bot/behavior/neo_bot_ctg_enemy.h
+    neo/bot/behavior/neo_bot_ctg_enemy_chase.h
+    neo/bot/behavior/neo_bot_ctg_enemy_cutoff.h
     neo/bot/behavior/neo_bot_ctg_escort.h
     neo/bot/behavior/neo_bot_ctg_lone_wolf.h
     neo/bot/behavior/neo_bot_ctg_lone_wolf_ambush.cpp

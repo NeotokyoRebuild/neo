@@ -3,13 +3,14 @@
 #include "bot/behavior/neo_bot_ladder_climb.h"
 #include "bot/behavior/neo_bot_attack.h"
 #include "nav_ladder.h"
+#include "NextBot/Path/NextBotPathFollow.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 //---------------------------------------------------------------------------------------------
 CNEOBotLadderApproach::CNEOBotLadderApproach( const CNavLadder *ladder, bool goingUp )
-	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_bOverTop( false ), m_bFlushTop( false ), m_vecLastProgressPos( vec3_origin )
+	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_bOverTop( false ), m_bFlushTop( false ), m_bStuck( false ), m_vecLastProgressPos( vec3_origin )
 {
 	m_ladderCenter = ladder ? ( ladder->m_top + ladder->m_bottom ) * 0.5f : vec3_origin;
 }
@@ -65,6 +66,30 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::OnStart( CNEOBot *me, Action<CNEOBo
 }
 
 //---------------------------------------------------------------------------------------------
+// The area the path reaches through this ladder, held by its ladder segment
+static const CNavArea *FindLadderExitArea( CNEOBot *me, const CNavLadder *ladder, bool goingUp )
+{
+	const PathFollower *path = me->GetCurrentPath();
+	const Path::Segment *goal = ( path && path->IsValid() ) ? path->GetCurrentGoal() : nullptr;
+	if ( !goal )
+	{
+		return nullptr;
+	}
+
+	const NavTraverseType how = goingUp ? GO_LADDER_UP : GO_LADDER_DOWN;
+	const Path::Segment *candidates[] = { goal, path->NextSegment( goal ), path->PriorSegment( goal ) };
+	for ( const Path::Segment *seg : candidates )
+	{
+		if ( seg && seg->ladder == ladder && seg->how == how )
+		{
+			return seg->area;
+		}
+	}
+
+	return nullptr;
+}
+
+//---------------------------------------------------------------------------------------------
 // Implementation based on ladder climbing implementation in https://github.com/Dragoteryx/drgbase/
 ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 {
@@ -84,7 +109,17 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 
 	if ( m_timeoutTimer.IsElapsed() )
 	{
+		TryHandicap( me, "expire" );
 		return Done( "Ladder approach timeout" );
+	}
+
+	if ( m_bStuck )
+	{
+		m_bStuck = false;
+		if ( TryHandicap( me, "stuck" ) )
+		{
+			return Done( "Stuck approaching the ladder, teleported past it" );
+		}
 	}
 
 	const Vector &feetNow = me->GetLocomotionInterface()->GetFeet();
@@ -109,6 +144,13 @@ ActionResult<CNEOBot> CNEOBotLadderApproach::Update( CNEOBot *me, float )
 	IBody *body = me->GetBodyInterface();
 
 	const Vector& myPos = mover->GetFeet();
+
+	// Transition to the climb behavior as soon as the bot is attached to the ladder
+	if ( m_bGoingUp && me->GetLocomotionInterface()->IsAttachedToLadder( m_ladder ) )
+	{
+		me->SetAbsVelocity( vec3_origin );
+		return ChangeTo( new CNEOBotLadderClimb( m_ladder, m_bGoingUp ), "Attached to ladder, climbing" );
+	}
 
 	// If we end up closer to exit point than entry point,
 	// may not need to continue climb, exit to reevaluate situation
@@ -380,6 +422,21 @@ bool CNEOBotLadderApproach::IsBarrierAhead( CNEOBot *me, const Vector &hangPos )
 		MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
 
 	return tr.DidHit();
+}
+
+//---------------------------------------------------------------------------------------------
+bool CNEOBotLadderApproach::TryHandicap( CNEOBot *me, const char *reason ) const
+{
+	const CNavArea *exitArea = FindLadderExitArea( me, m_ladder, m_bGoingUp );
+	return CNEOBotLadderClimb::TeleportPastLadder( me, m_ladder, m_bGoingUp, exitArea, reason );
+}
+
+//---------------------------------------------------------------------------------------------
+// Handled on the next update, so the teleport does not run in the middle of this one
+EventDesiredResult<CNEOBot> CNEOBotLadderApproach::OnStuck( CNEOBot *me )
+{
+	m_bStuck = true;
+	return TryContinue();
 }
 
 //---------------------------------------------------------------------------------------------

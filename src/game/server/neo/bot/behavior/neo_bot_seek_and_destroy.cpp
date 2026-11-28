@@ -25,6 +25,8 @@ ConVar sv_neo_bot_seek_and_destroy_combat_sound_detour_ratio( "sv_neo_bot_seek_a
 	"When racing for an objective, divert only if going via the combat sound costs at most this multiple of direct distance.", true, 0, false, 0 );
 ConVar sv_neo_bot_seek_and_destroy_combat_sound_arrive_range( "sv_neo_bot_seek_and_destroy_combat_sound_arrive_range", "200.0", FCVAR_CHEAT,
 	"Combat sound close enough to count as investigated.", true, 0, false, 0 );
+ConVar sv_neo_bot_seek_and_destroy_roam_goal_tries( "sv_neo_bot_seek_and_destroy_roam_goal_tries", "10", FCVAR_CHEAT,
+	"Random roam goals to try before settling on one the bot can already see.", true, 1, false, 0 );
 
 
 //---------------------------------------------------------------------------------------------
@@ -106,8 +108,7 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 		m_combatSoundCommitTimer.Start( sv_neo_bot_seek_and_destroy_combat_sound_commit_time.GetFloat() );
 	}
 
-	if ( CNEOBotPathCompute( me, m_path, m_vCombatSoundSpot, DEFAULT_ROUTE )
-			&& m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+	if ( TryPathToRoamGoal( me, m_vCombatSoundSpot ) )
 	{
 		m_vGoalPos = m_vCombatSoundSpot;
 		m_bGoingToTargetEntity = false;
@@ -125,6 +126,30 @@ bool CNEOBotSeekAndDestroy::TryPathToCombatSound( CNEOBot *me )
 	}
 
 	return false;
+}
+
+
+//---------------------------------------------------------------------------------------------
+// Roam goals are picked at random, so skip one that no route reaches instead of walking at it. A refused
+// attempt stays in m_path: the wander loop's last resort keeps it.
+bool CNEOBotSeekAndDestroy::TryPathToRoamGoal( CNEOBot *me, const Vector &vGoal )
+{
+	return CNEOBotPathCompute( me, m_path, vGoal, DEFAULT_ROUTE ) && CNEOBotPathReachesGoal( m_path );
+}
+
+
+//---------------------------------------------------------------------------------------------
+// A place the bot can already see is not worth the walk, so pick an area outside of PVS
+static bool IsRoamGoalInView( CNEOBot *me, const Vector &vGoal )
+{
+	const CNavArea *pMyArea = me->GetLastKnownArea();
+	if ( !pMyArea )
+	{
+		return false;
+	}
+
+	const CNavArea *pGoalArea = TheNavMesh->GetNearestNavArea( vGoal );
+	return pGoalArea && pMyArea->IsPotentiallyVisible( pGoalArea );
 }
 
 
@@ -163,10 +188,16 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNE
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interval )
 {
+	// Bots respawn mid-round in JGR, so the switch cannot wait for the pre-round freeze
+	if ( NEORules()->GetGameType() == NEO_GAME_TYPE_JGR )
+	{
+		return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
+	}
+
 	// Check for Game Type Specific behaviors and suspend for them
 	if ( NEORules()->GetRemainingPreRoundFreezeTime( true ) > 0.0f )
 	{
-		if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+		if ( IsGhostGameType() )
 		{
 			// Only switch to CTG behavior if there are available capture zones this round
 			const Vector vecCapPoint = NEORules()->GetNearestGhostCapPoint( me->GetTeamNumber(), me->GetAbsOrigin() );
@@ -176,15 +207,11 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 			}
 
 		}
-		else if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
-		{
-			return SuspendFor( new CNEOBotJgrSeek, "Switching to Juggernaut-related Seek and Destroy" );
-		}
 
 		return Continue();
 	}
 
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	if ( IsGhostGameType() )
 	{
 		// Check if enemy has the ghost
 		if (NEORules()->GhostExists())
@@ -580,35 +607,64 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		CBaseEntity* pSearch = NULL;
 		while ( ( pSearch = gEntList.FindEntityByClassname( pSearch, "info_player_*", &spawnFilter ) ) != NULL )
 		{
-			if ( pSearch && Q_strcmp(pSearch->GetEntityName().ToCStr(), "info_player_start"))
+			if ( pSearch && !FClassnameIs( pSearch, "info_player_start" ) )
+			{
 				pSpawns.AddToTail( pSearch );
+			}
 		}
 
 		// Don't wander between spawns if there aren't that many.
 		if ( pSpawns.Size() >= 3 )
 		{
-			for ( int i = 0; i < 10; i++ )
+			const int iTries = sv_neo_bot_seek_and_destroy_roam_goal_tries.GetInt();
+			for ( int i = 0; i < iTries; i++ )
 			{
-				m_hTargetEntity = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
+				CBaseEntity *pSpawn = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
+				const Vector vSpawn = pSpawn->WorldSpaceCenter();
+				if ( IsRoamGoalInView( me, vSpawn ) )
+				{
+					continue;
+				}
+
+				m_hTargetEntity = pSpawn;
 				m_bGoingToTargetEntity = true;
-				m_vGoalPos = m_hTargetEntity->WorldSpaceCenter();
-				if ( CNEOBotPathCompute( me, m_path, m_vGoalPos, DEFAULT_ROUTE ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+				m_vGoalPos = vSpawn;
+				if ( TryPathToRoamGoal( me, m_vGoalPos ) )
+				{
 					return;
+				}
+
+				// An unreachable spawn usually indicates a spawn protected area.
+				// Re-rolling would likely pick other spawn protected areas, so wander instead.
+				break;
 			}
 		}
 	}
 
-	for ( int i = 0; i < 10; i++ )
+	m_hTargetEntity = nullptr;
+	m_bGoingToTargetEntity = false;
+
+	const int iTries = sv_neo_bot_seek_and_destroy_roam_goal_tries.GetInt();
+	for ( int i = 0; i < iTries; i++ )
 	{
 		// No spawns we can get to? Just wander... somewhere!
 
 		Vector vWanderPoint = TheNavAreas[RandomInt( 0, TheNavAreas.Size() - 1 )]->GetCenter();
+
+		// The last try takes any point, so a bot that sees most of a small map still gets a path
+		const bool bLastTry = ( i == iTries - 1 );
+		if ( !bLastTry && IsRoamGoalInView( me, vWanderPoint ) )
+		{
+			continue;
+		}
+
 		m_vGoalPos = vWanderPoint;
-		if ( CNEOBotPathCompute( me, m_path, vWanderPoint, DEFAULT_ROUTE ) )
+		if ( TryPathToRoamGoal( me, vWanderPoint ) )
 			return;
 	}
 
-	m_path.Invalidate();
+	// No wander point has a route either (a pocket, or hazards all round): keep the last one's partial or
+	// straight-line path rather than stand still
 }
 
 

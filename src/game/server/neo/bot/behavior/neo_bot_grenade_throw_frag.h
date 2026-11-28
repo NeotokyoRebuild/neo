@@ -17,6 +17,7 @@ public:
 	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
 
 	static float GetFragSafetyRadius();
+	static bool IsFragPolite( const CNEOBot *me, const Vector &vecTarget );
 	static bool IsFragSafe( const CNEOBot *me, const Vector &vecTarget );
 
 protected:

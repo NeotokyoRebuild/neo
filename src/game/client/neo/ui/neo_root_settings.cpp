@@ -16,6 +16,7 @@
 #include "voice_status.h"
 
 #include "neo_ui.h"
+#include "neo_ui_fpsslider.h"
 #include "neo_root.h"
 #include "neo/ui/neo_utils.h"
 #include "neo_theme.h"
@@ -665,6 +666,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		}
 		pVideo->iFilteringMode = filterIdx;
 		pVideo->bVSync = cvr->mat_vsync.GetBool();
+		pVideo->iFpsMax = cvr->fps_max.GetInt();
 		pVideo->bMotionBlur = cvr->mat_motion_blur_enabled.GetBool();
 		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
@@ -695,6 +697,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pHUD->bShowPos = cvr->cl_showpos.GetBool();
 		pHUD->iShowFps = cvr->cl_showfps.GetInt();
 		pHUD->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
+		pHUD->bEnableWalkIndicator = cvr->cl_neo_hud_walkindicator_enabled.GetBool();
 		pHUD->iExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetInt();
 		pHUD->iScoreboardPadding = cvr->cl_neo_hud_scoreboard_padding.GetInt();
 		pHUD->bShowHudContextHints = cvr->cl_neo_hud_context_hint_enabled.GetBool();
@@ -937,6 +940,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		};
 		cvr->mat_forceaniso.SetValue(ANISO_MAP[pVideo->iFilteringMode]);
 		cvr->mat_vsync.SetValue(pVideo->bVSync);
+		cvr->fps_max.SetValue(pVideo->iFpsMax);
 		cvr->mat_motion_blur_enabled.SetValue(pVideo->bMotionBlur);
 		cvr->mat_hdr_level.SetValue(pVideo->iHDR);
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
@@ -963,6 +967,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_showpos.SetValue(pHUD->bShowPos);
 		cvr->cl_showfps.SetValue(pHUD->iShowFps);
 		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pHUD->bEnableRangeFinder);
+		cvr->cl_neo_hud_walkindicator_enabled.SetValue(pHUD->bEnableWalkIndicator);
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pHUD->iExtendedKillfeed);
 		cvr->cl_neo_hud_scoreboard_padding.SetValue(pHUD->iScoreboardPadding);
 		cvr->cl_neo_hud_context_hint_enabled.SetValue(pHUD->bShowHudContextHints);
@@ -1359,6 +1364,7 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::RingBox(L"Resolution", const_cast<const wchar_t **>(pVideo->p2WszVmDispList), pVideo->iVMListSize, &pVideo->iResolution);
 	NeoUI::RingBox(L"Window", WINDOW_MODE, WINDOWMODE__TOTAL, &pVideo->iWindow);
 	NeoUI::RingBoxBool(L"V-Sync", &pVideo->bVSync);
+	NeoUI::SliderFpsMax(L"Max FPS", &pVideo->iFpsMax);
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
 	NeoUI::Slider(L"Gamma", &pVideo->flGamma, 1.6, 2.6, 2, 0.1f);
 	NeoUI::SliderInt(L"FOV", &pVideo->iFov, MIN_FOV, MAX_FOV);
@@ -1688,6 +1694,7 @@ void NeoSettings_HUD(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show position", &pHud->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pHud->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pHud->bEnableRangeFinder);
+	NeoUI::RingBoxBool(L"Show walk indicator", &pHud->bEnableWalkIndicator);
 	NeoUI::RingBox(L"Extended killfeed", EXT_KILLFEED_LABELS, ARRAYSIZE(EXT_KILLFEED_LABELS), &pHud->iExtendedKillfeed);
 	NeoUI::RingBox(L"Scoreboard padding", NEOSCOREBOARDPADDING_LABELS, NEOSCOREBOARDPADDING__TOTAL, &pHud->iScoreboardPadding);
 

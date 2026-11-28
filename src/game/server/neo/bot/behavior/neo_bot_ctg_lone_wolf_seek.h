@@ -12,7 +12,7 @@ class CNEOBotCtgLoneWolfSeek : public CNEOBotCtgLoneWolf
 {
 public:
 	typedef CNEOBotCtgLoneWolf BaseClass;
-	CNEOBotCtgLoneWolfSeek( void );
+	CNEOBotCtgLoneWolfSeek( bool detpackHunt = false );
 	virtual ~CNEOBotCtgLoneWolfSeek();
 
 	virtual ActionResult< CNEOBot > OnStart( CNEOBot *me, Action< CNEOBot > *priorAction ) override;
@@ -39,6 +39,7 @@ private:
 
 	std::unique_ptr<CNEOIgnoredWeaponsCache> m_pIgnoredWeapons;
 	CountdownTimer m_scavengeTimer;
+	bool m_bDetpackHunt;
 
 	void MarkVisibleAreasAsExplored( CNEOBot *me, CNavArea *currentArea, CNavArea *ghostArea = nullptr );
 };

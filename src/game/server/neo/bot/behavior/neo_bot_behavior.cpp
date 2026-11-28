@@ -186,8 +186,6 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 	}
 	me->m_qPrevShouldAim = qDirectShouldAimQuery;
 	
-	me->RepathIfFriendlyBlockingLineOfFire();
-
 	ReconConsiderSuperJump( me );
 
 	return Continue();
@@ -723,6 +721,14 @@ const CKnownEntity *CNEOBotMainAction::SelectMoreDangerousThreatInternal( const 
 	}
 	else if ( !isImmediateThreat1 && !isImmediateThreat2 )
 	{
+		const bool bThreat1VisibleRecently = threat1->IsVisibleRecently();
+		const bool bThreat2VisibleRecently = threat2->IsVisibleRecently();
+		if ( bThreat1VisibleRecently != bThreat2VisibleRecently )
+		{
+			// The cloak/smoke/light detection systems mean that a nearest threat is not always the best priority
+			return bThreat1VisibleRecently ? threat1 : threat2;
+		}
+
 		// neither threat is immediately dangerous - use closest
 		return closerThreat;
 	}
@@ -761,6 +767,12 @@ QueryResultType CNEOBotMainAction::ShouldAttack( const INextBot *meBot, const CK
 //---------------------------------------------------------------------------------------------
 QueryResultType	CNEOBotMainAction::ShouldHurry( const INextBot *meBot ) const
 {
+	// ATK attackers must hurry because the clock runs for defenders.
+	if ( IsAtkAttackingTeam( meBot->GetEntity()->GetTeamNumber() ) )
+	{
+		return ANSWER_YES;
+	}
+
 	return ANSWER_UNDEFINED;
 }
 

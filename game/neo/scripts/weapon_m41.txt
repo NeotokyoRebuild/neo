@@ -15,6 +15,7 @@ WeaponData
 	"Damage"		"29"
 	"Penetration"		"32.0"
 	"CycleTime"		"0.166666"		// time between shots
+	"ReloadReadyBeforeEnd"	"0.393"	// the reload is done at the last reload click, this long before its animation ends
 	
 	"TPMuzzleFlashScale"	"0.5"
 
@@ -68,11 +69,14 @@ WeaponData
 	
 	"AimOffset"
 	{
+		"enabled"	"1"
 		"fov"		"25"
 		"forward"	"8"
 		"right"		"1.305"
-		"up"		"4.1"
-		//"pitch"     "-1.8"
+		"up"		"5.5"
+		"pitch"		"0"
+		"yaw"		"0"
+		"roll"		"0"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)

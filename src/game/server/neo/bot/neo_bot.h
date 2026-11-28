@@ -31,6 +31,17 @@ extern void BotGenerateAndWearItem(CNEO_Player* pBot, const char* itemName);
 
 extern int Bot_GetTeamByName(const char* string);
 
+// ATK uses the same ghost objective as CTG, with the clock running for defenders.
+inline bool IsGhostGameType()
+{
+	return NEORules()->GetGameType() == NEO_GAME_TYPE_CTG || NEORules()->GetGameType() == NEO_GAME_TYPE_ATK;
+}
+
+inline bool IsAtkAttackingTeam( int team )
+{
+	return NEORules()->GetGameType() == NEO_GAME_TYPE_ATK && team == NEORules()->GetAttackingTeam();
+}
+
 inline int GetEnemyTeam(int team)
 {
 	if (team == TEAM_JINRAI)
@@ -133,6 +144,8 @@ public:
 
 	bool IsCloakEnabled(void) const;
 	float GetCloakPower(void) const;
+	// smoke blocked a line of sight this bot traced; a Support answers with thermal vision
+	void OnSmokeBlockedSight(void);
 	void EnableCloak(float threshold);
 	void DisableCloak(void);
 
@@ -167,7 +180,6 @@ public:
 	void ReloadIfLowClip(bool bForceReload = false);
 
 	bool DropGhost();
-	CWeaponGhost *GetBeaconingGhost(void) const;
 	bool IsRevealedByMyGhost(CBaseEntity *subject) const;
 
 	void DropPrimaryWeapon(void);
@@ -232,10 +244,8 @@ public:
 	bool IsLineOfFireClear(const Vector& from, const Vector& to, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given points
 	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given point and entity
 	bool IsLineOfFireClearOfFriendlies(const Vector& from, CBaseEntity* who) const;
-	bool IsLineOfFireClearOfFriendlies(const Vector& from, const Vector& to) const;
 	bool IsFriendlyNearLineOfFire(const Vector& from, const Vector& to) const;	// return true if a teammate is near the line between the given points
 	bool IsFriendlyNearBarrel(float range) const;			// return true if a teammate is near where my weapon points
-	void RepathIfFriendlyBlockingLineOfFire();
 
 	Vector FindVisibleThrowPointNear( const Vector &vecPos ) const;
 	bool IsThrowLineClear(const Vector& where) const;
@@ -469,6 +479,12 @@ public:
 
 private:
 	void ToggleCloak(void);
+	void UpdateVisionMode(void);
+
+	int m_visionClass = NEO_CLASS_RANDOM;
+	CountdownTimer m_visionCheckTimer;
+	CountdownTimer m_visionHoldTimer;
+	CountdownTimer m_smokeThermalTimer;
 
 	CNEOBotSuppressiveFire m_suppressiveFire;
 
@@ -538,9 +554,6 @@ private:
 	float m_flAutoJumpMin;
 	float m_flAutoJumpMax;
 	CountdownTimer m_autoJumpTimer;
-
-	CountdownTimer m_repathAroundFriendlyTimer;
-	PathFollower m_repathAroundFriendlyFollower;
 
 	int m_nPlainJumpTick = -1;
 

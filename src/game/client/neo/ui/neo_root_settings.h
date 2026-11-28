@@ -157,6 +157,7 @@ struct NeoSettings
 		int iAntiAliasing;
 		int iFilteringMode;
 		bool bVSync;
+		int iFpsMax;
 		bool bMotionBlur;
 		int iHDR;
 		float flGamma;
@@ -204,6 +205,7 @@ struct NeoSettings
 		bool bShowPos;
 		int iShowFps;
 		bool bEnableRangeFinder;
+		bool bEnableWalkIndicator;
 		int iExtendedKillfeed;
 		bool bShowHudContextHints;
 		bool bShowHudContextHintPlayerTakeover;
@@ -275,6 +277,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_streamermode);
 		CONVARREF_DEF(cl_neo_streamermode_autodetect_obs);
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
+		CONVARREF_DEF(cl_neo_hud_walkindicator_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
 		CONVARREF_DEF(cl_neo_hud_context_hint_enabled);
 		CONVARREF_DEF(cl_neo_hud_context_hint_show_player_takeover_hint);
@@ -338,6 +341,7 @@ struct NeoSettings
 		CONVARREF_DEF(mat_trilinear);
 		CONVARREF_DEF(mat_forceaniso);
 		CONVARREF_DEF(mat_vsync);
+		CONVARREF_DEF(fps_max);
 		CONVARREF_DEF(mat_motion_blur_enabled);
 		CONVARREF_DEF(mat_hdr_level);
 		CONVARREF_DEF(mat_monitorgamma);

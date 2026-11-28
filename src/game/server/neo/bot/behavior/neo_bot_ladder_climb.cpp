@@ -2,6 +2,7 @@
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_ladder_climb.h"
 #include "nav_ladder.h"
+#include "neo_gamerules.h"
 #include "NextBot/Path/NextBotPathFollow.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -14,10 +15,99 @@ static constexpr float LADDER_PLACE_GAP = 2.0f;
 // and is slid at most this far towards the face to find it.
 static constexpr float LADDER_PLACE_SEEK = 16.0f;
 
+ConVar neo_bot_ladder_handicap( "neo_bot_ladder_handicap", "1", FCVAR_NONE,
+	"Teleport a bot that fails to climb a ladder onto the ladder's exit area (0 disables, to debug climbing)", true, 0.0f, true, 1.0f );
+
+// A teleport spot stands this far inside the exit area's edge, beyond half a hull
+static constexpr float HANDICAP_EDGE_GAP = 2.0f;
+// A teleported bot holds crouch this long, then stands once there is room
+static constexpr float HANDICAP_CROUCH_HOLD = 0.5f;
+
+//---------------------------------------------------------------------------------------------
+// Drop as a crouched hull onto the floor within step height of the area
+static bool SettleHandicapSpot( CNEOBot *me, const CNavArea *area, Vector *spot )
+{
+	const IBody *body = me->GetBodyInterface();
+	const float halfWidth = body->GetHullWidth() * 0.5f;
+	const float stepHeight = me->GetLocomotionInterface()->GetStepHeight();
+	const float areaZ = area->GetZ( *spot );
+
+	const Vector from( spot->x, spot->y, areaZ + stepHeight );
+	const Vector to( spot->x, spot->y, areaZ - stepHeight );
+	const Vector mins( -halfWidth, -halfWidth, 0.0f );
+	const Vector maxs( halfWidth, halfWidth, body->GetCrouchHullHeight() );
+	CTraceFilterSimple filter( me, COLLISION_GROUP_PLAYER_MOVEMENT );
+	trace_t tr;
+	UTIL_TraceHull( from, to, mins, maxs, MASK_PLAYERSOLID, &filter, &tr );
+	if ( tr.startsolid || tr.allsolid || !tr.DidHit() )
+	{
+		return false;
+	}
+
+	*spot = tr.endpos;
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------
+// A bot that fails to get past a ladder is teleported onto its exit area,
+// so a ladder the bot cannot climb does not hold up its team's objective
+bool CNEOBotLadderClimb::TeleportPastLadder( CNEOBot *me, const CNavLadder *ladder, bool goingUp, const CNavArea *exitArea, const char *reason )
+{
+	if ( !exitArea || !neo_bot_ladder_handicap.GetBool() || !NEORules()->IsRoundLive()
+		|| me->GetVisionInterface()->GetPrimaryKnownThreat( false ) )
+	{
+		return false;
+	}
+
+	// Just inside the exit area's edge by the ladder, or else the area's center
+	const Vector &ladderEnd = goingUp ? ladder->m_top : ladder->m_bottom;
+	Vector nearPoint;
+	exitArea->GetClosestPointOnArea( ladderEnd, &nearPoint );
+	Vector inward = exitArea->GetCenter() - nearPoint;
+	inward.z = 0.0f;
+	const float toCenter = inward.NormalizeInPlace();
+	const float inset = me->GetBodyInterface()->GetHullWidth() * 0.5f + HANDICAP_EDGE_GAP;
+
+	Vector spot = nearPoint + inward * Min( inset, toCenter );
+	if ( !SettleHandicapSpot( me, exitArea, &spot ) )
+	{
+		spot = exitArea->GetCenter();
+		if ( !SettleHandicapSpot( me, exitArea, &spot ) )
+		{
+			return false;
+		}
+	}
+
+	DevMsg( "NEO_BOT_MOVE ladder_teleport reason=%s bot=%d ladder=%u area=%u\n", reason, me->entindex(), ladder->GetID(), exitArea->GetID() );
+
+	me->ReleaseJumpButton();
+	me->SetMoveType( MOVETYPE_WALK );
+	me->SetGroundEntity( nullptr );
+
+	// Place while crouched to simplify the height checks
+	me->AddFlag( FL_DUCKING );
+	me->m_Local.m_bDucked = true;
+	me->SetViewOffset( VEC_DUCK_VIEW_SCALED( me ) );
+	me->SetCollisionBounds( VEC_DUCK_HULL_MIN_SCALED( me ), VEC_DUCK_HULL_MAX_SCALED( me ) );
+	me->PressCrouchButton( HANDICAP_CROUCH_HOLD );
+	me->Teleport( &spot, nullptr, &vec3_origin );
+	me->GetLocomotionInterface()->Reset();
+	me->UpdateLastKnownArea();
+
+	// Update the path follower destination after moving past the ladder
+	const PathFollower *path = me->GetCurrentPath();
+	if ( path )
+	{
+		const_cast< PathFollower * >( path )->Invalidate();
+	}
+
+	return true;
+}
+
 //---------------------------------------------------------------------------------------------
 CNEOBotLadderClimb::CNEOBotLadderClimb( const CNavLadder *ladder, bool goingUp )
 	: m_ladder( ladder ), m_bGoingUp( goingUp ), m_flLastZ( 0.0f ),
-	m_bDismountPhase( false ), m_bJumpedOffLadder( false ), m_pExitArea( nullptr ), m_nNudges( 0 )
+	m_bDismountPhase( false ), m_bJumpedOffLadder( false ), m_bCrawlDismount( false ), m_bCrawlPushed( false ), m_bLeftGround( false ), m_pExitArea( nullptr ), m_nNudges( 0 )
 {
 	m_dismountPos = vec3_origin;
 	m_ladderForward = ladder ? -ladder->GetNormal() : vec3_origin;
@@ -308,6 +398,7 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 {
 	if ( m_timeoutTimer.IsElapsed() )
 	{
+		TryHandicap( me, "expire" );
 		return Done( "Ladder climb timeout" );
 	}
 
@@ -352,11 +443,21 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 
 	// Check if we're on the ladder (MOVETYPE_LADDER or locomotion says so)
 	bool onLadder = me->IsBotOnLadder();
+	if ( onLadder || !mover->IsOnGround() )
+	{
+		m_bLeftGround = true;
+	}
 
 	if ( !onLadder )
 	{
-		if ( mover->IsOnGround() )
+		// crawling off, the gap's sill is ground too, short of the landing
+		if ( mover->IsOnGround() && !m_bCrawlDismount )
 		{
+			if ( IsWrongGround( me ) )
+			{
+				TryHandicap( me, "wrong_ground" );
+			}
+
 			return Done( "Reached the ground, ending climb" );
 		}
 		
@@ -415,6 +516,11 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 				}
 				else
 				{
+					if ( TryHandicap( me, "stuck" ) )
+					{
+						return Done( "Got stuck on something climbing the ladder, teleported past it" );
+					}
+
 					// We are stuck mid-climb. Reset scenario by jumping backwards and ending condition
 					if ( me->IsDebugging( NEXTBOT_PATH ) )
 					{
@@ -470,6 +576,20 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		if ( m_bGoingUp ? ( currentZ >= dismountZ ) : ( currentZ <= dismountZ ) )
 		{
 			bWantsDismount = true;
+		}
+
+		// A gap at the top only a crouched body fits through, such as a vent or a low window: climbing on never clears it,
+		// so duck on the way up, and step off crouched once the gap is in reach
+		if ( m_bGoingUp && onLadder && m_pExitArea && currentZ > GetCrawlFeetZ() - CRAWL_DUCK_RANGE && IsCrawlOnlyExit( me, toExit ) )
+		{
+			me->PressCrouchButton( CRAWL_CROUCH_HOLD );
+			if ( ( me->GetFlags() & FL_DUCKING ) && fabsf( GetCrawlFeetZ() - currentZ ) <= CRAWL_SNAP_DIST )
+			{
+				m_bCrawlDismount = true;
+				EnterDismountPhase( me );
+				UpdateCrawlDismount( me, toExit, onLadder );
+				return Continue();
+			}
 		}
 
 		// A parapet between the ladder and a roof exit blocks the step off at floor height:
@@ -559,7 +679,14 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 		// Safety timeout
 		if ( m_dismountTimer.IsElapsed() )
 		{
+			TryHandicap( me, "expire" );
 			return Done( "Dismount walk timed out" );
+		}
+
+		if ( m_bCrawlDismount && m_pExitArea )
+		{
+			UpdateCrawlDismount( me, toExit, onLadder );
+			return Continue();
 		}
 
 		// Build look target toward exit area center with vertical bias preserved
@@ -638,6 +765,27 @@ ActionResult<CNEOBot> CNEOBotLadderClimb::Update( CNEOBot *me, float /*interval*
 }
 
 //---------------------------------------------------------------------------------------------
+// Detect whether we landed on the correct exit area
+bool CNEOBotLadderClimb::IsWrongGround( CNEOBot *me ) const
+{
+	if ( !m_bLeftGround || !m_pExitArea )
+	{
+		return false;
+	}
+
+	const ILocomotion *mover = me->GetLocomotionInterface();
+	const Vector &feet = mover->GetFeet();
+	const float rise = feet.z - m_pExitArea->GetZ( feet );
+	return m_bGoingUp ? rise < -mover->GetStepHeight() : rise > mover->GetStepHeight();
+}
+
+//---------------------------------------------------------------------------------------------
+bool CNEOBotLadderClimb::TryHandicap( CNEOBot *me, const char *reason ) const
+{
+	return TeleportPastLadder( me, m_ladder, m_bGoingUp, m_pExitArea, reason );
+}
+
+//---------------------------------------------------------------------------------------------
 bool CNEOBotLadderClimb::IsDismountBlocked( CNEOBot *me, const Vector &toExit ) const
 {
 	const Vector &feet = me->GetLocomotionInterface()->GetFeet();
@@ -649,6 +797,100 @@ bool CNEOBotLadderClimb::IsDismountBlocked( CNEOBot *me, const Vector &toExit ) 
 
 	return tr.DidHit();
 }
+//---------------------------------------------------------------------------------------------
+// Which way to crawl off toward the exit: along the face for an exit beside the ladder,
+// since on the ladder a press with any part into the face climbs
+Vector CNEOBotLadderClimb::GetCrawlDirection( const Vector &toExit ) const
+{
+	if ( DotProduct( toExit, m_ladderForward ) >= 0.5f )
+	{
+		return toExit;
+	}
+
+	const Vector &normal = m_ladder->GetNormal();
+	Vector along = toExit - DotProduct( toExit, normal ) * normal;
+	along.z = 0.0f;
+	return ( along.NormalizeInPlace() > 0.0f ) ? along : toExit;
+}
+
+//---------------------------------------------------------------------------------------------
+// Where the feet step off crawling: just above the ladder's top
+float CNEOBotLadderClimb::GetCrawlFeetZ() const
+{
+	return m_ladder->m_top.z + CRAWL_FEET_ABOVE_TOP;
+}
+
+//---------------------------------------------------------------------------------------------
+// From the ladder's top toward the exit, the standing body is blocked but a crouched one is clear
+bool CNEOBotLadderClimb::IsCrawlOnlyExit( CNEOBot *me, const Vector &toExit ) const
+{
+	const IBody *body = me->GetBodyInterface();
+	const float halfWidth = body->GetHullWidth() * 0.5f;
+	const Vector mins( -halfWidth, -halfWidth, 0.0f );
+	const Vector standMaxs( halfWidth, halfWidth, body->GetStandHullHeight() );
+	const Vector crouchMaxs( halfWidth, halfWidth, body->GetCrouchHullHeight() );
+
+	Vector start = me->GetLocomotionInterface()->GetFeet();
+	start.z = GetCrawlFeetZ();
+	const Vector end = start + GetCrawlDirection( toExit ) * ( DISMOUNT_CLEARANCE_HULLS * body->GetHullWidth() );
+
+	trace_t tr;
+	UTIL_TraceHull( start, end, mins, standMaxs, MASK_NPCSOLID, me, COLLISION_GROUP_NONE, &tr );
+	if ( !tr.DidHit() )
+	{
+		return false;
+	}
+
+	UTIL_TraceHull( start, end, mins, crouchMaxs, MASK_NPCSOLID, me, COLLISION_GROUP_NONE, &tr );
+	return !tr.DidHit();
+}
+
+//---------------------------------------------------------------------------------------------
+// Bot updates come a tenth of a second apart, too coarse to stop a climb inside the gap's few units,
+// so the crouched bot is set just above the ladder's top, let go of the ladder and pushed into the gap:
+//
+//              |#####|          <- the gap's top
+//      ladder  | o-> |  landing
+//       ||     |_____|________  <- the gap's sill, the ladder's top
+//       ||     |#####|
+void CNEOBotLadderClimb::UpdateCrawlDismount( CNEOBot *me, const Vector &toExit, bool bOnLadder )
+{
+	me->PressCrouchButton( CRAWL_CROUCH_HOLD );
+	if ( bOnLadder && !m_bCrawlPushed )
+	{
+		m_bCrawlPushed = true;
+
+		Vector crawlPos = me->GetLocomotionInterface()->GetFeet();
+		crawlPos.z = GetCrawlFeetZ();
+		trace_t tr;
+		UTIL_TraceHull( crawlPos, crawlPos, me->WorldAlignMins(), me->WorldAlignMaxs(), MASK_PLAYERSOLID, me, COLLISION_GROUP_PLAYER_MOVEMENT, &tr );
+		if ( tr.startsolid )
+		{
+			return;
+		}
+
+		me->ReleaseMoveUpButton();
+		me->ReleaseForwardButton();
+		me->SetAbsOrigin( crawlPos );
+		me->SetMoveType( MOVETYPE_WALK );
+
+		// with a little rise, so the bot reaches the sill before it falls below it
+		Vector push = GetCrawlDirection( toExit ) * CRAWL_PUSH_SPEED;
+		push.z = CRAWL_PUSH_RISE_SPEED;
+		me->SetAbsVelocity( push );
+		return;
+	}
+
+	// Level, so the bot looks where it walks. In the air beside the ladder a press toward its face grabs it again,
+	// so the push alone carries the bot until it lands
+	me->GetBodyInterface()->AimHeadTowards( me->EyePosition() + toExit * 100.0f, IBody::MANDATORY, 0.1f, nullptr, "Crawling off the ladder" );
+	ILocomotion *mover = me->GetLocomotionInterface();
+	if ( mover->IsOnGround() )
+	{
+		mover->Approach( mover->GetFeet() + toExit * 100.0f );
+	}
+}
+
 //---------------------------------------------------------------------------------------------
 void CNEOBotLadderClimb::EnterDismountPhase( CNEOBot *me )
 {

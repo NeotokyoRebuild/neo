@@ -24,6 +24,7 @@ public:
 
 	int		m_iBullets;
 	float	m_flCycleTime;
+	float	m_flReloadReadyBeforeEnd;
 	char	szViewModel2[MAX_WEAPON_STRING];		// Team 2 (NSF) wep vm
 	char	szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
 	char	szDeathIcon[MAX_BULLET_CHARACTER];
@@ -38,6 +39,19 @@ public:
 	float	m_flVMAimFov;
 	Vector	m_vecVMAimPosOffset;
 	QAngle	m_angVMAimAngOffset;
+
+	// The ADS pose ("AimOffset" block). m_bHasAds: the block says "enabled" "1", so the weapon takes part in ADS.
+	bool	m_bHasAds;
+	float	m_flVMAdsFov;
+	Vector	m_vecVMAdsPosOffset;
+	QAngle	m_angVMAdsAngOffset;
+
+	// Per-weapon multipliers on the cl_neo_ads_recoil_* scales ("AdsRecoil" block).
+	float	m_flAdsRecoilVertical;
+	float	m_flAdsRecoilSide;
+	float	m_flAdsRecoilBack;
+	float	m_flAdsRecoilMaxDist;	// <= 0: use cl_neo_ads_recoil_max_dist
+	float	m_flAdsRecoilMaxAngle;	// <= 0: use cl_neo_ads_recoil_max_angle
 };
 
 

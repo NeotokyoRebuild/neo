@@ -19,6 +19,8 @@ public:
 
 	virtual const char *GetName( void ) const override { return "DetpackTrigger"; }
 
+	static bool IsTeammateInBlast( const CNEOBot *me, const Vector &vecDetpackPos, float flRadius );
+
 private:
 	bool m_bPushedWeapon;
 	CHandle< CWeaponDetpack > m_hDetpackWeapon;

@@ -238,6 +238,10 @@ extern ISaveRestoreOps *eventFuncs;
 
 // Define shared with others, this is pred only, and FTYPEDESC_VIEW_OTHER_PLAYER is not used for pred.
 #define FTYPEDESC_ONLY_ERROR_IF_ABOVE_ZERO_TO_ZERO_OR_BELOW_ETC		0x2000	// misyl: Only throw a prediction error if this changes from > 0 -> <= 0
+#ifdef NEO
+// Pred only as well, and nothing reads FTYPEDESC_VIEW_OWN_TEAM.
+#define FTYPEDESC_NOERRORCHECK_WHEN_FOLLOWING_TARGET		0x4000	// Not compared for errors while CGameMovement::FullObserverMove copies this field from the observer target
+#endif
 
 #define TD_MSECTOLERANCE		0.001f		// This is a FIELD_FLOAT and should only be checked to be within 0.001 of the networked info
 

@@ -1330,6 +1330,12 @@ void C_HL2MPRagdoll::ImpactTrace( trace_t *pTrace, int iDamageType, const char *
 }
 
 
+#ifdef NEO
+// A ragdoll takes the player's momentum only when it is created this soon after the death,
+// allowing for this client's clock trailing the server's
+static constexpr float RAGDOLL_MOMENTUM_MAX_DEATH_AGE = 1.0f;
+#endif // NEO
+
 void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 {
 	// First, initialize all our data. If we have the player's entity on our client,
@@ -1424,8 +1430,47 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 #ifdef NEO
 	if (m_pRagdoll)
 	{
-		m_pRagdoll->SetInitialVelocity(GetInitialRagdollVelocity());
 		m_pRagdoll->SetLastOrigin(GetInitialRagdollOrigin());
+
+		// A ragdoll re-created later, by a full update or a mid-round connect, is not thrown again,
+		// and a dormant player's death time is stale here, so that ragdoll drops in place as before
+		if (!pPlayer || pPlayer->IsDormant() || (gpGlobals->curtime - pPlayer->GetDeathTime()) > RAGDOLL_MOMENTUM_MAX_DEATH_AGE)
+		{
+			return;
+		}
+
+		// The bone history often misses the player's own movement, so the ragdoll dropped in place:
+		// shift every element equally so the mass-weighted velocity is the player's velocity at death.
+		ragdoll_t *pRagdollData = m_pRagdoll->GetRagdoll();
+		Vector vecAnimMomentum = vec3_origin;
+		float flTotalMass = 0.f;
+		for (int i = 0; i < pRagdollData->listCount; ++i)
+		{
+			IPhysicsObject *pObject = pRagdollData->list[i].pObject;
+			if (!pObject)
+			{
+				continue;
+			}
+
+			Vector vecVelocity;
+			AngularImpulse angVelocity;
+			const int iBone = pRagdollData->boneIndex[i];
+			CalcBoneDerivatives(vecVelocity, angVelocity, boneDelta0[iBone], boneDelta1[iBone], boneDt);
+			vecAnimMomentum += vecVelocity * pObject->GetMass();
+			flTotalMass += pObject->GetMass();
+		}
+
+		if (flTotalMass > 0.f)
+		{
+			Vector vecVelocityCorrection = GetInitialRagdollVelocity() - (vecAnimMomentum / flTotalMass);
+			for (int i = 0; i < pRagdollData->listCount; ++i)
+			{
+				if (IPhysicsObject *pObject = pRagdollData->list[i].pObject)
+				{
+					pObject->AddVelocity(&vecVelocityCorrection, nullptr);
+				}
+			}
+		}
 	}
 #endif // NEO
 }

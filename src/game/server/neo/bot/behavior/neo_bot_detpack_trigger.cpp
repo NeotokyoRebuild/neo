@@ -2,12 +2,42 @@
 #include "bot/neo_bot.h"
 #include "bot/behavior/neo_bot_detpack_trigger.h"
 #include "weapon_detpack.h"
+#include "neo_detpack.h"
+#include "neo_gamerules.h"
 
 //---------------------------------------------------------------------------------------------
 CNEOBotDetpackTrigger::CNEOBotDetpackTrigger( void )
 {
 	m_hDetpackWeapon = nullptr;
 	m_bPushedWeapon = false;
+}
+
+//---------------------------------------------------------------------------------------------
+// Check if teammates would be in the blast radius
+bool CNEOBotDetpackTrigger::IsTeammateInBlast( const CNEOBot *me, const Vector &vecDetpackPos, float flRadius )
+{
+	if ( !NEORules()->IsTeamplay() )
+	{
+		return false;
+	}
+
+	CUtlVector< CNEO_Player * > friendVector;
+	CollectPlayers( &friendVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
+
+	for ( int i = 0; i < friendVector.Count(); ++i )
+	{
+		if ( friendVector[i] == me->GetEntity() )
+		{
+			continue;
+		}
+
+		if ( friendVector[i]->GetAbsOrigin().DistToSqr( vecDetpackPos ) <= Square( flRadius ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -44,6 +74,13 @@ ActionResult< CNEOBot >	CNEOBotDetpackTrigger::Update( CNEOBot *me, float interv
 	if ( !m_hDetpackWeapon || !m_hDetpackWeapon->m_bThisDetpackHasBeenThrown || m_hDetpackWeapon->m_bRemoteHasBeenTriggered )
 	{
 		return Done( "Detpack triggered or invalid" );
+	}
+
+	// A teammate may have walked into the blast radius since the decision to trigger
+	CBaseEntity *pDetpackEnt = m_hDetpackWeapon->GetDetpackEntity();
+	if ( pDetpackEnt && IsTeammateInBlast( me, pDetpackEnt->GetAbsOrigin(), NEO_DETPACK_DAMAGE_RADIUS ) )
+	{
+		return Done( "Teammate in detpack blast radius" );
 	}
 
 	if ( me->GetActiveWeapon() == m_hDetpackWeapon && gpGlobals->curtime >= m_hDetpackWeapon->m_flNextPrimaryAttack )

@@ -1673,6 +1673,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_root_settings.cpp
     neo/ui/neo_loading.cpp
     neo/ui/neo_ui.cpp
+    neo/ui/neo_ui_fpsslider.cpp
     neo/ui/neo_theme.cpp
     neo/ui/neo_utils.cpp
     neo/ui/OverrideInterface.cpp
@@ -1696,6 +1697,7 @@ set(UNITY_SOURCE_NEO_UI
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_spectator_overlay.cpp
     neo/ui/neo_hud_startup_sequence.cpp
+    neo/ui/neo_hud_walking_indicator.cpp
     neo/ui/neo_hud_worldpos_marker.cpp
     neo/ui/neo_hud_worldpos_marker_generic.cpp
     neo/ui/neo_scoreboard.cpp
@@ -1718,6 +1720,7 @@ target_sources_grouped(
     neo/ui/neo_root_settings.h
     neo/ui/neo_loading.h
     neo/ui/neo_ui.h
+    neo/ui/neo_ui_fpsslider.h
     neo/ui/neo_theme.h
     neo/ui/neo_utils.h
     neo/ui/IOverrideInterface.h
@@ -1740,6 +1743,7 @@ target_sources_grouped(
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_spectator_overlay.h
     neo/ui/neo_hud_startup_sequence.h
+    neo/ui/neo_hud_walking_indicator.h
     neo/ui/neo_hud_worldpos_marker.h
     neo/ui/neo_hud_worldpos_marker_generic.h
     neo/ui/neo_scoreboard.h
@@ -1750,6 +1754,7 @@ target_sources_grouped(
 
 set(UNITY_SOURCE_NEO_SHARED
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ads.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
@@ -1780,6 +1785,7 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/achievements_neo.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/nav_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ads.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_debugoverlay_budget.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h

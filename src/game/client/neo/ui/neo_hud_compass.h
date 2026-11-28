@@ -46,8 +46,6 @@ private:
 	int m_resX, m_resY;
 	float m_objAngle;
 
-	wchar_t m_wszRangeFinder[11];
-
 	GhostCallout m_GhostCallouts[MAX_PLAYERS_ARRAY_SAFE];
 
 	CPanelAnimationVarAliasType(bool, m_showCompass, "visible", "1", "bool");

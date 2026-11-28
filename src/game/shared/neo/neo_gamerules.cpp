@@ -569,6 +569,7 @@ static const char *s_NeoPreserveEnts[] =
 	"info_player_defender",
 	"info_player_start",
 	"neo_predicted_viewmodel",
+	"neo_predicted_viewmodel_muzzleflash",
 	"neo_ghost_retrieval_point",
 	"neo_ghostspawnpoint",
 	"neo_juggernautspawnpoint",

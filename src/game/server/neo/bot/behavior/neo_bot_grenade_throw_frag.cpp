@@ -124,7 +124,7 @@ float CNEOBotGrenadeThrowFrag::GetFragSafetyRadius()
 	return sv_neo_grenade_blast_radius.GetFloat() * sv_neo_bot_grenade_frag_safety_range_multiplier.GetFloat();
 }
 
-bool CNEOBotGrenadeThrowFrag::IsFragSafe( const CNEOBot *me, const Vector &vecTarget )
+bool CNEOBotGrenadeThrowFrag::IsFragPolite( const CNEOBot *me, const Vector &vecTarget )
 {
 	const float flDistToTargetSqr = me->GetAbsOrigin().DistToSqr( vecTarget );
 	const float flSafeRadius = GetFragSafetyRadius();
@@ -141,10 +141,23 @@ bool CNEOBotGrenadeThrowFrag::IsFragSafe( const CNEOBot *me, const Vector &vecTa
 		return false; // Too far to throw
 	}
 
+	return true;
+}
+
+bool CNEOBotGrenadeThrowFrag::IsFragSafe( const CNEOBot *me, const Vector &vecTarget )
+{
+	if ( !IsFragPolite( me, vecTarget ) )
+	{
+		return false;
+	}
+
 	if ( !NEORules()->IsTeamplay() )
 	{
 		return true;
 	}
+
+	const float flSafeRadius = GetFragSafetyRadius();
+	const float flSafeRadiusSqr = flSafeRadius * flSafeRadius;
 
 	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{

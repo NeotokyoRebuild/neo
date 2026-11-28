@@ -99,7 +99,7 @@ ConVar cl_neo_cap_ring_smoke_proxy_debug("cl_neo_cap_ring_smoke_proxy_debug", "0
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 {
 	m_flCapzoneRadius = -1;
-	m_iOwningTeam = TEAM_INVALID;
+	m_iOwningTeam = NEO_FGD_TEAMNUM_ATTACKER;
 	m_bIsActive = true;
 
 #ifdef CLIENT_DLL

@@ -4,6 +4,7 @@
 #include "bot/behavior/neo_bot_ctg_lone_wolf_seek.h"
 #include "bot/behavior/neo_bot_seek_weapon.h"
 #include "bot/neo_bot_path_compute.h"
+#include "bot/neo_bot_path_reservation.h"
 #include "neo_gamerules.h"
 #include "neo_player.h"
 
@@ -16,15 +17,19 @@ public:
 	static constexpr int DEFAULT_AREA_LIMIT = 100000;
 	static constexpr int CANDIDATE_LIMIT = 10;
 
-	CSearchForUnexplored( CNEOBot *me, CUtlMap<int, bool> &exploredAreaIds, int areaLimit = DEFAULT_AREA_LIMIT )
-		: m_me( me ), m_exploredAreaIds( exploredAreaIds ), m_iAreaCount( 0 ), m_iAreaLimit( areaLimit )
+	CSearchForUnexplored( CNEOBot *me, CUtlMap<int, bool> &exploredAreaIds, int teamID, bool excludeDetpackHazards,
+		int areaLimit = DEFAULT_AREA_LIMIT )
+		: m_me( me ), m_exploredAreaIds( exploredAreaIds ), m_iTeamID( teamID ),
+		m_bExcludeDetpackHazards( excludeDetpackHazards ), m_iAreaCount( 0 ), m_iAreaLimit( areaLimit )
 	{
 	}
 
 	// return true to keep searching, return false to stop searching
 	virtual bool operator() ( CNavArea *baseArea, CNavArea *priorArea, float travelDistanceSoFar ) override
 	{
-		if ( m_exploredAreaIds.Find( (int)baseArea->GetID() ) == m_exploredAreaIds.InvalidIndex() )
+		if ( m_exploredAreaIds.Find( (int)baseArea->GetID() ) == m_exploredAreaIds.InvalidIndex()
+			&& ( !m_bExcludeDetpackHazards
+				|| !CNEOBotPathReservations()->IsAreaDetpackHazard( baseArea->GetID(), m_iTeamID ) ) )
 		{
 			m_candidateAreas.AddToTail( baseArea );
 		}
@@ -73,13 +78,16 @@ public:
 
 	CNEOBot *m_me;
 	CUtlMap<int, bool> &m_exploredAreaIds;
+	int m_iTeamID;
+	bool m_bExcludeDetpackHazards;
 	CUtlVector<CNavArea *> m_candidateAreas;
 	int m_iAreaCount;
 	int m_iAreaLimit;
 };
 
 //---------------------------------------------------------------------------------------------
-CNEOBotCtgLoneWolfSeek::CNEOBotCtgLoneWolfSeek( void )
+CNEOBotCtgLoneWolfSeek::CNEOBotCtgLoneWolfSeek( bool detpackHunt )
+	: m_bDetpackHunt( detpackHunt )
 {
 	m_pIgnoredWeapons = std::make_unique<CNEOIgnoredWeaponsCache>();
 }
@@ -108,6 +116,13 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::OnStart( CNEOBot *me, Action< CN
 //---------------------------------------------------------------------------------------------
 ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float interval )
 {
+	if ( m_bDetpackHunt
+		&& !CNEOBotPathReservations()->HasDeployedDetpackMarkInBlastOfGhostArea( me->GetTeamNumber() ) )
+	{
+		// The marked pack is gone from the ghost's blast radius; resume normal ghost seeking.
+		return Done( "Ghost-area detpack gone, resuming ghost seek" );
+	}
+
 	ActionResult< CNEOBot > result = ConsiderGhostCaptureTransition( me );
 	if ( result.IsRequestingChange() )
 	{
@@ -218,7 +233,7 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 					MarkVisibleAreasAsExplored( me, currentArea, ghostArea );
 				}
 
-				CSearchForUnexplored search( me, m_exploredAreaIds );
+				CSearchForUnexplored search( me, m_exploredAreaIds, me->GetTeamNumber(), m_bDetpackHunt );
 				SearchSurroundingAreas( ghostArea, search );
 
 				if ( search.m_candidateAreas.IsEmpty() )
@@ -267,16 +282,31 @@ ActionResult< CNEOBot >	CNEOBotCtgLoneWolfSeek::Update( CNEOBot *me, float inter
 		}
 	}
 
-	if ( m_vecSearchWaypoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+	if ( m_bDetpackHunt && m_iExplorationTargetId != -1
+		&& CNEOBotPathReservations()->IsAreaDetpackHazard( m_iExplorationTargetId, me->GetTeamNumber() ) )
 	{
-		m_vecSearchWaypoint = NEORules()->GetGhostPos();
+		m_exploredAreaIds.InsertOrReplace( m_iExplorationTargetId, true );
+		m_iExplorationTargetId = -1;
+		m_vecSearchWaypoint = CNEO_Player::VECTOR_INVALID_WAYPOINT;
+		m_path.Invalidate();
 	}
 
-	if ( me->GetAbsOrigin().DistToSqr( m_vecSearchWaypoint ) > Square( PATH_RECOMPUTE_DIST ) )
+	if ( m_vecSearchWaypoint == CNEO_Player::VECTOR_INVALID_WAYPOINT )
+	{
+		// A detpack hunt must never use the hazardous ghost itself as its no-candidate fallback.
+		if ( !m_bDetpackHunt )
+		{
+			m_vecSearchWaypoint = NEORules()->GetGhostPos();
+		}
+	}
+
+	if ( m_vecSearchWaypoint != CNEO_Player::VECTOR_INVALID_WAYPOINT
+		&& me->GetAbsOrigin().DistToSqr( m_vecSearchWaypoint ) > Square( PATH_RECOMPUTE_DIST ) )
 	{
 		if ( !m_path.IsValid() )
 		{
-			CNEOBotPathCompute( me, m_path, m_vecSearchWaypoint, FASTEST_ROUTE );
+			CNEOBotPathCompute( me, m_path, m_vecSearchWaypoint, FASTEST_ROUTE,
+				PATH_NO_LENGTH_LIMIT, !m_bDetpackHunt );
 		}
 	}
 

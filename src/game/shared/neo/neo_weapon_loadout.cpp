@@ -108,8 +108,8 @@ int GetNumberOfLoadoutWeapons(const int rank, const int classType)
 	return amount;
 }
 
-ConVar sv_neo_wep_xp_override("sv_neo_wep_xp_override", "-1", FCVAR_CHEAT | FCVAR_REPLICATED,
-	"Override the effective XP used for weapon eligibility checks, or -1 to disable.", true, -1.0f, false, 0.0f);
+ConVar sv_neo_wep_xp_override("sv_neo_wep_xp_override", "", FCVAR_CHEAT | FCVAR_REPLICATED,
+	"Override the effective XP used for weapon eligibility checks, or empty to disable. Negative values are allowed.");
 
 int GetEffectiveXP(const int actualXP)
 {
@@ -118,8 +118,8 @@ int GetEffectiveXP(const int actualXP)
 		// Treat as max rank so every XP-gated weapon is eligible
 		return XP_LIEUTENANT;
 	}
-	const int iOverride = sv_neo_wep_xp_override.GetInt();
-	return (iOverride >= 0) ? iOverride : actualXP;
+	// Empty means disabled, since negative XP is a valid value to test with
+	return (sv_neo_wep_xp_override.GetString()[0] != '\0') ? sv_neo_wep_xp_override.GetInt() : actualXP;
 }
 
 } // namespace CNEOWeaponLoadout

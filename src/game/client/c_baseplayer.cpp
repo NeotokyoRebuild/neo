@@ -372,7 +372,11 @@ BEGIN_PREDICTION_DATA_NO_BASE( CPlayerLocalData )
 	DEFINE_PRED_FIELD( m_flDucktime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_flDuckJumpTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_flJumpTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
+#ifdef NEO
+	DEFINE_PRED_FIELD_TOL( m_flFallVelocity, FIELD_FLOAT, FTYPEDESC_INSENDTABLE | FTYPEDESC_NOERRORCHECK_WHEN_FOLLOWING_TARGET, 0.5f ),
+#else
 	DEFINE_PRED_FIELD_TOL( m_flFallVelocity, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, 0.5f ),
+#endif
 //	DEFINE_PRED_FIELD( m_nOldButtons, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_FIELD( m_nOldButtons, FIELD_INTEGER ),
 	DEFINE_FIELD( m_flOldForwardMove, FIELD_FLOAT ),
@@ -770,6 +774,14 @@ bool C_BasePlayer::IsValidObserverTarget(CBaseEntity* target)
 	}
 
 	return true;	// passed all test
+}
+#endif
+
+#ifdef NEO
+bool C_BasePlayer::IsFollowingObserverTarget() const
+{
+	const int mode = GetObserverMode();
+	return ( mode == OBS_MODE_IN_EYE || mode == OBS_MODE_CHASE || mode == OBS_MODE_POI ) && GetObserverTarget() != nullptr;
 }
 #endif
 

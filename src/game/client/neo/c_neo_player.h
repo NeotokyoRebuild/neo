@@ -94,6 +94,16 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 	bool IsMakingFootstepSounds(float* pVelRun={}, float* pSpeed={}, int* fLadder={}) const;
+	bool IsInSilentMoveMode() const;
+	int GetSilentMoveKeys(bool bCrouchFromPress) const;
+	bool IsOnFootstepGround() const;
+	bool IsLoudFootstep() const;
+	float GetSurfaceStepVolume(const surfacedata_t *psurface, bool bLoud) const;
+	void UpdateFootstepAverageVelocity();
+	void UpdateFootstepLanding();
+	void OnFootstepDecided();
+	void UpdateHeldStep(bool bLoud, surfacedata_t *psurface, const Vector &vecOrigin);
+	bool HoldStep(surfacedata_t *psurface, const Vector &vecOrigin);
 
 	void Lean(void);
 
@@ -154,8 +164,6 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
-	void SuperJump(void);
-
 	void DrawCompass(void);
 
 	void Weapon_AimToggle(C_NEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType);
@@ -171,6 +179,7 @@ public:
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
+	bool IsAllowedToSuperJump(void);
 
 	const char *InternalGetNeoPlayerName() const;
 	const char *GetNeoPlayerName() const;
@@ -198,6 +207,8 @@ public:
 	
 	bool ValidTakeoverTargetFor(CNEO_Player* pPlayerTakingOver);
 
+	void AimPunch(float amount);
+
 private:
 	char m_sNameWithTakeoverContextProcessingBuffer[MAX_PLAYER_NAME_LENGTH];
 	void CheckAimButtons();
@@ -208,13 +219,13 @@ private:
 	void SetCloakState(bool state);
 	void FixupOnGroundFlag();
 
-	bool IsAllowedToSuperJump(void);
-
 	void ClearLocalPlayerDmgReports();
 
 	// Spectator takeover player related functionality
 	bool IsAFK() const;
 	bool IsFakePlayer() const;
+
+	void ApplyAimPunch();
 
 public:
 	CNetworkVar(bool, m_bShowTestMessage);
@@ -269,8 +280,28 @@ private:
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
 
+	float m_flAimPunchVel;
+	float m_flAimPunchCurrent;
+
 private:
 	C_NEO_Player(const C_NEO_Player &);
+
+	// Held step: the first audible step after pressing crouch, walk or aim, see UpdateHeldStep
+	bool IsHeldStepPending() const;
+	void PlayHeldStep(surfacedata_t *psurface, const Vector &vecOrigin);
+	int m_iHeldStep = NEO_FS_HELD_NONE;
+	int m_nHeldStepKeysDown = 0;
+	int m_nHeldStepArmedKeys = 0;
+	float m_flHeldStepQuietTime = -1.f;
+	float m_flHeldStepDropTime = 0.f;
+	float m_flHeldStepWindow = 0.f;
+
+	// Landing, see UpdateFootstepLanding
+	float m_flFootstepAirTime = -1.f;
+	bool m_bFootstepLanding = false;
+
+	// Ground velocity averaged over about the last step interval, see UpdateFootstepAverageVelocity
+	Vector m_vecFootstepAvgVelocity = vec3_origin;
 };
 
 inline C_NEO_Player *ToNEOPlayer(C_BaseEntity *pEntity)

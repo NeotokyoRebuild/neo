@@ -37,8 +37,13 @@ private:
 	CountdownTimer m_detpackCheckTimer;
 	ActionResult< CNEOBot > MonitorArmedDetpack(CNEOBot *me);
 
+	CountdownTimer m_enemyDetpackTimer;
+	void MonitorEnemyDetpack(CNEOBot *me);
+	void RepathAroundNewDetpackMark(CNEOBot *me);
+
 	ActionResult< CNEOBot > ScavengeForPrimaryWeapon(CNEOBot* me);
 
 	void AvoidBumpingFriends(CNEOBot* me);
 	ActionResult< CNEOBot > WatchForLadders(CNEOBot* me);
+	void CloakPastNpcTurret(CNEOBot* me);
 };

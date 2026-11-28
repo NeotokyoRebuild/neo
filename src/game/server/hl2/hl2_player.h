@@ -340,7 +340,13 @@ private:
 	Class_T				m_nControlClass;			// Class when player is controlling another entity
 	// This player's HL2 specific data that should only be replicated to 
 	//  the player and not to other players.
+#ifdef NEO
+public:
+#endif
 	CNetworkVarEmbedded( CHL2PlayerLocalData, m_HL2Local );
+#ifdef NEO
+private:
+#endif
 
 	bool				m_bSprintEnabled;		// Used to disable sprint temporarily
 	bool				m_bIsAutoSprinting;		// A proxy for holding down the sprint key.
