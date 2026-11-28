@@ -768,6 +768,17 @@ bool CNEO_Player::IsInScope() const
 		&& ScopeClock(this) >= m_flScopeUpTime;
 }
 
+bool CNEO_Player::HasAimedAccuracy() const
+{
+	const auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
+	{
+		return IsInScope();
+	}
+
+	return IsInAim();
+}
+
 void CNEO_Player::CheckAimButtons()
 {
 	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))

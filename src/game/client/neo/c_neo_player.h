@@ -181,6 +181,7 @@ public:
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
 	bool IsInScope() const;
+	bool HasAimedAccuracy() const;
 	bool IsAllowedToSuperJump(void);
 
 	const char *InternalGetNeoPlayerName() const;

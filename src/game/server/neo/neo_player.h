@@ -193,6 +193,7 @@ public:
 	const char *GetStarName( int iStar ) const;
 	bool IsInAim() const { return m_bInAim; }
 	bool IsInScope() const;
+	bool HasAimedAccuracy() const;
 	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }

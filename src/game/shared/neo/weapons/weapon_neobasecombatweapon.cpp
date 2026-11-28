@@ -652,7 +652,7 @@ void CNEOBaseCombatWeapon::UpdateInaccuracy()
 		m_flAccuracyPenalty += gpGlobals->frametime * 3.0;
 	}
 
-	if (!pOwner->IsInAim() && pOwner->GetAbsVelocity().Length2D() > 5.0)
+	if (!pOwner->HasAimedAccuracy() && pOwner->GetAbsVelocity().Length2D() > 5.0)
 	{
 		m_flAccuracyPenalty += gpGlobals->frametime * 2.0;
 	}
@@ -923,7 +923,7 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 	// We lerp from very accurate to inaccurate over time
 	static Vector cone;
 	const auto& weaponSpread = GetSpreadInfo();
-	if (pOwner && pOwner->IsInAim())
+	if (pOwner && pOwner->HasAimedAccuracy())
 	{
 		VectorLerp(
 			weaponSpread.minSpreadAim,
@@ -979,7 +979,7 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	auto recoilInfo = m_weaponHandling.recoilInfo;
-	float recoilScale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
+	float recoilScale = owner->HasAimedAccuracy() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
 	if (!recoilScale)
 	{
 		return;
