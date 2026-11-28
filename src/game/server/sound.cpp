@@ -158,6 +158,12 @@ class CAmbientGeneric : public CPointEntity
 {
 public:
 	DECLARE_CLASS( CAmbientGeneric, CPointEntity );
+#ifdef NEO
+	// Networked so the client's HRTF renderer can attenuate the sound as the engine does: the
+	// engine channel it polls carries the emitting entity index but not the sound level, which for
+	// an ambient_generic comes from its "radius" keyvalue rather than any sound script.
+	DECLARE_SERVERCLASS();
+#endif // NEO
 
 	CAmbientGeneric();
 
@@ -172,6 +178,11 @@ public:
 	// Rules about which entities need to transmit along with me
 	virtual void SetTransmit( CCheckTransmitInfo *pInfo, bool bAlways );
 	virtual void UpdateOnRemove( void );
+#ifdef NEO
+	virtual int UpdateTransmitState() override;
+	virtual int ShouldTransmit( const CCheckTransmitInfo *pInfo ) override;
+	void UpdateNetworkedSound();
+#endif // NEO
 
 	void ToggleSound();
 	void SendSound( SoundFlags_t flags );
@@ -199,6 +210,14 @@ public:
 	string_t m_sSourceEntName;
 	EHANDLE m_hSoundSource;	// entity from which the sound comes
 	int		m_nSoundSourceEntIndex; // In case the entity goes away before we finish stopping the sound...
+
+#ifdef NEO
+	// What the engine channel is emitted as: the entity index it comes from, the file it plays,
+	// and the sound level it is attenuated by, or -1 when that comes from a sound script instead.
+	CNetworkVar( int, m_nNetSoundSourceIndex );
+	CNetworkVar( int, m_nNetSoundLevel );
+	CNetworkString( m_szNetSoundFile, MAX_PATH );
+#endif // NEO
 
 private:
 	void ValidateSoundFile( void );
@@ -243,6 +262,17 @@ BEGIN_DATADESC( CAmbientGeneric )
 
 END_DATADESC()
 
+#ifdef NEO
+// With the base entity properties: once networked, the client entity at this index is what the
+// engine asks for the position of every sound emitted from it (C_BaseEntity::GetSoundSpatialization),
+// so it must carry the real origin; without it ambient sounds all played from the world origin.
+IMPLEMENT_SERVERCLASS_ST( CAmbientGeneric, DT_AmbientGeneric )
+	SendPropInt( SENDINFO( m_nNetSoundSourceIndex ), MAX_EDICT_BITS + 1 ),
+	SendPropInt( SENDINFO( m_nNetSoundLevel ), 10 ),
+	SendPropString( SENDINFO( m_szNetSoundFile ) ),
+END_SEND_TABLE()
+#endif // NEO
+
 
 #define SF_AMBIENT_SOUND_EVERYWHERE			1
 #define SF_AMBIENT_SOUND_START_SILENT		16
@@ -257,6 +287,11 @@ CAmbientGeneric::CAmbientGeneric()
 	m_szSoundFile[0] = 0;
 	m_iszSound = NULL_STRING;
 	m_iszPrevSound = NULL_STRING;
+#ifdef NEO
+	m_nNetSoundSourceIndex = -1;
+	m_nNetSoundLevel = -1;
+	m_szNetSoundFile.GetForModify()[0] = 0;
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
@@ -304,6 +339,9 @@ void CAmbientGeneric::Spawn( void )
 
 	// init all dynamic modulation parms
 	InitModulationParms();
+#ifdef NEO
+	UpdateNetworkedSound();
+#endif // NEO
 }
 
 
@@ -535,6 +573,9 @@ void CAmbientGeneric::Activate( void )
 			}
 		}
 	}
+#ifdef NEO
+	UpdateNetworkedSound();
+#endif // NEO
 
 #ifdef PORTAL
 		// This is the only way we can silence the radio sound from the first room without touching them map -- jdw
@@ -586,6 +627,11 @@ void CAmbientGeneric::Activate( void )
 //-----------------------------------------------------------------------------
 void CAmbientGeneric::SetTransmit( CCheckTransmitInfo *pInfo, bool bAlways )
 {
+#ifdef NEO
+	// Unlike upstream, ambient generics do transmit (see UpdateTransmitState), always, so every
+	// client can match any ambient channel it hears to its sound level.
+	BaseClass::SetTransmit( pInfo, bAlways );
+#endif // NEO
 	// Ambient generics never transmit; this is just a way for us to ensure
 	// the sound source gets transmitted; that's why we don't call pInfo->m_pTransmitEdict->Set
 	if ( !m_hSoundSource || m_hSoundSource == this || !m_fActive )
@@ -607,8 +653,43 @@ void CAmbientGeneric::SetTransmit( CCheckTransmitInfo *pInfo, bool bAlways )
 	}
 }
 
+#ifdef NEO
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose: Transmitted to every client, wherever it is, but through a full check
+//          rather than FL_EDICT_ALWAYS: entities with that flag skip SetTransmit,
+//          which this entity relies on to also send its sound source entity.
+//-----------------------------------------------------------------------------
+int CAmbientGeneric::UpdateTransmitState()
+{
+	return SetTransmitState( FL_EDICT_FULLCHECK );
+}
+
+int CAmbientGeneric::ShouldTransmit( const CCheckTransmitInfo *pInfo )
+{
+	return FL_EDICT_ALWAYS;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Mirrors what SendSound hands the engine, for the client to match to
+//          the channel: raw files are emitted at m_iSoundLevel, sound script names
+//          at their script's level (which the client reads from the scripts itself).
+//-----------------------------------------------------------------------------
+void CAmbientGeneric::UpdateNetworkedSound()
+{
+	m_nNetSoundSourceIndex = m_hSoundSource ? m_hSoundSource->GetSoundSourceIndex() : m_nSoundSourceEntIndex;
+
+	const bool bRawFile = m_szSoundFile[0] != '!' && ( Q_stristr( m_szSoundFile, ".wav" ) || Q_stristr( m_szSoundFile, ".mp3" ) );
+	m_nNetSoundLevel = bRawFile ? static_cast<int>( m_iSoundLevel ) : -1;
+
+	if ( V_strcmp( m_szNetSoundFile.Get(), m_szSoundFile ) != 0 )
+	{
+		V_strncpy( m_szNetSoundFile.GetForModify(), m_szSoundFile, MAX_PATH );
+	}
+}
+#endif // NEO
+
+//-----------------------------------------------------------------------------
+// Purpose:
 //-----------------------------------------------------------------------------
 void CAmbientGeneric::UpdateOnRemove( void )
 {
@@ -942,6 +1023,10 @@ void CAmbientGeneric::InputStopSound( inputdata_t &inputdata )
 void CAmbientGeneric::SendSound( SoundFlags_t flags)
 {
 	ValidateSoundFile();
+#ifdef NEO
+	// The "message" keyvalue can change at runtime; the client must see the file being emitted.
+	UpdateNetworkedSound();
+#endif // NEO
 
 	CBaseEntity* pSoundSource = m_hSoundSource;
 	if ( pSoundSource )
