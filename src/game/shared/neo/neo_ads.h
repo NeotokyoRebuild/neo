@@ -7,6 +7,14 @@
 
 class CNEOWeaponInfo;
 
+#ifdef CLIENT_DLL
+class C_NEOBaseCombatWeapon;
+float NeoAimTransitionTime(const C_NEOBaseCombatWeapon &weapon);
+#else
+class CNEOBaseCombatWeapon;
+float NeoAimTransitionTime(const CNEOBaseCombatWeapon &weapon);
+#endif
+
 struct NeoAimPose
 {
 	Vector pos;
@@ -18,7 +26,7 @@ struct NeoAimPose
 bool NeoAdsActive(const CNEOWeaponInfo &data);
 
 NeoAimPose NeoGetAimPose(const CNEOWeaponInfo &data);
-float NeoAimTransitionTime(const CNEOWeaponInfo &data);
+float NeoAimChangeStart(float lastStart, float now, float changeTime);
 float NeoAimTransitionCurve(const CNEOWeaponInfo &data, float fraction);
 
 // adsBlend: 0 at the hip, 1 on the sights.

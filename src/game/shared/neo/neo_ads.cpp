@@ -2,10 +2,10 @@
 #include "neo_ads.h"
 #include "neo_player_shared.h"
 #include "neo_weapon_parse.h"
+#include "weapon_neobasecombatweapon.h"
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
-#include "weapon_neobasecombatweapon.h"
 #include "filesystem.h"
 #include "studio.h"
 #include "bone_setup.h"
@@ -168,15 +168,30 @@ NeoAimPose NeoGetAimPose(const CNEOWeaponInfo &data)
 	return { data.m_vecVMAimPosOffset, data.m_angVMAimAngOffset, data.m_flVMAimFov };
 }
 
-float NeoAimTransitionTime(const CNEOWeaponInfo &data)
+float NeoAimTransitionTime(const CNEOBaseCombatWeapon &weapon)
 {
+	if (weapon.GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+	{
+		return NEO_SCOPE_RAISE_TIME;
+	}
 #ifdef CLIENT_DLL
-	if (NeoAdsActive(data))
+	if (NeoAdsActive(weapon.GetNEOWpnData()))
 	{
 		return cl_neo_ads_time.GetFloat();
 	}
 #endif
 	return NEO_ZOOM_SPEED;
+}
+
+float NeoAimChangeStart(const float lastStart, const float now, const float changeTime)
+{
+	const float elapsed = now - lastStart;
+	if (elapsed < 0.0f || elapsed >= changeTime)
+	{
+		return now;
+	}
+
+	return now - (changeTime - elapsed);
 }
 
 float NeoAimTransitionCurve(const CNEOWeaponInfo &data, float fraction)

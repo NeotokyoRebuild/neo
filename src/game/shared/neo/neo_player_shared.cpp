@@ -16,6 +16,7 @@
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #include "c_playerresource.h"
+#include "prediction.h"
 #include "ui/neo_hud_context_hint.h"
 #include "vprof.h"
 #define CNEO_Player C_NEO_Player
@@ -88,16 +89,7 @@ ConVar sv_neo_aimpunch_max("sv_neo_aimpunch_max", "2", FCVAR_NOTIFY | FCVAR_REPL
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
-	if (!pWep || pWep->m_bInReload || !pWep->CanAim())
-	{
-		return false;
-	}
-
-	if (pWep->GetNeoWepBits() & NEO_WEP_SRS && pWep->GetIdealActivity() == ACT_VM_PULLBACK) {
-		return false;
-	}
-
-	return true;
+	return pWep && !pWep->m_bInReload && pWep->CanAim();
 }
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits)
@@ -752,6 +744,41 @@ const wchar_t *GetRankNameW(const int xp, const bool shortened)
 	return GetRankNameBase(xp, shortened).wszStr;
 }
 
+// Accounts for the prediction lead of the local player
+static float ScopeClock(const CNEO_Player *pPlayer)
+{
+#ifdef CLIENT_DLL
+	if (!prediction->InPrediction() && pPlayer->IsLocalPlayer() && pPlayer->GetPredictable())
+	{
+		return pPlayer->GetFinalPredictedTime() - TICK_INTERVAL;
+	}
+#endif
+	return gpGlobals->curtime;
+}
+
+bool CNEO_Player::IsInScope() const
+{
+	if (!IsInAim())
+	{
+		return false;
+	}
+
+	const auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	return pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		&& ScopeClock(this) >= m_flScopeUpTime;
+}
+
+bool CNEO_Player::HasAimedAccuracy() const
+{
+	const auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
+	{
+		return IsInScope();
+	}
+
+	return IsInAim();
+}
+
 void CNEO_Player::CheckAimButtons()
 {
 	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
@@ -771,6 +798,17 @@ void CNEO_Player::CheckAimButtons()
 		else if (m_afButtonPressed & IN_AIM)
 		{
 			Weapon_SetZoom(!IsInAim());
+		}
+
+		if (pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		{
+			const int defaultFOV = GetDefaultFOV();
+			const int targetFOV = IsInScope() ? NeoAimFOV(defaultFOV, pNeoWep) : defaultFOV;
+			const int currentTargetFOV = (m_iFOV == 0) ? defaultFOV : m_iFOV;
+			if (currentTargetFOV != targetFOV || m_Local.m_flFOVRate != 0.0f)
+			{
+				SetFOV(this, targetFOV, 0.0f);
+			}
 		}
 	}
 	else

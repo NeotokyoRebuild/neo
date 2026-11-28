@@ -567,20 +567,20 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 		{
 			const bool playerAiming = neoPlayer->IsInAim();
 			const float currentTime = gpGlobals->curtime;
+			const float aimChangeTime = NeoAimTransitionTime(*weapon);
 			if (m_bViewAim && !playerAiming)
 			{
 				// From aiming to not aiming
-				m_flStartAimingChange = currentTime;
+				m_flStartAimingChange = NeoAimChangeStart(m_flStartAimingChange, currentTime, aimChangeTime);
 				m_bViewAim = false;
 			}
 			else if (!m_bViewAim && playerAiming)
 			{
 				// From not aiming to aiming
-				m_flStartAimingChange = currentTime;
+				m_flStartAimingChange = NeoAimChangeStart(m_flStartAimingChange, currentTime, aimChangeTime);
 				m_bViewAim = true;
 			}
 			const NeoAimPose aimPose = NeoGetAimPose(data);
-			const float aimChangeTime = NeoAimTransitionTime(data);
 			const float endAimingChange = m_flStartAimingChange + aimChangeTime;
 			const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
 			if (inAimingChange)

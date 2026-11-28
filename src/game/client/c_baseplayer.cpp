@@ -2717,9 +2717,6 @@ float C_BasePlayer::GetFOV( void )
 		// get fov from observer target. Not if target is observer itself
 		if (pTargetPlayer && !pTargetPlayer->IsObserver())
 		{
-			// NEO NOTE (nullsystem): This uses a percentage based rather than delta, but it's good enough
-			// to provide a motion of going between ADS states rather than immediate for the spectator viewing
-			// in first person
 			float fov = pTargetPlayer->m_flSpecFOV;
 			if (!prediction->InPrediction())
 			{
@@ -2727,17 +2724,27 @@ float C_BasePlayer::GetFOV( void )
 				const float fovNorm = static_cast<float>(fovNormInt);
 				const float fovAim = static_cast<float>(NeoAimFOV(fovNormInt, pTargetPlayer->GetActiveWeapon()));
 
-				// Don't spline/lerp when we're already at the desired FOV
-				if ((pTargetPlayer->m_bInAim && (fov == fovAim)) ||
-						(!pTargetPlayer->m_bInAim && (fov == fovNorm)))
+				auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(pTargetPlayer->GetActiveWeapon());
+				if (pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
 				{
-					return fov;
+					pTargetPlayer->m_flSpecFOV = fovNorm;
+					return pTargetPlayer->IsInScope() ? fovAim : fovNorm;
 				}
-				float perc = (gpGlobals->curtime - pTargetPlayer->m_flFOVTime) / NEO_ZOOM_SPEED;
-				perc = clamp(perc, 0.0f, 1.0f);
-				if (pTargetPlayer->m_bInAim) perc = 1.0f - perc;
-				fov = SimpleSplineRemapValClamped( perc, 0.0f, 1.0f, fovAim, fovNorm);
+
+				const float targetFOV = pTargetPlayer->m_bInAim ? fovAim : fovNorm;
+				const float fovSpan = fabsf(fovNorm - fovAim);
+				const float sinceDrawn = gpGlobals->curtime - pTargetPlayer->m_flSpecFOVDrawTime;
+				// A target not drawn for a while shows its current zoom at once instead of a stale ease
+				if (sinceDrawn > NEO_ZOOM_SPEED || fovSpan == 0.0f)
+				{
+					fov = targetFOV;
+				}
+				else if (sinceDrawn > 0.0f)
+				{
+					fov = Approach(targetFOV, fov, fovSpan * sinceDrawn / NEO_ZOOM_SPEED);
+				}
 				pTargetPlayer->m_flSpecFOV = fov;
+				pTargetPlayer->m_flSpecFOVDrawTime = gpGlobals->curtime;
 			}
 			return fov;
 		}
@@ -2778,6 +2785,10 @@ float C_BasePlayer::GetFOV( void )
 				// m_flFOVTime was set to a predicted time in the future, because the FOV change was predicted.
 				deltaTime = (float)( GetFinalPredictedTime() - m_flFOVTime );
 				deltaTime += ( gpGlobals->interpolation_amount * TICK_INTERVAL );
+#ifdef NEO
+				// Prediction stores the time after running the command
+				deltaTime -= TICK_INTERVAL;
+#endif
 				deltaTime /= m_Local.m_flFOVRate;
 			}
 #endif
@@ -2789,7 +2800,11 @@ float C_BasePlayer::GetFOV( void )
 			}
 			else
 			{
+#ifdef NEO
+				fFOV = RemapValClamped( deltaTime, 0.0f, 1.0f, (float) m_iFOVStart, fFOV );
+#else
 				fFOV = SimpleSplineRemapValClamped( deltaTime, 0.0f, 1.0f, (float) m_iFOVStart, fFOV );
+#endif
 			}
 		}
 	}

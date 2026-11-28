@@ -575,6 +575,10 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 				{
 					pOwner->Weapon_SetZoom(true);
 				}
+				else if (GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+				{
+					pOwner->m_flScopeUpTime = gpGlobals->curtime + NEO_SCOPE_RAISE_TIME;
+				}
 				else
 				{
 					pOwner->SetFOV(pOwner, GetNEOWpnData().iAimFOV, 0.1);
@@ -602,7 +606,18 @@ float CNEOBaseCombatWeapon::GetPenetration() const
 
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-	return BaseClass::Holster(pSwitchingTo);
+	if (!BaseClass::Holster(pSwitchingTo))
+	{
+		return false;
+	}
+
+	auto *pOwner = static_cast<CNEO_Player *>(GetOwner());
+	if ((GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON) && pOwner && pOwner->IsInScope())
+	{
+		pOwner->SetFOV(pOwner, pOwner->GetDefaultFOV(), 0.0f);
+	}
+
+	return true;
 }
 
 void CNEOBaseCombatWeapon::CheckReload(void)
@@ -637,7 +652,7 @@ void CNEOBaseCombatWeapon::UpdateInaccuracy()
 		m_flAccuracyPenalty += gpGlobals->frametime * 3.0;
 	}
 
-	if (!pOwner->IsInAim() && pOwner->GetAbsVelocity().Length2D() > 5.0)
+	if (!pOwner->HasAimedAccuracy() && pOwner->GetAbsVelocity().Length2D() > 5.0)
 	{
 		m_flAccuracyPenalty += gpGlobals->frametime * 2.0;
 	}
@@ -908,7 +923,7 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 	// We lerp from very accurate to inaccurate over time
 	static Vector cone;
 	const auto& weaponSpread = GetSpreadInfo();
-	if (pOwner && pOwner->IsInAim())
+	if (pOwner && pOwner->HasAimedAccuracy())
 	{
 		VectorLerp(
 			weaponSpread.minSpreadAim,
@@ -964,7 +979,7 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	auto recoilInfo = m_weaponHandling.recoilInfo;
-	float recoilScale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
+	float recoilScale = owner->HasAimedAccuracy() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
 	if (!recoilScale)
 	{
 		return;

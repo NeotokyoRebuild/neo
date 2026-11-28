@@ -9042,7 +9042,11 @@ int CBasePlayer::GetFOV( void )
 	}
 	else
 	{
+#ifdef NEO
+		fFOV = RemapValClamped( deltaTime, 0.0f, 1.0f, m_iFOVStart, fFOV );
+#else
 		fFOV = SimpleSplineRemapValClamped( deltaTime, 0.0f, 1.0f, m_iFOVStart, fFOV );
+#endif
 	}
 
 	return fFOV;

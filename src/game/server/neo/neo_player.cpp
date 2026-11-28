@@ -65,6 +65,7 @@ SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
+SendPropTime(SENDINFO(m_flScopeUpTime)),
 SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 SendPropBool(SENDINFO(m_bCarryingGhost)),
 
@@ -105,6 +106,7 @@ DEFINE_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
+DEFINE_FIELD(m_flScopeUpTime, FIELD_TIME),
 
 DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
 DEFINE_FIELD(m_flVisionLastTime, FIELD_TIME),
@@ -558,6 +560,7 @@ CNEO_Player::CNEO_Player()
 
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bInAim = false;
+	m_flScopeUpTime = 0.0f;
 	m_bCarryingGhost = false;
 	m_bInLean = NEO_LEAN_NONE;
 
@@ -1849,6 +1852,18 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	}
 
 	ShowCrosshair(bZoomIn);
+
+	auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (pWeapon && (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON))
+	{
+		if (bZoomIn)
+		{
+			// Wait for the raising scope to eye animation to finish before zooming in
+			m_flScopeUpTime = gpGlobals->curtime + NEO_SCOPE_RAISE_TIME;
+		}
+		m_bInAim = bZoomIn;
+		return;
+	}
 
 	const int fov = GetDefaultFOV();
 	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, NEO_ZOOM_SPEED);
@@ -4261,6 +4276,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 
 			m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
 			m_bInAim = pPlayerTakeoverTarget->m_bInAim;
+			m_flScopeUpTime = pPlayerTakeoverTarget->m_flScopeUpTime;
 			Weapon_SetZoom(pPlayerTakeoverTarget->m_bInAim);
 			m_bCarryingGhost = pPlayerTakeoverTarget->m_bCarryingGhost;
 			m_bInLean = pPlayerTakeoverTarget->m_bInLean;
