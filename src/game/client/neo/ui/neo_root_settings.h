@@ -73,6 +73,7 @@ struct NeoSettings
 		bool bTachiFullAutoPreferred;
 		int iBackground;
 		bool bTakingDamageSounds;
+		float flViewKickStrength;
 	};
 
 	struct Keys
@@ -286,6 +287,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_hud_context_hint_highlight_player);
 		CONVARREF_DEF(cl_neo_equip_utility_priority);
 		CONVARREF_DEF(cl_neo_taking_damage_sounds);
+		CONVARREF_DEF(cl_neo_viewkick_strength);
 		CONVARREF_DEF(cl_neo_hud_scoreboard_padding);
 
 		// Multiplayer

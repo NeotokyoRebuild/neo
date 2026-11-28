@@ -1083,6 +1083,7 @@ void C_NEO_Player::PreThink( void )
 	CheckPingButton(this);
 
 	ApplyAimPunch();
+	ApplyViewKick();
 
 	if (m_bInThermOpticCamo)
 	{
@@ -1519,6 +1520,11 @@ void C_NEO_Player::CalcView( Vector &eyeOrigin, QAngle &eyeAngles,
 	float &zNear, float &zFar, float &fov )
 {
 	BaseClass::CalcView(eyeOrigin, eyeAngles, zNear, zFar, fov);
+
+	if (IsAlive() && !IsObserver())
+	{
+		eyeAngles += Lerp(gpGlobals->interpolation_amount, m_vecViewKickPrev, m_vecViewKickCurrent);
+	}
 }
 
 const QAngle &C_NEO_Player::EyeAngles()
@@ -2056,4 +2062,57 @@ void C_NEO_Player::ApplyAimPunch()
 	float springForceMagnitude = sv_neo_aimpunch_spring_constant.GetFloat() * gpGlobals->frametime;
 	springForceMagnitude = clamp(springForceMagnitude, 0.f, 2.f );
 	m_flAimPunchVel -= m_flAimPunchCurrent * springForceMagnitude;
+}
+
+ConVar cl_neo_viewkick_strength( "cl_neo_viewkick_strength", "1.0", FCVAR_ARCHIVE, "View kick strength", true, 0.0f, true, 1.0f );
+ConVar cl_neo_viewkick_spring_constant( "cl_neo_viewkick_spring_constant", "65.0", FCVAR_DEVELOPMENTONLY, "View kick spring constant", true, 0.0f, false, 0.0f );
+ConVar cl_neo_viewkick_damping( "cl_neo_viewkick_damping", "9.0", FCVAR_DEVELOPMENTONLY, "View kick damping", true, 0.0f, false, 0.0f );
+
+void C_NEO_Player::ViewKickReset()
+{
+	m_vecViewKickVel = vec3_angle;
+	m_vecViewKickCurrent = vec3_angle;
+}
+
+void C_NEO_Player::ViewKick( const QAngle &angleOffset )
+{
+	m_vecViewKickVel += angleOffset * 20.0 * cl_neo_viewkick_strength.GetFloat();
+}
+
+void C_NEO_Player::ApplyViewKick()
+{
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
+	m_vecViewKickPrev = m_vecViewKickCurrent;
+
+	if ( m_vecViewKickCurrent.LengthSqr() > 0.001 || m_vecViewKickVel.LengthSqr() > 0.001 )
+	{
+		m_vecViewKickCurrent += m_vecViewKickVel * gpGlobals->frametime;
+		float damping = 1 - (cl_neo_viewkick_damping.GetFloat() * gpGlobals->frametime);
+
+		if ( damping < 0 )
+		{
+			damping = 0;
+		}
+		m_vecViewKickVel *= damping;
+
+		// torsional spring
+		float springForceMagnitude = cl_neo_viewkick_spring_constant.GetFloat() * gpGlobals->frametime;
+		springForceMagnitude = clamp(springForceMagnitude, 0.f, 2.f );
+		m_vecViewKickVel -= m_vecViewKickCurrent * springForceMagnitude;
+
+		// don't wrap around
+		m_vecViewKickCurrent.Init(
+			clamp(m_vecViewKickCurrent.x, -89.f, 89.f ),
+			clamp(m_vecViewKickCurrent.y, -179.f, 179.f ),
+			clamp(m_vecViewKickCurrent.z, -89.f, 89.f ) );
+	}
+	else
+	{
+		m_vecViewKickCurrent.Init( 0, 0, 0 );
+		m_vecViewKickVel.Init( 0, 0, 0 );
+	}
 }
