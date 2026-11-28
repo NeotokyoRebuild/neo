@@ -2065,8 +2065,8 @@ void C_NEO_Player::ApplyAimPunch()
 }
 
 ConVar cl_neo_viewkick_strength( "cl_neo_viewkick_strength", "1.0", FCVAR_ARCHIVE, "View kick strength", true, 0.0f, true, 1.0f );
-ConVar cl_neo_viewkick_spring_constant( "cl_neo_viewkick_spring_constant", "65.0", FCVAR_ARCHIVE, "View kick spring constant", true, 0.0f, false, 0.0f );
-ConVar cl_neo_viewkick_damping( "cl_neo_viewkick_damping", "9.0", FCVAR_ARCHIVE, "View kick damping", true, 0.0f, false, 0.0f );
+ConVar cl_neo_viewkick_spring_constant( "cl_neo_viewkick_spring_constant", "65.0", FCVAR_DEVELOPMENTONLY, "View kick spring constant", true, 0.0f, false, 0.0f );
+ConVar cl_neo_viewkick_damping( "cl_neo_viewkick_damping", "9.0", FCVAR_DEVELOPMENTONLY, "View kick damping", true, 0.0f, false, 0.0f );
 
 void C_NEO_Player::ViewKickReset()
 {
